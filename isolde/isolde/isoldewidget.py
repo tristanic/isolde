@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '/home/tic20/isolde/QtDesigner/IsoldeWidget.ui'
+# Form implementation generated from reading ui file '../../QtDesigner/IsoldeWidget.ui'
 #
 # Created by: PyQt5 UI code generator 5.7
 #
@@ -26,7 +26,7 @@ class Ui_isolde_widget(object):
         self.toolBox = QtWidgets.QToolBox(self._isolde_widget_contents)
         self.toolBox.setObjectName("toolBox")
         self._build_page = QtWidgets.QWidget()
-        self._build_page.setGeometry(QtCore.QRect(0, 0, 546, 697))
+        self._build_page.setGeometry(QtCore.QRect(0, 0, 475, 697))
         self._build_page.setObjectName("_build_page")
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self._build_page)
         self.verticalLayout_4.setContentsMargins(0, 0, 0, 0)
@@ -153,9 +153,9 @@ class Ui_isolde_widget(object):
         self.label_10 = QtWidgets.QLabel(self._sim_basic_mobile_whole_model_frame)
         self.label_10.setObjectName("label_10")
         self.horizontalLayout_17.addWidget(self.label_10)
-        self._sim_basic_whole_chain_model_combo_box = QtWidgets.QComboBox(self._sim_basic_mobile_whole_model_frame)
-        self._sim_basic_whole_chain_model_combo_box.setObjectName("_sim_basic_whole_chain_model_combo_box")
-        self.horizontalLayout_17.addWidget(self._sim_basic_whole_chain_model_combo_box)
+        self._sim_basic_whole_model_combo_box = QtWidgets.QComboBox(self._sim_basic_mobile_whole_model_frame)
+        self._sim_basic_whole_model_combo_box.setObjectName("_sim_basic_whole_model_combo_box")
+        self.horizontalLayout_17.addWidget(self._sim_basic_whole_model_combo_box)
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_17.addItem(spacerItem)
         self.verticalLayout_8.addWidget(self._sim_basic_mobile_whole_model_frame)
@@ -185,6 +185,7 @@ class Ui_isolde_widget(object):
         self._sim_basic_mobile_chains_list_box = QtWidgets.QListWidget(self._sim_basic_mobile_by_chain_frame)
         self._sim_basic_mobile_chains_list_box.setMinimumSize(QtCore.QSize(80, 80))
         self._sim_basic_mobile_chains_list_box.setMaximumSize(QtCore.QSize(60, 50))
+        self._sim_basic_mobile_chains_list_box.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self._sim_basic_mobile_chains_list_box.setObjectName("_sim_basic_mobile_chains_list_box")
         self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.FieldRole, self._sim_basic_mobile_chains_list_box)
         self.horizontalLayout_14.addLayout(self.formLayout_2)
@@ -344,7 +345,7 @@ class Ui_isolde_widget(object):
         self._sim_restrain_scroll_area.setWidgetResizable(True)
         self._sim_restrain_scroll_area.setObjectName("_sim_restrain_scroll_area")
         self.scrollAreaWidgetContents_6 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_6.setGeometry(QtCore.QRect(0, 0, 443, 544))
+        self.scrollAreaWidgetContents_6.setGeometry(QtCore.QRect(0, 0, 98, 28))
         self.scrollAreaWidgetContents_6.setObjectName("scrollAreaWidgetContents_6")
         self._sim_restrain_scroll_area.setWidget(self.scrollAreaWidgetContents_6)
         self.verticalLayout_7.addWidget(self._sim_restrain_scroll_area)
@@ -358,7 +359,7 @@ class Ui_isolde_widget(object):
         self._sim_remodel_scroll_area.setWidgetResizable(True)
         self._sim_remodel_scroll_area.setObjectName("_sim_remodel_scroll_area")
         self.scrollAreaWidgetContents_5 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_5.setGeometry(QtCore.QRect(0, 0, 443, 544))
+        self.scrollAreaWidgetContents_5.setGeometry(QtCore.QRect(0, 0, 98, 28))
         self.scrollAreaWidgetContents_5.setObjectName("scrollAreaWidgetContents_5")
         self._sim_remodel_scroll_area.setWidget(self.scrollAreaWidgetContents_5)
         self.verticalLayout_6.addWidget(self._sim_remodel_scroll_area)

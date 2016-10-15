@@ -20,10 +20,11 @@ class Isolde():
         em      = 1
         free    = 2
 
-    _human_readable_sim_modes = {}
-    _human_readable_sim_modes[_sim_modes.xtal] = "Crystallography mode"
-    _human_readable_sim_modes[_sim_modes.em] = "Single-particle EM mode"
-    _human_readable_sim_modes[_sim_modes.free] = "Free mode (no maps)"
+    _human_readable_sim_modes = {
+        _sim_modes.xtal:  "Crystallography mode",
+        _sim_modes.em: "Single-particle EM mode",
+        _sim_modes.free: "Free mode (no maps)"
+        }
     
     # Master switch to set the level of control the user has over the simulation.
     class _experience_levels(IntEnum):
@@ -41,15 +42,30 @@ class Isolde():
         custom                  = 3
         script                  = 99
 
+
     def __init__(self, session):
         self.session = session
         
         from . import sim_interface
+        
+        # Dict containing list of all currently loaded atomic models
+        self._available_models = {}
+        # Selected model on which we are actually going to run a simulation
+        self._selected_model = None
+        # If we're running by chain(s)
+        self._selected_atoms = None
+        
+        # List of forcefields available to the MD package
         self._available_ffs = sim_interface.available_forcefields()
+        # Variables holding current forcefield choices
         self._sim_main_ff = None
         self._sim_implicit_solvent_ff = None
         self._sim_water_ff = None 
+        # Currently chosen mode for selecting the mobile simulation
         self._sim_selection_mode = None
+        
+        
+        
         
         # Holds the current simulation mode, to be chosen from the GUI
         # drop-down menu or loaded from saved settings.
@@ -143,24 +159,30 @@ class Isolde():
         
         
         ####
-        # Add handlers for GUI events
+        # Add handlers for GUI events, and run each callback once to
+        # initialise to current conditions
         ####
         
-        #self.sess_triggers = session.triggers
-        
-        ## We need to disable the simulation setup/start functions if
-        ## nothing is selected
-        #self.selection_handler = self.sess_triggers.add_handler(
-            #'selection changed',
-            #self._selection_changed
-            #)          
         
         from . import eventhandler
         self._event_handler = eventhandler.EventHandler(self.session)
         self._selection_handler = self._event_handler.add_event_handler(
-            'update_menu_on_selection',
-            'selection changed',
-            self._selection_changed)
+            'update_menu_on_selection', 'selection changed',
+            self._selection_changed
+            )
+        self._selection_changed
+        
+        self._model_add_handler = self._event_handler.add_event_handler(
+            'update_menu_on_model_add', 'add models', 
+            self._update_model_list
+            )
+        
+        self._model_add_handler = self._event_handler.add_event_handler(
+            'update_menu_on_model_remove', 'remove models', 
+            self._update_model_list
+            )
+        self._update_model_list
+        
         
         # Work out menu state based on current ChimeraX session
         self._update_sim_control_button_states()
@@ -227,6 +249,15 @@ class Isolde():
             )
         iw._sim_water_model_combo_box.currentIndexChanged.connect(
             self._change_water_model
+            )
+        iw._sim_basic_whole_model_combo_box.currentIndexChanged.connect(
+            self._change_selected_model
+            )
+        iw._sim_basic_by_chain_model_combo_box.currentIndexChanged.connect(
+            self._change_selected_model
+            )
+        iw._sim_basic_mobile_chains_list_box.itemSelectionChanged.connect(
+            self._change_selected_chains
             )
         
         ####
@@ -303,22 +334,6 @@ class Isolde():
 
         return
         
-    #def _change_sim_mode(self):
-        #mode_index = self.iw._sim_basic_mode_combo_box.currentIndex()
-        #exp_index = self.iw._experience_level_combo_box.currentIndex()
-        #if (mode_index == 0):
-            ## Crystallography mode
-            #self.iw._sim_basic_xtal_map_frame.show()
-            #self.iw._sim_basic_em_map_frame.hide()
-        #elif (mode_index == 1):
-            ## EM mode
-            #self.iw._sim_basic_xtal_map_frame.hide()
-            #self.iw._sim_basic_em_map_frame.show()
-        #else:
-            ## Free mode (no maps)    
-            #self.iw._sim_basic_xtal_map_frame.hide()
-            #self.iw._sim_basic_em_map_frame.hide()
-
     def _update_sim_temperature(self):
         t = self.iw._sim_temp_spin_box.value
         self.simulation_temperature = t
@@ -329,6 +344,32 @@ class Isolde():
     ##############################################################
     # Menu control functions to run on key events
     ##############################################################
+
+    def _update_model_list(self, *_):
+        self.iw._sim_basic_whole_model_combo_box.clear()
+        self.iw._sim_basic_by_chain_model_combo_box.clear()
+        models = self.session.models.list()
+        model_list = []
+        sorted_models = sorted(models, key=lambda m: m.id)
+        # Remove non-atomic models from the list
+        for i, m in enumerate(sorted_models):
+            if not m.atomspec_has_atoms():
+                sorted_models.pop(i)
+        for model in sorted_models:
+            id_str = model.id_string()
+            self._available_models[id_str] = model
+            model_list.append(id_str)
+        self.iw._sim_basic_whole_model_combo_box.addItems(model_list)
+        self.iw._sim_basic_by_chain_model_combo_box.addItems(model_list)            
+
+    def _update_chain_list(self):
+        m = self._selected_model
+        chains = m.chains.chain_ids
+        lb = iw = self.iw._sim_basic_mobile_chains_list_box
+        lb.clear()
+        lb.addItems(chains)
+        
+
     def _selection_changed(self, *_):
         if self._simulation_running:
             # A running simulation takes precedence for memory control
@@ -422,6 +463,43 @@ class Isolde():
     def _change_water_model(self):
         ffindex = self.iw._sim_water_model_combo_box.currentIndex()
         self._sim_water_ff = self._available_ffs.explicit_water_files[ffindex]
+    
+    def _change_selected_model(self):
+        sm = self._sim_selection_mode.name
+        iw = self.iw
+        if sm == 'whole_model':
+            choice = iw._sim_basic_whole_model_combo_box.currentText()
+            if choice == '':
+                return
+            self._selected_model = self._available_models[choice]
+            self.session.selection.clear()
+            self._selected_model.selected = True
+        elif sm == 'chain':
+            choice = iw._sim_basic_by_chain_model_combo_box.currentText()
+            if choice == '':
+                return
+            self._selected_model = self._available_models[choice]
+            self.session.selection.clear()
+            self._selected_model.selected = True
+            self._update_chain_list()
+    
+    def _change_selected_chains(self,*_):
+        lb = self.iw._sim_basic_mobile_chains_list_box
+        m = self._selected_model
+        lb_sels = lb.selectedItems()
+        sel_chain_list = []
+        self.session.selection.clear()
+        for s in lb_sels:
+            sel_chain_list.append(s.text())
+        for a in m.atoms:
+            if a.chain_id in sel_chain_list:
+                a.selected = True
+
+        
+        #self.session.selection.clear()
+        #self._selected_chains.selected = True
+            
+
     
     
     ##############################################################
