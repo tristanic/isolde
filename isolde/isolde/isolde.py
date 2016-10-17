@@ -53,7 +53,8 @@ class Isolde():
         # Selected model on which we are actually going to run a simulation
         self._selected_model = None
         # If we're running by chain(s)
-        self._selected_atoms = None
+        self._selected_atoms = set()
+        self._soft_shell_atoms = set()
         
         # List of forcefields available to the MD package
         self._available_ffs = sim_interface.available_forcefields()
@@ -259,6 +260,12 @@ class Isolde():
         iw._sim_basic_mobile_chains_list_box.itemSelectionChanged.connect(
             self._change_selected_chains
             )
+            
+        # Run all connected functions once to initialise
+        self._change_force_field()
+        self._change_water_model()    
+        self._change_selected_model()
+        self._change_selected_chains()
         
         ####
         # Simulation control functions
@@ -432,9 +439,12 @@ class Isolde():
         elif i == 1:
             self._sim_selection_mode = self._sim_selection_modes.chain
             iw._sim_basic_mobile_by_chain_frame.show()
+            self._change_selected_model()
+            self._change_selected_chains()
         elif i == 2:
             self._sim_selection_mode = self._sim_selection_modes.whole_model
             iw._sim_basic_mobile_whole_model_frame.show()
+            self._change_selected_model()
         elif i == 3:
             self._sim_selection_mode = self._sim_selection_modes.custom
             iw._sim_basic_mobile_custom_frame.show()
@@ -465,6 +475,8 @@ class Isolde():
         self._sim_water_ff = self._available_ffs.explicit_water_files[ffindex]
     
     def _change_selected_model(self):
+        if len(self._available_models) == 0:
+            return
         sm = self._sim_selection_mode.name
         iw = self.iw
         if sm == 'whole_model':
@@ -474,6 +486,7 @@ class Isolde():
             self._selected_model = self._available_models[choice]
             self.session.selection.clear()
             self._selected_model.selected = True
+            self._selected_atoms = self._selected_model.atoms
         elif sm == 'chain':
             choice = iw._sim_basic_by_chain_model_combo_box.currentText()
             if choice == '':
@@ -484,27 +497,30 @@ class Isolde():
             self._update_chain_list()
     
     def _change_selected_chains(self,*_):
+        if len(self._available_models) == 0:
+            return
         lb = self.iw._sim_basic_mobile_chains_list_box
         m = self._selected_model
         lb_sels = lb.selectedItems()
         sel_chain_list = []
         self.session.selection.clear()
+        self._selected_atoms = []
         for s in lb_sels:
             sel_chain_list.append(s.text())
         for a in m.atoms:
             if a.chain_id in sel_chain_list:
                 a.selected = True
+                self._selected_atoms.append(a)
 
         
         #self.session.selection.clear()
         #self._selected_chains.selected = True
             
-
+    ##############################################################
+    # Simulation prep
+    ##############################################################
     
     
-    ##############################################################
-    # Simulation on-the-fly control functions
-    ##############################################################
     def start_sim(self):
         print('Simulation should start now')
         if self._simulation_running:
@@ -512,6 +528,109 @@ class Isolde():
             return
         self._simulation_running = True
         self._update_sim_control_button_states()
+        
+        # Define final mobile selection
+        self._get_final_sim_selection()
+        
+        # Define "soft shell" of mobile atoms surrounding main selection
+        self._get_sim_soft_shell()
+        
+        
+        # Define fixed selection (whole residues with atoms coming within
+        # a cutoff of the mobile selection
+        
+        # Generate topology
+        
+        # Define simulation system
+        
+        # Go
+    
+    def _get_final_sim_selection(self):
+        # Get the mobile selection. The method will vary depending on
+        # the selection mode chosen in the GUI
+        mode = self._sim_selection_mode
+        modes = self._sim_selection_modes
+        
+        if mode == modes.chain or mode == modes.whole_model:
+            # Then everything is easy. The selection is already defined
+            sel = self._selected_atoms
+        elif mode == modes.from_picked_atoms:
+            # A bit more complex. Have to work through the model to find
+            # the picked atoms (making sure only one model is selected!),
+            # then work back and forward from each picked atom to expand
+            # the selection by the specified number of residues.            
+            m_list = self.session.selection.models()
+            for i, m in enumerate(m_list):
+                if not hasattr(m, 'num_atoms'):
+                    m_list.pop(i)
+            if len(m_list) > 1:
+                print(len(m_list))
+                raise Exception('Selected atoms must all be in the same model!')
+            m = m_list[0]
+            self._selected_model = m
+            pad = self.iw._sim_basic_mobile_b_and_a_spinbox.value()
+            for chain in m.chains:
+                selected_indices = []
+                for r, resid in enumerate(chain.residues):
+                    if resid is None:
+                        continue
+                    for atom in resid.atoms:
+                        if atom.selected:
+                            for n in range(r-pad, r+pad+1):
+                                selected_indices.append(n)
+                            # No need to continue with this residue    
+                            break
+                for s in selected_indices:
+                    if s < 0 or s > len(chain.residues):
+                        continue
+                    sr = chain.residues[s]
+                    for atom in sr.atoms:
+                        atom.selected = True
+            self._selected_atoms = set()
+            for atom in m.atoms:
+                if atom.selected:
+                    self._selected_atoms.add(atom)
+                        
+        elif mode == modes.custom:
+            # relatively simple. Just need to apply the in-built selection
+            # text parser
+            pass
+    
+    def _get_sim_soft_shell(self):
+        from scipy.spatial.distance import pdist, squareform
+        import numpy as np
+        allatoms = self._selected_model.atoms
+        allcoords = allatoms.coords
+        dists = squareform(pdist(allcoords))
+        sm = self._selected_model
+        
+        dist_cutoff = self.iw._sim_basic_mobile_sel_within_spinbox.value()
+        close_atoms = set()
+        
+        for i, atom in enumerate(sm.atoms):
+            if atom.selected:
+                for j, d in enumerate(dists[i]):
+                    if d < dist_cutoff:
+                        close_atoms.add(j)
+        
+        self._soft_shell_atoms = set()
+        shell_residues = set()
+        for index in close_atoms:
+            a = allatoms[index]
+            r = a.residue
+            if r in shell_residues:
+                # This residue's already been done. No need to waste time
+                continue
+            shell_residues.add(r)
+            self._soft_shell_atoms.update(r.atoms)
+            r.atoms.selected = True
+            
+        
+        
+    ##############################################################
+    # Simulation on-the-fly control functions
+    ##############################################################
+        
         
     
     def pause_sim_toggle(self):
