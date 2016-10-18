@@ -107,9 +107,9 @@
                  <property name="geometry">
                   <rect>
                    <x>0</x>
-                   <y>0</y>
+                   <y>-390</y>
                    <width>418</width>
-                   <height>934</height>
+                   <height>942</height>
                   </rect>
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0,0,0,0,0">
@@ -612,7 +612,7 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QFrame" name="_intermediate_frame_example">
+                   <widget class="QFrame" name="_sim_platform_frame">
                     <property name="frameShape">
                      <enum>QFrame::StyledPanel</enum>
                     </property>
@@ -623,9 +623,12 @@
                      <item>
                       <widget class="QLabel" name="label">
                        <property name="text">
-                        <string>Example intermediate frame</string>
+                        <string>Computational Platform:</string>
                        </property>
                       </widget>
+                     </item>
+                     <item>
+                      <widget class="QComboBox" name="_sim_platform_combo_box"/>
                      </item>
                     </layout>
                    </widget>
@@ -650,7 +653,7 @@
                  <zorder>_sim_basic_xtal_map_frame</zorder>
                  <zorder>verticalSpacer</zorder>
                  <zorder>_force_field_selection_frame</zorder>
-                 <zorder>_intermediate_frame_example</zorder>
+                 <zorder>_sim_platform_frame</zorder>
                  <zorder>_sim_basic_selection_mode_frame</zorder>
                  <zorder>_sim_basic_mobile_custom_frame</zorder>
                  <zorder>_sim_basic_mobile_whole_model_frame</zorder>
@@ -675,8 +678,8 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>28</height>
+                   <width>67</width>
+                   <height>16</height>
                   </rect>
                  </property>
                 </widget>
@@ -699,8 +702,8 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>28</height>
+                   <width>67</width>
+                   <height>16</height>
                   </rect>
                  </property>
                 </widget>

@@ -21,6 +21,8 @@ session.fpstracker.start_showing()
 
 from isolde import isolde
 session.isolde = isolde.Isolde(session)
-session.isolde.mainwin.show()
+session.ui.main_window.add_custom_menu_entry('Plugins','ISOLDE',session.isolde.start_gui)
+#session.isolde.start_gui()
+#session.isolde.mainwin.show()
 
 

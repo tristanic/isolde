@@ -46,15 +46,34 @@ class Isolde():
     def __init__(self, session):
         self.session = session
         
+        initialize_openmm()
         from . import sim_interface
         
         # Dict containing list of all currently loaded atomic models
         self._available_models = {}
         # Selected model on which we are actually going to run a simulation
         self._selected_model = None
-        # If we're running by chain(s)
-        self._selected_atoms = set()
-        self._soft_shell_atoms = set()
+        # Atoms within the model that are the primary focus of the simulation.
+        # Should be whole residues
+        self._selected_atoms = None
+        # Number of residues before and after each selected residue to add
+        # to the mobile selection
+        self._b_and_a_padding = 5
+        # Extra mobile shell of surrounding atoms to provide a soft buffer to
+        # the simulation. Whole residues only.
+        self._soft_shell_atoms = None
+        # User-definable distance cutoff to define the soft shell
+        self.soft_shell_cutoff = 5      # Angstroms
+        # Do we fix the backbone atoms of the soft shell?
+        self.fix_soft_shell_backbone = False
+        # Shell of fixed atoms surrounding all mobile atoms to maintain 
+        # the context of the simulation. Whole residues only.
+        self._hard_shell_atoms = None
+        # User-definable distance cutoff to define the hard shell
+        self.hard_shell_cutoff = 8      # Angstroms
+        # Construct containing all atoms that will actually be simulated
+        self._total_sim_construct = None
+        
         
         # List of forcefields available to the MD package
         self._available_ffs = sim_interface.available_forcefields()
@@ -65,6 +84,10 @@ class Isolde():
         # Currently chosen mode for selecting the mobile simulation
         self._sim_selection_mode = None
         
+        self._topology = None
+        self._system = None
+        # Computational platform to run the simulation on
+        self.sim_platform = None
         
         
         
@@ -86,69 +109,15 @@ class Isolde():
         self.simulation_type = 'equil'
         
         
+    def start_gui(self):
         ####
         # Connect and initialise ISOLDE widget
         ####
         
-        from PyQt5 import QtWidgets
-        
-        self.mainwin = QtWidgets.QDockWidget(parent=session.ui.main_window)
-        self.mainwin.setFloating(True) 
-        from . import isoldewidget
-        
-        self.iw = isoldewidget.Ui_isolde_widget()
-        self.iw.setupUi(self.mainwin)
-        # Should load saved state here
-        
-        # Define frames specific to crystallograpy, EM or free mode
-        self._xtal_frames = [
-            self.iw._sim_basic_xtal_map_frame
-            ]
-        self._em_frames = [
-            self.iw._sim_basic_em_map_frame
-            ]
-        self._free_frames = [
-            ]
-        
-        self._sim_mode_frame_lists = [
-            self._xtal_frames,
-            self._em_frames,
-            self._free_frames
-            ]
-        
-        # Radio buttons to choose different selection modes
-        self._selection_mode_buttons = [
-            self.iw._sim_basic_by_selected_atoms_button,
-            self.iw._sim_basic_by_chain_button,
-            self.iw._sim_basic_whole_structure_button,
-            self.iw._sim_basic_custom_selection_button
-            ]        
-        
-        
-        # Define intermediate and expert frames
-        self._intermediate_frames = [
-            self.iw._intermediate_frame_example
-            ]
-        self._expert_frames = [
-            self.iw._force_field_selection_frame,
-            self.iw._sim_basic_custom_selection_button
-            ]
-        
-        
-        # Apply custom palettes to intermediate and expert frames
-        from . import palettes
-        self._pi = palettes.IntermediatePalette()
-        self._pe = palettes.ExpertPalette()
-        
-        for f in self._intermediate_frames:
-            f.setPalette(self._pi.palette)
-            f.setAutoFillBackground(True)
-        
-        for f in self._expert_frames:
-            f.setPalette(self._pe.palette)
-            f.setAutoFillBackground(True)
-        
-        
+        from . import isolde_gui
+        self.gui = isolde_gui.IsoldeGui(self.session)
+        self.iw = self.gui.iw
+        self.gui.mainwin.show()
         
         # Any values in the Qt Designer .ui file are placeholders only.
         # Combo boxes need to be repopulated, and variables need to be
@@ -217,6 +186,30 @@ class Isolde():
         cb = iw._sim_water_model_combo_box
         cb.clear()
         cb.addItems(self._available_ffs.explicit_water_descriptions)
+        
+        # Populate OpenMM platform combo box with available platforms
+        cb = iw._sim_platform_combo_box
+        cb.clear()
+        from simtk import openmm
+        from simtk.openmm import app
+        from simtk.openmm import Platform
+        platform_names = []
+        for i in range(Platform.getNumPlatforms()):
+            p = Platform.getPlatform(i)
+            name = p.getName()
+            cb.addItem(name)
+            platform_names.append(name)
+        
+        # Set to the fastest available platform
+        if 'CUDA' in platform_names:
+            cb.setCurrentIndex(platform_names.index('CUDA'))
+        elif 'OpenCL' in platform_names:
+            cb.setCurrentIndex(platform_names.index('OpenCL'))
+        elif 'CPU' in platform_names:
+            cb.setCurrentIndex(platform_names.index('CPU'))
+        
+         
+                
     
     def _connect_functions(self):
         iw = self.iw
@@ -225,18 +218,18 @@ class Isolde():
         ####
         
         iw._experience_level_combo_box.currentIndexChanged.connect(
-            self._change_experience_level_or_sim_mode
+            self.gui._change_experience_level_or_sim_mode
             )
         ## Initialise to current level
         #self._change_experience_level_or_sim_mode()
         
         iw._sim_basic_mode_combo_box.currentIndexChanged.connect(
-            self._change_experience_level_or_sim_mode
+            self.gui._change_experience_level_or_sim_mode
             )            
         # Initialise to selected mode. 
-        self._change_experience_level_or_sim_mode()
+        self.gui._change_experience_level_or_sim_mode()
         
-        for button in self._selection_mode_buttons:
+        for button in self.gui._selection_mode_buttons:
             button.clicked.connect(self._change_sim_selection_mode)
         
         self._change_sim_selection_mode()
@@ -260,13 +253,28 @@ class Isolde():
         iw._sim_basic_mobile_chains_list_box.itemSelectionChanged.connect(
             self._change_selected_chains
             )
-            
+        iw._sim_basic_mobile_sel_within_spinbox.valueChanged.connect(
+            self._change_soft_shell_cutoff
+            )
+        iw._sim_basic_mobile_b_and_a_spinbox.valueChanged.connect(
+            self._change_b_and_a_padding
+            )
+        iw._sim_basic_mobile_sel_backbone_checkbox.stateChanged.connect(
+            self._change_soft_shell_fix_backbone
+            )
+        iw._sim_platform_combo_box.currentIndexChanged.connect(
+            self._change_sim_platform
+            )
+        
         # Run all connected functions once to initialise
         self._change_force_field()
         self._change_water_model()    
         self._change_selected_model()
         self._change_selected_chains()
-        
+        self._change_soft_shell_cutoff()
+        self._change_b_and_a_padding()
+        self._change_soft_shell_fix_backbone()
+        self._change_sim_platform()
         ####
         # Simulation control functions
         ####
@@ -294,52 +302,6 @@ class Isolde():
         )
         
     
-    def _change_experience_level_or_sim_mode(self):
-        exp_index = self.iw._experience_level_combo_box.currentIndex()
-        mode_index = self.iw._sim_basic_mode_combo_box.currentIndex()
-        # Need to consider both at once to ensure we don't show/hide
-        # something we shouldn't. For the simulation mode, we need to
-        # ensure all frames associated with the *other* two modes remain
-        # hidden.
-        import copy
-        hide_sim_modes = copy.copy(self._sim_mode_frame_lists)
-        hide_sim_modes.pop(mode_index)
-        # Flatten to a single list for easy searching
-        hide_sim_modes = [item for sublist in hide_sim_modes for item in sublist]
-        for f in hide_sim_modes:
-            f.hide()
-        show_sim_modes = self._sim_mode_frame_lists[mode_index]
-        if (exp_index == 0):
-            # Easy. Just hide everything intermediate or expert, and
-            # everything belonging to other sim modes
-            for f in self._intermediate_frames:
-                f.hide()
-            for f in self._expert_frames:
-                f.hide()
-            for f in show_sim_modes:
-                if f not in self._intermediate_frames and \
-                   f not in self._expert_frames:
-                    f.show()
-        elif (exp_index == 1):
-            for f in self._intermediate_frames:
-                if f not in hide_sim_modes:
-                    f.show()
-            for f in self._expert_frames:
-                f.hide()
-            for f in show_sim_modes:
-                if f not in self._expert_frames:
-                    f.show()
-        else:
-            for f in self._intermediate_frames:
-                if f not in hide_sim_modes:
-                    f.show()
-            for f in self._expert_frames:
-                if f not in hide_sim_modes:
-                    f.show()
-            for f in show_sim_modes:
-                f.show()
-
-        return
         
     def _update_sim_temperature(self):
         t = self.iw._sim_temp_spin_box.value
@@ -427,11 +389,9 @@ class Isolde():
         iw._sim_basic_mobile_whole_model_frame.hide()
         iw._sim_basic_mobile_custom_frame.hide()
         
-        i = 0
-        for b in self._selection_mode_buttons:
+        for i, b in enumerate(self.gui._selection_mode_buttons):
             if b.isChecked():
                 break
-            i += 1
         
         if i == 0:
             self._sim_selection_mode = self._sim_selection_modes.from_picked_atoms
@@ -504,17 +464,25 @@ class Isolde():
         lb_sels = lb.selectedItems()
         sel_chain_list = []
         self.session.selection.clear()
-        self._selected_atoms = []
         for s in lb_sels:
             sel_chain_list.append(s.text())
-        for a in m.atoms:
-            if a.chain_id in sel_chain_list:
-                a.selected = True
-                self._selected_atoms.append(a)
+        for r in m.residues:
+            if r.chain_id in sel_chain_list:
+                r.atoms.selected = True
+        from chimerax.core.atomic import selected_atoms
+        self._selected_atoms = selected_atoms(self.session)
 
+    def _change_b_and_a_padding(self, *_):
+        self._b_and_a_padding = self.iw._sim_basic_mobile_b_and_a_spinbox.value()
         
-        #self.session.selection.clear()
-        #self._selected_chains.selected = True
+    def _change_soft_shell_cutoff(self, *_):
+        self.soft_shell_cutoff = self.iw._sim_basic_mobile_sel_within_spinbox.value()
+    
+    def _change_soft_shell_fix_backbone(self, *_):
+        self.fix_soft_shell_backbone = self.iw._sim_basic_mobile_sel_backbone_checkbox.checkState()
+    
+    def _change_sim_platform(self, *_):
+        self.sim_platform = self.iw._sim_platform_combo_box
             
     ##############################################################
     # Simulation prep
@@ -533,21 +501,56 @@ class Isolde():
         self._get_final_sim_selection()
         
         # Define "soft shell" of mobile atoms surrounding main selection
-        self._get_sim_soft_shell()
+        self._soft_shell_atoms = self.get_shell_of_residues(
+            self._selected_atoms,
+            self._selected_model,
+            self.soft_shell_cutoff
+            )
         
         
         # Define fixed selection (whole residues with atoms coming within
         # a cutoff of the mobile selection
+        total_mobile = self._selected_atoms.merge(self._soft_shell_atoms)
+        self._hard_shell_atoms = self.get_shell_of_residues(
+            total_mobile,
+            self._selected_model,
+            self.hard_shell_cutoff
+            )
+        
+        sc = self._total_sim_construct = total_mobile.merge(self._hard_shell_atoms)
         
         # Generate topology
+        from . import sim_interface as si
+        self._topology, self._particle_positions = si.openmm_topology_and_coordinates(self._selected_model, sc)
+
+        forcefield_list = [self._sim_main_ff,
+                            self._sim_implicit_solvent_ff,
+                            self._sim_water_ff]
+        ff = si.define_forcefield(forcefield_list)
         
-        # Define simulation system
+        # Define simulation System
+        self._system = si.create_openmm_system(self._topolgy, ff)
+        
+        # Apply fixed atoms to System
+        for a in sc:
+            a.fixed = False
+        for i in self._hard_shell_atoms.indices(sc):
+            sc[i].fixed = True
+        if self.fix_soft_shell_backbone:
+            for a in self._soft_shell_atoms:
+                if a.name in ['N', 'C', 'O', 'H']:
+                    a.fixed = True        
+        for i, a in sc:
+            if a.fixed:
+                self._system.setParticleMass(i, 0)
+        
         
         # Go
     
     def _get_final_sim_selection(self):
+                
         # Get the mobile selection. The method will vary depending on
-        # the selection mode chosen in the GUI
+        # the selection mode chosen
         mode = self._sim_selection_mode
         modes = self._sim_selection_modes
         
@@ -560,71 +563,83 @@ class Isolde():
             # then work back and forward from each picked atom to expand
             # the selection by the specified number of residues.            
             m_list = self.session.selection.models()
-            for i, m in enumerate(m_list):
+            for i, m in reversed(list(enumerate(m_list))):
                 if not hasattr(m, 'num_atoms'):
                     m_list.pop(i)
             if len(m_list) > 1:
                 print(len(m_list))
+                for m in m_list:
+                    print(m.category)
                 raise Exception('Selected atoms must all be in the same model!')
             m = m_list[0]
             self._selected_model = m
-            pad = self.iw._sim_basic_mobile_b_and_a_spinbox.value()
-            for chain in m.chains:
-                selected_indices = []
-                for r, resid in enumerate(chain.residues):
-                    if resid is None:
-                        continue
-                    for atom in resid.atoms:
-                        if atom.selected:
-                            for n in range(r-pad, r+pad+1):
-                                selected_indices.append(n)
-                            # No need to continue with this residue    
-                            break
-                for s in selected_indices:
-                    if s < 0 or s > len(chain.residues):
-                        continue
-                    sr = chain.residues[s]
-                    for atom in sr.atoms:
-                        atom.selected = True
-            self._selected_atoms = set()
-            for atom in m.atoms:
-                if atom.selected:
-                    self._selected_atoms.add(atom)
+            pad = self._b_and_a_padding
+            from chimerax.core.atomic import selected_atoms
+            import numpy
+            selatoms = selected_atoms(self.session)
+            selresids = selatoms.residues.unique()
+            allatoms_by_chain = self._selected_model.atoms.by_chain
+            
+            selections_by_chain = {}
+            for sr in selresids:
+                thischain = sr.chain_id
+                r = sr.number
+                if thischain not in selections_by_chain:
+                    selections_by_chain[thischain] = []
+                selections_by_chain[thischain].extend(range(r-pad, r+pad+1))
+
+            self.session.selection.clear()
+                        
+            for struct, chain, atoms in allatoms_by_chain:
+                if chain in selections_by_chain:
+                    for resid in atoms.residues.unique():
+                        if resid.number in selections_by_chain[chain]:
+                            resid.atoms.selected = True
+            
+            self._selected_atoms = selected_atoms(self.session)
+                
+
+            
+                
+            
+            
                         
         elif mode == modes.custom:
             # relatively simple. Just need to apply the in-built selection
-            # text parser
+            # text parser. To be completed.
             pass
+        
+        
+    # Get a shell of whole residues within a user-defined cut-off surrounding
+    # an existing set of selected atoms. Expects the existing_sel set to be
+    # whole residues, and all within the same model.
     
-    def _get_sim_soft_shell(self):
-        from scipy.spatial.distance import pdist, squareform
-        import numpy as np
-        allatoms = self._selected_model.atoms
-        allcoords = allatoms.coords
-        dists = squareform(pdist(allcoords))
-        sm = self._selected_model
+    def get_shell_of_residues(self, existing_sel, model, dist_cutoff):
+        from chimerax.core.geometry import find_close_points
+        from chimerax.core.atomic import selected_atoms, Atoms, concatenate
+        selatoms = existing_sel
+        allatoms = model.atoms
+        unselected_atoms = allatoms.subtract(selatoms)
         
-        dist_cutoff = self.iw._sim_basic_mobile_sel_within_spinbox.value()
-        close_atoms = set()
         
-        for i, atom in enumerate(sm.atoms):
-            if atom.selected:
-                for j, d in enumerate(dists[i]):
-                    if d < dist_cutoff:
-                        close_atoms.add(j)
+        selcoords = selatoms.coords
+        unselcoords = unselected_atoms.coords
         
-        self._soft_shell_atoms = set()
-        shell_residues = set()
-        for index in close_atoms:
-            a = allatoms[index]
-            r = a.residue
-            if r in shell_residues:
-                # This residue's already been done. No need to waste time
-                continue
-            shell_residues.add(r)
-            self._soft_shell_atoms.update(r.atoms)
-            r.atoms.selected = True
-            
+        ignore, shell_indices = find_close_points(selcoords, unselcoords, dist_cutoff)
+        
+        shell = []
+        resids = set()
+        for i in shell_indices:
+            r = unselected_atoms[i].residue
+            if r not in resids:
+                shell.append(unselected_atoms[i].residue.atoms)
+                resids.add(r)
+        
+        shell_atoms = concatenate(shell, Atoms)
+ 
+        return shell_atoms
+
+
         
         
     ##############################################################
@@ -678,6 +693,18 @@ class Isolde():
 
         
 
+_openmm_initialized = False
+def initialize_openmm():
+    # On linux need to set environment variable to find plugins.
+    # Without this it gives an error saying there is no "CPU" platform.
+    global _openmm_initialized
+    if not _openmm_initialized:
+        _openmm_initialized = True
+        from sys import platform
+        if platform == 'linux':
+            from os import environ, path
+            from chimerax import app_lib_dir
+            environ['OPENMM_PLUGIN_DIR'] = path.join(app_lib_dir, 'plugins')
 
             
     
