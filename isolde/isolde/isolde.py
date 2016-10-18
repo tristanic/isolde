@@ -45,10 +45,15 @@ class Isolde():
 
     def __init__(self, session):
         self.session = session
+
+        from .eventhandler import EventHandler
+        self._event_handler = EventHandler(self.session)
         
         initialize_openmm()
         from . import sim_interface
-        
+ 
+         # Currently chosen mode for selecting the mobile simulation
+        self._sim_selection_mode = None       
         # Dict containing list of all currently loaded atomic models
         self._available_models = {}
         # Selected model on which we are actually going to run a simulation
@@ -75,19 +80,45 @@ class Isolde():
         self._total_sim_construct = None
         
         
+        
+        ####
+        # Settings for OpenMM
+        ####
+        
         # List of forcefields available to the MD package
         self._available_ffs = sim_interface.available_forcefields()
         # Variables holding current forcefield choices
         self._sim_main_ff = None
         self._sim_implicit_solvent_ff = None
         self._sim_water_ff = None 
-        # Currently chosen mode for selecting the mobile simulation
-        self._sim_selection_mode = None
         
+        from simtk import unit
+        # Simulation topology
         self._topology = None
+        # OpenMM system containing the simulation
         self._system = None
         # Computational platform to run the simulation on
         self.sim_platform = None
+        # Number of steps to run in before updating coordinates in ChimeraX
+        self.sim_steps_per_update = 50
+        # If using the VariableLangevinIntegrator, we define a tolerance
+        self._integrator_tolerance = 0.0001
+        # ... otherwise, we simply set the time per step
+        self._sim_time_step = 1.0*unit.femtoseconds
+        # Type of integrator to use. Should give the choice in the expert level
+        # of the menu. Variable is more stable, but simulated time per gui update
+        # is harder to determine
+        self._integrator_type = 'variable'
+        # Constraints (e.g. rigid bonds) need their own tolerance
+        self._constraint_tolerance = 0.001
+        # Friction term for coupling to heat bath
+        self._friction = 1.0/unit.picoseconds
+        # Limit on the net force on a single atom to detect instability and
+        # force a minimisation
+        self._max_allowable_force = 20000.0 # kJ mol-1 nm-1
+        # Flag for unstable simulation
+        self._sim_is_unstable = False
+        
         
         
         
@@ -96,6 +127,12 @@ class Isolde():
         self.sim_mode = None
         # Do we have a simulation running right now?
         self._simulation_running = False
+        # If running, is the simulation in startup mode?
+        self._sim_startup = True
+        # Maximum number of rounds of minimisation to run on startup
+        self._sim_startup_rounds = 50
+        # Counter for how many rounds we've done on startup
+        self._sim_startup_counter = 0
         
         # Simulation temperature in Kelvin
         self.simulation_temperature = 100.0
@@ -108,6 +145,10 @@ class Isolde():
         # Are we equilibrating or minimising?
         self.simulation_type = 'equil'
         
+        # Current positions of all particles in the simulation
+        self._particle_positions = None
+        # Saved particle positions in case we want to discard the simulation
+        self._saved_positions = None
         
     def start_gui(self):
         ####
@@ -134,29 +175,21 @@ class Isolde():
         ####
         
         
-        from . import eventhandler
-        self._event_handler = eventhandler.EventHandler(self.session)
-        self._selection_handler = self._event_handler.add_event_handler(
-            'update_menu_on_selection', 'selection changed',
-            self._selection_changed
-            )
-        self._selection_changed
-        
-        self._model_add_handler = self._event_handler.add_event_handler(
-            'update_menu_on_model_add', 'add models', 
-            self._update_model_list
-            )
-        
-        self._model_add_handler = self._event_handler.add_event_handler(
-            'update_menu_on_model_remove', 'remove models', 
-            self._update_model_list
-            )
-        self._update_model_list
+        self._event_handler.add_event_handler('update_menu_on_selection', 
+                                              'selection changed',
+                                              self._selection_changed)
+        self._event_handler.add_event_handler('update_menu_on_model_add',
+                                              'add models', 
+                                              self._update_model_list)
+        self._event_handler.add_event_handler('update_menu_on_model_remove',
+                                              'remove models', 
+                                              self._update_model_list)
+        self._selection_changed()
+        self._update_model_list()
         
         
         # Work out menu state based on current ChimeraX session
         self._update_sim_control_button_states()
-        self._selection_changed()
         
         
         
@@ -190,15 +223,9 @@ class Isolde():
         # Populate OpenMM platform combo box with available platforms
         cb = iw._sim_platform_combo_box
         cb.clear()
-        from simtk import openmm
-        from simtk.openmm import app
-        from simtk.openmm import Platform
-        platform_names = []
-        for i in range(Platform.getNumPlatforms()):
-            p = Platform.getPlatform(i)
-            name = p.getName()
-            cb.addItem(name)
-            platform_names.append(name)
+        from . import sim_interface as si        
+        platform_names = si.get_available_platforms()
+        cb.addItems(platform_names)
         
         # Set to the fastest available platform
         if 'CUDA' in platform_names:
@@ -544,9 +571,32 @@ class Isolde():
             if a.fixed:
                 self._system.setParticleMass(i, 0)
         
+        integrator = si.integrator(self._integrator_type,
+                                    self.simulation_temperature,
+                                    self._friction,
+                                    self._integrator_tolerance,
+                                    self._sim_time_step)
         
+        platform = si.platform(self._sim_platform)
+                                    
+        self.sim = si.create_sim(self._topology, self._system, integrator, platform)
+        
+        # Save the current positions in case of reversion
+        self._saved_positions = self._particle_positions
         # Go
-    
+        c = self.sim.context
+        c.setPositions(self._particle_positions)
+        c.setVelocitiesToTemperature(self.simulation_temperature)
+        
+        self._sim_startup = True
+        self._sim_startup_counter = 0
+        
+        self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
+                                              'new frame',
+                                              self.do_sim_steps)
+        
+        
+        
     def _get_final_sim_selection(self):
                 
         # Get the mobile selection. The method will vary depending on
@@ -652,9 +702,13 @@ class Isolde():
         print('This function should toggle pause/resume of the sim')
         if self._simulation_running:
             if not self._sim_paused:
+                self._event_handler.remove_event_handler('do_sim_steps_on_gui_update')
                 self._sim_paused = True
                 self.iw._sim_pause_button.setText('Resume')
             else:
+                self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
+                                      'new frame',
+                                      self.do_sim_steps)
                 self._sim_paused = False
                 self.iw._sim_pause_button.setText('Pause')    
     
@@ -690,7 +744,82 @@ class Isolde():
         self._update_menu_after_sim()
         
     
+    #############################################
+    # Main simulation functions to be run once per GUI update
+    #############################################
+    
+    def do_sim_steps(self):
+        s = self.sim
+        c = s.context
+        integrator = c.getIntegrator()
+        steps = self._sim_steps_per_update
+        mode = self.simulation_type
+        startup = self._sim_startup
+        s_count = self._sim_startup_counter
+        s_max_count = self._sim_startup_rounds
+        pos = self._particle_positions
+        sc = self._total_sim_construct
+        
+        if self._temperature_changed:
+            integrator.setTemperature(self._temperature)
+            c.setVelocitiesToTemperature(self._temperature)
+            self._temperature_changed = False
+        
+        if startup && s_count:
+            start_step = s.currentStep
+            s.minimizeEnergy(maxIterations = steps)
+            end_step = s.currentStep
+            if end_step - start_step < steps:
+                # minimisation has converged. We can continue on
+                startup = False
+            else:
+                s_count += 1
+        elif self._sim_is_unstable:
+            s.minimizeEnergy(maxIterations = steps)
+        elif mode == 'min':
+            s.minimizeEnergy(maxIterations = steps)
+        elif mode == 'equil':
+            s.steps(steps)
+        else:
+            raise Exception('Unrecognised simulation mode!')
+        
+        newpos, max_force = self._get_positions_and_max_force()
+        if max_force > self._max_allowable_force:
+            self._simulation_is_unstable = True
+            if mode == 'equil':
+                # revert to the coordinates before this simulation step
+                c.setPositions(pos)
+            self.simulation_type = 'min'
+            return
+        elif self._simulation_is_unstable:
+            if max_force < self._max_allowable_force / 2:
+                # We're back to stability. We can go back to equilibrating
+                self._simulation_is_unstable = False
+                self.simulation_type = 'equil'
+        
+        self._particle_positions = newpos
+        from simtk import unit
+        sc.atoms.coords = newpos.value_in_unit(unit.angstrom)
+        
+            
+        
+    def _get_max_force (self):
+        import numpy
+        c = self.sim.context
+        from simtk.unit import kilojoule_per_mole, nanometer
+        state = c.getState(getForces = True, getPositions = True)
+        forces = state.getForces(asNumpy = True)/(kilojoule_per_mole/nanometer)
+        forcesx = forces[:,0]
+        forcesy = forces[:,1]
+        forcesz = forces[:,2]
+        magnitudes =numpy.sqrt(forcesx*forcesx + forcesy*forcesy + forcesz*forcesz)
+        pos = state.getPositions()
+        return pos, max(magnitudes)
 
+        
+        
+        
+        
         
 
 _openmm_initialized = False

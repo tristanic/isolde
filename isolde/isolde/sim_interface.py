@@ -33,6 +33,16 @@ class available_forcefields():
         'TIP4P-FB (DOI: 10.1021/jz500737m)',
         'Original TIP3P water (not recommended)'
         ]
+
+def get_available_platforms():
+    from simtk.openmm import Platform
+    platform_names = []
+    for i in range(Platform.getNumPlatforms()):
+        p = Platform.getPlatform(i)
+        name = p.getName()
+        platform_names.append(name)
+    return platform_names
+
     
 def openmm_topology_and_coordinates(mol,
                                     sim_construct,
@@ -47,6 +57,7 @@ def openmm_topology_and_coordinates(mol,
     rnum = r.numbers
     cids = r.chain_ids
     from simtk.openmm.app import Topology, Element
+    from simtk import unit
     top = Topology()
     cmap = {}
     rmap = {}
@@ -65,7 +76,7 @@ def openmm_topology_and_coordinates(mol,
     for i1, i2 in zip(a1.indices(a), a2.indices(a)):
         top.addBond(atoms[i1],  atoms[i2])
     from simtk.openmm import Vec3
-    pos = a.coords
+    pos = a.coords*unit.angstrom
     return top, pos
 
 def define_forcefield (forcefield_list):
@@ -90,4 +101,20 @@ def create_openmm_system(top, ff):
                               str(e))
     return system
 
+
+def integrator(i_type, temperature, friction, tolerance, timestep):
+    from simtk import openmm as mm
+    if i_type == 'variable':
+        integrator = mm.VariableLangevinIntegrator(temperature, friction, tolerance)
+    elif i_type == 'fixed':
+        integrator = mm.LangevinIntegrator(temperature, friction, timestep)
+    return integrator
     
+def platform(name):
+    from simtk.openmm import Platform
+    return Platform.getPlatformByName(name)
+
+
+def create_sim(topology, system, integrator, platform):
+    from simtk.openmm.app import Simulation
+    return Simulation(topology, system, integrator, platform)
