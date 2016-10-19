@@ -38,7 +38,7 @@ class EventHandler():
         self.registered_handlers.pop(name,'Handler not found')
     
     def list_event_handlers(self):
-        print(str(list(self.registered_handlers.keys())))
+        return self.registered_handlers.keys()
     
     
         

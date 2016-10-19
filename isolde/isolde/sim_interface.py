@@ -44,10 +44,11 @@ def get_available_platforms():
     return platform_names
 
     
-def openmm_topology_and_coordinates(mol,
-                                    sim_construct,
-                                    fix_shell_backbones = False
-                                    ):
+def openmm_topology_and_coordinates(sim_construct,
+                                    sim_bonds,
+                                    fix_shell_backbones = False,
+                                    logging = False,
+                                    log = None):        
     a = sim_construct
     n = len(a)
     r = a.residues
@@ -72,21 +73,30 @@ def openmm_topology_and_coordinates(mol,
         element = Element.getBySymbol(ename[i])
         atoms[i] = top.addAtom(aname[i], element,rmap[rid])
     
-    a1, a2 = mol.bonds.atoms
+    
+    a1, a2 = sim_bonds.atoms
     for i1, i2 in zip(a1.indices(a), a2.indices(a)):
-        top.addBond(atoms[i1],  atoms[i2])
+        #if logging and log is not None:
+            #for num, i in enumerate([i1, i2]):
+                #info_str = 'Atom ' + str(num) + ': Chain ' + a[i].chain_id + \
+                             #' Resid ' + str(a[i].residue.number) + ' Resname ' + a[i].residue.name + ' Name ' + a[i].name
+                #log(info_str)
+
+        if -1 not in [i1, i2]:
+            top.addBond(atoms[i1],  atoms[i2])
+    
     from simtk.openmm import Vec3
-    pos = a.coords*unit.angstrom
+    pos = a.coords # in Angstrom (convert to nm for OpenMM)
     return top, pos
 
 def define_forcefield (forcefield_list):
-    from simtk.openmm.app import Forcefield
-    return Forcefield(forcefield_list)
+    from simtk.openmm.app import ForceField
+    return ForceField(*forcefield_list)
     
 def create_openmm_system(top, ff):
     from simtk.openmm import app
     from simtk import openmm as mm
-    from simtk import unit_down
+    from simtk import unit
     
     try:
         system = ff.createSystem(top,
@@ -94,9 +104,10 @@ def create_openmm_system(top, ff):
                                 nonbondedCutoff = 1.0*unit.nanometers,
                                 constraints = app.HBonds,
                                 rigidWater = True,
-                                removeCMMotion = False)
+                                removeCMMotion = False,
+                                ignoreMissingExternalBonds = True)
     except ValueError as e:
-        raise ForceFieldError('Missing atoms or parameterisation needed by force field.\n' +
+        raise Exception('Missing atoms or parameterisation needed by force field.\n' +
                               'All heavy atoms and hydrogens with standard names are required.\n' +
                               str(e))
     return system
@@ -118,3 +129,7 @@ def platform(name):
 def create_sim(topology, system, integrator, platform):
     from simtk.openmm.app import Simulation
     return Simulation(topology, system, integrator, platform)
+    
+
+    
+

@@ -8,6 +8,7 @@
 
 
 class Isolde():
+    
 
     ####
     # Enums for menu options
@@ -44,6 +45,9 @@ class Isolde():
 
 
     def __init__(self, session):
+        self._logging = False
+        self._log = Logger('isolde.log')
+
         self.session = session
 
         from .eventhandler import EventHandler
@@ -78,6 +82,8 @@ class Isolde():
         self.hard_shell_cutoff = 8      # Angstroms
         # Construct containing all atoms that will actually be simulated
         self._total_sim_construct = None
+        # List of all bonds in _total_sim_construct
+        self._total_sim_bonds = None
         
         
         
@@ -149,6 +155,9 @@ class Isolde():
         self._particle_positions = None
         # Saved particle positions in case we want to discard the simulation
         self._saved_positions = None
+        
+        # To ensure we do only one simulation round per graphics redraw
+        self._last_frame_number = None
         
     def start_gui(self):
         ####
@@ -331,7 +340,7 @@ class Isolde():
     
         
     def _update_sim_temperature(self):
-        t = self.iw._sim_temp_spin_box.value
+        t = self.iw._sim_temp_spin_box.value()
         self.simulation_temperature = t
         # So we know to update the temperature in any running simulation
         self._temperature_changed = True
@@ -509,7 +518,7 @@ class Isolde():
         self.fix_soft_shell_backbone = self.iw._sim_basic_mobile_sel_backbone_checkbox.checkState()
     
     def _change_sim_platform(self, *_):
-        self.sim_platform = self.iw._sim_platform_combo_box
+        self.sim_platform = self.iw._sim_platform_combo_box.currentText()
             
     ##############################################################
     # Simulation prep
@@ -517,6 +526,9 @@ class Isolde():
     
     
     def start_sim(self):
+        if self._logging:
+            self._log('Initialising simulation')
+            
         print('Simulation should start now')
         if self._simulation_running:
             print('You already have a simulation running!')
@@ -544,32 +556,59 @@ class Isolde():
             self.hard_shell_cutoff
             )
         
-        sc = self._total_sim_construct = total_mobile.merge(self._hard_shell_atoms)
+        sc = total_mobile.merge(self._hard_shell_atoms)
+        sc.selected = True
+        from chimerax.core.atomic import selected_atoms, selected_bonds
+        sc = self._total_sim_construct = selected_atoms(self.session)
+        sb = self._total_sim_bonds = selected_bonds(self.session)
+    
+
+        if self._logging:
+            self._log('Generating topology')
         
         # Generate topology
         from . import sim_interface as si
-        self._topology, self._particle_positions = si.openmm_topology_and_coordinates(self._selected_model, sc)
+        self._topology, self._particle_positions = si.openmm_topology_and_coordinates(sc, sb, logging = self._logging, log = self._log)
 
+        if self._logging:
+            self._log('Generating forcefield')
+        
         forcefield_list = [self._sim_main_ff,
                             self._sim_implicit_solvent_ff,
                             self._sim_water_ff]
-        ff = si.define_forcefield(forcefield_list)
+        
+        self._ff = si.define_forcefield(forcefield_list)
+        
+        if self._logging:
+            self._log('Preparing system')
         
         # Define simulation System
-        self._system = si.create_openmm_system(self._topolgy, ff)
+        self._system = si.create_openmm_system(self._topology, self._ff)
         
         # Apply fixed atoms to System
-        for a in sc:
-            a.fixed = False
-        for i in self._hard_shell_atoms.indices(sc):
-            sc[i].fixed = True
-        if self.fix_soft_shell_backbone:
-            for a in self._soft_shell_atoms:
-                if a.name in ['N', 'C', 'O', 'H']:
-                    a.fixed = True        
-        for i, a in sc:
-            if a.fixed:
-                self._system.setParticleMass(i, 0)
+        if self._logging:
+            self._log('Applying fixed atoms')
+        
+        
+   
+        #fixed = len(sc)*[False]
+        #for i in self._hard_shell_atoms.indices(sc):
+            #if i != -1:
+                #fixed[i] = True
+        #if self.fix_soft_shell_backbone:
+        #    for a in self._soft_shell_atoms:
+        #        if a.name in ['N', 'C', 'O', 'H']:
+        #            a.fixed = True        
+        #for i, a in enumerate(sc):
+        #    if a.fixed:
+        #        self._system.setParticleMass(i, 0)
+        #for i in range(len(fixed)):
+            #if fixed[i]:
+                #self._system.setParticleMass(i, 0)
+
+
+        if self._logging:
+            self._log('Choosing integrator')
         
         integrator = si.integrator(self._integrator_type,
                                     self.simulation_temperature,
@@ -577,19 +616,47 @@ class Isolde():
                                     self._integrator_tolerance,
                                     self._sim_time_step)
         
-        platform = si.platform(self._sim_platform)
+        if self._logging:
+            self._log('Setting platform to ' + self.sim_platform)
+        platform = si.platform(self.sim_platform)
+
+        if self._logging:
+            self._log('Generating simulation')
                                     
         self.sim = si.create_sim(self._topology, self._system, integrator, platform)
+        
+        
+        fixed = len(sc)*[False]
+        for i, atom in enumerate(sc):
+            if atom in self._hard_shell_atoms:
+                fixed[i] = True
+                continue
+            if self.fix_soft_shell_backbone:
+                if atom in self._soft_shell_atoms:
+                    if atom.name in ['N','C','O','H']:
+                        fixed[i] = True
+        for i in range(len(fixed)):
+            if fixed[i]:
+                self.sim.system.setParticleMass(i, 0)
+        if True in fixed:
+            self.sim.context.reinitialize()
+            
+ 
+
         
         # Save the current positions in case of reversion
         self._saved_positions = self._particle_positions
         # Go
         c = self.sim.context
-        c.setPositions(self._particle_positions)
+        from simtk import unit
+        c.setPositions(self._particle_positions/10) # OpenMM uses nanometers
         c.setVelocitiesToTemperature(self.simulation_temperature)
         
         self._sim_startup = True
         self._sim_startup_counter = 0
+
+        if self._logging:
+            self._log('Starting sim')
         
         self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
                                               'new frame',
@@ -718,6 +785,7 @@ class Isolde():
         if not self._simulation_running:
             print('No simulation running!')
             return
+        self._total_sim_construct.coords = self._saved_positions
         self._cleanup_after_sim()
     
     def commit_sim(self):
@@ -741,6 +809,10 @@ class Isolde():
     
     def _cleanup_after_sim(self):            
         self._simulation_running = False
+        if 'do_sim_steps_on_gui_update' in self._event_handler.list_event_handlers():
+            self._event_handler.remove_event_handler('do_sim_steps_on_gui_update')
+        self.sim = None
+        self._system = None
         self._update_menu_after_sim()
         
     
@@ -748,24 +820,33 @@ class Isolde():
     # Main simulation functions to be run once per GUI update
     #############################################
     
-    def do_sim_steps(self):
+    def do_sim_steps(self,*_):
+        if self._logging:
+            self._log('Running ' + str(self.sim_steps_per_update) + ' steps')
+
+        v = self.session.main_view
+#        if v.frame_number == self._last_frame_number:
+#            return # Make sure we draw a frame before doing another MD calculation
+            
         s = self.sim
         c = s.context
         integrator = c.getIntegrator()
-        steps = self._sim_steps_per_update
+        steps = self.sim_steps_per_update
         mode = self.simulation_type
         startup = self._sim_startup
         s_count = self._sim_startup_counter
         s_max_count = self._sim_startup_rounds
         pos = self._particle_positions
         sc = self._total_sim_construct
-        
+
+
         if self._temperature_changed:
-            integrator.setTemperature(self._temperature)
-            c.setVelocitiesToTemperature(self._temperature)
+            integrator.setTemperature(self.simulation_temperature)
+            c.setVelocitiesToTemperature(self.simulation_temperature)
             self._temperature_changed = False
+
         
-        if startup && s_count:
+        if startup and s_count:
             start_step = s.currentStep
             s.minimizeEnergy(maxIterations = steps)
             end_step = s.currentStep
@@ -779,41 +860,46 @@ class Isolde():
         elif mode == 'min':
             s.minimizeEnergy(maxIterations = steps)
         elif mode == 'equil':
-            s.steps(steps)
+            s.step(steps)
         else:
             raise Exception('Unrecognised simulation mode!')
         
         newpos, max_force = self._get_positions_and_max_force()
         if max_force > self._max_allowable_force:
-            self._simulation_is_unstable = True
+            self._sim_is_unstable = True
             if mode == 'equil':
                 # revert to the coordinates before this simulation step
-                c.setPositions(pos)
+                c.setPositions(pos/10)
             self.simulation_type = 'min'
             return
-        elif self._simulation_is_unstable:
+        elif self._sim_is_unstable:
             if max_force < self._max_allowable_force / 2:
                 # We're back to stability. We can go back to equilibrating
-                self._simulation_is_unstable = False
+                self._sim_is_unstable = False
                 self.simulation_type = 'equil'
+        if self._logging:
+            self._log('Sim 4')
         
-        self._particle_positions = newpos
         from simtk import unit
-        sc.atoms.coords = newpos.value_in_unit(unit.angstrom)
+        self._particle_positions = newpos
+        sc.coords = self._particle_positions
+        self._last_frame_number = v.frame_number
+        if self._logging:
+            self._log('Ran ' + str(self.sim_steps_per_update) + ' steps')
         
             
         
-    def _get_max_force (self):
+    def _get_positions_and_max_force (self):
         import numpy
         c = self.sim.context
-        from simtk.unit import kilojoule_per_mole, nanometer
+        from simtk.unit import kilojoule_per_mole, nanometer, angstrom
         state = c.getState(getForces = True, getPositions = True)
         forces = state.getForces(asNumpy = True)/(kilojoule_per_mole/nanometer)
         forcesx = forces[:,0]
         forcesy = forces[:,1]
         forcesz = forces[:,2]
         magnitudes =numpy.sqrt(forcesx*forcesx + forcesy*forcesy + forcesz*forcesz)
-        pos = state.getPositions()
+        pos = state.getPositions(asNumpy = True)/angstrom
         return pos, max(magnitudes)
 
         
@@ -837,6 +923,25 @@ def initialize_openmm():
 
             
     
+class Logger:
+    def __init__(self, filename = None):
+        self.filename = filename
+        self._log_file = None
+    def __call__(self, message, close = False):
+        if self.filename is None:
+            return	# No logging
+        f = self._log_file
+        if f is None:
+            self._log_file = f = open(self.filename,'w')
+            self._log_counter = 0
+        f.write(message)
+        f.write(' %d' % self._log_counter)
+        f.write("\n")
+        f.flush()
+        self._log_counter += 1
+        if close:
+            f.close()
+            self._log_file = None
     
     
 
