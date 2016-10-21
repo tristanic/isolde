@@ -56,7 +56,11 @@ class Isolde():
         initialize_openmm()
         from . import sim_interface
  
-         # Currently chosen mode for selecting the mobile simulation
+        ####
+        # Settings for handling of atomic coordinates
+        ####
+        
+        # Currently chosen mode for selecting the mobile simulation
         self._sim_selection_mode = None       
         # Dict containing list of all currently loaded atomic models
         self._available_models = {}
@@ -85,6 +89,19 @@ class Isolde():
         # List of all bonds in _total_sim_construct
         self._total_sim_bonds = None
         
+        ####
+        # Settings for handling of volumetric data
+        ####
+        
+        # Maps to be used to bias the simulation
+        self.master_map_list = None
+        # Cutoff distances (in Angstroms) to be used for masking (one per map)
+        self.mask_cutoffs = None
+        # Maps masked down to the current mobile selection
+        self._masked_maps = None
+        # Coupling constants (how strongly the maps pull on the mobile atoms)
+        self.map_coupling_constants = None
+        
         
         
         ####
@@ -107,6 +124,8 @@ class Isolde():
         self.sim_platform = None
         # Number of steps to run in before updating coordinates in ChimeraX
         self.sim_steps_per_update = 50
+        # Number of steps per GUI update in minimization mode
+        self.min_steps_per_update = 50
         # If using the VariableLangevinIntegrator, we define a tolerance
         self._integrator_tolerance = 0.0001
         # ... otherwise, we simply set the time per step
@@ -158,7 +177,11 @@ class Isolde():
         
         # To ensure we do only one simulation round per graphics redraw
         self._last_frame_number = None
-        
+    
+    ###################################################################
+    # GUI related functions
+    ###################################################################
+    
     def start_gui(self):
         ####
         # Connect and initialise ISOLDE widget
@@ -176,7 +199,6 @@ class Isolde():
         
         # Make sure everything in the widget actually does something.
         self._connect_functions()
-        
         
         ####
         # Add handlers for GUI events, and run each callback once to
@@ -199,8 +221,6 @@ class Isolde():
         
         # Work out menu state based on current ChimeraX session
         self._update_sim_control_button_states()
-        
-        
         
     def _populate_menus_and_update_params(self):
         iw = self.iw
@@ -244,9 +264,6 @@ class Isolde():
         elif 'CPU' in platform_names:
             cb.setCurrentIndex(platform_names.index('CPU'))
         
-         
-                
-    
     def _connect_functions(self):
         iw = self.iw
         ####
@@ -515,7 +532,7 @@ class Isolde():
         self.soft_shell_cutoff = self.iw._sim_basic_mobile_sel_within_spinbox.value()
     
     def _change_soft_shell_fix_backbone(self, *_):
-        self.fix_soft_shell_backbone = self.iw._sim_basic_mobile_sel_backbone_checkbox.checkState()
+        self.fix_soft_shell_backbone = not self.iw._sim_basic_mobile_sel_backbone_checkbox.checkState()
     
     def _change_sim_platform(self, *_):
         self.sim_platform = self.iw._sim_platform_combo_box.currentText()
@@ -588,24 +605,6 @@ class Isolde():
         # Apply fixed atoms to System
         if self._logging:
             self._log('Applying fixed atoms')
-        
-        
-   
-        #fixed = len(sc)*[False]
-        #for i in self._hard_shell_atoms.indices(sc):
-            #if i != -1:
-                #fixed[i] = True
-        #if self.fix_soft_shell_backbone:
-        #    for a in self._soft_shell_atoms:
-        #        if a.name in ['N', 'C', 'O', 'H']:
-        #            a.fixed = True        
-        #for i, a in enumerate(sc):
-        #    if a.fixed:
-        #        self._system.setParticleMass(i, 0)
-        #for i in range(len(fixed)):
-            #if fixed[i]:
-                #self._system.setParticleMass(i, 0)
-
 
         if self._logging:
             self._log('Choosing integrator')
@@ -633,7 +632,7 @@ class Isolde():
                 continue
             if self.fix_soft_shell_backbone:
                 if atom in self._soft_shell_atoms:
-                    if atom.name in ['N','C','O','H']:
+                    if atom.name in ['N','C','O','H','H1','H2','H3']:
                         fixed[i] = True
         for i in range(len(fixed)):
             if fixed[i]:
@@ -662,38 +661,32 @@ class Isolde():
                                               'new frame',
                                               self.do_sim_steps)
         
-        
-        
+    # Get the mobile selection. The method will vary depending on
+    # the selection mode chosen
     def _get_final_sim_selection(self):
                 
-        # Get the mobile selection. The method will vary depending on
-        # the selection mode chosen
         mode = self._sim_selection_mode
         modes = self._sim_selection_modes
         
         if mode == modes.chain or mode == modes.whole_model:
             # Then everything is easy. The selection is already defined
-            sel = self._selected_atoms
+            pass
         elif mode == modes.from_picked_atoms:
             # A bit more complex. Have to work through the model to find
             # the picked atoms (making sure only one model is selected!),
             # then work back and forward from each picked atom to expand
-            # the selection by the specified number of residues.            
-            m_list = self.session.selection.models()
-            for i, m in reversed(list(enumerate(m_list))):
-                if not hasattr(m, 'num_atoms'):
-                    m_list.pop(i)
-            if len(m_list) > 1:
-                print(len(m_list))
-                for m in m_list:
-                    print(m.category)
-                raise Exception('Selected atoms must all be in the same model!')
-            m = m_list[0]
-            self._selected_model = m
+            # the selection by the specified number of residues.                        
             pad = self._b_and_a_padding
             from chimerax.core.atomic import selected_atoms
             import numpy
             selatoms = selected_atoms(self.session)
+            us = selatoms.unique_structures
+            if len(us) != 1:
+                print(len(us))
+                for m in us:
+                    print(m.category)
+                raise Exception('Selected atoms must all be in the same model!')
+            self._selected_model = us[0]    
             selresids = selatoms.residues.unique()
             allatoms_by_chain = self._selected_model.atoms.by_chain
             
@@ -756,7 +749,58 @@ class Isolde():
  
         return shell_atoms
 
-
+    
+    def mask_volume_to_selection(self, big_map, resolution, sel, cutoff):
+        import numpy as np
+        # Get minimum and maximum coordinates of selected atoms, and pad
+        maxcoor = (sel.coords.max(0)  + cutoff)
+        mincoor = (sel.coords.min(0)  - cutoff)
+        # ChimeraX wants the volume array to be in zyx order, so we need to reverse
+        vol_size = maxcoor[::-1] - mincoor[::-1]
+        # Round to an integral number of steps at the desired resolution
+        res = resolution
+        vol_size_in_steps = np.ceil(vol_size/res).astype(int)
+        vol_array = np.zeros(vol_size_in_steps)
+        
+        from chimerax.core.map.data import Array_Grid_Data
+        from chimerax.core.map import Volume
+        
+        mask_array = Array_Grid_Data(vol_array, origin = mincoor, step = res*np.ones(3))
+        vol = Volume(mask_array, self.session)
+        vol_coords = vol.grid_points(vol.model_transform())
+        
+        from chimerax.core.geometry import find_close_points
+        map_points, ignore = find_close_points(vol_coords, sel.coords, cutoff)
+        mask_1d = np.zeros(len(vol_coords))
+        for i in map_points:
+            mask_1d[i] = 1
+        iterator = 0
+        for k in range(vol_size_in_steps[0]):
+            for j in range(vol_size_in_steps[1]):
+                for i in range(vol_size_in_steps[2]):
+                    vol_array[k][j][i] = mask_1d[iterator]
+                    iterator += 1
+        cropped_map = big_map.interpolate_on_grid(vol)
+        masked_map = cropped_map[0] * vol_array
+        masked_array = Array_Grid_Data(masked_map, origin = mincoor, step = res*np.ones(3))
+        vol = Volume(masked_array, self.session)
+        self.session.models.add([vol])
+        vol.initialize_thresholds()
+        vol.show()
+        return vol
+        
+        
+        # create a rectangular grid of zeros of desired resolution encompassing all the
+        # atoms to be masked, plus padding for the cutoff
+        
+        
+        # From the volume to be masked, get list of indices that are within
+        # cutoff of the selected atoms
+        
+        
+        # Interpolate selected map indices onto the target map grid
+        
+        
         
         
     ##############################################################
@@ -785,7 +829,8 @@ class Isolde():
         if not self._simulation_running:
             print('No simulation running!')
             return
-        self._total_sim_construct.coords = self._saved_positions
+        if self._saved_positions is not None:
+            self._total_sim_construct.coords = self._saved_positions
         self._cleanup_after_sim()
     
     def commit_sim(self):
@@ -832,6 +877,7 @@ class Isolde():
         c = s.context
         integrator = c.getIntegrator()
         steps = self.sim_steps_per_update
+        minsteps = self.min_steps_per_update
         mode = self.simulation_type
         startup = self._sim_startup
         s_count = self._sim_startup_counter
@@ -858,7 +904,7 @@ class Isolde():
         elif self._sim_is_unstable:
             s.minimizeEnergy(maxIterations = steps)
         elif mode == 'min':
-            s.minimizeEnergy(maxIterations = steps)
+            s.minimizeEnergy(maxIterations = minsteps)
         elif mode == 'equil':
             s.step(steps)
         else:
@@ -867,6 +913,7 @@ class Isolde():
         newpos, max_force = self._get_positions_and_max_force()
         if max_force > self._max_allowable_force:
             self._sim_is_unstable = True
+            self._oldmode = mode
             if mode == 'equil':
                 # revert to the coordinates before this simulation step
                 c.setPositions(pos/10)
@@ -876,7 +923,7 @@ class Isolde():
             if max_force < self._max_allowable_force / 2:
                 # We're back to stability. We can go back to equilibrating
                 self._sim_is_unstable = False
-                self.simulation_type = 'equil'
+                self.simulation_type = self._oldmode
         if self._logging:
             self._log('Sim 4')
         
@@ -902,12 +949,6 @@ class Isolde():
         pos = state.getPositions(asNumpy = True)/angstrom
         return pos, max(magnitudes)
 
-        
-        
-        
-        
-        
-
 _openmm_initialized = False
 def initialize_openmm():
     # On linux need to set environment variable to find plugins.
@@ -921,8 +962,7 @@ def initialize_openmm():
             from chimerax import app_lib_dir
             environ['OPENMM_PLUGIN_DIR'] = path.join(app_lib_dir, 'plugins')
 
-            
-    
+   
 class Logger:
     def __init__(self, filename = None):
         self.filename = filename

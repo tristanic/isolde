@@ -19,6 +19,8 @@ from fps import Track_FPS
 session.fpstracker = Track_FPS(session)
 session.fpstracker.start_showing()
 
+
+
 from isolde import isolde
 session.isolde = isolde.Isolde(session)
 session.ui.main_window.add_custom_menu_entry('Plugins','ISOLDE',session.isolde.start_gui)
