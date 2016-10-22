@@ -514,14 +514,14 @@ class Isolde():
             return
         lb = self.iw._sim_basic_mobile_chains_list_box
         m = self._selected_model
+        all_chains = m.chains
+        all_chain_ids = list(all_chains.chain_ids)
         lb_sels = lb.selectedItems()
-        sel_chain_list = []
         self.session.selection.clear()
         for s in lb_sels:
-            sel_chain_list.append(s.text())
-        for r in m.residues:
-            if r.chain_id in sel_chain_list:
-                r.atoms.selected = True
+            chain_text = s.text()
+            chain_index = all_chain_ids.index(chain_text)
+            all_chains[chain_index].existing_residues.atoms.selected = True
         from chimerax.core.atomic import selected_atoms
         self._selected_atoms = selected_atoms(self.session)
 
@@ -559,7 +559,6 @@ class Isolde():
         # Define "soft shell" of mobile atoms surrounding main selection
         self._soft_shell_atoms = self.get_shell_of_residues(
             self._selected_atoms,
-            self._selected_model,
             self.soft_shell_cutoff
             )
         
@@ -569,7 +568,6 @@ class Isolde():
         total_mobile = self._selected_atoms.merge(self._soft_shell_atoms)
         self._hard_shell_atoms = self.get_shell_of_residues(
             total_mobile,
-            self._selected_model,
             self.hard_shell_cutoff
             )
         
@@ -664,7 +662,7 @@ class Isolde():
     # Get the mobile selection. The method will vary depending on
     # the selection mode chosen
     def _get_final_sim_selection(self):
-                
+                        
         mode = self._sim_selection_mode
         modes = self._sim_selection_modes
         
@@ -687,33 +685,43 @@ class Isolde():
                     print(m.category)
                 raise Exception('Selected atoms must all be in the same model!')
             self._selected_model = us[0]    
-            selresids = selatoms.residues.unique()
-            allatoms_by_chain = self._selected_model.atoms.by_chain
+            selatoms_by_chain = selatoms.by_chain
+            selchains = [row[1] for row in selatoms_by_chain]
+            allatoms = self._selected_model.atoms
             
-            selections_by_chain = {}
-            for sr in selresids:
-                thischain = sr.chain_id
-                r = sr.number
-                if thischain not in selections_by_chain:
-                    selections_by_chain[thischain] = []
-                selections_by_chain[thischain].extend(range(r-pad, r+pad+1))
-
-            self.session.selection.clear()
-                        
-            for struct, chain, atoms in allatoms_by_chain:
-                if chain in selections_by_chain:
-                    for resid in atoms.residues.unique():
-                        if resid.number in selections_by_chain[chain]:
-                            resid.atoms.selected = True
+            allchains = self._selected_model.chains
+            allchainids = list(allchains.chain_ids)
+            numchains = len(allchains)
+            
+            chain_mask = numpy.zeros(numchains,dtype=bool)
+            for c in selchains:
+                i = allchainids.index(c)
+                chain_mask[i] = True
+                
+            # Throw out the chains containing no selected atoms
+            from itertools import compress
+            allchains = list(compress(allchains, chain_mask))
+            
+            for selchain, wholechain in zip(selatoms_by_chain, allchains):
+                selatoms = selchain[2]
+                sel_resnums_in_chain = selatoms.residues.unique().numbers
+                all_residues_in_chain = wholechain.existing_residues
+                max_resid_in_chain = all_residues_in_chain.numbers.max()
+                min_resid_in_chain = all_residues_in_chain.numbers.min()
+                resid_in_range = numpy.zeros(max_resid_in_chain+1,dtype=bool)
+                for r in sel_resnums_in_chain:
+                    minr = r-pad
+                    maxr = r+pad+1
+                    if maxr > max_resid_in_chain:
+                        maxr = max_resid_in_chain
+                    if minr < 0:
+                        minr = 0
+                    resid_in_range[minr:maxr] = [True] * (maxr-minr)
+                all_residues_in_chain.filter(resid_in_range[all_residues_in_chain.numbers]).atoms.selected = True
+                    
             
             self._selected_atoms = selected_atoms(self.session)
-                
-
-            
-                
-            
-            
-                        
+                       
         elif mode == modes.custom:
             # relatively simple. Just need to apply the in-built selection
             # text parser. To be completed.
@@ -724,34 +732,27 @@ class Isolde():
     # an existing set of selected atoms. Expects the existing_sel set to be
     # whole residues, and all within the same model.
     
-    def get_shell_of_residues(self, existing_sel, model, dist_cutoff):
+    def get_shell_of_residues(self, existing_sel, dist_cutoff):
         from chimerax.core.geometry import find_close_points
         from chimerax.core.atomic import selected_atoms, Atoms, concatenate
         selatoms = existing_sel
-        allatoms = model.atoms
+        us = selatoms.unique_structures
+        if len(us) !=1:
+            raise Exception('selection should contain atoms from a single molecule!')
+        allatoms = us[0].atoms
         unselected_atoms = allatoms.subtract(selatoms)
-        
-        
         selcoords = selatoms.coords
         unselcoords = unselected_atoms.coords
-        
         ignore, shell_indices = find_close_points(selcoords, unselcoords, dist_cutoff)
-        
-        shell = []
-        resids = set()
-        for i in shell_indices:
-            r = unselected_atoms[i].residue
-            if r not in resids:
-                shell.append(unselected_atoms[i].residue.atoms)
-                resids.add(r)
-        
-        shell_atoms = concatenate(shell, Atoms)
- 
+        shell_atoms = unselected_atoms[shell_indices].residues.atoms
         return shell_atoms
 
     
-    def mask_volume_to_selection(self, big_map, resolution, sel, cutoff):
+    def mask_volume_to_selection(self, big_map, resolution, sel, cutoff, invert = False, normalize = False, show = False):
         import numpy as np
+        if self._logging:
+            from time import time
+            start_time = time()
         # Get minimum and maximum coordinates of selected atoms, and pad
         maxcoor = (sel.coords.max(0)  + cutoff)
         mincoor = (sel.coords.min(0)  - cutoff)
@@ -759,8 +760,8 @@ class Isolde():
         vol_size = maxcoor[::-1] - mincoor[::-1]
         # Round to an integral number of steps at the desired resolution
         res = resolution
-        vol_size_in_steps = np.ceil(vol_size/res).astype(int)
-        vol_array = np.zeros(vol_size_in_steps)
+        sizek, sizej, sizei = np.ceil(vol_size/res).astype(int)
+        vol_array = np.zeros([sizek, sizej, sizei])
         
         from chimerax.core.map.data import Array_Grid_Data
         from chimerax.core.map import Volume
@@ -772,21 +773,27 @@ class Isolde():
         from chimerax.core.geometry import find_close_points
         map_points, ignore = find_close_points(vol_coords, sel.coords, cutoff)
         mask_1d = np.zeros(len(vol_coords))
-        for i in map_points:
-            mask_1d[i] = 1
-        iterator = 0
-        for k in range(vol_size_in_steps[0]):
-            for j in range(vol_size_in_steps[1]):
-                for i in range(vol_size_in_steps[2]):
-                    vol_array[k][j][i] = mask_1d[iterator]
-                    iterator += 1
-        cropped_map = big_map.interpolate_on_grid(vol)
-        masked_map = cropped_map[0] * vol_array
+        mask_1d[map_points] = 1
+        vol_array = np.reshape(mask_1d, (sizek, sizej, sizei))
+        if normalize:
+            map_stats = big_map.matrix_value_statistics()
+            max_abs_value = max(map_stats.maximum,abs(map_stats.minimum))
+            cropped_map = big_map.interpolate_on_grid(vol) / max_abs_value
+        else:
+            cropped_map = big_map.interpolate_on_grid(vol)
+        if invert:
+            masked_map = -cropped_map[0] * vol_array
+        else:
+            masked_map = cropped_map[0] * vol_array
         masked_array = Array_Grid_Data(masked_map, origin = mincoor, step = res*np.ones(3))
         vol = Volume(masked_array, self.session)
-        self.session.models.add([vol])
-        vol.initialize_thresholds()
-        vol.show()
+        if self._logging:
+            end_time = time()
+            self._log('Masking took ' + str(end_time - start_time) + ' seconds')
+        if show:
+            self.session.models.add([vol])
+            vol.initialize_thresholds()
+            vol.show()
         return vol
         
         
