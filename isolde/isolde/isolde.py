@@ -43,7 +43,7 @@ class Isolde():
         custom                  = 3
         script                  = 99
 
-
+    
     def __init__(self, session):
         self._logging = False
         self._log = Logger('isolde.log')
@@ -90,20 +90,15 @@ class Isolde():
         self._total_sim_bonds = None
         
         ####
-        # Settings for handling of volumetric data
+        # Settings for handling of maps
         ####
-        
-        # Maps to be used to bias the simulation
-        self.master_map_list = None
-        # Cutoff distances (in Angstroms) to be used for masking (one per map)
-        self.mask_cutoffs = None
-        # Maps masked down to the current mobile selection
-        self._masked_maps = None
-        # Coupling constants (how strongly the maps pull on the mobile atoms)
-        self.map_coupling_constants = None
-        
-        
-        
+        # List of currently available volumetric data sets
+        self._available_volumes = {}
+        # Master list of maps and their parameters
+        self.master_map_list = {}
+        # Are we adding a new map to the simulation list?
+        self._add_new_map = True
+
         ####
         # Settings for OpenMM
         ####
@@ -228,14 +223,14 @@ class Isolde():
         cb = iw._experience_level_combo_box
         cb.clear()
         for lvl in self._experience_levels:
-            cb.addItem(lvl.name, int(lvl))
+            cb.addItem(lvl.name, lvl)
         
         # Clear simulation mode placeholders from QT Designer and repopulate
         cb = iw._sim_basic_mode_combo_box
         cb.clear()
         for mode in self._sim_modes:
             text = self._human_readable_sim_modes[mode]
-            cb.addItem(text, int(mode))
+            cb.addItem(text, mode)
         
         iw._sim_temp_spin_box.setProperty('value', self.simulation_temperature)
     
@@ -264,6 +259,14 @@ class Isolde():
         elif 'CPU' in platform_names:
             cb.setCurrentIndex(platform_names.index('CPU'))
         
+        # The last entry in the EM map chooser combo box should always be "Add map"
+        cb = iw._em_map_chooser_combo_box
+        cb.clear()
+        cb.addItem('Add map')
+        cb.setCurrentText('Add map')
+
+
+
     def _connect_functions(self):
         iw = self.iw
         ####
@@ -277,10 +280,11 @@ class Isolde():
         #self._change_experience_level_or_sim_mode()
         
         iw._sim_basic_mode_combo_box.currentIndexChanged.connect(
-            self.gui._change_experience_level_or_sim_mode
+            self._change_sim_mode
             )            
         # Initialise to selected mode. 
-        self.gui._change_experience_level_or_sim_mode()
+        self._change_sim_mode()
+        # automatically runs self.gui._change_experience_level_or_sim_mode()
         
         for button in self.gui._selection_mode_buttons:
             button.clicked.connect(self._change_sim_selection_mode)
@@ -328,6 +332,31 @@ class Isolde():
         self._change_b_and_a_padding()
         self._change_soft_shell_fix_backbone()
         self._change_sim_platform()
+        
+        ####
+        # EM map parameters (can only be set before starting simulation)
+        ####
+        iw._sim_basic_em_map_button.clicked.connect(
+            self._show_em_map_chooser
+            )
+        iw._em_map_done_button.clicked.connect(
+            self._hide_em_map_chooser
+            )
+        iw._em_map_set_button.clicked.connect(
+            self._add_or_change_em_map_from_gui
+            )
+        iw._em_map_remove_button.clicked.connect(
+            self._remove_em_map_from_gui
+            )
+        iw._em_map_chooser_combo_box.currentIndexChanged.connect(
+            self._show_em_map_in_menu_or_add_new
+            )
+         # We want to start with the EM map chooser hidden
+        self._hide_em_map_chooser()
+        
+                
+        
+        
         ####
         # Simulation control functions
         ####
@@ -370,19 +399,29 @@ class Isolde():
     def _update_model_list(self, *_):
         self.iw._sim_basic_whole_model_combo_box.clear()
         self.iw._sim_basic_by_chain_model_combo_box.clear()
+        self.iw._em_map_model_combo_box.clear()
         models = self.session.models.list()
-        model_list = []
+        atomic_model_list = []
+        volume_model_list = []
         sorted_models = sorted(models, key=lambda m: m.id)
-        # Remove non-atomic models from the list
-        for i, m in enumerate(sorted_models):
-            if not m.atomspec_has_atoms():
-                sorted_models.pop(i)
-        for model in sorted_models:
-            id_str = model.id_string()
-            self._available_models[id_str] = model
-            model_list.append(id_str)
-        self.iw._sim_basic_whole_model_combo_box.addItems(model_list)
-        self.iw._sim_basic_by_chain_model_combo_box.addItems(model_list)            
+        if len(sorted_models) != 0:
+            # Find atomic and volumetric models and sort them into the
+            # appropriate lists
+            for i, m in enumerate(sorted_models):
+                if m.atomspec_has_atoms():
+                    id_str = m.id_string()
+                    self._available_models[id_str] = m
+                    atomic_model_list.append(id_str)
+                elif hasattr(m, 'grid_data'):
+                    id_str = m.id_string()
+                    self._available_volumes[id_str] = m
+                    volume_model_list.append(id_str)
+                else:
+                    # This is a model type we don't currently handle. Ignore.
+                    continue
+        self.iw._sim_basic_whole_model_combo_box.addItems(atomic_model_list)
+        self.iw._sim_basic_by_chain_model_combo_box.addItems(atomic_model_list)
+        self.iw._em_map_model_combo_box.addItems(volume_model_list)
 
     def _update_chain_list(self):
         m = self._selected_model
@@ -464,9 +503,43 @@ class Isolde():
         else:
             raise Exception('No or unrecognised mode selected!')
         
+    def _show_em_map_chooser(self, *_):
+        self.iw._em_map_chooser_frame.show()
+        self.iw._sim_basic_em_map_button.setEnabled(False)
+
+    def _hide_em_map_chooser(self, *_):
+        self.iw._em_map_chooser_frame.hide()
+        self.iw._sim_basic_em_map_button.setEnabled(True)
     
-    
-    
+    def _show_em_map_in_menu_or_add_new(self, *_):
+        iw = self.iw
+        seltext = iw._em_map_chooser_combo_box.currentText()
+        if seltext == 'Add map':
+            self._add_new_map = True
+            iw._em_map_name_field.setText('')
+            iw._em_map_model_combo_box.setCurrentIndex(-1)
+            iw._em_map_name_field.setEnabled(True)
+        elif len(seltext):
+            self._add_new_map = False
+            current_map = self.master_map_list[seltext]
+            name, vol, cutoff, coupling = current_map.get_map_parameters()
+            iw._em_map_name_field.setText(name)
+            iw._em_map_model_combo_box.setCurrentText(vol.id_string())
+            iw._em_map_cutoff_spin_box.setValue(cutoff)
+            iw._em_map_coupling_spin_box.setValue(coupling)
+            # Map name is our lookup key, so can't change it after it's been added
+            iw._em_map_name_field.setEnabled(False)
+        else:
+            # Do nothing. List is empty.
+            return
+
+    def _update_master_map_list_combo_box(self):
+        cb = self.iw._em_map_chooser_combo_box
+        cb.clear()
+        keylist = sorted([key for key in self.master_map_list])
+        cb.addItems(keylist)
+        cb.addItem('Add map')
+        
     
     # Update button states after a simulation has finished
     def _update_menu_after_sim(self):
@@ -477,6 +550,11 @@ class Isolde():
     ##############################################################
     # Simulation global settings functions
     ##############################################################
+    def _change_sim_mode(self, *_):
+        sm = self.iw._sim_basic_mode_combo_box.currentData()
+        self.sim_mode = sm
+        self.gui._change_experience_level_or_sim_mode()
+    
     def _change_force_field(self):
         ffindex = self.iw._sim_force_field_combo_box.currentIndex()
         ffs = self._available_ffs
@@ -537,6 +615,43 @@ class Isolde():
     def _change_sim_platform(self, *_):
         self.sim_platform = self.iw._sim_platform_combo_box.currentText()
             
+    def _add_or_change_em_map_from_gui(self, *_):
+        iw = self.iw
+        name = iw._em_map_name_field.text()
+        m_id = iw._em_map_model_combo_box.currentText()
+        model = self._available_volumes[m_id]
+        cutoff = iw._em_map_cutoff_spin_box.value()
+        coupling_constant = iw._em_map_coupling_spin_box.value()
+        if self._add_new_map:
+            self.add_map(name, model, cutoff, coupling_constant)
+        else:
+            m = self.master_map_list[name]
+            m.change_map_parameters(model, cutoff, coupling_constant)
+
+    def _remove_em_map_from_gui(self, *_):
+        name = self.iw._em_map_name_field.text()
+        self.remove_map(name)
+
+
+    def add_map(self, name, vol, cutoff, coupling_constant):
+        if name in self.master_map_list:
+            raise Exception('Each map must have a unique name!')
+        # Check if this model is a unique volumetric map
+        if len(vol.models()) !=1 or not hasattr(vol, 'grid_data'):
+            raise Exception('vol must be a single volumetric map object')
+        
+        from .volumetric import IsoldeMap
+        new_map = IsoldeMap(self.session, name, vol, cutoff, coupling_constant)
+        self.master_map_list[name] = new_map
+        self._update_master_map_list_combo_box()
+        
+    def remove_map(self, name):
+        result = self.master_map_list.pop(name, 'Not present')
+        if result == 'Not present':
+            print(name + ' is an unrecognised key.')
+        self._update_master_map_list_combo_box()
+    
+
     ##############################################################
     # Simulation prep
     ##############################################################
@@ -550,8 +665,18 @@ class Isolde():
         if self._simulation_running:
             print('You already have a simulation running!')
             return
+        
+        sm = self._sim_modes
+        if self.sim_mode in [sm.xtal, sm.em]:
+            if not len(self.master_map_list):
+                errstring = 'You have selected ' + \
+                self._human_readable_sim_modes[self.sim_mode] + \
+                ' but have not selected any maps. Please choose at least one map.'
+                raise Exception(errstring)
+                
         self._simulation_running = True
         self._update_sim_control_button_states()
+        
         
         # Define final mobile selection
         self._get_final_sim_selection()
@@ -576,13 +701,26 @@ class Isolde():
         from chimerax.core.atomic import selected_atoms, selected_bonds
         sc = self._total_sim_construct = selected_atoms(self.session)
         sb = self._total_sim_bonds = selected_bonds(self.session)
-    
 
+        from . import sim_interface as si
+                
+        self._sim_map_potential_functions = []
+        # Crop down maps and convert to potential fields
+        if self.sim_mode in [sm.xtal, sm.em]:
+            for m in self.master_map_list:
+                vol, mincoor, maxcoor = m.mask_volume_to_selection(
+                    total_mobile, invert = True)
+                c3d = si.continuous3D_from_volume(vol, mincoor, maxcoor)
+                self._sim_map_potential_functions.append(c3d)
+                    
+        
+        
+        
+        
         if self._logging:
             self._log('Generating topology')
         
         # Generate topology
-        from . import sim_interface as si
         self._topology, self._particle_positions = si.openmm_topology_and_coordinates(sc, sb, logging = self._logging, log = self._log)
 
         if self._logging:
@@ -747,65 +885,8 @@ class Isolde():
         shell_atoms = unselected_atoms[shell_indices].residues.atoms
         return shell_atoms
 
-    
-    def mask_volume_to_selection(self, big_map, resolution, sel, cutoff, invert = False, normalize = False, show = False):
-        import numpy as np
-        if self._logging:
-            from time import time
-            start_time = time()
-        # Get minimum and maximum coordinates of selected atoms, and pad
-        maxcoor = (sel.coords.max(0)  + cutoff)
-        mincoor = (sel.coords.min(0)  - cutoff)
-        # ChimeraX wants the volume array to be in zyx order, so we need to reverse
-        vol_size = maxcoor[::-1] - mincoor[::-1]
-        # Round to an integral number of steps at the desired resolution
-        res = resolution
-        sizek, sizej, sizei = np.ceil(vol_size/res).astype(int)
-        vol_array = np.zeros([sizek, sizej, sizei])
-        
-        from chimerax.core.map.data import Array_Grid_Data
-        from chimerax.core.map import Volume
-        
-        mask_array = Array_Grid_Data(vol_array, origin = mincoor, step = res*np.ones(3))
-        vol = Volume(mask_array, self.session)
-        vol_coords = vol.grid_points(vol.model_transform())
-        
-        from chimerax.core.geometry import find_close_points
-        map_points, ignore = find_close_points(vol_coords, sel.coords, cutoff)
-        mask_1d = np.zeros(len(vol_coords))
-        mask_1d[map_points] = 1
-        vol_array = np.reshape(mask_1d, (sizek, sizej, sizei))
-        if normalize:
-            map_stats = big_map.matrix_value_statistics()
-            max_abs_value = max(map_stats.maximum,abs(map_stats.minimum))
-            cropped_map = big_map.interpolate_on_grid(vol) / max_abs_value
-        else:
-            cropped_map = big_map.interpolate_on_grid(vol)
-        if invert:
-            masked_map = -cropped_map[0] * vol_array
-        else:
-            masked_map = cropped_map[0] * vol_array
-        masked_array = Array_Grid_Data(masked_map, origin = mincoor, step = res*np.ones(3))
-        vol = Volume(masked_array, self.session)
-        if self._logging:
-            end_time = time()
-            self._log('Masking took ' + str(end_time - start_time) + ' seconds')
-        if show:
-            self.session.models.add([vol])
-            vol.initialize_thresholds()
-            vol.show()
-        return vol
         
         
-        # create a rectangular grid of zeros of desired resolution encompassing all the
-        # atoms to be masked, plus padding for the cutoff
-        
-        
-        # From the volume to be masked, get list of indices that are within
-        # cutoff of the selected atoms
-        
-        
-        # Interpolate selected map indices onto the target map grid
         
         
         

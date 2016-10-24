@@ -89,6 +89,24 @@ def openmm_topology_and_coordinates(sim_construct,
     pos = a.coords # in Angstrom (convert to nm for OpenMM)
     return top, pos
 
+
+# Takes a volumetric map and uses it to generate an OpenMM Continuous3DFunction.
+# Returns the function.
+def continuous3D_from_volume(volume, mincoor, maxcoor):
+    import numpy as np
+    # Continuous3DFunction expects the minimum and maximum coordinates as
+    # arguments xmin, xmax, ymin, ...
+    minmax = [val for pair in zip(mincoor, maxcoor) for val in pair]
+    vol_data = volume.grid_data()
+    vol_data_1d = np.ravel(vol_data.matrix(), order = 'C')
+    vol_dimensions = reversed(vol_data.size)
+    vol_origin = vol_data.origin
+    
+    from simtk.openmm.openmm import Continuous3DFunction
+    
+    return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
+    
+
 def define_forcefield (forcefield_list):
     from simtk.openmm.app import ForceField
     return ForceField(*forcefield_list)
