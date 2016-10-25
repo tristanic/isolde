@@ -92,20 +92,61 @@ def openmm_topology_and_coordinates(sim_construct,
 
 # Takes a volumetric map and uses it to generate an OpenMM Continuous3DFunction.
 # Returns the function.
-def continuous3D_from_volume(volume, mincoor, maxcoor):
+def continuous3D_from_volume(volume):
     import numpy as np
+    vol_data = volume.data
+    mincoor = np.array(vol_data.origin)
+    maxcoor = mincoor + volume.data_origin_and_step()[1]*(np.array(vol_data.size)-1)
+    #Map data is in Angstroms. Need to convert (x,y,z) positions to nanometres
+    mincoor = mincoor/10
+    maxcoor = maxcoor/10
     # Continuous3DFunction expects the minimum and maximum coordinates as
     # arguments xmin, xmax, ymin, ...
     minmax = [val for pair in zip(mincoor, maxcoor) for val in pair]
-    vol_data = volume.grid_data()
     vol_data_1d = np.ravel(vol_data.matrix(), order = 'C')
-    vol_dimensions = reversed(vol_data.size)
-    vol_origin = vol_data.origin
-    
-    from simtk.openmm.openmm import Continuous3DFunction
-    
+    vol_dimensions = (vol_data.size)
+    from simtk.openmm.openmm import Continuous3DFunction    
     return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
     
+# Takes a Continuous3DFunction and returns a CustomCompoundBondForce based on it
+def map_potential_force_field(c3d_func):
+    from simtk.openmm import CustomCompoundBondForce
+    f = CustomCompoundBondForce(1,'')
+    f.addTabulatedFunction(name = 'map_potential', function = c3d_func)
+    f.addGlobalParameter(name = 'global_k', defaultValue = 1.0)
+    f.addPerBondParameter(name = 'individual_k')
+    f.setEnergyFunction('-global_k * individual_k * map_potential(x1,y1,z1)')
+    return f
+
+# Take the atoms in a topology, and add them to a map-derived potential field.
+# per_atom_coupling must be either a single value, or an array with one value
+# per atom
+def couple_atoms_to_map(top, map_field, global_coupling_constant, \
+                        hydrogens = False, per_atom_coupling = 1.0):
+    if not isinstance(per_atom_coupling, list):
+        global_coupling = True
+        k = per_atom_coupling
+    else:
+        global_coupling = False
+    # Find the global coupling constant parameter in the Force and set its new value
+    for i in range(map_field.getNumGlobalParameters()):
+        if map_field.getGlobalParameterName(i) == 'global_k':
+            map_field.setGlobalParameterDefaultValue(i, global_coupling_constant)
+            break
+    
+    for a in top.atoms():
+        i = a.index
+        if not hydrogens:
+            if a.element.name == 'hydrogen':
+                continue
+        if not global_coupling:
+            k = per_atom_coupling[i]
+        map_field.addBond([i],[k])
+            
+            
+
+
+
 
 def define_forcefield (forcefield_list):
     from simtk.openmm.app import ForceField

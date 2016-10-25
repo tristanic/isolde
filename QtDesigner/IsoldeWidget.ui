@@ -108,7 +108,7 @@
                   <rect>
                    <x>0</x>
                    <y>-511</y>
-                   <width>457</width>
+                   <width>500</width>
                    <height>1063</height>
                   </rect>
                  </property>
@@ -610,8 +610,11 @@
                             <property name="decimals">
                              <number>1</number>
                             </property>
+                            <property name="maximum">
+                             <double>10000000000.000000000000000</double>
+                            </property>
                             <property name="value">
-                             <double>0.500000000000000</double>
+                             <double>100.000000000000000</double>
                             </property>
                            </widget>
                           </item>

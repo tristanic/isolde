@@ -90,6 +90,18 @@ class Isolde():
         self._total_sim_bonds = None
         
         ####
+        # Mouse modes
+        ####
+        from . import mousemodes
+        # Object to initialise and hold simulation-specific mouse modes,
+        # and keep track of standard modes they've replaced. The standard
+        # mode will be reinstated when a mode is removed.
+        self._sim_mouse_modes = mousemodes.MouseModeRegistry(session)
+        # Placeholder for mouse tugging object
+        self._mouse_tugger = None
+        
+        
+        ####
         # Settings for handling of maps
         ####
         # List of currently available volumetric data sets
@@ -128,7 +140,7 @@ class Isolde():
         # Type of integrator to use. Should give the choice in the expert level
         # of the menu. Variable is more stable, but simulated time per gui update
         # is harder to determine
-        self._integrator_type = 'variable'
+        self._integrator_type = 'fixed'
         # Constraints (e.g. rigid bonds) need their own tolerance
         self._constraint_tolerance = 0.001
         # Friction term for coupling to heat bath
@@ -704,18 +716,7 @@ class Isolde():
 
         from . import sim_interface as si
                 
-        self._sim_map_potential_functions = []
-        # Crop down maps and convert to potential fields
-        if self.sim_mode in [sm.xtal, sm.em]:
-            for m in self.master_map_list:
-                vol, mincoor, maxcoor = m.mask_volume_to_selection(
-                    total_mobile, invert = True)
-                c3d = si.continuous3D_from_volume(vol, mincoor, maxcoor)
-                self._sim_map_potential_functions.append(c3d)
                     
-        
-        
-        
         
         if self._logging:
             self._log('Generating topology')
@@ -736,7 +737,26 @@ class Isolde():
             self._log('Preparing system')
         
         # Define simulation System
-        self._system = si.create_openmm_system(self._topology, self._ff)
+        sys = self._system = si.create_openmm_system(self._topology, self._ff)
+
+        # Crop down maps and convert to potential fields
+        # Timing here can be improved a lot. At the moment we're looping
+        # through all atoms once to generate the topology, and once for
+        # each map (in si.couple_atoms_to_map()). With some rearrangement
+        # this can all be done in a single loop.
+        if self.sim_mode in [sm.xtal, sm.em]:
+            for mkey in self.master_map_list:
+                m = self.master_map_list[mkey]
+                vol = m.mask_volume_to_selection(
+                    total_mobile, invert = False)
+                c3d = si.continuous3D_from_volume(vol)
+                m.set_c3d_function(c3d)
+                f = si.map_potential_force_field(c3d)
+                k = m.get_coupling_constant()
+                si.couple_atoms_to_map(self._topology,f, k, 
+                    hydrogens = False, per_atom_coupling = 1.0)
+                m.set_potential_function(f)
+                sys.addForce(f)
         
         # Apply fixed atoms to System
         if self._logging:
@@ -760,6 +780,7 @@ class Isolde():
                                     
         self.sim = si.create_sim(self._topology, self._system, integrator, platform)
         
+            
         
         fixed = len(sc)*[False]
         for i, atom in enumerate(sc):
@@ -792,6 +813,11 @@ class Isolde():
 
         if self._logging:
             self._log('Starting sim')
+        
+        # Register simulation-specific mouse modes
+        from . import mousemodes
+        self._mouse_tugger = mousemodes.TugAtomsMode(self.session)
+        self._sim_mouse_modes.register_mode(mouse_tugger.name, mouse_tugger, 'right', [])
         
         self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
                                               'new frame',
@@ -947,6 +973,11 @@ class Isolde():
         self.sim = None
         self._system = None
         self._update_menu_after_sim()
+        from . import mousemodes
+        mouse_mode_names = self._sim_mouse_modes.get_names()
+        for n in mouse_mode_names:
+            self._sim_mouse_modes.remove_mode(n)
+        self._mouse_tugger = None
         
     
     #############################################
