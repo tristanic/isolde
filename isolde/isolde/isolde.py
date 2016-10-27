@@ -54,7 +54,6 @@ class Isolde():
         self._event_handler = EventHandler(self.session)
         
         initialize_openmm()
-        from . import sim_interface
  
         ####
         # Settings for handling of atomic coordinates
@@ -99,6 +98,8 @@ class Isolde():
         self._sim_mouse_modes = mousemodes.MouseModeRegistry(session)
         # Placeholder for mouse tugging object
         self._mouse_tugger = None
+        # Are we currently tugging an atom?
+        self._currently_tugging = False
         
         
         ####
@@ -114,7 +115,11 @@ class Isolde():
         ####
         # Settings for OpenMM
         ####
-        
+
+        # Placeholder for the sim_interface.SimHandler object used to perform
+        # simulation setup and management
+        self._sim_handler = None
+        from . import sim_interface
         # List of forcefields available to the MD package
         self._available_ffs = sim_interface.available_forcefields()
         # Variables holding current forcefield choices
@@ -151,6 +156,12 @@ class Isolde():
         # Flag for unstable simulation
         self._sim_is_unstable = False
         
+        # Are we currently tugging on an atom?
+        self._currently_tugging = False
+        # Placeholder for tugging forces
+        self._tugging_force = None
+        # Force constant for mouse/haptic tugging. Need to make this user-adjustable
+        self.tug_force_constant = 10000 # kJ/mol/nm
         
         
         
@@ -534,7 +545,7 @@ class Isolde():
         elif len(seltext):
             self._add_new_map = False
             current_map = self.master_map_list[seltext]
-            name, vol, cutoff, coupling = current_map.get_map_parameters()
+            name, vol, cutoff, coupling, is_per_atom, per_atom_k = current_map.get_map_parameters()
             iw._em_map_name_field.setText(name)
             iw._em_map_model_combo_box.setCurrentText(vol.id_string())
             iw._em_map_cutoff_spin_box.setValue(cutoff)
@@ -715,14 +726,47 @@ class Isolde():
         sb = self._total_sim_bonds = selected_bonds(self.session)
 
         from . import sim_interface as si
-                
+        sh = self._sim_handler = si.SimHandler(self.session)        
                     
         
         if self._logging:
             self._log('Generating topology')
+            
+        # Setup pulling force, to be used by mouse and/or haptic tugging
+        e = 'k*((x-x0)^2+(y-y0)^2+(z-z0)^2)'
+        per_particle_parameters = ['k','x0','y0','z0']
+        per_particle_defaults = [0,0,0,0]
+        global_parameters = None
+        global_defaults = None
+        tug_force = sh.initialize_tugging_force(e, global_parameters, global_defaults, per_particle_parameters)
+        
+        sh.register_custom_external_force('tug', tug_force, global_parameters,
+                per_particle_parameters, per_particle_defaults)
+        
+        # Crop down maps and convert to potential fields
+        # Timing here can be improved a lot. At the moment we're looping
+        # through all atoms once to generate the topology, and once for
+        # each map (in si.couple_atoms_to_map()). With some rearrangement
+        # this can all be done in a single loop.
+        if self.sim_mode in [sm.xtal, sm.em]:
+            for mkey in self.master_map_list:
+                m = self.master_map_list[mkey]
+                vol = m.mask_volume_to_selection(
+                    total_mobile, invert = False)
+                c3d = sh.continuous3D_from_volume(vol)
+                m.set_c3d_function(c3d)
+                f = sh.map_potential_force_field(c3d, m.get_coupling_constant())
+                m.set_potential_function(f)
+                # Register the map with the SimHandler
+                sh.register_map(m)
+        
+
+
         
         # Generate topology
-        self._topology, self._particle_positions = si.openmm_topology_and_coordinates(sc, sb, logging = self._logging, log = self._log)
+        self._topology, self._particle_positions = sh.openmm_topology_and_external_forces(
+            sc, sb, tug_hydrogens = False, hydrogens_feel_maps = False,
+            logging = self._logging, log = self._log)
 
         if self._logging:
             self._log('Generating forcefield')
@@ -739,28 +783,14 @@ class Isolde():
         # Define simulation System
         sys = self._system = si.create_openmm_system(self._topology, self._ff)
 
-        # Crop down maps and convert to potential fields
-        # Timing here can be improved a lot. At the moment we're looping
-        # through all atoms once to generate the topology, and once for
-        # each map (in si.couple_atoms_to_map()). With some rearrangement
-        # this can all be done in a single loop.
-        if self.sim_mode in [sm.xtal, sm.em]:
-            for mkey in self.master_map_list:
-                m = self.master_map_list[mkey]
-                vol = m.mask_volume_to_selection(
-                    total_mobile, invert = False)
-                c3d = si.continuous3D_from_volume(vol)
-                m.set_c3d_function(c3d)
-                f = si.map_potential_force_field(c3d)
-                k = m.get_coupling_constant()
-                si.couple_atoms_to_map(self._topology,f, k, 
-                    hydrogens = False, per_atom_coupling = 1.0)
-                m.set_potential_function(f)
-                sys.addForce(f)
+        # Register extra forces
+        for key, f in sh.get_all_custom_external_forces().items():
+            sys.addForce(f[0])
         
-        # Apply fixed atoms to System
-        if self._logging:
-            self._log('Applying fixed atoms')
+        for key,m in self.master_map_list.items():
+            sys.addForce(m.get_potential_function())
+        
+        
 
         if self._logging:
             self._log('Choosing integrator')
@@ -781,6 +811,9 @@ class Isolde():
         self.sim = si.create_sim(self._topology, self._system, integrator, platform)
         
             
+        # Apply fixed atoms to System
+        if self._logging:
+            self._log('Applying fixed atoms')
         
         fixed = len(sc)*[False]
         for i, atom in enumerate(sc):
@@ -816,8 +849,8 @@ class Isolde():
         
         # Register simulation-specific mouse modes
         from . import mousemodes
-        self._mouse_tugger = mousemodes.TugAtomsMode(self.session)
-        self._sim_mouse_modes.register_mode(mouse_tugger.name, mouse_tugger, 'right', [])
+        mt = self._mouse_tugger = mousemodes.TugAtomsMode(self.session)
+        self._sim_mouse_modes.register_mode(mt.name, mt, 'right', [])
         
         self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
                                               'new frame',
@@ -991,6 +1024,7 @@ class Isolde():
         v = self.session.main_view
 #        if v.frame_number == self._last_frame_number:
 #            return # Make sure we draw a frame before doing another MD calculation
+        sh = self._sim_handler
             
         s = self.sim
         c = s.context
@@ -1003,6 +1037,31 @@ class Isolde():
         s_max_count = self._sim_startup_rounds
         pos = self._particle_positions
         sc = self._total_sim_construct
+        
+        # Mouse interaction
+        mtug = self._mouse_tugger
+        t_force = self._tugging_force
+        t_k = self.tug_force_constant
+        cur_tug = self._currently_tugging
+        tugging, tug_atom, xyz0 = mtug.get_status()
+        # If tugging is true, we need to update the parameters for the picked atom
+        if tugging:
+            xyz0 = xyz0 / 10 # OpenMM coordinates are in nanometres
+            params = [t_k, *xyz0]
+            tug_index = self._total_sim_construct.index(tug_atom)
+            if not cur_tug:
+                self._last_tugged_index = tug_index
+                self._currently_tugging = True
+            sh.set_custom_external_force_particle_params('tug', tug_index, params)
+            sh.update_force_in_context('tug', c)
+        # If cur_tug is true and tugging is false, we need to disconnect the atom from the tugging force
+        elif cur_tug:
+            sh.set_custom_external_force_particle_params('tug', self._last_tugged_index, [0,0,0,0])
+            sh.update_force_in_context('tug', c)
+            self._currently_tugging = False
+            self._last_tugged_index = None
+
+        # If both cur_tug and tugging are false, do nothing
 
 
         if self._temperature_changed:
@@ -1032,6 +1091,7 @@ class Isolde():
         newpos, max_force = self._get_positions_and_max_force()
         if max_force > self._max_allowable_force:
             self._sim_is_unstable = True
+            print(str(max_force))
             self._oldmode = mode
             if mode == 'equil':
                 # revert to the coordinates before this simulation step

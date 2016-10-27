@@ -1,17 +1,27 @@
 # Generic class to hold the details of maps to be used in the simulation
 class IsoldeMap(object):
     
-    def __init__(self, session, name, source_map, cutoff, coupling_constant):
+    def __init__(self, session, name, source_map, cutoff, coupling_constant, per_atom_coupling = False):
         self.session = session # Handle for current ChimeraX session
         self._name = name     # User-specified name (e.g. '2mFo-DFc')
         self._source_map = source_map # A model currently loaded into ChimeraX
         self._mask_cutoff = cutoff # in Angstroms 
         self._coupling_constant = coupling_constant # How hard map pulls on atoms
+        self._per_atom_coupling = per_atom_coupling # Do we vary map pull by atom type?
         # TODO: Add the ability to define specific sub-selections of atoms
         # to be associated with a particular map (e.g. anomalous scatterers with
         # an anomalous difference map; omitted fragments with the mFo-DFc density
         # in an omit map, etc.)
-
+        
+        # Optionally, we can scale the strength of each atom's individual coupling to the map
+        if per_atom_coupling:
+            # dict relating atom index to scale factor
+            self._per_atom_coupling_scale_factor = {}
+        else:
+            # single global value
+            self._per_atom_coupling_scale_factor = 1.0
+        
+        
         self._source_map_res = source_map.region_origin_and_step(source_map.region)[1]
         # TODO: This currently ignores the skewness of the map (in most cases
         # probably not a huge deal). Still, it should be re-calculated to give
@@ -45,11 +55,26 @@ class IsoldeMap(object):
         
     def set_potential_function(self, func):
         self._potential_function = func
-        
-
     
     def get_map_parameters(self):
-        return self._name, self._source_map, self._mask_cutoff, self._coupling_constant
+        return self._name, self._source_map, self._mask_cutoff, \
+                self._coupling_constant, self._per_atom_coupling, \
+                self._per_atom_coupling_scale_factor
+    
+    def per_atom_coupling(self):
+        return self._per_atom_coupling
+    
+    def get_per_atom_coupling_params(self):
+        return self._per_atom_coupling_scale_factor
+    
+    # Set the per-atom scale factor for a single atom    
+    def set_per_atom_coupling_constant(self, index, value):
+        self._per_atom_coupling_scale_factor[index] = value
+        
+    # Set all per-atom scale factors at once (e.g. to copy parameters from another map)
+    def set_per_atom_coupling_constants(self, params):
+        from copy import deepcopy
+        self._per_atom_coupling_scale_factor = deepcopy(params)
                 
     def get_name(self):
         return self._name

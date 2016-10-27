@@ -1,5 +1,6 @@
 # Useful mouse modes for working with ISOLDE
 
+from chimerax.core.ui import MouseMode
 
 class TugAtomsMode(MouseMode):
     name = 'tug'
@@ -7,18 +8,20 @@ class TugAtomsMode(MouseMode):
 
     def __init__(self, session):
         MouseMode.__init__(self, session)
-        self._tugger = None
+        #self._tugger = None
         self._tugging = False
         self._last_xy = None
         self._arrow_model = None
         self._picked_atom = None
         self._pull_vector = None
+        self._xyz0 = None
         self._xy = None
         self.name = 'ISOLDE_mouse_tug'
         self._handler = None
         
     def get_status(self):
-        return self._tugging, self._picked_atom, self._pull_vector    
+        return self._tugging, self._picked_atom, self._xyz0
+        print('Atom coords: ' + str(self._picked_atom.scene_coord) + ' xyz0: ' + str(self._xyz0))
         
             
     def mouse_down(self, event):
@@ -29,14 +32,18 @@ class TugAtomsMode(MouseMode):
         pick = view.first_intercept(x,y)
         if hasattr(pick, 'atom'):
             a = self._picked_atom = pick.atom
+            atom_xyz, self._pull_vector = self._pull_direction(x, y)
+            self._xyz0 = atom_xyz + self._pull_vector
             self._tugging = True
+        
 
     def mouse_drag(self, event):
         if not self._tugging:
             return
         self._xy = x,y = event.position()
         atom_xyz, self._pull_vector = self._pull_direction(x, y)
-        self._draw_arrow(atom_xyz+self._pull_vector, atom_xyz)
+        self._xyz0 = atom_xyz + self._pull_vector
+        self._draw_arrow(self._xyz0, atom_xyz)
         
         
     def mouse_up(self, event):
@@ -49,7 +56,7 @@ class TugAtomsMode(MouseMode):
     def _pull_direction(self, x, y):
         v = self.session.main_view
         x0,x1 = v.clip_plane_points(x, y)
-        axyz = self._tugger.atom.scene_coord
+        axyz = self._picked_atom.scene_coord
         # Project atom onto view ray to get displacement.
         dir = x1 - x0
         da = axyz - x0
@@ -92,7 +99,7 @@ class MouseModeRegistry():
             raise Exception('Unrecognised mouse mode name!')
         
     def register_mode(self, name, mode, button, modifiers = []):
-        mm = session.ui.mouse_modes
+        mm = self.session.ui.mouse_modes
         existing_bindings = mm.bindings
         for b in existing_bindings:
             if b.exact_match(button, modifiers):
@@ -104,7 +111,7 @@ class MouseModeRegistry():
         self._registered_modes[name] = (mode, button, modifiers)
         
     def remove_mode(self, name):
-        mm = session.ui.mouse_modes
+        mm = self.session.ui.mouse_modes
         if self._existing_modes[name] is not None:
             mode, button, modifiers = self._existing_modes[name]
             mm.bind_mouse_mode(button, modifiers, mode)

@@ -35,122 +35,218 @@ class available_forcefields():
         ]
 
 def get_available_platforms():
-    from simtk.openmm import Platform
-    platform_names = []
-    for i in range(Platform.getNumPlatforms()):
-        p = Platform.getPlatform(i)
-        name = p.getName()
-        platform_names.append(name)
-    return platform_names
+        from simtk.openmm import Platform
+        platform_names = []
+        for i in range(Platform.getNumPlatforms()):
+            p = Platform.getPlatform(i)
+            name = p.getName()
+            platform_names.append(name)
+        return platform_names
+
+class SimHandler():
+    
+    def __init__(self, session):
+        self.session = session
+        # Forcefield used in this simulation
+        self._forcefield = None
+        # Overall simulation topology
+        self._topology = None
+        # Atoms in simulation topology
+        self._atoms = None
+        
+        # Dict holding each custom external force object, its global and its
+        # per-particle parameters. Format:
+        # {'name': [object, 
+        #           {'global_name': value}, 
+        #           [per_particle_names],
+        #           [per_particle_default_values],
+        #           {index_in_topology: index_in_force}
+        # } 
+        self._custom_external_forces = {}
+        
+        # List of IsoldeMap objects registered with this simulation
+        self._maps = []
+        # CustomExternalForce handling haptic interactions
+        self._tugging_force = None
+        # Dict for mapping atom indices in the topology to indices in the tugging force
+        self._tug_force_lookup = {}
+        
+    def register_custom_external_force(self, name, force, global_params, 
+                                        per_particle_params, 
+                                        per_particle_default_vals):
+        self._custom_external_forces[name] = [force, global_params, per_particle_params, per_particle_default_vals, {}]
+    
+    def get_custom_external_force_by_name(self, name):
+        return self._custom_external_forces[name]
+    
+    def get_all_custom_external_forces(self):
+        return self._custom_external_forces
+    
+    def set_custom_external_force_particle_params(self, name, index, params):
+        fparams = self._custom_external_forces[name]
+        force = fparams[0]
+        index_lookup = fparams[4]
+        index_in_force = index_lookup[index]
+        force.setParticleParameters(index_in_force, index, params)
+       
+    def register_map(self, map_object):
+        self._maps.append(map_object)
+
 
     
-def openmm_topology_and_coordinates(sim_construct,
-                                    sim_bonds,
-                                    fix_shell_backbones = False,
-                                    logging = False,
-                                    log = None):        
-    a = sim_construct
-    n = len(a)
-    r = a.residues
-    aname = a.names
-    ename = a.element_names
-    rname = r.names
-    rnum = r.numbers
-    cids = r.chain_ids
-    from simtk.openmm.app import Topology, Element
-    from simtk import unit
-    top = Topology()
-    cmap = {}
-    rmap = {}
-    atoms = {}
-    for i in range(n):
-        cid = cids[i]
-        if not cid in cmap:
-            cmap[cid] = top.addChain()   # OpenMM chains have no name
-        rid = (rname[i], rnum[i], cid)
-        if not rid in rmap:
-            rmap[rid] = top.addResidue(rname[i], cmap[cid])
-        element = Element.getBySymbol(ename[i])
-        atoms[i] = top.addAtom(aname[i], element,rmap[rid])
+    def initialize_tugging_force(self, potential_equation, g_params, g_vals, pp_params):
+        from simtk import openmm as mm
+        f = self._tugging_force = mm.CustomExternalForce(potential_equation)
+        if g_params is not None:
+            for p, v in zip(g_params, g_vals):
+                f.addGlobalParameter(g, v)
+        if pp_params is not None:
+            for p in pp_params:
+                f.addPerParticleParameter(p)
+        return f
     
     
-    a1, a2 = sim_bonds.atoms
-    for i1, i2 in zip(a1.indices(a), a2.indices(a)):
-        #if logging and log is not None:
-            #for num, i in enumerate([i1, i2]):
-                #info_str = 'Atom ' + str(num) + ': Chain ' + a[i].chain_id + \
-                             #' Resid ' + str(a[i].residue.number) + ' Resname ' + a[i].residue.name + ' Name ' + a[i].name
-                #log(info_str)
+    # Prepares the openmm topology and binds atoms to existing force fields.
+    # Since looping over all atoms can take a long time, it's best to do
+    # topology generation and force binding as a single concerted loop as
+    # much as we can. This should be possible for all external-type forces
+    # (tugging and map forces). Forces involving two or more atoms (e.g.
+    # H-bond or dihedral restraints) will have to be handled in separate
+    # loops.
+    def openmm_topology_and_external_forces(self, sim_construct,
+                                        sim_bonds,
+                                        fix_shell_backbones = False,
+                                        tug_hydrogens = False,
+                                        hydrogens_feel_maps = False,
+                                        logging = False,
+                                        log = None):        
+        a = sim_construct
+        n = len(a)
+        r = a.residues
+        aname = a.names
+        ename = a.element_names
+        rname = r.names
+        rnum = r.numbers
+        cids = r.chain_ids
+        from simtk.openmm.app import Topology, Element
+        from simtk import unit
+        top = self._simulation_topology = Topology()
+        cmap = {}
+        rmap = {}
+        atoms = self._atoms = {}
+        for i in range(n):
+            cid = cids[i]
+            if not cid in cmap:
+                cmap[cid] = top.addChain()   # OpenMM chains have no name
+            rid = (rname[i], rnum[i], cid)
+            if not rid in rmap:
+                rmap[rid] = top.addResidue(rname[i], cmap[cid])
+            element = Element.getBySymbol(ename[i])
+            atoms[i] = top.addAtom(aname[i], element,rmap[rid])
+ 
+            # Register atoms with forces
+            if ename is not 'H' or (ename is 'H' and tug_hydrogens):
+                # All CustomExternalForces
+                for key, ff in self._custom_external_forces.items():
+                    f = ff[0]
+                    per_particle_param_vals = ff[3]
+                    index_map = ff[4]
+                    index_map[i] = f.addParticle(i, per_particle_param_vals)
+        
+            if ename is not 'H' or (ename is 'H' and hydrogens_feel_maps):
+                # All map forces
+                for m in self._maps:
+                    self.couple_atom_to_map(i, m)
+                #sh.couple_atoms_to_map(self._topology,f, k, 
+                    #hydrogens = False, per_atom_coupling = 1.0)
 
-        if -1 not in [i1, i2]:
-            top.addBond(atoms[i1],  atoms[i2])
-    
-    from simtk.openmm import Vec3
-    pos = a.coords # in Angstrom (convert to nm for OpenMM)
-    return top, pos
+        
+        a1, a2 = sim_bonds.atoms
+        for i1, i2 in zip(a1.indices(a), a2.indices(a)):
+            if -1 not in [i1, i2]:
+                top.addBond(atoms[i1],  atoms[i2])
+        
+        from simtk.openmm import Vec3
+        pos = a.coords # in Angstrom (convert to nm for OpenMM)
+        return top, pos
 
 
-# Takes a volumetric map and uses it to generate an OpenMM Continuous3DFunction.
-# Returns the function.
-def continuous3D_from_volume(volume):
-    import numpy as np
-    vol_data = volume.data
-    mincoor = np.array(vol_data.origin)
-    maxcoor = mincoor + volume.data_origin_and_step()[1]*(np.array(vol_data.size)-1)
-    #Map data is in Angstroms. Need to convert (x,y,z) positions to nanometres
-    mincoor = mincoor/10
-    maxcoor = maxcoor/10
-    # Continuous3DFunction expects the minimum and maximum coordinates as
-    # arguments xmin, xmax, ymin, ...
-    minmax = [val for pair in zip(mincoor, maxcoor) for val in pair]
-    vol_data_1d = np.ravel(vol_data.matrix(), order = 'C')
-    vol_dimensions = (vol_data.size)
-    from simtk.openmm.openmm import Continuous3DFunction    
-    return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
-    
-# Takes a Continuous3DFunction and returns a CustomCompoundBondForce based on it
-def map_potential_force_field(c3d_func):
-    from simtk.openmm import CustomCompoundBondForce
-    f = CustomCompoundBondForce(1,'')
-    f.addTabulatedFunction(name = 'map_potential', function = c3d_func)
-    f.addGlobalParameter(name = 'global_k', defaultValue = 1.0)
-    f.addPerBondParameter(name = 'individual_k')
-    f.setEnergyFunction('-global_k * individual_k * map_potential(x1,y1,z1)')
-    return f
-
-# Take the atoms in a topology, and add them to a map-derived potential field.
-# per_atom_coupling must be either a single value, or an array with one value
-# per atom
-def couple_atoms_to_map(top, map_field, global_coupling_constant, \
-                        hydrogens = False, per_atom_coupling = 1.0):
-    if not isinstance(per_atom_coupling, list):
-        global_coupling = True
-        k = per_atom_coupling
-    else:
-        global_coupling = False
-    # Find the global coupling constant parameter in the Force and set its new value
-    for i in range(map_field.getNumGlobalParameters()):
-        if map_field.getGlobalParameterName(i) == 'global_k':
-            map_field.setGlobalParameterDefaultValue(i, global_coupling_constant)
-            break
-    
-    for a in top.atoms():
-        i = a.index
-        if not hydrogens:
-            if a.element.name == 'hydrogen':
-                continue
+    # Take the atoms in a topology, and add them to a map-derived potential field.
+    # per_atom_coupling must be either a single value, or an array with one value
+    # per atom
+    def couple_atom_to_map(self, index, map_object):
+        m = map_object
+        if not m.per_atom_coupling():
+            global_coupling = True
+            k = m.get_per_atom_coupling_params()
+        else:
+            global_coupling = False
+            per_atom_k = m.get_per_atom_coupling_params()
+        # Find the global coupling constant parameter in the Force and set its new value
+        map_field = m.get_potential_function()
         if not global_coupling:
-            k = per_atom_coupling[i]
-        map_field.addBond([i],[k])
-            
-            
+            k = per_atom_k[index]
+        map_field.addBond([index],[k])
 
 
+
+
+
+    # Takes a volumetric map and uses it to generate an OpenMM Continuous3DFunction.
+    # Returns the function.
+    def continuous3D_from_volume(self, volume):
+        import numpy as np
+        vol_data = volume.data
+        mincoor = np.array(vol_data.origin)
+        maxcoor = mincoor + volume.data_origin_and_step()[1]*(np.array(vol_data.size)-1)
+        #Map data is in Angstroms. Need to convert (x,y,z) positions to nanometres
+        mincoor = mincoor/10
+        maxcoor = maxcoor/10
+        # Continuous3DFunction expects the minimum and maximum coordinates as
+        # arguments xmin, xmax, ymin, ...
+        minmax = [val for pair in zip(mincoor, maxcoor) for val in pair]
+        vol_data_1d = np.ravel(vol_data.matrix(), order = 'C')
+        vol_dimensions = (vol_data.size)
+        from simtk.openmm.openmm import Continuous3DFunction    
+        return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
+        
+    # Takes a Continuous3DFunction and returns a CustomCompoundBondForce based on it
+    def map_potential_force_field(self, c3d_func, global_k):
+        from simtk.openmm import CustomCompoundBondForce
+        f = CustomCompoundBondForce(1,'')
+        f.addTabulatedFunction(name = 'map_potential', function = c3d_func)
+        f.addGlobalParameter(name = 'global_k', defaultValue = global_k)
+        f.addPerBondParameter(name = 'individual_k')
+        f.setEnergyFunction('-global_k * individual_k * map_potential(x1,y1,z1)')
+        return f
+
+
+    # Add an atom to a CustomExternalForce of the form k*((x-x0)^2+(y-y0)^2+(z-z0)^2)
+    # (e.g. to allow it to be manipulated by the mouse or a haptic device).
+    # top: the OpenMM topology object
+    # index: the index of the atom in the overall topology
+    # force_index_lookup: a dict mapping the topology index to the index of the atom
+    # in the force handler.
+    # force: the openmm CustomExternalForce object
+    # k: the spring constant, scaled by the atom's mass
+    # target: a 3-element array or tuple (x0, y0, z0)           
+    def add_atom_to_tugging_force(self, top, index, tug_force_lookup, force, k, target):
+        atom = self._atoms[index]
+        mass = atom.element.mass()
+        k = k/mass
+        params = [k].extend(target)
+        tug_force_lookup_lookup[index] = force.addParticle(index, params)
+
+    
+    def update_force_in_context(self, force_name, context):
+        force = self._custom_external_forces[force_name][0]
+        force.updateParametersInContext(context)
 
 
 def define_forcefield (forcefield_list):
     from simtk.openmm.app import ForceField
-    return ForceField(*forcefield_list)
+    ff = self_forcefield = ForceField(*forcefield_list)
+    return ff
     
 def create_openmm_system(top, ff):
     from simtk.openmm import app
