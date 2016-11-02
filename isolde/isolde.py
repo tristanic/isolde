@@ -44,6 +44,36 @@ class Isolde():
         custom                  = 3
         script                  = 99
 
+    class _map_styles(IntEnum):
+        mesh_square             = 0
+        mesh_triangle           = 1
+        solid_t20               = 2
+        solid_t40               = 3
+        solid_t60               = 4
+        solid_t80               = 5
+        solid_opaque            = 6
+    
+    _human_readable_map_display_styles = {
+        _map_styles.mesh_square: "Mesh (squares)",
+        _map_styles.mesh_triangle: "Mesh (triangles)",
+        _map_styles.solid_t20: "Solid (20% opacity)",
+        _map_styles.solid_t40: "Solid (40% opacity)",
+        _map_styles.solid_t60: "Solid (60% opacity)",
+        _map_styles.solid_t80: "Solid (80% opacity)",
+        _map_styles.solid_opaque: "Solid (opaque)"
+        }
+        
+    # array of settings to apply to the map depending on the chosen
+    # representation. Order is: [style,     
+    _map_style_settings = {
+        _map_styles.mesh_square: {'style': 'mesh', 'square_mesh': True, 'transparency':0},
+        _map_styles.mesh_triangle: {'style': 'mesh', 'square_mesh': False, 'transparency':0},
+        _map_styles.solid_t20: {'style': 'surface', 'transparency': 0.8},
+        _map_styles.solid_t40: {'style': 'surface', 'transparency': 0.6},
+        _map_styles.solid_t60: {'style': 'surface', 'transparency': 0.4},
+        _map_styles.solid_t80: {'style': 'surface', 'transparency': 0.2},
+        _map_styles.solid_opaque: {'style': 'surface', 'transparency': 0.0}
+        }
     
     def __init__(self, gui):
         self._logging = False
@@ -56,6 +86,15 @@ class Isolde():
         
         initialize_openmm()
  
+        # Available pre-defined colors
+        from chimerax.core import colors
+        self._available_colors = colors.BuiltinColors
+        # Remove duplicates
+        for key in self._available_colors:
+            stripped_key = key.replace(" ","")
+            self._available_colors.pop(stripped_key, None)
+        
+        
         ####
         # Settings for handling of atomic coordinates
         ####
@@ -288,8 +327,26 @@ class Isolde():
         cb.clear()
         cb.addItem('Add map')
         cb.setCurrentText('Add map')
-
-
+        
+        # Map display style options
+        cb = iw._em_map_style_combo_box
+        cb.clear()
+        for mode in self._map_styles:
+            text = self._human_readable_map_display_styles[mode]
+            cb.addItem(text, mode)
+        cb.setCurrentIndex(-1)
+        
+        cb = iw._em_map_color_combo_box
+        cb.clear()
+        for key, cval in self._available_colors.items():
+            cb.addItem(key, cval)
+        cb.setCurrentIndex(-1)
+        
+        cb = iw._em_map_contour_units_combo_box
+        cb.clear()
+        cb.addItem('sigma')
+        cb.addItem('map units')
+        cb.setCurrentIndex(-1)
 
     def _connect_functions(self):
         iw = self.iw
@@ -375,10 +432,22 @@ class Isolde():
         iw._em_map_chooser_combo_box.currentIndexChanged.connect(
             self._show_em_map_in_menu_or_add_new
             )
+        iw._em_map_style_combo_box.currentIndexChanged.connect(
+            self._change_display_of_selected_map
+            )
+        iw._em_map_color_combo_box.currentIndexChanged.connect(
+            self._change_display_of_selected_map
+            )
+        iw._em_map_contour_spin_box.valueChanged.connect(
+            self._change_contour_level_of_selected_map
+            )
+        iw._em_map_contour_units_combo_box.currentIndexChanged.connect(
+            self._change_contour_units_of_selected_map
+            )
          # We want to start with the EM map chooser hidden
         self._hide_em_map_chooser()
         
-                
+                    
         
         
         ####
@@ -543,14 +612,22 @@ class Isolde():
             iw._em_map_name_field.setText('')
             iw._em_map_model_combo_box.setCurrentIndex(-1)
             iw._em_map_name_field.setEnabled(True)
+            iw._em_map_style_combo_box.setCurrentIndex(-1)
+            iw._em_map_color_combo_box.setCurrentIndex(-1)
         elif len(seltext):
             self._add_new_map = False
             current_map = self.master_map_list[seltext]
-            name, vol, cutoff, coupling, is_per_atom, per_atom_k = current_map.get_map_parameters()
+            name, vol, cutoff, coupling, style, color, contour, contour_units, \
+                mask_vis, is_per_atom, per_atom_k = current_map.get_map_parameters()
             iw._em_map_name_field.setText(name)
             iw._em_map_model_combo_box.setCurrentText(vol.id_string())
             iw._em_map_cutoff_spin_box.setValue(cutoff)
             iw._em_map_coupling_spin_box.setValue(coupling)
+            iw._em_map_style_combo_box.setCurrentText(style)
+            iw._em_map_color_combo_box.setCurrentText(color)
+            iw._em_map_contour_spin_box.setValue(contour)
+            iw._em_map_contour_units_combo_box.setCurrentText(contour_units)
+            iw._em_map_masked_checkbox.setCheckState(mask_vis)
             # Map name is our lookup key, so can't change it after it's been added
             iw._em_map_name_field.setEnabled(False)
         else:
@@ -646,18 +723,70 @@ class Isolde():
         model = self._available_volumes[m_id]
         cutoff = iw._em_map_cutoff_spin_box.value()
         coupling_constant = iw._em_map_coupling_spin_box.value()
+        style = iw._em_map_style_combo_box.currentText()
+        color = iw._em_map_color_combo_box.currentText()
+        contour = iw._em_map_contour_spin_box.value()
+        contour_units = iw._em_map_contour_units_combo_box.currentText()
+        mask = iw._em_map_masked_checkbox.checkState()
         if self._add_new_map:
-            self.add_map(name, model, cutoff, coupling_constant)
+            self.add_map(name, model, cutoff, coupling_constant, style, color, contour, contour_units, mask)
         else:
             m = self.master_map_list[name]
-            m.change_map_parameters(model, cutoff, coupling_constant)
+            m.change_map_parameters(model, cutoff, coupling_constant, style, color, contour, contour_units, mask)
 
     def _remove_em_map_from_gui(self, *_):
         name = self.iw._em_map_name_field.text()
         self.remove_map(name)
 
+    def _change_display_of_selected_map(self, *_):
+        iw = self.iw
+        m_id = iw._em_map_model_combo_box.currentText()
+        if m_id == "":
+            return
+        model = self._available_volumes[m_id]
+        styleargs = {}
+        style = iw._em_map_style_combo_box.currentData()
+        if style is not None:
+            styleargs = self._map_style_settings[style]
+        map_color = iw._em_map_color_combo_box.currentData()
+        if map_color is not None:
+            styleargs['color'] = [map_color]
+        if len(styleargs) != 0:
+            from chimerax.core.map import volumecommand
+            volumecommand.volume(self.session, [model], **styleargs)
 
-    def add_map(self, name, vol, cutoff, coupling_constant):
+    def _change_contour_level_of_selected_map(self, *_):
+        iw = self.iw
+        m_id = iw._em_map_model_combo_box.currentText()
+        model = self._available_volumes[m_id]
+        contour_val = iw._em_map_contour_spin_box.value()
+        contour_units = iw._em_map_contour_units_combo_box.currentText()
+        if contour_units == 'sigma':
+            map_sigma = model.mean_sd_rms()[1]
+            contour_val = contour_val * map_sigma
+        from chimerax.core.map import volumecommand
+        volumecommand.volume(self.session,[model], level=[[contour_val]])
+        
+    
+    def _change_contour_units_of_selected_map(self, *_):
+        iw = self.iw
+        sb = iw._em_map_contour_spin_box
+        cb = iw._em_map_contour_units_combo_box
+        m_id = iw._em_map_model_combo_box.currentText()
+        model = self._available_volumes[m_id]
+        contour_units = cb.currentText()
+        contour_val = sb.value()
+        map_sigma = model.mean_sd_rms()[1]
+        if contour_units == 'sigma':
+            contour_val = contour_val / map_sigma
+        else:
+            contour_val = contour_val * map_sigma
+        sb.setValue(contour_val)
+            
+
+
+
+    def add_map(self, name, vol, cutoff, coupling_constant, style, color, contour, contour_units, mask):
         if name in self.master_map_list:
             raise Exception('Each map must have a unique name!')
         # Check if this model is a unique volumetric map
@@ -665,7 +794,7 @@ class Isolde():
             raise Exception('vol must be a single volumetric map object')
         
         from .volumetric import IsoldeMap
-        new_map = IsoldeMap(self.session, name, vol, cutoff, coupling_constant)
+        new_map = IsoldeMap(self.session, name, vol, cutoff, coupling_constant, style, color, contour, contour_units, mask)
         self.master_map_list[name] = new_map
         self._update_master_map_list_combo_box()
         
@@ -760,6 +889,14 @@ class Isolde():
                 m.set_potential_function(f)
                 # Register the map with the SimHandler
                 sh.register_map(m)
+                
+                # If required, mask the map visualisation down to the mobile selection
+                do_mask = m.get_mask_vis()
+                if do_mask:
+                    v = m.get_source_map()
+                    cutoff = m.get_mask_cutoff()
+                    from chimerax.core.commands import sop
+                    sop.sop_zone(self.session, v.surface_drawings, near_atoms = total_mobile, range = cutoff)
         
 
 

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>541</width>
-    <height>899</height>
+    <width>560</width>
+    <height>912</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,8 +30,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>157</width>
-        <height>72</height>
+        <width>540</width>
+        <height>710</height>
        </rect>
       </property>
       <attribute name="label">
@@ -62,8 +62,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>521</width>
-        <height>697</height>
+        <width>540</width>
+        <height>710</height>
        </rect>
       </property>
       <attribute name="label">
@@ -100,9 +100,9 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>0</y>
-                  <width>464</width>
-                  <height>1063</height>
+                  <y>-506</y>
+                  <width>483</width>
+                  <height>1137</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0,0,0,0,0">
@@ -544,7 +544,7 @@
                       <property name="frameShadow">
                        <enum>QFrame::Raised</enum>
                       </property>
-                      <layout class="QVBoxLayout" name="verticalLayout_12">
+                      <layout class="QVBoxLayout" name="verticalLayout_11">
                        <item>
                         <layout class="QHBoxLayout" name="horizontalLayout_11">
                          <item>
@@ -610,6 +610,63 @@
                             <double>10.000000000000000</double>
                            </property>
                           </widget>
+                         </item>
+                        </layout>
+                       </item>
+                       <item>
+                        <layout class="QGridLayout" name="gridLayout_5">
+                         <item row="0" column="1">
+                          <widget class="QComboBox" name="_em_map_style_combo_box"/>
+                         </item>
+                         <item row="0" column="0">
+                          <widget class="QLabel" name="label_16">
+                           <property name="text">
+                            <string>Style:</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item row="0" column="2">
+                          <widget class="QLabel" name="label_17">
+                           <property name="text">
+                            <string>Colour:</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item row="0" column="3">
+                          <widget class="QComboBox" name="_em_map_color_combo_box"/>
+                         </item>
+                         <item row="1" column="3">
+                          <widget class="QCheckBox" name="_em_map_masked_checkbox">
+                           <property name="text">
+                            <string>Mask to selection</string>
+                           </property>
+                           <property name="checked">
+                            <bool>true</bool>
+                           </property>
+                          </widget>
+                         </item>
+                         <item row="1" column="1">
+                          <widget class="QDoubleSpinBox" name="_em_map_contour_spin_box">
+                           <property name="maximum">
+                            <double>9999.989999999999782</double>
+                           </property>
+                           <property name="singleStep">
+                            <double>0.100000000000000</double>
+                           </property>
+                           <property name="value">
+                            <double>1.000000000000000</double>
+                           </property>
+                          </widget>
+                         </item>
+                         <item row="1" column="0">
+                          <widget class="QLabel" name="label_18">
+                           <property name="text">
+                            <string>Contour:</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item row="1" column="2">
+                          <widget class="QComboBox" name="_em_map_contour_units_combo_box"/>
                          </item>
                         </layout>
                        </item>
@@ -831,8 +888,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>98</width>
-                  <height>28</height>
+                  <width>67</width>
+                  <height>16</height>
                  </rect>
                 </property>
                </widget>
@@ -855,8 +912,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>98</width>
-                  <height>28</height>
+                  <width>67</width>
+                  <height>16</height>
                  </rect>
                 </property>
                </widget>

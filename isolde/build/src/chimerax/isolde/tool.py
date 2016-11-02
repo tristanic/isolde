@@ -21,6 +21,8 @@ class ISOLDE_ToolUI(ToolInstance):
         self.tool_window = MainToolWindow(self)
         self.tool_window.manage(placement=None)
         parent = self.tool_window.ui_area
+        pp = parent.parent()
+        pp.resize(480,700) 
 
         from PyQt5 import QtWidgets
         from . import isoldewidget
@@ -33,7 +35,6 @@ class ISOLDE_ToolUI(ToolInstance):
         layout.setStretchFactor(self.mainwin, 1)
         parent.setLayout(layout)
         self.tool_window.manage(placement=None)
-        #self.iw.setupUi(parent)
         # Should load saved state here
         
         # Define frames specific to crystallograpy, EM or free mode

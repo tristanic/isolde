@@ -3,13 +3,18 @@
 # Generic class to hold the details of maps to be used in the simulation
 class IsoldeMap(object):
     
-    def __init__(self, session, name, source_map, cutoff, coupling_constant, per_atom_coupling = False):
+    def __init__(self, session, name, source_map, cutoff, coupling_constant, style, color, contour, contour_units, mask, per_atom_coupling = False):
         self.session = session # Handle for current ChimeraX session
         self._name = name     # User-specified name (e.g. '2mFo-DFc')
         self._source_map = source_map # A model currently loaded into ChimeraX
         self._mask_cutoff = cutoff # in Angstroms 
         self._coupling_constant = coupling_constant # How hard map pulls on atoms
         self._per_atom_coupling = per_atom_coupling # Do we vary map pull by atom type?
+        self._style = style # Map surface style
+        self._color = color # Map display color
+        self._contour = contour # Map contour level
+        self._contour_units = contour_units # Units for contour level (sigma or map units)
+        self._mask = mask # Do we mask down the volume to the mobile selection?
         # TODO: Add the ability to define specific sub-selections of atoms
         # to be associated with a particular map (e.g. anomalous scatterers with
         # an anomalous difference map; omitted fragments with the mFo-DFc density
@@ -38,16 +43,60 @@ class IsoldeMap(object):
         self._potential_function = None
         
     
-    def change_map_parameters(self, source_map, cutoff, coupling_constant):
-        self._source_map = source_map
-        self._mask_cutoff = cutoff
-        self._coupling_constant = coupling_constant
+    def change_map_parameters(self, source_map = None, 
+                                cutoff = None, 
+                                coupling_constant = None,
+                                style = None,
+                                color = None,
+                                contour = None,
+                                contour_units = None,
+                                mask = None,
+                                per_atom_coupling = None 
+                                ):
+        if source_map is not None: self._source_map = source_map 
+        if cutoff is not None: self._mask_cutoff = cutoff 
+        if coupling_constant is not None: self._coupling_constant = coupling_constant 
+        if style is not None: self._style = style 
+        if contour is not None: self._contour = contour 
+        if contour_units is not None: self._contour_units = contour_units 
+        if mask is not None: self._mask = mask 
+        if per_atom_coupling is not None: self._per_atom_coupling = per_atom_coupling 
+        
     
     def set_source_map(self, source_map):
         self._source_map = source_map
     
+    # Boolean switch: do we mask to the mobile atoms when the simulation starts?
+    def set_mask_vis(self, mask):
+        self._mask = mask
+
     def set_mask_cutoff(self, cutoff):
         self._mask_cutoff = cutoff
+        
+    def set_display_style(self, style):
+        if style not in ['mesh', 'surface', 'solid']:
+            print('style must be one of \'mesh\', \'surface\' or \'solid\'')
+            return
+        else:
+            self._style = style
+    
+    def set_color(self, color_name):
+        from chimerax.core.map import volumecommand
+        from chimerax.core import colors
+        rgba = colors.BuiltinColors[color_name]
+        volumecommand.volume(session, [self._source_map], color = [rgba])
+        self._color = color_name
+        
+    def set_contour(self, contour):
+        self._contour = contour
+        
+    def set_contour_units(self, text):
+        if text not in ['sigma', 'map units']:
+            print('text must be either \'sigma\' or \'map units\'')
+            return
+        else:
+            self._contour_units = text
+    
     
     def set_coupling_constant(self, coupling_constant):
         self._coupling_constant = coupling_constant
@@ -58,16 +107,21 @@ class IsoldeMap(object):
     def set_potential_function(self, func):
         self._potential_function = func
     
+    def get_contour(self):
+        return self._contour, self._contour_units
+    
     def get_map_parameters(self):
         return self._name, self._source_map, self._mask_cutoff, \
-                self._coupling_constant, self._per_atom_coupling, \
-                self._per_atom_coupling_scale_factor
+                self._coupling_constant, self._style, self._color, \
+                self._contour, self._contour_units, self._mask, \
+                self._per_atom_coupling, self._per_atom_coupling_scale_factor
     
     def per_atom_coupling(self):
         return self._per_atom_coupling
     
     def get_per_atom_coupling_params(self):
         return self._per_atom_coupling_scale_factor
+    
     
     # Set the per-atom scale factor for a single atom    
     def set_per_atom_coupling_constant(self, index, value):
@@ -83,9 +137,18 @@ class IsoldeMap(object):
     
     def get_source_map(self):
         return self._source_map
+
+    def get_mask_vis(self):
+        return self._mask
     
     def get_mask_cutoff(self):
         return self._mask_cutoff
+    
+    def get_color(self):
+        return self._color
+    
+    def get_display_style(self):
+        return self._style
     
     def get_coupling_constant(self):
         return self._coupling_constant
