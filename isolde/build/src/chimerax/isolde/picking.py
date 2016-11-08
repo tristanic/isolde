@@ -1,4 +1,4 @@
-def pick_closest_to_line(session, mx, my, atoms, cutoff):
+def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, no_hydrogens = False):
     closest = None
     xyz1, xyz2 = session.view.clip_plane_points(mx, my)
     import numpy
@@ -12,6 +12,10 @@ def pick_closest_to_line(session, mx, my, atoms, cutoff):
     for xyz in zip(xvals, yvals, zvals):
         xyzlist.append(xyz)
     xyzlist = numpy.array(xyzlist)
+    if displayed_only:
+        atoms = atoms.filter(atoms.displays)
+    if no_hydrogens:
+        atoms = atoms.filter(atoms.element_names != 'H')
     atomic_coords = atoms.coords
     from chimerax.core.geometry import find_close_points
     line_indices, atom_indices = find_close_points(xyzlist, atomic_coords, cutoff)

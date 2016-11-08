@@ -10,7 +10,6 @@ class TugAtomsMode(MouseMode):
 
     def __init__(self, session, atoms):
         MouseMode.__init__(self, session)
-        #self._tugger = None
         self._tugging = False
         self._last_xy = None
         self._arrow_model = None
@@ -22,6 +21,9 @@ class TugAtomsMode(MouseMode):
         self._handler = None
         # Atomic array to pick from
         self._atoms = atoms
+    
+    def cleanup(self):
+        self._delete_arrow()
         
     def get_status(self):
         return self._tugging, self._picked_atom, self._xyz0
@@ -33,7 +35,6 @@ class TugAtomsMode(MouseMode):
         x,y = event.position()
         self._xy = (x,y)
         view = self.session.main_view
-        #pick = view.first_intercept(x,y)
         from . import picking
         pick = picking.pick_closest_to_line(self.session, x, y, self._atoms, 0.5)
         if pick is not None:
@@ -89,6 +90,12 @@ class TugAtomsMode(MouseMode):
         a.position = p[0]
         a.display = True
 
+    def _delete_arrow(self):
+        a = self._arrow_model
+        if a is not None:
+            self.session.models.close([a])
+        self._arrow_model = None
+    
 class MouseModeRegistry():
     def __init__(self, session):
         self.session = session
@@ -121,8 +128,11 @@ class MouseModeRegistry():
         if self._existing_modes[name] is not None:
             mode, button, modifiers = self._existing_modes[name]
             mm.bind_mouse_mode(button, modifiers, mode)
+            mode, button, modifiers = self._registered_modes[name]
+            mode.cleanup()
         else:
             mode, button, modifiers = self._registered_modes[name]
             mm.remove_binding(button, modifiers)
+            mode.cleanup()
         self._existing_modes.pop(name)
         self._registered_modes.pop(name)

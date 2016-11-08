@@ -158,8 +158,6 @@ class SimHandler():
                 # All map forces
                 for m in self._maps:
                     self.couple_atom_to_map(i, m)
-                #sh.couple_atoms_to_map(self._topology,f, k, 
-                    #hydrogens = False, per_atom_coupling = 1.0)
 
         
         a1, a2 = sim_bonds.atoms
@@ -220,24 +218,6 @@ class SimHandler():
         f.addPerBondParameter(name = 'individual_k')
         f.setEnergyFunction('-global_k * individual_k * map_potential(x1,y1,z1)')
         return f
-
-
-    # Add an atom to a CustomExternalForce of the form k*((x-x0)^2+(y-y0)^2+(z-z0)^2)
-    # (e.g. to allow it to be manipulated by the mouse or a haptic device).
-    # top: the OpenMM topology object
-    # index: the index of the atom in the overall topology
-    # force_index_lookup: a dict mapping the topology index to the index of the atom
-    # in the force handler.
-    # force: the openmm CustomExternalForce object
-    # k: the spring constant, scaled by the atom's mass
-    # target: a 3-element array or tuple (x0, y0, z0)           
-    def add_atom_to_tugging_force(self, top, index, tug_force_lookup, force, k, target):
-        atom = self._atoms[index]
-        mass = atom.element.mass()
-        k = k/mass
-        params = [k].extend(target)
-        tug_force_lookup_lookup[index] = force.addParticle(index, params)
-
     
     def update_force_in_context(self, force_name, context):
         force = self._custom_external_forces[force_name][0]

@@ -1,7 +1,7 @@
 # vim: set expandtab shiftwidth=4 softtabstop=4:
 
 from chimerax.core.toolshed import BundleAPI
-
+from . import geometry
 
 class _MyAPI(BundleAPI):
 
@@ -18,14 +18,20 @@ class _MyAPI(BundleAPI):
     def start_tool(session, tool_name):
         # 'start_tool' is called to start an instance of the tool
         from .tool import ISOLDE_ToolUI
-        return ISOLDE_ToolUI(session, tool_name)
+        from chimerax.core import tools
+        return tools.get_singleton(session, ISOLDE_ToolUI, 'ISOLDE', create=True)
+        
 
     @staticmethod
     def register_command(command_name):
         # 'register_command' is lazily called when the command is referenced
-        from . import cmd
+        from . import fps
         from chimerax.core.commands import register
-        register(command_name + " start", cmd.fps_start_desc, cmd.fps_start)
-        register(command_name + " stop", cmd.fps_stop_desc, cmd.fps_stop)
+        if command_name == 'fps':
+            register(command_name + " start", fps.fps_start_desc, fps.fps_start)
+            register(command_name + " stop", fps.fps_stop_desc, fps.fps_stop)
+        elif command_name == 'isolde':
+            from . import cmd
+            cmd.register_isolde()
 
 bundle_api = _MyAPI()

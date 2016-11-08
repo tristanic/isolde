@@ -110,7 +110,7 @@ class Isolde():
         self._selected_atoms = None
         # Number of residues before and after each selected residue to add
         # to the mobile selection
-        self._b_and_a_padding = 5
+        self.b_and_a_padding = 5
         # Extra mobile shell of surrounding atoms to provide a soft buffer to
         # the simulation. Whole residues only.
         self._soft_shell_atoms = None
@@ -177,7 +177,7 @@ class Isolde():
         # Number of steps to run in before updating coordinates in ChimeraX
         self.sim_steps_per_update = 50
         # Number of steps per GUI update in minimization mode
-        self.min_steps_per_update = 50
+        self.min_steps_per_update = 100
         # If using the VariableLangevinIntegrator, we define a tolerance
         self._integrator_tolerance = 0.0001
         # ... otherwise, we simply set the time per step
@@ -346,7 +346,7 @@ class Isolde():
         cb.clear()
         cb.addItem('sigma')
         cb.addItem('map units')
-        cb.setCurrentIndex(-1)
+        cb.setCurrentIndex(0)
 
     def _connect_functions(self):
         iw = self.iw
@@ -395,7 +395,7 @@ class Isolde():
             self._change_soft_shell_cutoff
             )
         iw._sim_basic_mobile_b_and_a_spinbox.valueChanged.connect(
-            self._change_b_and_a_padding
+            self._changeb_and_a_padding
             )
         iw._sim_basic_mobile_sel_backbone_checkbox.stateChanged.connect(
             self._change_soft_shell_fix_backbone
@@ -410,7 +410,7 @@ class Isolde():
         self._change_selected_model()
         self._change_selected_chains()
         self._change_soft_shell_cutoff()
-        self._change_b_and_a_padding()
+        self._changeb_and_a_padding()
         self._change_soft_shell_fix_backbone()
         self._change_sim_platform()
         
@@ -623,10 +623,24 @@ class Isolde():
             iw._em_map_model_combo_box.setCurrentText(vol.id_string())
             iw._em_map_cutoff_spin_box.setValue(cutoff)
             iw._em_map_coupling_spin_box.setValue(coupling)
-            iw._em_map_style_combo_box.setCurrentText(style)
-            iw._em_map_color_combo_box.setCurrentText(color)
-            iw._em_map_contour_spin_box.setValue(contour)
-            iw._em_map_contour_units_combo_box.setCurrentText(contour_units)
+            if style is not None:
+                iw._em_map_style_combo_box.setCurrentText(style)
+            else:
+                iw._em_map_style_combo_box.setCurrentIndex(-1)
+            if color is not None:
+                iw._em_map_color_combo_box.setCurrentText(color)
+            else:
+                iw._em_map_color_combo_box.setCurrentIndex(-1)
+            if contour is None:
+                contour = vol.surface_levels[0]
+                if iw._em_map_contour_units_combo_box.currentText() == 'sigma':
+                    sigma = vol.mean_sd_rms()[1]
+                    contour = contour/sigma
+                iw._em_map_contour_spin_box.setValue(contour)
+
+            if contour_units is not None:
+                iw._em_map_contour_units_combo_box.setCurrentText(contour_units)
+
             iw._em_map_masked_checkbox.setCheckState(mask_vis)
             # Map name is our lookup key, so can't change it after it's been added
             iw._em_map_name_field.setEnabled(False)
@@ -669,6 +683,8 @@ class Isolde():
     def _change_selected_model(self):
         if len(self._available_models) == 0:
             return
+        if self._simulation_running:
+            return
         sm = self._sim_selection_mode.name
         iw = self.iw
         if sm == 'whole_model':
@@ -685,11 +701,13 @@ class Isolde():
                 return
             self._selected_model = self._available_models[choice]
             self.session.selection.clear()
-            self._selected_model.selected = True
+            # self._selected_model.selected = True
             self._update_chain_list()
     
     def _change_selected_chains(self,*_):
         if len(self._available_models) == 0:
+            return
+        if self._simulation_running:
             return
         lb = self.iw._sim_basic_mobile_chains_list_box
         m = self._selected_model
@@ -704,8 +722,8 @@ class Isolde():
         from chimerax.core.atomic import selected_atoms
         self._selected_atoms = selected_atoms(self.session)
 
-    def _change_b_and_a_padding(self, *_):
-        self._b_and_a_padding = self.iw._sim_basic_mobile_b_and_a_spinbox.value()
+    def _changeb_and_a_padding(self, *_):
+        self.b_and_a_padding = self.iw._sim_basic_mobile_b_and_a_spinbox.value()
         
     def _change_soft_shell_cutoff(self, *_):
         self.soft_shell_cutoff = self.iw._sim_basic_mobile_sel_within_spinbox.value()
@@ -786,8 +804,11 @@ class Isolde():
 
 
 
-    def add_map(self, name, vol, cutoff, coupling_constant, style, color, contour, contour_units, mask):
+    def add_map(self, name, vol, cutoff, coupling_constant, style = None, 
+                color = None, contour = None, contour_units = None, mask = True):
         if name in self.master_map_list:
+            for key in self.master_map_list:
+                print(key)
             raise Exception('Each map must have a unique name!')
         # Check if this model is a unique volumetric map
         if len(vol.models()) !=1 or not hasattr(vol, 'grid_data'):
@@ -797,6 +818,7 @@ class Isolde():
         new_map = IsoldeMap(self.session, name, vol, cutoff, coupling_constant, style, color, contour, contour_units, mask)
         self.master_map_list[name] = new_map
         self._update_master_map_list_combo_box()
+
         
     def remove_map(self, name):
         result = self.master_map_list.pop(name, 'Not present')
@@ -1009,7 +1031,7 @@ class Isolde():
             # the picked atoms (making sure only one model is selected!),
             # then work back and forward from each picked atom to expand
             # the selection by the specified number of residues.                        
-            pad = self._b_and_a_padding
+            pad = self.b_and_a_padding
             from chimerax.core.atomic import selected_atoms
             import numpy
             selatoms = selected_atoms(self.session)
@@ -1219,8 +1241,10 @@ class Isolde():
                 s_count += 1
         elif self._sim_is_unstable:
             s.minimizeEnergy(maxIterations = steps)
+            c.setVelocitiesToTemperature(self.simulation_temperature)
         elif mode == 'min':
             s.minimizeEnergy(maxIterations = minsteps)
+            c.setVelocitiesToTemperature(self.simulation_temperature)
         elif mode == 'equil':
             s.step(steps)
         else:
@@ -1265,6 +1289,25 @@ class Isolde():
         magnitudes =numpy.sqrt(forcesx*forcesx + forcesy*forcesy + forcesz*forcesz)
         pos = state.getPositions(asNumpy = True)/angstrom
         return pos, max(magnitudes)
+
+    #############
+    # Commands for script/command-line control
+    #############
+
+    def set_sim_selection_mode(self, mode):
+        try:
+            self._sim_selection_mode = self._sim_selection_modes[mode]
+        except KeyError:
+            e = "mode must be one of 'from_picked_atoms', 'chain', 'whole_model', \
+                    'custom', or 'script'"
+            raise Exception(e)
+    
+    def set_sim_mode(self, mode):
+        try:
+            self.sim_mode = self._sim_modes[mode]
+        except KeyError:
+            e = "Mode must be one of 'xtal', 'em' or 'free'"
+            raise Exception(e)
 
 _openmm_initialized = False
 def initialize_openmm():

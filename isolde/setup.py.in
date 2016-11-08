@@ -13,14 +13,14 @@ import sys
 pkg_dir = "PKG_DIR"  # DO NOT CHANGE
 
 description = """
-ISOLDE is an ChimeraX interface to Molecular Dynamics
-Flexible Fitting, or MDFF.
+ISOLDE is an ChimeraX interface to Interactive Molecular Dynamics
+Flexible Fitting, or iMDFF.
 """
 
 setup(
     name="BUNDLE_NAME",
     version="BUNDLE_VERSION",  # PEP 440, should match Development Status below
-    description="MDFF interface",  # one line synopsis
+    description="Interactive molecular dynamics based model building, manipulation and refinement",  # one line synopsis
     long_description=description,  # see above
     author="Tristan Croll",
     author_email="tic20@cam.ac.uk",
@@ -55,7 +55,8 @@ setup(
 
         "Development Status :: 2 - Pre-Alpha",
         "ChimeraX-Bundle :: General :: 1,1 :: PKG_NAME :: ",
-        "ChimeraX-Tool :: ISOLDE :: General :: Molecular Dynamics Flexible Fittin (MDFF)",
+        "ChimeraX-Tool :: ISOLDE :: General :: Interactive Molecular Dynamics Flexible Fitting (iMDFF)",
         "ChimeraX-Command :: fps :: General :: Display graphics FPS rate",
+        "ChimeraX-Command :: isolde :: General :: Command-line control of ISOLDE simulations",
     ],
 )

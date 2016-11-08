@@ -3,7 +3,9 @@
 # Generic class to hold the details of maps to be used in the simulation
 class IsoldeMap(object):
     
-    def __init__(self, session, name, source_map, cutoff, coupling_constant, style, color, contour, contour_units, mask, per_atom_coupling = False):
+    def __init__(self, session, name, source_map, cutoff, coupling_constant, 
+        style = None, color = None, contour = None, contour_units = None, 
+        mask = None, per_atom_coupling = False):
         self.session = session # Handle for current ChimeraX session
         self._name = name     # User-specified name (e.g. '2mFo-DFc')
         self._source_map = source_map # A model currently loaded into ChimeraX
@@ -56,7 +58,8 @@ class IsoldeMap(object):
         if source_map is not None: self._source_map = source_map 
         if cutoff is not None: self._mask_cutoff = cutoff 
         if coupling_constant is not None: self._coupling_constant = coupling_constant 
-        if style is not None: self._style = style 
+        if style is not None: self._style = style
+        if color is not None: self._color = color 
         if contour is not None: self._contour = contour 
         if contour_units is not None: self._contour_units = contour_units 
         if mask is not None: self._mask = mask 
