@@ -1,3 +1,8 @@
+# Pick the atom coming closest to the ray projected from the mouse pointer
+# away from the camera. Only atoms found between the near and far clipping
+# planes and within cutoff of the line will be considered. Optionally the
+# selection can be further limited to include only displayed atoms and/or
+# exclude hydrogens.
 def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, no_hydrogens = False):
     closest = None
     xyz1, xyz2 = session.view.clip_plane_points(mx, my)
@@ -31,4 +36,22 @@ def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, 
                 min_dist = d
     return closest
             
+# Pick the atom closest to an (x,y,z) point in space. Optionally the
+# selection can be limited to include only displayed atoms and/or
+# exclude hydrogens.    
+def pick_closest_to_point(session, xyz, atoms, cutoff, displayed_only = True, no_hydrogens = False):
+    closest = None
+    import numpy
+    if displayed_only:
+        atoms = atoms.filter(atoms.displays)
+    if no_hydrogens:
+        atoms = atoms.filter(atoms.element_names != 'H')
+    atomic_coords = atoms.coords
+    
+    from chimerax.core.geometry import find_closest_points
+    ignore1, ignore2, nearest = find_closest_points([xyz], atomic_coords, cutoff)
+    if nearest is not None:
+        if len(nearest):
+            return atoms[nearest[0]]
+    return
     

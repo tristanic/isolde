@@ -123,6 +123,8 @@ class Isolde():
         self._hard_shell_atoms = None
         # User-definable distance cutoff to define the hard shell
         self.hard_shell_cutoff = 8      # Angstroms
+        # Construct containing all mobile atoms in the simulation
+        self._total_mobile = None
         # Construct containing all atoms that will actually be simulated
         self._total_sim_construct = None
         # List of all bonds in _total_sim_construct
@@ -141,6 +143,23 @@ class Isolde():
         # Are we currently tugging an atom?
         self._currently_tugging = False
         
+        ####
+        # Haptic interfaces
+        ####
+        # Number of connected haptic devices
+        self._num_haptic_devices = None
+        # Array of HapticTugger objects, one for each device
+        self._haptic_devices = []
+        # Atoms currently being tugged by haptic devices
+        self._haptic_tug_atom = []
+        # Highlight the nearest atom?
+        self._haptic_highlight_nearest_atom = []
+        # Current nearest atom
+        self._haptic_current_nearest_atom = []
+        # Nearest atom's normal color
+        self._haptic_current_nearest_atom_color = []
+        # Spring constant felt by atoms tugged by the haptic device
+        self._haptic_force_constant = 2500
         
         ####
         # Settings for handling of maps
@@ -235,6 +254,8 @@ class Isolde():
         
         # To ensure we do only one simulation round per graphics redraw
         self._last_frame_number = None
+        
+        self.initialize_haptics()
 
         self.start_gui(gui)
     
@@ -475,8 +496,25 @@ class Isolde():
         iw._sim_equil_button.clicked.connect(
             self.equilibrate
         )
-        
     
+    # Create a HapticTugger object for each connected haptic device.
+    def initialize_haptics(self):
+        if hasattr(self.session, 'HapticHandler'):
+            hh = self.session.HapticHandler
+            hh.startHaptics()
+            n = self._num_haptic_devices = hh.getNumDevices()
+            d = self._haptic_devices = [None] * n
+            self._haptic_tug_atom = [None] * n
+            self._haptic_tug_index = [-1] * n
+            self._haptic_highlight_nearest_atom = [True] * n
+            self._haptic_current_nearest_atom = [None] * n
+            self._haptic_current_nearest_atom_color = [None] * n
+            from . import haptics
+            for i in range(n):
+                d[i] = haptics.HapticTugger(self.session, i)
+                
+
+
         
     def _update_sim_temperature(self):
         t = self.iw._sim_temp_spin_box.value()
@@ -865,7 +903,7 @@ class Isolde():
         
         # Define fixed selection (whole residues with atoms coming within
         # a cutoff of the mobile selection
-        total_mobile = self._selected_atoms.merge(self._soft_shell_atoms)
+        total_mobile = self._total_mobile = self._selected_atoms.merge(self._soft_shell_atoms)
         self._hard_shell_atoms = self.get_shell_of_residues(
             total_mobile,
             self.hard_shell_cutoff
@@ -1171,6 +1209,8 @@ class Isolde():
         for n in mouse_mode_names:
             self._sim_mouse_modes.remove_mode(n)
         self._mouse_tugger = None
+        for d in self._haptic_devices:
+            d.cleanup()
         
     
     #############################################
@@ -1222,7 +1262,56 @@ class Isolde():
             self._last_tugged_index = None
 
         # If both cur_tug and tugging are false, do nothing
+        
+        # Haptic interaction
+        hh = self.session.HapticHandler
+        from . import picking
+        for d in self._haptic_devices:
+            i = d.index
+            pointer_pos = hh.getPosition(i, scene_coords = True)
+            if self._haptic_highlight_nearest_atom[i] and not d.tugging:
+                a = self._haptic_current_nearest_atom[i]
+                if a is not None:
+                    # set the previously picked atom back to standard
+                    a.draw_mode = 2
+                    a.color = self._haptic_current_nearest_atom_color[i]
+                a = self._haptic_current_nearest_atom[i] = picking.pick_closest_to_point(
+                        self.session, pointer_pos, self._total_mobile,3.0)
+                if a is not None:
+                    a.draw_mode = 1
+                    self._haptic_current_nearest_atom_color[i] = a.color
+                    a.color = [0, 255, 0, 255] # bright green
 
+            b = hh.getButtonStates(i)
+            # Button 0 controls tugging
+            if b[0]:
+                if not d.tugging:
+                    a = self._haptic_tug_atom[i] = picking.pick_closest_to_point(self.session, 
+                        pointer_pos, self._total_mobile, 3.0)
+                    if a is not None:
+                        tug_index = self._haptic_tug_index[i] = self._total_sim_construct.index(a)
+                        # Start the haptic device feedback loop
+                        d.start_tugging(a)
+                        params = [self._haptic_force_constant, *(hh.getPosition(i, scene_coords = True)/10)]
+                        sh.set_custom_external_force_particle_params('tug', tug_index, params)
+                        sh.update_force_in_context('tug', c)
+
+                else:
+                    d.update_target()
+                    # Update the target for the tugged atom in the simulation
+                    tug_index = self._haptic_tug_index[i]
+                    params = [self._haptic_force_constant, *(hh.getPosition(i, scene_coords = True)/10)]
+                    sh.set_custom_external_force_particle_params('tug', tug_index, params)
+                    sh.update_force_in_context('tug', c)
+            else:
+                if d.tugging:
+                    d.stop_tugging()
+                    tug_index = self._haptic_tug_index[i]
+                    sh.set_custom_external_force_particle_params('tug', tug_index, [0,0,0,0])
+                    self._haptic_tug_atom[i] = None
+                    
+            
+        
 
         if self._temperature_changed:
             integrator.setTemperature(self.simulation_temperature)

@@ -35,7 +35,7 @@ class HapticHandler():
         self._event_handler = None
         
         self._arrow_radius = 0.10
-        self._arrow_aspect_ratio = 10
+        self._arrow_aspect_ratio = 3
         
         from chimerax.core.geometry import place
         # Arrow rotation matrix
