@@ -17,7 +17,7 @@ PKG_NAME = chimerax.isolde
 # Source and data files.  By default, all .py files
 # except for setup.py and no data files.
 PYSRCS = $(filter-out setup.py,$(wildcard *.py))
-DATAFILES = 
+DATAFILES =
 
 # ==================================================================
 # Theoretically, no changes should be needed below here.

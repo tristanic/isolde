@@ -1,170 +1,336 @@
 import os
+from math import degrees, radians
 package_directory = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(package_directory, 'molprobity_data')
 
 # Load a MolProbity data set and return a SciPy RegularGridInterpolator 
 # object for later fast interpolation of values
 def generate_interpolator(filename, wrap_axes = True):
-	from scipy.interpolate import RegularGridInterpolator
-	import numpy
-	infile = open(filename, 'r')
-	# Throw away the first line - we don't need it
-	infile.readline()
-	# Get number of dimensions
-	ndim = int(infile.readline().split()[-1])
-	# Throw away the next line - it's just headers
-	infile.readline()
-	lower_bound = []
-	upper_bound= []
-	number_of_bins = []
-	
-	step_size = []
-	first_step = []
-	last_step = []
-	axis = []
-	
-	# Read in the header to get the dimensions and step size for each
-	# axis, and initialise the axis arrays
-	for i in range(ndim):
-		line = infile.readline().split()
-		lb = float(line[2])
-		lower_bound.append(lb)
-		ub = float(line[3])
-		upper_bound.append(ub)
-		nb = int(line[4])
-		number_of_bins.append(nb)
-		
-		ss = (ub - lb)/nb
-		step_size.append(ss)
-		# Values are at the midpoint of each bin
-		fs = lb + ss/2
-		first_step.append(fs)
-		ls = ub - ss/2
-		last_step.append(ls)
-		axis.append(numpy.linspace(fs,ls,nb))
-		
-	infile.close()
-		
-	full_grid = numpy.zeros(number_of_bins)
-	
-	# Slurp in the actual numerical data as a numpy array
-	data = numpy.loadtxt(filename)
-	
-	# Convert each coordinate to an integral number of steps along each
-	# axis
-	axes_ij = []
-	
-	for i in range(ndim):
-		ss = step_size[i]
-		fs = first_step[i]
-		lb = lower_bound[i]
-		axis_vals = data[:,i]
-		axes_ij.append(((axis_vals - ss/2 - lb) / ss).astype(int))
-	
-	full_grid[axes_ij] = data[:,ndim]
-	
-	# At this point we should have the full n-dimensional matrix, with
-	# all values not present in the text file present as zeros.
-	# Now we have to consider periodicity. Since we're just going to
-	# be doing linear interpretation, the easiest approach is to simply
-	# pad the array on all sides with the values from the opposite extreme
-	# of the relevant matrix. This can be handily done with numpy.pad
-	if wrap_axes:
-		full_grid = numpy.pad(full_grid, 1, 'wrap')
-	
-		# ... and we need to extend each of the axes by one step to match
-		for i, a in enumerate(axis):
-			fs = first_step[i]
-			ls = last_step[i]
-			ss = step_size[i]
-			a = numpy.pad(a, 1, mode='constant')
-			a[0] = fs - ss
-			a[-1] = ls + ss
-			axis[i] = a
-			
-	# Finally, convert the axes to radians
-	from math import pi
-	axis = numpy.array(axis)
-	axis = axis/180*pi
-	
-	return RegularGridInterpolator(axis, full_grid, bounds_error = True)
-		
+    from scipy.interpolate import RegularGridInterpolator
+    import numpy
+    infile = open(filename, 'r')
+    # Throw away the first line - we don't need it
+    infile.readline()
+    # Get number of dimensions
+    ndim = int(infile.readline().split()[-1])
+    # Throw away the next line - it's just headers
+    infile.readline()
+    lower_bound = []
+    upper_bound= []
+    number_of_bins = []
+    
+    step_size = []
+    first_step = []
+    last_step = []
+    axis = []
+    
+    # Read in the header to get the dimensions and step size for each
+    # axis, and initialise the axis arrays
+    for i in range(ndim):
+        line = infile.readline().split()
+        lb = float(line[2])
+        lower_bound.append(lb)
+        ub = float(line[3])
+        upper_bound.append(ub)
+        nb = int(line[4])
+        number_of_bins.append(nb)
+        
+        ss = (ub - lb)/nb
+        step_size.append(ss)
+        # Values are at the midpoint of each bin
+        fs = lb + ss/2
+        first_step.append(fs)
+        ls = ub - ss/2
+        last_step.append(ls)
+        axis.append(numpy.linspace(fs,ls,nb))
+        
+    infile.close()
+        
+    full_grid = numpy.zeros(number_of_bins)
+    
+    # Slurp in the actual numerical data as a numpy array
+    data = numpy.loadtxt(filename)
+    
+    # Convert each coordinate to an integral number of steps along each
+    # axis
+    axes_ij = []
+    
+    for i in range(ndim):
+        ss = step_size[i]
+        fs = first_step[i]
+        lb = lower_bound[i]
+        axis_vals = data[:,i]
+        axes_ij.append(((axis_vals - ss/2 - lb) / ss).astype(int))
+    
+    full_grid[axes_ij] = data[:,ndim]
+    
+    # At this point we should have the full n-dimensional matrix, with
+    # all values not present in the text file present as zeros.
+    # Now we have to consider periodicity. Since we're just going to
+    # be doing linear interpretation, the easiest approach is to simply
+    # pad the array on all sides with the values from the opposite extreme
+    # of the relevant matrix. This can be handily done with numpy.pad
+    if wrap_axes:
+        full_grid = numpy.pad(full_grid, 1, 'wrap')
+    
+        # ... and we need to extend each of the axes by one step to match
+        for i, a in enumerate(axis):
+            fs = first_step[i]
+            ls = last_step[i]
+            ss = step_size[i]
+            a = numpy.pad(a, 1, mode='constant')
+            a[0] = fs - ss
+            a[-1] = ls + ss
+            axis[i] = a
+            
+    # Finally, convert the axes to radians
+    from math import pi
+    axis = numpy.array(axis)
+    axis = axis/180*pi
+    
+    return RegularGridInterpolator(axis, full_grid, bounds_error = True)
 
+cis_min = radians(-30)
+cis_max = radians(30)
+trans_min = radians(150)
+trans_max = radians(-150)
 
-		
+    
+def omega_type(omega):
+    if omega >= trans_min or omega <= trans_max:
+        return "trans"
+    elif omega >= cis_min and omega <= cis_max:
+        return "cis"
+    return "twisted"
+
+def log_allow_zero(vals):
+    from math import log
+    import copy
+    return_vals = copy.copy(vals)
+    for i, val in enumerate(vals):
+        if val > 0:
+            return_vals[i] = log(val)
+        else:
+            return_vals[i] = -100
+    return return_vals
+
+        
 class RamaValidator():
-	from math import pi
-	# Define cases. Need to know:
-	# - Case name
-	# - File name
-	# - matching names for current residue
-	# - matching names for next residue (None if no restrictions)
-	# - excluded names for next residue (None if no restrictions)
-	# - peptide omega value (for cis/trans pro, None if no restrictions)
-	
-	cases = {}
-	cases['General'] = {
-		'name': 'General'
-		'file_name': os.path.join(data_dir, 'rama8000-general-noGPIVpreP.data'),
-		'cur_names': ['ARG','HIS','LYS','ASP','GLU','SER','THR','ASN','GLN','CYS','ALA','LEU','MET','PHE','TRP','TYR'],
-		'next': None,
-		'excluded_next': ['PRO'],
-		'omega': None
-		}
-	cases['Glycine'] = {
-		'name': 'Glycine'
-		'file_name': os.path.join(data_dir, 'rama8000-gly-sym.data'),
-		'cur_names': ['GLY'],
-		'next': None,
-		'excluded_next': None,
-		'omega': None
-		}
-	cases['IleVal'] = {
-		'name': 'Isoleucine or valine',
-		'file_name': os.path.join(data_dir, 'rama8000-ileval-nopreP.data'),
-		'cur_names': ['ILE', 'VAL'],
-		'next': None,
-		'excluded_nex': ['PRO'],
-		'omega': None
-		}
-	cases['PrePro'] = {
-		'name': 'Preceding proline',
-		'file_name': os.path.join(data_dir, 'rama8000-prepro-noGP.data'),
-		'cur_names': ['ARG','HIS','LYS','ASP','GLU','SER','THR','ASN','GLN','CYS','ALA','LEU','MET','PHE','TRP','TYR', 'ILE', 'VAL'],
-		'next': ['PRO'],
-		'excluded_next': None,
-		'omega': None
-		}
-	cases['transpro'] = {
-		'name': 'Trans proline',
-		'file_name': os.path.join(data_dir, 'rama8000-transpro.data'),
-		'cur_names': ['PRO'],
-		'next': None,
-		'excluded_next': None,
-		'omega': 'trans'
-		}
-	cases['cispro'] = {
-		'name': 'Cis proline',
-		'file_name': os.path.join(data_dir, 'rama8000-cispro.data'),
-		'cur_names': ['PRO'],
-		'next': None,
-		'excluded_next': None,
-		'omega': 'cis'
-		}
-		
-		
-	
-	def __init__(self):
-		for key, case in self.cases.items():
-			case['validator'] = generate_interpolator(case['file_name'])
-		self.current_structure = None
-		
-				
-	
-	
-			
-		
-	
-	
-	
-		
+    import numpy
+    from math import pi
+    # Define cases.
+    # name: human-readable name for display purposes.
+    # file_name: path to the file containing the contour data.
+    # cutoffs: [outlier cutoff, 1.0, allowed cutoff].
+    # log_cutoffs: cutoffs on a log scale to define color thresholds
+    # color_scale: will hold a ThreeColorScale object to generate colours
+    #               for display based on scores and the defined cutoffs.
+    # validator: handle to hold the RegularGridInterpolator object generated
+    #            at runtime.
+    
+    cases = {}
+    cases['CisPro'] = {
+        'name': 'Cis proline',
+        'file_name': os.path.join(data_dir, 'rama8000-cispro.data'),
+        'cutoffs': [0.002, 1.0, 0.02],
+        'log_cutoffs': numpy.log(numpy.array([0.002, 1.0, 0.02])),
+        'color_scale':  None,
+        'validator': None
+        }
+    cases['TransPro'] = {
+        'name': 'Trans proline',
+        'file_name': os.path.join(data_dir, 'rama8000-transpro.data'),
+        'cutoffs': [0.001, 1.0, 0.02],
+        'log_cutoffs': numpy.log(numpy.array([0.001, 1.0, 0.02])),
+        'color_scale':  None,
+        'validator': None
+        }
+    cases['Glycine'] = {
+        'name': 'Glycine',
+        'file_name': os.path.join(data_dir, 'rama8000-gly-sym.data'),
+        'cutoffs': [0.001, 1.0, 0.02],
+        'log_cutoffs': numpy.log(numpy.array([0.001, 1.0, 0.02])),
+        'color_scale':  None,
+        'validator': None
+        }
+    cases['PrePro'] = {
+        'name': 'Preceding proline',
+        'file_name': os.path.join(data_dir, 'rama8000-prepro-noGP.data'),
+        'cutoffs': [0.001, 1.0, 0.02],
+        'log_cutoffs': numpy.log(numpy.array([0.001, 1.0, 0.02])),
+        'color_scale':  None,
+        'validator': None
+        }
+    cases['IleVal'] = {
+        'name': 'Isoleucine or valine',
+        'file_name': os.path.join(data_dir, 'rama8000-ileval-nopreP.data'),
+        'cutoffs': [0.001, 1.0, 0.02],
+        'log_cutoffs': numpy.log(numpy.array([0.001, 1.0, 0.02])),
+        'color_scale':  None,
+        'validator': None
+        }
+    cases['General'] = {
+        'name': 'General',
+        'file_name': os.path.join(data_dir, 'rama8000-general-noGPIVpreP.data'),
+        'cutoffs': [0.0005, 1.0, 0.02],
+        'log_cutoffs': numpy.log(numpy.array([0.0005, 1.0, 0.02])),
+        'color_scale':  None,
+        'validator': None
+        }
+                
+    
+    def __init__(self, color_scale = 'RWB'):
+        for key, case in self.cases.items():
+            case['validator'] = generate_interpolator(case['file_name'])
+        self.current_structure = None
+        self.rama_scores = None
+        self.rama_types = None
+        self.case_arrays = {
+            'CisPro': [],
+            'TransPro': [],
+            'Glycine': [],
+            'PrePro': [],
+            'IleVal': [],
+            'General': []
+            }
+        self._proline_indices = []
+        self.color_scale = color_scale
+        
+        from . import color
+        for key, case in self.cases.items():
+            minval, maxval, midval = case['log_cutoffs']
+            case['color_scale'] = color.standard_three_color_scale(
+                    self.color_scale, minval, maxval, midval)
+        
+        # Array of color values corresponding to scores
+        self.current_colors = [];
+        
+        
+        
+
+    def rama_bins(scores, types):
+        score_bins = []
+        for score, rt in scores, types:
+            if rt is None:
+                score_bins.append(None)
+                continue
+            outlier, favored, allowed = self.cases[rt]['cutoffs']
+            if score >= allowed:
+                score_bins.append('favored')
+            elif score >= outlier:
+                score_bins.append('allowed')
+            else:
+                score_bins.append('outlier')
+
+
+
+
+    # Initialise the validator with a sequence and matching set of initial
+    # phi, psi and omega values. A value of None in either of the phi or psi 
+    # arrays indicates a chain end/break, which should not be included in
+    # the analysis. The residues will be sorted into their various MolProbity
+    # cases here.
+    def load_structure(self, resnames, phi, psi, omega):
+        import numpy
+        cases = self.cases
+        ca = self.case_arrays
+        # Reset the arrays of indices for each case
+        for key in ca:
+            ca[key] = []
+        self._proline_indices = []
+        
+        num_residues = len(resnames)
+        # Terminal residues will retain a score of -1
+        self.rama_scores = numpy.array([-1] * num_residues, dtype = 'float32')
+        self.rama_types = [None] * num_residues
+        self.current_colors = numpy.array([128,128,128,255] * num_residues, dtype='ubyte').reshape(num_residues,4)
+        
+        for i, resname in enumerate(resnames):
+            if phi[i] == None or psi[i] == None:
+                continue
+        
+            # Determine the category of the residue to match it with a set
+            # of contours. There is a hierarchy to the categories: Pro beats
+            # PrePro for example.
+            
+            if resname == 'PRO':
+                # we need to sort the prolines into cis and trans every
+                # update, so for convenience we'll store a complete list
+                # here.
+                self._proline_indices.append(i)
+                if omega_type(omega[i]) == 'cis':
+                    self.rama_types[i] = 'CisPro'
+                    ca['CisPro'].append(i)
+                else:
+                    self.rama_types[i] = 'TransPro'
+                    ca['TransPro'].append(i)
+            elif resname == 'GLY':
+                self.rama_types[i] = 'Glycine'
+                ca['Glycine'].append(i)
+            elif i < num_residues-1 and resnames[i+1] == 'PRO':
+                self.rama_types[i] = 'PrePro'
+                ca['PrePro'].append(i)
+            elif resname in ('ILE', 'VAL'):
+                self.rama_types[i] = 'IleVal'
+                ca['IleVal'].append(i)
+            else:
+                self.rama_types[i] = 'General'
+                ca['General'].append(i)
+        
+        
+        
+    
+    # Calculate and return Ramachandran scores for the current dihedral
+    # values    
+    def update(self, phi, psi, omega, return_colors = True):
+        # Since prolines may change from cis to trans or vice versa
+        # in the course of a simulation, we need to double-check these
+        # each time.
+        import numpy
+        phipsi = numpy.column_stack([phi,psi])
+        # since None values crash the interpolator, we'll re-cast them to
+        # a value outside the range of the maps
+        phipsi = numpy.where(phipsi == numpy.array(None), 9999, phipsi)
+        ca = self.case_arrays
+        ca['CisPro'] = []
+        ca['TransPro'] = []
+        for i in self._proline_indices:
+            if omega_type(omega[i]) == 'cis':
+                self.rama_types[i] = 'CisPro'
+                ca['CisPro'].append(i)
+            else:
+                self.rama_types[i] = 'TransPro'
+                ca['TransPro'].append(i)
+        for key, indices in self.case_arrays.items():
+            indices = numpy.array(indices, dtype = 'int')
+            case = self.cases[key]
+            v = case['validator']
+            scores = v(phipsi[indices])
+            #print(str(scores))
+            self.rama_scores[indices] = scores
+            if return_colors:
+                if len(scores):
+                    c = case['color_scale']
+                    colors = c.get_colors(log_allow_zero(scores))
+                    self.current_colors[indices] = colors
+                
+        if return_colors:
+            return self.rama_scores, self.current_colors
+        
+        return self.rama_scores
+        
+    
+        
+        
+        
+        
+        
+                
+    
+    
+            
+        
+    
+    
+    
+        

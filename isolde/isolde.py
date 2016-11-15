@@ -129,6 +129,32 @@ class Isolde():
         self._total_sim_construct = None
         # List of all bonds in _total_sim_construct
         self._total_sim_bonds = None
+        # Cache of atom colours prior to starting the simulation, so we
+        # can revert once we're done.
+        self._original_atom_colors = None
+        self._original_atom_draw_modes = None
+        
+        ####
+        # Settings for live tracking of structural quality
+        ####
+        
+        # Load in Ramachandran maps
+        from . import validation
+        # object containing all the Ramachandran contours and lookup functions
+        self.rama_validator = validation.RamaValidator()
+        
+        # Will hold the backbone dihedral information for the simulated
+        # selection
+        self.backbone_dihedrals = None
+        
+        
+        # Do we track and display residues' status on the Ramachandran plot?
+        self.track_rama = True
+        # How often do we want to update our Ramachandran statistics?
+        self.steps_per_rama_update = 10
+        # Internal counter for Ramachandran update
+        self._rama_counter = 0
+        
         
         ####
         # Mouse modes
@@ -509,6 +535,7 @@ class Isolde():
             self._haptic_highlight_nearest_atom = [True] * n
             self._haptic_current_nearest_atom = [None] * n
             self._haptic_current_nearest_atom_color = [None] * n
+            self._haptic_current_nearest_atom_draw_mode = [None] * n
             from . import haptics
             for i in range(n):
                 d[i] = haptics.HapticTugger(self.session, i)
@@ -914,7 +941,17 @@ class Isolde():
         from chimerax.core.atomic import selected_atoms, selected_bonds
         sc = self._total_sim_construct = selected_atoms(self.session)
         sb = self._total_sim_bonds = selected_bonds(self.session)
-
+        
+        # Cache all the colors so we can revert at the end of the simulation
+        self._original_atom_colors = sc.colors
+        self._original_atom_draw_modes = sc.draw_modes
+        # Collect backbone dihedral atoms and prepare the Ramachandran
+        # validator
+        if self.track_rama:
+            from . import dihedrals
+            bd = self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(sc)
+            self.rama_validator.load_structure(bd.resnames, bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
+            bd.CAs.draw_modes = 1
         from . import sim_interface as si
         sh = self._sim_handler = si.SimHandler(self.session)        
                     
@@ -1211,6 +1248,9 @@ class Isolde():
         self._mouse_tugger = None
         for d in self._haptic_devices:
             d.cleanup()
+        self._total_sim_construct.colors = self._original_atom_colors
+        self._total_sim_construct.draw_modes = self._original_atom_draw_modes
+        self._total_sim_construct = None
         
     
     #############################################
@@ -1273,11 +1313,12 @@ class Isolde():
                 a = self._haptic_current_nearest_atom[i]
                 if a is not None:
                     # set the previously picked atom back to standard
-                    a.draw_mode = 2
+                    a.draw_mode = self._haptic_current_nearest_atom_draw_mode[i]
                     a.color = self._haptic_current_nearest_atom_color[i]
                 a = self._haptic_current_nearest_atom[i] = picking.pick_closest_to_point(
                         self.session, pointer_pos, self._total_mobile,3.0)
                 if a is not None:
+                    self._haptic_current_nearest_atom_draw_mode[i] = a.draw_mode
                     a.draw_mode = 1
                     self._haptic_current_nearest_atom_color[i] = a.color
                     a.color = [0, 255, 0, 255] # bright green
@@ -1363,6 +1404,16 @@ class Isolde():
         self._last_frame_number = v.frame_number
         if self._logging:
             self._log('Ran ' + str(self.sim_steps_per_update) + ' steps')
+        if self.track_rama:
+            self.update_ramachandran()
+        
+    def update_ramachandran(self):
+        self._rama_counter = (self._rama_counter + 1) % self.steps_per_rama_update
+        if self._rama_counter == 0:
+            rv = self.rama_validator
+            bd = self.backbone_dihedrals
+            scores, colors = rv.update(bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
+            bd.CAs.colors = colors
         
             
         
@@ -1418,7 +1469,7 @@ class Logger:
         self._log_file = None
     def __call__(self, message, close = False):
         if self.filename is None:
-            return	# No logging
+            return    # No logging
         f = self._log_file
         if f is None:
             self._log_file = f = open(self.filename,'w')

@@ -8,12 +8,13 @@ def time_dihedrals(sel, iterations):
     
     start_time = time()
     for i in range(iterations):
-        for res, phi in dlist.phi.items():
-            phi.get_value()
-        for res, psi in dlist.psi.items():
-            psi.get_value()
-        for res, omega in dlist.omega.items():
-            omega.get_value()
+        for i in range(len(dlist.residues)):
+            if dlist.phi[i] is not None:
+                dlist.phi[i].get_value()
+            if dlist.psi[i] is not None:
+                dlist.psi[i].get_value()
+            if dlist.omega[i] is not None:
+                dlist.omega[i].get_value()
     end_time = time()    
     print('Calculating dihedrals ' + str(iterations) + ' times took ' + str(end_time - start_time) + ' seconds.')
 
@@ -48,16 +49,52 @@ class Dihedral():
 # arrays containing the phi, psi and omega dihedrals    
 class Backbone_Dihedrals():
     def __init__(self, atoms):
-        self.atoms = atoms
         self.residues = atoms.unique_residues
+        # Filter to get only amino acid residues
+        f = []
+        for r in self.residues:
+            f.append(r.PT_AMINO)
+        import numpy
+        f = numpy.array(f, dtype = bool)
+        self.residues = self.residues.filter(f)
         
-        # Dicts holding the dihedrals for each residue, with the residue
-        # as the key
-        self.phi = {}
-        self.psi = {}
-        self.omega = {}
+        self.resnames = self.residues.names
+        self.atoms = self.residues.atoms
+        # We want to colour C-alphas according to their status, so we'll
+        # hold an array of them here.
+        self.CAs = atoms.filter(atoms.names == 'CA')
+        
+        nr = self.num_residues = len(self.residues)
+        
+        # Lists holding the dihedrals for each residue, in the same order
+        # as the lists of residues
+        self.phi = [None] * nr
+        self.phi_vals = [None] * nr
+        self.psi = [None] * nr
+        self.psi_vals = [None] * nr
+        self.omega = [None] * nr
+        self.omega_vals = [None] * nr
         self.find_dihedrals()
+    
+    def get_phi_vals(self):
+        for i, phi in enumerate(self.phi):
+            if phi is not None:
+                self.phi_vals[i] = phi.get_value()
+        return self.phi_vals
+    
+    def get_psi_vals(self):
+        for i, psi in enumerate(self.psi):
+            if psi is not None:
+                self.psi_vals[i] = psi.get_value()
+        return self.psi_vals
         
+    def get_omega_vals(self):
+        for i, omega in enumerate(self.omega):
+            if omega is not None:
+                self.omega_vals[i] = omega.get_value()
+        return self.omega_vals
+
+    
     
     def find_dihedrals(self):
         bond_to_last = False
@@ -67,7 +104,7 @@ class Backbone_Dihedrals():
         last_names = None
         import numpy
         from copy import copy
-        for r in self.residues:
+        for i, r in enumerate(self.residues):
             if not r.PT_AMINO:
                 bond_to_last = False
                 continue
@@ -131,18 +168,17 @@ class Backbone_Dihedrals():
                 psi_atoms = None
             from chimerax.core.atomic import concatenate, Atoms
             if phi_atoms is not None:
-                self.phi[r] = Dihedral(concatenate(phi_atoms, Atoms))
+                self.phi[i] = Dihedral(concatenate(phi_atoms, Atoms))
             if psi_atoms is not None:
-                self.psi[r] = Dihedral(concatenate(psi_atoms, Atoms))
+                self.psi[i] = Dihedral(concatenate(psi_atoms, Atoms))
             if omega_atoms is not None:
-                self.omega[r] = Dihedral(concatenate(omega_atoms, Atoms))
+                self.omega[i] = Dihedral(concatenate(omega_atoms, Atoms))
             
             bond_to_last = bond_to_next
             last_atoms = a
             last_names = names
             #a = next_atoms
             #names = next_names
-            
                 
                     
                     
