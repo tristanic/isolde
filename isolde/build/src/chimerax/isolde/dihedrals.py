@@ -58,6 +58,7 @@ class Backbone_Dihedrals():
         f = numpy.array(f, dtype = bool)
         self.residues = self.residues.filter(f)
         
+        self.residues = self.residues[numpy.lexsort((self.residues.numbers, self.residues.chains.chain_ids))]
         self.resnames = self.residues.names
         self.atoms = self.residues.atoms
         # We want to colour C-alphas according to their status, so we'll
@@ -161,7 +162,7 @@ class Backbone_Dihedrals():
             if bond_to_next:
                 next_atoms = next_residue.atoms
                 next_names = next_atoms.names
-                CA = next_atoms.filter(numpy.in1d(next_names, 'CA'))
+                CA = next_atoms.filter(numpy.in1d(next_names, 'N'))
                 psi_atoms.append(CA)
             else:
                 # C-terminal residues have no psi dihedral

@@ -53,16 +53,18 @@ def generate_interpolator(filename, wrap_axes = True):
     
     # Convert each coordinate to an integral number of steps along each
     # axis
-    axes_ij = []
+    axes = []
+    for i in range(ndim):
+        axes.append([])
     
     for i in range(ndim):
         ss = step_size[i]
         fs = first_step[i]
         lb = lower_bound[i]
         axis_vals = data[:,i]
-        axes_ij.append(((axis_vals - ss/2 - lb) / ss).astype(int))
+        axes[i]=(((axis_vals - ss/2 - lb) / ss).astype(int))
     
-    full_grid[axes_ij] = data[:,ndim]
+    full_grid[axes] = data[:,ndim]
     
     # At this point we should have the full n-dimensional matrix, with
     # all values not present in the text file present as zeros.
