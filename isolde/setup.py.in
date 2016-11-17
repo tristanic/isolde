@@ -32,6 +32,9 @@ setup(
     packages=[
         "PKG_NAME",
     ],
+    package_data={
+		"PKG_NAME": ["molprobity_data/*.data","*.PYMOD_EXT"]
+	},
     install_requires=[
         "ChimeraX-Core >= 0.1",
         # TODO: Should list numpy, OpenMM, simtk, etc.

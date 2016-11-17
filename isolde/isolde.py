@@ -129,10 +129,18 @@ class Isolde():
         self._total_sim_construct = None
         # List of all bonds in _total_sim_construct
         self._total_sim_bonds = None
-        # Cache of atom colours prior to starting the simulation, so we
+        # All other atoms in the current model
+        self._surroundings = None
+        # Cache of atom display parameters prior to starting the simulation, so we
         # can revert once we're done.
         self._original_atom_colors = None
         self._original_atom_draw_modes = None
+        self._original_bond_radii = None
+        self._original_atom_radii = None
+        # Are the surroundings currently hidden?
+        self._surroundings_hidden = False
+        # Do we want to hide surroundings during the simulation?
+        self.hide_surroundings_during_sim = True
         
         ####
         # Settings for live tracking of structural quality
@@ -172,6 +180,8 @@ class Isolde():
         ####
         # Haptic interfaces
         ####
+        # Will be set to true if haptic devices are detected
+        self._use_haptics = False
         # Number of connected haptic devices
         self._num_haptic_devices = None
         # Array of HapticTugger objects, one for each device
@@ -522,6 +532,9 @@ class Isolde():
         iw._sim_equil_button.clicked.connect(
             self.equilibrate
         )
+        iw._sim_hide_surroundings_toggle.stateChanged.connect(
+            self._set_hide_surroundings
+        )
     
     # Create a HapticTugger object for each connected haptic device.
     def initialize_haptics(self):
@@ -539,9 +552,9 @@ class Isolde():
             from . import haptics
             for i in range(n):
                 d[i] = haptics.HapticTugger(self.session, i)
-                
-
-
+            self._use_haptics = True
+        else:
+            self._use_haptics = False
         
     def _update_sim_temperature(self):
         t = self.iw._sim_temp_spin_box.value()
@@ -549,7 +562,6 @@ class Isolde():
         # So we know to update the temperature in any running simulation
         self._temperature_changed = True
         
-    
     ##############################################################
     # Menu control functions to run on key events
     ##############################################################
@@ -724,6 +736,7 @@ class Isolde():
     # Update button states after a simulation has finished
     def _update_menu_after_sim(self):
         self._update_sim_control_button_states()
+    
         
     
     
@@ -866,6 +879,8 @@ class Isolde():
             contour_val = contour_val * map_sigma
         sb.setValue(contour_val)
             
+    def _set_hide_surroundings(self,*_):
+        self.hide_surroundings_during_sim = self.iw._sim_hide_surroundings_toggle.checkState() 
 
 
 
@@ -891,6 +906,8 @@ class Isolde():
             print(name + ' is an unrecognised key.')
         self._update_master_map_list_combo_box()
     
+
+
 
     ##############################################################
     # Simulation prep
@@ -941,10 +958,26 @@ class Isolde():
         from chimerax.core.atomic import selected_atoms, selected_bonds
         sc = self._total_sim_construct = selected_atoms(self.session)
         sb = self._total_sim_bonds = selected_bonds(self.session)
+        import numpy
+        surr = self._surroundings = self._selected_model.atoms.filter(numpy.invert(
+            self._selected_model.atoms.selected))
+        
         
         # Cache all the colors so we can revert at the end of the simulation
         self._original_atom_colors = sc.colors
         self._original_atom_draw_modes = sc.draw_modes
+        self._original_bond_radii = sb.radii
+        self._original_atom_radii = sc.radii
+        
+        sc.selected = False
+        self._hard_shell_atoms.selected = True
+        hsb = selected_bonds(self.session)
+        hsb.radii = 0.1
+        self._hard_shell_atoms.radii = 0.1
+        self._hard_shell_atoms.draw_modes = 3
+        
+        sc.selected = True
+        
         # Collect backbone dihedral atoms and prepare the Ramachandran
         # validator
         if self.track_rama:
@@ -1188,9 +1221,7 @@ class Isolde():
     ##############################################################
     # Simulation on-the-fly control functions
     ##############################################################
-        
-        
-    
+            
     def pause_sim_toggle(self):
         print('This function should toggle pause/resume of the sim')
         if self._simulation_running:
@@ -1248,9 +1279,14 @@ class Isolde():
         self._mouse_tugger = None
         for d in self._haptic_devices:
             d.cleanup()
+        self._surroundings.displays = True
+        self._surroundings_hidden = False
         self._total_sim_construct.colors = self._original_atom_colors
         self._total_sim_construct.draw_modes = self._original_atom_draw_modes
+        self._total_sim_construct.radii = self._original_atom_radii
+        self._total_sim_bonds.radii = self._original_bond_radii
         self._total_sim_construct = None
+        self._surroundings = None
         
     
     #############################################
@@ -1277,6 +1313,17 @@ class Isolde():
         s_max_count = self._sim_startup_rounds
         pos = self._particle_positions
         sc = self._total_sim_construct
+        surr = self._surroundings
+        
+        # Check if we need to hide or show the surroundings
+        if self.hide_surroundings_during_sim:
+            if not self._surroundings_hidden:
+                surr.displays = False
+                self._surroundings_hidden = True
+        elif self._surroundings_hidden:
+            surr.displays = True
+            self._surroundings_hidden = False
+        
         
         # Mouse interaction
         mtug = self._mouse_tugger
@@ -1304,52 +1351,53 @@ class Isolde():
         # If both cur_tug and tugging are false, do nothing
         
         # Haptic interaction
-        hh = self.session.HapticHandler
-        from . import picking
-        for d in self._haptic_devices:
-            i = d.index
-            pointer_pos = hh.getPosition(i, scene_coords = True)
-            if self._haptic_highlight_nearest_atom[i] and not d.tugging:
-                a = self._haptic_current_nearest_atom[i]
-                if a is not None:
-                    # set the previously picked atom back to standard
-                    a.draw_mode = self._haptic_current_nearest_atom_draw_mode[i]
-                    a.color = self._haptic_current_nearest_atom_color[i]
-                a = self._haptic_current_nearest_atom[i] = picking.pick_closest_to_point(
-                        self.session, pointer_pos, self._total_mobile,3.0)
-                if a is not None:
-                    self._haptic_current_nearest_atom_draw_mode[i] = a.draw_mode
-                    a.draw_mode = 1
-                    self._haptic_current_nearest_atom_color[i] = a.color
-                    a.color = [0, 255, 0, 255] # bright green
-
-            b = hh.getButtonStates(i)
-            # Button 0 controls tugging
-            if b[0]:
-                if not d.tugging:
-                    a = self._haptic_tug_atom[i] = picking.pick_closest_to_point(self.session, 
-                        pointer_pos, self._total_mobile, 3.0)
+        if self._use_haptics:
+            hh = self.session.HapticHandler
+            from . import picking
+            for d in self._haptic_devices:
+                i = d.index
+                pointer_pos = hh.getPosition(i, scene_coords = True)
+                if self._haptic_highlight_nearest_atom[i] and not d.tugging:
+                    a = self._haptic_current_nearest_atom[i]
                     if a is not None:
-                        tug_index = self._haptic_tug_index[i] = self._total_sim_construct.index(a)
-                        # Start the haptic device feedback loop
-                        d.start_tugging(a)
+                        # set the previously picked atom back to standard
+                        a.draw_mode = self._haptic_current_nearest_atom_draw_mode[i]
+                        a.color = self._haptic_current_nearest_atom_color[i]
+                    a = self._haptic_current_nearest_atom[i] = picking.pick_closest_to_point(
+                            self.session, pointer_pos, self._total_mobile,3.0)
+                    if a is not None:
+                        self._haptic_current_nearest_atom_draw_mode[i] = a.draw_mode
+                        a.draw_mode = 1
+                        self._haptic_current_nearest_atom_color[i] = a.color
+                        a.color = [0, 255, 0, 255] # bright green
+
+                b = hh.getButtonStates(i)
+                # Button 0 controls tugging
+                if b[0]:
+                    if not d.tugging:
+                        a = self._haptic_tug_atom[i] = picking.pick_closest_to_point(self.session, 
+                            pointer_pos, self._total_mobile, 3.0)
+                        if a is not None:
+                            tug_index = self._haptic_tug_index[i] = self._total_sim_construct.index(a)
+                            # Start the haptic device feedback loop
+                            d.start_tugging(a)
+                            params = [self._haptic_force_constant, *(hh.getPosition(i, scene_coords = True)/10)]
+                            sh.set_custom_external_force_particle_params('tug', tug_index, params)
+                            sh.update_force_in_context('tug', c)
+
+                    else:
+                        d.update_target()
+                        # Update the target for the tugged atom in the simulation
+                        tug_index = self._haptic_tug_index[i]
                         params = [self._haptic_force_constant, *(hh.getPosition(i, scene_coords = True)/10)]
                         sh.set_custom_external_force_particle_params('tug', tug_index, params)
                         sh.update_force_in_context('tug', c)
-
                 else:
-                    d.update_target()
-                    # Update the target for the tugged atom in the simulation
-                    tug_index = self._haptic_tug_index[i]
-                    params = [self._haptic_force_constant, *(hh.getPosition(i, scene_coords = True)/10)]
-                    sh.set_custom_external_force_particle_params('tug', tug_index, params)
-                    sh.update_force_in_context('tug', c)
-            else:
-                if d.tugging:
-                    d.stop_tugging()
-                    tug_index = self._haptic_tug_index[i]
-                    sh.set_custom_external_force_particle_params('tug', tug_index, [0,0,0,0])
-                    self._haptic_tug_atom[i] = None
+                    if d.tugging:
+                        d.stop_tugging()
+                        tug_index = self._haptic_tug_index[i]
+                        sh.set_custom_external_force_particle_params('tug', tug_index, [0,0,0,0])
+                        self._haptic_tug_atom[i] = None
                     
             
         

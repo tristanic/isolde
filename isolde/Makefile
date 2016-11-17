@@ -17,7 +17,11 @@ PKG_NAME = chimerax.isolde
 # Source and data files.  By default, all .py files
 # except for setup.py and no data files.
 PYSRCS = $(filter-out setup.py,$(wildcard *.py))
-DATAFILES =
+DATAFILES = molprobity_data
+
+# Python extension modules
+PYMOD_EXT=so
+PYMOD_FILES=$(wildcard *.$(PYMOD_EXT))
 
 # ==================================================================
 # Theoretically, no changes should be needed below here.
@@ -65,12 +69,13 @@ setup.py: setup.py.in Makefile
 		-e 's,BUNDLE_VERSION,$(BUNDLE_VERSION),' \
 		-e 's,PKG_NAME,$(PKG_NAME),' \
 		-e 's,PKG_DIR,$(PKG_DIR),' \
+		-e 's,PYMOD_EXT,$(PYMOD_EXT),' \
 		< setup.py.in > setup.py
 
-$(PKG_DIR):	$(PYSRCS) $(DATAFILES)
+$(PKG_DIR):	$(PYSRCS) $(DATAFILES) $(PYMOD_FILES)
 	if [ ! -d "$(PKG_DIR)" ]; then mkdir -p $(PKG_DIR); fi
 	$(PYTHON_EXE) -B -m py_compile $(PYSRCS)
-	$(COPY) $(PYSRCS) $(DATAFILES) $(PKG_DIR)
+	$(COPY) $(PYSRCS) $(DATAFILES) $(PYMOD_FILES) $(PKG_DIR)
 
 clean:
 	rm -rf __pycache__ build dist $(WHL_BNDL_NAME).egg-info setup.py

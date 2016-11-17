@@ -181,7 +181,7 @@ class RamaValidator():
         }
                 
     
-    def __init__(self, color_scale = 'RWB'):
+    def __init__(self, color_scale = 'RWG'):
         for key, case in self.cases.items():
             case['validator'] = generate_interpolator(case['file_name'])
         self.current_structure = None

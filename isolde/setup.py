@@ -32,6 +32,9 @@ setup(
     packages=[
         "chimerax.isolde",
     ],
+    package_data={
+		"chimerax.isolde": ["molprobity_data/*.data","*.so"]
+	},
     install_requires=[
         "ChimeraX-Core >= 0.1",
         # TODO: Should list numpy, OpenMM, simtk, etc.
