@@ -11,7 +11,7 @@ CHIMERAX_APP = /home/tic20/apps/chimerax
 # and the ChimeraX toolshed code apparently really wants
 # the "chimerax." part of the package name (for now).
 BUNDLE_NAME = ChimeraX-ISOLDE
-BUNDLE_VERSION = 0.9.1
+BUNDLE_VERSION = 0.9.2
 PKG_NAME = chimerax.isolde
 
 # Source and data files.  By default, all .py files

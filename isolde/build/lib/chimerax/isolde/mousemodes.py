@@ -8,7 +8,7 @@ class TugAtomsMode(MouseMode):
     name = 'tug'
     #icon_file = 'tug.png'
 
-    def __init__(self, session, atoms):
+    def __init__(self, session, atoms, annotations):
         MouseMode.__init__(self, session)
         self._tugging = False
         self._last_xy = None
@@ -21,6 +21,8 @@ class TugAtomsMode(MouseMode):
         self._handler = None
         # Atomic array to pick from
         self._atoms = atoms
+        # Model to draw the arrow into
+        self._annotations = annotations
     
     def cleanup(self):
         self._delete_arrow()
@@ -57,7 +59,7 @@ class TugAtomsMode(MouseMode):
         MouseMode.mouse_up(self, event)
         self._tugging = False
         a = self._arrow_model
-        if a and not a.deleted:
+        if a:
             a.display = False
                 
     def _pull_direction(self, x, y):
@@ -72,28 +74,21 @@ class TugAtomsMode(MouseMode):
         return axyz, -offset
 
     def _draw_arrow(self, xyz1, xyz2, radius = 0.1):
+        from . import geometry        
         a = self._arrow_model
-        if a is None or a.deleted:
-            from chimerax.core.models import Model
+        if a is None:
             s = self.session
-            self._arrow_model = a = Model('Tug arrow', s)
-            from chimerax.core.surface import cone_geometry
-            a.vertices, a.normals, a.triangles  = cone_geometry()
-            a.color = (0,255,0,255)
-            s.models.add([a])
+            self._arrow_model = a = geometry.simple_arrow(radius = radius, 
+                    color = [0,255,0,255])
+            self._annotations.add_drawing(a)
         # Scale and rotate prototype cylinder.
-        from chimerax.core.atomic import structure
-        from numpy import array, float32
-        p = structure._bond_cylinder_placements(xyz1.reshape((1,3)),
-                                                xyz2.reshape((1,3)),
-                                                array([radius],float32))
-        a.position = p[0]
+        geometry.arrow_between_points(a, xyz2, xyz1)
         a.display = True
 
     def _delete_arrow(self):
         a = self._arrow_model
         if a is not None:
-            self.session.models.close([a])
+            self._annotations.remove_drawing(a)
         self._arrow_model = None
     
 class MouseModeRegistry():

@@ -32,6 +32,9 @@ class Dihedral():
         self.residues = atoms.residues
         self.resnames = self.residues.names
         self.resnums = self.residues.numbers
+        # Index of the matching CustomTorsionForce in the simulation so
+        # we can restrain this dihedral as needed
+        self.sim_index = -1
         
         self.value = None
         
@@ -105,6 +108,11 @@ class Backbone_Dihedrals():
         last_names = None
         import numpy
         from copy import copy
+        # Loop through all residues in the selection held by the object,
+        # picking out amino acid residues and storing Atom arrays defining
+        # their phi, psi and omega atoms where applicable. To avoid 
+        # unforseen errors, we'll explicitly check connectivity for the
+        # N- and C-termini of every residue.
         for i, r in enumerate(self.residues):
             if not r.PT_AMINO:
                 bond_to_last = False

@@ -94,6 +94,10 @@ class Isolde():
             stripped_key = key.replace(" ","")
             self._available_colors.pop(stripped_key, None)
         
+        # Model object to hold annotations (arrows, etc.)
+        from chimerax.core.models import Model
+        self._annotations = Model('ISOLDE annotations', self.session)
+        self.session.models.add([self._annotations])
         
         ####
         # Settings for handling of atomic coordinates
@@ -137,6 +141,7 @@ class Isolde():
         self._original_atom_draw_modes = None
         self._original_bond_radii = None
         self._original_atom_radii = None
+        self._original_display_state = None
         # Are the surroundings currently hidden?
         self._surroundings_hidden = False
         # Do we want to hide surroundings during the simulation?
@@ -206,7 +211,20 @@ class Isolde():
         self.master_map_list = {}
         # Are we adding a new map to the simulation list?
         self._add_new_map = True
-
+        
+        
+        ####
+        # Restraints settings
+        ####
+        self.restrain_peptide_bonds = True
+        self.peptide_bond_restraints_k = 200
+        # Range of dihedral values which will be interpreted as a cis peptide
+        # bond (-30 to 30 degrees). If restrain_peptide_bonds is True, anything
+        # outside of this range at the start of the simulation will be forced
+        # to trans.
+        from math import pi 
+        self.cis_peptide_bond_range = (-pi/6, pi/6)
+        
         ####
         # Settings for OpenMM
         ####
@@ -551,7 +569,7 @@ class Isolde():
             self._haptic_current_nearest_atom_draw_mode = [None] * n
             from . import haptics
             for i in range(n):
-                d[i] = haptics.HapticTugger(self.session, i)
+                d[i] = haptics.HapticTugger(self.session, i, self._annotations)
             self._use_haptics = True
         else:
             self._use_haptics = False
@@ -968,6 +986,7 @@ class Isolde():
         self._original_atom_draw_modes = sc.draw_modes
         self._original_bond_radii = sb.radii
         self._original_atom_radii = sc.radii
+        self._original_display_state = self._selected_model.atoms.displays
         
         sc.selected = False
         self._hard_shell_atoms.selected = True
@@ -980,14 +999,21 @@ class Isolde():
         
         # Collect backbone dihedral atoms and prepare the Ramachandran
         # validator
+        from . import dihedrals
+        bd = self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(sc)
         if self.track_rama:
-            from . import dihedrals
-            bd = self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(sc)
             self.rama_validator.load_structure(bd.resnames, bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
             bd.CAs.draw_modes = 1
         from . import sim_interface as si
         sh = self._sim_handler = si.SimHandler(self.session)        
                     
+        # Register each dihedral with the CustomTorsionForce, so we can
+        # restrain them at will during the 
+        for dlist in (bd.phi, bd.psi, bd.omega):
+            for d in dlist:
+                if d is not None:
+                    if -1 not in d.atoms.indices(sc):
+                        d.sim_index = sh.initialize_dihedral_restraint(sc, d)
         
         if self._logging:
             self._log('Generating topology')
@@ -1004,10 +1030,6 @@ class Isolde():
                 per_particle_parameters, per_particle_defaults)
         
         # Crop down maps and convert to potential fields
-        # Timing here can be improved a lot. At the moment we're looping
-        # through all atoms once to generate the topology, and once for
-        # each map (in si.couple_atoms_to_map()). With some rearrangement
-        # this can all be done in a single loop.
         if self.sim_mode in [sm.xtal, sm.em]:
             for mkey in self.master_map_list:
                 m = self.master_map_list[mkey]
@@ -1058,7 +1080,7 @@ class Isolde():
         for key,m in self.master_map_list.items():
             sys.addForce(m.get_potential_function())
         
-        
+        sys.addForce(sh._dihedral_restraint_force)
 
         if self._logging:
             self._log('Choosing integrator')
@@ -1117,7 +1139,7 @@ class Isolde():
         
         # Register simulation-specific mouse modes
         from . import mousemodes
-        mt = self._mouse_tugger = mousemodes.TugAtomsMode(self.session, total_mobile)
+        mt = self._mouse_tugger = mousemodes.TugAtomsMode(self.session, total_mobile, self._annotations)
         self._sim_mouse_modes.register_mode(mt.name, mt, 'right', [])
         
         self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
@@ -1279,7 +1301,7 @@ class Isolde():
         self._mouse_tugger = None
         for d in self._haptic_devices:
             d.cleanup()
-        self._surroundings.displays = True
+        self._selected_model.atoms.displays = self._original_display_state
         self._surroundings_hidden = False
         self._total_sim_construct.colors = self._original_atom_colors
         self._total_sim_construct.draw_modes = self._original_atom_draw_modes
@@ -1369,7 +1391,7 @@ class Isolde():
                         self._haptic_current_nearest_atom_draw_mode[i] = a.draw_mode
                         a.draw_mode = 1
                         self._haptic_current_nearest_atom_color[i] = a.color
-                        a.color = [0, 255, 0, 255] # bright green
+                        a.color = [0, 255, 255, 255] # bright cyan
 
                 b = hh.getButtonStates(i)
                 # Button 0 controls tugging

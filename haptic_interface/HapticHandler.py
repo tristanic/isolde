@@ -266,14 +266,14 @@ class HapticHandler():
             from chimerax.core.models import Model
             s = self.session
             self._arrow_model[i] = a = Model('Haptic tool ' + str(i), s)
-            from chimerax.core.surface import custom_cone_geometry
-            a.vertices, a.normals, a.triangles  = custom_cone_geometry(
+            from chimerax.core.surface import cone_geometry
+            a.vertices, a.normals, a.triangles  = cone_geometry(
                     radius = self._arrow_radius,
                     height = self._arrow_radius * self._arrow_aspect_ratio,
                     nc = 20)
             a.color = (0,255,0,255)
             s.models.add([a])
-        # Scale and rotate prototype cylinder.
+        # Scale and rotate prototype cone.
         from chimerax.core.geometry import place
         r = reference_frame
         r = place.product([r, place.translation(axis_scale*pos)])
