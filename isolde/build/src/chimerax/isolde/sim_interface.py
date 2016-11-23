@@ -88,13 +88,17 @@ class SimHandler():
         index_in_force = force.addTorsion(*indices.tolist(), 1, 0, 0)
         return index_in_force
         
-    def set_dihedral_restraint(self, context, sim_construct, dihedral, target, k):
-        from math import pi
+    def set_dihedral_restraint(self, context, sim_construct, dihedral, target, k, degrees=False):
+        from math import pi, radians
         force = self._dihedral_restraint_force
         atoms = dihedral.atoms
         indices = atoms.indices(sim_construct)
-        force.setTorsionParameters(dihedral.sim_index, *indices.tolist(), 1, target+pi, k)
-        force.updateParametersInContext(context)
+        if degrees:
+            target = radians(target)
+        target += pi
+        force.setTorsionParameters(dihedral.sim_index, *indices.tolist(), 1, target, k)
+        if context is not None:
+            force.updateParametersInContext(context)
     
         
     def register_custom_external_force(self, name, force, global_params, 

@@ -39,10 +39,10 @@ class ISOLDE_ToolUI(ToolInstance):
         
         # Define frames specific to crystallograpy, EM or free mode
         self._xtal_frames = [
-            self.iw._sim_basic_xtal_map_frame
+            self.iw._sim_basic_xtal_map_frame,
             ]
         self._em_frames = [
-            self.iw._sim_basic_em_map_frame
+            self.iw._sim_basic_em_map_frame,
             ]
         self._free_frames = [
             ]
@@ -50,28 +50,35 @@ class ISOLDE_ToolUI(ToolInstance):
         self._sim_mode_frame_lists = [
             self._xtal_frames,
             self._em_frames,
-            self._free_frames
+            self._free_frames,
             ]
         
         # Radio buttons to choose different selection modes
-        self._selection_mode_buttons = [
+        self._selection_mode_buttons = (
             self.iw._sim_basic_by_selected_atoms_button,
             self.iw._sim_basic_by_chain_button,
             self.iw._sim_basic_whole_structure_button,
-            self.iw._sim_basic_custom_selection_button
-            ]        
+            self.iw._sim_basic_custom_selection_button,
+            )        
         
         
         # Define intermediate and expert frames
         self._intermediate_frames = [
-            self.iw._sim_platform_frame
+            self.iw._sim_platform_frame,
             ]
         self._expert_frames = [
             self.iw._force_field_selection_frame,
-            self.iw._sim_basic_custom_selection_button
+            self.iw._sim_basic_custom_selection_button,
             ]
         
+        # Any other frames/widgets that should be hidden at the start
+        self._hidden_at_start = [
+            self.iw._validate_rama_main_frame,
+            ]
         
+        for f in self._hidden_at_start:
+            f.hide()
+                
         # Apply custom palettes to intermediate and expert frames
         from . import palettes
         self._pi = palettes.IntermediatePalette()

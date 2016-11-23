@@ -97,7 +97,8 @@ class SimHandler():
             target = radians(target)
         target += pi
         force.setTorsionParameters(dihedral.sim_index, *indices.tolist(), 1, target, k)
-        force.updateParametersInContext(context)
+        if context is not None:
+            force.updateParametersInContext(context)
     
         
     def register_custom_external_force(self, name, force, global_params, 

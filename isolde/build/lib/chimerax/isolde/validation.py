@@ -84,7 +84,10 @@ def generate_interpolator(filename, wrap_axes = True):
             a[0] = fs - ss
             a[-1] = ls + ss
             axis[i] = a
-            
+    
+    # Replace all zero or negative values with the minimum positive non-zero
+    # value, so that we can use logs
+    full_grid[full_grid<=0] = numpy.min(full_grid[full_grid > 0])         
     # Finally, convert the axes to radians
     from math import pi
     axis = numpy.array(axis)
@@ -104,18 +107,6 @@ def omega_type(omega):
     elif omega >= cis_min and omega <= cis_max:
         return "cis"
     return "twisted"
-
-def log_allow_zero(vals):
-    from math import log
-    import copy
-    return_vals = copy.copy(vals)
-    for i, val in enumerate(vals):
-        if val > 0:
-            return_vals[i] = log(val)
-        else:
-            return_vals[i] = -100
-    return return_vals
-
         
 class RamaValidator():
     import numpy
@@ -129,6 +120,10 @@ class RamaValidator():
     #               for display based on scores and the defined cutoffs.
     # validator: handle to hold the RegularGridInterpolator object generated
     #            at runtime.
+    
+    # Ordered list of keys for the below cases, since dict objects do not
+    # guarantee any particular order.
+    case_keys = ('General', 'Glycine', 'IleVal', 'PrePro', 'CisPro', 'TransPro')
     
     cases = {}
     cases['CisPro'] = {
@@ -187,6 +182,10 @@ class RamaValidator():
         self.current_structure = None
         self.rama_scores = None
         self.rama_types = None
+        # Locally cached array of current phi and psi for plotting purposes
+        self.phipsi = None
+        # Locally cached list of residues for looking up from the plot
+        self.residues = None
         self.case_arrays = {
             'CisPro': [],
             'TransPro': [],
@@ -232,7 +231,8 @@ class RamaValidator():
     # arrays indicates a chain end/break, which should not be included in
     # the analysis. The residues will be sorted into their various MolProbity
     # cases here.
-    def load_structure(self, resnames, phi, psi, omega):
+    def load_structure(self, residues, resnames, phi, psi, omega):
+        self.residues = residues
         import numpy
         cases = self.cases
         ca = self.case_arrays
@@ -246,7 +246,12 @@ class RamaValidator():
         self.rama_scores = numpy.array([-1] * num_residues, dtype = 'float32')
         self.rama_types = [None] * num_residues
         self.current_colors = numpy.array([128,128,128,255] * num_residues, dtype='ubyte').reshape(num_residues,4)
-        
+
+        phipsi = numpy.column_stack([phi,psi])
+        # since None values crash the interpolator, we'll re-cast them to
+        # a value outside the range of the maps
+        self.phipsi = numpy.where(phipsi == numpy.array(None), 9999, phipsi)
+
         for i, resname in enumerate(resnames):
             if phi[i] == None or psi[i] == None:
                 continue
@@ -279,12 +284,32 @@ class RamaValidator():
                 self.rama_types[i] = 'General'
                 ca['General'].append(i)
         
-        
+    def reset(self):
+        '''
+        Release the current structure and reset phi, psi etc. to None.
+        '''
+        self.current_structure = None
+        self.rama_scores = None
+        self.rama_types = None
+        # Locally cached array of current phi and psi for plotting purposes
+        self.phipsi = None
+        self.case_arrays = {
+            'CisPro': [],
+            'TransPro': [],
+            'Glycine': [],
+            'PrePro': [],
+            'IleVal': [],
+            'General': []
+            }
+        self.current_colors = []
+            
         
     
-    # Calculate and return Ramachandran scores for the current dihedral
-    # values    
     def update(self, phi, psi, omega, return_colors = True):
+        '''
+        Calculate and return Ramachandran scores for the current dihedral
+        values
+        '''
         # Since prolines may change from cis to trans or vice versa
         # in the course of a simulation, we need to double-check these
         # each time.
@@ -292,7 +317,7 @@ class RamaValidator():
         phipsi = numpy.column_stack([phi,psi])
         # since None values crash the interpolator, we'll re-cast them to
         # a value outside the range of the maps
-        phipsi = numpy.where(phipsi == numpy.array(None), 9999, phipsi)
+        self.phipsi = numpy.where(phipsi == numpy.array(None), 9999, phipsi)
         ca = self.case_arrays
         ca['CisPro'] = []
         ca['TransPro'] = []
@@ -307,13 +332,13 @@ class RamaValidator():
             indices = numpy.array(indices, dtype = 'int')
             case = self.cases[key]
             v = case['validator']
-            scores = v(phipsi[indices])
+            scores = v(phipsi[indices]).astype(float)
             #print(str(scores))
             self.rama_scores[indices] = scores
             if return_colors:
                 if len(scores):
                     c = case['color_scale']
-                    colors = c.get_colors(log_allow_zero(scores))
+                    colors = c.get_colors(numpy.log(scores))
                     self.current_colors[indices] = colors
                 
         if return_colors:
@@ -321,9 +346,110 @@ class RamaValidator():
         
         return self.rama_scores
         
+class RamaPlot():
     
+    def __init__(self, session, container, validator):
+        self.session = session
+        self.container = container
+        self.validator = validator
+        self.current_case = None
+        
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_qt5agg import (
+            FigureCanvasQTAgg as FigureCanvas,
+            NavigationToolbar2QT as NavigationToolbar
+            )
+        
+        fig = self.figure = Figure()
+        
+        axes = self.axes = fig.add_subplot(111)
+        
+        axes.set_xticks([-120,-60,0,60,120])
+        axes.set_yticks([-120,-60,0,60,120])
+        #axes.set_xticklabels(axes.get_xticklabels(), rotation=60)
+        axes.set_xlim(-180,180)
+        axes.set_ylim(-180,180)
+        axes.minorticks_on()
+        axes.autoscale(enable=False)
         
         
+        canvas = self.canvas = FigureCanvas(fig)
+        self.resize_cid = self.canvas.mpl_connect('resize_event', self.on_resize)
+        container.addWidget(canvas)
+        
+        self.change_case('General')
+        
+    def on_resize(self, *_):
+        axes = self.axes
+        axes.set_xlim(-180,180)
+        axes.set_ylim(-180,180)
+        axes.set_xticks([-120,-60,0,60,120])
+        axes.set_yticks([-120,-60,0,60,120])
+        axes.autoscale(enable=False)
+        self.scatter.remove()
+        self.canvas.draw()
+        self.background = self.canvas.copy_from_bbox(self.axes.bbox)
+        self.axes.add_artist(self.scatter)
+        self.canvas.draw()
+    
+    def on_pick(self, event):
+        ind = event.ind[0]
+        res_index = self.validator.case_arrays[self.current_case][ind]
+        picked_residue = self.validator.residues[res_index]
+        v = self.session.main_view
+        center = picked_residue.center
+        radius = 5.0
+        v.center_of_rotation = center
+        bounds = picked_residue.atoms.scene_bounds
+        bounds.xyz_min = bounds.xyz_min - radius
+        bounds.xyz_max = bounds.xyz_max + radius
+        radius += bounds.radius()
+        v.view_all(bounds)
+        cam = v.camera
+        vd = cam.view_direction()
+        cp = v.clip_planes
+        cp.set_clip_position('near', center - radius*vd, cam)
+        cp.set_clip_position('far', center + radius*vd, cam)
+        picked_residue.structure.selected=False
+        picked_residue.atoms.selected=True    
+        
+    def change_case(self, case_key):
+        self.current_case = case_key
+        import numpy
+        case_data = self.validator.cases[case_key]['validator']
+        from operator import itemgetter
+        contours = itemgetter(0,2)(self.validator.cases[case_key]['cutoffs'])
+        grid = numpy.degrees(case_data.grid)
+        values = numpy.rot90(numpy.fliplr(case_data.values)).astype(float)
+        logvalues = self.logvalues = numpy.log(values)
+        self.axes.clear()
+        self.axes.contour(*grid, values, contours)
+        self.axes.pcolor(*grid, logvalues, cmap='BuGn')
+          
+        self.canvas.draw()
+        # Cache the contour plot for faster animation
+        self.background = self.canvas.copy_from_bbox(self.axes.bbox)
+        # Create a scatter plot stub to write the (phi,psi) coordinates into
+        from math import log
+        P = self.P_limits = [0, -log(contours[0])]
+        self.scatter = self.axes.scatter((0),(0), cmap='bwr', picker = 2.0)
+        self.canvas.mpl_connect('pick_event', self.on_pick)
+        
+    def update_scatter(self, *_):
+        import numpy
+        key = self.current_case
+        indices = self.validator.case_arrays[key]
+        if not len(indices):
+            return
+        phipsi = self.validator.phipsi[indices].astype(float)
+        logscores = numpy.log(self.validator.rama_scores[indices])
+        if phipsi is not None and len(phipsi):
+            self.canvas.restore_region(self.background)
+            self.scatter.set_offsets(numpy.degrees(phipsi))
+            self.scatter.set_clim(self.P_limits)
+            self.scatter.set_array(-logscores)
+            self.axes.draw_artist(self.scatter)
+            self.canvas.blit(self.axes.bbox)
         
         
         

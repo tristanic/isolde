@@ -80,22 +80,25 @@ class Backbone_Dihedrals():
         self.omega_vals = [None] * nr
         self.find_dihedrals()
     
-    def get_phi_vals(self):
-        for i, phi in enumerate(self.phi):
-            if phi is not None:
-                self.phi_vals[i] = phi.get_value()
+    def get_phi_vals(self, update = True):
+        if update:
+            for i, phi in enumerate(self.phi):
+                if phi is not None:
+                    self.phi_vals[i] = phi.get_value()
         return self.phi_vals
     
-    def get_psi_vals(self):
-        for i, psi in enumerate(self.psi):
-            if psi is not None:
-                self.psi_vals[i] = psi.get_value()
+    def get_psi_vals(self, update = True):
+        if update:
+            for i, psi in enumerate(self.psi):
+                if psi is not None:
+                    self.psi_vals[i] = psi.get_value()
         return self.psi_vals
         
-    def get_omega_vals(self):
-        for i, omega in enumerate(self.omega):
-            if omega is not None:
-                self.omega_vals[i] = omega.get_value()
+    def get_omega_vals(self, update = True):
+        if update:
+            for i, omega in enumerate(self.omega):
+                if omega is not None:
+                    self.omega_vals[i] = omega.get_value()
         return self.omega_vals
 
     

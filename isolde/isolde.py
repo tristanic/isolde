@@ -155,6 +155,10 @@ class Isolde():
         from . import validation
         # object containing all the Ramachandran contours and lookup functions
         self.rama_validator = validation.RamaValidator()
+        # Generic widget object holding the Ramachandran plot
+        self._rama_plot_window = None
+        # Object holding Ramachandran plot information and controls
+        self.rama_plot = None
         
         # Will hold the backbone dihedral information for the simulated
         # selection
@@ -164,7 +168,7 @@ class Isolde():
         # Do we track and display residues' status on the Ramachandran plot?
         self.track_rama = True
         # How often do we want to update our Ramachandran statistics?
-        self.steps_per_rama_update = 10
+        self.steps_per_rama_update = 5
         # Internal counter for Ramachandran update
         self._rama_counter = 0
         
@@ -228,7 +232,9 @@ class Isolde():
         ####
         # Settings for OpenMM
         ####
-
+        
+        # The actual simulation object
+        self.sim = None
         # Placeholder for the sim_interface.SimHandler object used to perform
         # simulation setup and management
         self._sim_handler = None
@@ -325,6 +331,7 @@ class Isolde():
         self.gui = gui
         self.iw = gui.iw
         
+        
         # Any values in the Qt Designer .ui file are placeholders only.
         # Combo boxes need to be repopulated, and variables need to be
         # set to match any saved state.
@@ -352,8 +359,12 @@ class Isolde():
         self._update_model_list()
         
         
+        
         # Work out menu state based on current ChimeraX session
         self._update_sim_control_button_states()
+        
+        # Create the basic MatPlotLib canvas for the Ramachandran plot
+        self._prepare_ramachandran_plot()
         
     def _populate_menus_and_update_params(self):
         iw = self.iw
@@ -422,7 +433,28 @@ class Isolde():
         cb.addItem('sigma')
         cb.addItem('map units')
         cb.setCurrentIndex(0)
-
+        
+        # Populate the Ramachandran plot case selector with available
+        # cases
+        cb = iw._validate_rama_case_combo_box
+        cb.clear()
+        val = self.rama_validator
+        for key in val.case_keys:
+            cb.addItem(val.cases[key]['name'], key)
+        
+    
+    def _prepare_ramachandran_plot(self):
+        '''
+        Prepare an empty MatPlotLib figure to put the Ramachandran plots in.
+        '''
+        from . import validation
+        iw = self.iw
+        container = self._rama_plot_window = iw._validate_rama_plot_layout
+        self._rama_plot = validation.RamaPlot(self.session, container, self.rama_validator)
+        
+        
+    
+    
     def _connect_functions(self):
         iw = self.iw
         ####
@@ -522,7 +554,26 @@ class Isolde():
          # We want to start with the EM map chooser hidden
         self._hide_em_map_chooser()
         
-                    
+        ####
+        # Restraints tab
+        ####            
+        iw._restraints_pep_go_button.clicked.connect(
+            self._change_peptide_bond_restraints
+            )
+        
+        ####
+        # Validation tab
+        ####
+        
+        iw._validate_rama_show_button.clicked.connect(
+            self._show_rama_plot
+            )
+        iw._validate_rama_hide_button.clicked.connect(
+            self._hide_rama_plot
+            )
+        iw._validate_rama_case_combo_box.currentIndexChanged.connect(
+            self._change_rama_case
+            )
         
         
         ####
@@ -755,6 +806,22 @@ class Isolde():
     def _update_menu_after_sim(self):
         self._update_sim_control_button_states()
     
+    
+    ####
+    # Validation tab
+    ####
+    def _show_rama_plot(self, *_):
+        self.iw._validate_rama_stub_frame.hide()
+        self.iw._validate_rama_main_frame.show()
+    
+    def _hide_rama_plot(self, *_):
+        self.iw._validate_rama_main_frame.hide()
+        self.iw._validate_rama_stub_frame.show()
+    
+    
+    def _change_rama_case(self, *_):
+        case_key = self.iw._validate_rama_case_combo_box.currentData()
+        self._rama_plot.change_case(case_key)
         
     
     
@@ -924,6 +991,47 @@ class Isolde():
             print(name + ' is an unrecognised key.')
         self._update_master_map_list_combo_box()
     
+    ##############################################################
+    # Interactive restraints functions
+    ##############################################################
+    
+    def _change_peptide_bond_restraints(self, *_):
+        '''
+        Menu-driven function to turn peptide bond restraints on/off
+        for some subset of residues.
+        '''
+        enable = bool(self.iw._restraints_pep_on_off_combo_box.currentIndex())
+        selected = bool(self.iw._restraints_pep_all_sel_combo_box.currentIndex())
+        
+        bd = self.backbone_dihedrals
+        
+        if selected:
+            from chimerax.core.atomic import selected_atoms
+            sel = selected_atoms(self.session)
+        else:
+            sel = self._total_mobile
+        
+        res = sel.unique_residues
+        
+        if enable:
+            k = self.peptide_bond_restraints_k
+        else:
+            k = 0
+        
+        omegas = []
+        
+        for r in res:
+            rindex = bd.residues.index(r)
+            if rindex != -1:
+                omegas.append(bd.omega[rindex])
+        
+        if enable:
+            self.apply_peptide_bond_restraints(omegas)
+        else:
+            self.remove_peptide_bond_restraints(omegas)    
+                
+                    
+                    
 
 
 
@@ -1002,7 +1110,8 @@ class Isolde():
         from . import dihedrals
         bd = self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(sc)
         if self.track_rama:
-            self.rama_validator.load_structure(bd.resnames, bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
+            self.rama_validator.load_structure(bd.residues, bd.resnames, 
+                bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
             bd.CAs.draw_modes = 1
         from . import sim_interface as si
         sh = self._sim_handler = si.SimHandler(self.session)        
@@ -1014,6 +1123,10 @@ class Isolde():
                 if d is not None:
                     if -1 not in d.atoms.indices(sc):
                         d.sim_index = sh.initialize_dihedral_restraint(sc, d)
+        
+        # If we wish to apply peptide bond restraints, initialise them here
+        if self.restrain_peptide_bonds:
+            self.apply_peptide_bond_restraints(bd.omega, target = None)
         
         if self._logging:
             self._log('Generating topology')
@@ -1311,6 +1424,67 @@ class Isolde():
         self._surroundings = None
         
     
+    ####
+    # Restraint controls
+    ####
+    def apply_peptide_bond_restraints(self, dihedrals, target = None, units = 'deg'):
+        '''
+        Apply restraints to a list of omega dihedrals. If target is None,
+        then each dihedral will be automatically restrained to trans or
+        cis according to its starting configuration. Otherwise, the target
+        may be a value (interpreted as degrees if units = 'deg' or radians
+        if units = 'rad'), or either 'trans' or 'cis'.
+        '''
+        from numbers import Number
+        if units not in ('deg','rad'):
+            raise Exception('Units should be either "deg" or "rad"')
+        
+        cr = self.cis_peptide_bond_range
+        sh = self._sim_handler
+        sc = self._total_sim_construct
+        k = self.peptide_bond_restraints_k
+        sim = self.sim
+        context = None
+        if sim is not None and hasattr(sim, 'context'):
+            context = sim.context
+        
+        from math import pi, radians
+        if target == 'trans':
+            t = pi
+        elif target == 'cis':
+            t = 0.0
+        elif isinstance(target, Number):
+            if units == 'deg':
+                t = radians(target)
+            else:
+                t = target
+        elif target is not None:
+            raise Exception('Target must be either a number, "trans", "cis", or None')
+        
+        
+        for d in dihedrals:
+            if d is not None:
+                if target is None:
+                    dval = d.get_value()
+                    if dval < cr[1] and dval > cr[0]:
+                        t = 0
+                    else:
+                        t = pi
+                sh.set_dihedral_restraint(context, sc, d, t, k)
+                    
+    def remove_peptide_bond_restraints(self, dihedrals):
+        '''
+        Remove restraints on a list of peptide bonds (actually, just set
+        their spring constants to zero). Simulation must already be running.
+        '''
+        sc = self._total_sim_construct
+        sh = self._sim_handler
+        context = self.sim.context
+        for d in dihedrals:
+            if d is not None:
+                sh.set_dihedral_restraint(context, sc, d, 0, 0)        
+
+
     #############################################
     # Main simulation functions to be run once per GUI update
     #############################################
