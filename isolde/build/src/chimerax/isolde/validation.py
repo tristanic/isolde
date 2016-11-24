@@ -176,7 +176,7 @@ class RamaValidator():
         }
                 
     
-    def __init__(self, color_scale = 'RWG'):
+    def __init__(self, color_scale = 'PiYG'):
         for key, case in self.cases.items():
             case['validator'] = generate_interpolator(case['file_name'])
         self.current_structure = None
@@ -232,25 +232,35 @@ class RamaValidator():
     # the analysis. The residues will be sorted into their various MolProbity
     # cases here.
     def load_structure(self, residues, resnames, phi, psi, omega):
-        self.residues = residues
+        ores, ophi, opsi, oomega = [residues, phi, psi, omega]
         import numpy
+        phipsi = numpy.column_stack([phi,psi])
+        # Filter out any residues missing either phi or psi
+        none_filter = self.none_filter = numpy.where(
+            numpy.invert(numpy.any(phipsi == numpy.array(None), axis = 1)))
+        phipsi = self.phipsi = phipsi[none_filter]
+        residues = self.residues = numpy.array(residues)[none_filter]
+        resnames = self.resnames = resnames[none_filter]
+        phi = numpy.array(phi)[none_filter]
+        psi = numpy.array(psi)[none_filter]
+        omega = numpy.array(omega)[none_filter]
+
+
+        self.residues = residues
         cases = self.cases
         ca = self.case_arrays
         # Reset the arrays of indices for each case
         for key in ca:
             ca[key] = []
         self._proline_indices = []
-        
+        num_all_residues = len(ores)
         num_residues = len(resnames)
         # Terminal residues will retain a score of -1
         self.rama_scores = numpy.array([-1] * num_residues, dtype = 'float32')
         self.rama_types = [None] * num_residues
-        self.current_colors = numpy.array([128,128,128,255] * num_residues, dtype='ubyte').reshape(num_residues,4)
+        self.output_colors = numpy.array([128,128,128,255] * num_all_residues, dtype='ubyte').reshape(num_all_residues,4)
+        self.current_colors = self.output_colors[none_filter]
 
-        phipsi = numpy.column_stack([phi,psi])
-        # since None values crash the interpolator, we'll re-cast them to
-        # a value outside the range of the maps
-        self.phipsi = numpy.where(phipsi == numpy.array(None), 9999, phipsi)
 
         for i, resname in enumerate(resnames):
             if phi[i] == None or psi[i] == None:
@@ -283,6 +293,8 @@ class RamaValidator():
             else:
                 self.rama_types[i] = 'General'
                 ca['General'].append(i)
+        # Calculate the current scores
+        self.update(ophi,opsi,oomega)
         
     def reset(self):
         '''
@@ -317,7 +329,7 @@ class RamaValidator():
         phipsi = numpy.column_stack([phi,psi])
         # since None values crash the interpolator, we'll re-cast them to
         # a value outside the range of the maps
-        self.phipsi = numpy.where(phipsi == numpy.array(None), 9999, phipsi)
+        phipsi = self.phipsi = phipsi[self.none_filter]
         ca = self.case_arrays
         ca['CisPro'] = []
         ca['TransPro'] = []
@@ -342,7 +354,8 @@ class RamaValidator():
                     self.current_colors[indices] = colors
                 
         if return_colors:
-            return self.rama_scores, self.current_colors
+            self.output_colors[self.none_filter] = self.current_colors
+            return self.rama_scores, self.output_colors
         
         return self.rama_scores
         
@@ -434,6 +447,7 @@ class RamaPlot():
         P = self.P_limits = [0, -log(contours[0])]
         self.scatter = self.axes.scatter((0),(0), cmap='bwr', picker = 2.0)
         self.canvas.mpl_connect('pick_event', self.on_pick)
+        self.update_scatter()
         
     def update_scatter(self, *_):
         import numpy

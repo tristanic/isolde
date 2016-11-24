@@ -159,7 +159,8 @@ class Isolde():
         self._rama_plot_window = None
         # Object holding Ramachandran plot information and controls
         self.rama_plot = None
-        
+        # Currently chosen model for analysis outside of a simulation context
+        self._current_rama_model = None
         # Will hold the backbone dihedral information for the simulated
         # selection
         self.backbone_dihedrals = None
@@ -574,6 +575,9 @@ class Isolde():
         iw._validate_rama_case_combo_box.currentIndexChanged.connect(
             self._change_rama_case
             )
+        iw._validate_rama_go_button.clicked.connect(
+            self._rama_static_plot
+            )
         
         
         ####
@@ -639,6 +643,7 @@ class Isolde():
         self.iw._sim_basic_whole_model_combo_box.clear()
         self.iw._sim_basic_by_chain_model_combo_box.clear()
         self.iw._em_map_model_combo_box.clear()
+        self.iw._validate_rama_model_combo_box.clear()
         models = self.session.models.list()
         atomic_model_list = []
         volume_model_list = []
@@ -660,6 +665,7 @@ class Isolde():
                     continue
         self.iw._sim_basic_whole_model_combo_box.addItems(atomic_model_list)
         self.iw._sim_basic_by_chain_model_combo_box.addItems(atomic_model_list)
+        self.iw._validate_rama_model_combo_box.addItems(atomic_model_list)
         self.iw._em_map_model_combo_box.addItems(volume_model_list)
 
     def _update_chain_list(self):
@@ -813,16 +819,48 @@ class Isolde():
     def _show_rama_plot(self, *_):
         self.iw._validate_rama_stub_frame.hide()
         self.iw._validate_rama_main_frame.show()
+        if self._simulation_running and self.track_rama:
+            self._rama_go_live()
     
     def _hide_rama_plot(self, *_):
         self.iw._validate_rama_main_frame.hide()
         self.iw._validate_rama_stub_frame.show()
+        self._rama_go_static()
     
     
     def _change_rama_case(self, *_):
         case_key = self.iw._validate_rama_case_combo_box.currentData()
         self._rama_plot.change_case(case_key)
         
+    def _rama_go_live(self, *_):
+        if 'rama_plot_update' not in self._event_handler.list_event_handlers():
+            self._event_handler.add_event_handler('rama_plot_update',
+                                                  'new frame',
+                                                  self._rama_plot.update_scatter)
+        self.iw._validate_rama_sel_combo_box.setDisabled(True)
+        self.iw._validate_rama_go_button.setDisabled(True)
+        self.iw._validate_rama_model_combo_box.setDisabled(True)
+    
+    def _rama_go_static(self, *_):
+        if 'rama_plot_update' in self._event_handler.list_event_handlers():
+            self._event_handler.remove_event_handler('rama_plot_update')
+        self.iw._validate_rama_sel_combo_box.setEnabled(True)
+        self.iw._validate_rama_go_button.setEnabled(True)
+        self.iw._validate_rama_model_combo_box.setEnabled(True)
+                                                          
+    def _rama_static_plot(self, *_):
+        model_id = self.iw._validate_rama_model_combo_box.currentText()
+        model = self._available_models[model_id]
+        whole_model = bool(self.iw._validate_rama_sel_combo_box.currentIndex())
+        if whole_model:
+            sel = model.atoms
+        else:
+            sel = model.atoms.filter(model.atoms.selected)
+        from . import dihedrals
+        bd = self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(sel)
+        self.rama_validator.load_structure(bd.residues, bd.resnames, 
+                bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
+        self._rama_plot.update_scatter()
     
     
     ##############################################################
@@ -850,6 +888,7 @@ class Isolde():
             return
         sm = self._sim_selection_mode.name
         iw = self.iw
+        choice = None
         if sm == 'whole_model':
             choice = iw._sim_basic_whole_model_combo_box.currentText()
             if choice == '':
@@ -866,6 +905,22 @@ class Isolde():
             self.session.selection.clear()
             # self._selected_model.selected = True
             self._update_chain_list()
+        if choice is not None:
+            iw._sim_basic_whole_model_combo_box.setCurrentText(choice)
+            iw._sim_basic_by_chain_model_combo_box.setCurrentText(choice)
+            iw._validate_rama_model_combo_box.setCurrentText(choice)
+        self._change_rama_model()
+    
+    def _change_rama_model(self):
+        if len(self._available_models) == 0:
+            return
+        if self._simulation_running:
+            return
+        choice = self.iw._validate_rama_model_combo_box.currentText()
+        if choice == '':
+            return
+        self._current_rama_model = self._available_models[choice]
+        
     
     def _change_selected_chains(self,*_):
         if len(self._available_models) == 0:
@@ -1113,6 +1168,7 @@ class Isolde():
             self.rama_validator.load_structure(bd.residues, bd.resnames, 
                 bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
             bd.CAs.draw_modes = 1
+            self._rama_go_live()
         from . import sim_interface as si
         sh = self._sim_handler = si.SimHandler(self.session)        
                     
@@ -1422,6 +1478,10 @@ class Isolde():
         self._total_sim_bonds.radii = self._original_bond_radii
         self._total_sim_construct = None
         self._surroundings = None
+        if self.track_rama:
+            # Update one last time
+            self._rama_plot.update_scatter()
+            self._rama_go_static()
         
     
     ####

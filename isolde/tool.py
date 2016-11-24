@@ -22,7 +22,7 @@ class ISOLDE_ToolUI(ToolInstance):
         self.tool_window.manage(placement=None)
         parent = self.tool_window.ui_area
         pp = parent.parent()
-        pp.resize(480,700) 
+        pp.resize(480,750) 
 
         from PyQt5 import QtWidgets
         from . import isoldewidget

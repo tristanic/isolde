@@ -85,6 +85,8 @@ class Backbone_Dihedrals():
             for i, phi in enumerate(self.phi):
                 if phi is not None:
                     self.phi_vals[i] = phi.get_value()
+                else:
+                    self.phi_vals[i] = None
         return self.phi_vals
     
     def get_psi_vals(self, update = True):
@@ -92,6 +94,8 @@ class Backbone_Dihedrals():
             for i, psi in enumerate(self.psi):
                 if psi is not None:
                     self.psi_vals[i] = psi.get_value()
+                else:
+                    self.phi_vals[i] = None
         return self.psi_vals
         
     def get_omega_vals(self, update = True):
@@ -99,6 +103,8 @@ class Backbone_Dihedrals():
             for i, omega in enumerate(self.omega):
                 if omega is not None:
                     self.omega_vals[i] = omega.get_value()
+                else:
+                    self.omega_vals[i] = None
         return self.omega_vals
 
     
@@ -118,7 +124,6 @@ class Backbone_Dihedrals():
         # N- and C-termini of every residue.
         for i, r in enumerate(self.residues):
             if not r.PT_AMINO:
-                bond_to_last = False
                 continue
             a = r.atoms
             names = a.names
@@ -131,11 +136,13 @@ class Backbone_Dihedrals():
             psi_atoms = copy(phi_atoms)
             omega_atoms = phi_atoms[0:2]
             # Atoms from the previous residue
-            if not bond_to_last:
-                # Double-check to see if this residue is bonded to a previous
-                # one.
-                N = phi_atoms[0][0]
-                N_bonded_atom_list = N.bonds.atoms[0].merge(N.bonds.atoms[1])
+            # Check to see if this residue is bonded to a previous
+            # one.
+            N = phi_atoms[0][0]
+            N_bonded_atom_list = N.bonds.atoms[0].merge(N.bonds.atoms[1])
+            if -1 in N_bonded_atom_list.indices(self.atoms):
+                bond_to_last = False
+            else:
                 prev_C_l = N_bonded_atom_list.filter(numpy.in1d(N_bonded_atom_list.names, 'C'))
                 if len(prev_C_l):
                     last_residue = prev_C_l[0].residue
@@ -162,11 +169,16 @@ class Backbone_Dihedrals():
             # Atoms from the next residue
             C = psi_atoms[-1][0]
             C_bonded_atom_list = C.bonds.atoms[0].merge(C.bonds.atoms[1])
-            next_N_l = C_bonded_atom_list.filter(numpy.in1d(C_bonded_atom_list.names, 'N'))
-            if len(next_N_l):
-                next_residue = next_N_l[0].residue
-                if next_residue.PT_AMINO:
-                    bond_to_next = True
+            if -1 in C_bonded_atom_list.indices(self.atoms):
+                bond_to_next = False
+            else:
+                next_N_l = C_bonded_atom_list.filter(numpy.in1d(C_bonded_atom_list.names, 'N'))
+                if len(next_N_l):
+                    next_residue = next_N_l[0].residue
+                    if next_residue.PT_AMINO:
+                        bond_to_next = True
+                    else:
+                        bond_to_next = False
                 else:
                     bond_to_next = False
                 
@@ -186,11 +198,6 @@ class Backbone_Dihedrals():
             if omega_atoms is not None:
                 self.omega[i] = Dihedral(concatenate(omega_atoms, Atoms))
             
-            bond_to_last = bond_to_next
-            last_atoms = a
-            last_names = names
-            #a = next_atoms
-            #names = next_names
                 
                     
                     
