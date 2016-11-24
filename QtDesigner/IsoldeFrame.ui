@@ -1152,6 +1152,40 @@
                        </spacer>
                       </item>
                       <item>
+                       <widget class="QComboBox" name="_validate_rama_case_combo_box">
+                        <item>
+                         <property name="text">
+                          <string>General</string>
+                         </property>
+                        </item>
+                        <item>
+                         <property name="text">
+                          <string>Glycine</string>
+                         </property>
+                        </item>
+                        <item>
+                         <property name="text">
+                          <string>Isoleucine/Valine</string>
+                         </property>
+                        </item>
+                        <item>
+                         <property name="text">
+                          <string>Preceding Proline</string>
+                         </property>
+                        </item>
+                        <item>
+                         <property name="text">
+                          <string>Trans Proline</string>
+                         </property>
+                        </item>
+                        <item>
+                         <property name="text">
+                          <string>Cis Proline</string>
+                         </property>
+                        </item>
+                       </widget>
+                      </item>
+                      <item>
                        <widget class="QPushButton" name="_validate_rama_hide_button">
                         <property name="text">
                          <string>Hide</string>
@@ -1191,7 +1225,17 @@
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_22">
                       <item>
-                       <widget class="QComboBox" name="_validate_rama_mobile_all_combo_box">
+                       <widget class="QLabel" name="label_23">
+                        <property name="text">
+                         <string>Model: </string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QComboBox" name="_validate_rama_model_combo_box"/>
+                      </item>
+                      <item>
+                       <widget class="QComboBox" name="_validate_rama_sel_combo_box">
                         <item>
                          <property name="text">
                           <string>Selected only</string>
@@ -1202,13 +1246,6 @@
                           <string>All</string>
                          </property>
                         </item>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QPushButton" name="_validate_rama_go_button">
-                        <property name="text">
-                         <string>Make it so</string>
-                        </property>
                        </widget>
                       </item>
                       <item>
@@ -1225,37 +1262,10 @@
                        </spacer>
                       </item>
                       <item>
-                       <widget class="QComboBox" name="_validate_rama_case_combo_box">
-                        <item>
-                         <property name="text">
-                          <string>General</string>
-                         </property>
-                        </item>
-                        <item>
-                         <property name="text">
-                          <string>Glycine</string>
-                         </property>
-                        </item>
-                        <item>
-                         <property name="text">
-                          <string>Isoleucine/Valine</string>
-                         </property>
-                        </item>
-                        <item>
-                         <property name="text">
-                          <string>Preceding Proline</string>
-                         </property>
-                        </item>
-                        <item>
-                         <property name="text">
-                          <string>Trans Proline</string>
-                         </property>
-                        </item>
-                        <item>
-                         <property name="text">
-                          <string>Cis Proline</string>
-                         </property>
-                        </item>
+                       <widget class="QPushButton" name="_validate_rama_go_button">
+                        <property name="text">
+                         <string>Make it so</string>
+                        </property>
                        </widget>
                       </item>
                      </layout>
