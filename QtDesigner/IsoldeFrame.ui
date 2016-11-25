@@ -84,7 +84,7 @@
             </sizepolicy>
            </property>
            <property name="currentIndex">
-            <number>3</number>
+            <number>2</number>
            </property>
            <widget class="QWidget" name="_sim_basic_tab">
             <attribute name="title">
@@ -101,7 +101,7 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>483</width>
+                  <width>470</width>
                   <height>1137</height>
                  </rect>
                 </property>
@@ -888,8 +888,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>496</width>
-                  <height>505</height>
+                  <width>483</width>
+                  <height>610</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1000,7 +1000,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QFrame" name="frame">
+                  <widget class="QFrame" name="_restraints_stub_frame">
                    <property name="frameShape">
                     <enum>QFrame::StyledPanel</enum>
                    </property>
@@ -1052,10 +1052,116 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>496</width>
-                  <height>505</height>
+                  <width>487</width>
+                  <height>597</height>
                  </rect>
                 </property>
+                <layout class="QVBoxLayout" name="verticalLayout_15">
+                 <item>
+                  <widget class="QFrame" name="_rebuild_sel_residue_frame">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QGridLayout" name="gridLayout_6">
+                    <item row="2" column="0">
+                     <widget class="QLabel" name="label_28">
+                      <property name="text">
+                       <string>Current rotamer:</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="2" colspan="2">
+                     <widget class="QLabel" name="_rebuild_sel_res_pep_info">
+                      <property name="text">
+                       <string>Placeholder</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="3" column="5">
+                     <widget class="QPushButton" name="_rebuild_sel_res_rot_discard_button">
+                      <property name="text">
+                       <string>Revert</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="3" column="3" colspan="2">
+                     <widget class="QPushButton" name="_rebuild_sel_res_rot_target_button">
+                      <property name="text">
+                       <string>Set target</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="0" colspan="2">
+                     <widget class="QLabel" name="label_25">
+                      <property name="text">
+                       <string>Current peptide conformation:</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="2" column="1">
+                     <widget class="QLabel" name="_rebuild_sel_res_rot_info">
+                      <property name="text">
+                       <string>Placeholder</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="3" column="1" colspan="2">
+                     <widget class="QPushButton" name="_rebuild_sel_res_rot_commit_button">
+                      <property name="text">
+                       <string>Commit</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="2" column="4" colspan="2">
+                     <widget class="QComboBox" name="_rebuild_sel_res_rot_combo_box">
+                      <item>
+                       <property name="text">
+                        <string>Pause sim to adjust</string>
+                       </property>
+                      </item>
+                     </widget>
+                    </item>
+                    <item row="0" column="0">
+                     <widget class="QLabel" name="label_24">
+                      <property name="text">
+                       <string>Selected residue:</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="1" column="5">
+                     <widget class="QPushButton" name="_rebuild_sel_res_pep_flip_button">
+                      <property name="text">
+                       <string>Flip</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="1" colspan="5">
+                     <widget class="QLabel" name="_rebuild_sel_residue_info">
+                      <property name="text">
+                       <string>Placeholder</string>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="verticalSpacer_4">
+                   <property name="orientation">
+                    <enum>Qt::Vertical</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>20</width>
+                     <height>420</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
                </widget>
               </widget>
              </item>

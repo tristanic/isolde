@@ -69,6 +69,7 @@ class ISOLDE_ToolUI(ToolInstance):
         self._expert_frames = [
             self.iw._force_field_selection_frame,
             self.iw._sim_basic_custom_selection_button,
+            self.iw._restraints_stub_frame,
             ]
         
         # Any other frames/widgets that should be hidden at the start

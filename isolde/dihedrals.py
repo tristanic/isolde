@@ -107,7 +107,14 @@ class Backbone_Dihedrals():
                     self.omega_vals[i] = None
         return self.omega_vals
 
-    
+    def lookup_by_residue(self, res):
+        ''' 
+        Return the phi, psi and omega dihedrals for a given residue
+        '''
+        i = self.residues.index(res)
+        if i == -1:
+            return None
+        return (self.phi[i], self.psi[i], self.omega[i])
     
     def find_dihedrals(self):
         bond_to_last = False

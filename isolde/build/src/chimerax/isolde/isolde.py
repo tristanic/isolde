@@ -435,6 +435,20 @@ class Isolde():
         cb.addItem('map units')
         cb.setCurrentIndex(0)
         
+        ####
+        # Rebuild tab
+        ####
+        
+        ## Info for a single selected residue
+        iw._rebuild_sel_residue_info.setText('(Select a mobile residue)')
+        iw._rebuild_sel_res_pep_info.setText('')
+        iw._rebuild_sel_res_rot_info.setText('')
+        
+        
+        ####
+        # Validate tab
+        ####
+        
         # Populate the Ramachandran plot case selector with available
         # cases
         cb = iw._validate_rama_case_combo_box
@@ -563,6 +577,13 @@ class Isolde():
             )
         
         ####
+        # Rebuild tab
+        ####
+        iw._rebuild_sel_res_pep_flip_button.clicked.connect(
+            self._flip_peptide_bond
+            )
+        
+        ####
         # Validation tab
         ####
         
@@ -677,6 +698,13 @@ class Isolde():
         
 
     def _selection_changed(self, *_):
+        from chimerax.core.atomic import selected_atoms
+        sel = selected_atoms(self.session)
+        selres = sel.unique_residues
+        if len(selres) == 1:
+            self._enable_rebuild_residue_frame(selres[0])
+        else:
+            self._disable_rebuild_residue_frame()
         if self._simulation_running:
             # A running simulation takes precedence for memory control
             return
@@ -688,6 +716,7 @@ class Isolde():
         iw = self.iw        
         iw._sim_basic_mobile_selection_frame.setEnabled(flag)
         iw._sim_go_button.setEnabled(flag)
+    
     
     def _update_sim_control_button_states(self):
         # Set enabled/disabled states of main simulation control panel
@@ -710,8 +739,6 @@ class Isolde():
             iw._sim_equil_button.setStyleSheet('background-color: red')
             iw._sim_min_button.setStyleSheet('background-color: green')
             
-        
-        
         # Undo/redo will only lead to trouble while a simulation is running
         iw._undo_button.setDisabled(flag)
         iw._redo_button.setDisabled(flag)
@@ -812,6 +839,110 @@ class Isolde():
     def _update_menu_after_sim(self):
         self._update_sim_control_button_states()
     
+    ####
+    # Rebuild tab
+    ####
+    def _enable_rebuild_residue_frame(self, res):
+        if not self._simulation_running:
+            return
+        self._get_rotamer_list_for_selected_residue()
+        if -1 in res.atoms.indices(self._total_mobile):
+            self._disable_rebuild_residue_frame()
+            return
+        else:
+            bd = self.backbone_dihedrals
+            self._rebuild_residue = res
+            res_bd = bd.lookup_by_residue(res)
+            self._rebuild_res_update_omega = True
+            self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
+            if res_bd is not None:
+                omega = self._rebuild_res_omega = res_bd[2]
+                if omega is None or None in omega.atoms:
+                    # This is a terminal residue without an omega dihedral
+                    self.iw._rebuild_sel_res_pep_info.setText('N/A')
+                    self.iw._rebuild_sel_res_pep_flip_button.setDisabled(True)
+                    self._rebuild_res_update_omega = False
+            else:
+                # We should not be able to get here, but just in case:
+                self._disable_rebuild_residue_frame()
+                return
+            self.iw._rebuild_sel_residue_frame.setEnabled(True)
+            chain_id, resnum, resname = (res.chain_id, res.number, res.name)
+            self.iw._rebuild_sel_residue_info.setText(str(chain_id) + ' ' + str(resnum) + ' ' + resname)
+            
+            self._steps_per_sel_res_update = 10
+            self._sel_res_update_counter = 0
+            if 'update_selected_residue_info' not in self._event_handler.list_event_handlers():
+                self._event_handler.add_event_handler('update_selected_residue_info',
+                        'new frame', self._update_selected_residue_info_live)
+                    
+                    
+    def _disable_rebuild_residue_frame(self):
+        if 'update_selected_residue_info' in self._event_handler.list_event_handlers():
+            self._event_handler.remove_event_handler('update_selected_residue_info')
+        self.iw._rebuild_sel_residue_info.setText('(Select a mobile residue)')
+        self.iw._rebuild_sel_res_pep_info.setText('')
+        self.iw._rebuild_sel_res_rot_info.setText('')
+        self.iw._rebuild_sel_res_rot_target_button.setText('Set target')
+        self.iw._rebuild_sel_res_rot_combo_box.clear()
+        self.iw._rebuild_sel_res_rot_combo_box.addItem('Pause sim to adjust')
+        self.iw._rebuild_sel_residue_frame.setDisabled(True)
+        
+    def _get_rotamer_list_for_selected_residue(self, *_):
+        # stub
+        pass
+    
+    def _update_selected_residue_info_live(self, *_):
+        from math import degrees
+        res = self._rebuild_residue
+        c = self._sel_res_update_counter
+        s = self._steps_per_sel_res_update
+        c = (c + 1) % s
+        if c == 0:
+            # Get the residue's omega value
+            if self._rebuild_res_update_omega:
+                omega = self._rebuild_res_omega
+                oval = degrees(omega.get_value())
+                if oval <= -150 or oval >= 150:
+                    pep_type = 'trans'
+                elif oval >= -30 and oval <= 30:
+                    pep_type = 'cis'
+                else:
+                    pep_type = 'twisted'
+                self.iw._rebuild_sel_res_pep_info.setText(pep_type)
+        self._sel_res_update_counter = c
+    
+    def _flip_peptide_bond(self, *_):
+        res = self._rebuild_residue
+        self.flip_peptide_omega(res)
+    
+    def flip_peptide_omega(self, res):
+        from math import degrees
+        bd = self.backbone_dihedrals
+        res_bd = bd.lookup_by_residue(res)
+        if res_bd is None:
+            print('Could not find residue!')
+            return
+        omega = res_bd[2]
+        if omega is None or None in omega.atoms:
+            print('Residue has no omega dihedral or not all atoms are in the simulation.')
+            return
+        oval = degrees(omega.get_value())
+        if oval >= -30 and oval <= 30:
+            # cis, flip to trans
+            target = 180
+        else:
+            target = 0
+        self.apply_peptide_bond_restraints([omega], target = target, units = 'deg')
+                    
+                
+        
+        
+        # stub
+        pass
+    
+
+
     
     ####
     # Validation tab
