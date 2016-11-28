@@ -1377,8 +1377,10 @@ class Isolde():
         for key, f in sh.get_all_custom_external_forces().items():
             sys.addForce(f[0])
         
-        for key,m in self.master_map_list.items():
-            sys.addForce(m.get_potential_function())
+        sm = self._sim_modes
+        if self.sim_mode in [sm.xtal, sm.em]:
+            for key,m in self.master_map_list.items():
+                sys.addForce(m.get_potential_function())
         
         sys.addForce(sh._dihedral_restraint_force)
 

@@ -19,7 +19,7 @@ Flexible Fitting, or iMDFF.
 
 setup(
     name="ChimeraX-ISOLDE",
-    version="0.9.2",  # PEP 440, should match Development Status below
+    version="0.9.3",  # PEP 440, should match Development Status below
     description="Interactive molecular dynamics based model building, manipulation and refinement",  # one line synopsis
     long_description=description,  # see above
     author="Tristan Croll",

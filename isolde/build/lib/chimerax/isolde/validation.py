@@ -102,6 +102,8 @@ trans_max = radians(-150)
 
     
 def omega_type(omega):
+    if omega is None:
+        return None
     if omega >= trans_min or omega <= trans_max:
         return "trans"
     elif omega >= cis_min and omega <= cis_max:
@@ -337,7 +339,7 @@ class RamaValidator():
             if omega_type(omega[i]) == 'cis':
                 self.rama_types[i] = 'CisPro'
                 ca['CisPro'].append(i)
-            else:
+            elif omega_type(omega[i]) == 'trans':
                 self.rama_types[i] = 'TransPro'
                 ca['TransPro'].append(i)
         for key, indices in self.case_arrays.items():
