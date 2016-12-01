@@ -155,6 +155,8 @@ class Isolde():
         from . import validation
         # object containing all the Ramachandran contours and lookup functions
         self.rama_validator = validation.RamaValidator()
+        # object that handles checking and annotation of peptide bond geometry
+        self.omega_validator = validation.OmegaValidator(self._annotations)
         # Generic widget object holding the Ramachandran plot
         self._rama_plot_window = None
         # Object holding Ramachandran plot information and controls
@@ -272,7 +274,7 @@ class Isolde():
         self._friction = 1.0/unit.picoseconds
         # Limit on the net force on a single atom to detect instability and
         # force a minimisation
-        self._max_allowable_force = 20000.0 # kJ mol-1 nm-1
+        self._max_allowable_force = 100000.0 # kJ mol-1 nm-1
         # Flag for unstable simulation
         self._sim_is_unstable = False
         
@@ -599,6 +601,21 @@ class Isolde():
         iw._validate_rama_go_button.clicked.connect(
             self._rama_static_plot
             )
+        iw._validate_pep_show_button.clicked.connect(
+            self._show_peptide_validation_frame
+            )
+        iw._validate_pep_hide_button.clicked.connect(
+            self._hide_peptide_validation_frame
+            )
+        iw._validate_pep_update_button.clicked.connect(
+            self._update_iffy_peptide_lists
+            )
+        iw._validate_pep_cis_list.itemClicked.connect(
+            self._show_selected_iffy_peptide
+            )
+        iw._validate_pep_twisted_list.itemClicked.connect(
+            self._show_selected_iffy_peptide
+            )
         
         
         ####
@@ -665,6 +682,7 @@ class Isolde():
         self.iw._sim_basic_by_chain_model_combo_box.clear()
         self.iw._em_map_model_combo_box.clear()
         self.iw._validate_rama_model_combo_box.clear()
+        self.iw._validate_pep_model_combo_box.clear()
         models = self.session.models.list()
         atomic_model_list = []
         volume_model_list = []
@@ -687,6 +705,7 @@ class Isolde():
         self.iw._sim_basic_whole_model_combo_box.addItems(atomic_model_list)
         self.iw._sim_basic_by_chain_model_combo_box.addItems(atomic_model_list)
         self.iw._validate_rama_model_combo_box.addItems(atomic_model_list)
+        self.iw._validate_pep_model_combo_box.addItems(atomic_model_list)
         self.iw._em_map_model_combo_box.addItems(volume_model_list)
 
     def _update_chain_list(self):
@@ -701,11 +720,11 @@ class Isolde():
         from chimerax.core.atomic import selected_atoms
         sel = selected_atoms(self.session)
         selres = sel.unique_residues
-        if len(selres) == 1:
-            self._enable_rebuild_residue_frame(selres[0])
-        else:
-            self._disable_rebuild_residue_frame()
         if self._simulation_running:
+            if len(selres) == 1:
+                self._enable_rebuild_residue_frame(selres[0])
+            else:
+                self._disable_rebuild_residue_frame()
             # A running simulation takes precedence for memory control
             return
         
@@ -874,7 +893,7 @@ class Isolde():
             self._sel_res_update_counter = 0
             if 'update_selected_residue_info' not in self._event_handler.list_event_handlers():
                 self._event_handler.add_event_handler('update_selected_residue_info',
-                        'new frame', self._update_selected_residue_info_live)
+                        'atomic changes', self._update_selected_residue_info_live)
                     
                     
     def _disable_rebuild_residue_frame(self):
@@ -966,7 +985,7 @@ class Isolde():
     def _rama_go_live(self, *_):
         if 'rama_plot_update' not in self._event_handler.list_event_handlers():
             self._event_handler.add_event_handler('rama_plot_update',
-                                                  'new frame',
+                                                  'atomic changes',
                                                   self._rama_plot.update_scatter)
         self.iw._validate_rama_sel_combo_box.setDisabled(True)
         self.iw._validate_rama_go_button.setDisabled(True)
@@ -993,7 +1012,62 @@ class Isolde():
                 bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
         self._rama_plot.update_scatter()
     
+    def _show_peptide_validation_frame(self, *_):
+        self.iw._validate_pep_stub_frame.hide()
+        self.iw._validate_pep_main_frame.show()
     
+    def _hide_peptide_validation_frame(self, *_):
+        self.iw._validate_pep_main_frame.hide()
+        self.iw._validate_pep_stub_frame.show()    
+    
+    def _update_iffy_peptide_lists(self, *_):
+        ov = self.omega_validator
+        model_id = self.iw._validate_pep_model_combo_box.currentText()
+        model = self._available_models[model_id]
+        clist = self.iw._validate_pep_cis_list
+        tlist = self.iw._validate_pep_twisted_list
+        clist.clear()
+        tlist.clear()
+        if model != ov.current_model:
+            sel = model.atoms
+            from . import dihedrals
+            bd = self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(sel)
+            bd.get_omega_vals()
+            ov.load_structure(model, bd.omega)
+        cis, twisted = ov.find_outliers()
+        ov.draw_outliers()
+        from PyQt5.QtWidgets import QListWidgetItem
+        from PyQt5.Qt import QColor, QBrush
+        from PyQt5.QtCore import Qt
+        badColor = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
+        for c in cis:
+            pre, r = c.residues.unique()
+            label = r.chain_id + ' ' \
+                    + str(pre.number) + ' - ' + str(r.number) + '\t' \
+                    + pre.name + ' - ' + r.name
+            list_item = QListWidgetItem(label)
+            list_item.data = r
+            if r.name != 'PRO':
+                list_item.setBackground(badColor)
+            clist.addItem(list_item)
+        for t in twisted:
+            pre, r = t.residues.unique()
+            label = r.chain_id + ' ' \
+                    + str(pre.number) + ' - ' + str(r.number) + '\t' \
+                    + pre.name + ' - ' + r.name
+            list_item = QListWidgetItem(label)
+            list_item.data = r
+            list_item.setBackground(badColor)
+            tlist.addItem(list_item)
+            
+    def _show_selected_iffy_peptide(self, item):
+        res = item.data
+        from . import view
+        view.focus_on_selection(self.session, self.session.main_view, res.atoms)
+        self.session.selection.clear()
+        res.atoms.selected = True
+            
+            
     ##############################################################
     # Simulation global settings functions
     ##############################################################
@@ -1132,7 +1206,7 @@ class Isolde():
             map_sigma = model.mean_sd_rms()[1]
             contour_val = contour_val * map_sigma
         from chimerax.core.map import volumecommand
-        volumecommand.volume(self.session,[model], level=[[contour_val]])
+        volumecommand.volume(self.session,[model], level=[[contour_val]], cap_faces = False)
         
     
     def _change_contour_units_of_selected_map(self, *_):
@@ -1243,8 +1317,6 @@ class Isolde():
                 ' but have not selected any maps. Please choose at least one map.'
                 raise Exception(errstring)
                 
-        self._simulation_running = True
-        self._update_sim_control_button_states()
         
         
         # Define final mobile selection
@@ -1299,7 +1371,7 @@ class Isolde():
             self.rama_validator.load_structure(bd.residues, bd.resnames, 
                 bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
             bd.CAs.draw_modes = 1
-            self._rama_go_live()
+            self.omega_validator.load_structure(self._selected_model, bd.omega)
         from . import sim_interface as si
         sh = self._sim_handler = si.SimHandler(self.session)        
                     
@@ -1447,6 +1519,11 @@ class Isolde():
         self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
                                               'new frame',
                                               self.do_sim_steps)
+        self._simulation_running = True
+        self._update_sim_control_button_states()
+
+        if self.track_rama:
+            self._rama_go_live()
         
     # Get the mobile selection. The method will vary depending on
     # the selection mode chosen
@@ -1614,8 +1691,9 @@ class Isolde():
         if self.track_rama:
             # Update one last time
             self._rama_plot.update_scatter()
-            self._rama_go_static()
-        
+            self.update_omega_check()
+        self._rama_go_static()
+        self.omega_validator.current_model = None
     
     ####
     # Restraint controls
@@ -1713,6 +1791,22 @@ class Isolde():
             surr.displays = True
             self._surroundings_hidden = False
         
+        newpos, max_force = self._get_positions_and_max_force()
+        if max_force > self._max_allowable_force:
+            self._sim_is_unstable = True
+            print(str(max_force))
+            self._oldmode = mode
+            if mode == 'equil':
+                # revert to the coordinates before this simulation step
+                c.setPositions(pos/10)
+            self.simulation_type = 'min'
+            return
+        elif self._sim_is_unstable:
+            if max_force < self._max_allowable_force / 2:
+                # We're back to stability. We can go back to equilibrating
+                self._sim_is_unstable = False
+                self.simulation_type = self._oldmode
+
         
         # Mouse interaction
         mtug = self._mouse_tugger
@@ -1817,23 +1911,6 @@ class Isolde():
         else:
             raise Exception('Unrecognised simulation mode!')
         
-        newpos, max_force = self._get_positions_and_max_force()
-        if max_force > self._max_allowable_force:
-            self._sim_is_unstable = True
-            print(str(max_force))
-            self._oldmode = mode
-            if mode == 'equil':
-                # revert to the coordinates before this simulation step
-                c.setPositions(pos/10)
-            self.simulation_type = 'min'
-            return
-        elif self._sim_is_unstable:
-            if max_force < self._max_allowable_force / 2:
-                # We're back to stability. We can go back to equilibrating
-                self._sim_is_unstable = False
-                self.simulation_type = self._oldmode
-        if self._logging:
-            self._log('Sim 4')
         
         from simtk import unit
         self._particle_positions = newpos
@@ -1843,6 +1920,8 @@ class Isolde():
             self._log('Ran ' + str(self.sim_steps_per_update) + ' steps')
         if self.track_rama:
             self.update_ramachandran()
+            self.update_omega_check()
+        
         
     def update_ramachandran(self):
         self._rama_counter = (self._rama_counter + 1) % self.steps_per_rama_update
@@ -1852,7 +1931,13 @@ class Isolde():
             scores, colors = rv.update(bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
             bd.CAs.colors = colors
         
-            
+    def update_omega_check(self, *_):
+        rc = self._rama_counter
+        ov = self.omega_validator
+        if self._rama_counter == 0:
+            cis, twisted = ov.find_outliers()
+            ov.draw_outliers(cis, twisted)
+        ov.update_coords()
         
     def _get_positions_and_max_force (self):
         import numpy

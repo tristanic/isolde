@@ -65,7 +65,7 @@ class TugAtomsMode(MouseMode):
     def _pull_direction(self, x, y):
         v = self.session.main_view
         x0,x1 = v.clip_plane_points(x, y)
-        axyz = self._picked_atom.scene_coord
+        axyz = self._picked_atom.coord
         # Project atom onto view ray to get displacement.
         dir = x1 - x0
         da = axyz - x0

@@ -37,6 +37,29 @@ def get_dihedral(p0, p1, p2, p3):
                     p2.ctypes.data_as(COORTYPE),
                     p3.ctypes.data_as(COORTYPE))
         
+def dihedral_fill_plane(p0, p1, p2, p3):
+    '''
+    Fill in the "cup" in a dihedral with a pseudo-planar surface
+    '''
+    from numpy import empty, float32, int32, array, cross
+    varray = empty((5,3), float32)
+    narray = empty((5,3), float32)
+    
+    for i, p in enumerate((p0,p1,p2,p3)):
+        varray[i] = p
+    
+    varray[4] = (varray[0]+varray[3])/2
+    
+    # This surface should always be almost planar, so we'll assign it a
+    # single normal
+    
+    n = cross(varray[3]-varray[0], varray[1]-varray[0])
+    
+    narray[:] = n
+    tarray = array([[0,1,4],[1,2,4],[2,3,4]],int32)
+    return varray, varray, tarray
+    
+
 
 
 def cone_geometry(radius = 1, height = 1, nc = 10, caps = True, flipped = False):

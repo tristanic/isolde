@@ -411,22 +411,24 @@ class RamaPlot():
         ind = event.ind[0]
         res_index = self.validator.case_arrays[self.current_case][ind]
         picked_residue = self.validator.residues[res_index]
-        v = self.session.main_view
-        center = picked_residue.center
-        radius = 5.0
-        v.center_of_rotation = center
-        bounds = picked_residue.atoms.scene_bounds
-        bounds.xyz_min = bounds.xyz_min - radius
-        bounds.xyz_max = bounds.xyz_max + radius
-        radius += bounds.radius()
-        v.view_all(bounds)
-        cam = v.camera
-        vd = cam.view_direction()
-        cp = v.clip_planes
-        cp.set_clip_position('near', center - radius*vd, cam)
-        cp.set_clip_position('far', center + radius*vd, cam)
-        picked_residue.structure.selected=False
-        picked_residue.atoms.selected=True    
+        from . import view
+        view.focus_on_selection(self.session, self.session.main_view, picked_residue.atoms)
+        #v = self.session.main_view
+        #center = picked_residue.center
+        #radius = 5.0
+        #v.center_of_rotation = center
+        #bounds = picked_residue.atoms.scene_bounds
+        #bounds.xyz_min = bounds.xyz_min - radius
+        #bounds.xyz_max = bounds.xyz_max + radius
+        #radius += bounds.radius()
+        #v.view_all(bounds)
+        #cam = v.camera
+        #vd = cam.view_direction()
+        #cp = v.clip_planes
+        #cp.set_clip_position('near', center - radius*vd, cam)
+        #cp.set_clip_position('far', center + radius*vd, cam)
+        #picked_residue.structure.selected=False
+        #picked_residue.atoms.selected=True    
         
     def change_case(self, case_key):
         self.current_case = case_key
@@ -467,8 +469,86 @@ class RamaPlot():
             self.axes.draw_artist(self.scatter)
             self.canvas.blit(self.axes.bbox)
         
+class OmegaValidator():
+    def __init__(self, annotation_model):
+        from chimerax.core.models import Drawing
+        self.current_model = None
+        self.omega = None
+        self.m = annotation_model
+        self.name = 'omega planes'
+        self.cis_color = [255, 32, 32, 255]
+        self.twisted_color = [255,255,32,255]
+        existing_names = [d.name for d in self.m.all_drawings()]
+        if self.name not in existing_names:          
+            self.master_drawing = Drawing(self.name)
+            self.m.add_drawing(self.master_drawing)
+        else:
+            i = existing_names.index(self.name)
+            self.master_drawing = self.m.all_drawings()[i]
+            self.master_drawing.remove_all_drawings()
         
+        self.drawings = {}
+        self.currently_drawn = {}
         
+        from math import radians
+        # maximum deviation from 0 radians to be annotated as cis
+        self.cis_max = radians(30)
+        # maximum absolute value of torsion angles annotated as twisted
+        self.twisted_max = radians(150)
+    
+    def load_structure(self, model, omega_list):
+        self.current_model = model
+        self.clear()
+        self.omega = [o for o in omega_list if o != None]
+        self.drawings = {}
+        from chimerax.core.models import Drawing
+        for o in self.omega:
+            d = self.drawings[o] = Drawing('omega plane')
+            self.master_drawing.add_drawing(d)
+        self.currently_drawn = {}
+    
+    def find_outliers(self):
+        cis = []
+        twisted = []
+        for o in self.omega:
+            if abs(o.value)  <= self.cis_max:
+                cis.append(o)
+            elif abs(o.value) <= self.twisted_max:
+                twisted.append(o)
+        return cis, twisted
+    
+    def draw_outliers(self, cis, twisted):
+        from . import geometry
+        for o, d in self.drawings.items():
+            d.set_display(False)
+        self.currently_drawn = {}
+        
+        if len(cis):
+            for c in cis:
+                d = self.drawings[c]
+                d.vertices, d.normals, d.triangles = geometry.dihedral_fill_plane(*c.atoms.coords)
+                d.set_color(self.cis_color)
+                d.set_display(True)
+                self.currently_drawn[c] = d
+        
+        if len(twisted):
+            for t in twisted:
+                d = self.drawings[t]
+                d.vertices, d.normals, d.triangles = geometry.dihedral_fill_plane(*t.atoms.coords)
+                d.set_color(self.twisted_color)
+                d.set_display(True)
+                self.currently_drawn[t] = d
+    
+    def update_coords(self):
+        from . import geometry
+        for o, d in self.currently_drawn.items():
+            d.vertices, d.normals, d.triangles = geometry.dihedral_fill_plane(*o.atoms.coords)
+        
+    def clear(self):
+        self.master_drawing.remove_all_drawings()
+        self.drawings = {}
+        self.currently_drawn = {}
+    
                 
     
     

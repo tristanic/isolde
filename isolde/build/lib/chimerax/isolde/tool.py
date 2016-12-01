@@ -75,6 +75,7 @@ class ISOLDE_ToolUI(ToolInstance):
         # Any other frames/widgets that should be hidden at the start
         self._hidden_at_start = [
             self.iw._validate_rama_main_frame,
+            self.iw._validate_pep_main_frame,
             ]
         
         for f in self._hidden_at_start:

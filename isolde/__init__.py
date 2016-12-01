@@ -3,6 +3,7 @@
 from chimerax.core.toolshed import BundleAPI
 from . import geometry
 
+
 class _MyAPI(BundleAPI):
 
     @staticmethod

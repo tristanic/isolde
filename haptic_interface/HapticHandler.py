@@ -1,21 +1,73 @@
-#def haptics_start(session):
-    #singleton(session).start_haptics()
-#from chimerax.core.commands import CmdDesc
-#haptics_start_desc = CmdDesc()
 
-#def haptics_stop(session):
-    #singleton(session).stop_haptics()
-#from chimerax.core.commands import CmdDesc
-#haptics_stop_desc = CmdDesc()
+def cone_geometry(radius = 1, height = 1, nc = 10, caps = True, flipped = False):
+    '''
+    Return vertex, normal vector and triangle arrays for cone geometry
+    with specified radius and height. If flipped is true, the base of the
+    cone will be at the origin, otherwise the point will be at the origin.
+    '''
+    from numpy import ones, empty, float32, arange, cos, sin, int32, pi
+    vc = nc * 2
+    tc = nc
+    if caps:
+        vc += (nc + 1)
+        tc += nc
+    varray = empty((vc, 3), float32)
+    narray = empty((vc, 3), float32)
+    tarray = empty((tc, 3), int32)
+
+    # Compute a circle (which may be used twice if caps is true)
+    angles = (2 * pi / nc) * arange(nc)
+    import sys
+    circle = empty((nc, 2), float32)
+    circle[:,0] = cos(angles) * radius
+    circle[:,1] = sin(angles) * radius
+
+    # Create cone faces (first nc*2 vertices)
+    # The normals are wrong, but let's see how they look
+    nc2 = nc * 2
+    if not flipped:
+        varray[:nc] = (0, 0, 0)      # point of cone (multiple normals)
+    else:
+        varray[:nc] = (0, 0, height)
+    narray[:nc,:2] = circle
+    if not flipped:
+        narray[:nc,2] = 0
+    else:
+        narray[:nc,2] = height            
+    varray[nc:nc2,:2] = circle      # base of cone
+    if not flipped:
+        varray[nc:nc2,2] = height
+    else:
+        varray[nc:nc2,2] = 0
+    narray[nc:nc2,:2] = circle      # wrong, but close (enough?)
+    if not flipped:
+        narray[nc:nc2,2] = height
+    else:
+        narray[nc:nc2,2] = 0
+    tarray[:nc,0] = arange(nc)
+    tarray[:nc,1] = (arange(nc) + 1) % nc + nc
+    tarray[:nc,2] = arange(nc) + nc
+
+    # Create cone base (last nc+1 vertices)
+    if caps:
+        if not flipped:
+            varray[nc2] = (0, 0, height)
+        else:
+            varray[nc2] = (0, 0, 0)
+        varray[nc2+1:,:2] = circle
+        if not flipped:
+            varray[nc2+1:,2] = height
+        else:
+            varray[nc2+1:,2] = 0
+        narray[nc2:] = (0, 0, 1)
+        tarray[nc:,0] = nc2
+        tarray[nc:,1] = (arange(nc) + 1) % nc + nc2 + 1
+        tarray[nc:,2] = arange(nc) + nc2 + 1
+
+    return varray, narray, tarray
 
 
 
-#_haptic_handler = None
-#def singleton(session):
-    #global _haptic_handler
-    #if _haptic_handler is None:
-        #_haptic_handler = HapticHandler(session)
-    #return _haptic_handler
 import ctypes
 import numpy
 class HapticHandler():
@@ -220,6 +272,7 @@ class HapticHandler():
             if scene_coords:
                 return self._arrow_model[i].position.origin()
             return [i for i in self._getPosition(i).contents]
+
     
     
     
@@ -262,11 +315,11 @@ class HapticHandler():
         import numpy
         pos = numpy.array(pos)[self._axis_order] * self._axis_directions
         a = self._arrow_model[i]
+        s = self.session
         if a is None or a.deleted:
             from chimerax.core.models import Model
-            s = self.session
             self._arrow_model[i] = a = Model('Haptic tool ' + str(i), s)
-            from chimerax.core.surface import cone_geometry
+            #from chimerax.core.surface import cone_geometry
             a.vertices, a.normals, a.triangles  = cone_geometry(
                     radius = self._arrow_radius,
                     height = self._arrow_radius * self._arrow_aspect_ratio,
@@ -277,7 +330,9 @@ class HapticHandler():
         from chimerax.core.geometry import place
         r = reference_frame
         r = place.product([r, place.translation(axis_scale*pos)])
-        a.position = r
+        pixel_size = s.main_view.pixel_size(r.origin())
+        if not a.position.same(r, angle_tolerance = 1, shift_tolerance = pixel_size):
+            a.position = r
 
         
         

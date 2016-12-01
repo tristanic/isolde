@@ -100,7 +100,7 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-342</y>
+                  <y>-527</y>
                   <width>470</width>
                   <height>1137</height>
                  </rect>
@@ -607,7 +607,7 @@
                             <double>1000.000000000000000</double>
                            </property>
                            <property name="value">
-                            <double>1.000000000000000</double>
+                            <double>10.000000000000000</double>
                            </property>
                           </widget>
                          </item>
@@ -647,6 +647,9 @@
                          </item>
                          <item row="1" column="1">
                           <widget class="QDoubleSpinBox" name="_em_map_contour_spin_box">
+                           <property name="minimum">
+                            <double>-9999.989999999999782</double>
+                           </property>
                            <property name="maximum">
                             <double>9999.989999999999782</double>
                            </property>
@@ -888,8 +891,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>483</width>
-                  <height>610</height>
+                  <width>423</width>
+                  <height>222</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1053,7 +1056,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>487</width>
-                  <height>597</height>
+                  <height>174</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -1181,9 +1184,9 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>0</y>
-                  <width>483</width>
-                  <height>610</height>
+                  <y>-186</y>
+                  <width>470</width>
+                  <height>796</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -1371,6 +1374,150 @@
                        <widget class="QPushButton" name="_validate_rama_go_button">
                         <property name="text">
                          <string>Make it so</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QFrame" name="_validate_pep_stub_frame">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QHBoxLayout" name="horizontalLayout_25">
+                    <item>
+                     <widget class="QLabel" name="label_26">
+                      <property name="text">
+                       <string>Peptide bond geometry</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <spacer name="horizontalSpacer_12">
+                      <property name="orientation">
+                       <enum>Qt::Horizontal</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>40</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                     </spacer>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="_validate_pep_show_button">
+                      <property name="text">
+                       <string>Show</string>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QFrame" name="_validate_pep_main_frame">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QVBoxLayout" name="verticalLayout_16">
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_27">
+                      <item>
+                       <widget class="QLabel" name="label_27">
+                        <property name="text">
+                         <string>Peptide biond geometry</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <spacer name="horizontalSpacer_13">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="_validate_pep_hide_button">
+                        <property name="text">
+                         <string>Hide</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                    <item>
+                     <layout class="QGridLayout" name="gridLayout_7">
+                      <item row="1" column="0">
+                       <widget class="QListWidget" name="_validate_pep_cis_list">
+                        <property name="editTriggers">
+                         <set>QAbstractItemView::NoEditTriggers</set>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="0" column="0">
+                       <widget class="QLabel" name="label_29">
+                        <property name="text">
+                         <string>Cis</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="0" column="1">
+                       <widget class="QLabel" name="label_30">
+                        <property name="text">
+                         <string>Twisted</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="1" column="1">
+                       <widget class="QListWidget" name="_validate_pep_twisted_list"/>
+                      </item>
+                     </layout>
+                    </item>
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_28">
+                      <item>
+                       <widget class="QLabel" name="label_31">
+                        <property name="text">
+                         <string>Model: </string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QComboBox" name="_validate_pep_model_combo_box"/>
+                      </item>
+                      <item>
+                       <spacer name="horizontalSpacer_14">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="_validate_pep_update_button">
+                        <property name="text">
+                         <string>Update list</string>
                         </property>
                        </widget>
                       </item>
