@@ -1,0 +1,3 @@
+import os
+env = Environment(ENV = os.environ)
+SharedLibrary('_geometry', ['_geometry.cc'])

@@ -1035,7 +1035,7 @@ class Isolde():
             bd.get_omega_vals()
             ov.load_structure(model, bd.omega)
         cis, twisted = ov.find_outliers()
-        ov.draw_outliers()
+        ov.draw_outliers(cis, twisted)
         from PyQt5.QtWidgets import QListWidgetItem
         from PyQt5.Qt import QColor, QBrush
         from PyQt5.QtCore import Qt
