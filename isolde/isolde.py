@@ -1365,13 +1365,26 @@ class Isolde():
         
         # Collect backbone dihedral atoms and prepare the Ramachandran
         # validator
+        
+        log = self.session.logger.info
+        from time import time
+        last_time = time()
+        
         from . import dihedrals
         bd = self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(sc)
+        log('Defining dihedrals took' + str(time() - last_time) + ' seconds')
+        last_time = time()
         if self.track_rama:
             self.rama_validator.load_structure(bd.residues, bd.resnames, 
                 bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
             bd.CAs.draw_modes = 1
+            log('Preparing Ramachandran validation took ' + str(time() - last_time) + ' seconds')
+            last_time = time()
+
             self.omega_validator.load_structure(self._selected_model, bd.omega)
+            log('Preparing peptide bond validation took ' + str(time() - last_time) + ' seconds')
+            last_time = time()
+
         from . import sim_interface as si
         sh = self._sim_handler = si.SimHandler(self.session)        
                     
@@ -1380,12 +1393,19 @@ class Isolde():
         for dlist in (bd.phi, bd.psi, bd.omega):
             for d in dlist:
                 if d is not None:
-                    if -1 not in d.atoms.indices(sc):
-                        d.sim_index = sh.initialize_dihedral_restraint(sc, d)
+                    indices = d.atoms.indices(sc)
+                    if -1 not in indices:
+                        d.sim_index = sh.initialize_dihedral_restraint(d, indices)
+        log('Defining dihedral restraint forces took ' + str(time() - last_time) + ' seconds')
+        last_time = time()
+
         
         # If we wish to apply peptide bond restraints, initialise them here
         if self.restrain_peptide_bonds:
             self.apply_peptide_bond_restraints(bd.omega, target = None)
+        log('Adding peptide bond restraints took ' + str(time() - last_time) + ' seconds')
+        last_time = time()
+
         
         if self._logging:
             self._log('Generating topology')

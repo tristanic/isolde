@@ -80,11 +80,9 @@ class SimHandler():
 
         
     
-    def initialize_dihedral_restraint(self, sim_construct, dihedral):
-        top = self._topology
+    def initialize_dihedral_restraint(self, dihedral, indices):
+        #top = self._topology
         force = self._dihedral_restraint_force
-        atoms = dihedral.atoms
-        indices = atoms.indices(sim_construct)
         index_in_force = force.addTorsion(*indices.tolist(), 1, 0, 0)
         return index_in_force
         

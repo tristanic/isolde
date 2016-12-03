@@ -22,22 +22,24 @@ def get_dihedral(p0, p1, p2, p3):
     y = np.dot(np.cross(b1, v), w)
     return np.arctan2(y, x)
 
-# C version. Saves about 16 microseconds per dihedral.
-#import os
-#import ctypes
-#_geometry = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)),'./lib_geometry.so'))
+# C version. Saves about 16 microseconds per dihedral. Linux only until I
+# find the time to put together OS-specific makefiles
+import os
+if os.name == 'posix':
+    import ctypes
+    _geometry = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)),'./lib_geometry.so'))
 
-#COORTYPE = ctypes.POINTER(ctypes.c_double * 3)
-  
-#_get_dihedral = _geometry.get_dihedral
-#_get_dihedral.argtypes = [COORTYPE, COORTYPE, COORTYPE, COORTYPE]
-#_get_dihedral.restype = ctypes.c_double
-   
-#def get_dihedral(p0, p1, p2, p3):
-    #return _get_dihedral(p0.ctypes.data_as(COORTYPE), 
-                    #p1.ctypes.data_as(COORTYPE),
-                    #p2.ctypes.data_as(COORTYPE),
-                    #p3.ctypes.data_as(COORTYPE))
+    COORTYPE = ctypes.POINTER(ctypes.c_double * 3)
+      
+    _get_dihedral = _geometry.get_dihedral
+    _get_dihedral.argtypes = [COORTYPE, COORTYPE, COORTYPE, COORTYPE]
+    _get_dihedral.restype = ctypes.c_double
+       
+    def get_dihedral(p0, p1, p2, p3):
+        return _get_dihedral(p0.ctypes.data_as(COORTYPE), 
+                        p1.ctypes.data_as(COORTYPE),
+                        p2.ctypes.data_as(COORTYPE),
+                        p3.ctypes.data_as(COORTYPE))
         
 def dihedral_fill_plane(p0, p1, p2, p3):
     '''

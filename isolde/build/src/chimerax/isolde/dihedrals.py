@@ -23,6 +23,7 @@ def time_dihedrals(sel, iterations):
 # between the middle two atoms. This axis needn't necessarily correspond to
 # a physical bond.
 
+
 class Dihedral():
     
     def __init__(self, atoms):
@@ -115,7 +116,7 @@ class Backbone_Dihedrals():
         if i == -1:
             return None
         return (self.phi[i], self.psi[i], self.omega[i])
-    
+         
     def find_dihedrals(self):
         bond_to_last = False
         bond_to_next = False
