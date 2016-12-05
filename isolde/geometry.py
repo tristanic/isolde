@@ -27,7 +27,7 @@ def get_dihedral(p0, p1, p2, p3):
 import sys, os
 import ctypes
 platform = sys.platform
-if platform == 'linux2':
+if platform == 'linux':
     libfile = './lib_geometry.so'
 elif platform == 'darwin':
     libfile = './lib_geometry.dylib'

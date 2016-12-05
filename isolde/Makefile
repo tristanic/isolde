@@ -11,7 +11,7 @@ CHIMERAX_APP = /home/tic20/apps/chimerax
 # and the ChimeraX toolshed code apparently really wants
 # the "chimerax." part of the package name (for now).
 BUNDLE_NAME = ChimeraX-ISOLDE
-BUNDLE_VERSION = 0.9.3
+BUNDLE_VERSION = 0.9.3.1
 PKG_NAME = chimerax.isolde
 
 # Source and data files.  By default, all .py files
@@ -20,8 +20,12 @@ PYSRCS = $(filter-out setup.py,$(wildcard *.py))
 DATAFILES = molprobity_data
 
 # Python extension modules
-PYMOD_EXT=so
-PYMOD_FILES=$(wildcard *.$(PYMOD_EXT))
+PYMOD_LINUX_EXT = so
+PYMOD_MAC_EXT = dylib
+PYMOD_WIN_EXT = dll
+PYMOD_FILES = $(wildcard *.$(PYMOD_LINUX_EXT))
+PYMOD_FILES += $(wildcard *.$(PYMOD_MAC_EXT))
+PYMOD_FILES += $(wildcard *.$(PYMOD_WIN_EXT))
 
 # ==================================================================
 # Theoretically, no changes should be needed below here.
@@ -69,7 +73,9 @@ setup.py: setup.py.in Makefile
 		-e 's,BUNDLE_VERSION,$(BUNDLE_VERSION),' \
 		-e 's,PKG_NAME,$(PKG_NAME),' \
 		-e 's,PKG_DIR,$(PKG_DIR),' \
-		-e 's,PYMOD_EXT,$(PYMOD_EXT),' \
+		-e 's,PYMOD_LINUX_EXT,$(PYMOD_LINUX_EXT),' \
+		-e 's,PYMOD_MAC_EXT,$(PYMOD_MAC_EXT),' \
+		-e 's,PYMOD_WIN_EXT,$(PYMOD_WIN_EXT),' \
 		< setup.py.in > setup.py
 
 $(PKG_DIR):	$(PYSRCS) $(DATAFILES) $(PYMOD_FILES)
