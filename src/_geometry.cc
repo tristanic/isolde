@@ -1,6 +1,6 @@
 #include <math.h>
 
-using namespace std;
+//using namespace std;
 
 extern "C"
 
