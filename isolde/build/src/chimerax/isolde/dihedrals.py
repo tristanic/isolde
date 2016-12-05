@@ -138,7 +138,7 @@ class Backbone_Dihedrals():
             # Build the lists of dihedral atoms found in this residue
             phi_atoms = []
             for name in ['N','CA', 'C']:
-                phi_atoms.append(r.find_atom(name))
+                phi_atoms.append(a.filter(numpy.in1d(a.names, name)))
             # These three atoms are common to both phi and psi, so we can
             # just copy the array
             psi_atoms = copy(phi_atoms)
