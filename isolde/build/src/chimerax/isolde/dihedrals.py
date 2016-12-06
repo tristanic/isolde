@@ -18,18 +18,21 @@ def time_dihedrals(sel, iterations):
     end_time = time()    
     print('Calculating dihedrals ' + str(iterations) + ' times took ' + str(end_time - start_time) + ' seconds.')
 
-# Holds information about the dihedral formed by an array of four atoms.
-# The atoms must be an Atom array, ordered so that the torsion axis is
-# between the middle two atoms. This axis needn't necessarily correspond to
-# a physical bond.
 
 
 class Dihedral():
+    '''
+    Holds information about the dihedral formed by an array of four atoms.
+    The atoms must be an Atom array, ordered so that the torsion axis is
+    between the middle two atoms. This axis needn't necessarily correspond to
+    a physical bond.
+    '''
     
-    def __init__(self, atoms):
+    def __init__(self, atoms, residue = None):
         self.atoms = atoms
         self.coords = atoms.coords
         self.names = atoms.names
+        self.residue = residue # the Residue object that this dihedral belongs to
         self.residues = atoms.residues
         self.resnames = self.residues.names
         self.resnums = self.residues.numbers
@@ -48,16 +51,100 @@ class Dihedral():
         self.update()
         return self.value
 
+class Dihedrals():
+    '''
+    Holds an array of Dihedral objects and their statistics, arranged for
+    fast look-up and handling.
+    '''
+    def __init__(self, dlist = None):
+        self._dihedrals = None
+        # ChimeraX Residues object in the same order as the list of dihedrals
+        self._residues = None
+        # ChimeraX Atoms object holding all dihedral atoms. The atoms 
+        # corresponding to dihedral i will be found at [4*i:4*i+4]
+        self._atoms = None
+        # Current dihedral values
+        self._values = None
+        if dlist is not None:
+            self._dihedrals = dlist
+            residues = [d.residue for d in self._dihedrals] 
+            from chimerax.core.atomic import Residues
+            self._residues = Residues(residues)
+            atoms = [a for d in self.dihedrals for a in d.atoms]
+            from chimerax.core.atomic import Atoms
+            self._atoms = Atoms(atoms)
+    
+    def __len__(self):
+        return len(self._dihedrals)
+    
+    def __bool__(self):
+        return len(self) > 0
+    
+    def __iter__(self):
+        return iter(self._dihedrals)
+    
+    def __getitem__(self, i):
+        import numpy
+        if isinstance(i,(int,numpy.int32,slice)):
+            return self._dihedrals[i]
+        elif isinstance(i, numpy.ndarray):
+            return [self._dihedrals[j] for j in i]
+        else:
+            raise IndexError('Only integer indices allowed for %s, got %s'
+                % (self.__class__.__name__, str(type(i))))
+    
+    def append(self, d):
+        from chimerax.core.atomic import concatenate
+        if isinstance(d, Dihedral):
+            self._dihedrals.append(d)
+            self._residues = concatenate([self.residues, [d.residue]])
+            self._atoms = concatenate([self.atoms, d.atoms])
+        elif isinstance(d, Dihedrals):
+            self._dihedrals.extend(d)
+            self._residues = concatenate([self.residues, d.residues])
+            self._atoms = concatenate([self.atoms, d.atoms])
+        else:
+            raise TypeError('Can only append a single Dihedral or a Dihedrals object.')
+    
+    
+    def index(self, d):
+        try:
+            i = self._dihedrals.index(d)
+        except ValueError:
+            return -1
+        return i
+    
+    @property
+    def atoms(self):
+        return self._atoms
+    
+    @property
+    def residues(self):
+        return self._residues
+    
+    @property
+    def coords(self):
+        return self.atoms.coords
+    
+    @property
+    def dihedrals(self):
+        return self._dihedrals
 
-# Given an atom selection, finds contiguous protein stretches and stores
-# arrays containing the phi, psi and omega dihedrals    
 class Backbone_Dihedrals():
-    def __init__(self, atoms):
-        self.residues = atoms.unique_residues
+    '''
+    Given an atomic model, finds all amino acid residues and creates
+    Dihedrals objects containing their phi, psi and omega dihedrals.
+    '''
+    def __init__(self, model):
+        if not model.atomspec_has_atoms():
+            raise TypeError('Please provide a model containing atoms!')
+        self.residues = model.residues
         # Filter to get only amino acid residues
         f = []
         for r in self.residues:
             f.append(r.PT_AMINO)
+        if not len(f):
+            return
         import numpy
         f = numpy.array(f, dtype = bool)
         self.residues = self.residues.filter(f)
@@ -67,18 +154,15 @@ class Backbone_Dihedrals():
         self.atoms = self.residues.atoms
         # We want to colour C-alphas according to their status, so we'll
         # hold an array of them here.
-        self.CAs = atoms.filter(atoms.names == 'CA')
+        self.CAs = self.atoms.filter(self.atoms.names == 'CA')
         
         nr = self.num_residues = len(self.residues)
         
-        # Lists holding the dihedrals for each residue, in the same order
-        # as the lists of residues
-        self.phi = [None] * nr
-        self.phi_vals = [None] * nr
-        self.psi = [None] * nr
-        self.psi_vals = [None] * nr
-        self.omega = [None] * nr
-        self.omega_vals = [None] * nr
+        # Empty Dihedrals objects to fill with phi, psi and omega
+        self.phi = []
+        self.psi = []
+        self.omega = []
+                
         self.find_dihedrals()
     
     def get_phi_vals(self, update = True):
@@ -148,21 +232,18 @@ class Backbone_Dihedrals():
             # one.
             N = phi_atoms[0][0]
             N_bonded_atom_list = N.bonds.atoms[0].merge(N.bonds.atoms[1])
-            if -1 in N_bonded_atom_list.indices(self.atoms):
-                bond_to_last = False
-            else:
-                prev_C_l = N_bonded_atom_list.filter(numpy.in1d(N_bonded_atom_list.names, 'C'))
-                if len(prev_C_l):
-                    last_residue = prev_C_l[0].residue
-                    if not last_residue.PT_AMINO:
-                        last_residue = None
-                        bond_to_last = False
-                    else:
-                        bond_to_last = True
-                        last_atoms = last_residue.atoms
-                        last_names = last_atoms.names
-                else:
+            prev_C_l = N_bonded_atom_list.filter(numpy.in1d(N_bonded_atom_list.names, 'C'))
+            if len(prev_C_l):
+                last_residue = prev_C_l[0].residue
+                if not last_residue.PT_AMINO:
+                    last_residue = None
                     bond_to_last = False
+                else:
+                    bond_to_last = True
+                    last_atoms = last_residue.atoms
+                    last_names = last_atoms.names
+            else:
+                bond_to_last = False
             if bond_to_last:
                 C = last_atoms.filter(numpy.in1d(last_names, 'C'))
                 phi_atoms.insert(0, C)
@@ -177,18 +258,15 @@ class Backbone_Dihedrals():
             # Atoms from the next residue
             C = psi_atoms[-1][0]
             C_bonded_atom_list = C.bonds.atoms[0].merge(C.bonds.atoms[1])
-            if -1 in C_bonded_atom_list.indices(self.atoms):
-                bond_to_next = False
-            else:
-                next_N_l = C_bonded_atom_list.filter(numpy.in1d(C_bonded_atom_list.names, 'N'))
-                if len(next_N_l):
-                    next_residue = next_N_l[0].residue
-                    if next_residue.PT_AMINO:
-                        bond_to_next = True
-                    else:
-                        bond_to_next = False
+            next_N_l = C_bonded_atom_list.filter(numpy.in1d(C_bonded_atom_list.names, 'N'))
+            if len(next_N_l):
+                next_residue = next_N_l[0].residue
+                if next_residue.PT_AMINO:
+                    bond_to_next = True
                 else:
                     bond_to_next = False
+            else:
+                bond_to_next = False
                 
             if bond_to_next:
                 next_atoms = next_residue.atoms
@@ -200,13 +278,16 @@ class Backbone_Dihedrals():
                 psi_atoms = None
             from chimerax.core.atomic import concatenate, Atoms
             if phi_atoms is not None:
-                self.phi[i] = Dihedral(concatenate(phi_atoms, Atoms))
+                self.phi.append(Dihedral(concatenate(phi_atoms, Atoms), residue = r))
             if psi_atoms is not None:
-                self.psi[i] = Dihedral(concatenate(psi_atoms, Atoms))
+                self.psi.append(Dihedral(concatenate(psi_atoms, Atoms), residue = r))
             if omega_atoms is not None:
-                self.omega[i] = Dihedral(concatenate(omega_atoms, Atoms))
-            
-                
+                self.omega.append(Dihedral(concatenate(omega_atoms, Atoms), residue = r))
+        
+        # Convert to Dihedrals objects
+        self.phi = Dihedrals(self.phi)
+        self.psi = Dihedrals(self.psi)
+        self.omega = Dihedrals(self.omega)
                     
                     
                         

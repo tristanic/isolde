@@ -31,6 +31,8 @@ if platform == 'linux':
     libfile = './lib_geometry.so'
 elif platform == 'darwin':
     libfile = './lib_geometry.dylib'
+elif platform == 'win32':
+    libfile = './_geometry.dll'
 _geometry = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)), libfile))
 COORTYPE = ctypes.POINTER(ctypes.c_double * 3)
   
@@ -43,6 +45,21 @@ def get_dihedral(p0, p1, p2, p3):
                     p1.ctypes.data_as(COORTYPE),
                     p2.ctypes.data_as(COORTYPE),
                     p3.ctypes.data_as(COORTYPE))
+
+_get_dihedrals = _geometry.get_dihedrals
+
+def get_dihedrals(coords, n):
+    full_len = n*4*3
+    INTYPE = ctypes.POINTER(ctypes.c_double*full_len)
+    RTYPE = ctypes.POINTER(ctypes.c_double*n)
+    _get_dihedrals.argtypes = [INTYPE, ctypes.c_int, RTYPE]
+    import numpy
+    ret = RTYPE(numpy.empty(n).ctypes.data_as(RTYPE))
+    _get_dihedrals(numpy.reshape(coords, -1).ctypes.data_as(INTYPE), n, ret)
+    return ret.contents
+
+
+
 
 def dihedral_fill_plane(p0, p1, p2, p3):
     '''

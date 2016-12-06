@@ -161,8 +161,6 @@ class Isolde():
         self._rama_plot_window = None
         # Object holding Ramachandran plot information and controls
         self.rama_plot = None
-        # Currently chosen model for analysis outside of a simulation context
-        self._current_rama_model = None
         # Will hold the backbone dihedral information for the simulated
         # selection
         self.backbone_dihedrals = None
@@ -506,10 +504,7 @@ class Isolde():
         iw._sim_water_model_combo_box.currentIndexChanged.connect(
             self._change_water_model
             )
-        iw._sim_basic_whole_model_combo_box.currentIndexChanged.connect(
-            self._change_selected_model
-            )
-        iw._sim_basic_by_chain_model_combo_box.currentIndexChanged.connect(
+        iw._master_model_combo_box.currentIndexChanged.connect(
             self._change_selected_model
             )
         iw._sim_basic_mobile_chains_list_box.itemSelectionChanged.connect(
@@ -519,7 +514,7 @@ class Isolde():
             self._change_soft_shell_cutoff
             )
         iw._sim_basic_mobile_b_and_a_spinbox.valueChanged.connect(
-            self._changeb_and_a_padding
+            self._change_b_and_a_padding
             )
         iw._sim_basic_mobile_sel_backbone_checkbox.stateChanged.connect(
             self._change_soft_shell_fix_backbone
@@ -534,7 +529,7 @@ class Isolde():
         self._change_selected_model()
         self._change_selected_chains()
         self._change_soft_shell_cutoff()
-        self._changeb_and_a_padding()
+        self._change_b_and_a_padding()
         self._change_soft_shell_fix_backbone()
         self._change_sim_platform()
         
@@ -678,35 +673,35 @@ class Isolde():
     ##############################################################
 
     def _update_model_list(self, *_):
-        self.iw._sim_basic_whole_model_combo_box.clear()
-        self.iw._sim_basic_by_chain_model_combo_box.clear()
+        self.iw._master_model_combo_box.clear()
         self.iw._em_map_model_combo_box.clear()
-        self.iw._validate_rama_model_combo_box.clear()
-        self.iw._validate_pep_model_combo_box.clear()
         models = self.session.models.list()
         atomic_model_list = []
+        atomic_model_name_list = []
         volume_model_list = []
+        volume_model_name_list = []
         sorted_models = sorted(models, key=lambda m: m.id)
         if len(sorted_models) != 0:
             # Find atomic and volumetric models and sort them into the
             # appropriate lists
             for i, m in enumerate(sorted_models):
                 if m.atomspec_has_atoms():
-                    id_str = m.id_string()
+                    id_str = m.id_string() + ' ' + m.name
                     self._available_models[id_str] = m
-                    atomic_model_list.append(id_str)
+                    atomic_model_name_list.append(id_str)
+                    atomic_model_list.append(m)
                 elif hasattr(m, 'grid_data'):
-                    id_str = m.id_string()
+                    id_str = m.id_string() + ' ' + m.name
                     self._available_volumes[id_str] = m
-                    volume_model_list.append(id_str)
+                    volume_model_name_list.append(id_str)
+                    volume_model_list.append(m)
                 else:
                     # This is a model type we don't currently handle. Ignore.
                     continue
-        self.iw._sim_basic_whole_model_combo_box.addItems(atomic_model_list)
-        self.iw._sim_basic_by_chain_model_combo_box.addItems(atomic_model_list)
-        self.iw._validate_rama_model_combo_box.addItems(atomic_model_list)
-        self.iw._validate_pep_model_combo_box.addItems(atomic_model_list)
-        self.iw._em_map_model_combo_box.addItems(volume_model_list)
+        for l, m in zip(atomic_model_name_list, atomic_model_list):
+            self.iw._master_model_combo_box.addItem(l, m)
+        for l, m in zip(volume_model_name_list, volume_model_list):
+            self.iw._em_map_model_combo_box.addItem(l, m)
 
     def _update_chain_list(self):
         m = self._selected_model
@@ -769,7 +764,6 @@ class Isolde():
         iw = self.iw
         iw._sim_basic_mobile_selection_frame.hide()
         iw._sim_basic_mobile_by_chain_frame.hide()
-        iw._sim_basic_mobile_whole_model_frame.hide()
         iw._sim_basic_mobile_custom_frame.hide()
         
         for i, b in enumerate(self.gui._selection_mode_buttons):
@@ -786,7 +780,6 @@ class Isolde():
             self._change_selected_chains()
         elif i == 2:
             self._sim_selection_mode = self._sim_selection_modes.whole_model
-            iw._sim_basic_mobile_whole_model_frame.show()
             self._change_selected_model()
         elif i == 3:
             self._sim_selection_mode = self._sim_selection_modes.custom
@@ -989,18 +982,15 @@ class Isolde():
                                                   self._rama_plot.update_scatter)
         self.iw._validate_rama_sel_combo_box.setDisabled(True)
         self.iw._validate_rama_go_button.setDisabled(True)
-        self.iw._validate_rama_model_combo_box.setDisabled(True)
     
     def _rama_go_static(self, *_):
         if 'rama_plot_update' in self._event_handler.list_event_handlers():
             self._event_handler.remove_event_handler('rama_plot_update')
         self.iw._validate_rama_sel_combo_box.setEnabled(True)
         self.iw._validate_rama_go_button.setEnabled(True)
-        self.iw._validate_rama_model_combo_box.setEnabled(True)
                                                           
     def _rama_static_plot(self, *_):
-        model_id = self.iw._validate_rama_model_combo_box.currentText()
-        model = self._available_models[model_id]
+        model = self._selected_model
         whole_model = bool(self.iw._validate_rama_sel_combo_box.currentIndex())
         if whole_model:
             sel = model.atoms
@@ -1022,8 +1012,7 @@ class Isolde():
     
     def _update_iffy_peptide_lists(self, *_):
         ov = self.omega_validator
-        model_id = self.iw._validate_pep_model_combo_box.currentText()
-        model = self._available_models[model_id]
+        model = self._selected_model
         clist = self.iw._validate_pep_cis_list
         tlist = self.iw._validate_pep_twisted_list
         clist.clear()
@@ -1091,40 +1080,12 @@ class Isolde():
             return
         if self._simulation_running:
             return
-        sm = self._sim_selection_mode.name
         iw = self.iw
-        choice = None
-        if sm == 'whole_model':
-            choice = iw._sim_basic_whole_model_combo_box.currentText()
-            if choice == '':
-                return
-            self._selected_model = self._available_models[choice]
-            self.session.selection.clear()
+        self._selected_model = iw._master_model_combo_box.currentData()
+        self.session.selection.clear()
+        if self._selected_model is not None:
             self._selected_model.selected = True
-            self._selected_atoms = self._selected_model.atoms
-        elif sm == 'chain':
-            choice = iw._sim_basic_by_chain_model_combo_box.currentText()
-            if choice == '':
-                return
-            self._selected_model = self._available_models[choice]
-            self.session.selection.clear()
-            # self._selected_model.selected = True
             self._update_chain_list()
-        if choice is not None:
-            iw._sim_basic_whole_model_combo_box.setCurrentText(choice)
-            iw._sim_basic_by_chain_model_combo_box.setCurrentText(choice)
-            iw._validate_rama_model_combo_box.setCurrentText(choice)
-        self._change_rama_model()
-    
-    def _change_rama_model(self):
-        if len(self._available_models) == 0:
-            return
-        if self._simulation_running:
-            return
-        choice = self.iw._validate_rama_model_combo_box.currentText()
-        if choice == '':
-            return
-        self._current_rama_model = self._available_models[choice]
         
     
     def _change_selected_chains(self,*_):
@@ -1145,7 +1106,7 @@ class Isolde():
         from chimerax.core.atomic import selected_atoms
         self._selected_atoms = selected_atoms(self.session)
 
-    def _changeb_and_a_padding(self, *_):
+    def _change_b_and_a_padding(self, *_):
         self.b_and_a_padding = self.iw._sim_basic_mobile_b_and_a_spinbox.value()
         
     def _change_soft_shell_cutoff(self, *_):

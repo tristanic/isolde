@@ -72,6 +72,27 @@ double get_dihedral(double p0[3], double p1[3], double p2[3], double p3[3])
     return atan2(y, x);
 }
 
+void get_dihedrals(double * coords, int n, double * out)
+{
+    double p0[3];
+    double p1[3];
+    double p2[3];
+    double p3[3];
+
+    for (int i = 0; i < n; i++) {
+        int ii = 12*i;
+        for (int j = 0; j < 3; j++) {
+            p0[j] = coords[ii+j];
+            p1[j] = coords[ii+3+j];
+            p2[j] = coords[ii+6+j];
+            p3[j] = coords[ii+9+j];
+        }
+        out[i] = get_dihedral(p0, p1, p2, p3);
+    }
+
+}
+
+
 
 }
 

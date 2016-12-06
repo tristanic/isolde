@@ -21,6 +21,47 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
+    <widget class="QFrame" name="frame">
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_29">
+      <item>
+       <widget class="QLabel" name="label_32">
+        <property name="text">
+         <string>Working on: </string>
+        </property>
+        <property name="textFormat">
+         <enum>Qt::AutoText</enum>
+        </property>
+        <property name="scaledContents">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="_master_model_combo_box"/>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_15">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
     <widget class="QToolBox" name="toolBox">
      <property name="currentIndex">
       <number>1</number>
@@ -31,7 +72,7 @@
         <x>0</x>
         <y>0</y>
         <width>527</width>
-        <height>763</height>
+        <height>708</height>
        </rect>
       </property>
       <attribute name="label">
@@ -63,54 +104,13 @@
         <x>0</x>
         <y>0</y>
         <width>527</width>
-        <height>763</height>
+        <height>708</height>
        </rect>
       </property>
       <attribute name="label">
        <string>Simulate</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
-       <item>
-        <widget class="QFrame" name="frame">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_29">
-          <item>
-           <widget class="QLabel" name="label_32">
-            <property name="text">
-             <string>Working on: </string>
-            </property>
-            <property name="textFormat">
-             <enum>Qt::AutoText</enum>
-            </property>
-            <property name="scaledContents">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QComboBox" name="_sim_master_model_combo_box"/>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_15">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </widget>
-       </item>
        <item>
         <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0">
          <property name="sizeConstraint">
@@ -143,10 +143,10 @@
                   <x>0</x>
                   <y>0</y>
                   <width>470</width>
-                  <height>1137</height>
+                  <height>1078</height>
                  </rect>
                 </property>
-                <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0,0,0,0,0">
+                <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0,0,0,0">
                  <property name="spacing">
                   <number>6</number>
                  </property>
@@ -300,41 +300,6 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QFrame" name="_sim_basic_mobile_whole_model_frame">
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                   <layout class="QHBoxLayout" name="horizontalLayout_17">
-                    <item>
-                     <widget class="QLabel" name="label_10">
-                      <property name="text">
-                       <string>Mobilise model: </string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QComboBox" name="_sim_basic_whole_model_combo_box"/>
-                    </item>
-                    <item>
-                     <spacer name="horizontalSpacer_5">
-                      <property name="orientation">
-                       <enum>Qt::Horizontal</enum>
-                      </property>
-                      <property name="sizeHint" stdset="0">
-                       <size>
-                        <width>40</width>
-                        <height>20</height>
-                       </size>
-                      </property>
-                     </spacer>
-                    </item>
-                   </layout>
-                  </widget>
-                 </item>
-                 <item>
                   <widget class="QFrame" name="_sim_basic_mobile_by_chain_frame">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -358,23 +323,13 @@
                     <item>
                      <layout class="QFormLayout" name="formLayout_2">
                       <item row="0" column="0">
-                       <widget class="QLabel" name="_sim_basic_mobile_chains_list_label">
-                        <property name="text">
-                         <string>Mobilise model: </string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="0" column="1">
-                       <widget class="QComboBox" name="_sim_basic_by_chain_model_combo_box"/>
-                      </item>
-                      <item row="1" column="0">
                        <widget class="QLabel" name="label_8">
                         <property name="text">
                          <string>Chains: </string>
                         </property>
                        </widget>
                       </item>
-                      <item row="1" column="1">
+                      <item row="0" column="1">
                        <widget class="QListWidget" name="_sim_basic_mobile_chains_list_box">
                         <property name="minimumSize">
                          <size>
@@ -910,7 +865,6 @@
                 <zorder>_sim_platform_frame</zorder>
                 <zorder>_sim_basic_selection_mode_frame</zorder>
                 <zorder>_sim_basic_mobile_custom_frame</zorder>
-                <zorder>_sim_basic_mobile_whole_model_frame</zorder>
                 <zorder>_sim_basic_mobile_by_chain_frame</zorder>
                </widget>
               </widget>
@@ -933,7 +887,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>483</width>
-                  <height>610</height>
+                  <height>555</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1097,7 +1051,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>487</width>
-                  <height>597</height>
+                  <height>542</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -1225,7 +1179,7 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-186</y>
+                  <y>0</y>
                   <width>470</width>
                   <height>796</height>
                  </rect>
@@ -1375,16 +1329,6 @@
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_22">
                       <item>
-                       <widget class="QLabel" name="label_23">
-                        <property name="text">
-                         <string>Model: </string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QComboBox" name="_validate_rama_model_combo_box"/>
-                      </item>
-                      <item>
                        <widget class="QComboBox" name="_validate_rama_sel_combo_box">
                         <item>
                          <property name="text">
@@ -1532,16 +1476,6 @@
                     </item>
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_28">
-                      <item>
-                       <widget class="QLabel" name="label_31">
-                        <property name="text">
-                         <string>Model: </string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QComboBox" name="_validate_pep_model_combo_box"/>
-                      </item>
                       <item>
                        <spacer name="horizontalSpacer_14">
                         <property name="orientation">
