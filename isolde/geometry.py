@@ -51,12 +51,12 @@ _get_dihedrals = _geometry.get_dihedrals
 def get_dihedrals(coords, n):
     full_len = n*4*3
     INTYPE = ctypes.POINTER(ctypes.c_double*full_len)
-    RTYPE = ctypes.POINTER(ctypes.c_double*n)
-    _get_dihedrals.argtypes = [INTYPE, ctypes.c_int, RTYPE]
+    RTYPE = ctypes.c_double*n
+    _get_dihedrals.argtypes = [INTYPE, ctypes.c_int, ctypes.POINTER(RTYPE)]
     import numpy
-    ret = RTYPE(numpy.empty(n).ctypes.data_as(RTYPE))
-    _get_dihedrals(numpy.reshape(coords, -1).ctypes.data_as(INTYPE), n, ret)
-    return ret.contents
+    ret = RTYPE(*numpy.empty(n))
+    _get_dihedrals(numpy.reshape(coords, -1).ctypes.data_as(INTYPE), n, ctypes.byref(ret))
+    return ret
 
 
 
