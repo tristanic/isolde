@@ -75,34 +75,36 @@ class Dihedrals():
             self._atoms = Atoms(atoms)
     
     def __len__(self):
-        return len(self._dihedrals)
+        return len(self.dihedrals)
     
     def __bool__(self):
         return len(self) > 0
     
     def __iter__(self):
-        return iter(self._dihedrals)
+        return iter(self.dihedrals)
     
     def __getitem__(self, i):
         import numpy
-        if isinstance(i,(int,numpy.int32,slice)):
-            return self._dihedrals[i]
+        if isinstance(i,(int,numpy.int32)):
+            return self.dihedrals[i]
+        elif isinstance(i,(slice)):
+            return Dihedrals(self.dihedrals[i])
         elif isinstance(i, numpy.ndarray):
-            return [self._dihedrals[j] for j in i]
+            return Dihedrals([self.dihedrals[j] for j in i])
         else:
             raise IndexError('Only integer indices allowed for %s, got %s'
                 % (self.__class__.__name__, str(type(i))))
     
     def append(self, d):
-        from chimerax.core.atomic import concatenate
+        from chimerax.core.atomic import concatenate, Residues
         if isinstance(d, Dihedral):
-            self._dihedrals.append(d)
-            self._residues = concatenate([self.residues, [d.residue]])
-            self._atoms = concatenate([self.atoms, d.atoms])
+            self.dihedrals.append(d)
+            self.residues = concatenate([self.residues, [d.residue]])
+            self.atoms = concatenate([self.atoms, d.atoms])
         elif isinstance(d, Dihedrals):
-            self._dihedrals.extend(d)
-            self._residues = concatenate([self.residues, d.residues])
-            self._atoms = concatenate([self.atoms, d.atoms])
+            self.dihedrals.extend(d)
+            self.residues = concatenate([self.residues, d.residues])
+            self.atoms = concatenate([self.atoms, d.atoms])
         else:
             raise TypeError('Can only append a single Dihedral or a Dihedrals object.')
     
@@ -129,6 +131,11 @@ class Dihedrals():
     @property
     def dihedrals(self):
         return self._dihedrals
+        
+    @property
+    def values(self):
+        from . import geometry
+        return geometry.get_dihedrals(self.coords, len(self))
 
 class Backbone_Dihedrals():
     '''
@@ -158,10 +165,6 @@ class Backbone_Dihedrals():
         
         nr = self.num_residues = len(self.residues)
         
-        # Empty Dihedrals objects to fill with phi, psi and omega
-        self.phi = []
-        self.psi = []
-        self.omega = []
                 
         self.find_dihedrals()
     
@@ -202,6 +205,10 @@ class Backbone_Dihedrals():
         return (self.phi[i], self.psi[i], self.omega[i])
          
     def find_dihedrals(self):
+        # Empty Dihedrals objects to fill with phi, psi and omega
+        self.phi = []
+        self.psi = []
+        self.omega = []
         bond_to_last = False
         bond_to_next = False
         last_residue = None

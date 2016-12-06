@@ -56,7 +56,7 @@ def get_dihedrals(coords, n):
     import numpy
     ret = RTYPE(*numpy.empty(n))
     _get_dihedrals(numpy.reshape(coords, -1).ctypes.data_as(INTYPE), n, ctypes.byref(ret))
-    return ret
+    return numpy.array(ret, numpy.float32)
 
 
 

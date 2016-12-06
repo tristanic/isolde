@@ -1081,10 +1081,14 @@ class Isolde():
         if self._simulation_running:
             return
         iw = self.iw
-        self._selected_model = iw._master_model_combo_box.currentData()
-        self.session.selection.clear()
-        if self._selected_model is not None:
+        m = iw._master_model_combo_box.currentData()
+        if self._selected_model != m and m is not None:
+            self._selected_model = m
+            self.session.selection.clear()
             self._selected_model.selected = True
+            from . import dihedrals
+            self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(m)
+            
             self._update_chain_list()
         
     
