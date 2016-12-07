@@ -239,7 +239,7 @@ class RamaValidator():
         phipsi = numpy.column_stack([phi,psi])
         # Filter out any residues missing either phi or psi
         none_filter = self.none_filter = numpy.where(
-            numpy.invert(numpy.any(phipsi == numpy.array(None), axis = 1)))
+            numpy.invert(numpy.any(numpy.isnan(phipsi), axis = 1)))
         phipsi = self.phipsi = phipsi[none_filter]
         residues = self.residues = numpy.array(residues)[none_filter]
         resnames = self.resnames = resnames[none_filter]
@@ -247,8 +247,6 @@ class RamaValidator():
         psi = numpy.array(psi)[none_filter]
         omega = numpy.array(omega)[none_filter]
 
-
-        self.residues = residues
         cases = self.cases
         ca = self.case_arrays
         # Reset the arrays of indices for each case
@@ -347,7 +345,6 @@ class RamaValidator():
             case = self.cases[key]
             v = case['validator']
             scores = v(phipsi[indices]).astype(float)
-            #print(str(scores))
             self.rama_scores[indices] = scores
             if return_colors:
                 if len(scores):
@@ -413,22 +410,6 @@ class RamaPlot():
         picked_residue = self.validator.residues[res_index]
         from . import view
         view.focus_on_selection(self.session, self.session.main_view, picked_residue.atoms)
-        #v = self.session.main_view
-        #center = picked_residue.center
-        #radius = 5.0
-        #v.center_of_rotation = center
-        #bounds = picked_residue.atoms.scene_bounds
-        #bounds.xyz_min = bounds.xyz_min - radius
-        #bounds.xyz_max = bounds.xyz_max + radius
-        #radius += bounds.radius()
-        #v.view_all(bounds)
-        #cam = v.camera
-        #vd = cam.view_direction()
-        #cp = v.clip_planes
-        #cp.set_clip_position('near', center - radius*vd, cam)
-        #cp.set_clip_position('far', center + radius*vd, cam)
-        #picked_residue.structure.selected=False
-        #picked_residue.atoms.selected=True    
         
     def change_case(self, case_key):
         self.current_case = case_key

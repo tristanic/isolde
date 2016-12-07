@@ -1,25 +1,4 @@
 
-def time_dihedrals(sel, iterations):
-    from time import time
-    start_time = time()
-    dlist = Backbone_Dihedrals(sel)
-    end_time = time()
-    print('Caching dihedrals for ' + str(len(dlist.residues)) + ' residues took ' + str(end_time - start_time) + ' seconds.')
-    
-    start_time = time()
-    for i in range(iterations):
-        for i in range(len(dlist.residues)):
-            if dlist.phi[i] is not None:
-                dlist.phi[i].get_value()
-            if dlist.psi[i] is not None:
-                dlist.psi[i].get_value()
-            if dlist.omega[i] is not None:
-                dlist.omega[i].get_value()
-    end_time = time()    
-    print('Calculating dihedrals ' + str(iterations) + ' times took ' + str(end_time - start_time) + ' seconds.')
-
-
-
 class Dihedral():
     '''
     Holds information about the dihedral formed by an array of four atoms.
@@ -40,16 +19,12 @@ class Dihedral():
         # we can restrain this dihedral as needed
         self.sim_index = -1
         
-        self.value = None
-        
-    def update(self):
+    
+    @property
+    def value(self):
         from .geometry import get_dihedral
         self.coords = self.atoms.coords
-        self.value = get_dihedral(*self.coords)
-    
-    def get_value(self):
-        self.update()
-        return self.value
+        return get_dihedral(*self.coords)
 
 class Dihedrals():
     '''
@@ -95,6 +70,21 @@ class Dihedrals():
             raise IndexError('Only integer indices allowed for %s, got %s'
                 % (self.__class__.__name__, str(type(i))))
     
+    def by_residue(self, residue):
+        from chimerax.core.atomic import Residues
+        r = Residues([residue])
+        i = r.indices(self.residues)[0]
+        if i == -1:
+            return None
+        return self[i]
+    
+    def by_residues(self, residues):
+        indices = residues.indices(self.residues)
+        indices = indices[indices != -1]
+        if len(indices):
+            return self[indices]
+        return None
+   
     def append(self, d):
         from chimerax.core.atomic import concatenate, Residues
         if isinstance(d, Dihedral):
@@ -139,76 +129,124 @@ class Dihedrals():
 
 class Backbone_Dihedrals():
     '''
-    Given an atomic model, finds all amino acid residues and creates
-    Dihedrals objects containing their phi, psi and omega dihedrals.
+    Takes either an atomic model or three Dihedrals objects with pre-defined
+    phi, psi and omega dihedrals. If provided with a model, it will find and
+    store all phi, psi and omega dihedrals as Dihedrals objects.
     '''
-    def __init__(self, model):
-        if not model.atomspec_has_atoms():
+    def __init__(self, model = None, phi = None, psi = None, omega = None):
+        if model == None and (phi == None or psi == None or omega == None):
+            raise TypeError('You must provide either a model or all three of\
+                            phi, psi and omega!')
+        elif model and (phi or psi or omega):
+            raise TypeError('Cannot provide both a model and predefined dihedrals!')
+        elif model and not model.atomspec_has_atoms():
             raise TypeError('Please provide a model containing atoms!')
-        self.residues = model.residues
-        # Filter to get only amino acid residues
-        f = []
-        for r in self.residues:
-            f.append(r.PT_AMINO)
-        if not len(f):
-            return
+            
         import numpy
-        f = numpy.array(f, dtype = bool)
-        self.residues = self.residues.filter(f)
         
-        self.residues = self.residues[numpy.lexsort((self.residues.numbers, self.residues.chains.chain_ids))]
-        self.resnames = self.residues.names
-        self.atoms = self.residues.atoms
-        # We want to colour C-alphas according to their status, so we'll
-        # hold an array of them here.
-        self.CAs = self.atoms.filter(self.atoms.names == 'CA')
-        
-        nr = self.num_residues = len(self.residues)
-        
+        if model:
+            self.residues = model.residues
+            # Filter to get only amino acid residues
+            from chimerax.core.atomic import Residue
+            f = self.residues.polymer_types == Residue.PT_AMINO
+            self.residues = self.residues.filter(f)
+            self.residues = self.residues[numpy.lexsort((self.residues.numbers, self.residues.chains.chain_ids))]
+            self.resnames = self.residues.names
+            self.atoms = self.residues.atoms
+            # We want to colour C-alphas according to their status, so we'll
+            # hold an array of them here.
+            self.CAs = self.atoms.filter(self.atoms.names == 'CA')
+            nr = self.num_residues = len(self.residues)
+            # Empty lists to fill with phi, psi and omega. Once filled, they
+            # will be converted to Dihedrals objects
+            self.phi = []
+            self.psi = []
+            self.omega = []
+            # We want to keep a single master list of residues, but not all
+            # residues will have all three dihedrals. So, we'll keep an array
+            # of indices for each type, mapping the dihedral index to the
+            # residue index.
+            self._phi_indices = []
+            self._psi_indices = []
+            self._omega_indices = []
+            self.find_dihedrals()
+        else:
+            self.phi = phi
+            self.psi = psi
+            self.omega = omega
+            
+            self.residues = phi.residues.merge(psi.residues).merge(omega.residues)
+            self.residues = self.residues[numpy.lexsort((self.residues.numbers, self.residues.chains.chain_ids))]
+            self.resnames = self.residues.names
+            atoms = self.residues.atoms
+            self.CAs = atoms.filter(atoms.names == 'CA')
+            phi_indices = []
+            psi_indices = []
+            omega_indices = []
+            phi_indices = phi.residues.indices(self.residues)
+            psi_indices = psi.residues.indices(self.residues)
+            omega_indices = omega.residues.indices(self.residues)
+            
+            #for i, r in enumerate(self.residues):
+                #if phi.by_residue(r) != None:
+                    #phi_indices.append(i)
+                #if psi.by_residue(r) != None:
+                    #psi_indices.append(i)
+                #if omega.by_residue(r) != None:
+                    #omega_indices.append(i)
+            self._phi_indices = numpy.array(phi_indices[phi_indices != -1],numpy.int32)
+            self._psi_indices = numpy.array(psi_indices[psi_indices != -1],numpy.int32)
+            self._omega_indices = numpy.array(omega_indices[omega_indices != -1],numpy.int32)
                 
-        self.find_dihedrals()
+            
+    @property
+    def all_vals(self):
+        return self.phi_vals, self.psi_vals, self.omega_vals
     
-    def get_phi_vals(self, update = True):
-        if update:
-            for i, phi in enumerate(self.phi):
-                if phi is not None:
-                    self.phi_vals[i] = phi.get_value()
-                else:
-                    self.phi_vals[i] = None
-        return self.phi_vals
+    @property
+    def phi_vals(self):
+        import numpy
+        vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
+        vals[self._phi_indices] = self.phi.values
+        return vals
     
-    def get_psi_vals(self, update = True):
-        if update:
-            for i, psi in enumerate(self.psi):
-                if psi is not None:
-                    self.psi_vals[i] = psi.get_value()
-                else:
-                    self.phi_vals[i] = None
-        return self.psi_vals
-        
-    def get_omega_vals(self, update = True):
-        if update:
-            for i, omega in enumerate(self.omega):
-                if omega is not None:
-                    self.omega_vals[i] = omega.get_value()
-                else:
-                    self.omega_vals[i] = None
-        return self.omega_vals
+    @property
+    def psi_vals(self):
+        import numpy
+        vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
+        vals[self._psi_indices] = self.psi.values
+        return vals
+    
+    @property    
+    def omega_vals(self):
+        import numpy
+        vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
+        vals[self._omega_indices] = self.omega.values
+        return vals
 
-    def lookup_by_residue(self, res):
+    def by_residue(self, res):
         ''' 
         Return the phi, psi and omega dihedrals for a given residue
         '''
-        i = self.residues.index(res)
-        if i == -1:
-            return None
-        return (self.phi[i], self.psi[i], self.omega[i])
+        phi = self.phi.by_residue(res)
+        psi = self.psi.by_residue(res)
+        omega = self.omega.by_residue(res)
+        return phi, psi, omega
+    
+    def by_residues(self, reslist):
+        import numpy
+        phi = self.phi.by_residues(reslist)
+        psi = self.psi.by_residues(reslist)
+        omega = self.omega.by_residues(reslist)
+        return phi, psi, omega
          
     def find_dihedrals(self):
-        # Empty Dihedrals objects to fill with phi, psi and omega
-        self.phi = []
-        self.psi = []
-        self.omega = []
+        if len(self.phi) or len(self.psi) or len(self.omega):
+            import warnings
+            warnings.warn('Backbone dihedrals have already been defined. \
+                           If you want to update them, create a new \
+                           Backbone_Dihedrals object.')
+            return            
         bond_to_last = False
         bond_to_next = False
         last_residue = None
@@ -286,16 +324,22 @@ class Backbone_Dihedrals():
             from chimerax.core.atomic import concatenate, Atoms
             if phi_atoms is not None:
                 self.phi.append(Dihedral(concatenate(phi_atoms, Atoms), residue = r))
+                self._phi_indices.append(i)
             if psi_atoms is not None:
                 self.psi.append(Dihedral(concatenate(psi_atoms, Atoms), residue = r))
+                self._psi_indices.append(i)
             if omega_atoms is not None:
                 self.omega.append(Dihedral(concatenate(omega_atoms, Atoms), residue = r))
+                self._omega_indices.append(i)
         
         # Convert to Dihedrals objects
         self.phi = Dihedrals(self.phi)
         self.psi = Dihedrals(self.psi)
         self.omega = Dihedrals(self.omega)
-                    
+        
+        self._phi_indices = numpy.array(self._phi_indices)
+        self._psi_indices = numpy.array(self._psi_indices)
+        self._omega_indices = numpy.array(self._omega_indices)            
                     
                         
                 

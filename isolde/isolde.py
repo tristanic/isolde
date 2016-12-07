@@ -161,9 +161,12 @@ class Isolde():
         self._rama_plot_window = None
         # Object holding Ramachandran plot information and controls
         self.rama_plot = None
-        # Will hold the backbone dihedral information for the simulated
-        # selection
+        # Object holding the protein phi, psi and omega dihedrals for the
+        # currently selected model.
         self.backbone_dihedrals = None
+        # Object holding only the backbone dihedrals that are mobile in
+        # the current simulation
+        self._mobile_backbone_dihedrals = None
         
         
         # Do we track and display residues' status on the Ramachandran plot?
@@ -522,6 +525,9 @@ class Isolde():
         iw._sim_platform_combo_box.currentIndexChanged.connect(
             self._change_sim_platform
             )
+        iw._sim_basic_whole_structure_button.clicked.connect(
+            self._select_whole_model
+            )
         
         # Run all connected functions once to initialise
         self._change_force_field()
@@ -856,37 +862,33 @@ class Isolde():
     ####
     def _enable_rebuild_residue_frame(self, res):
         if not self._simulation_running:
+            self._disable_rebuild_residue_frame()
             return
-        self._get_rotamer_list_for_selected_residue()
         if -1 in res.atoms.indices(self._total_mobile):
             self._disable_rebuild_residue_frame()
             return
-        else:
-            bd = self.backbone_dihedrals
-            self._rebuild_residue = res
-            res_bd = bd.lookup_by_residue(res)
-            self._rebuild_res_update_omega = True
-            self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
-            if res_bd is not None:
-                omega = self._rebuild_res_omega = res_bd[2]
-                if omega is None or None in omega.atoms:
-                    # This is a terminal residue without an omega dihedral
-                    self.iw._rebuild_sel_res_pep_info.setText('N/A')
-                    self.iw._rebuild_sel_res_pep_flip_button.setDisabled(True)
-                    self._rebuild_res_update_omega = False
-            else:
-                # We should not be able to get here, but just in case:
-                self._disable_rebuild_residue_frame()
-                return
-            self.iw._rebuild_sel_residue_frame.setEnabled(True)
-            chain_id, resnum, resname = (res.chain_id, res.number, res.name)
-            self.iw._rebuild_sel_residue_info.setText(str(chain_id) + ' ' + str(resnum) + ' ' + resname)
-            
-            self._steps_per_sel_res_update = 10
-            self._sel_res_update_counter = 0
-            if 'update_selected_residue_info' not in self._event_handler.list_event_handlers():
-                self._event_handler.add_event_handler('update_selected_residue_info',
-                        'atomic changes', self._update_selected_residue_info_live)
+        self._get_rotamer_list_for_selected_residue()
+        bd = self._mobile_backbone_dihedrals
+        self._rebuild_residue = res
+        omega = bd.omega.by_residue(res)
+        if omega is None:
+            # This is a terminal residue without an omega dihedral
+            self.iw._rebuild_sel_res_pep_info.setText('N/A')
+            self.iw._rebuild_sel_res_pep_flip_button.setDisabled(True)
+            self._rebuild_res_update_omega = False
+            return
+        self._rebuild_res_update_omega = True
+        self._rebuild_res_omega = omega
+        self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
+        self.iw._rebuild_sel_residue_frame.setEnabled(True)
+        chain_id, resnum, resname = (res.chain_id, res.number, res.name)
+        self.iw._rebuild_sel_residue_info.setText(str(chain_id) + ' ' + str(resnum) + ' ' + resname)
+        
+        self._steps_per_sel_res_update = 10
+        self._sel_res_update_counter = 0
+        if 'update_selected_residue_info' not in self._event_handler.list_event_handlers():
+            self._event_handler.add_event_handler('update_selected_residue_info',
+                    'atomic changes', self._update_selected_residue_info_live)
                     
                     
     def _disable_rebuild_residue_frame(self):
@@ -914,7 +916,7 @@ class Isolde():
             # Get the residue's omega value
             if self._rebuild_res_update_omega:
                 omega = self._rebuild_res_omega
-                oval = degrees(omega.get_value())
+                oval = degrees(omega.value)
                 if oval <= -150 or oval >= 150:
                     pep_type = 'trans'
                 elif oval >= -30 and oval <= 30:
@@ -930,29 +932,20 @@ class Isolde():
     
     def flip_peptide_omega(self, res):
         from math import degrees
-        bd = self.backbone_dihedrals
-        res_bd = bd.lookup_by_residue(res)
-        if res_bd is None:
-            print('Could not find residue!')
+        bd = self._mobile_backbone_dihedrals
+        omega = bd.omega.by_residue(res)
+        if omega is None:
+            import warnings
+            warnings.warn('Could not find residue or residue has no omega dihedral.')
             return
-        omega = res_bd[2]
-        if omega is None or None in omega.atoms:
-            print('Residue has no omega dihedral or not all atoms are in the simulation.')
-            return
-        oval = degrees(omega.get_value())
+        oval = degrees(omega.value)
         if oval >= -30 and oval <= 30:
             # cis, flip to trans
             target = 180
         else:
             target = 0
-        self.apply_peptide_bond_restraints([omega], target = target, units = 'deg')
-                    
-                
-        
-        
-        # stub
-        pass
-    
+        from . import dihedrals
+        self.apply_peptide_bond_restraints(dihedrals.Dihedrals([omega]), target = target, units = 'deg')
 
 
     
@@ -994,12 +987,16 @@ class Isolde():
         whole_model = bool(self.iw._validate_rama_sel_combo_box.currentIndex())
         if whole_model:
             sel = model.atoms
+            bd = self.backbone_dihedrals
+            
         else:
             sel = model.atoms.filter(model.atoms.selected)
-        from . import dihedrals
-        bd = self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(sel)
-        self.rama_validator.load_structure(bd.residues, bd.resnames, 
-                bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
+            residues = sel.unique_residues
+            phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
+            from . import dihedrals
+            bd = self.bd2 = dihedrals.Backbone_Dihedrals(phi=phi, psi=psi, omega=omega)
+        phi_vals, psi_vals, omega_vals = bd.all_vals
+        self.rama_validator.load_structure(bd.residues, bd.resnames, phi_vals, psi_vals, omega_vals)
         self._rama_plot.update_scatter()
     
     def _show_peptide_validation_frame(self, *_):
@@ -1020,8 +1017,7 @@ class Isolde():
         if model != ov.current_model:
             sel = model.atoms
             from . import dihedrals
-            bd = self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(sel)
-            bd.get_omega_vals()
+            bd = self.backbone_dihedrals
             ov.load_structure(model, bd.omega)
         cis, twisted = ov.find_outliers()
         ov.draw_outliers(cis, twisted)
@@ -1090,6 +1086,11 @@ class Isolde():
             self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(m)
             
             self._update_chain_list()
+    
+    def _select_whole_model(self, *_):
+        if self._selected_model:
+            self._selected_model.selected = True
+            self._selected_atoms = self._selected_model.atoms
         
     
     def _change_selected_chains(self,*_):
@@ -1228,7 +1229,7 @@ class Isolde():
         enable = bool(self.iw._restraints_pep_on_off_combo_box.currentIndex())
         selected = bool(self.iw._restraints_pep_all_sel_combo_box.currentIndex())
         
-        bd = self.backbone_dihedrals
+        bd = self._mobile_backbone_dihedrals
         
         if selected:
             from chimerax.core.atomic import selected_atoms
@@ -1266,6 +1267,9 @@ class Isolde():
     
     
     def start_sim(self):
+        log = self.session.logger.info
+        from time import time
+        last_time = time()
         if self._logging:
             self._log('Initialising simulation')
             
@@ -1330,24 +1334,26 @@ class Isolde():
         
         # Collect backbone dihedral atoms and prepare the Ramachandran
         # validator
-        
-        log = self.session.logger.info
-        from time import time
+        log('Initial phase took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
         
         from . import dihedrals
-        bd = self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(sc)
-        log('Defining dihedrals took' + str(time() - last_time) + ' seconds')
+        all_bd = self.backbone_dihedrals
+        sim_phi, sim_psi, sim_omega = all_bd.by_residues(total_mobile.unique_residues)
+        bd = self._mobile_backbone_dihedrals \
+            = dihedrals.Backbone_Dihedrals(phi = sim_phi, psi = sim_psi, omega = sim_omega)
+        log('Preparing backbone dihedrals took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
         if self.track_rama:
+            phi, psi, omega = bd.all_vals
             self.rama_validator.load_structure(bd.residues, bd.resnames, 
-                bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
+                phi, psi, omega)
             bd.CAs.draw_modes = 1
-            log('Preparing Ramachandran validation took ' + str(time() - last_time) + ' seconds')
+            log('Preparing Ramachandran validation took {0:0.4f} seconds'.format(time() - last_time))
             last_time = time()
 
             self.omega_validator.load_structure(self._selected_model, bd.omega)
-            log('Preparing peptide bond validation took ' + str(time() - last_time) + ' seconds')
+            log('Preparing peptide bond validation took {0:0.4f} seconds'.format(time() - last_time))
             last_time = time()
 
         from . import sim_interface as si
@@ -1356,19 +1362,19 @@ class Isolde():
         # Register each dihedral with the CustomTorsionForce, so we can
         # restrain them at will during the 
         for dlist in (bd.phi, bd.psi, bd.omega):
-            for d in dlist:
-                if d is not None:
-                    indices = d.atoms.indices(sc)
-                    if -1 not in indices:
-                        d.sim_index = sh.initialize_dihedral_restraint(d, indices)
-        log('Defining dihedral restraint forces took ' + str(time() - last_time) + ' seconds')
+            atoms = dlist.atoms
+            indices = numpy.reshape(atoms.indices(sc),[len(dlist),4])
+            for i, d in enumerate(dlist):
+                d_indices = indices[i]
+                d.sim_index = sh.initialize_dihedral_restraint(d, d_indices)
+        log('Defining dihedral restraint forces took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
 
         
         # If we wish to apply peptide bond restraints, initialise them here
         if self.restrain_peptide_bonds:
             self.apply_peptide_bond_restraints(bd.omega, target = None)
-        log('Adding peptide bond restraints took ' + str(time() - last_time) + ' seconds')
+        log('Adding peptide bond restraints took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
 
         
@@ -1385,6 +1391,9 @@ class Isolde():
         
         sh.register_custom_external_force('tug', tug_force, global_parameters,
                 per_particle_parameters, per_particle_defaults)
+        
+        log('Setting up tugging force took {0:0.4f} seconds'.format(time() - last_time))
+        last_time = time()
         
         # Crop down maps and convert to potential fields
         if self.sim_mode in [sm.xtal, sm.em]:
@@ -1407,14 +1416,18 @@ class Isolde():
                     from chimerax.core.commands import sop
                     sop.sop_zone(self.session, v.surface_drawings, near_atoms = total_mobile, range = cutoff)
         
-
+        log('Preparing maps took {0:0.4f} seconds'.format(time() - last_time))
+        last_time = time()
 
         
         # Generate topology
         self._topology, self._particle_positions = sh.openmm_topology_and_external_forces(
             sc, sb, tug_hydrogens = False, hydrogens_feel_maps = False,
             logging = self._logging, log = self._log)
-
+        
+        log('Preparing topology took {0:0.4f} seconds'.format(time() - last_time))
+        last_time = time()
+        
         if self._logging:
             self._log('Generating forcefield')
         
@@ -1429,7 +1442,10 @@ class Isolde():
         
         # Define simulation System
         sys = self._system = si.create_openmm_system(self._topology, self._ff)
-
+        
+        log('Creating system took {0:0.4f} seconds'.format(time() - last_time))
+        last_time = time()
+        
         # Register extra forces
         for key, f in sh.get_all_custom_external_forces().items():
             sys.addForce(f[0])
@@ -1459,27 +1475,29 @@ class Isolde():
                                     
         self.sim = si.create_sim(self._topology, self._system, integrator, platform)
         
+        log('Finalising sim platform took {0:0.4f} seconds'.format(time() - last_time))
+        last_time = time()
             
         # Apply fixed atoms to System
         if self._logging:
             self._log('Applying fixed atoms')
         
-        fixed = len(sc)*[False]
-        for i, atom in enumerate(sc):
-            if atom in self._hard_shell_atoms:
-                fixed[i] = True
-                continue
-            if self.fix_soft_shell_backbone:
-                if atom in self._soft_shell_atoms:
-                    if atom.name in ['N','C','O','H','H1','H2','H3']:
-                        fixed[i] = True
-        for i in range(len(fixed)):
-            if fixed[i]:
+        fixed = numpy.array(len(sc)*[False],numpy.bool)
+        fixed[self._hard_shell_atoms.indices(sc)] = True
+        if self.fix_soft_shell_backbone:
+            indices = self._soft_shell_atoms.indices(sc)
+            names = self._soft_shell_atoms.names
+            for i, n in zip(indices, names):
+                if n in ['N','C','O','H','H1','H2','H3']:
+                    fixed[i] = True        
+        for i, f in enumerate(fixed):
+            if f:
                 self.sim.system.setParticleMass(i, 0)
         if True in fixed:
             self.sim.context.reinitialize()
             
- 
+        log('Applying fixed atoms took {0:0.4f} seconds'.format(time() - last_time))
+        last_time = time()
 
         
         # Save the current positions in case of reversion
@@ -1509,6 +1527,8 @@ class Isolde():
 
         if self.track_rama:
             self._rama_go_live()
+        
+        log('Everything else took {0:0.4f} seconds'.format(time() - last_time))
         
     # Get the mobile selection. The method will vary depending on
     # the selection mode chosen
@@ -1717,16 +1737,18 @@ class Isolde():
         elif target is not None:
             raise Exception('Target must be either a number, "trans", "cis", or None')
         
+        import numpy
+        indices = numpy.reshape(dihedrals.atoms.indices(sc),[len(dihedrals),4])
         
-        for d in dihedrals:
-            if d is not None:
-                if target is None:
-                    dval = d.get_value()
-                    if dval < cr[1] and dval > cr[0]:
-                        t = 0
-                    else:
-                        t = pi
-                sh.set_dihedral_restraint(context, sc, d, t, k)
+        for i, d in enumerate(dihedrals):
+            if target is None:
+                dval = d.value
+                if dval < cr[1] and dval > cr[0]:
+                    t = 0
+                else:
+                    t = pi
+            ilist = indices[i]
+            sh.set_dihedral_restraint(context, sc, d, ilist, t, k)
                     
     def remove_peptide_bond_restraints(self, dihedrals):
         '''
@@ -1912,8 +1934,8 @@ class Isolde():
         self._rama_counter = (self._rama_counter + 1) % self.steps_per_rama_update
         if self._rama_counter == 0:
             rv = self.rama_validator
-            bd = self.backbone_dihedrals
-            scores, colors = rv.update(bd.get_phi_vals(), bd.get_psi_vals(), bd.get_omega_vals())
+            bd = self._mobile_backbone_dihedrals
+            scores, colors = rv.update(bd.phi_vals, bd.psi_vals, bd.omega_vals)
             bd.CAs.colors = colors
         
     def update_omega_check(self, *_):
@@ -1964,7 +1986,7 @@ def initialize_openmm():
     if not _openmm_initialized:
         _openmm_initialized = True
         from sys import platform
-        if platform == 'linux':
+        if platform in ['linux', 'darwin']:
             from os import environ, path
             from chimerax import app_lib_dir
             environ['OPENMM_PLUGIN_DIR'] = path.join(app_lib_dir, 'plugins')
