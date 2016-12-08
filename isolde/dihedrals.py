@@ -143,7 +143,10 @@ class Backbone_Dihedrals():
             raise TypeError('Please provide a model containing atoms!')
             
         import numpy
-        
+        # It's most convenient to determine and store the Ramachandran case
+        # for each residue here, otherwise things start to get messy when
+        # working with subsets.
+        self.rama_case = []
         if model:
             self.residues = model.residues
             # Filter to get only amino acid residues
@@ -234,6 +237,10 @@ class Backbone_Dihedrals():
         return phi, psi, omega
     
     def by_residues(self, reslist):
+        '''
+        Return phi, psi and omega dihedrals for all residues in a 
+        Residues array.
+        '''
         import numpy
         phi = self.phi.by_residues(reslist)
         psi = self.psi.by_residues(reslist)
@@ -260,7 +267,7 @@ class Backbone_Dihedrals():
         # unforseen errors, we'll explicitly check connectivity for the
         # N- and C-termini of every residue.
         for i, r in enumerate(self.residues):
-            if not r.PT_AMINO:
+            if not r.polymer_type == r.PT_AMINO:
                 continue
             a = r.atoms
             names = a.names
@@ -344,7 +351,24 @@ class Backbone_Dihedrals():
                         
                 
             
+    def find_dihedrals(self):
+        if len(self.phi) or len(self.psi) or len(self.omega):
+            import warnings
+            warnings.warn('Backbone dihedrals have already been defined. \
+                           If you want to update them, create a new \
+                           Backbone_Dihedrals object.')
+            return            
+        import numpy
+        from chimerax.core.atomic import Residue
             
+        res = self.residues.filter(self.residues.polymer_types == Residue.PT_AMINO)
+        atoms = res.atoms
+        keyatoms = numpy.empty([len(res),3],dtype='object')
+        
+        for i, name in enumerate(['N','CA', 'C']):
+            keyatoms[:,i] = atoms.filter(atoms.names == name)
+            
+        
         
                 
             

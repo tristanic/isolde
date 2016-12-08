@@ -143,7 +143,10 @@ class Backbone_Dihedrals():
             raise TypeError('Please provide a model containing atoms!')
             
         import numpy
-        
+        # It's most convenient to determine and store the Ramachandran case
+        # for each residue here, otherwise things start to get messy when
+        # working with subsets.
+        self.rama_case = []
         if model:
             self.residues = model.residues
             # Filter to get only amino acid residues
@@ -234,6 +237,10 @@ class Backbone_Dihedrals():
         return phi, psi, omega
     
     def by_residues(self, reslist):
+        '''
+        Return phi, psi and omega dihedrals for all residues in a 
+        Residues array.
+        '''
         import numpy
         phi = self.phi.by_residues(reslist)
         psi = self.psi.by_residues(reslist)

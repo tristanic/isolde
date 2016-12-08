@@ -78,8 +78,10 @@ class Isolde():
     def __init__(self, gui):
         self._logging = False
         self._log = Logger('isolde.log')
-
+        
         self.session = gui.session
+        
+        self._status = self.session.logger.status
 
         from .eventhandler import EventHandler
         self._event_handler = EventHandler(self.session)
@@ -154,13 +156,15 @@ class Isolde():
         # Load in Ramachandran maps
         from . import validation
         # object containing all the Ramachandran contours and lookup functions
+        self._status('Preparing Ramachandran contours...')
         self.rama_validator = validation.RamaValidator()
+        self._status('')
         # object that handles checking and annotation of peptide bond geometry
         self.omega_validator = validation.OmegaValidator(self._annotations)
         # Generic widget object holding the Ramachandran plot
         self._rama_plot_window = None
         # Object holding Ramachandran plot information and controls
-        self.rama_plot = None
+        self._rama_plot = None
         # Object holding the protein phi, psi and omega dihedrals for the
         # currently selected model.
         self.backbone_dihedrals = None
@@ -320,7 +324,8 @@ class Isolde():
         self._last_frame_number = None
         
         self.initialize_haptics()
-
+        
+        self.gui_mode = False
         self.start_gui(gui)
     
     ###################################################################
@@ -334,7 +339,7 @@ class Isolde():
         
         self.gui = gui
         self.iw = gui.iw
-        
+        self.gui_mode = True
         
         # Any values in the Qt Designer .ui file are placeholders only.
         # Combo boxes need to be repopulated, and variables need to be
@@ -367,8 +372,6 @@ class Isolde():
         # Work out menu state based on current ChimeraX session
         self._update_sim_control_button_states()
         
-        # Create the basic MatPlotLib canvas for the Ramachandran plot
-        self._prepare_ramachandran_plot()
         
     def _populate_menus_and_update_params(self):
         iw = self.iw
@@ -651,6 +654,7 @@ class Isolde():
     # Create a HapticTugger object for each connected haptic device.
     def initialize_haptics(self):
         if hasattr(self.session, 'HapticHandler'):
+            self._status('Initialising haptic interface(s)')
             hh = self.session.HapticHandler
             hh.startHaptics()
             n = self._num_haptic_devices = hh.getNumDevices()
@@ -665,6 +669,8 @@ class Isolde():
             for i in range(n):
                 d[i] = haptics.HapticTugger(self.session, i, self._annotations)
             self._use_haptics = True
+            self._status('')
+            self.session.view.center_of_rotation_method = 'fixed'
         else:
             self._use_haptics = False
         
@@ -782,11 +788,9 @@ class Isolde():
         elif i == 1:
             self._sim_selection_mode = self._sim_selection_modes.chain
             iw._sim_basic_mobile_by_chain_frame.show()
-            self._change_selected_model()
             self._change_selected_chains()
         elif i == 2:
             self._sim_selection_mode = self._sim_selection_modes.whole_model
-            self._change_selected_model()
         elif i == 3:
             self._sim_selection_mode = self._sim_selection_modes.custom
             iw._sim_basic_mobile_custom_frame.show()
@@ -955,6 +959,10 @@ class Isolde():
     def _show_rama_plot(self, *_):
         self.iw._validate_rama_stub_frame.hide()
         self.iw._validate_rama_main_frame.show()
+        if self._rama_plot is None:
+            # Create the basic MatPlotLib canvas for the Ramachandran plot
+            self._prepare_ramachandran_plot()
+
         if self._simulation_running and self.track_rama:
             self._rama_go_live()
     
@@ -1072,6 +1080,7 @@ class Isolde():
         self._sim_water_ff = self._available_ffs.explicit_water_files[ffindex]
     
     def _change_selected_model(self):
+        self._status('Finding backbone dihedrals. Please be patient.')
         if len(self._available_models) == 0:
             return
         if self._simulation_running:
@@ -1083,9 +1092,9 @@ class Isolde():
             self.session.selection.clear()
             self._selected_model.selected = True
             from . import dihedrals
-            self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(m)
-            
+            self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(m)            
             self._update_chain_list()
+        self._status('')
     
     def _select_whole_model(self, *_):
         if self._selected_model:
@@ -1263,8 +1272,7 @@ class Isolde():
 
     ##############################################################
     # Simulation prep
-    ##############################################################
-    
+    ##############################################################        
     
     def start_sim(self):
         log = self.session.logger.info
@@ -1281,12 +1289,10 @@ class Isolde():
         sm = self._sim_modes
         if self.sim_mode in [sm.xtal, sm.em]:
             if not len(self.master_map_list):
-                errstring = 'You have selected ' + \
-                self._human_readable_sim_modes[self.sim_mode] + \
-                ' but have not selected any maps. Please choose at least one map.'
-                raise Exception(errstring)
+                self._no_maps_warning()
+                return
                 
-        
+        self._status('Defining simulation selection...')
         
         # Define final mobile selection
         self._get_final_sim_selection()
@@ -1337,6 +1343,8 @@ class Isolde():
         log('Initial phase took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
         
+        self._status('Organising dihedrals...')
+        
         from . import dihedrals
         all_bd = self.backbone_dihedrals
         sim_phi, sim_psi, sim_omega = all_bd.by_residues(total_mobile.unique_residues)
@@ -1345,6 +1353,7 @@ class Isolde():
         log('Preparing backbone dihedrals took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
         if self.track_rama:
+            self._status('Preparing validators...')
             phi, psi, omega = bd.all_vals
             self.rama_validator.load_structure(bd.residues, bd.resnames, 
                 phi, psi, omega)
@@ -1358,7 +1367,8 @@ class Isolde():
 
         from . import sim_interface as si
         sh = self._sim_handler = si.SimHandler(self.session)        
-                    
+        
+        self._status('Preparing restraints...')            
         # Register each dihedral with the CustomTorsionForce, so we can
         # restrain them at will during the 
         for dlist in (bd.phi, bd.psi, bd.omega):
@@ -1392,9 +1402,8 @@ class Isolde():
         sh.register_custom_external_force('tug', tug_force, global_parameters,
                 per_particle_parameters, per_particle_defaults)
         
-        log('Setting up tugging force took {0:0.4f} seconds'.format(time() - last_time))
-        last_time = time()
         
+        self._status('Preparing maps...')
         # Crop down maps and convert to potential fields
         if self.sim_mode in [sm.xtal, sm.em]:
             for mkey in self.master_map_list:
@@ -1419,7 +1428,7 @@ class Isolde():
         log('Preparing maps took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
 
-        
+        self._status('Preparing simulation topology...')
         # Generate topology
         self._topology, self._particle_positions = sh.openmm_topology_and_external_forces(
             sc, sb, tug_hydrogens = False, hydrogens_feel_maps = False,
@@ -1428,6 +1437,7 @@ class Isolde():
         log('Preparing topology took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
         
+        self._status('Initialising OpenMM simulation...')
         if self._logging:
             self._log('Generating forcefield')
         
@@ -1525,10 +1535,11 @@ class Isolde():
         self._simulation_running = True
         self._update_sim_control_button_states()
 
-        if self.track_rama:
+        if self.track_rama and self._rama_plot is not None:
             self._rama_go_live()
         
         log('Everything else took {0:0.4f} seconds'.format(time() - last_time))
+        self._status('Simulation running')
         
     # Get the mobile selection. The method will vary depending on
     # the selection mode chosen
@@ -1634,12 +1645,14 @@ class Isolde():
             if not self._sim_paused:
                 self._event_handler.remove_event_handler('do_sim_steps_on_gui_update')
                 self._sim_paused = True
+                self._status('Simulation paused')
                 self.iw._sim_pause_button.setText('Resume')
             else:
                 self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
                                       'new frame',
                                       self.do_sim_steps)
                 self._sim_paused = False
+                self._status('Simulation running')
                 self.iw._sim_pause_button.setText('Pause')    
     
     def discard_sim(self):
@@ -1698,7 +1711,9 @@ class Isolde():
             self._rama_plot.update_scatter()
             self.update_omega_check()
         self._rama_go_static()
+        self.iw._rebuild_sel_residue_frame.setDisabled(True)
         self.omega_validator.current_model = None
+        self._status('')
     
     ####
     # Restraint controls
@@ -1977,6 +1992,32 @@ class Isolde():
         except KeyError:
             e = "Mode must be one of 'xtal', 'em' or 'free'"
             raise Exception(e)
+
+    ##############################################
+    # Warning dialogs
+    ##############################################
+    def _no_maps_warning(self):
+        '''
+        If the user has chosen crystallography or EM mode and has not
+        set up any maps.
+        '''
+        from PyQt5.QtWidgets import QMessageBox
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Warning)
+        errstring = 'You have selected {} but have not selected any maps. '\
+            .format(self._human_readable_sim_modes[self.sim_mode])\
+            + 'Click Ok to switch to Free mode and run without maps, or '\
+            + 'Cancel to stop and choose map(s).'
+        msg.setText(errstring)
+        msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        choice = msg.exec()
+        if choice == QMessageBox.Ok:
+            self.iw._sim_basic_mode_combo_box.setCurrentIndex(2)
+            self.start_sim()
+        else:
+            return
+
+
 
 _openmm_initialized = False
 def initialize_openmm():

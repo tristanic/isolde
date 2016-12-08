@@ -5,93 +5,113 @@ data_dir = os.path.join(package_directory, 'molprobity_data')
 
 # Load a MolProbity data set and return a SciPy RegularGridInterpolator 
 # object for later fast interpolation of values
-def generate_interpolator(filename, wrap_axes = True):
+def generate_interpolator(file_prefix, wrap_axes = True):
     from scipy.interpolate import RegularGridInterpolator
-    import numpy
-    infile = open(filename, 'r')
-    # Throw away the first line - we don't need it
-    infile.readline()
-    # Get number of dimensions
-    ndim = int(infile.readline().split()[-1])
-    # Throw away the next line - it's just headers
-    infile.readline()
-    lower_bound = []
-    upper_bound= []
-    number_of_bins = []
+    import numpy, pickle
+    infile = None
     
-    step_size = []
-    first_step = []
-    last_step = []
-    axis = []
-    
-    # Read in the header to get the dimensions and step size for each
-    # axis, and initialise the axis arrays
-    for i in range(ndim):
-        line = infile.readline().split()
-        lb = float(line[2])
-        lower_bound.append(lb)
-        ub = float(line[3])
-        upper_bound.append(ub)
-        nb = int(line[4])
-        number_of_bins.append(nb)
+    # First try to load from a pickle file
+    try:
+        infile = open(file_prefix+'.pickle', 'r+b')
+        axis, full_grid = pickle.load(infile)
+        infile.close()
+        infile = None
+    except:
+        # If pickle load fails for any reason, fall back to loading from
+        # text, then regenerate the pickle file at the end.
+        if infile is not None:    
+            infile.close()
+        infile = open(file_prefix+'.data', 'r')
+        # Throw away the first line - we don't need it
+        infile.readline()
+        # Get number of dimensions
+        ndim = int(infile.readline().split()[-1])
+        # Throw away the next line - it's just headers
+        infile.readline()
+        lower_bound = []
+        upper_bound= []
+        number_of_bins = []
         
-        ss = (ub - lb)/nb
-        step_size.append(ss)
-        # Values are at the midpoint of each bin
-        fs = lb + ss/2
-        first_step.append(fs)
-        ls = ub - ss/2
-        last_step.append(ls)
-        axis.append(numpy.linspace(fs,ls,nb))
+        step_size = []
+        first_step = []
+        last_step = []
+        axis = []
         
-    infile.close()
+        # Read in the header to get the dimensions and step size for each
+        # axis, and initialise the axis arrays
+        for i in range(ndim):
+            line = infile.readline().split()
+            lb = float(line[2])
+            lower_bound.append(lb)
+            ub = float(line[3])
+            upper_bound.append(ub)
+            nb = int(line[4])
+            number_of_bins.append(nb)
+            
+            ss = (ub - lb)/nb
+            step_size.append(ss)
+            # Values are at the midpoint of each bin
+            fs = lb + ss/2
+            first_step.append(fs)
+            ls = ub - ss/2
+            last_step.append(ls)
+            axis.append(numpy.linspace(fs,ls,nb))
+            
+        infile.close()
+            
+        full_grid = numpy.zeros(number_of_bins)
         
-    full_grid = numpy.zeros(number_of_bins)
-    
-    # Slurp in the actual numerical data as a numpy array
-    data = numpy.loadtxt(filename)
-    
-    # Convert each coordinate to an integral number of steps along each
-    # axis
-    axes = []
-    for i in range(ndim):
-        axes.append([])
-    
-    for i in range(ndim):
-        ss = step_size[i]
-        fs = first_step[i]
-        lb = lower_bound[i]
-        axis_vals = data[:,i]
-        axes[i]=(((axis_vals - ss/2 - lb) / ss).astype(int))
-    
-    full_grid[axes] = data[:,ndim]
-    
-    # At this point we should have the full n-dimensional matrix, with
-    # all values not present in the text file present as zeros.
-    # Now we have to consider periodicity. Since we're just going to
-    # be doing linear interpretation, the easiest approach is to simply
-    # pad the array on all sides with the values from the opposite extreme
-    # of the relevant matrix. This can be handily done with numpy.pad
-    if wrap_axes:
-        full_grid = numpy.pad(full_grid, 1, 'wrap')
-    
-        # ... and we need to extend each of the axes by one step to match
-        for i, a in enumerate(axis):
-            fs = first_step[i]
-            ls = last_step[i]
+        # Slurp in the actual numerical data as a numpy array
+        data = numpy.loadtxt(file_prefix+'.data')
+        
+        # Convert each coordinate to an integral number of steps along each
+        # axis
+        axes = []
+        for i in range(ndim):
+            axes.append([])
+        
+        for i in range(ndim):
             ss = step_size[i]
-            a = numpy.pad(a, 1, mode='constant')
-            a[0] = fs - ss
-            a[-1] = ls + ss
-            axis[i] = a
-    
-    # Replace all zero or negative values with the minimum positive non-zero
-    # value, so that we can use logs
-    full_grid[full_grid<=0] = numpy.min(full_grid[full_grid > 0])         
-    # Finally, convert the axes to radians
-    from math import pi
-    axis = numpy.array(axis)
-    axis = axis/180*pi
+            fs = first_step[i]
+            lb = lower_bound[i]
+            axis_vals = data[:,i]
+            axes[i]=(((axis_vals - ss/2 - lb) / ss).astype(int))
+        
+        full_grid[axes] = data[:,ndim]
+        
+        # At this point we should have the full n-dimensional matrix, with
+        # all values not present in the text file present as zeros.
+        # Now we have to consider periodicity. Since we're just going to
+        # be doing linear interpretation, the easiest approach is to simply
+        # pad the array on all sides with the values from the opposite extreme
+        # of the relevant matrix. This can be handily done with numpy.pad
+        if wrap_axes:
+            full_grid = numpy.pad(full_grid, 1, 'wrap')
+        
+            # ... and we need to extend each of the axes by one step to match
+            for i, a in enumerate(axis):
+                fs = first_step[i]
+                ls = last_step[i]
+                ss = step_size[i]
+                a = numpy.pad(a, 1, mode='constant')
+                a[0] = fs - ss
+                a[-1] = ls + ss
+                axis[i] = a
+        
+        # Replace all zero or negative values with the minimum positive non-zero
+        # value, so that we can use logs
+        full_grid[full_grid<=0] = numpy.min(full_grid[full_grid > 0])         
+        # Finally, convert the axes to radians
+        from math import pi
+        axis = numpy.array(axis)
+        axis = axis/180*pi
+        
+        # Pickle a tuple containing the axes and grid for fast loading in
+        # future runs
+        
+        outfile = open(file_prefix+'.pickle', 'w+b')
+        pickle.dump((axis, full_grid), outfile)
+        outfile.close()
     
     return RegularGridInterpolator(axis, full_grid, bounds_error = True)
 
@@ -130,7 +150,7 @@ class RamaValidator():
     cases = {}
     cases['CisPro'] = {
         'name': 'Cis proline',
-        'file_name': os.path.join(data_dir, 'rama8000-cispro.data'),
+        'file_prefix': os.path.join(data_dir, 'rama8000-cispro'),
         'cutoffs': [0.002, 1.0, 0.02],
         'log_cutoffs': numpy.log(numpy.array([0.002, 1.0, 0.02])),
         'color_scale':  None,
@@ -138,7 +158,7 @@ class RamaValidator():
         }
     cases['TransPro'] = {
         'name': 'Trans proline',
-        'file_name': os.path.join(data_dir, 'rama8000-transpro.data'),
+        'file_prefix': os.path.join(data_dir, 'rama8000-transpro'),
         'cutoffs': [0.001, 1.0, 0.02],
         'log_cutoffs': numpy.log(numpy.array([0.001, 1.0, 0.02])),
         'color_scale':  None,
@@ -146,7 +166,7 @@ class RamaValidator():
         }
     cases['Glycine'] = {
         'name': 'Glycine',
-        'file_name': os.path.join(data_dir, 'rama8000-gly-sym.data'),
+        'file_prefix': os.path.join(data_dir, 'rama8000-gly-sym'),
         'cutoffs': [0.001, 1.0, 0.02],
         'log_cutoffs': numpy.log(numpy.array([0.001, 1.0, 0.02])),
         'color_scale':  None,
@@ -154,7 +174,7 @@ class RamaValidator():
         }
     cases['PrePro'] = {
         'name': 'Preceding proline',
-        'file_name': os.path.join(data_dir, 'rama8000-prepro-noGP.data'),
+        'file_prefix': os.path.join(data_dir, 'rama8000-prepro-noGP'),
         'cutoffs': [0.001, 1.0, 0.02],
         'log_cutoffs': numpy.log(numpy.array([0.001, 1.0, 0.02])),
         'color_scale':  None,
@@ -162,7 +182,7 @@ class RamaValidator():
         }
     cases['IleVal'] = {
         'name': 'Isoleucine or valine',
-        'file_name': os.path.join(data_dir, 'rama8000-ileval-nopreP.data'),
+        'file_prefix': os.path.join(data_dir, 'rama8000-ileval-nopreP'),
         'cutoffs': [0.001, 1.0, 0.02],
         'log_cutoffs': numpy.log(numpy.array([0.001, 1.0, 0.02])),
         'color_scale':  None,
@@ -170,7 +190,7 @@ class RamaValidator():
         }
     cases['General'] = {
         'name': 'General',
-        'file_name': os.path.join(data_dir, 'rama8000-general-noGPIVpreP.data'),
+        'file_prefix': os.path.join(data_dir, 'rama8000-general-noGPIVpreP'),
         'cutoffs': [0.0005, 1.0, 0.02],
         'log_cutoffs': numpy.log(numpy.array([0.0005, 1.0, 0.02])),
         'color_scale':  None,
@@ -180,7 +200,7 @@ class RamaValidator():
     
     def __init__(self, color_scale = 'PiYG'):
         for key, case in self.cases.items():
-            case['validator'] = generate_interpolator(case['file_name'])
+            case['validator'] = generate_interpolator(case['file_prefix'])
         self.current_structure = None
         self.rama_scores = None
         self.rama_types = None
@@ -361,6 +381,7 @@ class RamaValidator():
 class RamaPlot():
     
     def __init__(self, session, container, validator):
+        import numpy
         self.session = session
         self.container = container
         self.validator = validator
@@ -384,12 +405,35 @@ class RamaPlot():
         axes.minorticks_on()
         axes.autoscale(enable=False)
         
+        # Scatter plot needs to always have at least one point, so we'll
+        # define a point off the scale for when there's nothing to plot
+        self.default_coords = numpy.array([200,200])
+        self.default_logscores = numpy.ones(1)
+        self.scatter = None
         
         canvas = self.canvas = FigureCanvas(fig)
         self.resize_cid = self.canvas.mpl_connect('resize_event', self.on_resize)
         container.addWidget(canvas)
         
+        self.contours = {}
         self.change_case('General')
+            
+    def cache_contour_plots(self, key):
+        import numpy
+        case_data = self.validator.cases[key]['validator']
+        grid = numpy.degrees(case_data.grid)
+        from operator import itemgetter
+        contours = itemgetter(0,2)(self.validator.cases[key]['cutoffs'])
+        grid = numpy.degrees(case_data.grid)
+        values = numpy.rot90(numpy.fliplr(case_data.values)).astype(float)
+        logvalues = self.logvalues = numpy.log(values)
+        contour_plot = self.axes.contour(*grid, values, contours)
+        pcolor_plot = self.axes.pcolor(*grid, logvalues, cmap = 'BuGn')
+        for coll in contour_plot.collections:
+           coll.remove()
+        pcolor_plot.remove()
+        self.contours[key] = (contour_plot, pcolor_plot)
+        
         
     def on_resize(self, *_):
         axes = self.axes
@@ -398,11 +442,14 @@ class RamaPlot():
         axes.set_xticks([-120,-60,0,60,120])
         axes.set_yticks([-120,-60,0,60,120])
         axes.autoscale(enable=False)
-        self.scatter.remove()
+        if self.scatter.is_figure_set():
+            self.scatter.remove()
+        self.figure.set_facecolor('0.5')  
         self.canvas.draw()
         self.background = self.canvas.copy_from_bbox(self.axes.bbox)
         self.axes.add_artist(self.scatter)
         self.canvas.draw()
+        self.update_scatter()
     
     def on_pick(self, event):
         ind = event.ind[0]
@@ -414,41 +461,44 @@ class RamaPlot():
     def change_case(self, case_key):
         self.current_case = case_key
         import numpy
-        case_data = self.validator.cases[case_key]['validator']
+        self.axes.clear()
+        try:
+            contourplots = self.contours[case_key]
+        except KeyError:
+            self.cache_contour_plots(case_key)
+            contourplots = self.contours[case_key]
+        for coll in contourplots[0].collections:
+            self.axes.add_artist(coll)
+        self.axes.add_artist(contourplots[1])
+        from math import log
         from operator import itemgetter
         contours = itemgetter(0,2)(self.validator.cases[case_key]['cutoffs'])
-        grid = numpy.degrees(case_data.grid)
-        values = numpy.rot90(numpy.fliplr(case_data.values)).astype(float)
-        logvalues = self.logvalues = numpy.log(values)
-        self.axes.clear()
-        self.axes.contour(*grid, values, contours)
-        self.axes.pcolor(*grid, logvalues, cmap='BuGn')
-          
-        self.canvas.draw()
-        # Cache the contour plot for faster animation
-        self.background = self.canvas.copy_from_bbox(self.axes.bbox)
-        # Create a scatter plot stub to write the (phi,psi) coordinates into
-        from math import log
         P = self.P_limits = [0, -log(contours[0])]
-        self.scatter = self.axes.scatter((0),(0), cmap='bwr', picker = 2.0)
+        self.scatter = self.axes.scatter((200),(200), cmap='bwr', picker = 2.0)
         self.canvas.mpl_connect('pick_event', self.on_pick)
-        self.update_scatter()
+        self.on_resize()
         
     def update_scatter(self, *_):
         import numpy
         key = self.current_case
         indices = self.validator.case_arrays[key]
-        if not len(indices):
-            return
-        phipsi = self.validator.phipsi[indices].astype(float)
-        logscores = numpy.log(self.validator.rama_scores[indices])
+        if len(indices):
+            phipsi = numpy.degrees(self.validator.phipsi[indices].astype(float))
+            logscores = numpy.log(self.validator.rama_scores[indices])
+        else:
+            phipsi = self.default_coords
+            logscores = self.default_logscores
         if phipsi is not None and len(phipsi):
             self.canvas.restore_region(self.background)
-            self.scatter.set_offsets(numpy.degrees(phipsi))
+            self.scatter.set_offsets(phipsi)
             self.scatter.set_clim(self.P_limits)
             self.scatter.set_array(-logscores)
-            self.axes.draw_artist(self.scatter)
-            self.canvas.blit(self.axes.bbox)
+        else:
+            #Just in case of the unexpected
+            self.scatter.set_offsets(self.default_coords)
+        self.axes.draw_artist(self.scatter)
+        self.canvas.blit(self.axes.bbox)
+
         
 class OmegaValidator():
     def __init__(self, annotation_model):
