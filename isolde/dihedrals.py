@@ -351,7 +351,7 @@ class Backbone_Dihedrals():
                         
                 
             
-    def find_dihedrals(self):
+    def find_dihedrals2(self):
         if len(self.phi) or len(self.psi) or len(self.omega):
             import warnings
             warnings.warn('Backbone dihedrals have already been defined. \
@@ -360,18 +360,76 @@ class Backbone_Dihedrals():
             return            
         import numpy
         from chimerax.core.atomic import Residue
-            
-        res = self.residues.filter(self.residues.polymer_types == Residue.PT_AMINO)
+        
+        # Get all protein residues and their atoms    
+        res = self.residues = self.residues.filter(self.residues.polymer_types == Residue.PT_AMINO)
+        resnums = res.numbers
         atoms = res.atoms
-        keyatoms = numpy.empty([len(res),3],dtype='object')
         
-        for i, name in enumerate(['N','CA', 'C']):
-            keyatoms[:,i] = atoms.filter(atoms.names == name)
+        # Get all N, CA, C in ordered arrays. We need to hold the CA atoms
+        # long-term for visualisation purposes.
+        N_atoms = atoms.filter(atoms.names == 'N')
+        CA_atoms = self.CAs = atoms.filter(atoms.names == 'CA')
+        C_atoms = atoms.filter(atoms.names == 'C')
+        
+        # Get all the C-N bonds
+        CN_atoms = atoms.filter(numpy.any(numpy.column_stack(
+            [atoms.names == 'N', atoms.names == 'C']), axis = 1))
             
+        CN_bonds = CN_atoms.inter_bonds
+        
+        bonded_C = CN_bonds.atoms[0]
+        assert(numpy.all(bonded_C.names == 'C'))
+        bonded_C_indices = bonded_C.indices(C_atoms)
+        bonded_C_resnames = bonded_C.resnames
+        bonded_N = CN_bonds.atoms[1]
+        assert(numpy.all(bonded_N.names == 'N'))
+        bonded_N_indices = bonded_N.indices(N_atoms)
+        bonded_N_resnames = bonded_N.resnames
+
+        # We also need the CA atom from the preceding residue to make up
+        # the omega dihedral
+        bonded_C_residues = bonded_C.residues
+        prev_atoms = bonded_C_residues.atoms
+        prev_CA = prev_atoms.filter(prev_atoms.names == 'CA')
         
         
+        '''
+        Build up a 6 * (number of residues) numpy array where each row is
+        [CA, C, N, CA, C, N].
+        The omega dihedral is entries 0 to 3, phi is 1 to 4, psi is 2 to 5.
+        '''
+        
+        master_array = numpy.array([[None] * 6] * len(res))
+        master_array[:,2] = N_atoms
+        master_array[:,3] = CA_atoms
+        master_array[:,4] = C_atoms
+        
+        master_array[bonded_C_indices,1] = bonded_C
+        master_array[bonded_C_indices,0] = prev_CA
+        master_array[bonded_N_indices,5] = bonded_N
+        
+        
+        ome_i = self._omega_indices = numpy.where(numpy.all(master_array[:,0:4], axis=1))
+        phi_i = self._phi_indices = numpy.where(numpy.all(master_array[:,1:5], axis = 1))
+        psi_i = self._psi_indices = numpy.where(numpy.all(master_array[:,2:6], axis = 1))
                 
-            
+        raw_omegas = master_array[ome_i,0:4]
+        raw_phis = master_array[phi_i,1:5]
+        raw_psis = master_array[psi_i,2:6]
+        
+        from chimerax.core.atomic import Atoms
+        
+        first_res = res[psi_i]
+        next_res = Atoms(raw_psis[:,3].tolist()).unique_residues
+        
+        
+        
+        
+        # To determine the MolProbity Ramachandran case for each residue we
+        # need to know both its name and the name of the following residue.
+        # We also need the value of the omega dihedral to distinguish cis-Pro
+        # from trans-Pro.
         
         
     
