@@ -115,18 +115,81 @@ def generate_interpolator(file_prefix, wrap_axes = True):
     
     return RegularGridInterpolator(axis, full_grid, bounds_error = True)
 
-cis_min = radians(-30)
-cis_max = radians(30)
-trans_min = radians(150)
-trans_max = radians(-150)
+RAMA_CASES = ['Nter', 'Cter', 'CisPro', 'TransPro', 'Glycine', 'PrePro', 'IleVal', 'General']
+
+def sort_into_rama_cases(counts_for_rama, rama_resnames, omega_vals):
+    '''
+    Sorts a list of residues into the different Ramachandran cases.
+    Arguments:
+        counts_for_rama: 1D boolean array determining which residues
+                         are valid for Ramachandran analysis (i.e. have
+                         both phi and psi dihedrals).
+        rama_resnames:   2D array containing the names of the first and 
+                         second residue in all psi dihedrals
+        omega_values:    Values of the omega dihedrals for sorting into
+                         cis and trans proline
+    Output:
+        a dict containing a numpy array of residue indices corresponding to
+        each standard Ramachandran case, plus N- and C-terminal residues since
+        we can easily do it here.
+    '''
+    import numpy
+    
+    case_arrays = {}
+    for case in RAMA_CASES:
+        case_arrays[case] = []
+    
+    rama_case_list = []
+     
+    for i, [counts, names, oval] in enumerate(zip(counts_for_rama, rama_resnames, omega_vals)):
+        name1, name2 = names
+        if not counts:
+            if name1 is not None:
+                case_arrays['Nter'].append(i)
+                rama_case_list.append('Nter')
+            else:
+                case_arrays['Cter'].append(i)
+                rama_case_list.append('Cter')
+        elif name1 == 'PRO':
+            otype = omega_type(oval)
+            if otype == 'cis':
+                case_arrays['CisPro'].append(i)
+                rama_case_list.append('CisPro')
+            else:
+                case_arrays['TransPro'].append(i)
+                rama_case_list.append('TransPro')
+        elif name1 == 'GLY':
+            case_arrays['Glycine'].append(i)
+            rama_case_list.append('Glycine')
+        elif name2 == 'PRO':
+            case_arrays['PrePro'].append(i)
+            rama_case_list.append('PrePro')
+        elif name1 in ['ILE', 'VAL']:
+            case_arrays['IleVal'].append(i)
+            rama_case_list.append('IleVal')
+        else:
+            case_arrays['General'].append(i)
+            rama_case_list.append('General')
+    
+    # Convert lists to numpy integer arrays
+    for key, arr in case_arrays.items():
+        case_arrays[key] = numpy.array(arr,numpy.int32)
+
+    return case_arrays, numpy.array(rama_case_list)
+    
+
+CIS_MIN = radians(-30)
+CIS_MAX = radians(30)
+TRANS_MIN = radians(150)
+TRANS_MAX = radians(-150)
 
     
 def omega_type(omega):
     if omega is None:
         return None
-    if omega >= trans_min or omega <= trans_max:
+    if omega >= TRANS_MIN or omega <= TRANS_MAX:
         return "trans"
-    elif omega >= cis_min and omega <= cis_max:
+    elif omega >= CIS_MIN and omega <= CIS_MAX:
         return "cis"
     return "twisted"
         
@@ -144,7 +207,9 @@ class RamaValidator():
     #            at runtime.
     
     # Ordered list of keys for the below cases, since dict objects do not
-    # guarantee any particular order.
+    # guarantee any particular order. The master dict in the Backbone_Dihedrals
+    # object also contains the cases 'Nter' and 'Cter', but they're of no
+    # interest here.
     case_keys = ('General', 'Glycine', 'IleVal', 'PrePro', 'CisPro', 'TransPro')
     
     cases = {}
@@ -522,10 +587,6 @@ class OmegaValidator():
         self.currently_drawn = {}
         
         from math import radians
-        # maximum deviation from 0 radians to be annotated as cis
-        self.cis_max = radians(30)
-        # maximum absolute value of torsion angles annotated as twisted
-        self.twisted_max = radians(150)
     
     def load_structure(self, model, omega_list):
         self.current_model = model
@@ -542,9 +603,9 @@ class OmegaValidator():
         cis = []
         twisted = []
         for o in self.omega:
-            if abs(o.value)  <= self.cis_max:
+            if abs(o.value)  <= CIS_MAX:
                 cis.append(o)
-            elif abs(o.value) <= self.twisted_max:
+            elif abs(o.value) <= TRANS_MIN:
                 twisted.append(o)
         return cis, twisted
     

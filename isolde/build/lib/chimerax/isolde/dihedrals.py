@@ -9,22 +9,45 @@ class Dihedral():
     
     def __init__(self, atoms, residue = None):
         self.atoms = atoms
-        self.coords = atoms.coords
-        self.names = atoms.names
         self.residue = residue # the Residue object that this dihedral belongs to
-        self.residues = atoms.residues
-        self.resnames = self.residues.names
-        self.resnums = self.residues.numbers
+        #self.resnames = self.residues.names
+        #self.resnums = self.residues.numbers
+        self._rama_case = None
+        
         # Index of the matching CustomTorsionForce in the simulation so
         # we can restrain this dihedral as needed
         self.sim_index = -1
-        
     
     @property
     def value(self):
         from .geometry import get_dihedral
         self.coords = self.atoms.coords
         return get_dihedral(*self.coords)
+    
+    @property
+    def coords(self):
+        return self.atoms.coords
+    
+    @property
+    def names(self):
+        return self.atoms.names
+    
+    @property
+    def residues(self):
+        # List of four residues corresponding to the atoms in the dihedral
+        return self.atoms.residues
+    
+    @property
+    def rama_case(self):
+        return self._rama_case
+    
+    @rama_case.setter
+    def rama_case(self, name):
+        from . import validation
+        if name not in validation.RAMA_CASES:
+            errstring = 'Invalid Ramachandran case! Must be one of {}'.format(validation.RAMA_CASES)
+            raise Exception(errstring)
+        self._rama_case = name
 
 class Dihedrals():
     '''
@@ -40,14 +63,10 @@ class Dihedrals():
         self._atoms = None
         # Current dihedral values
         self._values = None
+        # Array of Ramachandran cases (if applicable to this dihedral type)
+        self._rama_cases = None
         if dlist is not None:
             self._dihedrals = dlist
-            residues = [d.residue for d in self._dihedrals] 
-            from chimerax.core.atomic import Residues
-            self._residues = Residues(residues)
-            atoms = [a for d in self.dihedrals for a in d.atoms]
-            from chimerax.core.atomic import Atoms
-            self._atoms = Atoms(atoms)
     
     def __len__(self):
         return len(self.dihedrals)
@@ -89,15 +108,14 @@ class Dihedrals():
         from chimerax.core.atomic import concatenate, Residues
         if isinstance(d, Dihedral):
             self.dihedrals.append(d)
-            self.residues = concatenate([self.residues, [d.residue]])
-            self.atoms = concatenate([self.atoms, d.atoms])
+            self._residues = concatenate([self.residues, [d.residue]])
+            self._atoms = concatenate([self.atoms, d.atoms])
         elif isinstance(d, Dihedrals):
             self.dihedrals.extend(d)
-            self.residues = concatenate([self.residues, d.residues])
-            self.atoms = concatenate([self.atoms, d.atoms])
+            self._residues = concatenate([self.residues, d.residues])
+            self._atoms = concatenate([self.atoms, d.atoms])
         else:
-            raise TypeError('Can only append a single Dihedral or a Dihedrals object.')
-    
+            raise TypeError('Can only append a single Dihedral or a Dihedrals object.')    
     
     def index(self, d):
         try:
@@ -108,12 +126,23 @@ class Dihedrals():
     
     @property
     def atoms(self):
-        return self._atoms
+        if self._atoms is None:
+            import numpy
+            atom_pointers = numpy.empty([len(self),4],numpy.uint64)
+            for i, d in enumerate(self):
+                atom_pointers[i] = d.atoms._pointer_array
+            from chimerax.core.atomic import Atoms
+            self._atoms = Atoms(numpy.ravel(atom_pointers))
+        return self._atoms    
     
     @property
     def residues(self):
+        if self._residues is None:
+            residues = [d.residue for d in self._dihedrals] 
+            from chimerax.core.atomic import Residues
+            self._residues = Residues(residues)            
         return self._residues
-    
+        
     @property
     def coords(self):
         return self.atoms.coords
@@ -126,6 +155,22 @@ class Dihedrals():
     def values(self):
         from . import geometry
         return geometry.get_dihedrals(self.coords, len(self))
+    
+    @property
+    def rama_cases(self):
+        # Need to check every time in case any have been changed directly
+        cases = self._rama_cases = [d.rama_case for d in self]
+        return cases
+    
+    @rama_cases.setter
+    def rama_cases(self, cases):
+        if not hasattr(cases,'__len__') or len(cases) != len(self):
+            raise TypeError('Array size must match number of dihedrals!')
+        self._rama_cases = cases
+        for d, case in zip(self, cases):
+            d.rama_case = case
+            
+        
 
 class Backbone_Dihedrals():
     '''
@@ -133,7 +178,7 @@ class Backbone_Dihedrals():
     phi, psi and omega dihedrals. If provided with a model, it will find and
     store all phi, psi and omega dihedrals as Dihedrals objects.
     '''
-    def __init__(self, model = None, phi = None, psi = None, omega = None):
+    def __init__(self, model = None, phi = None, psi = None, omega = None, old = False):
         if model == None and (phi == None or psi == None or omega == None):
             raise TypeError('You must provide either a model or all three of\
                             phi, psi and omega!')
@@ -145,8 +190,10 @@ class Backbone_Dihedrals():
         import numpy
         # It's most convenient to determine and store the Ramachandran case
         # for each residue here, otherwise things start to get messy when
-        # working with subsets.
-        self.rama_case = []
+        # working with subsets. We'll also keep a list of all proline indices
+        # since we have to double-check their peptide bond state and re-categorise
+        # as necessary
+        self._rama_cases = None
         if model:
             self.residues = model.residues
             # Filter to get only amino acid residues
@@ -172,6 +219,9 @@ class Backbone_Dihedrals():
             self._phi_indices = []
             self._psi_indices = []
             self._omega_indices = []
+            if old:
+                self.find_dihedrals_old()
+                return
             self.find_dihedrals()
         else:
             self.phi = phi
@@ -190,16 +240,22 @@ class Backbone_Dihedrals():
             psi_indices = psi.residues.indices(self.residues)
             omega_indices = omega.residues.indices(self.residues)
             
-            #for i, r in enumerate(self.residues):
-                #if phi.by_residue(r) != None:
-                    #phi_indices.append(i)
-                #if psi.by_residue(r) != None:
-                    #psi_indices.append(i)
-                #if omega.by_residue(r) != None:
-                    #omega_indices.append(i)
             self._phi_indices = numpy.array(phi_indices[phi_indices != -1],numpy.int32)
             self._psi_indices = numpy.array(psi_indices[psi_indices != -1],numpy.int32)
             self._omega_indices = numpy.array(omega_indices[omega_indices != -1],numpy.int32)
+            
+            # Get a list of Ramachandran cases to sort into a dict. We need
+            # to merge the arrays for Phi and Psi to make sure we get them
+            # all.
+            
+            rama_cases = numpy.array([None]*len(self.residues))
+            rama_cases[self._phi_indices] = phi.rama_cases
+            rama_cases[self._psi_indices] = psi.rama_cases
+            
+            from . import validation
+            self._rama_cases = {}
+            for key in validation.RAMA_CASES:
+                self._rama_cases[key] = numpy.where(rama_cases == key)[0]
                 
             
     @property
@@ -226,7 +282,16 @@ class Backbone_Dihedrals():
         vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
         vals[self._omega_indices] = self.omega.values
         return vals
-
+    
+    @property
+    def rama_cases(self):
+        self.update_pro_rama_cases(self.omega_vals)
+        return self._rama_cases
+    
+    @rama_cases.setter
+    def rama_cases(self, case_dict):
+        self._rama_cases = case_dict
+        
     def by_residue(self, res):
         ''' 
         Return the phi, psi and omega dihedrals for a given residue
@@ -246,8 +311,53 @@ class Backbone_Dihedrals():
         psi = self.psi.by_residues(reslist)
         omega = self.omega.by_residues(reslist)
         return phi, psi, omega
+    
+    def update_pro_rama_cases(self, omega_vals):
+        import numpy
+        rc = self._rama_cases
+        current_trans = rc['TransPro']
+        current_cis = rc['CisPro']
+        switch_to_cis = []
+        switch_to_trans = []
+        from . import validation
+        for i in current_trans:
+            if validation.omega_type(omega_vals[i]) == 'cis':
+                switch_to_cis.append(i)
+        for i in current_cis:
+            if validation.omega_type(omega_vals[i]) == 'trans':
+                switch_to_trans.append(i)
+        
+        if len(switch_to_cis):
+            switch_to_cis = numpy.array(switch_to_cis)
+            rc['TransPro'] = current_trans[numpy.in1d(current_trans, switch_to_cis, invert=True)]
+            rc['CisPro'] = numpy.append(current_cis, switch_to_cis)
+            
+            switched_residues = self.residues[switch_to_cis]
+            for r in switched_residues:
+                for d in self.by_residue(r):
+                    if d is not None:
+                        d.rama_case = 'CisPro'
+            
+        if len(switch_to_trans):
+            switch_to_trans = numpy.array(switch_to_trans)
+            rc['CisPro'] = current_cis[numpy.in1d(current_cis, switch_to_trans, invert=True)]
+            rc['TransPro'] = numpy.append(current_trans, switch_to_trans)
+            
+            switched_residues = self.residues[switch_to_trans]
+            for r in switched_residues:
+                for d in self.by_residue(r):
+                    if d is not None:
+                        d.rama_case = 'TransPro'
+            
+                
+                    
+            
+            
          
-    def find_dihedrals(self):
+    def find_dihedrals_old(self):
+        '''
+        Old, unused version. New code is about four times faster.
+        '''
         if len(self.phi) or len(self.psi) or len(self.omega):
             import warnings
             warnings.warn('Backbone dihedrals have already been defined. \
@@ -267,7 +377,7 @@ class Backbone_Dihedrals():
         # unforseen errors, we'll explicitly check connectivity for the
         # N- and C-termini of every residue.
         for i, r in enumerate(self.residues):
-            if not r.PT_AMINO:
+            if not r.polymer_type == r.PT_AMINO:
                 continue
             a = r.atoms
             names = a.names
@@ -351,11 +461,145 @@ class Backbone_Dihedrals():
                         
                 
             
-            
+    def find_dihedrals(self):
+        if len(self.phi) or len(self.psi) or len(self.omega):
+            import warnings
+            warnings.warn('Backbone dihedrals have already been defined. \
+                           If you want to update them, create a new \
+                           Backbone_Dihedrals object.')
+            return            
+        import numpy
+        from chimerax.core.atomic import Residue
         
+        # Get all protein residues and their atoms    
+        res = self.residues = self.residues.filter(self.residues.polymer_types == Residue.PT_AMINO)
+        resnums = res.numbers
+        atoms = res.atoms
+        
+        # Get all N, CA, C in ordered arrays. We need to hold the CA atoms
+        # long-term for visualisation purposes.
+        N_atoms = atoms.filter(atoms.names == 'N')
+        CA_atoms = self.CAs = atoms.filter(atoms.names == 'CA')
+        C_atoms = atoms.filter(atoms.names == 'C')
+        
+        # Get all the C-N bonds
+        CN_atoms = atoms.filter(numpy.any(numpy.column_stack(
+            [atoms.names == 'N', atoms.names == 'C']), axis = 1))
+            
+        CN_bonds = CN_atoms.inter_bonds
+        
+        bonded_C = CN_bonds.atoms[0]
+        assert(numpy.all(bonded_C.names == 'C'))
+        bonded_C_indices = bonded_C.indices(C_atoms)
+        bonded_C_resnames = bonded_C.unique_residues.names
+        bonded_N = CN_bonds.atoms[1]
+        assert(numpy.all(bonded_N.names == 'N'))
+        bonded_N_indices = bonded_N.indices(N_atoms)
+        bonded_N_resnames = bonded_N.unique_residues.names
+
+        # We also need the CA atom from the preceding residue to make up
+        # the omega dihedral
+        bonded_C_residues = bonded_C.residues
+        prev_atoms = bonded_C_residues.atoms
+        prev_CA = prev_atoms.filter(prev_atoms.names == 'CA')
+        
+        
+        '''
+        Build up a 6 * (number of residues) numpy array where each row is
+        [CA, C, N, CA, C, N].
+        The omega dihedral is entries 0 to 3, phi is 1 to 4, psi is 2 to 5.
+        '''
+        total_n_res = len(res)
+        
+        master_array = numpy.array([[None] * 6] * total_n_res)
+        master_array[:,2] = N_atoms._pointer_array
+        master_array[:,3] = CA_atoms._pointer_array
+        master_array[:,4] = C_atoms._pointer_array
+        
+        master_array[bonded_C_indices+1,1] = bonded_C._pointer_array
+        master_array[bonded_C_indices+1,0] = prev_CA._pointer_array
+        master_array[bonded_N_indices-1,5] = bonded_N._pointer_array
+        
+        
+        ome_i = self._omega_indices = numpy.where(numpy.all(master_array[:,0:4], axis=1))[0]
+        phi_i = self._phi_indices = numpy.where(numpy.all(master_array[:,1:5], axis = 1))[0]
+        psi_i = self._psi_indices = numpy.where(numpy.all(master_array[:,2:6], axis = 1))[0]
                 
-            
+        raw_omegas = master_array[ome_i,0:4]
+        raw_phis = master_array[phi_i,1:5]
+        raw_psis = master_array[psi_i,2:6]
         
+        from chimerax.core.atomic import Atoms
+        
+        # Create all the Dihedrals arrays
+        omega_1d = numpy.ravel(raw_omegas).astype(numpy.uint64)
+
+        omega_res = res[ome_i]
+        omega = []
+        for i in range(len(raw_omegas)):
+            omega.append(Dihedral(Atoms(omega_1d[4*i:4*i+4]), omega_res[i]))
+        omega = self.omega = Dihedrals(omega)
+        
+        phi_1d = numpy.ravel(raw_phis).astype(numpy.uint64)
+        phi_res = res[phi_i]
+        phi = []
+        for i in range(len(raw_phis)):
+            phi.append(Dihedral(Atoms(phi_1d[4*i:4*i+4]), phi_res[i]))
+        phi = self.phi = Dihedrals(phi)
+        
+        psi_1d = numpy.ravel(raw_psis).astype(numpy.uint64)
+        psi_res = res[psi_i]
+        psi = []
+        for i in range(len(raw_psis)):
+            psi.append(Dihedral(Atoms(psi_1d[4*i:4*i+4]), psi_res[i]))
+        psi = self.psi = Dihedrals(psi)
+        
+
+
+        # To determine the MolProbity Ramachandran case for each residue we
+        # need to know both its name and the name of the following residue.
+        # We also need the value of the omega dihedral to distinguish cis-Pro
+        # from trans-Pro. Only residues that have both omega and phi dihedrals
+        # count towards Ramachandran statistics.
+        
+        has_phi = numpy.array([False]*total_n_res)
+        has_phi[phi_i] = True
+        
+        has_psi = numpy.array([False]*total_n_res)
+        has_psi[psi_i] = True
+        
+        counts_for_rama = numpy.all([has_phi, has_psi], axis=0)
+          
+        first_res = res[psi_i]
+        next_res = Atoms(raw_psis[:,3].astype(numpy.uint64)).unique_residues
+        
+        # Column 1: The residue to which the Ramachandran score will apply
+        # Column 2: The residue to which residue 1's C is bonded
+        rama_resnames = numpy.array([[None]*2]*total_n_res)
+        rama_resnames[psi_i,0] = first_res.names
+        rama_resnames[psi_i,1] = next_res.names
+        
+        omega_vals = numpy.array([numpy.nan]*total_n_res)
+        omega_vals[ome_i] = omega.values
+        
+        from . import validation
+        
+        self.rama_cases, rca = validation.sort_into_rama_cases(counts_for_rama, rama_resnames, omega_vals)
+        omega_rama = rca[ome_i]
+        phi_rama = rca[phi_i]
+        psi_rama = rca[psi_i]
+        
+        omega.rama_cases = omega_rama
+        phi.rama_cases = phi_rama
+        psi.rama_cases = psi_rama
+        
+        
+        
+        
+        
+        
+        
+       
         
     
         
