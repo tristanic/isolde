@@ -21,8 +21,7 @@ class Dihedral():
     @property
     def value(self):
         from .geometry import get_dihedral
-        self.coords = self.atoms.coords
-        return get_dihedral(*self.coords)
+        return get_dihedral(*self.atoms.coords)
     
     @property
     def coords(self):
@@ -194,6 +193,11 @@ class Backbone_Dihedrals():
         # since we have to double-check their peptide bond state and re-categorise
         # as necessary
         self._rama_cases = None
+        # Numpy array holding the current Ramachandran scores
+        self._rama_scores = None
+        # Colours for C-alpha atoms will be changed according to Ramachandran score
+        self._rama_colors = None
+        
         if model:
             self.residues = model.residues
             # Filter to get only amino acid residues
@@ -288,9 +292,19 @@ class Backbone_Dihedrals():
         self.update_pro_rama_cases(self.omega_vals)
         return self._rama_cases
     
-    @rama_cases.setter
-    def rama_cases(self, case_dict):
-        self._rama_cases = case_dict
+    @property
+    def rama_scores(self):
+        if self._rama_scores is None:
+            import numpy
+            self._rama_scores = numpy.ones(len(self.residues),numpy.float32) * -1
+        return self._rama_scores
+    
+    @property
+    def rama_colors(self):
+        if self._rama_colors is None:
+            import numpy
+            self._rama_colors = numpy.array([[128,128,128,255]]*len(self.residues),numpy.uint8)
+        return self._rama_colors
         
     def by_residue(self, res):
         ''' 
@@ -356,7 +370,7 @@ class Backbone_Dihedrals():
          
     def find_dihedrals_old(self):
         '''
-        Old, unused version. New code is about four times faster.
+        Old, unused version. New code is about fifteen times faster.
         '''
         if len(self.phi) or len(self.psi) or len(self.omega):
             import warnings
@@ -462,6 +476,11 @@ class Backbone_Dihedrals():
                 
             
     def find_dihedrals(self):
+        '''
+        Identifies all protein backbone phi, psi and omega dihedrals in
+        a model, generates a Dihedrals containing each set, and sorts the
+        residues into the MolProbity Ramachandran groupings.
+        '''
         if len(self.phi) or len(self.psi) or len(self.omega):
             import warnings
             warnings.warn('Backbone dihedrals have already been defined. \
@@ -512,13 +531,13 @@ class Backbone_Dihedrals():
         total_n_res = len(res)
         
         master_array = numpy.array([[None] * 6] * total_n_res)
-        master_array[:,2] = N_atoms._pointer_array
-        master_array[:,3] = CA_atoms._pointer_array
-        master_array[:,4] = C_atoms._pointer_array
+        master_array[:,2] = N_atoms
+        master_array[:,3] = CA_atoms
+        master_array[:,4] = C_atoms
         
-        master_array[bonded_C_indices+1,1] = bonded_C._pointer_array
-        master_array[bonded_C_indices+1,0] = prev_CA._pointer_array
-        master_array[bonded_N_indices-1,5] = bonded_N._pointer_array
+        master_array[bonded_C_indices+1,1] = bonded_C
+        master_array[bonded_C_indices+1,0] = prev_CA
+        master_array[bonded_N_indices-1,5] = bonded_N
         
         
         ome_i = self._omega_indices = numpy.where(numpy.all(master_array[:,0:4], axis=1))[0]
@@ -532,7 +551,7 @@ class Backbone_Dihedrals():
         from chimerax.core.atomic import Atoms
         
         # Create all the Dihedrals arrays
-        omega_1d = numpy.ravel(raw_omegas).astype(numpy.uint64)
+        omega_1d = numpy.ravel(raw_omegas)
 
         omega_res = res[ome_i]
         omega = []
@@ -540,14 +559,14 @@ class Backbone_Dihedrals():
             omega.append(Dihedral(Atoms(omega_1d[4*i:4*i+4]), omega_res[i]))
         omega = self.omega = Dihedrals(omega)
         
-        phi_1d = numpy.ravel(raw_phis).astype(numpy.uint64)
+        phi_1d = numpy.ravel(raw_phis)
         phi_res = res[phi_i]
         phi = []
         for i in range(len(raw_phis)):
             phi.append(Dihedral(Atoms(phi_1d[4*i:4*i+4]), phi_res[i]))
         phi = self.phi = Dihedrals(phi)
         
-        psi_1d = numpy.ravel(raw_psis).astype(numpy.uint64)
+        psi_1d = numpy.ravel(raw_psis)
         psi_res = res[psi_i]
         psi = []
         for i in range(len(raw_psis)):
@@ -571,7 +590,7 @@ class Backbone_Dihedrals():
         counts_for_rama = numpy.all([has_phi, has_psi], axis=0)
           
         first_res = res[psi_i]
-        next_res = Atoms(raw_psis[:,3].astype(numpy.uint64)).unique_residues
+        next_res = Atoms(raw_psis[:,3]).unique_residues
         
         # Column 1: The residue to which the Ramachandran score will apply
         # Column 2: The residue to which residue 1's C is bonded
@@ -584,7 +603,8 @@ class Backbone_Dihedrals():
         
         from . import validation
         
-        self.rama_cases, rca = validation.sort_into_rama_cases(counts_for_rama, rama_resnames, omega_vals)
+        self._rama_cases, rca = validation.sort_into_rama_cases(
+                                counts_for_rama, rama_resnames, omega_vals)
         omega_rama = rca[ome_i]
         phi_rama = rca[phi_i]
         psi_rama = rca[psi_i]

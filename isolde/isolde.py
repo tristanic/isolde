@@ -165,6 +165,8 @@ class Isolde():
         self._rama_plot_window = None
         # Object holding Ramachandran plot information and controls
         self._rama_plot = None
+        # Is the Ramachandran plot running live?
+        self._update_rama_plot = False
         # Object holding the protein phi, psi and omega dihedrals for the
         # currently selected model.
         self.backbone_dihedrals = None
@@ -459,9 +461,11 @@ class Isolde():
         # cases
         cb = iw._validate_rama_case_combo_box
         cb.clear()
-        val = self.rama_validator
-        for key in val.case_keys:
-            cb.addItem(val.cases[key]['name'], key)
+        from . import validation
+        # First two keys are N- and C-terminal residues, which we don't plot
+        keys = validation.RAMA_CASES[2:]
+        for key in reversed(keys):
+            cb.addItem(validation.RAMA_CASE_DETAILS[key]['name'], key)
         
     
     def _prepare_ramachandran_plot(self):
@@ -977,16 +981,12 @@ class Isolde():
         self._rama_plot.change_case(case_key)
         
     def _rama_go_live(self, *_):
-        if 'rama_plot_update' not in self._event_handler.list_event_handlers():
-            self._event_handler.add_event_handler('rama_plot_update',
-                                                  'atomic changes',
-                                                  self._rama_plot.update_scatter)
+        self._update_rama_plot = True
         self.iw._validate_rama_sel_combo_box.setDisabled(True)
         self.iw._validate_rama_go_button.setDisabled(True)
     
     def _rama_go_static(self, *_):
-        if 'rama_plot_update' in self._event_handler.list_event_handlers():
-            self._event_handler.remove_event_handler('rama_plot_update')
+        self._update_rama_plot = False
         self.iw._validate_rama_sel_combo_box.setEnabled(True)
         self.iw._validate_rama_go_button.setEnabled(True)
                                                           
@@ -1002,10 +1002,10 @@ class Isolde():
             residues = sel.unique_residues
             phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
             from . import dihedrals
-            bd = self.bd2 = dihedrals.Backbone_Dihedrals(phi=phi, psi=psi, omega=omega)
-        phi_vals, psi_vals, omega_vals = bd.all_vals
-        self.rama_validator.load_structure(bd.residues, bd.resnames, phi_vals, psi_vals, omega_vals)
-        self._rama_plot.update_scatter()
+            bd = dihedrals.Backbone_Dihedrals(phi=phi, psi=psi, omega=omega)
+        #phi_vals, psi_vals, omega_vals = bd.all_vals
+        #self.rama_validator.load_structure(bd.residues, bd.resnames, phi_vals, psi_vals, omega_vals)
+        self._rama_plot.update_scatter(bd, force_update = True)
     
     def _show_peptide_validation_frame(self, *_):
         self.iw._validate_pep_stub_frame.hide()
@@ -1353,13 +1353,7 @@ class Isolde():
         log('Preparing backbone dihedrals took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
         if self.track_rama:
-            self._status('Preparing validators...')
-            phi, psi, omega = bd.all_vals
-            self.rama_validator.load_structure(bd.residues, bd.resnames, 
-                phi, psi, omega)
             bd.CAs.draw_modes = 1
-            log('Preparing Ramachandran validation took {0:0.4f} seconds'.format(time() - last_time))
-            last_time = time()
 
             self.omega_validator.load_structure(self._selected_model, bd.omega)
             log('Preparing peptide bond validation took {0:0.4f} seconds'.format(time() - last_time))
@@ -1708,8 +1702,9 @@ class Isolde():
         self._surroundings = None
         if self.track_rama:
             # Update one last time
-            self._rama_plot.update_scatter()
-            self.update_omega_check()
+            if self._update_rama_plot:
+                self._rama_plot.update_scatter(self._mobile_backbone_dihedrals)
+                self.update_omega_check()
         self._rama_go_static()
         self.iw._rebuild_sel_residue_frame.setDisabled(True)
         self.omega_validator.current_model = None
@@ -1950,8 +1945,10 @@ class Isolde():
         if self._rama_counter == 0:
             rv = self.rama_validator
             bd = self._mobile_backbone_dihedrals
-            scores, colors = rv.update(bd.phi_vals, bd.psi_vals, bd.omega_vals)
-            bd.CAs.colors = colors
+            rv.get_scores(bd, update_colors = True)
+            bd.CAs.colors = bd.rama_colors
+            if self._update_rama_plot:
+                self._rama_plot.update_scatter(bd)
         
     def update_omega_check(self, *_):
         rc = self._rama_counter

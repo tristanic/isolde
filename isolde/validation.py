@@ -1,7 +1,7 @@
 import os
 from math import degrees, radians
 package_directory = os.path.dirname(os.path.abspath(__file__))
-data_dir = os.path.join(package_directory, 'molprobity_data')
+DATA_DIR = os.path.join(package_directory, 'molprobity_data')
 
 # Load a MolProbity data set and return a SciPy RegularGridInterpolator 
 # object for later fast interpolation of values
@@ -115,7 +115,55 @@ def generate_interpolator(file_prefix, wrap_axes = True):
     
     return RegularGridInterpolator(axis, full_grid, bounds_error = True)
 
+# Master list of Ramachandran case keys. As well as the official ones, we'll
+# list N- and C-terminal residues here for convenience.
 RAMA_CASES = ['Nter', 'Cter', 'CisPro', 'TransPro', 'Glycine', 'PrePro', 'IleVal', 'General']
+
+RAMA_CASE_DETAILS = {
+    'Nter': {
+        'name': 'N-terminal residues',
+        'file_prefix': None,
+        'cutoffs': None
+    },
+    'Cter': {
+        'name': 'C-terminal residues',
+        'file_prefix': None,
+        'cutoffs': None
+    },
+    'CisPro': {
+        'name': 'Cis-proline residues',
+        'file_prefix': os.path.join(DATA_DIR, 'rama8000-cispro'),
+        'cutoffs': [0.002, 1.0, 0.02]
+    },
+    'TransPro': {
+        'name': 'Trans-proline residues',
+        'file_prefix': os.path.join(DATA_DIR, 'rama8000-transpro'),
+        'cutoffs': [0.001, 1.0, 0.02]
+    },
+    'Glycine': {
+        'name': 'Glycine residues',
+        'file_prefix': os.path.join(DATA_DIR, 'rama8000-gly-sym'),
+        'cutoffs': [0.001, 1.0, 0.02]
+    },
+    'PrePro': {
+        'name': 'Residues preceding proline',
+        'file_prefix': os.path.join(DATA_DIR, 'rama8000-prepro-noGP'),
+        'cutoffs': [0.001, 1.0, 0.02]
+    },
+    'IleVal': {
+        'name': 'Isoleucine or valine residues',
+        'file_prefix': os.path.join(DATA_DIR, 'rama8000-ileval-nopreP'),
+        'cutoffs': [0.001, 1.0, 0.02]
+    },
+    'General': {
+        'name': 'General amino acid residues',
+        'file_prefix': os.path.join(DATA_DIR, 'rama8000-general-noGPIVpreP'),
+        'cutoffs': [0.0005, 1.0, 0.02]
+    }
+}
+
+
+
 
 def sort_into_rama_cases(counts_for_rama, rama_resnames, omega_vals):
     '''
@@ -192,110 +240,100 @@ def omega_type(omega):
     elif omega >= CIS_MIN and omega <= CIS_MAX:
         return "cis"
     return "twisted"
+
+class RamaCase:
+    '''
+    Holds the RegularGridInterpolator object and defining parameters for
+    a specific MolProbity Ramachandran case.
+    '''
+    def __init__(self, file_prefix, cutoffs, color_scale_name):
+        self._cutoffs = cutoffs
+        self._log_cutoffs = None
+        self._file_prefix = file_prefix
+        self._interpolator = None
+        self.color_scale_name = color_scale_name
+        self._color_scale = None
+    
+    @property
+    def interpolator(self):
+        if self._interpolator is None:
+            self._interpolator = generate_interpolator(self._file_prefix)
+        return self._interpolator
+    
+    @property
+    def color_scale(self):
+        if self._color_scale is None:
+            import numpy
+            self._log_cutoffs = numpy.log(numpy.array(self._cutoffs, numpy.float32))
+            from . import color            
+            self._color_scale = color.standard_three_color_scale(
+                self.color_scale_name, *self._log_cutoffs)
+        return self._color_scale
+    
+    @color_scale.setter
+    def color_scale(self, scale_name):
+        from . import color
+
+        try:
+            self._color_scale = color.standard_three_color_scale(
+                scale_name, *self._log_cutoffs)
+            self.color_scale_name = scale_name
+        except:
+            import warnings
+            errstring = 'Please choose a valid color scale! Available scales are: {}'\
+                    .format(color.color_scales.keys())
+            warnings.warn(errstring)
+    
+    @property
+    def cutoffs(self):
+        return self._cutoffs
+    
+    @cutoffs.setter
+    def cutoffs(self, cutoffs):
+        c = cutoffs
+        if not hasattr(c, '__len__') or len(c) != 3:
+            errstring = 'Please provide a list of three values ordered (smallest, largest, midpoint)'
+            raise TypeError(errstring)
+        import numpy
+        c = numpy.array(c, numpy.float32)
+        first_smallest = numpy.all(c[[1,2]] > c[0])
+        second_largest = c[1] > c[2]
+        if not (first_smallest and second_largest):
+            raise TypeError('Cutoffs must be in order [smallest, largest, midpoint]!')
+        if numpy.any(c <= 0):
+            raise TypeError('Only positive non-zero cutoffs are allowed!')
+        self._cutoffs = c
+        self._log_cutoffs = numpy.log(c)
+        
+    
+
+
         
 class RamaValidator():
+    '''
+    Encapsulates the MolProbity Ramachandran data with a set of handy
+    functions for quick look-up of scores for all residues in a
+    Backbone_Dihedrals object.
+    '''
+    
     import numpy
     from math import pi
-    # Define cases.
-    # name: human-readable name for display purposes.
-    # file_name: path to the file containing the contour data.
-    # cutoffs: [outlier cutoff, 1.0, allowed cutoff].
-    # log_cutoffs: cutoffs on a log scale to define color thresholds
-    # color_scale: will hold a ThreeColorScale object to generate colours
-    #               for display based on scores and the defined cutoffs.
-    # validator: handle to hold the RegularGridInterpolator object generated
-    #            at runtime.
-    
-    # Ordered list of keys for the below cases, since dict objects do not
-    # guarantee any particular order. The master dict in the Backbone_Dihedrals
-    # object also contains the cases 'Nter' and 'Cter', but they're of no
-    # interest here.
-    case_keys = ('General', 'Glycine', 'IleVal', 'PrePro', 'CisPro', 'TransPro')
-    
-    cases = {}
-    cases['CisPro'] = {
-        'name': 'Cis proline',
-        'file_prefix': os.path.join(data_dir, 'rama8000-cispro'),
-        'cutoffs': [0.002, 1.0, 0.02],
-        'log_cutoffs': numpy.log(numpy.array([0.002, 1.0, 0.02])),
-        'color_scale':  None,
-        'validator': None
-        }
-    cases['TransPro'] = {
-        'name': 'Trans proline',
-        'file_prefix': os.path.join(data_dir, 'rama8000-transpro'),
-        'cutoffs': [0.001, 1.0, 0.02],
-        'log_cutoffs': numpy.log(numpy.array([0.001, 1.0, 0.02])),
-        'color_scale':  None,
-        'validator': None
-        }
-    cases['Glycine'] = {
-        'name': 'Glycine',
-        'file_prefix': os.path.join(data_dir, 'rama8000-gly-sym'),
-        'cutoffs': [0.001, 1.0, 0.02],
-        'log_cutoffs': numpy.log(numpy.array([0.001, 1.0, 0.02])),
-        'color_scale':  None,
-        'validator': None
-        }
-    cases['PrePro'] = {
-        'name': 'Preceding proline',
-        'file_prefix': os.path.join(data_dir, 'rama8000-prepro-noGP'),
-        'cutoffs': [0.001, 1.0, 0.02],
-        'log_cutoffs': numpy.log(numpy.array([0.001, 1.0, 0.02])),
-        'color_scale':  None,
-        'validator': None
-        }
-    cases['IleVal'] = {
-        'name': 'Isoleucine or valine',
-        'file_prefix': os.path.join(data_dir, 'rama8000-ileval-nopreP'),
-        'cutoffs': [0.001, 1.0, 0.02],
-        'log_cutoffs': numpy.log(numpy.array([0.001, 1.0, 0.02])),
-        'color_scale':  None,
-        'validator': None
-        }
-    cases['General'] = {
-        'name': 'General',
-        'file_prefix': os.path.join(data_dir, 'rama8000-general-noGPIVpreP'),
-        'cutoffs': [0.0005, 1.0, 0.02],
-        'log_cutoffs': numpy.log(numpy.array([0.0005, 1.0, 0.02])),
-        'color_scale':  None,
-        'validator': None
-        }
-                
     
     def __init__(self, color_scale = 'PiYG'):
-        for key, case in self.cases.items():
-            case['validator'] = generate_interpolator(case['file_prefix'])
-        self.current_structure = None
-        self.rama_scores = None
-        self.rama_types = None
-        # Locally cached array of current phi and psi for plotting purposes
+        # Cached phi and psi values for plotting
         self.phipsi = None
-        # Locally cached list of residues for looking up from the plot
-        self.residues = None
-        self.case_arrays = {
-            'CisPro': [],
-            'TransPro': [],
-            'Glycine': [],
-            'PrePro': [],
-            'IleVal': [],
-            'General': []
-            }
-        self._proline_indices = []
-        self.color_scale = color_scale
-        
-        from . import color
-        for key, case in self.cases.items():
-            minval, maxval, midval = case['log_cutoffs']
-            case['color_scale'] = color.standard_three_color_scale(
-                    self.color_scale, minval, maxval, midval)
-        
-        # Array of color values corresponding to scores
-        self.current_colors = [];
-        
-        
-        
-
+        # Generate the objects handling the interpolation for each case
+        self._rama_cases = {}
+        for case in RAMA_CASES:
+            cd = RAMA_CASE_DETAILS[case]
+            prefix = cd['file_prefix']
+            cutoffs = cd['cutoffs']
+            if prefix is None:
+                # Cases that don't have Ramachandran scores
+                self._rama_cases[case] = None
+                continue
+            self._rama_cases[case] = RamaCase(prefix, cutoffs, color_scale)
+            
     def rama_bins(scores, types):
         score_bins = []
         for score, rt in scores, types:
@@ -310,139 +348,47 @@ class RamaValidator():
             else:
                 score_bins.append('outlier')
 
-
-
-
-    # Initialise the validator with a sequence and matching set of initial
-    # phi, psi and omega values. A value of None in either of the phi or psi 
-    # arrays indicates a chain end/break, which should not be included in
-    # the analysis. The residues will be sorted into their various MolProbity
-    # cases here.
-    def load_structure(self, residues, resnames, phi, psi, omega):
-        ores, ophi, opsi, oomega = [residues, phi, psi, omega]
+    def get_scores(self, bd, update_colors = False):
+        '''
+        Update the Ramachandran scores for a Backbone_Dihedrals object bd.
+        The scores will be automatically filled into the bd.rama_scores
+        array. If update_colors is set to True, the colours of the CA
+        atoms in the structure will be changed to reflect their scores.
+        We'll also cache the Phi and Psi values here for plotting purposes -
+        we don't want to be calculating them twice.
+        '''
         import numpy
-        phipsi = numpy.column_stack([phi,psi])
-        # Filter out any residues missing either phi or psi
-        none_filter = self.none_filter = numpy.where(
-            numpy.invert(numpy.any(numpy.isnan(phipsi), axis = 1)))
-        phipsi = self.phipsi = phipsi[none_filter]
-        residues = self.residues = numpy.array(residues)[none_filter]
-        resnames = self.resnames = resnames[none_filter]
-        phi = numpy.array(phi)[none_filter]
-        psi = numpy.array(psi)[none_filter]
-        omega = numpy.array(omega)[none_filter]
-
-        cases = self.cases
-        ca = self.case_arrays
-        # Reset the arrays of indices for each case
-        for key in ca:
-            ca[key] = []
-        self._proline_indices = []
-        num_all_residues = len(ores)
-        num_residues = len(resnames)
-        # Terminal residues will retain a score of -1
-        self.rama_scores = numpy.array([-1] * num_residues, dtype = 'float32')
-        self.rama_types = [None] * num_residues
-        self.output_colors = numpy.array([128,128,128,255] * num_all_residues, dtype='ubyte').reshape(num_all_residues,4)
-        self.current_colors = self.output_colors[none_filter]
-
-
-        for i, resname in enumerate(resnames):
-            if phi[i] == None or psi[i] == None:
+        residues = bd.residues
+        phi = bd.phi_vals
+        psi = bd.psi_vals
+        phipsi = self.phipsi = numpy.column_stack([phi,psi])
+        case_index_dict = bd.rama_cases        
+        scores = bd.rama_scores
+        CAs = bd.CAs
+        if update_colors:
+            colors = bd.rama_colors
+        
+        for case in RAMA_CASES:
+            if self._rama_cases[case] is None:
+                # We're not interested in these residues
                 continue
-        
-            # Determine the category of the residue to match it with a set
-            # of contours. There is a hierarchy to the categories: Pro beats
-            # PrePro for example.
-            
-            if resname == 'PRO':
-                # we need to sort the prolines into cis and trans every
-                # update, so for convenience we'll store a complete list
-                # here.
-                self._proline_indices.append(i)
-                if omega_type(omega[i]) == 'cis':
-                    self.rama_types[i] = 'CisPro'
-                    ca['CisPro'].append(i)
-                else:
-                    self.rama_types[i] = 'TransPro'
-                    ca['TransPro'].append(i)
-            elif resname == 'GLY':
-                self.rama_types[i] = 'Glycine'
-                ca['Glycine'].append(i)
-            elif i < num_residues-1 and resnames[i+1] == 'PRO':
-                self.rama_types[i] = 'PrePro'
-                ca['PrePro'].append(i)
-            elif resname in ('ILE', 'VAL'):
-                self.rama_types[i] = 'IleVal'
-                ca['IleVal'].append(i)
             else:
-                self.rama_types[i] = 'General'
-                ca['General'].append(i)
-        # Calculate the current scores
-        self.update(ophi,opsi,oomega)
-        
-    def reset(self):
-        '''
-        Release the current structure and reset phi, psi etc. to None.
-        '''
-        self.current_structure = None
-        self.rama_scores = None
-        self.rama_types = None
-        # Locally cached array of current phi and psi for plotting purposes
-        self.phipsi = None
-        self.case_arrays = {
-            'CisPro': [],
-            'TransPro': [],
-            'Glycine': [],
-            'PrePro': [],
-            'IleVal': [],
-            'General': []
-            }
-        self.current_colors = []
-            
-        
+                rc = self._rama_cases[case]
+                v = rc.interpolator
+                indices = case_index_dict[case]
+                case_scores = v(phipsi[indices])
+                scores[indices] = case_scores
+                if update_colors:
+                    if len(case_scores):
+                        cs = rc.color_scale
+                        case_colors = cs.get_colors(numpy.log(case_scores))
+                        colors[indices] = case_colors
+                        
+    @property
+    def rama_cases(self):
+        return self._rama_cases
     
-    def update(self, phi, psi, omega, return_colors = True):
-        '''
-        Calculate and return Ramachandran scores for the current dihedral
-        values
-        '''
-        # Since prolines may change from cis to trans or vice versa
-        # in the course of a simulation, we need to double-check these
-        # each time.
-        import numpy
-        phipsi = numpy.column_stack([phi,psi])
-        # since None values crash the interpolator, we'll re-cast them to
-        # a value outside the range of the maps
-        phipsi = self.phipsi = phipsi[self.none_filter]
-        ca = self.case_arrays
-        ca['CisPro'] = []
-        ca['TransPro'] = []
-        for i in self._proline_indices:
-            if omega_type(omega[i]) == 'cis':
-                self.rama_types[i] = 'CisPro'
-                ca['CisPro'].append(i)
-            elif omega_type(omega[i]) == 'trans':
-                self.rama_types[i] = 'TransPro'
-                ca['TransPro'].append(i)
-        for key, indices in self.case_arrays.items():
-            indices = numpy.array(indices, dtype = 'int')
-            case = self.cases[key]
-            v = case['validator']
-            scores = v(phipsi[indices]).astype(float)
-            self.rama_scores[indices] = scores
-            if return_colors:
-                if len(scores):
-                    c = case['color_scale']
-                    colors = c.get_colors(numpy.log(scores))
-                    self.current_colors[indices] = colors
-                
-        if return_colors:
-            self.output_colors[self.none_filter] = self.current_colors
-            return self.rama_scores, self.output_colors
-        
-        return self.rama_scores
-        
+                        
 class RamaPlot():
     
     def __init__(self, session, container, validator):
@@ -451,6 +397,7 @@ class RamaPlot():
         self.container = container
         self.validator = validator
         self.current_case = None
+        self._last_bd = None
         
         from matplotlib.figure import Figure
         from matplotlib.backends.backend_qt5agg import (
@@ -485,10 +432,10 @@ class RamaPlot():
             
     def cache_contour_plots(self, key):
         import numpy
-        case_data = self.validator.cases[key]['validator']
+        case_data = self.validator.rama_cases[key].interpolator
         grid = numpy.degrees(case_data.grid)
         from operator import itemgetter
-        contours = itemgetter(0,2)(self.validator.cases[key]['cutoffs'])
+        contours = itemgetter(0,2)(RAMA_CASE_DETAILS[key]['cutoffs'])
         grid = numpy.degrees(case_data.grid)
         values = numpy.rot90(numpy.fliplr(case_data.values)).astype(float)
         logvalues = self.logvalues = numpy.log(values)
@@ -514,7 +461,7 @@ class RamaPlot():
         self.background = self.canvas.copy_from_bbox(self.axes.bbox)
         self.axes.add_artist(self.scatter)
         self.canvas.draw()
-        self.update_scatter()
+        self.update_scatter(self._last_bd)
     
     def on_pick(self, event):
         ind = event.ind[0]
@@ -537,20 +484,26 @@ class RamaPlot():
         self.axes.add_artist(contourplots[1])
         from math import log
         from operator import itemgetter
-        contours = itemgetter(0,2)(self.validator.cases[case_key]['cutoffs'])
+        contours = itemgetter(0,2)(RAMA_CASE_DETAILS[case_key]['cutoffs'])
         P = self.P_limits = [0, -log(contours[0])]
         self.scatter = self.axes.scatter((200),(200), cmap='bwr', picker = 2.0)
         self.canvas.mpl_connect('pick_event', self.on_pick)
         self.on_resize()
         
-    def update_scatter(self, *_):
+    def update_scatter(self, bd = None, force_update = False):
         import numpy
         key = self.current_case
-        indices = self.validator.case_arrays[key]
-        if len(indices):
-            phipsi = numpy.degrees(self.validator.phipsi[indices].astype(float))
-            logscores = numpy.log(self.validator.rama_scores[indices])
+        rv = self.validator
+        if bd is not None:
+            self._last_bd = bd
+            indices = bd.rama_cases[key]
+            if len(indices):
+                if force_update:
+                    rv.get_scores(bd)
+                phipsi = numpy.degrees(rv.phipsi[indices].astype(float))
+                logscores = numpy.log(bd.rama_scores[indices])
         else:
+            self._last_bd = None
             phipsi = self.default_coords
             logscores = self.default_logscores
         if phipsi is not None and len(phipsi):
