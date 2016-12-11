@@ -1253,12 +1253,13 @@ class Isolde():
         else:
             k = 0
         
-        omegas = []
+        omegas = bd.omega.by_residues(res)
+        #omegas = []
         
-        for r in res:
-            rindex = bd.residues.index(r)
-            if rindex != -1:
-                omegas.append(bd.omega[rindex])
+        #for r in res:
+            #rindex = bd.residues.index(r)
+            #if rindex != -1:
+                #omegas.append(bd.omega[rindex])
         
         if enable:
             self.apply_peptide_bond_restraints(omegas)
@@ -1748,6 +1749,7 @@ class Isolde():
             raise Exception('Target must be either a number, "trans", "cis", or None')
         
         import numpy
+        # Get all atom indices in one go because the lookup is expensive
         indices = numpy.reshape(dihedrals.atoms.indices(sc),[len(dihedrals),4])
         
         for i, d in enumerate(dihedrals):
@@ -1757,20 +1759,22 @@ class Isolde():
                     t = 0
                 else:
                     t = pi
-            ilist = indices[i]
-            sh.set_dihedral_restraint(context, sc, d, ilist, t, k)
+            sh.set_dihedral_restraint(context, sc, d, indices[i], t, k)
                     
     def remove_peptide_bond_restraints(self, dihedrals):
         '''
         Remove restraints on a list of peptide bonds (actually, just set
         their spring constants to zero). Simulation must already be running.
         '''
+        import numpy
         sc = self._total_sim_construct
         sh = self._sim_handler
         context = self.sim.context
-        for d in dihedrals:
+        # Get all atom indices in one go because the lookup is expensive
+        indices = numpy.reshape(dihedrals.atoms.indices(sc),[len(dihedrals),4])
+        for i, d in enumerate(dihedrals):
             if d is not None:
-                sh.set_dihedral_restraint(context, sc, d, 0, 0)        
+                sh.set_dihedral_restraint(context, sc, d, indices[i], 0, 0)        
 
 
     #############################################

@@ -465,8 +465,8 @@ class RamaPlot():
     
     def on_pick(self, event):
         ind = event.ind[0]
-        res_index = self.validator.case_arrays[self.current_case][ind]
-        picked_residue = self.validator.residues[res_index]
+        res_index = self._last_bd.rama_cases[self.current_case][ind]
+        picked_residue = self._last_bd.residues[res_index]
         from . import view
         view.focus_on_selection(self.session, self.session.main_view, picked_residue.atoms)
         
