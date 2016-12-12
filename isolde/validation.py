@@ -502,6 +502,9 @@ class RamaPlot():
                     rv.get_scores(bd)
                 phipsi = numpy.degrees(rv.phipsi[indices].astype(float))
                 logscores = numpy.log(bd.rama_scores[indices])
+            else:
+                phipsi = self.default_coords
+                logscores = self.default_logscores
         else:
             self._last_bd = None
             phipsi = self.default_coords

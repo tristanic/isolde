@@ -966,9 +966,10 @@ class Isolde():
         if self._rama_plot is None:
             # Create the basic MatPlotLib canvas for the Ramachandran plot
             self._prepare_ramachandran_plot()
-
         if self._simulation_running and self.track_rama:
             self._rama_go_live()
+        else:
+            self._rama_static_plot()
     
     def _hide_rama_plot(self, *_):
         self.iw._validate_rama_main_frame.hide()
