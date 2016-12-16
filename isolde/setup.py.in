@@ -33,7 +33,7 @@ setup(
         "PKG_NAME",
     ],
     package_data={
-		"PKG_NAME": ["molprobity_data/*.data","*.PYMOD_LINUX_EXT", "*.PYMOD_MAC_EXT", "*.PYMOD_WIN_EXT"]
+		"PKG_NAME": ["DATAFILES/*.data","RESOURCES/*","*.PYMOD_LINUX_EXT", "*.PYMOD_MAC_EXT", "*.PYMOD_WIN_EXT"]
 	},
     install_requires=[
         "ChimeraX-Core >= 0.1",

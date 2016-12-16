@@ -22,8 +22,7 @@ def get_dihedral(p0, p1, p2, p3):
     y = np.dot(np.cross(b1, v), w)
     return np.arctan2(y, x)
 
-# C version. Saves about 16 microseconds per dihedral. Linux only until I
-# find the time to put together OS-specific makefiles
+# C version. Saves about 16 microseconds per dihedral. 
 import sys, os
 import ctypes
 platform = sys.platform
@@ -46,6 +45,8 @@ def get_dihedral(p0, p1, p2, p3):
                     p2.ctypes.data_as(COORTYPE),
                     p3.ctypes.data_as(COORTYPE))
 
+# Get values for an entire set of dihedrals at once. More than an order
+# of magnitude faster than calling get_dihedral() in a Python loop.
 _get_dihedrals = _geometry.get_dihedrals
 
 def get_dihedrals(coords, n):

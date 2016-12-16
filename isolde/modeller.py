@@ -82,7 +82,7 @@ def openmm_topology_from_model(model):
         atoms[i] = top.addAtom(aname[i], element,rmap[rid])
 
     a1, a2 = b.atoms
-    for i1, i2 in zip(a1.indices(a), a2.indices(a)):
+    for i1, i2 in zip(a.indices(a1), a.indices(a2)):
         if -1 not in [i1, i2]:
             top.addBond(atoms[i1],  atoms[i2])
             

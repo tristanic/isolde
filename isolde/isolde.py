@@ -10,6 +10,12 @@
 
 class Isolde():
     
+    ####
+    # Environment information
+    ####
+    import sys, os
+    _root_dir = os.path.dirname(os.path.abspath(__file__))
+    _platform = sys.platform
 
     ####
     # Enums for menu options
@@ -190,7 +196,7 @@ class Isolde():
         # Object to initialise and hold simulation-specific mouse modes,
         # and keep track of standard modes they've replaced. The standard
         # mode will be reinstated when a mode is removed.
-        self._sim_mouse_modes = mousemodes.MouseModeRegistry(self.session)
+        self._mouse_modes = mousemodes.MouseModeRegistry(self.session)
         # Placeholder for mouse tugging object
         self._mouse_tugger = None
         # Are we currently tugging an atom?
@@ -277,11 +283,13 @@ class Isolde():
         self._integrator_type = 'fixed'
         # Constraints (e.g. rigid bonds) need their own tolerance
         self._constraint_tolerance = 0.001
-        # Friction term for coupling to heat bath
-        self._friction = 1.0/unit.picoseconds
+        # Friction term for coupling to heat bath. Using a relatively high
+        # value helps keep the simulation under control in response to
+        # very large forces.
+        self._friction = 5.0/unit.picoseconds
         # Limit on the net force on a single atom to detect instability and
         # force a minimisation
-        self._max_allowable_force = 100000.0 # kJ mol-1 nm-1
+        self._max_allowable_force = 50000.0 # kJ mol-1 nm-1
         # Flag for unstable simulation
         self._sim_is_unstable = False
         
@@ -328,7 +336,27 @@ class Isolde():
         self.initialize_haptics()
         
         self.gui_mode = False
+        
+        from PyQt5.QtGui import QPixmap
+        from PyQt5.QtWidgets import QSplashScreen
+        from PyQt5.QtCore import Qt
+        import os
+        
+        splash_pix = QPixmap(os.path.join(
+            self._root_dir,'resources/isolde_splash_screen.jpg'))
+        splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+        splash.setMask(splash_pix.mask())
+        splash.showMessage('\n\n\n\nAnalysing your structure. Please be patient...', 
+                alignment = Qt.AlignRight | Qt.AlignVCenter)
+        splash.show()
+        # Make sure the splash screen is actually shown
+        for i in range(5):
+            self.session.ui.processEvents()
+        from time import sleep
+        sleep(1)
         self.start_gui(gui)
+        
+        splash.destroy()
     
     ###################################################################
     # GUI related functions
@@ -342,6 +370,20 @@ class Isolde():
         self.gui = gui
         self.iw = gui.iw
         self.gui_mode = True
+        
+        # ISOLDE will need to define a number of custom mouse modes to
+        # give a familiar environment to users of existing packages. 
+        # These will not work well with the standard ChimeraX right mouse
+        # button selection panel, so best if we disable it for the
+        # duration of the ISOLDE session. We'll put them back the way
+        # we found them when the ISOLDE gui is closed.
+        self._set_chimerax_mouse_mode_panel_enabled(False)
+        
+        
+        
+        # Function to remove all event handlers, mouse modes etc. when
+        # ISOLDE is closed, and return ChimeraX to its standard state.
+        self.gui.tool_window.ui_area.destroyed.connect(self._on_close)
         
         # Any values in the Qt Designer .ui file are placeholders only.
         # Combo boxes need to be repopulated, and variables need to be
@@ -481,6 +523,9 @@ class Isolde():
     
     
     def _connect_functions(self):
+        '''
+        Connect PyQt events from the ISOLDE gui widget to functions.
+        '''
         iw = self.iw
         ####
         # Master switches
@@ -654,9 +699,18 @@ class Isolde():
         iw._sim_hide_surroundings_toggle.stateChanged.connect(
             self._set_hide_surroundings
         )
+
+    def _set_chimerax_mouse_mode_panel_enabled(self, state):
+        from chimerax.mouse_modes.tool import MouseModePanel
+        mm = self.session.tools.find_by_class(MouseModePanel)[0]
+        mm.buttons.setEnabled(state)
+
     
-    # Create a HapticTugger object for each connected haptic device.
     def initialize_haptics(self):
+        '''
+        If the HapticHandler plugin is installed, start it and create
+        a HapticTugger object for each connected haptic device.
+        '''
         if hasattr(self.session, 'HapticHandler'):
             self._status('Initialising haptic interface(s)')
             hh = self.session.HapticHandler
@@ -872,7 +926,7 @@ class Isolde():
         if not self._simulation_running:
             self._disable_rebuild_residue_frame()
             return
-        if -1 in res.atoms.indices(self._total_mobile):
+        if -1 in self._total_mobile.indices(res.atoms):
             self._disable_rebuild_residue_frame()
             return
         self._get_rotamer_list_for_selected_residue()
@@ -1003,7 +1057,7 @@ class Isolde():
             residues = sel.unique_residues
             phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
             from . import dihedrals
-            bd = dihedrals.Backbone_Dihedrals(phi=phi, psi=psi, omega=omega)
+            bd = dihedrals.Backbone_Dihedrals(self.session, phi=phi, psi=psi, omega=omega)
         #phi_vals, psi_vals, omega_vals = bd.all_vals
         #self.rama_validator.load_structure(bd.residues, bd.resnames, phi_vals, psi_vals, omega_vals)
         self._rama_plot.update_scatter(bd, force_update = True)
@@ -1093,7 +1147,7 @@ class Isolde():
             self.session.selection.clear()
             self._selected_model.selected = True
             from . import dihedrals
-            self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(m)            
+            self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(self.session, m)            
             self._update_chain_list()
         self._status('')
     
@@ -1314,7 +1368,9 @@ class Isolde():
             self.hard_shell_cutoff
             )
         
-        sc = total_mobile.merge(self._hard_shell_atoms)
+        sc = self._total_sim_construct = total_mobile.merge(self._hard_shell_atoms)
+        #sb = self._total_sim_bonds = sc.inter_bonds
+            
         sc.selected = True
         from chimerax.core.atomic import selected_atoms, selected_bonds
         sc = self._total_sim_construct = selected_atoms(self.session)
@@ -1351,7 +1407,7 @@ class Isolde():
         all_bd = self.backbone_dihedrals
         sim_phi, sim_psi, sim_omega = all_bd.by_residues(total_mobile.unique_residues)
         bd = self._mobile_backbone_dihedrals \
-            = dihedrals.Backbone_Dihedrals(phi = sim_phi, psi = sim_psi, omega = sim_omega)
+            = dihedrals.Backbone_Dihedrals(self.session, phi = sim_phi, psi = sim_psi, omega = sim_omega)
         log('Preparing backbone dihedrals took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
         if self.track_rama:
@@ -1369,7 +1425,7 @@ class Isolde():
         # restrain them at will during the 
         for dlist in (bd.phi, bd.psi, bd.omega):
             atoms = dlist.atoms
-            indices = numpy.reshape(atoms.indices(sc),[len(dlist),4])
+            indices = numpy.reshape(sc.indices(atoms),[len(dlist),4])
             for i, d in enumerate(dlist):
                 d_indices = indices[i]
                 d.sim_index = sh.initialize_dihedral_restraint(d, d_indices)
@@ -1489,9 +1545,9 @@ class Isolde():
             self._log('Applying fixed atoms')
         
         fixed = numpy.array(len(sc)*[False],numpy.bool)
-        fixed[self._hard_shell_atoms.indices(sc)] = True
+        fixed[sc.indices(self._hard_shell_atoms)] = True
         if self.fix_soft_shell_backbone:
-            indices = self._soft_shell_atoms.indices(sc)
+            indices = sc.indices(self._soft_shell_atoms)
             names = self._soft_shell_atoms.names
             for i, n in zip(indices, names):
                 if n in ['N','C','O','H','H1','H2','H3']:
@@ -1523,7 +1579,7 @@ class Isolde():
         # Register simulation-specific mouse modes
         from . import mousemodes
         mt = self._mouse_tugger = mousemodes.TugAtomsMode(self.session, total_mobile, self._annotations)
-        self._sim_mouse_modes.register_mode(mt.name, mt, 'right', [])
+        self._mouse_modes.register_mode(mt.name, mt, 'right', [])
         
         self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
                                               'new frame',
@@ -1659,6 +1715,8 @@ class Isolde():
             return
         if self._saved_positions is not None:
             self._total_sim_construct.coords = self._saved_positions
+        if self.track_rama:
+            self.update_omega_check()
         self._cleanup_after_sim()
     
     def commit_sim(self):
@@ -1688,9 +1746,9 @@ class Isolde():
         self._system = None
         self._update_menu_after_sim()
         from . import mousemodes
-        mouse_mode_names = self._sim_mouse_modes.get_names()
+        mouse_mode_names = self._mouse_modes.get_names()
         for n in mouse_mode_names:
-            self._sim_mouse_modes.remove_mode(n)
+            self._mouse_modes.remove_mode(n)
         self._mouse_tugger = None
         for d in self._haptic_devices:
             d.cleanup()
@@ -1751,7 +1809,7 @@ class Isolde():
         
         import numpy
         # Get all atom indices in one go because the lookup is expensive
-        indices = numpy.reshape(dihedrals.atoms.indices(sc),[len(dihedrals),4])
+        indices = numpy.reshape(sc.indices(dihedrals.atoms),[len(dihedrals),4])
         
         for i, d in enumerate(dihedrals):
             if target is None:
@@ -1772,7 +1830,7 @@ class Isolde():
         sh = self._sim_handler
         context = self.sim.context
         # Get all atom indices in one go because the lookup is expensive
-        indices = numpy.reshape(dihedrals.atoms.indices(sc),[len(dihedrals),4])
+        indices = numpy.reshape(sc.indices(dihedrals.atoms),[len(dihedrals),4])
         for i, d in enumerate(dihedrals):
             if d is not None:
                 sh.set_dihedral_restraint(context, sc, d, indices[i], 0, 0)        
@@ -1821,8 +1879,8 @@ class Isolde():
             if mode == 'equil':
                 # revert to the coordinates before this simulation step
                 c.setPositions(pos/10)
-            self.simulation_type = 'min'
-            return
+                self.simulation_type = 'min'
+                return
         elif self._sim_is_unstable:
             if max_force < self._max_allowable_force / 2:
                 # We're back to stability. We can go back to equilibrating
@@ -1923,7 +1981,7 @@ class Isolde():
             else:
                 s_count += 1
         elif self._sim_is_unstable:
-            s.minimizeEnergy(maxIterations = steps)
+            s.minimizeEnergy()
             c.setVelocitiesToTemperature(self.simulation_temperature)
         elif mode == 'min':
             s.minimizeEnergy(maxIterations = minsteps)
@@ -1986,7 +2044,7 @@ class Isolde():
         except KeyError:
             e = "mode must be one of 'from_picked_atoms', 'chain', 'whole_model', \
                     'custom', or 'script'"
-            raise Exception(e)
+            raise KeyError(e)
     
     def set_sim_mode(self, mode):
         try:
@@ -2018,7 +2076,21 @@ class Isolde():
             self.start_sim()
         else:
             return
-
+    
+    #############################################
+    # Final cleanup
+    #############################################
+    def _on_close(self):
+        self.session.logger.status('Closing ISOLDE and cleaning up')
+    
+        # Remove all registered event handlers
+        eh_keys = list(self._event_handler.list_event_handlers())
+        for e in eh_keys:
+            self._event_handler.remove_event_handler(e)
+        
+        # Revert mouse modes
+        self._set_chimerax_mouse_mode_panel_enabled(True)
+        self._mouse_modes.remove_all_modes()
 
 
 _openmm_initialized = False

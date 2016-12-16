@@ -90,14 +90,13 @@ class Dihedrals():
     
     def by_residue(self, residue):
         from chimerax.core.atomic import Residues
-        r = Residues([residue])
-        i = r.indices(self.residues)[0]
+        i = self.residues.index(residue)
         if i == -1:
             return None
         return self[i]
     
     def by_residues(self, residues):
-        indices = residues.indices(self.residues)
+        indices = self.residues.indices(residues)
         indices = indices[indices != -1]
         if len(indices):
             return self[indices]
@@ -127,17 +126,17 @@ class Dihedrals():
     def atoms(self):
         if self._atoms is None:
             import numpy
-            atom_pointers = numpy.empty([len(self),4],numpy.uint64)
+            atoms = numpy.empty([len(self),4],dtype='object')
             for i, d in enumerate(self):
-                atom_pointers[i] = d.atoms._pointer_array
+                atoms[i] = d.atoms
             from chimerax.core.atomic import Atoms
-            self._atoms = Atoms(numpy.ravel(atom_pointers))
+            self._atoms = Atoms(numpy.ravel(atoms))
         return self._atoms    
     
     @property
     def residues(self):
         if self._residues is None:
-            residues = [d.residue for d in self._dihedrals] 
+            residues = [d.residue for d in self.dihedrals] 
             from chimerax.core.atomic import Residues
             self._residues = Residues(residues)            
         return self._residues
@@ -177,7 +176,7 @@ class Backbone_Dihedrals():
     phi, psi and omega dihedrals. If provided with a model, it will find and
     store all phi, psi and omega dihedrals as Dihedrals objects.
     '''
-    def __init__(self, model = None, phi = None, psi = None, omega = None, old = False):
+    def __init__(self, session, model = None, phi = None, psi = None, omega = None, old = False):
         if model == None and (phi == None or psi == None or omega == None):
             raise TypeError('You must provide either a model or all three of\
                             phi, psi and omega!')
@@ -185,7 +184,8 @@ class Backbone_Dihedrals():
             raise TypeError('Cannot provide both a model and predefined dihedrals!')
         elif model and not model.atomspec_has_atoms():
             raise TypeError('Please provide a model containing atoms!')
-            
+        
+        self.session = session
         import numpy
         # It's most convenient to determine and store the Ramachandran case
         # for each residue here, otherwise things start to get messy when
@@ -197,6 +197,10 @@ class Backbone_Dihedrals():
         self._rama_scores = None
         # Colours for C-alpha atoms will be changed according to Ramachandran score
         self._rama_colors = None
+        
+        self._phi_vals = None
+        self._psi_vals = None
+        self._omega_vals = None
         
         if model:
             self.residues = model.residues
@@ -240,9 +244,9 @@ class Backbone_Dihedrals():
             phi_indices = []
             psi_indices = []
             omega_indices = []
-            phi_indices = phi.residues.indices(self.residues)
-            psi_indices = psi.residues.indices(self.residues)
-            omega_indices = omega.residues.indices(self.residues)
+            phi_indices = self.residues.indices(phi.residues)
+            psi_indices = self.residues.indices(psi.residues)
+            omega_indices = self.residues.indices(omega.residues)
             
             self._phi_indices = numpy.array(phi_indices[phi_indices != -1],numpy.int32)
             self._psi_indices = numpy.array(psi_indices[psi_indices != -1],numpy.int32)
@@ -268,24 +272,27 @@ class Backbone_Dihedrals():
     
     @property
     def phi_vals(self):
-        import numpy
-        vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
-        vals[self._phi_indices] = self.phi.values
-        return vals
+        if self._phi_vals is None:
+            import numpy
+            self._phi_vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
+        self._phi_vals[self._phi_indices] = self.phi.values
+        return self._phi_vals
     
     @property
     def psi_vals(self):
-        import numpy
-        vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
-        vals[self._psi_indices] = self.psi.values
-        return vals
+        if self._psi_vals is None:
+            import numpy
+            self._psi_vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
+        self._psi_vals[self._psi_indices] = self.psi.values
+        return self._psi_vals
     
     @property    
     def omega_vals(self):
-        import numpy
-        vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
-        vals[self._omega_indices] = self.omega.values
-        return vals
+        if self._omega_vals is None:
+            import numpy
+            self._omega_vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
+        self._omega_vals[self._omega_indices] = self.omega.values
+        return self._omega_vals
     
     @property
     def rama_cases(self):
@@ -490,8 +497,11 @@ class Backbone_Dihedrals():
         import numpy
         from chimerax.core.atomic import Residue
         
+        self.session.ui.processEvents()
+        
         # Get all protein residues and their atoms    
-        res = self.residues = self.residues.filter(self.residues.polymer_types == Residue.PT_AMINO)
+        res = self.residues = self.residues.filter(
+                        self.residues.polymer_types == Residue.PT_AMINO)
         resnums = res.numbers
         atoms = res.atoms
         
@@ -501,6 +511,8 @@ class Backbone_Dihedrals():
         CA_atoms = self.CAs = atoms.filter(atoms.names == 'CA')
         C_atoms = atoms.filter(atoms.names == 'C')
         
+        self.session.ui.processEvents()
+        
         # Get all the C-N bonds
         CN_atoms = atoms.filter(numpy.any(numpy.column_stack(
             [atoms.names == 'N', atoms.names == 'C']), axis = 1))
@@ -509,11 +521,11 @@ class Backbone_Dihedrals():
         
         bonded_C = CN_bonds.atoms[0]
         assert(numpy.all(bonded_C.names == 'C'))
-        bonded_C_indices = bonded_C.indices(C_atoms)
+        bonded_C_indices = C_atoms.indices(bonded_C)
         bonded_C_resnames = bonded_C.unique_residues.names
         bonded_N = CN_bonds.atoms[1]
         assert(numpy.all(bonded_N.names == 'N'))
-        bonded_N_indices = bonded_N.indices(N_atoms)
+        bonded_N_indices = N_atoms.indices(bonded_N)
         bonded_N_resnames = bonded_N.unique_residues.names
 
         # We also need the CA atom from the preceding residue to make up
@@ -522,6 +534,7 @@ class Backbone_Dihedrals():
         prev_atoms = bonded_C_residues.atoms
         prev_CA = prev_atoms.filter(prev_atoms.names == 'CA')
         
+        self.session.ui.processEvents()
         
         '''
         Build up a 6 * (number of residues) numpy array where each row is

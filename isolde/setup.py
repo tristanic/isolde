@@ -19,7 +19,7 @@ Flexible Fitting, or iMDFF.
 
 setup(
     name="ChimeraX-ISOLDE",
-    version="0.9.8",  # PEP 440, should match Development Status below
+    version="0.9.10",  # PEP 440, should match Development Status below
     description="Interactive molecular dynamics based model building, manipulation and refinement",  # one line synopsis
     long_description=description,  # see above
     author="Tristan Croll",
@@ -33,7 +33,7 @@ setup(
         "chimerax.isolde",
     ],
     package_data={
-		"chimerax.isolde": ["molprobity_data/*.data","*.so", "*.dylib", "*.dll"]
+		"chimerax.isolde": ["molprobity_data/*.data","resources/*","*.so", "*.dylib", "*.dll"]
 	},
     install_requires=[
         "ChimeraX-Core >= 0.1",
