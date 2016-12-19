@@ -226,7 +226,7 @@ class MouseModeRegistry():
         if self._existing_modes[name] is not None:
             mode, button, modifiers = self._existing_modes[name]
             mm.bind_mouse_mode(button, modifiers, mode)
-            mode, button, modifiers = self._registered_modes[name]
+            mode, *_ = self._registered_modes[name]
             mode.cleanup()
         else:
             mode, button, modifiers = self._registered_modes[name]
@@ -234,3 +234,9 @@ class MouseModeRegistry():
             mode.cleanup()
         self._existing_modes.pop(name)
         self._registered_modes.pop(name)
+    
+    def remove_all_modes(self):
+        names = list(self.get_names())
+        for name in names:
+            self.remove_mode(name)
+        

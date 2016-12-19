@@ -11,13 +11,14 @@ CHIMERAX_APP = /home/tic20/apps/chimerax
 # and the ChimeraX toolshed code apparently really wants
 # the "chimerax." part of the package name (for now).
 BUNDLE_NAME = ChimeraX-ISOLDE
-BUNDLE_VERSION = 0.9.8
+BUNDLE_VERSION = 0.9.10
 PKG_NAME = chimerax.isolde
 
 # Source and data files.  By default, all .py files
 # except for setup.py and no data files.
 PYSRCS = $(filter-out setup.py,$(wildcard *.py))
 DATAFILES = molprobity_data
+RESOURCES = resources
 
 # Python extension modules
 PYMOD_LINUX_EXT = so
@@ -76,12 +77,14 @@ setup.py: setup.py.in Makefile
 		-e 's,PYMOD_LINUX_EXT,$(PYMOD_LINUX_EXT),' \
 		-e 's,PYMOD_MAC_EXT,$(PYMOD_MAC_EXT),' \
 		-e 's,PYMOD_WIN_EXT,$(PYMOD_WIN_EXT),' \
+		-e 's,DATAFILES,$(DATAFILES),' \
+		-e 's,RESOURCES,$(RESOURCES),' \
 		< setup.py.in > setup.py
 
-$(PKG_DIR):	$(PYSRCS) $(DATAFILES) $(PYMOD_FILES)
+$(PKG_DIR):	$(PYSRCS) $(DATAFILES) $(RESOURCES) $(PYMOD_FILES)
 	if [ ! -d "$(PKG_DIR)" ]; then mkdir -p $(PKG_DIR); fi
 	$(PYTHON_EXE) -B -m py_compile $(PYSRCS)
-	$(COPY) $(PYSRCS) $(DATAFILES) $(PYMOD_FILES) $(PKG_DIR)
+	$(COPY) $(PYSRCS) $(DATAFILES) $(RESOURCES) $(PYMOD_FILES) $(PKG_DIR)
 
 clean:
 	rm -rf __pycache__ build dist $(WHL_BNDL_NAME).egg-info setup.py
