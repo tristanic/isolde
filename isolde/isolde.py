@@ -193,10 +193,10 @@ class Isolde():
         # Mouse modes
         ####
         from . import mousemodes
-        # Object to initialise and hold simulation-specific mouse modes,
-        # and keep track of standard modes they've replaced. The standard
+        # Object to initialise and hold ISOLDE-specific mouse modes,
+        # and keep track of standard modes they've replaced. The pre-existing
         # mode will be reinstated when a mode is removed.
-        self._mouse_modes = mousemodes.MouseModeRegistry(self.session)
+        self._mouse_modes = mousemodes.MouseModeRegistry(self.session, self)
         # Placeholder for mouse tugging object
         self._mouse_tugger = None
         # Are we currently tugging an atom?
@@ -411,10 +411,12 @@ class Isolde():
         self._selection_changed()
         self._update_model_list()
         
-        
-        
         # Work out menu state based on current ChimeraX session
         self._update_sim_control_button_states()
+        
+        # Register ISOLDE-specific mouse modes
+        self._mouse_modes.register_all_isolde_modes()
+        
         
         
     def _populate_menus_and_update_params(self):

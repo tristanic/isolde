@@ -90,9 +90,154 @@ class TugAtomsMode(MouseMode):
         if a is not None:
             self._annotations.remove_drawing(a)
         self._arrow_model = None
+
+class AtomPicker(MouseMode):
+    name = 'select'
+    '''
+    Pick atom(s) only using the mouse, ignoring other objects. Select
+    either from only a defined Atoms selection, or from all available
+    AtomicStructure models.
+    '''
+    def __init__(self, session, isolde, all_models = False):
+        MouseMode.__init__(self, session)
+
+        self._isolde = isolde
+        self._atoms = isolde._selected_model.atoms
+        self._add_trigger = None
+        self._remove_trigger = None
+        self.minimum_drag_pixels = 5
+        self.drag_color = (0,255,0,255)
+        self._drawn_rectangle = None
+        if all_models:
+            self.pick_from_any()
+        
+        
+    def pick_from_any(self):
+        self._choose_from_all_models = True
+        self._update_atomic_models()
+        self._add_handlers()
+    
+    def _update_atomic_models(self, *_):
+        self._atoms = None
+        for m in self.session.models.list():
+            if m.atomspec_has_atoms():
+                if self._atoms is None:
+                    self._atoms = m.atoms
+                else:
+                    self._atoms = self._atoms.merge(m.atoms)
+    
+    def pick_from_selection(atoms):
+        from chimerax.core.atomic.molarray import Atoms
+        if type(atoms) != Atoms:
+            raise TypeError('Please provide an Atoms array as your selection!')
+        self._choose_from_all_models = False
+        self._atoms = atoms
+        self._remove_handlers()
+        
+    def _add_handlers(self):
+        self._add_trigger = self.session.triggers.add_handler(
+                        'add models', self._update_atomic_models)
+        self._remove_trigger = self.session.triggers.add_handler(
+                        'remove models', self._update_atomic_models)
+    
+    def _remove_handlers(self):
+        if self._add_trigger is not None:
+            self.session.triggers.remove_handler(self._add_trigger)
+            self._add_trigger = None
+        if self._remove_trigger is not None:
+            self.session.triggers.remove_handler(self._remove_trigger)
+            self._remove_trigger = None
+    
+    def cleanup(self):
+        self._remove_handlers()
+        
+    def mouse_down(self, event):
+        MouseMode.mouse_down(self, event)
+    
+    def mouse_drag(self, event):
+        if self._is_drag(event):
+            self._undraw_drag_rectangle()
+            self._draw_drag_rectangle(event)
+    
+    def mouse_up(self, event):
+        self._undraw_drag_rectangle()
+        if self._is_drag(event):
+            # Select atoms in rectangle
+            mouse_drag_select(self.mouse_down_position, event, self.session, self.view, self._atoms)
+        else:
+            # Select closest atom to a ray projecting from the pointer
+            mouse_select(event, self.session, self._atoms)
+        
+    def _is_drag(self, event):
+        dp = self.mouse_down_position
+        if dp is None:
+            return False
+        dx,dy = dp
+        x, y = event.position()
+        mp = self.minimum_drag_pixels
+        return abs(x-dx) > mp or abs(y-dy) > mp
+
+    def _draw_drag_rectangle(self, event):
+        dx,dy = self.mouse_down_position
+        x, y = event.position()
+        v = self.session.main_view
+        w,h = v.window_size
+        v.draw_xor_rectangle(dx, h-dy, x, h-y, self.drag_color)
+        self._drawn_rectangle = (dx,dy), (x,y)
+        
+    def _undraw_drag_rectangle(self):
+        dr = self._drawn_rectangle
+        if dr:
+            (dx,dy), (x,y) = dr
+            v = self.session.main_view
+            w,h = v.window_size
+            v.draw_xor_rectangle(dx, h-dy, x, h-y, self.drag_color)
+            self._drawn_rectangle = None
+    
+
+def mouse_drag_select(start_xy, event, session, view, select_from_atoms):
+    sx, sy = start_xy
+    x, y = event.position()
+    # Pick all objects under the rectangle
+    pick = view.rectangle_intercept(sx, sy, x, y)
+    # ... then weed out the non-atomic ones
+    toggle = event.shift_down()
+    if pick is None:
+        if not toggle:
+            session.selection.clear()
+            session.logger.status('cleared selection')
+            return
+    # If shift is down, add to an existing selection, otherwise clear the
+    # old selection
+    if not toggle:
+        session.selection.clear()
+    for p in pick:
+        if hasattr(p, 'atoms'):
+            p.select()
+
+def mouse_select(event, session, select_from_atoms):
+    from . import picking
+    x, y = event.position()
+    # Allow atoms within 0.5 Angstroms of the cursor to be picked
+    cutoff = 0.5
+    picked_atom = picking.pick_closest_to_line(session, x, y, select_from_atoms, cutoff)
+    # If shift is down, add to an existing selection, otherwise clear the
+    # old selection
+    toggle = event.shift_down()
+    if not toggle:
+        session.selection.clear()
+    if picked_atom is None:
+        if not toggle:
+            session.logger.status('cleared selection')
+        return
+    picked_atom.selected = True
+    
+    
+
     
 class MouseModeRegistry():
-    def __init__(self, session):
+    def __init__(self, session, isolde):
+        self._isolde = isolde
         self.session = session
         self._registered_modes = {}
         self._existing_modes = {}
@@ -112,17 +257,27 @@ class MouseModeRegistry():
         for b in existing_bindings:
             if b.exact_match(button, modifiers):
                 self._existing_modes[name] = (b, button, modifiers)
+                break
             else:
                 self._existing_modes[name] = (None)
         
         mm.bind_mouse_mode(button, modifiers, mode)
         self._registered_modes[name] = (mode, button, modifiers)
+    
+    def register_all_isolde_modes(self):
+        # Button, modifier(s), name, class, args
+        standard_modes = (
+            ('left', ['control',], 'select atoms', AtomPicker, (self.session, self._isolde)),
+            )
+        for m in standard_modes:
+            self.register_mode(m[2], m[3](*m[4]), m[0], m[1])
+    
         
     def remove_mode(self, name):
         mm = self.session.ui.mouse_modes
         if self._existing_modes[name] is not None:
             mode, button, modifiers = self._existing_modes[name]
-            mm.bind_mouse_mode(button, modifiers, mode)
+            mm.bind_mouse_mode(button, modifiers, mode.mode)
             mode, *_ = self._registered_modes[name]
             mode.cleanup()
         else:

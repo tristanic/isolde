@@ -70,10 +70,29 @@ def cone_geometry(radius = 1, height = 1, nc = 10, caps = True, flipped = False)
 
 import ctypes
 import numpy
-class HapticHandler():
+from PyQt5.QtCore import QObject, pyqtSignal
+class HapticHandler(QObject):
     _HapticHandler = ctypes.CDLL('/home/tic20/chimerax_start/haptic_interface/_HapticHandler.so')
+
+    # One signal per button, so that we can handle pressing of
+    # multiple buttons at once. The signal will send the index of
+    # the haptic device
+    button_1_pressed = pyqtSignal(int)
+    button_2_pressed = pyqtSignal(int)
+    button_3_pressed = pyqtSignal(int)
+    button_4_pressed = pyqtSignal(int)
+        
+    button_1_released = pyqtSignal(int)
+    button_2_released = pyqtSignal(int)
+    button_3_released = pyqtSignal(int)
+    button_4_released = pyqtSignal(int)
     
+        
+
+
+   
     def __init__ (self, session):
+        QObject.__init__(self)
         self.session = session
         self.log = session.logger.info
         self._MAX_DEVICES = 16
@@ -102,6 +121,8 @@ class HapticHandler():
         # Current scaling factor between device and scene coordinates
         self._final_axis_scale = None
         
+        # Current states of all haptic device buttons
+        self._button_states = [[False] * 4 ] * self._MAX_DEVICES
         
         self._final_axes_and_origin = None
         
@@ -286,6 +307,28 @@ class HapticHandler():
         display_axes_and_origin, axis_scale = self.get_haptic_reference_frame()
         for i in range(self.numHapticDevices):
             pos = self.getPosition(i)
+            old_buttons = self._button_states[i]
+            buttons = self.getButtonStates(i)
+            # PyQt won't let us arrange signals into lists, so we have to
+            # do this longhand
+            if buttons[0] and not old_buttons[0]:
+                self.button_1_pressed.emit(i)
+            elif old_buttons[0] and not buttons[0]:
+                self.button_1_released.emit(i)
+            if buttons[1] and not old_buttons[1]:
+                self.button_2_pressed.emit(i)
+            elif old_buttons[1] and not buttons[1]:
+                self.button_2_released.emit(i)
+            if buttons[2] and not old_buttons[2]:
+                self.button_3_pressed.emit(i)
+            elif old_buttons[2] and not buttons[2]:
+                self.button_3_released.emit(i)
+            if buttons[3] and not old_buttons[3]:
+                self.button_4_pressed.emit(i)
+            elif old_buttons[3] and not buttons[3]:
+                self.button_4_released.emit(i)
+            self._button_states[i] = buttons    
+
             self._draw_arrow(i, pos, display_axes_and_origin, axis_scale)
             if self.deviceInUse[i]:
                 self._setSpringConstant(i, self.springConstant[i]*self._final_display_scale)
