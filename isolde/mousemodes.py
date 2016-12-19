@@ -90,6 +90,109 @@ class TugAtomsMode(MouseMode):
         if a is not None:
             self._annotations.remove_drawing(a)
         self._arrow_model = None
+
+class AtomPicker(MouseMode):
+    name = 'select'
+    '''
+    Pick atom(s) only using the mouse, ignoring other objects. Select
+    either from only a defined Atoms selection, or from all available
+    AtomicStructure models.
+    '''
+    def __init__(self, session, atoms = None, all_models = False):
+        if atoms is None and not all_models:
+            raise TypeError('Must provide either an atom selection or\
+                set all_models to True!')
+        self._atoms = atoms
+        self._add_trigger = None
+        self._remove_trigger = None
+        self.minimum_drag_pixels = 5
+        self.drag_color = (0,255,0,255)
+        self._drawn_rectangle = None
+        if all_models:
+            self.pick_from_any()
+        
+    def pick_from_any():
+        self._choose_from_all_models = True
+        self._update_atomic_models()
+        self._add_handlers()
+    
+    def _update_atomic_models():
+        self._atoms = None
+        for m in self._session.models.list():
+            if m.atomspec_has_atoms():
+                if self_atoms is None:
+                    self._atoms = m.atoms
+                else:
+                    self._atoms = self._atoms.merge(m.atoms)
+    
+    def pick_from_selection(atoms):
+        from chimerax.core.atomic.molarray import Atoms
+        if type(atoms) != Atoms:
+            raise TypeError('Please provide an Atoms array as your selection!')
+        self._choose_from_all_models = False
+        self._atoms = atoms
+        self._remove_handlers()
+        
+    def _add_handlers():
+        self._add_trigger = self.session.triggers.add_handler(
+                        'add models', self._update_atomic_models)
+        self._remove_trigger = self.session.triggers.add_handler(
+                        'remove models', self._update_atomic_models)
+    
+    def _remove_handlers():
+        if self._add_trigger is not None:
+            self.session.triggers.remove_handler(self._add_trigger)
+            self._add_trigger = None
+        if self._remove_trigger is not None:
+            self.session.triggers.remove_handler(self._remove_trigger)
+            self._remove_trigger = None
+    
+    def cleanup():
+        self._remove_handlers()
+        
+    def mouse_down(self, event):
+        MouseMode.mouse_down(self, event)
+    
+    def mouse_drag(self, event):
+        if self._is_drag(event):
+            self._undraw_drag_rectangle()
+            self._draw_drag_rectangle(event)
+    
+    def mouse_up(self, event):
+        self._undraw_drag_rectangle()
+        if self._is_drag(event):
+            # Select atoms in rectangle
+            mouse_drag_select(self.mouse_down_position, event, self._session, self.view)
+        
+    def _is_drag(self, event):
+        dp = self.mouse_down_position
+        if dp is None:
+            return False
+        dx,dy = dp
+        x, y = event.position()
+        mp = self.minimum_drag_pixels
+        return abs(x-dx) > mp or abs(y-dy) > mp
+
+    def _draw_drag_rectangle(self, event):
+        dx,dy = self.mouse_down_position
+        x, y = event.position()
+        v = self._session.main_view
+        w,h = v.window_size
+        v.draw_xor_rectangle(dx, h-dy, x, h-y, self.drag_color)
+        self._drawn_rectangle = (dx,dy), (x,y)
+        
+    def _undraw_drag_rectangle(self):
+        dr = self._drawn_rectangle
+        if dr:
+            (dx,dy), (x,y) = dr
+            v = self._session.main_view
+            w,h = v.window_size
+            v.draw_xor_rectangle(dx, h-dy, x, h-y, self.drag_color)
+            self._drawn_rectangle = None
+    
+
+
+
     
 class MouseModeRegistry():
     def __init__(self, session):
