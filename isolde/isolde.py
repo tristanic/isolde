@@ -123,11 +123,13 @@ class Isolde():
  
         # Available pre-defined colors
         from chimerax.core import colors
-        self._available_colors = colors.BuiltinColors
+        import copy
+        self._available_colors = copy.copy(colors.BuiltinColors)
         # Remove duplicates
         for key in self._available_colors:
-            stripped_key = key.replace(" ","")
-            self._available_colors.pop(stripped_key, None)
+            if ' ' in key:
+                stripped_key = key.replace(' ',"")
+                self._available_colors.pop(stripped_key, None)
         
         # Model object to hold annotations (arrows, etc.)
         from chimerax.core.models import Model
