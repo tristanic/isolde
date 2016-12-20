@@ -97,20 +97,49 @@ class AtomPicker(MouseMode):
     Pick atom(s) only using the mouse, ignoring other objects. Select
     either from only a defined Atoms selection, or from all available
     AtomicStructure models.
+    
+    Standard binding is ctrl-click (and drag)
+    
+    Modifiers:
+        - ctrl-shift: Add to current selection
+        - ctrl-alt: Subtract from current selection
+        
+        If shift is pressed, alt will be ignored.
     '''
     def __init__(self, session, isolde, all_models = False):
         MouseMode.__init__(self, session)
 
         self._isolde = isolde
-        self._atoms = isolde._selected_model.atoms
+        self._atoms = None
         self._add_trigger = None
         self._remove_trigger = None
         self.minimum_drag_pixels = 5
         self.drag_color = (0,255,0,255)
         self._drawn_rectangle = None
+        self._choose_from_all_models = all_models
         if all_models:
             self.pick_from_any()
-        
+        else:
+            self._isolde_model_handler = isolde.triggers.add_handler(
+                'selected model changed', self._isolde_changed_model)
+        # While a simulation is running, we only want to pick from the
+        # mobile atoms
+        self._sim_start_handler = isolde.triggers.add_handler(
+            'simulation started', self._on_sim_start)
+        self._sim_end_handler = isolde.triggers.add_handler(
+            'simulation terminated', self._on_sim_end)
+    
+    def _isolde_changed_model(self, trigger_name, m):
+        self._atoms = m.atoms
+    
+    def _on_sim_start(self, *_):
+        self._atoms = isolde.mobile_atoms
+    
+    def _on_sim_end(self, *_):
+        if self._choose_from_all_models:
+            self.pick_from_any()
+        else:
+            self._atoms = self._isolde.selected_model.atoms
         
     def pick_from_any(self):
         self._choose_from_all_models = True
@@ -163,10 +192,10 @@ class AtomPicker(MouseMode):
         self._undraw_drag_rectangle()
         if self._is_drag(event):
             # Select atoms in rectangle
-            mouse_drag_select(self.mouse_down_position, event, self.session, self.view, self._atoms)
+            self._mouse_drag_select(self.mouse_down_position, event)
         else:
             # Select closest atom to a ray projecting from the pointer
-            mouse_select(event, self.session, self._atoms)
+            self._mouse_select(event)
         
     def _is_drag(self, event):
         dp = self.mouse_down_position
@@ -195,42 +224,81 @@ class AtomPicker(MouseMode):
             self._drawn_rectangle = None
     
 
-def mouse_drag_select(start_xy, event, session, view, select_from_atoms):
-    sx, sy = start_xy
-    x, y = event.position()
-    # Pick all objects under the rectangle
-    pick = view.rectangle_intercept(sx, sy, x, y)
-    # ... then weed out the non-atomic ones
-    toggle = event.shift_down()
-    if pick is None:
-        if not toggle:
+    def _mouse_drag_select(self, start_xy, event):
+        session = self.session
+        view = self.view
+        sx, sy = start_xy
+        x, y = event.position()
+        # Pick all objects under the rectangle
+        pick = view.rectangle_intercept(sx, sy, x, y)
+        # ... then weed out the non-atomic ones
+        add_toggle = event.shift_down()
+        sub_toggle = event.alt_down()
+        found_atoms = False
+        found_ribbons = False
+        if pick is None:
+            if not toggle and not sub_toggle:
+                session.selection.clear()
+                session.logger.status('cleared selection')
+                return
+        # If shift is down, add to an existing selection, otherwise clear the
+        # old selection
+        if not add_toggle and not sub_toggle:
             session.selection.clear()
-            session.logger.status('cleared selection')
-            return
-    # If shift is down, add to an existing selection, otherwise clear the
-    # old selection
-    if not toggle:
-        session.selection.clear()
-    for p in pick:
-        if hasattr(p, 'atoms'):
-            p.select()
+        for p in pick:
+            if self._choose_from_all_models:
+                if hasattr(p, 'atoms') or hasattr(p, 'residues'):
+                    if add_toggle or not sub_toggle:
+                        p.select()
+                    else:
+                        if hasattr(p, 'atoms'):
+                            p.atoms.selected = False
+                        else:
+                            p.residues.selected = False
+            else:
+                import numpy
+                if not found_atoms and hasattr(p, 'atoms'):
+                    patoms = p.atoms.filter(self._atoms.indices(p.atoms) != -1)
+                    if len(patoms):
+                        found_atoms = True
+                        if add_toggle or not sub_toggle:
+                            patoms.selected = True
+                        else:
+                            patoms.selected = False
+                elif not found_ribbons and hasattr(p, 'residues'):
+                    presidues = p.residues.filter(self._atoms.unique_residues.indices(p.residues) != 1)
+                    if len(presidues):
+                        found_ribbons = True
+                        if add_toggle or not sub_toggle:
+                            presidues.atoms.selected = True
+                        else:
+                            presidues.atoms.selected = False
+                if found_atoms and found_ribbons:
+                    break
+                        
 
-def mouse_select(event, session, select_from_atoms):
-    from . import picking
-    x, y = event.position()
-    # Allow atoms within 0.5 Angstroms of the cursor to be picked
-    cutoff = 0.5
-    picked_atom = picking.pick_closest_to_line(session, x, y, select_from_atoms, cutoff)
-    # If shift is down, add to an existing selection, otherwise clear the
-    # old selection
-    toggle = event.shift_down()
-    if not toggle:
-        session.selection.clear()
-    if picked_atom is None:
-        if not toggle:
-            session.logger.status('cleared selection')
-        return
-    picked_atom.selected = True
+    def _mouse_select(self, event):
+        session = self.session
+        from . import picking
+        x, y = event.position()
+        # Allow atoms within 0.5 Angstroms of the cursor to be picked
+        cutoff = 0.5
+        picked_atom = picking.pick_closest_to_line(session, x, y, self._atoms, cutoff)
+        # If shift is down, add to an existing selection, otherwise clear the
+        # old selection
+        add_toggle = event.shift_down()
+        sub_toggle = event.alt_down()
+        if not add_toggle and not sub_toggle:
+            session.selection.clear()
+        if picked_atom is None:
+            if not add_toggle and not sub_toggle:
+                session.logger.status('cleared selection')
+            return
+        if add_toggle or not sub_toggle:
+            picked_atom.selected = True
+        else:
+            picked_atom.selected = False
+    
     
     
 

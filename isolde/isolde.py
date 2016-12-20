@@ -6,7 +6,9 @@
 #            Cambridge Institute for Medical Research
 #            University of Cambridge
 
-
+from PyQt5.QtCore import QObject, pyqtSignal
+import chimerax
+from math import inf
 
 class Isolde():
     
@@ -81,6 +83,31 @@ class Isolde():
         _map_styles.solid_opaque: {'style': 'surface', 'transparency': 0.0}
         }
     
+    # Possible outcomes of simulation
+    class sim_outcome(IntEnum):
+        COMMIT          = 0
+        DISCARD         = 1
+        FAIL_TO_START   = 2
+        UNSTABLE        = 3
+    
+    '''
+    Named triggers to simplify handling of changes on key ISOLDE events,
+    using the same code as ChimeraX's session.triggers. The same
+    functionality could be achieved without too much trouble using the
+    PyQt signal/slot system.
+    '''    
+    from chimerax.core import triggerset
+    triggers = triggerset.TriggerSet()
+    trigger_names = [
+        'simulation started',    # Successful initiation of a simulation
+        'simulation terminated', # Simulation finished, crashed or failed to start
+        'selected model changed', # Changed the master model selection
+        ]
+    for t in trigger_names:
+        triggers.add_trigger(t)
+    
+    
+    
     def __init__(self, gui):
         self._logging = False
         self._log = Logger('isolde.log')
@@ -137,6 +164,8 @@ class Isolde():
         self.hard_shell_cutoff = 8      # Angstroms
         # Construct containing all mobile atoms in the simulation
         self._total_mobile = None
+        # Indices of mobile atoms in the total simulation construct
+        self._total_mobile_indices = None
         # Construct containing all atoms that will actually be simulated
         self._total_sim_construct = None
         # List of all bonds in _total_sim_construct
@@ -289,9 +318,17 @@ class Isolde():
         self._friction = 5.0/unit.picoseconds
         # Limit on the net force on a single atom to detect instability and
         # force a minimisation
-        self._max_allowable_force = 50000.0 # kJ mol-1 nm-1
+        self._max_allowable_force = 10000.0 # kJ mol-1 nm-1
+        # We need to store the last measured maximum force to determine
+        # when minimisation has converged.
+        self._last_max_force = inf
         # Flag for unstable simulation
         self._sim_is_unstable = False
+        # Counter for the number of simulation rounds that have been unstable
+        self._unstable_min_rounds = 0
+        # Maximum number of rounds to attempt minimisation of an unstable
+        # simulation
+        self.max_unstable_rounds = 20
         
         # Are we currently tugging on an atom?
         self._currently_tugging = False
@@ -310,7 +347,7 @@ class Isolde():
         # If running, is the simulation in startup mode?
         self._sim_startup = True
         # Maximum number of rounds of minimisation to run on startup
-        self._sim_startup_rounds = 50
+        self._sim_startup_rounds = 10
         # Counter for how many rounds we've done on startup
         self._sim_startup_counter = 0
         
@@ -335,6 +372,11 @@ class Isolde():
         
         self.initialize_haptics()
         
+        ####
+        # Internal trigger handlers
+        ####
+        self.triggers.add_handler('simulation terminated', self._cleanup_after_sim)
+        
         self.gui_mode = False
         
         from PyQt5.QtGui import QPixmap
@@ -358,6 +400,26 @@ class Isolde():
         
         splash.destroy()
     
+    @property
+    def selected_model(self):
+        return self._selected_model
+    @selected_model.setter
+    def selected_model(self, model):
+        if not isinstance(model, chimerax.core.atomic.AtomicStructure):
+            raise TypeError('Selection must be a single AtomicStructure model!')
+        self._change_selected_model(model = model)
+    @property
+    def fixed_atoms(self):
+        return self._hard_shell_atoms
+    @property
+    def mobile_atoms(self):
+        return self._total_mobile
+    @property
+    def all_simulated_atoms(self):
+        return self._total_sim_construct
+    
+    
+    
     ###################################################################
     # GUI related functions
     ###################################################################
@@ -378,6 +440,8 @@ class Isolde():
         # duration of the ISOLDE session. We'll put them back the way
         # we found them when the ISOLDE gui is closed.
         self._set_chimerax_mouse_mode_panel_enabled(False)
+        # Register ISOLDE-specific mouse modes
+        self._mouse_modes.register_all_isolde_modes()
         
         
         
@@ -414,8 +478,6 @@ class Isolde():
         # Work out menu state based on current ChimeraX session
         self._update_sim_control_button_states()
         
-        # Register ISOLDE-specific mouse modes
-        self._mouse_modes.register_all_isolde_modes()
         
         
         
@@ -1136,13 +1198,19 @@ class Isolde():
         ffindex = self.iw._sim_water_model_combo_box.currentIndex()
         self._sim_water_ff = self._available_ffs.explicit_water_files[ffindex]
     
-    def _change_selected_model(self):
+    def _change_selected_model(self, *_, model = None):
         self._status('Finding backbone dihedrals. Please be patient.')
         if len(self._available_models) == 0:
             return
         if self._simulation_running:
             return
         iw = self.iw
+        if model is not None:
+            # Find and select the model in the master combo box, which
+            # will automatically call this function again with model = None
+            index = iw._master_model_combo_box.findData(model)
+            iw._master_model_combo_box.setCurrentIndex(index)
+            return
         m = iw._master_model_combo_box.currentData()
         if self._selected_model != m and m is not None:
             self._selected_model = m
@@ -1151,6 +1219,7 @@ class Isolde():
             from . import dihedrals
             self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(self.session, m)            
             self._update_chain_list()
+            self.triggers.activate_trigger('selected model changed', data=m)
         self._status('')
     
     def _select_whole_model(self, *_):
@@ -1333,6 +1402,14 @@ class Isolde():
     ##############################################################        
     
     def start_sim(self):
+        try:
+            self._start_sim()
+        except Exception as e:
+            self.triggers.activate_trigger('simulation terminated', 
+                                        (self.sim_outcome.FAIL_TO_START, e))
+    
+    
+    def _start_sim(self):
         log = self.session.logger.info
         from time import time
         last_time = time()
@@ -1372,6 +1449,8 @@ class Isolde():
         
         sc = self._total_sim_construct = total_mobile.merge(self._hard_shell_atoms)
         #sb = self._total_sim_bonds = sc.inter_bonds
+        
+        self._total_mobile_indices = sc.indices(total_mobile)
             
         sc.selected = True
         from chimerax.core.atomic import selected_atoms, selected_bonds
@@ -1719,7 +1798,7 @@ class Isolde():
             self._total_sim_construct.coords = self._saved_positions
         if self.track_rama:
             self.update_omega_check()
-        self._cleanup_after_sim()
+        self.triggers.activate_trigger('simulation terminated', (self.sim_outcome.DISCARD, None))
     
     def commit_sim(self):
         print("""This function should stop the simulation and write the
@@ -1727,8 +1806,7 @@ class Isolde():
         if not self._simulation_running:
             print('No simulation running!')
             return
-        # Write coords back to target here
-        self._cleanup_after_sim()
+        self.triggers.activate_trigger('simulation terminated', (self.sim_outcome.COMMIT, None))
         
     def minimize(self):
         print('Minimisation mode')
@@ -1740,17 +1818,35 @@ class Isolde():
         self.simulation_type = 'equil'
         self._update_sim_control_button_states()
     
-    def _cleanup_after_sim(self):            
+    def _cleanup_after_sim(self, name, outcome):
+        outcomes = self.sim_outcome
+        if outcome[0] == outcomes.UNSTABLE:
+            print('''Unable to minimise excessive force. Giving up. Try starting 
+                a simulation on a larger selection to give the surroundings 
+                more room to settle.''')
+            '''
+            TODO: Pop up a dialog box, giving the user the opportunity to save
+            or discard the existing coordinates, and/or start a simulation
+            with a wider selection to give the minimiser more room to work.
+            '''
+            pass
+        elif outcome[0] == outcomes.FAIL_TO_START:
+            '''
+            TODO: Pop up a dialog box giving the details of the exception, then
+            clean up.
+            '''
+            pass
+        # Otherwise just clean up            
         self._simulation_running = False
         if 'do_sim_steps_on_gui_update' in self._event_handler.list_event_handlers():
             self._event_handler.remove_event_handler('do_sim_steps_on_gui_update')
         self.sim = None
         self._system = None
         self._update_menu_after_sim()
-        from . import mousemodes
-        mouse_mode_names = self._mouse_modes.get_names()
-        for n in mouse_mode_names:
-            self._mouse_modes.remove_mode(n)
+        self._mouse_modes.remove_mode(self._mouse_tugger.name)
+        #mouse_mode_names = self._mouse_modes.get_names()
+        #for n in mouse_mode_names:
+            #self._mouse_modes.remove_mode(n)
         self._mouse_tugger = None
         for d in self._haptic_devices:
             d.cleanup()
@@ -1770,6 +1866,9 @@ class Isolde():
         self._rama_go_static()
         self.iw._rebuild_sel_residue_frame.setDisabled(True)
         self.omega_validator.current_model = None
+        self._last_max_force = inf
+        self._unstable_min_rounds = 0
+        self._sim_is_unstable = False
         self._status('')
     
     ####
@@ -1858,8 +1957,12 @@ class Isolde():
         minsteps = self.min_steps_per_update
         mode = self.simulation_type
         startup = self._sim_startup
-        s_count = self._sim_startup_counter
+        self._sim_startup_counter
         s_max_count = self._sim_startup_rounds
+        if self._sim_startup and self._sim_startup_counter >= s_max_count:
+            print('Maximum number of startup minimisation rounds reached. \
+                    starting dynamics anyway...')
+            startup = self._sim_startup = False
         pos = self._particle_positions
         sc = self._total_sim_construct
         surr = self._surroundings
@@ -1873,21 +1976,42 @@ class Isolde():
             surr.displays = True
             self._surroundings_hidden = False
         
-        newpos, max_force = self._get_positions_and_max_force()
-        if max_force > self._max_allowable_force:
+        newpos, max_force, max_index = self._get_positions_and_max_force()
+        if startup:
+            print('Startup round {} max force: {:0.0f} kJ/mol/nm'
+                    .format(self._sim_startup_counter, max_force))
+            if abs(max_force - self._last_max_force) < 1.0 and max_force < self._max_allowable_force:
+                print('Minimisation converged. Starting dynamics.')
+                startup = self._sim_startup = False
+            self._last_max_force = max_force
+        elif max_force > self._max_allowable_force and not self._sim_is_unstable:
             self._sim_is_unstable = True
-            print(str(max_force))
             self._oldmode = mode
             if mode == 'equil':
                 # revert to the coordinates before this simulation step
-                c.setPositions(pos/10)
+                #c.setPositions(pos/10)
                 self.simulation_type = 'min'
                 return
-        elif self._sim_is_unstable:
-            if max_force < self._max_allowable_force / 2:
+        if self._sim_is_unstable:
+            if self._unstable_min_rounds >= self.max_unstable_rounds:
+                # We have a problem we can't fix. Terminate the simulation
+                self.triggers.activate_trigger('simulation terminated', (self.sim_outcome.UNSTABLE, None))
+                return
+            bad_atom = self._total_mobile[max_index]
+            bad_res = bad_atom.residue
+            outstr = '''
+            Simulation is unstable! Atom {} from residue {} of chain {}
+            is experiencing a net force of {:0.0f} kJ/mol/nm.
+            '''.format(bad_atom.name, bad_res.number, bad_atom.chain_id,
+                        max_force)
+            print(outstr)
+            self._unstable_min_rounds += 1
+            if max_force < self._max_allowable_force:
                 # We're back to stability. We can go back to equilibrating
                 self._sim_is_unstable = False
                 self.simulation_type = self._oldmode
+                self._unstable_min_rounds = 0
+            
 
         
         # Mouse interaction
@@ -1973,16 +2097,12 @@ class Isolde():
             self._temperature_changed = False
 
         
-        if startup and s_count:
-            start_step = s.currentStep
+        if startup:
             s.minimizeEnergy(maxIterations = steps)
-            end_step = s.currentStep
-            if end_step - start_step < steps:
-                # minimisation has converged. We can continue on
-                startup = False
-            else:
-                s_count += 1
+            self._sim_startup_counter += 1
         elif self._sim_is_unstable:
+            # Run a few timesteps to jiggle out of local minima
+            s.step(5)
             s.minimizeEnergy()
             c.setVelocitiesToTemperature(self.simulation_temperature)
         elif mode == 'min':
@@ -2028,13 +2148,22 @@ class Isolde():
         c = self.sim.context
         from simtk.unit import kilojoule_per_mole, nanometer, angstrom
         state = c.getState(getForces = True, getPositions = True)
-        forces = state.getForces(asNumpy = True)/(kilojoule_per_mole/nanometer)
+        # We only want to consider forces on the mobile atoms to decide
+        # if the simulation is unstable
+        forces = (state.getForces(asNumpy = True) \
+            /(kilojoule_per_mole/nanometer))[self._total_mobile_indices]
         forcesx = forces[:,0]
         forcesy = forces[:,1]
         forcesz = forces[:,2]
         magnitudes =numpy.sqrt(forcesx*forcesx + forcesy*forcesy + forcesz*forcesz)
+        max_mag = max(magnitudes)
+        # Only look up the index if the maximum force is too high
+        if max_mag > self._max_allowable_force:
+            max_index = numpy.where(magnitudes == max_mag)[0][0]
+        else:
+            max_index = -1
         pos = state.getPositions(asNumpy = True)/angstrom
-        return pos, max(magnitudes)
+        return pos, max_mag, max_index
 
     #############
     # Commands for script/command-line control
