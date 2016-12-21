@@ -320,7 +320,7 @@ class Isolde():
         self._friction = 5.0/unit.picoseconds
         # Limit on the net force on a single atom to detect instability and
         # force a minimisation
-        self._max_allowable_force = 10000.0 # kJ mol-1 nm-1
+        self._max_allowable_force = 50000.0 # kJ mol-1 nm-1
         # We need to store the last measured maximum force to determine
         # when minimisation has converged.
         self._last_max_force = inf
@@ -377,6 +377,15 @@ class Isolde():
         ####
         # Internal trigger handlers
         ####
+        
+        
+        # During simulations, ISOLDE needs to reserve the right mouse
+        # button for tugging atoms. Therefore, the ChimeraX right mouse
+        # mode selection panel needs to be disabled for the duration of
+        # each simulation.
+        self.triggers.add_handler('simulation started', self._disable_chimerax_mouse_mode_panel)
+        self.triggers.add_handler('simulation terminated', self._enable_chimerax_mouse_mode_panel)
+        
         self.triggers.add_handler('simulation terminated', self._cleanup_after_sim)
         
         self.gui_mode = False
@@ -435,14 +444,7 @@ class Isolde():
         self.iw = gui.iw
         self.gui_mode = True
         
-        # ISOLDE will need to define a number of custom mouse modes to
-        # give a familiar environment to users of existing packages. 
-        # These will not work well with the standard ChimeraX right mouse
-        # button selection panel, so best if we disable it for the
-        # duration of the ISOLDE session. We'll put them back the way
-        # we found them when the ISOLDE gui is closed.
-        self._set_chimerax_mouse_mode_panel_enabled(False)
-        # Register ISOLDE-specific mouse modes
+         # Register ISOLDE-specific mouse modes
         self._mouse_modes.register_all_isolde_modes()
         
         
@@ -765,7 +767,13 @@ class Isolde():
         iw._sim_hide_surroundings_toggle.stateChanged.connect(
             self._set_hide_surroundings
         )
-
+    
+    def _disable_chimerax_mouse_mode_panel(self, *_):
+        self._set_chimerax_mouse_mode_panel_enabled(False)
+    
+    def _enable_chimerax_mouse_mode_panel(self, *_):
+        self._set_chimerax_mouse_mode_panel_enabled(True)
+    
     def _set_chimerax_mouse_mode_panel_enabled(self, state):
         from chimerax.mouse_modes.tool import MouseModePanel
         mm = self.session.tools.find_by_class(MouseModePanel)[0]
@@ -984,6 +992,10 @@ class Isolde():
     # Update button states after a simulation has finished
     def _update_menu_after_sim(self):
         self._update_sim_control_button_states()
+    
+    
+    
+    
     
     ####
     # Rebuild tab
@@ -1667,6 +1679,8 @@ class Isolde():
         self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
                                               'new frame',
                                               self.do_sim_steps)
+                                              
+        self.triggers.activate_trigger('simulation started', None)
         self._simulation_running = True
         self._update_sim_control_button_states()
 
