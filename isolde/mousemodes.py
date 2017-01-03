@@ -108,7 +108,10 @@ class AtomPicker(MouseMode):
     '''
     def __init__(self, session, isolde, all_models = False):
         MouseMode.__init__(self, session)
-
+        
+        self.mode = {'select': 'replace',
+                     'select add': 'add',
+                     'select subtract': 'subtract'}[self.name]
         self._isolde = isolde
         self._atoms = None
         self._add_trigger = None
@@ -226,14 +229,15 @@ class AtomPicker(MouseMode):
 
     def _mouse_drag_select(self, start_xy, event):
         session = self.session
+        mode = self.mode
         view = self.view
         sx, sy = start_xy
         x, y = event.position()
         # Pick all objects under the rectangle
         pick = view.rectangle_intercept(sx, sy, x, y)
         # ... then weed out the non-atomic ones
-        add_toggle = event.shift_down()
-        sub_toggle = event.alt_down()
+        #add_toggle = event.shift_down()
+        #sub_toggle = event.alt_down()
         found_atoms = False
         found_ribbons = False
         if pick is None:
@@ -243,12 +247,14 @@ class AtomPicker(MouseMode):
                 return
         # If shift is down, add to an existing selection, otherwise clear the
         # old selection
-        if not add_toggle and not sub_toggle:
+        #if not add_toggle and not sub_toggle:
+        if mode == 'replace':
             session.selection.clear()
         for p in pick:
             if self._choose_from_all_models:
                 if hasattr(p, 'atoms') or hasattr(p, 'residues'):
-                    if add_toggle or not sub_toggle:
+                    #if add_toggle or not sub_toggle:
+                    if not mode == 'subtract':
                         p.select()
                     else:
                         if hasattr(p, 'atoms'):
@@ -261,7 +267,7 @@ class AtomPicker(MouseMode):
                     patoms = p.atoms.filter(self._atoms.indices(p.atoms) != -1)
                     if len(patoms):
                         found_atoms = True
-                        if add_toggle or not sub_toggle:
+                        if not mode == 'subtract':
                             patoms.selected = True
                         else:
                             patoms.selected = False
@@ -269,7 +275,7 @@ class AtomPicker(MouseMode):
                     presidues = p.residues.filter(self._atoms.unique_residues.indices(p.residues) != 1)
                     if len(presidues):
                         found_ribbons = True
-                        if add_toggle or not sub_toggle:
+                        if not mode == 'subtract':
                             presidues.atoms.selected = True
                         else:
                             presidues.atoms.selected = False
@@ -279,6 +285,7 @@ class AtomPicker(MouseMode):
 
     def _mouse_select(self, event):
         session = self.session
+        mode = self.mode
         from . import picking
         x, y = event.position()
         # Allow atoms within 0.5 Angstroms of the cursor to be picked
@@ -288,19 +295,25 @@ class AtomPicker(MouseMode):
         # old selection
         add_toggle = event.shift_down()
         sub_toggle = event.alt_down()
-        if not add_toggle and not sub_toggle:
+        if mode == 'replace':
             session.selection.clear()
         if picked_atom is None:
-            if not add_toggle and not sub_toggle:
+            if mode == 'replace':
                 session.logger.status('cleared selection')
             return
-        if add_toggle or not sub_toggle:
+        if not mode == 'subtract':
             picked_atom.selected = True
         else:
             picked_atom.selected = False
     
     
-    
+class AtomPickAdd(AtomPicker):
+    name = 'select add'
+    icon = None
+
+class AtomPickSubtract(AtomPicker):
+    name = 'select subtract'
+    icon = None
 
     
 class MouseModeRegistry():
@@ -335,7 +348,9 @@ class MouseModeRegistry():
     def register_all_isolde_modes(self):
         # Button, modifier(s), name, class, args
         standard_modes = (
-            ('left', ['control',], 'select atoms', AtomPicker, (self.session, self._isolde)),
+            ('left', ['control',], 'select', AtomPicker, (self.session, self._isolde)),
+            ('left', ['control','shift'], 'select add', AtomPickAdd, (self.session, self._isolde)),
+            ('left', ['control','alt'], 'select', AtomPickSubtract, (self.session, self._isolde)),
             )
         for m in standard_modes:
             self.register_mode(m[2], m[3](*m[4]), m[0], m[1])
