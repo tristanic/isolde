@@ -1,0 +1,9 @@
+prefix=/home/tic20/ccp4/devtools/install
+libdir=/home/tic20/ccp4/devtools/install/lib
+
+Name: blas
+Description: Basic Linear Algebra Subprograms F77 reference implementations
+Version: 
+URL: http://www.netlib.org/blas/
+Libs: -L/home/tic20/ccp4/devtools/install/lib -lblas
+Libs.private: -lm
