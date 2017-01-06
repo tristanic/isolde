@@ -52,7 +52,7 @@ class Atom():
     
     @element.setter
     def element(self, element_name):
-        # Check common atom names first for performance
+        # Check common atom names first to improve performance
         if element_name not in ('H', 'C', 'N', 'O', 'S'):
             if element_name not in self.ATOM_NAMES:
                 raise TypeError('Unrecognised element!')
@@ -105,6 +105,9 @@ class Atom():
     
     @property
     def b_factor(self):
+        '''
+        Synonym for u_iso
+        '''
         return self.u_iso
     
     @b_factor.setter
@@ -124,6 +127,10 @@ class Atom():
     def u_aniso(self, u11, u22, u33, u12, u13, u23):
         self.core_atom.set_u_aniso_orth(u11, u22, u33, u12, u13, u23)
     
+    @property
+    def is_null(self):
+        return self.core_atom.is_null()
+    
     def transform(self, rot_trans):
         '''
         Transform the atom using the rotation and translation defined in
@@ -131,11 +138,76 @@ class Atom():
         '''
         self.core_atom.transform(rot_rans)
 
-def chimerax_atoms_to_clipper_atoms(atom_list):
+def Atom_list_from_sel(atom_list):
+    n = len(atom_list)
     elements = atom_list.element_names
     coords = atom_list.coords
+    occupancies = atom_list.occupancy.astype(float)
+    u_iso = atom_list.bfactors.astype(float)
+    #u_aniso = sel.aniso_u
+    u_aniso = [numpy.random.rand(3,3).astype(float)]*n # FIXME For testing only
+    
+    clipper_atom_list = clipper_core.Atom_list(n)
+    
+    for i in range(n):
+        thisatom = clipper_atom_list[i]
+        thisatom.set_element(elements[i])
+        thisatom.set_coord_orth(clipper_core.Coord_orth(*coords[i]))
+        thisatom.set_occupancy(occupancies[i])
+        thisatom.set_u_iso(u_iso[i])
+        ua = u_aniso[i]
+        thisatom.set_u_aniso_orth(
+            clipper_core.U_aniso_orth(
+                ua[0][0], ua[1][1], ua[2][2], ua[0][1], ua[0][2], ua[1][2]))
+    
+    return clipper_atom_list
+ 
+def Atom_list_from_sel_fast(atom_list):
+    from time import time
+    start_time = time()
+    n = len(atom_list)
+    elements = atom_list.element_names.tolist()
+    coords = atom_list.coords
     occupancies = atom_list.occupancy
-    u_iso = sel.bfactors
+    u_iso = atom_list.bfactors
+    #u_aniso = sel.aniso_u
+    u_aniso = numpy.random.rand(n,3,3).astype(float) # FIXME For testing only
+    clipper_atom_list = clipper_core.Atom_list(n)
+
+    clipper_atom_list.set_elements(elements)
+    clipper_atom_list.set_coord_orth(coords)
+    clipper_atom_list.set_occupancies(occupancies)
+    clipper_atom_list.set_u_isos(u_iso)
+    # need to extract the relevant values into an n x 6 array
+    # print('Intermediate time: {}'.format(time() - start_time))
+    ua_vals = numpy.empty([n,6], numpy.float)
+    ua_vals[:,0] = u_aniso[:,0,0]
+    ua_vals[:,1] = u_aniso[:,1,1]
+    ua_vals[:,2] = u_aniso[:,2,2]
+    ua_vals[:,3] = u_aniso[:,0,1]
+    ua_vals[:,4] = u_aniso[:,0,2]
+    ua_vals[:,5] = u_aniso[:,1,2]
+    clipper_atom_list.set_u_anisos(ua_vals)
+    return clipper_atom_list
+
+def map_import_test(filename):
+    myhkl = clipper_core.HKL_info()
+    fphidata =  clipper_core.HKL_data_F_phi_double()  
+    mtzin = clipper_core.CCP4MTZfile()
+    mtzin.open_read(filename)
+    mtzin.import_hkl_info(myhkl)
+    mtzin.import_hkl_data(fphidata, '/crystal/dataset/[2FOFCWT, PH2FOFCWT]')
+    mtzin.close_read()
+    mygrid = clipper_core.Grid_sampling(myhkl.spacegroup(), myhkl.cell(), myhkl.resolution())
+    mymap = clipper_core.Xmap_double(myhkl.spacegroup(), myhkl.cell(), mygrid)
+    mymap.fft_from(fphidata)
+    return (myhkl, mymap)
     
-    
+def vol_box(hklinfo, xmap, min_coor, max_coor):
+    cell = hklifno.cell()
+    grid = xmap.grid_sampling()
+    min_ortho = clipper_core.Coord_orth(*min_coor)
+    max_ortho = clipper_core.Coord_orth(*max_coor)
+    min_grid = min_ortho.coord_frac(cell).coord_grid(grid)
+    max_grid = max_ortho.coord_frac(cell).coord_grid(grid)    
     
