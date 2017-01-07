@@ -3564,6 +3564,9 @@ class Atom_list(_object):
     def append(self, a):
         return _clipper.Atom_list_append(self, a)
 
+    def extend_by(self, n):
+        return _clipper.Atom_list_extend_by(self, n)
+
     def set_elements(self, elements):
         return _clipper.Atom_list_set_elements(self, elements)
 
@@ -4207,14 +4210,14 @@ class Xmap_float(Xmap_base):
     def export_numpy(self, numpy_array):
         return _clipper.Xmap_float_export_numpy(self, numpy_array)
 
-    def import_numpy(self, numpy_array):
-        return _clipper.Xmap_float_import_numpy(self, numpy_array)
+    def import_numpy(self, numpy_3d_in):
+        return _clipper.Xmap_float_import_numpy(self, numpy_3d_in)
 
     def export_section_numpy(self, numpy_array, start, end):
         return _clipper.Xmap_float_export_section_numpy(self, numpy_array, start, end)
 
-    def import_section_numpy(self, numpy_array, start, end):
-        return _clipper.Xmap_float_import_section_numpy(self, numpy_array, start, end)
+    def import_section_numpy(self, numpy_3d_in, start, end):
+        return _clipper.Xmap_float_import_section_numpy(self, numpy_3d_in, start, end)
 
     def operator_orth_grid(self):
         return _clipper.Xmap_float_operator_orth_grid(self)
@@ -4268,14 +4271,14 @@ class Xmap_double(Xmap_base):
     def export_numpy(self, numpy_array):
         return _clipper.Xmap_double_export_numpy(self, numpy_array)
 
-    def import_numpy(self, numpy_array):
-        return _clipper.Xmap_double_import_numpy(self, numpy_array)
+    def import_numpy(self, numpy_3d_in):
+        return _clipper.Xmap_double_import_numpy(self, numpy_3d_in)
 
     def export_section_numpy(self, numpy_array, start, end):
         return _clipper.Xmap_double_export_section_numpy(self, numpy_array, start, end)
 
-    def import_section_numpy(self, numpy_array, start, end):
-        return _clipper.Xmap_double_import_section_numpy(self, numpy_array, start, end)
+    def import_section_numpy(self, numpy_3d_in, start, end):
+        return _clipper.Xmap_double_import_section_numpy(self, numpy_3d_in, start, end)
 
     def operator_orth_grid(self):
         return _clipper.Xmap_double_operator_orth_grid(self)
@@ -4366,8 +4369,8 @@ class NXmap_float(NXmap_base):
     def export_numpy(self, numpy_array):
         return _clipper.NXmap_float_export_numpy(self, numpy_array)
 
-    def import_numpy(self, numpy_array):
-        return _clipper.NXmap_float_import_numpy(self, numpy_array)
+    def import_numpy(self, numpy_3d_in):
+        return _clipper.NXmap_float_import_numpy(self, numpy_3d_in)
 
     def operator_orth_grid(self):
         return _clipper.NXmap_float_operator_orth_grid(self)
@@ -4415,8 +4418,8 @@ class NXmap_double(NXmap_base):
     def export_numpy(self, numpy_array):
         return _clipper.NXmap_double_export_numpy(self, numpy_array)
 
-    def import_numpy(self, numpy_array):
-        return _clipper.NXmap_double_import_numpy(self, numpy_array)
+    def import_numpy(self, numpy_3d_in):
+        return _clipper.NXmap_double_import_numpy(self, numpy_3d_in)
 
     def operator_orth_grid(self):
         return _clipper.NXmap_double_operator_orth_grid(self)
