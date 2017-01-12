@@ -2896,14 +2896,23 @@ class Coord_grid(_object):
         except __builtin__.Exception:
             self.this = this
 
-    def u(self, *args):
-        return _clipper.Coord_grid_u(self, *args)
+    def u(self):
+        return _clipper.Coord_grid_u(self)
 
-    def v(self, *args):
-        return _clipper.Coord_grid_v(self, *args)
+    def v(self):
+        return _clipper.Coord_grid_v(self)
 
-    def w(self, *args):
-        return _clipper.Coord_grid_w(self, *args)
+    def w(self):
+        return _clipper.Coord_grid_w(self)
+
+    def _u_ptr(self):
+        return _clipper.Coord_grid__u_ptr(self)
+
+    def _v_ptr(self):
+        return _clipper.Coord_grid__v_ptr(self)
+
+    def _w_ptr(self):
+        return _clipper.Coord_grid__w_ptr(self)
 
     def coord_map(self):
         return _clipper.Coord_grid_coord_map(self)
@@ -2947,17 +2956,8 @@ class Coord_grid(_object):
     def __sub__(self, g2):
         return _clipper.Coord_grid___sub__(self, g2)
 
-    def u_val(self):
-        return _clipper.Coord_grid_u_val(self)
-
-    def v_val(self):
-        return _clipper.Coord_grid_v_val(self)
-
-    def w_val(self):
-        return _clipper.Coord_grid_w_val(self)
-
-    def coord_vals(self):
-        return _clipper.Coord_grid_coord_vals(self)
+    def uvw(self):
+        return _clipper.Coord_grid_uvw(self)
     __swig_destroy__ = _clipper.delete_Coord_grid
     __del__ = lambda self: None
 Coord_grid_swigregister = _clipper.Coord_grid_swigregister
@@ -3046,6 +3046,9 @@ class Coord_orth(_object):
 
     def __neg__(self):
         return _clipper.Coord_orth___neg__(self)
+
+    def xyz(self):
+        return _clipper.Coord_orth_xyz(self)
 
     def __mul__(self, *args):
         return _clipper.Coord_orth___mul__(self, *args)
@@ -3150,6 +3153,9 @@ class Coord_frac(_object):
 
     def __neg__(self):
         return _clipper.Coord_frac___neg__(self)
+
+    def uvw(self):
+        return _clipper.Coord_frac_uvw(self)
 
     def __mul__(self, *args):
         return _clipper.Coord_frac___mul__(self, *args)
@@ -3264,6 +3270,9 @@ class U_aniso_orth(_object):
 
     def __str__(self):
         return _clipper.U_aniso_orth___str__(self)
+
+    def get_vals(self):
+        return _clipper.U_aniso_orth_get_vals(self)
     __swig_destroy__ = _clipper.delete_U_aniso_orth
     __del__ = lambda self: None
 U_aniso_orth_swigregister = _clipper.U_aniso_orth_swigregister

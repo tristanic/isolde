@@ -203,6 +203,7 @@ class HapticHandler(QObject):
     def startHaptics(self):
         if not self._running:
             self._startHaptics()
+            self.session.view.center_of_rotation_method = 'simple'
             self._event_handler = self.session.triggers.add_handler('new frame', self.on_refresh)
         self._running = True
         self.getNumDevices()
@@ -342,8 +343,9 @@ class HapticHandler(QObject):
         camera_view_direction = c.view_direction()
         camera_axes = camera_place.axes()
         window_scale = max(v.window_size) / 1000
-        near_far = v.near_far_distances(c, 0)
-        origin = (near_far[0] + near_far[1])/2 * camera_view_direction + camera_origin
+        #near_far = v.near_far_distances(c, 0)
+        #origin = (near_far[0] + near_far[1])/2 * camera_view_direction + camera_origin
+        origin = v.center_of_rotation
         from chimerax.core.geometry import place
         p = place.Place(axes = camera_axes, origin = origin)
         final_display_scale = self._final_display_scale = self.display_scaling_factor * v.pixel_size()
