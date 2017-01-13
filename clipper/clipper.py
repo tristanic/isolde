@@ -138,6 +138,114 @@ class Atom():
         '''
         self.core_atom.transform(rot_rans)
 
+class Xmap(clipper_core.Xmap_double):
+    def __init__(self, session, name, spacegroup, cell, grid_sam):
+        clipper_core.Xmap_double.__init__(self, spacegroup, cell, grid_sam)
+        self.session = session
+        self.name = name
+        # Some extra useful variables that aren't directly available from
+        # the Clipper API
+        c = self.cell()
+        g = self.grid_sampling()
+        self.grid_samples = g.dim()
+        
+        # Default "radius" (actually half-width of the rhombohedron) of
+        # the box in which the map will be drawn.
+        self.box_radius_angstroms = 20
+        # Box dimensions in grid points (depends on resolution)
+        self.box_dimensions = None
+        # Centre point of the box (will typically be set to the centre of
+        # rotation).
+        self.box_center = None
+        # Vector mapping the box centre to its origin
+        self.box_origin_offset = None
+        # ChimeraX Volume object to draw the map into
+        self.volume = None
+        # Array_Grid_Data object held by the Volume object
+        self.array_grid_data = None
+        # Numpy array to send the map data to
+        self.box_data = None
+    
+    def initialize_box_display(self, radius = 20, follow_cofr = True, pad = 1):
+        self.box_radius_angstroms = radius
+        v = self.session.view
+        c = self.cell()
+        g = self.grid_sampling()
+        self.box_center = v.center_of_rotation
+        box_corner_grid, box_corner_xyz = self.find_box_corner(self.box_center, radius, pad)
+        self.box_origin_offset = box_corner_xyz - self.box_center
+        # Add padding of one voxel on each side to make sure we're always above
+        # the radius
+        self.box_dimensions = (numpy.ceil(radius / self.voxel_size() * 2)+pad*2).astype(int)
+        print('Box size: {}'.format(numpy.product(self.box_dimensions)))
+        data = self.box_array = numpy.ones(self.box_dimensions, numpy.double)
+                
+        
+        from chimerax.core.map.data import Array_Grid_Data
+        from chimerax.core.map import Volume
+        self.array_grid_data = Array_Grid_Data(data, origin = box_corner_xyz,
+                step = self.voxel_size(), cell_angles = c.angles_deg())
+        self.volume = Volume(self.array_grid_data, self.session)
+        self.fill_volume_data(data, box_corner_grid)
+        self.volume.initialize_thresholds()
+        self.session.models.add([self.volume])
+        
+
+    def fill_volume_data(self, target, start_grid_coor):
+        shape = (numpy.array(target.shape) - 1).tolist()
+        end_grid_coor = start_grid_coor + clipper_core.Coord_grid(*shape)
+        count = self.export_section_numpy(target, start_grid_coor, end_grid_coor)
+        print('Target dimensions: {}'.format(target.shape))
+        print('Start coor: {}'.format(start_grid_coor.uvw()))
+        print('End coor: {}'.format(end_grid_coor.uvw()))
+        print("Exported: {}".format(count))
+                
+    
+    def find_box_corner(self, center, radius = 20, pad = 1):
+        '''
+        Find the bottom corner (i.e. the origin) of a rhombohedral box
+        big enough to hold a sphere of the desired radius, and padded by
+        pad voxels in each dimension.
+        '''
+        cell = self.cell()
+        grid = self.grid_sampling()
+        voxel_size = self.voxel_size()
+        radii_in_voxels = radius / voxel_size
+        radii_frac = clipper_core.Coord_frac(*(radii_in_voxels * self.voxel_size_frac()))
+        center_ortho = clipper_core.Coord_orth(*center)
+        center_frac = center_ortho.coord_frac(cell)
+        bottom_corner_frac = center_frac - radii_frac
+        bottom_corner_grid = bottom_corner_frac.coord_grid(grid) -\
+                            clipper_core.Coord_grid(pad,pad,pad)
+        bottom_corner_orth = bottom_corner_grid.coord_frac(grid).coord_orth(cell)
+        return bottom_corner_grid, bottom_corner_orth.xyz()
+         
+        
+        
+        
+    
+    
+
+
+
+def apply_b_factors_to_hydrogens(atom_list):
+    '''
+    When hydrogens are added to a pre-existing structure, their isotropic
+    and/or anisotropic B-factors are not necessarily set. This routine simply
+    sets them to match their adjacent heavy atoms. The input atom_list can
+    be either the hydrogens alone, or the whole structure.
+    '''
+    hydrogens = atom_list.filter(atom_list.element_names == 'H')
+    # Get heavy atoms by taking advantage of the fact that hydrogens are
+    # only ever covalently bonded to a single other atom.
+    for h in hydrogens:
+        b = h.bonds[0]
+        for atom in b.atoms:
+            if atom.element_name != 'H':
+                h.bfactor = atom.bfactor
+                h.aniso_u6 = atom.aniso_u6
+                break
+                
 def Atom_list_from_sel(atom_list):
     n = len(atom_list)
     elements = atom_list.element_names
@@ -163,34 +271,35 @@ def Atom_list_from_sel(atom_list):
     return clipper_atom_list
  
 def Atom_list_from_sel_fast(atom_list):
-    from time import time
-    start_time = time()
+    '''
+    Takes a ChimeraX Atoms object, and creates a Clipper Atoms_list object
+    from the relevant atom properties.
+    '''
     n = len(atom_list)
     elements = atom_list.element_names.tolist()
     coords = atom_list.coords
     occupancies = atom_list.occupancy
     u_iso = atom_list.bfactors
-    #u_aniso = sel.aniso_u
-    u_aniso = numpy.random.rand(n,3,3).astype(float) # FIXME For testing only
-    clipper_atom_list = clipper_core.Atom_list(n)
+    # Have to be careful here. Atoms.aniso_u6 returns None if any atom in
+    # the array has no aniso_u6 entry. 
+    u_aniso = atom_list.aniso_u6
+    if u_aniso is None:
+        u_aniso = numpy.zeros([n,6],numpy.float32)
+        # FIXME Once new ChimeraX build arrives with Atoms.has_aniso_u entry
+        for i, a in enumerate(atom_list):
+            if a.aniso_u6 is not None:
+                u_aniso[i] = a.aniso_u6
+    clipper_atom_list = clipper_core.Atom_list()
+    clipper_atom_list.extend_by(n)
 
     clipper_atom_list.set_elements(elements)
     clipper_atom_list.set_coord_orth(coords)
     clipper_atom_list.set_occupancies(occupancies)
     clipper_atom_list.set_u_isos(u_iso)
-    # need to extract the relevant values into an n x 6 array
-    # print('Intermediate time: {}'.format(time() - start_time))
-    ua_vals = numpy.empty([n,6], numpy.float)
-    ua_vals[:,0] = u_aniso[:,0,0]
-    ua_vals[:,1] = u_aniso[:,1,1]
-    ua_vals[:,2] = u_aniso[:,2,2]
-    ua_vals[:,3] = u_aniso[:,0,1]
-    ua_vals[:,4] = u_aniso[:,0,2]
-    ua_vals[:,5] = u_aniso[:,1,2]
-    clipper_atom_list.set_u_anisos(ua_vals)
+    clipper_atom_list.set_u_anisos(u_aniso)
     return clipper_atom_list
 
-def map_import_test(filename):
+def import_Xmap_from_mtz_test(session, filename):
     myhkl = clipper_core.HKL_info()
     fphidata =  clipper_core.HKL_data_F_phi_double()  
     mtzin = clipper_core.CCP4MTZfile()
@@ -198,8 +307,10 @@ def map_import_test(filename):
     mtzin.import_hkl_info(myhkl)
     mtzin.import_hkl_data(fphidata, '/crystal/dataset/[2FOFCWT, PH2FOFCWT]')
     mtzin.close_read()
+    name = '2FOFCWT'
     mygrid = clipper_core.Grid_sampling(myhkl.spacegroup(), myhkl.cell(), myhkl.resolution())
-    mymap = clipper_core.Xmap_double(myhkl.spacegroup(), myhkl.cell(), mygrid)
+    #mymap = clipper_core.Xmap_double(myhkl.spacegroup(), myhkl.cell(), mygrid)
+    mymap = Xmap(session, name, myhkl.spacegroup(), myhkl.cell(), mygrid)
     mymap.fft_from(fphidata)
     return (myhkl, mymap)
     

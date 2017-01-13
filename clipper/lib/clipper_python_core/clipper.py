@@ -2613,6 +2613,15 @@ class Cell(Cell_descr):
 
     def matrix_frac(self):
         return _clipper.Cell_matrix_frac(self)
+
+    def dim(self):
+        return _clipper.Cell_dim(self)
+
+    def angles(self):
+        return _clipper.Cell_angles(self)
+
+    def angles_deg(self):
+        return _clipper.Cell_angles_deg(self)
     __swig_destroy__ = _clipper.delete_Cell
     __del__ = lambda self: None
 Cell_swigregister = _clipper.Cell_swigregister
@@ -3400,6 +3409,9 @@ class Grid_sampling(Grid):
 
     def is_null(self):
         return _clipper.Grid_sampling_is_null(self)
+
+    def dim(self):
+        return _clipper.Grid_sampling_dim(self)
     __swig_destroy__ = _clipper.delete_Grid_sampling
     __del__ = lambda self: None
 Grid_sampling_swigregister = _clipper.Grid_sampling_swigregister
@@ -4228,6 +4240,18 @@ class Xmap_float(Xmap_base):
     def import_section_numpy(self, numpy_3d_in, start, end):
         return _clipper.Xmap_float_import_section_numpy(self, numpy_3d_in, start, end)
 
+    def voxel_size(self):
+        return _clipper.Xmap_float_voxel_size(self)
+
+    def voxel_size_frac(self):
+        return _clipper.Xmap_float_voxel_size_frac(self)
+
+    def interp_cubic(self, f):
+        return _clipper.Xmap_float_interp_cubic(self, f)
+
+    def interp_linear(self, f):
+        return _clipper.Xmap_float_interp_linear(self, f)
+
     def operator_orth_grid(self):
         return _clipper.Xmap_float_operator_orth_grid(self)
 
@@ -4288,6 +4312,18 @@ class Xmap_double(Xmap_base):
 
     def import_section_numpy(self, numpy_3d_in, start, end):
         return _clipper.Xmap_double_import_section_numpy(self, numpy_3d_in, start, end)
+
+    def voxel_size(self):
+        return _clipper.Xmap_double_voxel_size(self)
+
+    def voxel_size_frac(self):
+        return _clipper.Xmap_double_voxel_size_frac(self)
+
+    def interp_cubic(self, f):
+        return _clipper.Xmap_double_interp_cubic(self, f)
+
+    def interp_linear(self, f):
+        return _clipper.Xmap_double_interp_linear(self, f)
 
     def operator_orth_grid(self):
         return _clipper.Xmap_double_operator_orth_grid(self)
