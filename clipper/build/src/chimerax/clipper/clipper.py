@@ -149,6 +149,13 @@ class Xmap(clipper_core.Xmap_double):
         g = self.grid_sampling()
         self.grid_samples = g.dim()
         
+        ###
+        # Basic stats. Can only be set after the map has been filled with an
+        # FFT. Returned as a tuple in the below order by self.stats()
+        ###
+        self.max, self.min, self.mean, \
+            self.sigma, self.skewness, self.kurtosis = self.stats()
+        
         # Default "radius" (actually half-width of the rhombohedron) of
         # the box in which the map will be drawn.
         self.box_radius_angstroms = 20
@@ -165,8 +172,14 @@ class Xmap(clipper_core.Xmap_double):
         self.array_grid_data = None
         # Numpy array to send the map data to
         self.box_data = None
+        
+    def calculate_stats(self):
+        self.max, self.min, self.mean, \
+            self.sigma, self.skewness, self.kurtosis = self.stats()         
     
-    def initialize_box_display(self, radius = 20, follow_cofr = True, pad = 1):
+    def initialize_box_display(self, radius = 15, pad = 1):
+        self.box_radius = radius
+        self.box_pad = pad
         self.box_radius_angstroms = radius
         v = self.session.view
         c = self.cell()
@@ -176,8 +189,7 @@ class Xmap(clipper_core.Xmap_double):
         self.box_origin_offset = box_corner_xyz - self.box_center
         # Add padding of one voxel on each side to make sure we're always above
         # the radius
-        self.box_dimensions = (numpy.ceil(radius / self.voxel_size() * 2)+pad*2).astype(int)
-        print('Box size: {}'.format(numpy.product(self.box_dimensions)))
+        self.box_dimensions = (numpy.ceil(radius / self.voxel_size() * 2)+pad*2).astype(int)[::-1]
         data = self.box_array = numpy.ones(self.box_dimensions, numpy.double)
                 
         
@@ -189,16 +201,32 @@ class Xmap(clipper_core.Xmap_double):
         self.fill_volume_data(data, box_corner_grid)
         self.volume.initialize_thresholds()
         self.session.models.add([self.volume])
+        contour_val = self.contour = 1.5 * self.sigma
+        self.change_contour(contour_val)
+        self.volume.set_color([0.5,1.0,0.5,0.6])
+        self.volume.show()
+        self.session.triggers.add_handler('new frame', self.update_box)
+        
+    def update_box(self, *_):
+        v = self.session.view
+        cofr = v.center_of_rotation
+        if numpy.all(self.box_center == cofr):
+            return
+        self.box_center = cofr
+        box_corner_grid, box_corner_xyz = self.find_box_corner(cofr, self.box_radius, self.box_pad)
+        self.array_grid_data.set_origin(box_corner_xyz)
+        self.fill_volume_data(self.box_array, box_corner_grid)
+        self.change_contour(self.contour)
+        
+    def change_contour(self, contour_val):
+        from chimerax.core.map import volumecommand
+        volumecommand.volume(self.session,[self.volume], level=[[contour_val]], cap_faces = False)
         
 
     def fill_volume_data(self, target, start_grid_coor):
-        shape = (numpy.array(target.shape) - 1).tolist()
+        shape = (numpy.array(target.shape)[::-1] - 1).tolist()
         end_grid_coor = start_grid_coor + clipper_core.Coord_grid(*shape)
-        count = self.export_section_numpy(target, start_grid_coor, end_grid_coor)
-        print('Target dimensions: {}'.format(target.shape))
-        print('Start coor: {}'.format(start_grid_coor.uvw()))
-        print('End coor: {}'.format(end_grid_coor.uvw()))
-        print("Exported: {}".format(count))
+        count = self.export_section_numpy(target, start_grid_coor, end_grid_coor, 'C')
                 
     
     def find_box_corner(self, center, radius = 20, pad = 1):
@@ -312,6 +340,7 @@ def import_Xmap_from_mtz_test(session, filename):
     #mymap = clipper_core.Xmap_double(myhkl.spacegroup(), myhkl.cell(), mygrid)
     mymap = Xmap(session, name, myhkl.spacegroup(), myhkl.cell(), mygrid)
     mymap.fft_from(fphidata)
+    mymap.calculate_stats()
     return (myhkl, mymap)
     
 def vol_box(hklinfo, xmap, min_coor, max_coor):

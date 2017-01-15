@@ -4228,17 +4228,20 @@ class Xmap_float(Xmap_base):
     def __isub__(self, other):
         return _clipper.Xmap_float___isub__(self, other)
 
-    def export_numpy(self, numpy_array):
-        return _clipper.Xmap_float_export_numpy(self, numpy_array)
+    def stats(self):
+        return _clipper.Xmap_float_stats(self)
 
-    def import_numpy(self, numpy_3d_in):
-        return _clipper.Xmap_float_import_numpy(self, numpy_3d_in)
+    def export_numpy(self, *args):
+        return _clipper.Xmap_float_export_numpy(self, *args)
 
-    def export_section_numpy(self, numpy_array, start, end):
-        return _clipper.Xmap_float_export_section_numpy(self, numpy_array, start, end)
+    def import_numpy(self, *args):
+        return _clipper.Xmap_float_import_numpy(self, *args)
 
-    def import_section_numpy(self, numpy_3d_in, start, end):
-        return _clipper.Xmap_float_import_section_numpy(self, numpy_3d_in, start, end)
+    def export_section_numpy(self, *args):
+        return _clipper.Xmap_float_export_section_numpy(self, *args)
+
+    def import_section_numpy(self, *args):
+        return _clipper.Xmap_float_import_section_numpy(self, *args)
 
     def voxel_size(self):
         return _clipper.Xmap_float_voxel_size(self)
@@ -4301,17 +4304,20 @@ class Xmap_double(Xmap_base):
     def __isub__(self, other):
         return _clipper.Xmap_double___isub__(self, other)
 
-    def export_numpy(self, numpy_array):
-        return _clipper.Xmap_double_export_numpy(self, numpy_array)
+    def stats(self):
+        return _clipper.Xmap_double_stats(self)
 
-    def import_numpy(self, numpy_3d_in):
-        return _clipper.Xmap_double_import_numpy(self, numpy_3d_in)
+    def export_numpy(self, *args):
+        return _clipper.Xmap_double_export_numpy(self, *args)
 
-    def export_section_numpy(self, numpy_array, start, end):
-        return _clipper.Xmap_double_export_section_numpy(self, numpy_array, start, end)
+    def import_numpy(self, *args):
+        return _clipper.Xmap_double_import_numpy(self, *args)
 
-    def import_section_numpy(self, numpy_3d_in, start, end):
-        return _clipper.Xmap_double_import_section_numpy(self, numpy_3d_in, start, end)
+    def export_section_numpy(self, *args):
+        return _clipper.Xmap_double_export_section_numpy(self, *args)
+
+    def import_section_numpy(self, *args):
+        return _clipper.Xmap_double_import_section_numpy(self, *args)
 
     def voxel_size(self):
         return _clipper.Xmap_double_voxel_size(self)
