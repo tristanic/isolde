@@ -172,6 +172,8 @@ class Xmap(clipper_core.Xmap_double):
         self.array_grid_data = None
         # Numpy array to send the map data to
         self.box_data = None
+        # Distance any axis of the cofr has to move before triggering an update
+        self.cofr_eps = 0.01
         
     def calculate_stats(self):
         self.max, self.min, self.mean, \
@@ -210,7 +212,7 @@ class Xmap(clipper_core.Xmap_double):
     def update_box(self, *_):
         v = self.session.view
         cofr = v.center_of_rotation
-        if numpy.all(self.box_center == cofr):
+        if numpy.all(abs(self.box_center - cofr) < self.cofr_eps):
             return
         self.box_center = cofr
         box_corner_grid, box_corner_xyz = self.find_box_corner(cofr, self.box_radius, self.box_pad)

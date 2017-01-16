@@ -166,6 +166,119 @@ class SwigPyIterator(_object):
 SwigPyIterator_swigregister = _clipper.SwigPyIterator_swigregister
 SwigPyIterator_swigregister(SwigPyIterator)
 
+class IntVector(_object):
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, IntVector, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, IntVector, name)
+    __repr__ = _swig_repr
+
+    def iterator(self):
+        return _clipper.IntVector_iterator(self)
+    def __iter__(self):
+        return self.iterator()
+
+    def __nonzero__(self):
+        return _clipper.IntVector___nonzero__(self)
+
+    def __bool__(self):
+        return _clipper.IntVector___bool__(self)
+
+    def __len__(self):
+        return _clipper.IntVector___len__(self)
+
+    def __getslice__(self, i, j):
+        return _clipper.IntVector___getslice__(self, i, j)
+
+    def __setslice__(self, *args):
+        return _clipper.IntVector___setslice__(self, *args)
+
+    def __delslice__(self, i, j):
+        return _clipper.IntVector___delslice__(self, i, j)
+
+    def __delitem__(self, *args):
+        return _clipper.IntVector___delitem__(self, *args)
+
+    def __getitem__(self, *args):
+        return _clipper.IntVector___getitem__(self, *args)
+
+    def __setitem__(self, *args):
+        return _clipper.IntVector___setitem__(self, *args)
+
+    def pop(self):
+        return _clipper.IntVector_pop(self)
+
+    def append(self, x):
+        return _clipper.IntVector_append(self, x)
+
+    def empty(self):
+        return _clipper.IntVector_empty(self)
+
+    def size(self):
+        return _clipper.IntVector_size(self)
+
+    def swap(self, v):
+        return _clipper.IntVector_swap(self, v)
+
+    def begin(self):
+        return _clipper.IntVector_begin(self)
+
+    def end(self):
+        return _clipper.IntVector_end(self)
+
+    def rbegin(self):
+        return _clipper.IntVector_rbegin(self)
+
+    def rend(self):
+        return _clipper.IntVector_rend(self)
+
+    def clear(self):
+        return _clipper.IntVector_clear(self)
+
+    def get_allocator(self):
+        return _clipper.IntVector_get_allocator(self)
+
+    def pop_back(self):
+        return _clipper.IntVector_pop_back(self)
+
+    def erase(self, *args):
+        return _clipper.IntVector_erase(self, *args)
+
+    def __init__(self, *args):
+        this = _clipper.new_IntVector(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
+    def push_back(self, x):
+        return _clipper.IntVector_push_back(self, x)
+
+    def front(self):
+        return _clipper.IntVector_front(self)
+
+    def back(self):
+        return _clipper.IntVector_back(self)
+
+    def assign(self, n, x):
+        return _clipper.IntVector_assign(self, n, x)
+
+    def resize(self, *args):
+        return _clipper.IntVector_resize(self, *args)
+
+    def insert(self, *args):
+        return _clipper.IntVector_insert(self, *args)
+
+    def reserve(self, n):
+        return _clipper.IntVector_reserve(self, n)
+
+    def capacity(self):
+        return _clipper.IntVector_capacity(self)
+    __swig_destroy__ = _clipper.delete_IntVector
+    __del__ = lambda self: None
+IntVector_swigregister = _clipper.IntVector_swigregister
+IntVector_swigregister(IntVector)
+
 class FloatVector(_object):
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, FloatVector, name, value)
@@ -391,6 +504,119 @@ class DoubleVector(_object):
     __del__ = lambda self: None
 DoubleVector_swigregister = _clipper.DoubleVector_swigregister
 DoubleVector_swigregister(DoubleVector)
+
+class IntIntVector(_object):
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, IntIntVector, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, IntIntVector, name)
+    __repr__ = _swig_repr
+
+    def iterator(self):
+        return _clipper.IntIntVector_iterator(self)
+    def __iter__(self):
+        return self.iterator()
+
+    def __nonzero__(self):
+        return _clipper.IntIntVector___nonzero__(self)
+
+    def __bool__(self):
+        return _clipper.IntIntVector___bool__(self)
+
+    def __len__(self):
+        return _clipper.IntIntVector___len__(self)
+
+    def __getslice__(self, i, j):
+        return _clipper.IntIntVector___getslice__(self, i, j)
+
+    def __setslice__(self, *args):
+        return _clipper.IntIntVector___setslice__(self, *args)
+
+    def __delslice__(self, i, j):
+        return _clipper.IntIntVector___delslice__(self, i, j)
+
+    def __delitem__(self, *args):
+        return _clipper.IntIntVector___delitem__(self, *args)
+
+    def __getitem__(self, *args):
+        return _clipper.IntIntVector___getitem__(self, *args)
+
+    def __setitem__(self, *args):
+        return _clipper.IntIntVector___setitem__(self, *args)
+
+    def pop(self):
+        return _clipper.IntIntVector_pop(self)
+
+    def append(self, x):
+        return _clipper.IntIntVector_append(self, x)
+
+    def empty(self):
+        return _clipper.IntIntVector_empty(self)
+
+    def size(self):
+        return _clipper.IntIntVector_size(self)
+
+    def swap(self, v):
+        return _clipper.IntIntVector_swap(self, v)
+
+    def begin(self):
+        return _clipper.IntIntVector_begin(self)
+
+    def end(self):
+        return _clipper.IntIntVector_end(self)
+
+    def rbegin(self):
+        return _clipper.IntIntVector_rbegin(self)
+
+    def rend(self):
+        return _clipper.IntIntVector_rend(self)
+
+    def clear(self):
+        return _clipper.IntIntVector_clear(self)
+
+    def get_allocator(self):
+        return _clipper.IntIntVector_get_allocator(self)
+
+    def pop_back(self):
+        return _clipper.IntIntVector_pop_back(self)
+
+    def erase(self, *args):
+        return _clipper.IntIntVector_erase(self, *args)
+
+    def __init__(self, *args):
+        this = _clipper.new_IntIntVector(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
+    def push_back(self, x):
+        return _clipper.IntIntVector_push_back(self, x)
+
+    def front(self):
+        return _clipper.IntIntVector_front(self)
+
+    def back(self):
+        return _clipper.IntIntVector_back(self)
+
+    def assign(self, n, x):
+        return _clipper.IntIntVector_assign(self, n, x)
+
+    def resize(self, *args):
+        return _clipper.IntIntVector_resize(self, *args)
+
+    def insert(self, *args):
+        return _clipper.IntIntVector_insert(self, *args)
+
+    def reserve(self, n):
+        return _clipper.IntIntVector_reserve(self, n)
+
+    def capacity(self):
+        return _clipper.IntIntVector_capacity(self)
+    __swig_destroy__ = _clipper.delete_IntIntVector
+    __del__ = lambda self: None
+IntIntVector_swigregister = _clipper.IntIntVector_swigregister
+IntIntVector_swigregister(IntIntVector)
 
 class FloatFloatVector(_object):
     __swig_setmethods__ = {}
@@ -734,232 +960,6 @@ class UnsignedIntVector(_object):
     __del__ = lambda self: None
 UnsignedIntVector_swigregister = _clipper.UnsignedIntVector_swigregister
 UnsignedIntVector_swigregister(UnsignedIntVector)
-
-class IntVector(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, IntVector, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, IntVector, name)
-    __repr__ = _swig_repr
-
-    def iterator(self):
-        return _clipper.IntVector_iterator(self)
-    def __iter__(self):
-        return self.iterator()
-
-    def __nonzero__(self):
-        return _clipper.IntVector___nonzero__(self)
-
-    def __bool__(self):
-        return _clipper.IntVector___bool__(self)
-
-    def __len__(self):
-        return _clipper.IntVector___len__(self)
-
-    def __getslice__(self, i, j):
-        return _clipper.IntVector___getslice__(self, i, j)
-
-    def __setslice__(self, *args):
-        return _clipper.IntVector___setslice__(self, *args)
-
-    def __delslice__(self, i, j):
-        return _clipper.IntVector___delslice__(self, i, j)
-
-    def __delitem__(self, *args):
-        return _clipper.IntVector___delitem__(self, *args)
-
-    def __getitem__(self, *args):
-        return _clipper.IntVector___getitem__(self, *args)
-
-    def __setitem__(self, *args):
-        return _clipper.IntVector___setitem__(self, *args)
-
-    def pop(self):
-        return _clipper.IntVector_pop(self)
-
-    def append(self, x):
-        return _clipper.IntVector_append(self, x)
-
-    def empty(self):
-        return _clipper.IntVector_empty(self)
-
-    def size(self):
-        return _clipper.IntVector_size(self)
-
-    def swap(self, v):
-        return _clipper.IntVector_swap(self, v)
-
-    def begin(self):
-        return _clipper.IntVector_begin(self)
-
-    def end(self):
-        return _clipper.IntVector_end(self)
-
-    def rbegin(self):
-        return _clipper.IntVector_rbegin(self)
-
-    def rend(self):
-        return _clipper.IntVector_rend(self)
-
-    def clear(self):
-        return _clipper.IntVector_clear(self)
-
-    def get_allocator(self):
-        return _clipper.IntVector_get_allocator(self)
-
-    def pop_back(self):
-        return _clipper.IntVector_pop_back(self)
-
-    def erase(self, *args):
-        return _clipper.IntVector_erase(self, *args)
-
-    def __init__(self, *args):
-        this = _clipper.new_IntVector(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-
-    def push_back(self, x):
-        return _clipper.IntVector_push_back(self, x)
-
-    def front(self):
-        return _clipper.IntVector_front(self)
-
-    def back(self):
-        return _clipper.IntVector_back(self)
-
-    def assign(self, n, x):
-        return _clipper.IntVector_assign(self, n, x)
-
-    def resize(self, *args):
-        return _clipper.IntVector_resize(self, *args)
-
-    def insert(self, *args):
-        return _clipper.IntVector_insert(self, *args)
-
-    def reserve(self, n):
-        return _clipper.IntVector_reserve(self, n)
-
-    def capacity(self):
-        return _clipper.IntVector_capacity(self)
-    __swig_destroy__ = _clipper.delete_IntVector
-    __del__ = lambda self: None
-IntVector_swigregister = _clipper.IntVector_swigregister
-IntVector_swigregister(IntVector)
-
-class IntIntVector(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, IntIntVector, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, IntIntVector, name)
-    __repr__ = _swig_repr
-
-    def iterator(self):
-        return _clipper.IntIntVector_iterator(self)
-    def __iter__(self):
-        return self.iterator()
-
-    def __nonzero__(self):
-        return _clipper.IntIntVector___nonzero__(self)
-
-    def __bool__(self):
-        return _clipper.IntIntVector___bool__(self)
-
-    def __len__(self):
-        return _clipper.IntIntVector___len__(self)
-
-    def __getslice__(self, i, j):
-        return _clipper.IntIntVector___getslice__(self, i, j)
-
-    def __setslice__(self, *args):
-        return _clipper.IntIntVector___setslice__(self, *args)
-
-    def __delslice__(self, i, j):
-        return _clipper.IntIntVector___delslice__(self, i, j)
-
-    def __delitem__(self, *args):
-        return _clipper.IntIntVector___delitem__(self, *args)
-
-    def __getitem__(self, *args):
-        return _clipper.IntIntVector___getitem__(self, *args)
-
-    def __setitem__(self, *args):
-        return _clipper.IntIntVector___setitem__(self, *args)
-
-    def pop(self):
-        return _clipper.IntIntVector_pop(self)
-
-    def append(self, x):
-        return _clipper.IntIntVector_append(self, x)
-
-    def empty(self):
-        return _clipper.IntIntVector_empty(self)
-
-    def size(self):
-        return _clipper.IntIntVector_size(self)
-
-    def swap(self, v):
-        return _clipper.IntIntVector_swap(self, v)
-
-    def begin(self):
-        return _clipper.IntIntVector_begin(self)
-
-    def end(self):
-        return _clipper.IntIntVector_end(self)
-
-    def rbegin(self):
-        return _clipper.IntIntVector_rbegin(self)
-
-    def rend(self):
-        return _clipper.IntIntVector_rend(self)
-
-    def clear(self):
-        return _clipper.IntIntVector_clear(self)
-
-    def get_allocator(self):
-        return _clipper.IntIntVector_get_allocator(self)
-
-    def pop_back(self):
-        return _clipper.IntIntVector_pop_back(self)
-
-    def erase(self, *args):
-        return _clipper.IntIntVector_erase(self, *args)
-
-    def __init__(self, *args):
-        this = _clipper.new_IntIntVector(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-
-    def push_back(self, x):
-        return _clipper.IntIntVector_push_back(self, x)
-
-    def front(self):
-        return _clipper.IntIntVector_front(self)
-
-    def back(self):
-        return _clipper.IntIntVector_back(self)
-
-    def assign(self, n, x):
-        return _clipper.IntIntVector_assign(self, n, x)
-
-    def resize(self, *args):
-        return _clipper.IntIntVector_resize(self, *args)
-
-    def insert(self, *args):
-        return _clipper.IntIntVector_insert(self, *args)
-
-    def reserve(self, n):
-        return _clipper.IntIntVector_reserve(self, n)
-
-    def capacity(self):
-        return _clipper.IntIntVector_capacity(self)
-    __swig_destroy__ = _clipper.delete_IntIntVector
-    __del__ = lambda self: None
-IntIntVector_swigregister = _clipper.IntIntVector_swigregister
-IntIntVector_swigregister(IntIntVector)
 
 class ClipperStringVector(_object):
     __swig_setmethods__ = {}
@@ -4231,6 +4231,9 @@ class Xmap_float(Xmap_base):
     def stats(self):
         return _clipper.Xmap_float_stats(self)
 
+    def special_positions(self):
+        return _clipper.Xmap_float_special_positions(self)
+
     def export_numpy(self, *args):
         return _clipper.Xmap_float_export_numpy(self, *args)
 
@@ -4306,6 +4309,9 @@ class Xmap_double(Xmap_base):
 
     def stats(self):
         return _clipper.Xmap_double_stats(self)
+
+    def special_positions(self):
+        return _clipper.Xmap_double_special_positions(self)
 
     def export_numpy(self, *args):
         return _clipper.Xmap_double_export_numpy(self, *args)
