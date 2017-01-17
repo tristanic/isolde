@@ -4234,6 +4234,12 @@ class Xmap_float(Xmap_base):
     def special_positions(self):
         return _clipper.Xmap_float_special_positions(self)
 
+    def special_positions_unit_cell_grid(self, grid):
+        return _clipper.Xmap_float_special_positions_unit_cell_grid(self, grid)
+
+    def special_positions_unit_cell_xyz(self, grid):
+        return _clipper.Xmap_float_special_positions_unit_cell_xyz(self, grid)
+
     def export_numpy(self, *args):
         return _clipper.Xmap_float_export_numpy(self, *args)
 
@@ -4312,6 +4318,12 @@ class Xmap_double(Xmap_base):
 
     def special_positions(self):
         return _clipper.Xmap_double_special_positions(self)
+
+    def special_positions_unit_cell_grid(self, grid):
+        return _clipper.Xmap_double_special_positions_unit_cell_grid(self, grid)
+
+    def special_positions_unit_cell_xyz(self, grid):
+        return _clipper.Xmap_double_special_positions_unit_cell_xyz(self, grid)
 
     def export_numpy(self, *args):
         return _clipper.Xmap_double_export_numpy(self, *args)

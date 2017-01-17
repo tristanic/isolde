@@ -175,6 +175,9 @@ class Xmap(clipper_core.Xmap_double):
         # Distance any axis of the cofr has to move before triggering an update
         self.cofr_eps = 0.01
         
+        # Model object to hold Drawings defining the special positions
+        self.special_positions_model = None
+        
     def calculate_stats(self):
         self.max, self.min, self.mean, \
             self.sigma, self.skewness, self.kurtosis = self.stats()         
@@ -249,6 +252,142 @@ class Xmap(clipper_core.Xmap_double):
                             clipper_core.Coord_grid(pad,pad,pad)
         bottom_corner_orth = bottom_corner_grid.coord_frac(grid).coord_orth(cell)
         return bottom_corner_grid, bottom_corner_orth.xyz()
+        
+    def draw_special_positions(self):
+        from chimerax.core.models import Model, Drawing
+        from chimerax.core.geometry import Place
+        from chimerax.core.surface.shapes import sphere_geometry
+        import copy
+        
+        m = self.special_positions_model
+        
+        if m is None or m.deleted:
+            m = self.special_positions_model = Model('Special Positions',self.session)
+            spc = numpy.array(self.special_positions_unit_cell(self.grid_sampling()))
+            sphere = numpy.array(sphere_geometry(4))
+            sphere[0]*=0.5
+            
+            for row in spc:
+                coords = row[0:3].tolist()
+                mult = row[3]
+                cg = clipper_core.Coord_grid(*coords)
+                cf = cg.coord_frac(self.grid_sampling())
+                co = cf.coord_orth(self.cell())
+                d = Drawing('point')
+                d.vertices, d.normals, d.triangles = copy.copy(sphere)
+                if mult == 3:
+                    d.name = '3-fold'
+                    d.vertices = d.vertices * 1.5
+                    d.set_color([0,255,255,255])
+                elif mult == 4:
+                    d.name = '4-fold'
+                    d.vertices = d.vertices * 2
+                    d.set_color([255,255,0,255])
+                elif mult == 6:
+                    d.name = '6-fold'
+                    d.vertices = d.vertices * 3
+                    d.set_color([255,0,0,255])
+                else:
+                    d.name = '2-fold'
+                d.set_position(Place(origin = co.xyz()))
+                m.add_drawing(d) 
+            self.session.models.add([m])
+                            
+    def draw_special_positions(self):
+        from chimerax.core.models import Model, Drawing
+        from chimerax.core.geometry import Place, Places
+        from chimerax.core.surface.shapes import sphere_geometry
+        import copy
+        
+        m = self.special_positions_model
+        
+        if m is None or m.deleted:
+            m = self.special_positions_model = Model('Special Positions',self.session)
+            spc = numpy.array(self.special_positions_unit_cell(self.grid_sampling()))
+            sphere = numpy.array(sphere_geometry(80))
+            sphere[0]*=0.5
+            scale_2fold = numpy.identity(3)
+            scale_3fold = numpy.identity(3)* 1.5
+            scale_4fold = numpy.identity(3)* 2
+            scale_6fold = numpy.identity(3)* 3
+            rgba_2fold = numpy.array([255,255,255,255],numpy.int32)
+            rgba_3fold = numpy.array([0,255,255,255],numpy.int32)
+            rgba_4fold = numpy.array([255,255,0,255],numpy.int32)
+            rgba_6fold = numpy.array([255,0,0,255],numpy.int32)
+            positions = []
+            colors = []
+            d = Drawing('points')
+            d.vertices, d.normals, d.triangles = sphere
+            
+            for row in spc:
+                coords = row[0:3].tolist()
+                mult = row[3]
+                cg = clipper_core.Coord_grid(*coords)
+                cf = cg.coord_frac(self.grid_sampling())
+                co = cf.coord_orth(self.cell())
+                if mult == 2:
+                    positions.append(Place(axes=scale_2fold, origin=co.xyz()))
+                    colors.append(rgba_2fold)
+                if mult == 3:
+                    positions.append(Place(axes=scale_3fold, origin=co.xyz()))
+                    colors.append(rgba_3fold)
+                elif mult == 4:
+                    positions.append(Place(axes=scale_4fold, origin=co.xyz()))
+                    colors.append(rgba_4fold)
+                elif mult == 6:
+                    positions.append(Place(axes=scale_6fold, origin=co.xyz()))
+                    colors.append(rgba_6fold)
+            d.positions = Places(positions)
+            d.colors = numpy.array(colors)
+            m.add_drawing(d)
+            self.session.models.add([m])
+        
+    def draw_special_positions(self):
+        from chimerax.core.models import Model, Drawing
+        from chimerax.core.geometry import Place, Places
+        from chimerax.core.surface.shapes import sphere_geometry
+        import copy
+        
+        m = self.special_positions_model
+        
+        if m is None or m.deleted:
+            m = self.special_positions_model = Model('Special Positions',self.session)
+            spc = numpy.array(self.special_positions_unit_cell_xyz(self.grid_sampling()))
+            coords = spc[:,0:3]
+            multiplicity = spc[:,3].astype(int)
+            sphere = numpy.array(sphere_geometry(80))
+            sphere[0]*=0.5
+            scale_2fold = numpy.identity(3)
+            scale_3fold = numpy.identity(3)* 1.5
+            scale_4fold = numpy.identity(3)* 2
+            scale_6fold = numpy.identity(3)* 3
+            rgba_2fold = numpy.array([255,255,255,255],numpy.int32)
+            rgba_3fold = numpy.array([0,255,255,255],numpy.int32)
+            rgba_4fold = numpy.array([255,255,0,255],numpy.int32)
+            rgba_6fold = numpy.array([255,0,0,255],numpy.int32)
+            positions = []
+            colors = []
+            d = Drawing('points')
+            d.vertices, d.normals, d.triangles = sphere
+            
+            for coord, mult in zip(coords, multiplicity):
+                if mult == 2:
+                    positions.append(Place(axes=scale_2fold, origin=coord))
+                    colors.append(rgba_2fold)
+                if mult == 3:
+                    positions.append(Place(axes=scale_3fold, origin=coord))
+                    colors.append(rgba_3fold)
+                elif mult == 4:
+                    positions.append(Place(axes=scale_4fold, origin=coord))
+                    colors.append(rgba_4fold)
+                elif mult == 6:
+                    positions.append(Place(axes=scale_6fold, origin=coord))
+                    colors.append(rgba_6fold)
+            d.positions = Places(positions)
+            d.colors = numpy.array(colors)
+            m.add_drawing(d)
+            self.session.models.add([m])
+        
          
         
         
