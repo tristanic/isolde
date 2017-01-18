@@ -203,9 +203,9 @@ class HapticHandler(QObject):
     def startHaptics(self):
         if not self._running:
             self._startHaptics()
-            self.session.view.center_of_rotation_method = 'simple'
-            from chimerax.core.commands import camera
+            from chimerax.core.commands import camera, cofr
             camera.camera(self.session, 'ortho')
+            cofr.cofr(self.session, 'centerOfView')
             self._event_handler = self.session.triggers.add_handler('new frame', self.on_refresh)
         self._running = True
         self.getNumDevices()

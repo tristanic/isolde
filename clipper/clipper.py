@@ -183,6 +183,9 @@ class Xmap(clipper_core.Xmap_double):
             self.sigma, self.skewness, self.kurtosis = self.stats()         
     
     def initialize_box_display(self, radius = 15, pad = 1):
+        from chimerax.core.commands import camera, cofr
+        camera.camera(self.session, 'ortho')
+        cofr.cofr(self.session, 'centerOfView')
         self.box_radius = radius
         self.box_pad = pad
         self.box_radius_angstroms = radius
@@ -389,7 +392,11 @@ class Xmap(clipper_core.Xmap_double):
             self.session.models.add([m])
         
          
-        
+class HKL_info(clipper_core.HKL_info):
+    def __init__(self, session):
+        clipper_core.HKL_info.__init__(self)
+        self.session = session
+                
         
         
     
@@ -469,7 +476,7 @@ def Atom_list_from_sel_fast(atom_list):
     return clipper_atom_list
 
 def import_Xmap_from_mtz_test(session, filename):
-    myhkl = clipper_core.HKL_info()
+    myhkl = HKL_info(session)
     fphidata =  clipper_core.HKL_data_F_phi_double()  
     mtzin = clipper_core.CCP4MTZfile()
     mtzin.open_read(filename)

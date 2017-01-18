@@ -2055,6 +2055,12 @@ class Symop(RTop_frac):
 
     def format(self):
         return _clipper.Symop_format(self)
+
+    def rotation(self):
+        return _clipper.Symop_rotation(self)
+
+    def translation(self):
+        return _clipper.Symop_translation(self)
     __swig_destroy__ = _clipper.delete_Symop
     __del__ = lambda self: None
 Symop_swigregister = _clipper.Symop_swigregister
@@ -2466,6 +2472,12 @@ class Spacegroup(Spgr_descr):
 
     def debug(self):
         return _clipper.Spacegroup_debug(self)
+
+    def unit_cell_RTops(self, ref):
+        return _clipper.Spacegroup_unit_cell_RTops(self, ref)
+
+    def unit_cell_RTop(self, unit_cell_RTops, i):
+        return _clipper.Spacegroup_unit_cell_RTop(self, unit_cell_RTops, i)
     __swig_destroy__ = _clipper.delete_Spacegroup
     __del__ = lambda self: None
 Spacegroup_swigregister = _clipper.Spacegroup_swigregister
@@ -2723,6 +2735,12 @@ class RTop_orth(_object):
             self.this.append(this)
         except __builtin__.Exception:
             self.this = this
+
+    def rotation(self):
+        return _clipper.RTop_orth_rotation(self)
+
+    def translation(self):
+        return _clipper.RTop_orth_translation(self)
     __swig_destroy__ = _clipper.delete_RTop_orth
     __del__ = lambda self: None
 RTop_orth_swigregister = _clipper.RTop_orth_swigregister
