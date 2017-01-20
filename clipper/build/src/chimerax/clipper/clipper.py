@@ -345,17 +345,26 @@ class Xmap(clipper_core.Xmap_double):
             m.add_drawing(d)
             self.session.models.add([m])
         
-    def draw_special_positions(self):
+    def draw_special_positions(self, model, offset = None):
         from chimerax.core.models import Model, Drawing
         from chimerax.core.geometry import Place, Places
         from chimerax.core.surface.shapes import sphere_geometry
         import copy
         
+        ref = model.bounds().center().astype(float)
+        frac_coords = clipper_core.Coord_orth(*ref).coord_frac(self.cell()).uvw()
+        if offset is None:
+            offset = numpy.array([0,0,0],int)
+        corners_frac = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]],numpy.double) + offset
+        corners = []
+        for c in corners_frac:
+            cf = clipper_core.Coord_frac(*c).coord_orth(self.cell())
+            corners.append(cf.xyz())
         m = self.special_positions_model
         
         if m is None or m.deleted:
             m = self.special_positions_model = Model('Special Positions',self.session)
-            spc = numpy.array(self.special_positions_unit_cell_xyz(self.grid_sampling()))
+            spc = numpy.array(self.special_positions_unit_cell_xyz(offset))
             coords = spc[:,0:3]
             multiplicity = spc[:,3].astype(int)
             sphere = numpy.array(sphere_geometry(80))
@@ -368,6 +377,7 @@ class Xmap(clipper_core.Xmap_double):
             rgba_3fold = numpy.array([0,255,255,255],numpy.int32)
             rgba_4fold = numpy.array([255,255,0,255],numpy.int32)
             rgba_6fold = numpy.array([255,0,0,255],numpy.int32)
+            rgba_corner = numpy.array([255,0,255,255],numpy.int32)
             positions = []
             colors = []
             d = Drawing('points')
@@ -377,7 +387,7 @@ class Xmap(clipper_core.Xmap_double):
                 if mult == 2:
                     positions.append(Place(axes=scale_2fold, origin=coord))
                     colors.append(rgba_2fold)
-                if mult == 3:
+                elif mult == 3:
                     positions.append(Place(axes=scale_3fold, origin=coord))
                     colors.append(rgba_3fold)
                 elif mult == 4:
@@ -386,6 +396,10 @@ class Xmap(clipper_core.Xmap_double):
                 elif mult == 6:
                     positions.append(Place(axes=scale_6fold, origin=coord))
                     colors.append(rgba_6fold)
+            for c in corners:
+                positions.append(Place(axes=scale_6fold, origin=c))
+                colors.append(rgba_corner)
+                
             d.positions = Places(positions)
             d.colors = numpy.array(colors)
             m.add_drawing(d)
@@ -499,3 +513,18 @@ def vol_box(hklinfo, xmap, min_coor, max_coor):
     min_grid = min_ortho.coord_frac(cell).coord_grid(grid)
     max_grid = max_ortho.coord_frac(cell).coord_grid(grid)    
     
+def make_unit_cell(model, hklinfo, cell):
+    from chimerax.core.geometry import Place, Places
+    coord = model.bounds().center().astype(float)
+    coord_orth = clipper_core.Coord_orth(*coord)
+    coord_frac = coord_orth.coord_frac(cell)
+    sg = hklinfo.spacegroup()
+    unit_cell_frac_symops = sg.unit_cell_RTops(coord_frac)
+    uc_places = []
+    for i in range(sg.num_symops()):
+        this_op = sg.unit_cell_RTop(unit_cell_frac_symops, i)
+        this_op_orth = this_op.rtop_orth(cell)
+        uc_places.append(Place(matrix=this_op_orth.matrix()[0:3,:]))
+    ucp = Places(uc_places)
+    model.positions = ucp
+    return ucp

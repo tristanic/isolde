@@ -2056,6 +2056,9 @@ class Symop(RTop_frac):
     def format(self):
         return _clipper.Symop_format(self)
 
+    def matrix(self):
+        return _clipper.Symop_matrix(self)
+
     def rotation(self):
         return _clipper.Symop_rotation(self)
 
@@ -2735,6 +2738,9 @@ class RTop_orth(_object):
             self.this.append(this)
         except __builtin__.Exception:
             self.this = this
+
+    def matrix(self):
+        return _clipper.RTop_orth_matrix(self)
 
     def rotation(self):
         return _clipper.RTop_orth_rotation(self)
@@ -4252,11 +4258,11 @@ class Xmap_float(Xmap_base):
     def special_positions(self):
         return _clipper.Xmap_float_special_positions(self)
 
-    def special_positions_unit_cell_grid(self, grid):
-        return _clipper.Xmap_float_special_positions_unit_cell_grid(self, grid)
+    def special_positions_unit_cell_grid(self, frac_offset):
+        return _clipper.Xmap_float_special_positions_unit_cell_grid(self, frac_offset)
 
-    def special_positions_unit_cell_xyz(self, grid):
-        return _clipper.Xmap_float_special_positions_unit_cell_xyz(self, grid)
+    def special_positions_unit_cell_xyz(self, frac_offset):
+        return _clipper.Xmap_float_special_positions_unit_cell_xyz(self, frac_offset)
 
     def export_numpy(self, *args):
         return _clipper.Xmap_float_export_numpy(self, *args)
@@ -4337,11 +4343,11 @@ class Xmap_double(Xmap_base):
     def special_positions(self):
         return _clipper.Xmap_double_special_positions(self)
 
-    def special_positions_unit_cell_grid(self, grid):
-        return _clipper.Xmap_double_special_positions_unit_cell_grid(self, grid)
+    def special_positions_unit_cell_grid(self, frac_offset):
+        return _clipper.Xmap_double_special_positions_unit_cell_grid(self, frac_offset)
 
-    def special_positions_unit_cell_xyz(self, grid):
-        return _clipper.Xmap_double_special_positions_unit_cell_xyz(self, grid)
+    def special_positions_unit_cell_xyz(self, frac_offset):
+        return _clipper.Xmap_double_special_positions_unit_cell_xyz(self, frac_offset)
 
     def export_numpy(self, *args):
         return _clipper.Xmap_double_export_numpy(self, *args)
