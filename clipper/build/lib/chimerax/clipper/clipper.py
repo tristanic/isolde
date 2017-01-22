@@ -256,45 +256,6 @@ class Xmap(clipper_core.Xmap_double):
         bottom_corner_orth = bottom_corner_grid.coord_frac(grid).coord_orth(cell)
         return bottom_corner_grid, bottom_corner_orth.xyz()
         
-    def draw_special_positions(self):
-        from chimerax.core.models import Model, Drawing
-        from chimerax.core.geometry import Place
-        from chimerax.core.surface.shapes import sphere_geometry
-        import copy
-        
-        m = self.special_positions_model
-        
-        if m is None or m.deleted:
-            m = self.special_positions_model = Model('Special Positions',self.session)
-            spc = numpy.array(self.special_positions_unit_cell(self.grid_sampling()))
-            sphere = numpy.array(sphere_geometry(4))
-            sphere[0]*=0.5
-            
-            for row in spc:
-                coords = row[0:3].tolist()
-                mult = row[3]
-                cg = clipper_core.Coord_grid(*coords)
-                cf = cg.coord_frac(self.grid_sampling())
-                co = cf.coord_orth(self.cell())
-                d = Drawing('point')
-                d.vertices, d.normals, d.triangles = copy.copy(sphere)
-                if mult == 3:
-                    d.name = '3-fold'
-                    d.vertices = d.vertices * 1.5
-                    d.set_color([0,255,255,255])
-                elif mult == 4:
-                    d.name = '4-fold'
-                    d.vertices = d.vertices * 2
-                    d.set_color([255,255,0,255])
-                elif mult == 6:
-                    d.name = '6-fold'
-                    d.vertices = d.vertices * 3
-                    d.set_color([255,0,0,255])
-                else:
-                    d.name = '2-fold'
-                d.set_position(Place(origin = co.xyz()))
-                m.add_drawing(d) 
-            self.session.models.add([m])
                             
     def draw_special_positions(self):
         from chimerax.core.models import Model, Drawing
@@ -495,7 +456,8 @@ def import_Xmap_from_mtz_test(session, filename):
     mtzin = clipper_core.CCP4MTZfile()
     mtzin.open_read(filename)
     mtzin.import_hkl_info(myhkl)
-    mtzin.import_hkl_data(fphidata, '/crystal/dataset/[2FOFCWT, PH2FOFCWT]')
+    #mtzin.import_hkl_data(fphidata, '/crystal/dataset/[2FOFCWT, PH2FOFCWT]')
+    mtzin.import_hkl_data(fphidata, '/crystal/dataset/[fdsaf, fdafd]')
     mtzin.close_read()
     name = '2FOFCWT'
     mygrid = clipper_core.Grid_sampling(myhkl.spacegroup(), myhkl.cell(), myhkl.resolution())
