@@ -1,7 +1,7 @@
 from .lib import clipper_python_core as clipper_core
 import numpy
 
-class Atom():
+class Atom(clipper_core.Atom):
     '''
     A minimalist atom object containing only the properties required for
     electron density calculations
@@ -36,19 +36,16 @@ class Atom():
                   'Pu4+', 'Pu6+']  
                         
     def __init__(self):
-        self._core_atom = clipper_core.Atom()
+        clipper_core.Atom.__init__(self)
     
-    @property
-    def core_atom(self):
-        return self._core_atom
     
     @property
     def element(self):
         '''
-        The standard abbreviated element name. All valid names are listed in
-        Atom.ATOM_NAMES
+        The standard abbreviated element (or elemental ion) name. All valid
+        names are listed in Atom.ATOM_NAMES.
         '''
-        return self.core_atom.element()
+        return super(Atom, self).element()
     
     @element.setter
     def element(self, element_name):
@@ -56,29 +53,28 @@ class Atom():
         if element_name not in ('H', 'C', 'N', 'O', 'S'):
             if element_name not in self.ATOM_NAMES:
                 raise TypeError('Unrecognised element!')
-        self.core_atom.set_element(element_name)
+        super(Atom, self).set_element(element_name)
     
     @property
     def coord(self):
         '''
         Get the coordinates of the atom as a numpy array
         '''
-        coord_orth = self.core_atom.coord_orth()
-        return numpy.array([coord_orth.x(), coord_orth.y(), coord_orth.z()])
+        return self.coord_orth().xyz()
     
     @coord.setter
     def coord(self, coord):
         '''
         Set the coordinates of the atom using a list or numpy array
         '''
-        self.core_atom.set_coord_orth(clipper_core.Coord_orth(*coord))
+        self.set_coord_orth(clipper_core.Coord_orth(*coord))
 
     @property
     def coord_orth(self):
         '''
         Get the Clipper Coord_orth object associated with this atom
         '''
-        return self.core_atom.coord_orth()
+        return super(Atom, self).coord_orth()
     
     @coord_orth.setter
     def coord_orth(self, coord):
@@ -86,27 +82,27 @@ class Atom():
         
     @property
     def occupancy(self):
-        return self.core_atom.occupancy()
+        return super(Atom, self).occupancy()
     
     @occupancy.setter
     def occupancy(self, occ):
-        self.core_atom.set_occupancy(occ)
+        self.set_occupancy(occ)
     
     @property
     def u_iso(self):
         '''
-        Get the isotropic b-factor
+        Get the isotropic b-factor.
         '''
-        return self.core_atom.u_iso()
+        return super(Atom, self).u_iso()
     
     @u_iso.setter
     def u_iso(self, u_iso):
-        self.core_atom.set_u_iso(u_iso)
+        self.set_u_iso(u_iso)
     
     @property
     def b_factor(self):
         '''
-        Synonym for u_iso
+        Synonym for u_iso.
         '''
         return self.u_iso
     
@@ -115,30 +111,136 @@ class Atom():
         self.u_iso = b_factor
     
     @property
-    def u_aniso(self):
+    def u_aniso_orth(self):
         '''
-        Get the object holding the anisotropic B-factor matrix. Note that
-        Clipper-python does not currently have functions to retrieve the
-        matrix elements
+        Get the anisotropic B-factor matrix as a 6-member array:
+        [u11, u22, u33, u12, u13, u23].
         '''
-        return self.core_atom.u_aniso_orth()
+        return super(Atom, self).u_aniso_orth().get_vals()
     
-    @u_aniso.setter
-    def u_aniso(self, u11, u22, u33, u12, u13, u23):
-        self.core_atom.set_u_aniso_orth(u11, u22, u33, u12, u13, u23)
+    @property
+    def _u_aniso_orth(self):
+        '''
+        Get the Clipper::U_aniso_orth object
+        '''
+        return super(Atom, self).u_aniso_orth()
+    
+    @u_aniso_orth.setter
+    def u_aniso_orth(self, u_aniso):
+        '''
+        Set the anisotropic B-factor matrix using a 6-member array:
+        [u11, u22, u33, u12, u13, u23].
+        '''
+        self.set_u_aniso_orth(*u_aniso)
     
     @property
     def is_null(self):
-        return self.core_atom.is_null()
+        return super(Atom, self).is_null()
+
+class Coord_orth(clipper_core.Coord_orth):
+    '''
+    Coordinates in orthographic (x,y,z) space.
+    '''
+    def __init__(self, xyz):
+        if isinstance(xyz, numpy.ndarray):
+            # Because SWIG does not correctly typemap numpy.float32
+            xyz = xyz.astype(float)
+        clipper_core.Coord_orth.__init__(self, *xyz)
     
-    def transform(self, rot_trans):
-        '''
-        Transform the atom using the rotation and translation defined in
-        a Clipper RTop_orth object
-        '''
-        self.core_atom.transform(rot_rans)
+    @property
+    def x(self):
+        return super(Coord_orth, self).x()
+    
+    @property
+    def y(self):
+        return super(Coord_orth, self).y()
+        
+    @property
+    def z(self):
+        return super(Coord_orth, self).z()
+
+    @property
+    def xyz(self):
+        return super(Coord_orth, self).xyz()
+        
+class Coord_grid(clipper_core.Coord_grid):
+    '''
+    Integer grid coordinates in crystal space.
+    '''
+    def __init__(self, uvw):
+        clipper_core.Coord_grid.__init__(self, *uvw)
+    
+    @property
+    def u(self):
+        return super(Coord_grid, self).u()
+    
+    @property
+    def v(self):
+        return super(Coord_grid, self).v()
+    
+    @property
+    def w(self):
+        return super(Coord_grid, self).w()
+    
+    @property
+    def uvw(self):
+        return super(Coord_grid, self).uvw()
+    
+
+class Coord_map(clipper_core.Coord_map):
+    '''
+    Like Coord_grid, but allowing non-integer values.
+    '''
+    def __init__(self, uvw):
+        if isinstance(uvw, numpy.ndarray):
+            # Because SWIG does not correctly typemap numpy.float32
+            uvw = uvw.astype(float)
+        clipper_core.Coord_map.__init__(self, *uvw)
+    
+    @property
+    def u(self):
+        return super(Coord_map, self).u()
+    
+    @property
+    def v(self):
+        return super(Coord_map, self).v()
+    
+    @property
+    def w(self):
+        return super(Coord_map, self).w()
+    
+    @property
+    def uvw(self):
+        return super(Coord_map, self).uvw()
+
+class Coord_frac(clipper_core.Coord_frac):
+    def __init__(self, uvw):
+        if isinstance(uvw, numpy.ndarray):
+            # Because SWIG does not correctly typemap numpy.float32
+            uvw = uvw.astype(float)
+        clipper_core.Coord_frac.__init__(self, *uvw)
+
+    @property
+    def u(self):
+        return super(Coord_frac, self).u()
+    
+    @property
+    def v(self):
+        return super(Coord_frac, self).v()
+    
+    @property
+    def w(self):
+        return super(Coord_frac, self).w()
+    
+    @property
+    def uvw(self):
+        return super(Coord_frac, self).uvw()
+    
 
 class Xmap(clipper_core.Xmap_double):
+    '''
+    A Clipper crystallographic map generated from reciprocal space data.
+    '''
     def __init__(self, session, name, spacegroup, cell, grid_sam):
         clipper_core.Xmap_double.__init__(self, spacegroup, cell, grid_sam)
         self.session = session
@@ -153,14 +255,18 @@ class Xmap(clipper_core.Xmap_double):
         # Basic stats. Can only be set after the map has been filled with an
         # FFT. Returned as a tuple in the below order by self.stats()
         ###
-        self.max, self.min, self.mean, \
-            self.sigma, self.skewness, self.kurtosis = self.stats()
+        self._max = None
+        self._min = None
+        self._mean = None
+        self._sigma = None
+        self._skewness = None
+        self._kurtosis = None
         
         # Default "radius" (actually half-width of the rhombohedron) of
         # the box in which the map will be drawn.
-        self.box_radius_angstroms = 20
+        self.box_radius = None
         # Box dimensions in grid points (depends on resolution)
-        self.box_dimensions = None
+        self._box_dimensions = None
         # Centre point of the box (will typically be set to the centre of
         # rotation).
         self.box_center = None
@@ -169,75 +275,152 @@ class Xmap(clipper_core.Xmap_double):
         # ChimeraX Volume object to draw the map into
         self.volume = None
         # Array_Grid_Data object held by the Volume object
-        self.array_grid_data = None
+        self._array_grid_data = None
         # Numpy array to send the map data to
-        self.box_data = None
+        self._box_data = None
+        # session.triggers handler for live box update
+        self._box_handler = None
         # Distance any axis of the cofr has to move before triggering an update
-        self.cofr_eps = 0.01
+        self_cofr_eps = 0.01
         
         # Model object to hold Drawings defining the special positions
         self.special_positions_model = None
-        
-    def calculate_stats(self):
-        self.max, self.min, self.mean, \
-            self.sigma, self.skewness, self.kurtosis = self.stats()         
+       
+    def recalculate_stats(self):
+        '''
+        Force recalculation of map statistics (max, min, mean, sigma, 
+        skewness and kurtosis).
+        '''
+        self._max, self._min, self._mean, \
+            self._sigma, self._skewness, self._kurtosis = self.stats()         
     
-    def initialize_box_display(self, radius = 15, pad = 1):
+    @property
+    def max(self):
+        if self._max is None:
+            self.recalculate_stats()
+        return self._max
+
+    @property
+    def min(self):
+        if self._min is None:
+            self.recalculate_stats()
+        return self._min
+
+    @property
+    def mean(self):
+        if self._mean is None:
+            self.recalculate_stats()
+        return self._mean
+    
+    @property
+    def sigma(self):
+        if self._sigma is None:
+            self.recalculate_stats()
+        return self._sigma
+    
+    @property
+    def skewness(self):
+        if self._skewness is None:
+            self.recalculate_stats()
+        return self._skewness
+
+    @property
+    def kurtosis(self):
+        if self._max is None:
+            self.recalculate_stats()
+        return self._kurtosis
+    
+    
+    def _box_go_live(self):
+        if self._box_handler is None:
+            self._box_handler = self.session.triggers.add_handler('new frame', self.update_box)
+    
+    def _box_go_static(self):
+        if self._box_handler is not None:
+            self.session.triggers.remove_handler(self._box_handler)
+            self._box_handler = None
+    
+    def initialize_box_display(self, radius = 15, pad = 0):
+        '''
+        Generate a Volume big enough to hold a sphere of the given radius,
+        plus an optional padding of pad voxels on each side. The session
+        view will be changed to use an orthographic camera, with the centre
+        of rotation updating to always remain at the centre of the screen.
+        The volume will automatically track the centre of rotation and 
+        update its position and contents to reflect the local density.
+        '''
         from chimerax.core.commands import camera, cofr
         camera.camera(self.session, 'ortho')
         cofr.cofr(self.session, 'centerOfView')
+        self._box_pad = pad
         self.box_radius = radius
-        self.box_pad = pad
-        self.box_radius_angstroms = radius
         v = self.session.view
         c = self.cell()
         g = self.grid_sampling()
         self.box_center = v.center_of_rotation
-        box_corner_grid, box_corner_xyz = self.find_box_corner(self.box_center, radius, pad)
+        box_corner_grid, box_corner_xyz = self._find_box_corner(self.box_center, radius, pad)
         self.box_origin_offset = box_corner_xyz - self.box_center
-        # Add padding of one voxel on each side to make sure we're always above
-        # the radius
-        self.box_dimensions = (numpy.ceil(radius / self.voxel_size() * 2)+pad*2).astype(int)[::-1]
-        data = self.box_array = numpy.ones(self.box_dimensions, numpy.double)
+        self._box_dimensions = (numpy.ceil(radius / self.voxel_size() * 2)+pad*2).astype(int)[::-1]
+        data = self._box_data = numpy.empty(self._box_dimensions, numpy.double)
                 
-        
         from chimerax.core.map.data import Array_Grid_Data
         from chimerax.core.map import Volume
-        self.array_grid_data = Array_Grid_Data(data, origin = box_corner_xyz,
+        self._array_grid_data = Array_Grid_Data(data, origin = box_corner_xyz,
                 step = self.voxel_size(), cell_angles = c.angles_deg())
-        self.volume = Volume(self.array_grid_data, self.session)
-        self.fill_volume_data(data, box_corner_grid)
+        self.volume = Volume(self._array_grid_data, self.session)
+        self._fill_volume_data(data, box_corner_grid)
         self.volume.initialize_thresholds()
         self.session.models.add([self.volume])
         contour_val = self.contour = 1.5 * self.sigma
         self.change_contour(contour_val)
         self.volume.set_color([0.5,1.0,0.5,0.6])
         self.volume.show()
-        self.session.triggers.add_handler('new frame', self.update_box)
-        
-    def update_box(self, *_):
+        self._box_go_live()
+
+    def change_box_radius(self, radius, pad=0):
+        self._box_go_static()
         v = self.session.view
         cofr = v.center_of_rotation
-        if numpy.all(abs(self.box_center - cofr) < self.cofr_eps):
-            return
+        self.box_radius = radius
+        dim = (numpy.ceil(radius / self.voxel_size() * 2)+pad*2).astype(int)[::-1]
+        data = numpy.empty(dim, numpy.double)
+        box_corner_grid, box_corner_xyz = self._find_box_corner(cofr, radius, pad)
+        from chimerax.core.map.data import Array_Grid_Data
+        darray = Array_Grid_Data(data, origin = box_corner_xyz,
+            step = self.voxel_size(), cell_angles = self.cell().angles_deg())
+        self.volume.replace_data(darray)
+        self._box_pad = pad
+        self._box_dimensions = dim
+        self._box_data = data
+        self._array_grid_data = darray
+        self._box_go_live()
+        
+        
+        
+    def update_box(self, force_update = False, *_):
+        v = self.session.view
+        cofr = v.center_of_rotation
+        if not force_update:
+            if numpy.all(abs(self.box_center - cofr) < self_cofr_eps):
+                return
         self.box_center = cofr
-        box_corner_grid, box_corner_xyz = self.find_box_corner(cofr, self.box_radius, self.box_pad)
-        self.array_grid_data.set_origin(box_corner_xyz)
-        self.fill_volume_data(self.box_array, box_corner_grid)
-        self.change_contour(self.contour)
+        box_corner_grid, box_corner_xyz = self._find_box_corner(cofr, self.box_radius, self._box_pad)
+        self._array_grid_data.set_origin(box_corner_xyz)
+        self._fill_volume_data(self._box_data, box_corner_grid)
+        self.volume.update_surface()
         
     def change_contour(self, contour_val):
         from chimerax.core.map import volumecommand
         volumecommand.volume(self.session,[self.volume], level=[[contour_val]], cap_faces = False)
         
 
-    def fill_volume_data(self, target, start_grid_coor):
+    def _fill_volume_data(self, target, start_grid_coor):
         shape = (numpy.array(target.shape)[::-1] - 1).tolist()
         end_grid_coor = start_grid_coor + clipper_core.Coord_grid(*shape)
         count = self.export_section_numpy(target, start_grid_coor, end_grid_coor, 'C')
                 
     
-    def find_box_corner(self, center, radius = 20, pad = 1):
+    def _find_box_corner(self, center, radius = 20, pad = 1):
         '''
         Find the bottom corner (i.e. the origin) of a rhombohedral box
         big enough to hold a sphere of the desired radius, and padded by
@@ -256,57 +439,8 @@ class Xmap(clipper_core.Xmap_double):
         bottom_corner_orth = bottom_corner_grid.coord_frac(grid).coord_orth(cell)
         return bottom_corner_grid, bottom_corner_orth.xyz()
         
-                            
-    def draw_special_positions(self):
-        from chimerax.core.models import Model, Drawing
-        from chimerax.core.geometry import Place, Places
-        from chimerax.core.surface.shapes import sphere_geometry
-        import copy
-        
-        m = self.special_positions_model
-        
-        if m is None or m.deleted:
-            m = self.special_positions_model = Model('Special Positions',self.session)
-            spc = numpy.array(self.special_positions_unit_cell(self.grid_sampling()))
-            sphere = numpy.array(sphere_geometry(80))
-            sphere[0]*=0.5
-            scale_2fold = numpy.identity(3)
-            scale_3fold = numpy.identity(3)* 1.5
-            scale_4fold = numpy.identity(3)* 2
-            scale_6fold = numpy.identity(3)* 3
-            rgba_2fold = numpy.array([255,255,255,255],numpy.int32)
-            rgba_3fold = numpy.array([0,255,255,255],numpy.int32)
-            rgba_4fold = numpy.array([255,255,0,255],numpy.int32)
-            rgba_6fold = numpy.array([255,0,0,255],numpy.int32)
-            positions = []
-            colors = []
-            d = Drawing('points')
-            d.vertices, d.normals, d.triangles = sphere
-            
-            for row in spc:
-                coords = row[0:3].tolist()
-                mult = row[3]
-                cg = clipper_core.Coord_grid(*coords)
-                cf = cg.coord_frac(self.grid_sampling())
-                co = cf.coord_orth(self.cell())
-                if mult == 2:
-                    positions.append(Place(axes=scale_2fold, origin=co.xyz()))
-                    colors.append(rgba_2fold)
-                if mult == 3:
-                    positions.append(Place(axes=scale_3fold, origin=co.xyz()))
-                    colors.append(rgba_3fold)
-                elif mult == 4:
-                    positions.append(Place(axes=scale_4fold, origin=co.xyz()))
-                    colors.append(rgba_4fold)
-                elif mult == 6:
-                    positions.append(Place(axes=scale_6fold, origin=co.xyz()))
-                    colors.append(rgba_6fold)
-            d.positions = Places(positions)
-            d.colors = numpy.array(colors)
-            m.add_drawing(d)
-            self.session.models.add([m])
-        
-    def draw_special_positions(self, model, offset = None):
+                                    
+    def draw_unit_cell_and_special_positions(self, model, offset = None):
         from chimerax.core.models import Model, Drawing
         from chimerax.core.geometry import Place, Places
         from chimerax.core.surface.shapes import sphere_geometry
@@ -456,15 +590,13 @@ def import_Xmap_from_mtz_test(session, filename):
     mtzin = clipper_core.CCP4MTZfile()
     mtzin.open_read(filename)
     mtzin.import_hkl_info(myhkl)
-    #mtzin.import_hkl_data(fphidata, '/crystal/dataset/[2FOFCWT, PH2FOFCWT]')
-    mtzin.import_hkl_data(fphidata, '/crystal/dataset/[fdsaf, fdafd]')
+    mtzin.import_hkl_data(fphidata, '/crystal/dataset/[2FOFCWT, PH2FOFCWT]')
     mtzin.close_read()
     name = '2FOFCWT'
     mygrid = clipper_core.Grid_sampling(myhkl.spacegroup(), myhkl.cell(), myhkl.resolution())
     #mymap = clipper_core.Xmap_double(myhkl.spacegroup(), myhkl.cell(), mygrid)
     mymap = Xmap(session, name, myhkl.spacegroup(), myhkl.cell(), mygrid)
     mymap.fft_from(fphidata)
-    mymap.calculate_stats()
     return (myhkl, mymap)
     
 def vol_box(hklinfo, xmap, min_coor, max_coor):

@@ -1697,13 +1697,6 @@ class vec3_float(_object):
     __getattr__ = lambda self, name: _swig_getattr(self, vec3_float, name)
     __repr__ = _swig_repr
 
-    def __init__(self, *args):
-        this = _clipper.new_vec3_float(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-
     def equals(self, v, tol):
         return _clipper.vec3_float_equals(self, v, tol)
 
@@ -1738,6 +1731,13 @@ class vec3_float(_object):
     def __isub__(self, v):
         return _clipper.vec3_float___isub__(self, v)
 
+    def __init__(self, *args):
+        this = _clipper.new_vec3_float(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
     def __getitem__(self, i):
         return _clipper.vec3_float___getitem__(self, i)
 
@@ -1770,13 +1770,6 @@ class vec3_double(_object):
     __swig_getmethods__ = {}
     __getattr__ = lambda self, name: _swig_getattr(self, vec3_double, name)
     __repr__ = _swig_repr
-
-    def __init__(self, *args):
-        this = _clipper.new_vec3_double(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
 
     def equals(self, v, tol):
         return _clipper.vec3_double_equals(self, v, tol)
@@ -1811,6 +1804,13 @@ class vec3_double(_object):
 
     def __isub__(self, v):
         return _clipper.vec3_double___isub__(self, v)
+
+    def __init__(self, *args):
+        this = _clipper.new_vec3_double(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
 
     def __str__(self):
         return _clipper.vec3_double___str__(self)
@@ -3532,8 +3532,8 @@ class Atom(_object):
         except __builtin__.Exception:
             self.this = this
 
-    def element(self):
-        return _clipper.Atom_element(self)
+    def _element_ptr(self):
+        return _clipper.Atom__element_ptr(self)
 
     def coord_orth(self):
         return _clipper.Atom_coord_orth(self)
@@ -3571,6 +3571,9 @@ class Atom(_object):
         null = staticmethod(_clipper.Atom_null)
     else:
         null = _clipper.Atom_null
+
+    def element(self):
+        return _clipper.Atom_element(self)
     __swig_destroy__ = _clipper.delete_Atom
     __del__ = lambda self: None
 Atom_swigregister = _clipper.Atom_swigregister
