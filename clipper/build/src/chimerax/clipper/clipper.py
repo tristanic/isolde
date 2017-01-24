@@ -235,6 +235,15 @@ class Coord_frac(clipper_core.Coord_frac):
     @property
     def uvw(self):
         return super(Coord_frac, self).uvw()
+        
+class HKL_info(clipper_core.HKL_info):
+    def __init__(self, session):
+        clipper_core.HKL_info.__init__(self)
+        self.session = session
+
+
+
+
     
 
 class Xmap(clipper_core.Xmap_double):
@@ -291,7 +300,7 @@ class Xmap(clipper_core.Xmap_double):
         Force recalculation of map statistics (max, min, mean, sigma, 
         skewness and kurtosis).
         '''
-        self._max, self._min, self._mean, \
+        self._min, self._max, self._mean, \
             self._sigma, self._skewness, self._kurtosis = self.stats()         
     
     @property
@@ -501,10 +510,6 @@ class Xmap(clipper_core.Xmap_double):
             self.session.models.add([m])
         
          
-class HKL_info(clipper_core.HKL_info):
-    def __init__(self, session):
-        clipper_core.HKL_info.__init__(self)
-        self.session = session
                 
         
         
@@ -597,7 +602,7 @@ def import_Xmap_from_mtz_test(session, filename):
     #mymap = clipper_core.Xmap_double(myhkl.spacegroup(), myhkl.cell(), mygrid)
     mymap = Xmap(session, name, myhkl.spacegroup(), myhkl.cell(), mygrid)
     mymap.fft_from(fphidata)
-    return (myhkl, mymap)
+    return (fphidata, myhkl, mymap)
     
 def vol_box(hklinfo, xmap, min_coor, max_coor):
     cell = hklifno.cell()
