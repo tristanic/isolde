@@ -21,5 +21,6 @@ class Clipper_ToolInstance(ToolInstance):
         from . import clipper
         self.main = clipper
         session.clipper = self.main
+        session.clipper.session = session
         
     

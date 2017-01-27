@@ -167,6 +167,8 @@ SwigPyIterator_swigregister = _clipper.SwigPyIterator_swigregister
 SwigPyIterator_swigregister(SwigPyIterator)
 
 class IntVector(_object):
+    """Proxy of C++ std::vector<(int)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, IntVector, name, value)
     __swig_getmethods__ = {}
@@ -174,77 +176,350 @@ class IntVector(_object):
     __repr__ = _swig_repr
 
     def iterator(self):
+        """
+        iterator(IntVector self) -> SwigPyIterator
+
+        Parameters
+        ----------
+        self: std::vector< int > *
+
+        """
         return _clipper.IntVector_iterator(self)
+
     def __iter__(self):
         return self.iterator()
 
     def __nonzero__(self):
+        """
+        __nonzero__(IntVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< int > const *
+
+        """
         return _clipper.IntVector___nonzero__(self)
 
+
     def __bool__(self):
+        """
+        __bool__(IntVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< int > const *
+
+        """
         return _clipper.IntVector___bool__(self)
 
+
     def __len__(self):
+        """
+        __len__(IntVector self) -> std::vector< int >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< int > const *
+
+        """
         return _clipper.IntVector___len__(self)
 
+
     def __getslice__(self, i, j):
+        """
+        __getslice__(IntVector self, std::vector< int >::difference_type i, std::vector< int >::difference_type j) -> IntVector
+
+        Parameters
+        ----------
+        i: std::vector< int >::difference_type
+        j: std::vector< int >::difference_type
+
+        """
         return _clipper.IntVector___getslice__(self, i, j)
 
+
     def __setslice__(self, *args):
+        """
+        __setslice__(IntVector self, std::vector< int >::difference_type i, std::vector< int >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< int >::difference_type
+        j: std::vector< int >::difference_type
+
+        __setslice__(IntVector self, std::vector< int >::difference_type i, std::vector< int >::difference_type j, IntVector v)
+
+        Parameters
+        ----------
+        i: std::vector< int >::difference_type
+        j: std::vector< int >::difference_type
+        v: std::vector< int,std::allocator< int > > const &
+
+        """
         return _clipper.IntVector___setslice__(self, *args)
 
+
     def __delslice__(self, i, j):
+        """
+        __delslice__(IntVector self, std::vector< int >::difference_type i, std::vector< int >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< int >::difference_type
+        j: std::vector< int >::difference_type
+
+        """
         return _clipper.IntVector___delslice__(self, i, j)
 
+
     def __delitem__(self, *args):
+        """
+        __delitem__(IntVector self, std::vector< int >::difference_type i)
+
+        Parameters
+        ----------
+        i: std::vector< int >::difference_type
+
+        __delitem__(IntVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        """
         return _clipper.IntVector___delitem__(self, *args)
 
+
     def __getitem__(self, *args):
+        """
+        __getitem__(IntVector self, PySliceObject * slice) -> IntVector
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __getitem__(IntVector self, std::vector< int >::difference_type i) -> std::vector< int >::value_type const &
+
+        Parameters
+        ----------
+        i: std::vector< int >::difference_type
+
+        """
         return _clipper.IntVector___getitem__(self, *args)
 
+
     def __setitem__(self, *args):
+        """
+        __setitem__(IntVector self, PySliceObject * slice, IntVector v)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+        v: std::vector< int,std::allocator< int > > const &
+
+        __setitem__(IntVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __setitem__(IntVector self, std::vector< int >::difference_type i, std::vector< int >::value_type const & x)
+
+        Parameters
+        ----------
+        i: std::vector< int >::difference_type
+        x: std::vector< int >::value_type const &
+
+        """
         return _clipper.IntVector___setitem__(self, *args)
 
+
     def pop(self):
+        """
+        pop(IntVector self) -> std::vector< int >::value_type
+
+        Parameters
+        ----------
+        self: std::vector< int > *
+
+        """
         return _clipper.IntVector_pop(self)
 
+
     def append(self, x):
+        """
+        append(IntVector self, std::vector< int >::value_type const & x)
+
+        Parameters
+        ----------
+        x: std::vector< int >::value_type const &
+
+        """
         return _clipper.IntVector_append(self, x)
 
+
     def empty(self):
+        """
+        empty(IntVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< int > const *
+
+        """
         return _clipper.IntVector_empty(self)
 
+
     def size(self):
+        """
+        size(IntVector self) -> std::vector< int >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< int > const *
+
+        """
         return _clipper.IntVector_size(self)
 
+
     def swap(self, v):
+        """
+        swap(IntVector self, IntVector v)
+
+        Parameters
+        ----------
+        v: std::vector< int > &
+
+        """
         return _clipper.IntVector_swap(self, v)
 
+
     def begin(self):
+        """
+        begin(IntVector self) -> std::vector< int >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< int > *
+
+        """
         return _clipper.IntVector_begin(self)
 
+
     def end(self):
+        """
+        end(IntVector self) -> std::vector< int >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< int > *
+
+        """
         return _clipper.IntVector_end(self)
 
+
     def rbegin(self):
+        """
+        rbegin(IntVector self) -> std::vector< int >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< int > *
+
+        """
         return _clipper.IntVector_rbegin(self)
 
+
     def rend(self):
+        """
+        rend(IntVector self) -> std::vector< int >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< int > *
+
+        """
         return _clipper.IntVector_rend(self)
 
+
     def clear(self):
+        """
+        clear(IntVector self)
+
+        Parameters
+        ----------
+        self: std::vector< int > *
+
+        """
         return _clipper.IntVector_clear(self)
 
+
     def get_allocator(self):
+        """
+        get_allocator(IntVector self) -> std::vector< int >::allocator_type
+
+        Parameters
+        ----------
+        self: std::vector< int > const *
+
+        """
         return _clipper.IntVector_get_allocator(self)
 
+
     def pop_back(self):
+        """
+        pop_back(IntVector self)
+
+        Parameters
+        ----------
+        self: std::vector< int > *
+
+        """
         return _clipper.IntVector_pop_back(self)
 
+
     def erase(self, *args):
+        """
+        erase(IntVector self, std::vector< int >::iterator pos) -> std::vector< int >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< int >::iterator
+
+        erase(IntVector self, std::vector< int >::iterator first, std::vector< int >::iterator last) -> std::vector< int >::iterator
+
+        Parameters
+        ----------
+        first: std::vector< int >::iterator
+        last: std::vector< int >::iterator
+
+        """
         return _clipper.IntVector_erase(self, *args)
 
+
     def __init__(self, *args):
+        """
+        __init__(std::vector<(int)> self) -> IntVector
+        __init__(std::vector<(int)> self, IntVector arg2) -> IntVector
+
+        Parameters
+        ----------
+        arg2: std::vector< int > const &
+
+        __init__(std::vector<(int)> self, std::vector< int >::size_type size) -> IntVector
+
+        Parameters
+        ----------
+        size: std::vector< int >::size_type
+
+        __init__(std::vector<(int)> self, std::vector< int >::size_type size, std::vector< int >::value_type const & value) -> IntVector
+
+        Parameters
+        ----------
+        size: std::vector< int >::size_type
+        value: std::vector< int >::value_type const &
+
+        """
         this = _clipper.new_IntVector(*args)
         try:
             self.this.append(this)
@@ -252,34 +527,125 @@ class IntVector(_object):
             self.this = this
 
     def push_back(self, x):
+        """
+        push_back(IntVector self, std::vector< int >::value_type const & x)
+
+        Parameters
+        ----------
+        x: std::vector< int >::value_type const &
+
+        """
         return _clipper.IntVector_push_back(self, x)
 
+
     def front(self):
+        """
+        front(IntVector self) -> std::vector< int >::value_type const &
+
+        Parameters
+        ----------
+        self: std::vector< int > const *
+
+        """
         return _clipper.IntVector_front(self)
 
+
     def back(self):
+        """
+        back(IntVector self) -> std::vector< int >::value_type const &
+
+        Parameters
+        ----------
+        self: std::vector< int > const *
+
+        """
         return _clipper.IntVector_back(self)
 
+
     def assign(self, n, x):
+        """
+        assign(IntVector self, std::vector< int >::size_type n, std::vector< int >::value_type const & x)
+
+        Parameters
+        ----------
+        n: std::vector< int >::size_type
+        x: std::vector< int >::value_type const &
+
+        """
         return _clipper.IntVector_assign(self, n, x)
 
+
     def resize(self, *args):
+        """
+        resize(IntVector self, std::vector< int >::size_type new_size)
+
+        Parameters
+        ----------
+        new_size: std::vector< int >::size_type
+
+        resize(IntVector self, std::vector< int >::size_type new_size, std::vector< int >::value_type const & x)
+
+        Parameters
+        ----------
+        new_size: std::vector< int >::size_type
+        x: std::vector< int >::value_type const &
+
+        """
         return _clipper.IntVector_resize(self, *args)
 
+
     def insert(self, *args):
+        """
+        insert(IntVector self, std::vector< int >::iterator pos, std::vector< int >::value_type const & x) -> std::vector< int >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< int >::iterator
+        x: std::vector< int >::value_type const &
+
+        insert(IntVector self, std::vector< int >::iterator pos, std::vector< int >::size_type n, std::vector< int >::value_type const & x)
+
+        Parameters
+        ----------
+        pos: std::vector< int >::iterator
+        n: std::vector< int >::size_type
+        x: std::vector< int >::value_type const &
+
+        """
         return _clipper.IntVector_insert(self, *args)
 
+
     def reserve(self, n):
+        """
+        reserve(IntVector self, std::vector< int >::size_type n)
+
+        Parameters
+        ----------
+        n: std::vector< int >::size_type
+
+        """
         return _clipper.IntVector_reserve(self, n)
 
+
     def capacity(self):
+        """
+        capacity(IntVector self) -> std::vector< int >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< int > const *
+
+        """
         return _clipper.IntVector_capacity(self)
+
     __swig_destroy__ = _clipper.delete_IntVector
     __del__ = lambda self: None
 IntVector_swigregister = _clipper.IntVector_swigregister
 IntVector_swigregister(IntVector)
 
 class FloatVector(_object):
+    """Proxy of C++ std::vector<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, FloatVector, name, value)
     __swig_getmethods__ = {}
@@ -287,77 +653,350 @@ class FloatVector(_object):
     __repr__ = _swig_repr
 
     def iterator(self):
+        """
+        iterator(FloatVector self) -> SwigPyIterator
+
+        Parameters
+        ----------
+        self: std::vector< float > *
+
+        """
         return _clipper.FloatVector_iterator(self)
+
     def __iter__(self):
         return self.iterator()
 
     def __nonzero__(self):
+        """
+        __nonzero__(FloatVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< float > const *
+
+        """
         return _clipper.FloatVector___nonzero__(self)
 
+
     def __bool__(self):
+        """
+        __bool__(FloatVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< float > const *
+
+        """
         return _clipper.FloatVector___bool__(self)
 
+
     def __len__(self):
+        """
+        __len__(FloatVector self) -> std::vector< float >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< float > const *
+
+        """
         return _clipper.FloatVector___len__(self)
 
+
     def __getslice__(self, i, j):
+        """
+        __getslice__(FloatVector self, std::vector< float >::difference_type i, std::vector< float >::difference_type j) -> FloatVector
+
+        Parameters
+        ----------
+        i: std::vector< float >::difference_type
+        j: std::vector< float >::difference_type
+
+        """
         return _clipper.FloatVector___getslice__(self, i, j)
 
+
     def __setslice__(self, *args):
+        """
+        __setslice__(FloatVector self, std::vector< float >::difference_type i, std::vector< float >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< float >::difference_type
+        j: std::vector< float >::difference_type
+
+        __setslice__(FloatVector self, std::vector< float >::difference_type i, std::vector< float >::difference_type j, FloatVector v)
+
+        Parameters
+        ----------
+        i: std::vector< float >::difference_type
+        j: std::vector< float >::difference_type
+        v: std::vector< float,std::allocator< float > > const &
+
+        """
         return _clipper.FloatVector___setslice__(self, *args)
 
+
     def __delslice__(self, i, j):
+        """
+        __delslice__(FloatVector self, std::vector< float >::difference_type i, std::vector< float >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< float >::difference_type
+        j: std::vector< float >::difference_type
+
+        """
         return _clipper.FloatVector___delslice__(self, i, j)
 
+
     def __delitem__(self, *args):
+        """
+        __delitem__(FloatVector self, std::vector< float >::difference_type i)
+
+        Parameters
+        ----------
+        i: std::vector< float >::difference_type
+
+        __delitem__(FloatVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        """
         return _clipper.FloatVector___delitem__(self, *args)
 
+
     def __getitem__(self, *args):
+        """
+        __getitem__(FloatVector self, PySliceObject * slice) -> FloatVector
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __getitem__(FloatVector self, std::vector< float >::difference_type i) -> std::vector< float >::value_type const &
+
+        Parameters
+        ----------
+        i: std::vector< float >::difference_type
+
+        """
         return _clipper.FloatVector___getitem__(self, *args)
 
+
     def __setitem__(self, *args):
+        """
+        __setitem__(FloatVector self, PySliceObject * slice, FloatVector v)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+        v: std::vector< float,std::allocator< float > > const &
+
+        __setitem__(FloatVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __setitem__(FloatVector self, std::vector< float >::difference_type i, std::vector< float >::value_type const & x)
+
+        Parameters
+        ----------
+        i: std::vector< float >::difference_type
+        x: std::vector< float >::value_type const &
+
+        """
         return _clipper.FloatVector___setitem__(self, *args)
 
+
     def pop(self):
+        """
+        pop(FloatVector self) -> std::vector< float >::value_type
+
+        Parameters
+        ----------
+        self: std::vector< float > *
+
+        """
         return _clipper.FloatVector_pop(self)
 
+
     def append(self, x):
+        """
+        append(FloatVector self, std::vector< float >::value_type const & x)
+
+        Parameters
+        ----------
+        x: std::vector< float >::value_type const &
+
+        """
         return _clipper.FloatVector_append(self, x)
 
+
     def empty(self):
+        """
+        empty(FloatVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< float > const *
+
+        """
         return _clipper.FloatVector_empty(self)
 
+
     def size(self):
+        """
+        size(FloatVector self) -> std::vector< float >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< float > const *
+
+        """
         return _clipper.FloatVector_size(self)
 
+
     def swap(self, v):
+        """
+        swap(FloatVector self, FloatVector v)
+
+        Parameters
+        ----------
+        v: std::vector< float > &
+
+        """
         return _clipper.FloatVector_swap(self, v)
 
+
     def begin(self):
+        """
+        begin(FloatVector self) -> std::vector< float >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< float > *
+
+        """
         return _clipper.FloatVector_begin(self)
 
+
     def end(self):
+        """
+        end(FloatVector self) -> std::vector< float >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< float > *
+
+        """
         return _clipper.FloatVector_end(self)
 
+
     def rbegin(self):
+        """
+        rbegin(FloatVector self) -> std::vector< float >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< float > *
+
+        """
         return _clipper.FloatVector_rbegin(self)
 
+
     def rend(self):
+        """
+        rend(FloatVector self) -> std::vector< float >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< float > *
+
+        """
         return _clipper.FloatVector_rend(self)
 
+
     def clear(self):
+        """
+        clear(FloatVector self)
+
+        Parameters
+        ----------
+        self: std::vector< float > *
+
+        """
         return _clipper.FloatVector_clear(self)
 
+
     def get_allocator(self):
+        """
+        get_allocator(FloatVector self) -> std::vector< float >::allocator_type
+
+        Parameters
+        ----------
+        self: std::vector< float > const *
+
+        """
         return _clipper.FloatVector_get_allocator(self)
 
+
     def pop_back(self):
+        """
+        pop_back(FloatVector self)
+
+        Parameters
+        ----------
+        self: std::vector< float > *
+
+        """
         return _clipper.FloatVector_pop_back(self)
 
+
     def erase(self, *args):
+        """
+        erase(FloatVector self, std::vector< float >::iterator pos) -> std::vector< float >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< float >::iterator
+
+        erase(FloatVector self, std::vector< float >::iterator first, std::vector< float >::iterator last) -> std::vector< float >::iterator
+
+        Parameters
+        ----------
+        first: std::vector< float >::iterator
+        last: std::vector< float >::iterator
+
+        """
         return _clipper.FloatVector_erase(self, *args)
 
+
     def __init__(self, *args):
+        """
+        __init__(std::vector<(float)> self) -> FloatVector
+        __init__(std::vector<(float)> self, FloatVector arg2) -> FloatVector
+
+        Parameters
+        ----------
+        arg2: std::vector< float > const &
+
+        __init__(std::vector<(float)> self, std::vector< float >::size_type size) -> FloatVector
+
+        Parameters
+        ----------
+        size: std::vector< float >::size_type
+
+        __init__(std::vector<(float)> self, std::vector< float >::size_type size, std::vector< float >::value_type const & value) -> FloatVector
+
+        Parameters
+        ----------
+        size: std::vector< float >::size_type
+        value: std::vector< float >::value_type const &
+
+        """
         this = _clipper.new_FloatVector(*args)
         try:
             self.this.append(this)
@@ -365,34 +1004,125 @@ class FloatVector(_object):
             self.this = this
 
     def push_back(self, x):
+        """
+        push_back(FloatVector self, std::vector< float >::value_type const & x)
+
+        Parameters
+        ----------
+        x: std::vector< float >::value_type const &
+
+        """
         return _clipper.FloatVector_push_back(self, x)
 
+
     def front(self):
+        """
+        front(FloatVector self) -> std::vector< float >::value_type const &
+
+        Parameters
+        ----------
+        self: std::vector< float > const *
+
+        """
         return _clipper.FloatVector_front(self)
 
+
     def back(self):
+        """
+        back(FloatVector self) -> std::vector< float >::value_type const &
+
+        Parameters
+        ----------
+        self: std::vector< float > const *
+
+        """
         return _clipper.FloatVector_back(self)
 
+
     def assign(self, n, x):
+        """
+        assign(FloatVector self, std::vector< float >::size_type n, std::vector< float >::value_type const & x)
+
+        Parameters
+        ----------
+        n: std::vector< float >::size_type
+        x: std::vector< float >::value_type const &
+
+        """
         return _clipper.FloatVector_assign(self, n, x)
 
+
     def resize(self, *args):
+        """
+        resize(FloatVector self, std::vector< float >::size_type new_size)
+
+        Parameters
+        ----------
+        new_size: std::vector< float >::size_type
+
+        resize(FloatVector self, std::vector< float >::size_type new_size, std::vector< float >::value_type const & x)
+
+        Parameters
+        ----------
+        new_size: std::vector< float >::size_type
+        x: std::vector< float >::value_type const &
+
+        """
         return _clipper.FloatVector_resize(self, *args)
 
+
     def insert(self, *args):
+        """
+        insert(FloatVector self, std::vector< float >::iterator pos, std::vector< float >::value_type const & x) -> std::vector< float >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< float >::iterator
+        x: std::vector< float >::value_type const &
+
+        insert(FloatVector self, std::vector< float >::iterator pos, std::vector< float >::size_type n, std::vector< float >::value_type const & x)
+
+        Parameters
+        ----------
+        pos: std::vector< float >::iterator
+        n: std::vector< float >::size_type
+        x: std::vector< float >::value_type const &
+
+        """
         return _clipper.FloatVector_insert(self, *args)
 
+
     def reserve(self, n):
+        """
+        reserve(FloatVector self, std::vector< float >::size_type n)
+
+        Parameters
+        ----------
+        n: std::vector< float >::size_type
+
+        """
         return _clipper.FloatVector_reserve(self, n)
 
+
     def capacity(self):
+        """
+        capacity(FloatVector self) -> std::vector< float >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< float > const *
+
+        """
         return _clipper.FloatVector_capacity(self)
+
     __swig_destroy__ = _clipper.delete_FloatVector
     __del__ = lambda self: None
 FloatVector_swigregister = _clipper.FloatVector_swigregister
 FloatVector_swigregister(FloatVector)
 
 class DoubleVector(_object):
+    """Proxy of C++ std::vector<(double)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, DoubleVector, name, value)
     __swig_getmethods__ = {}
@@ -400,77 +1130,350 @@ class DoubleVector(_object):
     __repr__ = _swig_repr
 
     def iterator(self):
+        """
+        iterator(DoubleVector self) -> SwigPyIterator
+
+        Parameters
+        ----------
+        self: std::vector< double > *
+
+        """
         return _clipper.DoubleVector_iterator(self)
+
     def __iter__(self):
         return self.iterator()
 
     def __nonzero__(self):
+        """
+        __nonzero__(DoubleVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< double > const *
+
+        """
         return _clipper.DoubleVector___nonzero__(self)
 
+
     def __bool__(self):
+        """
+        __bool__(DoubleVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< double > const *
+
+        """
         return _clipper.DoubleVector___bool__(self)
 
+
     def __len__(self):
+        """
+        __len__(DoubleVector self) -> std::vector< double >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< double > const *
+
+        """
         return _clipper.DoubleVector___len__(self)
 
+
     def __getslice__(self, i, j):
+        """
+        __getslice__(DoubleVector self, std::vector< double >::difference_type i, std::vector< double >::difference_type j) -> DoubleVector
+
+        Parameters
+        ----------
+        i: std::vector< double >::difference_type
+        j: std::vector< double >::difference_type
+
+        """
         return _clipper.DoubleVector___getslice__(self, i, j)
 
+
     def __setslice__(self, *args):
+        """
+        __setslice__(DoubleVector self, std::vector< double >::difference_type i, std::vector< double >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< double >::difference_type
+        j: std::vector< double >::difference_type
+
+        __setslice__(DoubleVector self, std::vector< double >::difference_type i, std::vector< double >::difference_type j, DoubleVector v)
+
+        Parameters
+        ----------
+        i: std::vector< double >::difference_type
+        j: std::vector< double >::difference_type
+        v: std::vector< double,std::allocator< double > > const &
+
+        """
         return _clipper.DoubleVector___setslice__(self, *args)
 
+
     def __delslice__(self, i, j):
+        """
+        __delslice__(DoubleVector self, std::vector< double >::difference_type i, std::vector< double >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< double >::difference_type
+        j: std::vector< double >::difference_type
+
+        """
         return _clipper.DoubleVector___delslice__(self, i, j)
 
+
     def __delitem__(self, *args):
+        """
+        __delitem__(DoubleVector self, std::vector< double >::difference_type i)
+
+        Parameters
+        ----------
+        i: std::vector< double >::difference_type
+
+        __delitem__(DoubleVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        """
         return _clipper.DoubleVector___delitem__(self, *args)
 
+
     def __getitem__(self, *args):
+        """
+        __getitem__(DoubleVector self, PySliceObject * slice) -> DoubleVector
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __getitem__(DoubleVector self, std::vector< double >::difference_type i) -> std::vector< double >::value_type const &
+
+        Parameters
+        ----------
+        i: std::vector< double >::difference_type
+
+        """
         return _clipper.DoubleVector___getitem__(self, *args)
 
+
     def __setitem__(self, *args):
+        """
+        __setitem__(DoubleVector self, PySliceObject * slice, DoubleVector v)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+        v: std::vector< double,std::allocator< double > > const &
+
+        __setitem__(DoubleVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __setitem__(DoubleVector self, std::vector< double >::difference_type i, std::vector< double >::value_type const & x)
+
+        Parameters
+        ----------
+        i: std::vector< double >::difference_type
+        x: std::vector< double >::value_type const &
+
+        """
         return _clipper.DoubleVector___setitem__(self, *args)
 
+
     def pop(self):
+        """
+        pop(DoubleVector self) -> std::vector< double >::value_type
+
+        Parameters
+        ----------
+        self: std::vector< double > *
+
+        """
         return _clipper.DoubleVector_pop(self)
 
+
     def append(self, x):
+        """
+        append(DoubleVector self, std::vector< double >::value_type const & x)
+
+        Parameters
+        ----------
+        x: std::vector< double >::value_type const &
+
+        """
         return _clipper.DoubleVector_append(self, x)
 
+
     def empty(self):
+        """
+        empty(DoubleVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< double > const *
+
+        """
         return _clipper.DoubleVector_empty(self)
 
+
     def size(self):
+        """
+        size(DoubleVector self) -> std::vector< double >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< double > const *
+
+        """
         return _clipper.DoubleVector_size(self)
 
+
     def swap(self, v):
+        """
+        swap(DoubleVector self, DoubleVector v)
+
+        Parameters
+        ----------
+        v: std::vector< double > &
+
+        """
         return _clipper.DoubleVector_swap(self, v)
 
+
     def begin(self):
+        """
+        begin(DoubleVector self) -> std::vector< double >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< double > *
+
+        """
         return _clipper.DoubleVector_begin(self)
 
+
     def end(self):
+        """
+        end(DoubleVector self) -> std::vector< double >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< double > *
+
+        """
         return _clipper.DoubleVector_end(self)
 
+
     def rbegin(self):
+        """
+        rbegin(DoubleVector self) -> std::vector< double >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< double > *
+
+        """
         return _clipper.DoubleVector_rbegin(self)
 
+
     def rend(self):
+        """
+        rend(DoubleVector self) -> std::vector< double >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< double > *
+
+        """
         return _clipper.DoubleVector_rend(self)
 
+
     def clear(self):
+        """
+        clear(DoubleVector self)
+
+        Parameters
+        ----------
+        self: std::vector< double > *
+
+        """
         return _clipper.DoubleVector_clear(self)
 
+
     def get_allocator(self):
+        """
+        get_allocator(DoubleVector self) -> std::vector< double >::allocator_type
+
+        Parameters
+        ----------
+        self: std::vector< double > const *
+
+        """
         return _clipper.DoubleVector_get_allocator(self)
 
+
     def pop_back(self):
+        """
+        pop_back(DoubleVector self)
+
+        Parameters
+        ----------
+        self: std::vector< double > *
+
+        """
         return _clipper.DoubleVector_pop_back(self)
 
+
     def erase(self, *args):
+        """
+        erase(DoubleVector self, std::vector< double >::iterator pos) -> std::vector< double >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< double >::iterator
+
+        erase(DoubleVector self, std::vector< double >::iterator first, std::vector< double >::iterator last) -> std::vector< double >::iterator
+
+        Parameters
+        ----------
+        first: std::vector< double >::iterator
+        last: std::vector< double >::iterator
+
+        """
         return _clipper.DoubleVector_erase(self, *args)
 
+
     def __init__(self, *args):
+        """
+        __init__(std::vector<(double)> self) -> DoubleVector
+        __init__(std::vector<(double)> self, DoubleVector arg2) -> DoubleVector
+
+        Parameters
+        ----------
+        arg2: std::vector< double > const &
+
+        __init__(std::vector<(double)> self, std::vector< double >::size_type size) -> DoubleVector
+
+        Parameters
+        ----------
+        size: std::vector< double >::size_type
+
+        __init__(std::vector<(double)> self, std::vector< double >::size_type size, std::vector< double >::value_type const & value) -> DoubleVector
+
+        Parameters
+        ----------
+        size: std::vector< double >::size_type
+        value: std::vector< double >::value_type const &
+
+        """
         this = _clipper.new_DoubleVector(*args)
         try:
             self.this.append(this)
@@ -478,34 +1481,125 @@ class DoubleVector(_object):
             self.this = this
 
     def push_back(self, x):
+        """
+        push_back(DoubleVector self, std::vector< double >::value_type const & x)
+
+        Parameters
+        ----------
+        x: std::vector< double >::value_type const &
+
+        """
         return _clipper.DoubleVector_push_back(self, x)
 
+
     def front(self):
+        """
+        front(DoubleVector self) -> std::vector< double >::value_type const &
+
+        Parameters
+        ----------
+        self: std::vector< double > const *
+
+        """
         return _clipper.DoubleVector_front(self)
 
+
     def back(self):
+        """
+        back(DoubleVector self) -> std::vector< double >::value_type const &
+
+        Parameters
+        ----------
+        self: std::vector< double > const *
+
+        """
         return _clipper.DoubleVector_back(self)
 
+
     def assign(self, n, x):
+        """
+        assign(DoubleVector self, std::vector< double >::size_type n, std::vector< double >::value_type const & x)
+
+        Parameters
+        ----------
+        n: std::vector< double >::size_type
+        x: std::vector< double >::value_type const &
+
+        """
         return _clipper.DoubleVector_assign(self, n, x)
 
+
     def resize(self, *args):
+        """
+        resize(DoubleVector self, std::vector< double >::size_type new_size)
+
+        Parameters
+        ----------
+        new_size: std::vector< double >::size_type
+
+        resize(DoubleVector self, std::vector< double >::size_type new_size, std::vector< double >::value_type const & x)
+
+        Parameters
+        ----------
+        new_size: std::vector< double >::size_type
+        x: std::vector< double >::value_type const &
+
+        """
         return _clipper.DoubleVector_resize(self, *args)
 
+
     def insert(self, *args):
+        """
+        insert(DoubleVector self, std::vector< double >::iterator pos, std::vector< double >::value_type const & x) -> std::vector< double >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< double >::iterator
+        x: std::vector< double >::value_type const &
+
+        insert(DoubleVector self, std::vector< double >::iterator pos, std::vector< double >::size_type n, std::vector< double >::value_type const & x)
+
+        Parameters
+        ----------
+        pos: std::vector< double >::iterator
+        n: std::vector< double >::size_type
+        x: std::vector< double >::value_type const &
+
+        """
         return _clipper.DoubleVector_insert(self, *args)
 
+
     def reserve(self, n):
+        """
+        reserve(DoubleVector self, std::vector< double >::size_type n)
+
+        Parameters
+        ----------
+        n: std::vector< double >::size_type
+
+        """
         return _clipper.DoubleVector_reserve(self, n)
 
+
     def capacity(self):
+        """
+        capacity(DoubleVector self) -> std::vector< double >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< double > const *
+
+        """
         return _clipper.DoubleVector_capacity(self)
+
     __swig_destroy__ = _clipper.delete_DoubleVector
     __del__ = lambda self: None
 DoubleVector_swigregister = _clipper.DoubleVector_swigregister
 DoubleVector_swigregister(DoubleVector)
 
 class IntIntVector(_object):
+    """Proxy of C++ std::vector<(std::vector<(int)>)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, IntIntVector, name, value)
     __swig_getmethods__ = {}
@@ -513,77 +1607,350 @@ class IntIntVector(_object):
     __repr__ = _swig_repr
 
     def iterator(self):
+        """
+        iterator(IntIntVector self) -> SwigPyIterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > *
+
+        """
         return _clipper.IntIntVector_iterator(self)
+
     def __iter__(self):
         return self.iterator()
 
     def __nonzero__(self):
+        """
+        __nonzero__(IntIntVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > const *
+
+        """
         return _clipper.IntIntVector___nonzero__(self)
 
+
     def __bool__(self):
+        """
+        __bool__(IntIntVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > const *
+
+        """
         return _clipper.IntIntVector___bool__(self)
 
+
     def __len__(self):
+        """
+        __len__(IntIntVector self) -> std::vector< std::vector< int > >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > const *
+
+        """
         return _clipper.IntIntVector___len__(self)
 
+
     def __getslice__(self, i, j):
+        """
+        __getslice__(IntIntVector self, std::vector< std::vector< int > >::difference_type i, std::vector< std::vector< int > >::difference_type j) -> IntIntVector
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< int > >::difference_type
+        j: std::vector< std::vector< int > >::difference_type
+
+        """
         return _clipper.IntIntVector___getslice__(self, i, j)
 
+
     def __setslice__(self, *args):
+        """
+        __setslice__(IntIntVector self, std::vector< std::vector< int > >::difference_type i, std::vector< std::vector< int > >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< int > >::difference_type
+        j: std::vector< std::vector< int > >::difference_type
+
+        __setslice__(IntIntVector self, std::vector< std::vector< int > >::difference_type i, std::vector< std::vector< int > >::difference_type j, IntIntVector v)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< int > >::difference_type
+        j: std::vector< std::vector< int > >::difference_type
+        v: std::vector< std::vector< int,std::allocator< int > >,std::allocator< std::vector< int,std::allocator< int > > > > const &
+
+        """
         return _clipper.IntIntVector___setslice__(self, *args)
 
+
     def __delslice__(self, i, j):
+        """
+        __delslice__(IntIntVector self, std::vector< std::vector< int > >::difference_type i, std::vector< std::vector< int > >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< int > >::difference_type
+        j: std::vector< std::vector< int > >::difference_type
+
+        """
         return _clipper.IntIntVector___delslice__(self, i, j)
 
+
     def __delitem__(self, *args):
+        """
+        __delitem__(IntIntVector self, std::vector< std::vector< int > >::difference_type i)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< int > >::difference_type
+
+        __delitem__(IntIntVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        """
         return _clipper.IntIntVector___delitem__(self, *args)
 
+
     def __getitem__(self, *args):
+        """
+        __getitem__(IntIntVector self, PySliceObject * slice) -> IntIntVector
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __getitem__(IntIntVector self, std::vector< std::vector< int > >::difference_type i) -> IntVector
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< int > >::difference_type
+
+        """
         return _clipper.IntIntVector___getitem__(self, *args)
 
+
     def __setitem__(self, *args):
+        """
+        __setitem__(IntIntVector self, PySliceObject * slice, IntIntVector v)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+        v: std::vector< std::vector< int,std::allocator< int > >,std::allocator< std::vector< int,std::allocator< int > > > > const &
+
+        __setitem__(IntIntVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __setitem__(IntIntVector self, std::vector< std::vector< int > >::difference_type i, IntVector x)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< int > >::difference_type
+        x: std::vector< std::vector< int > >::value_type const &
+
+        """
         return _clipper.IntIntVector___setitem__(self, *args)
 
+
     def pop(self):
+        """
+        pop(IntIntVector self) -> IntVector
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > *
+
+        """
         return _clipper.IntIntVector_pop(self)
 
+
     def append(self, x):
+        """
+        append(IntIntVector self, IntVector x)
+
+        Parameters
+        ----------
+        x: std::vector< std::vector< int > >::value_type const &
+
+        """
         return _clipper.IntIntVector_append(self, x)
 
+
     def empty(self):
+        """
+        empty(IntIntVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > const *
+
+        """
         return _clipper.IntIntVector_empty(self)
 
+
     def size(self):
+        """
+        size(IntIntVector self) -> std::vector< std::vector< int > >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > const *
+
+        """
         return _clipper.IntIntVector_size(self)
 
+
     def swap(self, v):
+        """
+        swap(IntIntVector self, IntIntVector v)
+
+        Parameters
+        ----------
+        v: std::vector< std::vector< int,std::allocator< int > > > &
+
+        """
         return _clipper.IntIntVector_swap(self, v)
 
+
     def begin(self):
+        """
+        begin(IntIntVector self) -> std::vector< std::vector< int > >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > *
+
+        """
         return _clipper.IntIntVector_begin(self)
 
+
     def end(self):
+        """
+        end(IntIntVector self) -> std::vector< std::vector< int > >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > *
+
+        """
         return _clipper.IntIntVector_end(self)
 
+
     def rbegin(self):
+        """
+        rbegin(IntIntVector self) -> std::vector< std::vector< int > >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > *
+
+        """
         return _clipper.IntIntVector_rbegin(self)
 
+
     def rend(self):
+        """
+        rend(IntIntVector self) -> std::vector< std::vector< int > >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > *
+
+        """
         return _clipper.IntIntVector_rend(self)
 
+
     def clear(self):
+        """
+        clear(IntIntVector self)
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > *
+
+        """
         return _clipper.IntIntVector_clear(self)
 
+
     def get_allocator(self):
+        """
+        get_allocator(IntIntVector self) -> std::vector< std::vector< int > >::allocator_type
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > const *
+
+        """
         return _clipper.IntIntVector_get_allocator(self)
 
+
     def pop_back(self):
+        """
+        pop_back(IntIntVector self)
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > *
+
+        """
         return _clipper.IntIntVector_pop_back(self)
 
+
     def erase(self, *args):
+        """
+        erase(IntIntVector self, std::vector< std::vector< int > >::iterator pos) -> std::vector< std::vector< int > >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< std::vector< int > >::iterator
+
+        erase(IntIntVector self, std::vector< std::vector< int > >::iterator first, std::vector< std::vector< int > >::iterator last) -> std::vector< std::vector< int > >::iterator
+
+        Parameters
+        ----------
+        first: std::vector< std::vector< int > >::iterator
+        last: std::vector< std::vector< int > >::iterator
+
+        """
         return _clipper.IntIntVector_erase(self, *args)
 
+
     def __init__(self, *args):
+        """
+        __init__(std::vector<(std::vector<(int)>)> self) -> IntIntVector
+        __init__(std::vector<(std::vector<(int)>)> self, IntIntVector arg2) -> IntIntVector
+
+        Parameters
+        ----------
+        arg2: std::vector< std::vector< int,std::allocator< int > > > const &
+
+        __init__(std::vector<(std::vector<(int)>)> self, std::vector< std::vector< int > >::size_type size) -> IntIntVector
+
+        Parameters
+        ----------
+        size: std::vector< std::vector< int > >::size_type
+
+        __init__(std::vector<(std::vector<(int)>)> self, std::vector< std::vector< int > >::size_type size, IntVector value) -> IntIntVector
+
+        Parameters
+        ----------
+        size: std::vector< std::vector< int > >::size_type
+        value: std::vector< std::vector< int > >::value_type const &
+
+        """
         this = _clipper.new_IntIntVector(*args)
         try:
             self.this.append(this)
@@ -591,34 +1958,125 @@ class IntIntVector(_object):
             self.this = this
 
     def push_back(self, x):
+        """
+        push_back(IntIntVector self, IntVector x)
+
+        Parameters
+        ----------
+        x: std::vector< std::vector< int > >::value_type const &
+
+        """
         return _clipper.IntIntVector_push_back(self, x)
 
+
     def front(self):
+        """
+        front(IntIntVector self) -> IntVector
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > const *
+
+        """
         return _clipper.IntIntVector_front(self)
 
+
     def back(self):
+        """
+        back(IntIntVector self) -> IntVector
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > const *
+
+        """
         return _clipper.IntIntVector_back(self)
 
+
     def assign(self, n, x):
+        """
+        assign(IntIntVector self, std::vector< std::vector< int > >::size_type n, IntVector x)
+
+        Parameters
+        ----------
+        n: std::vector< std::vector< int > >::size_type
+        x: std::vector< std::vector< int > >::value_type const &
+
+        """
         return _clipper.IntIntVector_assign(self, n, x)
 
+
     def resize(self, *args):
+        """
+        resize(IntIntVector self, std::vector< std::vector< int > >::size_type new_size)
+
+        Parameters
+        ----------
+        new_size: std::vector< std::vector< int > >::size_type
+
+        resize(IntIntVector self, std::vector< std::vector< int > >::size_type new_size, IntVector x)
+
+        Parameters
+        ----------
+        new_size: std::vector< std::vector< int > >::size_type
+        x: std::vector< std::vector< int > >::value_type const &
+
+        """
         return _clipper.IntIntVector_resize(self, *args)
 
+
     def insert(self, *args):
+        """
+        insert(IntIntVector self, std::vector< std::vector< int > >::iterator pos, IntVector x) -> std::vector< std::vector< int > >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< std::vector< int > >::iterator
+        x: std::vector< std::vector< int > >::value_type const &
+
+        insert(IntIntVector self, std::vector< std::vector< int > >::iterator pos, std::vector< std::vector< int > >::size_type n, IntVector x)
+
+        Parameters
+        ----------
+        pos: std::vector< std::vector< int > >::iterator
+        n: std::vector< std::vector< int > >::size_type
+        x: std::vector< std::vector< int > >::value_type const &
+
+        """
         return _clipper.IntIntVector_insert(self, *args)
 
+
     def reserve(self, n):
+        """
+        reserve(IntIntVector self, std::vector< std::vector< int > >::size_type n)
+
+        Parameters
+        ----------
+        n: std::vector< std::vector< int > >::size_type
+
+        """
         return _clipper.IntIntVector_reserve(self, n)
 
+
     def capacity(self):
+        """
+        capacity(IntIntVector self) -> std::vector< std::vector< int > >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< int > > const *
+
+        """
         return _clipper.IntIntVector_capacity(self)
+
     __swig_destroy__ = _clipper.delete_IntIntVector
     __del__ = lambda self: None
 IntIntVector_swigregister = _clipper.IntIntVector_swigregister
 IntIntVector_swigregister(IntIntVector)
 
 class FloatFloatVector(_object):
+    """Proxy of C++ std::vector<(std::vector<(float)>)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, FloatFloatVector, name, value)
     __swig_getmethods__ = {}
@@ -626,77 +2084,350 @@ class FloatFloatVector(_object):
     __repr__ = _swig_repr
 
     def iterator(self):
+        """
+        iterator(FloatFloatVector self) -> SwigPyIterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > *
+
+        """
         return _clipper.FloatFloatVector_iterator(self)
+
     def __iter__(self):
         return self.iterator()
 
     def __nonzero__(self):
+        """
+        __nonzero__(FloatFloatVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > const *
+
+        """
         return _clipper.FloatFloatVector___nonzero__(self)
 
+
     def __bool__(self):
+        """
+        __bool__(FloatFloatVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > const *
+
+        """
         return _clipper.FloatFloatVector___bool__(self)
 
+
     def __len__(self):
+        """
+        __len__(FloatFloatVector self) -> std::vector< std::vector< float > >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > const *
+
+        """
         return _clipper.FloatFloatVector___len__(self)
 
+
     def __getslice__(self, i, j):
+        """
+        __getslice__(FloatFloatVector self, std::vector< std::vector< float > >::difference_type i, std::vector< std::vector< float > >::difference_type j) -> FloatFloatVector
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< float > >::difference_type
+        j: std::vector< std::vector< float > >::difference_type
+
+        """
         return _clipper.FloatFloatVector___getslice__(self, i, j)
 
+
     def __setslice__(self, *args):
+        """
+        __setslice__(FloatFloatVector self, std::vector< std::vector< float > >::difference_type i, std::vector< std::vector< float > >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< float > >::difference_type
+        j: std::vector< std::vector< float > >::difference_type
+
+        __setslice__(FloatFloatVector self, std::vector< std::vector< float > >::difference_type i, std::vector< std::vector< float > >::difference_type j, FloatFloatVector v)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< float > >::difference_type
+        j: std::vector< std::vector< float > >::difference_type
+        v: std::vector< std::vector< float,std::allocator< float > >,std::allocator< std::vector< float,std::allocator< float > > > > const &
+
+        """
         return _clipper.FloatFloatVector___setslice__(self, *args)
 
+
     def __delslice__(self, i, j):
+        """
+        __delslice__(FloatFloatVector self, std::vector< std::vector< float > >::difference_type i, std::vector< std::vector< float > >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< float > >::difference_type
+        j: std::vector< std::vector< float > >::difference_type
+
+        """
         return _clipper.FloatFloatVector___delslice__(self, i, j)
 
+
     def __delitem__(self, *args):
+        """
+        __delitem__(FloatFloatVector self, std::vector< std::vector< float > >::difference_type i)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< float > >::difference_type
+
+        __delitem__(FloatFloatVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        """
         return _clipper.FloatFloatVector___delitem__(self, *args)
 
+
     def __getitem__(self, *args):
+        """
+        __getitem__(FloatFloatVector self, PySliceObject * slice) -> FloatFloatVector
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __getitem__(FloatFloatVector self, std::vector< std::vector< float > >::difference_type i) -> FloatVector
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< float > >::difference_type
+
+        """
         return _clipper.FloatFloatVector___getitem__(self, *args)
 
+
     def __setitem__(self, *args):
+        """
+        __setitem__(FloatFloatVector self, PySliceObject * slice, FloatFloatVector v)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+        v: std::vector< std::vector< float,std::allocator< float > >,std::allocator< std::vector< float,std::allocator< float > > > > const &
+
+        __setitem__(FloatFloatVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __setitem__(FloatFloatVector self, std::vector< std::vector< float > >::difference_type i, FloatVector x)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< float > >::difference_type
+        x: std::vector< std::vector< float > >::value_type const &
+
+        """
         return _clipper.FloatFloatVector___setitem__(self, *args)
 
+
     def pop(self):
+        """
+        pop(FloatFloatVector self) -> FloatVector
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > *
+
+        """
         return _clipper.FloatFloatVector_pop(self)
 
+
     def append(self, x):
+        """
+        append(FloatFloatVector self, FloatVector x)
+
+        Parameters
+        ----------
+        x: std::vector< std::vector< float > >::value_type const &
+
+        """
         return _clipper.FloatFloatVector_append(self, x)
 
+
     def empty(self):
+        """
+        empty(FloatFloatVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > const *
+
+        """
         return _clipper.FloatFloatVector_empty(self)
 
+
     def size(self):
+        """
+        size(FloatFloatVector self) -> std::vector< std::vector< float > >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > const *
+
+        """
         return _clipper.FloatFloatVector_size(self)
 
+
     def swap(self, v):
+        """
+        swap(FloatFloatVector self, FloatFloatVector v)
+
+        Parameters
+        ----------
+        v: std::vector< std::vector< float,std::allocator< float > > > &
+
+        """
         return _clipper.FloatFloatVector_swap(self, v)
 
+
     def begin(self):
+        """
+        begin(FloatFloatVector self) -> std::vector< std::vector< float > >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > *
+
+        """
         return _clipper.FloatFloatVector_begin(self)
 
+
     def end(self):
+        """
+        end(FloatFloatVector self) -> std::vector< std::vector< float > >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > *
+
+        """
         return _clipper.FloatFloatVector_end(self)
 
+
     def rbegin(self):
+        """
+        rbegin(FloatFloatVector self) -> std::vector< std::vector< float > >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > *
+
+        """
         return _clipper.FloatFloatVector_rbegin(self)
 
+
     def rend(self):
+        """
+        rend(FloatFloatVector self) -> std::vector< std::vector< float > >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > *
+
+        """
         return _clipper.FloatFloatVector_rend(self)
 
+
     def clear(self):
+        """
+        clear(FloatFloatVector self)
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > *
+
+        """
         return _clipper.FloatFloatVector_clear(self)
 
+
     def get_allocator(self):
+        """
+        get_allocator(FloatFloatVector self) -> std::vector< std::vector< float > >::allocator_type
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > const *
+
+        """
         return _clipper.FloatFloatVector_get_allocator(self)
 
+
     def pop_back(self):
+        """
+        pop_back(FloatFloatVector self)
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > *
+
+        """
         return _clipper.FloatFloatVector_pop_back(self)
 
+
     def erase(self, *args):
+        """
+        erase(FloatFloatVector self, std::vector< std::vector< float > >::iterator pos) -> std::vector< std::vector< float > >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< std::vector< float > >::iterator
+
+        erase(FloatFloatVector self, std::vector< std::vector< float > >::iterator first, std::vector< std::vector< float > >::iterator last) -> std::vector< std::vector< float > >::iterator
+
+        Parameters
+        ----------
+        first: std::vector< std::vector< float > >::iterator
+        last: std::vector< std::vector< float > >::iterator
+
+        """
         return _clipper.FloatFloatVector_erase(self, *args)
 
+
     def __init__(self, *args):
+        """
+        __init__(std::vector<(std::vector<(float)>)> self) -> FloatFloatVector
+        __init__(std::vector<(std::vector<(float)>)> self, FloatFloatVector arg2) -> FloatFloatVector
+
+        Parameters
+        ----------
+        arg2: std::vector< std::vector< float,std::allocator< float > > > const &
+
+        __init__(std::vector<(std::vector<(float)>)> self, std::vector< std::vector< float > >::size_type size) -> FloatFloatVector
+
+        Parameters
+        ----------
+        size: std::vector< std::vector< float > >::size_type
+
+        __init__(std::vector<(std::vector<(float)>)> self, std::vector< std::vector< float > >::size_type size, FloatVector value) -> FloatFloatVector
+
+        Parameters
+        ----------
+        size: std::vector< std::vector< float > >::size_type
+        value: std::vector< std::vector< float > >::value_type const &
+
+        """
         this = _clipper.new_FloatFloatVector(*args)
         try:
             self.this.append(this)
@@ -704,34 +2435,125 @@ class FloatFloatVector(_object):
             self.this = this
 
     def push_back(self, x):
+        """
+        push_back(FloatFloatVector self, FloatVector x)
+
+        Parameters
+        ----------
+        x: std::vector< std::vector< float > >::value_type const &
+
+        """
         return _clipper.FloatFloatVector_push_back(self, x)
 
+
     def front(self):
+        """
+        front(FloatFloatVector self) -> FloatVector
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > const *
+
+        """
         return _clipper.FloatFloatVector_front(self)
 
+
     def back(self):
+        """
+        back(FloatFloatVector self) -> FloatVector
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > const *
+
+        """
         return _clipper.FloatFloatVector_back(self)
 
+
     def assign(self, n, x):
+        """
+        assign(FloatFloatVector self, std::vector< std::vector< float > >::size_type n, FloatVector x)
+
+        Parameters
+        ----------
+        n: std::vector< std::vector< float > >::size_type
+        x: std::vector< std::vector< float > >::value_type const &
+
+        """
         return _clipper.FloatFloatVector_assign(self, n, x)
 
+
     def resize(self, *args):
+        """
+        resize(FloatFloatVector self, std::vector< std::vector< float > >::size_type new_size)
+
+        Parameters
+        ----------
+        new_size: std::vector< std::vector< float > >::size_type
+
+        resize(FloatFloatVector self, std::vector< std::vector< float > >::size_type new_size, FloatVector x)
+
+        Parameters
+        ----------
+        new_size: std::vector< std::vector< float > >::size_type
+        x: std::vector< std::vector< float > >::value_type const &
+
+        """
         return _clipper.FloatFloatVector_resize(self, *args)
 
+
     def insert(self, *args):
+        """
+        insert(FloatFloatVector self, std::vector< std::vector< float > >::iterator pos, FloatVector x) -> std::vector< std::vector< float > >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< std::vector< float > >::iterator
+        x: std::vector< std::vector< float > >::value_type const &
+
+        insert(FloatFloatVector self, std::vector< std::vector< float > >::iterator pos, std::vector< std::vector< float > >::size_type n, FloatVector x)
+
+        Parameters
+        ----------
+        pos: std::vector< std::vector< float > >::iterator
+        n: std::vector< std::vector< float > >::size_type
+        x: std::vector< std::vector< float > >::value_type const &
+
+        """
         return _clipper.FloatFloatVector_insert(self, *args)
 
+
     def reserve(self, n):
+        """
+        reserve(FloatFloatVector self, std::vector< std::vector< float > >::size_type n)
+
+        Parameters
+        ----------
+        n: std::vector< std::vector< float > >::size_type
+
+        """
         return _clipper.FloatFloatVector_reserve(self, n)
 
+
     def capacity(self):
+        """
+        capacity(FloatFloatVector self) -> std::vector< std::vector< float > >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< float > > const *
+
+        """
         return _clipper.FloatFloatVector_capacity(self)
+
     __swig_destroy__ = _clipper.delete_FloatFloatVector
     __del__ = lambda self: None
 FloatFloatVector_swigregister = _clipper.FloatFloatVector_swigregister
 FloatFloatVector_swigregister(FloatFloatVector)
 
 class DoubleDoubleVector(_object):
+    """Proxy of C++ std::vector<(std::vector<(double)>)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, DoubleDoubleVector, name, value)
     __swig_getmethods__ = {}
@@ -739,77 +2561,350 @@ class DoubleDoubleVector(_object):
     __repr__ = _swig_repr
 
     def iterator(self):
+        """
+        iterator(DoubleDoubleVector self) -> SwigPyIterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > *
+
+        """
         return _clipper.DoubleDoubleVector_iterator(self)
+
     def __iter__(self):
         return self.iterator()
 
     def __nonzero__(self):
+        """
+        __nonzero__(DoubleDoubleVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > const *
+
+        """
         return _clipper.DoubleDoubleVector___nonzero__(self)
 
+
     def __bool__(self):
+        """
+        __bool__(DoubleDoubleVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > const *
+
+        """
         return _clipper.DoubleDoubleVector___bool__(self)
 
+
     def __len__(self):
+        """
+        __len__(DoubleDoubleVector self) -> std::vector< std::vector< double > >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > const *
+
+        """
         return _clipper.DoubleDoubleVector___len__(self)
 
+
     def __getslice__(self, i, j):
+        """
+        __getslice__(DoubleDoubleVector self, std::vector< std::vector< double > >::difference_type i, std::vector< std::vector< double > >::difference_type j) -> DoubleDoubleVector
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< double > >::difference_type
+        j: std::vector< std::vector< double > >::difference_type
+
+        """
         return _clipper.DoubleDoubleVector___getslice__(self, i, j)
 
+
     def __setslice__(self, *args):
+        """
+        __setslice__(DoubleDoubleVector self, std::vector< std::vector< double > >::difference_type i, std::vector< std::vector< double > >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< double > >::difference_type
+        j: std::vector< std::vector< double > >::difference_type
+
+        __setslice__(DoubleDoubleVector self, std::vector< std::vector< double > >::difference_type i, std::vector< std::vector< double > >::difference_type j, DoubleDoubleVector v)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< double > >::difference_type
+        j: std::vector< std::vector< double > >::difference_type
+        v: std::vector< std::vector< double,std::allocator< double > >,std::allocator< std::vector< double,std::allocator< double > > > > const &
+
+        """
         return _clipper.DoubleDoubleVector___setslice__(self, *args)
 
+
     def __delslice__(self, i, j):
+        """
+        __delslice__(DoubleDoubleVector self, std::vector< std::vector< double > >::difference_type i, std::vector< std::vector< double > >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< double > >::difference_type
+        j: std::vector< std::vector< double > >::difference_type
+
+        """
         return _clipper.DoubleDoubleVector___delslice__(self, i, j)
 
+
     def __delitem__(self, *args):
+        """
+        __delitem__(DoubleDoubleVector self, std::vector< std::vector< double > >::difference_type i)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< double > >::difference_type
+
+        __delitem__(DoubleDoubleVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        """
         return _clipper.DoubleDoubleVector___delitem__(self, *args)
 
+
     def __getitem__(self, *args):
+        """
+        __getitem__(DoubleDoubleVector self, PySliceObject * slice) -> DoubleDoubleVector
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __getitem__(DoubleDoubleVector self, std::vector< std::vector< double > >::difference_type i) -> DoubleVector
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< double > >::difference_type
+
+        """
         return _clipper.DoubleDoubleVector___getitem__(self, *args)
 
+
     def __setitem__(self, *args):
+        """
+        __setitem__(DoubleDoubleVector self, PySliceObject * slice, DoubleDoubleVector v)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+        v: std::vector< std::vector< double,std::allocator< double > >,std::allocator< std::vector< double,std::allocator< double > > > > const &
+
+        __setitem__(DoubleDoubleVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __setitem__(DoubleDoubleVector self, std::vector< std::vector< double > >::difference_type i, DoubleVector x)
+
+        Parameters
+        ----------
+        i: std::vector< std::vector< double > >::difference_type
+        x: std::vector< std::vector< double > >::value_type const &
+
+        """
         return _clipper.DoubleDoubleVector___setitem__(self, *args)
 
+
     def pop(self):
+        """
+        pop(DoubleDoubleVector self) -> DoubleVector
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > *
+
+        """
         return _clipper.DoubleDoubleVector_pop(self)
 
+
     def append(self, x):
+        """
+        append(DoubleDoubleVector self, DoubleVector x)
+
+        Parameters
+        ----------
+        x: std::vector< std::vector< double > >::value_type const &
+
+        """
         return _clipper.DoubleDoubleVector_append(self, x)
 
+
     def empty(self):
+        """
+        empty(DoubleDoubleVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > const *
+
+        """
         return _clipper.DoubleDoubleVector_empty(self)
 
+
     def size(self):
+        """
+        size(DoubleDoubleVector self) -> std::vector< std::vector< double > >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > const *
+
+        """
         return _clipper.DoubleDoubleVector_size(self)
 
+
     def swap(self, v):
+        """
+        swap(DoubleDoubleVector self, DoubleDoubleVector v)
+
+        Parameters
+        ----------
+        v: std::vector< std::vector< double,std::allocator< double > > > &
+
+        """
         return _clipper.DoubleDoubleVector_swap(self, v)
 
+
     def begin(self):
+        """
+        begin(DoubleDoubleVector self) -> std::vector< std::vector< double > >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > *
+
+        """
         return _clipper.DoubleDoubleVector_begin(self)
 
+
     def end(self):
+        """
+        end(DoubleDoubleVector self) -> std::vector< std::vector< double > >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > *
+
+        """
         return _clipper.DoubleDoubleVector_end(self)
 
+
     def rbegin(self):
+        """
+        rbegin(DoubleDoubleVector self) -> std::vector< std::vector< double > >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > *
+
+        """
         return _clipper.DoubleDoubleVector_rbegin(self)
 
+
     def rend(self):
+        """
+        rend(DoubleDoubleVector self) -> std::vector< std::vector< double > >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > *
+
+        """
         return _clipper.DoubleDoubleVector_rend(self)
 
+
     def clear(self):
+        """
+        clear(DoubleDoubleVector self)
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > *
+
+        """
         return _clipper.DoubleDoubleVector_clear(self)
 
+
     def get_allocator(self):
+        """
+        get_allocator(DoubleDoubleVector self) -> std::vector< std::vector< double > >::allocator_type
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > const *
+
+        """
         return _clipper.DoubleDoubleVector_get_allocator(self)
 
+
     def pop_back(self):
+        """
+        pop_back(DoubleDoubleVector self)
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > *
+
+        """
         return _clipper.DoubleDoubleVector_pop_back(self)
 
+
     def erase(self, *args):
+        """
+        erase(DoubleDoubleVector self, std::vector< std::vector< double > >::iterator pos) -> std::vector< std::vector< double > >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< std::vector< double > >::iterator
+
+        erase(DoubleDoubleVector self, std::vector< std::vector< double > >::iterator first, std::vector< std::vector< double > >::iterator last) -> std::vector< std::vector< double > >::iterator
+
+        Parameters
+        ----------
+        first: std::vector< std::vector< double > >::iterator
+        last: std::vector< std::vector< double > >::iterator
+
+        """
         return _clipper.DoubleDoubleVector_erase(self, *args)
 
+
     def __init__(self, *args):
+        """
+        __init__(std::vector<(std::vector<(double)>)> self) -> DoubleDoubleVector
+        __init__(std::vector<(std::vector<(double)>)> self, DoubleDoubleVector arg2) -> DoubleDoubleVector
+
+        Parameters
+        ----------
+        arg2: std::vector< std::vector< double,std::allocator< double > > > const &
+
+        __init__(std::vector<(std::vector<(double)>)> self, std::vector< std::vector< double > >::size_type size) -> DoubleDoubleVector
+
+        Parameters
+        ----------
+        size: std::vector< std::vector< double > >::size_type
+
+        __init__(std::vector<(std::vector<(double)>)> self, std::vector< std::vector< double > >::size_type size, DoubleVector value) -> DoubleDoubleVector
+
+        Parameters
+        ----------
+        size: std::vector< std::vector< double > >::size_type
+        value: std::vector< std::vector< double > >::value_type const &
+
+        """
         this = _clipper.new_DoubleDoubleVector(*args)
         try:
             self.this.append(this)
@@ -817,54 +2912,213 @@ class DoubleDoubleVector(_object):
             self.this = this
 
     def push_back(self, x):
+        """
+        push_back(DoubleDoubleVector self, DoubleVector x)
+
+        Parameters
+        ----------
+        x: std::vector< std::vector< double > >::value_type const &
+
+        """
         return _clipper.DoubleDoubleVector_push_back(self, x)
 
+
     def front(self):
+        """
+        front(DoubleDoubleVector self) -> DoubleVector
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > const *
+
+        """
         return _clipper.DoubleDoubleVector_front(self)
 
+
     def back(self):
+        """
+        back(DoubleDoubleVector self) -> DoubleVector
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > const *
+
+        """
         return _clipper.DoubleDoubleVector_back(self)
 
+
     def assign(self, n, x):
+        """
+        assign(DoubleDoubleVector self, std::vector< std::vector< double > >::size_type n, DoubleVector x)
+
+        Parameters
+        ----------
+        n: std::vector< std::vector< double > >::size_type
+        x: std::vector< std::vector< double > >::value_type const &
+
+        """
         return _clipper.DoubleDoubleVector_assign(self, n, x)
 
+
     def resize(self, *args):
+        """
+        resize(DoubleDoubleVector self, std::vector< std::vector< double > >::size_type new_size)
+
+        Parameters
+        ----------
+        new_size: std::vector< std::vector< double > >::size_type
+
+        resize(DoubleDoubleVector self, std::vector< std::vector< double > >::size_type new_size, DoubleVector x)
+
+        Parameters
+        ----------
+        new_size: std::vector< std::vector< double > >::size_type
+        x: std::vector< std::vector< double > >::value_type const &
+
+        """
         return _clipper.DoubleDoubleVector_resize(self, *args)
 
+
     def insert(self, *args):
+        """
+        insert(DoubleDoubleVector self, std::vector< std::vector< double > >::iterator pos, DoubleVector x) -> std::vector< std::vector< double > >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< std::vector< double > >::iterator
+        x: std::vector< std::vector< double > >::value_type const &
+
+        insert(DoubleDoubleVector self, std::vector< std::vector< double > >::iterator pos, std::vector< std::vector< double > >::size_type n, DoubleVector x)
+
+        Parameters
+        ----------
+        pos: std::vector< std::vector< double > >::iterator
+        n: std::vector< std::vector< double > >::size_type
+        x: std::vector< std::vector< double > >::value_type const &
+
+        """
         return _clipper.DoubleDoubleVector_insert(self, *args)
 
+
     def reserve(self, n):
+        """
+        reserve(DoubleDoubleVector self, std::vector< std::vector< double > >::size_type n)
+
+        Parameters
+        ----------
+        n: std::vector< std::vector< double > >::size_type
+
+        """
         return _clipper.DoubleDoubleVector_reserve(self, n)
 
+
     def capacity(self):
+        """
+        capacity(DoubleDoubleVector self) -> std::vector< std::vector< double > >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< std::vector< double > > const *
+
+        """
         return _clipper.DoubleDoubleVector_capacity(self)
+
     __swig_destroy__ = _clipper.delete_DoubleDoubleVector
     __del__ = lambda self: None
 DoubleDoubleVector_swigregister = _clipper.DoubleDoubleVector_swigregister
 DoubleDoubleVector_swigregister(DoubleDoubleVector)
 
+class ClipperMessageStream(_object):
+    """Proxy of C++ clipper::ClipperMessageStream class."""
 
-def stdout_test():
-    return _clipper.stdout_test()
-stdout_test = _clipper.stdout_test
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, ClipperMessageStream, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, ClipperMessageStream, name)
+    __repr__ = _swig_repr
+
+    def __init__(self):
+        """__init__(clipper::ClipperMessageStream self) -> ClipperMessageStream"""
+        this = _clipper.new_ClipperMessageStream()
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+    __swig_destroy__ = _clipper.delete_ClipperMessageStream
+    __del__ = lambda self: None
+
+    def get_stream(self):
+        """
+        get_stream(ClipperMessageStream self) -> std::ostringstream &
+
+        Parameters
+        ----------
+        self: clipper::ClipperMessageStream *
+
+        """
+        return _clipper.ClipperMessageStream_get_stream(self)
+
+
+    def redirect_clipper_messages(self):
+        """
+        redirect_clipper_messages(ClipperMessageStream self) -> std::ostringstream &
+
+        Parameters
+        ----------
+        self: clipper::ClipperMessageStream *
+
+        """
+        return _clipper.ClipperMessageStream_redirect_clipper_messages(self)
+
+
+    def read_and_clear(self):
+        """
+        read_and_clear(ClipperMessageStream self) -> std::string
+
+        Parameters
+        ----------
+        self: clipper::ClipperMessageStream *
+
+        """
+        return _clipper.ClipperMessageStream_read_and_clear(self)
+
+
+    def clear(self):
+        """
+        clear(ClipperMessageStream self)
+
+        Parameters
+        ----------
+        self: clipper::ClipperMessageStream *
+
+        """
+        return _clipper.ClipperMessageStream_clear(self)
+
+ClipperMessageStream_swigregister = _clipper.ClipperMessageStream_swigregister
+ClipperMessageStream_swigregister(ClipperMessageStream)
+
 
 def warn_test():
+    """warn_test()"""
     return _clipper.warn_test()
-warn_test = _clipper.warn_test
 
-def send_messages_to_cout():
-    return _clipper.send_messages_to_cout()
-send_messages_to_cout = _clipper.send_messages_to_cout
-
-def send_messages_to_cerr():
-    return _clipper.send_messages_to_cerr()
-send_messages_to_cerr = _clipper.send_messages_to_cerr
+def except_test():
+    """except_test()"""
+    return _clipper.except_test()
 
 def ClipperStringAsString(a):
+    """
+    ClipperStringAsString(String a) -> std::string
+
+    Parameters
+    ----------
+    a: clipper::String const &
+
+    """
     return _clipper.ClipperStringAsString(a)
-ClipperStringAsString = _clipper.ClipperStringAsString
 class UnsignedIntVector(_object):
+    """Proxy of C++ std::vector<(unsigned int)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, UnsignedIntVector, name, value)
     __swig_getmethods__ = {}
@@ -872,77 +3126,350 @@ class UnsignedIntVector(_object):
     __repr__ = _swig_repr
 
     def iterator(self):
+        """
+        iterator(UnsignedIntVector self) -> SwigPyIterator
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > *
+
+        """
         return _clipper.UnsignedIntVector_iterator(self)
+
     def __iter__(self):
         return self.iterator()
 
     def __nonzero__(self):
+        """
+        __nonzero__(UnsignedIntVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > const *
+
+        """
         return _clipper.UnsignedIntVector___nonzero__(self)
 
+
     def __bool__(self):
+        """
+        __bool__(UnsignedIntVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > const *
+
+        """
         return _clipper.UnsignedIntVector___bool__(self)
 
+
     def __len__(self):
+        """
+        __len__(UnsignedIntVector self) -> std::vector< unsigned int >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > const *
+
+        """
         return _clipper.UnsignedIntVector___len__(self)
 
+
     def __getslice__(self, i, j):
+        """
+        __getslice__(UnsignedIntVector self, std::vector< unsigned int >::difference_type i, std::vector< unsigned int >::difference_type j) -> UnsignedIntVector
+
+        Parameters
+        ----------
+        i: std::vector< unsigned int >::difference_type
+        j: std::vector< unsigned int >::difference_type
+
+        """
         return _clipper.UnsignedIntVector___getslice__(self, i, j)
 
+
     def __setslice__(self, *args):
+        """
+        __setslice__(UnsignedIntVector self, std::vector< unsigned int >::difference_type i, std::vector< unsigned int >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< unsigned int >::difference_type
+        j: std::vector< unsigned int >::difference_type
+
+        __setslice__(UnsignedIntVector self, std::vector< unsigned int >::difference_type i, std::vector< unsigned int >::difference_type j, UnsignedIntVector v)
+
+        Parameters
+        ----------
+        i: std::vector< unsigned int >::difference_type
+        j: std::vector< unsigned int >::difference_type
+        v: std::vector< unsigned int,std::allocator< unsigned int > > const &
+
+        """
         return _clipper.UnsignedIntVector___setslice__(self, *args)
 
+
     def __delslice__(self, i, j):
+        """
+        __delslice__(UnsignedIntVector self, std::vector< unsigned int >::difference_type i, std::vector< unsigned int >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< unsigned int >::difference_type
+        j: std::vector< unsigned int >::difference_type
+
+        """
         return _clipper.UnsignedIntVector___delslice__(self, i, j)
 
+
     def __delitem__(self, *args):
+        """
+        __delitem__(UnsignedIntVector self, std::vector< unsigned int >::difference_type i)
+
+        Parameters
+        ----------
+        i: std::vector< unsigned int >::difference_type
+
+        __delitem__(UnsignedIntVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        """
         return _clipper.UnsignedIntVector___delitem__(self, *args)
 
+
     def __getitem__(self, *args):
+        """
+        __getitem__(UnsignedIntVector self, PySliceObject * slice) -> UnsignedIntVector
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __getitem__(UnsignedIntVector self, std::vector< unsigned int >::difference_type i) -> std::vector< unsigned int >::value_type const &
+
+        Parameters
+        ----------
+        i: std::vector< unsigned int >::difference_type
+
+        """
         return _clipper.UnsignedIntVector___getitem__(self, *args)
 
+
     def __setitem__(self, *args):
+        """
+        __setitem__(UnsignedIntVector self, PySliceObject * slice, UnsignedIntVector v)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+        v: std::vector< unsigned int,std::allocator< unsigned int > > const &
+
+        __setitem__(UnsignedIntVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __setitem__(UnsignedIntVector self, std::vector< unsigned int >::difference_type i, std::vector< unsigned int >::value_type const & x)
+
+        Parameters
+        ----------
+        i: std::vector< unsigned int >::difference_type
+        x: std::vector< unsigned int >::value_type const &
+
+        """
         return _clipper.UnsignedIntVector___setitem__(self, *args)
 
+
     def pop(self):
+        """
+        pop(UnsignedIntVector self) -> std::vector< unsigned int >::value_type
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > *
+
+        """
         return _clipper.UnsignedIntVector_pop(self)
 
+
     def append(self, x):
+        """
+        append(UnsignedIntVector self, std::vector< unsigned int >::value_type const & x)
+
+        Parameters
+        ----------
+        x: std::vector< unsigned int >::value_type const &
+
+        """
         return _clipper.UnsignedIntVector_append(self, x)
 
+
     def empty(self):
+        """
+        empty(UnsignedIntVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > const *
+
+        """
         return _clipper.UnsignedIntVector_empty(self)
 
+
     def size(self):
+        """
+        size(UnsignedIntVector self) -> std::vector< unsigned int >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > const *
+
+        """
         return _clipper.UnsignedIntVector_size(self)
 
+
     def swap(self, v):
+        """
+        swap(UnsignedIntVector self, UnsignedIntVector v)
+
+        Parameters
+        ----------
+        v: std::vector< unsigned int > &
+
+        """
         return _clipper.UnsignedIntVector_swap(self, v)
 
+
     def begin(self):
+        """
+        begin(UnsignedIntVector self) -> std::vector< unsigned int >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > *
+
+        """
         return _clipper.UnsignedIntVector_begin(self)
 
+
     def end(self):
+        """
+        end(UnsignedIntVector self) -> std::vector< unsigned int >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > *
+
+        """
         return _clipper.UnsignedIntVector_end(self)
 
+
     def rbegin(self):
+        """
+        rbegin(UnsignedIntVector self) -> std::vector< unsigned int >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > *
+
+        """
         return _clipper.UnsignedIntVector_rbegin(self)
 
+
     def rend(self):
+        """
+        rend(UnsignedIntVector self) -> std::vector< unsigned int >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > *
+
+        """
         return _clipper.UnsignedIntVector_rend(self)
 
+
     def clear(self):
+        """
+        clear(UnsignedIntVector self)
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > *
+
+        """
         return _clipper.UnsignedIntVector_clear(self)
 
+
     def get_allocator(self):
+        """
+        get_allocator(UnsignedIntVector self) -> std::vector< unsigned int >::allocator_type
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > const *
+
+        """
         return _clipper.UnsignedIntVector_get_allocator(self)
 
+
     def pop_back(self):
+        """
+        pop_back(UnsignedIntVector self)
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > *
+
+        """
         return _clipper.UnsignedIntVector_pop_back(self)
 
+
     def erase(self, *args):
+        """
+        erase(UnsignedIntVector self, std::vector< unsigned int >::iterator pos) -> std::vector< unsigned int >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< unsigned int >::iterator
+
+        erase(UnsignedIntVector self, std::vector< unsigned int >::iterator first, std::vector< unsigned int >::iterator last) -> std::vector< unsigned int >::iterator
+
+        Parameters
+        ----------
+        first: std::vector< unsigned int >::iterator
+        last: std::vector< unsigned int >::iterator
+
+        """
         return _clipper.UnsignedIntVector_erase(self, *args)
 
+
     def __init__(self, *args):
+        """
+        __init__(std::vector<(unsigned int)> self) -> UnsignedIntVector
+        __init__(std::vector<(unsigned int)> self, UnsignedIntVector arg2) -> UnsignedIntVector
+
+        Parameters
+        ----------
+        arg2: std::vector< unsigned int > const &
+
+        __init__(std::vector<(unsigned int)> self, std::vector< unsigned int >::size_type size) -> UnsignedIntVector
+
+        Parameters
+        ----------
+        size: std::vector< unsigned int >::size_type
+
+        __init__(std::vector<(unsigned int)> self, std::vector< unsigned int >::size_type size, std::vector< unsigned int >::value_type const & value) -> UnsignedIntVector
+
+        Parameters
+        ----------
+        size: std::vector< unsigned int >::size_type
+        value: std::vector< unsigned int >::value_type const &
+
+        """
         this = _clipper.new_UnsignedIntVector(*args)
         try:
             self.this.append(this)
@@ -950,35 +3477,125 @@ class UnsignedIntVector(_object):
             self.this = this
 
     def push_back(self, x):
+        """
+        push_back(UnsignedIntVector self, std::vector< unsigned int >::value_type const & x)
+
+        Parameters
+        ----------
+        x: std::vector< unsigned int >::value_type const &
+
+        """
         return _clipper.UnsignedIntVector_push_back(self, x)
 
+
     def front(self):
+        """
+        front(UnsignedIntVector self) -> std::vector< unsigned int >::value_type const &
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > const *
+
+        """
         return _clipper.UnsignedIntVector_front(self)
 
+
     def back(self):
+        """
+        back(UnsignedIntVector self) -> std::vector< unsigned int >::value_type const &
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > const *
+
+        """
         return _clipper.UnsignedIntVector_back(self)
 
+
     def assign(self, n, x):
+        """
+        assign(UnsignedIntVector self, std::vector< unsigned int >::size_type n, std::vector< unsigned int >::value_type const & x)
+
+        Parameters
+        ----------
+        n: std::vector< unsigned int >::size_type
+        x: std::vector< unsigned int >::value_type const &
+
+        """
         return _clipper.UnsignedIntVector_assign(self, n, x)
 
+
     def resize(self, *args):
+        """
+        resize(UnsignedIntVector self, std::vector< unsigned int >::size_type new_size)
+
+        Parameters
+        ----------
+        new_size: std::vector< unsigned int >::size_type
+
+        resize(UnsignedIntVector self, std::vector< unsigned int >::size_type new_size, std::vector< unsigned int >::value_type const & x)
+
+        Parameters
+        ----------
+        new_size: std::vector< unsigned int >::size_type
+        x: std::vector< unsigned int >::value_type const &
+
+        """
         return _clipper.UnsignedIntVector_resize(self, *args)
 
+
     def insert(self, *args):
+        """
+        insert(UnsignedIntVector self, std::vector< unsigned int >::iterator pos, std::vector< unsigned int >::value_type const & x) -> std::vector< unsigned int >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< unsigned int >::iterator
+        x: std::vector< unsigned int >::value_type const &
+
+        insert(UnsignedIntVector self, std::vector< unsigned int >::iterator pos, std::vector< unsigned int >::size_type n, std::vector< unsigned int >::value_type const & x)
+
+        Parameters
+        ----------
+        pos: std::vector< unsigned int >::iterator
+        n: std::vector< unsigned int >::size_type
+        x: std::vector< unsigned int >::value_type const &
+
+        """
         return _clipper.UnsignedIntVector_insert(self, *args)
 
+
     def reserve(self, n):
+        """
+        reserve(UnsignedIntVector self, std::vector< unsigned int >::size_type n)
+
+        Parameters
+        ----------
+        n: std::vector< unsigned int >::size_type
+
+        """
         return _clipper.UnsignedIntVector_reserve(self, n)
 
+
     def capacity(self):
+        """
+        capacity(UnsignedIntVector self) -> std::vector< unsigned int >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< unsigned int > const *
+
+        """
         return _clipper.UnsignedIntVector_capacity(self)
+
     __swig_destroy__ = _clipper.delete_UnsignedIntVector
     __del__ = lambda self: None
 UnsignedIntVector_swigregister = _clipper.UnsignedIntVector_swigregister
 UnsignedIntVector_swigregister(UnsignedIntVector)
-cvar = _clipper.cvar
 
 class ClipperStringVector(_object):
+    """Proxy of C++ std::vector<(clipper::String)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, ClipperStringVector, name, value)
     __swig_getmethods__ = {}
@@ -986,77 +3603,350 @@ class ClipperStringVector(_object):
     __repr__ = _swig_repr
 
     def iterator(self):
+        """
+        iterator(ClipperStringVector self) -> SwigPyIterator
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > *
+
+        """
         return _clipper.ClipperStringVector_iterator(self)
+
     def __iter__(self):
         return self.iterator()
 
     def __nonzero__(self):
+        """
+        __nonzero__(ClipperStringVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > const *
+
+        """
         return _clipper.ClipperStringVector___nonzero__(self)
 
+
     def __bool__(self):
+        """
+        __bool__(ClipperStringVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > const *
+
+        """
         return _clipper.ClipperStringVector___bool__(self)
 
+
     def __len__(self):
+        """
+        __len__(ClipperStringVector self) -> std::vector< clipper::String >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > const *
+
+        """
         return _clipper.ClipperStringVector___len__(self)
 
+
     def __getslice__(self, i, j):
+        """
+        __getslice__(ClipperStringVector self, std::vector< clipper::String >::difference_type i, std::vector< clipper::String >::difference_type j) -> ClipperStringVector
+
+        Parameters
+        ----------
+        i: std::vector< clipper::String >::difference_type
+        j: std::vector< clipper::String >::difference_type
+
+        """
         return _clipper.ClipperStringVector___getslice__(self, i, j)
 
+
     def __setslice__(self, *args):
+        """
+        __setslice__(ClipperStringVector self, std::vector< clipper::String >::difference_type i, std::vector< clipper::String >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< clipper::String >::difference_type
+        j: std::vector< clipper::String >::difference_type
+
+        __setslice__(ClipperStringVector self, std::vector< clipper::String >::difference_type i, std::vector< clipper::String >::difference_type j, ClipperStringVector v)
+
+        Parameters
+        ----------
+        i: std::vector< clipper::String >::difference_type
+        j: std::vector< clipper::String >::difference_type
+        v: std::vector< clipper::String,std::allocator< clipper::String > > const &
+
+        """
         return _clipper.ClipperStringVector___setslice__(self, *args)
 
+
     def __delslice__(self, i, j):
+        """
+        __delslice__(ClipperStringVector self, std::vector< clipper::String >::difference_type i, std::vector< clipper::String >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< clipper::String >::difference_type
+        j: std::vector< clipper::String >::difference_type
+
+        """
         return _clipper.ClipperStringVector___delslice__(self, i, j)
 
+
     def __delitem__(self, *args):
+        """
+        __delitem__(ClipperStringVector self, std::vector< clipper::String >::difference_type i)
+
+        Parameters
+        ----------
+        i: std::vector< clipper::String >::difference_type
+
+        __delitem__(ClipperStringVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        """
         return _clipper.ClipperStringVector___delitem__(self, *args)
 
+
     def __getitem__(self, *args):
+        """
+        __getitem__(ClipperStringVector self, PySliceObject * slice) -> ClipperStringVector
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __getitem__(ClipperStringVector self, std::vector< clipper::String >::difference_type i) -> String
+
+        Parameters
+        ----------
+        i: std::vector< clipper::String >::difference_type
+
+        """
         return _clipper.ClipperStringVector___getitem__(self, *args)
 
+
     def __setitem__(self, *args):
+        """
+        __setitem__(ClipperStringVector self, PySliceObject * slice, ClipperStringVector v)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+        v: std::vector< clipper::String,std::allocator< clipper::String > > const &
+
+        __setitem__(ClipperStringVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __setitem__(ClipperStringVector self, std::vector< clipper::String >::difference_type i, String x)
+
+        Parameters
+        ----------
+        i: std::vector< clipper::String >::difference_type
+        x: std::vector< clipper::String >::value_type const &
+
+        """
         return _clipper.ClipperStringVector___setitem__(self, *args)
 
+
     def pop(self):
+        """
+        pop(ClipperStringVector self) -> String
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > *
+
+        """
         return _clipper.ClipperStringVector_pop(self)
 
+
     def append(self, x):
+        """
+        append(ClipperStringVector self, String x)
+
+        Parameters
+        ----------
+        x: std::vector< clipper::String >::value_type const &
+
+        """
         return _clipper.ClipperStringVector_append(self, x)
 
+
     def empty(self):
+        """
+        empty(ClipperStringVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > const *
+
+        """
         return _clipper.ClipperStringVector_empty(self)
 
+
     def size(self):
+        """
+        size(ClipperStringVector self) -> std::vector< clipper::String >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > const *
+
+        """
         return _clipper.ClipperStringVector_size(self)
 
+
     def swap(self, v):
+        """
+        swap(ClipperStringVector self, ClipperStringVector v)
+
+        Parameters
+        ----------
+        v: std::vector< clipper::String > &
+
+        """
         return _clipper.ClipperStringVector_swap(self, v)
 
+
     def begin(self):
+        """
+        begin(ClipperStringVector self) -> std::vector< clipper::String >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > *
+
+        """
         return _clipper.ClipperStringVector_begin(self)
 
+
     def end(self):
+        """
+        end(ClipperStringVector self) -> std::vector< clipper::String >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > *
+
+        """
         return _clipper.ClipperStringVector_end(self)
 
+
     def rbegin(self):
+        """
+        rbegin(ClipperStringVector self) -> std::vector< clipper::String >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > *
+
+        """
         return _clipper.ClipperStringVector_rbegin(self)
 
+
     def rend(self):
+        """
+        rend(ClipperStringVector self) -> std::vector< clipper::String >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > *
+
+        """
         return _clipper.ClipperStringVector_rend(self)
 
+
     def clear(self):
+        """
+        clear(ClipperStringVector self)
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > *
+
+        """
         return _clipper.ClipperStringVector_clear(self)
 
+
     def get_allocator(self):
+        """
+        get_allocator(ClipperStringVector self) -> std::vector< clipper::String >::allocator_type
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > const *
+
+        """
         return _clipper.ClipperStringVector_get_allocator(self)
 
+
     def pop_back(self):
+        """
+        pop_back(ClipperStringVector self)
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > *
+
+        """
         return _clipper.ClipperStringVector_pop_back(self)
 
+
     def erase(self, *args):
+        """
+        erase(ClipperStringVector self, std::vector< clipper::String >::iterator pos) -> std::vector< clipper::String >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< clipper::String >::iterator
+
+        erase(ClipperStringVector self, std::vector< clipper::String >::iterator first, std::vector< clipper::String >::iterator last) -> std::vector< clipper::String >::iterator
+
+        Parameters
+        ----------
+        first: std::vector< clipper::String >::iterator
+        last: std::vector< clipper::String >::iterator
+
+        """
         return _clipper.ClipperStringVector_erase(self, *args)
 
+
     def __init__(self, *args):
+        """
+        __init__(std::vector<(clipper::String)> self) -> ClipperStringVector
+        __init__(std::vector<(clipper::String)> self, ClipperStringVector arg2) -> ClipperStringVector
+
+        Parameters
+        ----------
+        arg2: std::vector< clipper::String > const &
+
+        __init__(std::vector<(clipper::String)> self, std::vector< clipper::String >::size_type size) -> ClipperStringVector
+
+        Parameters
+        ----------
+        size: std::vector< clipper::String >::size_type
+
+        __init__(std::vector<(clipper::String)> self, std::vector< clipper::String >::size_type size, String value) -> ClipperStringVector
+
+        Parameters
+        ----------
+        size: std::vector< clipper::String >::size_type
+        value: std::vector< clipper::String >::value_type const &
+
+        """
         this = _clipper.new_ClipperStringVector(*args)
         try:
             self.this.append(this)
@@ -1064,34 +3954,125 @@ class ClipperStringVector(_object):
             self.this = this
 
     def push_back(self, x):
+        """
+        push_back(ClipperStringVector self, String x)
+
+        Parameters
+        ----------
+        x: std::vector< clipper::String >::value_type const &
+
+        """
         return _clipper.ClipperStringVector_push_back(self, x)
 
+
     def front(self):
+        """
+        front(ClipperStringVector self) -> String
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > const *
+
+        """
         return _clipper.ClipperStringVector_front(self)
 
+
     def back(self):
+        """
+        back(ClipperStringVector self) -> String
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > const *
+
+        """
         return _clipper.ClipperStringVector_back(self)
 
+
     def assign(self, n, x):
+        """
+        assign(ClipperStringVector self, std::vector< clipper::String >::size_type n, String x)
+
+        Parameters
+        ----------
+        n: std::vector< clipper::String >::size_type
+        x: std::vector< clipper::String >::value_type const &
+
+        """
         return _clipper.ClipperStringVector_assign(self, n, x)
 
+
     def resize(self, *args):
+        """
+        resize(ClipperStringVector self, std::vector< clipper::String >::size_type new_size)
+
+        Parameters
+        ----------
+        new_size: std::vector< clipper::String >::size_type
+
+        resize(ClipperStringVector self, std::vector< clipper::String >::size_type new_size, String x)
+
+        Parameters
+        ----------
+        new_size: std::vector< clipper::String >::size_type
+        x: std::vector< clipper::String >::value_type const &
+
+        """
         return _clipper.ClipperStringVector_resize(self, *args)
 
+
     def insert(self, *args):
+        """
+        insert(ClipperStringVector self, std::vector< clipper::String >::iterator pos, String x) -> std::vector< clipper::String >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< clipper::String >::iterator
+        x: std::vector< clipper::String >::value_type const &
+
+        insert(ClipperStringVector self, std::vector< clipper::String >::iterator pos, std::vector< clipper::String >::size_type n, String x)
+
+        Parameters
+        ----------
+        pos: std::vector< clipper::String >::iterator
+        n: std::vector< clipper::String >::size_type
+        x: std::vector< clipper::String >::value_type const &
+
+        """
         return _clipper.ClipperStringVector_insert(self, *args)
 
+
     def reserve(self, n):
+        """
+        reserve(ClipperStringVector self, std::vector< clipper::String >::size_type n)
+
+        Parameters
+        ----------
+        n: std::vector< clipper::String >::size_type
+
+        """
         return _clipper.ClipperStringVector_reserve(self, n)
 
+
     def capacity(self):
+        """
+        capacity(ClipperStringVector self) -> std::vector< clipper::String >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< clipper::String > const *
+
+        """
         return _clipper.ClipperStringVector_capacity(self)
+
     __swig_destroy__ = _clipper.delete_ClipperStringVector
     __del__ = lambda self: None
 ClipperStringVector_swigregister = _clipper.ClipperStringVector_swigregister
 ClipperStringVector_swigregister(ClipperStringVector)
 
 class HKLVector(_object):
+    """Proxy of C++ std::vector<(clipper::HKL)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, HKLVector, name, value)
     __swig_getmethods__ = {}
@@ -1099,77 +4080,350 @@ class HKLVector(_object):
     __repr__ = _swig_repr
 
     def iterator(self):
+        """
+        iterator(HKLVector self) -> SwigPyIterator
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > *
+
+        """
         return _clipper.HKLVector_iterator(self)
+
     def __iter__(self):
         return self.iterator()
 
     def __nonzero__(self):
+        """
+        __nonzero__(HKLVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > const *
+
+        """
         return _clipper.HKLVector___nonzero__(self)
 
+
     def __bool__(self):
+        """
+        __bool__(HKLVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > const *
+
+        """
         return _clipper.HKLVector___bool__(self)
 
+
     def __len__(self):
+        """
+        __len__(HKLVector self) -> std::vector< clipper::HKL >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > const *
+
+        """
         return _clipper.HKLVector___len__(self)
 
+
     def __getslice__(self, i, j):
+        """
+        __getslice__(HKLVector self, std::vector< clipper::HKL >::difference_type i, std::vector< clipper::HKL >::difference_type j) -> HKLVector
+
+        Parameters
+        ----------
+        i: std::vector< clipper::HKL >::difference_type
+        j: std::vector< clipper::HKL >::difference_type
+
+        """
         return _clipper.HKLVector___getslice__(self, i, j)
 
+
     def __setslice__(self, *args):
+        """
+        __setslice__(HKLVector self, std::vector< clipper::HKL >::difference_type i, std::vector< clipper::HKL >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< clipper::HKL >::difference_type
+        j: std::vector< clipper::HKL >::difference_type
+
+        __setslice__(HKLVector self, std::vector< clipper::HKL >::difference_type i, std::vector< clipper::HKL >::difference_type j, HKLVector v)
+
+        Parameters
+        ----------
+        i: std::vector< clipper::HKL >::difference_type
+        j: std::vector< clipper::HKL >::difference_type
+        v: std::vector< clipper::HKL,std::allocator< clipper::HKL > > const &
+
+        """
         return _clipper.HKLVector___setslice__(self, *args)
 
+
     def __delslice__(self, i, j):
+        """
+        __delslice__(HKLVector self, std::vector< clipper::HKL >::difference_type i, std::vector< clipper::HKL >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< clipper::HKL >::difference_type
+        j: std::vector< clipper::HKL >::difference_type
+
+        """
         return _clipper.HKLVector___delslice__(self, i, j)
 
+
     def __delitem__(self, *args):
+        """
+        __delitem__(HKLVector self, std::vector< clipper::HKL >::difference_type i)
+
+        Parameters
+        ----------
+        i: std::vector< clipper::HKL >::difference_type
+
+        __delitem__(HKLVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        """
         return _clipper.HKLVector___delitem__(self, *args)
 
+
     def __getitem__(self, *args):
+        """
+        __getitem__(HKLVector self, PySliceObject * slice) -> HKLVector
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __getitem__(HKLVector self, std::vector< clipper::HKL >::difference_type i) -> HKL
+
+        Parameters
+        ----------
+        i: std::vector< clipper::HKL >::difference_type
+
+        """
         return _clipper.HKLVector___getitem__(self, *args)
 
+
     def __setitem__(self, *args):
+        """
+        __setitem__(HKLVector self, PySliceObject * slice, HKLVector v)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+        v: std::vector< clipper::HKL,std::allocator< clipper::HKL > > const &
+
+        __setitem__(HKLVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __setitem__(HKLVector self, std::vector< clipper::HKL >::difference_type i, HKL x)
+
+        Parameters
+        ----------
+        i: std::vector< clipper::HKL >::difference_type
+        x: std::vector< clipper::HKL >::value_type const &
+
+        """
         return _clipper.HKLVector___setitem__(self, *args)
 
+
     def pop(self):
+        """
+        pop(HKLVector self) -> HKL
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > *
+
+        """
         return _clipper.HKLVector_pop(self)
 
+
     def append(self, x):
+        """
+        append(HKLVector self, HKL x)
+
+        Parameters
+        ----------
+        x: std::vector< clipper::HKL >::value_type const &
+
+        """
         return _clipper.HKLVector_append(self, x)
 
+
     def empty(self):
+        """
+        empty(HKLVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > const *
+
+        """
         return _clipper.HKLVector_empty(self)
 
+
     def size(self):
+        """
+        size(HKLVector self) -> std::vector< clipper::HKL >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > const *
+
+        """
         return _clipper.HKLVector_size(self)
 
+
     def swap(self, v):
+        """
+        swap(HKLVector self, HKLVector v)
+
+        Parameters
+        ----------
+        v: std::vector< clipper::HKL > &
+
+        """
         return _clipper.HKLVector_swap(self, v)
 
+
     def begin(self):
+        """
+        begin(HKLVector self) -> std::vector< clipper::HKL >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > *
+
+        """
         return _clipper.HKLVector_begin(self)
 
+
     def end(self):
+        """
+        end(HKLVector self) -> std::vector< clipper::HKL >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > *
+
+        """
         return _clipper.HKLVector_end(self)
 
+
     def rbegin(self):
+        """
+        rbegin(HKLVector self) -> std::vector< clipper::HKL >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > *
+
+        """
         return _clipper.HKLVector_rbegin(self)
 
+
     def rend(self):
+        """
+        rend(HKLVector self) -> std::vector< clipper::HKL >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > *
+
+        """
         return _clipper.HKLVector_rend(self)
 
+
     def clear(self):
+        """
+        clear(HKLVector self)
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > *
+
+        """
         return _clipper.HKLVector_clear(self)
 
+
     def get_allocator(self):
+        """
+        get_allocator(HKLVector self) -> std::vector< clipper::HKL >::allocator_type
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > const *
+
+        """
         return _clipper.HKLVector_get_allocator(self)
 
+
     def pop_back(self):
+        """
+        pop_back(HKLVector self)
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > *
+
+        """
         return _clipper.HKLVector_pop_back(self)
 
+
     def erase(self, *args):
+        """
+        erase(HKLVector self, std::vector< clipper::HKL >::iterator pos) -> std::vector< clipper::HKL >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< clipper::HKL >::iterator
+
+        erase(HKLVector self, std::vector< clipper::HKL >::iterator first, std::vector< clipper::HKL >::iterator last) -> std::vector< clipper::HKL >::iterator
+
+        Parameters
+        ----------
+        first: std::vector< clipper::HKL >::iterator
+        last: std::vector< clipper::HKL >::iterator
+
+        """
         return _clipper.HKLVector_erase(self, *args)
 
+
     def __init__(self, *args):
+        """
+        __init__(std::vector<(clipper::HKL)> self) -> HKLVector
+        __init__(std::vector<(clipper::HKL)> self, HKLVector arg2) -> HKLVector
+
+        Parameters
+        ----------
+        arg2: std::vector< clipper::HKL > const &
+
+        __init__(std::vector<(clipper::HKL)> self, std::vector< clipper::HKL >::size_type size) -> HKLVector
+
+        Parameters
+        ----------
+        size: std::vector< clipper::HKL >::size_type
+
+        __init__(std::vector<(clipper::HKL)> self, std::vector< clipper::HKL >::size_type size, HKL value) -> HKLVector
+
+        Parameters
+        ----------
+        size: std::vector< clipper::HKL >::size_type
+        value: std::vector< clipper::HKL >::value_type const &
+
+        """
         this = _clipper.new_HKLVector(*args)
         try:
             self.this.append(this)
@@ -1177,34 +4431,125 @@ class HKLVector(_object):
             self.this = this
 
     def push_back(self, x):
+        """
+        push_back(HKLVector self, HKL x)
+
+        Parameters
+        ----------
+        x: std::vector< clipper::HKL >::value_type const &
+
+        """
         return _clipper.HKLVector_push_back(self, x)
 
+
     def front(self):
+        """
+        front(HKLVector self) -> HKL
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > const *
+
+        """
         return _clipper.HKLVector_front(self)
 
+
     def back(self):
+        """
+        back(HKLVector self) -> HKL
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > const *
+
+        """
         return _clipper.HKLVector_back(self)
 
+
     def assign(self, n, x):
+        """
+        assign(HKLVector self, std::vector< clipper::HKL >::size_type n, HKL x)
+
+        Parameters
+        ----------
+        n: std::vector< clipper::HKL >::size_type
+        x: std::vector< clipper::HKL >::value_type const &
+
+        """
         return _clipper.HKLVector_assign(self, n, x)
 
+
     def resize(self, *args):
+        """
+        resize(HKLVector self, std::vector< clipper::HKL >::size_type new_size)
+
+        Parameters
+        ----------
+        new_size: std::vector< clipper::HKL >::size_type
+
+        resize(HKLVector self, std::vector< clipper::HKL >::size_type new_size, HKL x)
+
+        Parameters
+        ----------
+        new_size: std::vector< clipper::HKL >::size_type
+        x: std::vector< clipper::HKL >::value_type const &
+
+        """
         return _clipper.HKLVector_resize(self, *args)
 
+
     def insert(self, *args):
+        """
+        insert(HKLVector self, std::vector< clipper::HKL >::iterator pos, HKL x) -> std::vector< clipper::HKL >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< clipper::HKL >::iterator
+        x: std::vector< clipper::HKL >::value_type const &
+
+        insert(HKLVector self, std::vector< clipper::HKL >::iterator pos, std::vector< clipper::HKL >::size_type n, HKL x)
+
+        Parameters
+        ----------
+        pos: std::vector< clipper::HKL >::iterator
+        n: std::vector< clipper::HKL >::size_type
+        x: std::vector< clipper::HKL >::value_type const &
+
+        """
         return _clipper.HKLVector_insert(self, *args)
 
+
     def reserve(self, n):
+        """
+        reserve(HKLVector self, std::vector< clipper::HKL >::size_type n)
+
+        Parameters
+        ----------
+        n: std::vector< clipper::HKL >::size_type
+
+        """
         return _clipper.HKLVector_reserve(self, n)
 
+
     def capacity(self):
+        """
+        capacity(HKLVector self) -> std::vector< clipper::HKL >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< clipper::HKL > const *
+
+        """
         return _clipper.HKLVector_capacity(self)
+
     __swig_destroy__ = _clipper.delete_HKLVector
     __del__ = lambda self: None
 HKLVector_swigregister = _clipper.HKLVector_swigregister
 HKLVector_swigregister(HKLVector)
 
 class StringVector(_object):
+    """Proxy of C++ std::vector<(std::string)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, StringVector, name, value)
     __swig_getmethods__ = {}
@@ -1212,77 +4557,350 @@ class StringVector(_object):
     __repr__ = _swig_repr
 
     def iterator(self):
+        """
+        iterator(StringVector self) -> SwigPyIterator
+
+        Parameters
+        ----------
+        self: std::vector< std::string > *
+
+        """
         return _clipper.StringVector_iterator(self)
+
     def __iter__(self):
         return self.iterator()
 
     def __nonzero__(self):
+        """
+        __nonzero__(StringVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< std::string > const *
+
+        """
         return _clipper.StringVector___nonzero__(self)
 
+
     def __bool__(self):
+        """
+        __bool__(StringVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< std::string > const *
+
+        """
         return _clipper.StringVector___bool__(self)
 
+
     def __len__(self):
+        """
+        __len__(StringVector self) -> std::vector< std::string >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< std::string > const *
+
+        """
         return _clipper.StringVector___len__(self)
 
+
     def __getslice__(self, i, j):
+        """
+        __getslice__(StringVector self, std::vector< std::string >::difference_type i, std::vector< std::string >::difference_type j) -> StringVector
+
+        Parameters
+        ----------
+        i: std::vector< std::string >::difference_type
+        j: std::vector< std::string >::difference_type
+
+        """
         return _clipper.StringVector___getslice__(self, i, j)
 
+
     def __setslice__(self, *args):
+        """
+        __setslice__(StringVector self, std::vector< std::string >::difference_type i, std::vector< std::string >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< std::string >::difference_type
+        j: std::vector< std::string >::difference_type
+
+        __setslice__(StringVector self, std::vector< std::string >::difference_type i, std::vector< std::string >::difference_type j, StringVector v)
+
+        Parameters
+        ----------
+        i: std::vector< std::string >::difference_type
+        j: std::vector< std::string >::difference_type
+        v: std::vector< std::string,std::allocator< std::string > > const &
+
+        """
         return _clipper.StringVector___setslice__(self, *args)
 
+
     def __delslice__(self, i, j):
+        """
+        __delslice__(StringVector self, std::vector< std::string >::difference_type i, std::vector< std::string >::difference_type j)
+
+        Parameters
+        ----------
+        i: std::vector< std::string >::difference_type
+        j: std::vector< std::string >::difference_type
+
+        """
         return _clipper.StringVector___delslice__(self, i, j)
 
+
     def __delitem__(self, *args):
+        """
+        __delitem__(StringVector self, std::vector< std::string >::difference_type i)
+
+        Parameters
+        ----------
+        i: std::vector< std::string >::difference_type
+
+        __delitem__(StringVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        """
         return _clipper.StringVector___delitem__(self, *args)
 
+
     def __getitem__(self, *args):
+        """
+        __getitem__(StringVector self, PySliceObject * slice) -> StringVector
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __getitem__(StringVector self, std::vector< std::string >::difference_type i) -> std::vector< std::string >::value_type const &
+
+        Parameters
+        ----------
+        i: std::vector< std::string >::difference_type
+
+        """
         return _clipper.StringVector___getitem__(self, *args)
 
+
     def __setitem__(self, *args):
+        """
+        __setitem__(StringVector self, PySliceObject * slice, StringVector v)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+        v: std::vector< std::string,std::allocator< std::string > > const &
+
+        __setitem__(StringVector self, PySliceObject * slice)
+
+        Parameters
+        ----------
+        slice: PySliceObject *
+
+        __setitem__(StringVector self, std::vector< std::string >::difference_type i, std::vector< std::string >::value_type const & x)
+
+        Parameters
+        ----------
+        i: std::vector< std::string >::difference_type
+        x: std::vector< std::string >::value_type const &
+
+        """
         return _clipper.StringVector___setitem__(self, *args)
 
+
     def pop(self):
+        """
+        pop(StringVector self) -> std::vector< std::string >::value_type
+
+        Parameters
+        ----------
+        self: std::vector< std::string > *
+
+        """
         return _clipper.StringVector_pop(self)
 
+
     def append(self, x):
+        """
+        append(StringVector self, std::vector< std::string >::value_type const & x)
+
+        Parameters
+        ----------
+        x: std::vector< std::string >::value_type const &
+
+        """
         return _clipper.StringVector_append(self, x)
 
+
     def empty(self):
+        """
+        empty(StringVector self) -> bool
+
+        Parameters
+        ----------
+        self: std::vector< std::string > const *
+
+        """
         return _clipper.StringVector_empty(self)
 
+
     def size(self):
+        """
+        size(StringVector self) -> std::vector< std::string >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< std::string > const *
+
+        """
         return _clipper.StringVector_size(self)
 
+
     def swap(self, v):
+        """
+        swap(StringVector self, StringVector v)
+
+        Parameters
+        ----------
+        v: std::vector< std::string > &
+
+        """
         return _clipper.StringVector_swap(self, v)
 
+
     def begin(self):
+        """
+        begin(StringVector self) -> std::vector< std::string >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::string > *
+
+        """
         return _clipper.StringVector_begin(self)
 
+
     def end(self):
+        """
+        end(StringVector self) -> std::vector< std::string >::iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::string > *
+
+        """
         return _clipper.StringVector_end(self)
 
+
     def rbegin(self):
+        """
+        rbegin(StringVector self) -> std::vector< std::string >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::string > *
+
+        """
         return _clipper.StringVector_rbegin(self)
 
+
     def rend(self):
+        """
+        rend(StringVector self) -> std::vector< std::string >::reverse_iterator
+
+        Parameters
+        ----------
+        self: std::vector< std::string > *
+
+        """
         return _clipper.StringVector_rend(self)
 
+
     def clear(self):
+        """
+        clear(StringVector self)
+
+        Parameters
+        ----------
+        self: std::vector< std::string > *
+
+        """
         return _clipper.StringVector_clear(self)
 
+
     def get_allocator(self):
+        """
+        get_allocator(StringVector self) -> std::vector< std::string >::allocator_type
+
+        Parameters
+        ----------
+        self: std::vector< std::string > const *
+
+        """
         return _clipper.StringVector_get_allocator(self)
 
+
     def pop_back(self):
+        """
+        pop_back(StringVector self)
+
+        Parameters
+        ----------
+        self: std::vector< std::string > *
+
+        """
         return _clipper.StringVector_pop_back(self)
 
+
     def erase(self, *args):
+        """
+        erase(StringVector self, std::vector< std::string >::iterator pos) -> std::vector< std::string >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< std::string >::iterator
+
+        erase(StringVector self, std::vector< std::string >::iterator first, std::vector< std::string >::iterator last) -> std::vector< std::string >::iterator
+
+        Parameters
+        ----------
+        first: std::vector< std::string >::iterator
+        last: std::vector< std::string >::iterator
+
+        """
         return _clipper.StringVector_erase(self, *args)
 
+
     def __init__(self, *args):
+        """
+        __init__(std::vector<(std::string)> self) -> StringVector
+        __init__(std::vector<(std::string)> self, StringVector arg2) -> StringVector
+
+        Parameters
+        ----------
+        arg2: std::vector< std::string > const &
+
+        __init__(std::vector<(std::string)> self, std::vector< std::string >::size_type size) -> StringVector
+
+        Parameters
+        ----------
+        size: std::vector< std::string >::size_type
+
+        __init__(std::vector<(std::string)> self, std::vector< std::string >::size_type size, std::vector< std::string >::value_type const & value) -> StringVector
+
+        Parameters
+        ----------
+        size: std::vector< std::string >::size_type
+        value: std::vector< std::string >::value_type const &
+
+        """
         this = _clipper.new_StringVector(*args)
         try:
             self.this.append(this)
@@ -1290,34 +4908,125 @@ class StringVector(_object):
             self.this = this
 
     def push_back(self, x):
+        """
+        push_back(StringVector self, std::vector< std::string >::value_type const & x)
+
+        Parameters
+        ----------
+        x: std::vector< std::string >::value_type const &
+
+        """
         return _clipper.StringVector_push_back(self, x)
 
+
     def front(self):
+        """
+        front(StringVector self) -> std::vector< std::string >::value_type const &
+
+        Parameters
+        ----------
+        self: std::vector< std::string > const *
+
+        """
         return _clipper.StringVector_front(self)
 
+
     def back(self):
+        """
+        back(StringVector self) -> std::vector< std::string >::value_type const &
+
+        Parameters
+        ----------
+        self: std::vector< std::string > const *
+
+        """
         return _clipper.StringVector_back(self)
 
+
     def assign(self, n, x):
+        """
+        assign(StringVector self, std::vector< std::string >::size_type n, std::vector< std::string >::value_type const & x)
+
+        Parameters
+        ----------
+        n: std::vector< std::string >::size_type
+        x: std::vector< std::string >::value_type const &
+
+        """
         return _clipper.StringVector_assign(self, n, x)
 
+
     def resize(self, *args):
+        """
+        resize(StringVector self, std::vector< std::string >::size_type new_size)
+
+        Parameters
+        ----------
+        new_size: std::vector< std::string >::size_type
+
+        resize(StringVector self, std::vector< std::string >::size_type new_size, std::vector< std::string >::value_type const & x)
+
+        Parameters
+        ----------
+        new_size: std::vector< std::string >::size_type
+        x: std::vector< std::string >::value_type const &
+
+        """
         return _clipper.StringVector_resize(self, *args)
 
+
     def insert(self, *args):
+        """
+        insert(StringVector self, std::vector< std::string >::iterator pos, std::vector< std::string >::value_type const & x) -> std::vector< std::string >::iterator
+
+        Parameters
+        ----------
+        pos: std::vector< std::string >::iterator
+        x: std::vector< std::string >::value_type const &
+
+        insert(StringVector self, std::vector< std::string >::iterator pos, std::vector< std::string >::size_type n, std::vector< std::string >::value_type const & x)
+
+        Parameters
+        ----------
+        pos: std::vector< std::string >::iterator
+        n: std::vector< std::string >::size_type
+        x: std::vector< std::string >::value_type const &
+
+        """
         return _clipper.StringVector_insert(self, *args)
 
+
     def reserve(self, n):
+        """
+        reserve(StringVector self, std::vector< std::string >::size_type n)
+
+        Parameters
+        ----------
+        n: std::vector< std::string >::size_type
+
+        """
         return _clipper.StringVector_reserve(self, n)
 
+
     def capacity(self):
+        """
+        capacity(StringVector self) -> std::vector< std::string >::size_type
+
+        Parameters
+        ----------
+        self: std::vector< std::string > const *
+
+        """
         return _clipper.StringVector_capacity(self)
+
     __swig_destroy__ = _clipper.delete_StringVector
     __del__ = lambda self: None
 StringVector_swigregister = _clipper.StringVector_swigregister
 StringVector_swigregister(StringVector)
 
 class Util(_object):
+    """Proxy of C++ clipper::Util class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Util, name, value)
     __swig_getmethods__ = {}
@@ -1325,225 +5034,610 @@ class Util(_object):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::Util self) -> Util"""
         this = _clipper.new_Util()
         try:
             self.this.append(this)
         except __builtin__.Exception:
             self.this = this
-    if _newclass:
-        nan = staticmethod(_clipper.Util_nan)
-    else:
-        nan = _clipper.Util_nan
-    if _newclass:
-        nanf = staticmethod(_clipper.Util_nanf)
-    else:
-        nanf = _clipper.Util_nanf
-    if _newclass:
-        nand = staticmethod(_clipper.Util_nand)
-    else:
-        nand = _clipper.Util_nand
-    if _newclass:
-        set_null = staticmethod(_clipper.Util_set_null)
-    else:
-        set_null = _clipper.Util_set_null
-    if _newclass:
-        is_null = staticmethod(_clipper.Util_is_null)
-    else:
-        is_null = _clipper.Util_is_null
-    if _newclass:
-        is_nan = staticmethod(_clipper.Util_is_nan)
-    else:
-        is_nan = _clipper.Util_is_nan
-    if _newclass:
-        isnan = staticmethod(_clipper.Util_isnan)
-    else:
-        isnan = _clipper.Util_isnan
-    if _newclass:
-        sim = staticmethod(_clipper.Util_sim)
-    else:
-        sim = _clipper.Util_sim
-    if _newclass:
-        invsim = staticmethod(_clipper.Util_invsim)
-    else:
-        invsim = _clipper.Util_invsim
-    if _newclass:
-        sim_integ = staticmethod(_clipper.Util_sim_integ)
-    else:
-        sim_integ = _clipper.Util_sim_integ
-    if _newclass:
-        sim_deriv = staticmethod(_clipper.Util_sim_deriv)
-    else:
-        sim_deriv = _clipper.Util_sim_deriv
-    if _newclass:
-        sim_deriv_recur = staticmethod(_clipper.Util_sim_deriv_recur)
-    else:
-        sim_deriv_recur = _clipper.Util_sim_deriv_recur
-    if _newclass:
-        atanh = staticmethod(_clipper.Util_atanh)
-    else:
-        atanh = _clipper.Util_atanh
-    if _newclass:
-        bessel_i0 = staticmethod(_clipper.Util_bessel_i0)
-    else:
-        bessel_i0 = _clipper.Util_bessel_i0
-    if _newclass:
-        u2b = staticmethod(_clipper.Util_u2b)
-    else:
-        u2b = _clipper.Util_u2b
-    if _newclass:
-        b2u = staticmethod(_clipper.Util_b2u)
-    else:
-        b2u = _clipper.Util_b2u
-    if _newclass:
-        intf = staticmethod(_clipper.Util_intf)
-    else:
-        intf = _clipper.Util_intf
-    if _newclass:
-        intc = staticmethod(_clipper.Util_intc)
-    else:
-        intc = _clipper.Util_intc
-    if _newclass:
-        intr = staticmethod(_clipper.Util_intr)
-    else:
-        intr = _clipper.Util_intr
-    if _newclass:
-        mod = staticmethod(_clipper.Util_mod)
-    else:
-        mod = _clipper.Util_mod
-    if _newclass:
-        pi = staticmethod(_clipper.Util_pi)
-    else:
-        pi = _clipper.Util_pi
-    if _newclass:
-        twopi = staticmethod(_clipper.Util_twopi)
-    else:
-        twopi = _clipper.Util_twopi
-    if _newclass:
-        twopi2 = staticmethod(_clipper.Util_twopi2)
-    else:
-        twopi2 = _clipper.Util_twopi2
-    if _newclass:
-        eightpi2 = staticmethod(_clipper.Util_eightpi2)
-    else:
-        eightpi2 = _clipper.Util_eightpi2
-    if _newclass:
-        d2rad = staticmethod(_clipper.Util_d2rad)
-    else:
-        d2rad = _clipper.Util_d2rad
-    if _newclass:
-        rad2d = staticmethod(_clipper.Util_rad2d)
-    else:
-        rad2d = _clipper.Util_rad2d
+
+    def nan():
+        """nan() -> clipper::ftype const &"""
+        return _clipper.Util_nan()
+
+    nan = staticmethod(nan)
+
+    def nanf():
+        """nanf() -> float const &"""
+        return _clipper.Util_nanf()
+
+    nanf = staticmethod(nanf)
+
+    def nand():
+        """nand() -> double const &"""
+        return _clipper.Util_nand()
+
+    nand = staticmethod(nand)
+
+    def set_null(*args):
+        """
+        set_null(clipper::ftype32 & f)
+
+        Parameters
+        ----------
+        f: clipper::ftype32 &
+
+        set_null(clipper::ftype64 & f)
+
+        Parameters
+        ----------
+        f: clipper::ftype64 &
+
+        """
+        return _clipper.Util_set_null(*args)
+
+    set_null = staticmethod(set_null)
+
+    def is_null(*args):
+        """
+        is_null(clipper::ftype32 const & f) -> bool
+
+        Parameters
+        ----------
+        f: clipper::ftype32 const &
+
+        is_null(clipper::ftype64 const & f) -> bool
+
+        Parameters
+        ----------
+        f: clipper::ftype64 const &
+
+        """
+        return _clipper.Util_is_null(*args)
+
+    is_null = staticmethod(is_null)
+
+    def is_nan(*args):
+        """
+        is_nan(clipper::ftype32 const f) -> bool
+
+        Parameters
+        ----------
+        f: clipper::ftype32 const
+
+        is_nan(clipper::ftype64 const f) -> bool
+
+        Parameters
+        ----------
+        f: clipper::ftype64 const
+
+        """
+        return _clipper.Util_is_nan(*args)
+
+    is_nan = staticmethod(is_nan)
+
+    def isnan(*args):
+        """
+        isnan(clipper::ftype32 const f) -> bool
+
+        Parameters
+        ----------
+        f: clipper::ftype32 const
+
+        isnan(clipper::ftype64 const f) -> bool
+
+        Parameters
+        ----------
+        f: clipper::ftype64 const
+
+        """
+        return _clipper.Util_isnan(*args)
+
+    isnan = staticmethod(isnan)
+
+    def sim(x):
+        """
+        sim(clipper::ftype const & x) -> clipper::ftype
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
+        return _clipper.Util_sim(x)
+
+    sim = staticmethod(sim)
+
+    def invsim(x):
+        """
+        invsim(clipper::ftype const & x) -> clipper::ftype
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
+        return _clipper.Util_invsim(x)
+
+    invsim = staticmethod(invsim)
+
+    def sim_integ(x):
+        """
+        sim_integ(clipper::ftype const & x) -> clipper::ftype
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
+        return _clipper.Util_sim_integ(x)
+
+    sim_integ = staticmethod(sim_integ)
+
+    def sim_deriv(x):
+        """
+        sim_deriv(clipper::ftype const & x) -> clipper::ftype
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
+        return _clipper.Util_sim_deriv(x)
+
+    sim_deriv = staticmethod(sim_deriv)
+
+    def sim_deriv_recur(x):
+        """
+        sim_deriv_recur(clipper::ftype const & x) -> clipper::ftype
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
+        return _clipper.Util_sim_deriv_recur(x)
+
+    sim_deriv_recur = staticmethod(sim_deriv_recur)
+
+    def atanh(x):
+        """
+        atanh(clipper::ftype const & x) -> clipper::ftype
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
+        return _clipper.Util_atanh(x)
+
+    atanh = staticmethod(atanh)
+
+    def bessel_i0(x):
+        """
+        bessel_i0(clipper::ftype const & x) -> clipper::ftype
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
+        return _clipper.Util_bessel_i0(x)
+
+    bessel_i0 = staticmethod(bessel_i0)
+
+    def u2b(x):
+        """
+        u2b(clipper::ftype const & x) -> clipper::ftype
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
+        return _clipper.Util_u2b(x)
+
+    u2b = staticmethod(u2b)
+
+    def b2u(x):
+        """
+        b2u(clipper::ftype const & x) -> clipper::ftype
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
+        return _clipper.Util_b2u(x)
+
+    b2u = staticmethod(b2u)
+
+    def intf(a):
+        """
+        intf(clipper::ftype const & a) -> int
+
+        Parameters
+        ----------
+        a: clipper::ftype const &
+
+        """
+        return _clipper.Util_intf(a)
+
+    intf = staticmethod(intf)
+
+    def intc(a):
+        """
+        intc(clipper::ftype const & a) -> int
+
+        Parameters
+        ----------
+        a: clipper::ftype const &
+
+        """
+        return _clipper.Util_intc(a)
+
+    intc = staticmethod(intc)
+
+    def intr(a):
+        """
+        intr(clipper::ftype const & a) -> int
+
+        Parameters
+        ----------
+        a: clipper::ftype const &
+
+        """
+        return _clipper.Util_intr(a)
+
+    intr = staticmethod(intr)
+
+    def mod(*args):
+        """
+        mod(clipper::ftype const & a, clipper::ftype const & b) -> clipper::ftype
+
+        Parameters
+        ----------
+        a: clipper::ftype const &
+        b: clipper::ftype const &
+
+        mod(int const & a, int const & b) -> int
+
+        Parameters
+        ----------
+        a: int const &
+        b: int const &
+
+        """
+        return _clipper.Util_mod(*args)
+
+    mod = staticmethod(mod)
+
+    def pi():
+        """pi() -> clipper::ftype const &"""
+        return _clipper.Util_pi()
+
+    pi = staticmethod(pi)
+
+    def twopi():
+        """twopi() -> clipper::ftype const &"""
+        return _clipper.Util_twopi()
+
+    twopi = staticmethod(twopi)
+
+    def twopi2():
+        """twopi2() -> clipper::ftype const &"""
+        return _clipper.Util_twopi2()
+
+    twopi2 = staticmethod(twopi2)
+
+    def eightpi2():
+        """eightpi2() -> clipper::ftype const &"""
+        return _clipper.Util_eightpi2()
+
+    eightpi2 = staticmethod(eightpi2)
+
+    def d2rad(x):
+        """
+        d2rad(clipper::ftype const & x) -> clipper::ftype
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
+        return _clipper.Util_d2rad(x)
+
+    d2rad = staticmethod(d2rad)
+
+    def rad2d(x):
+        """
+        rad2d(clipper::ftype const & x) -> clipper::ftype
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
+        return _clipper.Util_rad2d(x)
+
+    rad2d = staticmethod(rad2d)
     __swig_destroy__ = _clipper.delete_Util
     __del__ = lambda self: None
 Util_swigregister = _clipper.Util_swigregister
 Util_swigregister(Util)
 
 def Util_nan():
+    """Util_nan() -> clipper::ftype const &"""
     return _clipper.Util_nan()
-Util_nan = _clipper.Util_nan
 
 def Util_nanf():
+    """Util_nanf() -> float const &"""
     return _clipper.Util_nanf()
-Util_nanf = _clipper.Util_nanf
 
 def Util_nand():
+    """Util_nand() -> double const &"""
     return _clipper.Util_nand()
-Util_nand = _clipper.Util_nand
 
 def Util_set_null(*args):
+    """
+    set_null(clipper::ftype32 & f)
+
+    Parameters
+    ----------
+    f: clipper::ftype32 &
+
+    Util_set_null(clipper::ftype64 & f)
+
+    Parameters
+    ----------
+    f: clipper::ftype64 &
+
+    """
     return _clipper.Util_set_null(*args)
-Util_set_null = _clipper.Util_set_null
 
 def Util_is_null(*args):
+    """
+    is_null(clipper::ftype32 const & f) -> bool
+
+    Parameters
+    ----------
+    f: clipper::ftype32 const &
+
+    Util_is_null(clipper::ftype64 const & f) -> bool
+
+    Parameters
+    ----------
+    f: clipper::ftype64 const &
+
+    """
     return _clipper.Util_is_null(*args)
-Util_is_null = _clipper.Util_is_null
 
 def Util_is_nan(*args):
+    """
+    is_nan(clipper::ftype32 const f) -> bool
+
+    Parameters
+    ----------
+    f: clipper::ftype32 const
+
+    Util_is_nan(clipper::ftype64 const f) -> bool
+
+    Parameters
+    ----------
+    f: clipper::ftype64 const
+
+    """
     return _clipper.Util_is_nan(*args)
-Util_is_nan = _clipper.Util_is_nan
 
 def Util_isnan(*args):
+    """
+    isnan(clipper::ftype32 const f) -> bool
+
+    Parameters
+    ----------
+    f: clipper::ftype32 const
+
+    Util_isnan(clipper::ftype64 const f) -> bool
+
+    Parameters
+    ----------
+    f: clipper::ftype64 const
+
+    """
     return _clipper.Util_isnan(*args)
-Util_isnan = _clipper.Util_isnan
 
 def Util_sim(x):
+    """
+    Util_sim(clipper::ftype const & x) -> clipper::ftype
+
+    Parameters
+    ----------
+    x: clipper::ftype const &
+
+    """
     return _clipper.Util_sim(x)
-Util_sim = _clipper.Util_sim
 
 def Util_invsim(x):
+    """
+    Util_invsim(clipper::ftype const & x) -> clipper::ftype
+
+    Parameters
+    ----------
+    x: clipper::ftype const &
+
+    """
     return _clipper.Util_invsim(x)
-Util_invsim = _clipper.Util_invsim
 
 def Util_sim_integ(x):
+    """
+    Util_sim_integ(clipper::ftype const & x) -> clipper::ftype
+
+    Parameters
+    ----------
+    x: clipper::ftype const &
+
+    """
     return _clipper.Util_sim_integ(x)
-Util_sim_integ = _clipper.Util_sim_integ
 
 def Util_sim_deriv(x):
+    """
+    Util_sim_deriv(clipper::ftype const & x) -> clipper::ftype
+
+    Parameters
+    ----------
+    x: clipper::ftype const &
+
+    """
     return _clipper.Util_sim_deriv(x)
-Util_sim_deriv = _clipper.Util_sim_deriv
 
 def Util_sim_deriv_recur(x):
+    """
+    Util_sim_deriv_recur(clipper::ftype const & x) -> clipper::ftype
+
+    Parameters
+    ----------
+    x: clipper::ftype const &
+
+    """
     return _clipper.Util_sim_deriv_recur(x)
-Util_sim_deriv_recur = _clipper.Util_sim_deriv_recur
 
 def Util_atanh(x):
+    """
+    Util_atanh(clipper::ftype const & x) -> clipper::ftype
+
+    Parameters
+    ----------
+    x: clipper::ftype const &
+
+    """
     return _clipper.Util_atanh(x)
-Util_atanh = _clipper.Util_atanh
 
 def Util_bessel_i0(x):
+    """
+    Util_bessel_i0(clipper::ftype const & x) -> clipper::ftype
+
+    Parameters
+    ----------
+    x: clipper::ftype const &
+
+    """
     return _clipper.Util_bessel_i0(x)
-Util_bessel_i0 = _clipper.Util_bessel_i0
 
 def Util_u2b(x):
+    """
+    Util_u2b(clipper::ftype const & x) -> clipper::ftype
+
+    Parameters
+    ----------
+    x: clipper::ftype const &
+
+    """
     return _clipper.Util_u2b(x)
-Util_u2b = _clipper.Util_u2b
 
 def Util_b2u(x):
+    """
+    Util_b2u(clipper::ftype const & x) -> clipper::ftype
+
+    Parameters
+    ----------
+    x: clipper::ftype const &
+
+    """
     return _clipper.Util_b2u(x)
-Util_b2u = _clipper.Util_b2u
 
 def Util_intf(a):
+    """
+    Util_intf(clipper::ftype const & a) -> int
+
+    Parameters
+    ----------
+    a: clipper::ftype const &
+
+    """
     return _clipper.Util_intf(a)
-Util_intf = _clipper.Util_intf
 
 def Util_intc(a):
+    """
+    Util_intc(clipper::ftype const & a) -> int
+
+    Parameters
+    ----------
+    a: clipper::ftype const &
+
+    """
     return _clipper.Util_intc(a)
-Util_intc = _clipper.Util_intc
 
 def Util_intr(a):
+    """
+    Util_intr(clipper::ftype const & a) -> int
+
+    Parameters
+    ----------
+    a: clipper::ftype const &
+
+    """
     return _clipper.Util_intr(a)
-Util_intr = _clipper.Util_intr
 
 def Util_mod(*args):
+    """
+    mod(clipper::ftype const & a, clipper::ftype const & b) -> clipper::ftype
+
+    Parameters
+    ----------
+    a: clipper::ftype const &
+    b: clipper::ftype const &
+
+    Util_mod(int const & a, int const & b) -> int
+
+    Parameters
+    ----------
+    a: int const &
+    b: int const &
+
+    """
     return _clipper.Util_mod(*args)
-Util_mod = _clipper.Util_mod
 
 def Util_pi():
+    """Util_pi() -> clipper::ftype const &"""
     return _clipper.Util_pi()
-Util_pi = _clipper.Util_pi
 
 def Util_twopi():
+    """Util_twopi() -> clipper::ftype const &"""
     return _clipper.Util_twopi()
-Util_twopi = _clipper.Util_twopi
 
 def Util_twopi2():
+    """Util_twopi2() -> clipper::ftype const &"""
     return _clipper.Util_twopi2()
-Util_twopi2 = _clipper.Util_twopi2
 
 def Util_eightpi2():
+    """Util_eightpi2() -> clipper::ftype const &"""
     return _clipper.Util_eightpi2()
-Util_eightpi2 = _clipper.Util_eightpi2
 
 def Util_d2rad(x):
+    """
+    Util_d2rad(clipper::ftype const & x) -> clipper::ftype
+
+    Parameters
+    ----------
+    x: clipper::ftype const &
+
+    """
     return _clipper.Util_d2rad(x)
-Util_d2rad = _clipper.Util_d2rad
 
 def Util_rad2d(x):
+    """
+    Util_rad2d(clipper::ftype const & x) -> clipper::ftype
+
+    Parameters
+    ----------
+    x: clipper::ftype const &
+
+    """
     return _clipper.Util_rad2d(x)
-Util_rad2d = _clipper.Util_rad2d
 
 class String(_object):
+    """Proxy of C++ clipper::String class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, String, name, value)
     __swig_getmethods__ = {}
@@ -1551,6 +5645,96 @@ class String(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::String self) -> String
+        __init__(clipper::String self, std::string const str) -> String
+
+        Parameters
+        ----------
+        str: std::string const
+
+        __init__(clipper::String self, char const * str) -> String
+
+        Parameters
+        ----------
+        str: char const *
+
+        __init__(clipper::String self, char const * str, int const l) -> String
+
+        Parameters
+        ----------
+        str: char const *
+        l: int const
+
+        __init__(clipper::String self, int const i, int const w=4) -> String
+
+        Parameters
+        ----------
+        i: int const
+        w: int const
+
+        __init__(clipper::String self, int const i) -> String
+
+        Parameters
+        ----------
+        i: int const
+
+        __init__(clipper::String self, long const i, int const w=4) -> String
+
+        Parameters
+        ----------
+        i: long const
+        w: int const
+
+        __init__(clipper::String self, long const i) -> String
+
+        Parameters
+        ----------
+        i: long const
+
+        __init__(clipper::String self, float const f, int const w=6, int const p=6) -> String
+
+        Parameters
+        ----------
+        f: float const
+        w: int const
+        p: int const
+
+        __init__(clipper::String self, float const f, int const w=6) -> String
+
+        Parameters
+        ----------
+        f: float const
+        w: int const
+
+        __init__(clipper::String self, float const f) -> String
+
+        Parameters
+        ----------
+        f: float const
+
+        __init__(clipper::String self, double const f, int const w=6, int const p=6) -> String
+
+        Parameters
+        ----------
+        f: double const
+        w: int const
+        p: int const
+
+        __init__(clipper::String self, double const f, int const w=6) -> String
+
+        Parameters
+        ----------
+        f: double const
+        w: int const
+
+        __init__(clipper::String self, double const f) -> String
+
+        Parameters
+        ----------
+        f: double const
+
+        """
         this = _clipper.new_String(*args)
         try:
             self.this.append(this)
@@ -1558,49 +5742,183 @@ class String(_object):
             self.this = this
 
     def split(self, sep):
+        """
+        split(String self, String sep) -> ClipperStringVector
+
+        Parameters
+        ----------
+        sep: clipper::String const
+
+        """
         return _clipper.String_split(self, sep)
 
+
     def trim(self):
+        """
+        trim(String self) -> String
+
+        Parameters
+        ----------
+        self: clipper::String const *
+
+        """
         return _clipper.String_trim(self)
 
+
     def tail(self):
+        """
+        tail(String self) -> String
+
+        Parameters
+        ----------
+        self: clipper::String const *
+
+        """
         return _clipper.String_tail(self)
 
+
     def head(self):
+        """
+        head(String self) -> String
+
+        Parameters
+        ----------
+        self: clipper::String const *
+
+        """
         return _clipper.String_head(self)
 
+
     def nohead(self):
+        """
+        nohead(String self) -> String
+
+        Parameters
+        ----------
+        self: clipper::String const *
+
+        """
         return _clipper.String_nohead(self)
 
+
     def notail(self):
+        """
+        notail(String self) -> String
+
+        Parameters
+        ----------
+        self: clipper::String const *
+
+        """
         return _clipper.String_notail(self)
 
+
     def i(self):
+        """
+        i(String self) -> int
+
+        Parameters
+        ----------
+        self: clipper::String const *
+
+        """
         return _clipper.String_i(self)
 
+
     def l(self):
+        """
+        l(String self) -> long
+
+        Parameters
+        ----------
+        self: clipper::String const *
+
+        """
         return _clipper.String_l(self)
 
+
     def f32(self):
+        """
+        f32(String self) -> clipper::ftype32
+
+        Parameters
+        ----------
+        self: clipper::String const *
+
+        """
         return _clipper.String_f32(self)
 
+
     def f64(self):
+        """
+        f64(String self) -> clipper::ftype64
+
+        Parameters
+        ----------
+        self: clipper::String const *
+
+        """
         return _clipper.String_f64(self)
 
+
     def f(self):
+        """
+        f(String self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::String const *
+
+        """
         return _clipper.String_f(self)
 
+
     def rational(self, *args):
+        """
+        rational(String self, double const f, int const b, bool const sign=False) -> String
+
+        Parameters
+        ----------
+        f: double const
+        b: int const
+        sign: bool const
+
+        rational(String self, double const f, int const b) -> String
+
+        Parameters
+        ----------
+        f: double const
+        b: int const
+
+        rational(String self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::String const *
+
+        """
         return _clipper.String_rational(self, *args)
 
+
     def __str__(self):
+        """
+        __str__(String self) -> std::string
+
+        Parameters
+        ----------
+        self: clipper::String *
+
+        """
         return _clipper.String___str__(self)
+
     __swig_destroy__ = _clipper.delete_String
     __del__ = lambda self: None
 String_swigregister = _clipper.String_swigregister
 String_swigregister(String)
 
 class mat33_float(_object):
+    """Proxy of C++ clipper::Mat33<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, mat33_float, name, value)
     __swig_getmethods__ = {}
@@ -1608,6 +5926,23 @@ class mat33_float(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Mat33<(float)> self) -> mat33_float
+        __init__(clipper::Mat33<(float)> self, float const & m00, float const & m01, float const & m02, float const & m10, float const & m11, float const & m12, float const & m20, float const & m21, float const & m22) -> mat33_float
+
+        Parameters
+        ----------
+        m00: float const &
+        m01: float const &
+        m02: float const &
+        m10: float const &
+        m11: float const &
+        m12: float const &
+        m20: float const &
+        m21: float const &
+        m22: float const &
+
+        """
         this = _clipper.new_mat33_float(*args)
         try:
             self.this.append(this)
@@ -1615,47 +5950,125 @@ class mat33_float(_object):
             self.this = this
 
     def det(self):
+        """
+        det(mat33_float self) -> float
+
+        Parameters
+        ----------
+        self: clipper::Mat33< float > const *
+
+        """
         return _clipper.mat33_float_det(self)
 
+
     def inverse(self):
+        """
+        inverse(mat33_float self) -> mat33_float
+
+        Parameters
+        ----------
+        self: clipper::Mat33< float > const *
+
+        """
         return _clipper.mat33_float_inverse(self)
 
+
     def transpose(self):
+        """
+        transpose(mat33_float self) -> mat33_float
+
+        Parameters
+        ----------
+        self: clipper::Mat33< float > const *
+
+        """
         return _clipper.mat33_float_transpose(self)
 
+
     def equals(self, m, tol):
+        """
+        equals(mat33_float self, mat33_float m, float const & tol) -> bool
+
+        Parameters
+        ----------
+        m: clipper::Mat33< float > const &
+        tol: float const &
+
+        """
         return _clipper.mat33_float_equals(self, m, tol)
 
+
     def __call__(self, *args):
+        """
+        __call__(mat33_float self, int const & i, int const & j) -> float const
+
+        Parameters
+        ----------
+        i: int const &
+        j: int const &
+
+        __call__(mat33_float self, int const & i, int const & j) -> float &
+
+        Parameters
+        ----------
+        i: int const &
+        j: int const &
+
+        """
         return _clipper.mat33_float___call__(self, *args)
 
+
     def format(self):
+        """
+        format(mat33_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Mat33< float > const *
+
+        """
         return _clipper.mat33_float_format(self)
-    if _newclass:
-        identity = staticmethod(_clipper.mat33_float_identity)
-    else:
-        identity = _clipper.mat33_float_identity
-    if _newclass:
-        null = staticmethod(_clipper.mat33_float_null)
-    else:
-        null = _clipper.mat33_float_null
+
+
+    def identity():
+        """identity() -> mat33_float"""
+        return _clipper.mat33_float_identity()
+
+    identity = staticmethod(identity)
+
+    def null():
+        """null() -> mat33_float"""
+        return _clipper.mat33_float_null()
+
+    null = staticmethod(null)
 
     def is_null(self):
+        """
+        is_null(mat33_float self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Mat33< float > const *
+
+        """
         return _clipper.mat33_float_is_null(self)
+
     __swig_destroy__ = _clipper.delete_mat33_float
     __del__ = lambda self: None
 mat33_float_swigregister = _clipper.mat33_float_swigregister
 mat33_float_swigregister(mat33_float)
 
 def mat33_float_identity():
+    """mat33_float_identity() -> mat33_float"""
     return _clipper.mat33_float_identity()
-mat33_float_identity = _clipper.mat33_float_identity
 
 def mat33_float_null():
+    """mat33_float_null() -> mat33_float"""
     return _clipper.mat33_float_null()
-mat33_float_null = _clipper.mat33_float_null
 
 class mat33_ftype(_object):
+    """Proxy of C++ clipper::Mat33<(ftype)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, mat33_ftype, name, value)
     __swig_getmethods__ = {}
@@ -1663,6 +6076,23 @@ class mat33_ftype(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Mat33<(ftype)> self) -> mat33_ftype
+        __init__(clipper::Mat33<(ftype)> self, double const & m00, double const & m01, double const & m02, double const & m10, double const & m11, double const & m12, double const & m20, double const & m21, double const & m22) -> mat33_ftype
+
+        Parameters
+        ----------
+        m00: double const &
+        m01: double const &
+        m02: double const &
+        m10: double const &
+        m11: double const &
+        m12: double const &
+        m20: double const &
+        m21: double const &
+        m22: double const &
+
+        """
         this = _clipper.new_mat33_ftype(*args)
         try:
             self.this.append(this)
@@ -1670,47 +6100,125 @@ class mat33_ftype(_object):
             self.this = this
 
     def det(self):
+        """
+        det(mat33_ftype self) -> double
+
+        Parameters
+        ----------
+        self: clipper::Mat33< ftype > const *
+
+        """
         return _clipper.mat33_ftype_det(self)
 
+
     def inverse(self):
+        """
+        inverse(mat33_ftype self) -> mat33_ftype
+
+        Parameters
+        ----------
+        self: clipper::Mat33< ftype > const *
+
+        """
         return _clipper.mat33_ftype_inverse(self)
 
+
     def transpose(self):
+        """
+        transpose(mat33_ftype self) -> mat33_ftype
+
+        Parameters
+        ----------
+        self: clipper::Mat33< ftype > const *
+
+        """
         return _clipper.mat33_ftype_transpose(self)
 
+
     def equals(self, m, tol):
+        """
+        equals(mat33_ftype self, mat33_ftype m, double const & tol) -> bool
+
+        Parameters
+        ----------
+        m: clipper::Mat33< double > const &
+        tol: double const &
+
+        """
         return _clipper.mat33_ftype_equals(self, m, tol)
 
+
     def __call__(self, *args):
+        """
+        __call__(mat33_ftype self, int const & i, int const & j) -> double const
+
+        Parameters
+        ----------
+        i: int const &
+        j: int const &
+
+        __call__(mat33_ftype self, int const & i, int const & j) -> double &
+
+        Parameters
+        ----------
+        i: int const &
+        j: int const &
+
+        """
         return _clipper.mat33_ftype___call__(self, *args)
 
+
     def format(self):
+        """
+        format(mat33_ftype self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Mat33< ftype > const *
+
+        """
         return _clipper.mat33_ftype_format(self)
-    if _newclass:
-        identity = staticmethod(_clipper.mat33_ftype_identity)
-    else:
-        identity = _clipper.mat33_ftype_identity
-    if _newclass:
-        null = staticmethod(_clipper.mat33_ftype_null)
-    else:
-        null = _clipper.mat33_ftype_null
+
+
+    def identity():
+        """identity() -> mat33_ftype"""
+        return _clipper.mat33_ftype_identity()
+
+    identity = staticmethod(identity)
+
+    def null():
+        """null() -> mat33_ftype"""
+        return _clipper.mat33_ftype_null()
+
+    null = staticmethod(null)
 
     def is_null(self):
+        """
+        is_null(mat33_ftype self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Mat33< ftype > const *
+
+        """
         return _clipper.mat33_ftype_is_null(self)
+
     __swig_destroy__ = _clipper.delete_mat33_ftype
     __del__ = lambda self: None
 mat33_ftype_swigregister = _clipper.mat33_ftype_swigregister
 mat33_ftype_swigregister(mat33_ftype)
 
 def mat33_ftype_identity():
+    """mat33_ftype_identity() -> mat33_ftype"""
     return _clipper.mat33_ftype_identity()
-mat33_ftype_identity = _clipper.mat33_ftype_identity
 
 def mat33_ftype_null():
+    """mat33_ftype_null() -> mat33_ftype"""
     return _clipper.mat33_ftype_null()
-mat33_ftype_null = _clipper.mat33_ftype_null
 
 class RTop_frac(_object):
+    """Proxy of C++ clipper::RTop_frac class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, RTop_frac, name, value)
     __swig_getmethods__ = {}
@@ -1718,6 +6226,34 @@ class RTop_frac(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::RTop_frac self) -> RTop_frac
+        __init__(clipper::RTop_frac self, clipper::RTop< > const & o) -> RTop_frac
+
+        Parameters
+        ----------
+        o: clipper::RTop< > const &
+
+        __init__(clipper::RTop_frac self, mat33_ftype r) -> RTop_frac
+
+        Parameters
+        ----------
+        r: clipper::Mat33< > const &
+
+        __init__(clipper::RTop_frac self, String strop) -> RTop_frac
+
+        Parameters
+        ----------
+        strop: clipper::String const &
+
+        __init__(clipper::RTop_frac self, mat33_ftype r, clipper::Vec3< > const & t) -> RTop_frac
+
+        Parameters
+        ----------
+        r: clipper::Mat33< > const &
+        t: clipper::Vec3< > const &
+
+        """
         this = _clipper.new_RTop_frac(*args)
         try:
             self.this.append(this)
@@ -1725,32 +6261,56 @@ class RTop_frac(_object):
             self.this = this
 
     def rtop_orth(self, cell):
+        """
+        rtop_orth(RTop_frac self, Cell cell) -> RTop_orth
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.RTop_frac_rtop_orth(self, cell)
 
+
     def inverse(self):
+        """
+        inverse(RTop_frac self) -> RTop_frac
+
+        Parameters
+        ----------
+        self: clipper::RTop_frac const *
+
+        """
         return _clipper.RTop_frac_inverse(self)
-    if _newclass:
-        identity = staticmethod(_clipper.RTop_frac_identity)
-    else:
-        identity = _clipper.RTop_frac_identity
-    if _newclass:
-        null = staticmethod(_clipper.RTop_frac_null)
-    else:
-        null = _clipper.RTop_frac_null
+
+
+    def identity():
+        """identity() -> RTop_frac"""
+        return _clipper.RTop_frac_identity()
+
+    identity = staticmethod(identity)
+
+    def null():
+        """null() -> RTop_frac"""
+        return _clipper.RTop_frac_null()
+
+    null = staticmethod(null)
     __swig_destroy__ = _clipper.delete_RTop_frac
     __del__ = lambda self: None
 RTop_frac_swigregister = _clipper.RTop_frac_swigregister
 RTop_frac_swigregister(RTop_frac)
 
 def RTop_frac_identity():
+    """RTop_frac_identity() -> RTop_frac"""
     return _clipper.RTop_frac_identity()
-RTop_frac_identity = _clipper.RTop_frac_identity
 
 def RTop_frac_null():
+    """RTop_frac_null() -> RTop_frac"""
     return _clipper.RTop_frac_null()
-RTop_frac_null = _clipper.RTop_frac_null
 
 class Symop(RTop_frac):
+    """Proxy of C++ clipper::Symop class."""
+
     __swig_setmethods__ = {}
     for _s in [RTop_frac]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -1762,6 +6322,21 @@ class Symop(RTop_frac):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Symop self) -> Symop
+        __init__(clipper::Symop self, clipper::RTop< > const & rt) -> Symop
+
+        Parameters
+        ----------
+        rt: clipper::RTop< > const &
+
+        __init__(clipper::Symop self, clipper::ftype const [4][4] mat) -> Symop
+
+        Parameters
+        ----------
+        mat: clipper::ftype const [4][4]
+
+        """
         this = _clipper.new_Symop(*args)
         try:
             self.this.append(this)
@@ -1769,22 +6344,60 @@ class Symop(RTop_frac):
             self.this = this
 
     def format(self):
+        """
+        format(Symop self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Symop const *
+
+        """
         return _clipper.Symop_format(self)
 
+
     def matrix(self):
+        """
+        matrix(Symop self)
+
+        Parameters
+        ----------
+        self: clipper::Symop *
+
+        """
         return _clipper.Symop_matrix(self)
 
+
     def rotation(self):
+        """
+        rotation(Symop self)
+
+        Parameters
+        ----------
+        self: clipper::Symop *
+
+        """
         return _clipper.Symop_rotation(self)
 
+
     def translation(self):
+        """
+        translation(Symop self)
+
+        Parameters
+        ----------
+        self: clipper::Symop *
+
+        """
         return _clipper.Symop_translation(self)
+
     __swig_destroy__ = _clipper.delete_Symop
     __del__ = lambda self: None
 Symop_swigregister = _clipper.Symop_swigregister
 Symop_swigregister(Symop)
 
 class Isymop(_object):
+    """Proxy of C++ clipper::Isymop class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Isymop, name, value)
     __swig_getmethods__ = {}
@@ -1792,6 +6405,22 @@ class Isymop(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Isymop self) -> Isymop
+        __init__(clipper::Isymop self, clipper::RTop< int > const & rt) -> Isymop
+
+        Parameters
+        ----------
+        rt: clipper::RTop< int > const &
+
+        __init__(clipper::Isymop self, Symop symop, Grid grid) -> Isymop
+
+        Parameters
+        ----------
+        symop: clipper::Symop const &
+        grid: clipper::Grid const &
+
+        """
         this = _clipper.new_Isymop(*args)
         try:
             self.this.append(this)
@@ -1803,6 +6432,8 @@ Isymop_swigregister = _clipper.Isymop_swigregister
 Isymop_swigregister(Isymop)
 
 class Symop_code(_object):
+    """Proxy of C++ clipper::Symop_code class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Symop_code, name, value)
     __swig_getmethods__ = {}
@@ -1810,6 +6441,27 @@ class Symop_code(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Symop_code self) -> Symop_code
+        __init__(clipper::Symop_code self, int const & code) -> Symop_code
+
+        Parameters
+        ----------
+        code: int const &
+
+        __init__(clipper::Symop_code self, Symop op) -> Symop_code
+
+        Parameters
+        ----------
+        op: clipper::Symop const &
+
+        __init__(clipper::Symop_code self, Isymop op) -> Symop_code
+
+        Parameters
+        ----------
+        op: clipper::Isymop const &
+
+        """
         this = _clipper.new_Symop_code(*args)
         try:
             self.this.append(this)
@@ -1817,33 +6469,82 @@ class Symop_code(_object):
             self.this = this
 
     def init(self, op):
+        """
+        init(Symop_code self, Isymop op)
+
+        Parameters
+        ----------
+        op: clipper::Isymop const &
+
+        """
         return _clipper.Symop_code_init(self, op)
 
+
     def code_rot(self):
+        """
+        code_rot(Symop_code self) -> Symop_code
+
+        Parameters
+        ----------
+        self: clipper::Symop_code const *
+
+        """
         return _clipper.Symop_code_code_rot(self)
 
+
     def code_trn(self):
+        """
+        code_trn(Symop_code self) -> Symop_code
+
+        Parameters
+        ----------
+        self: clipper::Symop_code const *
+
+        """
         return _clipper.Symop_code_code_trn(self)
 
+
     def symop(self):
+        """
+        symop(Symop_code self) -> Symop
+
+        Parameters
+        ----------
+        self: clipper::Symop_code const *
+
+        """
         return _clipper.Symop_code_symop(self)
 
+
     def isymop(self):
+        """
+        isymop(Symop_code self) -> Isymop
+
+        Parameters
+        ----------
+        self: clipper::Symop_code const *
+
+        """
         return _clipper.Symop_code_isymop(self)
-    if _newclass:
-        identity = staticmethod(_clipper.Symop_code_identity)
-    else:
-        identity = _clipper.Symop_code_identity
+
+
+    def identity():
+        """identity() -> Symop_code"""
+        return _clipper.Symop_code_identity()
+
+    identity = staticmethod(identity)
     __swig_destroy__ = _clipper.delete_Symop_code
     __del__ = lambda self: None
 Symop_code_swigregister = _clipper.Symop_code_swigregister
 Symop_code_swigregister(Symop_code)
 
 def Symop_code_identity():
+    """Symop_code_identity() -> Symop_code"""
     return _clipper.Symop_code_identity()
-Symop_code_identity = _clipper.Symop_code_identity
 
 class Symops(_object):
+    """Proxy of C++ clipper::Symops class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Symops, name, value)
     __swig_getmethods__ = {}
@@ -1851,6 +6552,15 @@ class Symops(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Symops self) -> Symops
+        __init__(clipper::Symops self, std::vector< clipper::Symop,std::allocator< clipper::Symop > > ops) -> Symops
+
+        Parameters
+        ----------
+        ops: std::vector< clipper::Symop,std::allocator< clipper::Symop > >
+
+        """
         this = _clipper.new_Symops(*args)
         try:
             self.this.append(this)
@@ -1860,23 +6570,71 @@ class Symops(_object):
     __del__ = lambda self: None
 
     def __getitem__(self, i):
+        """
+        __getitem__(Symops self, int i) -> Symop
+
+        Parameters
+        ----------
+        i: int
+
+        """
         return _clipper.Symops___getitem__(self, i)
 
+
     def __setitem__(self, i, op):
+        """
+        __setitem__(Symops self, int i, Symop op)
+
+        Parameters
+        ----------
+        i: int
+        op: clipper::Symop
+
+        """
         return _clipper.Symops___setitem__(self, i, op)
 
+
     def __len__(self):
+        """
+        __len__(Symops self) -> size_t
+
+        Parameters
+        ----------
+        self: clipper::Symops *
+
+        """
         return _clipper.Symops___len__(self)
 
+
     def append(self, op):
+        """
+        append(Symops self, Symop op)
+
+        Parameters
+        ----------
+        op: clipper::Symop
+
+        """
         return _clipper.Symops_append(self, op)
 
+
     def pop(self, i):
+        """
+        pop(Symops self, int i) -> Symop
+
+        Parameters
+        ----------
+        i: int
+
+        """
         return _clipper.Symops_pop(self, i)
+
 Symops_swigregister = _clipper.Symops_swigregister
 Symops_swigregister(Symops)
 
 class SGdata(_object):
+    """Proxy of C++ clipper::data::SGdata class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, SGdata, name, value)
     __swig_getmethods__ = {}
@@ -1902,6 +6660,7 @@ class SGdata(_object):
         num = _swig_property(_clipper.SGdata_num_get, _clipper.SGdata_num_set)
 
     def __init__(self):
+        """__init__(clipper::data::SGdata self) -> SGdata"""
         this = _clipper.new_SGdata()
         try:
             self.this.append(this)
@@ -1913,6 +6672,8 @@ SGdata_swigregister = _clipper.SGdata_swigregister
 SGdata_swigregister(SGdata)
 
 class LGdata(_object):
+    """Proxy of C++ clipper::data::LGdata class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, LGdata, name, value)
     __swig_getmethods__ = {}
@@ -1931,6 +6692,7 @@ class LGdata(_object):
         lgname = _swig_property(_clipper.LGdata_lgname_get)
 
     def __init__(self):
+        """__init__(clipper::data::LGdata self) -> LGdata"""
         this = _clipper.new_LGdata()
         try:
             self.this.append(this)
@@ -1942,6 +6704,8 @@ LGdata_swigregister = _clipper.LGdata_swigregister
 LGdata_swigregister(LGdata)
 
 class Spgr_descr(_object):
+    """Proxy of C++ clipper::Spgr_descr class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Spgr_descr, name, value)
     __swig_getmethods__ = {}
@@ -1955,25 +6719,107 @@ class Spgr_descr(_object):
     Unknown = _clipper.Spgr_descr_Unknown
 
     def spacegroup_number(self):
+        """
+        spacegroup_number(Spgr_descr self) -> int
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr const *
+
+        """
         return _clipper.Spgr_descr_spacegroup_number(self)
 
+
     def symbol_hall(self):
+        """
+        symbol_hall(Spgr_descr self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr const *
+
+        """
         return _clipper.Spgr_descr_symbol_hall(self)
 
+
     def symbol_hm(self):
+        """
+        symbol_hm(Spgr_descr self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr const *
+
+        """
         return _clipper.Spgr_descr_symbol_hm(self)
 
+
     def symbol_xhm(self):
+        """
+        symbol_xhm(Spgr_descr self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr const *
+
+        """
         return _clipper.Spgr_descr_symbol_xhm(self)
 
+
     def symbol_hm_ext(self):
+        """
+        symbol_hm_ext(Spgr_descr self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr const *
+
+        """
         return _clipper.Spgr_descr_symbol_hm_ext(self)
-    if _newclass:
-        set_preferred = staticmethod(_clipper.Spgr_descr_set_preferred)
-    else:
-        set_preferred = _clipper.Spgr_descr_set_preferred
+
+
+    def set_preferred(c):
+        """
+        set_preferred(char const & c)
+
+        Parameters
+        ----------
+        c: char const &
+
+        """
+        return _clipper.Spgr_descr_set_preferred(c)
+
+    set_preferred = staticmethod(set_preferred)
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Spgr_descr self) -> Spgr_descr
+        __init__(clipper::Spgr_descr self, String symb, clipper::Spgr_descr::TYPE type) -> Spgr_descr
+
+        Parameters
+        ----------
+        symb: clipper::String const &
+        type: enum clipper::Spgr_descr::TYPE
+
+        __init__(clipper::Spgr_descr self, String symb) -> Spgr_descr
+
+        Parameters
+        ----------
+        symb: clipper::String const &
+
+        __init__(clipper::Spgr_descr self, int const & num) -> Spgr_descr
+
+        Parameters
+        ----------
+        num: int const &
+
+        __init__(clipper::Spgr_descr self, Symop_codes ops) -> Spgr_descr
+
+        Parameters
+        ----------
+        ops: clipper::Spgr_descr::Symop_codes const &
+
+        """
         this = _clipper.new_Spgr_descr(*args)
         try:
             self.this.append(this)
@@ -1981,20 +6827,48 @@ class Spgr_descr(_object):
             self.this = this
 
     def generator_ops(self):
+        """
+        generator_ops(Spgr_descr self) -> Symop_codes
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr const *
+
+        """
         return _clipper.Spgr_descr_generator_ops(self)
 
+
     def hash(self):
+        """
+        hash(Spgr_descr self) -> unsigned int const &
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr const *
+
+        """
         return _clipper.Spgr_descr_hash(self)
+
     __swig_destroy__ = _clipper.delete_Spgr_descr
     __del__ = lambda self: None
 Spgr_descr_swigregister = _clipper.Spgr_descr_swigregister
 Spgr_descr_swigregister(Spgr_descr)
+cvar = _clipper.cvar
 
 def Spgr_descr_set_preferred(c):
+    """
+    Spgr_descr_set_preferred(char const & c)
+
+    Parameters
+    ----------
+    c: char const &
+
+    """
     return _clipper.Spgr_descr_set_preferred(c)
-Spgr_descr_set_preferred = _clipper.Spgr_descr_set_preferred
 
 class Symop_codes(_object):
+    """Proxy of C++ clipper::Spgr_descr::Symop_codes class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Symop_codes, name, value)
     __swig_getmethods__ = {}
@@ -2002,45 +6876,163 @@ class Symop_codes(_object):
     __repr__ = _swig_repr
 
     def init_hall(self, symb):
+        """
+        init_hall(Symop_codes self, String symb)
+
+        Parameters
+        ----------
+        symb: clipper::String const &
+
+        """
         return _clipper.Symop_codes_init_hall(self, symb)
 
+
     def init_symops(self, symb):
+        """
+        init_symops(Symop_codes self, String symb)
+
+        Parameters
+        ----------
+        symb: clipper::String const &
+
+        """
         return _clipper.Symop_codes_init_symops(self, symb)
 
+
     def expand(self):
+        """
+        expand(Symop_codes self) -> Symop_codes
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr::Symop_codes const *
+
+        """
         return _clipper.Symop_codes_expand(self)
 
+
     def primitive_noninversion_ops(self):
+        """
+        primitive_noninversion_ops(Symop_codes self) -> Symop_codes
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr::Symop_codes const *
+
+        """
         return _clipper.Symop_codes_primitive_noninversion_ops(self)
 
+
     def inversion_ops(self):
+        """
+        inversion_ops(Symop_codes self) -> Symop_codes
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr::Symop_codes const *
+
+        """
         return _clipper.Symop_codes_inversion_ops(self)
 
+
     def primitive_ops(self):
+        """
+        primitive_ops(Symop_codes self) -> Symop_codes
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr::Symop_codes const *
+
+        """
         return _clipper.Symop_codes_primitive_ops(self)
 
+
     def centering_ops(self):
+        """
+        centering_ops(Symop_codes self) -> Symop_codes
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr::Symop_codes const *
+
+        """
         return _clipper.Symop_codes_centering_ops(self)
 
+
     def laue_ops(self):
+        """
+        laue_ops(Symop_codes self) -> Symop_codes
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr::Symop_codes const *
+
+        """
         return _clipper.Symop_codes_laue_ops(self)
 
+
     def pgrp_ops(self):
+        """
+        pgrp_ops(Symop_codes self) -> Symop_codes
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr::Symop_codes const *
+
+        """
         return _clipper.Symop_codes_pgrp_ops(self)
 
+
     def patterson_ops(self):
+        """
+        patterson_ops(Symop_codes self) -> Symop_codes
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr::Symop_codes const *
+
+        """
         return _clipper.Symop_codes_patterson_ops(self)
 
+
     def generator_ops(self):
+        """
+        generator_ops(Symop_codes self) -> Symop_codes
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr::Symop_codes const *
+
+        """
         return _clipper.Symop_codes_generator_ops(self)
 
+
     def product(self, ops2):
+        """
+        product(Symop_codes self, Symop_codes ops2) -> Symop_codes
+
+        Parameters
+        ----------
+        ops2: clipper::Spgr_descr::Symop_codes const &
+
+        """
         return _clipper.Symop_codes_product(self, ops2)
 
+
     def hash(self):
+        """
+        hash(Symop_codes self) -> unsigned int
+
+        Parameters
+        ----------
+        self: clipper::Spgr_descr::Symop_codes const *
+
+        """
         return _clipper.Symop_codes_hash(self)
 
+
     def __init__(self):
+        """__init__(clipper::Spgr_descr::Symop_codes self) -> Symop_codes"""
         this = _clipper.new_Symop_codes()
         try:
             self.this.append(this)
@@ -2052,6 +7044,8 @@ Symop_codes_swigregister = _clipper.Symop_codes_swigregister
 Symop_codes_swigregister(Symop_codes)
 
 class Spgr_cacheobj(_object):
+    """Proxy of C++ clipper::Spgr_cacheobj class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Spgr_cacheobj, name, value)
     __swig_getmethods__ = {}
@@ -2059,6 +7053,14 @@ class Spgr_cacheobj(_object):
     __repr__ = _swig_repr
 
     def __init__(self, spgr_cachekey):
+        """
+        __init__(clipper::Spgr_cacheobj self, Spgr_descr spgr_cachekey) -> Spgr_cacheobj
+
+        Parameters
+        ----------
+        spgr_cachekey: clipper::Spgr_cacheobj::Key const &
+
+        """
         this = _clipper.new_Spgr_cacheobj(spgr_cachekey)
         try:
             self.this.append(this)
@@ -2066,10 +7068,28 @@ class Spgr_cacheobj(_object):
             self.this = this
 
     def matches(self, spgr_cachekey):
+        """
+        matches(Spgr_cacheobj self, Spgr_descr spgr_cachekey) -> bool
+
+        Parameters
+        ----------
+        spgr_cachekey: clipper::Spgr_cacheobj::Key const &
+
+        """
         return _clipper.Spgr_cacheobj_matches(self, spgr_cachekey)
 
+
     def format(self):
+        """
+        format(Spgr_cacheobj self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Spgr_cacheobj const *
+
+        """
         return _clipper.Spgr_cacheobj_format(self)
+
     __swig_setmethods__["spgr_cachekey_"] = _clipper.Spgr_cacheobj_spgr_cachekey__set
     __swig_getmethods__["spgr_cachekey_"] = _clipper.Spgr_cacheobj_spgr_cachekey__get
     if _newclass:
@@ -2124,6 +7144,8 @@ Spgr_cacheobj_swigregister = _clipper.Spgr_cacheobj_swigregister
 Spgr_cacheobj_swigregister(Spgr_cacheobj)
 
 class Spacegroup(Spgr_descr):
+    """Proxy of C++ clipper::Spacegroup class."""
+
     __swig_setmethods__ = {}
     for _s in [Spgr_descr]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -2140,6 +7162,21 @@ class Spacegroup(Spgr_descr):
     C = _clipper.Spacegroup_C
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Spacegroup self) -> Spacegroup
+        __init__(clipper::Spacegroup self, clipper::Spacegroup::TYPE type) -> Spacegroup
+
+        Parameters
+        ----------
+        type: enum clipper::Spacegroup::TYPE
+
+        __init__(clipper::Spacegroup self, Spgr_descr spgr_descr) -> Spacegroup
+
+        Parameters
+        ----------
+        spgr_descr: clipper::Spgr_descr const &
+
+        """
         this = _clipper.new_Spacegroup(*args)
         try:
             self.this.append(this)
@@ -2147,98 +7184,321 @@ class Spacegroup(Spgr_descr):
             self.this = this
 
     def init(self, spgr_descr):
+        """
+        init(Spacegroup self, Spgr_descr spgr_descr)
+
+        Parameters
+        ----------
+        spgr_descr: clipper::Spgr_descr const &
+
+        """
         return _clipper.Spacegroup_init(self, spgr_descr)
 
+
     def is_null(self):
+        """
+        is_null(Spacegroup self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Spacegroup const *
+
+        """
         return _clipper.Spacegroup_is_null(self)
 
+
     def descr(self):
+        """
+        descr(Spacegroup self) -> Spgr_descr
+
+        Parameters
+        ----------
+        self: clipper::Spacegroup const *
+
+        """
         return _clipper.Spacegroup_descr(self)
 
+
     def num_symops(self):
+        """
+        num_symops(Spacegroup self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Spacegroup const *
+
+        """
         return _clipper.Spacegroup_num_symops(self)
 
+
     def num_primops(self):
+        """
+        num_primops(Spacegroup self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Spacegroup const *
+
+        """
         return _clipper.Spacegroup_num_primops(self)
 
+
     def num_primitive_symops(self):
+        """
+        num_primitive_symops(Spacegroup self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Spacegroup const *
+
+        """
         return _clipper.Spacegroup_num_primitive_symops(self)
 
+
     def num_centering_symops(self):
+        """
+        num_centering_symops(Spacegroup self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Spacegroup const *
+
+        """
         return _clipper.Spacegroup_num_centering_symops(self)
 
+
     def num_inversion_symops(self):
+        """
+        num_inversion_symops(Spacegroup self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Spacegroup const *
+
+        """
         return _clipper.Spacegroup_num_inversion_symops(self)
 
+
     def num_primitive_noninversion_symops(self):
+        """
+        num_primitive_noninversion_symops(Spacegroup self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Spacegroup const *
+
+        """
         return _clipper.Spacegroup_num_primitive_noninversion_symops(self)
 
+
     def symop(self, sym_no):
+        """
+        symop(Spacegroup self, int const & sym_no) -> Symop
+
+        Parameters
+        ----------
+        sym_no: int const &
+
+        """
         return _clipper.Spacegroup_symop(self, sym_no)
 
+
     def primitive_symop(self, sym_no):
+        """
+        primitive_symop(Spacegroup self, int const & sym_no) -> Symop
+
+        Parameters
+        ----------
+        sym_no: int const &
+
+        """
         return _clipper.Spacegroup_primitive_symop(self, sym_no)
 
+
     def inversion_symop(self, sym_no):
+        """
+        inversion_symop(Spacegroup self, int const & sym_no) -> Symop
+
+        Parameters
+        ----------
+        sym_no: int const &
+
+        """
         return _clipper.Spacegroup_inversion_symop(self, sym_no)
 
+
     def centering_symop(self, sym_no):
+        """
+        centering_symop(Spacegroup self, int const & sym_no) -> Symop
+
+        Parameters
+        ----------
+        sym_no: int const &
+
+        """
         return _clipper.Spacegroup_centering_symop(self, sym_no)
 
+
     def order_of_symmetry_about_axis(self, axis):
+        """
+        order_of_symmetry_about_axis(Spacegroup self, clipper::Spacegroup::AXIS const axis) -> int
+
+        Parameters
+        ----------
+        axis: enum clipper::Spacegroup::AXIS const
+
+        """
         return _clipper.Spacegroup_order_of_symmetry_about_axis(self, axis)
 
+
     def hkl_class(self, hkl):
+        """
+        hkl_class(Spacegroup self, HKL hkl) -> HKL_class
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+
+        """
         return _clipper.Spacegroup_hkl_class(self, hkl)
 
+
     def recip_asu(self, hkl):
+        """
+        recip_asu(Spacegroup self, HKL hkl) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+
+        """
         return _clipper.Spacegroup_recip_asu(self, hkl)
 
+
     def product_op(self, s1, s2):
+        """
+        product_op(Spacegroup self, int const & s1, int & s2) -> int
+
+        Parameters
+        ----------
+        s1: int const &
+        s2: int &
+
+        """
         return _clipper.Spacegroup_product_op(self, s1, s2)
 
+
     def inverse_op(self, s):
+        """
+        inverse_op(Spacegroup self, int const & s) -> int
+
+        Parameters
+        ----------
+        s: int const &
+
+        """
         return _clipper.Spacegroup_inverse_op(self, s)
 
+
     def asu_max(self):
+        """
+        asu_max(Spacegroup self) -> Coord_frac
+
+        Parameters
+        ----------
+        self: clipper::Spacegroup const *
+
+        """
         return _clipper.Spacegroup_asu_max(self)
 
+
     def asu_min(self):
+        """
+        asu_min(Spacegroup self) -> Coord_frac
+
+        Parameters
+        ----------
+        self: clipper::Spacegroup const *
+
+        """
         return _clipper.Spacegroup_asu_min(self)
 
+
     def invariant_under_change_of_hand(self):
+        """
+        invariant_under_change_of_hand(Spacegroup self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Spacegroup const *
+
+        """
         return _clipper.Spacegroup_invariant_under_change_of_hand(self)
 
+
     def symbol_laue(self):
+        """
+        symbol_laue(Spacegroup self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Spacegroup const *
+
+        """
         return _clipper.Spacegroup_symbol_laue(self)
-    if _newclass:
-        p1 = staticmethod(_clipper.Spacegroup_p1)
-    else:
-        p1 = _clipper.Spacegroup_p1
-    if _newclass:
-        null = staticmethod(_clipper.Spacegroup_null)
-    else:
-        null = _clipper.Spacegroup_null
+
+
+    def p1():
+        """p1() -> Spacegroup"""
+        return _clipper.Spacegroup_p1()
+
+    p1 = staticmethod(p1)
+
+    def null():
+        """null() -> Spacegroup"""
+        return _clipper.Spacegroup_null()
+
+    null = staticmethod(null)
 
     def debug(self):
+        """
+        debug(Spacegroup self)
+
+        Parameters
+        ----------
+        self: clipper::Spacegroup const *
+
+        """
         return _clipper.Spacegroup_debug(self)
 
+
     def unit_cell_Symops(self, ref):
+        """
+        unit_cell_Symops(Spacegroup self, Coord_frac ref) -> Symops
+
+        Parameters
+        ----------
+        ref: clipper::Coord_frac
+
+        """
         return _clipper.Spacegroup_unit_cell_Symops(self, ref)
+
     __swig_destroy__ = _clipper.delete_Spacegroup
     __del__ = lambda self: None
 Spacegroup_swigregister = _clipper.Spacegroup_swigregister
 Spacegroup_swigregister(Spacegroup)
 
 def Spacegroup_p1():
+    """Spacegroup_p1() -> Spacegroup"""
     return _clipper.Spacegroup_p1()
-Spacegroup_p1 = _clipper.Spacegroup_p1
 
 def Spacegroup_null():
+    """Spacegroup_null() -> Spacegroup"""
     return _clipper.Spacegroup_null()
-Spacegroup_null = _clipper.Spacegroup_null
 
 class Metric_tensor(_object):
+    """Proxy of C++ clipper::Metric_tensor class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Metric_tensor, name, value)
     __swig_getmethods__ = {}
@@ -2246,6 +7506,20 @@ class Metric_tensor(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Metric_tensor self) -> Metric_tensor
+        __init__(clipper::Metric_tensor self, clipper::ftype const & a, clipper::ftype const & b, clipper::ftype const & c, clipper::ftype const & alph, clipper::ftype const & beta, clipper::ftype const & gamm) -> Metric_tensor
+
+        Parameters
+        ----------
+        a: clipper::ftype const &
+        b: clipper::ftype const &
+        c: clipper::ftype const &
+        alph: clipper::ftype const &
+        beta: clipper::ftype const &
+        gamm: clipper::ftype const &
+
+        """
         this = _clipper.new_Metric_tensor(*args)
         try:
             self.this.append(this)
@@ -2253,16 +7527,42 @@ class Metric_tensor(_object):
             self.this = this
 
     def lengthsq(self, *args):
+        """
+        lengthsq(Metric_tensor self, clipper::Vec3< > const & v) -> clipper::ftype
+
+        Parameters
+        ----------
+        v: clipper::Vec3< > const &
+
+        lengthsq(Metric_tensor self, clipper::Vec3< int > const & v) -> clipper::ftype
+
+        Parameters
+        ----------
+        v: clipper::Vec3< int > const &
+
+        """
         return _clipper.Metric_tensor_lengthsq(self, *args)
 
+
     def format(self):
+        """
+        format(Metric_tensor self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Metric_tensor const *
+
+        """
         return _clipper.Metric_tensor_format(self)
+
     __swig_destroy__ = _clipper.delete_Metric_tensor
     __del__ = lambda self: None
 Metric_tensor_swigregister = _clipper.Metric_tensor_swigregister
 Metric_tensor_swigregister(Metric_tensor)
 
 class Cell_descr(_object):
+    """Proxy of C++ clipper::Cell_descr class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Cell_descr, name, value)
     __swig_getmethods__ = {}
@@ -2270,6 +7570,47 @@ class Cell_descr(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Cell_descr self) -> Cell_descr
+        __init__(clipper::Cell_descr self, clipper::ftype const & a, clipper::ftype const & b, clipper::ftype const & c, clipper::ftype const & alpha=90.0, clipper::ftype const & beta=90.0, clipper::ftype const & gamma=90.0) -> Cell_descr
+
+        Parameters
+        ----------
+        a: clipper::ftype const &
+        b: clipper::ftype const &
+        c: clipper::ftype const &
+        alpha: clipper::ftype const &
+        beta: clipper::ftype const &
+        gamma: clipper::ftype const &
+
+        __init__(clipper::Cell_descr self, clipper::ftype const & a, clipper::ftype const & b, clipper::ftype const & c, clipper::ftype const & alpha=90.0, clipper::ftype const & beta=90.0) -> Cell_descr
+
+        Parameters
+        ----------
+        a: clipper::ftype const &
+        b: clipper::ftype const &
+        c: clipper::ftype const &
+        alpha: clipper::ftype const &
+        beta: clipper::ftype const &
+
+        __init__(clipper::Cell_descr self, clipper::ftype const & a, clipper::ftype const & b, clipper::ftype const & c, clipper::ftype const & alpha=90.0) -> Cell_descr
+
+        Parameters
+        ----------
+        a: clipper::ftype const &
+        b: clipper::ftype const &
+        c: clipper::ftype const &
+        alpha: clipper::ftype const &
+
+        __init__(clipper::Cell_descr self, clipper::ftype const & a, clipper::ftype const & b, clipper::ftype const & c) -> Cell_descr
+
+        Parameters
+        ----------
+        a: clipper::ftype const &
+        b: clipper::ftype const &
+        c: clipper::ftype const &
+
+        """
         this = _clipper.new_Cell_descr(*args)
         try:
             self.this.append(this)
@@ -2277,40 +7618,132 @@ class Cell_descr(_object):
             self.this = this
 
     def a(self):
+        """
+        a(Cell_descr self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Cell_descr const *
+
+        """
         return _clipper.Cell_descr_a(self)
 
+
     def b(self):
+        """
+        b(Cell_descr self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Cell_descr const *
+
+        """
         return _clipper.Cell_descr_b(self)
 
+
     def c(self):
+        """
+        c(Cell_descr self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Cell_descr const *
+
+        """
         return _clipper.Cell_descr_c(self)
 
+
     def alpha(self):
+        """
+        alpha(Cell_descr self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Cell_descr const *
+
+        """
         return _clipper.Cell_descr_alpha(self)
 
+
     def beta(self):
+        """
+        beta(Cell_descr self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Cell_descr const *
+
+        """
         return _clipper.Cell_descr_beta(self)
 
+
     def gamma(self):
+        """
+        gamma(Cell_descr self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Cell_descr const *
+
+        """
         return _clipper.Cell_descr_gamma(self)
 
+
     def alpha_deg(self):
+        """
+        alpha_deg(Cell_descr self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Cell_descr const *
+
+        """
         return _clipper.Cell_descr_alpha_deg(self)
 
+
     def beta_deg(self):
+        """
+        beta_deg(Cell_descr self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Cell_descr const *
+
+        """
         return _clipper.Cell_descr_beta_deg(self)
 
+
     def gamma_deg(self):
+        """
+        gamma_deg(Cell_descr self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Cell_descr const *
+
+        """
         return _clipper.Cell_descr_gamma_deg(self)
 
+
     def format(self):
+        """
+        format(Cell_descr self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Cell_descr const *
+
+        """
         return _clipper.Cell_descr_format(self)
+
     __swig_destroy__ = _clipper.delete_Cell_descr
     __del__ = lambda self: None
 Cell_descr_swigregister = _clipper.Cell_descr_swigregister
 Cell_descr_swigregister(Cell_descr)
 
 class Cell(Cell_descr):
+    """Proxy of C++ clipper::Cell class."""
+
     __swig_setmethods__ = {}
     for _s in [Cell_descr]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -2322,6 +7755,15 @@ class Cell(Cell_descr):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Cell self) -> Cell
+        __init__(clipper::Cell self, Cell_descr cell_) -> Cell
+
+        Parameters
+        ----------
+        cell_: clipper::Cell_descr const &
+
+        """
         this = _clipper.new_Cell(*args)
         try:
             self.this.append(this)
@@ -2329,64 +7771,235 @@ class Cell(Cell_descr):
             self.this = this
 
     def init(self, cell_):
+        """
+        init(Cell self, Cell_descr cell_)
+
+        Parameters
+        ----------
+        cell_: clipper::Cell_descr const &
+
+        """
         return _clipper.Cell_init(self, cell_)
 
+
     def is_null(self):
+        """
+        is_null(Cell self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Cell const *
+
+        """
         return _clipper.Cell_is_null(self)
 
+
     def a_star(self):
+        """
+        a_star(Cell self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Cell const *
+
+        """
         return _clipper.Cell_a_star(self)
 
+
     def b_star(self):
+        """
+        b_star(Cell self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Cell const *
+
+        """
         return _clipper.Cell_b_star(self)
 
+
     def c_star(self):
+        """
+        c_star(Cell self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Cell const *
+
+        """
         return _clipper.Cell_c_star(self)
 
+
     def alpha_star(self):
+        """
+        alpha_star(Cell self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Cell const *
+
+        """
         return _clipper.Cell_alpha_star(self)
 
+
     def beta_star(self):
+        """
+        beta_star(Cell self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Cell const *
+
+        """
         return _clipper.Cell_beta_star(self)
 
+
     def gamma_star(self):
+        """
+        gamma_star(Cell self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Cell const *
+
+        """
         return _clipper.Cell_gamma_star(self)
 
+
     def volume(self):
+        """
+        volume(Cell self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Cell const *
+
+        """
         return _clipper.Cell_volume(self)
 
+
     def equals(self, other, tol=1.0):
+        """
+        equals(Cell self, Cell other, clipper::ftype const tol=1.0) -> bool
+
+        Parameters
+        ----------
+        other: clipper::Cell const &
+        tol: clipper::ftype const
+
+        equals(Cell self, Cell other) -> bool
+
+        Parameters
+        ----------
+        other: clipper::Cell const &
+
+        """
         return _clipper.Cell_equals(self, other, tol)
 
+
     def metric_real(self):
+        """
+        metric_real(Cell self) -> Metric_tensor
+
+        Parameters
+        ----------
+        self: clipper::Cell const *
+
+        """
         return _clipper.Cell_metric_real(self)
 
+
     def metric_reci(self):
+        """
+        metric_reci(Cell self) -> Metric_tensor
+
+        Parameters
+        ----------
+        self: clipper::Cell const *
+
+        """
         return _clipper.Cell_metric_reci(self)
 
+
     def debug(self):
+        """
+        debug(Cell self)
+
+        Parameters
+        ----------
+        self: clipper::Cell const *
+
+        """
         return _clipper.Cell_debug(self)
 
+
     def matrix_orth(self):
+        """
+        matrix_orth(Cell self) -> mat33_float
+
+        Parameters
+        ----------
+        self: clipper::Cell *
+
+        """
         return _clipper.Cell_matrix_orth(self)
 
+
     def matrix_frac(self):
+        """
+        matrix_frac(Cell self) -> mat33_float
+
+        Parameters
+        ----------
+        self: clipper::Cell *
+
+        """
         return _clipper.Cell_matrix_frac(self)
 
+
     def dim(self):
+        """
+        dim(Cell self)
+
+        Parameters
+        ----------
+        self: clipper::Cell *
+
+        """
         return _clipper.Cell_dim(self)
 
+
     def angles(self):
+        """
+        angles(Cell self)
+
+        Parameters
+        ----------
+        self: clipper::Cell *
+
+        """
         return _clipper.Cell_angles(self)
 
+
     def angles_deg(self):
+        """
+        angles_deg(Cell self)
+
+        Parameters
+        ----------
+        self: clipper::Cell *
+
+        """
         return _clipper.Cell_angles_deg(self)
+
     __swig_destroy__ = _clipper.delete_Cell
     __del__ = lambda self: None
 Cell_swigregister = _clipper.Cell_swigregister
 Cell_swigregister(Cell)
 
 class Resolution(_object):
+    """Proxy of C++ clipper::Resolution class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Resolution, name, value)
     __swig_getmethods__ = {}
@@ -2394,6 +8007,15 @@ class Resolution(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Resolution self) -> Resolution
+        __init__(clipper::Resolution self, clipper::ftype const & resol_) -> Resolution
+
+        Parameters
+        ----------
+        resol_: clipper::ftype const &
+
+        """
         this = _clipper.new_Resolution(*args)
         try:
             self.this.append(this)
@@ -2401,22 +8023,60 @@ class Resolution(_object):
             self.this = this
 
     def init(self, resol_):
+        """
+        init(Resolution self, clipper::ftype const & resol_)
+
+        Parameters
+        ----------
+        resol_: clipper::ftype const &
+
+        """
         return _clipper.Resolution_init(self, resol_)
 
+
     def limit(self):
+        """
+        limit(Resolution self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Resolution const *
+
+        """
         return _clipper.Resolution_limit(self)
 
+
     def invresolsq_limit(self):
+        """
+        invresolsq_limit(Resolution self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Resolution const *
+
+        """
         return _clipper.Resolution_invresolsq_limit(self)
 
+
     def is_null(self):
+        """
+        is_null(Resolution self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Resolution const *
+
+        """
         return _clipper.Resolution_is_null(self)
+
     __swig_destroy__ = _clipper.delete_Resolution
     __del__ = lambda self: None
 Resolution_swigregister = _clipper.Resolution_swigregister
 Resolution_swigregister(Resolution)
 
 class HKL_class(_object):
+    """Proxy of C++ clipper::HKL_class class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, HKL_class, name, value)
     __swig_getmethods__ = {}
@@ -2424,6 +8084,16 @@ class HKL_class(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_class self) -> HKL_class
+        __init__(clipper::HKL_class self, Spacegroup spgr, HKL hkl) -> HKL_class
+
+        Parameters
+        ----------
+        spgr: clipper::Spacegroup const &
+        hkl: clipper::HKL const &
+
+        """
         this = _clipper.new_HKL_class(*args)
         try:
             self.this.append(this)
@@ -2431,25 +8101,72 @@ class HKL_class(_object):
             self.this = this
 
     def epsilon(self):
+        """
+        epsilon(HKL_class self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::HKL_class const *
+
+        """
         return _clipper.HKL_class_epsilon(self)
 
+
     def epsilonc(self):
+        """
+        epsilonc(HKL_class self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::HKL_class const *
+
+        """
         return _clipper.HKL_class_epsilonc(self)
 
+
     def allowed(self):
+        """
+        allowed(HKL_class self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::HKL_class const *
+
+        """
         return _clipper.HKL_class_allowed(self)
 
+
     def centric(self):
+        """
+        centric(HKL_class self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_class const *
+
+        """
         return _clipper.HKL_class_centric(self)
 
+
     def sys_abs(self):
+        """
+        sys_abs(HKL_class self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_class const *
+
+        """
         return _clipper.HKL_class_sys_abs(self)
+
     __swig_destroy__ = _clipper.delete_HKL_class
     __del__ = lambda self: None
 HKL_class_swigregister = _clipper.HKL_class_swigregister
 HKL_class_swigregister(HKL_class)
 
 class RTop_orth(_object):
+    """Proxy of C++ clipper::RTop_orth class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, RTop_orth, name, value)
     __swig_getmethods__ = {}
@@ -2457,6 +8174,43 @@ class RTop_orth(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::RTop_orth self) -> RTop_orth
+        __init__(clipper::RTop_orth self, clipper::RTop< > const & o) -> RTop_orth
+
+        Parameters
+        ----------
+        o: clipper::RTop< > const &
+
+        __init__(clipper::RTop_orth self, mat33_ftype r) -> RTop_orth
+
+        Parameters
+        ----------
+        r: clipper::Mat33< > const &
+
+        __init__(clipper::RTop_orth self, mat33_ftype r, clipper::Vec3< > const & t) -> RTop_orth
+
+        Parameters
+        ----------
+        r: clipper::Mat33< > const &
+        t: clipper::Vec3< > const &
+
+        __init__(clipper::RTop_orth self, std::vector< clipper::Coord_orth,std::allocator< clipper::Coord_orth > > const & src, std::vector< clipper::Coord_orth,std::allocator< clipper::Coord_orth > > const & tgt) -> RTop_orth
+
+        Parameters
+        ----------
+        src: std::vector< clipper::Coord_orth,std::allocator< clipper::Coord_orth > > const &
+        tgt: std::vector< clipper::Coord_orth,std::allocator< clipper::Coord_orth > > const &
+
+        __init__(clipper::RTop_orth self, std::vector< clipper::Coord_orth,std::allocator< clipper::Coord_orth > > const & src, std::vector< clipper::Coord_orth,std::allocator< clipper::Coord_orth > > const & tgt, DoubleVector wgt) -> RTop_orth
+
+        Parameters
+        ----------
+        src: std::vector< clipper::Coord_orth,std::allocator< clipper::Coord_orth > > const &
+        tgt: std::vector< clipper::Coord_orth,std::allocator< clipper::Coord_orth > > const &
+        wgt: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         this = _clipper.new_RTop_orth(*args)
         try:
             self.this.append(this)
@@ -2464,47 +8218,116 @@ class RTop_orth(_object):
             self.this = this
 
     def rtop_frac(self, cell):
+        """
+        rtop_frac(RTop_orth self, Cell cell) -> RTop_frac
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.RTop_orth_rtop_frac(self, cell)
 
+
     def inverse(self):
+        """
+        inverse(RTop_orth self) -> RTop_orth
+
+        Parameters
+        ----------
+        self: clipper::RTop_orth const *
+
+        """
         return _clipper.RTop_orth_inverse(self)
 
+
     def axis_coordinate_near(self, centre):
+        """
+        axis_coordinate_near(RTop_orth self, Coord_orth centre) -> Coord_orth
+
+        Parameters
+        ----------
+        centre: clipper::Coord_orth const &
+
+        """
         return _clipper.RTop_orth_axis_coordinate_near(self, centre)
 
+
     def screw_translation(self):
+        """
+        screw_translation(RTop_orth self) -> Coord_orth
+
+        Parameters
+        ----------
+        self: clipper::RTop_orth const *
+
+        """
         return _clipper.RTop_orth_screw_translation(self)
-    if _newclass:
-        identity = staticmethod(_clipper.RTop_orth_identity)
-    else:
-        identity = _clipper.RTop_orth_identity
-    if _newclass:
-        null = staticmethod(_clipper.RTop_orth_null)
-    else:
-        null = _clipper.RTop_orth_null
+
+
+    def identity():
+        """identity() -> RTop_orth"""
+        return _clipper.RTop_orth_identity()
+
+    identity = staticmethod(identity)
+
+    def null():
+        """null() -> RTop_orth"""
+        return _clipper.RTop_orth_null()
+
+    null = staticmethod(null)
 
     def matrix(self):
+        """
+        matrix(RTop_orth self)
+
+        Parameters
+        ----------
+        self: clipper::RTop_orth *
+
+        """
         return _clipper.RTop_orth_matrix(self)
 
+
     def rotation(self):
+        """
+        rotation(RTop_orth self)
+
+        Parameters
+        ----------
+        self: clipper::RTop_orth *
+
+        """
         return _clipper.RTop_orth_rotation(self)
 
+
     def translation(self):
+        """
+        translation(RTop_orth self)
+
+        Parameters
+        ----------
+        self: clipper::RTop_orth *
+
+        """
         return _clipper.RTop_orth_translation(self)
+
     __swig_destroy__ = _clipper.delete_RTop_orth
     __del__ = lambda self: None
 RTop_orth_swigregister = _clipper.RTop_orth_swigregister
 RTop_orth_swigregister(RTop_orth)
 
 def RTop_orth_identity():
+    """RTop_orth_identity() -> RTop_orth"""
     return _clipper.RTop_orth_identity()
-RTop_orth_identity = _clipper.RTop_orth_identity
 
 def RTop_orth_null():
+    """RTop_orth_null() -> RTop_orth"""
     return _clipper.RTop_orth_null()
-RTop_orth_null = _clipper.RTop_orth_null
 
 class HKL(_object):
+    """Proxy of C++ clipper::HKL class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, HKL, name, value)
     __swig_getmethods__ = {}
@@ -2512,6 +8335,23 @@ class HKL(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL self) -> HKL
+        __init__(clipper::HKL self, clipper::Vec3< int > const & v) -> HKL
+
+        Parameters
+        ----------
+        v: clipper::Vec3< int > const &
+
+        __init__(clipper::HKL self, int const & h, int const & k, int const & l) -> HKL
+
+        Parameters
+        ----------
+        h: int const &
+        k: int const &
+        l: int const &
+
+        """
         this = _clipper.new_HKL(*args)
         try:
             self.this.append(this)
@@ -2519,66 +8359,224 @@ class HKL(_object):
             self.this = this
 
     def h(self, *args):
+        """
+        h(HKL self) -> int const
+        h(HKL self) -> int &
+
+        Parameters
+        ----------
+        self: clipper::HKL *
+
+        """
         return _clipper.HKL_h(self, *args)
 
+
     def k(self, *args):
+        """
+        k(HKL self) -> int const
+        k(HKL self) -> int &
+
+        Parameters
+        ----------
+        self: clipper::HKL *
+
+        """
         return _clipper.HKL_k(self, *args)
 
+
     def l(self, *args):
+        """
+        l(HKL self) -> int const
+        l(HKL self) -> int &
+
+        Parameters
+        ----------
+        self: clipper::HKL *
+
+        """
         return _clipper.HKL_l(self, *args)
 
+
     def invresolsq(self, cell):
+        """
+        invresolsq(HKL self, Cell cell) -> clipper::ftype
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.HKL_invresolsq(self, cell)
 
+
     def coord_reci_frac(self):
+        """
+        coord_reci_frac(HKL self) -> Coord_reci_frac
+
+        Parameters
+        ----------
+        self: clipper::HKL const *
+
+        """
         return _clipper.HKL_coord_reci_frac(self)
 
+
     def coord_reci_orth(self, cell):
+        """
+        coord_reci_orth(HKL self, Cell cell) -> Coord_reci_orth
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.HKL_coord_reci_orth(self, cell)
 
+
     def transform(self, *args):
+        """
+        transform(HKL self, Symop op) -> HKL
+
+        Parameters
+        ----------
+        op: clipper::Symop const &
+
+        transform(HKL self, Isymop op) -> HKL
+
+        Parameters
+        ----------
+        op: clipper::Isymop const &
+
+        """
         return _clipper.HKL_transform(self, *args)
 
+
     def sym_phase_shift(self, op):
+        """
+        sym_phase_shift(HKL self, Symop op) -> clipper::ftype
+
+        Parameters
+        ----------
+        op: clipper::Symop const &
+
+        """
         return _clipper.HKL_sym_phase_shift(self, op)
 
+
     def format(self):
+        """
+        format(HKL self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL const *
+
+        """
         return _clipper.HKL_format(self)
 
+
     def __add__(self, h2):
+        """
+        __add__(HKL self, HKL h2) -> HKL
+
+        Parameters
+        ----------
+        h2: clipper::HKL const &
+
+        """
         return _clipper.HKL___add__(self, h2)
 
+
     def __sub__(self, h2):
+        """
+        __sub__(HKL self, HKL h2) -> HKL
+
+        Parameters
+        ----------
+        h2: clipper::HKL const &
+
+        """
         return _clipper.HKL___sub__(self, h2)
 
+
     def __neg__(self):
+        """
+        __neg__(HKL self) -> HKL
+
+        Parameters
+        ----------
+        self: clipper::HKL *
+
+        """
         return _clipper.HKL___neg__(self)
+
     __swig_destroy__ = _clipper.delete_HKL
     __del__ = lambda self: None
 HKL_swigregister = _clipper.HKL_swigregister
 HKL_swigregister(HKL)
 
 def neg_HKL(h1):
+    """
+    neg_HKL(HKL h1) -> HKL
+
+    Parameters
+    ----------
+    h1: clipper::HKL const &
+
+    """
     return _clipper.neg_HKL(h1)
-neg_HKL = _clipper.neg_HKL
 
 def add_HKL(h1, h2):
+    """
+    add_HKL(HKL h1, HKL h2) -> HKL
+
+    Parameters
+    ----------
+    h1: clipper::HKL const &
+    h2: clipper::HKL const &
+
+    """
     return _clipper.add_HKL(h1, h2)
-add_HKL = _clipper.add_HKL
 
 def subs_HKL(h1, h2):
+    """
+    subs_HKL(HKL h1, HKL h2) -> HKL
+
+    Parameters
+    ----------
+    h1: clipper::HKL const &
+    h2: clipper::HKL const &
+
+    """
     return _clipper.subs_HKL(h1, h2)
-subs_HKL = _clipper.subs_HKL
 
 def product_HKL(s, h1):
+    """
+    product_HKL(int const & s, HKL h1) -> HKL
+
+    Parameters
+    ----------
+    s: int const &
+    h1: clipper::HKL const &
+
+    """
     return _clipper.product_HKL(s, h1)
-product_HKL = _clipper.product_HKL
 
 def transf_HKL(op, h1):
+    """
+    transf_HKL(Isymop op, HKL h1) -> HKL
+
+    Parameters
+    ----------
+    op: clipper::Isymop const &
+    h1: clipper::HKL const &
+
+    """
     return _clipper.transf_HKL(op, h1)
-transf_HKL = _clipper.transf_HKL
 
 class Coord_reci_orth(_object):
+    """Proxy of C++ clipper::Coord_reci_orth class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Coord_reci_orth, name, value)
     __swig_getmethods__ = {}
@@ -2586,6 +8584,23 @@ class Coord_reci_orth(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Coord_reci_orth self) -> Coord_reci_orth
+        __init__(clipper::Coord_reci_orth self, clipper::Vec3< > const & v) -> Coord_reci_orth
+
+        Parameters
+        ----------
+        v: clipper::Vec3< > const &
+
+        __init__(clipper::Coord_reci_orth self, clipper::ftype const & xs, clipper::ftype const & ys, clipper::ftype const & zs) -> Coord_reci_orth
+
+        Parameters
+        ----------
+        xs: clipper::ftype const &
+        ys: clipper::ftype const &
+        zs: clipper::ftype const &
+
+        """
         this = _clipper.new_Coord_reci_orth(*args)
         try:
             self.this.append(this)
@@ -2593,31 +8608,96 @@ class Coord_reci_orth(_object):
             self.this = this
 
     def xs(self):
+        """
+        xs(Coord_reci_orth self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_reci_orth const *
+
+        """
         return _clipper.Coord_reci_orth_xs(self)
 
+
     def ys(self):
+        """
+        ys(Coord_reci_orth self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_reci_orth const *
+
+        """
         return _clipper.Coord_reci_orth_ys(self)
 
+
     def zs(self):
+        """
+        zs(Coord_reci_orth self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_reci_orth const *
+
+        """
         return _clipper.Coord_reci_orth_zs(self)
 
+
     def invresolsq(self):
+        """
+        invresolsq(Coord_reci_orth self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Coord_reci_orth const *
+
+        """
         return _clipper.Coord_reci_orth_invresolsq(self)
 
+
     def coord_reci_frac(self, cell):
+        """
+        coord_reci_frac(Coord_reci_orth self, Cell cell) -> Coord_reci_frac
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.Coord_reci_orth_coord_reci_frac(self, cell)
 
+
     def transform(self, op):
+        """
+        transform(Coord_reci_orth self, RTop_orth op) -> Coord_reci_orth
+
+        Parameters
+        ----------
+        op: clipper::RTop_orth const &
+
+        """
         return _clipper.Coord_reci_orth_transform(self, op)
 
+
     def format(self):
+        """
+        format(Coord_reci_orth self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Coord_reci_orth const *
+
+        """
         return _clipper.Coord_reci_orth_format(self)
+
     __swig_destroy__ = _clipper.delete_Coord_reci_orth
     __del__ = lambda self: None
 Coord_reci_orth_swigregister = _clipper.Coord_reci_orth_swigregister
 Coord_reci_orth_swigregister(Coord_reci_orth)
 
 class Coord_reci_frac(_object):
+    """Proxy of C++ clipper::Coord_reci_frac class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Coord_reci_frac, name, value)
     __swig_getmethods__ = {}
@@ -2625,6 +8705,29 @@ class Coord_reci_frac(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Coord_reci_frac self) -> Coord_reci_frac
+        __init__(clipper::Coord_reci_frac self, clipper::Vec3< > const & v) -> Coord_reci_frac
+
+        Parameters
+        ----------
+        v: clipper::Vec3< > const &
+
+        __init__(clipper::Coord_reci_frac self, clipper::ftype const & us, clipper::ftype const & vs, clipper::ftype const & ws) -> Coord_reci_frac
+
+        Parameters
+        ----------
+        us: clipper::ftype const &
+        vs: clipper::ftype const &
+        ws: clipper::ftype const &
+
+        __init__(clipper::Coord_reci_frac self, HKL hkl) -> Coord_reci_frac
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+
+        """
         this = _clipper.new_Coord_reci_frac(*args)
         try:
             self.this.append(this)
@@ -2632,34 +8735,108 @@ class Coord_reci_frac(_object):
             self.this = this
 
     def hkl(self):
+        """
+        hkl(Coord_reci_frac self) -> HKL
+
+        Parameters
+        ----------
+        self: clipper::Coord_reci_frac const *
+
+        """
         return _clipper.Coord_reci_frac_hkl(self)
 
+
     def invresolsq(self, cell):
+        """
+        invresolsq(Coord_reci_frac self, Cell cell) -> clipper::ftype
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.Coord_reci_frac_invresolsq(self, cell)
 
+
     def us(self):
+        """
+        us(Coord_reci_frac self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_reci_frac const *
+
+        """
         return _clipper.Coord_reci_frac_us(self)
 
+
     def vs(self):
+        """
+        vs(Coord_reci_frac self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_reci_frac const *
+
+        """
         return _clipper.Coord_reci_frac_vs(self)
 
+
     def ws(self):
+        """
+        ws(Coord_reci_frac self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_reci_frac const *
+
+        """
         return _clipper.Coord_reci_frac_ws(self)
 
+
     def coord_reci_orth(self, cell):
+        """
+        coord_reci_orth(Coord_reci_frac self, Cell cell) -> Coord_reci_orth
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.Coord_reci_frac_coord_reci_orth(self, cell)
 
+
     def transform(self, op):
+        """
+        transform(Coord_reci_frac self, RTop_frac op) -> Coord_reci_frac
+
+        Parameters
+        ----------
+        op: clipper::RTop_frac const &
+
+        """
         return _clipper.Coord_reci_frac_transform(self, op)
 
+
     def format(self):
+        """
+        format(Coord_reci_frac self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Coord_reci_frac const *
+
+        """
         return _clipper.Coord_reci_frac_format(self)
+
     __swig_destroy__ = _clipper.delete_Coord_reci_frac
     __del__ = lambda self: None
 Coord_reci_frac_swigregister = _clipper.Coord_reci_frac_swigregister
 Coord_reci_frac_swigregister(Coord_reci_frac)
 
 class Coord_grid(_object):
+    """Proxy of C++ clipper::Coord_grid class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Coord_grid, name, value)
     __swig_getmethods__ = {}
@@ -2667,6 +8844,30 @@ class Coord_grid(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Coord_grid self) -> Coord_grid
+        __init__(clipper::Coord_grid self, clipper::Vec3< int > const v) -> Coord_grid
+
+        Parameters
+        ----------
+        v: clipper::Vec3< int > const
+
+        __init__(clipper::Coord_grid self, int const & u, int const & v, int const & w) -> Coord_grid
+
+        Parameters
+        ----------
+        u: int const &
+        v: int const &
+        w: int const &
+
+        __init__(clipper::Coord_grid self, Grid g, int const & index) -> Coord_grid
+
+        Parameters
+        ----------
+        g: clipper::Grid const &
+        index: int const &
+
+        """
         this = _clipper.new_Coord_grid(*args)
         try:
             self.this.append(this)
@@ -2674,101 +8875,360 @@ class Coord_grid(_object):
             self.this = this
 
     def u(self):
+        """
+        u(Coord_grid self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_grid const *
+
+        """
         return _clipper.Coord_grid_u(self)
 
+
     def v(self):
+        """
+        v(Coord_grid self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_grid const *
+
+        """
         return _clipper.Coord_grid_v(self)
 
+
     def w(self):
+        """
+        w(Coord_grid self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_grid const *
+
+        """
         return _clipper.Coord_grid_w(self)
 
+
     def _u_ptr(self):
+        """
+        _u_ptr(Coord_grid self) -> int &
+
+        Parameters
+        ----------
+        self: clipper::Coord_grid *
+
+        """
         return _clipper.Coord_grid__u_ptr(self)
 
+
     def _v_ptr(self):
+        """
+        _v_ptr(Coord_grid self) -> int &
+
+        Parameters
+        ----------
+        self: clipper::Coord_grid *
+
+        """
         return _clipper.Coord_grid__v_ptr(self)
 
+
     def _w_ptr(self):
+        """
+        _w_ptr(Coord_grid self) -> int &
+
+        Parameters
+        ----------
+        self: clipper::Coord_grid *
+
+        """
         return _clipper.Coord_grid__w_ptr(self)
 
+
     def coord_map(self):
+        """
+        coord_map(Coord_grid self) -> Coord_map
+
+        Parameters
+        ----------
+        self: clipper::Coord_grid const *
+
+        """
         return _clipper.Coord_grid_coord_map(self)
 
+
     def coord_frac(self, g):
+        """
+        coord_frac(Coord_grid self, Grid_sampling g) -> Coord_frac
+
+        Parameters
+        ----------
+        g: clipper::Grid_sampling const &
+
+        """
         return _clipper.Coord_grid_coord_frac(self, g)
 
+
     def transform(self, op):
+        """
+        transform(Coord_grid self, Isymop op) -> Coord_grid
+
+        Parameters
+        ----------
+        op: clipper::Isymop const &
+
+        """
         return _clipper.Coord_grid_transform(self, op)
 
+
     def unit(self, g):
+        """
+        unit(Coord_grid self, Grid_sampling g) -> Coord_grid
+
+        Parameters
+        ----------
+        g: clipper::Grid_sampling const &
+
+        """
         return _clipper.Coord_grid_unit(self, g)
 
+
     def next(self, *args):
+        """
+        next(Coord_grid self, Grid g) -> Coord_grid
+
+        Parameters
+        ----------
+        g: clipper::Grid const &
+
+        next(Coord_grid self, Grid_range g) -> Coord_grid
+
+        Parameters
+        ----------
+        g: clipper::Grid_range const &
+
+        """
         return _clipper.Coord_grid_next(self, *args)
 
+
     def last(self, *args):
+        """
+        last(Coord_grid self, Grid g) -> bool
+
+        Parameters
+        ----------
+        g: clipper::Grid const &
+
+        last(Coord_grid self, Grid_range g) -> bool
+
+        Parameters
+        ----------
+        g: clipper::Grid_range const &
+
+        """
         return _clipper.Coord_grid_last(self, *args)
 
+
     def index(self, g):
+        """
+        index(Coord_grid self, Grid g) -> int
+
+        Parameters
+        ----------
+        g: clipper::Grid const &
+
+        """
         return _clipper.Coord_grid_index(self, g)
 
+
     def deindex(self, g, index):
+        """
+        deindex(Coord_grid self, Grid g, int const & index)
+
+        Parameters
+        ----------
+        g: clipper::Grid const &
+        index: int const &
+
+        """
         return _clipper.Coord_grid_deindex(self, g, index)
 
+
     def format(self):
+        """
+        format(Coord_grid self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Coord_grid const *
+
+        """
         return _clipper.Coord_grid_format(self)
 
+
     def __cmp__(self, g2):
+        """
+        __cmp__(Coord_grid self, Coord_grid g2) -> bool
+
+        Parameters
+        ----------
+        g2: clipper::Coord_grid const &
+
+        """
         return _clipper.Coord_grid___cmp__(self, g2)
 
+
     def __ne__(self, g2):
+        """
+        __ne__(Coord_grid self, Coord_grid g2) -> bool
+
+        Parameters
+        ----------
+        g2: clipper::Coord_grid const &
+
+        """
         return _clipper.Coord_grid___ne__(self, g2)
 
+
     def __add__(self, g2):
+        """
+        __add__(Coord_grid self, Coord_grid g2) -> Coord_grid
+
+        Parameters
+        ----------
+        g2: clipper::Coord_grid const &
+
+        """
         return _clipper.Coord_grid___add__(self, g2)
 
+
     def __neg__(self):
+        """
+        __neg__(Coord_grid self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::Coord_grid *
+
+        """
         return _clipper.Coord_grid___neg__(self)
 
+
     def __sub__(self, g2):
+        """
+        __sub__(Coord_grid self, Coord_grid g2) -> Coord_grid
+
+        Parameters
+        ----------
+        g2: clipper::Coord_grid const &
+
+        """
         return _clipper.Coord_grid___sub__(self, g2)
 
+
     def uvw(self):
+        """
+        uvw(Coord_grid self)
+
+        Parameters
+        ----------
+        self: clipper::Coord_grid *
+
+        """
         return _clipper.Coord_grid_uvw(self)
+
     __swig_destroy__ = _clipper.delete_Coord_grid
     __del__ = lambda self: None
 Coord_grid_swigregister = _clipper.Coord_grid_swigregister
 Coord_grid_swigregister(Coord_grid)
 
 def neg_Coord_grid(r1):
+    """
+    neg_Coord_grid(Coord_grid r1) -> Coord_grid
+
+    Parameters
+    ----------
+    r1: clipper::Coord_grid const &
+
+    """
     return _clipper.neg_Coord_grid(r1)
-neg_Coord_grid = _clipper.neg_Coord_grid
 
 def add_Coord_grid(r1, r2):
+    """
+    add_Coord_grid(Coord_grid r1, Coord_grid r2) -> Coord_grid
+
+    Parameters
+    ----------
+    r1: clipper::Coord_grid const &
+    r2: clipper::Coord_grid const &
+
+    """
     return _clipper.add_Coord_grid(r1, r2)
-add_Coord_grid = _clipper.add_Coord_grid
 
 def subs_Coord_grid(r1, r2):
+    """
+    subs_Coord_grid(Coord_grid r1, Coord_grid r2) -> Coord_grid
+
+    Parameters
+    ----------
+    r1: clipper::Coord_grid const &
+    r2: clipper::Coord_grid const &
+
+    """
     return _clipper.subs_Coord_grid(r1, r2)
-subs_Coord_grid = _clipper.subs_Coord_grid
 
 def product_Coord_grid(s, r1):
+    """
+    product_Coord_grid(int const & s, Coord_grid r1) -> Coord_grid
+
+    Parameters
+    ----------
+    s: int const &
+    r1: clipper::Coord_grid const &
+
+    """
     return _clipper.product_Coord_grid(s, r1)
-product_Coord_grid = _clipper.product_Coord_grid
 
 def equals_Coord_grid(r1, r2):
+    """
+    equals_Coord_grid(Coord_grid r1, Coord_grid r2) -> int
+
+    Parameters
+    ----------
+    r1: clipper::Coord_grid const &
+    r2: clipper::Coord_grid const &
+
+    """
     return _clipper.equals_Coord_grid(r1, r2)
-equals_Coord_grid = _clipper.equals_Coord_grid
 
 def notequals_Coord_grid(r1, r2):
+    """
+    notequals_Coord_grid(Coord_grid r1, Coord_grid r2) -> int
+
+    Parameters
+    ----------
+    r1: clipper::Coord_grid const &
+    r2: clipper::Coord_grid const &
+
+    """
     return _clipper.notequals_Coord_grid(r1, r2)
-notequals_Coord_grid = _clipper.notequals_Coord_grid
 
 def transf_Coord_grid(op, r1):
+    """
+    transf_Coord_grid(Isymop op, Coord_grid r1) -> Coord_grid
+
+    Parameters
+    ----------
+    op: clipper::Isymop const &
+    r1: clipper::Coord_grid const &
+
+    """
     return _clipper.transf_Coord_grid(op, r1)
-transf_Coord_grid = _clipper.transf_Coord_grid
 
 class Coord_orth(_object):
+    """Proxy of C++ clipper::Coord_orth class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Coord_orth, name, value)
     __swig_getmethods__ = {}
@@ -2776,6 +9236,34 @@ class Coord_orth(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Coord_orth self) -> Coord_orth
+        __init__(clipper::Coord_orth self, clipper::Vec3< > const & v) -> Coord_orth
+
+        Parameters
+        ----------
+        v: clipper::Vec3< > const &
+
+        __init__(clipper::Coord_orth self, clipper::ftype const & x, clipper::ftype const & y, clipper::ftype const & z) -> Coord_orth
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+        y: clipper::ftype const &
+        z: clipper::ftype const &
+
+        __init__(clipper::Coord_orth self, Coord_orth x1, Coord_orth x2, Coord_orth x3, clipper::ftype const & length, clipper::ftype const & angle, clipper::ftype const & torsion) -> Coord_orth
+
+        Parameters
+        ----------
+        x1: clipper::Coord_orth const &
+        x2: clipper::Coord_orth const &
+        x3: clipper::Coord_orth const &
+        length: clipper::ftype const &
+        angle: clipper::ftype const &
+        torsion: clipper::ftype const &
+
+        """
         this = _clipper.new_Coord_orth(*args)
         try:
             self.this.append(this)
@@ -2783,93 +9271,323 @@ class Coord_orth(_object):
             self.this = this
 
     def x(self):
+        """
+        x(Coord_orth self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_orth const *
+
+        """
         return _clipper.Coord_orth_x(self)
 
+
     def y(self):
+        """
+        y(Coord_orth self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_orth const *
+
+        """
         return _clipper.Coord_orth_y(self)
 
+
     def z(self):
+        """
+        z(Coord_orth self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_orth const *
+
+        """
         return _clipper.Coord_orth_z(self)
 
+
     def lengthsq(self):
+        """
+        lengthsq(Coord_orth self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Coord_orth const *
+
+        """
         return _clipper.Coord_orth_lengthsq(self)
 
+
     def coord_frac(self, cell):
+        """
+        coord_frac(Coord_orth self, Cell cell) -> Coord_frac
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.Coord_orth_coord_frac(self, cell)
 
+
     def transform(self, op):
+        """
+        transform(Coord_orth self, RTop_orth op) -> Coord_orth
+
+        Parameters
+        ----------
+        op: clipper::RTop_orth const &
+
+        """
         return _clipper.Coord_orth_transform(self, op)
 
+
     def format(self):
+        """
+        format(Coord_orth self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Coord_orth const *
+
+        """
         return _clipper.Coord_orth_format(self)
-    if _newclass:
-        length = staticmethod(_clipper.Coord_orth_length)
-    else:
-        length = _clipper.Coord_orth_length
-    if _newclass:
-        angle = staticmethod(_clipper.Coord_orth_angle)
-    else:
-        angle = _clipper.Coord_orth_angle
-    if _newclass:
-        torsion = staticmethod(_clipper.Coord_orth_torsion)
-    else:
-        torsion = _clipper.Coord_orth_torsion
+
+
+    def length(x1, x2):
+        """
+        length(Coord_orth x1, Coord_orth x2) -> clipper::ftype
+
+        Parameters
+        ----------
+        x1: clipper::Coord_orth const &
+        x2: clipper::Coord_orth const &
+
+        """
+        return _clipper.Coord_orth_length(x1, x2)
+
+    length = staticmethod(length)
+
+    def angle(x1, x2, x3):
+        """
+        angle(Coord_orth x1, Coord_orth x2, Coord_orth x3) -> clipper::ftype
+
+        Parameters
+        ----------
+        x1: clipper::Coord_orth const &
+        x2: clipper::Coord_orth const &
+        x3: clipper::Coord_orth const &
+
+        """
+        return _clipper.Coord_orth_angle(x1, x2, x3)
+
+    angle = staticmethod(angle)
+
+    def torsion(x1, x2, x3, x4):
+        """
+        torsion(Coord_orth x1, Coord_orth x2, Coord_orth x3, Coord_orth x4) -> clipper::ftype
+
+        Parameters
+        ----------
+        x1: clipper::Coord_orth const &
+        x2: clipper::Coord_orth const &
+        x3: clipper::Coord_orth const &
+        x4: clipper::Coord_orth const &
+
+        """
+        return _clipper.Coord_orth_torsion(x1, x2, x3, x4)
+
+    torsion = staticmethod(torsion)
 
     def __add__(self, h2):
+        """
+        __add__(Coord_orth self, Coord_orth h2) -> Coord_orth
+
+        Parameters
+        ----------
+        h2: clipper::Coord_orth const &
+
+        """
         return _clipper.Coord_orth___add__(self, h2)
 
+
     def __sub__(self, h2):
+        """
+        __sub__(Coord_orth self, Coord_orth h2) -> Coord_orth
+
+        Parameters
+        ----------
+        h2: clipper::Coord_orth const &
+
+        """
         return _clipper.Coord_orth___sub__(self, h2)
 
+
     def __neg__(self):
+        """
+        __neg__(Coord_orth self) -> Coord_orth
+
+        Parameters
+        ----------
+        self: clipper::Coord_orth *
+
+        """
         return _clipper.Coord_orth___neg__(self)
 
+
     def xyz(self):
+        """
+        xyz(Coord_orth self)
+
+        Parameters
+        ----------
+        self: clipper::Coord_orth *
+
+        """
         return _clipper.Coord_orth_xyz(self)
 
+
     def __mul__(self, *args):
+        """
+        __mul__(Coord_orth self, float const & factor) -> Coord_orth
+
+        Parameters
+        ----------
+        factor: float const &
+
+        __mul__(Coord_orth self, RTop_orth op) -> Coord_orth
+
+        Parameters
+        ----------
+        op: clipper::RTop_orth const &
+
+        """
         return _clipper.Coord_orth___mul__(self, *args)
 
+
     def __rmul__(self, *args):
+        """
+        __rmul__(Coord_orth self, float const & factor) -> Coord_orth
+
+        Parameters
+        ----------
+        factor: float const &
+
+        __rmul__(Coord_orth self, RTop_orth op) -> Coord_orth
+
+        Parameters
+        ----------
+        op: clipper::RTop_orth const &
+
+        """
         return _clipper.Coord_orth___rmul__(self, *args)
+
     __swig_destroy__ = _clipper.delete_Coord_orth
     __del__ = lambda self: None
 Coord_orth_swigregister = _clipper.Coord_orth_swigregister
 Coord_orth_swigregister(Coord_orth)
 
 def Coord_orth_length(x1, x2):
+    """
+    Coord_orth_length(Coord_orth x1, Coord_orth x2) -> clipper::ftype
+
+    Parameters
+    ----------
+    x1: clipper::Coord_orth const &
+    x2: clipper::Coord_orth const &
+
+    """
     return _clipper.Coord_orth_length(x1, x2)
-Coord_orth_length = _clipper.Coord_orth_length
 
 def Coord_orth_angle(x1, x2, x3):
+    """
+    Coord_orth_angle(Coord_orth x1, Coord_orth x2, Coord_orth x3) -> clipper::ftype
+
+    Parameters
+    ----------
+    x1: clipper::Coord_orth const &
+    x2: clipper::Coord_orth const &
+    x3: clipper::Coord_orth const &
+
+    """
     return _clipper.Coord_orth_angle(x1, x2, x3)
-Coord_orth_angle = _clipper.Coord_orth_angle
 
 def Coord_orth_torsion(x1, x2, x3, x4):
+    """
+    Coord_orth_torsion(Coord_orth x1, Coord_orth x2, Coord_orth x3, Coord_orth x4) -> clipper::ftype
+
+    Parameters
+    ----------
+    x1: clipper::Coord_orth const &
+    x2: clipper::Coord_orth const &
+    x3: clipper::Coord_orth const &
+    x4: clipper::Coord_orth const &
+
+    """
     return _clipper.Coord_orth_torsion(x1, x2, x3, x4)
-Coord_orth_torsion = _clipper.Coord_orth_torsion
 
 def neg_Coord_orth(x1):
+    """
+    neg_Coord_orth(Coord_orth x1) -> Coord_orth
+
+    Parameters
+    ----------
+    x1: clipper::Coord_orth const &
+
+    """
     return _clipper.neg_Coord_orth(x1)
-neg_Coord_orth = _clipper.neg_Coord_orth
 
 def add_Coord_orth(x1, x2):
+    """
+    add_Coord_orth(Coord_orth x1, Coord_orth x2) -> Coord_orth
+
+    Parameters
+    ----------
+    x1: clipper::Coord_orth const &
+    x2: clipper::Coord_orth const &
+
+    """
     return _clipper.add_Coord_orth(x1, x2)
-add_Coord_orth = _clipper.add_Coord_orth
 
 def subs_Coord_orth(x1, x2):
+    """
+    subs_Coord_orth(Coord_orth x1, Coord_orth x2) -> Coord_orth
+
+    Parameters
+    ----------
+    x1: clipper::Coord_orth const &
+    x2: clipper::Coord_orth const &
+
+    """
     return _clipper.subs_Coord_orth(x1, x2)
-subs_Coord_orth = _clipper.subs_Coord_orth
 
 def product_Coord_orth(s, x1):
+    """
+    product_Coord_orth(clipper::ftype const & s, Coord_orth x1) -> Coord_orth
+
+    Parameters
+    ----------
+    s: clipper::ftype const &
+    x1: clipper::Coord_orth const &
+
+    """
     return _clipper.product_Coord_orth(s, x1)
-product_Coord_orth = _clipper.product_Coord_orth
 
 def transf_Coord_orth(op, x1):
+    """
+    transf_Coord_orth(RTop_orth op, Coord_orth x1) -> Coord_orth
+
+    Parameters
+    ----------
+    op: clipper::RTop_orth const &
+    x1: clipper::Coord_orth const &
+
+    """
     return _clipper.transf_Coord_orth(op, x1)
-transf_Coord_orth = _clipper.transf_Coord_orth
 
 class Coord_frac(_object):
+    """Proxy of C++ clipper::Coord_frac class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Coord_frac, name, value)
     __swig_getmethods__ = {}
@@ -2877,6 +9595,23 @@ class Coord_frac(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Coord_frac self) -> Coord_frac
+        __init__(clipper::Coord_frac self, clipper::Vec3< > const & v) -> Coord_frac
+
+        Parameters
+        ----------
+        v: clipper::Vec3< > const &
+
+        __init__(clipper::Coord_frac self, clipper::ftype const & u, clipper::ftype const & v, clipper::ftype const & w) -> Coord_frac
+
+        Parameters
+        ----------
+        u: clipper::ftype const &
+        v: clipper::ftype const &
+        w: clipper::ftype const &
+
+        """
         this = _clipper.new_Coord_frac(*args)
         try:
             self.this.append(this)
@@ -2884,87 +9619,313 @@ class Coord_frac(_object):
             self.this = this
 
     def u(self):
+        """
+        u(Coord_frac self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_frac const *
+
+        """
         return _clipper.Coord_frac_u(self)
 
+
     def v(self):
+        """
+        v(Coord_frac self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_frac const *
+
+        """
         return _clipper.Coord_frac_v(self)
 
+
     def w(self):
+        """
+        w(Coord_frac self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_frac const *
+
+        """
         return _clipper.Coord_frac_w(self)
 
+
     def lengthsq(self, cell):
+        """
+        lengthsq(Coord_frac self, Cell cell) -> clipper::ftype
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.Coord_frac_lengthsq(self, cell)
 
+
     def coord_orth(self, cell):
+        """
+        coord_orth(Coord_frac self, Cell cell) -> Coord_orth
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.Coord_frac_coord_orth(self, cell)
 
+
     def coord_map(self, g):
+        """
+        coord_map(Coord_frac self, Grid g) -> Coord_map
+
+        Parameters
+        ----------
+        g: clipper::Grid const &
+
+        """
         return _clipper.Coord_frac_coord_map(self, g)
 
+
     def coord_grid(self, g):
+        """
+        coord_grid(Coord_frac self, Grid g) -> Coord_grid
+
+        Parameters
+        ----------
+        g: clipper::Grid const &
+
+        """
         return _clipper.Coord_frac_coord_grid(self, g)
 
+
     def transform(self, op):
+        """
+        transform(Coord_frac self, RTop_frac op) -> Coord_frac
+
+        Parameters
+        ----------
+        op: clipper::RTop_frac const &
+
+        """
         return _clipper.Coord_frac_transform(self, op)
 
+
     def lattice_copy_zero(self):
+        """
+        lattice_copy_zero(Coord_frac self) -> Coord_frac
+
+        Parameters
+        ----------
+        self: clipper::Coord_frac const *
+
+        """
         return _clipper.Coord_frac_lattice_copy_zero(self)
 
+
     def lattice_copy_unit(self):
+        """
+        lattice_copy_unit(Coord_frac self) -> Coord_frac
+
+        Parameters
+        ----------
+        self: clipper::Coord_frac const *
+
+        """
         return _clipper.Coord_frac_lattice_copy_unit(self)
 
+
     def lattice_copy_near(self, n):
+        """
+        lattice_copy_near(Coord_frac self, Coord_frac n) -> Coord_frac
+
+        Parameters
+        ----------
+        n: clipper::Coord_frac const &
+
+        """
         return _clipper.Coord_frac_lattice_copy_near(self, n)
 
+
     def symmetry_copy_near(self, spgr, cell, n):
+        """
+        symmetry_copy_near(Coord_frac self, Spacegroup spgr, Cell cell, Coord_frac n) -> Coord_frac
+
+        Parameters
+        ----------
+        spgr: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        n: clipper::Coord_frac const &
+
+        """
         return _clipper.Coord_frac_symmetry_copy_near(self, spgr, cell, n)
 
+
     def format(self):
+        """
+        format(Coord_frac self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Coord_frac const *
+
+        """
         return _clipper.Coord_frac_format(self)
 
+
     def __add__(self, h2):
+        """
+        __add__(Coord_frac self, Coord_frac h2) -> Coord_frac
+
+        Parameters
+        ----------
+        h2: clipper::Coord_frac const &
+
+        """
         return _clipper.Coord_frac___add__(self, h2)
 
+
     def __sub__(self, h2):
+        """
+        __sub__(Coord_frac self, Coord_frac h2) -> Coord_frac
+
+        Parameters
+        ----------
+        h2: clipper::Coord_frac const &
+
+        """
         return _clipper.Coord_frac___sub__(self, h2)
 
+
     def __neg__(self):
+        """
+        __neg__(Coord_frac self) -> Coord_frac
+
+        Parameters
+        ----------
+        self: clipper::Coord_frac *
+
+        """
         return _clipper.Coord_frac___neg__(self)
 
+
     def uvw(self):
+        """
+        uvw(Coord_frac self)
+
+        Parameters
+        ----------
+        self: clipper::Coord_frac *
+
+        """
         return _clipper.Coord_frac_uvw(self)
 
+
     def __mul__(self, *args):
+        """
+        __mul__(Coord_frac self, float const & factor) -> Coord_frac
+
+        Parameters
+        ----------
+        factor: float const &
+
+        __mul__(Coord_frac self, RTop_frac op) -> Coord_frac
+
+        Parameters
+        ----------
+        op: clipper::RTop_frac const &
+
+        """
         return _clipper.Coord_frac___mul__(self, *args)
 
+
     def __rmul__(self, *args):
+        """
+        __rmul__(Coord_frac self, float const & factor) -> Coord_frac
+
+        Parameters
+        ----------
+        factor: float const &
+
+        __rmul__(Coord_frac self, RTop_frac op) -> Coord_frac
+
+        Parameters
+        ----------
+        op: clipper::RTop_frac const &
+
+        """
         return _clipper.Coord_frac___rmul__(self, *args)
+
     __swig_destroy__ = _clipper.delete_Coord_frac
     __del__ = lambda self: None
 Coord_frac_swigregister = _clipper.Coord_frac_swigregister
 Coord_frac_swigregister(Coord_frac)
 
 def neg_Coord_frac(u1):
+    """
+    neg_Coord_frac(Coord_frac u1) -> Coord_frac
+
+    Parameters
+    ----------
+    u1: clipper::Coord_frac const &
+
+    """
     return _clipper.neg_Coord_frac(u1)
-neg_Coord_frac = _clipper.neg_Coord_frac
 
 def add_Coord_frac(u1, u2):
+    """
+    add_Coord_frac(Coord_frac u1, Coord_frac u2) -> Coord_frac
+
+    Parameters
+    ----------
+    u1: clipper::Coord_frac const &
+    u2: clipper::Coord_frac const &
+
+    """
     return _clipper.add_Coord_frac(u1, u2)
-add_Coord_frac = _clipper.add_Coord_frac
 
 def subs_Coord_frac(u1, u2):
+    """
+    subs_Coord_frac(Coord_frac u1, Coord_frac u2) -> Coord_frac
+
+    Parameters
+    ----------
+    u1: clipper::Coord_frac const &
+    u2: clipper::Coord_frac const &
+
+    """
     return _clipper.subs_Coord_frac(u1, u2)
-subs_Coord_frac = _clipper.subs_Coord_frac
 
 def product_Coord_frac(s, u1):
+    """
+    product_Coord_frac(clipper::ftype const & s, Coord_frac u1) -> Coord_frac
+
+    Parameters
+    ----------
+    s: clipper::ftype const &
+    u1: clipper::Coord_frac const &
+
+    """
     return _clipper.product_Coord_frac(s, u1)
-product_Coord_frac = _clipper.product_Coord_frac
 
 def transf_Coord_frac(op, x1):
+    """
+    transf_Coord_frac(RTop_frac op, Coord_frac x1) -> Coord_frac
+
+    Parameters
+    ----------
+    op: clipper::RTop_frac const &
+    x1: clipper::Coord_frac const &
+
+    """
     return _clipper.transf_Coord_frac(op, x1)
-transf_Coord_frac = _clipper.transf_Coord_frac
 
 class Coord_map(_object):
+    """Proxy of C++ clipper::Coord_map class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Coord_map, name, value)
     __swig_getmethods__ = {}
@@ -2972,6 +9933,29 @@ class Coord_map(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Coord_map self) -> Coord_map
+        __init__(clipper::Coord_map self, clipper::Vec3< > const & v) -> Coord_map
+
+        Parameters
+        ----------
+        v: clipper::Vec3< > const &
+
+        __init__(clipper::Coord_map self, Coord_grid c) -> Coord_map
+
+        Parameters
+        ----------
+        c: clipper::Coord_grid const &
+
+        __init__(clipper::Coord_map self, clipper::ftype const & u, clipper::ftype const & v, clipper::ftype const & w) -> Coord_map
+
+        Parameters
+        ----------
+        u: clipper::ftype const &
+        v: clipper::ftype const &
+        w: clipper::ftype const &
+
+        """
         this = _clipper.new_Coord_map(*args)
         try:
             self.this.append(this)
@@ -2979,50 +9963,155 @@ class Coord_map(_object):
             self.this = this
 
     def coord_frac(self, g):
+        """
+        coord_frac(Coord_map self, Grid g) -> Coord_frac
+
+        Parameters
+        ----------
+        g: clipper::Grid const &
+
+        """
         return _clipper.Coord_map_coord_frac(self, g)
 
+
     def coord_grid(self):
+        """
+        coord_grid(Coord_map self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::Coord_map const *
+
+        """
         return _clipper.Coord_map_coord_grid(self)
 
+
     def floor(self):
+        """
+        floor(Coord_map self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::Coord_map const *
+
+        """
         return _clipper.Coord_map_floor(self)
 
+
     def ceil(self):
+        """
+        ceil(Coord_map self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::Coord_map const *
+
+        """
         return _clipper.Coord_map_ceil(self)
 
+
     def u(self):
+        """
+        u(Coord_map self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_map const *
+
+        """
         return _clipper.Coord_map_u(self)
 
+
     def v(self):
+        """
+        v(Coord_map self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_map const *
+
+        """
         return _clipper.Coord_map_v(self)
 
+
     def w(self):
+        """
+        w(Coord_map self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Coord_map const *
+
+        """
         return _clipper.Coord_map_w(self)
 
+
     def format(self):
+        """
+        format(Coord_map self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Coord_map const *
+
+        """
         return _clipper.Coord_map_format(self)
+
     __swig_destroy__ = _clipper.delete_Coord_map
     __del__ = lambda self: None
 Coord_map_swigregister = _clipper.Coord_map_swigregister
 Coord_map_swigregister(Coord_map)
 
 def neg_Coord_map(u1):
+    """
+    neg_Coord_map(Coord_map u1) -> Coord_map
+
+    Parameters
+    ----------
+    u1: clipper::Coord_map const &
+
+    """
     return _clipper.neg_Coord_map(u1)
-neg_Coord_map = _clipper.neg_Coord_map
 
 def add_Coord_map(u1, u2):
+    """
+    add_Coord_map(Coord_map u1, Coord_map u2) -> Coord_map
+
+    Parameters
+    ----------
+    u1: clipper::Coord_map const &
+    u2: clipper::Coord_map const &
+
+    """
     return _clipper.add_Coord_map(u1, u2)
-add_Coord_map = _clipper.add_Coord_map
 
 def subs_Coord_map(u1, u2):
+    """
+    subs_Coord_map(Coord_map u1, Coord_map u2) -> Coord_map
+
+    Parameters
+    ----------
+    u1: clipper::Coord_map const &
+    u2: clipper::Coord_map const &
+
+    """
     return _clipper.subs_Coord_map(u1, u2)
-subs_Coord_map = _clipper.subs_Coord_map
 
 def product_Coord_map(s, u1):
+    """
+    product_Coord_map(clipper::ftype const & s, Coord_map u1) -> Coord_map
+
+    Parameters
+    ----------
+    s: clipper::ftype const &
+    u1: clipper::Coord_map const &
+
+    """
     return _clipper.product_Coord_map(s, u1)
-product_Coord_map = _clipper.product_Coord_map
 
 class U_aniso_orth(_object):
+    """Proxy of C++ clipper::U_aniso_orth class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, U_aniso_orth, name, value)
     __swig_getmethods__ = {}
@@ -3030,6 +10119,32 @@ class U_aniso_orth(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::U_aniso_orth self) -> U_aniso_orth
+        __init__(clipper::U_aniso_orth self, clipper::Mat33sym< > const & m) -> U_aniso_orth
+
+        Parameters
+        ----------
+        m: clipper::Mat33sym< > const &
+
+        __init__(clipper::U_aniso_orth self, clipper::ftype const & u) -> U_aniso_orth
+
+        Parameters
+        ----------
+        u: clipper::ftype const &
+
+        __init__(clipper::U_aniso_orth self, clipper::ftype const & u11, clipper::ftype const & u22, clipper::ftype const & u33, clipper::ftype const & u12, clipper::ftype const & u13, clipper::ftype const & u23) -> U_aniso_orth
+
+        Parameters
+        ----------
+        u11: clipper::ftype const &
+        u22: clipper::ftype const &
+        u33: clipper::ftype const &
+        u12: clipper::ftype const &
+        u13: clipper::ftype const &
+        u23: clipper::ftype const &
+
+        """
         this = _clipper.new_U_aniso_orth(*args)
         try:
             self.this.append(this)
@@ -3037,37 +10152,107 @@ class U_aniso_orth(_object):
             self.this = this
 
     def u_iso(self):
+        """
+        u_iso(U_aniso_orth self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::U_aniso_orth const *
+
+        """
         return _clipper.U_aniso_orth_u_iso(self)
 
+
     def u_aniso_frac(self, cell):
+        """
+        u_aniso_frac(U_aniso_orth self, Cell cell) -> U_aniso_frac
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.U_aniso_orth_u_aniso_frac(self, cell)
 
+
     def transform(self, op):
+        """
+        transform(U_aniso_orth self, RTop_orth op) -> U_aniso_orth
+
+        Parameters
+        ----------
+        op: clipper::RTop_orth const &
+
+        """
         return _clipper.U_aniso_orth_transform(self, op)
 
+
     def __str__(self):
+        """
+        __str__(U_aniso_orth self) -> std::string
+
+        Parameters
+        ----------
+        self: clipper::U_aniso_orth *
+
+        """
         return _clipper.U_aniso_orth___str__(self)
 
+
     def get_vals(self):
+        """
+        get_vals(U_aniso_orth self)
+
+        Parameters
+        ----------
+        self: clipper::U_aniso_orth *
+
+        """
         return _clipper.U_aniso_orth_get_vals(self)
+
     __swig_destroy__ = _clipper.delete_U_aniso_orth
     __del__ = lambda self: None
 U_aniso_orth_swigregister = _clipper.U_aniso_orth_swigregister
 U_aniso_orth_swigregister(U_aniso_orth)
 
 def add_U_aniso_orth(u1, u2):
+    """
+    add_U_aniso_orth(U_aniso_orth u1, U_aniso_orth u2) -> U_aniso_orth
+
+    Parameters
+    ----------
+    u1: clipper::U_aniso_orth const &
+    u2: clipper::U_aniso_orth const &
+
+    """
     return _clipper.add_U_aniso_orth(u1, u2)
-add_U_aniso_orth = _clipper.add_U_aniso_orth
 
 def neg_U_aniso_orth(u):
+    """
+    neg_U_aniso_orth(U_aniso_orth u) -> U_aniso_orth
+
+    Parameters
+    ----------
+    u: clipper::U_aniso_orth const &
+
+    """
     return _clipper.neg_U_aniso_orth(u)
-neg_U_aniso_orth = _clipper.neg_U_aniso_orth
 
 def product_U_aniso_orth(s, u):
+    """
+    product_U_aniso_orth(clipper::ftype const & s, U_aniso_orth u) -> U_aniso_orth
+
+    Parameters
+    ----------
+    s: clipper::ftype const &
+    u: clipper::U_aniso_orth const &
+
+    """
     return _clipper.product_U_aniso_orth(s, u)
-product_U_aniso_orth = _clipper.product_U_aniso_orth
 
 class U_aniso_frac(_object):
+    """Proxy of C++ clipper::U_aniso_frac class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, U_aniso_frac, name, value)
     __swig_getmethods__ = {}
@@ -3075,6 +10260,26 @@ class U_aniso_frac(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::U_aniso_frac self) -> U_aniso_frac
+        __init__(clipper::U_aniso_frac self, clipper::Mat33sym< > const & m) -> U_aniso_frac
+
+        Parameters
+        ----------
+        m: clipper::Mat33sym< > const &
+
+        __init__(clipper::U_aniso_frac self, clipper::ftype const & u11, clipper::ftype const & u22, clipper::ftype const & u33, clipper::ftype const & u12, clipper::ftype const & u13, clipper::ftype const & u23) -> U_aniso_frac
+
+        Parameters
+        ----------
+        u11: clipper::ftype const &
+        u22: clipper::ftype const &
+        u33: clipper::ftype const &
+        u12: clipper::ftype const &
+        u13: clipper::ftype const &
+        u23: clipper::ftype const &
+
+        """
         this = _clipper.new_U_aniso_frac(*args)
         try:
             self.this.append(this)
@@ -3082,28 +10287,71 @@ class U_aniso_frac(_object):
             self.this = this
 
     def u_aniso_orth(self, cell):
+        """
+        u_aniso_orth(U_aniso_frac self, Cell cell) -> U_aniso_orth
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.U_aniso_frac_u_aniso_orth(self, cell)
 
+
     def transform(self, op):
+        """
+        transform(U_aniso_frac self, RTop_frac op) -> U_aniso_frac
+
+        Parameters
+        ----------
+        op: clipper::RTop_frac const &
+
+        """
         return _clipper.U_aniso_frac_transform(self, op)
+
     __swig_destroy__ = _clipper.delete_U_aniso_frac
     __del__ = lambda self: None
 U_aniso_frac_swigregister = _clipper.U_aniso_frac_swigregister
 U_aniso_frac_swigregister(U_aniso_frac)
 
 def add_U_aniso_frac(u1, u2):
+    """
+    add_U_aniso_frac(U_aniso_frac u1, U_aniso_frac u2) -> U_aniso_frac
+
+    Parameters
+    ----------
+    u1: clipper::U_aniso_frac const &
+    u2: clipper::U_aniso_frac const &
+
+    """
     return _clipper.add_U_aniso_frac(u1, u2)
-add_U_aniso_frac = _clipper.add_U_aniso_frac
 
 def neg_U_aniso_frac(u):
+    """
+    neg_U_aniso_frac(U_aniso_frac u) -> U_aniso_frac
+
+    Parameters
+    ----------
+    u: clipper::U_aniso_frac const &
+
+    """
     return _clipper.neg_U_aniso_frac(u)
-neg_U_aniso_frac = _clipper.neg_U_aniso_frac
 
 def product_U_aniso_frac(s, u):
+    """
+    product_U_aniso_frac(clipper::ftype const & s, U_aniso_frac u) -> U_aniso_frac
+
+    Parameters
+    ----------
+    s: clipper::ftype const &
+    u: clipper::U_aniso_frac const &
+
+    """
     return _clipper.product_U_aniso_frac(s, u)
-product_U_aniso_frac = _clipper.product_U_aniso_frac
 
 class Grid(_object):
+    """Proxy of C++ clipper::Grid class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Grid, name, value)
     __swig_getmethods__ = {}
@@ -3111,6 +10359,17 @@ class Grid(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Grid self) -> Grid
+        __init__(clipper::Grid self, int const & nu, int const & nv, int const & nw) -> Grid
+
+        Parameters
+        ----------
+        nu: int const &
+        nv: int const &
+        nw: int const &
+
+        """
         this = _clipper.new_Grid(*args)
         try:
             self.this.append(this)
@@ -3118,37 +10377,120 @@ class Grid(_object):
             self.this = this
 
     def nu(self):
+        """
+        nu(Grid self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Grid const *
+
+        """
         return _clipper.Grid_nu(self)
 
+
     def nv(self):
+        """
+        nv(Grid self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Grid const *
+
+        """
         return _clipper.Grid_nv(self)
 
+
     def nw(self):
+        """
+        nw(Grid self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Grid const *
+
+        """
         return _clipper.Grid_nw(self)
 
+
     def size(self):
+        """
+        size(Grid self) -> int
+
+        Parameters
+        ----------
+        self: clipper::Grid const *
+
+        """
         return _clipper.Grid_size(self)
 
+
     def in_grid(self, g):
+        """
+        in_grid(Grid self, Coord_grid g) -> bool
+
+        Parameters
+        ----------
+        g: clipper::Coord_grid
+
+        """
         return _clipper.Grid_in_grid(self, g)
 
+
     def index(self, c):
+        """
+        index(Grid self, Coord_grid c) -> int
+
+        Parameters
+        ----------
+        c: clipper::Coord_grid const &
+
+        """
         return _clipper.Grid_index(self, c)
 
+
     def deindex(self, index):
+        """
+        deindex(Grid self, int const & index) -> Coord_grid
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.Grid_deindex(self, index)
 
+
     def format(self):
+        """
+        format(Grid self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Grid const *
+
+        """
         return _clipper.Grid_format(self)
 
+
     def debug(self):
+        """
+        debug(Grid self)
+
+        Parameters
+        ----------
+        self: clipper::Grid const *
+
+        """
         return _clipper.Grid_debug(self)
+
     __swig_destroy__ = _clipper.delete_Grid
     __del__ = lambda self: None
 Grid_swigregister = _clipper.Grid_swigregister
 Grid_swigregister(Grid)
 
 class Grid_sampling(Grid):
+    """Proxy of C++ clipper::Grid_sampling class."""
+
     __swig_setmethods__ = {}
     for _s in [Grid]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -3160,6 +10502,34 @@ class Grid_sampling(Grid):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Grid_sampling self) -> Grid_sampling
+        __init__(clipper::Grid_sampling self, int const & nu, int const & nv, int const & nw) -> Grid_sampling
+
+        Parameters
+        ----------
+        nu: int const &
+        nv: int const &
+        nw: int const &
+
+        __init__(clipper::Grid_sampling self, Spacegroup spacegroup, Cell cell, Resolution resol, clipper::ftype const rate=1.5) -> Grid_sampling
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        resol: clipper::Resolution const &
+        rate: clipper::ftype const
+
+        __init__(clipper::Grid_sampling self, Spacegroup spacegroup, Cell cell, Resolution resol) -> Grid_sampling
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        resol: clipper::Resolution const &
+
+        """
         this = _clipper.new_Grid_sampling(*args)
         try:
             self.this.append(this)
@@ -3167,25 +10537,83 @@ class Grid_sampling(Grid):
             self.this = this
 
     def init(self, spacegroup, cell, resol, rate=1.5):
+        """
+        init(Grid_sampling self, Spacegroup spacegroup, Cell cell, Resolution resol, clipper::ftype const rate=1.5)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        resol: clipper::Resolution const &
+        rate: clipper::ftype const
+
+        init(Grid_sampling self, Spacegroup spacegroup, Cell cell, Resolution resol)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        resol: clipper::Resolution const &
+
+        """
         return _clipper.Grid_sampling_init(self, spacegroup, cell, resol, rate)
 
+
     def matrix_grid_frac(self):
+        """
+        matrix_grid_frac(Grid_sampling self) -> mat33_ftype
+
+        Parameters
+        ----------
+        self: clipper::Grid_sampling const *
+
+        """
         return _clipper.Grid_sampling_matrix_grid_frac(self)
 
+
     def matrix_frac_grid(self):
+        """
+        matrix_frac_grid(Grid_sampling self) -> mat33_ftype
+
+        Parameters
+        ----------
+        self: clipper::Grid_sampling const *
+
+        """
         return _clipper.Grid_sampling_matrix_frac_grid(self)
 
+
     def is_null(self):
+        """
+        is_null(Grid_sampling self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Grid_sampling const *
+
+        """
         return _clipper.Grid_sampling_is_null(self)
 
+
     def dim(self):
+        """
+        dim(Grid_sampling self)
+
+        Parameters
+        ----------
+        self: clipper::Grid_sampling *
+
+        """
         return _clipper.Grid_sampling_dim(self)
+
     __swig_destroy__ = _clipper.delete_Grid_sampling
     __del__ = lambda self: None
 Grid_sampling_swigregister = _clipper.Grid_sampling_swigregister
 Grid_sampling_swigregister(Grid_sampling)
 
 class HKL_sampling(_object):
+    """Proxy of C++ clipper::HKL_sampling class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, HKL_sampling, name, value)
     __swig_getmethods__ = {}
@@ -3193,6 +10621,16 @@ class HKL_sampling(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_sampling self) -> HKL_sampling
+        __init__(clipper::HKL_sampling self, Cell cell, Resolution resolution) -> HKL_sampling
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        resolution: clipper::Resolution const &
+
+        """
         this = _clipper.new_HKL_sampling(*args)
         try:
             self.this.append(this)
@@ -3200,29 +10638,84 @@ class HKL_sampling(_object):
             self.this = this
 
     def hkl_limit(self):
+        """
+        hkl_limit(HKL_sampling self) -> HKL
+
+        Parameters
+        ----------
+        self: clipper::HKL_sampling const *
+
+        """
         return _clipper.HKL_sampling_hkl_limit(self)
 
+
     def resolution(self, cell):
+        """
+        resolution(HKL_sampling self, Cell cell) -> Resolution
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.HKL_sampling_resolution(self, cell)
 
+
     def in_resolution(self, h):
+        """
+        in_resolution(HKL_sampling self, HKL h) -> bool
+
+        Parameters
+        ----------
+        h: clipper::HKL const &
+
+        """
         return _clipper.HKL_sampling_in_resolution(self, h)
 
+
     def is_null(self):
+        """
+        is_null(HKL_sampling self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_sampling const *
+
+        """
         return _clipper.HKL_sampling_is_null(self)
 
+
     def format(self):
+        """
+        format(HKL_sampling self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_sampling const *
+
+        """
         return _clipper.HKL_sampling_format(self)
+
     __swig_destroy__ = _clipper.delete_HKL_sampling
     __del__ = lambda self: None
 HKL_sampling_swigregister = _clipper.HKL_sampling_swigregister
 HKL_sampling_swigregister(HKL_sampling)
 
 def equals_HKL_samp(h1, h2):
+    """
+    equals_HKL_samp(HKL_sampling h1, HKL_sampling h2) -> int
+
+    Parameters
+    ----------
+    h1: clipper::HKL_sampling const &
+    h2: clipper::HKL_sampling const &
+
+    """
     return _clipper.equals_HKL_samp(h1, h2)
-equals_HKL_samp = _clipper.equals_HKL_samp
 
 class Grid_range(Grid):
+    """Proxy of C++ clipper::Grid_range class."""
+
     __swig_setmethods__ = {}
     for _s in [Grid]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -3234,6 +10727,32 @@ class Grid_range(Grid):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Grid_range self) -> Grid_range
+        __init__(clipper::Grid_range self, Coord_grid min, Coord_grid max) -> Grid_range
+
+        Parameters
+        ----------
+        min: clipper::Coord_grid const &
+        max: clipper::Coord_grid const &
+
+        __init__(clipper::Grid_range self, Grid grid, Coord_frac min, Coord_frac max) -> Grid_range
+
+        Parameters
+        ----------
+        grid: clipper::Grid const &
+        min: clipper::Coord_frac const &
+        max: clipper::Coord_frac const &
+
+        __init__(clipper::Grid_range self, Cell cell, Grid grid, clipper::ftype const & radius) -> Grid_range
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        grid: clipper::Grid const &
+        radius: clipper::ftype const &
+
+        """
         this = _clipper.new_Grid_range(*args)
         try:
             self.this.append(this)
@@ -3241,28 +10760,84 @@ class Grid_range(Grid):
             self.this = this
 
     def min(self):
+        """
+        min(Grid_range self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::Grid_range const *
+
+        """
         return _clipper.Grid_range_min(self)
 
+
     def max(self):
+        """
+        max(Grid_range self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::Grid_range const *
+
+        """
         return _clipper.Grid_range_max(self)
 
+
     def add_border(self, b):
+        """
+        add_border(Grid_range self, int const b)
+
+        Parameters
+        ----------
+        b: int const
+
+        """
         return _clipper.Grid_range_add_border(self, b)
 
+
     def in_grid(self, g):
+        """
+        in_grid(Grid_range self, Coord_grid g) -> bool
+
+        Parameters
+        ----------
+        g: clipper::Coord_grid
+
+        """
         return _clipper.Grid_range_in_grid(self, g)
 
+
     def index(self, c):
+        """
+        index(Grid_range self, Coord_grid c) -> int
+
+        Parameters
+        ----------
+        c: clipper::Coord_grid const &
+
+        """
         return _clipper.Grid_range_index(self, c)
 
+
     def deindex(self, index):
+        """
+        deindex(Grid_range self, int const & index) -> Coord_grid
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.Grid_range_deindex(self, index)
+
     __swig_destroy__ = _clipper.delete_Grid_range
     __del__ = lambda self: None
 Grid_range_swigregister = _clipper.Grid_range_swigregister
 Grid_range_swigregister(Grid_range)
 
 class Atom(_object):
+    """Proxy of C++ clipper::Atom class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Atom, name, value)
     __swig_getmethods__ = {}
@@ -3270,6 +10845,7 @@ class Atom(_object):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::Atom self) -> Atom"""
         this = _clipper.new_Atom()
         try:
             self.this.append(this)
@@ -3277,57 +10853,178 @@ class Atom(_object):
             self.this = this
 
     def _element_ptr(self):
+        """
+        _element_ptr(Atom self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Atom const *
+
+        """
         return _clipper.Atom__element_ptr(self)
 
+
     def coord_orth(self):
+        """
+        coord_orth(Atom self) -> Coord_orth
+
+        Parameters
+        ----------
+        self: clipper::Atom const *
+
+        """
         return _clipper.Atom_coord_orth(self)
 
+
     def occupancy(self):
+        """
+        occupancy(Atom self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Atom const *
+
+        """
         return _clipper.Atom_occupancy(self)
 
+
     def u_iso(self):
+        """
+        u_iso(Atom self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Atom const *
+
+        """
         return _clipper.Atom_u_iso(self)
 
+
     def u_aniso_orth(self):
+        """
+        u_aniso_orth(Atom self) -> U_aniso_orth
+
+        Parameters
+        ----------
+        self: clipper::Atom const *
+
+        """
         return _clipper.Atom_u_aniso_orth(self)
 
+
     def set_element(self, s):
+        """
+        set_element(Atom self, String s)
+
+        Parameters
+        ----------
+        s: clipper::String const &
+
+        """
         return _clipper.Atom_set_element(self, s)
 
+
     def set_coord_orth(self, s):
+        """
+        set_coord_orth(Atom self, Coord_orth s)
+
+        Parameters
+        ----------
+        s: clipper::Coord_orth const &
+
+        """
         return _clipper.Atom_set_coord_orth(self, s)
 
+
     def set_occupancy(self, s):
+        """
+        set_occupancy(Atom self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.Atom_set_occupancy(self, s)
 
+
     def set_u_iso(self, s):
+        """
+        set_u_iso(Atom self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.Atom_set_u_iso(self, s)
 
+
     def set_u_aniso_orth(self, s):
+        """
+        set_u_aniso_orth(Atom self, U_aniso_orth s)
+
+        Parameters
+        ----------
+        s: clipper::U_aniso_orth const &
+
+        """
         return _clipper.Atom_set_u_aniso_orth(self, s)
 
+
     def transform(self, rt):
+        """
+        transform(Atom self, RTop_orth rt)
+
+        Parameters
+        ----------
+        rt: clipper::RTop_orth const
+
+        """
         return _clipper.Atom_transform(self, rt)
 
+
     def is_null(self):
+        """
+        is_null(Atom self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Atom const *
+
+        """
         return _clipper.Atom_is_null(self)
-    if _newclass:
-        null = staticmethod(_clipper.Atom_null)
-    else:
-        null = _clipper.Atom_null
+
+
+    def null():
+        """null() -> Atom"""
+        return _clipper.Atom_null()
+
+    null = staticmethod(null)
 
     def element(self):
+        """
+        element(Atom self) -> std::string
+
+        Parameters
+        ----------
+        self: clipper::Atom *
+
+        """
         return _clipper.Atom_element(self)
+
     __swig_destroy__ = _clipper.delete_Atom
     __del__ = lambda self: None
 Atom_swigregister = _clipper.Atom_swigregister
 Atom_swigregister(Atom)
 
 def Atom_null():
+    """Atom_null() -> Atom"""
     return _clipper.Atom_null()
-Atom_null = _clipper.Atom_null
 
 class Atom_list(_object):
+    """Proxy of C++ clipper::Atom_list class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Atom_list, name, value)
     __swig_getmethods__ = {}
@@ -3335,6 +11032,21 @@ class Atom_list(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Atom_list self) -> Atom_list
+        __init__(clipper::Atom_list self, int n) -> Atom_list
+
+        Parameters
+        ----------
+        n: int
+
+        __init__(clipper::Atom_list self, std::vector< clipper::Atom,std::allocator< clipper::Atom > > const & list) -> Atom_list
+
+        Parameters
+        ----------
+        list: std::vector< clipper::Atom,std::allocator< clipper::Atom > > const &
+
+        """
         this = _clipper.new_Atom_list(*args)
         try:
             self.this.append(this)
@@ -3342,43 +11054,145 @@ class Atom_list(_object):
             self.this = this
 
     def __getitem__(self, i):
+        """
+        __getitem__(Atom_list self, int i) -> Atom
+
+        Parameters
+        ----------
+        i: int
+
+        """
         return _clipper.Atom_list___getitem__(self, i)
 
+
     def __setitem__(self, i, atom):
+        """
+        __setitem__(Atom_list self, int i, Atom atom)
+
+        Parameters
+        ----------
+        i: int
+        atom: clipper::Atom &
+
+        """
         return _clipper.Atom_list___setitem__(self, i, atom)
 
+
     def __len__(self):
+        """
+        __len__(Atom_list self) -> size_t
+
+        Parameters
+        ----------
+        self: clipper::Atom_list *
+
+        """
         return _clipper.Atom_list___len__(self)
 
+
     def pop(self, i):
+        """
+        pop(Atom_list self, int i) -> Atom
+
+        Parameters
+        ----------
+        i: int
+
+        """
         return _clipper.Atom_list_pop(self, i)
 
+
     def append(self, a):
+        """
+        append(Atom_list self, Atom a) -> size_t
+
+        Parameters
+        ----------
+        a: clipper::Atom &
+
+        """
         return _clipper.Atom_list_append(self, a)
 
+
     def extend_by(self, n):
+        """
+        extend_by(Atom_list self, size_t n)
+
+        Parameters
+        ----------
+        n: size_t
+
+        """
         return _clipper.Atom_list_extend_by(self, n)
 
+
     def set_elements(self, elements):
+        """
+        set_elements(Atom_list self, StringVector elements)
+
+        Parameters
+        ----------
+        elements: std::vector< std::string,std::allocator< std::string > >
+
+        """
         return _clipper.Atom_list_set_elements(self, elements)
 
+
     def set_coord_orth(self, numpy_2d_in):
+        """
+        set_coord_orth(Atom_list self, double * numpy_2d_in)
+
+        Parameters
+        ----------
+        numpy_2d_in: double *
+
+        """
         return _clipper.Atom_list_set_coord_orth(self, numpy_2d_in)
 
+
     def set_occupancies(self, numpy_1d_in):
+        """
+        set_occupancies(Atom_list self, double * numpy_1d_in)
+
+        Parameters
+        ----------
+        numpy_1d_in: double *
+
+        """
         return _clipper.Atom_list_set_occupancies(self, numpy_1d_in)
 
+
     def set_u_isos(self, numpy_1d_in):
+        """
+        set_u_isos(Atom_list self, double * numpy_1d_in)
+
+        Parameters
+        ----------
+        numpy_1d_in: double *
+
+        """
         return _clipper.Atom_list_set_u_isos(self, numpy_1d_in)
 
+
     def set_u_anisos(self, numpy_2d_in):
+        """
+        set_u_anisos(Atom_list self, double * numpy_2d_in)
+
+        Parameters
+        ----------
+        numpy_2d_in: double *
+
+        """
         return _clipper.Atom_list_set_u_anisos(self, numpy_2d_in)
+
     __swig_destroy__ = _clipper.delete_Atom_list
     __del__ = lambda self: None
 Atom_list_swigregister = _clipper.Atom_list_swigregister
 Atom_list_swigregister(Atom_list)
 
 class RTop_float(_object):
+    """Proxy of C++ clipper::RTop<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, RTop_float, name, value)
     __swig_getmethods__ = {}
@@ -3386,6 +11200,22 @@ class RTop_float(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::RTop<(float)> self) -> RTop_float
+        __init__(clipper::RTop<(float)> self, mat33_float r) -> RTop_float
+
+        Parameters
+        ----------
+        r: clipper::Mat33< float > const &
+
+        __init__(clipper::RTop<(float)> self, mat33_float r, vec3_float t) -> RTop_float
+
+        Parameters
+        ----------
+        r: clipper::Mat33< float > const &
+        t: clipper::Vec3< float > const &
+
+        """
         this = _clipper.new_RTop_float(*args)
         try:
             self.this.append(this)
@@ -3393,44 +11223,107 @@ class RTop_float(_object):
             self.this = this
 
     def inverse(self):
+        """
+        inverse(RTop_float self) -> RTop_float
+
+        Parameters
+        ----------
+        self: clipper::RTop< float > const *
+
+        """
         return _clipper.RTop_float_inverse(self)
 
+
     def equals(self, m, tol):
+        """
+        equals(RTop_float self, RTop_float m, float const & tol) -> bool
+
+        Parameters
+        ----------
+        m: clipper::RTop< float > const &
+        tol: float const &
+
+        """
         return _clipper.RTop_float_equals(self, m, tol)
 
+
     def rot(self, *args):
+        """
+        rot(RTop_float self) -> mat33_float
+        rot(RTop_float self) -> mat33_float
+
+        Parameters
+        ----------
+        self: clipper::RTop< float > *
+
+        """
         return _clipper.RTop_float_rot(self, *args)
 
+
     def trn(self, *args):
+        """
+        trn(RTop_float self) -> vec3_float
+        trn(RTop_float self) -> vec3_float
+
+        Parameters
+        ----------
+        self: clipper::RTop< float > *
+
+        """
         return _clipper.RTop_float_trn(self, *args)
-    if _newclass:
-        identity = staticmethod(_clipper.RTop_float_identity)
-    else:
-        identity = _clipper.RTop_float_identity
-    if _newclass:
-        null = staticmethod(_clipper.RTop_float_null)
-    else:
-        null = _clipper.RTop_float_null
+
+
+    def identity():
+        """identity() -> RTop_float"""
+        return _clipper.RTop_float_identity()
+
+    identity = staticmethod(identity)
+
+    def null():
+        """null() -> RTop_float"""
+        return _clipper.RTop_float_null()
+
+    null = staticmethod(null)
 
     def is_null(self):
+        """
+        is_null(RTop_float self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::RTop< float > const *
+
+        """
         return _clipper.RTop_float_is_null(self)
 
+
     def format(self):
+        """
+        format(RTop_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::RTop< float > const *
+
+        """
         return _clipper.RTop_float_format(self)
+
     __swig_destroy__ = _clipper.delete_RTop_float
     __del__ = lambda self: None
 RTop_float_swigregister = _clipper.RTop_float_swigregister
 RTop_float_swigregister(RTop_float)
 
 def RTop_float_identity():
+    """RTop_float_identity() -> RTop_float"""
     return _clipper.RTop_float_identity()
-RTop_float_identity = _clipper.RTop_float_identity
 
 def RTop_float_null():
+    """RTop_float_null() -> RTop_float"""
     return _clipper.RTop_float_null()
-RTop_float_null = _clipper.RTop_float_null
 
 class RTop_double(_object):
+    """Proxy of C++ clipper::RTop<(double)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, RTop_double, name, value)
     __swig_getmethods__ = {}
@@ -3438,6 +11331,22 @@ class RTop_double(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::RTop<(double)> self) -> RTop_double
+        __init__(clipper::RTop<(double)> self, mat33_ftype r) -> RTop_double
+
+        Parameters
+        ----------
+        r: clipper::Mat33< double > const &
+
+        __init__(clipper::RTop<(double)> self, mat33_ftype r, vec3_double t) -> RTop_double
+
+        Parameters
+        ----------
+        r: clipper::Mat33< double > const &
+        t: clipper::Vec3< double > const &
+
+        """
         this = _clipper.new_RTop_double(*args)
         try:
             self.this.append(this)
@@ -3445,44 +11354,107 @@ class RTop_double(_object):
             self.this = this
 
     def inverse(self):
+        """
+        inverse(RTop_double self) -> RTop_double
+
+        Parameters
+        ----------
+        self: clipper::RTop< double > const *
+
+        """
         return _clipper.RTop_double_inverse(self)
 
+
     def equals(self, m, tol):
+        """
+        equals(RTop_double self, RTop_double m, double const & tol) -> bool
+
+        Parameters
+        ----------
+        m: clipper::RTop< double > const &
+        tol: double const &
+
+        """
         return _clipper.RTop_double_equals(self, m, tol)
 
+
     def rot(self, *args):
+        """
+        rot(RTop_double self) -> mat33_ftype
+        rot(RTop_double self) -> mat33_ftype
+
+        Parameters
+        ----------
+        self: clipper::RTop< double > *
+
+        """
         return _clipper.RTop_double_rot(self, *args)
 
+
     def trn(self, *args):
+        """
+        trn(RTop_double self) -> vec3_double
+        trn(RTop_double self) -> vec3_double
+
+        Parameters
+        ----------
+        self: clipper::RTop< double > *
+
+        """
         return _clipper.RTop_double_trn(self, *args)
-    if _newclass:
-        identity = staticmethod(_clipper.RTop_double_identity)
-    else:
-        identity = _clipper.RTop_double_identity
-    if _newclass:
-        null = staticmethod(_clipper.RTop_double_null)
-    else:
-        null = _clipper.RTop_double_null
+
+
+    def identity():
+        """identity() -> RTop_double"""
+        return _clipper.RTop_double_identity()
+
+    identity = staticmethod(identity)
+
+    def null():
+        """null() -> RTop_double"""
+        return _clipper.RTop_double_null()
+
+    null = staticmethod(null)
 
     def is_null(self):
+        """
+        is_null(RTop_double self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::RTop< double > const *
+
+        """
         return _clipper.RTop_double_is_null(self)
 
+
     def format(self):
+        """
+        format(RTop_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::RTop< double > const *
+
+        """
         return _clipper.RTop_double_format(self)
+
     __swig_destroy__ = _clipper.delete_RTop_double
     __del__ = lambda self: None
 RTop_double_swigregister = _clipper.RTop_double_swigregister
 RTop_double_swigregister(RTop_double)
 
 def RTop_double_identity():
+    """RTop_double_identity() -> RTop_double"""
     return _clipper.RTop_double_identity()
-RTop_double_identity = _clipper.RTop_double_identity
 
 def RTop_double_null():
+    """RTop_double_null() -> RTop_double"""
     return _clipper.RTop_double_null()
-RTop_double_null = _clipper.RTop_double_null
 
 class vec3_float(_object):
+    """Proxy of C++ clipper::Vec3<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, vec3_float, name, value)
     __swig_getmethods__ = {}
@@ -3490,40 +11462,148 @@ class vec3_float(_object):
     __repr__ = _swig_repr
 
     def equals(self, v, tol):
+        """
+        equals(vec3_float self, vec3_float v, float const & tol) -> bool
+
+        Parameters
+        ----------
+        v: clipper::Vec3< float > const &
+        tol: float const &
+
+        """
         return _clipper.vec3_float_equals(self, v, tol)
 
+
     def unit(self):
+        """
+        unit(vec3_float self) -> vec3_float
+
+        Parameters
+        ----------
+        self: clipper::Vec3< float > const *
+
+        """
         return _clipper.vec3_float_unit(self)
-    if _newclass:
-        zero = staticmethod(_clipper.vec3_float_zero)
-    else:
-        zero = _clipper.vec3_float_zero
-    if _newclass:
-        null = staticmethod(_clipper.vec3_float_null)
-    else:
-        null = _clipper.vec3_float_null
+
+
+    def zero():
+        """zero() -> vec3_float"""
+        return _clipper.vec3_float_zero()
+
+    zero = staticmethod(zero)
+
+    def null():
+        """null() -> vec3_float"""
+        return _clipper.vec3_float_null()
+
+    null = staticmethod(null)
 
     def is_null(self):
+        """
+        is_null(vec3_float self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Vec3< float > const *
+
+        """
         return _clipper.vec3_float_is_null(self)
-    if _newclass:
-        dot = staticmethod(_clipper.vec3_float_dot)
-    else:
-        dot = _clipper.vec3_float_dot
-    if _newclass:
-        cross = staticmethod(_clipper.vec3_float_cross)
-    else:
-        cross = _clipper.vec3_float_cross
+
+
+    def dot(v1, v2):
+        """
+        dot(vec3_float v1, vec3_float v2) -> float
+
+        Parameters
+        ----------
+        v1: clipper::Vec3< float > const &
+        v2: clipper::Vec3< float > const &
+
+        """
+        return _clipper.vec3_float_dot(v1, v2)
+
+    dot = staticmethod(dot)
+
+    def cross(v1, v2):
+        """
+        cross(vec3_float v1, vec3_float v2) -> vec3_float
+
+        Parameters
+        ----------
+        v1: clipper::Vec3< float > const &
+        v2: clipper::Vec3< float > const &
+
+        """
+        return _clipper.vec3_float_cross(v1, v2)
+
+    cross = staticmethod(cross)
 
     def format(self):
+        """
+        format(vec3_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Vec3< float > const *
+
+        """
         return _clipper.vec3_float_format(self)
 
+
     def __iadd__(self, v):
+        """
+        __iadd__(vec3_float self, vec3_float v) -> vec3_float
+
+        Parameters
+        ----------
+        v: clipper::Vec3< float > const &
+
+        """
         return _clipper.vec3_float___iadd__(self, v)
 
+
     def __isub__(self, v):
+        """
+        __isub__(vec3_float self, vec3_float v) -> vec3_float
+
+        Parameters
+        ----------
+        v: clipper::Vec3< float > const &
+
+        """
         return _clipper.vec3_float___isub__(self, v)
 
+
+    def __str__(self):
+        """
+        __str__(vec3_float self) -> std::string
+
+        Parameters
+        ----------
+        self: clipper::Vec3< float > *
+
+        """
+        return _clipper.vec3_float___str__(self)
+
+
     def __init__(self, *args):
+        """
+        __init__(clipper::Vec3<(float)> self) -> vec3_float
+        __init__(clipper::Vec3<(float)> self, float const & v0, float const & v1, float const & v2) -> vec3_float
+
+        Parameters
+        ----------
+        v0: float const &
+        v1: float const &
+        v2: float const &
+
+        __init__(clipper::Vec3<(float)> self, float [3] v) -> vec3_float
+
+        Parameters
+        ----------
+        v: float [3]
+
+        """
         this = _clipper.new_vec3_float(*args)
         try:
             self.this.append(this)
@@ -3531,32 +11611,69 @@ class vec3_float(_object):
             self.this = this
 
     def __getitem__(self, i):
+        """
+        __getitem__(vec3_float self, int i) -> float
+
+        Parameters
+        ----------
+        i: int
+
+        """
         return _clipper.vec3_float___getitem__(self, i)
 
+
     def __setitem__(self, i, value):
+        """
+        __setitem__(vec3_float self, int i, float value)
+
+        Parameters
+        ----------
+        i: int
+        value: float
+
+        """
         return _clipper.vec3_float___setitem__(self, i, value)
+
     __swig_destroy__ = _clipper.delete_vec3_float
     __del__ = lambda self: None
 vec3_float_swigregister = _clipper.vec3_float_swigregister
 vec3_float_swigregister(vec3_float)
 
 def vec3_float_zero():
+    """vec3_float_zero() -> vec3_float"""
     return _clipper.vec3_float_zero()
-vec3_float_zero = _clipper.vec3_float_zero
 
 def vec3_float_null():
+    """vec3_float_null() -> vec3_float"""
     return _clipper.vec3_float_null()
-vec3_float_null = _clipper.vec3_float_null
 
 def vec3_float_dot(v1, v2):
+    """
+    vec3_float_dot(vec3_float v1, vec3_float v2) -> float
+
+    Parameters
+    ----------
+    v1: clipper::Vec3< float > const &
+    v2: clipper::Vec3< float > const &
+
+    """
     return _clipper.vec3_float_dot(v1, v2)
-vec3_float_dot = _clipper.vec3_float_dot
 
 def vec3_float_cross(v1, v2):
+    """
+    vec3_float_cross(vec3_float v1, vec3_float v2) -> vec3_float
+
+    Parameters
+    ----------
+    v1: clipper::Vec3< float > const &
+    v2: clipper::Vec3< float > const &
+
+    """
     return _clipper.vec3_float_cross(v1, v2)
-vec3_float_cross = _clipper.vec3_float_cross
 
 class vec3_double(_object):
+    """Proxy of C++ clipper::Vec3<(double)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, vec3_double, name, value)
     __swig_getmethods__ = {}
@@ -3564,40 +11681,148 @@ class vec3_double(_object):
     __repr__ = _swig_repr
 
     def equals(self, v, tol):
+        """
+        equals(vec3_double self, vec3_double v, double const & tol) -> bool
+
+        Parameters
+        ----------
+        v: clipper::Vec3< double > const &
+        tol: double const &
+
+        """
         return _clipper.vec3_double_equals(self, v, tol)
 
+
     def unit(self):
+        """
+        unit(vec3_double self) -> vec3_double
+
+        Parameters
+        ----------
+        self: clipper::Vec3< double > const *
+
+        """
         return _clipper.vec3_double_unit(self)
-    if _newclass:
-        zero = staticmethod(_clipper.vec3_double_zero)
-    else:
-        zero = _clipper.vec3_double_zero
-    if _newclass:
-        null = staticmethod(_clipper.vec3_double_null)
-    else:
-        null = _clipper.vec3_double_null
+
+
+    def zero():
+        """zero() -> vec3_double"""
+        return _clipper.vec3_double_zero()
+
+    zero = staticmethod(zero)
+
+    def null():
+        """null() -> vec3_double"""
+        return _clipper.vec3_double_null()
+
+    null = staticmethod(null)
 
     def is_null(self):
+        """
+        is_null(vec3_double self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Vec3< double > const *
+
+        """
         return _clipper.vec3_double_is_null(self)
-    if _newclass:
-        dot = staticmethod(_clipper.vec3_double_dot)
-    else:
-        dot = _clipper.vec3_double_dot
-    if _newclass:
-        cross = staticmethod(_clipper.vec3_double_cross)
-    else:
-        cross = _clipper.vec3_double_cross
+
+
+    def dot(v1, v2):
+        """
+        dot(vec3_double v1, vec3_double v2) -> double
+
+        Parameters
+        ----------
+        v1: clipper::Vec3< double > const &
+        v2: clipper::Vec3< double > const &
+
+        """
+        return _clipper.vec3_double_dot(v1, v2)
+
+    dot = staticmethod(dot)
+
+    def cross(v1, v2):
+        """
+        cross(vec3_double v1, vec3_double v2) -> vec3_double
+
+        Parameters
+        ----------
+        v1: clipper::Vec3< double > const &
+        v2: clipper::Vec3< double > const &
+
+        """
+        return _clipper.vec3_double_cross(v1, v2)
+
+    cross = staticmethod(cross)
 
     def format(self):
+        """
+        format(vec3_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Vec3< double > const *
+
+        """
         return _clipper.vec3_double_format(self)
 
+
     def __iadd__(self, v):
+        """
+        __iadd__(vec3_double self, vec3_double v) -> vec3_double
+
+        Parameters
+        ----------
+        v: clipper::Vec3< double > const &
+
+        """
         return _clipper.vec3_double___iadd__(self, v)
 
+
     def __isub__(self, v):
+        """
+        __isub__(vec3_double self, vec3_double v) -> vec3_double
+
+        Parameters
+        ----------
+        v: clipper::Vec3< double > const &
+
+        """
         return _clipper.vec3_double___isub__(self, v)
 
+
+    def __str__(self):
+        """
+        __str__(vec3_double self) -> std::string
+
+        Parameters
+        ----------
+        self: clipper::Vec3< double > *
+
+        """
+        return _clipper.vec3_double___str__(self)
+
+
     def __init__(self, *args):
+        """
+        __init__(clipper::Vec3<(double)> self) -> vec3_double
+        __init__(clipper::Vec3<(double)> self, double const & v0, double const & v1, double const & v2) -> vec3_double
+
+        Parameters
+        ----------
+        v0: double const &
+        v1: double const &
+        v2: double const &
+
+        __init__(clipper::Vec3<(double)> self, double [3] v) -> vec3_double
+
+        Parameters
+        ----------
+        v: double [3]
+
+        """
         this = _clipper.new_vec3_double(*args)
         try:
             self.this.append(this)
@@ -3605,32 +11830,69 @@ class vec3_double(_object):
             self.this = this
 
     def __getitem__(self, i):
+        """
+        __getitem__(vec3_double self, int i) -> double
+
+        Parameters
+        ----------
+        i: int
+
+        """
         return _clipper.vec3_double___getitem__(self, i)
 
+
     def __setitem__(self, i, value):
+        """
+        __setitem__(vec3_double self, int i, double value)
+
+        Parameters
+        ----------
+        i: int
+        value: double
+
+        """
         return _clipper.vec3_double___setitem__(self, i, value)
+
     __swig_destroy__ = _clipper.delete_vec3_double
     __del__ = lambda self: None
 vec3_double_swigregister = _clipper.vec3_double_swigregister
 vec3_double_swigregister(vec3_double)
 
 def vec3_double_zero():
+    """vec3_double_zero() -> vec3_double"""
     return _clipper.vec3_double_zero()
-vec3_double_zero = _clipper.vec3_double_zero
 
 def vec3_double_null():
+    """vec3_double_null() -> vec3_double"""
     return _clipper.vec3_double_null()
-vec3_double_null = _clipper.vec3_double_null
 
 def vec3_double_dot(v1, v2):
+    """
+    vec3_double_dot(vec3_double v1, vec3_double v2) -> double
+
+    Parameters
+    ----------
+    v1: clipper::Vec3< double > const &
+    v2: clipper::Vec3< double > const &
+
+    """
     return _clipper.vec3_double_dot(v1, v2)
-vec3_double_dot = _clipper.vec3_double_dot
 
 def vec3_double_cross(v1, v2):
+    """
+    vec3_double_cross(vec3_double v1, vec3_double v2) -> vec3_double
+
+    Parameters
+    ----------
+    v1: clipper::Vec3< double > const &
+    v2: clipper::Vec3< double > const &
+
+    """
     return _clipper.vec3_double_cross(v1, v2)
-vec3_double_cross = _clipper.vec3_double_cross
 
 class HKL_info(_object):
+    """Proxy of C++ clipper::HKL_info class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, HKL_info, name, value)
     __swig_getmethods__ = {}
@@ -3638,6 +11900,26 @@ class HKL_info(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_info self) -> HKL_info
+        __init__(clipper::HKL_info self, Spacegroup spacegroup, Cell cell, Resolution resolution, bool const & generate=False) -> HKL_info
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        resolution: clipper::Resolution const &
+        generate: bool const &
+
+        __init__(clipper::HKL_info self, Spacegroup spacegroup, Cell cell, Resolution resolution) -> HKL_info
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        resolution: clipper::Resolution const &
+
+        """
         this = _clipper.new_HKL_info(*args)
         try:
             self.this.append(this)
@@ -3645,61 +11927,246 @@ class HKL_info(_object):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_info self, Spacegroup spacegroup, Cell cell, Resolution resolution, bool const & generate=False)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        resolution: clipper::Resolution const &
+        generate: bool const &
+
+        init(HKL_info self, Spacegroup spacegroup, Cell cell, Resolution resolution)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        resolution: clipper::Resolution const &
+
+        init(HKL_info self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling, bool const & generate=True)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+        generate: bool const &
+
+        init(HKL_info self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        """
         return _clipper.HKL_info_init(self, *args)
 
+
     def is_null(self):
+        """
+        is_null(HKL_info self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_info const *
+
+        """
         return _clipper.HKL_info_is_null(self)
 
+
     def cell(self):
+        """
+        cell(HKL_info self) -> Cell
+
+        Parameters
+        ----------
+        self: clipper::HKL_info const *
+
+        """
         return _clipper.HKL_info_cell(self)
 
+
     def spacegroup(self):
+        """
+        spacegroup(HKL_info self) -> Spacegroup
+
+        Parameters
+        ----------
+        self: clipper::HKL_info const *
+
+        """
         return _clipper.HKL_info_spacegroup(self)
 
+
     def hkl_sampling(self):
+        """
+        hkl_sampling(HKL_info self) -> HKL_sampling
+
+        Parameters
+        ----------
+        self: clipper::HKL_info const *
+
+        """
         return _clipper.HKL_info_hkl_sampling(self)
 
+
     def resolution(self):
+        """
+        resolution(HKL_info self) -> Resolution
+
+        Parameters
+        ----------
+        self: clipper::HKL_info const *
+
+        """
         return _clipper.HKL_info_resolution(self)
 
+
     def generate_hkl_list(self):
+        """
+        generate_hkl_list(HKL_info self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_info *
+
+        """
         return _clipper.HKL_info_generate_hkl_list(self)
 
+
     def add_hkl_list(self, add):
+        """
+        add_hkl_list(HKL_info self, HKLVector add)
+
+        Parameters
+        ----------
+        add: std::vector< clipper::HKL,std::allocator< clipper::HKL > > const &
+
+        """
         return _clipper.HKL_info_add_hkl_list(self, add)
 
+
     def num_reflections(self):
+        """
+        num_reflections(HKL_info self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_info const *
+
+        """
         return _clipper.HKL_info_num_reflections(self)
 
+
     def hkl_of(self, index):
+        """
+        hkl_of(HKL_info self, int const & index) -> HKL
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_info_hkl_of(self, index)
 
+
     def index_of(self, rfl):
+        """
+        index_of(HKL_info self, HKL rfl) -> int
+
+        Parameters
+        ----------
+        rfl: clipper::HKL const &
+
+        """
         return _clipper.HKL_info_index_of(self, rfl)
 
+
     def invresolsq(self, index):
+        """
+        invresolsq(HKL_info self, int const & index) -> clipper::ftype32 const &
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_info_invresolsq(self, index)
 
+
     def invresolsq_range(self):
+        """
+        invresolsq_range(HKL_info self) -> Range< clipper::ftype > const &
+
+        Parameters
+        ----------
+        self: clipper::HKL_info const *
+
+        """
         return _clipper.HKL_info_invresolsq_range(self)
 
+
     def hkl_class(self, index):
+        """
+        hkl_class(HKL_info self, int const & index) -> HKL_class
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_info_hkl_class(self, index)
 
+
     def find_sym(self, rfl, sym, friedel):
+        """
+        find_sym(HKL_info self, HKL rfl, int & sym, bool & friedel) -> HKL
+
+        Parameters
+        ----------
+        rfl: clipper::HKL const &
+        sym: int &
+        friedel: bool &
+
+        """
         return _clipper.HKL_info_find_sym(self, rfl, sym, friedel)
 
+
     def first(self):
+        """
+        first(HKL_info self) -> clipper::HKL_info::HKL_reference_index
+
+        Parameters
+        ----------
+        self: clipper::HKL_info const *
+
+        """
         return _clipper.HKL_info_first(self)
 
+
     def debug(self):
+        """
+        debug(HKL_info self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_info const *
+
+        """
         return _clipper.HKL_info_debug(self)
+
     __swig_destroy__ = _clipper.delete_HKL_info
     __del__ = lambda self: None
 HKL_info_swigregister = _clipper.HKL_info_swigregister
 HKL_info_swigregister(HKL_info)
 
 class HKL_data_cacheobj(HKL_info):
+    """Proxy of C++ clipper::HKL_data_cacheobj class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_info]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -3711,6 +12178,14 @@ class HKL_data_cacheobj(HKL_info):
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data_cachekey):
+        """
+        __init__(clipper::HKL_data_cacheobj self, clipper::HKL_data_cacheobj::Key const & hkl_data_cachekey) -> HKL_data_cacheobj
+
+        Parameters
+        ----------
+        hkl_data_cachekey: clipper::HKL_data_cacheobj::Key const &
+
+        """
         this = _clipper.new_HKL_data_cacheobj(hkl_data_cachekey)
         try:
             self.this.append(this)
@@ -3718,10 +12193,28 @@ class HKL_data_cacheobj(HKL_info):
             self.this = this
 
     def matches(self, hkl_data_cachekey):
+        """
+        matches(HKL_data_cacheobj self, clipper::HKL_data_cacheobj::Key const & hkl_data_cachekey) -> bool
+
+        Parameters
+        ----------
+        hkl_data_cachekey: clipper::HKL_data_cacheobj::Key const &
+
+        """
         return _clipper.HKL_data_cacheobj_matches(self, hkl_data_cachekey)
 
+
     def format(self):
+        """
+        format(HKL_data_cacheobj self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_cacheobj const *
+
+        """
         return _clipper.HKL_data_cacheobj_format(self)
+
     __swig_setmethods__["mutex"] = _clipper.HKL_data_cacheobj_mutex_set
     __swig_getmethods__["mutex"] = _clipper.HKL_data_cacheobj_mutex_get
     if _newclass:
@@ -3732,6 +12225,8 @@ HKL_data_cacheobj_swigregister = _clipper.HKL_data_cacheobj_swigregister
 HKL_data_cacheobj_swigregister(HKL_data_cacheobj)
 
 class Datatype_base(_object):
+    """Proxy of C++ clipper::Datatype_base class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Datatype_base, name, value)
     __swig_getmethods__ = {}
@@ -3739,6 +12234,7 @@ class Datatype_base(_object):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::Datatype_base self) -> Datatype_base"""
         this = _clipper.new_Datatype_base()
         try:
             self.this.append(this)
@@ -3750,6 +12246,8 @@ Datatype_base_swigregister = _clipper.Datatype_base_swigregister
 Datatype_base_swigregister(Datatype_base)
 
 class HKL_data_base(_object):
+    """Proxy of C++ clipper::HKL_data_base class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, HKL_data_base, name, value)
     __swig_getmethods__ = {}
@@ -3757,81 +12255,331 @@ class HKL_data_base(_object):
     __repr__ = _swig_repr
 
     def init(self, *args):
+        """
+        init(HKL_data_base self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_base self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        init(HKL_data_base self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        """
         return _clipper.HKL_data_base_init(self, *args)
 
+
     def is_null(self):
+        """
+        is_null(HKL_data_base self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_is_null(self)
 
+
     def base_hkl_info(self):
+        """
+        base_hkl_info(HKL_data_base self) -> HKL_info
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_base_hkl_info(self)
 
+
     def base_cell(self):
+        """
+        base_cell(HKL_data_base self) -> Cell
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_base_cell(self)
 
+
     def spacegroup(self):
+        """
+        spacegroup(HKL_data_base self) -> Spacegroup
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_spacegroup(self)
 
+
     def cell(self):
+        """
+        cell(HKL_data_base self) -> Cell
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_cell(self)
 
+
     def resolution(self):
+        """
+        resolution(HKL_data_base self) -> Resolution
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_resolution(self)
 
+
     def hkl_sampling(self):
+        """
+        hkl_sampling(HKL_data_base self) -> HKL_sampling
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_hkl_sampling(self)
 
+
     def hkl_info(self):
+        """
+        hkl_info(HKL_data_base self) -> HKL_info
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_hkl_info(self)
 
+
     def invresolsq(self, index):
+        """
+        invresolsq(HKL_data_base self, int const & index) -> clipper::ftype
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_base_invresolsq(self, index)
 
+
     def invresolsq_range(self):
+        """
+        invresolsq_range(HKL_data_base self) -> Range< clipper::ftype >
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_invresolsq_range(self)
 
+
     def num_obs(self):
+        """
+        num_obs(HKL_data_base self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_num_obs(self)
 
+
     def update(self):
+        """
+        update(HKL_data_base self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base *
+
+        """
         return _clipper.HKL_data_base_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_base self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_base self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_base_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_base self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_base_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_base self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_base self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_base self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_base_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_base self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_base_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_base self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_base_mask(self, mask)
 
+
     def first(self):
+        """
+        first(HKL_data_base self) -> clipper::HKL_data_base::HKL_reference_index
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_first(self)
 
+
     def first_data(self):
+        """
+        first_data(HKL_data_base self) -> clipper::HKL_data_base::HKL_reference_index
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_first_data(self)
 
+
     def next_data(self, ih):
+        """
+        next_data(HKL_data_base self, clipper::HKL_data_base::HKL_reference_index & ih) -> clipper::HKL_data_base::HKL_reference_index &
+
+        Parameters
+        ----------
+        ih: clipper::HKL_data_base::HKL_reference_index &
+
+        """
         return _clipper.HKL_data_base_next_data(self, ih)
 
+
     def debug(self):
+        """
+        debug(HKL_data_base self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data_base const *
+
+        """
         return _clipper.HKL_data_base_debug(self)
 
+
     def __init__(self):
+        """
+        __init__(clipper::HKL_data_base self) -> HKL_data_base
+
+        Parameters
+        ----------
+        self: PyObject *
+
+        """
         if self.__class__ == HKL_data_base:
             _self = None
         else:
@@ -3849,6 +12597,8 @@ HKL_data_base_swigregister = _clipper.HKL_data_base_swigregister
 HKL_data_base_swigregister(HKL_data_base)
 
 class HKL_reference_base(_object):
+    """Proxy of C++ clipper::HKL_reference_base class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, HKL_reference_base, name, value)
     __swig_getmethods__ = {}
@@ -3856,18 +12606,61 @@ class HKL_reference_base(_object):
     __repr__ = _swig_repr
 
     def base_hkl_info(self):
+        """
+        base_hkl_info(HKL_reference_base self) -> HKL_info
+
+        Parameters
+        ----------
+        self: clipper::HKL_reference_base const *
+
+        """
         return _clipper.HKL_reference_base_base_hkl_info(self)
 
+
     def index(self):
+        """
+        index(HKL_reference_base self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::HKL_reference_base const *
+
+        """
         return _clipper.HKL_reference_base_index(self)
 
+
     def invresolsq(self, *args):
+        """
+        invresolsq(HKL_reference_base self, HKL_data_base hkldata) -> clipper::ftype
+
+        Parameters
+        ----------
+        hkldata: clipper::HKL_data_base const &
+
+        invresolsq(HKL_reference_base self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::HKL_reference_base const *
+
+        """
         return _clipper.HKL_reference_base_invresolsq(self, *args)
 
+
     def last(self):
+        """
+        last(HKL_reference_base self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_reference_base const *
+
+        """
         return _clipper.HKL_reference_base_last(self)
 
+
     def __init__(self):
+        """__init__(clipper::HKL_reference_base self) -> HKL_reference_base"""
         this = _clipper.new_HKL_reference_base()
         try:
             self.this.append(this)
@@ -3879,6 +12672,8 @@ HKL_reference_base_swigregister = _clipper.HKL_reference_base_swigregister
 HKL_reference_base_swigregister(HKL_reference_base)
 
 class HKL_reference_index(HKL_reference_base):
+    """Proxy of C++ clipper::HKL_reference_index class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_reference_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -3890,6 +12685,16 @@ class HKL_reference_index(HKL_reference_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_reference_index self) -> HKL_reference_index
+        __init__(clipper::HKL_reference_index self, HKL_info hklinfo_, int const & index) -> HKL_reference_index
+
+        Parameters
+        ----------
+        hklinfo_: clipper::HKL_info const &
+        index: int const &
+
+        """
         this = _clipper.new_HKL_reference_index(*args)
         try:
             self.this.append(this)
@@ -3897,19 +12702,48 @@ class HKL_reference_index(HKL_reference_base):
             self.this = this
 
     def hkl(self):
+        """
+        hkl(HKL_reference_index self) -> HKL
+
+        Parameters
+        ----------
+        self: clipper::HKL_reference_index const *
+
+        """
         return _clipper.HKL_reference_index_hkl(self)
 
+
     def hkl_class(self):
+        """
+        hkl_class(HKL_reference_index self) -> HKL_class
+
+        Parameters
+        ----------
+        self: clipper::HKL_reference_index const *
+
+        """
         return _clipper.HKL_reference_index_hkl_class(self)
 
+
     def next(self):
+        """
+        next(HKL_reference_index self) -> HKL_reference_index
+
+        Parameters
+        ----------
+        self: clipper::HKL_reference_index *
+
+        """
         return _clipper.HKL_reference_index_next(self)
+
     __swig_destroy__ = _clipper.delete_HKL_reference_index
     __del__ = lambda self: None
 HKL_reference_index_swigregister = _clipper.HKL_reference_index_swigregister
 HKL_reference_index_swigregister(HKL_reference_index)
 
 class Xmap_cacheobj(_object):
+    """Proxy of C++ clipper::Xmap_cacheobj class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Xmap_cacheobj, name, value)
     __swig_getmethods__ = {}
@@ -3917,6 +12751,14 @@ class Xmap_cacheobj(_object):
     __repr__ = _swig_repr
 
     def __init__(self, xmap_cachekey):
+        """
+        __init__(clipper::Xmap_cacheobj self, clipper::Xmap_cacheobj::Key const & xmap_cachekey) -> Xmap_cacheobj
+
+        Parameters
+        ----------
+        xmap_cachekey: clipper::Xmap_cacheobj::Key const &
+
+        """
         this = _clipper.new_Xmap_cacheobj(xmap_cachekey)
         try:
             self.this.append(this)
@@ -3924,10 +12766,28 @@ class Xmap_cacheobj(_object):
             self.this = this
 
     def matches(self, xmap_cachekey):
+        """
+        matches(Xmap_cacheobj self, clipper::Xmap_cacheobj::Key const & xmap_cachekey) -> bool
+
+        Parameters
+        ----------
+        xmap_cachekey: clipper::Xmap_cacheobj::Key const &
+
+        """
         return _clipper.Xmap_cacheobj_matches(self, xmap_cachekey)
 
+
     def format(self):
+        """
+        format(Xmap_cacheobj self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Xmap_cacheobj const *
+
+        """
         return _clipper.Xmap_cacheobj_format(self)
+
     __swig_setmethods__["key"] = _clipper.Xmap_cacheobj_key_set
     __swig_getmethods__["key"] = _clipper.Xmap_cacheobj_key_get
     if _newclass:
@@ -3986,6 +12846,8 @@ Xmap_cacheobj_swigregister = _clipper.Xmap_cacheobj_swigregister
 Xmap_cacheobj_swigregister(Xmap_cacheobj)
 
 class Xmap_base(_object):
+    """Proxy of C++ clipper::Xmap_base class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Xmap_base, name, value)
     __swig_getmethods__ = {}
@@ -3999,66 +12861,214 @@ class Xmap_base(_object):
     Sparse = _clipper.Xmap_base_Sparse
 
     def is_null(self):
+        """
+        is_null(Xmap_base self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Xmap_base const *
+
+        """
         return _clipper.Xmap_base_is_null(self)
 
+
     def cell(self):
+        """
+        cell(Xmap_base self) -> Cell
+
+        Parameters
+        ----------
+        self: clipper::Xmap_base const *
+
+        """
         return _clipper.Xmap_base_cell(self)
 
+
     def spacegroup(self):
+        """
+        spacegroup(Xmap_base self) -> Spacegroup
+
+        Parameters
+        ----------
+        self: clipper::Xmap_base const *
+
+        """
         return _clipper.Xmap_base_spacegroup(self)
 
+
     def grid_sampling(self):
+        """
+        grid_sampling(Xmap_base self) -> Grid_sampling
+
+        Parameters
+        ----------
+        self: clipper::Xmap_base const *
+
+        """
         return _clipper.Xmap_base_grid_sampling(self)
 
+
     def grid_asu(self):
+        """
+        grid_asu(Xmap_base self) -> Grid_range
+
+        Parameters
+        ----------
+        self: clipper::Xmap_base const *
+
+        """
         return _clipper.Xmap_base_grid_asu(self)
 
+
     def coord_of(self, index):
+        """
+        coord_of(Xmap_base self, int const & index) -> Coord_grid
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.Xmap_base_coord_of(self, index)
 
+
     def index_of(self, coord):
+        """
+        index_of(Xmap_base self, Coord_grid coord) -> int
+
+        Parameters
+        ----------
+        coord: clipper::Coord_grid const &
+
+        """
         return _clipper.Xmap_base_index_of(self, coord)
 
+
     def to_map_unit(self, pos):
+        """
+        to_map_unit(Xmap_base self, Coord_grid pos) -> Coord_grid
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        """
         return _clipper.Xmap_base_to_map_unit(self, pos)
 
+
     def operator_orth_grid(self):
+        """
+        operator_orth_grid(Xmap_base self) -> clipper::RTop< > const &
+
+        Parameters
+        ----------
+        self: clipper::Xmap_base const *
+
+        """
         return _clipper.Xmap_base_operator_orth_grid(self)
 
+
     def operator_grid_orth(self):
+        """
+        operator_grid_orth(Xmap_base self) -> clipper::RTop< > const &
+
+        Parameters
+        ----------
+        self: clipper::Xmap_base const *
+
+        """
         return _clipper.Xmap_base_operator_grid_orth(self)
 
+
     def coord_orth(self, cm):
+        """
+        coord_orth(Xmap_base self, Coord_map cm) -> Coord_orth
+
+        Parameters
+        ----------
+        cm: clipper::Coord_map const &
+
+        """
         return _clipper.Xmap_base_coord_orth(self, cm)
 
+
     def coord_map(self, co):
+        """
+        coord_map(Xmap_base self, Coord_orth co) -> Coord_map
+
+        Parameters
+        ----------
+        co: clipper::Coord_orth const &
+
+        """
         return _clipper.Xmap_base_coord_map(self, co)
 
+
     def in_map(self, arg2):
+        """
+        in_map(Xmap_base self, Coord_grid arg2) -> bool
+
+        Parameters
+        ----------
+        arg2: clipper::Coord_grid const &
+
+        """
         return _clipper.Xmap_base_in_map(self, arg2)
 
+
     def multiplicity(self, pos):
+        """
+        multiplicity(Xmap_base self, Coord_grid pos) -> int
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        """
         return _clipper.Xmap_base_multiplicity(self, pos)
 
+
     def first(self):
+        """
+        first(Xmap_base self) -> clipper::Xmap_base::Map_reference_index
+
+        Parameters
+        ----------
+        self: clipper::Xmap_base const *
+
+        """
         return _clipper.Xmap_base_first(self)
 
+
     def first_coord(self):
+        """
+        first_coord(Xmap_base self) -> clipper::Xmap_base::Map_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_base const *
+
+        """
         return _clipper.Xmap_base_first_coord(self)
-    if _newclass:
-        default_type = staticmethod(_clipper.Xmap_base_default_type)
-    else:
-        default_type = _clipper.Xmap_base_default_type
+
+
+    def default_type():
+        """default_type() -> clipper::Xmap_base::FFTtype &"""
+        return _clipper.Xmap_base_default_type()
+
+    default_type = staticmethod(default_type)
     __swig_destroy__ = _clipper.delete_Xmap_base
     __del__ = lambda self: None
 Xmap_base_swigregister = _clipper.Xmap_base_swigregister
 Xmap_base_swigregister(Xmap_base)
 
 def Xmap_base_default_type():
+    """Xmap_base_default_type() -> clipper::Xmap_base::FFTtype &"""
     return _clipper.Xmap_base_default_type()
-Xmap_base_default_type = _clipper.Xmap_base_default_type
 
 class NXmap_base(_object):
+    """Proxy of C++ clipper::NXmap_base class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, NXmap_base, name, value)
     __swig_getmethods__ = {}
@@ -4069,156 +13079,859 @@ class NXmap_base(_object):
     __repr__ = _swig_repr
 
     def is_null(self):
+        """
+        is_null(NXmap_base self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::NXmap_base const *
+
+        """
         return _clipper.NXmap_base_is_null(self)
 
+
     def grid(self):
+        """
+        grid(NXmap_base self) -> Grid
+
+        Parameters
+        ----------
+        self: clipper::NXmap_base const *
+
+        """
         return _clipper.NXmap_base_grid(self)
 
+
     def operator_orth_grid(self):
+        """
+        operator_orth_grid(NXmap_base self) -> clipper::RTop< > const &
+
+        Parameters
+        ----------
+        self: clipper::NXmap_base const *
+
+        """
         return _clipper.NXmap_base_operator_orth_grid(self)
 
+
     def operator_grid_orth(self):
+        """
+        operator_grid_orth(NXmap_base self) -> clipper::RTop< > const &
+
+        Parameters
+        ----------
+        self: clipper::NXmap_base const *
+
+        """
         return _clipper.NXmap_base_operator_grid_orth(self)
 
+
     def coord_orth(self, cm):
+        """
+        coord_orth(NXmap_base self, Coord_map cm) -> Coord_orth
+
+        Parameters
+        ----------
+        cm: clipper::Coord_map const &
+
+        """
         return _clipper.NXmap_base_coord_orth(self, cm)
 
+
     def coord_map(self, co):
+        """
+        coord_map(NXmap_base self, Coord_orth co) -> Coord_map
+
+        Parameters
+        ----------
+        co: clipper::Coord_orth const &
+
+        """
         return _clipper.NXmap_base_coord_map(self, co)
 
+
     def in_map(self, pos):
+        """
+        in_map(NXmap_base self, Coord_grid pos) -> bool
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        """
         return _clipper.NXmap_base_in_map(self, pos)
 
+
     def multiplicity(self, arg2):
+        """
+        multiplicity(NXmap_base self, Coord_grid arg2) -> int
+
+        Parameters
+        ----------
+        arg2: clipper::Coord_grid const &
+
+        """
         return _clipper.NXmap_base_multiplicity(self, arg2)
 
+
     def first(self):
+        """
+        first(NXmap_base self) -> clipper::NXmap_base::Map_reference_index
+
+        Parameters
+        ----------
+        self: clipper::NXmap_base const *
+
+        """
         return _clipper.NXmap_base_first(self)
 
+
     def first_coord(self):
+        """
+        first_coord(NXmap_base self) -> clipper::NXmap_base::Map_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_base const *
+
+        """
         return _clipper.NXmap_base_first_coord(self)
+
     __swig_destroy__ = _clipper.delete_NXmap_base
     __del__ = lambda self: None
 NXmap_base_swigregister = _clipper.NXmap_base_swigregister
 NXmap_base_swigregister(NXmap_base)
 
-class Map_reference_base(_object):
+
+def compare_int_Vec3_double_pairs(a, b):
+    """
+    compare_int_Vec3_double_pairs(std::pair< int,clipper::Vec3< double > > const & a, std::pair< int,clipper::Vec3< double > > const & b) -> bool
+
+    Parameters
+    ----------
+    a: std::pair< int,clipper::Vec3< double > > const &
+    b: std::pair< int,clipper::Vec3< double > > const &
+
+    """
+    return _clipper.compare_int_Vec3_double_pairs(a, b)
+
+def int_Vec3_double_pairs_equal(a, b):
+    """
+    int_Vec3_double_pairs_equal(std::pair< int,clipper::Vec3< double > > const & a, std::pair< int,clipper::Vec3< double > > const & b) -> bool
+
+    Parameters
+    ----------
+    a: std::pair< int,clipper::Vec3< double > > const &
+    b: std::pair< int,clipper::Vec3< double > > const &
+
+    """
+    return _clipper.int_Vec3_double_pairs_equal(a, b)
+
+def find_asu_symop(*args):
+    """
+    find_asu_symop(Coord_grid coord, Xmap_float map) -> int
+
+    Parameters
+    ----------
+    coord: clipper::Coord_grid &
+    map: clipper::Xmap< float > const &
+
+    find_asu_symop(Coord_grid coord, Xmap_double map) -> int
+
+    Parameters
+    ----------
+    coord: clipper::Coord_grid &
+    map: clipper::Xmap< double > const &
+
+    find_asu_symop(Coord_grid coord, Xmap_int map) -> int
+
+    Parameters
+    ----------
+    coord: clipper::Coord_grid &
+    map: clipper::Xmap< int > const &
+
+    """
+    return _clipper.find_asu_symop(*args)
+class NXmap_reference_base(_object):
+    """Proxy of C++ clipper::NXmap_reference_base class."""
+
     __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Map_reference_base, name, value)
+    __setattr__ = lambda self, name, value: _swig_setattr(self, NXmap_reference_base, name, value)
     __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, Map_reference_base, name)
+    __getattr__ = lambda self, name: _swig_getattr(self, NXmap_reference_base, name)
     __repr__ = _swig_repr
 
     def base_nxmap(self):
-        return _clipper.Map_reference_base_base_nxmap(self)
+        """
+        base_nxmap(NXmap_reference_base self) -> NXmap_base
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_base const *
+
+        """
+        return _clipper.NXmap_reference_base_base_nxmap(self)
+
 
     def index(self):
-        return _clipper.Map_reference_base_index(self)
+        """
+        index(NXmap_reference_base self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_base const *
+
+        """
+        return _clipper.NXmap_reference_base_index(self)
+
 
     def last(self):
-        return _clipper.Map_reference_base_last(self)
+        """
+        last(NXmap_reference_base self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_base const *
+
+        """
+        return _clipper.NXmap_reference_base_last(self)
+
 
     def __init__(self):
-        this = _clipper.new_Map_reference_base()
+        """__init__(clipper::NXmap_reference_base self) -> NXmap_reference_base"""
+        this = _clipper.new_NXmap_reference_base()
         try:
             self.this.append(this)
         except __builtin__.Exception:
             self.this = this
-    __swig_destroy__ = _clipper.delete_Map_reference_base
+    __swig_destroy__ = _clipper.delete_NXmap_reference_base
     __del__ = lambda self: None
-Map_reference_base_swigregister = _clipper.Map_reference_base_swigregister
-Map_reference_base_swigregister(Map_reference_base)
+NXmap_reference_base_swigregister = _clipper.NXmap_reference_base_swigregister
+NXmap_reference_base_swigregister(NXmap_reference_base)
 
-class Map_reference_index(Map_reference_base):
+class NXmap_reference_index(NXmap_reference_base):
+    """Proxy of C++ clipper::NXmap_reference_index class."""
+
     __swig_setmethods__ = {}
-    for _s in [Map_reference_base]:
+    for _s in [NXmap_reference_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Map_reference_index, name, value)
+    __setattr__ = lambda self, name, value: _swig_setattr(self, NXmap_reference_index, name, value)
     __swig_getmethods__ = {}
-    for _s in [Map_reference_base]:
+    for _s in [NXmap_reference_base]:
         __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
-    __getattr__ = lambda self, name: _swig_getattr(self, Map_reference_index, name)
+    __getattr__ = lambda self, name: _swig_getattr(self, NXmap_reference_index, name)
     __repr__ = _swig_repr
 
     def __init__(self, *args):
-        this = _clipper.new_Map_reference_index(*args)
+        """
+        __init__(clipper::NXmap_reference_index self) -> NXmap_reference_index
+        __init__(clipper::NXmap_reference_index self, NXmap_base map) -> NXmap_reference_index
+
+        Parameters
+        ----------
+        map: clipper::NXmap_base const &
+
+        __init__(clipper::NXmap_reference_index self, NXmap_base map, Coord_grid pos) -> NXmap_reference_index
+
+        Parameters
+        ----------
+        map: clipper::NXmap_base const &
+        pos: clipper::Coord_grid const &
+
+        """
+        this = _clipper.new_NXmap_reference_index(*args)
         try:
             self.this.append(this)
         except __builtin__.Exception:
             self.this = this
 
     def coord(self):
-        return _clipper.Map_reference_index_coord(self)
+        """
+        coord(NXmap_reference_index self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_index const *
+
+        """
+        return _clipper.NXmap_reference_index_coord(self)
+
 
     def coord_orth(self):
-        return _clipper.Map_reference_index_coord_orth(self)
+        """
+        coord_orth(NXmap_reference_index self) -> Coord_orth
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_index const *
+
+        """
+        return _clipper.NXmap_reference_index_coord_orth(self)
+
 
     def set_coord(self, pos):
-        return _clipper.Map_reference_index_set_coord(self, pos)
+        """
+        set_coord(NXmap_reference_index self, Coord_grid pos) -> NXmap_reference_index
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        """
+        return _clipper.NXmap_reference_index_set_coord(self, pos)
+
 
     def next(self):
-        return _clipper.Map_reference_index_next(self)
+        """
+        next(NXmap_reference_index self) -> NXmap_reference_index
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_index *
+
+        """
+        return _clipper.NXmap_reference_index_next(self)
+
 
     def index_offset(self, du, dv, dw):
-        return _clipper.Map_reference_index_index_offset(self, du, dv, dw)
-    __swig_destroy__ = _clipper.delete_Map_reference_index
-    __del__ = lambda self: None
-Map_reference_index_swigregister = _clipper.Map_reference_index_swigregister
-Map_reference_index_swigregister(Map_reference_index)
+        """
+        index_offset(NXmap_reference_index self, int const & du, int const & dv, int const & dw) -> int
 
-class Map_reference_coord(Map_reference_base):
+        Parameters
+        ----------
+        du: int const &
+        dv: int const &
+        dw: int const &
+
+        """
+        return _clipper.NXmap_reference_index_index_offset(self, du, dv, dw)
+
+    __swig_destroy__ = _clipper.delete_NXmap_reference_index
+    __del__ = lambda self: None
+NXmap_reference_index_swigregister = _clipper.NXmap_reference_index_swigregister
+NXmap_reference_index_swigregister(NXmap_reference_index)
+
+class NXmap_reference_coord(NXmap_reference_base):
+    """Proxy of C++ clipper::NXmap_reference_coord class."""
+
     __swig_setmethods__ = {}
-    for _s in [Map_reference_base]:
+    for _s in [NXmap_reference_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Map_reference_coord, name, value)
+    __setattr__ = lambda self, name, value: _swig_setattr(self, NXmap_reference_coord, name, value)
     __swig_getmethods__ = {}
-    for _s in [Map_reference_base]:
+    for _s in [NXmap_reference_base]:
         __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
-    __getattr__ = lambda self, name: _swig_getattr(self, Map_reference_coord, name)
+    __getattr__ = lambda self, name: _swig_getattr(self, NXmap_reference_coord, name)
     __repr__ = _swig_repr
 
     def __init__(self, *args):
-        this = _clipper.new_Map_reference_coord(*args)
+        """
+        __init__(clipper::NXmap_reference_coord self) -> NXmap_reference_coord
+        __init__(clipper::NXmap_reference_coord self, NXmap_base map) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        map: clipper::NXmap_base const &
+
+        __init__(clipper::NXmap_reference_coord self, NXmap_base map, Coord_grid pos) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        map: clipper::NXmap_base const &
+        pos: clipper::Coord_grid const &
+
+        """
+        this = _clipper.new_NXmap_reference_coord(*args)
         try:
             self.this.append(this)
         except __builtin__.Exception:
             self.this = this
 
     def coord(self):
-        return _clipper.Map_reference_coord_coord(self)
+        """
+        coord(NXmap_reference_coord self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord const *
+
+        """
+        return _clipper.NXmap_reference_coord_coord(self)
+
 
     def coord_orth(self):
-        return _clipper.Map_reference_coord_coord_orth(self)
+        """
+        coord_orth(NXmap_reference_coord self) -> Coord_orth
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord const *
+
+        """
+        return _clipper.NXmap_reference_coord_coord_orth(self)
+
 
     def set_coord(self, pos):
-        return _clipper.Map_reference_coord_set_coord(self, pos)
+        """
+        set_coord(NXmap_reference_coord self, Coord_grid pos) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        """
+        return _clipper.NXmap_reference_coord_set_coord(self, pos)
+
 
     def next(self):
-        return _clipper.Map_reference_coord_next(self)
+        """
+        next(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_next(self)
+
 
     def next_u(self):
-        return _clipper.Map_reference_coord_next_u(self)
+        """
+        next_u(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_next_u(self)
+
 
     def next_v(self):
-        return _clipper.Map_reference_coord_next_v(self)
+        """
+        next_v(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_next_v(self)
+
 
     def next_w(self):
-        return _clipper.Map_reference_coord_next_w(self)
+        """
+        next_w(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_next_w(self)
+
 
     def prev_u(self):
-        return _clipper.Map_reference_coord_prev_u(self)
+        """
+        prev_u(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_prev_u(self)
+
 
     def prev_v(self):
-        return _clipper.Map_reference_coord_prev_v(self)
+        """
+        prev_v(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_prev_v(self)
+
 
     def prev_w(self):
-        return _clipper.Map_reference_coord_prev_w(self)
-    __swig_destroy__ = _clipper.delete_Map_reference_coord
+        """
+        prev_w(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_prev_w(self)
+
+    __swig_destroy__ = _clipper.delete_NXmap_reference_coord
     __del__ = lambda self: None
-Map_reference_coord_swigregister = _clipper.Map_reference_coord_swigregister
-Map_reference_coord_swigregister(Map_reference_coord)
+NXmap_reference_coord_swigregister = _clipper.NXmap_reference_coord_swigregister
+NXmap_reference_coord_swigregister(NXmap_reference_coord)
+
+class Xmap_reference_base(_object):
+    """Proxy of C++ clipper::Xmap_reference_base class."""
+
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, Xmap_reference_base, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, Xmap_reference_base, name)
+    __repr__ = _swig_repr
+
+    def base_xmap(self):
+        """
+        base_xmap(Xmap_reference_base self) -> Xmap_base
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_base const *
+
+        """
+        return _clipper.Xmap_reference_base_base_xmap(self)
+
+
+    def index(self):
+        """
+        index(Xmap_reference_base self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_base const *
+
+        """
+        return _clipper.Xmap_reference_base_index(self)
+
+
+    def last(self):
+        """
+        last(Xmap_reference_base self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_base const *
+
+        """
+        return _clipper.Xmap_reference_base_last(self)
+
+
+    def __init__(self):
+        """__init__(clipper::Xmap_reference_base self) -> Xmap_reference_base"""
+        this = _clipper.new_Xmap_reference_base()
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+    __swig_destroy__ = _clipper.delete_Xmap_reference_base
+    __del__ = lambda self: None
+Xmap_reference_base_swigregister = _clipper.Xmap_reference_base_swigregister
+Xmap_reference_base_swigregister(Xmap_reference_base)
+
+class Xmap_reference_index(Xmap_reference_base):
+    """Proxy of C++ clipper::Xmap_reference_index class."""
+
+    __swig_setmethods__ = {}
+    for _s in [Xmap_reference_base]:
+        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, Xmap_reference_index, name, value)
+    __swig_getmethods__ = {}
+    for _s in [Xmap_reference_base]:
+        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
+    __getattr__ = lambda self, name: _swig_getattr(self, Xmap_reference_index, name)
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        """
+        __init__(clipper::Xmap_reference_index self) -> Xmap_reference_index
+        __init__(clipper::Xmap_reference_index self, Xmap_base map) -> Xmap_reference_index
+
+        Parameters
+        ----------
+        map: clipper::Xmap_base const &
+
+        __init__(clipper::Xmap_reference_index self, Xmap_base map, Coord_grid pos) -> Xmap_reference_index
+
+        Parameters
+        ----------
+        map: clipper::Xmap_base const &
+        pos: clipper::Coord_grid const &
+
+        """
+        this = _clipper.new_Xmap_reference_index(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
+    def coord(self):
+        """
+        coord(Xmap_reference_index self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_index const *
+
+        """
+        return _clipper.Xmap_reference_index_coord(self)
+
+
+    def coord_orth(self):
+        """
+        coord_orth(Xmap_reference_index self) -> Coord_orth
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_index const *
+
+        """
+        return _clipper.Xmap_reference_index_coord_orth(self)
+
+
+    def set_coord(self, pos):
+        """
+        set_coord(Xmap_reference_index self, Coord_grid pos) -> Xmap_reference_index
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        """
+        return _clipper.Xmap_reference_index_set_coord(self, pos)
+
+
+    def next(self):
+        """
+        next(Xmap_reference_index self) -> Xmap_reference_index
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_index *
+
+        """
+        return _clipper.Xmap_reference_index_next(self)
+
+
+    def index_offset(self, du, dv, dw):
+        """
+        index_offset(Xmap_reference_index self, int const & du, int const & dv, int const & dw) -> int
+
+        Parameters
+        ----------
+        du: int const &
+        dv: int const &
+        dw: int const &
+
+        """
+        return _clipper.Xmap_reference_index_index_offset(self, du, dv, dw)
+
+    __swig_destroy__ = _clipper.delete_Xmap_reference_index
+    __del__ = lambda self: None
+Xmap_reference_index_swigregister = _clipper.Xmap_reference_index_swigregister
+Xmap_reference_index_swigregister(Xmap_reference_index)
+
+class Xmap_reference_coord(Xmap_reference_base):
+    """Proxy of C++ clipper::Xmap_reference_coord class."""
+
+    __swig_setmethods__ = {}
+    for _s in [Xmap_reference_base]:
+        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, Xmap_reference_coord, name, value)
+    __swig_getmethods__ = {}
+    for _s in [Xmap_reference_base]:
+        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
+    __getattr__ = lambda self, name: _swig_getattr(self, Xmap_reference_coord, name)
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        """
+        __init__(clipper::Xmap_reference_coord self) -> Xmap_reference_coord
+        __init__(clipper::Xmap_reference_coord self, Xmap_base map) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        map: clipper::Xmap_base const &
+
+        __init__(clipper::Xmap_reference_coord self, Xmap_float map) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        map: clipper::Xmap< float > const &
+
+        __init__(clipper::Xmap_reference_coord self, Xmap_double map) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        map: clipper::Xmap< double > const &
+
+        __init__(clipper::Xmap_reference_coord self, Xmap_int map) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        map: clipper::Xmap< int > const &
+
+        __init__(clipper::Xmap_reference_coord self, Xmap_base map, Coord_grid pos) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        map: clipper::Xmap_base const &
+        pos: clipper::Coord_grid const &
+
+        __init__(clipper::Xmap_reference_coord self, Xmap_float map, Coord_grid pos) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        map: clipper::Xmap< float > const &
+        pos: clipper::Coord_grid const &
+
+        __init__(clipper::Xmap_reference_coord self, Xmap_double map, Coord_grid pos) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        map: clipper::Xmap< double > const &
+        pos: clipper::Coord_grid const &
+
+        __init__(clipper::Xmap_reference_coord self, Xmap_int map, Coord_grid pos) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        map: clipper::Xmap< int > const &
+        pos: clipper::Coord_grid const &
+
+        """
+        this = _clipper.new_Xmap_reference_coord(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
+    def coord(self):
+        """
+        coord(Xmap_reference_coord self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord const *
+
+        """
+        return _clipper.Xmap_reference_coord_coord(self)
+
+
+    def coord_orth(self):
+        """
+        coord_orth(Xmap_reference_coord self) -> Coord_orth
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord const *
+
+        """
+        return _clipper.Xmap_reference_coord_coord_orth(self)
+
+
+    def set_coord(self, pos):
+        """
+        set_coord(Xmap_reference_coord self, Coord_grid pos) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        """
+        return _clipper.Xmap_reference_coord_set_coord(self, pos)
+
+
+    def next(self):
+        """
+        next(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_next(self)
+
+
+    def next_u(self):
+        """
+        next_u(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_next_u(self)
+
+
+    def next_v(self):
+        """
+        next_v(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_next_v(self)
+
+
+    def next_w(self):
+        """
+        next_w(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_next_w(self)
+
+
+    def prev_u(self):
+        """
+        prev_u(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_prev_u(self)
+
+
+    def prev_v(self):
+        """
+        prev_v(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_prev_v(self)
+
+
+    def prev_w(self):
+        """
+        prev_w(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_prev_w(self)
+
+    __swig_destroy__ = _clipper.delete_Xmap_reference_coord
+    __del__ = lambda self: None
+Xmap_reference_coord_swigregister = _clipper.Xmap_reference_coord_swigregister
+Xmap_reference_coord_swigregister(Xmap_reference_coord)
 
 class Xmap_float(Xmap_base):
+    """Proxy of C++ clipper::Xmap<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [Xmap_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -4230,6 +13943,17 @@ class Xmap_float(Xmap_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Xmap<(float)> self) -> Xmap_float
+        __init__(clipper::Xmap<(float)> self, Spacegroup spacegroup, Cell cell, Grid_sampling grid_sam) -> Xmap_float
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        grid_sam: clipper::Grid_sampling const &
+
+        """
         this = _clipper.new_Xmap_float(*args)
         try:
             self.this.append(this)
@@ -4237,73 +13961,345 @@ class Xmap_float(Xmap_base):
             self.this = this
 
     def init(self, spacegroup, cell, grid_sam):
+        """
+        init(Xmap_float self, Spacegroup spacegroup, Cell cell, Grid_sampling grid_sam)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        grid_sam: clipper::Grid_sampling const &
+
+        """
         return _clipper.Xmap_float_init(self, spacegroup, cell, grid_sam)
 
+
     def get_data(self, *args):
+        """
+        get_data(Xmap_float self, Coord_grid pos) -> float const
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        get_data(Xmap_float self, int const & index) -> float const &
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.Xmap_float_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(Xmap_float self, Coord_grid pos, float const & val)
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+        val: float const &
+
+        set_data(Xmap_float self, int const & index, float const & val) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+        val: float const &
+
+        """
         return _clipper.Xmap_float_set_data(self, *args)
 
+
     def __iadd__(self, other):
+        """
+        __iadd__(Xmap_float self, Xmap_float other) -> Xmap_float
+
+        Parameters
+        ----------
+        other: clipper::Xmap< float > const &
+
+        """
         return _clipper.Xmap_float___iadd__(self, other)
 
+
     def __isub__(self, other):
+        """
+        __isub__(Xmap_float self, Xmap_float other) -> Xmap_float
+
+        Parameters
+        ----------
+        other: clipper::Xmap< float > const &
+
+        """
         return _clipper.Xmap_float___isub__(self, other)
 
+
+    def all_symops_in_box(self, box_origin_xyz, nu, nv, nw, unit_cell_symops, reference_coord):
+        """
+        all_symops_in_box(Xmap_float self, double [3] box_origin_xyz, int nu, int nv, int nw, Symops unit_cell_symops, Coord_frac reference_coord) -> Symops
+
+        Parameters
+        ----------
+        box_origin_xyz: double [3]
+        nu: int
+        nv: int
+        nw: int
+        unit_cell_symops: clipper::Symops &
+        reference_coord: clipper::Coord_frac &
+
+        """
+        return _clipper.Xmap_float_all_symops_in_box(self, box_origin_xyz, nu, nv, nw, unit_cell_symops, reference_coord)
+
+
+    def get_reference_coord(self, pos):
+        """
+        get_reference_coord(Xmap_float self, Coord_grid pos) -> clipper::Xmap< float >::Map_reference_coord
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        """
+        return _clipper.Xmap_float_get_reference_coord(self, pos)
+
+
     def stats(self):
+        """
+        stats(Xmap_float self) -> DoubleVector
+
+        Parameters
+        ----------
+        self: clipper::Xmap< float > *
+
+        """
         return _clipper.Xmap_float_stats(self)
 
+
     def special_positions(self):
+        """
+        special_positions(Xmap_float self) -> IntIntVector
+
+        Parameters
+        ----------
+        self: clipper::Xmap< float > *
+
+        """
         return _clipper.Xmap_float_special_positions(self)
 
+
     def special_positions_unit_cell_grid(self, frac_offset):
+        """
+        special_positions_unit_cell_grid(Xmap_float self, double [3] frac_offset) -> IntIntVector
+
+        Parameters
+        ----------
+        frac_offset: double [3]
+
+        """
         return _clipper.Xmap_float_special_positions_unit_cell_grid(self, frac_offset)
 
+
     def special_positions_unit_cell_xyz(self, frac_offset):
+        """
+        special_positions_unit_cell_xyz(Xmap_float self, double [3] frac_offset) -> DoubleDoubleVector
+
+        Parameters
+        ----------
+        frac_offset: double [3]
+
+        """
         return _clipper.Xmap_float_special_positions_unit_cell_xyz(self, frac_offset)
 
+
     def export_numpy(self, *args):
+        """
+        export_numpy(Xmap_float self, double * numpy_array, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        order: char
+
+        export_numpy(Xmap_float self, double * numpy_array) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+
+        """
         return _clipper.Xmap_float_export_numpy(self, *args)
 
+
     def import_numpy(self, *args):
+        """
+        import_numpy(Xmap_float self, double * numpy_3d_in, char order) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        order: char
+
+        import_numpy(Xmap_float self, double * numpy_3d_in) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+
+        """
         return _clipper.Xmap_float_import_numpy(self, *args)
 
+
     def export_section_numpy(self, *args):
+        """
+        export_section_numpy(Xmap_float self, double * numpy_array, Coord_grid start, Coord_grid end, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        start: clipper::Coord_grid &
+        end: clipper::Coord_grid &
+        order: char
+
+        export_section_numpy(Xmap_float self, double * numpy_array, Coord_grid start, Coord_grid end) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        start: clipper::Coord_grid &
+        end: clipper::Coord_grid &
+
+        """
         return _clipper.Xmap_float_export_section_numpy(self, *args)
 
+
     def import_section_numpy(self, *args):
+        """
+        import_section_numpy(Xmap_float self, double * numpy_3d_in, Coord_grid start, Coord_grid end, char order) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        start: clipper::Coord_grid &
+        end: clipper::Coord_grid &
+        order: char
+
+        import_section_numpy(Xmap_float self, double * numpy_3d_in, Coord_grid start, Coord_grid end) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        start: clipper::Coord_grid &
+        end: clipper::Coord_grid &
+
+        """
         return _clipper.Xmap_float_import_section_numpy(self, *args)
 
+
     def voxel_size(self):
+        """
+        voxel_size(Xmap_float self)
+
+        Parameters
+        ----------
+        self: clipper::Xmap< float > *
+
+        """
         return _clipper.Xmap_float_voxel_size(self)
 
+
     def voxel_size_frac(self):
+        """
+        voxel_size_frac(Xmap_float self)
+
+        Parameters
+        ----------
+        self: clipper::Xmap< float > *
+
+        """
         return _clipper.Xmap_float_voxel_size_frac(self)
 
+
     def interp_cubic(self, f):
+        """
+        interp_cubic(Xmap_float self, Coord_frac f) -> float
+
+        Parameters
+        ----------
+        f: clipper::Coord_frac
+
+        """
         return _clipper.Xmap_float_interp_cubic(self, f)
 
+
     def interp_linear(self, f):
+        """
+        interp_linear(Xmap_float self, Coord_frac f) -> float
+
+        Parameters
+        ----------
+        f: clipper::Coord_frac
+
+        """
         return _clipper.Xmap_float_interp_linear(self, f)
 
+
     def operator_orth_grid(self):
+        """
+        operator_orth_grid(Xmap_float self) -> RTop_double
+
+        Parameters
+        ----------
+        self: clipper::Xmap< float > *
+
+        """
         return _clipper.Xmap_float_operator_orth_grid(self)
 
+
     def operator_grid_orth(self):
+        """
+        operator_grid_orth(Xmap_float self) -> RTop_double
+
+        Parameters
+        ----------
+        self: clipper::Xmap< float > *
+
+        """
         return _clipper.Xmap_float_operator_grid_orth(self)
 
+
     def fft_from(self, fb):
+        """
+        fft_from(Xmap_float self, HKL_data_F_phi_float fb)
+
+        Parameters
+        ----------
+        fb: clipper::HKL_data< clipper::data32::F_phi > const &
+
+        """
         return _clipper.Xmap_float_fft_from(self, fb)
 
+
     def fft_to(self, fphidata):
+        """
+        fft_to(Xmap_float self, HKL_data_F_phi_float fphidata)
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::data32::F_phi > &
+
+        """
         return _clipper.Xmap_float_fft_to(self, fphidata)
+
     __swig_destroy__ = _clipper.delete_Xmap_float
     __del__ = lambda self: None
 Xmap_float_swigregister = _clipper.Xmap_float_swigregister
 Xmap_float_swigregister(Xmap_float)
 
 class Xmap_double(Xmap_base):
+    """Proxy of C++ clipper::Xmap<(double)> class."""
+
     __swig_setmethods__ = {}
     for _s in [Xmap_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -4315,6 +14311,17 @@ class Xmap_double(Xmap_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Xmap<(double)> self) -> Xmap_double
+        __init__(clipper::Xmap<(double)> self, Spacegroup spacegroup, Cell cell, Grid_sampling grid_sam) -> Xmap_double
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        grid_sam: clipper::Grid_sampling const &
+
+        """
         this = _clipper.new_Xmap_double(*args)
         try:
             self.this.append(this)
@@ -4322,73 +14329,345 @@ class Xmap_double(Xmap_base):
             self.this = this
 
     def init(self, spacegroup, cell, grid_sam):
+        """
+        init(Xmap_double self, Spacegroup spacegroup, Cell cell, Grid_sampling grid_sam)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        grid_sam: clipper::Grid_sampling const &
+
+        """
         return _clipper.Xmap_double_init(self, spacegroup, cell, grid_sam)
 
+
     def get_data(self, *args):
+        """
+        get_data(Xmap_double self, Coord_grid pos) -> double const
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        get_data(Xmap_double self, int const & index) -> double const &
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.Xmap_double_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(Xmap_double self, Coord_grid pos, double const & val)
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+        val: double const &
+
+        set_data(Xmap_double self, int const & index, double const & val) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+        val: double const &
+
+        """
         return _clipper.Xmap_double_set_data(self, *args)
 
+
     def __iadd__(self, other):
+        """
+        __iadd__(Xmap_double self, Xmap_double other) -> Xmap_double
+
+        Parameters
+        ----------
+        other: clipper::Xmap< double > const &
+
+        """
         return _clipper.Xmap_double___iadd__(self, other)
 
+
     def __isub__(self, other):
+        """
+        __isub__(Xmap_double self, Xmap_double other) -> Xmap_double
+
+        Parameters
+        ----------
+        other: clipper::Xmap< double > const &
+
+        """
         return _clipper.Xmap_double___isub__(self, other)
 
+
+    def all_symops_in_box(self, box_origin_xyz, nu, nv, nw, unit_cell_symops, reference_coord):
+        """
+        all_symops_in_box(Xmap_double self, double [3] box_origin_xyz, int nu, int nv, int nw, Symops unit_cell_symops, Coord_frac reference_coord) -> Symops
+
+        Parameters
+        ----------
+        box_origin_xyz: double [3]
+        nu: int
+        nv: int
+        nw: int
+        unit_cell_symops: clipper::Symops &
+        reference_coord: clipper::Coord_frac &
+
+        """
+        return _clipper.Xmap_double_all_symops_in_box(self, box_origin_xyz, nu, nv, nw, unit_cell_symops, reference_coord)
+
+
+    def get_reference_coord(self, pos):
+        """
+        get_reference_coord(Xmap_double self, Coord_grid pos) -> clipper::Xmap< double >::Map_reference_coord
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        """
+        return _clipper.Xmap_double_get_reference_coord(self, pos)
+
+
     def stats(self):
+        """
+        stats(Xmap_double self) -> DoubleVector
+
+        Parameters
+        ----------
+        self: clipper::Xmap< double > *
+
+        """
         return _clipper.Xmap_double_stats(self)
 
+
     def special_positions(self):
+        """
+        special_positions(Xmap_double self) -> IntIntVector
+
+        Parameters
+        ----------
+        self: clipper::Xmap< double > *
+
+        """
         return _clipper.Xmap_double_special_positions(self)
 
+
     def special_positions_unit_cell_grid(self, frac_offset):
+        """
+        special_positions_unit_cell_grid(Xmap_double self, double [3] frac_offset) -> IntIntVector
+
+        Parameters
+        ----------
+        frac_offset: double [3]
+
+        """
         return _clipper.Xmap_double_special_positions_unit_cell_grid(self, frac_offset)
 
+
     def special_positions_unit_cell_xyz(self, frac_offset):
+        """
+        special_positions_unit_cell_xyz(Xmap_double self, double [3] frac_offset) -> DoubleDoubleVector
+
+        Parameters
+        ----------
+        frac_offset: double [3]
+
+        """
         return _clipper.Xmap_double_special_positions_unit_cell_xyz(self, frac_offset)
 
+
     def export_numpy(self, *args):
+        """
+        export_numpy(Xmap_double self, double * numpy_array, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        order: char
+
+        export_numpy(Xmap_double self, double * numpy_array) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+
+        """
         return _clipper.Xmap_double_export_numpy(self, *args)
 
+
     def import_numpy(self, *args):
+        """
+        import_numpy(Xmap_double self, double * numpy_3d_in, char order) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        order: char
+
+        import_numpy(Xmap_double self, double * numpy_3d_in) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+
+        """
         return _clipper.Xmap_double_import_numpy(self, *args)
 
+
     def export_section_numpy(self, *args):
+        """
+        export_section_numpy(Xmap_double self, double * numpy_array, Coord_grid start, Coord_grid end, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        start: clipper::Coord_grid &
+        end: clipper::Coord_grid &
+        order: char
+
+        export_section_numpy(Xmap_double self, double * numpy_array, Coord_grid start, Coord_grid end) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        start: clipper::Coord_grid &
+        end: clipper::Coord_grid &
+
+        """
         return _clipper.Xmap_double_export_section_numpy(self, *args)
 
+
     def import_section_numpy(self, *args):
+        """
+        import_section_numpy(Xmap_double self, double * numpy_3d_in, Coord_grid start, Coord_grid end, char order) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        start: clipper::Coord_grid &
+        end: clipper::Coord_grid &
+        order: char
+
+        import_section_numpy(Xmap_double self, double * numpy_3d_in, Coord_grid start, Coord_grid end) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        start: clipper::Coord_grid &
+        end: clipper::Coord_grid &
+
+        """
         return _clipper.Xmap_double_import_section_numpy(self, *args)
 
+
     def voxel_size(self):
+        """
+        voxel_size(Xmap_double self)
+
+        Parameters
+        ----------
+        self: clipper::Xmap< double > *
+
+        """
         return _clipper.Xmap_double_voxel_size(self)
 
+
     def voxel_size_frac(self):
+        """
+        voxel_size_frac(Xmap_double self)
+
+        Parameters
+        ----------
+        self: clipper::Xmap< double > *
+
+        """
         return _clipper.Xmap_double_voxel_size_frac(self)
 
+
     def interp_cubic(self, f):
+        """
+        interp_cubic(Xmap_double self, Coord_frac f) -> double
+
+        Parameters
+        ----------
+        f: clipper::Coord_frac
+
+        """
         return _clipper.Xmap_double_interp_cubic(self, f)
 
+
     def interp_linear(self, f):
+        """
+        interp_linear(Xmap_double self, Coord_frac f) -> double
+
+        Parameters
+        ----------
+        f: clipper::Coord_frac
+
+        """
         return _clipper.Xmap_double_interp_linear(self, f)
 
+
     def operator_orth_grid(self):
+        """
+        operator_orth_grid(Xmap_double self) -> RTop_double
+
+        Parameters
+        ----------
+        self: clipper::Xmap< double > *
+
+        """
         return _clipper.Xmap_double_operator_orth_grid(self)
 
+
     def operator_grid_orth(self):
+        """
+        operator_grid_orth(Xmap_double self) -> RTop_double
+
+        Parameters
+        ----------
+        self: clipper::Xmap< double > *
+
+        """
         return _clipper.Xmap_double_operator_grid_orth(self)
 
+
     def fft_from(self, fb):
+        """
+        fft_from(Xmap_double self, HKL_data_F_phi_double fb)
+
+        Parameters
+        ----------
+        fb: clipper::HKL_data< clipper::data64::F_phi > const &
+
+        """
         return _clipper.Xmap_double_fft_from(self, fb)
 
+
     def fft_to(self, fphidata):
+        """
+        fft_to(Xmap_double self, HKL_data_F_phi_float fphidata)
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::data32::F_phi > &
+
+        """
         return _clipper.Xmap_double_fft_to(self, fphidata)
+
     __swig_destroy__ = _clipper.delete_Xmap_double
     __del__ = lambda self: None
 Xmap_double_swigregister = _clipper.Xmap_double_swigregister
 Xmap_double_swigregister(Xmap_double)
 
 class Xmap_int(Xmap_base):
+    """Proxy of C++ clipper::Xmap<(int)> class."""
+
     __swig_setmethods__ = {}
     for _s in [Xmap_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -4400,6 +14679,17 @@ class Xmap_int(Xmap_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Xmap<(int)> self) -> Xmap_int
+        __init__(clipper::Xmap<(int)> self, Spacegroup spacegroup, Cell cell, Grid_sampling grid_sam) -> Xmap_int
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        grid_sam: clipper::Grid_sampling const &
+
+        """
         this = _clipper.new_Xmap_int(*args)
         try:
             self.this.append(this)
@@ -4407,67 +14697,321 @@ class Xmap_int(Xmap_base):
             self.this = this
 
     def init(self, spacegroup, cell, grid_sam):
+        """
+        init(Xmap_int self, Spacegroup spacegroup, Cell cell, Grid_sampling grid_sam)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        grid_sam: clipper::Grid_sampling const &
+
+        """
         return _clipper.Xmap_int_init(self, spacegroup, cell, grid_sam)
 
+
     def get_data(self, *args):
+        """
+        get_data(Xmap_int self, Coord_grid pos) -> int const
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        get_data(Xmap_int self, int const & index) -> int const &
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.Xmap_int_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(Xmap_int self, Coord_grid pos, int const & val)
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+        val: int const &
+
+        set_data(Xmap_int self, int const & index, int const & val) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+        val: int const &
+
+        """
         return _clipper.Xmap_int_set_data(self, *args)
 
+
     def __iadd__(self, other):
+        """
+        __iadd__(Xmap_int self, Xmap_int other) -> Xmap_int
+
+        Parameters
+        ----------
+        other: clipper::Xmap< int > const &
+
+        """
         return _clipper.Xmap_int___iadd__(self, other)
 
+
     def __isub__(self, other):
+        """
+        __isub__(Xmap_int self, Xmap_int other) -> Xmap_int
+
+        Parameters
+        ----------
+        other: clipper::Xmap< int > const &
+
+        """
         return _clipper.Xmap_int___isub__(self, other)
 
+
+    def all_symops_in_box(self, box_origin_xyz, nu, nv, nw, unit_cell_symops, reference_coord):
+        """
+        all_symops_in_box(Xmap_int self, double [3] box_origin_xyz, int nu, int nv, int nw, Symops unit_cell_symops, Coord_frac reference_coord) -> Symops
+
+        Parameters
+        ----------
+        box_origin_xyz: double [3]
+        nu: int
+        nv: int
+        nw: int
+        unit_cell_symops: clipper::Symops &
+        reference_coord: clipper::Coord_frac &
+
+        """
+        return _clipper.Xmap_int_all_symops_in_box(self, box_origin_xyz, nu, nv, nw, unit_cell_symops, reference_coord)
+
+
+    def get_reference_coord(self, pos):
+        """
+        get_reference_coord(Xmap_int self, Coord_grid pos) -> clipper::Xmap< int >::Map_reference_coord
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        """
+        return _clipper.Xmap_int_get_reference_coord(self, pos)
+
+
     def stats(self):
+        """
+        stats(Xmap_int self) -> DoubleVector
+
+        Parameters
+        ----------
+        self: clipper::Xmap< int > *
+
+        """
         return _clipper.Xmap_int_stats(self)
 
+
     def special_positions(self):
+        """
+        special_positions(Xmap_int self) -> IntIntVector
+
+        Parameters
+        ----------
+        self: clipper::Xmap< int > *
+
+        """
         return _clipper.Xmap_int_special_positions(self)
 
+
     def special_positions_unit_cell_grid(self, frac_offset):
+        """
+        special_positions_unit_cell_grid(Xmap_int self, double [3] frac_offset) -> IntIntVector
+
+        Parameters
+        ----------
+        frac_offset: double [3]
+
+        """
         return _clipper.Xmap_int_special_positions_unit_cell_grid(self, frac_offset)
 
+
     def special_positions_unit_cell_xyz(self, frac_offset):
+        """
+        special_positions_unit_cell_xyz(Xmap_int self, double [3] frac_offset) -> DoubleDoubleVector
+
+        Parameters
+        ----------
+        frac_offset: double [3]
+
+        """
         return _clipper.Xmap_int_special_positions_unit_cell_xyz(self, frac_offset)
 
+
     def export_numpy(self, *args):
+        """
+        export_numpy(Xmap_int self, double * numpy_array, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        order: char
+
+        export_numpy(Xmap_int self, double * numpy_array) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+
+        """
         return _clipper.Xmap_int_export_numpy(self, *args)
 
+
     def import_numpy(self, *args):
+        """
+        import_numpy(Xmap_int self, double * numpy_3d_in, char order) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        order: char
+
+        import_numpy(Xmap_int self, double * numpy_3d_in) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+
+        """
         return _clipper.Xmap_int_import_numpy(self, *args)
 
+
     def export_section_numpy(self, *args):
+        """
+        export_section_numpy(Xmap_int self, double * numpy_array, Coord_grid start, Coord_grid end, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        start: clipper::Coord_grid &
+        end: clipper::Coord_grid &
+        order: char
+
+        export_section_numpy(Xmap_int self, double * numpy_array, Coord_grid start, Coord_grid end) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        start: clipper::Coord_grid &
+        end: clipper::Coord_grid &
+
+        """
         return _clipper.Xmap_int_export_section_numpy(self, *args)
 
+
     def import_section_numpy(self, *args):
+        """
+        import_section_numpy(Xmap_int self, double * numpy_3d_in, Coord_grid start, Coord_grid end, char order) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        start: clipper::Coord_grid &
+        end: clipper::Coord_grid &
+        order: char
+
+        import_section_numpy(Xmap_int self, double * numpy_3d_in, Coord_grid start, Coord_grid end) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        start: clipper::Coord_grid &
+        end: clipper::Coord_grid &
+
+        """
         return _clipper.Xmap_int_import_section_numpy(self, *args)
 
+
     def voxel_size(self):
+        """
+        voxel_size(Xmap_int self)
+
+        Parameters
+        ----------
+        self: clipper::Xmap< int > *
+
+        """
         return _clipper.Xmap_int_voxel_size(self)
 
+
     def voxel_size_frac(self):
+        """
+        voxel_size_frac(Xmap_int self)
+
+        Parameters
+        ----------
+        self: clipper::Xmap< int > *
+
+        """
         return _clipper.Xmap_int_voxel_size_frac(self)
 
+
     def interp_cubic(self, f):
+        """
+        interp_cubic(Xmap_int self, Coord_frac f) -> int
+
+        Parameters
+        ----------
+        f: clipper::Coord_frac
+
+        """
         return _clipper.Xmap_int_interp_cubic(self, f)
 
+
     def interp_linear(self, f):
+        """
+        interp_linear(Xmap_int self, Coord_frac f) -> int
+
+        Parameters
+        ----------
+        f: clipper::Coord_frac
+
+        """
         return _clipper.Xmap_int_interp_linear(self, f)
 
+
     def operator_orth_grid(self):
+        """
+        operator_orth_grid(Xmap_int self) -> RTop_double
+
+        Parameters
+        ----------
+        self: clipper::Xmap< int > *
+
+        """
         return _clipper.Xmap_int_operator_orth_grid(self)
 
+
     def operator_grid_orth(self):
+        """
+        operator_grid_orth(Xmap_int self) -> RTop_double
+
+        Parameters
+        ----------
+        self: clipper::Xmap< int > *
+
+        """
         return _clipper.Xmap_int_operator_grid_orth(self)
+
     __swig_destroy__ = _clipper.delete_Xmap_int
     __del__ = lambda self: None
 Xmap_int_swigregister = _clipper.Xmap_int_swigregister
 Xmap_int_swigregister(Xmap_int)
 
 class NXmap_float(NXmap_base):
+    """Proxy of C++ clipper::NXmap<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [NXmap_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -4479,21 +15023,101 @@ class NXmap_float(NXmap_base):
     __repr__ = _swig_repr
 
     def init(self, *args):
+        """
+        init(NXmap_float self, Grid grid, clipper::RTop< > const & rt)
+
+        Parameters
+        ----------
+        grid: clipper::Grid const &
+        rt: clipper::RTop< > const &
+
+        init(NXmap_float self, Cell cell, Grid_sampling grid, Grid_range grid_extent)
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        grid: clipper::Grid_sampling const &
+        grid_extent: clipper::Grid_range const &
+
+        """
         return _clipper.NXmap_float_init(self, *args)
 
+
     def get_data(self, pos):
+        """
+        get_data(NXmap_float self, Coord_grid pos) -> float const &
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        """
         return _clipper.NXmap_float_get_data(self, pos)
 
+
     def set_data(self, pos, val):
+        """
+        set_data(NXmap_float self, Coord_grid pos, float const & val)
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+        val: float const &
+
+        """
         return _clipper.NXmap_float_set_data(self, pos, val)
 
+
     def __iadd__(self, other):
+        """
+        __iadd__(NXmap_float self, NXmap_float other) -> NXmap_float
+
+        Parameters
+        ----------
+        other: clipper::NXmap< float > const &
+
+        """
         return _clipper.NXmap_float___iadd__(self, other)
 
+
     def __isub__(self, other):
+        """
+        __isub__(NXmap_float self, NXmap_float other) -> NXmap_float
+
+        Parameters
+        ----------
+        other: clipper::NXmap< float > const &
+
+        """
         return _clipper.NXmap_float___isub__(self, other)
 
+
     def __init__(self, *args):
+        """
+        __init__(clipper::NXmap<(float)> self) -> NXmap_float
+        __init__(clipper::NXmap<(float)> self, Grid grid, clipper::RTop< > const & rt) -> NXmap_float
+
+        Parameters
+        ----------
+        grid: clipper::Grid const &
+        rt: clipper::RTop< > const &
+
+        __init__(clipper::NXmap<(float)> self, Cell cell, Grid_sampling grid, Grid_range grid_extent) -> NXmap_float
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        grid: clipper::Grid_sampling const &
+        grid_extent: clipper::Grid_range const &
+
+        __init__(clipper::NXmap<(float)> self, Grid grid, RTop_double rtop) -> NXmap_float
+
+        Parameters
+        ----------
+        grid: clipper::Grid const &
+        rtop: clipper::RTop< clipper::ftype > const &
+
+        """
         this = _clipper.new_NXmap_float(*args)
         try:
             self.this.append(this)
@@ -4501,22 +15125,60 @@ class NXmap_float(NXmap_base):
             self.this = this
 
     def export_numpy(self, numpy_array):
+        """
+        export_numpy(NXmap_float self, double * numpy_array) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+
+        """
         return _clipper.NXmap_float_export_numpy(self, numpy_array)
 
+
     def import_numpy(self, numpy_3d_in):
+        """
+        import_numpy(NXmap_float self, double * numpy_3d_in) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+
+        """
         return _clipper.NXmap_float_import_numpy(self, numpy_3d_in)
 
+
     def operator_orth_grid(self):
+        """
+        operator_orth_grid(NXmap_float self) -> RTop_double
+
+        Parameters
+        ----------
+        self: clipper::NXmap< float > *
+
+        """
         return _clipper.NXmap_float_operator_orth_grid(self)
 
+
     def operator_grid_orth(self):
+        """
+        operator_grid_orth(NXmap_float self) -> RTop_double
+
+        Parameters
+        ----------
+        self: clipper::NXmap< float > *
+
+        """
         return _clipper.NXmap_float_operator_grid_orth(self)
+
     __swig_destroy__ = _clipper.delete_NXmap_float
     __del__ = lambda self: None
 NXmap_float_swigregister = _clipper.NXmap_float_swigregister
 NXmap_float_swigregister(NXmap_float)
 
 class NXmap_double(NXmap_base):
+    """Proxy of C++ clipper::NXmap<(double)> class."""
+
     __swig_setmethods__ = {}
     for _s in [NXmap_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -4528,21 +15190,101 @@ class NXmap_double(NXmap_base):
     __repr__ = _swig_repr
 
     def init(self, *args):
+        """
+        init(NXmap_double self, Grid grid, clipper::RTop< > const & rt)
+
+        Parameters
+        ----------
+        grid: clipper::Grid const &
+        rt: clipper::RTop< > const &
+
+        init(NXmap_double self, Cell cell, Grid_sampling grid, Grid_range grid_extent)
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        grid: clipper::Grid_sampling const &
+        grid_extent: clipper::Grid_range const &
+
+        """
         return _clipper.NXmap_double_init(self, *args)
 
+
     def get_data(self, pos):
+        """
+        get_data(NXmap_double self, Coord_grid pos) -> double const &
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        """
         return _clipper.NXmap_double_get_data(self, pos)
 
+
     def set_data(self, pos, val):
+        """
+        set_data(NXmap_double self, Coord_grid pos, double const & val)
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+        val: double const &
+
+        """
         return _clipper.NXmap_double_set_data(self, pos, val)
 
+
     def __iadd__(self, other):
+        """
+        __iadd__(NXmap_double self, NXmap_double other) -> NXmap_double
+
+        Parameters
+        ----------
+        other: clipper::NXmap< double > const &
+
+        """
         return _clipper.NXmap_double___iadd__(self, other)
 
+
     def __isub__(self, other):
+        """
+        __isub__(NXmap_double self, NXmap_double other) -> NXmap_double
+
+        Parameters
+        ----------
+        other: clipper::NXmap< double > const &
+
+        """
         return _clipper.NXmap_double___isub__(self, other)
 
+
     def __init__(self, *args):
+        """
+        __init__(clipper::NXmap<(double)> self) -> NXmap_double
+        __init__(clipper::NXmap<(double)> self, Grid grid, clipper::RTop< > const & rt) -> NXmap_double
+
+        Parameters
+        ----------
+        grid: clipper::Grid const &
+        rt: clipper::RTop< > const &
+
+        __init__(clipper::NXmap<(double)> self, Cell cell, Grid_sampling grid, Grid_range grid_extent) -> NXmap_double
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        grid: clipper::Grid_sampling const &
+        grid_extent: clipper::Grid_range const &
+
+        __init__(clipper::NXmap<(double)> self, Grid grid, RTop_double rtop) -> NXmap_double
+
+        Parameters
+        ----------
+        grid: clipper::Grid const &
+        rtop: clipper::RTop< clipper::ftype > const &
+
+        """
         this = _clipper.new_NXmap_double(*args)
         try:
             self.this.append(this)
@@ -4550,22 +15292,60 @@ class NXmap_double(NXmap_base):
             self.this = this
 
     def export_numpy(self, numpy_array):
+        """
+        export_numpy(NXmap_double self, double * numpy_array) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+
+        """
         return _clipper.NXmap_double_export_numpy(self, numpy_array)
 
+
     def import_numpy(self, numpy_3d_in):
+        """
+        import_numpy(NXmap_double self, double * numpy_3d_in) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+
+        """
         return _clipper.NXmap_double_import_numpy(self, numpy_3d_in)
 
+
     def operator_orth_grid(self):
+        """
+        operator_orth_grid(NXmap_double self) -> RTop_double
+
+        Parameters
+        ----------
+        self: clipper::NXmap< double > *
+
+        """
         return _clipper.NXmap_double_operator_orth_grid(self)
 
+
     def operator_grid_orth(self):
+        """
+        operator_grid_orth(NXmap_double self) -> RTop_double
+
+        Parameters
+        ----------
+        self: clipper::NXmap< double > *
+
+        """
         return _clipper.NXmap_double_operator_grid_orth(self)
+
     __swig_destroy__ = _clipper.delete_NXmap_double
     __del__ = lambda self: None
 NXmap_double_swigregister = _clipper.NXmap_double_swigregister
 NXmap_double_swigregister(NXmap_double)
 
 class NXmap_int(NXmap_base):
+    """Proxy of C++ clipper::NXmap<(int)> class."""
+
     __swig_setmethods__ = {}
     for _s in [NXmap_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -4577,21 +15357,101 @@ class NXmap_int(NXmap_base):
     __repr__ = _swig_repr
 
     def init(self, *args):
+        """
+        init(NXmap_int self, Grid grid, clipper::RTop< > const & rt)
+
+        Parameters
+        ----------
+        grid: clipper::Grid const &
+        rt: clipper::RTop< > const &
+
+        init(NXmap_int self, Cell cell, Grid_sampling grid, Grid_range grid_extent)
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        grid: clipper::Grid_sampling const &
+        grid_extent: clipper::Grid_range const &
+
+        """
         return _clipper.NXmap_int_init(self, *args)
 
+
     def get_data(self, pos):
+        """
+        get_data(NXmap_int self, Coord_grid pos) -> int const &
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+
+        """
         return _clipper.NXmap_int_get_data(self, pos)
 
+
     def set_data(self, pos, val):
+        """
+        set_data(NXmap_int self, Coord_grid pos, int const & val)
+
+        Parameters
+        ----------
+        pos: clipper::Coord_grid const &
+        val: int const &
+
+        """
         return _clipper.NXmap_int_set_data(self, pos, val)
 
+
     def __iadd__(self, other):
+        """
+        __iadd__(NXmap_int self, NXmap_int other) -> NXmap_int
+
+        Parameters
+        ----------
+        other: clipper::NXmap< int > const &
+
+        """
         return _clipper.NXmap_int___iadd__(self, other)
 
+
     def __isub__(self, other):
+        """
+        __isub__(NXmap_int self, NXmap_int other) -> NXmap_int
+
+        Parameters
+        ----------
+        other: clipper::NXmap< int > const &
+
+        """
         return _clipper.NXmap_int___isub__(self, other)
 
+
     def __init__(self, *args):
+        """
+        __init__(clipper::NXmap<(int)> self) -> NXmap_int
+        __init__(clipper::NXmap<(int)> self, Grid grid, clipper::RTop< > const & rt) -> NXmap_int
+
+        Parameters
+        ----------
+        grid: clipper::Grid const &
+        rt: clipper::RTop< > const &
+
+        __init__(clipper::NXmap<(int)> self, Cell cell, Grid_sampling grid, Grid_range grid_extent) -> NXmap_int
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        grid: clipper::Grid_sampling const &
+        grid_extent: clipper::Grid_range const &
+
+        __init__(clipper::NXmap<(int)> self, Grid grid, RTop_double rtop) -> NXmap_int
+
+        Parameters
+        ----------
+        grid: clipper::Grid const &
+        rtop: clipper::RTop< clipper::ftype > const &
+
+        """
         this = _clipper.new_NXmap_int(*args)
         try:
             self.this.append(this)
@@ -4599,22 +15459,60 @@ class NXmap_int(NXmap_base):
             self.this = this
 
     def export_numpy(self, numpy_array):
+        """
+        export_numpy(NXmap_int self, double * numpy_array) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+
+        """
         return _clipper.NXmap_int_export_numpy(self, numpy_array)
 
+
     def import_numpy(self, numpy_3d_in):
+        """
+        import_numpy(NXmap_int self, double * numpy_3d_in) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+
+        """
         return _clipper.NXmap_int_import_numpy(self, numpy_3d_in)
 
+
     def operator_orth_grid(self):
+        """
+        operator_orth_grid(NXmap_int self) -> RTop_double
+
+        Parameters
+        ----------
+        self: clipper::NXmap< int > *
+
+        """
         return _clipper.NXmap_int_operator_orth_grid(self)
 
+
     def operator_grid_orth(self):
+        """
+        operator_grid_orth(NXmap_int self) -> RTop_double
+
+        Parameters
+        ----------
+        self: clipper::NXmap< int > *
+
+        """
         return _clipper.NXmap_int_operator_grid_orth(self)
+
     __swig_destroy__ = _clipper.delete_NXmap_int
     __del__ = lambda self: None
 NXmap_int_swigregister = _clipper.NXmap_int_swigregister
 NXmap_int_swigregister(NXmap_int)
 
 class CCP4MAPfile(_object):
+    """Proxy of C++ clipper::CCP4MAPfile class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, CCP4MAPfile, name, value)
     __swig_getmethods__ = {}
@@ -4622,6 +15520,7 @@ class CCP4MAPfile(_object):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::CCP4MAPfile self) -> CCP4MAPfile"""
         this = _clipper.new_CCP4MAPfile()
         try:
             self.this.append(this)
@@ -4631,59 +15530,205 @@ class CCP4MAPfile(_object):
     __del__ = lambda self: None
 
     def open_read(self, filename_in):
+        """
+        open_read(CCP4MAPfile self, String filename_in)
+
+        Parameters
+        ----------
+        filename_in: clipper::String const
+
+        """
         return _clipper.CCP4MAPfile_open_read(self, filename_in)
 
+
     def close_read(self):
+        """
+        close_read(CCP4MAPfile self)
+
+        Parameters
+        ----------
+        self: clipper::CCP4MAPfile *
+
+        """
         return _clipper.CCP4MAPfile_close_read(self)
 
+
     def open_write(self, filename_out):
+        """
+        open_write(CCP4MAPfile self, String filename_out)
+
+        Parameters
+        ----------
+        filename_out: clipper::String const
+
+        """
         return _clipper.CCP4MAPfile_open_write(self, filename_out)
 
+
     def close_write(self):
+        """
+        close_write(CCP4MAPfile self)
+
+        Parameters
+        ----------
+        self: clipper::CCP4MAPfile *
+
+        """
         return _clipper.CCP4MAPfile_close_write(self)
 
+
     def set_cell(self, cell):
+        """
+        set_cell(CCP4MAPfile self, Cell cell)
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.CCP4MAPfile_set_cell(self, cell)
 
+
     def spacegroup(self):
+        """
+        spacegroup(CCP4MAPfile self) -> Spacegroup
+
+        Parameters
+        ----------
+        self: clipper::CCP4MAPfile const *
+
+        """
         return _clipper.CCP4MAPfile_spacegroup(self)
 
+
     def cell(self):
+        """
+        cell(CCP4MAPfile self) -> Cell
+
+        Parameters
+        ----------
+        self: clipper::CCP4MAPfile const *
+
+        """
         return _clipper.CCP4MAPfile_cell(self)
 
+
     def grid_sampling(self):
+        """
+        grid_sampling(CCP4MAPfile self) -> Grid_sampling
+
+        Parameters
+        ----------
+        self: clipper::CCP4MAPfile const *
+
+        """
         return _clipper.CCP4MAPfile_grid_sampling(self)
+
     ASUCORRECT = _clipper.CCP4MAPfile_ASUCORRECT
     ASUINCOMPLETE = _clipper.CCP4MAPfile_ASUINCOMPLETE
     ASUINCONSISTENT = _clipper.CCP4MAPfile_ASUINCONSISTENT
 
     def import_xmap_float(self, xmap):
+        """
+        import_xmap_float(CCP4MAPfile self, Xmap_float xmap)
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap< float > &
+
+        """
         return _clipper.CCP4MAPfile_import_xmap_float(self, xmap)
 
+
     def import_xmap_double(self, xmap):
+        """
+        import_xmap_double(CCP4MAPfile self, Xmap_double xmap)
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap< double > &
+
+        """
         return _clipper.CCP4MAPfile_import_xmap_double(self, xmap)
 
+
     def export_xmap_float(self, xmap):
+        """
+        export_xmap_float(CCP4MAPfile self, Xmap_float xmap)
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap< float > const &
+
+        """
         return _clipper.CCP4MAPfile_export_xmap_float(self, xmap)
 
+
     def export_xmap_double(self, xmap):
+        """
+        export_xmap_double(CCP4MAPfile self, Xmap_double xmap)
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap< double > const &
+
+        """
         return _clipper.CCP4MAPfile_export_xmap_double(self, xmap)
 
+
     def import_nxmap_float(self, nxmap):
+        """
+        import_nxmap_float(CCP4MAPfile self, NXmap_float nxmap)
+
+        Parameters
+        ----------
+        nxmap: clipper::NXmap< float > &
+
+        """
         return _clipper.CCP4MAPfile_import_nxmap_float(self, nxmap)
 
+
     def import_nxmap_double(self, nxmap):
+        """
+        import_nxmap_double(CCP4MAPfile self, NXmap_double nxmap)
+
+        Parameters
+        ----------
+        nxmap: clipper::NXmap< double > &
+
+        """
         return _clipper.CCP4MAPfile_import_nxmap_double(self, nxmap)
 
+
     def export_nxmap_float(self, nxmap):
+        """
+        export_nxmap_float(CCP4MAPfile self, NXmap_float nxmap)
+
+        Parameters
+        ----------
+        nxmap: clipper::NXmap< float > const &
+
+        """
         return _clipper.CCP4MAPfile_export_nxmap_float(self, nxmap)
 
+
     def export_nxmap_double(self, nxmap):
+        """
+        export_nxmap_double(CCP4MAPfile self, NXmap_double nxmap)
+
+        Parameters
+        ----------
+        nxmap: clipper::NXmap< double > const &
+
+        """
         return _clipper.CCP4MAPfile_export_nxmap_double(self, nxmap)
+
 CCP4MAPfile_swigregister = _clipper.CCP4MAPfile_swigregister
 CCP4MAPfile_swigregister(CCP4MAPfile)
 
 class MTZcrystal(Cell):
+    """Proxy of C++ clipper::MTZcrystal class."""
+
     __swig_setmethods__ = {}
     for _s in [Cell]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -4695,6 +15740,17 @@ class MTZcrystal(Cell):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MTZcrystal self) -> MTZcrystal
+        __init__(clipper::MTZcrystal self, String xname, String pname, Cell cell) -> MTZcrystal
+
+        Parameters
+        ----------
+        xname: clipper::String const &
+        pname: clipper::String const &
+        cell: clipper::Cell const &
+
+        """
         this = _clipper.new_MTZcrystal(*args)
         try:
             self.this.append(this)
@@ -4702,16 +15758,36 @@ class MTZcrystal(Cell):
             self.this = this
 
     def crystal_name(self):
+        """
+        crystal_name(MTZcrystal self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MTZcrystal const *
+
+        """
         return _clipper.MTZcrystal_crystal_name(self)
 
+
     def project_name(self):
+        """
+        project_name(MTZcrystal self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MTZcrystal const *
+
+        """
         return _clipper.MTZcrystal_project_name(self)
+
     __swig_destroy__ = _clipper.delete_MTZcrystal
     __del__ = lambda self: None
 MTZcrystal_swigregister = _clipper.MTZcrystal_swigregister
 MTZcrystal_swigregister(MTZcrystal)
 
 class MTZdataset(_object):
+    """Proxy of C++ clipper::MTZdataset class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MTZdataset, name, value)
     __swig_getmethods__ = {}
@@ -4719,6 +15795,16 @@ class MTZdataset(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MTZdataset self) -> MTZdataset
+        __init__(clipper::MTZdataset self, String dname, clipper::ftype const & wavel) -> MTZdataset
+
+        Parameters
+        ----------
+        dname: clipper::String const &
+        wavel: clipper::ftype const &
+
+        """
         this = _clipper.new_MTZdataset(*args)
         try:
             self.this.append(this)
@@ -4726,16 +15812,36 @@ class MTZdataset(_object):
             self.this = this
 
     def dataset_name(self):
+        """
+        dataset_name(MTZdataset self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MTZdataset const *
+
+        """
         return _clipper.MTZdataset_dataset_name(self)
 
+
     def wavelength(self):
+        """
+        wavelength(MTZdataset self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::MTZdataset const *
+
+        """
         return _clipper.MTZdataset_wavelength(self)
+
     __swig_destroy__ = _clipper.delete_MTZdataset
     __del__ = lambda self: None
 MTZdataset_swigregister = _clipper.MTZdataset_swigregister
 MTZdataset_swigregister(MTZdataset)
 
 class CMTZcrystal(MTZcrystal):
+    """Proxy of C++ clipper::CMTZcrystal class."""
+
     __swig_setmethods__ = {}
     for _s in [MTZcrystal]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -4747,6 +15853,17 @@ class CMTZcrystal(MTZcrystal):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::CMTZcrystal self) -> CMTZcrystal
+        __init__(clipper::CMTZcrystal self, Container & parent, String name, MTZcrystal xtl) -> CMTZcrystal
+
+        Parameters
+        ----------
+        parent: Container &
+        name: clipper::String const &
+        xtl: clipper::MTZcrystal const &
+
+        """
         this = _clipper.new_CMTZcrystal(*args)
         try:
             self.this.append(this)
@@ -4758,6 +15875,8 @@ CMTZcrystal_swigregister = _clipper.CMTZcrystal_swigregister
 CMTZcrystal_swigregister(CMTZcrystal)
 
 class CMTZdataset(MTZdataset):
+    """Proxy of C++ clipper::CMTZdataset class."""
+
     __swig_setmethods__ = {}
     for _s in [MTZdataset]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -4769,6 +15888,17 @@ class CMTZdataset(MTZdataset):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::CMTZdataset self) -> CMTZdataset
+        __init__(clipper::CMTZdataset self, Container & parent, String name, MTZdataset set) -> CMTZdataset
+
+        Parameters
+        ----------
+        parent: Container &
+        name: clipper::String const &
+        set: clipper::MTZdataset const &
+
+        """
         this = _clipper.new_CMTZdataset(*args)
         try:
             self.this.append(this)
@@ -4780,6 +15910,8 @@ CMTZdataset_swigregister = _clipper.CMTZdataset_swigregister
 CMTZdataset_swigregister(CMTZdataset)
 
 class CCP4MTZ_type_registry(_object):
+    """Proxy of C++ clipper::CCP4MTZ_type_registry class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, CCP4MTZ_type_registry, name, value)
     __swig_getmethods__ = {}
@@ -4787,57 +15919,146 @@ class CCP4MTZ_type_registry(_object):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::CCP4MTZ_type_registry self) -> CCP4MTZ_type_registry"""
         this = _clipper.new_CCP4MTZ_type_registry()
         try:
             self.this.append(this)
         except __builtin__.Exception:
             self.this = this
-    if _newclass:
-        add_type = staticmethod(_clipper.CCP4MTZ_type_registry_add_type)
-    else:
-        add_type = _clipper.CCP4MTZ_type_registry_add_type
-    if _newclass:
-        type = staticmethod(_clipper.CCP4MTZ_type_registry_type)
-    else:
-        type = _clipper.CCP4MTZ_type_registry_type
-    if _newclass:
-        scale = staticmethod(_clipper.CCP4MTZ_type_registry_scale)
-    else:
-        scale = _clipper.CCP4MTZ_type_registry_scale
-    if _newclass:
-        add_group = staticmethod(_clipper.CCP4MTZ_type_registry_add_group)
-    else:
-        add_group = _clipper.CCP4MTZ_type_registry_add_group
-    if _newclass:
-        group_type = staticmethod(_clipper.CCP4MTZ_type_registry_group_type)
-    else:
-        group_type = _clipper.CCP4MTZ_type_registry_group_type
+
+    def add_type(name, type, scale):
+        """
+        add_type(String name, String type, clipper::ftype32 const & scale)
+
+        Parameters
+        ----------
+        name: clipper::String const &
+        type: clipper::String const &
+        scale: clipper::ftype32 const &
+
+        """
+        return _clipper.CCP4MTZ_type_registry_add_type(name, type, scale)
+
+    add_type = staticmethod(add_type)
+
+    def type(name):
+        """
+        type(String name) -> String
+
+        Parameters
+        ----------
+        name: clipper::String const &
+
+        """
+        return _clipper.CCP4MTZ_type_registry_type(name)
+
+    type = staticmethod(type)
+
+    def scale(name):
+        """
+        scale(String name) -> clipper::ftype32
+
+        Parameters
+        ----------
+        name: clipper::String const &
+
+        """
+        return _clipper.CCP4MTZ_type_registry_scale(name)
+
+    scale = staticmethod(scale)
+
+    def add_group(name, type):
+        """
+        add_group(String name, String type)
+
+        Parameters
+        ----------
+        name: clipper::String const &
+        type: clipper::String const &
+
+        """
+        return _clipper.CCP4MTZ_type_registry_add_group(name, type)
+
+    add_group = staticmethod(add_group)
+
+    def group_type(name):
+        """
+        group_type(String name) -> String
+
+        Parameters
+        ----------
+        name: clipper::String const &
+
+        """
+        return _clipper.CCP4MTZ_type_registry_group_type(name)
+
+    group_type = staticmethod(group_type)
     __swig_destroy__ = _clipper.delete_CCP4MTZ_type_registry
     __del__ = lambda self: None
 CCP4MTZ_type_registry_swigregister = _clipper.CCP4MTZ_type_registry_swigregister
 CCP4MTZ_type_registry_swigregister(CCP4MTZ_type_registry)
 
 def CCP4MTZ_type_registry_add_type(name, type, scale):
+    """
+    CCP4MTZ_type_registry_add_type(String name, String type, clipper::ftype32 const & scale)
+
+    Parameters
+    ----------
+    name: clipper::String const &
+    type: clipper::String const &
+    scale: clipper::ftype32 const &
+
+    """
     return _clipper.CCP4MTZ_type_registry_add_type(name, type, scale)
-CCP4MTZ_type_registry_add_type = _clipper.CCP4MTZ_type_registry_add_type
 
 def CCP4MTZ_type_registry_type(name):
+    """
+    CCP4MTZ_type_registry_type(String name) -> String
+
+    Parameters
+    ----------
+    name: clipper::String const &
+
+    """
     return _clipper.CCP4MTZ_type_registry_type(name)
-CCP4MTZ_type_registry_type = _clipper.CCP4MTZ_type_registry_type
 
 def CCP4MTZ_type_registry_scale(name):
+    """
+    CCP4MTZ_type_registry_scale(String name) -> clipper::ftype32
+
+    Parameters
+    ----------
+    name: clipper::String const &
+
+    """
     return _clipper.CCP4MTZ_type_registry_scale(name)
-CCP4MTZ_type_registry_scale = _clipper.CCP4MTZ_type_registry_scale
 
 def CCP4MTZ_type_registry_add_group(name, type):
+    """
+    CCP4MTZ_type_registry_add_group(String name, String type)
+
+    Parameters
+    ----------
+    name: clipper::String const &
+    type: clipper::String const &
+
+    """
     return _clipper.CCP4MTZ_type_registry_add_group(name, type)
-CCP4MTZ_type_registry_add_group = _clipper.CCP4MTZ_type_registry_add_group
 
 def CCP4MTZ_type_registry_group_type(name):
+    """
+    CCP4MTZ_type_registry_group_type(String name) -> String
+
+    Parameters
+    ----------
+    name: clipper::String const &
+
+    """
     return _clipper.CCP4MTZ_type_registry_group_type(name)
-CCP4MTZ_type_registry_group_type = _clipper.CCP4MTZ_type_registry_group_type
 
 class CCP4MTZfile(_object):
+    """Proxy of C++ clipper::CCP4MTZfile class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, CCP4MTZfile, name, value)
     __swig_getmethods__ = {}
@@ -4848,6 +16069,7 @@ class CCP4MTZfile(_object):
     Legacy = _clipper.CCP4MTZfile_Legacy
 
     def __init__(self):
+        """__init__(clipper::CCP4MTZfile self) -> CCP4MTZfile"""
         this = _clipper.new_CCP4MTZfile()
         try:
             self.this.append(this)
@@ -4857,116 +16079,484 @@ class CCP4MTZfile(_object):
     __del__ = lambda self: None
 
     def open_read(self, filename_in):
+        """
+        open_read(CCP4MTZfile self, String filename_in)
+
+        Parameters
+        ----------
+        filename_in: clipper::String const
+
+        """
         return _clipper.CCP4MTZfile_open_read(self, filename_in)
 
+
     def close_read(self):
+        """
+        close_read(CCP4MTZfile self)
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile *
+
+        """
         return _clipper.CCP4MTZfile_close_read(self)
 
+
     def open_append(self, filename_in, filename_out):
+        """
+        open_append(CCP4MTZfile self, String filename_in, String filename_out)
+
+        Parameters
+        ----------
+        filename_in: clipper::String const
+        filename_out: clipper::String const
+
+        """
         return _clipper.CCP4MTZfile_open_append(self, filename_in, filename_out)
 
+
     def close_append(self):
+        """
+        close_append(CCP4MTZfile self)
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile *
+
+        """
         return _clipper.CCP4MTZfile_close_append(self)
 
+
     def open_write(self, filename_out):
+        """
+        open_write(CCP4MTZfile self, String filename_out)
+
+        Parameters
+        ----------
+        filename_out: clipper::String const
+
+        """
         return _clipper.CCP4MTZfile_open_write(self, filename_out)
 
+
     def close_write(self):
+        """
+        close_write(CCP4MTZfile self)
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile *
+
+        """
         return _clipper.CCP4MTZfile_close_write(self)
 
+
     def spacegroup(self):
+        """
+        spacegroup(CCP4MTZfile self) -> Spacegroup
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_spacegroup(self)
 
+
     def cell(self):
+        """
+        cell(CCP4MTZfile self) -> Cell
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_cell(self)
 
+
     def resolution(self):
+        """
+        resolution(CCP4MTZfile self) -> Resolution
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_resolution(self)
 
+
     def hkl_sampling(self):
+        """
+        hkl_sampling(CCP4MTZfile self) -> HKL_sampling
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_hkl_sampling(self)
 
+
     def import_hkl_list(self, target):
+        """
+        import_hkl_list(CCP4MTZfile self, HKL_info target)
+
+        Parameters
+        ----------
+        target: clipper::HKL_info &
+
+        """
         return _clipper.CCP4MTZfile_import_hkl_list(self, target)
 
+
     def import_hkl_info(self, target, generate=True):
+        """
+        import_hkl_info(CCP4MTZfile self, HKL_info target, bool const generate=True)
+
+        Parameters
+        ----------
+        target: clipper::HKL_info &
+        generate: bool const
+
+        import_hkl_info(CCP4MTZfile self, HKL_info target)
+
+        Parameters
+        ----------
+        target: clipper::HKL_info &
+
+        """
         return _clipper.CCP4MTZfile_import_hkl_info(self, target, generate)
 
+
     def import_crystal(self, cxtl, mtzpath):
+        """
+        import_crystal(CCP4MTZfile self, MTZcrystal cxtl, String mtzpath)
+
+        Parameters
+        ----------
+        cxtl: clipper::MTZcrystal &
+        mtzpath: clipper::String const
+
+        """
         return _clipper.CCP4MTZfile_import_crystal(self, cxtl, mtzpath)
 
+
     def import_dataset(self, cset, mtzpath):
+        """
+        import_dataset(CCP4MTZfile self, MTZdataset cset, String mtzpath)
+
+        Parameters
+        ----------
+        cset: clipper::MTZdataset &
+        mtzpath: clipper::String const
+
+        """
         return _clipper.CCP4MTZfile_import_dataset(self, cset, mtzpath)
 
+
     def export_hkl_info(self, target):
+        """
+        export_hkl_info(CCP4MTZfile self, HKL_info target)
+
+        Parameters
+        ----------
+        target: clipper::HKL_info const &
+
+        """
         return _clipper.CCP4MTZfile_export_hkl_info(self, target)
 
+
     def export_crystal(self, cxtl, mtzpath):
+        """
+        export_crystal(CCP4MTZfile self, MTZcrystal cxtl, String mtzpath)
+
+        Parameters
+        ----------
+        cxtl: clipper::MTZcrystal const &
+        mtzpath: clipper::String const
+
+        """
         return _clipper.CCP4MTZfile_export_crystal(self, cxtl, mtzpath)
 
+
     def export_dataset(self, cset, mtzpath):
+        """
+        export_dataset(CCP4MTZfile self, MTZdataset cset, String mtzpath)
+
+        Parameters
+        ----------
+        cset: clipper::MTZdataset const &
+        mtzpath: clipper::String const
+
+        """
         return _clipper.CCP4MTZfile_export_dataset(self, cset, mtzpath)
 
+
     def import_chkl_data(self, *args):
+        """
+        import_chkl_data(CCP4MTZfile self, Container & target, String mtzpath, String path)
+
+        Parameters
+        ----------
+        target: Container &
+        mtzpath: clipper::String const
+        path: clipper::String const
+
+        import_chkl_data(CCP4MTZfile self, Container & target, String mtzpath)
+
+        Parameters
+        ----------
+        target: Container &
+        mtzpath: clipper::String const
+
+        """
         return _clipper.CCP4MTZfile_import_chkl_data(self, *args)
 
+
     def export_chkl_data(self, target, mtzpath):
+        """
+        export_chkl_data(CCP4MTZfile self, Container & target, String mtzpath)
+
+        Parameters
+        ----------
+        target: Container &
+        mtzpath: clipper::String const
+
+        """
         return _clipper.CCP4MTZfile_export_chkl_data(self, target, mtzpath)
 
+
     def column_paths(self):
+        """
+        column_paths(CCP4MTZfile self) -> ClipperStringVector
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_column_paths(self)
 
+
     def title(self):
+        """
+        title(CCP4MTZfile self) -> String
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_title(self)
 
+
     def set_title(self, title):
+        """
+        set_title(CCP4MTZfile self, String title)
+
+        Parameters
+        ----------
+        title: clipper::String const &
+
+        """
         return _clipper.CCP4MTZfile_set_title(self, title)
 
+
     def history(self):
+        """
+        history(CCP4MTZfile self) -> ClipperStringVector
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_history(self)
 
+
     def set_history(self, history):
+        """
+        set_history(CCP4MTZfile self, ClipperStringVector history)
+
+        Parameters
+        ----------
+        history: std::vector< clipper::String,std::allocator< clipper::String > > const &
+
+        """
         return _clipper.CCP4MTZfile_set_history(self, history)
 
+
     def num_reflections(self):
+        """
+        num_reflections(CCP4MTZfile self) -> int
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_num_reflections(self)
 
+
     def sort_order(self):
+        """
+        sort_order(CCP4MTZfile self) -> IntVector
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_sort_order(self)
 
+
     def low_res_limit(self):
+        """
+        low_res_limit(CCP4MTZfile self) -> clipper::ftype32
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_low_res_limit(self)
 
+
     def high_res_limit(self):
+        """
+        high_res_limit(CCP4MTZfile self) -> clipper::ftype32
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_high_res_limit(self)
 
+
     def ccp4_spacegroup_number(self):
+        """
+        ccp4_spacegroup_number(CCP4MTZfile self) -> int
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_ccp4_spacegroup_number(self)
 
+
     def spacegroup_confidence(self):
+        """
+        spacegroup_confidence(CCP4MTZfile self) -> char
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_spacegroup_confidence(self)
 
+
     def set_spacegroup_confidence(self, spg_confidence):
+        """
+        set_spacegroup_confidence(CCP4MTZfile self, char const & spg_confidence)
+
+        Parameters
+        ----------
+        spg_confidence: char const &
+
+        """
         return _clipper.CCP4MTZfile_set_spacegroup_confidence(self, spg_confidence)
 
+
     def set_column_label_mode(self, mode):
+        """
+        set_column_label_mode(CCP4MTZfile self, clipper::CCP4MTZfile::CCP4MTZcolumn_label_mode mode)
+
+        Parameters
+        ----------
+        mode: enum clipper::CCP4MTZfile::CCP4MTZcolumn_label_mode
+
+        """
         return _clipper.CCP4MTZfile_set_column_label_mode(self, mode)
 
+
     def set_verbose(self, verbose):
+        """
+        set_verbose(CCP4MTZfile self, int verbose)
+
+        Parameters
+        ----------
+        verbose: int
+
+        """
         return _clipper.CCP4MTZfile_set_verbose(self, verbose)
 
+
     def column_labels(self):
+        """
+        column_labels(CCP4MTZfile self) -> ClipperStringVector
+
+        Parameters
+        ----------
+        self: clipper::CCP4MTZfile const *
+
+        """
         return _clipper.CCP4MTZfile_column_labels(self)
 
+
     def import_hkl_data(self, *args):
+        """
+        import_hkl_data(CCP4MTZfile self, HKL_data_base cdata, String mtzpath)
+
+        Parameters
+        ----------
+        cdata: clipper::HKL_data_base &
+        mtzpath: clipper::String const
+
+        import_hkl_data(CCP4MTZfile self, HKL_data_base cdata, MTZdataset cset, MTZcrystal cxtl, String mtzpath)
+
+        Parameters
+        ----------
+        cdata: clipper::HKL_data_base &
+        cset: clipper::MTZdataset &
+        cxtl: clipper::MTZcrystal &
+        mtzpath: clipper::String const
+
+        """
         return _clipper.CCP4MTZfile_import_hkl_data(self, *args)
 
+
     def export_hkl_data(self, *args):
+        """
+        export_hkl_data(CCP4MTZfile self, HKL_data_base cdata, String mtzpath)
+
+        Parameters
+        ----------
+        cdata: clipper::HKL_data_base const &
+        mtzpath: clipper::String const
+
+        export_hkl_data(CCP4MTZfile self, HKL_data_base cdata, MTZdataset cset, MTZcrystal cxtl, String mtzpath)
+
+        Parameters
+        ----------
+        cdata: clipper::HKL_data_base const &
+        cset: clipper::MTZdataset const &
+        cxtl: clipper::MTZcrystal const &
+        mtzpath: clipper::String const
+
+        """
         return _clipper.CCP4MTZfile_export_hkl_data(self, *args)
+
 CCP4MTZfile_swigregister = _clipper.CCP4MTZfile_swigregister
 CCP4MTZfile_swigregister(CCP4MTZfile)
 
 class CCP4CommandInput(StringVector):
+    """Proxy of C++ CCP4CommandInput class."""
+
     __swig_setmethods__ = {}
     for _s in [StringVector]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -4978,6 +16568,23 @@ class CCP4CommandInput(StringVector):
     __repr__ = _swig_repr
 
     def __init__(self, argc, argv, echo=False):
+        """
+        __init__(CCP4CommandInput self, int argc, char ** argv, bool echo=False) -> CCP4CommandInput
+
+        Parameters
+        ----------
+        argc: int
+        argv: char **
+        echo: bool
+
+        __init__(CCP4CommandInput self, int argc, char ** argv) -> CCP4CommandInput
+
+        Parameters
+        ----------
+        argc: int
+        argv: char **
+
+        """
         this = _clipper.new_CCP4CommandInput(argc, argv, echo)
         try:
             self.this.append(this)
@@ -4989,6 +16596,8 @@ CCP4CommandInput_swigregister = _clipper.CCP4CommandInput_swigregister
 CCP4CommandInput_swigregister(CCP4CommandInput)
 
 class CCP4Program(_object):
+    """Proxy of C++ CCP4Program class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, CCP4Program, name, value)
     __swig_getmethods__ = {}
@@ -4996,6 +16605,16 @@ class CCP4Program(_object):
     __repr__ = _swig_repr
 
     def __init__(self, name, vers, rcsdate):
+        """
+        __init__(CCP4Program self, char const * name, char const * vers, char const * rcsdate) -> CCP4Program
+
+        Parameters
+        ----------
+        name: char const *
+        vers: char const *
+        rcsdate: char const *
+
+        """
         this = _clipper.new_CCP4Program(name, vers, rcsdate)
         try:
             self.this.append(this)
@@ -5005,17 +16624,46 @@ class CCP4Program(_object):
     __del__ = lambda self: None
 
     def summary_beg(self):
+        """
+        summary_beg(CCP4Program self)
+
+        Parameters
+        ----------
+        self: CCP4Program const *
+
+        """
         return _clipper.CCP4Program_summary_beg(self)
 
+
     def summary_end(self):
+        """
+        summary_end(CCP4Program self)
+
+        Parameters
+        ----------
+        self: CCP4Program const *
+
+        """
         return _clipper.CCP4Program_summary_end(self)
 
+
     def set_termination_message(self, msg):
+        """
+        set_termination_message(CCP4Program self, std::string msg)
+
+        Parameters
+        ----------
+        msg: std::string
+
+        """
         return _clipper.CCP4Program_set_termination_message(self, msg)
+
 CCP4Program_swigregister = _clipper.CCP4Program_swigregister
 CCP4Program_swigregister(CCP4Program)
 
 class Range_sampling(_object):
+    """Proxy of C++ clipper::Range_sampling class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Range_sampling, name, value)
     __swig_getmethods__ = {}
@@ -5023,6 +16671,22 @@ class Range_sampling(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Range_sampling self) -> Range_sampling
+        __init__(clipper::Range_sampling self, int const & n) -> Range_sampling
+
+        Parameters
+        ----------
+        n: int const &
+
+        __init__(clipper::Range_sampling self, clipper::Range< clipper::ftype > const & range, int const & n) -> Range_sampling
+
+        Parameters
+        ----------
+        range: clipper::Range< clipper::ftype > const &
+        n: int const &
+
+        """
         this = _clipper.new_Range_sampling(*args)
         try:
             self.this.append(this)
@@ -5030,31 +16694,102 @@ class Range_sampling(_object):
             self.this = this
 
     def indexf(self, x):
+        """
+        indexf(Range_sampling self, clipper::ftype const & x) -> clipper::ftype
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
         return _clipper.Range_sampling_indexf(self, x)
 
+
     def index(self, x):
+        """
+        index(Range_sampling self, clipper::ftype const & x) -> int
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
         return _clipper.Range_sampling_index(self, x)
 
+
     def index_bounded(self, x):
+        """
+        index_bounded(Range_sampling self, clipper::ftype const & x) -> int
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
         return _clipper.Range_sampling_index_bounded(self, x)
 
+
     def x(self, *args):
+        """
+        x(Range_sampling self, clipper::ftype const & i) -> clipper::ftype
+
+        Parameters
+        ----------
+        i: clipper::ftype const &
+
+        x(Range_sampling self, int const & i) -> clipper::ftype
+
+        Parameters
+        ----------
+        i: int const &
+
+        """
         return _clipper.Range_sampling_x(self, *args)
 
+
     def x_min(self, i):
+        """
+        x_min(Range_sampling self, int const & i) -> clipper::ftype
+
+        Parameters
+        ----------
+        i: int const &
+
+        """
         return _clipper.Range_sampling_x_min(self, i)
 
+
     def x_max(self, i):
+        """
+        x_max(Range_sampling self, int const & i) -> clipper::ftype
+
+        Parameters
+        ----------
+        i: int const &
+
+        """
         return _clipper.Range_sampling_x_max(self, i)
 
+
     def size(self):
+        """
+        size(Range_sampling self) -> int
+
+        Parameters
+        ----------
+        self: clipper::Range_sampling const *
+
+        """
         return _clipper.Range_sampling_size(self)
+
     __swig_destroy__ = _clipper.delete_Range_sampling
     __del__ = lambda self: None
 Range_sampling_swigregister = _clipper.Range_sampling_swigregister
 Range_sampling_swigregister(Range_sampling)
 
 class Histogram(Range_sampling):
+    """Proxy of C++ clipper::Histogram class."""
+
     __swig_setmethods__ = {}
     for _s in [Range_sampling]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -5066,6 +16801,16 @@ class Histogram(Range_sampling):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Histogram self) -> Histogram
+        __init__(clipper::Histogram self, clipper::Range< clipper::ftype > const & range, int const & n) -> Histogram
+
+        Parameters
+        ----------
+        range: clipper::Range< clipper::ftype > const &
+        n: int const &
+
+        """
         this = _clipper.new_Histogram(*args)
         try:
             self.this.append(this)
@@ -5073,22 +16818,73 @@ class Histogram(Range_sampling):
             self.this = this
 
     def accumulate(self, *args):
+        """
+        accumulate(Histogram self, clipper::ftype const & x)
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        accumulate(Histogram self, clipper::ftype const & x, clipper::ftype const & w)
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+        w: clipper::ftype const &
+
+        """
         return _clipper.Histogram_accumulate(self, *args)
 
+
     def sum(self):
+        """
+        sum(Histogram self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Histogram const *
+
+        """
         return _clipper.Histogram_sum(self)
 
+
     def y(self, *args):
+        """
+        y(Histogram self, int const & i) -> clipper::ftype const
+
+        Parameters
+        ----------
+        i: int const &
+
+        y(Histogram self, clipper::ftype const & x) -> clipper::ftype
+
+        Parameters
+        ----------
+        x: clipper::ftype const &
+
+        """
         return _clipper.Histogram_y(self, *args)
 
+
     def __iadd__(self, h):
+        """
+        __iadd__(Histogram self, Histogram h) -> Histogram
+
+        Parameters
+        ----------
+        h: clipper::Histogram const &
+
+        """
         return _clipper.Histogram___iadd__(self, h)
+
     __swig_destroy__ = _clipper.delete_Histogram
     __del__ = lambda self: None
 Histogram_swigregister = _clipper.Histogram_swigregister
 Histogram_swigregister(Histogram)
 
 class Generic_ordinal(_object):
+    """Proxy of C++ clipper::Generic_ordinal class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Generic_ordinal, name, value)
     __swig_getmethods__ = {}
@@ -5096,6 +16892,16 @@ class Generic_ordinal(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Generic_ordinal self) -> Generic_ordinal
+        __init__(clipper::Generic_ordinal self, clipper::Range< clipper::ftype > const & range, int const & n) -> Generic_ordinal
+
+        Parameters
+        ----------
+        range: clipper::Range< clipper::ftype > const &
+        n: int const &
+
+        """
         this = _clipper.new_Generic_ordinal(*args)
         try:
             self.this.append(this)
@@ -5103,31 +16909,135 @@ class Generic_ordinal(_object):
             self.this = this
 
     def ordinal(self, value):
+        """
+        ordinal(Generic_ordinal self, clipper::ftype const & value) -> clipper::ftype
+
+        Parameters
+        ----------
+        value: clipper::ftype const &
+
+        """
         return _clipper.Generic_ordinal_ordinal(self, value)
 
+
     def accumulate(self, *args):
+        """
+        accumulate(Generic_ordinal self, clipper::ftype const & value)
+
+        Parameters
+        ----------
+        value: clipper::ftype const &
+
+        accumulate(Generic_ordinal self, clipper::ftype const & value, clipper::ftype const & weight)
+
+        Parameters
+        ----------
+        value: clipper::ftype const &
+        weight: clipper::ftype const &
+
+        """
         return _clipper.Generic_ordinal_accumulate(self, *args)
 
+
     def prep_ordinal(self):
+        """
+        prep_ordinal(Generic_ordinal self)
+
+        Parameters
+        ----------
+        self: clipper::Generic_ordinal *
+
+        """
         return _clipper.Generic_ordinal_prep_ordinal(self)
 
+
     def invert(self):
+        """
+        invert(Generic_ordinal self)
+
+        Parameters
+        ----------
+        self: clipper::Generic_ordinal *
+
+        """
         return _clipper.Generic_ordinal_invert(self)
 
+
     def init(self, *args):
+        """
+        init(Generic_ordinal self, clipper::Range< clipper::ftype > const & range, int const num_ranges=1000)
+
+        Parameters
+        ----------
+        range: clipper::Range< clipper::ftype > const &
+        num_ranges: int const
+
+        init(Generic_ordinal self, clipper::Range< clipper::ftype > const & range)
+
+        Parameters
+        ----------
+        range: clipper::Range< clipper::ftype > const &
+
+        init(Generic_ordinal self, DoubleVector values, int const num_ranges=1000)
+
+        Parameters
+        ----------
+        values: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+        num_ranges: int const
+
+        init(Generic_ordinal self, DoubleVector values)
+
+        Parameters
+        ----------
+        values: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        init(Generic_ordinal self, int const num_ranges=1000)
+
+        Parameters
+        ----------
+        num_ranges: int const
+
+        init(Generic_ordinal self)
+
+        Parameters
+        ----------
+        self: clipper::Generic_ordinal *
+
+        """
         return _clipper.Generic_ordinal_init(self, *args)
 
+
     def add_pass_1(self, value):
+        """
+        add_pass_1(Generic_ordinal self, clipper::ftype const & value)
+
+        Parameters
+        ----------
+        value: clipper::ftype const &
+
+        """
         return _clipper.Generic_ordinal_add_pass_1(self, value)
 
+
     def add_pass_2(self, value):
+        """
+        add_pass_2(Generic_ordinal self, clipper::ftype const & value)
+
+        Parameters
+        ----------
+        value: clipper::ftype const &
+
+        """
         return _clipper.Generic_ordinal_add_pass_2(self, value)
+
     __swig_destroy__ = _clipper.delete_Generic_ordinal
     __del__ = lambda self: None
 Generic_ordinal_swigregister = _clipper.Generic_ordinal_swigregister
 Generic_ordinal_swigregister(Generic_ordinal)
 
 class Map_stats(_object):
+    """Proxy of C++ clipper::Map_stats class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Map_stats, name, value)
     __swig_getmethods__ = {}
@@ -5135,21 +17045,81 @@ class Map_stats(_object):
     __repr__ = _swig_repr
 
     def mean(self):
+        """
+        mean(Map_stats self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Map_stats const *
+
+        """
         return _clipper.Map_stats_mean(self)
 
+
     def std_dev(self):
+        """
+        std_dev(Map_stats self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Map_stats const *
+
+        """
         return _clipper.Map_stats_std_dev(self)
 
+
     def min(self):
+        """
+        min(Map_stats self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Map_stats const *
+
+        """
         return _clipper.Map_stats_min(self)
 
+
     def max(self):
+        """
+        max(Map_stats self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Map_stats const *
+
+        """
         return _clipper.Map_stats_max(self)
 
+
     def _range_ptr(self):
+        """
+        _range_ptr(Map_stats self) -> clipper::Range< > const
+
+        Parameters
+        ----------
+        self: clipper::Map_stats const *
+
+        """
         return _clipper.Map_stats__range_ptr(self)
 
+
     def __init__(self, *args):
+        """
+        __init__(clipper::Map_stats self) -> Map_stats
+        __init__(clipper::Map_stats self, Xmap_float m) -> Map_stats
+
+        Parameters
+        ----------
+        m: clipper::Xmap< float > const &
+
+        __init__(clipper::Map_stats self, Xmap_double m) -> Map_stats
+
+        Parameters
+        ----------
+        m: clipper::Xmap< double > const &
+
+        """
         this = _clipper.new_Map_stats(*args)
         try:
             self.this.append(this)
@@ -5157,13 +17127,24 @@ class Map_stats(_object):
             self.this = this
 
     def range(self):
+        """
+        range(Map_stats self)
+
+        Parameters
+        ----------
+        self: clipper::Map_stats *
+
+        """
         return _clipper.Map_stats_range(self)
+
     __swig_destroy__ = _clipper.delete_Map_stats
     __del__ = lambda self: None
 Map_stats_swigregister = _clipper.Map_stats_swigregister
 Map_stats_swigregister(Map_stats)
 
 class Map_index_sort(_object):
+    """Proxy of C++ clipper::Map_index_sort class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Map_index_sort, name, value)
     __swig_getmethods__ = {}
@@ -5171,6 +17152,7 @@ class Map_index_sort(_object):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::Map_index_sort self) -> Map_index_sort"""
         this = _clipper.new_Map_index_sort()
         try:
             self.this.append(this)
@@ -5182,6 +17164,8 @@ Map_index_sort_swigregister = _clipper.Map_index_sort_swigregister
 Map_index_sort_swigregister(Map_index_sort)
 
 class Sig_Coord_orth(_object):
+    """Proxy of C++ clipper::Sig_Coord_orth class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Sig_Coord_orth, name, value)
     __swig_getmethods__ = {}
@@ -5189,6 +17173,23 @@ class Sig_Coord_orth(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Sig_Coord_orth self) -> Sig_Coord_orth
+        __init__(clipper::Sig_Coord_orth self, clipper::Vec3< > const & v) -> Sig_Coord_orth
+
+        Parameters
+        ----------
+        v: clipper::Vec3< > const &
+
+        __init__(clipper::Sig_Coord_orth self, clipper::ftype const & sigx, clipper::ftype const & sigy, clipper::ftype const & sigz) -> Sig_Coord_orth
+
+        Parameters
+        ----------
+        sigx: clipper::ftype const &
+        sigy: clipper::ftype const &
+        sigz: clipper::ftype const &
+
+        """
         this = _clipper.new_Sig_Coord_orth(*args)
         try:
             self.this.append(this)
@@ -5196,19 +17197,48 @@ class Sig_Coord_orth(_object):
             self.this = this
 
     def sigx(self):
+        """
+        sigx(Sig_Coord_orth self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Sig_Coord_orth const *
+
+        """
         return _clipper.Sig_Coord_orth_sigx(self)
 
+
     def sigy(self):
+        """
+        sigy(Sig_Coord_orth self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Sig_Coord_orth const *
+
+        """
         return _clipper.Sig_Coord_orth_sigy(self)
 
+
     def sigz(self):
+        """
+        sigz(Sig_Coord_orth self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Sig_Coord_orth const *
+
+        """
         return _clipper.Sig_Coord_orth_sigz(self)
+
     __swig_destroy__ = _clipper.delete_Sig_Coord_orth
     __del__ = lambda self: None
 Sig_Coord_orth_swigregister = _clipper.Sig_Coord_orth_swigregister
 Sig_Coord_orth_swigregister(Sig_Coord_orth)
 
 class Sig_U_aniso_orth(_object):
+    """Proxy of C++ clipper::Sig_U_aniso_orth class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Sig_U_aniso_orth, name, value)
     __swig_getmethods__ = {}
@@ -5216,6 +17246,26 @@ class Sig_U_aniso_orth(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Sig_U_aniso_orth self) -> Sig_U_aniso_orth
+        __init__(clipper::Sig_U_aniso_orth self, clipper::Mat33sym< > const & m) -> Sig_U_aniso_orth
+
+        Parameters
+        ----------
+        m: clipper::Mat33sym< > const &
+
+        __init__(clipper::Sig_U_aniso_orth self, clipper::ftype const & su11, clipper::ftype const & su22, clipper::ftype const & su33, clipper::ftype const & su12, clipper::ftype const & su13, clipper::ftype const & su23) -> Sig_U_aniso_orth
+
+        Parameters
+        ----------
+        su11: clipper::ftype const &
+        su22: clipper::ftype const &
+        su33: clipper::ftype const &
+        su12: clipper::ftype const &
+        su13: clipper::ftype const &
+        su23: clipper::ftype const &
+
+        """
         this = _clipper.new_Sig_U_aniso_orth(*args)
         try:
             self.this.append(this)
@@ -5227,6 +17277,8 @@ Sig_U_aniso_orth_swigregister = _clipper.Sig_U_aniso_orth_swigregister
 Sig_U_aniso_orth_swigregister(Sig_U_aniso_orth)
 
 class MMDBAtom(_object):
+    """Proxy of C++ clipper::MMDBAtom class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MMDBAtom, name, value)
     __swig_getmethods__ = {}
@@ -5234,6 +17286,15 @@ class MMDBAtom(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MMDBAtom self) -> MMDBAtom
+        __init__(clipper::MMDBAtom self, clipper::mmdb::CAtom const & a) -> MMDBAtom
+
+        Parameters
+        ----------
+        a: clipper::mmdb::CAtom const &
+
+        """
         this = _clipper.new_MMDBAtom(*args)
         try:
             self.this.append(this)
@@ -5241,79 +17302,288 @@ class MMDBAtom(_object):
             self.this = this
 
     def id(self):
+        """
+        id(MMDBAtom self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MMDBAtom const *
+
+        """
         return _clipper.MMDBAtom_id(self)
 
+
     def element(self):
+        """
+        element(MMDBAtom self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MMDBAtom const *
+
+        """
         return _clipper.MMDBAtom_element(self)
 
+
     def coord_orth(self):
+        """
+        coord_orth(MMDBAtom self) -> Coord_orth
+
+        Parameters
+        ----------
+        self: clipper::MMDBAtom const *
+
+        """
         return _clipper.MMDBAtom_coord_orth(self)
 
+
     def occupancy(self):
+        """
+        occupancy(MMDBAtom self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::MMDBAtom const *
+
+        """
         return _clipper.MMDBAtom_occupancy(self)
 
+
     def u_iso(self):
+        """
+        u_iso(MMDBAtom self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::MMDBAtom const *
+
+        """
         return _clipper.MMDBAtom_u_iso(self)
 
+
     def u_aniso_orth(self):
+        """
+        u_aniso_orth(MMDBAtom self) -> U_aniso_orth
+
+        Parameters
+        ----------
+        self: clipper::MMDBAtom const *
+
+        """
         return _clipper.MMDBAtom_u_aniso_orth(self)
 
+
     def set_id(self, n):
+        """
+        set_id(MMDBAtom self, String n)
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        """
         return _clipper.MMDBAtom_set_id(self, n)
 
+
     def set_element(self, n):
+        """
+        set_element(MMDBAtom self, String n)
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        """
         return _clipper.MMDBAtom_set_element(self, n)
 
+
     def set_coord_orth(self, v):
+        """
+        set_coord_orth(MMDBAtom self, Coord_orth v)
+
+        Parameters
+        ----------
+        v: clipper::Coord_orth const &
+
+        """
         return _clipper.MMDBAtom_set_coord_orth(self, v)
 
+
     def set_occupancy(self, v):
+        """
+        set_occupancy(MMDBAtom self, clipper::ftype const & v)
+
+        Parameters
+        ----------
+        v: clipper::ftype const &
+
+        """
         return _clipper.MMDBAtom_set_occupancy(self, v)
 
+
     def set_u_iso(self, v):
+        """
+        set_u_iso(MMDBAtom self, clipper::ftype const & v)
+
+        Parameters
+        ----------
+        v: clipper::ftype const &
+
+        """
         return _clipper.MMDBAtom_set_u_iso(self, v)
 
+
     def set_u_aniso_orth(self, v):
+        """
+        set_u_aniso_orth(MMDBAtom self, U_aniso_orth v)
+
+        Parameters
+        ----------
+        v: clipper::U_aniso_orth const &
+
+        """
         return _clipper.MMDBAtom_set_u_aniso_orth(self, v)
 
+
     def sig_coord_orth(self):
+        """
+        sig_coord_orth(MMDBAtom self) -> Sig_Coord_orth
+
+        Parameters
+        ----------
+        self: clipper::MMDBAtom const *
+
+        """
         return _clipper.MMDBAtom_sig_coord_orth(self)
 
+
     def sig_occupancy(self):
+        """
+        sig_occupancy(MMDBAtom self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::MMDBAtom const *
+
+        """
         return _clipper.MMDBAtom_sig_occupancy(self)
 
+
     def sig_u_iso(self):
+        """
+        sig_u_iso(MMDBAtom self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::MMDBAtom const *
+
+        """
         return _clipper.MMDBAtom_sig_u_iso(self)
 
+
     def sig_u_aniso_orth(self):
+        """
+        sig_u_aniso_orth(MMDBAtom self) -> Sig_U_aniso_orth
+
+        Parameters
+        ----------
+        self: clipper::MMDBAtom const *
+
+        """
         return _clipper.MMDBAtom_sig_u_aniso_orth(self)
 
+
     def set_sig_coord_orth(self, s):
+        """
+        set_sig_coord_orth(MMDBAtom self, Sig_Coord_orth s)
+
+        Parameters
+        ----------
+        s: clipper::Sig_Coord_orth const &
+
+        """
         return _clipper.MMDBAtom_set_sig_coord_orth(self, s)
 
+
     def set_sig_occupancy(self, s):
+        """
+        set_sig_occupancy(MMDBAtom self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.MMDBAtom_set_sig_occupancy(self, s)
 
+
     def set_sig_u_iso(self, s):
+        """
+        set_sig_u_iso(MMDBAtom self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.MMDBAtom_set_sig_u_iso(self, s)
 
+
     def set_sig_u_aniso_orth(self, s):
+        """
+        set_sig_u_aniso_orth(MMDBAtom self, Sig_U_aniso_orth s)
+
+        Parameters
+        ----------
+        s: clipper::Sig_U_aniso_orth const &
+
+        """
         return _clipper.MMDBAtom_set_sig_u_aniso_orth(self, s)
 
+
     def altconf(self):
+        """
+        altconf(MMDBAtom self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MMDBAtom const *
+
+        """
         return _clipper.MMDBAtom_altconf(self)
 
+
     def serial_num(self):
+        """
+        serial_num(MMDBAtom self) -> int
+
+        Parameters
+        ----------
+        self: clipper::MMDBAtom const *
+
+        """
         return _clipper.MMDBAtom_serial_num(self)
 
+
     def charge(self):
+        """
+        charge(MMDBAtom self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MMDBAtom const *
+
+        """
         return _clipper.MMDBAtom_charge(self)
+
     __swig_destroy__ = _clipper.delete_MMDBAtom
     __del__ = lambda self: None
 MMDBAtom_swigregister = _clipper.MMDBAtom_swigregister
 MMDBAtom_swigregister(MMDBAtom)
 
 class MMDBResidue(_object):
+    """Proxy of C++ clipper::MMDBResidue class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MMDBResidue, name, value)
     __swig_getmethods__ = {}
@@ -5321,6 +17591,15 @@ class MMDBResidue(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MMDBResidue self) -> MMDBResidue
+        __init__(clipper::MMDBResidue self, clipper::mmdb::CResidue const & a) -> MMDBResidue
+
+        Parameters
+        ----------
+        a: clipper::mmdb::CResidue const &
+
+        """
         this = _clipper.new_MMDBResidue(*args)
         try:
             self.this.append(this)
@@ -5328,28 +17607,84 @@ class MMDBResidue(_object):
             self.this = this
 
     def type(self):
+        """
+        type(MMDBResidue self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MMDBResidue const *
+
+        """
         return _clipper.MMDBResidue_type(self)
 
+
     def seqnum(self):
+        """
+        seqnum(MMDBResidue self) -> int
+
+        Parameters
+        ----------
+        self: clipper::MMDBResidue const *
+
+        """
         return _clipper.MMDBResidue_seqnum(self)
 
+
     def inscode(self):
+        """
+        inscode(MMDBResidue self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MMDBResidue const *
+
+        """
         return _clipper.MMDBResidue_inscode(self)
 
+
     def set_type(self, n):
+        """
+        set_type(MMDBResidue self, String n)
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        """
         return _clipper.MMDBResidue_set_type(self, n)
 
+
     def set_seqnum(self, n):
+        """
+        set_seqnum(MMDBResidue self, int const & n)
+
+        Parameters
+        ----------
+        n: int const &
+
+        """
         return _clipper.MMDBResidue_set_seqnum(self, n)
 
+
     def set_inscode(self, n):
+        """
+        set_inscode(MMDBResidue self, String n)
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        """
         return _clipper.MMDBResidue_set_inscode(self, n)
+
     __swig_destroy__ = _clipper.delete_MMDBResidue
     __del__ = lambda self: None
 MMDBResidue_swigregister = _clipper.MMDBResidue_swigregister
 MMDBResidue_swigregister(MMDBResidue)
 
 class MMDBChain(_object):
+    """Proxy of C++ clipper::MMDBChain class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MMDBChain, name, value)
     __swig_getmethods__ = {}
@@ -5357,6 +17692,15 @@ class MMDBChain(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MMDBChain self) -> MMDBChain
+        __init__(clipper::MMDBChain self, clipper::mmdb::CChain const & a) -> MMDBChain
+
+        Parameters
+        ----------
+        a: clipper::mmdb::CChain const &
+
+        """
         this = _clipper.new_MMDBChain(*args)
         try:
             self.this.append(this)
@@ -5364,16 +17708,36 @@ class MMDBChain(_object):
             self.this = this
 
     def id(self):
+        """
+        id(MMDBChain self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MMDBChain const *
+
+        """
         return _clipper.MMDBChain_id(self)
 
+
     def set_id(self, n):
+        """
+        set_id(MMDBChain self, String n)
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        """
         return _clipper.MMDBChain_set_id(self, n)
+
     __swig_destroy__ = _clipper.delete_MMDBChain
     __del__ = lambda self: None
 MMDBChain_swigregister = _clipper.MMDBChain_swigregister
 MMDBChain_swigregister(MMDBChain)
 
 class MMDBModel(_object):
+    """Proxy of C++ clipper::MMDBModel class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MMDBModel, name, value)
     __swig_getmethods__ = {}
@@ -5381,6 +17745,15 @@ class MMDBModel(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MMDBModel self) -> MMDBModel
+        __init__(clipper::MMDBModel self, clipper::mmdb::CModel const & a) -> MMDBModel
+
+        Parameters
+        ----------
+        a: clipper::mmdb::CModel const &
+
+        """
         this = _clipper.new_MMDBModel(*args)
         try:
             self.this.append(this)
@@ -5388,16 +17761,36 @@ class MMDBModel(_object):
             self.this = this
 
     def id(self):
+        """
+        id(MMDBModel self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MMDBModel const *
+
+        """
         return _clipper.MMDBModel_id(self)
 
+
     def set_id(self, n):
+        """
+        set_id(MMDBModel self, String n)
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        """
         return _clipper.MMDBModel_set_id(self, n)
+
     __swig_destroy__ = _clipper.delete_MMDBModel
     __del__ = lambda self: None
 MMDBModel_swigregister = _clipper.MMDBModel_swigregister
 MMDBModel_swigregister(MMDBModel)
 
 class MMDBManager(_object):
+    """Proxy of C++ clipper::MMDBManager class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MMDBManager, name, value)
     __swig_getmethods__ = {}
@@ -5409,6 +17802,7 @@ class MMDBManager(_object):
     Binary = _clipper.MMDBManager_Binary
 
     def __init__(self):
+        """__init__(clipper::MMDBManager self) -> MMDBManager"""
         this = _clipper.new_MMDBManager()
         try:
             self.this.append(this)
@@ -5418,20 +17812,58 @@ class MMDBManager(_object):
     __del__ = lambda self: None
 
     def spacegroup(self):
+        """
+        spacegroup(MMDBManager self) -> Spacegroup
+
+        Parameters
+        ----------
+        self: clipper::MMDBManager const *
+
+        """
         return _clipper.MMDBManager_spacegroup(self)
 
+
     def cell(self):
+        """
+        cell(MMDBManager self) -> Cell
+
+        Parameters
+        ----------
+        self: clipper::MMDBManager const *
+
+        """
         return _clipper.MMDBManager_cell(self)
 
+
     def set_spacegroup(self, spacegroup):
+        """
+        set_spacegroup(MMDBManager self, Spacegroup spacegroup)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+
+        """
         return _clipper.MMDBManager_set_spacegroup(self, spacegroup)
 
+
     def set_cell(self, cell):
+        """
+        set_cell(MMDBManager self, Cell cell)
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.MMDBManager_set_cell(self, cell)
+
 MMDBManager_swigregister = _clipper.MMDBManager_swigregister
 MMDBManager_swigregister(MMDBManager)
 
 class MMDBAtom_list(Atom_list):
+    """Proxy of C++ clipper::MMDBAtom_list class."""
+
     __swig_setmethods__ = {}
     for _s in [Atom_list]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -5443,6 +17875,15 @@ class MMDBAtom_list(Atom_list):
     __repr__ = _swig_repr
 
     def __init__(self, ppcatom, natom):
+        """
+        __init__(clipper::MMDBAtom_list self, clipper::mmdb::PPCAtom const ppcatom, int const natom) -> MMDBAtom_list
+
+        Parameters
+        ----------
+        ppcatom: clipper::mmdb::PPCAtom const
+        natom: int const
+
+        """
         this = _clipper.new_MMDBAtom_list(ppcatom, natom)
         try:
             self.this.append(this)
@@ -5467,6 +17908,8 @@ MEMBERS = _clipper.MEMBERS
 PROPERTIES = _clipper.PROPERTIES
 CHILDREN = _clipper.CHILDREN
 class MAtom(Atom):
+    """Proxy of C++ clipper::MAtom class."""
+
     __swig_setmethods__ = {}
     for _s in [Atom]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -5478,6 +17921,15 @@ class MAtom(Atom):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MAtom self) -> MAtom
+        __init__(clipper::MAtom self, Atom atom) -> MAtom
+
+        Parameters
+        ----------
+        atom: clipper::Atom const &
+
+        """
         this = _clipper.new_MAtom(*args)
         try:
             self.this.append(this)
@@ -5485,47 +17937,157 @@ class MAtom(Atom):
             self.this = this
 
     def id(self):
+        """
+        id(MAtom self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MAtom const *
+
+        """
         return _clipper.MAtom_id(self)
 
+
     def set_id(self, s):
+        """
+        set_id(MAtom self, String s)
+
+        Parameters
+        ----------
+        s: clipper::String const &
+
+        """
         return _clipper.MAtom_set_id(self, s)
 
+
     def name(self):
+        """
+        name(MAtom self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MAtom const *
+
+        """
         return _clipper.MAtom_name(self)
 
+
     def set_name(self, *args):
+        """
+        set_name(MAtom self, String s, String altconf)
+
+        Parameters
+        ----------
+        s: clipper::String const
+        altconf: clipper::String const
+
+        set_name(MAtom self, String s)
+
+        Parameters
+        ----------
+        s: clipper::String const
+
+        """
         return _clipper.MAtom_set_name(self, *args)
 
+
     def atom(self, *args):
+        """
+        atom(MAtom self) -> Atom
+        atom(MAtom self) -> Atom
+
+        Parameters
+        ----------
+        self: clipper::MAtom *
+
+        """
         return _clipper.MAtom_atom(self, *args)
 
+
     def copy(self, other, mode):
+        """
+        copy(MAtom self, MAtom other, clipper::MM::COPY const & mode) -> MAtom
+
+        Parameters
+        ----------
+        other: clipper::MAtom const &
+        mode: clipper::MM::COPY const &
+
+        """
         return _clipper.MAtom_copy(self, other, mode)
-    if _newclass:
-        id_tidy = staticmethod(_clipper.MAtom_id_tidy)
-    else:
-        id_tidy = _clipper.MAtom_id_tidy
-    if _newclass:
-        id_match = staticmethod(_clipper.MAtom_id_match)
-    else:
-        id_match = _clipper.MAtom_id_match
+
+
+    def id_tidy(id):
+        """
+        id_tidy(String id) -> String
+
+        Parameters
+        ----------
+        id: clipper::String const &
+
+        """
+        return _clipper.MAtom_id_tidy(id)
+
+    id_tidy = staticmethod(id_tidy)
+
+    def id_match(id1, id2, mode):
+        """
+        id_match(String id1, String id2, clipper::MM::MODE const & mode) -> bool
+
+        Parameters
+        ----------
+        id1: clipper::String const &
+        id2: clipper::String const &
+        mode: clipper::MM::MODE const &
+
+        """
+        return _clipper.MAtom_id_match(id1, id2, mode)
+
+    id_match = staticmethod(id_match)
 
     def __str__(self):
+        """
+        __str__(MAtom self) -> std::string
+
+        Parameters
+        ----------
+        self: clipper::MAtom *
+
+        """
         return _clipper.MAtom___str__(self)
+
     __swig_destroy__ = _clipper.delete_MAtom
     __del__ = lambda self: None
 MAtom_swigregister = _clipper.MAtom_swigregister
 MAtom_swigregister(MAtom)
 
 def MAtom_id_tidy(id):
+    """
+    MAtom_id_tidy(String id) -> String
+
+    Parameters
+    ----------
+    id: clipper::String const &
+
+    """
     return _clipper.MAtom_id_tidy(id)
-MAtom_id_tidy = _clipper.MAtom_id_tidy
 
 def MAtom_id_match(id1, id2, mode):
+    """
+    MAtom_id_match(String id1, String id2, clipper::MM::MODE const & mode) -> bool
+
+    Parameters
+    ----------
+    id1: clipper::String const &
+    id2: clipper::String const &
+    mode: clipper::MM::MODE const &
+
+    """
     return _clipper.MAtom_id_match(id1, id2, mode)
-MAtom_id_match = _clipper.MAtom_id_match
 
 class MMonomer(_object):
+    """Proxy of C++ clipper::MMonomer class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MMonomer, name, value)
     __swig_getmethods__ = {}
@@ -5533,102 +18095,440 @@ class MMonomer(_object):
     __repr__ = _swig_repr
 
     def id(self):
+        """
+        id(MMonomer self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MMonomer const *
+
+        """
         return _clipper.MMonomer_id(self)
 
+
     def set_id(self, s):
+        """
+        set_id(MMonomer self, String s)
+
+        Parameters
+        ----------
+        s: clipper::String const &
+
+        """
         return _clipper.MMonomer_set_id(self, s)
 
+
     def type(self):
+        """
+        type(MMonomer self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MMonomer const *
+
+        """
         return _clipper.MMonomer_type(self)
 
+
     def set_type(self, s):
+        """
+        set_type(MMonomer self, String s)
+
+        Parameters
+        ----------
+        s: clipper::String const &
+
+        """
         return _clipper.MMonomer_set_type(self, s)
 
+
     def seqnum(self):
+        """
+        seqnum(MMonomer self) -> int
+
+        Parameters
+        ----------
+        self: clipper::MMonomer const *
+
+        """
         return _clipper.MMonomer_seqnum(self)
 
+
     def set_seqnum(self, *args):
+        """
+        set_seqnum(MMonomer self, int const s, String inscode)
+
+        Parameters
+        ----------
+        s: int const
+        inscode: clipper::String const
+
+        set_seqnum(MMonomer self, int const s)
+
+        Parameters
+        ----------
+        s: int const
+
+        """
         return _clipper.MMonomer_set_seqnum(self, *args)
 
+
     def atom_list(self):
+        """
+        atom_list(MMonomer self) -> Atom_list
+
+        Parameters
+        ----------
+        self: clipper::MMonomer const *
+
+        """
         return _clipper.MMonomer_atom_list(self)
 
+
     def transform(self, rt):
+        """
+        transform(MMonomer self, RTop_orth rt)
+
+        Parameters
+        ----------
+        rt: clipper::RTop_orth const
+
+        """
         return _clipper.MMonomer_transform(self, rt)
 
+
     def size(self):
+        """
+        size(MMonomer self) -> int
+
+        Parameters
+        ----------
+        self: clipper::MMonomer const *
+
+        """
         return _clipper.MMonomer_size(self)
 
+
     def find(self, *args):
+        """
+        find(MMonomer self, String n, clipper::MM::MODE const mode) -> MAtom
+
+        Parameters
+        ----------
+        n: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        find(MMonomer self, String n) -> MAtom
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        find(MMonomer self, String n, clipper::MM::MODE const mode) -> MAtom
+
+        Parameters
+        ----------
+        n: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        find(MMonomer self, String n) -> MAtom
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        """
         return _clipper.MMonomer_find(self, *args)
 
+
     def select(self, *args):
+        """
+        select(MMonomer self, String sel, clipper::MM::MODE const mode) -> MMonomer
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        select(MMonomer self, String sel) -> MMonomer
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+
+        """
         return _clipper.MMonomer_select(self, *args)
 
+
     def select_index(self, *args):
+        """
+        select_index(MMonomer self, String sel, clipper::MM::MODE const mode) -> IntVector
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        select_index(MMonomer self, String sel) -> IntVector
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+
+        """
         return _clipper.MMonomer_select_index(self, *args)
 
+
     def lookup(self, str, mode):
+        """
+        lookup(MMonomer self, String str, clipper::MM::MODE const & mode) -> int
+
+        Parameters
+        ----------
+        str: clipper::String const &
+        mode: clipper::MM::MODE const &
+
+        """
         return _clipper.MMonomer_lookup(self, str, mode)
 
+
     def insert(self, add, pos=-1):
+        """
+        insert(MMonomer self, MAtom add, int pos=-1)
+
+        Parameters
+        ----------
+        add: clipper::MAtom const &
+        pos: int
+
+        insert(MMonomer self, MAtom add)
+
+        Parameters
+        ----------
+        add: clipper::MAtom const &
+
+        """
         return _clipper.MMonomer_insert(self, add, pos)
 
+
     def copy(self, other, mode):
+        """
+        copy(MMonomer self, MMonomer other, clipper::MM::COPY const & mode) -> MMonomer
+
+        Parameters
+        ----------
+        other: clipper::MMonomer const &
+        mode: clipper::MM::COPY const &
+
+        """
         return _clipper.MMonomer_copy(self, other, mode)
-    if _newclass:
-        id_tidy = staticmethod(_clipper.MMonomer_id_tidy)
-    else:
-        id_tidy = _clipper.MMonomer_id_tidy
-    if _newclass:
-        id_match = staticmethod(_clipper.MMonomer_id_match)
-    else:
-        id_match = _clipper.MMonomer_id_match
+
+
+    def id_tidy(id):
+        """
+        id_tidy(String id) -> String
+
+        Parameters
+        ----------
+        id: clipper::String const &
+
+        """
+        return _clipper.MMonomer_id_tidy(id)
+
+    id_tidy = staticmethod(id_tidy)
+
+    def id_match(id1, id2, mode):
+        """
+        id_match(String id1, String id2, clipper::MM::MODE const & mode) -> bool
+
+        Parameters
+        ----------
+        id1: clipper::String const &
+        id2: clipper::String const &
+        mode: clipper::MM::MODE const &
+
+        """
+        return _clipper.MMonomer_id_match(id1, id2, mode)
+
+    id_match = staticmethod(id_match)
     Default = _clipper.MMonomer_Default
     Dunbrack = _clipper.MMonomer_Dunbrack
     Richardson = _clipper.MMonomer_Richardson
 
     def protein_mainchain_build_carbonyl_oxygen(self, *args):
+        """
+        protein_mainchain_build_carbonyl_oxygen(MMonomer self, MMonomer next)
+
+        Parameters
+        ----------
+        next: clipper::MMonomer const &
+
+        protein_mainchain_build_carbonyl_oxygen(MMonomer self)
+
+        Parameters
+        ----------
+        self: clipper::MMonomer *
+
+        """
         return _clipper.MMonomer_protein_mainchain_build_carbonyl_oxygen(self, *args)
 
+
     def protein_sidechain_number_of_rotamers(self, *args):
+        """
+        protein_sidechain_number_of_rotamers(MMonomer self, clipper::MMonomer::TYPE t) -> int
+
+        Parameters
+        ----------
+        t: enum clipper::MMonomer::TYPE
+
+        protein_sidechain_number_of_rotamers(MMonomer self) -> int
+
+        Parameters
+        ----------
+        self: clipper::MMonomer const *
+
+        """
         return _clipper.MMonomer_protein_sidechain_number_of_rotamers(self, *args)
 
+
     def protein_sidechain_number_of_rotomers(self):
+        """
+        protein_sidechain_number_of_rotomers(MMonomer self) -> int
+
+        Parameters
+        ----------
+        self: clipper::MMonomer const *
+
+        """
         return _clipper.MMonomer_protein_sidechain_number_of_rotomers(self)
 
+
     def protein_sidechain_build_rotamer(self, *args):
+        """
+        protein_sidechain_build_rotamer(MMonomer self, int const & n, clipper::MMonomer::TYPE t) -> clipper::ftype
+
+        Parameters
+        ----------
+        n: int const &
+        t: enum clipper::MMonomer::TYPE
+
+        protein_sidechain_build_rotamer(MMonomer self, int const & n) -> clipper::ftype
+
+        Parameters
+        ----------
+        n: int const &
+
+        """
         return _clipper.MMonomer_protein_sidechain_build_rotamer(self, *args)
 
+
     def protein_sidechain_build_rotomer(self, n):
+        """
+        protein_sidechain_build_rotomer(MMonomer self, int const & n) -> clipper::ftype
+
+        Parameters
+        ----------
+        n: int const &
+
+        """
         return _clipper.MMonomer_protein_sidechain_build_rotomer(self, n)
-    if _newclass:
-        protein_peptide_bond = staticmethod(_clipper.MMonomer_protein_peptide_bond)
-    else:
-        protein_peptide_bond = _clipper.MMonomer_protein_peptide_bond
-    if _newclass:
-        protein_ramachandran_phi = staticmethod(_clipper.MMonomer_protein_ramachandran_phi)
-    else:
-        protein_ramachandran_phi = _clipper.MMonomer_protein_ramachandran_phi
-    if _newclass:
-        protein_ramachandran_psi = staticmethod(_clipper.MMonomer_protein_ramachandran_psi)
-    else:
-        protein_ramachandran_psi = _clipper.MMonomer_protein_ramachandran_psi
-    if _newclass:
-        default_type = staticmethod(_clipper.MMonomer_default_type)
-    else:
-        default_type = _clipper.MMonomer_default_type
+
+
+    def protein_peptide_bond(m1, m2, r=1.5):
+        """
+        protein_peptide_bond(MMonomer m1, MMonomer m2, clipper::ftype r=1.5) -> bool
+
+        Parameters
+        ----------
+        m1: clipper::MMonomer const &
+        m2: clipper::MMonomer const &
+        r: clipper::ftype
+
+        protein_peptide_bond(MMonomer m1, MMonomer m2) -> bool
+
+        Parameters
+        ----------
+        m1: clipper::MMonomer const &
+        m2: clipper::MMonomer const &
+
+        """
+        return _clipper.MMonomer_protein_peptide_bond(m1, m2, r)
+
+    protein_peptide_bond = staticmethod(protein_peptide_bond)
+
+    def protein_ramachandran_phi(m1, m2):
+        """
+        protein_ramachandran_phi(MMonomer m1, MMonomer m2) -> double
+
+        Parameters
+        ----------
+        m1: clipper::MMonomer const &
+        m2: clipper::MMonomer const &
+
+        """
+        return _clipper.MMonomer_protein_ramachandran_phi(m1, m2)
+
+    protein_ramachandran_phi = staticmethod(protein_ramachandran_phi)
+
+    def protein_ramachandran_psi(m1, m2):
+        """
+        protein_ramachandran_psi(MMonomer m1, MMonomer m2) -> double
+
+        Parameters
+        ----------
+        m1: clipper::MMonomer const &
+        m2: clipper::MMonomer const &
+
+        """
+        return _clipper.MMonomer_protein_ramachandran_psi(m1, m2)
+
+    protein_ramachandran_psi = staticmethod(protein_ramachandran_psi)
+
+    def default_type():
+        """default_type() -> clipper::MMonomer::TYPE &"""
+        return _clipper.MMonomer_default_type()
+
+    default_type = staticmethod(default_type)
 
     def __getitem__(self, i):
+        """
+        __getitem__(MMonomer self, int i) -> MAtom
+
+        Parameters
+        ----------
+        i: int
+
+        """
         return _clipper.MMonomer___getitem__(self, i)
 
+
     def __setitem__(self, i, atom):
+        """
+        __setitem__(MMonomer self, int i, MAtom atom)
+
+        Parameters
+        ----------
+        i: int
+        atom: clipper::MAtom &
+
+        """
         return _clipper.MMonomer___setitem__(self, i, atom)
 
+
     def __len__(self):
+        """
+        __len__(MMonomer self) -> size_t
+
+        Parameters
+        ----------
+        self: clipper::MMonomer *
+
+        """
         return _clipper.MMonomer___len__(self)
 
+
     def __init__(self):
+        """__init__(clipper::MMonomer self) -> MMonomer"""
         this = _clipper.new_MMonomer()
         try:
             self.this.append(this)
@@ -5640,38 +18540,104 @@ MMonomer_swigregister = _clipper.MMonomer_swigregister
 MMonomer_swigregister(MMonomer)
 
 def and_MMonomer(m1, m2):
+    """
+    and_MMonomer(MMonomer m1, MMonomer m2) -> MMonomer
+
+    Parameters
+    ----------
+    m1: clipper::MMonomer const &
+    m2: clipper::MMonomer const &
+
+    """
     return _clipper.and_MMonomer(m1, m2)
-and_MMonomer = _clipper.and_MMonomer
 
 def or_MMonomer(m1, m2):
+    """
+    or_MMonomer(MMonomer m1, MMonomer m2) -> MMonomer
+
+    Parameters
+    ----------
+    m1: clipper::MMonomer const &
+    m2: clipper::MMonomer const &
+
+    """
     return _clipper.or_MMonomer(m1, m2)
-or_MMonomer = _clipper.or_MMonomer
 
 def MMonomer_id_tidy(id):
+    """
+    MMonomer_id_tidy(String id) -> String
+
+    Parameters
+    ----------
+    id: clipper::String const &
+
+    """
     return _clipper.MMonomer_id_tidy(id)
-MMonomer_id_tidy = _clipper.MMonomer_id_tidy
 
 def MMonomer_id_match(id1, id2, mode):
+    """
+    MMonomer_id_match(String id1, String id2, clipper::MM::MODE const & mode) -> bool
+
+    Parameters
+    ----------
+    id1: clipper::String const &
+    id2: clipper::String const &
+    mode: clipper::MM::MODE const &
+
+    """
     return _clipper.MMonomer_id_match(id1, id2, mode)
-MMonomer_id_match = _clipper.MMonomer_id_match
 
 def MMonomer_protein_peptide_bond(m1, m2, r=1.5):
+    """
+    protein_peptide_bond(MMonomer m1, MMonomer m2, clipper::ftype r=1.5) -> bool
+
+    Parameters
+    ----------
+    m1: clipper::MMonomer const &
+    m2: clipper::MMonomer const &
+    r: clipper::ftype
+
+    MMonomer_protein_peptide_bond(MMonomer m1, MMonomer m2) -> bool
+
+    Parameters
+    ----------
+    m1: clipper::MMonomer const &
+    m2: clipper::MMonomer const &
+
+    """
     return _clipper.MMonomer_protein_peptide_bond(m1, m2, r)
-MMonomer_protein_peptide_bond = _clipper.MMonomer_protein_peptide_bond
 
 def MMonomer_protein_ramachandran_phi(m1, m2):
+    """
+    MMonomer_protein_ramachandran_phi(MMonomer m1, MMonomer m2) -> double
+
+    Parameters
+    ----------
+    m1: clipper::MMonomer const &
+    m2: clipper::MMonomer const &
+
+    """
     return _clipper.MMonomer_protein_ramachandran_phi(m1, m2)
-MMonomer_protein_ramachandran_phi = _clipper.MMonomer_protein_ramachandran_phi
 
 def MMonomer_protein_ramachandran_psi(m1, m2):
+    """
+    MMonomer_protein_ramachandran_psi(MMonomer m1, MMonomer m2) -> double
+
+    Parameters
+    ----------
+    m1: clipper::MMonomer const &
+    m2: clipper::MMonomer const &
+
+    """
     return _clipper.MMonomer_protein_ramachandran_psi(m1, m2)
-MMonomer_protein_ramachandran_psi = _clipper.MMonomer_protein_ramachandran_psi
 
 def MMonomer_default_type():
+    """MMonomer_default_type() -> clipper::MMonomer::TYPE &"""
     return _clipper.MMonomer_default_type()
-MMonomer_default_type = _clipper.MMonomer_default_type
 
 class MPolymer(_object):
+    """Proxy of C++ clipper::MPolymer class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MPolymer, name, value)
     __swig_getmethods__ = {}
@@ -5679,56 +18645,247 @@ class MPolymer(_object):
     __repr__ = _swig_repr
 
     def id(self):
+        """
+        id(MPolymer self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MPolymer const *
+
+        """
         return _clipper.MPolymer_id(self)
 
+
     def set_id(self, s):
+        """
+        set_id(MPolymer self, String s)
+
+        Parameters
+        ----------
+        s: clipper::String const &
+
+        """
         return _clipper.MPolymer_set_id(self, s)
 
+
     def atom_list(self):
+        """
+        atom_list(MPolymer self) -> Atom_list
+
+        Parameters
+        ----------
+        self: clipper::MPolymer const *
+
+        """
         return _clipper.MPolymer_atom_list(self)
 
+
     def transform(self, rt):
+        """
+        transform(MPolymer self, RTop_orth rt)
+
+        Parameters
+        ----------
+        rt: clipper::RTop_orth const
+
+        """
         return _clipper.MPolymer_transform(self, rt)
 
+
     def size(self):
+        """
+        size(MPolymer self) -> int
+
+        Parameters
+        ----------
+        self: clipper::MPolymer const *
+
+        """
         return _clipper.MPolymer_size(self)
 
+
     def find(self, *args):
+        """
+        find(MPolymer self, String n, clipper::MM::MODE const mode) -> MMonomer
+
+        Parameters
+        ----------
+        n: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        find(MPolymer self, String n) -> MMonomer
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        find(MPolymer self, String n, clipper::MM::MODE const mode) -> MMonomer
+
+        Parameters
+        ----------
+        n: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        find(MPolymer self, String n) -> MMonomer
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        """
         return _clipper.MPolymer_find(self, *args)
 
+
     def select(self, *args):
+        """
+        select(MPolymer self, String sel, clipper::MM::MODE const mode) -> MPolymer
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        select(MPolymer self, String sel) -> MPolymer
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+
+        """
         return _clipper.MPolymer_select(self, *args)
 
+
     def select_index(self, *args):
+        """
+        select_index(MPolymer self, String sel, clipper::MM::MODE const mode) -> IntVector
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        select_index(MPolymer self, String sel) -> IntVector
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+
+        """
         return _clipper.MPolymer_select_index(self, *args)
 
+
     def lookup(self, str, mode):
+        """
+        lookup(MPolymer self, String str, clipper::MM::MODE const & mode) -> int
+
+        Parameters
+        ----------
+        str: clipper::String const &
+        mode: clipper::MM::MODE const &
+
+        """
         return _clipper.MPolymer_lookup(self, str, mode)
 
+
     def insert(self, add, pos=-1):
+        """
+        insert(MPolymer self, MMonomer add, int pos=-1)
+
+        Parameters
+        ----------
+        add: clipper::MMonomer const &
+        pos: int
+
+        insert(MPolymer self, MMonomer add)
+
+        Parameters
+        ----------
+        add: clipper::MMonomer const &
+
+        """
         return _clipper.MPolymer_insert(self, add, pos)
 
+
     def copy(self, other, mode):
+        """
+        copy(MPolymer self, MPolymer other, clipper::MM::COPY const & mode) -> MPolymer
+
+        Parameters
+        ----------
+        other: clipper::MPolymer const &
+        mode: clipper::MM::COPY const &
+
+        """
         return _clipper.MPolymer_copy(self, other, mode)
-    if _newclass:
-        id_tidy = staticmethod(_clipper.MPolymer_id_tidy)
-    else:
-        id_tidy = _clipper.MPolymer_id_tidy
-    if _newclass:
-        id_match = staticmethod(_clipper.MPolymer_id_match)
-    else:
-        id_match = _clipper.MPolymer_id_match
+
+
+    def id_tidy(id):
+        """
+        id_tidy(String id) -> String
+
+        Parameters
+        ----------
+        id: clipper::String const &
+
+        """
+        return _clipper.MPolymer_id_tidy(id)
+
+    id_tidy = staticmethod(id_tidy)
+
+    def id_match(id1, id2, mode):
+        """
+        id_match(String id1, String id2, clipper::MM::MODE const & mode) -> bool
+
+        Parameters
+        ----------
+        id1: clipper::String const &
+        id2: clipper::String const &
+        mode: clipper::MM::MODE const &
+
+        """
+        return _clipper.MPolymer_id_match(id1, id2, mode)
+
+    id_match = staticmethod(id_match)
 
     def __getitem__(self, i):
+        """
+        __getitem__(MPolymer self, int i) -> MMonomer
+
+        Parameters
+        ----------
+        i: int
+
+        """
         return _clipper.MPolymer___getitem__(self, i)
 
+
     def __setitem__(self, i, mmon):
+        """
+        __setitem__(MPolymer self, int i, MMonomer mmon)
+
+        Parameters
+        ----------
+        i: int
+        mmon: clipper::MMonomer &
+
+        """
         return _clipper.MPolymer___setitem__(self, i, mmon)
 
+
     def __len__(self):
+        """
+        __len__(MPolymer self) -> size_t
+
+        Parameters
+        ----------
+        self: clipper::MPolymer *
+
+        """
         return _clipper.MPolymer___len__(self)
 
+
     def __init__(self):
+        """__init__(clipper::MPolymer self) -> MPolymer"""
         this = _clipper.new_MPolymer()
         try:
             self.this.append(this)
@@ -5740,22 +18897,56 @@ MPolymer_swigregister = _clipper.MPolymer_swigregister
 MPolymer_swigregister(MPolymer)
 
 def and_MPolymer(m1, m2):
+    """
+    and_MPolymer(MPolymer m1, MPolymer m2) -> MPolymer
+
+    Parameters
+    ----------
+    m1: clipper::MPolymer const &
+    m2: clipper::MPolymer const &
+
+    """
     return _clipper.and_MPolymer(m1, m2)
-and_MPolymer = _clipper.and_MPolymer
 
 def or_MPolymer(m1, m2):
+    """
+    or_MPolymer(MPolymer m1, MPolymer m2) -> MPolymer
+
+    Parameters
+    ----------
+    m1: clipper::MPolymer const &
+    m2: clipper::MPolymer const &
+
+    """
     return _clipper.or_MPolymer(m1, m2)
-or_MPolymer = _clipper.or_MPolymer
 
 def MPolymer_id_tidy(id):
+    """
+    MPolymer_id_tidy(String id) -> String
+
+    Parameters
+    ----------
+    id: clipper::String const &
+
+    """
     return _clipper.MPolymer_id_tidy(id)
-MPolymer_id_tidy = _clipper.MPolymer_id_tidy
 
 def MPolymer_id_match(id1, id2, mode):
+    """
+    MPolymer_id_match(String id1, String id2, clipper::MM::MODE const & mode) -> bool
+
+    Parameters
+    ----------
+    id1: clipper::String const &
+    id2: clipper::String const &
+    mode: clipper::MM::MODE const &
+
+    """
     return _clipper.MPolymer_id_match(id1, id2, mode)
-MPolymer_id_match = _clipper.MPolymer_id_match
 
 class MModel(_object):
+    """Proxy of C++ clipper::MModel class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MModel, name, value)
     __swig_getmethods__ = {}
@@ -5763,48 +18954,232 @@ class MModel(_object):
     __repr__ = _swig_repr
 
     def atom_list(self):
+        """
+        atom_list(MModel self) -> Atom_list
+
+        Parameters
+        ----------
+        self: clipper::MModel const *
+
+        """
         return _clipper.MModel_atom_list(self)
 
+
     def transform(self, rt):
+        """
+        transform(MModel self, RTop_orth rt)
+
+        Parameters
+        ----------
+        rt: clipper::RTop_orth const
+
+        """
         return _clipper.MModel_transform(self, rt)
 
+
     def size(self):
+        """
+        size(MModel self) -> int
+
+        Parameters
+        ----------
+        self: clipper::MModel const *
+
+        """
         return _clipper.MModel_size(self)
 
+
     def find(self, *args):
+        """
+        find(MModel self, String n, clipper::MM::MODE const mode) -> MPolymer
+
+        Parameters
+        ----------
+        n: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        find(MModel self, String n) -> MPolymer
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        find(MModel self, String n, clipper::MM::MODE const mode) -> MPolymer
+
+        Parameters
+        ----------
+        n: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        find(MModel self, String n) -> MPolymer
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        """
         return _clipper.MModel_find(self, *args)
 
+
     def select(self, *args):
+        """
+        select(MModel self, String sel, clipper::MM::MODE const mode) -> MModel
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        select(MModel self, String sel) -> MModel
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+
+        """
         return _clipper.MModel_select(self, *args)
 
+
     def select_index(self, *args):
+        """
+        select_index(MModel self, String sel, clipper::MM::MODE const mode) -> IntVector
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        select_index(MModel self, String sel) -> IntVector
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+
+        """
         return _clipper.MModel_select_index(self, *args)
 
+
     def lookup(self, str, mode):
+        """
+        lookup(MModel self, String str, clipper::MM::MODE const & mode) -> int
+
+        Parameters
+        ----------
+        str: clipper::String const &
+        mode: clipper::MM::MODE const &
+
+        """
         return _clipper.MModel_lookup(self, str, mode)
 
+
     def insert(self, add, pos=-1):
+        """
+        insert(MModel self, MPolymer add, int pos=-1)
+
+        Parameters
+        ----------
+        add: clipper::MPolymer const &
+        pos: int
+
+        insert(MModel self, MPolymer add)
+
+        Parameters
+        ----------
+        add: clipper::MPolymer const &
+
+        """
         return _clipper.MModel_insert(self, add, pos)
 
+
     def copy(self, other, mode):
+        """
+        copy(MModel self, MModel other, clipper::MM::COPY const & mode) -> MModel
+
+        Parameters
+        ----------
+        other: clipper::MModel const &
+        mode: clipper::MM::COPY const &
+
+        """
         return _clipper.MModel_copy(self, other, mode)
 
+
     def atom(self, *args):
+        """
+        atom(MModel self, clipper::MAtomIndex const & index) -> MAtom
+
+        Parameters
+        ----------
+        index: clipper::MAtomIndex const &
+
+        atom(MModel self, clipper::MAtomIndex const & index) -> MAtom
+
+        Parameters
+        ----------
+        index: clipper::MAtomIndex const &
+
+        """
         return _clipper.MModel_atom(self, *args)
 
+
     def select_atom_index(self, *args):
+        """
+        select_atom_index(MModel self, String sel, clipper::MM::MODE const mode) -> std::vector< clipper::MAtomIndex,std::allocator< clipper::MAtomIndex > >
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        select_atom_index(MModel self, String sel) -> std::vector< clipper::MAtomIndex,std::allocator< clipper::MAtomIndex > >
+
+        Parameters
+        ----------
+        sel: clipper::String const &
+
+        """
         return _clipper.MModel_select_atom_index(self, *args)
 
+
     def __getitem__(self, i):
+        """
+        __getitem__(MModel self, int i) -> MPolymer
+
+        Parameters
+        ----------
+        i: int
+
+        """
         return _clipper.MModel___getitem__(self, i)
 
+
     def __setitem__(self, i, mpol):
+        """
+        __setitem__(MModel self, int i, MPolymer mpol)
+
+        Parameters
+        ----------
+        i: int
+        mpol: clipper::MPolymer &
+
+        """
         return _clipper.MModel___setitem__(self, i, mpol)
 
+
     def __len__(self):
+        """
+        __len__(MModel self) -> size_t
+
+        Parameters
+        ----------
+        self: clipper::MModel *
+
+        """
         return _clipper.MModel___len__(self)
 
+
     def __init__(self):
+        """__init__(clipper::MModel self) -> MModel"""
         this = _clipper.new_MModel()
         try:
             self.this.append(this)
@@ -5816,14 +19191,32 @@ MModel_swigregister = _clipper.MModel_swigregister
 MModel_swigregister(MModel)
 
 def and_MModel(m1, m2):
+    """
+    and_MModel(MModel m1, MModel m2) -> MModel
+
+    Parameters
+    ----------
+    m1: clipper::MModel const &
+    m2: clipper::MModel const &
+
+    """
     return _clipper.and_MModel(m1, m2)
-and_MModel = _clipper.and_MModel
 
 def or_MModel(m1, m2):
+    """
+    or_MModel(MModel m1, MModel m2) -> MModel
+
+    Parameters
+    ----------
+    m1: clipper::MModel const &
+    m2: clipper::MModel const &
+
+    """
     return _clipper.or_MModel(m1, m2)
-or_MModel = _clipper.or_MModel
 
 class MiniMol(MModel):
+    """Proxy of C++ clipper::MiniMol class."""
+
     __swig_setmethods__ = {}
     for _s in [MModel]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -5837,6 +19230,16 @@ class MiniMol(MModel):
     ANY = _clipper.MiniMol_ANY
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MiniMol self) -> MiniMol
+        __init__(clipper::MiniMol self, Spacegroup spacegroup, Cell cell) -> MiniMol
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+
+        """
         this = _clipper.new_MiniMol(*args)
         try:
             self.this.append(this)
@@ -5844,28 +19247,86 @@ class MiniMol(MModel):
             self.this = this
 
     def init(self, spacegroup, cell):
+        """
+        init(MiniMol self, Spacegroup spacegroup, Cell cell)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+
+        """
         return _clipper.MiniMol_init(self, spacegroup, cell)
 
+
     def cell(self):
+        """
+        cell(MiniMol self) -> Cell
+
+        Parameters
+        ----------
+        self: clipper::MiniMol const *
+
+        """
         return _clipper.MiniMol_cell(self)
 
+
     def spacegroup(self):
+        """
+        spacegroup(MiniMol self) -> Spacegroup
+
+        Parameters
+        ----------
+        self: clipper::MiniMol const *
+
+        """
         return _clipper.MiniMol_spacegroup(self)
 
+
     def model(self, *args):
+        """
+        model(MiniMol self) -> MModel
+        model(MiniMol self) -> MModel
+
+        Parameters
+        ----------
+        self: clipper::MiniMol *
+
+        """
         return _clipper.MiniMol_model(self, *args)
 
+
     def symmetry_atom(self, index):
+        """
+        symmetry_atom(MiniMol self, clipper::MAtomIndexSymmetry const & index) -> MAtom
+
+        Parameters
+        ----------
+        index: clipper::MAtomIndexSymmetry const &
+
+        """
         return _clipper.MiniMol_symmetry_atom(self, index)
 
+
     def is_null(self):
+        """
+        is_null(MiniMol self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::MiniMol const *
+
+        """
         return _clipper.MiniMol_is_null(self)
+
     __swig_destroy__ = _clipper.delete_MiniMol
     __del__ = lambda self: None
 MiniMol_swigregister = _clipper.MiniMol_swigregister
 MiniMol_swigregister(MiniMol)
 
 class MMDBfile(MMDBManager):
+    """Proxy of C++ clipper::MMDBfile class."""
+
     __swig_setmethods__ = {}
     for _s in [MMDBManager]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -5877,18 +19338,63 @@ class MMDBfile(MMDBManager):
     __repr__ = _swig_repr
 
     def read_file(self, file):
+        """
+        read_file(MMDBfile self, String file)
+
+        Parameters
+        ----------
+        file: clipper::String const &
+
+        """
         return _clipper.MMDBfile_read_file(self, file)
 
+
     def write_file(self, *args):
+        """
+        write_file(MMDBfile self, String file, clipper::MMDBManager::TYPE type)
+
+        Parameters
+        ----------
+        file: clipper::String const &
+        type: enum clipper::MMDBManager::TYPE
+
+        """
         return _clipper.MMDBfile_write_file(self, *args)
 
+
     def import_minimol(self, minimol, hnd=-1):
+        """
+        import_minimol(MMDBfile self, MiniMol minimol, int const hnd=-1)
+
+        Parameters
+        ----------
+        minimol: clipper::MiniMol &
+        hnd: int const
+
+        import_minimol(MMDBfile self, MiniMol minimol)
+
+        Parameters
+        ----------
+        minimol: clipper::MiniMol &
+
+        """
         return _clipper.MMDBfile_import_minimol(self, minimol, hnd)
 
+
     def export_minimol(self, minimol):
+        """
+        export_minimol(MMDBfile self, MiniMol minimol)
+
+        Parameters
+        ----------
+        minimol: clipper::MiniMol const &
+
+        """
         return _clipper.MMDBfile_export_minimol(self, minimol)
 
+
     def __init__(self):
+        """__init__(clipper::MMDBfile self) -> MMDBfile"""
         this = _clipper.new_MMDBfile()
         try:
             self.this.append(this)
@@ -5900,6 +19406,8 @@ MMDBfile_swigregister = _clipper.MMDBfile_swigregister
 MMDBfile_swigregister(MMDBfile)
 
 class SEQfile(_object):
+    """Proxy of C++ clipper::SEQfile class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, SEQfile, name, value)
     __swig_getmethods__ = {}
@@ -5907,15 +19415,43 @@ class SEQfile(_object):
     __repr__ = _swig_repr
 
     def read_file(self, file):
+        """
+        read_file(SEQfile self, String file)
+
+        Parameters
+        ----------
+        file: clipper::String const &
+
+        """
         return _clipper.SEQfile_read_file(self, file)
 
+
     def import_polymer_sequence(self, target):
+        """
+        import_polymer_sequence(SEQfile self, MPolymerSequence & target)
+
+        Parameters
+        ----------
+        target: MPolymerSequence &
+
+        """
         return _clipper.SEQfile_import_polymer_sequence(self, target)
 
+
     def import_molecule_sequence(self, target):
+        """
+        import_molecule_sequence(SEQfile self, MMoleculeSequence & target)
+
+        Parameters
+        ----------
+        target: MMoleculeSequence &
+
+        """
         return _clipper.SEQfile_import_molecule_sequence(self, target)
 
+
     def __init__(self):
+        """__init__(clipper::SEQfile self) -> SEQfile"""
         this = _clipper.new_SEQfile()
         try:
             self.this.append(this)
@@ -5927,6 +19463,8 @@ SEQfile_swigregister = _clipper.SEQfile_swigregister
 SEQfile_swigregister(SEQfile)
 
 class MPolymerSequence(_object):
+    """Proxy of C++ clipper::MPolymerSequence class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MPolymerSequence, name, value)
     __swig_getmethods__ = {}
@@ -5934,6 +19472,7 @@ class MPolymerSequence(_object):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::MPolymerSequence self) -> MPolymerSequence"""
         this = _clipper.new_MPolymerSequence()
         try:
             self.this.append(this)
@@ -5941,38 +19480,112 @@ class MPolymerSequence(_object):
             self.this = this
 
     def id(self):
+        """
+        id(MPolymerSequence self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MPolymerSequence const *
+
+        """
         return _clipper.MPolymerSequence_id(self)
 
+
     def set_id(self, s):
+        """
+        set_id(MPolymerSequence self, String s)
+
+        Parameters
+        ----------
+        s: clipper::String const &
+
+        """
         return _clipper.MPolymerSequence_set_id(self, s)
 
+
     def sequence(self):
+        """
+        sequence(MPolymerSequence self) -> String
+
+        Parameters
+        ----------
+        self: clipper::MPolymerSequence const *
+
+        """
         return _clipper.MPolymerSequence_sequence(self)
 
+
     def set_sequence(self, s):
+        """
+        set_sequence(MPolymerSequence self, String s)
+
+        Parameters
+        ----------
+        s: clipper::String const &
+
+        """
         return _clipper.MPolymerSequence_set_sequence(self, s)
-    if _newclass:
-        id_tidy = staticmethod(_clipper.MPolymerSequence_id_tidy)
-    else:
-        id_tidy = _clipper.MPolymerSequence_id_tidy
-    if _newclass:
-        id_match = staticmethod(_clipper.MPolymerSequence_id_match)
-    else:
-        id_match = _clipper.MPolymerSequence_id_match
+
+
+    def id_tidy(id):
+        """
+        id_tidy(String id) -> String
+
+        Parameters
+        ----------
+        id: clipper::String const &
+
+        """
+        return _clipper.MPolymerSequence_id_tidy(id)
+
+    id_tidy = staticmethod(id_tidy)
+
+    def id_match(id1, id2, mode):
+        """
+        id_match(String id1, String id2, clipper::MM::MODE const & mode) -> bool
+
+        Parameters
+        ----------
+        id1: clipper::String const &
+        id2: clipper::String const &
+        mode: clipper::MM::MODE const &
+
+        """
+        return _clipper.MPolymerSequence_id_match(id1, id2, mode)
+
+    id_match = staticmethod(id_match)
     __swig_destroy__ = _clipper.delete_MPolymerSequence
     __del__ = lambda self: None
 MPolymerSequence_swigregister = _clipper.MPolymerSequence_swigregister
 MPolymerSequence_swigregister(MPolymerSequence)
 
 def MPolymerSequence_id_tidy(id):
+    """
+    MPolymerSequence_id_tidy(String id) -> String
+
+    Parameters
+    ----------
+    id: clipper::String const &
+
+    """
     return _clipper.MPolymerSequence_id_tidy(id)
-MPolymerSequence_id_tidy = _clipper.MPolymerSequence_id_tidy
 
 def MPolymerSequence_id_match(id1, id2, mode):
+    """
+    MPolymerSequence_id_match(String id1, String id2, clipper::MM::MODE const & mode) -> bool
+
+    Parameters
+    ----------
+    id1: clipper::String const &
+    id2: clipper::String const &
+    mode: clipper::MM::MODE const &
+
+    """
     return _clipper.MPolymerSequence_id_match(id1, id2, mode)
-MPolymerSequence_id_match = _clipper.MPolymerSequence_id_match
 
 class MMoleculeSequence(_object):
+    """Proxy of C++ clipper::MMoleculeSequence class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MMoleculeSequence, name, value)
     __swig_getmethods__ = {}
@@ -5980,21 +19593,95 @@ class MMoleculeSequence(_object):
     __repr__ = _swig_repr
 
     def size(self):
+        """
+        size(MMoleculeSequence self) -> int
+
+        Parameters
+        ----------
+        self: clipper::MMoleculeSequence const *
+
+        """
         return _clipper.MMoleculeSequence_size(self)
 
+
     def find(self, *args):
+        """
+        find(MMoleculeSequence self, String n, clipper::MM::MODE const mode) -> MPolymerSequence
+
+        Parameters
+        ----------
+        n: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        find(MMoleculeSequence self, String n) -> MPolymerSequence
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        find(MMoleculeSequence self, String n, clipper::MM::MODE const mode) -> MPolymerSequence
+
+        Parameters
+        ----------
+        n: clipper::String const &
+        mode: enum clipper::MM::MODE const
+
+        find(MMoleculeSequence self, String n) -> MPolymerSequence
+
+        Parameters
+        ----------
+        n: clipper::String const &
+
+        """
         return _clipper.MMoleculeSequence_find(self, *args)
 
+
     def lookup(self, str, mode):
+        """
+        lookup(MMoleculeSequence self, String str, clipper::MM::MODE const & mode) -> int
+
+        Parameters
+        ----------
+        str: clipper::String const &
+        mode: clipper::MM::MODE const &
+
+        """
         return _clipper.MMoleculeSequence_lookup(self, str, mode)
 
+
     def insert(self, add, pos=-1):
+        """
+        insert(MMoleculeSequence self, MPolymerSequence add, int pos=-1)
+
+        Parameters
+        ----------
+        add: clipper::MPolymerSequence const &
+        pos: int
+
+        insert(MMoleculeSequence self, MPolymerSequence add)
+
+        Parameters
+        ----------
+        add: clipper::MPolymerSequence const &
+
+        """
         return _clipper.MMoleculeSequence_insert(self, add, pos)
 
+
     def is_null(self):
+        """
+        is_null(MMoleculeSequence self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::MMoleculeSequence const *
+
+        """
         return _clipper.MMoleculeSequence_is_null(self)
 
+
     def __init__(self):
+        """__init__(clipper::MMoleculeSequence self) -> MMoleculeSequence"""
         this = _clipper.new_MMoleculeSequence()
         try:
             self.this.append(this)
@@ -6006,6 +19693,8 @@ MMoleculeSequence_swigregister = _clipper.MMoleculeSequence_swigregister
 MMoleculeSequence_swigregister(MMoleculeSequence)
 
 class MSequenceAlign(_object):
+    """Proxy of C++ clipper::MSequenceAlign class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MSequenceAlign, name, value)
     __swig_getmethods__ = {}
@@ -6015,6 +19704,39 @@ class MSequenceAlign(_object):
     LOCAL = _clipper.MSequenceAlign_LOCAL
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MSequenceAlign self, clipper::MSequenceAlign::TYPE type, clipper::ftype match_score=1.0, clipper::ftype miss_score=-0.5, clipper::ftype gap_score=-1.0) -> MSequenceAlign
+
+        Parameters
+        ----------
+        type: enum clipper::MSequenceAlign::TYPE
+        match_score: clipper::ftype
+        miss_score: clipper::ftype
+        gap_score: clipper::ftype
+
+        __init__(clipper::MSequenceAlign self, clipper::MSequenceAlign::TYPE type, clipper::ftype match_score=1.0, clipper::ftype miss_score=-0.5) -> MSequenceAlign
+
+        Parameters
+        ----------
+        type: enum clipper::MSequenceAlign::TYPE
+        match_score: clipper::ftype
+        miss_score: clipper::ftype
+
+        __init__(clipper::MSequenceAlign self, clipper::MSequenceAlign::TYPE type, clipper::ftype match_score=1.0) -> MSequenceAlign
+
+        Parameters
+        ----------
+        type: enum clipper::MSequenceAlign::TYPE
+        match_score: clipper::ftype
+
+        __init__(clipper::MSequenceAlign self, clipper::MSequenceAlign::TYPE type) -> MSequenceAlign
+
+        Parameters
+        ----------
+        type: enum clipper::MSequenceAlign::TYPE
+
+        __init__(clipper::MSequenceAlign self) -> MSequenceAlign
+        """
         this = _clipper.new_MSequenceAlign(*args)
         try:
             self.this.append(this)
@@ -6022,13 +19744,25 @@ class MSequenceAlign(_object):
             self.this = this
 
     def __call__(self, seq1, seq2):
+        """
+        __call__(MSequenceAlign self, String seq1, String seq2) -> std::pair< std::vector< int,std::allocator< int > >,std::vector< int,std::allocator< int > > >
+
+        Parameters
+        ----------
+        seq1: clipper::String const &
+        seq2: clipper::String const &
+
+        """
         return _clipper.MSequenceAlign___call__(self, seq1, seq2)
+
     __swig_destroy__ = _clipper.delete_MSequenceAlign
     __del__ = lambda self: None
 MSequenceAlign_swigregister = _clipper.MSequenceAlign_swigregister
 MSequenceAlign_swigregister(MSequenceAlign)
 
 class Flag(_object):
+    """Proxy of C++ clipper::datatypes::Flag class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Flag, name, value)
     __swig_getmethods__ = {}
@@ -6036,6 +19770,15 @@ class Flag(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::datatypes::Flag self) -> Flag
+        __init__(clipper::datatypes::Flag self, int const & flag) -> Flag
+
+        Parameters
+        ----------
+        flag: int const &
+
+        """
         this = _clipper.new_Flag(*args)
         try:
             self.this.append(this)
@@ -6043,64 +19786,163 @@ class Flag(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(Flag self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Flag *
+
+        """
         return _clipper.Flag_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.Flag_type)
-    else:
-        type = _clipper.Flag_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.Flag_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(Flag self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Flag *
+
+        """
         return _clipper.Flag_friedel(self)
 
+
     def shift_phase(self, arg2):
+        """
+        shift_phase(Flag self, clipper::ftype const & arg2)
+
+        Parameters
+        ----------
+        arg2: clipper::ftype const &
+
+        """
         return _clipper.Flag_shift_phase(self, arg2)
 
+
     def missing(self):
+        """
+        missing(Flag self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Flag const *
+
+        """
         return _clipper.Flag_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.Flag_data_size)
-    else:
-        data_size = _clipper.Flag_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.Flag_data_names)
-    else:
-        data_names = _clipper.Flag_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.Flag_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.Flag_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(Flag self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.Flag_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(Flag self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.Flag_data_import(self, array)
 
+
     def flag(self, *args):
+        """
+        flag(Flag self) -> int const
+        flag(Flag self) -> int &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Flag *
+
+        """
         return _clipper.Flag_flag(self, *args)
 
+
     def get_flag(self):
+        """
+        get_flag(Flag self) -> int
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Flag *
+
+        """
         return _clipper.Flag_get_flag(self)
 
+
     def set_flag(self, theFlag):
+        """
+        set_flag(Flag self, int theFlag)
+
+        Parameters
+        ----------
+        theFlag: int
+
+        """
         return _clipper.Flag_set_flag(self, theFlag)
 
+
     def copy(self):
+        """
+        copy(Flag self) -> Flag
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Flag *
+
+        """
         return _clipper.Flag_copy(self)
+
     __swig_destroy__ = _clipper.delete_Flag
     __del__ = lambda self: None
 Flag_swigregister = _clipper.Flag_swigregister
 Flag_swigregister(Flag)
 
 def Flag_type():
+    """Flag_type() -> String"""
     return _clipper.Flag_type()
-Flag_type = _clipper.Flag_type
 
 def Flag_data_size():
+    """Flag_data_size() -> int"""
     return _clipper.Flag_data_size()
-Flag_data_size = _clipper.Flag_data_size
 
 def Flag_data_names():
+    """Flag_data_names() -> String"""
     return _clipper.Flag_data_names()
-Flag_data_names = _clipper.Flag_data_names
 
 class Flag_bool(_object):
+    """Proxy of C++ clipper::datatypes::Flag_bool class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Flag_bool, name, value)
     __swig_getmethods__ = {}
@@ -6108,6 +19950,7 @@ class Flag_bool(_object):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::datatypes::Flag_bool self) -> Flag_bool"""
         this = _clipper.new_Flag_bool()
         try:
             self.this.append(this)
@@ -6115,64 +19958,163 @@ class Flag_bool(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(Flag_bool self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Flag_bool *
+
+        """
         return _clipper.Flag_bool_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.Flag_bool_type)
-    else:
-        type = _clipper.Flag_bool_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.Flag_bool_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(Flag_bool self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Flag_bool *
+
+        """
         return _clipper.Flag_bool_friedel(self)
 
+
     def shift_phase(self, arg2):
+        """
+        shift_phase(Flag_bool self, clipper::ftype const & arg2)
+
+        Parameters
+        ----------
+        arg2: clipper::ftype const &
+
+        """
         return _clipper.Flag_bool_shift_phase(self, arg2)
 
+
     def missing(self):
+        """
+        missing(Flag_bool self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Flag_bool const *
+
+        """
         return _clipper.Flag_bool_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.Flag_bool_data_size)
-    else:
-        data_size = _clipper.Flag_bool_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.Flag_bool_data_names)
-    else:
-        data_names = _clipper.Flag_bool_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.Flag_bool_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.Flag_bool_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(Flag_bool self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.Flag_bool_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(Flag_bool self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.Flag_bool_data_import(self, array)
 
+
     def flag(self, *args):
+        """
+        flag(Flag_bool self) -> bool const
+        flag(Flag_bool self) -> bool &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Flag_bool *
+
+        """
         return _clipper.Flag_bool_flag(self, *args)
 
+
     def get_flag(self):
+        """
+        get_flag(Flag_bool self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Flag_bool *
+
+        """
         return _clipper.Flag_bool_get_flag(self)
 
+
     def set_flag(self, theFlag):
+        """
+        set_flag(Flag_bool self, bool theFlag)
+
+        Parameters
+        ----------
+        theFlag: bool
+
+        """
         return _clipper.Flag_bool_set_flag(self, theFlag)
 
+
     def copy(self):
+        """
+        copy(Flag_bool self) -> Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Flag_bool *
+
+        """
         return _clipper.Flag_bool_copy(self)
+
     __swig_destroy__ = _clipper.delete_Flag_bool
     __del__ = lambda self: None
 Flag_bool_swigregister = _clipper.Flag_bool_swigregister
 Flag_bool_swigregister(Flag_bool)
 
 def Flag_bool_type():
+    """Flag_bool_type() -> String"""
     return _clipper.Flag_bool_type()
-Flag_bool_type = _clipper.Flag_bool_type
 
 def Flag_bool_data_size():
+    """Flag_bool_data_size() -> int"""
     return _clipper.Flag_bool_data_size()
-Flag_bool_data_size = _clipper.Flag_bool_data_size
 
 def Flag_bool_data_names():
+    """Flag_bool_data_names() -> String"""
     return _clipper.Flag_bool_data_names()
-Flag_bool_data_names = _clipper.Flag_bool_data_names
 
 class F_sigF_float(_object):
+    """Proxy of C++ clipper::datatypes::F_sigF<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, F_sigF_float, name, value)
     __swig_getmethods__ = {}
@@ -6180,6 +20122,16 @@ class F_sigF_float(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::datatypes::F_sigF<(float)> self) -> F_sigF_float
+        __init__(clipper::datatypes::F_sigF<(float)> self, float const & f, float const & sigf) -> F_sigF_float
+
+        Parameters
+        ----------
+        f: float const &
+        sigf: float const &
+
+        """
         this = _clipper.new_F_sigF_float(*args)
         try:
             self.this.append(this)
@@ -6187,79 +20139,224 @@ class F_sigF_float(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(F_sigF_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< float > *
+
+        """
         return _clipper.F_sigF_float_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.F_sigF_float_type)
-    else:
-        type = _clipper.F_sigF_float_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.F_sigF_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(F_sigF_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< float > *
+
+        """
         return _clipper.F_sigF_float_friedel(self)
 
+
     def shift_phase(self, arg2):
+        """
+        shift_phase(F_sigF_float self, clipper::ftype const & arg2)
+
+        Parameters
+        ----------
+        arg2: clipper::ftype const &
+
+        """
         return _clipper.F_sigF_float_shift_phase(self, arg2)
 
+
     def missing(self):
+        """
+        missing(F_sigF_float self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< float > const *
+
+        """
         return _clipper.F_sigF_float_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.F_sigF_float_data_size)
-    else:
-        data_size = _clipper.F_sigF_float_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.F_sigF_float_data_names)
-    else:
-        data_names = _clipper.F_sigF_float_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.F_sigF_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.F_sigF_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(F_sigF_float self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.F_sigF_float_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(F_sigF_float self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.F_sigF_float_data_import(self, array)
 
+
     def scale(self, s):
+        """
+        scale(F_sigF_float self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.F_sigF_float_scale(self, s)
 
+
     def f(self, *args):
+        """
+        f(F_sigF_float self) -> float const
+        f(F_sigF_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< float > *
+
+        """
         return _clipper.F_sigF_float_f(self, *args)
 
+
     def sigf(self, *args):
+        """
+        sigf(F_sigF_float self) -> float const
+        sigf(F_sigF_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< float > *
+
+        """
         return _clipper.F_sigF_float_sigf(self, *args)
 
+
     def f_pl(self):
+        """
+        f_pl(F_sigF_float self) -> float const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< float > const *
+
+        """
         return _clipper.F_sigF_float_f_pl(self)
 
+
     def sigf_pl(self):
+        """
+        sigf_pl(F_sigF_float self) -> float const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< float > const *
+
+        """
         return _clipper.F_sigF_float_sigf_pl(self)
 
+
     def f_mi(self):
+        """
+        f_mi(F_sigF_float self) -> float const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< float > const *
+
+        """
         return _clipper.F_sigF_float_f_mi(self)
 
+
     def sigf_mi(self):
+        """
+        sigf_mi(F_sigF_float self) -> float const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< float > const *
+
+        """
         return _clipper.F_sigF_float_sigf_mi(self)
 
+
     def cov(self):
+        """
+        cov(F_sigF_float self) -> float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< float > const *
+
+        """
         return _clipper.F_sigF_float_cov(self)
 
+
     def copy(self):
+        """
+        copy(F_sigF_float self) -> F_sigF_float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< float > *
+
+        """
         return _clipper.F_sigF_float_copy(self)
+
     __swig_destroy__ = _clipper.delete_F_sigF_float
     __del__ = lambda self: None
 F_sigF_float_swigregister = _clipper.F_sigF_float_swigregister
 F_sigF_float_swigregister(F_sigF_float)
 
 def F_sigF_float_type():
+    """F_sigF_float_type() -> String"""
     return _clipper.F_sigF_float_type()
-F_sigF_float_type = _clipper.F_sigF_float_type
 
 def F_sigF_float_data_size():
+    """F_sigF_float_data_size() -> int"""
     return _clipper.F_sigF_float_data_size()
-F_sigF_float_data_size = _clipper.F_sigF_float_data_size
 
 def F_sigF_float_data_names():
+    """F_sigF_float_data_names() -> String"""
     return _clipper.F_sigF_float_data_names()
-F_sigF_float_data_names = _clipper.F_sigF_float_data_names
 
 class F_sigF_double(_object):
+    """Proxy of C++ clipper::datatypes::F_sigF<(double)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, F_sigF_double, name, value)
     __swig_getmethods__ = {}
@@ -6267,6 +20364,16 @@ class F_sigF_double(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::datatypes::F_sigF<(double)> self) -> F_sigF_double
+        __init__(clipper::datatypes::F_sigF<(double)> self, double const & f, double const & sigf) -> F_sigF_double
+
+        Parameters
+        ----------
+        f: double const &
+        sigf: double const &
+
+        """
         this = _clipper.new_F_sigF_double(*args)
         try:
             self.this.append(this)
@@ -6274,76 +20381,212 @@ class F_sigF_double(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(F_sigF_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< double > *
+
+        """
         return _clipper.F_sigF_double_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.F_sigF_double_type)
-    else:
-        type = _clipper.F_sigF_double_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.F_sigF_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(F_sigF_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< double > *
+
+        """
         return _clipper.F_sigF_double_friedel(self)
 
+
     def shift_phase(self, arg2):
+        """
+        shift_phase(F_sigF_double self, clipper::ftype const & arg2)
+
+        Parameters
+        ----------
+        arg2: clipper::ftype const &
+
+        """
         return _clipper.F_sigF_double_shift_phase(self, arg2)
 
+
     def missing(self):
+        """
+        missing(F_sigF_double self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< double > const *
+
+        """
         return _clipper.F_sigF_double_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.F_sigF_double_data_size)
-    else:
-        data_size = _clipper.F_sigF_double_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.F_sigF_double_data_names)
-    else:
-        data_names = _clipper.F_sigF_double_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.F_sigF_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.F_sigF_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(F_sigF_double self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.F_sigF_double_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(F_sigF_double self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.F_sigF_double_data_import(self, array)
 
+
     def scale(self, s):
+        """
+        scale(F_sigF_double self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.F_sigF_double_scale(self, s)
 
+
     def f(self, *args):
+        """
+        f(F_sigF_double self) -> double const
+        f(F_sigF_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< double > *
+
+        """
         return _clipper.F_sigF_double_f(self, *args)
 
+
     def sigf(self, *args):
+        """
+        sigf(F_sigF_double self) -> double const
+        sigf(F_sigF_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< double > *
+
+        """
         return _clipper.F_sigF_double_sigf(self, *args)
 
+
     def f_pl(self):
+        """
+        f_pl(F_sigF_double self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< double > const *
+
+        """
         return _clipper.F_sigF_double_f_pl(self)
 
+
     def sigf_pl(self):
+        """
+        sigf_pl(F_sigF_double self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< double > const *
+
+        """
         return _clipper.F_sigF_double_sigf_pl(self)
 
+
     def f_mi(self):
+        """
+        f_mi(F_sigF_double self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< double > const *
+
+        """
         return _clipper.F_sigF_double_f_mi(self)
 
+
     def sigf_mi(self):
+        """
+        sigf_mi(F_sigF_double self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< double > const *
+
+        """
         return _clipper.F_sigF_double_sigf_mi(self)
 
+
     def cov(self):
+        """
+        cov(F_sigF_double self) -> double
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF< double > const *
+
+        """
         return _clipper.F_sigF_double_cov(self)
+
     __swig_destroy__ = _clipper.delete_F_sigF_double
     __del__ = lambda self: None
 F_sigF_double_swigregister = _clipper.F_sigF_double_swigregister
 F_sigF_double_swigregister(F_sigF_double)
 
 def F_sigF_double_type():
+    """F_sigF_double_type() -> String"""
     return _clipper.F_sigF_double_type()
-F_sigF_double_type = _clipper.F_sigF_double_type
 
 def F_sigF_double_data_size():
+    """F_sigF_double_data_size() -> int"""
     return _clipper.F_sigF_double_data_size()
-F_sigF_double_data_size = _clipper.F_sigF_double_data_size
 
 def F_sigF_double_data_names():
+    """F_sigF_double_data_names() -> String"""
     return _clipper.F_sigF_double_data_names()
-F_sigF_double_data_names = _clipper.F_sigF_double_data_names
 
 class HKL_data_F_sigF_float(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::datatypes::F_sigF<(float)>)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -6355,6 +20598,36 @@ class HKL_data_F_sigF_float(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::datatypes::F_sigF<(float)>)> self) -> HKL_data_F_sigF_float
+        __init__(clipper::HKL_data<(clipper::datatypes::F_sigF<(float)>)> self, HKL_info hkl_info) -> HKL_data_F_sigF_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::datatypes::F_sigF<(float)>)> self, HKL_info hkl_info, Cell cell) -> HKL_data_F_sigF_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::datatypes::F_sigF<(float)>)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_F_sigF_float
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::datatypes::F_sigF<(float)>)> self, HKL_data_base hkl_data) -> HKL_data_F_sigF_float
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_F_sigF_float(*args)
         try:
             self.this.append(this)
@@ -6362,73 +20635,297 @@ class HKL_data_F_sigF_float(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_F_sigF_float self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_F_sigF_float self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_F_sigF_float self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_F_sigF_float_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_F_sigF_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< float > > *
+
+        """
         return _clipper.HKL_data_F_sigF_float_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_F_sigF_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const *
+
+        """
         return _clipper.HKL_data_F_sigF_float_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_F_sigF_float self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_F_sigF_float_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_F_sigF_float self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_F_sigF_float_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_F_sigF_float self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const *
+
+        """
         return _clipper.HKL_data_F_sigF_float_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_F_sigF_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const *
+
+        """
         return _clipper.HKL_data_F_sigF_float_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_F_sigF_float self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_F_sigF_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_F_sigF_float self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_F_sigF_float_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_F_sigF_float self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_F_sigF_float_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_F_sigF_float self, clipper::HKL_info::HKL_reference_coord const & ih, F_sigF_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::F_sigF< float > &
+
+        get_data(HKL_data_F_sigF_float self, HKL hkl, F_sigF_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::F_sigF< float > &
+
+        """
         return _clipper.HKL_data_F_sigF_float_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_F_sigF_float self, clipper::HKL_info::HKL_reference_coord const & ih, F_sigF_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::F_sigF< float > const &
+
+        set_data(HKL_data_F_sigF_float self, HKL hkl, F_sigF_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::F_sigF< float > const &
+
+        """
         return _clipper.HKL_data_F_sigF_float_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_F_sigF_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const *
+
+        """
         return _clipper.HKL_data_F_sigF_float_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_F_sigF_float self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< float > > *
+
+        """
         return _clipper.HKL_data_F_sigF_float_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_F_sigF_float self, HKL_data_F_sigF_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_float___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_F_sigF_float self, HKL_data_F_sigF_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_float___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_F_sigF_float self, HKL_data_F_sigF_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_float___and__(self, d1)
 
+
     def getDataNumpy(self, test_numpy_a):
+        """
+        getDataNumpy(HKL_data_F_sigF_float self, double * test_numpy_a)
+
+        Parameters
+        ----------
+        test_numpy_a: double *
+
+        """
         return _clipper.HKL_data_F_sigF_float_getDataNumpy(self, test_numpy_a)
 
+
     def getData(self):
+        """
+        getData(HKL_data_F_sigF_float self) -> FloatFloatVector
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< float > > *
+
+        """
         return _clipper.HKL_data_F_sigF_float_getData(self)
 
+
     def __getitem__(self, i):
+        """
+        __getitem__(HKL_data_F_sigF_float self, int i) -> F_sigF_float
+
+        Parameters
+        ----------
+        i: int
+
+        """
         return _clipper.HKL_data_F_sigF_float___getitem__(self, i)
 
+
     def __len__(self):
+        """
+        __len__(HKL_data_F_sigF_float self) -> size_t
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< float > > *
+
+        """
         return _clipper.HKL_data_F_sigF_float___len__(self)
+
     __swig_destroy__ = _clipper.delete_HKL_data_F_sigF_float
     __del__ = lambda self: None
 HKL_data_F_sigF_float_swigregister = _clipper.HKL_data_F_sigF_float_swigregister
 HKL_data_F_sigF_float_swigregister(HKL_data_F_sigF_float)
 
 class HKL_data_F_sigF_double(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::datatypes::F_sigF<(double)>)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -6440,6 +20937,36 @@ class HKL_data_F_sigF_double(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::datatypes::F_sigF<(double)>)> self) -> HKL_data_F_sigF_double
+        __init__(clipper::HKL_data<(clipper::datatypes::F_sigF<(double)>)> self, HKL_info hkl_info) -> HKL_data_F_sigF_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::datatypes::F_sigF<(double)>)> self, HKL_info hkl_info, Cell cell) -> HKL_data_F_sigF_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::datatypes::F_sigF<(double)>)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_F_sigF_double
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::datatypes::F_sigF<(double)>)> self, HKL_data_base hkl_data) -> HKL_data_F_sigF_double
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_F_sigF_double(*args)
         try:
             self.this.append(this)
@@ -6447,61 +20974,249 @@ class HKL_data_F_sigF_double(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_F_sigF_double self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_F_sigF_double self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_F_sigF_double self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_F_sigF_double_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_F_sigF_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< double > > *
+
+        """
         return _clipper.HKL_data_F_sigF_double_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_F_sigF_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< double > > const *
+
+        """
         return _clipper.HKL_data_F_sigF_double_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_F_sigF_double self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_F_sigF_double_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_F_sigF_double self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_F_sigF_double_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_F_sigF_double self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< double > > const *
+
+        """
         return _clipper.HKL_data_F_sigF_double_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_F_sigF_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< double > > const *
+
+        """
         return _clipper.HKL_data_F_sigF_double_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_F_sigF_double self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_F_sigF_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_F_sigF_double self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_F_sigF_double_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_F_sigF_double self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_F_sigF_double_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_F_sigF_double self, clipper::HKL_info::HKL_reference_coord const & ih, F_sigF_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::F_sigF< double > &
+
+        get_data(HKL_data_F_sigF_double self, HKL hkl, F_sigF_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::F_sigF< double > &
+
+        """
         return _clipper.HKL_data_F_sigF_double_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_F_sigF_double self, clipper::HKL_info::HKL_reference_coord const & ih, F_sigF_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::F_sigF< double > const &
+
+        set_data(HKL_data_F_sigF_double self, HKL hkl, F_sigF_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::F_sigF< double > const &
+
+        """
         return _clipper.HKL_data_F_sigF_double_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_F_sigF_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< double > > const *
+
+        """
         return _clipper.HKL_data_F_sigF_double_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_F_sigF_double self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::F_sigF< double > > *
+
+        """
         return _clipper.HKL_data_F_sigF_double_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_F_sigF_double self, HKL_data_F_sigF_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_sigF< double > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_double___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_F_sigF_double self, HKL_data_F_sigF_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_sigF< double > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_double___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_F_sigF_double self, HKL_data_F_sigF_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_sigF< double > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_double___and__(self, d1)
+
     __swig_destroy__ = _clipper.delete_HKL_data_F_sigF_double
     __del__ = lambda self: None
 HKL_data_F_sigF_double_swigregister = _clipper.HKL_data_F_sigF_double_swigregister
 HKL_data_F_sigF_double_swigregister(HKL_data_F_sigF_double)
 
 class F_sigF_ano_float(_object):
+    """Proxy of C++ clipper::datatypes::F_sigF_ano<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, F_sigF_ano_float, name, value)
     __swig_getmethods__ = {}
@@ -6509,6 +21224,7 @@ class F_sigF_ano_float(_object):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::datatypes::F_sigF_ano<(float)> self) -> F_sigF_ano_float"""
         this = _clipper.new_F_sigF_ano_float()
         try:
             self.this.append(this)
@@ -6516,79 +21232,227 @@ class F_sigF_ano_float(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(F_sigF_ano_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< float > *
+
+        """
         return _clipper.F_sigF_ano_float_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.F_sigF_ano_float_type)
-    else:
-        type = _clipper.F_sigF_ano_float_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.F_sigF_ano_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(F_sigF_ano_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< float > *
+
+        """
         return _clipper.F_sigF_ano_float_friedel(self)
 
+
     def shift_phase(self, arg2):
+        """
+        shift_phase(F_sigF_ano_float self, clipper::ftype const & arg2)
+
+        Parameters
+        ----------
+        arg2: clipper::ftype const &
+
+        """
         return _clipper.F_sigF_ano_float_shift_phase(self, arg2)
 
+
     def missing(self):
+        """
+        missing(F_sigF_ano_float self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< float > const *
+
+        """
         return _clipper.F_sigF_ano_float_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.F_sigF_ano_float_data_size)
-    else:
-        data_size = _clipper.F_sigF_ano_float_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.F_sigF_ano_float_data_names)
-    else:
-        data_names = _clipper.F_sigF_ano_float_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.F_sigF_ano_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.F_sigF_ano_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, a):
+        """
+        data_export(F_sigF_ano_float self, clipper::xtype [] a)
+
+        Parameters
+        ----------
+        a: clipper::xtype []
+
+        """
         return _clipper.F_sigF_ano_float_data_export(self, a)
 
+
     def data_import(self, a):
+        """
+        data_import(F_sigF_ano_float self, clipper::xtype const [] a)
+
+        Parameters
+        ----------
+        a: clipper::xtype const []
+
+        """
         return _clipper.F_sigF_ano_float_data_import(self, a)
 
+
     def scale(self, s):
+        """
+        scale(F_sigF_ano_float self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.F_sigF_ano_float_scale(self, s)
 
+
     def f_pl(self, *args):
+        """
+        f_pl(F_sigF_ano_float self) -> float const
+        f_pl(F_sigF_ano_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< float > *
+
+        """
         return _clipper.F_sigF_ano_float_f_pl(self, *args)
 
+
     def sigf_pl(self, *args):
+        """
+        sigf_pl(F_sigF_ano_float self) -> float const
+        sigf_pl(F_sigF_ano_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< float > *
+
+        """
         return _clipper.F_sigF_ano_float_sigf_pl(self, *args)
 
+
     def f_mi(self, *args):
+        """
+        f_mi(F_sigF_ano_float self) -> float const
+        f_mi(F_sigF_ano_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< float > *
+
+        """
         return _clipper.F_sigF_ano_float_f_mi(self, *args)
 
+
     def sigf_mi(self, *args):
+        """
+        sigf_mi(F_sigF_ano_float self) -> float const
+        sigf_mi(F_sigF_ano_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< float > *
+
+        """
         return _clipper.F_sigF_ano_float_sigf_mi(self, *args)
 
+
     def cov(self, *args):
+        """
+        cov(F_sigF_ano_float self) -> float const
+        cov(F_sigF_ano_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< float > *
+
+        """
         return _clipper.F_sigF_ano_float_cov(self, *args)
 
+
     def f(self):
+        """
+        f(F_sigF_ano_float self) -> float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< float > const *
+
+        """
         return _clipper.F_sigF_ano_float_f(self)
 
+
     def sigf(self):
+        """
+        sigf(F_sigF_ano_float self) -> float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< float > const *
+
+        """
         return _clipper.F_sigF_ano_float_sigf(self)
 
+
     def copy(self):
+        """
+        copy(F_sigF_ano_float self) -> F_sigF_ano_float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< float > *
+
+        """
         return _clipper.F_sigF_ano_float_copy(self)
+
     __swig_destroy__ = _clipper.delete_F_sigF_ano_float
     __del__ = lambda self: None
 F_sigF_ano_float_swigregister = _clipper.F_sigF_ano_float_swigregister
 F_sigF_ano_float_swigregister(F_sigF_ano_float)
 
 def F_sigF_ano_float_type():
+    """F_sigF_ano_float_type() -> String"""
     return _clipper.F_sigF_ano_float_type()
-F_sigF_ano_float_type = _clipper.F_sigF_ano_float_type
 
 def F_sigF_ano_float_data_size():
+    """F_sigF_ano_float_data_size() -> int"""
     return _clipper.F_sigF_ano_float_data_size()
-F_sigF_ano_float_data_size = _clipper.F_sigF_ano_float_data_size
 
 def F_sigF_ano_float_data_names():
+    """F_sigF_ano_float_data_names() -> String"""
     return _clipper.F_sigF_ano_float_data_names()
-F_sigF_ano_float_data_names = _clipper.F_sigF_ano_float_data_names
 
 class F_sigF_ano_double(_object):
+    """Proxy of C++ clipper::datatypes::F_sigF_ano<(double)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, F_sigF_ano_double, name, value)
     __swig_getmethods__ = {}
@@ -6596,6 +21460,7 @@ class F_sigF_ano_double(_object):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::datatypes::F_sigF_ano<(double)> self) -> F_sigF_ano_double"""
         this = _clipper.new_F_sigF_ano_double()
         try:
             self.this.append(this)
@@ -6603,76 +21468,215 @@ class F_sigF_ano_double(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(F_sigF_ano_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< double > *
+
+        """
         return _clipper.F_sigF_ano_double_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.F_sigF_ano_double_type)
-    else:
-        type = _clipper.F_sigF_ano_double_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.F_sigF_ano_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(F_sigF_ano_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< double > *
+
+        """
         return _clipper.F_sigF_ano_double_friedel(self)
 
+
     def shift_phase(self, arg2):
+        """
+        shift_phase(F_sigF_ano_double self, clipper::ftype const & arg2)
+
+        Parameters
+        ----------
+        arg2: clipper::ftype const &
+
+        """
         return _clipper.F_sigF_ano_double_shift_phase(self, arg2)
 
+
     def missing(self):
+        """
+        missing(F_sigF_ano_double self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< double > const *
+
+        """
         return _clipper.F_sigF_ano_double_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.F_sigF_ano_double_data_size)
-    else:
-        data_size = _clipper.F_sigF_ano_double_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.F_sigF_ano_double_data_names)
-    else:
-        data_names = _clipper.F_sigF_ano_double_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.F_sigF_ano_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.F_sigF_ano_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, a):
+        """
+        data_export(F_sigF_ano_double self, clipper::xtype [] a)
+
+        Parameters
+        ----------
+        a: clipper::xtype []
+
+        """
         return _clipper.F_sigF_ano_double_data_export(self, a)
 
+
     def data_import(self, a):
+        """
+        data_import(F_sigF_ano_double self, clipper::xtype const [] a)
+
+        Parameters
+        ----------
+        a: clipper::xtype const []
+
+        """
         return _clipper.F_sigF_ano_double_data_import(self, a)
 
+
     def scale(self, s):
+        """
+        scale(F_sigF_ano_double self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.F_sigF_ano_double_scale(self, s)
 
+
     def f_pl(self, *args):
+        """
+        f_pl(F_sigF_ano_double self) -> double const
+        f_pl(F_sigF_ano_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< double > *
+
+        """
         return _clipper.F_sigF_ano_double_f_pl(self, *args)
 
+
     def sigf_pl(self, *args):
+        """
+        sigf_pl(F_sigF_ano_double self) -> double const
+        sigf_pl(F_sigF_ano_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< double > *
+
+        """
         return _clipper.F_sigF_ano_double_sigf_pl(self, *args)
 
+
     def f_mi(self, *args):
+        """
+        f_mi(F_sigF_ano_double self) -> double const
+        f_mi(F_sigF_ano_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< double > *
+
+        """
         return _clipper.F_sigF_ano_double_f_mi(self, *args)
 
+
     def sigf_mi(self, *args):
+        """
+        sigf_mi(F_sigF_ano_double self) -> double const
+        sigf_mi(F_sigF_ano_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< double > *
+
+        """
         return _clipper.F_sigF_ano_double_sigf_mi(self, *args)
 
+
     def cov(self, *args):
+        """
+        cov(F_sigF_ano_double self) -> double const
+        cov(F_sigF_ano_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< double > *
+
+        """
         return _clipper.F_sigF_ano_double_cov(self, *args)
 
+
     def f(self):
+        """
+        f(F_sigF_ano_double self) -> double
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< double > const *
+
+        """
         return _clipper.F_sigF_ano_double_f(self)
 
+
     def sigf(self):
+        """
+        sigf(F_sigF_ano_double self) -> double
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_sigF_ano< double > const *
+
+        """
         return _clipper.F_sigF_ano_double_sigf(self)
+
     __swig_destroy__ = _clipper.delete_F_sigF_ano_double
     __del__ = lambda self: None
 F_sigF_ano_double_swigregister = _clipper.F_sigF_ano_double_swigregister
 F_sigF_ano_double_swigregister(F_sigF_ano_double)
 
 def F_sigF_ano_double_type():
+    """F_sigF_ano_double_type() -> String"""
     return _clipper.F_sigF_ano_double_type()
-F_sigF_ano_double_type = _clipper.F_sigF_ano_double_type
 
 def F_sigF_ano_double_data_size():
+    """F_sigF_ano_double_data_size() -> int"""
     return _clipper.F_sigF_ano_double_data_size()
-F_sigF_ano_double_data_size = _clipper.F_sigF_ano_double_data_size
 
 def F_sigF_ano_double_data_names():
+    """F_sigF_ano_double_data_names() -> String"""
     return _clipper.F_sigF_ano_double_data_names()
-F_sigF_ano_double_data_names = _clipper.F_sigF_ano_double_data_names
 
 class HKL_data_F_sigF_ano_float(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::data32::F_sigF_ano)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -6684,6 +21688,36 @@ class HKL_data_F_sigF_ano_float(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::data32::F_sigF_ano)> self) -> HKL_data_F_sigF_ano_float
+        __init__(clipper::HKL_data<(clipper::data32::F_sigF_ano)> self, HKL_info hkl_info) -> HKL_data_F_sigF_ano_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::data32::F_sigF_ano)> self, HKL_info hkl_info, Cell cell) -> HKL_data_F_sigF_ano_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::data32::F_sigF_ano)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_F_sigF_ano_float
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::data32::F_sigF_ano)> self, HKL_data_base hkl_data) -> HKL_data_F_sigF_ano_float
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_F_sigF_ano_float(*args)
         try:
             self.this.append(this)
@@ -6691,70 +21725,289 @@ class HKL_data_F_sigF_ano_float(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_F_sigF_ano_float self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_F_sigF_ano_float self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_F_sigF_ano_float self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_F_sigF_ano_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_sigF_ano > *
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_F_sigF_ano_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_sigF_ano > const *
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_F_sigF_ano_float self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_F_sigF_ano_float self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_F_sigF_ano_float self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_sigF_ano > const *
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_F_sigF_ano_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_sigF_ano > const *
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_F_sigF_ano_float self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_F_sigF_ano_float self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_F_sigF_ano_float self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_F_sigF_ano_float self, clipper::HKL_info::HKL_reference_coord const & ih, F_sigF_ano_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::F_sigF_ano< float > &
+
+        get_data(HKL_data_F_sigF_ano_float self, HKL hkl, F_sigF_ano_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::F_sigF_ano< float > &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_F_sigF_ano_float self, clipper::HKL_info::HKL_reference_coord const & ih, F_sigF_ano_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::F_sigF_ano< float > const &
+
+        set_data(HKL_data_F_sigF_ano_float self, HKL hkl, F_sigF_ano_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::F_sigF_ano< float > const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_F_sigF_ano_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_sigF_ano > const *
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_F_sigF_ano_float self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_sigF_ano > *
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_F_sigF_ano_float self, HKL_data_F_sigF_ano_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_sigF_ano< float > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_F_sigF_ano_float self, HKL_data_F_sigF_ano_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_sigF_ano< float > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_F_sigF_ano_float self, HKL_data_F_sigF_ano_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_sigF_ano< float > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float___and__(self, d1)
 
+
     def compute_scale_u_iso_fsigfano(self, scale, u_value, fsigfano):
+        """
+        compute_scale_u_iso_fsigfano(HKL_data_F_sigF_ano_float self, float scale, float u_value, HKL_data_F_sigF_ano_float fsigfano)
+
+        Parameters
+        ----------
+        scale: float
+        u_value: float
+        fsigfano: clipper::HKL_data< clipper::datatypes::F_sigF_ano< float > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_compute_scale_u_iso_fsigfano(self, scale, u_value, fsigfano)
 
+
     def compute_scale_u_aniso_fsigfano(self, scale, u_value, fsigfano):
+        """
+        compute_scale_u_aniso_fsigfano(HKL_data_F_sigF_ano_float self, float scale, U_aniso_orth u_value, HKL_data_F_sigF_ano_float fsigfano)
+
+        Parameters
+        ----------
+        scale: float
+        u_value: clipper::U_aniso_orth
+        fsigfano: clipper::HKL_data< clipper::datatypes::F_sigF_ano< float > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_compute_scale_u_aniso_fsigfano(self, scale, u_value, fsigfano)
 
+
     def copy(self):
+        """
+        copy(HKL_data_F_sigF_ano_float self) -> HKL_data_F_sigF_ano_float
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_sigF_ano > *
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_copy(self)
+
     __swig_destroy__ = _clipper.delete_HKL_data_F_sigF_ano_float
     __del__ = lambda self: None
 HKL_data_F_sigF_ano_float_swigregister = _clipper.HKL_data_F_sigF_ano_float_swigregister
 HKL_data_F_sigF_ano_float_swigregister(HKL_data_F_sigF_ano_float)
 
 class HKL_data_F_sigF_ano_double(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::data64::F_sigF_ano)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -6766,6 +22019,36 @@ class HKL_data_F_sigF_ano_double(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::data64::F_sigF_ano)> self) -> HKL_data_F_sigF_ano_double
+        __init__(clipper::HKL_data<(clipper::data64::F_sigF_ano)> self, HKL_info hkl_info) -> HKL_data_F_sigF_ano_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::data64::F_sigF_ano)> self, HKL_info hkl_info, Cell cell) -> HKL_data_F_sigF_ano_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::data64::F_sigF_ano)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_F_sigF_ano_double
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::data64::F_sigF_ano)> self, HKL_data_base hkl_data) -> HKL_data_F_sigF_ano_double
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_F_sigF_ano_double(*args)
         try:
             self.this.append(this)
@@ -6773,61 +22056,249 @@ class HKL_data_F_sigF_ano_double(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_F_sigF_ano_double self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_F_sigF_ano_double self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_F_sigF_ano_double self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_F_sigF_ano_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::F_sigF_ano > *
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_F_sigF_ano_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::F_sigF_ano > const *
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_F_sigF_ano_double self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_F_sigF_ano_double self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_F_sigF_ano_double self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::F_sigF_ano > const *
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_F_sigF_ano_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::F_sigF_ano > const *
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_F_sigF_ano_double self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_F_sigF_ano_double self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_F_sigF_ano_double self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_F_sigF_ano_double self, clipper::HKL_info::HKL_reference_coord const & ih, F_sigF_ano_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::F_sigF_ano< double > &
+
+        get_data(HKL_data_F_sigF_ano_double self, HKL hkl, F_sigF_ano_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::F_sigF_ano< double > &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_F_sigF_ano_double self, clipper::HKL_info::HKL_reference_coord const & ih, F_sigF_ano_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::F_sigF_ano< double > const &
+
+        set_data(HKL_data_F_sigF_ano_double self, HKL hkl, F_sigF_ano_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::F_sigF_ano< double > const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_F_sigF_ano_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::F_sigF_ano > const *
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_F_sigF_ano_double self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::F_sigF_ano > *
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_F_sigF_ano_double self, HKL_data_F_sigF_ano_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_sigF_ano< double > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_F_sigF_ano_double self, HKL_data_F_sigF_ano_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_sigF_ano< double > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_F_sigF_ano_double self, HKL_data_F_sigF_ano_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_sigF_ano< double > > const &
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double___and__(self, d1)
+
     __swig_destroy__ = _clipper.delete_HKL_data_F_sigF_ano_double
     __del__ = lambda self: None
 HKL_data_F_sigF_ano_double_swigregister = _clipper.HKL_data_F_sigF_ano_double_swigregister
 HKL_data_F_sigF_ano_double_swigregister(HKL_data_F_sigF_ano_double)
 
 class I_sigI_float(_object):
+    """Proxy of C++ clipper::datatypes::I_sigI<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, I_sigI_float, name, value)
     __swig_getmethods__ = {}
@@ -6835,6 +22306,16 @@ class I_sigI_float(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::datatypes::I_sigI<(float)> self) -> I_sigI_float
+        __init__(clipper::datatypes::I_sigI<(float)> self, float const & I, float const & sigI) -> I_sigI_float
+
+        Parameters
+        ----------
+        I: float const &
+        sigI: float const &
+
+        """
         this = _clipper.new_I_sigI_float(*args)
         try:
             self.this.append(this)
@@ -6842,79 +22323,224 @@ class I_sigI_float(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(I_sigI_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< float > *
+
+        """
         return _clipper.I_sigI_float_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.I_sigI_float_type)
-    else:
-        type = _clipper.I_sigI_float_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.I_sigI_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(I_sigI_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< float > *
+
+        """
         return _clipper.I_sigI_float_friedel(self)
 
+
     def shift_phase(self, arg2):
+        """
+        shift_phase(I_sigI_float self, clipper::ftype const & arg2)
+
+        Parameters
+        ----------
+        arg2: clipper::ftype const &
+
+        """
         return _clipper.I_sigI_float_shift_phase(self, arg2)
 
+
     def missing(self):
+        """
+        missing(I_sigI_float self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< float > const *
+
+        """
         return _clipper.I_sigI_float_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.I_sigI_float_data_size)
-    else:
-        data_size = _clipper.I_sigI_float_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.I_sigI_float_data_names)
-    else:
-        data_names = _clipper.I_sigI_float_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.I_sigI_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.I_sigI_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(I_sigI_float self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.I_sigI_float_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(I_sigI_float self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.I_sigI_float_data_import(self, array)
 
+
     def scale(self, s):
+        """
+        scale(I_sigI_float self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.I_sigI_float_scale(self, s)
 
+
     def I(self, *args):
+        """
+        I(I_sigI_float self) -> float const
+        I(I_sigI_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< float > *
+
+        """
         return _clipper.I_sigI_float_I(self, *args)
 
+
     def sigI(self, *args):
+        """
+        sigI(I_sigI_float self) -> float const
+        sigI(I_sigI_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< float > *
+
+        """
         return _clipper.I_sigI_float_sigI(self, *args)
 
+
     def I_pl(self):
+        """
+        I_pl(I_sigI_float self) -> float const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< float > const *
+
+        """
         return _clipper.I_sigI_float_I_pl(self)
 
+
     def sigI_pl(self):
+        """
+        sigI_pl(I_sigI_float self) -> float const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< float > const *
+
+        """
         return _clipper.I_sigI_float_sigI_pl(self)
 
+
     def I_mi(self):
+        """
+        I_mi(I_sigI_float self) -> float const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< float > const *
+
+        """
         return _clipper.I_sigI_float_I_mi(self)
 
+
     def sigI_mi(self):
+        """
+        sigI_mi(I_sigI_float self) -> float const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< float > const *
+
+        """
         return _clipper.I_sigI_float_sigI_mi(self)
 
+
     def cov(self):
+        """
+        cov(I_sigI_float self) -> float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< float > const *
+
+        """
         return _clipper.I_sigI_float_cov(self)
 
+
     def copy(self):
+        """
+        copy(I_sigI_float self) -> I_sigI_float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< float > *
+
+        """
         return _clipper.I_sigI_float_copy(self)
+
     __swig_destroy__ = _clipper.delete_I_sigI_float
     __del__ = lambda self: None
 I_sigI_float_swigregister = _clipper.I_sigI_float_swigregister
 I_sigI_float_swigregister(I_sigI_float)
 
 def I_sigI_float_type():
+    """I_sigI_float_type() -> String"""
     return _clipper.I_sigI_float_type()
-I_sigI_float_type = _clipper.I_sigI_float_type
 
 def I_sigI_float_data_size():
+    """I_sigI_float_data_size() -> int"""
     return _clipper.I_sigI_float_data_size()
-I_sigI_float_data_size = _clipper.I_sigI_float_data_size
 
 def I_sigI_float_data_names():
+    """I_sigI_float_data_names() -> String"""
     return _clipper.I_sigI_float_data_names()
-I_sigI_float_data_names = _clipper.I_sigI_float_data_names
 
 class I_sigI_double(_object):
+    """Proxy of C++ clipper::datatypes::I_sigI<(double)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, I_sigI_double, name, value)
     __swig_getmethods__ = {}
@@ -6922,6 +22548,16 @@ class I_sigI_double(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::datatypes::I_sigI<(double)> self) -> I_sigI_double
+        __init__(clipper::datatypes::I_sigI<(double)> self, double const & I, double const & sigI) -> I_sigI_double
+
+        Parameters
+        ----------
+        I: double const &
+        sigI: double const &
+
+        """
         this = _clipper.new_I_sigI_double(*args)
         try:
             self.this.append(this)
@@ -6929,76 +22565,212 @@ class I_sigI_double(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(I_sigI_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< double > *
+
+        """
         return _clipper.I_sigI_double_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.I_sigI_double_type)
-    else:
-        type = _clipper.I_sigI_double_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.I_sigI_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(I_sigI_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< double > *
+
+        """
         return _clipper.I_sigI_double_friedel(self)
 
+
     def shift_phase(self, arg2):
+        """
+        shift_phase(I_sigI_double self, clipper::ftype const & arg2)
+
+        Parameters
+        ----------
+        arg2: clipper::ftype const &
+
+        """
         return _clipper.I_sigI_double_shift_phase(self, arg2)
 
+
     def missing(self):
+        """
+        missing(I_sigI_double self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< double > const *
+
+        """
         return _clipper.I_sigI_double_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.I_sigI_double_data_size)
-    else:
-        data_size = _clipper.I_sigI_double_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.I_sigI_double_data_names)
-    else:
-        data_names = _clipper.I_sigI_double_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.I_sigI_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.I_sigI_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(I_sigI_double self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.I_sigI_double_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(I_sigI_double self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.I_sigI_double_data_import(self, array)
 
+
     def scale(self, s):
+        """
+        scale(I_sigI_double self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.I_sigI_double_scale(self, s)
 
+
     def I(self, *args):
+        """
+        I(I_sigI_double self) -> double const
+        I(I_sigI_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< double > *
+
+        """
         return _clipper.I_sigI_double_I(self, *args)
 
+
     def sigI(self, *args):
+        """
+        sigI(I_sigI_double self) -> double const
+        sigI(I_sigI_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< double > *
+
+        """
         return _clipper.I_sigI_double_sigI(self, *args)
 
+
     def I_pl(self):
+        """
+        I_pl(I_sigI_double self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< double > const *
+
+        """
         return _clipper.I_sigI_double_I_pl(self)
 
+
     def sigI_pl(self):
+        """
+        sigI_pl(I_sigI_double self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< double > const *
+
+        """
         return _clipper.I_sigI_double_sigI_pl(self)
 
+
     def I_mi(self):
+        """
+        I_mi(I_sigI_double self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< double > const *
+
+        """
         return _clipper.I_sigI_double_I_mi(self)
 
+
     def sigI_mi(self):
+        """
+        sigI_mi(I_sigI_double self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< double > const *
+
+        """
         return _clipper.I_sigI_double_sigI_mi(self)
 
+
     def cov(self):
+        """
+        cov(I_sigI_double self) -> double
+
+        Parameters
+        ----------
+        self: clipper::datatypes::I_sigI< double > const *
+
+        """
         return _clipper.I_sigI_double_cov(self)
+
     __swig_destroy__ = _clipper.delete_I_sigI_double
     __del__ = lambda self: None
 I_sigI_double_swigregister = _clipper.I_sigI_double_swigregister
 I_sigI_double_swigregister(I_sigI_double)
 
 def I_sigI_double_type():
+    """I_sigI_double_type() -> String"""
     return _clipper.I_sigI_double_type()
-I_sigI_double_type = _clipper.I_sigI_double_type
 
 def I_sigI_double_data_size():
+    """I_sigI_double_data_size() -> int"""
     return _clipper.I_sigI_double_data_size()
-I_sigI_double_data_size = _clipper.I_sigI_double_data_size
 
 def I_sigI_double_data_names():
+    """I_sigI_double_data_names() -> String"""
     return _clipper.I_sigI_double_data_names()
-I_sigI_double_data_names = _clipper.I_sigI_double_data_names
 
 class HKL_data_I_sigI_float(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::data32::I_sigI)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -7010,6 +22782,36 @@ class HKL_data_I_sigI_float(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::data32::I_sigI)> self) -> HKL_data_I_sigI_float
+        __init__(clipper::HKL_data<(clipper::data32::I_sigI)> self, HKL_info hkl_info) -> HKL_data_I_sigI_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::data32::I_sigI)> self, HKL_info hkl_info, Cell cell) -> HKL_data_I_sigI_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::data32::I_sigI)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_I_sigI_float
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::data32::I_sigI)> self, HKL_data_base hkl_data) -> HKL_data_I_sigI_float
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_I_sigI_float(*args)
         try:
             self.this.append(this)
@@ -7017,70 +22819,289 @@ class HKL_data_I_sigI_float(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_I_sigI_float self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_I_sigI_float self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_I_sigI_float self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_I_sigI_float_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_I_sigI_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::I_sigI > *
+
+        """
         return _clipper.HKL_data_I_sigI_float_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_I_sigI_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::I_sigI > const *
+
+        """
         return _clipper.HKL_data_I_sigI_float_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_I_sigI_float self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_I_sigI_float_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_I_sigI_float self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_I_sigI_float_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_I_sigI_float self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::I_sigI > const *
+
+        """
         return _clipper.HKL_data_I_sigI_float_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_I_sigI_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::I_sigI > const *
+
+        """
         return _clipper.HKL_data_I_sigI_float_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_I_sigI_float self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_I_sigI_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_I_sigI_float self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_I_sigI_float_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_I_sigI_float self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_I_sigI_float_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_I_sigI_float self, clipper::HKL_info::HKL_reference_coord const & ih, I_sigI_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::I_sigI< float > &
+
+        get_data(HKL_data_I_sigI_float self, HKL hkl, I_sigI_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::I_sigI< float > &
+
+        """
         return _clipper.HKL_data_I_sigI_float_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_I_sigI_float self, clipper::HKL_info::HKL_reference_coord const & ih, I_sigI_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::I_sigI< float > const &
+
+        set_data(HKL_data_I_sigI_float self, HKL hkl, I_sigI_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::I_sigI< float > const &
+
+        """
         return _clipper.HKL_data_I_sigI_float_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_I_sigI_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::I_sigI > const *
+
+        """
         return _clipper.HKL_data_I_sigI_float_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_I_sigI_float self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::I_sigI > *
+
+        """
         return _clipper.HKL_data_I_sigI_float_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_I_sigI_float self, HKL_data_I_sigI_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::I_sigI< float > > const &
+
+        """
         return _clipper.HKL_data_I_sigI_float___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_I_sigI_float self, HKL_data_I_sigI_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::I_sigI< float > > const &
+
+        """
         return _clipper.HKL_data_I_sigI_float___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_I_sigI_float self, HKL_data_I_sigI_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::I_sigI< float > > const &
+
+        """
         return _clipper.HKL_data_I_sigI_float___and__(self, d1)
 
+
     def compute_scale_u_iso_isigi(self, scale, u_value, isigi):
+        """
+        compute_scale_u_iso_isigi(HKL_data_I_sigI_float self, float scale, float u_value, HKL_data_I_sigI_float isigi)
+
+        Parameters
+        ----------
+        scale: float
+        u_value: float
+        isigi: clipper::HKL_data< clipper::datatypes::I_sigI< float > > const &
+
+        """
         return _clipper.HKL_data_I_sigI_float_compute_scale_u_iso_isigi(self, scale, u_value, isigi)
 
+
     def compute_scale_u_aniso_isigi(self, scale, u_value, isigi):
+        """
+        compute_scale_u_aniso_isigi(HKL_data_I_sigI_float self, float scale, U_aniso_orth u_value, HKL_data_I_sigI_float isigi)
+
+        Parameters
+        ----------
+        scale: float
+        u_value: clipper::U_aniso_orth
+        isigi: clipper::HKL_data< clipper::datatypes::I_sigI< float > > const &
+
+        """
         return _clipper.HKL_data_I_sigI_float_compute_scale_u_aniso_isigi(self, scale, u_value, isigi)
 
+
     def copy(self):
+        """
+        copy(HKL_data_I_sigI_float self) -> HKL_data_I_sigI_float
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::I_sigI > *
+
+        """
         return _clipper.HKL_data_I_sigI_float_copy(self)
+
     __swig_destroy__ = _clipper.delete_HKL_data_I_sigI_float
     __del__ = lambda self: None
 HKL_data_I_sigI_float_swigregister = _clipper.HKL_data_I_sigI_float_swigregister
 HKL_data_I_sigI_float_swigregister(HKL_data_I_sigI_float)
 
 class HKL_data_I_sigI_double(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::data64::I_sigI)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -7092,6 +23113,36 @@ class HKL_data_I_sigI_double(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::data64::I_sigI)> self) -> HKL_data_I_sigI_double
+        __init__(clipper::HKL_data<(clipper::data64::I_sigI)> self, HKL_info hkl_info) -> HKL_data_I_sigI_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::data64::I_sigI)> self, HKL_info hkl_info, Cell cell) -> HKL_data_I_sigI_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::data64::I_sigI)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_I_sigI_double
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::data64::I_sigI)> self, HKL_data_base hkl_data) -> HKL_data_I_sigI_double
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_I_sigI_double(*args)
         try:
             self.this.append(this)
@@ -7099,61 +23150,249 @@ class HKL_data_I_sigI_double(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_I_sigI_double self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_I_sigI_double self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_I_sigI_double self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_I_sigI_double_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_I_sigI_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::I_sigI > *
+
+        """
         return _clipper.HKL_data_I_sigI_double_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_I_sigI_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::I_sigI > const *
+
+        """
         return _clipper.HKL_data_I_sigI_double_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_I_sigI_double self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_I_sigI_double_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_I_sigI_double self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_I_sigI_double_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_I_sigI_double self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::I_sigI > const *
+
+        """
         return _clipper.HKL_data_I_sigI_double_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_I_sigI_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::I_sigI > const *
+
+        """
         return _clipper.HKL_data_I_sigI_double_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_I_sigI_double self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_I_sigI_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_I_sigI_double self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_I_sigI_double_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_I_sigI_double self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_I_sigI_double_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_I_sigI_double self, clipper::HKL_info::HKL_reference_coord const & ih, I_sigI_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::I_sigI< double > &
+
+        get_data(HKL_data_I_sigI_double self, HKL hkl, I_sigI_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::I_sigI< double > &
+
+        """
         return _clipper.HKL_data_I_sigI_double_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_I_sigI_double self, clipper::HKL_info::HKL_reference_coord const & ih, I_sigI_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::I_sigI< double > const &
+
+        set_data(HKL_data_I_sigI_double self, HKL hkl, I_sigI_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::I_sigI< double > const &
+
+        """
         return _clipper.HKL_data_I_sigI_double_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_I_sigI_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::I_sigI > const *
+
+        """
         return _clipper.HKL_data_I_sigI_double_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_I_sigI_double self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::I_sigI > *
+
+        """
         return _clipper.HKL_data_I_sigI_double_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_I_sigI_double self, HKL_data_I_sigI_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::I_sigI< double > > const &
+
+        """
         return _clipper.HKL_data_I_sigI_double___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_I_sigI_double self, HKL_data_I_sigI_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::I_sigI< double > > const &
+
+        """
         return _clipper.HKL_data_I_sigI_double___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_I_sigI_double self, HKL_data_I_sigI_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::I_sigI< double > > const &
+
+        """
         return _clipper.HKL_data_I_sigI_double___and__(self, d1)
+
     __swig_destroy__ = _clipper.delete_HKL_data_I_sigI_double
     __del__ = lambda self: None
 HKL_data_I_sigI_double_swigregister = _clipper.HKL_data_I_sigI_double_swigregister
 HKL_data_I_sigI_double_swigregister(HKL_data_I_sigI_double)
 
 class E_sigE_float(_object):
+    """Proxy of C++ clipper::datatypes::E_sigE<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, E_sigE_float, name, value)
     __swig_getmethods__ = {}
@@ -7161,6 +23400,16 @@ class E_sigE_float(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::datatypes::E_sigE<(float)> self) -> E_sigE_float
+        __init__(clipper::datatypes::E_sigE<(float)> self, float const & E, float const & sigE) -> E_sigE_float
+
+        Parameters
+        ----------
+        E: float const &
+        sigE: float const &
+
+        """
         this = _clipper.new_E_sigE_float(*args)
         try:
             self.this.append(this)
@@ -7168,79 +23417,224 @@ class E_sigE_float(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(E_sigE_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< float > *
+
+        """
         return _clipper.E_sigE_float_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.E_sigE_float_type)
-    else:
-        type = _clipper.E_sigE_float_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.E_sigE_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(E_sigE_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< float > *
+
+        """
         return _clipper.E_sigE_float_friedel(self)
 
+
     def shift_phase(self, arg2):
+        """
+        shift_phase(E_sigE_float self, clipper::ftype const & arg2)
+
+        Parameters
+        ----------
+        arg2: clipper::ftype const &
+
+        """
         return _clipper.E_sigE_float_shift_phase(self, arg2)
 
+
     def missing(self):
+        """
+        missing(E_sigE_float self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< float > const *
+
+        """
         return _clipper.E_sigE_float_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.E_sigE_float_data_size)
-    else:
-        data_size = _clipper.E_sigE_float_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.E_sigE_float_data_names)
-    else:
-        data_names = _clipper.E_sigE_float_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.E_sigE_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.E_sigE_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(E_sigE_float self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.E_sigE_float_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(E_sigE_float self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.E_sigE_float_data_import(self, array)
 
+
     def scale(self, s):
+        """
+        scale(E_sigE_float self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.E_sigE_float_scale(self, s)
 
+
     def E(self, *args):
+        """
+        E(E_sigE_float self) -> float const
+        E(E_sigE_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< float > *
+
+        """
         return _clipper.E_sigE_float_E(self, *args)
 
+
     def sigE(self, *args):
+        """
+        sigE(E_sigE_float self) -> float const
+        sigE(E_sigE_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< float > *
+
+        """
         return _clipper.E_sigE_float_sigE(self, *args)
 
+
     def E_pl(self):
+        """
+        E_pl(E_sigE_float self) -> float const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< float > const *
+
+        """
         return _clipper.E_sigE_float_E_pl(self)
 
+
     def sigE_pl(self):
+        """
+        sigE_pl(E_sigE_float self) -> float const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< float > const *
+
+        """
         return _clipper.E_sigE_float_sigE_pl(self)
 
+
     def E_mi(self):
+        """
+        E_mi(E_sigE_float self) -> float const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< float > const *
+
+        """
         return _clipper.E_sigE_float_E_mi(self)
 
+
     def sigE_mi(self):
+        """
+        sigE_mi(E_sigE_float self) -> float const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< float > const *
+
+        """
         return _clipper.E_sigE_float_sigE_mi(self)
 
+
     def cov(self):
+        """
+        cov(E_sigE_float self) -> float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< float > const *
+
+        """
         return _clipper.E_sigE_float_cov(self)
 
+
     def copy(self):
+        """
+        copy(E_sigE_float self) -> E_sigE_float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< float > *
+
+        """
         return _clipper.E_sigE_float_copy(self)
+
     __swig_destroy__ = _clipper.delete_E_sigE_float
     __del__ = lambda self: None
 E_sigE_float_swigregister = _clipper.E_sigE_float_swigregister
 E_sigE_float_swigregister(E_sigE_float)
 
 def E_sigE_float_type():
+    """E_sigE_float_type() -> String"""
     return _clipper.E_sigE_float_type()
-E_sigE_float_type = _clipper.E_sigE_float_type
 
 def E_sigE_float_data_size():
+    """E_sigE_float_data_size() -> int"""
     return _clipper.E_sigE_float_data_size()
-E_sigE_float_data_size = _clipper.E_sigE_float_data_size
 
 def E_sigE_float_data_names():
+    """E_sigE_float_data_names() -> String"""
     return _clipper.E_sigE_float_data_names()
-E_sigE_float_data_names = _clipper.E_sigE_float_data_names
 
 class E_sigE_double(_object):
+    """Proxy of C++ clipper::datatypes::E_sigE<(double)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, E_sigE_double, name, value)
     __swig_getmethods__ = {}
@@ -7248,6 +23642,16 @@ class E_sigE_double(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::datatypes::E_sigE<(double)> self) -> E_sigE_double
+        __init__(clipper::datatypes::E_sigE<(double)> self, double const & E, double const & sigE) -> E_sigE_double
+
+        Parameters
+        ----------
+        E: double const &
+        sigE: double const &
+
+        """
         this = _clipper.new_E_sigE_double(*args)
         try:
             self.this.append(this)
@@ -7255,76 +23659,212 @@ class E_sigE_double(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(E_sigE_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< double > *
+
+        """
         return _clipper.E_sigE_double_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.E_sigE_double_type)
-    else:
-        type = _clipper.E_sigE_double_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.E_sigE_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(E_sigE_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< double > *
+
+        """
         return _clipper.E_sigE_double_friedel(self)
 
+
     def shift_phase(self, arg2):
+        """
+        shift_phase(E_sigE_double self, clipper::ftype const & arg2)
+
+        Parameters
+        ----------
+        arg2: clipper::ftype const &
+
+        """
         return _clipper.E_sigE_double_shift_phase(self, arg2)
 
+
     def missing(self):
+        """
+        missing(E_sigE_double self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< double > const *
+
+        """
         return _clipper.E_sigE_double_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.E_sigE_double_data_size)
-    else:
-        data_size = _clipper.E_sigE_double_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.E_sigE_double_data_names)
-    else:
-        data_names = _clipper.E_sigE_double_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.E_sigE_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.E_sigE_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(E_sigE_double self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.E_sigE_double_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(E_sigE_double self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.E_sigE_double_data_import(self, array)
 
+
     def scale(self, s):
+        """
+        scale(E_sigE_double self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.E_sigE_double_scale(self, s)
 
+
     def E(self, *args):
+        """
+        E(E_sigE_double self) -> double const
+        E(E_sigE_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< double > *
+
+        """
         return _clipper.E_sigE_double_E(self, *args)
 
+
     def sigE(self, *args):
+        """
+        sigE(E_sigE_double self) -> double const
+        sigE(E_sigE_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< double > *
+
+        """
         return _clipper.E_sigE_double_sigE(self, *args)
 
+
     def E_pl(self):
+        """
+        E_pl(E_sigE_double self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< double > const *
+
+        """
         return _clipper.E_sigE_double_E_pl(self)
 
+
     def sigE_pl(self):
+        """
+        sigE_pl(E_sigE_double self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< double > const *
+
+        """
         return _clipper.E_sigE_double_sigE_pl(self)
 
+
     def E_mi(self):
+        """
+        E_mi(E_sigE_double self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< double > const *
+
+        """
         return _clipper.E_sigE_double_E_mi(self)
 
+
     def sigE_mi(self):
+        """
+        sigE_mi(E_sigE_double self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< double > const *
+
+        """
         return _clipper.E_sigE_double_sigE_mi(self)
 
+
     def cov(self):
+        """
+        cov(E_sigE_double self) -> double
+
+        Parameters
+        ----------
+        self: clipper::datatypes::E_sigE< double > const *
+
+        """
         return _clipper.E_sigE_double_cov(self)
+
     __swig_destroy__ = _clipper.delete_E_sigE_double
     __del__ = lambda self: None
 E_sigE_double_swigregister = _clipper.E_sigE_double_swigregister
 E_sigE_double_swigregister(E_sigE_double)
 
 def E_sigE_double_type():
+    """E_sigE_double_type() -> String"""
     return _clipper.E_sigE_double_type()
-E_sigE_double_type = _clipper.E_sigE_double_type
 
 def E_sigE_double_data_size():
+    """E_sigE_double_data_size() -> int"""
     return _clipper.E_sigE_double_data_size()
-E_sigE_double_data_size = _clipper.E_sigE_double_data_size
 
 def E_sigE_double_data_names():
+    """E_sigE_double_data_names() -> String"""
     return _clipper.E_sigE_double_data_names()
-E_sigE_double_data_names = _clipper.E_sigE_double_data_names
 
 class HKL_data_E_sigE_float(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::data32::E_sigE)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -7336,6 +23876,36 @@ class HKL_data_E_sigE_float(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::data32::E_sigE)> self) -> HKL_data_E_sigE_float
+        __init__(clipper::HKL_data<(clipper::data32::E_sigE)> self, HKL_info hkl_info) -> HKL_data_E_sigE_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::data32::E_sigE)> self, HKL_info hkl_info, Cell cell) -> HKL_data_E_sigE_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::data32::E_sigE)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_E_sigE_float
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::data32::E_sigE)> self, HKL_data_base hkl_data) -> HKL_data_E_sigE_float
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_E_sigE_float(*args)
         try:
             self.this.append(this)
@@ -7343,73 +23913,297 @@ class HKL_data_E_sigE_float(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_E_sigE_float self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_E_sigE_float self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_E_sigE_float self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_E_sigE_float_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_E_sigE_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::E_sigE > *
+
+        """
         return _clipper.HKL_data_E_sigE_float_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_E_sigE_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::E_sigE > const *
+
+        """
         return _clipper.HKL_data_E_sigE_float_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_E_sigE_float self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_E_sigE_float_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_E_sigE_float self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_E_sigE_float_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_E_sigE_float self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::E_sigE > const *
+
+        """
         return _clipper.HKL_data_E_sigE_float_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_E_sigE_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::E_sigE > const *
+
+        """
         return _clipper.HKL_data_E_sigE_float_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_E_sigE_float self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_E_sigE_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_E_sigE_float self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_E_sigE_float_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_E_sigE_float self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_E_sigE_float_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_E_sigE_float self, clipper::HKL_info::HKL_reference_coord const & ih, E_sigE_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::E_sigE< float > &
+
+        get_data(HKL_data_E_sigE_float self, HKL hkl, E_sigE_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::E_sigE< float > &
+
+        """
         return _clipper.HKL_data_E_sigE_float_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_E_sigE_float self, clipper::HKL_info::HKL_reference_coord const & ih, E_sigE_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::E_sigE< float > const &
+
+        set_data(HKL_data_E_sigE_float self, HKL hkl, E_sigE_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::E_sigE< float > const &
+
+        """
         return _clipper.HKL_data_E_sigE_float_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_E_sigE_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::E_sigE > const *
+
+        """
         return _clipper.HKL_data_E_sigE_float_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_E_sigE_float self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::E_sigE > *
+
+        """
         return _clipper.HKL_data_E_sigE_float_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_E_sigE_float self, HKL_data_E_sigE_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::E_sigE< float > > const &
+
+        """
         return _clipper.HKL_data_E_sigE_float___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_E_sigE_float self, HKL_data_E_sigE_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::E_sigE< float > > const &
+
+        """
         return _clipper.HKL_data_E_sigE_float___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_E_sigE_float self, HKL_data_E_sigE_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::E_sigE< float > > const &
+
+        """
         return _clipper.HKL_data_E_sigE_float___and__(self, d1)
 
+
     def scaleBySqrtResolution(self, escale):
+        """
+        scaleBySqrtResolution(HKL_data_E_sigE_float self, ResolutionFn escale)
+
+        Parameters
+        ----------
+        escale: clipper::ResolutionFn const &
+
+        """
         return _clipper.HKL_data_E_sigE_float_scaleBySqrtResolution(self, escale)
 
+
     def scaleByResolution(self, escale):
+        """
+        scaleByResolution(HKL_data_E_sigE_float self, ResolutionFn escale)
+
+        Parameters
+        ----------
+        escale: clipper::ResolutionFn const &
+
+        """
         return _clipper.HKL_data_E_sigE_float_scaleByResolution(self, escale)
 
+
     def copy(self):
+        """
+        copy(HKL_data_E_sigE_float self) -> HKL_data_E_sigE_float
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::E_sigE > *
+
+        """
         return _clipper.HKL_data_E_sigE_float_copy(self)
 
+
     def compute_from_fsigf(self, fsigf):
+        """
+        compute_from_fsigf(HKL_data_E_sigE_float self, HKL_data_F_sigF_float fsigf)
+
+        Parameters
+        ----------
+        fsigf: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+
+        """
         return _clipper.HKL_data_E_sigE_float_compute_from_fsigf(self, fsigf)
+
     __swig_destroy__ = _clipper.delete_HKL_data_E_sigE_float
     __del__ = lambda self: None
 HKL_data_E_sigE_float_swigregister = _clipper.HKL_data_E_sigE_float_swigregister
 HKL_data_E_sigE_float_swigregister(HKL_data_E_sigE_float)
 
 class HKL_data_E_sigE_double(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::data64::E_sigE)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -7421,6 +24215,36 @@ class HKL_data_E_sigE_double(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::data64::E_sigE)> self) -> HKL_data_E_sigE_double
+        __init__(clipper::HKL_data<(clipper::data64::E_sigE)> self, HKL_info hkl_info) -> HKL_data_E_sigE_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::data64::E_sigE)> self, HKL_info hkl_info, Cell cell) -> HKL_data_E_sigE_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::data64::E_sigE)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_E_sigE_double
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::data64::E_sigE)> self, HKL_data_base hkl_data) -> HKL_data_E_sigE_double
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_E_sigE_double(*args)
         try:
             self.this.append(this)
@@ -7428,61 +24252,249 @@ class HKL_data_E_sigE_double(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_E_sigE_double self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_E_sigE_double self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_E_sigE_double self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_E_sigE_double_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_E_sigE_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::E_sigE > *
+
+        """
         return _clipper.HKL_data_E_sigE_double_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_E_sigE_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::E_sigE > const *
+
+        """
         return _clipper.HKL_data_E_sigE_double_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_E_sigE_double self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_E_sigE_double_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_E_sigE_double self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_E_sigE_double_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_E_sigE_double self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::E_sigE > const *
+
+        """
         return _clipper.HKL_data_E_sigE_double_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_E_sigE_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::E_sigE > const *
+
+        """
         return _clipper.HKL_data_E_sigE_double_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_E_sigE_double self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_E_sigE_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_E_sigE_double self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_E_sigE_double_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_E_sigE_double self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_E_sigE_double_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_E_sigE_double self, clipper::HKL_info::HKL_reference_coord const & ih, E_sigE_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::E_sigE< double > &
+
+        get_data(HKL_data_E_sigE_double self, HKL hkl, E_sigE_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::E_sigE< double > &
+
+        """
         return _clipper.HKL_data_E_sigE_double_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_E_sigE_double self, clipper::HKL_info::HKL_reference_coord const & ih, E_sigE_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::E_sigE< double > const &
+
+        set_data(HKL_data_E_sigE_double self, HKL hkl, E_sigE_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::E_sigE< double > const &
+
+        """
         return _clipper.HKL_data_E_sigE_double_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_E_sigE_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::E_sigE > const *
+
+        """
         return _clipper.HKL_data_E_sigE_double_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_E_sigE_double self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::E_sigE > *
+
+        """
         return _clipper.HKL_data_E_sigE_double_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_E_sigE_double self, HKL_data_E_sigE_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::E_sigE< double > > const &
+
+        """
         return _clipper.HKL_data_E_sigE_double___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_E_sigE_double self, HKL_data_E_sigE_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::E_sigE< double > > const &
+
+        """
         return _clipper.HKL_data_E_sigE_double___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_E_sigE_double self, HKL_data_E_sigE_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::E_sigE< double > > const &
+
+        """
         return _clipper.HKL_data_E_sigE_double___and__(self, d1)
+
     __swig_destroy__ = _clipper.delete_HKL_data_E_sigE_double
     __del__ = lambda self: None
 HKL_data_E_sigE_double_swigregister = _clipper.HKL_data_E_sigE_double_swigregister
 HKL_data_E_sigE_double_swigregister(HKL_data_E_sigE_double)
 
 class ABCD_float(_object):
+    """Proxy of C++ clipper::datatypes::ABCD<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, ABCD_float, name, value)
     __swig_getmethods__ = {}
@@ -7490,6 +24502,18 @@ class ABCD_float(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::datatypes::ABCD<(float)> self) -> ABCD_float
+        __init__(clipper::datatypes::ABCD<(float)> self, float const & a, float const & b, float const & c, float const & d) -> ABCD_float
+
+        Parameters
+        ----------
+        a: float const &
+        b: float const &
+        c: float const &
+        d: float const &
+
+        """
         this = _clipper.new_ABCD_float(*args)
         try:
             self.this.append(this)
@@ -7497,70 +24521,190 @@ class ABCD_float(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(ABCD_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< float > *
+
+        """
         return _clipper.ABCD_float_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.ABCD_float_type)
-    else:
-        type = _clipper.ABCD_float_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.ABCD_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(ABCD_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< float > *
+
+        """
         return _clipper.ABCD_float_friedel(self)
 
+
     def shift_phase(self, dphi):
+        """
+        shift_phase(ABCD_float self, clipper::ftype const & dphi)
+
+        Parameters
+        ----------
+        dphi: clipper::ftype const &
+
+        """
         return _clipper.ABCD_float_shift_phase(self, dphi)
 
+
     def missing(self):
+        """
+        missing(ABCD_float self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< float > const *
+
+        """
         return _clipper.ABCD_float_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.ABCD_float_data_size)
-    else:
-        data_size = _clipper.ABCD_float_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.ABCD_float_data_names)
-    else:
-        data_names = _clipper.ABCD_float_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.ABCD_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.ABCD_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(ABCD_float self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.ABCD_float_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(ABCD_float self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.ABCD_float_data_import(self, array)
 
+
     def a(self, *args):
+        """
+        a(ABCD_float self) -> float const
+        a(ABCD_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< float > *
+
+        """
         return _clipper.ABCD_float_a(self, *args)
 
+
     def b(self, *args):
+        """
+        b(ABCD_float self) -> float const
+        b(ABCD_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< float > *
+
+        """
         return _clipper.ABCD_float_b(self, *args)
 
+
     def c(self, *args):
+        """
+        c(ABCD_float self) -> float const
+        c(ABCD_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< float > *
+
+        """
         return _clipper.ABCD_float_c(self, *args)
 
+
     def d(self, *args):
+        """
+        d(ABCD_float self) -> float const
+        d(ABCD_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< float > *
+
+        """
         return _clipper.ABCD_float_d(self, *args)
 
+
     def __add__(self, h2):
+        """
+        __add__(ABCD_float self, ABCD_float h2) -> ABCD_float
+
+        Parameters
+        ----------
+        h2: clipper::datatypes::ABCD< float > const &
+
+        """
         return _clipper.ABCD_float___add__(self, h2)
 
+
     def copy(self):
+        """
+        copy(ABCD_float self) -> ABCD_float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< float > *
+
+        """
         return _clipper.ABCD_float_copy(self)
+
     __swig_destroy__ = _clipper.delete_ABCD_float
     __del__ = lambda self: None
 ABCD_float_swigregister = _clipper.ABCD_float_swigregister
 ABCD_float_swigregister(ABCD_float)
 
 def ABCD_float_type():
+    """ABCD_float_type() -> String"""
     return _clipper.ABCD_float_type()
-ABCD_float_type = _clipper.ABCD_float_type
 
 def ABCD_float_data_size():
+    """ABCD_float_data_size() -> int"""
     return _clipper.ABCD_float_data_size()
-ABCD_float_data_size = _clipper.ABCD_float_data_size
 
 def ABCD_float_data_names():
+    """ABCD_float_data_names() -> String"""
     return _clipper.ABCD_float_data_names()
-ABCD_float_data_names = _clipper.ABCD_float_data_names
 
 class ABCD_double(_object):
+    """Proxy of C++ clipper::datatypes::ABCD<(double)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, ABCD_double, name, value)
     __swig_getmethods__ = {}
@@ -7568,6 +24712,18 @@ class ABCD_double(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::datatypes::ABCD<(double)> self) -> ABCD_double
+        __init__(clipper::datatypes::ABCD<(double)> self, double const & a, double const & b, double const & c, double const & d) -> ABCD_double
+
+        Parameters
+        ----------
+        a: double const &
+        b: double const &
+        c: double const &
+        d: double const &
+
+        """
         this = _clipper.new_ABCD_double(*args)
         try:
             self.this.append(this)
@@ -7575,64 +24731,166 @@ class ABCD_double(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(ABCD_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< double > *
+
+        """
         return _clipper.ABCD_double_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.ABCD_double_type)
-    else:
-        type = _clipper.ABCD_double_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.ABCD_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(ABCD_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< double > *
+
+        """
         return _clipper.ABCD_double_friedel(self)
 
+
     def shift_phase(self, dphi):
+        """
+        shift_phase(ABCD_double self, clipper::ftype const & dphi)
+
+        Parameters
+        ----------
+        dphi: clipper::ftype const &
+
+        """
         return _clipper.ABCD_double_shift_phase(self, dphi)
 
+
     def missing(self):
+        """
+        missing(ABCD_double self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< double > const *
+
+        """
         return _clipper.ABCD_double_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.ABCD_double_data_size)
-    else:
-        data_size = _clipper.ABCD_double_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.ABCD_double_data_names)
-    else:
-        data_names = _clipper.ABCD_double_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.ABCD_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.ABCD_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(ABCD_double self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.ABCD_double_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(ABCD_double self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.ABCD_double_data_import(self, array)
 
+
     def a(self, *args):
+        """
+        a(ABCD_double self) -> double const
+        a(ABCD_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< double > *
+
+        """
         return _clipper.ABCD_double_a(self, *args)
 
+
     def b(self, *args):
+        """
+        b(ABCD_double self) -> double const
+        b(ABCD_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< double > *
+
+        """
         return _clipper.ABCD_double_b(self, *args)
 
+
     def c(self, *args):
+        """
+        c(ABCD_double self) -> double const
+        c(ABCD_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< double > *
+
+        """
         return _clipper.ABCD_double_c(self, *args)
 
+
     def d(self, *args):
+        """
+        d(ABCD_double self) -> double const
+        d(ABCD_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< double > *
+
+        """
         return _clipper.ABCD_double_d(self, *args)
+
     __swig_destroy__ = _clipper.delete_ABCD_double
     __del__ = lambda self: None
 ABCD_double_swigregister = _clipper.ABCD_double_swigregister
 ABCD_double_swigregister(ABCD_double)
 
 def ABCD_double_type():
+    """ABCD_double_type() -> String"""
     return _clipper.ABCD_double_type()
-ABCD_double_type = _clipper.ABCD_double_type
 
 def ABCD_double_data_size():
+    """ABCD_double_data_size() -> int"""
     return _clipper.ABCD_double_data_size()
-ABCD_double_data_size = _clipper.ABCD_double_data_size
 
 def ABCD_double_data_names():
+    """ABCD_double_data_names() -> String"""
     return _clipper.ABCD_double_data_names()
-ABCD_double_data_names = _clipper.ABCD_double_data_names
 
 class HKL_data_ABCD_float(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::data32::ABCD)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -7644,6 +24902,36 @@ class HKL_data_ABCD_float(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::data32::ABCD)> self) -> HKL_data_ABCD_float
+        __init__(clipper::HKL_data<(clipper::data32::ABCD)> self, HKL_info hkl_info) -> HKL_data_ABCD_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::data32::ABCD)> self, HKL_info hkl_info, Cell cell) -> HKL_data_ABCD_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::data32::ABCD)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_ABCD_float
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::data32::ABCD)> self, HKL_data_base hkl_data) -> HKL_data_ABCD_float
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_ABCD_float(*args)
         try:
             self.this.append(this)
@@ -7651,73 +24939,298 @@ class HKL_data_ABCD_float(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_ABCD_float self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_ABCD_float self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_ABCD_float self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_ABCD_float_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_ABCD_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::ABCD > *
+
+        """
         return _clipper.HKL_data_ABCD_float_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_ABCD_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::ABCD > const *
+
+        """
         return _clipper.HKL_data_ABCD_float_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_ABCD_float self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_ABCD_float_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_ABCD_float self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_ABCD_float_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_ABCD_float self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::ABCD > const *
+
+        """
         return _clipper.HKL_data_ABCD_float_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_ABCD_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::ABCD > const *
+
+        """
         return _clipper.HKL_data_ABCD_float_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_ABCD_float self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_ABCD_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_ABCD_float self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_ABCD_float_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_ABCD_float self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_ABCD_float_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_ABCD_float self, clipper::HKL_info::HKL_reference_coord const & ih, ABCD_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::ABCD< float > &
+
+        get_data(HKL_data_ABCD_float self, HKL hkl, ABCD_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::ABCD< float > &
+
+        """
         return _clipper.HKL_data_ABCD_float_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_ABCD_float self, clipper::HKL_info::HKL_reference_coord const & ih, ABCD_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::ABCD< float > const &
+
+        set_data(HKL_data_ABCD_float self, HKL hkl, ABCD_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::ABCD< float > const &
+
+        """
         return _clipper.HKL_data_ABCD_float_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_ABCD_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::ABCD > const *
+
+        """
         return _clipper.HKL_data_ABCD_float_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_ABCD_float self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::ABCD > *
+
+        """
         return _clipper.HKL_data_ABCD_float_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_ABCD_float self, HKL_data_ABCD_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::ABCD< float > > const &
+
+        """
         return _clipper.HKL_data_ABCD_float___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_ABCD_float self, HKL_data_ABCD_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::ABCD< float > > const &
+
+        """
         return _clipper.HKL_data_ABCD_float___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_ABCD_float self, HKL_data_ABCD_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::ABCD< float > > const &
+
+        """
         return _clipper.HKL_data_ABCD_float___and__(self, d1)
 
+
     def __add__(self, h2):
+        """
+        __add__(HKL_data_ABCD_float self, HKL_data_ABCD_float h2) -> HKL_data_ABCD_float
+
+        Parameters
+        ----------
+        h2: clipper::HKL_data< clipper::datatypes::ABCD< float > > const &
+
+        """
         return _clipper.HKL_data_ABCD_float___add__(self, h2)
 
+
     def copy(self):
+        """
+        copy(HKL_data_ABCD_float self) -> HKL_data_ABCD_float
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::ABCD > *
+
+        """
         return _clipper.HKL_data_ABCD_float_copy(self)
 
+
     def compute_from_phi_fom(self, phiw):
+        """
+        compute_from_phi_fom(HKL_data_ABCD_float self, HKL_data_Phi_fom_float phiw)
+
+        Parameters
+        ----------
+        phiw: clipper::HKL_data< clipper::datatypes::Phi_fom< float > > const &
+
+        """
         return _clipper.HKL_data_ABCD_float_compute_from_phi_fom(self, phiw)
 
+
     def compute_add_abcd(self, abcd1, abcd2):
+        """
+        compute_add_abcd(HKL_data_ABCD_float self, HKL_data_ABCD_float abcd1, HKL_data_ABCD_float abcd2)
+
+        Parameters
+        ----------
+        abcd1: clipper::HKL_data< clipper::datatypes::ABCD< float > > const &
+        abcd2: clipper::HKL_data< clipper::datatypes::ABCD< float > > const &
+
+        """
         return _clipper.HKL_data_ABCD_float_compute_add_abcd(self, abcd1, abcd2)
+
     __swig_destroy__ = _clipper.delete_HKL_data_ABCD_float
     __del__ = lambda self: None
 HKL_data_ABCD_float_swigregister = _clipper.HKL_data_ABCD_float_swigregister
 HKL_data_ABCD_float_swigregister(HKL_data_ABCD_float)
 
 class HKL_data_ABCD_double(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::data64::ABCD)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -7729,6 +25242,36 @@ class HKL_data_ABCD_double(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::data64::ABCD)> self) -> HKL_data_ABCD_double
+        __init__(clipper::HKL_data<(clipper::data64::ABCD)> self, HKL_info hkl_info) -> HKL_data_ABCD_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::data64::ABCD)> self, HKL_info hkl_info, Cell cell) -> HKL_data_ABCD_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::data64::ABCD)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_ABCD_double
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::data64::ABCD)> self, HKL_data_base hkl_data) -> HKL_data_ABCD_double
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_ABCD_double(*args)
         try:
             self.this.append(this)
@@ -7736,61 +25279,249 @@ class HKL_data_ABCD_double(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_ABCD_double self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_ABCD_double self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_ABCD_double self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_ABCD_double_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_ABCD_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::ABCD > *
+
+        """
         return _clipper.HKL_data_ABCD_double_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_ABCD_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::ABCD > const *
+
+        """
         return _clipper.HKL_data_ABCD_double_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_ABCD_double self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_ABCD_double_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_ABCD_double self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_ABCD_double_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_ABCD_double self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::ABCD > const *
+
+        """
         return _clipper.HKL_data_ABCD_double_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_ABCD_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::ABCD > const *
+
+        """
         return _clipper.HKL_data_ABCD_double_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_ABCD_double self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_ABCD_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_ABCD_double self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_ABCD_double_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_ABCD_double self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_ABCD_double_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_ABCD_double self, clipper::HKL_info::HKL_reference_coord const & ih, ABCD_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::ABCD< double > &
+
+        get_data(HKL_data_ABCD_double self, HKL hkl, ABCD_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::ABCD< double > &
+
+        """
         return _clipper.HKL_data_ABCD_double_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_ABCD_double self, clipper::HKL_info::HKL_reference_coord const & ih, ABCD_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::ABCD< double > const &
+
+        set_data(HKL_data_ABCD_double self, HKL hkl, ABCD_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::ABCD< double > const &
+
+        """
         return _clipper.HKL_data_ABCD_double_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_ABCD_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::ABCD > const *
+
+        """
         return _clipper.HKL_data_ABCD_double_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_ABCD_double self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::ABCD > *
+
+        """
         return _clipper.HKL_data_ABCD_double_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_ABCD_double self, HKL_data_ABCD_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::ABCD< double > > const &
+
+        """
         return _clipper.HKL_data_ABCD_double___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_ABCD_double self, HKL_data_ABCD_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::ABCD< double > > const &
+
+        """
         return _clipper.HKL_data_ABCD_double___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_ABCD_double self, HKL_data_ABCD_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::ABCD< double > > const &
+
+        """
         return _clipper.HKL_data_ABCD_double___and__(self, d1)
+
     __swig_destroy__ = _clipper.delete_HKL_data_ABCD_double
     __del__ = lambda self: None
 HKL_data_ABCD_double_swigregister = _clipper.HKL_data_ABCD_double_swigregister
 HKL_data_ABCD_double_swigregister(HKL_data_ABCD_double)
 
 class Phi_fom_float(_object):
+    """Proxy of C++ clipper::datatypes::Phi_fom<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Phi_fom_float, name, value)
     __swig_getmethods__ = {}
@@ -7798,6 +25529,16 @@ class Phi_fom_float(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::datatypes::Phi_fom<(float)> self) -> Phi_fom_float
+        __init__(clipper::datatypes::Phi_fom<(float)> self, float const & phi, float const & fom) -> Phi_fom_float
+
+        Parameters
+        ----------
+        phi: float const &
+        fom: float const &
+
+        """
         this = _clipper.new_Phi_fom_float(*args)
         try:
             self.this.append(this)
@@ -7805,58 +25546,140 @@ class Phi_fom_float(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(Phi_fom_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Phi_fom< float > *
+
+        """
         return _clipper.Phi_fom_float_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.Phi_fom_float_type)
-    else:
-        type = _clipper.Phi_fom_float_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.Phi_fom_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(Phi_fom_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Phi_fom< float > *
+
+        """
         return _clipper.Phi_fom_float_friedel(self)
 
+
     def shift_phase(self, dphi):
+        """
+        shift_phase(Phi_fom_float self, clipper::ftype const & dphi)
+
+        Parameters
+        ----------
+        dphi: clipper::ftype const &
+
+        """
         return _clipper.Phi_fom_float_shift_phase(self, dphi)
 
+
     def missing(self):
+        """
+        missing(Phi_fom_float self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Phi_fom< float > const *
+
+        """
         return _clipper.Phi_fom_float_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.Phi_fom_float_data_size)
-    else:
-        data_size = _clipper.Phi_fom_float_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.Phi_fom_float_data_names)
-    else:
-        data_names = _clipper.Phi_fom_float_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.Phi_fom_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.Phi_fom_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(Phi_fom_float self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.Phi_fom_float_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(Phi_fom_float self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.Phi_fom_float_data_import(self, array)
 
+
     def phi(self, *args):
+        """
+        phi(Phi_fom_float self) -> float const
+        phi(Phi_fom_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Phi_fom< float > *
+
+        """
         return _clipper.Phi_fom_float_phi(self, *args)
 
+
     def fom(self, *args):
+        """
+        fom(Phi_fom_float self) -> float const
+        fom(Phi_fom_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Phi_fom< float > *
+
+        """
         return _clipper.Phi_fom_float_fom(self, *args)
+
     __swig_destroy__ = _clipper.delete_Phi_fom_float
     __del__ = lambda self: None
 Phi_fom_float_swigregister = _clipper.Phi_fom_float_swigregister
 Phi_fom_float_swigregister(Phi_fom_float)
 
 def Phi_fom_float_type():
+    """Phi_fom_float_type() -> String"""
     return _clipper.Phi_fom_float_type()
-Phi_fom_float_type = _clipper.Phi_fom_float_type
 
 def Phi_fom_float_data_size():
+    """Phi_fom_float_data_size() -> int"""
     return _clipper.Phi_fom_float_data_size()
-Phi_fom_float_data_size = _clipper.Phi_fom_float_data_size
 
 def Phi_fom_float_data_names():
+    """Phi_fom_float_data_names() -> String"""
     return _clipper.Phi_fom_float_data_names()
-Phi_fom_float_data_names = _clipper.Phi_fom_float_data_names
 
 class Phi_fom_double(_object):
+    """Proxy of C++ clipper::datatypes::Phi_fom<(double)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Phi_fom_double, name, value)
     __swig_getmethods__ = {}
@@ -7864,6 +25687,16 @@ class Phi_fom_double(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::datatypes::Phi_fom<(double)> self) -> Phi_fom_double
+        __init__(clipper::datatypes::Phi_fom<(double)> self, double const & phi, double const & fom) -> Phi_fom_double
+
+        Parameters
+        ----------
+        phi: double const &
+        fom: double const &
+
+        """
         this = _clipper.new_Phi_fom_double(*args)
         try:
             self.this.append(this)
@@ -7871,58 +25704,140 @@ class Phi_fom_double(_object):
             self.this = this
 
     def set_null(self):
+        """
+        set_null(Phi_fom_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Phi_fom< double > *
+
+        """
         return _clipper.Phi_fom_double_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.Phi_fom_double_type)
-    else:
-        type = _clipper.Phi_fom_double_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.Phi_fom_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(Phi_fom_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Phi_fom< double > *
+
+        """
         return _clipper.Phi_fom_double_friedel(self)
 
+
     def shift_phase(self, dphi):
+        """
+        shift_phase(Phi_fom_double self, clipper::ftype const & dphi)
+
+        Parameters
+        ----------
+        dphi: clipper::ftype const &
+
+        """
         return _clipper.Phi_fom_double_shift_phase(self, dphi)
 
+
     def missing(self):
+        """
+        missing(Phi_fom_double self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Phi_fom< double > const *
+
+        """
         return _clipper.Phi_fom_double_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.Phi_fom_double_data_size)
-    else:
-        data_size = _clipper.Phi_fom_double_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.Phi_fom_double_data_names)
-    else:
-        data_names = _clipper.Phi_fom_double_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.Phi_fom_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.Phi_fom_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(Phi_fom_double self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.Phi_fom_double_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(Phi_fom_double self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.Phi_fom_double_data_import(self, array)
 
+
     def phi(self, *args):
+        """
+        phi(Phi_fom_double self) -> double const
+        phi(Phi_fom_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Phi_fom< double > *
+
+        """
         return _clipper.Phi_fom_double_phi(self, *args)
 
+
     def fom(self, *args):
+        """
+        fom(Phi_fom_double self) -> double const
+        fom(Phi_fom_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::Phi_fom< double > *
+
+        """
         return _clipper.Phi_fom_double_fom(self, *args)
+
     __swig_destroy__ = _clipper.delete_Phi_fom_double
     __del__ = lambda self: None
 Phi_fom_double_swigregister = _clipper.Phi_fom_double_swigregister
 Phi_fom_double_swigregister(Phi_fom_double)
 
 def Phi_fom_double_type():
+    """Phi_fom_double_type() -> String"""
     return _clipper.Phi_fom_double_type()
-Phi_fom_double_type = _clipper.Phi_fom_double_type
 
 def Phi_fom_double_data_size():
+    """Phi_fom_double_data_size() -> int"""
     return _clipper.Phi_fom_double_data_size()
-Phi_fom_double_data_size = _clipper.Phi_fom_double_data_size
 
 def Phi_fom_double_data_names():
+    """Phi_fom_double_data_names() -> String"""
     return _clipper.Phi_fom_double_data_names()
-Phi_fom_double_data_names = _clipper.Phi_fom_double_data_names
 
 class HKL_data_Phi_fom_float(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::data32::Phi_fom)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -7934,6 +25849,36 @@ class HKL_data_Phi_fom_float(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::data32::Phi_fom)> self) -> HKL_data_Phi_fom_float
+        __init__(clipper::HKL_data<(clipper::data32::Phi_fom)> self, HKL_info hkl_info) -> HKL_data_Phi_fom_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::data32::Phi_fom)> self, HKL_info hkl_info, Cell cell) -> HKL_data_Phi_fom_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::data32::Phi_fom)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_Phi_fom_float
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::data32::Phi_fom)> self, HKL_data_base hkl_data) -> HKL_data_Phi_fom_float
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_Phi_fom_float(*args)
         try:
             self.this.append(this)
@@ -7941,67 +25886,273 @@ class HKL_data_Phi_fom_float(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_Phi_fom_float self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_Phi_fom_float self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_Phi_fom_float self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_Phi_fom_float_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_Phi_fom_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Phi_fom > *
+
+        """
         return _clipper.HKL_data_Phi_fom_float_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_Phi_fom_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Phi_fom > const *
+
+        """
         return _clipper.HKL_data_Phi_fom_float_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_Phi_fom_float self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_Phi_fom_float_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_Phi_fom_float self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_Phi_fom_float_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_Phi_fom_float self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Phi_fom > const *
+
+        """
         return _clipper.HKL_data_Phi_fom_float_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_Phi_fom_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Phi_fom > const *
+
+        """
         return _clipper.HKL_data_Phi_fom_float_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_Phi_fom_float self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_Phi_fom_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_Phi_fom_float self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_Phi_fom_float_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_Phi_fom_float self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_Phi_fom_float_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_Phi_fom_float self, clipper::HKL_info::HKL_reference_coord const & ih, Phi_fom_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::Phi_fom< float > &
+
+        get_data(HKL_data_Phi_fom_float self, HKL hkl, Phi_fom_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::Phi_fom< float > &
+
+        """
         return _clipper.HKL_data_Phi_fom_float_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_Phi_fom_float self, clipper::HKL_info::HKL_reference_coord const & ih, Phi_fom_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::Phi_fom< float > const &
+
+        set_data(HKL_data_Phi_fom_float self, HKL hkl, Phi_fom_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::Phi_fom< float > const &
+
+        """
         return _clipper.HKL_data_Phi_fom_float_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_Phi_fom_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Phi_fom > const *
+
+        """
         return _clipper.HKL_data_Phi_fom_float_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_Phi_fom_float self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Phi_fom > *
+
+        """
         return _clipper.HKL_data_Phi_fom_float_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_Phi_fom_float self, HKL_data_Phi_fom_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::Phi_fom< float > > const &
+
+        """
         return _clipper.HKL_data_Phi_fom_float___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_Phi_fom_float self, HKL_data_Phi_fom_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::Phi_fom< float > > const &
+
+        """
         return _clipper.HKL_data_Phi_fom_float___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_Phi_fom_float self, HKL_data_Phi_fom_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::Phi_fom< float > > const &
+
+        """
         return _clipper.HKL_data_Phi_fom_float___and__(self, d1)
 
+
     def compute_from_abcd(self, abcd):
+        """
+        compute_from_abcd(HKL_data_Phi_fom_float self, HKL_data_ABCD_float abcd)
+
+        Parameters
+        ----------
+        abcd: clipper::HKL_data< clipper::datatypes::ABCD< float > > const &
+
+        """
         return _clipper.HKL_data_Phi_fom_float_compute_from_abcd(self, abcd)
 
+
     def copy(self):
+        """
+        copy(HKL_data_Phi_fom_float self) -> HKL_data_Phi_fom_float
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Phi_fom > *
+
+        """
         return _clipper.HKL_data_Phi_fom_float_copy(self)
+
     __swig_destroy__ = _clipper.delete_HKL_data_Phi_fom_float
     __del__ = lambda self: None
 HKL_data_Phi_fom_float_swigregister = _clipper.HKL_data_Phi_fom_float_swigregister
 HKL_data_Phi_fom_float_swigregister(HKL_data_Phi_fom_float)
 
 class HKL_data_Phi_fom_double(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::data64::Phi_fom)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -8013,6 +26164,36 @@ class HKL_data_Phi_fom_double(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::data64::Phi_fom)> self) -> HKL_data_Phi_fom_double
+        __init__(clipper::HKL_data<(clipper::data64::Phi_fom)> self, HKL_info hkl_info) -> HKL_data_Phi_fom_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::data64::Phi_fom)> self, HKL_info hkl_info, Cell cell) -> HKL_data_Phi_fom_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::data64::Phi_fom)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_Phi_fom_double
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::data64::Phi_fom)> self, HKL_data_base hkl_data) -> HKL_data_Phi_fom_double
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_Phi_fom_double(*args)
         try:
             self.this.append(this)
@@ -8020,61 +26201,249 @@ class HKL_data_Phi_fom_double(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_Phi_fom_double self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_Phi_fom_double self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_Phi_fom_double self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_Phi_fom_double_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_Phi_fom_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::Phi_fom > *
+
+        """
         return _clipper.HKL_data_Phi_fom_double_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_Phi_fom_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::Phi_fom > const *
+
+        """
         return _clipper.HKL_data_Phi_fom_double_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_Phi_fom_double self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_Phi_fom_double_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_Phi_fom_double self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_Phi_fom_double_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_Phi_fom_double self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::Phi_fom > const *
+
+        """
         return _clipper.HKL_data_Phi_fom_double_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_Phi_fom_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::Phi_fom > const *
+
+        """
         return _clipper.HKL_data_Phi_fom_double_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_Phi_fom_double self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_Phi_fom_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_Phi_fom_double self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_Phi_fom_double_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_Phi_fom_double self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_Phi_fom_double_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_Phi_fom_double self, clipper::HKL_info::HKL_reference_coord const & ih, Phi_fom_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::Phi_fom< double > &
+
+        get_data(HKL_data_Phi_fom_double self, HKL hkl, Phi_fom_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::Phi_fom< double > &
+
+        """
         return _clipper.HKL_data_Phi_fom_double_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_Phi_fom_double self, clipper::HKL_info::HKL_reference_coord const & ih, Phi_fom_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::Phi_fom< double > const &
+
+        set_data(HKL_data_Phi_fom_double self, HKL hkl, Phi_fom_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::Phi_fom< double > const &
+
+        """
         return _clipper.HKL_data_Phi_fom_double_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_Phi_fom_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::Phi_fom > const *
+
+        """
         return _clipper.HKL_data_Phi_fom_double_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_Phi_fom_double self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::Phi_fom > *
+
+        """
         return _clipper.HKL_data_Phi_fom_double_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_Phi_fom_double self, HKL_data_Phi_fom_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::Phi_fom< double > > const &
+
+        """
         return _clipper.HKL_data_Phi_fom_double___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_Phi_fom_double self, HKL_data_Phi_fom_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::Phi_fom< double > > const &
+
+        """
         return _clipper.HKL_data_Phi_fom_double___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_Phi_fom_double self, HKL_data_Phi_fom_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::Phi_fom< double > > const &
+
+        """
         return _clipper.HKL_data_Phi_fom_double___and__(self, d1)
+
     __swig_destroy__ = _clipper.delete_HKL_data_Phi_fom_double
     __del__ = lambda self: None
 HKL_data_Phi_fom_double_swigregister = _clipper.HKL_data_Phi_fom_double_swigregister
 HKL_data_Phi_fom_double_swigregister(HKL_data_Phi_fom_double)
 
 class F_phi_float(_object):
+    """Proxy of C++ clipper::datatypes::F_phi<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, F_phi_float, name, value)
     __swig_getmethods__ = {}
@@ -8082,51 +26451,174 @@ class F_phi_float(_object):
     __repr__ = _swig_repr
 
     def set_null(self):
+        """
+        set_null(F_phi_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< float > *
+
+        """
         return _clipper.F_phi_float_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.F_phi_float_type)
-    else:
-        type = _clipper.F_phi_float_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.F_phi_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(F_phi_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< float > *
+
+        """
         return _clipper.F_phi_float_friedel(self)
 
+
     def shift_phase(self, dphi):
+        """
+        shift_phase(F_phi_float self, clipper::ftype const & dphi)
+
+        Parameters
+        ----------
+        dphi: clipper::ftype const &
+
+        """
         return _clipper.F_phi_float_shift_phase(self, dphi)
 
+
     def missing(self):
+        """
+        missing(F_phi_float self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< float > const *
+
+        """
         return _clipper.F_phi_float_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.F_phi_float_data_size)
-    else:
-        data_size = _clipper.F_phi_float_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.F_phi_float_data_names)
-    else:
-        data_names = _clipper.F_phi_float_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.F_phi_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.F_phi_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(F_phi_float self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.F_phi_float_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(F_phi_float self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.F_phi_float_data_import(self, array)
 
+
     def scale(self, s):
+        """
+        scale(F_phi_float self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.F_phi_float_scale(self, s)
 
+
     def f(self, *args):
+        """
+        f(F_phi_float self) -> float const
+        f(F_phi_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< float > *
+
+        """
         return _clipper.F_phi_float_f(self, *args)
 
+
     def phi(self, *args):
+        """
+        phi(F_phi_float self) -> float const
+        phi(F_phi_float self) -> float &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< float > *
+
+        """
         return _clipper.F_phi_float_phi(self, *args)
 
+
     def a(self):
+        """
+        a(F_phi_float self) -> float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< float > const *
+
+        """
         return _clipper.F_phi_float_a(self)
 
+
     def b(self):
+        """
+        b(F_phi_float self) -> float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< float > const *
+
+        """
         return _clipper.F_phi_float_b(self)
 
+
     def __init__(self, *args):
+        """
+        __init__(clipper::datatypes::F_phi<(float)> self) -> F_phi_float
+        __init__(clipper::datatypes::F_phi<(float)> self, float const & f, float const & phi) -> F_phi_float
+
+        Parameters
+        ----------
+        f: float const &
+        phi: float const &
+
+        __init__(clipper::datatypes::F_phi<(float)> self, std::complex< float > const c) -> F_phi_float
+
+        Parameters
+        ----------
+        c: std::complex< float > const
+
+        """
         this = _clipper.new_F_phi_float(*args)
         try:
             self.this.append(this)
@@ -8134,40 +26626,96 @@ class F_phi_float(_object):
             self.this = this
 
     def resolve(self, phi):
+        """
+        resolve(F_phi_float self, float const phi) -> float
+
+        Parameters
+        ----------
+        phi: float const
+
+        """
         return _clipper.F_phi_float_resolve(self, phi)
 
+
     def norm(self):
+        """
+        norm(F_phi_float self) -> F_phi_float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< float > *
+
+        """
         return _clipper.F_phi_float_norm(self)
 
+
     def __add__(self, h2):
+        """
+        __add__(F_phi_float self, F_phi_float h2) -> F_phi_float
+
+        Parameters
+        ----------
+        h2: clipper::datatypes::F_phi< float > const &
+
+        """
         return _clipper.F_phi_float___add__(self, h2)
 
+
     def __sub__(self, h2):
+        """
+        __sub__(F_phi_float self, F_phi_float h2) -> F_phi_float
+
+        Parameters
+        ----------
+        h2: clipper::datatypes::F_phi< float > const &
+
+        """
         return _clipper.F_phi_float___sub__(self, h2)
 
+
     def __neg__(self):
+        """
+        __neg__(F_phi_float self) -> F_phi_float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< float > *
+
+        """
         return _clipper.F_phi_float___neg__(self)
 
+
     def copy(self):
+        """
+        copy(F_phi_float self) -> F_phi_float
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< float > *
+
+        """
         return _clipper.F_phi_float_copy(self)
+
     __swig_destroy__ = _clipper.delete_F_phi_float
     __del__ = lambda self: None
 F_phi_float_swigregister = _clipper.F_phi_float_swigregister
 F_phi_float_swigregister(F_phi_float)
 
 def F_phi_float_type():
+    """F_phi_float_type() -> String"""
     return _clipper.F_phi_float_type()
-F_phi_float_type = _clipper.F_phi_float_type
 
 def F_phi_float_data_size():
+    """F_phi_float_data_size() -> int"""
     return _clipper.F_phi_float_data_size()
-F_phi_float_data_size = _clipper.F_phi_float_data_size
 
 def F_phi_float_data_names():
+    """F_phi_float_data_names() -> String"""
     return _clipper.F_phi_float_data_names()
-F_phi_float_data_names = _clipper.F_phi_float_data_names
 
 class F_phi_double(_object):
+    """Proxy of C++ clipper::datatypes::F_phi<(double)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, F_phi_double, name, value)
     __swig_getmethods__ = {}
@@ -8175,51 +26723,174 @@ class F_phi_double(_object):
     __repr__ = _swig_repr
 
     def set_null(self):
+        """
+        set_null(F_phi_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< double > *
+
+        """
         return _clipper.F_phi_double_set_null(self)
-    if _newclass:
-        type = staticmethod(_clipper.F_phi_double_type)
-    else:
-        type = _clipper.F_phi_double_type
+
+
+    def type():
+        """type() -> String"""
+        return _clipper.F_phi_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self):
+        """
+        friedel(F_phi_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< double > *
+
+        """
         return _clipper.F_phi_double_friedel(self)
 
+
     def shift_phase(self, dphi):
+        """
+        shift_phase(F_phi_double self, clipper::ftype const & dphi)
+
+        Parameters
+        ----------
+        dphi: clipper::ftype const &
+
+        """
         return _clipper.F_phi_double_shift_phase(self, dphi)
 
+
     def missing(self):
+        """
+        missing(F_phi_double self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< double > const *
+
+        """
         return _clipper.F_phi_double_missing(self)
-    if _newclass:
-        data_size = staticmethod(_clipper.F_phi_double_data_size)
-    else:
-        data_size = _clipper.F_phi_double_data_size
-    if _newclass:
-        data_names = staticmethod(_clipper.F_phi_double_data_names)
-    else:
-        data_names = _clipper.F_phi_double_data_names
+
+
+    def data_size():
+        """data_size() -> int"""
+        return _clipper.F_phi_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names():
+        """data_names() -> String"""
+        return _clipper.F_phi_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array):
+        """
+        data_export(F_phi_double self, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype []
+
+        """
         return _clipper.F_phi_double_data_export(self, array)
 
+
     def data_import(self, array):
+        """
+        data_import(F_phi_double self, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        array: clipper::xtype const []
+
+        """
         return _clipper.F_phi_double_data_import(self, array)
 
+
     def scale(self, s):
+        """
+        scale(F_phi_double self, clipper::ftype const & s)
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.F_phi_double_scale(self, s)
 
+
     def f(self, *args):
+        """
+        f(F_phi_double self) -> double const
+        f(F_phi_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< double > *
+
+        """
         return _clipper.F_phi_double_f(self, *args)
 
+
     def phi(self, *args):
+        """
+        phi(F_phi_double self) -> double const
+        phi(F_phi_double self) -> double &
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< double > *
+
+        """
         return _clipper.F_phi_double_phi(self, *args)
 
+
     def a(self):
+        """
+        a(F_phi_double self) -> double
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< double > const *
+
+        """
         return _clipper.F_phi_double_a(self)
 
+
     def b(self):
+        """
+        b(F_phi_double self) -> double
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< double > const *
+
+        """
         return _clipper.F_phi_double_b(self)
 
+
     def __init__(self, *args):
+        """
+        __init__(clipper::datatypes::F_phi<(double)> self) -> F_phi_double
+        __init__(clipper::datatypes::F_phi<(double)> self, double const & f, double const & phi) -> F_phi_double
+
+        Parameters
+        ----------
+        f: double const &
+        phi: double const &
+
+        __init__(clipper::datatypes::F_phi<(double)> self, std::complex< double > const c) -> F_phi_double
+
+        Parameters
+        ----------
+        c: std::complex< double > const
+
+        """
         this = _clipper.new_F_phi_double(*args)
         try:
             self.this.append(this)
@@ -8227,28 +26898,48 @@ class F_phi_double(_object):
             self.this = this
 
     def resolve(self, phi):
+        """
+        resolve(F_phi_double self, double const phi) -> double
+
+        Parameters
+        ----------
+        phi: double const
+
+        """
         return _clipper.F_phi_double_resolve(self, phi)
 
+
     def norm(self):
+        """
+        norm(F_phi_double self) -> F_phi_double
+
+        Parameters
+        ----------
+        self: clipper::datatypes::F_phi< double > *
+
+        """
         return _clipper.F_phi_double_norm(self)
+
     __swig_destroy__ = _clipper.delete_F_phi_double
     __del__ = lambda self: None
 F_phi_double_swigregister = _clipper.F_phi_double_swigregister
 F_phi_double_swigregister(F_phi_double)
 
 def F_phi_double_type():
+    """F_phi_double_type() -> String"""
     return _clipper.F_phi_double_type()
-F_phi_double_type = _clipper.F_phi_double_type
 
 def F_phi_double_data_size():
+    """F_phi_double_data_size() -> int"""
     return _clipper.F_phi_double_data_size()
-F_phi_double_data_size = _clipper.F_phi_double_data_size
 
 def F_phi_double_data_names():
+    """F_phi_double_data_names() -> String"""
     return _clipper.F_phi_double_data_names()
-F_phi_double_data_names = _clipper.F_phi_double_data_names
 
 class HKL_data_F_phi_float(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::data32::F_phi)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -8260,6 +26951,36 @@ class HKL_data_F_phi_float(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::data32::F_phi)> self) -> HKL_data_F_phi_float
+        __init__(clipper::HKL_data<(clipper::data32::F_phi)> self, HKL_info hkl_info) -> HKL_data_F_phi_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::data32::F_phi)> self, HKL_info hkl_info, Cell cell) -> HKL_data_F_phi_float
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::data32::F_phi)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_F_phi_float
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::data32::F_phi)> self, HKL_data_base hkl_data) -> HKL_data_F_phi_float
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_F_phi_float(*args)
         try:
             self.this.append(this)
@@ -8267,109 +26988,448 @@ class HKL_data_F_phi_float(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_F_phi_float self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_F_phi_float self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_F_phi_float self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_F_phi_float_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_F_phi_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_phi > *
+
+        """
         return _clipper.HKL_data_F_phi_float_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_F_phi_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_phi > const *
+
+        """
         return _clipper.HKL_data_F_phi_float_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_F_phi_float self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_F_phi_float_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_F_phi_float self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_F_phi_float_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_F_phi_float self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_phi > const *
+
+        """
         return _clipper.HKL_data_F_phi_float_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_F_phi_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_phi > const *
+
+        """
         return _clipper.HKL_data_F_phi_float_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_F_phi_float self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_F_phi_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_F_phi_float self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_F_phi_float_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_F_phi_float self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_F_phi_float_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_F_phi_float self, clipper::HKL_info::HKL_reference_coord const & ih, F_phi_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::F_phi< float > &
+
+        get_data(HKL_data_F_phi_float self, HKL hkl, F_phi_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::F_phi< float > &
+
+        """
         return _clipper.HKL_data_F_phi_float_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_F_phi_float self, clipper::HKL_info::HKL_reference_coord const & ih, F_phi_float data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::F_phi< float > const &
+
+        set_data(HKL_data_F_phi_float self, HKL hkl, F_phi_float data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::F_phi< float > const &
+
+        """
         return _clipper.HKL_data_F_phi_float_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_F_phi_float self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_phi > const *
+
+        """
         return _clipper.HKL_data_F_phi_float_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_F_phi_float self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_phi > *
+
+        """
         return _clipper.HKL_data_F_phi_float_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_F_phi_float self, HKL_data_F_phi_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        """
         return _clipper.HKL_data_F_phi_float___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_F_phi_float self, HKL_data_F_phi_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        """
         return _clipper.HKL_data_F_phi_float___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_F_phi_float self, HKL_data_F_phi_float d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        """
         return _clipper.HKL_data_F_phi_float___and__(self, d1)
 
+
     def copy(self):
+        """
+        copy(HKL_data_F_phi_float self) -> HKL_data_F_phi_float
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_phi > *
+
+        """
         return _clipper.HKL_data_F_phi_float_copy(self)
 
+
     def __add__(self, h2):
+        """
+        __add__(HKL_data_F_phi_float self, HKL_data_F_phi_float h2) -> HKL_data_F_phi_float
+
+        Parameters
+        ----------
+        h2: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        """
         return _clipper.HKL_data_F_phi_float___add__(self, h2)
 
+
     def __sub__(self, h2):
+        """
+        __sub__(HKL_data_F_phi_float self, HKL_data_F_phi_float h2) -> HKL_data_F_phi_float
+
+        Parameters
+        ----------
+        h2: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        """
         return _clipper.HKL_data_F_phi_float___sub__(self, h2)
 
+
     def __neg__(self):
+        """
+        __neg__(HKL_data_F_phi_float self) -> HKL_data_F_phi_float
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_phi > *
+
+        """
         return _clipper.HKL_data_F_phi_float___neg__(self)
 
+
     def __mul__(self, s):
+        """
+        __mul__(HKL_data_F_phi_float self, float const s) -> HKL_data_F_phi_float
+
+        Parameters
+        ----------
+        s: float const
+
+        """
         return _clipper.HKL_data_F_phi_float___mul__(self, s)
 
+
     def __rmul__(self, s):
+        """
+        __rmul__(HKL_data_F_phi_float self, float const s) -> HKL_data_F_phi_float
+
+        Parameters
+        ----------
+        s: float const
+
+        """
         return _clipper.HKL_data_F_phi_float___rmul__(self, s)
 
+
     def compute_neg(self, fphi):
+        """
+        compute_neg(HKL_data_F_phi_float self, HKL_data_F_phi_float fphi)
+
+        Parameters
+        ----------
+        fphi: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        """
         return _clipper.HKL_data_F_phi_float_compute_neg(self, fphi)
 
+
     def compute_add_fphi(self, fphi1, fphi2):
+        """
+        compute_add_fphi(HKL_data_F_phi_float self, HKL_data_F_phi_float fphi1, HKL_data_F_phi_float fphi2)
+
+        Parameters
+        ----------
+        fphi1: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        fphi2: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        """
         return _clipper.HKL_data_F_phi_float_compute_add_fphi(self, fphi1, fphi2)
 
+
     def compute_sub_fphi(self, fphi1, fphi2):
+        """
+        compute_sub_fphi(HKL_data_F_phi_float self, HKL_data_F_phi_float fphi1, HKL_data_F_phi_float fphi2)
+
+        Parameters
+        ----------
+        fphi1: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        fphi2: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        """
         return _clipper.HKL_data_F_phi_float_compute_sub_fphi(self, fphi1, fphi2)
 
+
     def compute_from_fsigf_phifom(self, fsigf, phifom):
+        """
+        compute_from_fsigf_phifom(HKL_data_F_phi_float self, HKL_data_F_sigF_float fsigf, HKL_data_Phi_fom_float phifom)
+
+        Parameters
+        ----------
+        fsigf: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+        phifom: clipper::HKL_data< clipper::datatypes::Phi_fom< float > > const &
+
+        """
         return _clipper.HKL_data_F_phi_float_compute_from_fsigf_phifom(self, fsigf, phifom)
 
+
     def compute_scale_u_iso_fphi(self, scale, u_value, fphi):
+        """
+        compute_scale_u_iso_fphi(HKL_data_F_phi_float self, float scale, float u_value, HKL_data_F_phi_float fphi)
+
+        Parameters
+        ----------
+        scale: float
+        u_value: float
+        fphi: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        """
         return _clipper.HKL_data_F_phi_float_compute_scale_u_iso_fphi(self, scale, u_value, fphi)
 
+
     def compute_scale_u_aniso_fphi(self, scale, u_value, fphi):
+        """
+        compute_scale_u_aniso_fphi(HKL_data_F_phi_float self, float scale, U_aniso_orth u_value, HKL_data_F_phi_float fphi)
+
+        Parameters
+        ----------
+        scale: float
+        u_value: clipper::U_aniso_orth
+        fphi: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        """
         return _clipper.HKL_data_F_phi_float_compute_scale_u_aniso_fphi(self, scale, u_value, fphi)
 
+
     def getDataNumpy(self, test_numpy_a):
+        """
+        getDataNumpy(HKL_data_F_phi_float self, double * test_numpy_a)
+
+        Parameters
+        ----------
+        test_numpy_a: double *
+
+        """
         return _clipper.HKL_data_F_phi_float_getDataNumpy(self, test_numpy_a)
 
+
     def getData(self):
+        """
+        getData(HKL_data_F_phi_float self) -> FloatFloatVector
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_phi > *
+
+        """
         return _clipper.HKL_data_F_phi_float_getData(self)
 
+
     def __getitem__(self, i):
+        """
+        __getitem__(HKL_data_F_phi_float self, int i) -> F_phi_float
+
+        Parameters
+        ----------
+        i: int
+
+        """
         return _clipper.HKL_data_F_phi_float___getitem__(self, i)
 
+
     def __len__(self):
+        """
+        __len__(HKL_data_F_phi_float self) -> size_t
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::F_phi > *
+
+        """
         return _clipper.HKL_data_F_phi_float___len__(self)
+
     __swig_destroy__ = _clipper.delete_HKL_data_F_phi_float
     __del__ = lambda self: None
 HKL_data_F_phi_float_swigregister = _clipper.HKL_data_F_phi_float_swigregister
 HKL_data_F_phi_float_swigregister(HKL_data_F_phi_float)
 
 class HKL_data_F_phi_double(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::data64::F_phi)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -8381,6 +27441,36 @@ class HKL_data_F_phi_double(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::data64::F_phi)> self) -> HKL_data_F_phi_double
+        __init__(clipper::HKL_data<(clipper::data64::F_phi)> self, HKL_info hkl_info) -> HKL_data_F_phi_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::data64::F_phi)> self, HKL_info hkl_info, Cell cell) -> HKL_data_F_phi_double
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::data64::F_phi)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_F_phi_double
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::data64::F_phi)> self, HKL_data_base hkl_data) -> HKL_data_F_phi_double
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_F_phi_double(*args)
         try:
             self.this.append(this)
@@ -8388,61 +27478,249 @@ class HKL_data_F_phi_double(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_F_phi_double self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_F_phi_double self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_F_phi_double self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_F_phi_double_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_F_phi_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::F_phi > *
+
+        """
         return _clipper.HKL_data_F_phi_double_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_F_phi_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::F_phi > const *
+
+        """
         return _clipper.HKL_data_F_phi_double_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_F_phi_double self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_F_phi_double_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_F_phi_double self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_F_phi_double_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_F_phi_double self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::F_phi > const *
+
+        """
         return _clipper.HKL_data_F_phi_double_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_F_phi_double self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::F_phi > const *
+
+        """
         return _clipper.HKL_data_F_phi_double_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_F_phi_double self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_F_phi_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_F_phi_double self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_F_phi_double_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_F_phi_double self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_F_phi_double_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_F_phi_double self, clipper::HKL_info::HKL_reference_coord const & ih, F_phi_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::F_phi< double > &
+
+        get_data(HKL_data_F_phi_double self, HKL hkl, F_phi_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::F_phi< double > &
+
+        """
         return _clipper.HKL_data_F_phi_double_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_F_phi_double self, clipper::HKL_info::HKL_reference_coord const & ih, F_phi_double data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::F_phi< double > const &
+
+        set_data(HKL_data_F_phi_double self, HKL hkl, F_phi_double data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::F_phi< double > const &
+
+        """
         return _clipper.HKL_data_F_phi_double_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_F_phi_double self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::F_phi > const *
+
+        """
         return _clipper.HKL_data_F_phi_double_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_F_phi_double self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data64::F_phi > *
+
+        """
         return _clipper.HKL_data_F_phi_double_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_F_phi_double self, HKL_data_F_phi_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_phi< double > > const &
+
+        """
         return _clipper.HKL_data_F_phi_double___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_F_phi_double self, HKL_data_F_phi_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_phi< double > > const &
+
+        """
         return _clipper.HKL_data_F_phi_double___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_F_phi_double self, HKL_data_F_phi_double d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::F_phi< double > > const &
+
+        """
         return _clipper.HKL_data_F_phi_double___and__(self, d1)
+
     __swig_destroy__ = _clipper.delete_HKL_data_F_phi_double
     __del__ = lambda self: None
 HKL_data_F_phi_double_swigregister = _clipper.HKL_data_F_phi_double_swigregister
 HKL_data_F_phi_double_swigregister(HKL_data_F_phi_double)
 
 class HKL_data_Flag(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::data32::Flag)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -8454,6 +27732,36 @@ class HKL_data_Flag(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::data32::Flag)> self) -> HKL_data_Flag
+        __init__(clipper::HKL_data<(clipper::data32::Flag)> self, HKL_info hkl_info) -> HKL_data_Flag
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::data32::Flag)> self, HKL_info hkl_info, Cell cell) -> HKL_data_Flag
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::data32::Flag)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_Flag
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::data32::Flag)> self, HKL_data_base hkl_data) -> HKL_data_Flag
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_Flag(*args)
         try:
             self.this.append(this)
@@ -8461,88 +27769,357 @@ class HKL_data_Flag(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_Flag self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_Flag self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_Flag self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_Flag_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_Flag self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Flag > *
+
+        """
         return _clipper.HKL_data_Flag_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_Flag self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Flag > const *
+
+        """
         return _clipper.HKL_data_Flag_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_Flag self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_Flag_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_Flag self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_Flag_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_Flag self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Flag > const *
+
+        """
         return _clipper.HKL_data_Flag_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_Flag self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Flag > const *
+
+        """
         return _clipper.HKL_data_Flag_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_Flag self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_Flag_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_Flag self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_Flag_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_Flag self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_Flag_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_Flag self, clipper::HKL_info::HKL_reference_coord const & ih, Flag data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::Flag &
+
+        get_data(HKL_data_Flag self, HKL hkl, Flag data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::Flag &
+
+        """
         return _clipper.HKL_data_Flag_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_Flag self, clipper::HKL_info::HKL_reference_coord const & ih, Flag data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::Flag const &
+
+        set_data(HKL_data_Flag self, HKL hkl, Flag data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::Flag const &
+
+        """
         return _clipper.HKL_data_Flag_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_Flag self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Flag > const *
+
+        """
         return _clipper.HKL_data_Flag_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_Flag self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Flag > *
+
+        """
         return _clipper.HKL_data_Flag_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_Flag self, HKL_data_Flag d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::Flag > const &
+
+        """
         return _clipper.HKL_data_Flag___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_Flag self, HKL_data_Flag d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::Flag > const &
+
+        """
         return _clipper.HKL_data_Flag___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_Flag self, HKL_data_Flag d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::Flag > const &
+
+        """
         return _clipper.HKL_data_Flag___and__(self, d1)
 
+
     def __eq__(self, n):
+        """
+        __eq__(HKL_data_Flag self, int const & n) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        n: int const &
+
+        """
         return _clipper.HKL_data_Flag___eq__(self, n)
 
+
     def __ne__(self, n):
+        """
+        __ne__(HKL_data_Flag self, int const & n) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        n: int const &
+
+        """
         return _clipper.HKL_data_Flag___ne__(self, n)
 
+
     def __ge__(self, n):
+        """
+        __ge__(HKL_data_Flag self, int const & n) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        n: int const &
+
+        """
         return _clipper.HKL_data_Flag___ge__(self, n)
 
+
     def __le__(self, n):
+        """
+        __le__(HKL_data_Flag self, int const & n) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        n: int const &
+
+        """
         return _clipper.HKL_data_Flag___le__(self, n)
 
+
     def __gt__(self, n):
+        """
+        __gt__(HKL_data_Flag self, int const & n) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        n: int const &
+
+        """
         return _clipper.HKL_data_Flag___gt__(self, n)
 
+
     def __lt__(self, n):
+        """
+        __lt__(HKL_data_Flag self, int const & n) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        n: int const &
+
+        """
         return _clipper.HKL_data_Flag___lt__(self, n)
 
+
     def copy(self):
+        """
+        copy(HKL_data_Flag self) -> HKL_data_Flag
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Flag > *
+
+        """
         return _clipper.HKL_data_Flag_copy(self)
 
+
     def __getitem__(self, i):
+        """
+        __getitem__(HKL_data_Flag self, int i) -> Flag
+
+        Parameters
+        ----------
+        i: int
+
+        """
         return _clipper.HKL_data_Flag___getitem__(self, i)
 
+
     def __len__(self):
+        """
+        __len__(HKL_data_Flag self) -> size_t
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::data32::Flag > *
+
+        """
         return _clipper.HKL_data_Flag___len__(self)
+
     __swig_destroy__ = _clipper.delete_HKL_data_Flag
     __del__ = lambda self: None
 HKL_data_Flag_swigregister = _clipper.HKL_data_Flag_swigregister
 HKL_data_Flag_swigregister(HKL_data_Flag)
 
 class HKL_data_Flag_bool(HKL_data_base):
+    """Proxy of C++ clipper::HKL_data<(clipper::datatypes::Flag_bool)> class."""
+
     __swig_setmethods__ = {}
     for _s in [HKL_data_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -8554,6 +28131,36 @@ class HKL_data_Flag_bool(HKL_data_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::HKL_data<(clipper::datatypes::Flag_bool)> self) -> HKL_data_Flag_bool
+        __init__(clipper::HKL_data<(clipper::datatypes::Flag_bool)> self, HKL_info hkl_info) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+
+        __init__(clipper::HKL_data<(clipper::datatypes::Flag_bool)> self, HKL_info hkl_info, Cell cell) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        __init__(clipper::HKL_data<(clipper::datatypes::Flag_bool)> self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        __init__(clipper::HKL_data<(clipper::datatypes::Flag_bool)> self, HKL_data_base hkl_data) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         this = _clipper.new_HKL_data_Flag_bool(*args)
         try:
             self.this.append(this)
@@ -8561,67 +28168,273 @@ class HKL_data_Flag_bool(HKL_data_base):
             self.this = this
 
     def init(self, *args):
+        """
+        init(HKL_data_Flag_bool self, HKL_info hkl_info, Cell cell)
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        cell: clipper::Cell const &
+
+        init(HKL_data_Flag_bool self, Spacegroup spacegroup, Cell cell, HKL_sampling hkl_sampling)
+
+        Parameters
+        ----------
+        spacegroup: clipper::Spacegroup const &
+        cell: clipper::Cell const &
+        hkl_sampling: clipper::HKL_sampling const &
+
+        init(HKL_data_Flag_bool self, HKL_data_base hkl_data)
+
+        Parameters
+        ----------
+        hkl_data: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_Flag_bool_init(self, *args)
 
+
     def update(self):
+        """
+        update(HKL_data_Flag_bool self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::Flag_bool > *
+
+        """
         return _clipper.HKL_data_Flag_bool_update(self)
 
+
     def type(self):
+        """
+        type(HKL_data_Flag_bool self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::Flag_bool > const *
+
+        """
         return _clipper.HKL_data_Flag_bool_type(self)
 
+
     def missing(self, index):
+        """
+        missing(HKL_data_Flag_bool self, int const & index) -> bool
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_Flag_bool_missing(self, index)
 
+
     def set_null(self, index):
+        """
+        set_null(HKL_data_Flag_bool self, int const & index)
+
+        Parameters
+        ----------
+        index: int const &
+
+        """
         return _clipper.HKL_data_Flag_bool_set_null(self, index)
 
+
     def data_size(self):
+        """
+        data_size(HKL_data_Flag_bool self) -> int
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::Flag_bool > const *
+
+        """
         return _clipper.HKL_data_Flag_bool_data_size(self)
 
+
     def data_names(self):
+        """
+        data_names(HKL_data_Flag_bool self) -> String
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::Flag_bool > const *
+
+        """
         return _clipper.HKL_data_Flag_bool_data_names(self)
 
+
     def data_export(self, hkl, array):
+        """
+        data_export(HKL_data_Flag_bool self, HKL hkl, clipper::xtype [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype []
+
+        """
         return _clipper.HKL_data_Flag_bool_data_export(self, hkl, array)
 
+
     def data_import(self, hkl, array):
+        """
+        data_import(HKL_data_Flag_bool self, HKL hkl, clipper::xtype const [] array)
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        array: clipper::xtype const []
+
+        """
         return _clipper.HKL_data_Flag_bool_data_import(self, hkl, array)
 
+
     def mask(self, mask):
+        """
+        mask(HKL_data_Flag_bool self, HKL_data_base mask)
+
+        Parameters
+        ----------
+        mask: clipper::HKL_data_base const &
+
+        """
         return _clipper.HKL_data_Flag_bool_mask(self, mask)
 
+
     def get_data(self, *args):
+        """
+        get_data(HKL_data_Flag_bool self, clipper::HKL_info::HKL_reference_coord const & ih, Flag_bool data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::Flag_bool &
+
+        get_data(HKL_data_Flag_bool self, HKL hkl, Flag_bool data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::Flag_bool &
+
+        """
         return _clipper.HKL_data_Flag_bool_get_data(self, *args)
 
+
     def set_data(self, *args):
+        """
+        set_data(HKL_data_Flag_bool self, clipper::HKL_info::HKL_reference_coord const & ih, Flag_bool data) -> bool
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_coord const &
+        data: clipper::datatypes::Flag_bool const &
+
+        set_data(HKL_data_Flag_bool self, HKL hkl, Flag_bool data) -> bool
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        data: clipper::datatypes::Flag_bool const &
+
+        """
         return _clipper.HKL_data_Flag_bool_set_data(self, *args)
 
+
     def debug(self):
+        """
+        debug(HKL_data_Flag_bool self)
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::Flag_bool > const *
+
+        """
         return _clipper.HKL_data_Flag_bool_debug(self)
 
+
     def not_(self):
+        """
+        not_(HKL_data_Flag_bool self) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::Flag_bool > *
+
+        """
         return _clipper.HKL_data_Flag_bool_not_(self)
 
+
     def __or__(self, d1):
+        """
+        __or__(HKL_data_Flag_bool self, HKL_data_Flag_bool d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::Flag_bool > const &
+
+        """
         return _clipper.HKL_data_Flag_bool___or__(self, d1)
 
+
     def __xor__(self, d1):
+        """
+        __xor__(HKL_data_Flag_bool self, HKL_data_Flag_bool d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::Flag_bool > const &
+
+        """
         return _clipper.HKL_data_Flag_bool___xor__(self, d1)
 
+
     def __and__(self, d1):
+        """
+        __and__(HKL_data_Flag_bool self, HKL_data_Flag_bool d1) -> HKL_data_Flag_bool
+
+        Parameters
+        ----------
+        d1: clipper::HKL_data< clipper::datatypes::Flag_bool > const &
+
+        """
         return _clipper.HKL_data_Flag_bool___and__(self, d1)
 
+
     def __getitem__(self, i):
+        """
+        __getitem__(HKL_data_Flag_bool self, int i) -> Flag_bool
+
+        Parameters
+        ----------
+        i: int
+
+        """
         return _clipper.HKL_data_Flag_bool___getitem__(self, i)
 
+
     def __len__(self):
+        """
+        __len__(HKL_data_Flag_bool self) -> size_t
+
+        Parameters
+        ----------
+        self: clipper::HKL_data< clipper::datatypes::Flag_bool > *
+
+        """
         return _clipper.HKL_data_Flag_bool___len__(self)
+
     __swig_destroy__ = _clipper.delete_HKL_data_Flag_bool
     __del__ = lambda self: None
 HKL_data_Flag_bool_swigregister = _clipper.HKL_data_Flag_bool_swigregister
 HKL_data_Flag_bool_swigregister(HKL_data_Flag_bool)
 
 class Prob_phi_2d(_object):
+    """Proxy of C++ clipper::Prob_phi_2d class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Prob_phi_2d, name, value)
     __swig_getmethods__ = {}
@@ -8629,24 +28442,103 @@ class Prob_phi_2d(_object):
     __repr__ = _swig_repr
 
     def init(self, size):
+        """
+        init(Prob_phi_2d self, int const & size)
+
+        Parameters
+        ----------
+        size: int const &
+
+        """
         return _clipper.Prob_phi_2d_init(self, size)
 
+
     def accumulate(self, *args):
+        """
+        accumulate(Prob_phi_2d self, clipper::ftype32 const [] table)
+
+        Parameters
+        ----------
+        table: clipper::ftype32 const []
+
+        accumulate(Prob_phi_2d self, clipper::ftype const & phi1, clipper::ftype const & phi2, clipper::ftype wgt=1.0)
+
+        Parameters
+        ----------
+        phi1: clipper::ftype const &
+        phi2: clipper::ftype const &
+        wgt: clipper::ftype
+
+        accumulate(Prob_phi_2d self, clipper::ftype const & phi1, clipper::ftype const & phi2)
+
+        Parameters
+        ----------
+        phi1: clipper::ftype const &
+        phi2: clipper::ftype const &
+
+        """
         return _clipper.Prob_phi_2d_accumulate(self, *args)
 
+
     def normalise(self):
+        """
+        normalise(Prob_phi_2d self)
+
+        Parameters
+        ----------
+        self: clipper::Prob_phi_2d *
+
+        """
         return _clipper.Prob_phi_2d_normalise(self)
 
+
     def probability(self, phi1, phi2):
+        """
+        probability(Prob_phi_2d self, clipper::ftype const & phi1, clipper::ftype const & phi2) -> clipper::ftype
+
+        Parameters
+        ----------
+        phi1: clipper::ftype const &
+        phi2: clipper::ftype const &
+
+        """
         return _clipper.Prob_phi_2d_probability(self, phi1, phi2)
 
+
     def format(self):
+        """
+        format(Prob_phi_2d self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Prob_phi_2d const *
+
+        """
         return _clipper.Prob_phi_2d_format(self)
 
+
     def data(self, *args):
+        """
+        data(Prob_phi_2d self, int const & i, int const & j) -> clipper::ftype const
+
+        Parameters
+        ----------
+        i: int const &
+        j: int const &
+
+        data(Prob_phi_2d self, int const & i, int const & j) -> clipper::ftype &
+
+        Parameters
+        ----------
+        i: int const &
+        j: int const &
+
+        """
         return _clipper.Prob_phi_2d_data(self, *args)
 
+
     def __init__(self):
+        """__init__(clipper::Prob_phi_2d self) -> Prob_phi_2d"""
         this = _clipper.new_Prob_phi_2d()
         try:
             self.this.append(this)
@@ -8658,6 +28550,8 @@ Prob_phi_2d_swigregister = _clipper.Prob_phi_2d_swigregister
 Prob_phi_2d_swigregister(Prob_phi_2d)
 
 class Ramachandran(_object):
+    """Proxy of C++ clipper::Ramachandran class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Ramachandran, name, value)
     __swig_getmethods__ = {}
@@ -8675,6 +28569,15 @@ class Ramachandran(_object):
     All5 = _clipper.Ramachandran_All5
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Ramachandran self) -> Ramachandran
+        __init__(clipper::Ramachandran self, clipper::Ramachandran::TYPE type) -> Ramachandran
+
+        Parameters
+        ----------
+        type: enum clipper::Ramachandran::TYPE
+
+        """
         this = _clipper.new_Ramachandran(*args)
         try:
             self.this.append(this)
@@ -8682,25 +28585,88 @@ class Ramachandran(_object):
             self.this = this
 
     def init(self, type):
+        """
+        init(Ramachandran self, clipper::Ramachandran::TYPE type)
+
+        Parameters
+        ----------
+        type: enum clipper::Ramachandran::TYPE
+
+        """
         return _clipper.Ramachandran_init(self, type)
 
+
     def set_thresholds(self, prob_favored=0.01, prob_allowed=0.0005):
+        """
+        set_thresholds(Ramachandran self, clipper::ftype prob_favored=0.01, clipper::ftype prob_allowed=0.0005)
+
+        Parameters
+        ----------
+        prob_favored: clipper::ftype
+        prob_allowed: clipper::ftype
+
+        set_thresholds(Ramachandran self, clipper::ftype prob_favored=0.01)
+
+        Parameters
+        ----------
+        prob_favored: clipper::ftype
+
+        set_thresholds(Ramachandran self)
+
+        Parameters
+        ----------
+        self: clipper::Ramachandran *
+
+        """
         return _clipper.Ramachandran_set_thresholds(self, prob_favored, prob_allowed)
 
+
     def probability(self, phi, psi):
+        """
+        probability(Ramachandran self, clipper::ftype const & phi, clipper::ftype const & psi) -> clipper::ftype
+
+        Parameters
+        ----------
+        phi: clipper::ftype const &
+        psi: clipper::ftype const &
+
+        """
         return _clipper.Ramachandran_probability(self, phi, psi)
 
+
     def favored(self, phi, psi):
+        """
+        favored(Ramachandran self, clipper::ftype const & phi, clipper::ftype const & psi) -> bool
+
+        Parameters
+        ----------
+        phi: clipper::ftype const &
+        psi: clipper::ftype const &
+
+        """
         return _clipper.Ramachandran_favored(self, phi, psi)
 
+
     def allowed(self, phi, psi):
+        """
+        allowed(Ramachandran self, clipper::ftype const & phi, clipper::ftype const & psi) -> bool
+
+        Parameters
+        ----------
+        phi: clipper::ftype const &
+        psi: clipper::ftype const &
+
+        """
         return _clipper.Ramachandran_allowed(self, phi, psi)
+
     __swig_destroy__ = _clipper.delete_Ramachandran
     __del__ = lambda self: None
 Ramachandran_swigregister = _clipper.Ramachandran_swigregister
 Ramachandran_swigregister(Ramachandran)
 
 class CIFfile(_object):
+    """Proxy of C++ clipper::CIFfile class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, CIFfile, name, value)
     __swig_getmethods__ = {}
@@ -8708,6 +28674,7 @@ class CIFfile(_object):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::CIFfile self) -> CIFfile"""
         this = _clipper.new_CIFfile()
         try:
             self.this.append(this)
@@ -8717,35 +28684,119 @@ class CIFfile(_object):
     __del__ = lambda self: None
 
     def open_read(self, filename_in):
+        """
+        open_read(CIFfile self, String filename_in)
+
+        Parameters
+        ----------
+        filename_in: clipper::String const
+
+        """
         return _clipper.CIFfile_open_read(self, filename_in)
 
+
     def close_read(self):
+        """
+        close_read(CIFfile self)
+
+        Parameters
+        ----------
+        self: clipper::CIFfile *
+
+        """
         return _clipper.CIFfile_close_read(self)
 
+
     def spacegroup(self):
+        """
+        spacegroup(CIFfile self) -> Spacegroup
+
+        Parameters
+        ----------
+        self: clipper::CIFfile const *
+
+        """
         return _clipper.CIFfile_spacegroup(self)
 
+
     def cell(self):
+        """
+        cell(CIFfile self) -> Cell
+
+        Parameters
+        ----------
+        self: clipper::CIFfile const *
+
+        """
         return _clipper.CIFfile_cell(self)
 
+
     def hkl_sampling(self):
+        """
+        hkl_sampling(CIFfile self) -> HKL_sampling
+
+        Parameters
+        ----------
+        self: clipper::CIFfile const *
+
+        """
         return _clipper.CIFfile_hkl_sampling(self)
 
+
     def resolution(self, *args):
+        """
+        resolution(CIFfile self) -> Resolution
+        resolution(CIFfile self, Cell cell) -> Resolution
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+
+        """
         return _clipper.CIFfile_resolution(self, *args)
 
+
     def import_hkl_info(self, target):
+        """
+        import_hkl_info(CIFfile self, HKL_info target)
+
+        Parameters
+        ----------
+        target: clipper::HKL_info &
+
+        """
         return _clipper.CIFfile_import_hkl_info(self, target)
 
+
     def import_hkl_data(self, cdata):
+        """
+        import_hkl_data(CIFfile self, HKL_data_base cdata)
+
+        Parameters
+        ----------
+        cdata: clipper::HKL_data_base &
+
+        """
         return _clipper.CIFfile_import_hkl_data(self, cdata)
 
+
     def contains_phases_p(self):
+        """
+        contains_phases_p(CIFfile self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::CIFfile const *
+
+        """
         return _clipper.CIFfile_contains_phases_p(self)
+
 CIFfile_swigregister = _clipper.CIFfile_swigregister
 CIFfile_swigregister(CIFfile)
 
 class SFcalc_obs_bulk_float(_object):
+    """Proxy of C++ clipper::SFcalc_obs_bulk<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, SFcalc_obs_bulk_float, name, value)
     __swig_getmethods__ = {}
@@ -8753,6 +28804,32 @@ class SFcalc_obs_bulk_float(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::SFcalc_obs_bulk<(float)> self, int const n_params=12) -> SFcalc_obs_bulk_float
+
+        Parameters
+        ----------
+        n_params: int const
+
+        __init__(clipper::SFcalc_obs_bulk<(float)> self) -> SFcalc_obs_bulk_float
+        __init__(clipper::SFcalc_obs_bulk<(float)> self, HKL_data_F_phi_float fphi, HKL_data_F_sigF_float fsig, Atom_list atoms, int const n_params=12) -> SFcalc_obs_bulk_float
+
+        Parameters
+        ----------
+        fphi: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        fsig: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+        atoms: clipper::Atom_list const &
+        n_params: int const
+
+        __init__(clipper::SFcalc_obs_bulk<(float)> self, HKL_data_F_phi_float fphi, HKL_data_F_sigF_float fsig, Atom_list atoms) -> SFcalc_obs_bulk_float
+
+        Parameters
+        ----------
+        fphi: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        fsig: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+        atoms: clipper::Atom_list const &
+
+        """
         this = _clipper.new_SFcalc_obs_bulk_float(*args)
         try:
             self.this.append(this)
@@ -8760,19 +28837,50 @@ class SFcalc_obs_bulk_float(_object):
             self.this = this
 
     def __call__(self, fphi, fsig, atoms):
+        """
+        __call__(SFcalc_obs_bulk_float self, HKL_data_F_phi_float fphi, HKL_data_F_sigF_float fsig, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        fphi: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        fsig: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.SFcalc_obs_bulk_float___call__(self, fphi, fsig, atoms)
 
+
     def bulk_frac(self):
+        """
+        bulk_frac(SFcalc_obs_bulk_float self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::SFcalc_obs_bulk< float > *
+
+        """
         return _clipper.SFcalc_obs_bulk_float_bulk_frac(self)
 
+
     def bulk_scale(self):
+        """
+        bulk_scale(SFcalc_obs_bulk_float self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::SFcalc_obs_bulk< float > *
+
+        """
         return _clipper.SFcalc_obs_bulk_float_bulk_scale(self)
+
     __swig_destroy__ = _clipper.delete_SFcalc_obs_bulk_float
     __del__ = lambda self: None
 SFcalc_obs_bulk_float_swigregister = _clipper.SFcalc_obs_bulk_float_swigregister
 SFcalc_obs_bulk_float_swigregister(SFcalc_obs_bulk_float)
 
 class SFweight_base_float(_object):
+    """Proxy of C++ clipper::SFweight_base<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, SFweight_base_float, name, value)
     __swig_getmethods__ = {}
@@ -8784,11 +28892,33 @@ class SFweight_base_float(_object):
     BOTH = _clipper.SFweight_base_float_BOTH
 
     def __call__(self, fb, fd, phiw, fo, fc, usage):
+        """
+        __call__(SFweight_base_float self, HKL_data_F_phi_float fb, HKL_data_F_phi_float fd, HKL_data_Phi_fom_float phiw, HKL_data_F_sigF_float fo, HKL_data_F_phi_float fc, HKL_data_Flag usage) -> bool
+
+        Parameters
+        ----------
+        fb: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        fd: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        phiw: clipper::HKL_data< clipper::datatypes::Phi_fom< float > > &
+        fo: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+        fc: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        usage: clipper::HKL_data< clipper::datatypes::Flag > const &
+
+        """
         return _clipper.SFweight_base_float___call__(self, fb, fd, phiw, fo, fc, usage)
+
     __swig_destroy__ = _clipper.delete_SFweight_base_float
     __del__ = lambda self: None
 
     def __init__(self):
+        """
+        __init__(clipper::SFweight_base<(float)> self) -> SFweight_base_float
+
+        Parameters
+        ----------
+        self: PyObject *
+
+        """
         if self.__class__ == SFweight_base_float:
             _self = None
         else:
@@ -8806,6 +28936,8 @@ SFweight_base_float_swigregister = _clipper.SFweight_base_float_swigregister
 SFweight_base_float_swigregister(SFweight_base_float)
 
 class SFcalc_base_float(_object):
+    """Proxy of C++ clipper::SFcalc_base<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, SFcalc_base_float, name, value)
     __swig_getmethods__ = {}
@@ -8813,11 +28945,29 @@ class SFcalc_base_float(_object):
     __repr__ = _swig_repr
 
     def __call__(self, fphidata, atoms):
+        """
+        __call__(SFcalc_base_float self, HKL_data_F_phi_float fphidata, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.SFcalc_base_float___call__(self, fphidata, atoms)
+
     __swig_destroy__ = _clipper.delete_SFcalc_base_float
     __del__ = lambda self: None
 
     def __init__(self):
+        """
+        __init__(clipper::SFcalc_base<(float)> self) -> SFcalc_base_float
+
+        Parameters
+        ----------
+        self: PyObject *
+
+        """
         if self.__class__ == SFcalc_base_float:
             _self = None
         else:
@@ -8835,6 +28985,8 @@ SFcalc_base_float_swigregister = _clipper.SFcalc_base_float_swigregister
 SFcalc_base_float_swigregister(SFcalc_base_float)
 
 class EDcalc_base_float(_object):
+    """Proxy of C++ clipper::EDcalc_base<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, EDcalc_base_float, name, value)
     __swig_getmethods__ = {}
@@ -8842,11 +28994,36 @@ class EDcalc_base_float(_object):
     __repr__ = _swig_repr
 
     def __call__(self, *args):
+        """
+        __call__(EDcalc_base_float self, Xmap_float xmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap< float > &
+        atoms: clipper::Atom_list const &
+
+        __call__(EDcalc_base_float self, NXmap_float nxmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        nxmap: clipper::NXmap< float > &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.EDcalc_base_float___call__(self, *args)
+
     __swig_destroy__ = _clipper.delete_EDcalc_base_float
     __del__ = lambda self: None
 
     def __init__(self):
+        """
+        __init__(clipper::EDcalc_base<(float)> self) -> EDcalc_base_float
+
+        Parameters
+        ----------
+        self: PyObject *
+
+        """
         if self.__class__ == EDcalc_base_float:
             _self = None
         else:
@@ -8864,6 +29041,8 @@ EDcalc_base_float_swigregister = _clipper.EDcalc_base_float_swigregister
 EDcalc_base_float_swigregister(EDcalc_base_float)
 
 class SFcalc_obs_base_float(_object):
+    """Proxy of C++ clipper::SFcalc_obs_base<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, SFcalc_obs_base_float, name, value)
     __swig_getmethods__ = {}
@@ -8874,13 +29053,26 @@ class SFcalc_obs_base_float(_object):
     __repr__ = _swig_repr
 
     def __call__(self, fphi, fsig, atoms):
+        """
+        __call__(SFcalc_obs_base_float self, HKL_data_F_phi_float fphi, HKL_data_F_sigF_float fsig, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        fphi: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        fsig: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.SFcalc_obs_base_float___call__(self, fphi, fsig, atoms)
+
     __swig_destroy__ = _clipper.delete_SFcalc_obs_base_float
     __del__ = lambda self: None
 SFcalc_obs_base_float_swigregister = _clipper.SFcalc_obs_base_float_swigregister
 SFcalc_obs_base_float_swigregister(SFcalc_obs_base_float)
 
 class SFscale_base_float(_object):
+    """Proxy of C++ clipper::SFscale_base<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, SFscale_base_float, name, value)
     __swig_getmethods__ = {}
@@ -8888,11 +29080,42 @@ class SFscale_base_float(_object):
     __repr__ = _swig_repr
 
     def __call__(self, *args):
+        """
+        __call__(SFscale_base_float self, HKL_data_F_sigF_float fo, HKL_data_F_phi_float fc) -> bool
+
+        Parameters
+        ----------
+        fo: clipper::HKL_data< clipper::datatypes::F_sigF< float > > &
+        fc: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        __call__(SFscale_base_float self, HKL_data_F_phi_float fc, HKL_data_F_sigF_float fo) -> bool
+
+        Parameters
+        ----------
+        fc: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        fo: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+
+        __call__(SFscale_base_float self, HKL_data_F_sigF_float fo) -> bool
+
+        Parameters
+        ----------
+        fo: clipper::HKL_data< clipper::datatypes::F_sigF< float > > &
+
+        """
         return _clipper.SFscale_base_float___call__(self, *args)
+
     __swig_destroy__ = _clipper.delete_SFscale_base_float
     __del__ = lambda self: None
 
     def __init__(self):
+        """
+        __init__(clipper::SFscale_base<(float)> self) -> SFscale_base_float
+
+        Parameters
+        ----------
+        self: PyObject *
+
+        """
         if self.__class__ == SFscale_base_float:
             _self = None
         else:
@@ -8910,6 +29133,8 @@ SFscale_base_float_swigregister = _clipper.SFscale_base_float_swigregister
 SFscale_base_float_swigregister(SFscale_base_float)
 
 class MapFilter_base_float(_object):
+    """Proxy of C++ clipper::MapFilter_base<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MapFilter_base_float, name, value)
     __swig_getmethods__ = {}
@@ -8920,13 +29145,25 @@ class MapFilter_base_float(_object):
     __repr__ = _swig_repr
 
     def __call__(self, result, xmap):
+        """
+        __call__(MapFilter_base_float self, Xmap_float result, Xmap_float xmap) -> bool
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        xmap: clipper::Xmap< float > const &
+
+        """
         return _clipper.MapFilter_base_float___call__(self, result, xmap)
+
     __swig_destroy__ = _clipper.delete_MapFilter_base_float
     __del__ = lambda self: None
 MapFilter_base_float_swigregister = _clipper.MapFilter_base_float_swigregister
 MapFilter_base_float_swigregister(MapFilter_base_float)
 
 class Convolution_search_base_float(_object):
+    """Proxy of C++ clipper::Convolution_search_base<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Convolution_search_base_float, name, value)
     __swig_getmethods__ = {}
@@ -8937,13 +29174,26 @@ class Convolution_search_base_float(_object):
     __repr__ = _swig_repr
 
     def __call__(self, result, srchval, nxop):
+        """
+        __call__(Convolution_search_base_float self, Xmap_float result, NXmap_float srchval, NX_operator const & nxop) -> bool
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        srchval: clipper::NXmap< float > const &
+        nxop: NX_operator const &
+
+        """
         return _clipper.Convolution_search_base_float___call__(self, result, srchval, nxop)
+
     __swig_destroy__ = _clipper.delete_Convolution_search_base_float
     __del__ = lambda self: None
 Convolution_search_base_float_swigregister = _clipper.Convolution_search_base_float_swigregister
 Convolution_search_base_float_swigregister(Convolution_search_base_float)
 
 class FFFear_base_float(_object):
+    """Proxy of C++ clipper::FFFear_base<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, FFFear_base_float, name, value)
     __swig_getmethods__ = {}
@@ -8954,13 +29204,27 @@ class FFFear_base_float(_object):
     __repr__ = _swig_repr
 
     def __call__(self, result, srchval, srchwgt, nxop):
+        """
+        __call__(FFFear_base_float self, Xmap_float result, NXmap_float srchval, NXmap_float srchwgt, NX_operator const & nxop) -> bool
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        srchval: clipper::NXmap< float > const &
+        srchwgt: clipper::NXmap< float > const &
+        nxop: NX_operator const &
+
+        """
         return _clipper.FFFear_base_float___call__(self, result, srchval, srchwgt, nxop)
+
     __swig_destroy__ = _clipper.delete_FFFear_base_float
     __del__ = lambda self: None
 FFFear_base_float_swigregister = _clipper.FFFear_base_float_swigregister
 FFFear_base_float_swigregister(FFFear_base_float)
 
 class Skeleton_base_float(_object):
+    """Proxy of C++ clipper::Skeleton_base<(float,float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Skeleton_base_float, name, value)
     __swig_getmethods__ = {}
@@ -8971,13 +29235,25 @@ class Skeleton_base_float(_object):
     __repr__ = _swig_repr
 
     def __call__(self, xskl, xmap):
+        """
+        __call__(Skeleton_base_float self, Xmap_float xskl, Xmap_float xmap) -> bool
+
+        Parameters
+        ----------
+        xskl: clipper::Xmap< float > &
+        xmap: clipper::Xmap< float > const &
+
+        """
         return _clipper.Skeleton_base_float___call__(self, xskl, xmap)
+
     __swig_destroy__ = _clipper.delete_Skeleton_base_float
     __del__ = lambda self: None
 Skeleton_base_float_swigregister = _clipper.Skeleton_base_float_swigregister
 Skeleton_base_float_swigregister(Skeleton_base_float)
 
 class OriginMatch_base_float(_object):
+    """Proxy of C++ clipper::OriginMatch_base<(float)> class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, OriginMatch_base_float, name, value)
     __swig_getmethods__ = {}
@@ -8985,11 +29261,31 @@ class OriginMatch_base_float(_object):
     __repr__ = _swig_repr
 
     def __call__(self, invert, shift, fphi1, fphi2):
+        """
+        __call__(OriginMatch_base_float self, bool & invert, Coord_frac shift, HKL_data_F_phi_float fphi1, HKL_data_F_phi_float fphi2) -> bool
+
+        Parameters
+        ----------
+        invert: bool &
+        shift: clipper::Coord_frac &
+        fphi1: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        fphi2: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        """
         return _clipper.OriginMatch_base_float___call__(self, invert, shift, fphi1, fphi2)
+
     __swig_destroy__ = _clipper.delete_OriginMatch_base_float
     __del__ = lambda self: None
 
     def __init__(self):
+        """
+        __init__(clipper::OriginMatch_base<(float)> self) -> OriginMatch_base_float
+
+        Parameters
+        ----------
+        self: PyObject *
+
+        """
         if self.__class__ == OriginMatch_base_float:
             _self = None
         else:
@@ -9007,6 +29303,8 @@ OriginMatch_base_float_swigregister = _clipper.OriginMatch_base_float_swigregist
 OriginMatch_base_float_swigregister(OriginMatch_base_float)
 
 class SFscale_aniso_float(SFscale_base_float):
+    """Proxy of C++ clipper::SFscale_aniso<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [SFscale_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9023,6 +29321,22 @@ class SFscale_aniso_float(SFscale_base_float):
     SFscale_aniso_UNSHARPEN_float = _clipper.SFscale_aniso_float_SFscale_aniso_UNSHARPEN_float
 
     def __init__(self, *args):
+        """
+        __init__(clipper::SFscale_aniso<(float)> self, clipper::ftype nsig=0.0, clipper::SFscale_aniso< float >::MODE mode) -> SFscale_aniso_float
+
+        Parameters
+        ----------
+        nsig: clipper::ftype
+        mode: enum clipper::SFscale_aniso< float >::MODE
+
+        __init__(clipper::SFscale_aniso<(float)> self, clipper::ftype nsig=0.0) -> SFscale_aniso_float
+
+        Parameters
+        ----------
+        nsig: clipper::ftype
+
+        __init__(clipper::SFscale_aniso<(float)> self) -> SFscale_aniso_float
+        """
         this = _clipper.new_SFscale_aniso_float(*args)
         try:
             self.this.append(this)
@@ -9030,16 +29344,72 @@ class SFscale_aniso_float(SFscale_base_float):
             self.this = this
 
     def __call__(self, *args):
+        """
+        __call__(SFscale_aniso_float self, HKL_data_F_sigF_float fo, HKL_data_F_phi_float fc) -> bool
+
+        Parameters
+        ----------
+        fo: clipper::HKL_data< clipper::datatypes::F_sigF< float > > &
+        fc: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        __call__(SFscale_aniso_float self, HKL_data_F_phi_float fc, HKL_data_F_sigF_float fo) -> bool
+
+        Parameters
+        ----------
+        fc: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        fo: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+
+        __call__(SFscale_aniso_float self, HKL_data_F_sigF_float fo) -> bool
+
+        Parameters
+        ----------
+        fo: clipper::HKL_data< clipper::datatypes::F_sigF< float > > &
+
+        __call__(SFscale_aniso_float self, HKL_data_F_sigF_float fo, clipper::ftype const resfilter, int const npar_scl) -> bool
+
+        Parameters
+        ----------
+        fo: clipper::HKL_data< clipper::datatypes::F_sigF< float > > &
+        resfilter: clipper::ftype const
+        npar_scl: int const
+
+        __call__(SFscale_aniso_float self, HKL_data_I_sigI_float Io, clipper::ftype const resfilter, int const npar_scl) -> bool
+
+        Parameters
+        ----------
+        Io: clipper::HKL_data< clipper::datatypes::I_sigI< float > > &
+        resfilter: clipper::ftype const
+        npar_scl: int const
+
+        """
         return _clipper.SFscale_aniso_float___call__(self, *args)
 
+
     def u_aniso_orth(self, *args):
+        """
+        u_aniso_orth(SFscale_aniso_float self, clipper::SFscale_aniso< float >::TYPE t) -> U_aniso_orth
+
+        Parameters
+        ----------
+        t: enum clipper::SFscale_aniso< float >::TYPE
+
+        u_aniso_orth(SFscale_aniso_float self) -> U_aniso_orth
+
+        Parameters
+        ----------
+        self: clipper::SFscale_aniso< float > const *
+
+        """
         return _clipper.SFscale_aniso_float_u_aniso_orth(self, *args)
+
     __swig_destroy__ = _clipper.delete_SFscale_aniso_float
     __del__ = lambda self: None
 SFscale_aniso_float_swigregister = _clipper.SFscale_aniso_float_swigregister
 SFscale_aniso_float_swigregister(SFscale_aniso_float)
 
 class SFweight_spline_float(SFweight_base_float):
+    """Proxy of C++ clipper::SFweight_spline<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [SFweight_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9051,6 +29421,66 @@ class SFweight_spline_float(SFweight_base_float):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::SFweight_spline<(float)> self, int const n_reflns=1000, int const n_params=20, int const n_phases=24) -> SFweight_spline_float
+
+        Parameters
+        ----------
+        n_reflns: int const
+        n_params: int const
+        n_phases: int const
+
+        __init__(clipper::SFweight_spline<(float)> self, int const n_reflns=1000, int const n_params=20) -> SFweight_spline_float
+
+        Parameters
+        ----------
+        n_reflns: int const
+        n_params: int const
+
+        __init__(clipper::SFweight_spline<(float)> self, int const n_reflns=1000) -> SFweight_spline_float
+
+        Parameters
+        ----------
+        n_reflns: int const
+
+        __init__(clipper::SFweight_spline<(float)> self) -> SFweight_spline_float
+        __init__(clipper::SFweight_spline<(float)> self, HKL_data_F_phi_float fb, HKL_data_F_phi_float fd, HKL_data_Phi_fom_float phiw, HKL_data_F_sigF_float fo, HKL_data_F_phi_float fc, HKL_data_Flag usage, int const n_reflns=1000, int const n_params=20) -> SFweight_spline_float
+
+        Parameters
+        ----------
+        fb: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        fd: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        phiw: clipper::HKL_data< clipper::datatypes::Phi_fom< float > > &
+        fo: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+        fc: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        usage: clipper::HKL_data< clipper::datatypes::Flag > const &
+        n_reflns: int const
+        n_params: int const
+
+        __init__(clipper::SFweight_spline<(float)> self, HKL_data_F_phi_float fb, HKL_data_F_phi_float fd, HKL_data_Phi_fom_float phiw, HKL_data_F_sigF_float fo, HKL_data_F_phi_float fc, HKL_data_Flag usage, int const n_reflns=1000) -> SFweight_spline_float
+
+        Parameters
+        ----------
+        fb: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        fd: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        phiw: clipper::HKL_data< clipper::datatypes::Phi_fom< float > > &
+        fo: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+        fc: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        usage: clipper::HKL_data< clipper::datatypes::Flag > const &
+        n_reflns: int const
+
+        __init__(clipper::SFweight_spline<(float)> self, HKL_data_F_phi_float fb, HKL_data_F_phi_float fd, HKL_data_Phi_fom_float phiw, HKL_data_F_sigF_float fo, HKL_data_F_phi_float fc, HKL_data_Flag usage) -> SFweight_spline_float
+
+        Parameters
+        ----------
+        fb: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        fd: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        phiw: clipper::HKL_data< clipper::datatypes::Phi_fom< float > > &
+        fo: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+        fc: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        usage: clipper::HKL_data< clipper::datatypes::Flag > const &
+
+        """
         this = _clipper.new_SFweight_spline_float(*args)
         try:
             self.this.append(this)
@@ -9058,37 +29488,168 @@ class SFweight_spline_float(SFweight_base_float):
             self.this = this
 
     def init(self, n_reflns=1000, n_params=20, n_phases=24):
+        """
+        init(SFweight_spline_float self, int const n_reflns=1000, int const n_params=20, int const n_phases=24)
+
+        Parameters
+        ----------
+        n_reflns: int const
+        n_params: int const
+        n_phases: int const
+
+        init(SFweight_spline_float self, int const n_reflns=1000, int const n_params=20)
+
+        Parameters
+        ----------
+        n_reflns: int const
+        n_params: int const
+
+        init(SFweight_spline_float self, int const n_reflns=1000)
+
+        Parameters
+        ----------
+        n_reflns: int const
+
+        init(SFweight_spline_float self)
+
+        Parameters
+        ----------
+        self: clipper::SFweight_spline< float > *
+
+        """
         return _clipper.SFweight_spline_float_init(self, n_reflns, n_params, n_phases)
 
+
     def __call__(self, *args):
+        """
+        __call__(SFweight_spline_float self, HKL_data_F_phi_float fb, HKL_data_F_phi_float fd, HKL_data_Phi_fom_float phiw, HKL_data_F_sigF_float fo0, HKL_data_F_phi_float fc0, HKL_data_Flag usage) -> bool
+
+        Parameters
+        ----------
+        fb: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        fd: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        phiw: clipper::HKL_data< clipper::datatypes::Phi_fom< float > > &
+        fo0: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+        fc0: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        usage: clipper::HKL_data< clipper::datatypes::Flag > const &
+
+        __call__(SFweight_spline_float self, HKL_data_F_phi_float fb, HKL_data_F_phi_float fd, HKL_data_Phi_fom_float phiw, HKL_data_ABCD_float hl, HKL_data_F_sigF_float fo0, HKL_data_ABCD_float hl0, HKL_data_F_phi_float fc0, HKL_data_Flag usage) -> bool
+
+        Parameters
+        ----------
+        fb: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        fd: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        phiw: clipper::HKL_data< clipper::datatypes::Phi_fom< float > > &
+        hl: clipper::HKL_data< clipper::datatypes::ABCD< float > > &
+        fo0: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+        hl0: clipper::HKL_data< clipper::datatypes::ABCD< float > > const &
+        fc0: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        usage: clipper::HKL_data< clipper::datatypes::Flag > const &
+
+        """
         return _clipper.SFweight_spline_float___call__(self, *args)
 
+
     def params_scale(self):
+        """
+        params_scale(SFweight_spline_float self) -> DoubleVector
+
+        Parameters
+        ----------
+        self: clipper::SFweight_spline< float > *
+
+        """
         return _clipper.SFweight_spline_float_params_scale(self)
 
+
     def params_error(self):
+        """
+        params_error(SFweight_spline_float self) -> DoubleVector
+
+        Parameters
+        ----------
+        self: clipper::SFweight_spline< float > *
+
+        """
         return _clipper.SFweight_spline_float_params_error(self)
 
+
     def log_likelihood_work(self):
+        """
+        log_likelihood_work(SFweight_spline_float self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::SFweight_spline< float > *
+
+        """
         return _clipper.SFweight_spline_float_log_likelihood_work(self)
 
+
     def log_likelihood_free(self):
+        """
+        log_likelihood_free(SFweight_spline_float self) -> double const &
+
+        Parameters
+        ----------
+        self: clipper::SFweight_spline< float > *
+
+        """
         return _clipper.SFweight_spline_float_log_likelihood_free(self)
 
+
     def debug(self):
+        """
+        debug(SFweight_spline_float self)
+
+        Parameters
+        ----------
+        self: clipper::SFweight_spline< float > const *
+
+        """
         return _clipper.SFweight_spline_float_debug(self)
 
+
     def targetfn(self, cls, fo0, fc0, s, w):
+        """
+        targetfn(SFweight_spline_float self, HKL_class cls, F_sigF_float fo0, F_phi_float fc0, clipper::ftype const & s, clipper::ftype const & w) -> clipper::SFweight_spline< float >::TargetResult
+
+        Parameters
+        ----------
+        cls: clipper::HKL_class const
+        fo0: clipper::datatypes::F_sigF< float > const &
+        fc0: clipper::datatypes::F_phi< float > const &
+        s: clipper::ftype const &
+        w: clipper::ftype const &
+
+        """
         return _clipper.SFweight_spline_float_targetfn(self, cls, fo0, fc0, s, w)
 
+
     def targethl(self, cls, fo0, hl0, fc0, s, w):
+        """
+        targethl(SFweight_spline_float self, HKL_class cls, F_sigF_float fo0, ABCD_float hl0, F_phi_float fc0, clipper::ftype const & s, clipper::ftype const & w) -> clipper::SFweight_spline< float >::TargetResult
+
+        Parameters
+        ----------
+        cls: clipper::HKL_class const
+        fo0: clipper::datatypes::F_sigF< float > const &
+        hl0: clipper::datatypes::ABCD< float > const &
+        fc0: clipper::datatypes::F_phi< float > const &
+        s: clipper::ftype const &
+        w: clipper::ftype const &
+
+        """
         return _clipper.SFweight_spline_float_targethl(self, cls, fo0, hl0, fc0, s, w)
+
     __swig_destroy__ = _clipper.delete_SFweight_spline_float
     __del__ = lambda self: None
 SFweight_spline_float_swigregister = _clipper.SFweight_spline_float_swigregister
 SFweight_spline_float_swigregister(SFweight_spline_float)
 
 class SFcalc_iso_sum_float(SFcalc_base_float):
+    """Proxy of C++ clipper::SFcalc_iso_sum<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [SFcalc_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9100,6 +29661,16 @@ class SFcalc_iso_sum_float(SFcalc_base_float):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::SFcalc_iso_sum<(float)> self) -> SFcalc_iso_sum_float
+        __init__(clipper::SFcalc_iso_sum<(float)> self, HKL_data_F_phi_float fphidata, Atom_list atoms) -> SFcalc_iso_sum_float
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+
+        """
         this = _clipper.new_SFcalc_iso_sum_float(*args)
         try:
             self.this.append(this)
@@ -9107,13 +29678,25 @@ class SFcalc_iso_sum_float(SFcalc_base_float):
             self.this = this
 
     def __call__(self, fphidata, atoms):
+        """
+        __call__(SFcalc_iso_sum_float self, HKL_data_F_phi_float fphidata, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.SFcalc_iso_sum_float___call__(self, fphidata, atoms)
+
     __swig_destroy__ = _clipper.delete_SFcalc_iso_sum_float
     __del__ = lambda self: None
 SFcalc_iso_sum_float_swigregister = _clipper.SFcalc_iso_sum_float_swigregister
 SFcalc_iso_sum_float_swigregister(SFcalc_iso_sum_float)
 
 class SFcalc_aniso_sum_float(SFcalc_base_float):
+    """Proxy of C++ clipper::SFcalc_aniso_sum<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [SFcalc_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9125,6 +29708,16 @@ class SFcalc_aniso_sum_float(SFcalc_base_float):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::SFcalc_aniso_sum<(float)> self) -> SFcalc_aniso_sum_float
+        __init__(clipper::SFcalc_aniso_sum<(float)> self, HKL_data_F_phi_float fphidata, Atom_list atoms) -> SFcalc_aniso_sum_float
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+
+        """
         this = _clipper.new_SFcalc_aniso_sum_float(*args)
         try:
             self.this.append(this)
@@ -9132,13 +29725,25 @@ class SFcalc_aniso_sum_float(SFcalc_base_float):
             self.this = this
 
     def __call__(self, fphidata, atoms):
+        """
+        __call__(SFcalc_aniso_sum_float self, HKL_data_F_phi_float fphidata, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.SFcalc_aniso_sum_float___call__(self, fphidata, atoms)
+
     __swig_destroy__ = _clipper.delete_SFcalc_aniso_sum_float
     __del__ = lambda self: None
 SFcalc_aniso_sum_float_swigregister = _clipper.SFcalc_aniso_sum_float_swigregister
 SFcalc_aniso_sum_float_swigregister(SFcalc_aniso_sum_float)
 
 class SFcalc_iso_fft_float(SFcalc_base_float):
+    """Proxy of C++ clipper::SFcalc_iso_fft<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [SFcalc_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9150,6 +29755,64 @@ class SFcalc_iso_fft_float(SFcalc_base_float):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::SFcalc_iso_fft<(float)> self, clipper::ftype const radius=2.5, clipper::ftype const rate=1.5, clipper::ftype const uadd=0.0) -> SFcalc_iso_fft_float
+
+        Parameters
+        ----------
+        radius: clipper::ftype const
+        rate: clipper::ftype const
+        uadd: clipper::ftype const
+
+        __init__(clipper::SFcalc_iso_fft<(float)> self, clipper::ftype const radius=2.5, clipper::ftype const rate=1.5) -> SFcalc_iso_fft_float
+
+        Parameters
+        ----------
+        radius: clipper::ftype const
+        rate: clipper::ftype const
+
+        __init__(clipper::SFcalc_iso_fft<(float)> self, clipper::ftype const radius=2.5) -> SFcalc_iso_fft_float
+
+        Parameters
+        ----------
+        radius: clipper::ftype const
+
+        __init__(clipper::SFcalc_iso_fft<(float)> self) -> SFcalc_iso_fft_float
+        __init__(clipper::SFcalc_iso_fft<(float)> self, HKL_data_F_phi_float fphidata, Atom_list atoms, clipper::ftype const radius=2.5, clipper::ftype const rate=1.5, clipper::ftype const uadd=0.0) -> SFcalc_iso_fft_float
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+        radius: clipper::ftype const
+        rate: clipper::ftype const
+        uadd: clipper::ftype const
+
+        __init__(clipper::SFcalc_iso_fft<(float)> self, HKL_data_F_phi_float fphidata, Atom_list atoms, clipper::ftype const radius=2.5, clipper::ftype const rate=1.5) -> SFcalc_iso_fft_float
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+        radius: clipper::ftype const
+        rate: clipper::ftype const
+
+        __init__(clipper::SFcalc_iso_fft<(float)> self, HKL_data_F_phi_float fphidata, Atom_list atoms, clipper::ftype const radius=2.5) -> SFcalc_iso_fft_float
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+        radius: clipper::ftype const
+
+        __init__(clipper::SFcalc_iso_fft<(float)> self, HKL_data_F_phi_float fphidata, Atom_list atoms) -> SFcalc_iso_fft_float
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+
+        """
         this = _clipper.new_SFcalc_iso_fft_float(*args)
         try:
             self.this.append(this)
@@ -9157,13 +29820,25 @@ class SFcalc_iso_fft_float(SFcalc_base_float):
             self.this = this
 
     def __call__(self, fphidata, atoms):
+        """
+        __call__(SFcalc_iso_fft_float self, HKL_data_F_phi_float fphidata, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.SFcalc_iso_fft_float___call__(self, fphidata, atoms)
+
     __swig_destroy__ = _clipper.delete_SFcalc_iso_fft_float
     __del__ = lambda self: None
 SFcalc_iso_fft_float_swigregister = _clipper.SFcalc_iso_fft_float_swigregister
 SFcalc_iso_fft_float_swigregister(SFcalc_iso_fft_float)
 
 class SFcalc_aniso_fft_float(SFcalc_base_float):
+    """Proxy of C++ clipper::SFcalc_aniso_fft<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [SFcalc_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9175,6 +29850,64 @@ class SFcalc_aniso_fft_float(SFcalc_base_float):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::SFcalc_aniso_fft<(float)> self, clipper::ftype const radius=2.5, clipper::ftype const rate=1.5, clipper::ftype const uadd=0.0) -> SFcalc_aniso_fft_float
+
+        Parameters
+        ----------
+        radius: clipper::ftype const
+        rate: clipper::ftype const
+        uadd: clipper::ftype const
+
+        __init__(clipper::SFcalc_aniso_fft<(float)> self, clipper::ftype const radius=2.5, clipper::ftype const rate=1.5) -> SFcalc_aniso_fft_float
+
+        Parameters
+        ----------
+        radius: clipper::ftype const
+        rate: clipper::ftype const
+
+        __init__(clipper::SFcalc_aniso_fft<(float)> self, clipper::ftype const radius=2.5) -> SFcalc_aniso_fft_float
+
+        Parameters
+        ----------
+        radius: clipper::ftype const
+
+        __init__(clipper::SFcalc_aniso_fft<(float)> self) -> SFcalc_aniso_fft_float
+        __init__(clipper::SFcalc_aniso_fft<(float)> self, HKL_data_F_phi_float fphidata, Atom_list atoms, clipper::ftype const radius=2.5, clipper::ftype const rate=1.5, clipper::ftype const uadd=0.0) -> SFcalc_aniso_fft_float
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+        radius: clipper::ftype const
+        rate: clipper::ftype const
+        uadd: clipper::ftype const
+
+        __init__(clipper::SFcalc_aniso_fft<(float)> self, HKL_data_F_phi_float fphidata, Atom_list atoms, clipper::ftype const radius=2.5, clipper::ftype const rate=1.5) -> SFcalc_aniso_fft_float
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+        radius: clipper::ftype const
+        rate: clipper::ftype const
+
+        __init__(clipper::SFcalc_aniso_fft<(float)> self, HKL_data_F_phi_float fphidata, Atom_list atoms, clipper::ftype const radius=2.5) -> SFcalc_aniso_fft_float
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+        radius: clipper::ftype const
+
+        __init__(clipper::SFcalc_aniso_fft<(float)> self, HKL_data_F_phi_float fphidata, Atom_list atoms) -> SFcalc_aniso_fft_float
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+
+        """
         this = _clipper.new_SFcalc_aniso_fft_float(*args)
         try:
             self.this.append(this)
@@ -9182,7 +29915,17 @@ class SFcalc_aniso_fft_float(SFcalc_base_float):
             self.this = this
 
     def __call__(self, fphidata, atoms):
+        """
+        __call__(SFcalc_aniso_fft_float self, HKL_data_F_phi_float fphidata, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        fphidata: clipper::HKL_data< clipper::datatypes::F_phi< float > > &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.SFcalc_aniso_fft_float___call__(self, fphidata, atoms)
+
     __swig_destroy__ = _clipper.delete_SFcalc_aniso_fft_float
     __del__ = lambda self: None
 SFcalc_aniso_fft_float_swigregister = _clipper.SFcalc_aniso_fft_float_swigregister
@@ -9190,73 +29933,277 @@ SFcalc_aniso_fft_float_swigregister(SFcalc_aniso_fft_float)
 
 
 def CopyOverHKLInfo(*args):
+    """
+    CopyOverHKLInfo(HKL_data_F_sigF_float d_in, HKL_data_F_sigF_float d_out, HKL_info newhkl)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::F_sigF > const &
+    d_out: clipper::HKL_data< clipper::data32::F_sigF > &
+    newhkl: clipper::HKL_info const &
+
+    CopyOverHKLInfo(HKL_data_F_sigF_ano_float d_in, HKL_data_F_sigF_ano_float d_out, HKL_info newhkl)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::F_sigF_ano > const &
+    d_out: clipper::HKL_data< clipper::data32::F_sigF_ano > &
+    newhkl: clipper::HKL_info const &
+
+    CopyOverHKLInfo(HKL_data_E_sigE_float d_in, HKL_data_E_sigE_float d_out, HKL_info newhkl)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::E_sigE > const &
+    d_out: clipper::HKL_data< clipper::data32::E_sigE > &
+    newhkl: clipper::HKL_info const &
+
+    CopyOverHKLInfo(HKL_data_ABCD_float d_in, HKL_data_ABCD_float d_out, HKL_info newhkl)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::ABCD > const &
+    d_out: clipper::HKL_data< clipper::data32::ABCD > &
+    newhkl: clipper::HKL_info const &
+
+    CopyOverHKLInfo(HKL_data_Phi_fom_float d_in, HKL_data_Phi_fom_float d_out, HKL_info newhkl)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::Phi_fom > const &
+    d_out: clipper::HKL_data< clipper::data32::Phi_fom > &
+    newhkl: clipper::HKL_info const &
+
+    CopyOverHKLInfo(HKL_data_Flag d_in, HKL_data_Flag d_out, HKL_info newhkl)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::Flag > const &
+    d_out: clipper::HKL_data< clipper::data32::Flag > &
+    newhkl: clipper::HKL_info const &
+
+    CopyOverHKLInfo(HKL_data_F_phi_float d_in, HKL_data_F_phi_float d_out, HKL_info newhkl)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::F_phi > const &
+    d_out: clipper::HKL_data< clipper::data32::F_phi > &
+    newhkl: clipper::HKL_info const &
+
+    """
     return _clipper.CopyOverHKLInfo(*args)
-CopyOverHKLInfo = _clipper.CopyOverHKLInfo
 
 def CopyIfF_sigFRefNotMissingF_sigF_float(d_in, d_out, d_ref):
+    """
+    CopyIfF_sigFRefNotMissingF_sigF_float(HKL_data_F_sigF_float d_in, HKL_data_F_sigF_float d_out, HKL_data_F_sigF_float d_ref)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::F_sigF > const &
+    d_out: clipper::HKL_data< clipper::data32::F_sigF > &
+    d_ref: clipper::HKL_data< clipper::data32::F_sigF > const &
+
+    """
     return _clipper.CopyIfF_sigFRefNotMissingF_sigF_float(d_in, d_out, d_ref)
-CopyIfF_sigFRefNotMissingF_sigF_float = _clipper.CopyIfF_sigFRefNotMissingF_sigF_float
 
 def CopyIfF_sigFRefNotMissingF_sigF_ano_float(d_in, d_out, d_ref):
+    """
+    CopyIfF_sigFRefNotMissingF_sigF_ano_float(HKL_data_F_sigF_ano_float d_in, HKL_data_F_sigF_ano_float d_out, HKL_data_F_sigF_float d_ref)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::F_sigF_ano > const &
+    d_out: clipper::HKL_data< clipper::data32::F_sigF_ano > &
+    d_ref: clipper::HKL_data< clipper::data32::F_sigF > const &
+
+    """
     return _clipper.CopyIfF_sigFRefNotMissingF_sigF_ano_float(d_in, d_out, d_ref)
-CopyIfF_sigFRefNotMissingF_sigF_ano_float = _clipper.CopyIfF_sigFRefNotMissingF_sigF_ano_float
 
 def CopyIfF_sigFRefNotMissingE_sigE_float(d_in, d_out, d_ref):
+    """
+    CopyIfF_sigFRefNotMissingE_sigE_float(HKL_data_E_sigE_float d_in, HKL_data_E_sigE_float d_out, HKL_data_F_sigF_float d_ref)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::E_sigE > const &
+    d_out: clipper::HKL_data< clipper::data32::E_sigE > &
+    d_ref: clipper::HKL_data< clipper::data32::F_sigF > const &
+
+    """
     return _clipper.CopyIfF_sigFRefNotMissingE_sigE_float(d_in, d_out, d_ref)
-CopyIfF_sigFRefNotMissingE_sigE_float = _clipper.CopyIfF_sigFRefNotMissingE_sigE_float
 
 def CopyIfF_sigFRefNotMissingABCD_float(d_in, d_out, d_ref):
+    """
+    CopyIfF_sigFRefNotMissingABCD_float(HKL_data_ABCD_float d_in, HKL_data_ABCD_float d_out, HKL_data_F_sigF_float d_ref)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::ABCD > const &
+    d_out: clipper::HKL_data< clipper::data32::ABCD > &
+    d_ref: clipper::HKL_data< clipper::data32::F_sigF > const &
+
+    """
     return _clipper.CopyIfF_sigFRefNotMissingABCD_float(d_in, d_out, d_ref)
-CopyIfF_sigFRefNotMissingABCD_float = _clipper.CopyIfF_sigFRefNotMissingABCD_float
 
 def CopyIfF_sigFRefNotMissingPhi_fom_float(d_in, d_out, d_ref):
+    """
+    CopyIfF_sigFRefNotMissingPhi_fom_float(HKL_data_Phi_fom_float d_in, HKL_data_Phi_fom_float d_out, HKL_data_F_sigF_float d_ref)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::Phi_fom > const &
+    d_out: clipper::HKL_data< clipper::data32::Phi_fom > &
+    d_ref: clipper::HKL_data< clipper::data32::F_sigF > const &
+
+    """
     return _clipper.CopyIfF_sigFRefNotMissingPhi_fom_float(d_in, d_out, d_ref)
-CopyIfF_sigFRefNotMissingPhi_fom_float = _clipper.CopyIfF_sigFRefNotMissingPhi_fom_float
 
 def CopyIfF_sigFRefNotMissingF_phi_float(d_in, d_out, d_ref):
+    """
+    CopyIfF_sigFRefNotMissingF_phi_float(HKL_data_F_phi_float d_in, HKL_data_F_phi_float d_out, HKL_data_F_sigF_float d_ref)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::F_phi > const &
+    d_out: clipper::HKL_data< clipper::data32::F_phi > &
+    d_ref: clipper::HKL_data< clipper::data32::F_sigF > const &
+
+    """
     return _clipper.CopyIfF_sigFRefNotMissingF_phi_float(d_in, d_out, d_ref)
-CopyIfF_sigFRefNotMissingF_phi_float = _clipper.CopyIfF_sigFRefNotMissingF_phi_float
 
 def CopyIfF_sigFRefNotMissingFlag_float(d_in, d_out, d_ref):
+    """
+    CopyIfF_sigFRefNotMissingFlag_float(HKL_data_Flag d_in, HKL_data_Flag d_out, HKL_data_F_sigF_float d_ref)
+
+    Parameters
+    ----------
+    d_in: clipper::HKL_data< clipper::data32::Flag > const &
+    d_out: clipper::HKL_data< clipper::data32::Flag > &
+    d_ref: clipper::HKL_data< clipper::data32::F_sigF > const &
+
+    """
     return _clipper.CopyIfF_sigFRefNotMissingFlag_float(d_in, d_out, d_ref)
-CopyIfF_sigFRefNotMissingFlag_float = _clipper.CopyIfF_sigFRefNotMissingFlag_float
 
 def PopulateMatchesF_sigF_float(d_ref, d, matched):
+    """
+    PopulateMatchesF_sigF_float(HKL_data_F_sigF_float d_ref, HKL_data_F_sigF_float d, HKLVector matched)
+
+    Parameters
+    ----------
+    d_ref: clipper::HKL_data< clipper::data32::F_sigF > const &
+    d: clipper::HKL_data< clipper::data32::F_sigF > const &
+    matched: std::vector< clipper::HKL,std::allocator< clipper::HKL > > &
+
+    """
     return _clipper.PopulateMatchesF_sigF_float(d_ref, d, matched)
-PopulateMatchesF_sigF_float = _clipper.PopulateMatchesF_sigF_float
 
 def PopulateMatchesE_sigE_float(d_ref, d, matched):
+    """
+    PopulateMatchesE_sigE_float(HKL_data_E_sigE_float d_ref, HKL_data_E_sigE_float d, HKLVector matched)
+
+    Parameters
+    ----------
+    d_ref: clipper::HKL_data< clipper::data32::E_sigE > const &
+    d: clipper::HKL_data< clipper::data32::E_sigE > const &
+    matched: std::vector< clipper::HKL,std::allocator< clipper::HKL > > &
+
+    """
     return _clipper.PopulateMatchesE_sigE_float(d_ref, d, matched)
-PopulateMatchesE_sigE_float = _clipper.PopulateMatchesE_sigE_float
 
 def PopulateMatchesABCD_float(d_ref, d, matched):
+    """
+    PopulateMatchesABCD_float(HKL_data_ABCD_float d_ref, HKL_data_ABCD_float d, HKLVector matched)
+
+    Parameters
+    ----------
+    d_ref: clipper::HKL_data< clipper::data32::ABCD > const &
+    d: clipper::HKL_data< clipper::data32::ABCD > const &
+    matched: std::vector< clipper::HKL,std::allocator< clipper::HKL > > &
+
+    """
     return _clipper.PopulateMatchesABCD_float(d_ref, d, matched)
-PopulateMatchesABCD_float = _clipper.PopulateMatchesABCD_float
 
 def PopulateMatchesPhi_fom_float(d_ref, d, matched):
+    """
+    PopulateMatchesPhi_fom_float(HKL_data_Phi_fom_float d_ref, HKL_data_Phi_fom_float d, HKLVector matched)
+
+    Parameters
+    ----------
+    d_ref: clipper::HKL_data< clipper::data32::Phi_fom > const &
+    d: clipper::HKL_data< clipper::data32::Phi_fom > const &
+    matched: std::vector< clipper::HKL,std::allocator< clipper::HKL > > &
+
+    """
     return _clipper.PopulateMatchesPhi_fom_float(d_ref, d, matched)
-PopulateMatchesPhi_fom_float = _clipper.PopulateMatchesPhi_fom_float
 
 def PopulateMatchesF_phi_float(d_ref, d, matched):
+    """
+    PopulateMatchesF_phi_float(HKL_data_F_phi_float d_ref, HKL_data_F_phi_float d, HKLVector matched)
+
+    Parameters
+    ----------
+    d_ref: clipper::HKL_data< clipper::data32::F_phi > const &
+    d: clipper::HKL_data< clipper::data32::F_phi > const &
+    matched: std::vector< clipper::HKL,std::allocator< clipper::HKL > > &
+
+    """
     return _clipper.PopulateMatchesF_phi_float(d_ref, d, matched)
-PopulateMatchesF_phi_float = _clipper.PopulateMatchesF_phi_float
 
 def PopulateMatchesFlag_float(d_ref, d, matched):
+    """
+    PopulateMatchesFlag_float(HKL_data_Flag d_ref, HKL_data_Flag d, HKLVector matched)
+
+    Parameters
+    ----------
+    d_ref: clipper::HKL_data< clipper::data32::Flag > const &
+    d: clipper::HKL_data< clipper::data32::Flag > const &
+    matched: std::vector< clipper::HKL,std::allocator< clipper::HKL > > &
+
+    """
     return _clipper.PopulateMatchesFlag_float(d_ref, d, matched)
-PopulateMatchesFlag_float = _clipper.PopulateMatchesFlag_float
 
 def SetFlagBoth(flag):
+    """
+    SetFlagBoth(HKL_data_Flag flag)
+
+    Parameters
+    ----------
+    flag: clipper::HKL_data< clipper::data32::Flag > &
+
+    """
     return _clipper.SetFlagBoth(flag)
-SetFlagBoth = _clipper.SetFlagBoth
 
 def SetFlagBothIfMissing(flag, myfsigf, status, freeflag):
+    """
+    SetFlagBothIfMissing(HKL_data_Flag flag, HKL_data_F_sigF_float myfsigf, HKL_data_Flag status, int freeflag)
+
+    Parameters
+    ----------
+    flag: clipper::HKL_data< clipper::data32::Flag > &
+    myfsigf: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+    status: clipper::HKL_data< clipper::datatypes::Flag > const &
+    freeflag: int
+
+    """
     return _clipper.SetFlagBothIfMissing(flag, myfsigf, status, freeflag)
-SetFlagBothIfMissing = _clipper.SetFlagBothIfMissing
 
 def SetData(F1, F2, CHECK, OPS, ELSE_OPS):
+    """
+    SetData(HKL_data_F_sigF_float F1, HKL_data_F_sigF_float F2, String CHECK, String OPS, String ELSE_OPS)
+
+    Parameters
+    ----------
+    F1: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+    F2: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+    CHECK: clipper::String const &
+    OPS: clipper::String const &
+    ELSE_OPS: clipper::String const &
+
+    """
     return _clipper.SetData(F1, F2, CHECK, OPS, ELSE_OPS)
-SetData = _clipper.SetData
 class EDcalc_mask_float(EDcalc_base_float):
+    """Proxy of C++ clipper::EDcalc_mask<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [EDcalc_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9268,6 +30215,15 @@ class EDcalc_mask_float(EDcalc_base_float):
     __repr__ = _swig_repr
 
     def __init__(self, radius=2.5):
+        """
+        __init__(clipper::EDcalc_mask<(float)> self, clipper::ftype const radius=2.5) -> EDcalc_mask_float
+
+        Parameters
+        ----------
+        radius: clipper::ftype const
+
+        __init__(clipper::EDcalc_mask<(float)> self) -> EDcalc_mask_float
+        """
         this = _clipper.new_EDcalc_mask_float(radius)
         try:
             self.this.append(this)
@@ -9275,16 +30231,52 @@ class EDcalc_mask_float(EDcalc_base_float):
             self.this = this
 
     def __call__(self, *args):
+        """
+        __call__(EDcalc_mask_float self, Xmap_float xmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap< float > &
+        atoms: clipper::Atom_list const &
+
+        __call__(EDcalc_mask_float self, NXmap_float nxmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        nxmap: clipper::NXmap< float > &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.EDcalc_mask_float___call__(self, *args)
 
+
     def compute(self, *args):
+        """
+        compute(EDcalc_mask_float self, Xmap_float xmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap< float > &
+        atoms: clipper::Atom_list const &
+
+        compute(EDcalc_mask_float self, NXmap_float xmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        xmap: clipper::NXmap< float > &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.EDcalc_mask_float_compute(self, *args)
+
     __swig_destroy__ = _clipper.delete_EDcalc_mask_float
     __del__ = lambda self: None
 EDcalc_mask_float_swigregister = _clipper.EDcalc_mask_float_swigregister
 EDcalc_mask_float_swigregister(EDcalc_mask_float)
 
 class EDcalc_iso_float(EDcalc_base_float):
+    """Proxy of C++ clipper::EDcalc_iso<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [EDcalc_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9296,6 +30288,15 @@ class EDcalc_iso_float(EDcalc_base_float):
     __repr__ = _swig_repr
 
     def __init__(self, radius=2.5):
+        """
+        __init__(clipper::EDcalc_iso<(float)> self, clipper::ftype const radius=2.5) -> EDcalc_iso_float
+
+        Parameters
+        ----------
+        radius: clipper::ftype const
+
+        __init__(clipper::EDcalc_iso<(float)> self) -> EDcalc_iso_float
+        """
         this = _clipper.new_EDcalc_iso_float(radius)
         try:
             self.this.append(this)
@@ -9303,16 +30304,52 @@ class EDcalc_iso_float(EDcalc_base_float):
             self.this = this
 
     def __call__(self, *args):
+        """
+        __call__(EDcalc_iso_float self, Xmap_float xmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap< float > &
+        atoms: clipper::Atom_list const &
+
+        __call__(EDcalc_iso_float self, NXmap_float nxmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        nxmap: clipper::NXmap< float > &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.EDcalc_iso_float___call__(self, *args)
 
+
     def compute(self, *args):
+        """
+        compute(EDcalc_iso_float self, Xmap_float xmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap< float > &
+        atoms: clipper::Atom_list const &
+
+        compute(EDcalc_iso_float self, NXmap_float xmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        xmap: clipper::NXmap< float > &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.EDcalc_iso_float_compute(self, *args)
+
     __swig_destroy__ = _clipper.delete_EDcalc_iso_float
     __del__ = lambda self: None
 EDcalc_iso_float_swigregister = _clipper.EDcalc_iso_float_swigregister
 EDcalc_iso_float_swigregister(EDcalc_iso_float)
 
 class EDcalc_aniso_float(EDcalc_base_float):
+    """Proxy of C++ clipper::EDcalc_aniso<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [EDcalc_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9324,6 +30361,15 @@ class EDcalc_aniso_float(EDcalc_base_float):
     __repr__ = _swig_repr
 
     def __init__(self, radius=2.5):
+        """
+        __init__(clipper::EDcalc_aniso<(float)> self, clipper::ftype const radius=2.5) -> EDcalc_aniso_float
+
+        Parameters
+        ----------
+        radius: clipper::ftype const
+
+        __init__(clipper::EDcalc_aniso<(float)> self) -> EDcalc_aniso_float
+        """
         this = _clipper.new_EDcalc_aniso_float(radius)
         try:
             self.this.append(this)
@@ -9331,16 +30377,52 @@ class EDcalc_aniso_float(EDcalc_base_float):
             self.this = this
 
     def __call__(self, *args):
+        """
+        __call__(EDcalc_aniso_float self, Xmap_float xmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap< float > &
+        atoms: clipper::Atom_list const &
+
+        __call__(EDcalc_aniso_float self, NXmap_float nxmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        nxmap: clipper::NXmap< float > &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.EDcalc_aniso_float___call__(self, *args)
 
+
     def compute(self, *args):
+        """
+        compute(EDcalc_aniso_float self, Xmap_float xmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap< float > &
+        atoms: clipper::Atom_list const &
+
+        compute(EDcalc_aniso_float self, NXmap_float xmap, Atom_list atoms) -> bool
+
+        Parameters
+        ----------
+        xmap: clipper::NXmap< float > &
+        atoms: clipper::Atom_list const &
+
+        """
         return _clipper.EDcalc_aniso_float_compute(self, *args)
+
     __swig_destroy__ = _clipper.delete_EDcalc_aniso_float
     __del__ = lambda self: None
 EDcalc_aniso_float_swigregister = _clipper.EDcalc_aniso_float_swigregister
 EDcalc_aniso_float_swigregister(EDcalc_aniso_float)
 
 class BasisFn_base(_object):
+    """Proxy of C++ clipper::BasisFn_base class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, BasisFn_base, name, value)
     __swig_getmethods__ = {}
@@ -9350,6 +30432,15 @@ class BasisFn_base(_object):
     LINEAR = _clipper.BasisFn_base_LINEAR
 
     def __init__(self, *args):
+        """
+        __init__(clipper::BasisFn_base self) -> BasisFn_base
+        __init__(clipper::BasisFn_base self, int const & np) -> BasisFn_base
+
+        Parameters
+        ----------
+        np: int const &
+
+        """
         if self.__class__ == BasisFn_base:
             _self = None
         else:
@@ -9361,19 +30452,68 @@ class BasisFn_base(_object):
             self.this = this
 
     def num_params(self):
+        """
+        num_params(BasisFn_base self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::BasisFn_base const *
+
+        """
         return _clipper.BasisFn_base_num_params(self)
 
+
     def f(self, hkl, cell, params):
+        """
+        f(BasisFn_base self, HKL hkl, Cell cell, DoubleVector params) -> clipper::ftype
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        cell: clipper::Cell const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_base_f(self, hkl, cell, params)
 
+
     def fderiv(self, hkl, cell, params):
+        """
+        fderiv(BasisFn_base self, HKL hkl, Cell cell, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        cell: clipper::Cell const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_base_fderiv(self, hkl, cell, params)
 
+
     def type(self):
+        """
+        type(BasisFn_base self) -> clipper::BasisFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::BasisFn_base const *
+
+        """
         return _clipper.BasisFn_base_type(self)
 
+
     def num_diagonals(self):
+        """
+        num_diagonals(BasisFn_base self) -> int
+
+        Parameters
+        ----------
+        self: clipper::BasisFn_base const *
+
+        """
         return _clipper.BasisFn_base_num_diagonals(self)
+
     def __disown__(self):
         self.this.disown()
         _clipper.disown_BasisFn_base(self)
@@ -9382,6 +30522,8 @@ BasisFn_base_swigregister = _clipper.BasisFn_base_swigregister
 BasisFn_base_swigregister(BasisFn_base)
 
 class TargetFn_base(_object):
+    """Proxy of C++ clipper::TargetFn_base class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, TargetFn_base, name, value)
     __swig_getmethods__ = {}
@@ -9391,14 +30533,41 @@ class TargetFn_base(_object):
     QUADRATIC = _clipper.TargetFn_base_QUADRATIC
 
     def rderiv(self, ih, fh):
+        """
+        rderiv(TargetFn_base self, clipper::HKL_info::HKL_reference_index const & ih, clipper::ftype const & fh) -> clipper::TargetFn_base::Rderiv
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_index const &
+        fh: clipper::ftype const &
+
+        """
         return _clipper.TargetFn_base_rderiv(self, ih, fh)
 
+
     def type(self):
+        """
+        type(TargetFn_base self) -> clipper::TargetFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::TargetFn_base const *
+
+        """
         return _clipper.TargetFn_base_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_base
     __del__ = lambda self: None
 
     def __init__(self):
+        """
+        __init__(clipper::TargetFn_base self) -> TargetFn_base
+
+        Parameters
+        ----------
+        self: PyObject *
+
+        """
         if self.__class__ == TargetFn_base:
             _self = None
         else:
@@ -9416,6 +30585,8 @@ TargetFn_base_swigregister = _clipper.TargetFn_base_swigregister
 TargetFn_base_swigregister(TargetFn_base)
 
 class ResolutionFn(_object):
+    """Proxy of C++ clipper::ResolutionFn class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, ResolutionFn, name, value)
     __swig_getmethods__ = {}
@@ -9423,6 +30594,38 @@ class ResolutionFn(_object):
     __repr__ = _swig_repr
 
     def __init__(self, hkl_info, basisfn, targetfn, params, damp=0.0, debug=False):
+        """
+        __init__(clipper::ResolutionFn self, HKL_info hkl_info, BasisFn_base basisfn, TargetFn_base targetfn, DoubleVector params, clipper::ftype const damp=0.0, bool const debug=False) -> ResolutionFn
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        basisfn: clipper::BasisFn_base const &
+        targetfn: clipper::TargetFn_base const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+        damp: clipper::ftype const
+        debug: bool const
+
+        __init__(clipper::ResolutionFn self, HKL_info hkl_info, BasisFn_base basisfn, TargetFn_base targetfn, DoubleVector params, clipper::ftype const damp=0.0) -> ResolutionFn
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        basisfn: clipper::BasisFn_base const &
+        targetfn: clipper::TargetFn_base const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+        damp: clipper::ftype const
+
+        __init__(clipper::ResolutionFn self, HKL_info hkl_info, BasisFn_base basisfn, TargetFn_base targetfn, DoubleVector params) -> ResolutionFn
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        basisfn: clipper::BasisFn_base const &
+        targetfn: clipper::TargetFn_base const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         this = _clipper.new_ResolutionFn(hkl_info, basisfn, targetfn, params, damp, debug)
         try:
             self.this.append(this)
@@ -9430,16 +30633,36 @@ class ResolutionFn(_object):
             self.this = this
 
     def f(self, ih):
+        """
+        f(ResolutionFn self, clipper::HKL_info::HKL_reference_index const & ih) -> clipper::ftype
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_index const &
+
+        """
         return _clipper.ResolutionFn_f(self, ih)
 
+
     def params(self):
+        """
+        params(ResolutionFn self) -> DoubleVector
+
+        Parameters
+        ----------
+        self: clipper::ResolutionFn const *
+
+        """
         return _clipper.ResolutionFn_params(self)
+
     __swig_destroy__ = _clipper.delete_ResolutionFn
     __del__ = lambda self: None
 ResolutionFn_swigregister = _clipper.ResolutionFn_swigregister
 ResolutionFn_swigregister(ResolutionFn)
 
 class ResolutionFn_nonlinear(ResolutionFn):
+    """Proxy of C++ clipper::ResolutionFn_nonlinear class."""
+
     __swig_setmethods__ = {}
     for _s in [ResolutionFn]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9451,6 +30674,38 @@ class ResolutionFn_nonlinear(ResolutionFn):
     __repr__ = _swig_repr
 
     def __init__(self, hkl_info, basisfn, targetfn, params, damp=0.0, debug=False):
+        """
+        __init__(clipper::ResolutionFn_nonlinear self, HKL_info hkl_info, BasisFn_base basisfn, TargetFn_base targetfn, DoubleVector params, clipper::ftype const damp=0.0, bool const debug=False) -> ResolutionFn_nonlinear
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        basisfn: clipper::BasisFn_base const &
+        targetfn: clipper::TargetFn_base const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+        damp: clipper::ftype const
+        debug: bool const
+
+        __init__(clipper::ResolutionFn_nonlinear self, HKL_info hkl_info, BasisFn_base basisfn, TargetFn_base targetfn, DoubleVector params, clipper::ftype const damp=0.0) -> ResolutionFn_nonlinear
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        basisfn: clipper::BasisFn_base const &
+        targetfn: clipper::TargetFn_base const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+        damp: clipper::ftype const
+
+        __init__(clipper::ResolutionFn_nonlinear self, HKL_info hkl_info, BasisFn_base basisfn, TargetFn_base targetfn, DoubleVector params) -> ResolutionFn_nonlinear
+
+        Parameters
+        ----------
+        hkl_info: clipper::HKL_info const &
+        basisfn: clipper::BasisFn_base const &
+        targetfn: clipper::TargetFn_base const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         this = _clipper.new_ResolutionFn_nonlinear(hkl_info, basisfn, targetfn, params, damp, debug)
         try:
             self.this.append(this)
@@ -9462,6 +30717,8 @@ ResolutionFn_nonlinear_swigregister = _clipper.ResolutionFn_nonlinear_swigregist
 ResolutionFn_nonlinear_swigregister(ResolutionFn_nonlinear)
 
 class Resolution_ordinal(Generic_ordinal):
+    """Proxy of C++ clipper::Resolution_ordinal class."""
+
     __swig_setmethods__ = {}
     for _s in [Generic_ordinal]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9473,9 +30730,35 @@ class Resolution_ordinal(Generic_ordinal):
     __repr__ = _swig_repr
 
     def init(self, *args):
+        """
+        init(Resolution_ordinal self, HKL_info hklinfo, clipper::ftype const & power)
+
+        Parameters
+        ----------
+        hklinfo: clipper::HKL_info const &
+        power: clipper::ftype const &
+
+        init(Resolution_ordinal self, HKL_data_base hkldata, clipper::ftype const & power)
+
+        Parameters
+        ----------
+        hkldata: clipper::HKL_data_base const &
+        power: clipper::ftype const &
+
+        init(Resolution_ordinal self, HKL_data_base hkldata, Cell cell, clipper::ftype const & power)
+
+        Parameters
+        ----------
+        hkldata: clipper::HKL_data_base const &
+        cell: clipper::Cell const &
+        power: clipper::ftype const &
+
+        """
         return _clipper.Resolution_ordinal_init(self, *args)
 
+
     def __init__(self):
+        """__init__(clipper::Resolution_ordinal self) -> Resolution_ordinal"""
         this = _clipper.new_Resolution_ordinal()
         try:
             self.this.append(this)
@@ -9487,6 +30770,8 @@ Resolution_ordinal_swigregister = _clipper.Resolution_ordinal_swigregister
 Resolution_ordinal_swigregister(Resolution_ordinal)
 
 class BasisFn_binner(BasisFn_base):
+    """Proxy of C++ clipper::BasisFn_binner class."""
+
     __swig_setmethods__ = {}
     for _s in [BasisFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9498,6 +30783,38 @@ class BasisFn_binner(BasisFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::BasisFn_binner self, HKL_info hklinfo, int const & nbins_, clipper::ftype const power=1.0) -> BasisFn_binner
+
+        Parameters
+        ----------
+        hklinfo: clipper::HKL_info const &
+        nbins_: int const &
+        power: clipper::ftype const
+
+        __init__(clipper::BasisFn_binner self, HKL_info hklinfo, int const & nbins_) -> BasisFn_binner
+
+        Parameters
+        ----------
+        hklinfo: clipper::HKL_info const &
+        nbins_: int const &
+
+        __init__(clipper::BasisFn_binner self, HKL_data_base hkldata, int const & nbins_, clipper::ftype const power=1.0) -> BasisFn_binner
+
+        Parameters
+        ----------
+        hkldata: clipper::HKL_data_base const &
+        nbins_: int const &
+        power: clipper::ftype const
+
+        __init__(clipper::BasisFn_binner self, HKL_data_base hkldata, int const & nbins_) -> BasisFn_binner
+
+        Parameters
+        ----------
+        hkldata: clipper::HKL_data_base const &
+        nbins_: int const &
+
+        """
         this = _clipper.new_BasisFn_binner(*args)
         try:
             self.this.append(this)
@@ -9505,28 +30822,90 @@ class BasisFn_binner(BasisFn_base):
             self.this = this
 
     def f_s(self, s, params):
+        """
+        f_s(BasisFn_binner self, clipper::ftype const & s, DoubleVector params) -> clipper::ftype
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_binner_f_s(self, s, params)
 
+
     def fderiv_s(self, s, params):
+        """
+        fderiv_s(BasisFn_binner self, clipper::ftype const & s, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_binner_fderiv_s(self, s, params)
 
+
     def type(self):
+        """
+        type(BasisFn_binner self) -> clipper::BasisFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::BasisFn_binner const *
+
+        """
         return _clipper.BasisFn_binner_type(self)
 
+
     def num_diagonals(self):
+        """
+        num_diagonals(BasisFn_binner self) -> int
+
+        Parameters
+        ----------
+        self: clipper::BasisFn_binner const *
+
+        """
         return _clipper.BasisFn_binner_num_diagonals(self)
 
+
     def f(self, hkl, cell, params):
+        """
+        f(BasisFn_binner self, HKL hkl, Cell cell, DoubleVector params) -> clipper::ftype
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        cell: clipper::Cell const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_binner_f(self, hkl, cell, params)
 
+
     def fderiv(self, hkl, cell, params):
+        """
+        fderiv(BasisFn_binner self, HKL hkl, Cell cell, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        cell: clipper::Cell const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_binner_fderiv(self, hkl, cell, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_binner
     __del__ = lambda self: None
 BasisFn_binner_swigregister = _clipper.BasisFn_binner_swigregister
 BasisFn_binner_swigregister(BasisFn_binner)
 
 class BasisFn_linear(BasisFn_base):
+    """Proxy of C++ clipper::BasisFn_linear class."""
+
     __swig_setmethods__ = {}
     for _s in [BasisFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9538,6 +30917,38 @@ class BasisFn_linear(BasisFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::BasisFn_linear self, HKL_info hklinfo, int const & nbins_, clipper::ftype const power=1.0) -> BasisFn_linear
+
+        Parameters
+        ----------
+        hklinfo: clipper::HKL_info const &
+        nbins_: int const &
+        power: clipper::ftype const
+
+        __init__(clipper::BasisFn_linear self, HKL_info hklinfo, int const & nbins_) -> BasisFn_linear
+
+        Parameters
+        ----------
+        hklinfo: clipper::HKL_info const &
+        nbins_: int const &
+
+        __init__(clipper::BasisFn_linear self, HKL_data_base hkldata, int const & nbins_, clipper::ftype const power=1.0) -> BasisFn_linear
+
+        Parameters
+        ----------
+        hkldata: clipper::HKL_data_base const &
+        nbins_: int const &
+        power: clipper::ftype const
+
+        __init__(clipper::BasisFn_linear self, HKL_data_base hkldata, int const & nbins_) -> BasisFn_linear
+
+        Parameters
+        ----------
+        hkldata: clipper::HKL_data_base const &
+        nbins_: int const &
+
+        """
         this = _clipper.new_BasisFn_linear(*args)
         try:
             self.this.append(this)
@@ -9545,28 +30956,90 @@ class BasisFn_linear(BasisFn_base):
             self.this = this
 
     def f_s(self, s, params):
+        """
+        f_s(BasisFn_linear self, clipper::ftype const & s, DoubleVector params) -> clipper::ftype
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_linear_f_s(self, s, params)
 
+
     def fderiv_s(self, s, params):
+        """
+        fderiv_s(BasisFn_linear self, clipper::ftype const & s, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_linear_fderiv_s(self, s, params)
 
+
     def type(self):
+        """
+        type(BasisFn_linear self) -> clipper::BasisFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::BasisFn_linear const *
+
+        """
         return _clipper.BasisFn_linear_type(self)
 
+
     def num_diagonals(self):
+        """
+        num_diagonals(BasisFn_linear self) -> int
+
+        Parameters
+        ----------
+        self: clipper::BasisFn_linear const *
+
+        """
         return _clipper.BasisFn_linear_num_diagonals(self)
 
+
     def f(self, hkl, cell, params):
+        """
+        f(BasisFn_linear self, HKL hkl, Cell cell, DoubleVector params) -> clipper::ftype
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        cell: clipper::Cell const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_linear_f(self, hkl, cell, params)
 
+
     def fderiv(self, hkl, cell, params):
+        """
+        fderiv(BasisFn_linear self, HKL hkl, Cell cell, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        cell: clipper::Cell const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_linear_fderiv(self, hkl, cell, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_linear
     __del__ = lambda self: None
 BasisFn_linear_swigregister = _clipper.BasisFn_linear_swigregister
 BasisFn_linear_swigregister(BasisFn_linear)
 
 class BasisFn_spline(BasisFn_base):
+    """Proxy of C++ clipper::BasisFn_spline class."""
+
     __swig_setmethods__ = {}
     for _s in [BasisFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9578,6 +31051,38 @@ class BasisFn_spline(BasisFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::BasisFn_spline self, HKL_info hklinfo, int const & nbins_, clipper::ftype const power=1.0) -> BasisFn_spline
+
+        Parameters
+        ----------
+        hklinfo: clipper::HKL_info const &
+        nbins_: int const &
+        power: clipper::ftype const
+
+        __init__(clipper::BasisFn_spline self, HKL_info hklinfo, int const & nbins_) -> BasisFn_spline
+
+        Parameters
+        ----------
+        hklinfo: clipper::HKL_info const &
+        nbins_: int const &
+
+        __init__(clipper::BasisFn_spline self, HKL_data_base hkldata, int const & nbins_, clipper::ftype const power=1.0) -> BasisFn_spline
+
+        Parameters
+        ----------
+        hkldata: clipper::HKL_data_base const &
+        nbins_: int const &
+        power: clipper::ftype const
+
+        __init__(clipper::BasisFn_spline self, HKL_data_base hkldata, int const & nbins_) -> BasisFn_spline
+
+        Parameters
+        ----------
+        hkldata: clipper::HKL_data_base const &
+        nbins_: int const &
+
+        """
         this = _clipper.new_BasisFn_spline(*args)
         try:
             self.this.append(this)
@@ -9585,28 +31090,90 @@ class BasisFn_spline(BasisFn_base):
             self.this = this
 
     def f_s(self, s, params):
+        """
+        f_s(BasisFn_spline self, clipper::ftype const & s, DoubleVector params) -> clipper::ftype
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_spline_f_s(self, s, params)
 
+
     def fderiv_s(self, s, params):
+        """
+        fderiv_s(BasisFn_spline self, clipper::ftype const & s, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_spline_fderiv_s(self, s, params)
 
+
     def type(self):
+        """
+        type(BasisFn_spline self) -> clipper::BasisFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::BasisFn_spline const *
+
+        """
         return _clipper.BasisFn_spline_type(self)
 
+
     def num_diagonals(self):
+        """
+        num_diagonals(BasisFn_spline self) -> int
+
+        Parameters
+        ----------
+        self: clipper::BasisFn_spline const *
+
+        """
         return _clipper.BasisFn_spline_num_diagonals(self)
 
+
     def f(self, hkl, cell, params):
+        """
+        f(BasisFn_spline self, HKL hkl, Cell cell, DoubleVector params) -> clipper::ftype
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        cell: clipper::Cell const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_spline_f(self, hkl, cell, params)
 
+
     def fderiv(self, hkl, cell, params):
+        """
+        fderiv(BasisFn_spline self, HKL hkl, Cell cell, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        cell: clipper::Cell const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_spline_fderiv(self, hkl, cell, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_spline
     __del__ = lambda self: None
 BasisFn_spline_swigregister = _clipper.BasisFn_spline_swigregister
 BasisFn_spline_swigregister(BasisFn_spline)
 
 class BasisFn_gaussian(BasisFn_base):
+    """Proxy of C++ clipper::BasisFn_gaussian class."""
+
     __swig_setmethods__ = {}
     for _s in [BasisFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9618,6 +31185,7 @@ class BasisFn_gaussian(BasisFn_base):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::BasisFn_gaussian self) -> BasisFn_gaussian"""
         this = _clipper.new_BasisFn_gaussian()
         try:
             self.this.append(this)
@@ -9625,22 +31193,63 @@ class BasisFn_gaussian(BasisFn_base):
             self.this = this
 
     def fderiv_s(self, s, params):
+        """
+        fderiv_s(BasisFn_gaussian self, clipper::ftype const & s, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_gaussian_fderiv_s(self, s, params)
 
+
     def fderiv(self, hkl, cell, params):
+        """
+        fderiv(BasisFn_gaussian self, HKL hkl, Cell cell, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        cell: clipper::Cell const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_gaussian_fderiv(self, hkl, cell, params)
 
+
     def scale(self, params):
+        """
+        scale(BasisFn_gaussian self, DoubleVector params) -> clipper::ftype
+
+        Parameters
+        ----------
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_gaussian_scale(self, params)
 
+
     def u_iso(self, params):
+        """
+        u_iso(BasisFn_gaussian self, DoubleVector params) -> clipper::ftype
+
+        Parameters
+        ----------
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_gaussian_u_iso(self, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_gaussian
     __del__ = lambda self: None
 BasisFn_gaussian_swigregister = _clipper.BasisFn_gaussian_swigregister
 BasisFn_gaussian_swigregister(BasisFn_gaussian)
 
 class BasisFn_aniso_gaussian(BasisFn_base):
+    """Proxy of C++ clipper::BasisFn_aniso_gaussian class."""
+
     __swig_setmethods__ = {}
     for _s in [BasisFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9652,6 +31261,7 @@ class BasisFn_aniso_gaussian(BasisFn_base):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::BasisFn_aniso_gaussian self) -> BasisFn_aniso_gaussian"""
         this = _clipper.new_BasisFn_aniso_gaussian()
         try:
             self.this.append(this)
@@ -9659,22 +31269,63 @@ class BasisFn_aniso_gaussian(BasisFn_base):
             self.this = this
 
     def fderiv_coord(self, xs, params):
+        """
+        fderiv_coord(BasisFn_aniso_gaussian self, Coord_reci_orth xs, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        xs: clipper::Coord_reci_orth const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_aniso_gaussian_fderiv_coord(self, xs, params)
 
+
     def fderiv(self, hkl, cell, params):
+        """
+        fderiv(BasisFn_aniso_gaussian self, HKL hkl, Cell cell, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        cell: clipper::Cell const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_aniso_gaussian_fderiv(self, hkl, cell, params)
 
+
     def scale(self, params):
+        """
+        scale(BasisFn_aniso_gaussian self, DoubleVector params) -> clipper::ftype
+
+        Parameters
+        ----------
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_aniso_gaussian_scale(self, params)
 
+
     def u_aniso_orth(self, params):
+        """
+        u_aniso_orth(BasisFn_aniso_gaussian self, DoubleVector params) -> U_aniso_orth
+
+        Parameters
+        ----------
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_aniso_gaussian_u_aniso_orth(self, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_aniso_gaussian
     __del__ = lambda self: None
 BasisFn_aniso_gaussian_swigregister = _clipper.BasisFn_aniso_gaussian_swigregister
 BasisFn_aniso_gaussian_swigregister(BasisFn_aniso_gaussian)
 
 class BasisFn_log_gaussian(BasisFn_base):
+    """Proxy of C++ clipper::BasisFn_log_gaussian class."""
+
     __swig_setmethods__ = {}
     for _s in [BasisFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9686,6 +31337,7 @@ class BasisFn_log_gaussian(BasisFn_base):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::BasisFn_log_gaussian self) -> BasisFn_log_gaussian"""
         this = _clipper.new_BasisFn_log_gaussian()
         try:
             self.this.append(this)
@@ -9693,25 +31345,75 @@ class BasisFn_log_gaussian(BasisFn_base):
             self.this = this
 
     def fderiv_s(self, s, params):
+        """
+        fderiv_s(BasisFn_log_gaussian self, clipper::ftype const & s, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_log_gaussian_fderiv_s(self, s, params)
 
+
     def fderiv(self, hkl, cell, params):
+        """
+        fderiv(BasisFn_log_gaussian self, HKL hkl, Cell cell, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        cell: clipper::Cell const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_log_gaussian_fderiv(self, hkl, cell, params)
 
+
     def type(self):
+        """
+        type(BasisFn_log_gaussian self) -> clipper::BasisFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::BasisFn_log_gaussian const *
+
+        """
         return _clipper.BasisFn_log_gaussian_type(self)
 
+
     def scale(self, params):
+        """
+        scale(BasisFn_log_gaussian self, DoubleVector params) -> clipper::ftype
+
+        Parameters
+        ----------
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_log_gaussian_scale(self, params)
 
+
     def u_iso(self, params):
+        """
+        u_iso(BasisFn_log_gaussian self, DoubleVector params) -> clipper::ftype
+
+        Parameters
+        ----------
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_log_gaussian_u_iso(self, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_log_gaussian
     __del__ = lambda self: None
 BasisFn_log_gaussian_swigregister = _clipper.BasisFn_log_gaussian_swigregister
 BasisFn_log_gaussian_swigregister(BasisFn_log_gaussian)
 
 class BasisFn_log_aniso_gaussian(BasisFn_base):
+    """Proxy of C++ clipper::BasisFn_log_aniso_gaussian class."""
+
     __swig_setmethods__ = {}
     for _s in [BasisFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9723,6 +31425,7 @@ class BasisFn_log_aniso_gaussian(BasisFn_base):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::BasisFn_log_aniso_gaussian self) -> BasisFn_log_aniso_gaussian"""
         this = _clipper.new_BasisFn_log_aniso_gaussian()
         try:
             self.this.append(this)
@@ -9730,25 +31433,75 @@ class BasisFn_log_aniso_gaussian(BasisFn_base):
             self.this = this
 
     def fderiv_coord(self, xs, params):
+        """
+        fderiv_coord(BasisFn_log_aniso_gaussian self, Coord_reci_orth xs, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        xs: clipper::Coord_reci_orth const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_log_aniso_gaussian_fderiv_coord(self, xs, params)
 
+
     def fderiv(self, hkl, cell, params):
+        """
+        fderiv(BasisFn_log_aniso_gaussian self, HKL hkl, Cell cell, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        cell: clipper::Cell const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_log_aniso_gaussian_fderiv(self, hkl, cell, params)
 
+
     def type(self):
+        """
+        type(BasisFn_log_aniso_gaussian self) -> clipper::BasisFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::BasisFn_log_aniso_gaussian const *
+
+        """
         return _clipper.BasisFn_log_aniso_gaussian_type(self)
 
+
     def scale(self, params):
+        """
+        scale(BasisFn_log_aniso_gaussian self, DoubleVector params) -> clipper::ftype
+
+        Parameters
+        ----------
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_log_aniso_gaussian_scale(self, params)
 
+
     def u_aniso_orth(self, params):
+        """
+        u_aniso_orth(BasisFn_log_aniso_gaussian self, DoubleVector params) -> U_aniso_orth
+
+        Parameters
+        ----------
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_log_aniso_gaussian_u_aniso_orth(self, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_log_aniso_gaussian
     __del__ = lambda self: None
 BasisFn_log_aniso_gaussian_swigregister = _clipper.BasisFn_log_aniso_gaussian_swigregister
 BasisFn_log_aniso_gaussian_swigregister(BasisFn_log_aniso_gaussian)
 
 class BasisFn_expcubic(BasisFn_base):
+    """Proxy of C++ clipper::BasisFn_expcubic class."""
+
     __swig_setmethods__ = {}
     for _s in [BasisFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9760,6 +31513,7 @@ class BasisFn_expcubic(BasisFn_base):
     __repr__ = _swig_repr
 
     def __init__(self):
+        """__init__(clipper::BasisFn_expcubic self) -> BasisFn_expcubic"""
         this = _clipper.new_BasisFn_expcubic()
         try:
             self.this.append(this)
@@ -9767,16 +31521,39 @@ class BasisFn_expcubic(BasisFn_base):
             self.this = this
 
     def fderiv_s(self, s, params):
+        """
+        fderiv_s(BasisFn_expcubic self, clipper::ftype const & s, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_expcubic_fderiv_s(self, s, params)
 
+
     def fderiv(self, hkl, cell, params):
+        """
+        fderiv(BasisFn_expcubic self, HKL hkl, Cell cell, DoubleVector params) -> clipper::BasisFn_base::Fderiv const &
+
+        Parameters
+        ----------
+        hkl: clipper::HKL const &
+        cell: clipper::Cell const &
+        params: std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &
+
+        """
         return _clipper.BasisFn_expcubic_fderiv(self, hkl, cell, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_expcubic
     __del__ = lambda self: None
 BasisFn_expcubic_swigregister = _clipper.BasisFn_expcubic_swigregister
 BasisFn_expcubic_swigregister(BasisFn_expcubic)
 
 class TargetFn_scaleEsq_E_sigE_T(TargetFn_base):
+    """Proxy of C++ clipper::TargetFn_scaleEsq<(clipper::data32::E_sigE)> class."""
+
     __swig_setmethods__ = {}
     for _s in [TargetFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9788,6 +31565,14 @@ class TargetFn_scaleEsq_E_sigE_T(TargetFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data_):
+        """
+        __init__(clipper::TargetFn_scaleEsq<(clipper::data32::E_sigE)> self, HKL_data_E_sigE_float hkl_data_) -> TargetFn_scaleEsq_E_sigE_T
+
+        Parameters
+        ----------
+        hkl_data_: clipper::HKL_data< clipper::datatypes::E_sigE< float > > const &
+
+        """
         this = _clipper.new_TargetFn_scaleEsq_E_sigE_T(hkl_data_)
         try:
             self.this.append(this)
@@ -9795,16 +31580,37 @@ class TargetFn_scaleEsq_E_sigE_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih, fh):
+        """
+        rderiv(TargetFn_scaleEsq_E_sigE_T self, clipper::HKL_info::HKL_reference_index const & ih, clipper::ftype const & fh) -> clipper::TargetFn_base::Rderiv
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_index const &
+        fh: clipper::ftype const &
+
+        """
         return _clipper.TargetFn_scaleEsq_E_sigE_T_rderiv(self, ih, fh)
 
+
     def type(self):
+        """
+        type(TargetFn_scaleEsq_E_sigE_T self) -> clipper::TargetFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::TargetFn_scaleEsq< clipper::data32::E_sigE > const *
+
+        """
         return _clipper.TargetFn_scaleEsq_E_sigE_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_scaleEsq_E_sigE_T
     __del__ = lambda self: None
 TargetFn_scaleEsq_E_sigE_T_swigregister = _clipper.TargetFn_scaleEsq_E_sigE_T_swigregister
 TargetFn_scaleEsq_E_sigE_T_swigregister(TargetFn_scaleEsq_E_sigE_T)
 
 class TargetFn_meanFnth_F_phi_T(TargetFn_base):
+    """Proxy of C++ clipper::TargetFn_meanFnth<(clipper::data32::F_phi)> class."""
+
     __swig_setmethods__ = {}
     for _s in [TargetFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9816,6 +31622,15 @@ class TargetFn_meanFnth_F_phi_T(TargetFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data_, n):
+        """
+        __init__(clipper::TargetFn_meanFnth<(clipper::data32::F_phi)> self, HKL_data_F_phi_float hkl_data_, clipper::ftype const & n) -> TargetFn_meanFnth_F_phi_T
+
+        Parameters
+        ----------
+        hkl_data_: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        n: clipper::ftype const &
+
+        """
         this = _clipper.new_TargetFn_meanFnth_F_phi_T(hkl_data_, n)
         try:
             self.this.append(this)
@@ -9823,16 +31638,37 @@ class TargetFn_meanFnth_F_phi_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih, fh):
+        """
+        rderiv(TargetFn_meanFnth_F_phi_T self, clipper::HKL_info::HKL_reference_index const & ih, clipper::ftype const & fh) -> clipper::TargetFn_base::Rderiv
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_index const &
+        fh: clipper::ftype const &
+
+        """
         return _clipper.TargetFn_meanFnth_F_phi_T_rderiv(self, ih, fh)
 
+
     def type(self):
+        """
+        type(TargetFn_meanFnth_F_phi_T self) -> clipper::TargetFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::TargetFn_meanFnth< clipper::data32::F_phi > const *
+
+        """
         return _clipper.TargetFn_meanFnth_F_phi_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_meanFnth_F_phi_T
     __del__ = lambda self: None
 TargetFn_meanFnth_F_phi_T_swigregister = _clipper.TargetFn_meanFnth_F_phi_T_swigregister
 TargetFn_meanFnth_F_phi_T_swigregister(TargetFn_meanFnth_F_phi_T)
 
 class TargetFn_scaleF1F2_F_sigF_2_T(TargetFn_base):
+    """Proxy of C++ clipper::TargetFn_scaleF1F2<(clipper::data32::F_sigF,clipper::data32::F_sigF)> class."""
+
     __swig_setmethods__ = {}
     for _s in [TargetFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9844,6 +31680,15 @@ class TargetFn_scaleF1F2_F_sigF_2_T(TargetFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data1_, hkl_data2_):
+        """
+        __init__(clipper::TargetFn_scaleF1F2<(clipper::data32::F_sigF,clipper::data32::F_sigF)> self, HKL_data_F_sigF_float hkl_data1_, HKL_data_F_sigF_float hkl_data2_) -> TargetFn_scaleF1F2_F_sigF_2_T
+
+        Parameters
+        ----------
+        hkl_data1_: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+        hkl_data2_: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+
+        """
         this = _clipper.new_TargetFn_scaleF1F2_F_sigF_2_T(hkl_data1_, hkl_data2_)
         try:
             self.this.append(this)
@@ -9851,16 +31696,37 @@ class TargetFn_scaleF1F2_F_sigF_2_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih, fh):
+        """
+        rderiv(TargetFn_scaleF1F2_F_sigF_2_T self, clipper::HKL_info::HKL_reference_index const & ih, clipper::ftype const & fh) -> clipper::TargetFn_base::Rderiv
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_index const &
+        fh: clipper::ftype const &
+
+        """
         return _clipper.TargetFn_scaleF1F2_F_sigF_2_T_rderiv(self, ih, fh)
 
+
     def type(self):
+        """
+        type(TargetFn_scaleF1F2_F_sigF_2_T self) -> clipper::TargetFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::TargetFn_scaleF1F2< clipper::data32::F_sigF,clipper::data32::F_sigF > const *
+
+        """
         return _clipper.TargetFn_scaleF1F2_F_sigF_2_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_scaleF1F2_F_sigF_2_T
     __del__ = lambda self: None
 TargetFn_scaleF1F2_F_sigF_2_T_swigregister = _clipper.TargetFn_scaleF1F2_F_sigF_2_T_swigregister
 TargetFn_scaleF1F2_F_sigF_2_T_swigregister(TargetFn_scaleF1F2_F_sigF_2_T)
 
 class TargetFn_scaleLogF1F2_F_sigF_2_T(TargetFn_base):
+    """Proxy of C++ clipper::TargetFn_scaleLogF1F2<(clipper::data32::F_sigF,clipper::data32::F_sigF)> class."""
+
     __swig_setmethods__ = {}
     for _s in [TargetFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9872,6 +31738,15 @@ class TargetFn_scaleLogF1F2_F_sigF_2_T(TargetFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data1_, hkl_data2_):
+        """
+        __init__(clipper::TargetFn_scaleLogF1F2<(clipper::data32::F_sigF,clipper::data32::F_sigF)> self, HKL_data_F_sigF_float hkl_data1_, HKL_data_F_sigF_float hkl_data2_) -> TargetFn_scaleLogF1F2_F_sigF_2_T
+
+        Parameters
+        ----------
+        hkl_data1_: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+        hkl_data2_: clipper::HKL_data< clipper::datatypes::F_sigF< float > > const &
+
+        """
         this = _clipper.new_TargetFn_scaleLogF1F2_F_sigF_2_T(hkl_data1_, hkl_data2_)
         try:
             self.this.append(this)
@@ -9879,16 +31754,37 @@ class TargetFn_scaleLogF1F2_F_sigF_2_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih, fh):
+        """
+        rderiv(TargetFn_scaleLogF1F2_F_sigF_2_T self, clipper::HKL_info::HKL_reference_index const & ih, clipper::ftype const & fh) -> clipper::TargetFn_base::Rderiv
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_index const &
+        fh: clipper::ftype const &
+
+        """
         return _clipper.TargetFn_scaleLogF1F2_F_sigF_2_T_rderiv(self, ih, fh)
 
+
     def type(self):
+        """
+        type(TargetFn_scaleLogF1F2_F_sigF_2_T self) -> clipper::TargetFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::TargetFn_scaleLogF1F2< clipper::data32::F_sigF,clipper::data32::F_sigF > const *
+
+        """
         return _clipper.TargetFn_scaleLogF1F2_F_sigF_2_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_scaleLogF1F2_F_sigF_2_T
     __del__ = lambda self: None
 TargetFn_scaleLogF1F2_F_sigF_2_T_swigregister = _clipper.TargetFn_scaleLogF1F2_F_sigF_2_T_swigregister
 TargetFn_scaleLogF1F2_F_sigF_2_T_swigregister(TargetFn_scaleLogF1F2_F_sigF_2_T)
 
 class TargetFn_scaleI1I2_I_sigI_2_T(TargetFn_base):
+    """Proxy of C++ clipper::TargetFn_scaleI1I2<(clipper::data32::I_sigI,clipper::data32::I_sigI)> class."""
+
     __swig_setmethods__ = {}
     for _s in [TargetFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9900,6 +31796,15 @@ class TargetFn_scaleI1I2_I_sigI_2_T(TargetFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data1_, hkl_data2_):
+        """
+        __init__(clipper::TargetFn_scaleI1I2<(clipper::data32::I_sigI,clipper::data32::I_sigI)> self, HKL_data_I_sigI_float hkl_data1_, HKL_data_I_sigI_float hkl_data2_) -> TargetFn_scaleI1I2_I_sigI_2_T
+
+        Parameters
+        ----------
+        hkl_data1_: clipper::HKL_data< clipper::datatypes::I_sigI< float > > const &
+        hkl_data2_: clipper::HKL_data< clipper::datatypes::I_sigI< float > > const &
+
+        """
         this = _clipper.new_TargetFn_scaleI1I2_I_sigI_2_T(hkl_data1_, hkl_data2_)
         try:
             self.this.append(this)
@@ -9907,16 +31812,37 @@ class TargetFn_scaleI1I2_I_sigI_2_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih, fh):
+        """
+        rderiv(TargetFn_scaleI1I2_I_sigI_2_T self, clipper::HKL_info::HKL_reference_index const & ih, clipper::ftype const & fh) -> clipper::TargetFn_base::Rderiv
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_index const &
+        fh: clipper::ftype const &
+
+        """
         return _clipper.TargetFn_scaleI1I2_I_sigI_2_T_rderiv(self, ih, fh)
 
+
     def type(self):
+        """
+        type(TargetFn_scaleI1I2_I_sigI_2_T self) -> clipper::TargetFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::TargetFn_scaleI1I2< clipper::data32::I_sigI,clipper::data32::I_sigI > const *
+
+        """
         return _clipper.TargetFn_scaleI1I2_I_sigI_2_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_scaleI1I2_I_sigI_2_T
     __del__ = lambda self: None
 TargetFn_scaleI1I2_I_sigI_2_T_swigregister = _clipper.TargetFn_scaleI1I2_I_sigI_2_T_swigregister
 TargetFn_scaleI1I2_I_sigI_2_T_swigregister(TargetFn_scaleI1I2_I_sigI_2_T)
 
 class TargetFn_scaleLogI1I2_I_sigI_2_T(TargetFn_base):
+    """Proxy of C++ clipper::TargetFn_scaleLogI1I2<(clipper::data32::I_sigI,clipper::data32::I_sigI)> class."""
+
     __swig_setmethods__ = {}
     for _s in [TargetFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9928,6 +31854,15 @@ class TargetFn_scaleLogI1I2_I_sigI_2_T(TargetFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data1_, hkl_data2_):
+        """
+        __init__(clipper::TargetFn_scaleLogI1I2<(clipper::data32::I_sigI,clipper::data32::I_sigI)> self, HKL_data_I_sigI_float hkl_data1_, HKL_data_I_sigI_float hkl_data2_) -> TargetFn_scaleLogI1I2_I_sigI_2_T
+
+        Parameters
+        ----------
+        hkl_data1_: clipper::HKL_data< clipper::datatypes::I_sigI< float > > const &
+        hkl_data2_: clipper::HKL_data< clipper::datatypes::I_sigI< float > > const &
+
+        """
         this = _clipper.new_TargetFn_scaleLogI1I2_I_sigI_2_T(hkl_data1_, hkl_data2_)
         try:
             self.this.append(this)
@@ -9935,16 +31870,37 @@ class TargetFn_scaleLogI1I2_I_sigI_2_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih, fh):
+        """
+        rderiv(TargetFn_scaleLogI1I2_I_sigI_2_T self, clipper::HKL_info::HKL_reference_index const & ih, clipper::ftype const & fh) -> clipper::TargetFn_base::Rderiv
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_index const &
+        fh: clipper::ftype const &
+
+        """
         return _clipper.TargetFn_scaleLogI1I2_I_sigI_2_T_rderiv(self, ih, fh)
 
+
     def type(self):
+        """
+        type(TargetFn_scaleLogI1I2_I_sigI_2_T self) -> clipper::TargetFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::TargetFn_scaleLogI1I2< clipper::data32::I_sigI,clipper::data32::I_sigI > const *
+
+        """
         return _clipper.TargetFn_scaleLogI1I2_I_sigI_2_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_scaleLogI1I2_I_sigI_2_T
     __del__ = lambda self: None
 TargetFn_scaleLogI1I2_I_sigI_2_T_swigregister = _clipper.TargetFn_scaleLogI1I2_I_sigI_2_T_swigregister
 TargetFn_scaleLogI1I2_I_sigI_2_T_swigregister(TargetFn_scaleLogI1I2_I_sigI_2_T)
 
 class TargetFn_meanEnth_E_sigE_T(TargetFn_base):
+    """Proxy of C++ clipper::TargetFn_meanEnth<(clipper::data32::E_sigE)> class."""
+
     __swig_setmethods__ = {}
     for _s in [TargetFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9956,6 +31912,15 @@ class TargetFn_meanEnth_E_sigE_T(TargetFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data_, n):
+        """
+        __init__(clipper::TargetFn_meanEnth<(clipper::data32::E_sigE)> self, HKL_data_E_sigE_float hkl_data_, clipper::ftype const & n) -> TargetFn_meanEnth_E_sigE_T
+
+        Parameters
+        ----------
+        hkl_data_: clipper::HKL_data< clipper::datatypes::E_sigE< float > > const &
+        n: clipper::ftype const &
+
+        """
         this = _clipper.new_TargetFn_meanEnth_E_sigE_T(hkl_data_, n)
         try:
             self.this.append(this)
@@ -9963,16 +31928,37 @@ class TargetFn_meanEnth_E_sigE_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih, fh):
+        """
+        rderiv(TargetFn_meanEnth_E_sigE_T self, clipper::HKL_info::HKL_reference_index const & ih, clipper::ftype const & fh) -> clipper::TargetFn_base::Rderiv
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_index const &
+        fh: clipper::ftype const &
+
+        """
         return _clipper.TargetFn_meanEnth_E_sigE_T_rderiv(self, ih, fh)
 
+
     def type(self):
+        """
+        type(TargetFn_meanEnth_E_sigE_T self) -> clipper::TargetFn_base::FNtype
+
+        Parameters
+        ----------
+        self: clipper::TargetFn_meanEnth< clipper::data32::E_sigE > const *
+
+        """
         return _clipper.TargetFn_meanEnth_E_sigE_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_meanEnth_E_sigE_T
     __del__ = lambda self: None
 TargetFn_meanEnth_E_sigE_T_swigregister = _clipper.TargetFn_meanEnth_E_sigE_T_swigregister
 TargetFn_meanEnth_E_sigE_T_swigregister(TargetFn_meanEnth_E_sigE_T)
 
 class TargetFn_sigmaa_omegaa_E_sigE_T(TargetFn_base):
+    """Proxy of C++ clipper::TargetFn_sigmaa_omegaa<(clipper::data32::E_sigE)> class."""
+
     __swig_setmethods__ = {}
     for _s in [TargetFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -9984,6 +31970,15 @@ class TargetFn_sigmaa_omegaa_E_sigE_T(TargetFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, eo, ec):
+        """
+        __init__(clipper::TargetFn_sigmaa_omegaa<(clipper::data32::E_sigE)> self, HKL_data_E_sigE_float eo, HKL_data_E_sigE_float ec) -> TargetFn_sigmaa_omegaa_E_sigE_T
+
+        Parameters
+        ----------
+        eo: clipper::HKL_data< clipper::datatypes::E_sigE< float > > const &
+        ec: clipper::HKL_data< clipper::datatypes::E_sigE< float > > const &
+
+        """
         this = _clipper.new_TargetFn_sigmaa_omegaa_E_sigE_T(eo, ec)
         try:
             self.this.append(this)
@@ -9991,21 +31986,49 @@ class TargetFn_sigmaa_omegaa_E_sigE_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih, omegaa):
+        """
+        rderiv(TargetFn_sigmaa_omegaa_E_sigE_T self, clipper::HKL_info::HKL_reference_index const & ih, clipper::ftype const & omegaa) -> clipper::TargetFn_base::Rderiv
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_index const &
+        omegaa: clipper::ftype const &
+
+        """
         return _clipper.TargetFn_sigmaa_omegaa_E_sigE_T_rderiv(self, ih, omegaa)
-    if _newclass:
-        sigmaa = staticmethod(_clipper.TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa)
-    else:
-        sigmaa = _clipper.TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa
+
+
+    def sigmaa(omegaa):
+        """
+        sigmaa(clipper::ftype const & omegaa) -> clipper::ftype
+
+        Parameters
+        ----------
+        omegaa: clipper::ftype const &
+
+        """
+        return _clipper.TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa(omegaa)
+
+    sigmaa = staticmethod(sigmaa)
     __swig_destroy__ = _clipper.delete_TargetFn_sigmaa_omegaa_E_sigE_T
     __del__ = lambda self: None
 TargetFn_sigmaa_omegaa_E_sigE_T_swigregister = _clipper.TargetFn_sigmaa_omegaa_E_sigE_T_swigregister
 TargetFn_sigmaa_omegaa_E_sigE_T_swigregister(TargetFn_sigmaa_omegaa_E_sigE_T)
 
 def TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa(omegaa):
+    """
+    TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa(clipper::ftype const & omegaa) -> clipper::ftype
+
+    Parameters
+    ----------
+    omegaa: clipper::ftype const &
+
+    """
     return _clipper.TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa(omegaa)
-TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa = _clipper.TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa
 
 class TargetFn_sigmaa_E_sigE_T(TargetFn_base):
+    """Proxy of C++ clipper::TargetFn_sigmaa<(clipper::data32::E_sigE)> class."""
+
     __swig_setmethods__ = {}
     for _s in [TargetFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -10017,6 +32040,15 @@ class TargetFn_sigmaa_E_sigE_T(TargetFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, eo, ec):
+        """
+        __init__(clipper::TargetFn_sigmaa<(clipper::data32::E_sigE)> self, HKL_data_E_sigE_float eo, HKL_data_E_sigE_float ec) -> TargetFn_sigmaa_E_sigE_T
+
+        Parameters
+        ----------
+        eo: clipper::HKL_data< clipper::datatypes::E_sigE< float > > const &
+        ec: clipper::HKL_data< clipper::datatypes::E_sigE< float > > const &
+
+        """
         this = _clipper.new_TargetFn_sigmaa_E_sigE_T(eo, ec)
         try:
             self.this.append(this)
@@ -10024,57 +32056,156 @@ class TargetFn_sigmaa_E_sigE_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih, sigmaa0):
+        """
+        rderiv(TargetFn_sigmaa_E_sigE_T self, clipper::HKL_info::HKL_reference_index const & ih, clipper::ftype const & sigmaa0) -> clipper::TargetFn_base::Rderiv
+
+        Parameters
+        ----------
+        ih: clipper::HKL_info::HKL_reference_index const &
+        sigmaa0: clipper::ftype const &
+
+        """
         return _clipper.TargetFn_sigmaa_E_sigE_T_rderiv(self, ih, sigmaa0)
-    if _newclass:
-        sigmaa = staticmethod(_clipper.TargetFn_sigmaa_E_sigE_T_sigmaa)
-    else:
-        sigmaa = _clipper.TargetFn_sigmaa_E_sigE_T_sigmaa
+
+
+    def sigmaa(sigm):
+        """
+        sigmaa(clipper::ftype const & sigm) -> clipper::ftype
+
+        Parameters
+        ----------
+        sigm: clipper::ftype const &
+
+        """
+        return _clipper.TargetFn_sigmaa_E_sigE_T_sigmaa(sigm)
+
+    sigmaa = staticmethod(sigmaa)
     __swig_destroy__ = _clipper.delete_TargetFn_sigmaa_E_sigE_T
     __del__ = lambda self: None
 TargetFn_sigmaa_E_sigE_T_swigregister = _clipper.TargetFn_sigmaa_E_sigE_T_swigregister
 TargetFn_sigmaa_E_sigE_T_swigregister(TargetFn_sigmaa_E_sigE_T)
 
 def TargetFn_sigmaa_E_sigE_T_sigmaa(sigm):
+    """
+    TargetFn_sigmaa_E_sigE_T_sigmaa(clipper::ftype const & sigm) -> clipper::ftype
+
+    Parameters
+    ----------
+    sigm: clipper::ftype const &
+
+    """
     return _clipper.TargetFn_sigmaa_E_sigE_T_sigmaa(sigm)
-TargetFn_sigmaa_E_sigE_T_sigmaa = _clipper.TargetFn_sigmaa_E_sigE_T_sigmaa
 
 
 def TargetFn_scaleEsq_E_sigE(hkl_data_):
+    """
+    TargetFn_scaleEsq_E_sigE(HKL_data_E_sigE_float hkl_data_) -> TargetFn_scaleEsq_E_sigE_T
+
+    Parameters
+    ----------
+    hkl_data_: clipper::HKL_data< clipper::data32::E_sigE > const &
+
+    """
     return _clipper.TargetFn_scaleEsq_E_sigE(hkl_data_)
-TargetFn_scaleEsq_E_sigE = _clipper.TargetFn_scaleEsq_E_sigE
 
 def TargetFn_meanFnth_F_phi(hkl_data_, val):
+    """
+    TargetFn_meanFnth_F_phi(HKL_data_F_phi_float hkl_data_, float val) -> TargetFn_meanFnth_F_phi_T
+
+    Parameters
+    ----------
+    hkl_data_: clipper::HKL_data< clipper::data32::F_phi > const &
+    val: float
+
+    """
     return _clipper.TargetFn_meanFnth_F_phi(hkl_data_, val)
-TargetFn_meanFnth_F_phi = _clipper.TargetFn_meanFnth_F_phi
 
 def TargetFn_scaleF1F2_F_sigF_2(F1, F2):
+    """
+    TargetFn_scaleF1F2_F_sigF_2(HKL_data_F_sigF_float F1, HKL_data_F_sigF_float F2) -> TargetFn_scaleF1F2_F_sigF_2_T
+
+    Parameters
+    ----------
+    F1: clipper::HKL_data< clipper::data32::F_sigF > const &
+    F2: clipper::HKL_data< clipper::data32::F_sigF > const &
+
+    """
     return _clipper.TargetFn_scaleF1F2_F_sigF_2(F1, F2)
-TargetFn_scaleF1F2_F_sigF_2 = _clipper.TargetFn_scaleF1F2_F_sigF_2
 
 def TargetFn_scaleLogF1F2_F_sigF_2(hkl_data1_, hkl_data2_):
+    """
+    TargetFn_scaleLogF1F2_F_sigF_2(HKL_data_F_sigF_float hkl_data1_, HKL_data_F_sigF_float hkl_data2_) -> TargetFn_scaleLogF1F2_F_sigF_2_T
+
+    Parameters
+    ----------
+    hkl_data1_: clipper::HKL_data< clipper::data32::F_sigF > const &
+    hkl_data2_: clipper::HKL_data< clipper::data32::F_sigF > const &
+
+    """
     return _clipper.TargetFn_scaleLogF1F2_F_sigF_2(hkl_data1_, hkl_data2_)
-TargetFn_scaleLogF1F2_F_sigF_2 = _clipper.TargetFn_scaleLogF1F2_F_sigF_2
 
 def TargetFn_scaleI1I2_I_sigI_2(hkl_data1_, hkl_data2_):
+    """
+    TargetFn_scaleI1I2_I_sigI_2(HKL_data_I_sigI_float hkl_data1_, HKL_data_I_sigI_float hkl_data2_) -> TargetFn_scaleI1I2_I_sigI_2_T
+
+    Parameters
+    ----------
+    hkl_data1_: clipper::HKL_data< clipper::data32::I_sigI > const &
+    hkl_data2_: clipper::HKL_data< clipper::data32::I_sigI > const &
+
+    """
     return _clipper.TargetFn_scaleI1I2_I_sigI_2(hkl_data1_, hkl_data2_)
-TargetFn_scaleI1I2_I_sigI_2 = _clipper.TargetFn_scaleI1I2_I_sigI_2
 
 def TargetFn_scaleLogI1I2_I_sigI_2(hkl_data1_, hkl_data2_):
+    """
+    TargetFn_scaleLogI1I2_I_sigI_2(HKL_data_I_sigI_float hkl_data1_, HKL_data_I_sigI_float hkl_data2_) -> TargetFn_scaleLogI1I2_I_sigI_2_T
+
+    Parameters
+    ----------
+    hkl_data1_: clipper::HKL_data< clipper::data32::I_sigI > const &
+    hkl_data2_: clipper::HKL_data< clipper::data32::I_sigI > const &
+
+    """
     return _clipper.TargetFn_scaleLogI1I2_I_sigI_2(hkl_data1_, hkl_data2_)
-TargetFn_scaleLogI1I2_I_sigI_2 = _clipper.TargetFn_scaleLogI1I2_I_sigI_2
 
 def TargetFn_meanEnth_E_sigE(hkl_data_, n):
+    """
+    TargetFn_meanEnth_E_sigE(HKL_data_E_sigE_float hkl_data_, clipper::ftype const & n) -> TargetFn_meanEnth_E_sigE_T
+
+    Parameters
+    ----------
+    hkl_data_: clipper::HKL_data< clipper::data32::E_sigE > const &
+    n: clipper::ftype const &
+
+    """
     return _clipper.TargetFn_meanEnth_E_sigE(hkl_data_, n)
-TargetFn_meanEnth_E_sigE = _clipper.TargetFn_meanEnth_E_sigE
 
 def TargetFn_sigmaa_omegaa_E_sigE_2(eo, ec):
+    """
+    TargetFn_sigmaa_omegaa_E_sigE_2(HKL_data_E_sigE_float eo, HKL_data_E_sigE_float ec) -> TargetFn_sigmaa_omegaa_E_sigE_T
+
+    Parameters
+    ----------
+    eo: clipper::HKL_data< clipper::data32::E_sigE > const &
+    ec: clipper::HKL_data< clipper::data32::E_sigE > const &
+
+    """
     return _clipper.TargetFn_sigmaa_omegaa_E_sigE_2(eo, ec)
-TargetFn_sigmaa_omegaa_E_sigE_2 = _clipper.TargetFn_sigmaa_omegaa_E_sigE_2
 
 def TargetFn_sigmaa_E_sigE_2(eo, ec):
+    """
+    TargetFn_sigmaa_E_sigE_2(HKL_data_E_sigE_float eo, HKL_data_E_sigE_float ec) -> TargetFn_sigmaa_E_sigE_T
+
+    Parameters
+    ----------
+    eo: clipper::HKL_data< clipper::data32::E_sigE > const &
+    ec: clipper::HKL_data< clipper::data32::E_sigE > const &
+
+    """
     return _clipper.TargetFn_sigmaa_E_sigE_2(eo, ec)
-TargetFn_sigmaa_E_sigE_2 = _clipper.TargetFn_sigmaa_E_sigE_2
 class NX_operator(_object):
+    """Proxy of C++ clipper::NX_operator class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, NX_operator, name, value)
     __swig_getmethods__ = {}
@@ -10082,6 +32213,26 @@ class NX_operator(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::NX_operator self) -> NX_operator
+        __init__(clipper::NX_operator self, Xmap_base xmap, NXmap_base nxmap, RTop_orth rtop) -> NX_operator
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap_base const &
+        nxmap: clipper::NXmap_base const &
+        rtop: clipper::RTop_orth const &
+
+        __init__(clipper::NX_operator self, Cell cell, Grid_sampling grid, NXmap_base nxmap, RTop_orth rtop) -> NX_operator
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        grid: clipper::Grid_sampling const &
+        nxmap: clipper::NXmap_base const &
+        rtop: clipper::RTop_orth const &
+
+        """
         this = _clipper.new_NX_operator(*args)
         try:
             self.this.append(this)
@@ -10089,25 +32240,83 @@ class NX_operator(_object):
             self.this = this
 
     def init(self, *args):
+        """
+        init(NX_operator self, Xmap_base xmap, NXmap_base nxmap, RTop_orth rtop)
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap_base const &
+        nxmap: clipper::NXmap_base const &
+        rtop: clipper::RTop_orth const &
+
+        init(NX_operator self, Cell cell, Grid_sampling grid, NXmap_base nxmap, RTop_orth rtop)
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        grid: clipper::Grid_sampling const &
+        nxmap: clipper::NXmap_base const &
+        rtop: clipper::RTop_orth const &
+
+        """
         return _clipper.NX_operator_init(self, *args)
 
+
     def coord_map(self, c):
+        """
+        coord_map(NX_operator self, Coord_frac c) -> Coord_map
+
+        Parameters
+        ----------
+        c: clipper::Coord_frac const &
+
+        """
         return _clipper.NX_operator_coord_map(self, c)
 
+
     def coord_frac(self, c):
+        """
+        coord_frac(NX_operator self, Coord_map c) -> Coord_frac
+
+        Parameters
+        ----------
+        c: clipper::Coord_map const &
+
+        """
         return _clipper.NX_operator_coord_frac(self, c)
 
+
     def is_null(self):
+        """
+        is_null(NX_operator self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::NX_operator const *
+
+        """
         return _clipper.NX_operator_is_null(self)
 
+
     def debug(self):
+        """
+        debug(NX_operator self)
+
+        Parameters
+        ----------
+        self: clipper::NX_operator const *
+
+        """
         return _clipper.NX_operator_debug(self)
+
     __swig_destroy__ = _clipper.delete_NX_operator
     __del__ = lambda self: None
 NX_operator_swigregister = _clipper.NX_operator_swigregister
 NX_operator_swigregister(NX_operator)
 
 class NXmap_operator_float(NX_operator):
+    """Proxy of C++ clipper::NXmap_operator<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [NX_operator]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -10119,6 +32328,26 @@ class NXmap_operator_float(NX_operator):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::NXmap_operator<(float)> self) -> NXmap_operator_float
+        __init__(clipper::NXmap_operator<(float)> self, Xmap_base xmap, NXmap_float nxmap, RTop_orth rtop) -> NXmap_operator_float
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap_base const &
+        nxmap: clipper::NXmap< float > const &
+        rtop: clipper::RTop_orth const &
+
+        __init__(clipper::NXmap_operator<(float)> self, Cell cell, Grid_sampling grid, NXmap_float nxmap, RTop_orth rtop) -> NXmap_operator_float
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        grid: clipper::Grid_sampling const &
+        nxmap: clipper::NXmap< float > const &
+        rtop: clipper::RTop_orth const &
+
+        """
         this = _clipper.new_NXmap_operator_float(*args)
         try:
             self.this.append(this)
@@ -10126,16 +32355,47 @@ class NXmap_operator_float(NX_operator):
             self.this = this
 
     def init(self, *args):
+        """
+        init(NXmap_operator_float self, Xmap_base xmap, NXmap_float nxmap, RTop_orth rtop)
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap_base const &
+        nxmap: clipper::NXmap< float > const &
+        rtop: clipper::RTop_orth const &
+
+        init(NXmap_operator_float self, Cell cell, Grid_sampling grid, NXmap_float nxmap, RTop_orth rtop)
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        grid: clipper::Grid_sampling const &
+        nxmap: clipper::NXmap< float > const &
+        rtop: clipper::RTop_orth const &
+
+        """
         return _clipper.NXmap_operator_float_init(self, *args)
 
+
     def nxmap(self):
+        """
+        nxmap(NXmap_operator_float self) -> NXmap_float
+
+        Parameters
+        ----------
+        self: clipper::NXmap_operator< float > const *
+
+        """
         return _clipper.NXmap_operator_float_nxmap(self)
+
     __swig_destroy__ = _clipper.delete_NXmap_operator_float
     __del__ = lambda self: None
 NXmap_operator_float_swigregister = _clipper.NXmap_operator_float_swigregister
 NXmap_operator_float_swigregister(NXmap_operator_float)
 
 class Convolution_search_slow_float_T(Convolution_search_base_float):
+    """Proxy of C++ clipper::Convolution_search_slow<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [Convolution_search_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -10150,19 +32410,59 @@ class Convolution_search_slow_float_T(Convolution_search_base_float):
     __repr__ = _swig_repr
 
     def init(self, xmap):
+        """
+        init(Convolution_search_slow_float_T self, Xmap_float xmap)
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap< float > const &
+
+        """
         return _clipper.Convolution_search_slow_float_T_init(self, xmap)
 
+
     def __call__(self, *args):
+        """
+        __call__(Convolution_search_slow_float_T self, Xmap_float result, NXmap_float srchval, NX_operator nxop) -> bool
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        srchval: clipper::NXmap< float > const &
+        nxop: clipper::NX_operator const &
+
+        __call__(Convolution_search_slow_float_T self, Xmap_float result, NXmap_float srchval) -> bool
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        srchval: clipper::NXmap< float > const &
+
+        """
         return _clipper.Convolution_search_slow_float_T___call__(self, *args)
 
+
     def compute(self, res, srchval, nxop):
+        """
+        compute(Convolution_search_slow_float_T self, Xmap_float res, NXmap_float srchval, NX_operator nxop) -> bool
+
+        Parameters
+        ----------
+        res: clipper::Xmap< float > &
+        srchval: clipper::NXmap< float > const &
+        nxop: clipper::NX_operator const &
+
+        """
         return _clipper.Convolution_search_slow_float_T_compute(self, res, srchval, nxop)
+
     __swig_destroy__ = _clipper.delete_Convolution_search_slow_float_T
     __del__ = lambda self: None
 Convolution_search_slow_float_T_swigregister = _clipper.Convolution_search_slow_float_T_swigregister
 Convolution_search_slow_float_T_swigregister(Convolution_search_slow_float_T)
 
 class Convolution_search_fft_float_T(Convolution_search_base_float):
+    """Proxy of C++ clipper::Convolution_search_fft<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [Convolution_search_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -10177,13 +32477,51 @@ class Convolution_search_fft_float_T(Convolution_search_base_float):
     __repr__ = _swig_repr
 
     def init(self, xmap):
+        """
+        init(Convolution_search_fft_float_T self, Xmap_float xmap)
+
+        Parameters
+        ----------
+        xmap: clipper::Xmap< float > const &
+
+        """
         return _clipper.Convolution_search_fft_float_T_init(self, xmap)
 
+
     def __call__(self, *args):
+        """
+        __call__(Convolution_search_fft_float_T self, Xmap_float result, NXmap_float srchval, NX_operator nxop) -> bool
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        srchval: clipper::NXmap< float > const &
+        nxop: clipper::NX_operator const &
+
+        __call__(Convolution_search_fft_float_T self, Xmap_float result, NXmap_float srchval) -> bool
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        srchval: clipper::NXmap< float > const &
+
+        """
         return _clipper.Convolution_search_fft_float_T___call__(self, *args)
 
+
     def compute(self, res, srchval, nxop):
+        """
+        compute(Convolution_search_fft_float_T self, Xmap_float res, NXmap_float srchval, NX_operator nxop) -> bool
+
+        Parameters
+        ----------
+        res: clipper::Xmap< float > &
+        srchval: clipper::NXmap< float > const &
+        nxop: clipper::NX_operator const &
+
+        """
         return _clipper.Convolution_search_fft_float_T_compute(self, res, srchval, nxop)
+
     __swig_destroy__ = _clipper.delete_Convolution_search_fft_float_T
     __del__ = lambda self: None
 Convolution_search_fft_float_T_swigregister = _clipper.Convolution_search_fft_float_T_swigregister
@@ -10191,13 +32529,47 @@ Convolution_search_fft_float_T_swigregister(Convolution_search_fft_float_T)
 
 
 def Convolution_search_slow_float(*args):
+    """
+    Convolution_search_slow_float(Xmap_float xmap) -> Convolution_search_slow_float_T
+
+    Parameters
+    ----------
+    xmap: clipper::Xmap< float > const &
+
+    Convolution_search_slow_float(Xmap_float result, NXmap_float srchval, Xmap_float xmap, NX_operator nxop) -> Convolution_search_slow_float_T
+
+    Parameters
+    ----------
+    result: clipper::Xmap< float > &
+    srchval: clipper::NXmap< float > const &
+    xmap: clipper::Xmap< float > const &
+    nxop: clipper::NX_operator const &
+
+    """
     return _clipper.Convolution_search_slow_float(*args)
-Convolution_search_slow_float = _clipper.Convolution_search_slow_float
 
 def Convolution_search_fft_float(*args):
+    """
+    Convolution_search_fft_float(Xmap_float xmap) -> Convolution_search_fft_float_T
+
+    Parameters
+    ----------
+    xmap: clipper::Xmap< float > const &
+
+    Convolution_search_fft_float(Xmap_float result, NXmap_float srchval, Xmap_float xmap, NX_operator nxop) -> Convolution_search_fft_float_T
+
+    Parameters
+    ----------
+    result: clipper::Xmap< float > &
+    srchval: clipper::NXmap< float > const &
+    xmap: clipper::Xmap< float > const &
+    nxop: clipper::NX_operator const &
+
+    """
     return _clipper.Convolution_search_fft_float(*args)
-Convolution_search_fft_float = _clipper.Convolution_search_fft_float
 class MapFilterFn_base(_object):
+    """Proxy of C++ clipper::MapFilterFn_base class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, MapFilterFn_base, name, value)
     __swig_getmethods__ = {}
@@ -10210,11 +32582,22 @@ class MapFilterFn_base(_object):
     __del__ = lambda self: None
 
     def __call__(self, radius):
+        """
+        __call__(MapFilterFn_base self, clipper::ftype const & radius) -> clipper::ftype
+
+        Parameters
+        ----------
+        radius: clipper::ftype const &
+
+        """
         return _clipper.MapFilterFn_base___call__(self, radius)
+
 MapFilterFn_base_swigregister = _clipper.MapFilterFn_base_swigregister
 MapFilterFn_base_swigregister(MapFilterFn_base)
 
 class MapFilterFn_step(MapFilterFn_base):
+    """Proxy of C++ clipper::MapFilterFn_step class."""
+
     __swig_setmethods__ = {}
     for _s in [MapFilterFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -10226,6 +32609,15 @@ class MapFilterFn_step(MapFilterFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MapFilterFn_step self, clipper::ftype const & radius) -> MapFilterFn_step
+
+        Parameters
+        ----------
+        radius: clipper::ftype const &
+
+        __init__(clipper::MapFilterFn_step self) -> MapFilterFn_step
+        """
         this = _clipper.new_MapFilterFn_step(*args)
         try:
             self.this.append(this)
@@ -10233,13 +32625,24 @@ class MapFilterFn_step(MapFilterFn_base):
             self.this = this
 
     def __call__(self, radius):
+        """
+        __call__(MapFilterFn_step self, clipper::ftype const & radius) -> clipper::ftype
+
+        Parameters
+        ----------
+        radius: clipper::ftype const &
+
+        """
         return _clipper.MapFilterFn_step___call__(self, radius)
+
     __swig_destroy__ = _clipper.delete_MapFilterFn_step
     __del__ = lambda self: None
 MapFilterFn_step_swigregister = _clipper.MapFilterFn_step_swigregister
 MapFilterFn_step_swigregister(MapFilterFn_step)
 
 class MapFilterFn_linear(MapFilterFn_base):
+    """Proxy of C++ clipper::MapFilterFn_linear class."""
+
     __swig_setmethods__ = {}
     for _s in [MapFilterFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -10251,6 +32654,15 @@ class MapFilterFn_linear(MapFilterFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MapFilterFn_linear self, clipper::ftype const & radius) -> MapFilterFn_linear
+
+        Parameters
+        ----------
+        radius: clipper::ftype const &
+
+        __init__(clipper::MapFilterFn_linear self) -> MapFilterFn_linear
+        """
         this = _clipper.new_MapFilterFn_linear(*args)
         try:
             self.this.append(this)
@@ -10258,13 +32670,24 @@ class MapFilterFn_linear(MapFilterFn_base):
             self.this = this
 
     def __call__(self, radius):
+        """
+        __call__(MapFilterFn_linear self, clipper::ftype const & radius) -> clipper::ftype
+
+        Parameters
+        ----------
+        radius: clipper::ftype const &
+
+        """
         return _clipper.MapFilterFn_linear___call__(self, radius)
+
     __swig_destroy__ = _clipper.delete_MapFilterFn_linear
     __del__ = lambda self: None
 MapFilterFn_linear_swigregister = _clipper.MapFilterFn_linear_swigregister
 MapFilterFn_linear_swigregister(MapFilterFn_linear)
 
 class MapFilterFn_quadratic(MapFilterFn_base):
+    """Proxy of C++ clipper::MapFilterFn_quadratic class."""
+
     __swig_setmethods__ = {}
     for _s in [MapFilterFn_base]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -10276,6 +32699,15 @@ class MapFilterFn_quadratic(MapFilterFn_base):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MapFilterFn_quadratic self, clipper::ftype const & radius) -> MapFilterFn_quadratic
+
+        Parameters
+        ----------
+        radius: clipper::ftype const &
+
+        __init__(clipper::MapFilterFn_quadratic self) -> MapFilterFn_quadratic
+        """
         this = _clipper.new_MapFilterFn_quadratic(*args)
         try:
             self.this.append(this)
@@ -10283,13 +32715,24 @@ class MapFilterFn_quadratic(MapFilterFn_base):
             self.this = this
 
     def __call__(self, radius):
+        """
+        __call__(MapFilterFn_quadratic self, clipper::ftype const & radius) -> clipper::ftype
+
+        Parameters
+        ----------
+        radius: clipper::ftype const &
+
+        """
         return _clipper.MapFilterFn_quadratic___call__(self, radius)
+
     __swig_destroy__ = _clipper.delete_MapFilterFn_quadratic
     __del__ = lambda self: None
 MapFilterFn_quadratic_swigregister = _clipper.MapFilterFn_quadratic_swigregister
 MapFilterFn_quadratic_swigregister(MapFilterFn_quadratic)
 
 class MapFilter_slow_float(MapFilter_base_float):
+    """Proxy of C++ clipper::MapFilter_slow<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [MapFilter_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -10304,6 +32747,56 @@ class MapFilter_slow_float(MapFilter_base_float):
     Relative = _clipper.MapFilter_slow_float_Relative
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MapFilter_slow<(float)> self, MapFilterFn_base fltr, clipper::ftype const scale=1.0, clipper::MapFilter_slow< float >::TYPE const type) -> MapFilter_slow_float
+
+        Parameters
+        ----------
+        fltr: clipper::MapFilterFn_base const &
+        scale: clipper::ftype const
+        type: enum clipper::MapFilter_slow< float >::TYPE const
+
+        __init__(clipper::MapFilter_slow<(float)> self, MapFilterFn_base fltr, clipper::ftype const scale=1.0) -> MapFilter_slow_float
+
+        Parameters
+        ----------
+        fltr: clipper::MapFilterFn_base const &
+        scale: clipper::ftype const
+
+        __init__(clipper::MapFilter_slow<(float)> self, MapFilterFn_base fltr) -> MapFilter_slow_float
+
+        Parameters
+        ----------
+        fltr: clipper::MapFilterFn_base const &
+
+        __init__(clipper::MapFilter_slow<(float)> self, Xmap_float result, Xmap_float xmap, MapFilterFn_base fltr, clipper::ftype const scale=1.0, clipper::MapFilter_slow< float >::TYPE const type) -> MapFilter_slow_float
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        xmap: clipper::Xmap< float > const &
+        fltr: clipper::MapFilterFn_base &
+        scale: clipper::ftype const
+        type: enum clipper::MapFilter_slow< float >::TYPE const
+
+        __init__(clipper::MapFilter_slow<(float)> self, Xmap_float result, Xmap_float xmap, MapFilterFn_base fltr, clipper::ftype const scale=1.0) -> MapFilter_slow_float
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        xmap: clipper::Xmap< float > const &
+        fltr: clipper::MapFilterFn_base &
+        scale: clipper::ftype const
+
+        __init__(clipper::MapFilter_slow<(float)> self, Xmap_float result, Xmap_float xmap, MapFilterFn_base fltr) -> MapFilter_slow_float
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        xmap: clipper::Xmap< float > const &
+        fltr: clipper::MapFilterFn_base &
+
+        """
         this = _clipper.new_MapFilter_slow_float(*args)
         try:
             self.this.append(this)
@@ -10311,13 +32804,25 @@ class MapFilter_slow_float(MapFilter_base_float):
             self.this = this
 
     def __call__(self, result, xmap):
+        """
+        __call__(MapFilter_slow_float self, Xmap_float result, Xmap_float xmap) -> bool
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        xmap: clipper::Xmap< float > const &
+
+        """
         return _clipper.MapFilter_slow_float___call__(self, result, xmap)
+
     __swig_destroy__ = _clipper.delete_MapFilter_slow_float
     __del__ = lambda self: None
 MapFilter_slow_float_swigregister = _clipper.MapFilter_slow_float_swigregister
 MapFilter_slow_float_swigregister(MapFilter_slow_float)
 
 class MapFilter_fft_float(MapFilter_base_float):
+    """Proxy of C++ clipper::MapFilter_fft<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [MapFilter_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -10332,6 +32837,56 @@ class MapFilter_fft_float(MapFilter_base_float):
     Relative = _clipper.MapFilter_fft_float_Relative
 
     def __init__(self, *args):
+        """
+        __init__(clipper::MapFilter_fft<(float)> self, MapFilterFn_base fltr, clipper::ftype const scale=1.0, clipper::MapFilter_fft< float >::TYPE const type) -> MapFilter_fft_float
+
+        Parameters
+        ----------
+        fltr: clipper::MapFilterFn_base const &
+        scale: clipper::ftype const
+        type: enum clipper::MapFilter_fft< float >::TYPE const
+
+        __init__(clipper::MapFilter_fft<(float)> self, MapFilterFn_base fltr, clipper::ftype const scale=1.0) -> MapFilter_fft_float
+
+        Parameters
+        ----------
+        fltr: clipper::MapFilterFn_base const &
+        scale: clipper::ftype const
+
+        __init__(clipper::MapFilter_fft<(float)> self, MapFilterFn_base fltr) -> MapFilter_fft_float
+
+        Parameters
+        ----------
+        fltr: clipper::MapFilterFn_base const &
+
+        __init__(clipper::MapFilter_fft<(float)> self, Xmap_float result, Xmap_float xmap, MapFilterFn_base fltr, clipper::ftype const scale=1.0, clipper::MapFilter_fft< float >::TYPE const type) -> MapFilter_fft_float
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        xmap: clipper::Xmap< float > const &
+        fltr: clipper::MapFilterFn_base &
+        scale: clipper::ftype const
+        type: enum clipper::MapFilter_fft< float >::TYPE const
+
+        __init__(clipper::MapFilter_fft<(float)> self, Xmap_float result, Xmap_float xmap, MapFilterFn_base fltr, clipper::ftype const scale=1.0) -> MapFilter_fft_float
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        xmap: clipper::Xmap< float > const &
+        fltr: clipper::MapFilterFn_base &
+        scale: clipper::ftype const
+
+        __init__(clipper::MapFilter_fft<(float)> self, Xmap_float result, Xmap_float xmap, MapFilterFn_base fltr) -> MapFilter_fft_float
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        xmap: clipper::Xmap< float > const &
+        fltr: clipper::MapFilterFn_base &
+
+        """
         this = _clipper.new_MapFilter_fft_float(*args)
         try:
             self.this.append(this)
@@ -10339,13 +32894,32 @@ class MapFilter_fft_float(MapFilter_base_float):
             self.this = this
 
     def __call__(self, *args):
+        """
+        __call__(MapFilter_fft_float self, Xmap_float result, Xmap_float xmap) -> bool
+
+        Parameters
+        ----------
+        result: clipper::Xmap< float > &
+        xmap: clipper::Xmap< float > const &
+
+        __call__(MapFilter_fft_float self, NXmap_float result, NXmap_float nxmap) -> bool
+
+        Parameters
+        ----------
+        result: clipper::NXmap< float > &
+        nxmap: clipper::NXmap< float > const &
+
+        """
         return _clipper.MapFilter_fft_float___call__(self, *args)
+
     __swig_destroy__ = _clipper.delete_MapFilter_fft_float
     __del__ = lambda self: None
 MapFilter_fft_float_swigregister = _clipper.MapFilter_fft_float_swigregister
 MapFilter_fft_float_swigregister(MapFilter_fft_float)
 
 class OriginMatch_float(OriginMatch_base_float):
+    """Proxy of C++ clipper::OriginMatch<(float)> class."""
+
     __swig_setmethods__ = {}
     for _s in [OriginMatch_base_float]:
         __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
@@ -10357,6 +32931,32 @@ class OriginMatch_float(OriginMatch_base_float):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::OriginMatch<(float)> self, clipper::ftype const resol_limit=0.1) -> OriginMatch_float
+
+        Parameters
+        ----------
+        resol_limit: clipper::ftype const
+
+        __init__(clipper::OriginMatch<(float)> self) -> OriginMatch_float
+        __init__(clipper::OriginMatch<(float)> self, Coord_frac shift, HKL_data_F_phi_float fphi1, HKL_data_F_phi_float fphi2, clipper::ftype const resol_limit=0.1) -> OriginMatch_float
+
+        Parameters
+        ----------
+        shift: clipper::Coord_frac &
+        fphi1: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        fphi2: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        resol_limit: clipper::ftype const
+
+        __init__(clipper::OriginMatch<(float)> self, Coord_frac shift, HKL_data_F_phi_float fphi1, HKL_data_F_phi_float fphi2) -> OriginMatch_float
+
+        Parameters
+        ----------
+        shift: clipper::Coord_frac &
+        fphi1: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        fphi2: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        """
         this = _clipper.new_OriginMatch_float(*args)
         try:
             self.this.append(this)
@@ -10364,13 +32964,26 @@ class OriginMatch_float(OriginMatch_base_float):
             self.this = this
 
     def __call__(self, shift, fphi1, fphi2):
+        """
+        __call__(OriginMatch_float self, Coord_frac shift, HKL_data_F_phi_float fphi1, HKL_data_F_phi_float fphi2) -> bool
+
+        Parameters
+        ----------
+        shift: clipper::Coord_frac &
+        fphi1: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+        fphi2: clipper::HKL_data< clipper::datatypes::F_phi< float > > const &
+
+        """
         return _clipper.OriginMatch_float___call__(self, shift, fphi1, fphi2)
+
     __swig_destroy__ = _clipper.delete_OriginMatch_float
     __del__ = lambda self: None
 OriginMatch_float_swigregister = _clipper.OriginMatch_float_swigregister
 OriginMatch_float_swigregister(OriginMatch_float)
 
 class AtomShapeFn(_object):
+    """Proxy of C++ clipper::AtomShapeFn class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, AtomShapeFn, name, value)
     __swig_getmethods__ = {}
@@ -10389,6 +33002,56 @@ class AtomShapeFn(_object):
     U23 = _clipper.AtomShapeFn_U23
 
     def __init__(self, *args):
+        """
+        __init__(clipper::AtomShapeFn self) -> AtomShapeFn
+        __init__(clipper::AtomShapeFn self, Atom atom) -> AtomShapeFn
+
+        Parameters
+        ----------
+        atom: clipper::Atom const &
+
+        __init__(clipper::AtomShapeFn self, Coord_orth xyz, String element, clipper::ftype const u_iso=0.0, clipper::ftype const occ=1.0) -> AtomShapeFn
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+        element: clipper::String const &
+        u_iso: clipper::ftype const
+        occ: clipper::ftype const
+
+        __init__(clipper::AtomShapeFn self, Coord_orth xyz, String element, clipper::ftype const u_iso=0.0) -> AtomShapeFn
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+        element: clipper::String const &
+        u_iso: clipper::ftype const
+
+        __init__(clipper::AtomShapeFn self, Coord_orth xyz, String element) -> AtomShapeFn
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+        element: clipper::String const &
+
+        __init__(clipper::AtomShapeFn self, Coord_orth xyz, String element, U_aniso_orth u_aniso, clipper::ftype const occ=1.0) -> AtomShapeFn
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+        element: clipper::String const &
+        u_aniso: clipper::U_aniso_orth const &
+        occ: clipper::ftype const
+
+        __init__(clipper::AtomShapeFn self, Coord_orth xyz, String element, U_aniso_orth u_aniso) -> AtomShapeFn
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+        element: clipper::String const &
+        u_aniso: clipper::U_aniso_orth const &
+
+        """
         this = _clipper.new_AtomShapeFn(*args)
         try:
             self.this.append(this)
@@ -10396,28 +33059,149 @@ class AtomShapeFn(_object):
             self.this = this
 
     def init(self, *args):
+        """
+        init(AtomShapeFn self, Atom atom)
+
+        Parameters
+        ----------
+        atom: clipper::Atom const &
+
+        init(AtomShapeFn self, Coord_orth xyz, String element, clipper::ftype const u_iso=0.0, clipper::ftype const occ=1.0)
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+        element: clipper::String const &
+        u_iso: clipper::ftype const
+        occ: clipper::ftype const
+
+        init(AtomShapeFn self, Coord_orth xyz, String element, clipper::ftype const u_iso=0.0)
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+        element: clipper::String const &
+        u_iso: clipper::ftype const
+
+        init(AtomShapeFn self, Coord_orth xyz, String element)
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+        element: clipper::String const &
+
+        init(AtomShapeFn self, Coord_orth xyz, String element, U_aniso_orth u_aniso, clipper::ftype const occ=1.0)
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+        element: clipper::String const &
+        u_aniso: clipper::U_aniso_orth const &
+        occ: clipper::ftype const
+
+        init(AtomShapeFn self, Coord_orth xyz, String element, U_aniso_orth u_aniso)
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+        element: clipper::String const &
+        u_aniso: clipper::U_aniso_orth const &
+
+        """
         return _clipper.AtomShapeFn_init(self, *args)
 
+
     def rho_curv(self, xyz, rho, grad, curv):
+        """
+        rho_curv(AtomShapeFn self, Coord_orth xyz, clipper::ftype & rho, DoubleVector grad, clipper::Matrix< clipper::ftype > & curv) -> bool
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+        rho: clipper::ftype &
+        grad: std::vector< clipper::ftype,std::allocator< clipper::ftype > > &
+        curv: clipper::Matrix< clipper::ftype > &
+
+        """
         return _clipper.AtomShapeFn_rho_curv(self, xyz, rho, grad, curv)
 
+
     def rho_grad(self, *args):
+        """
+        rho_grad(AtomShapeFn self, Coord_orth xyz, clipper::ftype & rho, DoubleVector grad) -> bool
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+        rho: clipper::ftype &
+        grad: std::vector< clipper::ftype,std::allocator< clipper::ftype > > &
+
+        rho_grad(AtomShapeFn self, Coord_orth xyz, DoubleVector grad) -> bool
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+        grad: std::vector< clipper::ftype,std::allocator< clipper::ftype > > &
+
+        """
         return _clipper.AtomShapeFn_rho_grad(self, *args)
 
+
     def f(self, *args):
+        """
+        f(AtomShapeFn self, Coord_reci_orth rfl) -> clipper::ftype
+
+        Parameters
+        ----------
+        rfl: clipper::Coord_reci_orth const &
+
+        f(AtomShapeFn self, clipper::ftype const & invresolsq) -> clipper::ftype
+
+        Parameters
+        ----------
+        invresolsq: clipper::ftype const &
+
+        """
         return _clipper.AtomShapeFn_f(self, *args)
 
+
     def rho(self, *args):
+        """
+        rho(AtomShapeFn self, Coord_orth xyz) -> clipper::ftype
+
+        Parameters
+        ----------
+        xyz: clipper::Coord_orth const &
+
+        rho(AtomShapeFn self, clipper::ftype const & rsq) -> clipper::ftype
+
+        Parameters
+        ----------
+        rsq: clipper::ftype const &
+
+        """
         return _clipper.AtomShapeFn_rho(self, *args)
 
+
     def agarwal_params(self):
+        """
+        agarwal_params(AtomShapeFn self) -> std::vector< clipper::AtomShapeFn::TYPE,std::allocator< clipper::AtomShapeFn::TYPE > > &
+
+        Parameters
+        ----------
+        self: clipper::AtomShapeFn *
+
+        """
         return _clipper.AtomShapeFn_agarwal_params(self)
+
     __swig_destroy__ = _clipper.delete_AtomShapeFn
     __del__ = lambda self: None
 AtomShapeFn_swigregister = _clipper.AtomShapeFn_swigregister
 AtomShapeFn_swigregister(AtomShapeFn)
 
 class AtomSF(_object):
+    """Proxy of C++ clipper::AtomSF class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, AtomSF, name, value)
     __swig_getmethods__ = {}
@@ -10425,6 +33209,44 @@ class AtomSF(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::AtomSF self, String type, clipper::ftype const u_iso=0.0, clipper::ftype const occ=1.0) -> AtomSF
+
+        Parameters
+        ----------
+        type: clipper::String const &
+        u_iso: clipper::ftype const
+        occ: clipper::ftype const
+
+        __init__(clipper::AtomSF self, String type, clipper::ftype const u_iso=0.0) -> AtomSF
+
+        Parameters
+        ----------
+        type: clipper::String const &
+        u_iso: clipper::ftype const
+
+        __init__(clipper::AtomSF self, String type) -> AtomSF
+
+        Parameters
+        ----------
+        type: clipper::String const &
+
+        __init__(clipper::AtomSF self, String type, U_aniso_orth u_aniso, clipper::ftype const occ=1.0) -> AtomSF
+
+        Parameters
+        ----------
+        type: clipper::String const &
+        u_aniso: clipper::U_aniso_orth const &
+        occ: clipper::ftype const
+
+        __init__(clipper::AtomSF self, String type, U_aniso_orth u_aniso) -> AtomSF
+
+        Parameters
+        ----------
+        type: clipper::String const &
+        u_aniso: clipper::U_aniso_orth const &
+
+        """
         this = _clipper.new_AtomSF(*args)
         try:
             self.this.append(this)
@@ -10432,25 +33254,102 @@ class AtomSF(_object):
             self.this = this
 
     def init(self, *args):
+        """
+        init(AtomSF self, String type, clipper::ftype const u_iso=0.0, clipper::ftype const occ=1.0)
+
+        Parameters
+        ----------
+        type: clipper::String const &
+        u_iso: clipper::ftype const
+        occ: clipper::ftype const
+
+        init(AtomSF self, String type, clipper::ftype const u_iso=0.0)
+
+        Parameters
+        ----------
+        type: clipper::String const &
+        u_iso: clipper::ftype const
+
+        init(AtomSF self, String type)
+
+        Parameters
+        ----------
+        type: clipper::String const &
+
+        init(AtomSF self, String type, U_aniso_orth u_aniso, clipper::ftype const occ=1.0)
+
+        Parameters
+        ----------
+        type: clipper::String const &
+        u_aniso: clipper::U_aniso_orth const &
+        occ: clipper::ftype const
+
+        init(AtomSF self, String type, U_aniso_orth u_aniso)
+
+        Parameters
+        ----------
+        type: clipper::String const &
+        u_aniso: clipper::U_aniso_orth const &
+
+        """
         return _clipper.AtomSF_init(self, *args)
 
+
     def f_iso(self, s):
+        """
+        f_iso(AtomSF self, clipper::ftype const & s) -> clipper::ftype
+
+        Parameters
+        ----------
+        s: clipper::ftype const &
+
+        """
         return _clipper.AtomSF_f_iso(self, s)
 
+
     def f_aniso(self, rfl):
+        """
+        f_aniso(AtomSF self, Coord_reci_orth rfl) -> clipper::ftype
+
+        Parameters
+        ----------
+        rfl: clipper::Coord_reci_orth const &
+
+        """
         return _clipper.AtomSF_f_aniso(self, rfl)
 
+
     def rho_iso(self, d2):
+        """
+        rho_iso(AtomSF self, clipper::ftype const & d2) -> clipper::ftype
+
+        Parameters
+        ----------
+        d2: clipper::ftype const &
+
+        """
         return _clipper.AtomSF_rho_iso(self, d2)
 
+
     def rho_aniso(self, uvw):
+        """
+        rho_aniso(AtomSF self, Coord_orth uvw) -> clipper::ftype
+
+        Parameters
+        ----------
+        uvw: clipper::Coord_orth const &
+
+        """
         return _clipper.AtomSF_rho_aniso(self, uvw)
+
     __swig_destroy__ = _clipper.delete_AtomSF
     __del__ = lambda self: None
 AtomSF_swigregister = _clipper.AtomSF_swigregister
 AtomSF_swigregister(AtomSF)
 
 class Euler_ccp4(_object):
+    """Proxy of C++ clipper::Euler_ccp4 class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Euler_ccp4, name, value)
     __swig_getmethods__ = {}
@@ -10458,6 +33357,17 @@ class Euler_ccp4(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Euler_ccp4 self) -> Euler_ccp4
+        __init__(clipper::Euler_ccp4 self, clipper::ftype const & alpha, clipper::ftype const & beta, clipper::ftype const & gamma) -> Euler_ccp4
+
+        Parameters
+        ----------
+        alpha: clipper::ftype const &
+        beta: clipper::ftype const &
+        gamma: clipper::ftype const &
+
+        """
         this = _clipper.new_Euler_ccp4(*args)
         try:
             self.this.append(this)
@@ -10465,22 +33375,60 @@ class Euler_ccp4(_object):
             self.this = this
 
     def alpha(self):
+        """
+        alpha(Euler_ccp4 self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Euler_ccp4 const *
+
+        """
         return _clipper.Euler_ccp4_alpha(self)
 
+
     def beta(self):
+        """
+        beta(Euler_ccp4 self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Euler_ccp4 const *
+
+        """
         return _clipper.Euler_ccp4_beta(self)
 
+
     def gamma(self):
+        """
+        gamma(Euler_ccp4 self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Euler_ccp4 const *
+
+        """
         return _clipper.Euler_ccp4_gamma(self)
 
+
     def format(self):
+        """
+        format(Euler_ccp4 self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Euler_ccp4 const *
+
+        """
         return _clipper.Euler_ccp4_format(self)
+
     __swig_destroy__ = _clipper.delete_Euler_ccp4
     __del__ = lambda self: None
 Euler_ccp4_swigregister = _clipper.Euler_ccp4_swigregister
 Euler_ccp4_swigregister(Euler_ccp4)
 
 class Polar_ccp4(_object):
+    """Proxy of C++ clipper::Polar_ccp4 class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Polar_ccp4, name, value)
     __swig_getmethods__ = {}
@@ -10488,6 +33436,17 @@ class Polar_ccp4(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Polar_ccp4 self) -> Polar_ccp4
+        __init__(clipper::Polar_ccp4 self, clipper::ftype const & omega, clipper::ftype const & phi, clipper::ftype const & kappa) -> Polar_ccp4
+
+        Parameters
+        ----------
+        omega: clipper::ftype const &
+        phi: clipper::ftype const &
+        kappa: clipper::ftype const &
+
+        """
         this = _clipper.new_Polar_ccp4(*args)
         try:
             self.this.append(this)
@@ -10495,25 +33454,72 @@ class Polar_ccp4(_object):
             self.this = this
 
     def psi(self):
+        """
+        psi(Polar_ccp4 self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Polar_ccp4 const *
+
+        """
         return _clipper.Polar_ccp4_psi(self)
 
+
     def omega(self):
+        """
+        omega(Polar_ccp4 self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Polar_ccp4 const *
+
+        """
         return _clipper.Polar_ccp4_omega(self)
 
+
     def phi(self):
+        """
+        phi(Polar_ccp4 self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Polar_ccp4 const *
+
+        """
         return _clipper.Polar_ccp4_phi(self)
 
+
     def kappa(self):
+        """
+        kappa(Polar_ccp4 self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Polar_ccp4 const *
+
+        """
         return _clipper.Polar_ccp4_kappa(self)
 
+
     def format(self):
+        """
+        format(Polar_ccp4 self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Polar_ccp4 const *
+
+        """
         return _clipper.Polar_ccp4_format(self)
+
     __swig_destroy__ = _clipper.delete_Polar_ccp4
     __del__ = lambda self: None
 Polar_ccp4_swigregister = _clipper.Polar_ccp4_swigregister
 Polar_ccp4_swigregister(Polar_ccp4)
 
 class Rotation(_object):
+    """Proxy of C++ clipper::Rotation class."""
+
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Rotation, name, value)
     __swig_getmethods__ = {}
@@ -10521,6 +33527,36 @@ class Rotation(_object):
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+        __init__(clipper::Rotation self) -> Rotation
+        __init__(clipper::Rotation self, Euler_ccp4 euler) -> Rotation
+
+        Parameters
+        ----------
+        euler: clipper::Euler_ccp4 const &
+
+        __init__(clipper::Rotation self, Polar_ccp4 polar) -> Rotation
+
+        Parameters
+        ----------
+        polar: clipper::Polar_ccp4 const &
+
+        __init__(clipper::Rotation self, mat33_ftype matrix) -> Rotation
+
+        Parameters
+        ----------
+        matrix: clipper::Mat33< > const &
+
+        __init__(clipper::Rotation self, clipper::ftype const & w, clipper::ftype const & x, clipper::ftype const & y, clipper::ftype const & z) -> Rotation
+
+        Parameters
+        ----------
+        w: clipper::ftype const &
+        x: clipper::ftype const &
+        y: clipper::ftype const &
+        z: clipper::ftype const &
+
+        """
         this = _clipper.new_Rotation(*args)
         try:
             self.this.append(this)
@@ -10528,48 +33564,160 @@ class Rotation(_object):
             self.this = this
 
     def w(self):
+        """
+        w(Rotation self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Rotation const *
+
+        """
         return _clipper.Rotation_w(self)
 
+
     def x(self):
+        """
+        x(Rotation self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Rotation const *
+
+        """
         return _clipper.Rotation_x(self)
 
+
     def y(self):
+        """
+        y(Rotation self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Rotation const *
+
+        """
         return _clipper.Rotation_y(self)
 
+
     def z(self):
+        """
+        z(Rotation self) -> clipper::ftype const &
+
+        Parameters
+        ----------
+        self: clipper::Rotation const *
+
+        """
         return _clipper.Rotation_z(self)
 
+
     def euler_ccp4(self):
+        """
+        euler_ccp4(Rotation self) -> Euler_ccp4
+
+        Parameters
+        ----------
+        self: clipper::Rotation const *
+
+        """
         return _clipper.Rotation_euler_ccp4(self)
 
+
     def polar_ccp4(self):
+        """
+        polar_ccp4(Rotation self) -> Polar_ccp4
+
+        Parameters
+        ----------
+        self: clipper::Rotation const *
+
+        """
         return _clipper.Rotation_polar_ccp4(self)
 
+
     def matrix(self):
+        """
+        matrix(Rotation self) -> mat33_ftype
+
+        Parameters
+        ----------
+        self: clipper::Rotation const *
+
+        """
         return _clipper.Rotation_matrix(self)
 
+
     def norm(self):
+        """
+        norm(Rotation self) -> Rotation
+
+        Parameters
+        ----------
+        self: clipper::Rotation *
+
+        """
         return _clipper.Rotation_norm(self)
 
+
     def abs_angle(self):
+        """
+        abs_angle(Rotation self) -> clipper::ftype
+
+        Parameters
+        ----------
+        self: clipper::Rotation const *
+
+        """
         return _clipper.Rotation_abs_angle(self)
 
+
     def inverse(self):
+        """
+        inverse(Rotation self) -> Rotation
+
+        Parameters
+        ----------
+        self: clipper::Rotation const *
+
+        """
         return _clipper.Rotation_inverse(self)
-    if _newclass:
-        zero = staticmethod(_clipper.Rotation_zero)
-    else:
-        zero = _clipper.Rotation_zero
-    if _newclass:
-        null = staticmethod(_clipper.Rotation_null)
-    else:
-        null = _clipper.Rotation_null
+
+
+    def zero():
+        """zero() -> Rotation"""
+        return _clipper.Rotation_zero()
+
+    zero = staticmethod(zero)
+
+    def null():
+        """null() -> Rotation"""
+        return _clipper.Rotation_null()
+
+    null = staticmethod(null)
 
     def is_null(self):
+        """
+        is_null(Rotation self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Rotation const *
+
+        """
         return _clipper.Rotation_is_null(self)
 
+
     def format(self):
+        """
+        format(Rotation self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Rotation const *
+
+        """
         return _clipper.Rotation_format(self)
+
     EulerXYZr = _clipper.Rotation_EulerXYZr
     EulerXYZs = _clipper.Rotation_EulerXYZs
     EulerXYXr = _clipper.Rotation_EulerXYXr
@@ -10600,12 +33748,12 @@ Rotation_swigregister = _clipper.Rotation_swigregister
 Rotation_swigregister(Rotation)
 
 def Rotation_zero():
+    """Rotation_zero() -> Rotation"""
     return _clipper.Rotation_zero()
-Rotation_zero = _clipper.Rotation_zero
 
 def Rotation_null():
+    """Rotation_null() -> Rotation"""
     return _clipper.Rotation_null()
-Rotation_null = _clipper.Rotation_null
 
 # This file is compatible with both classic and new-style classes.
 

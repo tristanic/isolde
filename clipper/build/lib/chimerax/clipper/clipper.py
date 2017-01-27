@@ -1,6 +1,28 @@
 from .lib import clipper_python_core as clipper_core
 import numpy
 
+#### Message logging
+clipper_messages = clipper_core.ClipperMessageStream()
+
+def log_clipper(func):
+    def func_wrapper(*args, **kwargs):
+        clipper_messages.clear()
+        func(*args, **kwargs)
+        message_string = clipper_messages.read_and_clear()
+        if message_string:
+            session.logger.info("CLIPPER WARNING:")
+            session.logger.info(message_string)
+    return func_wrapper
+    
+
+
+        
+
+
+
+
+
+
 class Atom(clipper_core.Atom):
     '''
     A minimalist atom object containing only the properties required for
@@ -186,7 +208,6 @@ class Coord_grid(clipper_core.Coord_grid):
     def uvw(self):
         return super(Coord_grid, self).uvw()
     
-
 class Coord_map(clipper_core.Coord_map):
     '''
     Like Coord_grid, but allowing non-integer values.
@@ -214,6 +235,10 @@ class Coord_map(clipper_core.Coord_map):
         return super(Coord_map, self).uvw()
 
 class Coord_frac(clipper_core.Coord_frac):
+    '''
+    Fractional coordinates along unit cell axes (a,b,c), scaled to the 
+    range 0..1 on each axis.
+    '''
     def __init__(self, uvw):
         if isinstance(uvw, numpy.ndarray):
             # Because SWIG does not correctly typemap numpy.float32
@@ -235,11 +260,110 @@ class Coord_frac(clipper_core.Coord_frac):
     @property
     def uvw(self):
         return super(Coord_frac, self).uvw()
+
+class CCP4MTZfile(clipper_core.CCP4MTZfile):
+    '''
+    MTZ import/export parent class for clipper objects.
+    
+    This is the import/export class which can be linked to an mtz
+    file and used to transfer data into or out of a Clipper data structure.
+    
+    Note that to access the MTZ file efficiently, data reads and writes
+    are deferred until the file is closed.
+
+    MTZ column specification:
+
+    Note that the specification of the MTZ column names is quite
+    versatile. The MTZ crystal and dataset must be specified, although
+    the wildcard '*' may replace a complete name. Several MTZ columns
+    will correspond to a single datalist. This may be handled in two
+    ways:
+    
+    - A simple name. The corresponding MTZ columns will be named
+    after the datalist name, a dot, the datalist type, a dot, and a
+    type name for the indivudal column,
+    i.e. /crystal/dataset/datalist.listtype.coltype This is the
+    default Clipper naming convention for MTZ data.
+    
+    - A comma separated list of MTZ column names enclosed in square
+    brackets.  This allows MTZ data from legacy applications to be
+    accessed.
+    
+    Thus, for example, an MTZPATH of
+    
+        native/CuKa/fsigfdata
+    
+    expands to MTZ column names of
+    
+        fsigfdata.F_sigF.F
+        fsigfdata.F_sigF.sigF
+    
+    with a crystal called "native" and a dataset called "CuKa". An MTZPATH of
+    
+        native/CuKa/[FP,SIGFP]
+    
+    expands to MTZ column names of
+    
+        FP
+        SIGFP
+    
+    with a crystal called "native" and a dataset called "CuKa".
+
+   Import/export types:
+
+    For an HKL_data object to be imported or exported, an MTZ_iotype
+    for that datatype must exist in the MTZ_iotypes_registry. MTZ_iotypes 
+    are defined for all the built-in datatypes. If you need to store a 
+    user defined type in an MTZ file, then register that type with the 
+    MTZ_iotypes_registry. 
+
+    EXAMPLE: Loading essential crystal information and 
+    2Fo-Fc amplitudes/phases from an mtz file
+    
+    fphidata =  HKL_data_F_phi_double()    
+    myhkl = hklinfo()
+    mtzin = CCP4MTZfile()
+    mtzin.open_read(filename)
+    mtzin.import_hkl_info(myhkl)
+    mtzin.import_hkl_data(fphidata, '/crystal/dataset/[2FOFCWT, PH2FOFCWT]')
+    mtzin.close_read()
+    '''
+    
+    def __init__(self):
+        clipper_core.CCP4MTZfile.__init__(self)
+        
+    @log_clipper
+    def import_hkl_data(cdata, mtzpath):
+        return super(CCP4MTZfile, self).import_hkl_data(cdata, mtzpath)
+        
+class CIFfile(clipper_core.CIFfile):
+    '''
+    CIF import/export parent class for clipper objects.
+      
+    This is the import class which can be linked to an cif data
+    file and be used to transfer data into a Clipper
+    data structure. 
+    It is currently a read-only class.
+    '''
+    
+    def __init__(self):
+        clipper_core.CIFfile.__init__(self)
+    
+    @log_clipper
+    def resolution(cell):
+        return super(CIFfile, self).resolution(cell)
+    
+
+
+
+
         
 class HKL_info(clipper_core.HKL_info):
     def __init__(self, session):
         clipper_core.HKL_info.__init__(self)
         self.session = session
+    
+    
 
 
 
@@ -599,7 +723,6 @@ def import_Xmap_from_mtz_test(session, filename):
     mtzin.close_read()
     name = '2FOFCWT'
     mygrid = clipper_core.Grid_sampling(myhkl.spacegroup(), myhkl.cell(), myhkl.resolution())
-    #mymap = clipper_core.Xmap_double(myhkl.spacegroup(), myhkl.cell(), mygrid)
     mymap = Xmap(session, name, myhkl.spacegroup(), myhkl.cell(), mygrid)
     mymap.fft_from(fphidata)
     return (fphidata, myhkl, mymap)
@@ -618,12 +741,27 @@ def make_unit_cell(model, hklinfo, cell):
     coord_orth = clipper_core.Coord_orth(*coord)
     coord_frac = coord_orth.coord_frac(cell)
     sg = hklinfo.spacegroup()
-    unit_cell_frac_symops = sg.unit_cell_RTops(coord_frac)
+    unit_cell_frac_symops = sg.unit_cell_Symops(coord_frac)
     uc_places = []
-    for i in range(sg.num_symops()):
-        this_op = sg.unit_cell_RTop(unit_cell_frac_symops, i)
-        this_op_orth = this_op.rtop_orth(cell)
-        uc_places.append(Place(matrix=this_op_orth.matrix()[0:3,:]))
+    for op in unit_cell_frac_symops:
+        op_orth = op.rtop_orth(cell)
+        uc_places.append(Place(matrix=op_orth.matrix()[0:3,:]))
     ucp = Places(uc_places)
     model.positions = ucp
     return ucp
+
+
+
+
+
+@log_clipper
+def test_log_warn():
+    clipper_core.warn_test()
+
+@log_clipper
+def test_log_except():
+    clipper_core.except_test()
+
+@log_clipper    
+def test_log_no_warn():
+    pass
