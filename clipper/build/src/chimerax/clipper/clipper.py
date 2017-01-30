@@ -632,6 +632,13 @@ class Xmap(clipper_core.Xmap_double):
             d.colors = numpy.array(colors)
             m.add_drawing(d)
             self.session.models.add([m])
+            
+        
+                
+                
+            
+            
+        
         
          
                 
@@ -639,7 +646,15 @@ class Xmap(clipper_core.Xmap_double):
         
     
     
-
+def box_corners(origin_xyz, size_xyz):
+    ret = []
+    minmax = [origin_xyz, size_xyz]
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                ret.append([minmax[i][0],minmax[j][1], minmax[k][2]])
+    return ret
+                
 
 
 def apply_b_factors_to_hydrogens(atom_list):
@@ -735,24 +750,103 @@ def vol_box(hklinfo, xmap, min_coor, max_coor):
     min_grid = min_ortho.coord_frac(cell).coord_grid(grid)
     max_grid = max_ortho.coord_frac(cell).coord_grid(grid)    
     
-def make_unit_cell(model, hklinfo, cell):
+def make_unit_cell(model, xmap, draw = True):
     from chimerax.core.geometry import Place, Places
-    coord = model.bounds().center().astype(float)
-    coord_orth = clipper_core.Coord_orth(*coord)
+    cell = xmap.cell()
+    coord = model.bounds().center()
+    coord_orth = Coord_orth(coord)
     coord_frac = coord_orth.coord_frac(cell)
-    sg = hklinfo.spacegroup()
-    unit_cell_frac_symops = sg.unit_cell_Symops(coord_frac)
-    uc_places = []
-    for op in unit_cell_frac_symops:
-        op_orth = op.rtop_orth(cell)
-        uc_places.append(Place(matrix=op_orth.matrix()[0:3,:]))
-    ucp = Places(uc_places)
-    model.positions = ucp
-    return ucp
+    sg = xmap.spacegroup()
+    unit_cell_frac_symops = xmap.unit_cell_symops(coord_frac)
+    if draw:
+        uc_places = []
+        for op in unit_cell_frac_symops.symops():
+            op_orth = op.rtop_orth(cell)
+            uc_places.append(Place(matrix=op_orth.matrix()[0:3,:]))
+        ucp = Places(uc_places)
+        model.positions = ucp
+    return unit_cell_frac_symops
+
+def test_pack_box(model, xmap, size = 100):
+    from chimerax.core.geometry import Place, Places
+    uc = make_unit_cell(model, xmap, draw = False)
+    coord = model.bounds().center()
+    box_size = numpy.ones(3)*size
+    bo = xmap.all_symops_in_box(coord-box_size/2, box_size, uc)
+    p = []
+    for b in bo:
+        p.append(Place(matrix=b.rtop_orth(xmap.cell()).matrix()[0:3,:]))
+    P = Places(p)
+    model.positions = P
+    
+    from chimerax.core.models import Drawing, Model
+    from chimerax.core.surface.shapes import sphere_geometry
+    d = Drawing('box corners')
+    m = Model('box', session)
+    d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    minmax = [coord-box_size/2, coord+box_size/2]
+    dp = []
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                dp.append(Place(origin=[minmax[i][0],minmax[j][1],minmax[k][2]]))
+    d.positions = Places(dp)
+    m.add_drawing(d)
+    session.models.add([m])
+    
+    return bo
+
+def pack_box(model, xmap, box_origin_xyz, size = 100):
+    box_size_xyz = numpy.ones(3)*size
+    box_origin_xyz = numpy.array(box_origin_xyz)
+    model_bounds = model.bounds().box_corners()
+    bo = xmap.pack_xyz_box(model_bounds, box_origin_xyz, box_size_xyz);
+    from chimerax.core.geometry import Place, Places
+
+    p = []
+    for b in bo:
+        p.append(Place(matrix=b.rtop_orth(xmap.cell()).matrix()[0:3,:]))
+    P = Places(p)
+    model.positions = P
+    
+    from chimerax.core.models import Drawing, Model
+    from chimerax.core.surface.shapes import sphere_geometry
+    d = Drawing('box corners')
+    m = Model('box', session)
+    d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    minmax = [box_origin_xyz, box_origin_xyz+box_size_xyz]
+    dp = []
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                dp.append(Place(origin=[minmax[i][0],minmax[j][1],minmax[k][2]]))
+    d.positions = Places(dp)
+    m.add_drawing(d)
+    session.models.add([m])
+    return bo
 
 
-
-
+        
+def draw_asu(xmap):    
+    from chimerax.core.geometry import Place, Places
+    from chimerax.core.models import Drawing, Model
+    from chimerax.core.surface.shapes import sphere_geometry
+    d = Drawing('asu corners')
+    m = Model('asu box', session)
+    d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    asu = xmap.grid_asu()
+    grid = xmap.grid_sampling()
+    cell = xmap.cell()
+    minmax = [asu.min().coord_frac(grid).coord_orth(cell).xyz(), asu.max().coord_frac(grid).coord_orth(cell).xyz()]
+    dp = []
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                dp.append(Place(origin=[minmax[i][0],minmax[j][1],minmax[k][2]]))
+    d.positions = Places(dp)
+    m.add_drawing(d)
+    session.models.add([m])
+    return d
 
 @log_clipper
 def test_log_warn():

@@ -3028,6 +3028,656 @@ class DoubleDoubleVector(_object):
 DoubleDoubleVector_swigregister = _clipper.DoubleDoubleVector_swigregister
 DoubleDoubleVector_swigregister(DoubleDoubleVector)
 
+class NXmap_reference_base(_object):
+    """Proxy of C++ clipper::NXmap_reference_base class."""
+
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, NXmap_reference_base, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, NXmap_reference_base, name)
+    __repr__ = _swig_repr
+
+    def base_nxmap(self):
+        """
+        base_nxmap(NXmap_reference_base self) -> NXmap_base const &
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_base const *
+
+        """
+        return _clipper.NXmap_reference_base_base_nxmap(self)
+
+
+    def index(self):
+        """
+        index(NXmap_reference_base self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_base const *
+
+        """
+        return _clipper.NXmap_reference_base_index(self)
+
+
+    def last(self):
+        """
+        last(NXmap_reference_base self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_base const *
+
+        """
+        return _clipper.NXmap_reference_base_last(self)
+
+
+    def __init__(self):
+        """__init__(clipper::NXmap_reference_base self) -> NXmap_reference_base"""
+        this = _clipper.new_NXmap_reference_base()
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+    __swig_destroy__ = _clipper.delete_NXmap_reference_base
+    __del__ = lambda self: None
+NXmap_reference_base_swigregister = _clipper.NXmap_reference_base_swigregister
+NXmap_reference_base_swigregister(NXmap_reference_base)
+
+class NXmap_reference_index(NXmap_reference_base):
+    """Proxy of C++ clipper::NXmap_reference_index class."""
+
+    __swig_setmethods__ = {}
+    for _s in [NXmap_reference_base]:
+        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, NXmap_reference_index, name, value)
+    __swig_getmethods__ = {}
+    for _s in [NXmap_reference_base]:
+        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
+    __getattr__ = lambda self, name: _swig_getattr(self, NXmap_reference_index, name)
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        """
+        __init__(clipper::NXmap_reference_index self) -> NXmap_reference_index
+        __init__(clipper::NXmap_reference_index self, NXmap_base const & map) -> NXmap_reference_index
+
+        Parameters
+        ----------
+        map: NXmap_base const &
+
+        __init__(clipper::NXmap_reference_index self, NXmap_base const & map, Coord_grid const & pos) -> NXmap_reference_index
+
+        Parameters
+        ----------
+        map: NXmap_base const &
+        pos: Coord_grid const &
+
+        """
+        this = _clipper.new_NXmap_reference_index(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
+    def coord(self):
+        """
+        coord(NXmap_reference_index self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_index const *
+
+        """
+        return _clipper.NXmap_reference_index_coord(self)
+
+
+    def coord_orth(self):
+        """
+        coord_orth(NXmap_reference_index self) -> Coord_orth const
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_index const *
+
+        """
+        return _clipper.NXmap_reference_index_coord_orth(self)
+
+
+    def set_coord(self, pos):
+        """
+        set_coord(NXmap_reference_index self, Coord_grid const & pos) -> NXmap_reference_index
+
+        Parameters
+        ----------
+        pos: Coord_grid const &
+
+        """
+        return _clipper.NXmap_reference_index_set_coord(self, pos)
+
+
+    def next(self):
+        """
+        next(NXmap_reference_index self) -> NXmap_reference_index
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_index *
+
+        """
+        return _clipper.NXmap_reference_index_next(self)
+
+
+    def index_offset(self, du, dv, dw):
+        """
+        index_offset(NXmap_reference_index self, int const & du, int const & dv, int const & dw) -> int
+
+        Parameters
+        ----------
+        du: int const &
+        dv: int const &
+        dw: int const &
+
+        """
+        return _clipper.NXmap_reference_index_index_offset(self, du, dv, dw)
+
+    __swig_destroy__ = _clipper.delete_NXmap_reference_index
+    __del__ = lambda self: None
+NXmap_reference_index_swigregister = _clipper.NXmap_reference_index_swigregister
+NXmap_reference_index_swigregister(NXmap_reference_index)
+
+class NXmap_reference_coord(NXmap_reference_base):
+    """Proxy of C++ clipper::NXmap_reference_coord class."""
+
+    __swig_setmethods__ = {}
+    for _s in [NXmap_reference_base]:
+        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, NXmap_reference_coord, name, value)
+    __swig_getmethods__ = {}
+    for _s in [NXmap_reference_base]:
+        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
+    __getattr__ = lambda self, name: _swig_getattr(self, NXmap_reference_coord, name)
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        """
+        __init__(clipper::NXmap_reference_coord self) -> NXmap_reference_coord
+        __init__(clipper::NXmap_reference_coord self, NXmap_base const & map) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        map: NXmap_base const &
+
+        __init__(clipper::NXmap_reference_coord self, NXmap_base const & map, Coord_grid const & pos) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        map: NXmap_base const &
+        pos: Coord_grid const &
+
+        """
+        this = _clipper.new_NXmap_reference_coord(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
+    def coord(self):
+        """
+        coord(NXmap_reference_coord self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord const *
+
+        """
+        return _clipper.NXmap_reference_coord_coord(self)
+
+
+    def coord_orth(self):
+        """
+        coord_orth(NXmap_reference_coord self) -> Coord_orth const
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord const *
+
+        """
+        return _clipper.NXmap_reference_coord_coord_orth(self)
+
+
+    def set_coord(self, pos):
+        """
+        set_coord(NXmap_reference_coord self, Coord_grid const & pos) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        pos: Coord_grid const &
+
+        """
+        return _clipper.NXmap_reference_coord_set_coord(self, pos)
+
+
+    def next(self):
+        """
+        next(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_next(self)
+
+
+    def next_u(self):
+        """
+        next_u(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_next_u(self)
+
+
+    def next_v(self):
+        """
+        next_v(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_next_v(self)
+
+
+    def next_w(self):
+        """
+        next_w(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_next_w(self)
+
+
+    def prev_u(self):
+        """
+        prev_u(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_prev_u(self)
+
+
+    def prev_v(self):
+        """
+        prev_v(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_prev_v(self)
+
+
+    def prev_w(self):
+        """
+        prev_w(NXmap_reference_coord self) -> NXmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::NXmap_reference_coord *
+
+        """
+        return _clipper.NXmap_reference_coord_prev_w(self)
+
+    __swig_destroy__ = _clipper.delete_NXmap_reference_coord
+    __del__ = lambda self: None
+NXmap_reference_coord_swigregister = _clipper.NXmap_reference_coord_swigregister
+NXmap_reference_coord_swigregister(NXmap_reference_coord)
+
+class Xmap_reference_base(_object):
+    """Proxy of C++ clipper::Xmap_reference_base class."""
+
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, Xmap_reference_base, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, Xmap_reference_base, name)
+    __repr__ = _swig_repr
+
+    def base_xmap(self):
+        """
+        base_xmap(Xmap_reference_base self) -> Xmap_base const &
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_base const *
+
+        """
+        return _clipper.Xmap_reference_base_base_xmap(self)
+
+
+    def index(self):
+        """
+        index(Xmap_reference_base self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_base const *
+
+        """
+        return _clipper.Xmap_reference_base_index(self)
+
+
+    def last(self):
+        """
+        last(Xmap_reference_base self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_base const *
+
+        """
+        return _clipper.Xmap_reference_base_last(self)
+
+
+    def __init__(self):
+        """__init__(clipper::Xmap_reference_base self) -> Xmap_reference_base"""
+        this = _clipper.new_Xmap_reference_base()
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+    __swig_destroy__ = _clipper.delete_Xmap_reference_base
+    __del__ = lambda self: None
+Xmap_reference_base_swigregister = _clipper.Xmap_reference_base_swigregister
+Xmap_reference_base_swigregister(Xmap_reference_base)
+
+class Xmap_reference_index(Xmap_reference_base):
+    """Proxy of C++ clipper::Xmap_reference_index class."""
+
+    __swig_setmethods__ = {}
+    for _s in [Xmap_reference_base]:
+        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, Xmap_reference_index, name, value)
+    __swig_getmethods__ = {}
+    for _s in [Xmap_reference_base]:
+        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
+    __getattr__ = lambda self, name: _swig_getattr(self, Xmap_reference_index, name)
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        """
+        __init__(clipper::Xmap_reference_index self) -> Xmap_reference_index
+        __init__(clipper::Xmap_reference_index self, Xmap_base const & map) -> Xmap_reference_index
+
+        Parameters
+        ----------
+        map: Xmap_base const &
+
+        __init__(clipper::Xmap_reference_index self, Xmap_base const & map, Coord_grid const & pos) -> Xmap_reference_index
+
+        Parameters
+        ----------
+        map: Xmap_base const &
+        pos: Coord_grid const &
+
+        """
+        this = _clipper.new_Xmap_reference_index(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
+    def coord(self):
+        """
+        coord(Xmap_reference_index self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_index const *
+
+        """
+        return _clipper.Xmap_reference_index_coord(self)
+
+
+    def coord_orth(self):
+        """
+        coord_orth(Xmap_reference_index self) -> Coord_orth const
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_index const *
+
+        """
+        return _clipper.Xmap_reference_index_coord_orth(self)
+
+
+    def set_coord(self, pos):
+        """
+        set_coord(Xmap_reference_index self, Coord_grid const & pos) -> Xmap_reference_index
+
+        Parameters
+        ----------
+        pos: Coord_grid const &
+
+        """
+        return _clipper.Xmap_reference_index_set_coord(self, pos)
+
+
+    def next(self):
+        """
+        next(Xmap_reference_index self) -> Xmap_reference_index
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_index *
+
+        """
+        return _clipper.Xmap_reference_index_next(self)
+
+
+    def index_offset(self, du, dv, dw):
+        """
+        index_offset(Xmap_reference_index self, int const & du, int const & dv, int const & dw) -> int
+
+        Parameters
+        ----------
+        du: int const &
+        dv: int const &
+        dw: int const &
+
+        """
+        return _clipper.Xmap_reference_index_index_offset(self, du, dv, dw)
+
+    __swig_destroy__ = _clipper.delete_Xmap_reference_index
+    __del__ = lambda self: None
+Xmap_reference_index_swigregister = _clipper.Xmap_reference_index_swigregister
+Xmap_reference_index_swigregister(Xmap_reference_index)
+
+class Xmap_reference_coord(Xmap_reference_base):
+    """Proxy of C++ clipper::Xmap_reference_coord class."""
+
+    __swig_setmethods__ = {}
+    for _s in [Xmap_reference_base]:
+        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, Xmap_reference_coord, name, value)
+    __swig_getmethods__ = {}
+    for _s in [Xmap_reference_base]:
+        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
+    __getattr__ = lambda self, name: _swig_getattr(self, Xmap_reference_coord, name)
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        """
+        __init__(clipper::Xmap_reference_coord self) -> Xmap_reference_coord
+        __init__(clipper::Xmap_reference_coord self, Xmap_base const & map) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        map: Xmap_base const &
+
+        __init__(clipper::Xmap_reference_coord self, Xmap_base const & map, Coord_grid const & pos) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        map: Xmap_base const &
+        pos: Coord_grid const &
+
+        """
+        this = _clipper.new_Xmap_reference_coord(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
+    def coord(self):
+        """
+        coord(Xmap_reference_coord self) -> Coord_grid const &
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord const *
+
+        """
+        return _clipper.Xmap_reference_coord_coord(self)
+
+
+    def coord_orth(self):
+        """
+        coord_orth(Xmap_reference_coord self) -> Coord_orth const
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord const *
+
+        """
+        return _clipper.Xmap_reference_coord_coord_orth(self)
+
+
+    def sym(self):
+        """
+        sym(Xmap_reference_coord self) -> int const &
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord const *
+
+        """
+        return _clipper.Xmap_reference_coord_sym(self)
+
+
+    def set_coord(self, pos):
+        """
+        set_coord(Xmap_reference_coord self, Coord_grid const & pos) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        pos: Coord_grid const &
+
+        """
+        return _clipper.Xmap_reference_coord_set_coord(self, pos)
+
+
+    def next(self):
+        """
+        next(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_next(self)
+
+
+    def next_u(self):
+        """
+        next_u(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_next_u(self)
+
+
+    def next_v(self):
+        """
+        next_v(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_next_v(self)
+
+
+    def next_w(self):
+        """
+        next_w(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_next_w(self)
+
+
+    def prev_u(self):
+        """
+        prev_u(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_prev_u(self)
+
+
+    def prev_v(self):
+        """
+        prev_v(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_prev_v(self)
+
+
+    def prev_w(self):
+        """
+        prev_w(Xmap_reference_coord self) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        self: clipper::Xmap_reference_coord *
+
+        """
+        return _clipper.Xmap_reference_coord_prev_w(self)
+
+    __swig_destroy__ = _clipper.delete_Xmap_reference_coord
+    __del__ = lambda self: None
+Xmap_reference_coord_swigregister = _clipper.Xmap_reference_coord_swigregister
+Xmap_reference_coord_swigregister(Xmap_reference_coord)
+
 class ClipperMessageStream(_object):
     """Proxy of C++ clipper::ClipperMessageStream class."""
 
@@ -6295,6 +6945,42 @@ class RTop_frac(_object):
         return _clipper.RTop_frac_null()
 
     null = staticmethod(null)
+
+    def matrix(self):
+        """
+        matrix(RTop_frac self)
+
+        Parameters
+        ----------
+        self: clipper::RTop_frac *
+
+        """
+        return _clipper.RTop_frac_matrix(self)
+
+
+    def rotation(self):
+        """
+        rotation(RTop_frac self)
+
+        Parameters
+        ----------
+        self: clipper::RTop_frac *
+
+        """
+        return _clipper.RTop_frac_rotation(self)
+
+
+    def translation(self):
+        """
+        translation(RTop_frac self)
+
+        Parameters
+        ----------
+        self: clipper::RTop_frac *
+
+        """
+        return _clipper.RTop_frac_translation(self)
+
     __swig_destroy__ = _clipper.delete_RTop_frac
     __del__ = lambda self: None
 RTop_frac_swigregister = _clipper.RTop_frac_swigregister
@@ -6541,156 +7227,6 @@ Symop_code_swigregister(Symop_code)
 def Symop_code_identity():
     """Symop_code_identity() -> Symop_code"""
     return _clipper.Symop_code_identity()
-
-class Symops(_object):
-    """Proxy of C++ clipper::Symops class."""
-
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Symops, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, Symops, name)
-    __repr__ = _swig_repr
-
-    def __init__(self, *args):
-        """
-        __init__(clipper::Symops self) -> Symops
-        __init__(clipper::Symops self, std::vector< clipper::Symop,std::allocator< clipper::Symop > > ops) -> Symops
-
-        Parameters
-        ----------
-        ops: std::vector< clipper::Symop,std::allocator< clipper::Symop > >
-
-        """
-        this = _clipper.new_Symops(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-    __swig_destroy__ = _clipper.delete_Symops
-    __del__ = lambda self: None
-
-    def __getitem__(self, i):
-        """
-        __getitem__(Symops self, int i) -> Symop
-
-        Parameters
-        ----------
-        i: int
-
-        """
-        return _clipper.Symops___getitem__(self, i)
-
-
-    def __setitem__(self, i, op):
-        """
-        __setitem__(Symops self, int i, Symop op)
-
-        Parameters
-        ----------
-        i: int
-        op: clipper::Symop
-
-        """
-        return _clipper.Symops___setitem__(self, i, op)
-
-
-    def __len__(self):
-        """
-        __len__(Symops self) -> size_t
-
-        Parameters
-        ----------
-        self: clipper::Symops *
-
-        """
-        return _clipper.Symops___len__(self)
-
-
-    def append(self, op):
-        """
-        append(Symops self, Symop op)
-
-        Parameters
-        ----------
-        op: clipper::Symop
-
-        """
-        return _clipper.Symops_append(self, op)
-
-
-    def pop(self, i):
-        """
-        pop(Symops self, int i) -> Symop
-
-        Parameters
-        ----------
-        i: int
-
-        """
-        return _clipper.Symops_pop(self, i)
-
-Symops_swigregister = _clipper.Symops_swigregister
-Symops_swigregister(Symops)
-
-class Unit_Cell_Symops(_object):
-    """Proxy of C++ clipper::Unit_Cell_Symops class."""
-
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Unit_Cell_Symops, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, Unit_Cell_Symops, name)
-    __repr__ = _swig_repr
-
-    def __init__(self):
-        """__init__(clipper::Unit_Cell_Symops self) -> Unit_Cell_Symops"""
-        this = _clipper.new_Unit_Cell_Symops()
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-    __swig_destroy__ = _clipper.delete_Unit_Cell_Symops
-    __del__ = lambda self: None
-
-    def symops(self, *args):
-        """
-        symops(Unit_Cell_Symops self) -> Symops
-        symops(Unit_Cell_Symops self) -> Symops
-
-        Parameters
-        ----------
-        self: clipper::Unit_Cell_Symops *
-
-        """
-        return _clipper.Unit_Cell_Symops_symops(self, *args)
-
-
-    def ref(self, *args):
-        """
-        ref(Unit_Cell_Symops self) -> Coord_frac const
-        ref(Unit_Cell_Symops self) -> Coord_frac &
-
-        Parameters
-        ----------
-        self: clipper::Unit_Cell_Symops *
-
-        """
-        return _clipper.Unit_Cell_Symops_ref(self, *args)
-
-
-    def map(self, *args):
-        """
-        map(Unit_Cell_Symops self) -> IntVector
-        map(Unit_Cell_Symops self) -> IntVector
-
-        Parameters
-        ----------
-        self: clipper::Unit_Cell_Symops *
-
-        """
-        return _clipper.Unit_Cell_Symops_map(self, *args)
-
-Unit_Cell_Symops_swigregister = _clipper.Unit_Cell_Symops_swigregister
-Unit_Cell_Symops_swigregister(Unit_Cell_Symops)
 
 class SGdata(_object):
     """Proxy of C++ clipper::data::SGdata class."""
@@ -11238,6 +11774,234 @@ class Atom_list(_object):
 Atom_list_swigregister = _clipper.Atom_list_swigregister
 Atom_list_swigregister(Atom_list)
 
+class Symops(_object):
+    """Proxy of C++ clipper::Symops class."""
+
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, Symops, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, Symops, name)
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        """
+        __init__(clipper::Symops self) -> Symops
+        __init__(clipper::Symops self, std::vector< clipper::RTop_frac,std::allocator< clipper::RTop_frac > > ops) -> Symops
+
+        Parameters
+        ----------
+        ops: std::vector< clipper::RTop_frac,std::allocator< clipper::RTop_frac > >
+
+        __init__(clipper::Symops self, std::vector< clipper::Symop,std::allocator< clipper::Symop > > ops) -> Symops
+
+        Parameters
+        ----------
+        ops: std::vector< clipper::Symop,std::allocator< clipper::Symop > >
+
+        """
+        this = _clipper.new_Symops(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+    __swig_destroy__ = _clipper.delete_Symops
+    __del__ = lambda self: None
+
+    def __getitem__(self, i):
+        """
+        __getitem__(Symops self, int i) -> RTop_frac
+
+        Parameters
+        ----------
+        i: int
+
+        """
+        return _clipper.Symops___getitem__(self, i)
+
+
+    def __setitem__(self, i, op):
+        """
+        __setitem__(Symops self, int i, RTop_frac op)
+
+        Parameters
+        ----------
+        i: int
+        op: clipper::RTop_frac
+
+        """
+        return _clipper.Symops___setitem__(self, i, op)
+
+
+    def __len__(self):
+        """
+        __len__(Symops self) -> size_t
+
+        Parameters
+        ----------
+        self: clipper::Symops *
+
+        """
+        return _clipper.Symops___len__(self)
+
+
+    def append(self, op):
+        """
+        append(Symops self, RTop_frac op)
+
+        Parameters
+        ----------
+        op: clipper::RTop_frac
+
+        """
+        return _clipper.Symops_append(self, op)
+
+
+    def pop(self, i):
+        """
+        pop(Symops self, int i) -> RTop_frac
+
+        Parameters
+        ----------
+        i: int
+
+        """
+        return _clipper.Symops_pop(self, i)
+
+
+    def cell_trans(self, i):
+        """
+        cell_trans(Symops self, int i) -> Coord_frac
+
+        Parameters
+        ----------
+        i: int
+
+        """
+        return _clipper.Symops_cell_trans(self, i)
+
+Symops_swigregister = _clipper.Symops_swigregister
+Symops_swigregister(Symops)
+
+class Unit_Cell_Symops(_object):
+    """Proxy of C++ clipper::Unit_Cell_Symops class."""
+
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, Unit_Cell_Symops, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, Unit_Cell_Symops, name)
+    __repr__ = _swig_repr
+    __swig_destroy__ = _clipper.delete_Unit_Cell_Symops
+    __del__ = lambda self: None
+
+    def __init__(self, *args):
+        """
+        __init__(clipper::Unit_Cell_Symops self) -> Unit_Cell_Symops
+        __init__(clipper::Unit_Cell_Symops self, Coord_frac ref, Xmap_base & xmap) -> Unit_Cell_Symops
+
+        Parameters
+        ----------
+        ref: clipper::Coord_frac
+        xmap: Xmap_base &
+
+        """
+        this = _clipper.new_Unit_Cell_Symops(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
+    def symops(self, *args):
+        """
+        symops(Unit_Cell_Symops self) -> Symops
+        symops(Unit_Cell_Symops self) -> Symops
+
+        Parameters
+        ----------
+        self: clipper::Unit_Cell_Symops *
+
+        """
+        return _clipper.Unit_Cell_Symops_symops(self, *args)
+
+
+    def inv_symops(self, *args):
+        """
+        inv_symops(Unit_Cell_Symops self) -> Symops
+        inv_symops(Unit_Cell_Symops self) -> Symops
+
+        Parameters
+        ----------
+        self: clipper::Unit_Cell_Symops *
+
+        """
+        return _clipper.Unit_Cell_Symops_inv_symops(self, *args)
+
+
+    def ref(self, *args):
+        """
+        ref(Unit_Cell_Symops self) -> Coord_frac
+        ref(Unit_Cell_Symops self) -> Coord_frac
+
+        Parameters
+        ----------
+        self: clipper::Unit_Cell_Symops *
+
+        """
+        return _clipper.Unit_Cell_Symops_ref(self, *args)
+
+
+    def ref_asu(self):
+        """
+        ref_asu(Unit_Cell_Symops self) -> Grid_range
+
+        Parameters
+        ----------
+        self: clipper::Unit_Cell_Symops const *
+
+        """
+        return _clipper.Unit_Cell_Symops_ref_asu(self)
+
+
+    def _ref_asu_ptr(self):
+        """
+        _ref_asu_ptr(Unit_Cell_Symops self) -> Grid_range
+
+        Parameters
+        ----------
+        self: clipper::Unit_Cell_Symops *
+
+        """
+        return _clipper.Unit_Cell_Symops__ref_asu_ptr(self)
+
+
+    def cell_origin(self, *args):
+        """
+        cell_origin(Unit_Cell_Symops self) -> Coord_frac
+        cell_origin(Unit_Cell_Symops self) -> Coord_frac
+
+        Parameters
+        ----------
+        self: clipper::Unit_Cell_Symops *
+
+        """
+        return _clipper.Unit_Cell_Symops_cell_origin(self, *args)
+
+
+    def find_symop_of_coord(self, thecoord, grid, sg):
+        """
+        find_symop_of_coord(Unit_Cell_Symops self, Coord_frac thecoord, Grid_sampling grid, Spacegroup sg) -> std::pair< int,clipper::Coord_frac >
+
+        Parameters
+        ----------
+        thecoord: clipper::Coord_frac const &
+        grid: clipper::Grid_sampling const &
+        sg: clipper::Spacegroup const &
+
+        """
+        return _clipper.Unit_Cell_Symops_find_symop_of_coord(self, thecoord, grid, sg)
+
+Unit_Cell_Symops_swigregister = _clipper.Unit_Cell_Symops_swigregister
+Unit_Cell_Symops_swigregister(Unit_Cell_Symops)
+
 class RTop_float(_object):
     """Proxy of C++ clipper::RTop<(float)> class."""
 
@@ -13250,683 +14014,6 @@ class NXmap_base(_object):
 NXmap_base_swigregister = _clipper.NXmap_base_swigregister
 NXmap_base_swigregister(NXmap_base)
 
-class NXmap_reference_base(_object):
-    """Proxy of C++ clipper::NXmap_reference_base class."""
-
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, NXmap_reference_base, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, NXmap_reference_base, name)
-    __repr__ = _swig_repr
-
-    def base_nxmap(self):
-        """
-        base_nxmap(NXmap_reference_base self) -> NXmap_base
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_base const *
-
-        """
-        return _clipper.NXmap_reference_base_base_nxmap(self)
-
-
-    def index(self):
-        """
-        index(NXmap_reference_base self) -> int const &
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_base const *
-
-        """
-        return _clipper.NXmap_reference_base_index(self)
-
-
-    def last(self):
-        """
-        last(NXmap_reference_base self) -> bool
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_base const *
-
-        """
-        return _clipper.NXmap_reference_base_last(self)
-
-
-    def __init__(self):
-        """__init__(clipper::NXmap_reference_base self) -> NXmap_reference_base"""
-        this = _clipper.new_NXmap_reference_base()
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-    __swig_destroy__ = _clipper.delete_NXmap_reference_base
-    __del__ = lambda self: None
-NXmap_reference_base_swigregister = _clipper.NXmap_reference_base_swigregister
-NXmap_reference_base_swigregister(NXmap_reference_base)
-
-class NXmap_reference_index(NXmap_reference_base):
-    """Proxy of C++ clipper::NXmap_reference_index class."""
-
-    __swig_setmethods__ = {}
-    for _s in [NXmap_reference_base]:
-        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
-    __setattr__ = lambda self, name, value: _swig_setattr(self, NXmap_reference_index, name, value)
-    __swig_getmethods__ = {}
-    for _s in [NXmap_reference_base]:
-        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
-    __getattr__ = lambda self, name: _swig_getattr(self, NXmap_reference_index, name)
-    __repr__ = _swig_repr
-
-    def __init__(self, *args):
-        """
-        __init__(clipper::NXmap_reference_index self) -> NXmap_reference_index
-        __init__(clipper::NXmap_reference_index self, NXmap_base map) -> NXmap_reference_index
-
-        Parameters
-        ----------
-        map: clipper::NXmap_base const &
-
-        __init__(clipper::NXmap_reference_index self, NXmap_base map, Coord_grid pos) -> NXmap_reference_index
-
-        Parameters
-        ----------
-        map: clipper::NXmap_base const &
-        pos: clipper::Coord_grid const &
-
-        """
-        this = _clipper.new_NXmap_reference_index(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-
-    def coord(self):
-        """
-        coord(NXmap_reference_index self) -> Coord_grid
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_index const *
-
-        """
-        return _clipper.NXmap_reference_index_coord(self)
-
-
-    def coord_orth(self):
-        """
-        coord_orth(NXmap_reference_index self) -> Coord_orth
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_index const *
-
-        """
-        return _clipper.NXmap_reference_index_coord_orth(self)
-
-
-    def set_coord(self, pos):
-        """
-        set_coord(NXmap_reference_index self, Coord_grid pos) -> NXmap_reference_index
-
-        Parameters
-        ----------
-        pos: clipper::Coord_grid const &
-
-        """
-        return _clipper.NXmap_reference_index_set_coord(self, pos)
-
-
-    def next(self):
-        """
-        next(NXmap_reference_index self) -> NXmap_reference_index
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_index *
-
-        """
-        return _clipper.NXmap_reference_index_next(self)
-
-
-    def index_offset(self, du, dv, dw):
-        """
-        index_offset(NXmap_reference_index self, int const & du, int const & dv, int const & dw) -> int
-
-        Parameters
-        ----------
-        du: int const &
-        dv: int const &
-        dw: int const &
-
-        """
-        return _clipper.NXmap_reference_index_index_offset(self, du, dv, dw)
-
-    __swig_destroy__ = _clipper.delete_NXmap_reference_index
-    __del__ = lambda self: None
-NXmap_reference_index_swigregister = _clipper.NXmap_reference_index_swigregister
-NXmap_reference_index_swigregister(NXmap_reference_index)
-
-class NXmap_reference_coord(NXmap_reference_base):
-    """Proxy of C++ clipper::NXmap_reference_coord class."""
-
-    __swig_setmethods__ = {}
-    for _s in [NXmap_reference_base]:
-        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
-    __setattr__ = lambda self, name, value: _swig_setattr(self, NXmap_reference_coord, name, value)
-    __swig_getmethods__ = {}
-    for _s in [NXmap_reference_base]:
-        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
-    __getattr__ = lambda self, name: _swig_getattr(self, NXmap_reference_coord, name)
-    __repr__ = _swig_repr
-
-    def __init__(self, *args):
-        """
-        __init__(clipper::NXmap_reference_coord self) -> NXmap_reference_coord
-        __init__(clipper::NXmap_reference_coord self, NXmap_base map) -> NXmap_reference_coord
-
-        Parameters
-        ----------
-        map: clipper::NXmap_base const &
-
-        __init__(clipper::NXmap_reference_coord self, NXmap_base map, Coord_grid pos) -> NXmap_reference_coord
-
-        Parameters
-        ----------
-        map: clipper::NXmap_base const &
-        pos: clipper::Coord_grid const &
-
-        """
-        this = _clipper.new_NXmap_reference_coord(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-
-    def coord(self):
-        """
-        coord(NXmap_reference_coord self) -> Coord_grid
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_coord const *
-
-        """
-        return _clipper.NXmap_reference_coord_coord(self)
-
-
-    def coord_orth(self):
-        """
-        coord_orth(NXmap_reference_coord self) -> Coord_orth
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_coord const *
-
-        """
-        return _clipper.NXmap_reference_coord_coord_orth(self)
-
-
-    def set_coord(self, pos):
-        """
-        set_coord(NXmap_reference_coord self, Coord_grid pos) -> NXmap_reference_coord
-
-        Parameters
-        ----------
-        pos: clipper::Coord_grid const &
-
-        """
-        return _clipper.NXmap_reference_coord_set_coord(self, pos)
-
-
-    def next(self):
-        """
-        next(NXmap_reference_coord self) -> NXmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_coord *
-
-        """
-        return _clipper.NXmap_reference_coord_next(self)
-
-
-    def next_u(self):
-        """
-        next_u(NXmap_reference_coord self) -> NXmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_coord *
-
-        """
-        return _clipper.NXmap_reference_coord_next_u(self)
-
-
-    def next_v(self):
-        """
-        next_v(NXmap_reference_coord self) -> NXmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_coord *
-
-        """
-        return _clipper.NXmap_reference_coord_next_v(self)
-
-
-    def next_w(self):
-        """
-        next_w(NXmap_reference_coord self) -> NXmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_coord *
-
-        """
-        return _clipper.NXmap_reference_coord_next_w(self)
-
-
-    def prev_u(self):
-        """
-        prev_u(NXmap_reference_coord self) -> NXmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_coord *
-
-        """
-        return _clipper.NXmap_reference_coord_prev_u(self)
-
-
-    def prev_v(self):
-        """
-        prev_v(NXmap_reference_coord self) -> NXmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_coord *
-
-        """
-        return _clipper.NXmap_reference_coord_prev_v(self)
-
-
-    def prev_w(self):
-        """
-        prev_w(NXmap_reference_coord self) -> NXmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::NXmap_reference_coord *
-
-        """
-        return _clipper.NXmap_reference_coord_prev_w(self)
-
-    __swig_destroy__ = _clipper.delete_NXmap_reference_coord
-    __del__ = lambda self: None
-NXmap_reference_coord_swigregister = _clipper.NXmap_reference_coord_swigregister
-NXmap_reference_coord_swigregister(NXmap_reference_coord)
-
-class Xmap_reference_base(_object):
-    """Proxy of C++ clipper::Xmap_reference_base class."""
-
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Xmap_reference_base, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, Xmap_reference_base, name)
-    __repr__ = _swig_repr
-
-    def base_xmap(self):
-        """
-        base_xmap(Xmap_reference_base self) -> Xmap_base
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_base const *
-
-        """
-        return _clipper.Xmap_reference_base_base_xmap(self)
-
-
-    def index(self):
-        """
-        index(Xmap_reference_base self) -> int const &
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_base const *
-
-        """
-        return _clipper.Xmap_reference_base_index(self)
-
-
-    def last(self):
-        """
-        last(Xmap_reference_base self) -> bool
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_base const *
-
-        """
-        return _clipper.Xmap_reference_base_last(self)
-
-
-    def __init__(self):
-        """__init__(clipper::Xmap_reference_base self) -> Xmap_reference_base"""
-        this = _clipper.new_Xmap_reference_base()
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-    __swig_destroy__ = _clipper.delete_Xmap_reference_base
-    __del__ = lambda self: None
-Xmap_reference_base_swigregister = _clipper.Xmap_reference_base_swigregister
-Xmap_reference_base_swigregister(Xmap_reference_base)
-
-class Xmap_reference_index(Xmap_reference_base):
-    """Proxy of C++ clipper::Xmap_reference_index class."""
-
-    __swig_setmethods__ = {}
-    for _s in [Xmap_reference_base]:
-        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Xmap_reference_index, name, value)
-    __swig_getmethods__ = {}
-    for _s in [Xmap_reference_base]:
-        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
-    __getattr__ = lambda self, name: _swig_getattr(self, Xmap_reference_index, name)
-    __repr__ = _swig_repr
-
-    def __init__(self, *args):
-        """
-        __init__(clipper::Xmap_reference_index self) -> Xmap_reference_index
-        __init__(clipper::Xmap_reference_index self, Xmap_base map) -> Xmap_reference_index
-
-        Parameters
-        ----------
-        map: clipper::Xmap_base const &
-
-        __init__(clipper::Xmap_reference_index self, Xmap_base map, Coord_grid pos) -> Xmap_reference_index
-
-        Parameters
-        ----------
-        map: clipper::Xmap_base const &
-        pos: clipper::Coord_grid const &
-
-        """
-        this = _clipper.new_Xmap_reference_index(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-
-    def coord(self):
-        """
-        coord(Xmap_reference_index self) -> Coord_grid
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_index const *
-
-        """
-        return _clipper.Xmap_reference_index_coord(self)
-
-
-    def coord_orth(self):
-        """
-        coord_orth(Xmap_reference_index self) -> Coord_orth
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_index const *
-
-        """
-        return _clipper.Xmap_reference_index_coord_orth(self)
-
-
-    def set_coord(self, pos):
-        """
-        set_coord(Xmap_reference_index self, Coord_grid pos) -> Xmap_reference_index
-
-        Parameters
-        ----------
-        pos: clipper::Coord_grid const &
-
-        """
-        return _clipper.Xmap_reference_index_set_coord(self, pos)
-
-
-    def next(self):
-        """
-        next(Xmap_reference_index self) -> Xmap_reference_index
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_index *
-
-        """
-        return _clipper.Xmap_reference_index_next(self)
-
-
-    def index_offset(self, du, dv, dw):
-        """
-        index_offset(Xmap_reference_index self, int const & du, int const & dv, int const & dw) -> int
-
-        Parameters
-        ----------
-        du: int const &
-        dv: int const &
-        dw: int const &
-
-        """
-        return _clipper.Xmap_reference_index_index_offset(self, du, dv, dw)
-
-    __swig_destroy__ = _clipper.delete_Xmap_reference_index
-    __del__ = lambda self: None
-Xmap_reference_index_swigregister = _clipper.Xmap_reference_index_swigregister
-Xmap_reference_index_swigregister(Xmap_reference_index)
-
-class Xmap_reference_coord(Xmap_reference_base):
-    """Proxy of C++ clipper::Xmap_reference_coord class."""
-
-    __swig_setmethods__ = {}
-    for _s in [Xmap_reference_base]:
-        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Xmap_reference_coord, name, value)
-    __swig_getmethods__ = {}
-    for _s in [Xmap_reference_base]:
-        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
-    __getattr__ = lambda self, name: _swig_getattr(self, Xmap_reference_coord, name)
-    __repr__ = _swig_repr
-
-    def __init__(self, *args):
-        """
-        __init__(clipper::Xmap_reference_coord self) -> Xmap_reference_coord
-        __init__(clipper::Xmap_reference_coord self, Xmap_base map) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        map: clipper::Xmap_base const &
-
-        __init__(clipper::Xmap_reference_coord self, Xmap_float map) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        map: clipper::Xmap< float > const &
-
-        __init__(clipper::Xmap_reference_coord self, Xmap_double map) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        map: clipper::Xmap< double > const &
-
-        __init__(clipper::Xmap_reference_coord self, Xmap_int map) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        map: clipper::Xmap< int > const &
-
-        __init__(clipper::Xmap_reference_coord self, Xmap_base map, Coord_grid pos) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        map: clipper::Xmap_base const &
-        pos: clipper::Coord_grid const &
-
-        __init__(clipper::Xmap_reference_coord self, Xmap_float map, Coord_grid pos) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        map: clipper::Xmap< float > const &
-        pos: clipper::Coord_grid const &
-
-        __init__(clipper::Xmap_reference_coord self, Xmap_double map, Coord_grid pos) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        map: clipper::Xmap< double > const &
-        pos: clipper::Coord_grid const &
-
-        __init__(clipper::Xmap_reference_coord self, Xmap_int map, Coord_grid pos) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        map: clipper::Xmap< int > const &
-        pos: clipper::Coord_grid const &
-
-        """
-        this = _clipper.new_Xmap_reference_coord(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-
-    def coord(self):
-        """
-        coord(Xmap_reference_coord self) -> Coord_grid
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_coord const *
-
-        """
-        return _clipper.Xmap_reference_coord_coord(self)
-
-
-    def coord_orth(self):
-        """
-        coord_orth(Xmap_reference_coord self) -> Coord_orth
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_coord const *
-
-        """
-        return _clipper.Xmap_reference_coord_coord_orth(self)
-
-
-    def set_coord(self, pos):
-        """
-        set_coord(Xmap_reference_coord self, Coord_grid pos) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        pos: clipper::Coord_grid const &
-
-        """
-        return _clipper.Xmap_reference_coord_set_coord(self, pos)
-
-
-    def next(self):
-        """
-        next(Xmap_reference_coord self) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_coord *
-
-        """
-        return _clipper.Xmap_reference_coord_next(self)
-
-
-    def next_u(self):
-        """
-        next_u(Xmap_reference_coord self) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_coord *
-
-        """
-        return _clipper.Xmap_reference_coord_next_u(self)
-
-
-    def next_v(self):
-        """
-        next_v(Xmap_reference_coord self) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_coord *
-
-        """
-        return _clipper.Xmap_reference_coord_next_v(self)
-
-
-    def next_w(self):
-        """
-        next_w(Xmap_reference_coord self) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_coord *
-
-        """
-        return _clipper.Xmap_reference_coord_next_w(self)
-
-
-    def prev_u(self):
-        """
-        prev_u(Xmap_reference_coord self) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_coord *
-
-        """
-        return _clipper.Xmap_reference_coord_prev_u(self)
-
-
-    def prev_v(self):
-        """
-        prev_v(Xmap_reference_coord self) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_coord *
-
-        """
-        return _clipper.Xmap_reference_coord_prev_v(self)
-
-
-    def prev_w(self):
-        """
-        prev_w(Xmap_reference_coord self) -> Xmap_reference_coord
-
-        Parameters
-        ----------
-        self: clipper::Xmap_reference_coord *
-
-        """
-        return _clipper.Xmap_reference_coord_prev_w(self)
-
-    __swig_destroy__ = _clipper.delete_Xmap_reference_coord
-    __del__ = lambda self: None
-Xmap_reference_coord_swigregister = _clipper.Xmap_reference_coord_swigregister
-Xmap_reference_coord_swigregister(Xmap_reference_coord)
-
 class Xmap_float(Xmap_base):
     """Proxy of C++ clipper::Xmap<(float)> class."""
 
@@ -14034,32 +14121,32 @@ class Xmap_float(Xmap_base):
         return _clipper.Xmap_float___isub__(self, other)
 
 
-    def unit_cell_symops(self, ref):
+    def pack_xyz_box(self, model_bounds_xyz, box_origin_xyz, sides_xyz):
         """
-        unit_cell_symops(Xmap_float self, Coord_frac ref) -> Unit_Cell_Symops
+        pack_xyz_box(Xmap_float self, double [8][3] model_bounds_xyz, double [3] box_origin_xyz, double [3] sides_xyz) -> Symops
 
         Parameters
         ----------
-        ref: clipper::Coord_frac
+        model_bounds_xyz: double [8][3]
+        box_origin_xyz: double [3]
+        sides_xyz: double [3]
 
         """
-        return _clipper.Xmap_float_unit_cell_symops(self, ref)
+        return _clipper.Xmap_float_pack_xyz_box(self, model_bounds_xyz, box_origin_xyz, sides_xyz)
 
 
-    def all_symops_in_box(self, box_origin_xyz, nu, nv, nw, unit_cell_symops):
+    def all_symops_in_box(self, box_origin_xyz, box_size_xyz, unit_cell_symops):
         """
-        all_symops_in_box(Xmap_float self, double [3] box_origin_xyz, int nu, int nv, int nw, Unit_Cell_Symops unit_cell_symops) -> Symops
+        all_symops_in_box(Xmap_float self, double [3] box_origin_xyz, double [3] box_size_xyz, Unit_Cell_Symops unit_cell_symops) -> Symops
 
         Parameters
         ----------
         box_origin_xyz: double [3]
-        nu: int
-        nv: int
-        nw: int
+        box_size_xyz: double [3]
         unit_cell_symops: clipper::Unit_Cell_Symops &
 
         """
-        return _clipper.Xmap_float_all_symops_in_box(self, box_origin_xyz, nu, nv, nw, unit_cell_symops)
+        return _clipper.Xmap_float_all_symops_in_box(self, box_origin_xyz, box_size_xyz, unit_cell_symops)
 
 
     def get_reference_coord(self, pos):
@@ -14413,32 +14500,32 @@ class Xmap_double(Xmap_base):
         return _clipper.Xmap_double___isub__(self, other)
 
 
-    def unit_cell_symops(self, ref):
+    def pack_xyz_box(self, model_bounds_xyz, box_origin_xyz, sides_xyz):
         """
-        unit_cell_symops(Xmap_double self, Coord_frac ref) -> Unit_Cell_Symops
+        pack_xyz_box(Xmap_double self, double [8][3] model_bounds_xyz, double [3] box_origin_xyz, double [3] sides_xyz) -> Symops
 
         Parameters
         ----------
-        ref: clipper::Coord_frac
+        model_bounds_xyz: double [8][3]
+        box_origin_xyz: double [3]
+        sides_xyz: double [3]
 
         """
-        return _clipper.Xmap_double_unit_cell_symops(self, ref)
+        return _clipper.Xmap_double_pack_xyz_box(self, model_bounds_xyz, box_origin_xyz, sides_xyz)
 
 
-    def all_symops_in_box(self, box_origin_xyz, nu, nv, nw, unit_cell_symops):
+    def all_symops_in_box(self, box_origin_xyz, box_size_xyz, unit_cell_symops):
         """
-        all_symops_in_box(Xmap_double self, double [3] box_origin_xyz, int nu, int nv, int nw, Unit_Cell_Symops unit_cell_symops) -> Symops
+        all_symops_in_box(Xmap_double self, double [3] box_origin_xyz, double [3] box_size_xyz, Unit_Cell_Symops unit_cell_symops) -> Symops
 
         Parameters
         ----------
         box_origin_xyz: double [3]
-        nu: int
-        nv: int
-        nw: int
+        box_size_xyz: double [3]
         unit_cell_symops: clipper::Unit_Cell_Symops &
 
         """
-        return _clipper.Xmap_double_all_symops_in_box(self, box_origin_xyz, nu, nv, nw, unit_cell_symops)
+        return _clipper.Xmap_double_all_symops_in_box(self, box_origin_xyz, box_size_xyz, unit_cell_symops)
 
 
     def get_reference_coord(self, pos):
@@ -14657,6 +14744,42 @@ class Xmap_double(Xmap_base):
         return _clipper.Xmap_double_operator_grid_orth(self)
 
 
+    def map_reference_coord(self, coord):
+        """
+        map_reference_coord(Xmap_double self, Coord_grid coord) -> Xmap_reference_coord
+
+        Parameters
+        ----------
+        coord: clipper::Coord_grid const &
+
+        """
+        return _clipper.Xmap_double_map_reference_coord(self, coord)
+
+
+    def symop_of_reference_coord(self, coord):
+        """
+        symop_of_reference_coord(Xmap_double self, Xmap_reference_coord coord) -> int const &
+
+        Parameters
+        ----------
+        coord: clipper::Xmap_reference_coord const &
+
+        """
+        return _clipper.Xmap_double_symop_of_reference_coord(self, coord)
+
+
+    def unit_cell_symops(self, ref):
+        """
+        unit_cell_symops(Xmap_double self, Coord_frac ref) -> Unit_Cell_Symops
+
+        Parameters
+        ----------
+        ref: clipper::Coord_frac
+
+        """
+        return _clipper.Xmap_double_unit_cell_symops(self, ref)
+
+
     def fft_from(self, fb):
         """
         fft_from(Xmap_double self, HKL_data_F_phi_double fb)
@@ -14792,32 +14915,32 @@ class Xmap_int(Xmap_base):
         return _clipper.Xmap_int___isub__(self, other)
 
 
-    def unit_cell_symops(self, ref):
+    def pack_xyz_box(self, model_bounds_xyz, box_origin_xyz, sides_xyz):
         """
-        unit_cell_symops(Xmap_int self, Coord_frac ref) -> Unit_Cell_Symops
+        pack_xyz_box(Xmap_int self, double [8][3] model_bounds_xyz, double [3] box_origin_xyz, double [3] sides_xyz) -> Symops
 
         Parameters
         ----------
-        ref: clipper::Coord_frac
+        model_bounds_xyz: double [8][3]
+        box_origin_xyz: double [3]
+        sides_xyz: double [3]
 
         """
-        return _clipper.Xmap_int_unit_cell_symops(self, ref)
+        return _clipper.Xmap_int_pack_xyz_box(self, model_bounds_xyz, box_origin_xyz, sides_xyz)
 
 
-    def all_symops_in_box(self, box_origin_xyz, nu, nv, nw, unit_cell_symops):
+    def all_symops_in_box(self, box_origin_xyz, box_size_xyz, unit_cell_symops):
         """
-        all_symops_in_box(Xmap_int self, double [3] box_origin_xyz, int nu, int nv, int nw, Unit_Cell_Symops unit_cell_symops) -> Symops
+        all_symops_in_box(Xmap_int self, double [3] box_origin_xyz, double [3] box_size_xyz, Unit_Cell_Symops unit_cell_symops) -> Symops
 
         Parameters
         ----------
         box_origin_xyz: double [3]
-        nu: int
-        nv: int
-        nw: int
+        box_size_xyz: double [3]
         unit_cell_symops: clipper::Unit_Cell_Symops &
 
         """
-        return _clipper.Xmap_int_all_symops_in_box(self, box_origin_xyz, nu, nv, nw, unit_cell_symops)
+        return _clipper.Xmap_int_all_symops_in_box(self, box_origin_xyz, box_size_xyz, unit_cell_symops)
 
 
     def get_reference_coord(self, pos):
