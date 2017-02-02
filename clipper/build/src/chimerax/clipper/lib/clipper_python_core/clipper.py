@@ -11882,29 +11882,147 @@ class Symops(_object):
 Symops_swigregister = _clipper.Symops_swigregister
 Symops_swigregister(Symops)
 
-class Unit_Cell_Symops(_object):
-    """Proxy of C++ clipper::Unit_Cell_Symops class."""
+class Isymops(_object):
+    """Proxy of C++ clipper::Isymops class."""
 
     __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, Unit_Cell_Symops, name, value)
+    __setattr__ = lambda self, name, value: _swig_setattr(self, Isymops, name, value)
     __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, Unit_Cell_Symops, name)
+    __getattr__ = lambda self, name: _swig_getattr(self, Isymops, name)
     __repr__ = _swig_repr
-    __swig_destroy__ = _clipper.delete_Unit_Cell_Symops
+
+    def __init__(self, *args):
+        """
+        __init__(clipper::Isymops self) -> Isymops
+        __init__(clipper::Isymops self, Symops ops, Grid_sampling grid) -> Isymops
+
+        Parameters
+        ----------
+        ops: clipper::Symops const &
+        grid: clipper::Grid_sampling const &
+
+        """
+        this = _clipper.new_Isymops(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+    __swig_destroy__ = _clipper.delete_Isymops
+    __del__ = lambda self: None
+
+    def size(self):
+        """
+        size(Isymops self) -> size_t const &
+
+        Parameters
+        ----------
+        self: clipper::Isymops const *
+
+        """
+        return _clipper.Isymops_size(self)
+
+
+    def __getitem__(self, i):
+        """
+        __getitem__(Isymops self, int i) -> Isymop
+
+        Parameters
+        ----------
+        i: int
+
+        """
+        return _clipper.Isymops___getitem__(self, i)
+
+
+    def __setitem__(self, i, op, grid):
+        """
+        __setitem__(Isymops self, int i, Isymop op, Grid_sampling grid)
+
+        Parameters
+        ----------
+        i: int
+        op: clipper::Isymop
+        grid: clipper::Grid_sampling const &
+
+        """
+        return _clipper.Isymops___setitem__(self, i, op, grid)
+
+
+    def __len__(self):
+        """
+        __len__(Isymops self) -> size_t
+
+        Parameters
+        ----------
+        self: clipper::Isymops *
+
+        """
+        return _clipper.Isymops___len__(self)
+
+
+    def append(self, op, grid):
+        """
+        append(Isymops self, Isymop op, Grid_sampling grid)
+
+        Parameters
+        ----------
+        op: clipper::Isymop
+        grid: clipper::Grid_sampling const &
+
+        """
+        return _clipper.Isymops_append(self, op, grid)
+
+
+    def pop(self, i):
+        """
+        pop(Isymops self, int i) -> Isymop
+
+        Parameters
+        ----------
+        i: int
+
+        """
+        return _clipper.Isymops_pop(self, i)
+
+
+    def cell_trans(self, i):
+        """
+        cell_trans(Isymops self, int i) -> Coord_grid
+
+        Parameters
+        ----------
+        i: int
+
+        """
+        return _clipper.Isymops_cell_trans(self, i)
+
+Isymops_swigregister = _clipper.Isymops_swigregister
+Isymops_swigregister(Isymops)
+
+class Unit_Cell(_object):
+    """Proxy of C++ clipper::Unit_Cell class."""
+
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, Unit_Cell, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, Unit_Cell, name)
+    __repr__ = _swig_repr
+    __swig_destroy__ = _clipper.delete_Unit_Cell
     __del__ = lambda self: None
 
     def __init__(self, *args):
         """
-        __init__(clipper::Unit_Cell_Symops self) -> Unit_Cell_Symops
-        __init__(clipper::Unit_Cell_Symops self, Coord_frac ref, Xmap_base & xmap) -> Unit_Cell_Symops
+        __init__(clipper::Unit_Cell self) -> Unit_Cell
+        __init__(clipper::Unit_Cell self, Coord_frac ref, Atom_list atoms, Xmap_base const & xmap) -> Unit_Cell
 
         Parameters
         ----------
         ref: clipper::Coord_frac
-        xmap: Xmap_base &
+        atoms: clipper::Atom_list const &
+        xmap: Xmap_base const &
 
         """
-        this = _clipper.new_Unit_Cell_Symops(*args)
+        this = _clipper.new_Unit_Cell(*args)
         try:
             self.this.append(this)
         except __builtin__.Exception:
@@ -11912,83 +12030,112 @@ class Unit_Cell_Symops(_object):
 
     def symops(self, *args):
         """
-        symops(Unit_Cell_Symops self) -> Symops
-        symops(Unit_Cell_Symops self) -> Symops
+        symops(Unit_Cell self) -> Symops
+        symops(Unit_Cell self) -> Symops
 
         Parameters
         ----------
-        self: clipper::Unit_Cell_Symops *
+        self: clipper::Unit_Cell *
 
         """
-        return _clipper.Unit_Cell_Symops_symops(self, *args)
+        return _clipper.Unit_Cell_symops(self, *args)
 
 
     def inv_symops(self, *args):
         """
-        inv_symops(Unit_Cell_Symops self) -> Symops
-        inv_symops(Unit_Cell_Symops self) -> Symops
+        inv_symops(Unit_Cell self) -> Symops
+        inv_symops(Unit_Cell self) -> Symops
 
         Parameters
         ----------
-        self: clipper::Unit_Cell_Symops *
+        self: clipper::Unit_Cell *
 
         """
-        return _clipper.Unit_Cell_Symops_inv_symops(self, *args)
+        return _clipper.Unit_Cell_inv_symops(self, *args)
+
+
+    def isymops(self, *args):
+        """
+        isymops(Unit_Cell self) -> Isymops
+        isymops(Unit_Cell self) -> Isymops
+
+        Parameters
+        ----------
+        self: clipper::Unit_Cell *
+
+        """
+        return _clipper.Unit_Cell_isymops(self, *args)
+
+
+    def inv_isymops(self, *args):
+        """
+        inv_isymops(Unit_Cell self) -> Isymops
+        inv_isymops(Unit_Cell self) -> Isymops
+
+        Parameters
+        ----------
+        self: clipper::Unit_Cell *
+
+        """
+        return _clipper.Unit_Cell_inv_isymops(self, *args)
 
 
     def ref(self, *args):
         """
-        ref(Unit_Cell_Symops self) -> Coord_frac
-        ref(Unit_Cell_Symops self) -> Coord_frac
+        ref(Unit_Cell self) -> Coord_frac
+        ref(Unit_Cell self) -> Coord_frac
 
         Parameters
         ----------
-        self: clipper::Unit_Cell_Symops *
+        self: clipper::Unit_Cell *
 
         """
-        return _clipper.Unit_Cell_Symops_ref(self, *args)
+        return _clipper.Unit_Cell_ref(self, *args)
 
 
-    def ref_asu(self):
+    def ref_box(self, *args):
         """
-        ref_asu(Unit_Cell_Symops self) -> Grid_range
+        ref_box(Unit_Cell self) -> Grid_range
+        ref_box(Unit_Cell self) -> Grid_range
 
         Parameters
         ----------
-        self: clipper::Unit_Cell_Symops const *
+        self: clipper::Unit_Cell *
 
         """
-        return _clipper.Unit_Cell_Symops_ref_asu(self)
+        return _clipper.Unit_Cell_ref_box(self, *args)
 
 
-    def _ref_asu_ptr(self):
+    def ref_box_min_side(self):
         """
-        _ref_asu_ptr(Unit_Cell_Symops self) -> Grid_range
+        ref_box_min_side(Unit_Cell self) -> size_t const &
 
         Parameters
         ----------
-        self: clipper::Unit_Cell_Symops *
+        self: clipper::Unit_Cell const *
 
         """
-        return _clipper.Unit_Cell_Symops__ref_asu_ptr(self)
+        return _clipper.Unit_Cell_ref_box_min_side(self)
 
 
-    def cell_origin(self, *args):
+    def find_symops_of_coord(self, pairlist, thecoord, grid, sg):
         """
-        cell_origin(Unit_Cell_Symops self) -> Coord_frac
-        cell_origin(Unit_Cell_Symops self) -> Coord_frac
+        find_symops_of_coord(Unit_Cell self, std::vector< std::pair< int,clipper::Coord_grid >,std::allocator< std::pair< int,clipper::Coord_grid > > > & pairlist, Coord_grid thecoord, Grid_sampling grid, Spacegroup sg)
 
         Parameters
         ----------
-        self: clipper::Unit_Cell_Symops *
+        pairlist: std::vector< std::pair< int,clipper::Coord_grid >,std::allocator< std::pair< int,clipper::Coord_grid > > > &
+        thecoord: clipper::Coord_grid const &
+        grid: clipper::Grid_sampling const &
+        sg: clipper::Spacegroup const &
 
         """
-        return _clipper.Unit_Cell_Symops_cell_origin(self, *args)
+        return _clipper.Unit_Cell_find_symops_of_coord(self, pairlist, thecoord, grid, sg)
 
 
     def find_symop_of_coord(self, thecoord, grid, sg):
         """
-        find_symop_of_coord(Unit_Cell_Symops self, Coord_frac thecoord, Grid_sampling grid, Spacegroup sg) -> std::pair< int,clipper::Coord_frac >
+        find_symop_of_coord(Unit_Cell self, Coord_frac thecoord, Grid_sampling grid, Spacegroup sg) -> std::pair< int,clipper::Coord_frac >
 
         Parameters
         ----------
@@ -11997,10 +12144,10 @@ class Unit_Cell_Symops(_object):
         sg: clipper::Spacegroup const &
 
         """
-        return _clipper.Unit_Cell_Symops_find_symop_of_coord(self, thecoord, grid, sg)
+        return _clipper.Unit_Cell_find_symop_of_coord(self, thecoord, grid, sg)
 
-Unit_Cell_Symops_swigregister = _clipper.Unit_Cell_Symops_swigregister
-Unit_Cell_Symops_swigregister(Unit_Cell_Symops)
+Unit_Cell_swigregister = _clipper.Unit_Cell_swigregister
+Unit_Cell_swigregister(Unit_Cell)
 
 class RTop_float(_object):
     """Proxy of C++ clipper::RTop<(float)> class."""
@@ -14121,32 +14268,18 @@ class Xmap_float(Xmap_base):
         return _clipper.Xmap_float___isub__(self, other)
 
 
-    def pack_xyz_box(self, model_bounds_xyz, box_origin_xyz, sides_xyz):
+    def all_symops_in_box(self, box_origin_xyz, box_size_uvw, unit_cell_symops):
         """
-        pack_xyz_box(Xmap_float self, double [8][3] model_bounds_xyz, double [3] box_origin_xyz, double [3] sides_xyz) -> Symops
-
-        Parameters
-        ----------
-        model_bounds_xyz: double [8][3]
-        box_origin_xyz: double [3]
-        sides_xyz: double [3]
-
-        """
-        return _clipper.Xmap_float_pack_xyz_box(self, model_bounds_xyz, box_origin_xyz, sides_xyz)
-
-
-    def all_symops_in_box(self, box_origin_xyz, box_size_xyz, unit_cell_symops):
-        """
-        all_symops_in_box(Xmap_float self, double [3] box_origin_xyz, double [3] box_size_xyz, Unit_Cell_Symops unit_cell_symops) -> Symops
+        all_symops_in_box(Xmap_float self, double [3] box_origin_xyz, int [3] box_size_uvw, Unit_Cell unit_cell_symops) -> Symops
 
         Parameters
         ----------
         box_origin_xyz: double [3]
-        box_size_xyz: double [3]
-        unit_cell_symops: clipper::Unit_Cell_Symops &
+        box_size_uvw: int [3]
+        unit_cell_symops: clipper::Unit_Cell &
 
         """
-        return _clipper.Xmap_float_all_symops_in_box(self, box_origin_xyz, box_size_xyz, unit_cell_symops)
+        return _clipper.Xmap_float_all_symops_in_box(self, box_origin_xyz, box_size_uvw, unit_cell_symops)
 
 
     def get_reference_coord(self, pos):
@@ -14293,6 +14426,39 @@ class Xmap_float(Xmap_base):
         return _clipper.Xmap_float_import_section_numpy(self, *args)
 
 
+    def export_interpolated_box_numpy(self, *args):
+        """
+        export_interpolated_box_numpy(Xmap_float self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz, std::string mode, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        box_origin_xyz: double [3]
+        box_res_xyz: double [3]
+        mode: std::string
+        order: char
+
+        export_interpolated_box_numpy(Xmap_float self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz, std::string mode) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        box_origin_xyz: double [3]
+        box_res_xyz: double [3]
+        mode: std::string
+
+        export_interpolated_box_numpy(Xmap_float self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        box_origin_xyz: double [3]
+        box_res_xyz: double [3]
+
+        """
+        return _clipper.Xmap_float_export_interpolated_box_numpy(self, *args)
+
+
     def voxel_size(self):
         """
         voxel_size(Xmap_float self)
@@ -14317,28 +14483,52 @@ class Xmap_float(Xmap_base):
         return _clipper.Xmap_float_voxel_size_frac(self)
 
 
-    def interp_cubic(self, f):
+    def interp_cubic_frac_coord(self, f):
         """
-        interp_cubic(Xmap_float self, Coord_frac f) -> float
+        interp_cubic_frac_coord(Xmap_float self, Coord_frac f) -> float
 
         Parameters
         ----------
         f: clipper::Coord_frac
 
         """
-        return _clipper.Xmap_float_interp_cubic(self, f)
+        return _clipper.Xmap_float_interp_cubic_frac_coord(self, f)
 
 
-    def interp_linear(self, f):
+    def interp_cubic_xyz(self, numpy_1d_in):
         """
-        interp_linear(Xmap_float self, Coord_frac f) -> float
+        interp_cubic_xyz(Xmap_float self, double [3] numpy_1d_in) -> float
+
+        Parameters
+        ----------
+        numpy_1d_in: double [3]
+
+        """
+        return _clipper.Xmap_float_interp_cubic_xyz(self, numpy_1d_in)
+
+
+    def interp_linear_frac_coord(self, f):
+        """
+        interp_linear_frac_coord(Xmap_float self, Coord_frac f) -> float
 
         Parameters
         ----------
         f: clipper::Coord_frac
 
         """
-        return _clipper.Xmap_float_interp_linear(self, f)
+        return _clipper.Xmap_float_interp_linear_frac_coord(self, f)
+
+
+    def interp_linear_xyz(self, numpy_1d_in):
+        """
+        interp_linear_xyz(Xmap_float self, double [3] numpy_1d_in) -> float
+
+        Parameters
+        ----------
+        numpy_1d_in: double [3]
+
+        """
+        return _clipper.Xmap_float_interp_linear_xyz(self, numpy_1d_in)
 
 
     def operator_orth_grid(self):
@@ -14500,32 +14690,18 @@ class Xmap_double(Xmap_base):
         return _clipper.Xmap_double___isub__(self, other)
 
 
-    def pack_xyz_box(self, model_bounds_xyz, box_origin_xyz, sides_xyz):
+    def all_symops_in_box(self, box_origin_xyz, box_size_uvw, unit_cell_symops):
         """
-        pack_xyz_box(Xmap_double self, double [8][3] model_bounds_xyz, double [3] box_origin_xyz, double [3] sides_xyz) -> Symops
-
-        Parameters
-        ----------
-        model_bounds_xyz: double [8][3]
-        box_origin_xyz: double [3]
-        sides_xyz: double [3]
-
-        """
-        return _clipper.Xmap_double_pack_xyz_box(self, model_bounds_xyz, box_origin_xyz, sides_xyz)
-
-
-    def all_symops_in_box(self, box_origin_xyz, box_size_xyz, unit_cell_symops):
-        """
-        all_symops_in_box(Xmap_double self, double [3] box_origin_xyz, double [3] box_size_xyz, Unit_Cell_Symops unit_cell_symops) -> Symops
+        all_symops_in_box(Xmap_double self, double [3] box_origin_xyz, int [3] box_size_uvw, Unit_Cell unit_cell_symops) -> Symops
 
         Parameters
         ----------
         box_origin_xyz: double [3]
-        box_size_xyz: double [3]
-        unit_cell_symops: clipper::Unit_Cell_Symops &
+        box_size_uvw: int [3]
+        unit_cell_symops: clipper::Unit_Cell &
 
         """
-        return _clipper.Xmap_double_all_symops_in_box(self, box_origin_xyz, box_size_xyz, unit_cell_symops)
+        return _clipper.Xmap_double_all_symops_in_box(self, box_origin_xyz, box_size_uvw, unit_cell_symops)
 
 
     def get_reference_coord(self, pos):
@@ -14672,6 +14848,39 @@ class Xmap_double(Xmap_base):
         return _clipper.Xmap_double_import_section_numpy(self, *args)
 
 
+    def export_interpolated_box_numpy(self, *args):
+        """
+        export_interpolated_box_numpy(Xmap_double self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz, std::string mode, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        box_origin_xyz: double [3]
+        box_res_xyz: double [3]
+        mode: std::string
+        order: char
+
+        export_interpolated_box_numpy(Xmap_double self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz, std::string mode) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        box_origin_xyz: double [3]
+        box_res_xyz: double [3]
+        mode: std::string
+
+        export_interpolated_box_numpy(Xmap_double self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        box_origin_xyz: double [3]
+        box_res_xyz: double [3]
+
+        """
+        return _clipper.Xmap_double_export_interpolated_box_numpy(self, *args)
+
+
     def voxel_size(self):
         """
         voxel_size(Xmap_double self)
@@ -14696,28 +14905,52 @@ class Xmap_double(Xmap_base):
         return _clipper.Xmap_double_voxel_size_frac(self)
 
 
-    def interp_cubic(self, f):
+    def interp_cubic_frac_coord(self, f):
         """
-        interp_cubic(Xmap_double self, Coord_frac f) -> double
+        interp_cubic_frac_coord(Xmap_double self, Coord_frac f) -> double
 
         Parameters
         ----------
         f: clipper::Coord_frac
 
         """
-        return _clipper.Xmap_double_interp_cubic(self, f)
+        return _clipper.Xmap_double_interp_cubic_frac_coord(self, f)
 
 
-    def interp_linear(self, f):
+    def interp_cubic_xyz(self, numpy_1d_in):
         """
-        interp_linear(Xmap_double self, Coord_frac f) -> double
+        interp_cubic_xyz(Xmap_double self, double [3] numpy_1d_in) -> double
+
+        Parameters
+        ----------
+        numpy_1d_in: double [3]
+
+        """
+        return _clipper.Xmap_double_interp_cubic_xyz(self, numpy_1d_in)
+
+
+    def interp_linear_frac_coord(self, f):
+        """
+        interp_linear_frac_coord(Xmap_double self, Coord_frac f) -> double
 
         Parameters
         ----------
         f: clipper::Coord_frac
 
         """
-        return _clipper.Xmap_double_interp_linear(self, f)
+        return _clipper.Xmap_double_interp_linear_frac_coord(self, f)
+
+
+    def interp_linear_xyz(self, numpy_1d_in):
+        """
+        interp_linear_xyz(Xmap_double self, double [3] numpy_1d_in) -> double
+
+        Parameters
+        ----------
+        numpy_1d_in: double [3]
+
+        """
+        return _clipper.Xmap_double_interp_linear_xyz(self, numpy_1d_in)
 
 
     def operator_orth_grid(self):
@@ -14768,16 +15001,17 @@ class Xmap_double(Xmap_base):
         return _clipper.Xmap_double_symop_of_reference_coord(self, coord)
 
 
-    def unit_cell_symops(self, ref):
+    def unit_cell_symops(self, ref, atoms):
         """
-        unit_cell_symops(Xmap_double self, Coord_frac ref) -> Unit_Cell_Symops
+        unit_cell_symops(Xmap_double self, Coord_frac ref, Atom_list atoms) -> Unit_Cell
 
         Parameters
         ----------
         ref: clipper::Coord_frac
+        atoms: clipper::Atom_list const &
 
         """
-        return _clipper.Xmap_double_unit_cell_symops(self, ref)
+        return _clipper.Xmap_double_unit_cell_symops(self, ref, atoms)
 
 
     def fft_from(self, fb):
@@ -14915,32 +15149,18 @@ class Xmap_int(Xmap_base):
         return _clipper.Xmap_int___isub__(self, other)
 
 
-    def pack_xyz_box(self, model_bounds_xyz, box_origin_xyz, sides_xyz):
+    def all_symops_in_box(self, box_origin_xyz, box_size_uvw, unit_cell_symops):
         """
-        pack_xyz_box(Xmap_int self, double [8][3] model_bounds_xyz, double [3] box_origin_xyz, double [3] sides_xyz) -> Symops
-
-        Parameters
-        ----------
-        model_bounds_xyz: double [8][3]
-        box_origin_xyz: double [3]
-        sides_xyz: double [3]
-
-        """
-        return _clipper.Xmap_int_pack_xyz_box(self, model_bounds_xyz, box_origin_xyz, sides_xyz)
-
-
-    def all_symops_in_box(self, box_origin_xyz, box_size_xyz, unit_cell_symops):
-        """
-        all_symops_in_box(Xmap_int self, double [3] box_origin_xyz, double [3] box_size_xyz, Unit_Cell_Symops unit_cell_symops) -> Symops
+        all_symops_in_box(Xmap_int self, double [3] box_origin_xyz, int [3] box_size_uvw, Unit_Cell unit_cell_symops) -> Symops
 
         Parameters
         ----------
         box_origin_xyz: double [3]
-        box_size_xyz: double [3]
-        unit_cell_symops: clipper::Unit_Cell_Symops &
+        box_size_uvw: int [3]
+        unit_cell_symops: clipper::Unit_Cell &
 
         """
-        return _clipper.Xmap_int_all_symops_in_box(self, box_origin_xyz, box_size_xyz, unit_cell_symops)
+        return _clipper.Xmap_int_all_symops_in_box(self, box_origin_xyz, box_size_uvw, unit_cell_symops)
 
 
     def get_reference_coord(self, pos):
@@ -15087,6 +15307,39 @@ class Xmap_int(Xmap_base):
         return _clipper.Xmap_int_import_section_numpy(self, *args)
 
 
+    def export_interpolated_box_numpy(self, *args):
+        """
+        export_interpolated_box_numpy(Xmap_int self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz, std::string mode, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        box_origin_xyz: double [3]
+        box_res_xyz: double [3]
+        mode: std::string
+        order: char
+
+        export_interpolated_box_numpy(Xmap_int self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz, std::string mode) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        box_origin_xyz: double [3]
+        box_res_xyz: double [3]
+        mode: std::string
+
+        export_interpolated_box_numpy(Xmap_int self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        box_origin_xyz: double [3]
+        box_res_xyz: double [3]
+
+        """
+        return _clipper.Xmap_int_export_interpolated_box_numpy(self, *args)
+
+
     def voxel_size(self):
         """
         voxel_size(Xmap_int self)
@@ -15111,28 +15364,52 @@ class Xmap_int(Xmap_base):
         return _clipper.Xmap_int_voxel_size_frac(self)
 
 
-    def interp_cubic(self, f):
+    def interp_cubic_frac_coord(self, f):
         """
-        interp_cubic(Xmap_int self, Coord_frac f) -> int
+        interp_cubic_frac_coord(Xmap_int self, Coord_frac f) -> int
 
         Parameters
         ----------
         f: clipper::Coord_frac
 
         """
-        return _clipper.Xmap_int_interp_cubic(self, f)
+        return _clipper.Xmap_int_interp_cubic_frac_coord(self, f)
 
 
-    def interp_linear(self, f):
+    def interp_cubic_xyz(self, numpy_1d_in):
         """
-        interp_linear(Xmap_int self, Coord_frac f) -> int
+        interp_cubic_xyz(Xmap_int self, double [3] numpy_1d_in) -> int
+
+        Parameters
+        ----------
+        numpy_1d_in: double [3]
+
+        """
+        return _clipper.Xmap_int_interp_cubic_xyz(self, numpy_1d_in)
+
+
+    def interp_linear_frac_coord(self, f):
+        """
+        interp_linear_frac_coord(Xmap_int self, Coord_frac f) -> int
 
         Parameters
         ----------
         f: clipper::Coord_frac
 
         """
-        return _clipper.Xmap_int_interp_linear(self, f)
+        return _clipper.Xmap_int_interp_linear_frac_coord(self, f)
+
+
+    def interp_linear_xyz(self, numpy_1d_in):
+        """
+        interp_linear_xyz(Xmap_int self, double [3] numpy_1d_in) -> int
+
+        Parameters
+        ----------
+        numpy_1d_in: double [3]
+
+        """
+        return _clipper.Xmap_int_interp_linear_xyz(self, numpy_1d_in)
 
 
     def operator_orth_grid(self):

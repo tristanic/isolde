@@ -14,14 +14,21 @@ def log_clipper(func):
             session.logger.info(message_string)
     return func_wrapper
     
+#################################################################
+# To make things a little more user-friendly than the raw SWIG wrapper,
+# all the major Clipper classes are sub-classed here with some extra
+# documentation, useful Python methods, @property decorators, etc.
+# This requires overcoming one small problem: when Clipper itself creates 
+# and returns objects, they're returned as the base class rather than
+# the sub-class. So, we have to over-ride the __new__ method for each
+# base class. 
+#####################################
 
-
-        
-
-
-
-
-
+def __newAtom__(cls, *args, **kwargs):
+    if cls == clipper_core.clipper.Atom:
+        return object.__new__(Atom)
+    return object.__new__(cls)        
+clipper_core.Atom.__new__ = staticmethod(__newAtom__)
 
 class Atom(clipper_core.Atom):
     '''
@@ -159,6 +166,12 @@ class Atom(clipper_core.Atom):
     def is_null(self):
         return super(Atom, self).is_null()
 
+def __newCoord_orth__(cls, *args, **kwargs):
+    if cls == clipper_core.Coord_orth:
+        return object.__new__(Coord_orth)
+    return object.__new__(cls)        
+clipper_core.Coord_orth.__new__ = staticmethod(__newCoord_orth__)
+
 class Coord_orth(clipper_core.Coord_orth):
     '''
     Coordinates in orthographic (x,y,z) space.
@@ -184,6 +197,12 @@ class Coord_orth(clipper_core.Coord_orth):
     @property
     def xyz(self):
         return super(Coord_orth, self).xyz()
+
+def __newCoord_grid__(cls, *args, **kwargs):
+    if cls == clipper_core.Coord_grid:
+        return object.__new__(Coord_grid)
+    return object.__new__(cls)        
+clipper_core.Coord_grid.__new__ = staticmethod(__newCoord_grid__)
         
 class Coord_grid(clipper_core.Coord_grid):
     '''
@@ -207,6 +226,12 @@ class Coord_grid(clipper_core.Coord_grid):
     @property
     def uvw(self):
         return super(Coord_grid, self).uvw()
+
+def __newCoord_map__(cls, *args, **kwargs):
+    if cls == clipper_core.Coord_map:
+        return object.__new__(Coord_map)
+    return object.__new__(cls)        
+clipper_core.Coord_map.__new__ = staticmethod(__newCoord_map__)
     
 class Coord_map(clipper_core.Coord_map):
     '''
@@ -234,6 +259,12 @@ class Coord_map(clipper_core.Coord_map):
     def uvw(self):
         return super(Coord_map, self).uvw()
 
+def __newCoord_frac__(cls, *args, **kwargs):
+    if cls == clipper_core.Coord_frac:
+        return object.__new__(Coord_frac)
+    return object.__new__(cls)        
+clipper_core.Coord_frac.__new__ = staticmethod(__newCoord_frac__)
+
 class Coord_frac(clipper_core.Coord_frac):
     '''
     Fractional coordinates along unit cell axes (a,b,c), scaled to the 
@@ -260,6 +291,12 @@ class Coord_frac(clipper_core.Coord_frac):
     @property
     def uvw(self):
         return super(Coord_frac, self).uvw()
+
+def __newCCP4MTZfile__(cls, *args, **kwargs):
+    if cls == clipper_core.CCP4MTZfile:
+        return object.__new__(CCP4MTZfile)
+    return object.__new__(cls)        
+clipper_core.CCP4MTZfile.__new__ = staticmethod(__newCCP4MTZfile__)
 
 class CCP4MTZfile(clipper_core.CCP4MTZfile):
     '''
@@ -333,8 +370,14 @@ class CCP4MTZfile(clipper_core.CCP4MTZfile):
         clipper_core.CCP4MTZfile.__init__(self)
         
     @log_clipper
-    def import_hkl_data(cdata, mtzpath):
+    def import_hkl_data(self, cdata, mtzpath):
         return super(CCP4MTZfile, self).import_hkl_data(cdata, mtzpath)
+
+def __newCIFfile__(cls, *args, **kwargs):
+    if cls == clipper_core.CIFfile:
+        return object.__new__(CIFfile)
+    return object.__new__(cls)        
+clipper_core.CIFfile.__new__ = staticmethod(__newCIFfile__)
         
 class CIFfile(clipper_core.CIFfile):
     '''
@@ -352,24 +395,54 @@ class CIFfile(clipper_core.CIFfile):
     @log_clipper
     def resolution(cell):
         return super(CIFfile, self).resolution(cell)
-    
 
 
 
+def __newHKL_info__(cls, *args, **kwargs):
+    if cls == clipper_core.HKL_info:
+        return object.__new__(HKL_info)
+    return object.__new__(cls)        
+clipper_core.HKL_info.__new__ = staticmethod(__newHKL_info__)
 
-        
 class HKL_info(clipper_core.HKL_info):
     def __init__(self, session):
         clipper_core.HKL_info.__init__(self)
         self.session = session
+
+def __newHKL_data_F_phi__(cls, *args, **kwargs):
+    if cls == clipper_core.HKL_data_F_phi_double:
+        return object.__new__(HKL_data_F_phi)
+    return object.__new__(cls)        
+clipper_core.HKL_data_F_phi_double.__new__ = staticmethod(__newHKL_data_F_phi__)
+
+class HKL_data_F_phi (clipper_core.HKL_data_F_phi_double):
+    def __init__(self):
+        clipper_core.HKL_data_F_phi_double.__init__(self)
+
+
+
+def __newGrid_sampling__(cls, *args, **kwargs):
+    if cls == clipper_core.Grid_sampling:
+        return object.__new__(Grid_sampling)
+    return object.__new__(cls)        
+clipper_core.Grid_sampling.__new__ = staticmethod(__newGrid_sampling__)
+
+class Grid_sampling(clipper_core.Grid_sampling):
+    '''
+    Object defining the grid used to sample points in a 3D map.
+    '''
+    def __init__(self, spacegroup, cell, resolution, rate = 1.5):
+        clipper_core.Grid_sampling.__init__(self, spacegroup, cell, resolution, rate)
+
+
+
+
+def __newXmap_double__(cls, *args, **kwargs):
+    if cls == clipper_core.Xmap_double:
+        return object.__new__(Xmap)
+    return object.__new__(cls)        
+clipper_core.Xmap_double.__new__ = staticmethod(__newXmap_double__)
     
-    
-
-
-
-
-    
-
 class Xmap(clipper_core.Xmap_double):
     '''
     A Clipper crystallographic map generated from reciprocal space data.
@@ -413,8 +486,8 @@ class Xmap(clipper_core.Xmap_double):
         self._box_data = None
         # session.triggers handler for live box update
         self._box_handler = None
-        # Distance any axis of the cofr has to move before triggering an update
-        self_cofr_eps = 0.01
+        # Distance any axis of the cofr has to move before triggering an update.
+        self._cofr_eps = numpy.min(self.voxel_size()) / 2
         
         # Model object to hold Drawings defining the special positions
         self.special_positions_model = None
@@ -526,16 +599,18 @@ class Xmap(clipper_core.Xmap_double):
         self._box_dimensions = dim
         self._box_data = data
         self._array_grid_data = darray
+        self.update_box(force_update=True)
         self._box_go_live()
         
         
         
-    def update_box(self, force_update = False, *_):
+    def update_box(self, *_, force_update = False):
         v = self.session.view
         cofr = v.center_of_rotation
         if not force_update:
-            if numpy.all(abs(self.box_center - cofr) < self_cofr_eps):
+            if numpy.all(abs(self.box_center - cofr) < self._cofr_eps):
                 return
+        
         self.box_center = cofr
         box_corner_grid, box_corner_xyz = self._find_box_corner(cofr, self.box_radius, self._box_pad)
         self._array_grid_data.set_origin(box_corner_xyz)
@@ -549,7 +624,7 @@ class Xmap(clipper_core.Xmap_double):
 
     def _fill_volume_data(self, target, start_grid_coor):
         shape = (numpy.array(target.shape)[::-1] - 1).tolist()
-        end_grid_coor = start_grid_coor + clipper_core.Coord_grid(*shape)
+        end_grid_coor = start_grid_coor + Coord_grid(shape)
         count = self.export_section_numpy(target, start_grid_coor, end_grid_coor, 'C')
                 
     
@@ -563,14 +638,14 @@ class Xmap(clipper_core.Xmap_double):
         grid = self.grid_sampling()
         voxel_size = self.voxel_size()
         radii_in_voxels = radius / voxel_size
-        radii_frac = clipper_core.Coord_frac(*(radii_in_voxels * self.voxel_size_frac()))
-        center_ortho = clipper_core.Coord_orth(*center)
+        radii_frac = Coord_frac(radii_in_voxels * self.voxel_size_frac())
+        center_ortho = Coord_orth(center)
         center_frac = center_ortho.coord_frac(cell)
         bottom_corner_frac = center_frac - radii_frac
         bottom_corner_grid = bottom_corner_frac.coord_grid(grid) -\
-                            clipper_core.Coord_grid(pad,pad,pad)
+                            Coord_grid([pad,pad,pad])
         bottom_corner_orth = bottom_corner_grid.coord_frac(grid).coord_orth(cell)
-        return bottom_corner_grid, bottom_corner_orth.xyz()
+        return bottom_corner_grid, bottom_corner_orth.xyz
         
                                     
     def draw_unit_cell_and_special_positions(self, model, offset = None):
@@ -580,14 +655,14 @@ class Xmap(clipper_core.Xmap_double):
         import copy
         
         ref = model.bounds().center().astype(float)
-        frac_coords = clipper_core.Coord_orth(*ref).coord_frac(self.cell()).uvw()
+        frac_coords = Coord_orth(ref).coord_frac(self.cell()).uvw
         if offset is None:
             offset = numpy.array([0,0,0],int)
         corners_frac = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]],numpy.double) + offset
         corners = []
         for c in corners_frac:
-            cf = clipper_core.Coord_frac(*c).coord_orth(self.cell())
-            corners.append(cf.xyz())
+            cf = Coord_frac(c).coord_orth(self.cell())
+            corners.append(cf.xyz)
         m = self.special_positions_model
         
         if m is None or m.deleted:
@@ -675,31 +750,8 @@ def apply_b_factors_to_hydrogens(atom_list):
                 h.aniso_u6 = atom.aniso_u6
                 break
                 
-def Atom_list_from_sel(atom_list):
-    n = len(atom_list)
-    elements = atom_list.element_names
-    coords = atom_list.coords
-    occupancies = atom_list.occupancy.astype(float)
-    u_iso = atom_list.bfactors.astype(float)
-    #u_aniso = sel.aniso_u
-    u_aniso = [numpy.random.rand(3,3).astype(float)]*n # FIXME For testing only
-    
-    clipper_atom_list = clipper_core.Atom_list(n)
-    
-    for i in range(n):
-        thisatom = clipper_atom_list[i]
-        thisatom.set_element(elements[i])
-        thisatom.set_coord_orth(clipper_core.Coord_orth(*coords[i]))
-        thisatom.set_occupancy(occupancies[i])
-        thisatom.set_u_iso(u_iso[i])
-        ua = u_aniso[i]
-        thisatom.set_u_aniso_orth(
-            clipper_core.U_aniso_orth(
-                ua[0][0], ua[1][1], ua[2][2], ua[0][1], ua[0][2], ua[1][2]))
-    
-    return clipper_atom_list
  
-def Atom_list_from_sel_fast(atom_list):
+def atom_list_from_sel(atom_list):
     '''
     Takes a ChimeraX Atoms object, and creates a Clipper Atoms_list object
     from the relevant atom properties.
@@ -718,7 +770,7 @@ def Atom_list_from_sel_fast(atom_list):
         for i, a in enumerate(atom_list):
             if a.aniso_u6 is not None:
                 u_aniso[i] = a.aniso_u6
-    clipper_atom_list = clipper_core.Atom_list()
+    clipper_atom_list = Atom_list()
     clipper_atom_list.extend_by(n)
 
     clipper_atom_list.set_elements(elements)
@@ -730,14 +782,14 @@ def Atom_list_from_sel_fast(atom_list):
 
 def import_Xmap_from_mtz_test(session, filename):
     myhkl = HKL_info(session)
-    fphidata =  clipper_core.HKL_data_F_phi_double()  
-    mtzin = clipper_core.CCP4MTZfile()
+    fphidata =  HKL_data_F_phi()  
+    mtzin = CCP4MTZfile()
     mtzin.open_read(filename)
     mtzin.import_hkl_info(myhkl)
     mtzin.import_hkl_data(fphidata, '/crystal/dataset/[2FOFCWT, PH2FOFCWT]')
     mtzin.close_read()
     name = '2FOFCWT'
-    mygrid = clipper_core.Grid_sampling(myhkl.spacegroup(), myhkl.cell(), myhkl.resolution())
+    mygrid = Grid_sampling(myhkl.spacegroup(), myhkl.cell(), myhkl.resolution())
     mymap = Xmap(session, name, myhkl.spacegroup(), myhkl.cell(), mygrid)
     mymap.fft_from(fphidata)
     return (fphidata, myhkl, mymap)
@@ -745,19 +797,21 @@ def import_Xmap_from_mtz_test(session, filename):
 def vol_box(hklinfo, xmap, min_coor, max_coor):
     cell = hklifno.cell()
     grid = xmap.grid_sampling()
-    min_ortho = clipper_core.Coord_orth(*min_coor)
-    max_ortho = clipper_core.Coord_orth(*max_coor)
+    min_ortho = Coord_orth(min_coor)
+    max_ortho = Coord_orth(max_coor)
     min_grid = min_ortho.coord_frac(cell).coord_grid(grid)
     max_grid = max_ortho.coord_frac(cell).coord_grid(grid)    
     
 def make_unit_cell(model, xmap, draw = True):
     from chimerax.core.geometry import Place, Places
     cell = xmap.cell()
+    atoms = model.atoms
+    clipper_atoms = atom_list_from_sel(atoms)
     coord = model.bounds().center()
     coord_orth = Coord_orth(coord)
     coord_frac = coord_orth.coord_frac(cell)
     sg = xmap.spacegroup()
-    unit_cell_frac_symops = xmap.unit_cell_symops(coord_frac)
+    unit_cell_frac_symops = xmap.unit_cell_symops(coord_frac, clipper_atoms)
     if draw:
         uc_places = []
         for op in unit_cell_frac_symops.symops():
@@ -767,11 +821,11 @@ def make_unit_cell(model, xmap, draw = True):
         model.positions = ucp
     return unit_cell_frac_symops
 
-def test_pack_box(model, xmap, size = 100):
+def test_pack_box(model, xmap, size = 50):
     from chimerax.core.geometry import Place, Places
     uc = make_unit_cell(model, xmap, draw = False)
     coord = model.bounds().center()
-    box_size = numpy.ones(3)*size
+    box_size = (numpy.ones(3, numpy.int32)*size)
     bo = xmap.all_symops_in_box(coord-box_size/2, box_size, uc)
     p = []
     for b in bo:
@@ -784,12 +838,15 @@ def test_pack_box(model, xmap, size = 100):
     d = Drawing('box corners')
     m = Model('box', session)
     d.vertices, d.normals, d.triangles = sphere_geometry(80)
-    minmax = [coord-box_size/2, coord+box_size/2]
+    box_min = Coord_orth(coord-box_size/2).coord_frac(xmap.cell()).coord_grid(xmap.grid_sampling())
+    box_max = box_min + Coord_grid(*box_size.tolist())
+    minmax = [box_min, box_max]
     dp = []
     for i in range(2):
         for j in range(2):
             for k in range(2):
-                dp.append(Place(origin=[minmax[i][0],minmax[j][1],minmax[k][2]]))
+                thiscg = Coord_grid([minmax[i].u(), minmax[j].v(), minmax[k].w()])
+                dp.append(Place(origin=thiscg.coord_frac(xmap.grid_sampling()).coord_orth(xmap.cell()).xyz))
     d.positions = Places(dp)
     m.add_drawing(d)
     session.models.add([m])
@@ -825,6 +882,30 @@ def pack_box(model, xmap, box_origin_xyz, size = 100):
     session.models.add([m])
     return bo
 
+def draw_box(min_corner, max_corner, name='box'):
+    from chimerax.core.geometry import Place, Places
+    from chimerax.core.models import Drawing, Model
+    from chimerax.core.surface.shapes import sphere_geometry
+    d = Drawing('corners')
+    m = Model(name, session)
+    d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    minmax = [min_corner, max_corner]
+    dp = []
+    base_color = numpy.array([255,255,255,255])
+    color_increment = numpy.array([0,-32,-32,0])
+    colors = []
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                dp.append(Place(origin=[minmax[i][0],minmax[j][1],minmax[k][2]]))
+                colors.append(base_color-color_increment*(i+j+k));
+    d.positions = Places(dp)
+    d.colors = colors
+    m.add_drawing(d)
+    session.models.add([m])
+    return d
+    
+    
 
         
 def draw_asu(xmap):    
@@ -837,7 +918,7 @@ def draw_asu(xmap):
     asu = xmap.grid_asu()
     grid = xmap.grid_sampling()
     cell = xmap.cell()
-    minmax = [asu.min().coord_frac(grid).coord_orth(cell).xyz(), asu.max().coord_frac(grid).coord_orth(cell).xyz()]
+    minmax = [asu.min().coord_frac(grid).coord_orth(cell).xyz, asu.max().coord_frac(grid).coord_orth(cell).xyz]
     dp = []
     for i in range(2):
         for j in range(2):
