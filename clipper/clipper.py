@@ -2,16 +2,16 @@ from .lib import clipper_python_core as clipper_core
 import numpy
 
 #### Message logging
-clipper_messages = clipper_core.ClipperMessageStream()
+_clipper_messages = clipper_core.ClipperMessageStream()
 
 def log_clipper(func):
     def func_wrapper(*args, **kwargs):
-        clipper_messages.clear()
+        _clipper_messages.clear()
         func(*args, **kwargs)
-        message_string = clipper_messages.read_and_clear()
+        message_string = _clipper_messages.read_and_clear()
         if message_string:
-            session.logger.info("CLIPPER WARNING:")
-            session.logger.info(message_string)
+            print("CLIPPER WARNING:")
+            print(message_string)
     return func_wrapper
     
 #################################################################
@@ -21,7 +21,8 @@ def log_clipper(func):
 # This requires overcoming one small problem: when Clipper itself creates 
 # and returns objects, they're returned as the base class rather than
 # the sub-class. So, we have to over-ride the __new__ method for each
-# base class. 
+# base class to make sure they're instead instantiated as the derived
+# class with all the bells and whistles. 
 #####################################
 
 def __newAtom__(cls, *args, **kwargs):
@@ -209,7 +210,7 @@ class Coord_grid(clipper_core.Coord_grid):
     Integer grid coordinates in crystal space.
     '''
     def __init__(self, uvw):
-        clipper_core.Coord_grid.__init__(self, *uvw)
+        clipper_core.Coord_grid.__init__(self, *(uvw.tolist()))
     
     @property
     def u(self):
@@ -368,6 +369,10 @@ class CCP4MTZfile(clipper_core.CCP4MTZfile):
     
     def __init__(self):
         clipper_core.CCP4MTZfile.__init__(self)
+    
+    @log_clipper
+    def open_read(self, filename):
+        return super(CCP4MTZfile, self).open_read(filename)
         
     @log_clipper
     def import_hkl_data(self, cdata, mtzpath):
@@ -393,7 +398,11 @@ class CIFfile(clipper_core.CIFfile):
         clipper_core.CIFfile.__init__(self)
     
     @log_clipper
-    def resolution(cell):
+    def open_read(self, filename):
+        return super(CIFfile, self).open_read(filename)
+    
+    @log_clipper
+    def resolution(self, cell):
         return super(CIFfile, self).resolution(cell)
 
 
@@ -405,9 +414,9 @@ def __newHKL_info__(cls, *args, **kwargs):
 clipper_core.HKL_info.__new__ = staticmethod(__newHKL_info__)
 
 class HKL_info(clipper_core.HKL_info):
-    def __init__(self, session):
+    def __init__(self):
         clipper_core.HKL_info.__init__(self)
-        self.session = session
+        
 
 def __newHKL_data_F_phi__(cls, *args, **kwargs):
     if cls == clipper_core.HKL_data_F_phi_double:
@@ -447,9 +456,8 @@ class Xmap(clipper_core.Xmap_double):
     '''
     A Clipper crystallographic map generated from reciprocal space data.
     '''
-    def __init__(self, session, name, spacegroup, cell, grid_sam):
+    def __init__(self, name, spacegroup, cell, grid_sam):
         clipper_core.Xmap_double.__init__(self, spacegroup, cell, grid_sam)
-        self.session = session
         self.name = name
         # Some extra useful variables that aren't directly available from
         # the Clipper API
@@ -536,7 +544,9 @@ class Xmap(clipper_core.Xmap_double):
             self.recalculate_stats()
         return self._kurtosis
     
-    
+    ######
+    # MOVE TO CRYSTAL OBJECT
+    ######
     def _box_go_live(self):
         if self._box_handler is None:
             self._box_handler = self.session.triggers.add_handler('new frame', self.update_box)
@@ -595,6 +605,7 @@ class Xmap(clipper_core.Xmap_double):
         darray = Array_Grid_Data(data, origin = box_corner_xyz,
             step = self.voxel_size(), cell_angles = self.cell().angles_deg())
         self.volume.replace_data(darray)
+        self.volume.new_region((0,0,0), data.size)
         self._box_pad = pad
         self._box_dimensions = dim
         self._box_data = data
@@ -708,7 +719,9 @@ class Xmap(clipper_core.Xmap_double):
             m.add_drawing(d)
             self.session.models.add([m])
             
-        
+       #############
+       # /MOVE TO CRYSTAL OBJECT
+       ############# 
                 
                 
             

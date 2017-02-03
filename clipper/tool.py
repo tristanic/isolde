@@ -18,8 +18,8 @@ class Clipper_ToolInstance(ToolInstance):
         ToolInstance.__init__(self, session, tool_name)
         self.display_name = "Clipper"
         
-        from . import clipper
-        self.main = clipper
+        from . import main
+        self.main = main
         session.clipper = self.main
         session.clipper.session = session
         
