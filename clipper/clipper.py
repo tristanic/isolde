@@ -429,6 +429,16 @@ class HKL_data_F_phi (clipper_core.HKL_data_F_phi_double):
         clipper_core.HKL_data_F_phi_double.__init__(self)
 
 
+def __newHKL_data_I_sigI__(cls, *args, **kwargs):
+    if cls == clipper_core.HKL_data_I_sigI_double:
+        return object.__new__(HKL_data_I_sigI)
+    return object.__new__(cls)        
+clipper_core.HKL_data_I_sigI_double.__new__ = staticmethod(__newHKL_data_F_phi__)
+
+class HKL_data_I_sigI(clipper_core.HKL_data_I_sigI_double):
+    def __init__(self):
+        clipper_core.HKL_data_I_sigI_double.__init__(self)
+
 
 def __newGrid_sampling__(cls, *args, **kwargs):
     if cls == clipper_core.Grid_sampling:
