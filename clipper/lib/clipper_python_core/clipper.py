@@ -8201,114 +8201,6 @@ class Cell_descr(_object):
         except __builtin__.Exception:
             self.this = this
 
-    def a(self):
-        """
-        a(Cell_descr self) -> clipper::ftype const &
-
-        Parameters
-        ----------
-        self: clipper::Cell_descr const *
-
-        """
-        return _clipper.Cell_descr_a(self)
-
-
-    def b(self):
-        """
-        b(Cell_descr self) -> clipper::ftype const &
-
-        Parameters
-        ----------
-        self: clipper::Cell_descr const *
-
-        """
-        return _clipper.Cell_descr_b(self)
-
-
-    def c(self):
-        """
-        c(Cell_descr self) -> clipper::ftype const &
-
-        Parameters
-        ----------
-        self: clipper::Cell_descr const *
-
-        """
-        return _clipper.Cell_descr_c(self)
-
-
-    def alpha(self):
-        """
-        alpha(Cell_descr self) -> clipper::ftype const &
-
-        Parameters
-        ----------
-        self: clipper::Cell_descr const *
-
-        """
-        return _clipper.Cell_descr_alpha(self)
-
-
-    def beta(self):
-        """
-        beta(Cell_descr self) -> clipper::ftype const &
-
-        Parameters
-        ----------
-        self: clipper::Cell_descr const *
-
-        """
-        return _clipper.Cell_descr_beta(self)
-
-
-    def gamma(self):
-        """
-        gamma(Cell_descr self) -> clipper::ftype const &
-
-        Parameters
-        ----------
-        self: clipper::Cell_descr const *
-
-        """
-        return _clipper.Cell_descr_gamma(self)
-
-
-    def alpha_deg(self):
-        """
-        alpha_deg(Cell_descr self) -> clipper::ftype
-
-        Parameters
-        ----------
-        self: clipper::Cell_descr const *
-
-        """
-        return _clipper.Cell_descr_alpha_deg(self)
-
-
-    def beta_deg(self):
-        """
-        beta_deg(Cell_descr self) -> clipper::ftype
-
-        Parameters
-        ----------
-        self: clipper::Cell_descr const *
-
-        """
-        return _clipper.Cell_descr_beta_deg(self)
-
-
-    def gamma_deg(self):
-        """
-        gamma_deg(Cell_descr self) -> clipper::ftype
-
-        Parameters
-        ----------
-        self: clipper::Cell_descr const *
-
-        """
-        return _clipper.Cell_descr_gamma_deg(self)
-
-
     def format(self):
         """
         format(Cell_descr self) -> String
@@ -8364,90 +8256,6 @@ class Cell(Cell_descr):
 
         """
         return _clipper.Cell_init(self, cell_)
-
-
-    def is_null(self):
-        """
-        is_null(Cell self) -> bool
-
-        Parameters
-        ----------
-        self: clipper::Cell const *
-
-        """
-        return _clipper.Cell_is_null(self)
-
-
-    def a_star(self):
-        """
-        a_star(Cell self) -> clipper::ftype
-
-        Parameters
-        ----------
-        self: clipper::Cell const *
-
-        """
-        return _clipper.Cell_a_star(self)
-
-
-    def b_star(self):
-        """
-        b_star(Cell self) -> clipper::ftype
-
-        Parameters
-        ----------
-        self: clipper::Cell const *
-
-        """
-        return _clipper.Cell_b_star(self)
-
-
-    def c_star(self):
-        """
-        c_star(Cell self) -> clipper::ftype
-
-        Parameters
-        ----------
-        self: clipper::Cell const *
-
-        """
-        return _clipper.Cell_c_star(self)
-
-
-    def alpha_star(self):
-        """
-        alpha_star(Cell self) -> clipper::ftype
-
-        Parameters
-        ----------
-        self: clipper::Cell const *
-
-        """
-        return _clipper.Cell_alpha_star(self)
-
-
-    def beta_star(self):
-        """
-        beta_star(Cell self) -> clipper::ftype
-
-        Parameters
-        ----------
-        self: clipper::Cell const *
-
-        """
-        return _clipper.Cell_beta_star(self)
-
-
-    def gamma_star(self):
-        """
-        gamma_star(Cell self) -> clipper::ftype
-
-        Parameters
-        ----------
-        self: clipper::Cell const *
-
-        """
-        return _clipper.Cell_gamma_star(self)
 
 
     def volume(self):
@@ -8553,6 +8361,18 @@ class Cell(Cell_descr):
         return _clipper.Cell_dim(self)
 
 
+    def recip_dim(self):
+        """
+        recip_dim(Cell self)
+
+        Parameters
+        ----------
+        self: clipper::Cell *
+
+        """
+        return _clipper.Cell_recip_dim(self)
+
+
     def angles(self):
         """
         angles(Cell self)
@@ -8575,6 +8395,42 @@ class Cell(Cell_descr):
 
         """
         return _clipper.Cell_angles_deg(self)
+
+
+    def recip_angles(self):
+        """
+        recip_angles(Cell self)
+
+        Parameters
+        ----------
+        self: clipper::Cell *
+
+        """
+        return _clipper.Cell_recip_angles(self)
+
+
+    def recip_angles_deg(self):
+        """
+        recip_angles_deg(Cell self)
+
+        Parameters
+        ----------
+        self: clipper::Cell *
+
+        """
+        return _clipper.Cell_recip_angles_deg(self)
+
+
+    def cell_descr(self):
+        """
+        cell_descr(Cell self) -> Cell_descr
+
+        Parameters
+        ----------
+        self: clipper::Cell *
+
+        """
+        return _clipper.Cell_cell_descr(self)
 
     __swig_destroy__ = _clipper.delete_Cell
     __del__ = lambda self: None
@@ -11710,64 +11566,124 @@ class Atom_list(_object):
         return _clipper.Atom_list_extend_by(self, n)
 
 
-    def set_elements(self, elements):
+    def _set_elements(self, elements):
         """
-        set_elements(Atom_list self, StringVector elements)
+        _set_elements(Atom_list self, StringVector elements)
 
         Parameters
         ----------
         elements: std::vector< std::string,std::allocator< std::string > >
 
         """
-        return _clipper.Atom_list_set_elements(self, elements)
+        return _clipper.Atom_list__set_elements(self, elements)
 
 
-    def set_coord_orth(self, numpy_2d_in):
+    def _get_elements(self):
         """
-        set_coord_orth(Atom_list self, double * numpy_2d_in)
+        _get_elements(Atom_list self) -> StringVector
+
+        Parameters
+        ----------
+        self: clipper::Atom_list *
+
+        """
+        return _clipper.Atom_list__get_elements(self)
+
+
+    def _set_coord_orth(self, numpy_2d_in):
+        """
+        _set_coord_orth(Atom_list self, double * numpy_2d_in)
 
         Parameters
         ----------
         numpy_2d_in: double *
 
         """
-        return _clipper.Atom_list_set_coord_orth(self, numpy_2d_in)
+        return _clipper.Atom_list__set_coord_orth(self, numpy_2d_in)
 
 
-    def set_occupancies(self, numpy_1d_in):
+    def _get_coord_orth(self, numpy_array):
         """
-        set_occupancies(Atom_list self, double * numpy_1d_in)
+        _get_coord_orth(Atom_list self, double * numpy_array)
+
+        Parameters
+        ----------
+        numpy_array: double *
+
+        """
+        return _clipper.Atom_list__get_coord_orth(self, numpy_array)
+
+
+    def _set_occupancies(self, numpy_1d_in):
+        """
+        _set_occupancies(Atom_list self, double * numpy_1d_in)
 
         Parameters
         ----------
         numpy_1d_in: double *
 
         """
-        return _clipper.Atom_list_set_occupancies(self, numpy_1d_in)
+        return _clipper.Atom_list__set_occupancies(self, numpy_1d_in)
 
 
-    def set_u_isos(self, numpy_1d_in):
+    def _get_occupancies(self, numpy_array):
         """
-        set_u_isos(Atom_list self, double * numpy_1d_in)
+        _get_occupancies(Atom_list self, double * numpy_array)
+
+        Parameters
+        ----------
+        numpy_array: double *
+
+        """
+        return _clipper.Atom_list__get_occupancies(self, numpy_array)
+
+
+    def _set_u_isos(self, numpy_1d_in):
+        """
+        _set_u_isos(Atom_list self, double * numpy_1d_in)
 
         Parameters
         ----------
         numpy_1d_in: double *
 
         """
-        return _clipper.Atom_list_set_u_isos(self, numpy_1d_in)
+        return _clipper.Atom_list__set_u_isos(self, numpy_1d_in)
 
 
-    def set_u_anisos(self, numpy_2d_in):
+    def _get_u_isos(self, numpy_array):
         """
-        set_u_anisos(Atom_list self, double * numpy_2d_in)
+        _get_u_isos(Atom_list self, double * numpy_array)
+
+        Parameters
+        ----------
+        numpy_array: double *
+
+        """
+        return _clipper.Atom_list__get_u_isos(self, numpy_array)
+
+
+    def _set_u_anisos(self, numpy_2d_in):
+        """
+        _set_u_anisos(Atom_list self, double * numpy_2d_in)
 
         Parameters
         ----------
         numpy_2d_in: double *
 
         """
-        return _clipper.Atom_list_set_u_anisos(self, numpy_2d_in)
+        return _clipper.Atom_list__set_u_anisos(self, numpy_2d_in)
+
+
+    def _get_u_anisos(self, numpy_array):
+        """
+        _get_u_anisos(Atom_list self, double * numpy_array)
+
+        Parameters
+        ----------
+        numpy_array: double *
+
+        """
+        return _clipper.Atom_list__get_u_anisos(self, numpy_array)
 
     __swig_destroy__ = _clipper.delete_Atom_list
     __del__ = lambda self: None
@@ -11878,6 +11794,56 @@ class Symops(_object):
 
         """
         return _clipper.Symops_cell_trans(self, i)
+
+
+    def all_matrices44_frac(self, numpy_array):
+        """
+        all_matrices44_frac(Symops self, double * numpy_array)
+
+        Parameters
+        ----------
+        numpy_array: double *
+
+        """
+        return _clipper.Symops_all_matrices44_frac(self, numpy_array)
+
+
+    def all_matrices34_frac(self, numpy_array):
+        """
+        all_matrices34_frac(Symops self, double * numpy_array)
+
+        Parameters
+        ----------
+        numpy_array: double *
+
+        """
+        return _clipper.Symops_all_matrices34_frac(self, numpy_array)
+
+
+    def all_matrices44_orth(self, cell, numpy_array):
+        """
+        all_matrices44_orth(Symops self, Cell cell, double * numpy_array)
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        numpy_array: double *
+
+        """
+        return _clipper.Symops_all_matrices44_orth(self, cell, numpy_array)
+
+
+    def all_matrices34_orth(self, cell, numpy_array):
+        """
+        all_matrices34_orth(Symops self, Cell cell, double * numpy_array)
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        numpy_array: double *
+
+        """
+        return _clipper.Symops_all_matrices34_orth(self, cell, numpy_array)
 
 Symops_swigregister = _clipper.Symops_swigregister
 Symops_swigregister(Symops)

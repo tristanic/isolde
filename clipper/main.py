@@ -8,141 +8,229 @@ import numpy
 _clipper_messages = clipper._clipper_messages
 
 def _log_clipper(func):
-    def func_wrapper(*args, **kwargs):
-        _clipper_messages.clear()
-        func(*args, **kwargs)
-        message_string = _clipper_messages.read_and_clear()
-        if message_string:
-            session.logger.info("CLIPPER WARNING:")
-            session.logger.info(message_string)
-    return func_wrapper
+  def func_wrapper(*args, **kwargs):
+    _clipper_messages.clear()
+    func(*args, **kwargs)
+    message_string = _clipper_messages.read_and_clear()
+    if message_string:
+      session.logger.info("CLIPPER WARNING:")
+      session.logger.info(message_string)
+  return func_wrapper
 
 clipper.log_clipper = _log_clipper
 
-'''
-class Clipper_Project:
-    def __init__(self, project_name):
-        from .data_tree import DataTree
-        self.data = Datatree()
-        self.data['Head'].set_metadata(('Name', 'project_name'))
-'''        
-    
-from .data_tree import DataTree
-class Clipper_MTZ(DataTree):
+def initialize_project_database():
+  '''
+  Generate a database to hold the map data
+  '''
+  from .data_tree import DataTree
+  return DataTree()
+  
+def add_crystal(session, database, name):
+  from .crystal import Xtal_Project
+  return Xtal_Project(session, database, name)
+
+
+
+  
+
+def apply_b_factors_to_hydrogens(atom_list):
     '''
-    A container class to capture all the information loaded in from a 
-    .mtz or .cif structure factor file.
-    structure, using the clipper-python libraries: 
-        - The reflection data
-        - The cell and symmetry parameters
-        - The map(s)
-        - The atomic model describing the asymmetric unit
-    
-    Contains methods for:
-        - Loading in reflection and reciprocal-space map data from 
-          structure factor (.mtz or .cif) files
-        - Displaying density surrounding the current center of rotation
-        - Quickly finding and displaying all local symmetry equivalents
-        ...
+    When hydrogens are added to a pre-existing structure, their isotropic
+    and/or anisotropic B-factors are not necessarily set. This routine simply
+    sets them to match their adjacent heavy atoms. The input atom_list can
+    be either the hydrogens alone, or the whole structure.
     '''
-    
-    
-     
-    
-    
-    
-    def __init__(self):
-        DataTree.__init__(self)
-        
-    def load_hkl_data(session, filename):
-        import os
-        if os.path.isfile(filename):
-            hklfile = os.path.abspath(filename)
-        else:
-            self.session.logger.info('Invalid filename!')
-            return
-        
-        extension = os.path.splitext(filename)[1].lower()
-        if extension not in ('.cif', '.mtz'):
-            self.session.logger.info('Reflection file must be in either .cif or .mtz format!')
-            return
-        
-        from datetime import datetime
-        self.set_metadata(('Source file', hklfile))
-        self.set_metadata(('Accessed',str(datetime.today())))
-        
-        if extension == '.mtz':
-            mtzin = clipper.CCP4MTZfile()
-            hkl = self['hkl'] = clipper.HKL_info()
-            mtzin.open_read(filename)
-            mtzin.import_hkl_info(hkl)
-            # Get all the column names and types
-            column_labels = mtzin.column_labels
-            # Sort the columns into groups, and organise into a temporary tree 
-            temp_tree = DataTree()
-            i = 0
-            for l in column_labels:
-                thisname, thistype = l.__str__().split(' ')
-                crystal, dataset, name = thisname.split('/')[1:]
-                # The h, k, l indices are already captured in self.hklinfo
-                if thistype != 'H':
-                    temp_tree[crystal][dataset][thistype][name] = i
-                    i += 1
-            
-            for crystal in temp_tree.keys():
-                for dataset in temp_tree[crystal].keys():
-                    # Find I/sigI pairs and pull them in as
-                    # Clipper HKL_data_I_sigI objects
-                    for iname in temp_tree[crystal][dataset]['J'].keys():
-                        for sname in temp_tree[crystal][dataset]['Q'].keys():
-                            if iname in sname:
-                                this_isigi \
-                                    = self[crystal][dataset]['Intensities'][iname + ', ' + sname] \
-                                    = clipper.HKL_data_I_sigI()
-                                mtzin.import_hkl_data(this_isigi,
-                                '/' + crystal + '/' + dataset + 
-                                '/[' + iname + ',' + sname + ']')
-                    
-                    
-                    
-                    # Find amplitude/phase pairs and pull them in as 
-                    # Clipper HKL_data_F_phi objects
-                    for fname in temp_tree[crystal][dataset]['F'].keys():
-                        for pname in temp_tree[crystal][dataset]['P'].keys():
-                            if fname in pname:
-                                thisfphi \
-                                    = self[crystal][dataset]['F_Phi'][fname + ', ' + pname] \
-                                    = clipper.HKL_data_F_phi()
-                                mtzin.import_hkl_data(thisfphi, 
-                                '/' + crystal + '/' + dataset + 
-                                '/[' + fname + ',' + pname + ']')
-                    
-            
-            
-            
-            
-            
-            
-            
-            
+    hydrogens = atom_list.filter(atom_list.element_names == 'H')
+    # Get heavy atoms by taking advantage of the fact that hydrogens are
+    # only ever covalently bonded to a single other atom.
+    for h in hydrogens:
+        b = h.bonds[0]
+        for atom in b.atoms:
+            if atom.element_name != 'H':
+                h.bfactor = atom.bfactor
+                h.aniso_u6 = atom.aniso_u6
+                break
                 
-            
-                
+ 
+def atom_list_from_sel(atom_list):
+    '''
+    Takes a ChimeraX Atoms object, and creates a Clipper Atoms_list object
+    from the relevant atom properties.
+    '''
+    n = len(atom_list)
+    elements = atom_list.element_names.tolist()
+    coords = atom_list.coords
+    occupancies = atom_list.occupancy
+    u_iso = atom_list.bfactors
+    # Have to be careful here. Atoms.aniso_u6 returns None if any atom in
+    # the array has no aniso_u6 entry. 
+    u_aniso = atom_list.aniso_u6
+    if u_aniso is None:
+        u_aniso = numpy.zeros([n,6],numpy.float32)
+        u_aniso[atom_list.has_aniso_u] = atom_list.filter(atom_list.has_aniso_u).aniso_u6
+        # FIXME Once new ChimeraX build arrives with Atoms.has_aniso_u entry
+        #for i, a in enumerate(atom_list):
+            #if a.aniso_u6 is not None:
+                #u_aniso[i] = a.aniso_u6
+    clipper_atom_list = clipper.Atom_list(elements, coords, occupancies, u_iso, u_aniso)
+    return clipper_atom_list
+
+def import_Xmap_from_mtz_test(session, filename):
+    myhkl = clipper.HKL_info(session)
+    fphidata =  clipper.HKL_data_F_phi()  
+    mtzin = clipper.CCP4MTZfile()
+    mtzin.open_read(filename)
+    mtzin.import_hkl_info(myhkl)
+    mtzin.import_hkl_data(fphidata, '/crystal/dataset/[2FOFCWT, PH2FOFCWT]')
+    mtzin.close_read()
+    name = '2FOFCWT'
+    mygrid = clipper.Grid_sampling(myhkl.spacegroup(), myhkl.cell(), myhkl.resolution())
+    mymap = clipper.Xmap(session, name, myhkl.spacegroup(), myhkl.cell(), mygrid)
+    mymap.fft_from(fphidata)
+    return (fphidata, myhkl, mymap)
+    
+def vol_box(hklinfo, xmap, min_coor, max_coor):
+    cell = hklifno.cell()
+    grid = xmap.grid_sampling()
+    min_ortho = clipper.Coord_orth(min_coor)
+    max_ortho = clipper.Coord_orth(max_coor)
+    min_grid = min_ortho.coord_frac(cell).coord_grid(grid)
+    max_grid = max_ortho.coord_frac(cell).coord_grid(grid)    
+    
+def make_unit_cell(model, xmap, draw = True):
+    from chimerax.core.geometry import Place, Places
+    cell = xmap.cell()
+    atoms = model.atoms
+    clipper_atoms = atom_list_from_sel(atoms)
+    coord = model.bounds().center()
+    coord_orth = clipper.Coord_orth(coord)
+    coord_frac = coord_orth.coord_frac(cell)
+    sg = xmap.spacegroup()
+    unit_cell_frac_symops = xmap.unit_cell_symops(coord_frac, clipper_atoms)
+    if draw:
+        uc_places = []
+        for op in unit_cell_frac_symops.symops():
+            op_orth = op.rtop_orth(cell)
+            uc_places.append(Place(matrix=op_orth.matrix()[0:3,:]))
+        ucp = Places(uc_places)
+        model.positions = ucp
+    return unit_cell_frac_symops
+
+def test_pack_box(model, xmap, size = 50):
+    from chimerax.core.geometry import Place, Places
+    uc = make_unit_cell(model, xmap, draw = False)
+    coord = model.bounds().center()
+    box_size = (numpy.ones(3, numpy.int32)*size)
+    bo = xmap.all_symops_in_box(coord-box_size/2, box_size, uc)
+    p = []
+    for b in bo:
+        p.append(Place(matrix=b.rtop_orth(xmap.cell()).matrix()[0:3,:]))
+    P = Places(p)
+    model.positions = P
+    
+    from chimerax.core.models import Drawing, Model
+    from chimerax.core.surface.shapes import sphere_geometry
+    d = Drawing('box corners')
+    m = Model('box', session)
+    d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    box_min = clipper.Coord_orth(coord-box_size/2).coord_frac(xmap.cell()).coord_grid(xmap.grid_sampling())
+    box_max = box_min + clipper.Coord_grid(*box_size.tolist())
+    minmax = [box_min, box_max]
+    dp = []
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                thiscg = clipper.Coord_grid([minmax[i].u(), minmax[j].v(), minmax[k].w()])
+                dp.append(Place(origin=thiscg.coord_frac(xmap.grid_sampling()).coord_orth(xmap.cell()).xyz))
+    d.positions = Places(dp)
+    m.add_drawing(d)
+    session.models.add([m])
+    
+    return bo
+
+def pack_box(model, xmap, box_origin_xyz, size = 100):
+    box_size_xyz = numpy.ones(3)*size
+    box_origin_xyz = numpy.array(box_origin_xyz)
+    model_bounds = model.bounds().box_corners()
+    bo = xmap.pack_xyz_box(model_bounds, box_origin_xyz, box_size_xyz);
+    from chimerax.core.geometry import Place, Places
+
+    p = []
+    for b in bo:
+        p.append(Place(matrix=b.rtop_orth(xmap.cell()).matrix()[0:3,:]))
+    P = Places(p)
+    model.positions = P
+    
+    from chimerax.core.models import Drawing, Model
+    from chimerax.core.surface.shapes import sphere_geometry
+    d = Drawing('box corners')
+    m = Model('box', session)
+    d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    minmax = [box_origin_xyz, box_origin_xyz+box_size_xyz]
+    dp = []
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                dp.append(Place(origin=[minmax[i][0],minmax[j][1],minmax[k][2]]))
+    d.positions = Places(dp)
+    m.add_drawing(d)
+    session.models.add([m])
+    return bo
+
+def draw_box(min_corner, max_corner, name='box'):
+    from chimerax.core.geometry import Place, Places
+    from chimerax.core.models import Drawing, Model
+    from chimerax.core.surface.shapes import sphere_geometry
+    d = Drawing('corners')
+    m = Model(name, session)
+    d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    minmax = [min_corner, max_corner]
+    dp = []
+    base_color = numpy.array([255,255,255,255])
+    color_increment = numpy.array([0,-32,-32,0])
+    colors = []
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                dp.append(Place(origin=[minmax[i][0],minmax[j][1],minmax[k][2]]))
+                colors.append(base_color-color_increment*(i+j+k));
+    d.positions = Places(dp)
+    d.colors = colors
+    m.add_drawing(d)
+    session.models.add([m])
+    return d
+    
+    
+
         
+def draw_asu(xmap):    
+    from chimerax.core.geometry import Place, Places
+    from chimerax.core.models import Drawing, Model
+    from chimerax.core.surface.shapes import sphere_geometry
+    d = Drawing('asu corners')
+    m = Model('asu box', session)
+    d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    asu = xmap.grid_asu()
+    grid = xmap.grid_sampling()
+    cell = xmap.cell()
+    minmax = [asu.min().coord_frac(grid).coord_orth(cell).xyz, asu.max().coord_frac(grid).coord_orth(cell).xyz]
+    dp = []
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                dp.append(Place(origin=[minmax[i][0],minmax[j][1],minmax[k][2]]))
+    d.positions = Places(dp)
+    m.add_drawing(d)
+    session.models.add([m])
+    return d
+
+def box_corners(origin_xyz, size_xyz):
+    ret = []
+    minmax = [origin_xyz, size_xyz]
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                ret.append([minmax[i][0],minmax[j][1], minmax[k][2]])
+    return ret
         
-    
-    def import_Xmap_from_mtz_test(session, filename):
-        myhkl = HKL_info(session)
-        fphidata =  HKL_data_F_phi()  
-        mtzin = CCP4MTZfile()
-        mtzin.open_read(filename)
-        mtzin.import_hkl_info(myhkl)
-        mtzin.import_hkl_data(fphidata, '/crystal/dataset/[2FOFCWT, PH2FOFCWT]')
-        mtzin.close_read()
-        name = '2FOFCWT'
-        mygrid = Grid_sampling(myhkl.spacegroup(), myhkl.cell(), myhkl.resolution())
-        mymap = Xmap(session, name, myhkl.spacegroup(), myhkl.cell(), mygrid)
-        mymap.fft_from(fphidata)
-        return (fphidata, myhkl, mymap)
-    
-    
