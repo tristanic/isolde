@@ -67,7 +67,7 @@ def atom_list_from_sel(atom_list):
     # the array has no aniso_u6 entry. 
     u_aniso = atom_list.aniso_u6
     if u_aniso is None:
-        u_aniso = numpy.zeros([n,6],numpy.float32)
+        u_aniso = numpy.ones([n,6],numpy.float32)*numpy.nan
         u_aniso[atom_list.has_aniso_u] = atom_list.filter(atom_list.has_aniso_u).aniso_u6
         # FIXME Once new ChimeraX build arrives with Atoms.has_aniso_u entry
         #for i, a in enumerate(atom_list):

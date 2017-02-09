@@ -24,8 +24,9 @@ from enum import IntEnum
 class db_levels(IntEnum):
   PROJECT = 0
   EXPERIMENT = 1
-  CRYSTAL = 2
-  DATASET = 3
+  CRYSTAL_SET = 2
+  CRYSTAL = 3
+  DATASET = 4
 
 
 class DataTree(collections.defaultdict):

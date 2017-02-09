@@ -74,10 +74,8 @@ class Clipper_MTZ(DataTree):
           temp_tree[crystal][dataset][thistype][name] = i
           i += 1
       
-      # Officially add ourselves to the tree.
       # FIXME: will need checking here to see if the crystal name already
       # exists, and offer options to replace, rename or append
-      self.parent[crystal] = self
       
       # FIXME: ultimately we want to be able to handle any legal MTZ file,
       #        but for now we'll balk if we find more than one crystal
@@ -102,10 +100,10 @@ class Clipper_MTZ(DataTree):
           for iname in temp_tree[crystal][dataset]['I'].keys():
             if 'free' in iname.lower():
               assert 'Free flags' not in self[crystal][dataset].keys()
-              thisFree = self[dataset]['Free flags'] \
+              thisFree = self[crystal][dataset]['Free flags'] \
                    = clipper.HKL_data_Flag()
               mtzin.import_hkl_data(thisFree,
-                '/'+'/'.join(map(str, [crystal, dataset, iname])))
+                '/'+'/'.join(map(str, [crystal, dataset, '[{}]'.format(iname)])))
                 
           # Find I/sigI pairs and pull them in as
           # Clipper HKL_data_I_sigI objects
@@ -114,7 +112,7 @@ class Clipper_MTZ(DataTree):
               if data_labels_match(iname, sname):
                 keyname = ', '.join(map(str, [iname, sname]))
                 thisIsigI \
-                  = self[dataset]['Intensities'][keyname] \
+                  = self[crystal][dataset]['Intensities'][keyname] \
                   = clipper.HKL_data_I_sigI()
                 mtzin.import_hkl_data(thisIsigI,
                 '/'+'/'.join(map(str, [crystal, dataset, '[{}]'.format(keyname)])))
@@ -125,7 +123,7 @@ class Clipper_MTZ(DataTree):
               if data_labels_match(fname, sname):
                 keyname = ', '.join(map(str, [fname, sname]))
                 thisFsigF \
-                  = self[dataset]['F_SigF'][keyname] \
+                  = self[crystal][dataset]['F_SigF'][keyname] \
                   = clipper.HKL_data_F_sigF()
                 mtzin.import_hkl_data(thisFsigF, 
                 '/'+'/'.join(map(str, [crystal, dataset, '[{}]'.format(keyname)])))
@@ -137,7 +135,7 @@ class Clipper_MTZ(DataTree):
               if data_labels_match(fname, pname):
                 keyname = ', '.join(map(str, [fname, pname]))
                 thisFphi \
-                  = self[dataset]['F_Phi'][keyname] \
+                  = self[crystal][dataset]['F_Phi'][keyname] \
                   = clipper.HKL_data_F_phi()
                 mtzin.import_hkl_data(thisFphi, 
                 '/'+'/'.join(map(str, [crystal, dataset, '[{}]'.format(keyname)])))

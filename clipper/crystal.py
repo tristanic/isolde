@@ -1,6 +1,7 @@
 import numpy
+from . import clipper
 from .clipper_mtz import Clipper_MTZ
-from .data_tree import db_levels
+from .data_tree import db_levels, DataTree
 class Xtal_Project:
   '''
   The master object for handling a crystallographic data set within
@@ -16,13 +17,20 @@ class Xtal_Project:
     
   def load_data(self, filename):
     self.data.load_hkl_data(filename)
+  
+  def add_maps(self, crystal_name):
+    maps = self.data[crystal_name]['maps'] = \
+          Map_set(self.session, self.data[crystal_name]['dataset'])
+    for key in self.data[crystal_name]['dataset']['F_Phi'].keys():
+      maps.generate_map_from_f_phi(key)
+    return maps
 
 DEFAULT_SOLID_MAP_COLOR = [0,255,255,153] # Transparent cyan
 DEFAULT_MESH_MAP_COLOR = [0,255,255,255] # Solid cyan
 DEFAULT_DIFF_MAP_COLORS = [[0,255,0,153],[255,0,0,153]]
 
 
-class Xtal_Dataset:
+class Map_set:
   '''
   Each crystal dataset will usually have multiple maps associated with it.
   We need an object to organise these, to control their display, and to
@@ -37,21 +45,22 @@ class Xtal_Dataset:
                crystallographic dataset
     '''
     self.session = session
-    if not isinstance(dataset, Clipper_MTZ) or dataset.level != Clipper_MTZ.DATASET:
+    if not isinstance(dataset, DataTree) or dataset.level != db_levels.DATASET:
       raise TypeError('dataset should be the fourth level of a Clipper_MTZ tree!')
     self._data = dataset
     # The Clipper HKL_info object holding the (h,k,l) arrays and cell/symmetry information
-    hkl = self.hklinfo = dataset.find_ancestor(db_levels.CRYSTAL)['hkl']
+    hkl = self.hklinfo = dataset.find_ancestor(db_levels.CRYSTAL_SET)['hkl']
     sg = self.spacegroup = hkl.spacegroup
     cell = self.cell = hkl.cell
     res = self.resolution = hkl.resolution
     grid = self.grid = clipper.Grid_sampling(sg, cell, res)
     
-    self.voxel_size = cell.abc / grid.dim
+    self.voxel_size = cell.dim / grid.dim
+    self._voxel_size_frac = 1 / grid.dim
     
     
     # List of Xmap objects generated and handled by this object
-    self.maps = None
+    self.maps = []
     
     # Atomic model associated with this object
     self.atomic_model = None
@@ -108,9 +117,12 @@ class Xtal_Dataset:
   
   def generate_map_from_f_phi (self, data_key):
     name = data_key
-    data = self._data[data_key]
-    xmap = Xmap(name, self.spacegroup, self.cell, self.grid)
+    data = self._data['F_Phi'][data_key]
+    xmap = clipper.Xmap(self.spacegroup, self.cell, self.grid)
     xmap.fft_from(data)
+    # FIXME: Ugly fudge for now to find difference maps
+    if '2' not in data_key:
+      xmap.is_difference_map = True
     self.maps.append(xmap)
 
   ################
@@ -139,40 +151,41 @@ class Xtal_Dataset:
     camera.camera(self.session, 'ortho')
     cofr.cofr(self.session, 'centerOfView')
     self._box_pad = pad
-    self.box_radius = radius
+    self._box_radius = radius
     v = self.session.view
-    c = self.cell()
-    g = self.grid_sampling()
+    c = self.cell
+    g = self.grid
     self._box_center = v.center_of_rotation
-    box_corner_grid, box_corner_xyz = self._find_box_corner(self.box_center, radius, pad)
-    self.box_origin_offset = box_corner_xyz - self.box_center
+    box_corner_grid, box_corner_xyz = self._find_box_corner(self._box_center, radius, pad)
+    self.box_origin_offset = box_corner_xyz - self._box_center
     self._box_dimensions = (numpy.ceil(radius / self.voxel_size * 2)+pad*2).astype(int)[::-1]
-    for i, m in self.maps:
+    for m in self.maps:
       data = numpy.empty(self._box_dimensions, numpy.double)
       self._volume_data.append(data)
       grid_data = Array_Grid_Data(data, origin = box_corner_xyz,
-          step = m.voxel_size(), cell_angles = self.cell.angles_deg)
+          step = self.voxel_size, cell_angles = c.angles_deg)
       self._array_grid_data.append(grid_data)
       volume = Volume(grid_data, self.session)
       self._volumes.append(volume)
       self._fill_volume_data(m, data, box_corner_grid)
       volume.initialize_thresholds()
-      self._master_box_model.add([self.volume])
+      self._master_box_model.add([volume])
       if not m.is_difference_map:
         contour_val = [self._standard_contour * m.sigma]
         volume.set_color(DEFAULT_SOLID_MAP_COLOR)
       else:
         contour_val = self._standard_difference_map_contours * m.sigma
-        volume.set_colors(DEFAULT_DIFF_MAP_COLORS)
+        volume.set_colors (DEFAULT_DIFF_MAP_COLORS)
       self.change_contour(volume, contour_val)
       volume.show()
+    self.session.models.add([self._master_box_model])
     self._box_go_live()
 
   def change_box_radius(self, radius, pad=0):
     self._box_go_static()
     v = self.session.view
     cofr = v.center_of_rotation
-    self.box_radius = radius
+    self._box_radius = radius
     dim = (numpy.ceil(radius / self.voxel_size * 2)+pad*2).astype(int)[::-1]
     box_corner_grid, box_corner_xyz = self._find_box_corner(cofr, radius, pad)
     from chimerax.core.map.data import Array_Grid_Data
@@ -180,7 +193,7 @@ class Xtal_Dataset:
       data = numpy.empty(dim, numpy.double)
       self._volume_data[i] = data    
       darray = Array_Grid_Data(data, origin = box_corner_xyz,
-        step = self.voxel_size(), cell_angles = self.cell().angles_deg())
+        step = self.voxel_size, cell_angles = self.cell.angles_deg)
       self._array_grid_data[i] = darray
       volume.replace_data(darray)
       volume.new_region((0,0,0), data.size)
@@ -195,11 +208,11 @@ class Xtal_Dataset:
     v = self.session.view
     cofr = v.center_of_rotation
     if not force_update:
-      if numpy.all(abs(self.box_center - cofr) < self._cofr_eps):
+      if numpy.all(abs(self._box_center - cofr) < self._cofr_eps):
         return
     
     self._box_center = cofr
-    box_corner_grid, box_corner_xyz = self._find_box_corner(cofr, self.box_radius, self._box_pad)
+    box_corner_grid, box_corner_xyz = self._find_box_corner(cofr, self._box_radius, self._box_pad)
     for i, volume in enumerate(self._volumes):
       self._array_grid_data[i].set_origin(box_corner_xyz)
       self._fill_volume_data(self.maps[i], self._volume_data[i], box_corner_grid)
@@ -207,12 +220,13 @@ class Xtal_Dataset:
     
   def change_contour(self, volume, contour_vals):
     from chimerax.core.map import volumecommand
-    volumecommand.volume(self.session, [volume], level=[contour_vals], cap_faces = False)
+    for cv in contour_vals:
+      volumecommand.volume(self.session, [volume], level=[[cv]], cap_faces = False)
     
 
   def _fill_volume_data(self, xmap, target, start_grid_coor):
     shape = (numpy.array(target.shape)[::-1] - 1).tolist()
-    end_grid_coor = start_grid_coor + Coord_grid(shape)
+    end_grid_coor = start_grid_coor + clipper.Coord_grid(shape)
     xmap.export_section_numpy(target, start_grid_coor, end_grid_coor, 'C')
         
   
@@ -222,16 +236,16 @@ class Xtal_Dataset:
     big enough to hold a sphere of the desired radius, and padded by
     pad voxels in each dimension.
     '''
-    cell = self.cell()
-    grid = self.grid_sampling()
-    voxel_size = self.voxel_size()
+    cell = self.cell
+    grid = self.grid
+    voxel_size = self.voxel_size
     radii_in_voxels = radius / voxel_size
-    radii_frac = Coord_frac(radii_in_voxels * self.voxel_size_frac())
-    center_ortho = Coord_orth(center)
+    radii_frac = clipper.Coord_frac(radii_in_voxels * self._voxel_size_frac)
+    center_ortho = clipper.Coord_orth(center)
     center_frac = center_ortho.coord_frac(cell)
     bottom_corner_frac = center_frac - radii_frac
     bottom_corner_grid = bottom_corner_frac.coord_grid(grid) -\
-              Coord_grid([pad,pad,pad])
+              clipper.Coord_grid([pad,pad,pad])
     bottom_corner_orth = bottom_corner_grid.coord_frac(grid).coord_orth(cell)
     return bottom_corner_grid, bottom_corner_orth.xyz
     

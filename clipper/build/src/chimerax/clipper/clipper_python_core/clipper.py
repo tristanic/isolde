@@ -9314,40 +9314,40 @@ class Coord_grid(_object):
         except __builtin__.Exception:
             self.this = this
 
-    def u(self):
+    def _u(self):
         """
-        u(Coord_grid self) -> int const &
+        _u(Coord_grid self) -> int const &
 
         Parameters
         ----------
         self: clipper::Coord_grid const *
 
         """
-        return _clipper.Coord_grid_u(self)
+        return _clipper.Coord_grid__u(self)
 
 
-    def v(self):
+    def _v(self):
         """
-        v(Coord_grid self) -> int const &
+        _v(Coord_grid self) -> int const &
 
         Parameters
         ----------
         self: clipper::Coord_grid const *
 
         """
-        return _clipper.Coord_grid_v(self)
+        return _clipper.Coord_grid__v(self)
 
 
-    def w(self):
+    def _w(self):
         """
-        w(Coord_grid self) -> int const &
+        _w(Coord_grid self) -> int const &
 
         Parameters
         ----------
         self: clipper::Coord_grid const *
 
         """
-        return _clipper.Coord_grid_w(self)
+        return _clipper.Coord_grid__w(self)
 
 
     def _u_ptr(self):
@@ -9567,16 +9567,28 @@ class Coord_grid(_object):
         return _clipper.Coord_grid___sub__(self, g2)
 
 
-    def uvw(self):
+    def _get_uvw(self):
         """
-        uvw(Coord_grid self)
+        _get_uvw(Coord_grid self)
 
         Parameters
         ----------
         self: clipper::Coord_grid *
 
         """
-        return _clipper.Coord_grid_uvw(self)
+        return _clipper.Coord_grid__get_uvw(self)
+
+
+    def _set_uvw(self, v):
+        """
+        _set_uvw(Coord_grid self, int [3] v)
+
+        Parameters
+        ----------
+        v: int [3]
+
+        """
+        return _clipper.Coord_grid__set_uvw(self, v)
 
     __swig_destroy__ = _clipper.delete_Coord_grid
     __del__ = lambda self: None
@@ -9710,40 +9722,40 @@ class Coord_orth(_object):
         except __builtin__.Exception:
             self.this = this
 
-    def x(self):
+    def _x(self):
         """
-        x(Coord_orth self) -> clipper::ftype const &
+        _x(Coord_orth self) -> clipper::ftype const &
 
         Parameters
         ----------
         self: clipper::Coord_orth const *
 
         """
-        return _clipper.Coord_orth_x(self)
+        return _clipper.Coord_orth__x(self)
 
 
-    def y(self):
+    def _y(self):
         """
-        y(Coord_orth self) -> clipper::ftype const &
+        _y(Coord_orth self) -> clipper::ftype const &
 
         Parameters
         ----------
         self: clipper::Coord_orth const *
 
         """
-        return _clipper.Coord_orth_y(self)
+        return _clipper.Coord_orth__y(self)
 
 
-    def z(self):
+    def _z(self):
         """
-        z(Coord_orth self) -> clipper::ftype const &
+        _z(Coord_orth self) -> clipper::ftype const &
 
         Parameters
         ----------
         self: clipper::Coord_orth const *
 
         """
-        return _clipper.Coord_orth_z(self)
+        return _clipper.Coord_orth__z(self)
 
 
     def lengthsq(self):
@@ -9875,16 +9887,16 @@ class Coord_orth(_object):
         return _clipper.Coord_orth___neg__(self)
 
 
-    def xyz(self):
+    def _get_xyz(self):
         """
-        xyz(Coord_orth self)
+        _get_xyz(Coord_orth self)
 
         Parameters
         ----------
         self: clipper::Coord_orth *
 
         """
-        return _clipper.Coord_orth_xyz(self)
+        return _clipper.Coord_orth__get_xyz(self)
 
 
     def __mul__(self, *args):
@@ -10058,40 +10070,40 @@ class Coord_frac(_object):
         except __builtin__.Exception:
             self.this = this
 
-    def u(self):
+    def _u(self):
         """
-        u(Coord_frac self) -> clipper::ftype const &
+        _u(Coord_frac self) -> clipper::ftype const &
 
         Parameters
         ----------
         self: clipper::Coord_frac const *
 
         """
-        return _clipper.Coord_frac_u(self)
+        return _clipper.Coord_frac__u(self)
 
 
-    def v(self):
+    def _v(self):
         """
-        v(Coord_frac self) -> clipper::ftype const &
+        _v(Coord_frac self) -> clipper::ftype const &
 
         Parameters
         ----------
         self: clipper::Coord_frac const *
 
         """
-        return _clipper.Coord_frac_v(self)
+        return _clipper.Coord_frac__v(self)
 
 
-    def w(self):
+    def _w(self):
         """
-        w(Coord_frac self) -> clipper::ftype const &
+        _w(Coord_frac self) -> clipper::ftype const &
 
         Parameters
         ----------
         self: clipper::Coord_frac const *
 
         """
-        return _clipper.Coord_frac_w(self)
+        return _clipper.Coord_frac__w(self)
 
 
     def lengthsq(self, cell):
@@ -10252,16 +10264,16 @@ class Coord_frac(_object):
         return _clipper.Coord_frac___neg__(self)
 
 
-    def uvw(self):
+    def _get_uvw(self):
         """
-        uvw(Coord_frac self)
+        _get_uvw(Coord_frac self)
 
         Parameters
         ----------
         self: clipper::Coord_frac *
 
         """
-        return _clipper.Coord_frac_uvw(self)
+        return _clipper.Coord_frac__get_uvw(self)
 
 
     def __mul__(self, *args):
@@ -10450,40 +10462,40 @@ class Coord_map(_object):
         return _clipper.Coord_map_ceil(self)
 
 
-    def u(self):
+    def _u(self):
         """
-        u(Coord_map self) -> clipper::ftype const &
+        _u(Coord_map self) -> clipper::ftype const &
 
         Parameters
         ----------
         self: clipper::Coord_map const *
 
         """
-        return _clipper.Coord_map_u(self)
+        return _clipper.Coord_map__u(self)
 
 
-    def v(self):
+    def _v(self):
         """
-        v(Coord_map self) -> clipper::ftype const &
+        _v(Coord_map self) -> clipper::ftype const &
 
         Parameters
         ----------
         self: clipper::Coord_map const *
 
         """
-        return _clipper.Coord_map_v(self)
+        return _clipper.Coord_map__v(self)
 
 
-    def w(self):
+    def _w(self):
         """
-        w(Coord_map self) -> clipper::ftype const &
+        _w(Coord_map self) -> clipper::ftype const &
 
         Parameters
         ----------
         self: clipper::Coord_map const *
 
         """
-        return _clipper.Coord_map_w(self)
+        return _clipper.Coord_map__w(self)
 
 
     def format(self):
@@ -11979,13 +11991,15 @@ class Unit_Cell(_object):
     def __init__(self, *args):
         """
         __init__(clipper::Unit_Cell self) -> Unit_Cell
-        __init__(clipper::Unit_Cell self, Coord_frac ref, Atom_list atoms, Xmap_base const & xmap) -> Unit_Cell
+        __init__(clipper::Unit_Cell self, Coord_frac ref, Atom_list atoms, Cell cell, Spacegroup sg, Grid_sampling grid) -> Unit_Cell
 
         Parameters
         ----------
         ref: clipper::Coord_frac
         atoms: clipper::Atom_list const &
-        xmap: Xmap_base const &
+        cell: clipper::Cell const &
+        sg: clipper::Spacegroup const &
+        grid: clipper::Grid_sampling const &
 
         """
         this = _clipper.new_Unit_Cell(*args)
@@ -12084,33 +12098,30 @@ class Unit_Cell(_object):
         return _clipper.Unit_Cell_ref_box_min_side(self)
 
 
-    def find_symops_of_coord(self, pairlist, thecoord, grid, sg):
+    def find_symops_of_coord(self, pairlist, thecoord):
         """
-        find_symops_of_coord(Unit_Cell self, std::vector< std::pair< int,clipper::Coord_grid >,std::allocator< std::pair< int,clipper::Coord_grid > > > & pairlist, Coord_grid thecoord, Grid_sampling grid, Spacegroup sg)
+        find_symops_of_coord(Unit_Cell self, std::vector< std::pair< int,clipper::Coord_grid >,std::allocator< std::pair< int,clipper::Coord_grid > > > & pairlist, Coord_grid thecoord)
 
         Parameters
         ----------
         pairlist: std::vector< std::pair< int,clipper::Coord_grid >,std::allocator< std::pair< int,clipper::Coord_grid > > > &
         thecoord: clipper::Coord_grid const &
-        grid: clipper::Grid_sampling const &
-        sg: clipper::Spacegroup const &
 
         """
-        return _clipper.Unit_Cell_find_symops_of_coord(self, pairlist, thecoord, grid, sg)
+        return _clipper.Unit_Cell_find_symops_of_coord(self, pairlist, thecoord)
 
 
-    def find_symop_of_coord(self, thecoord, grid, sg):
+    def all_symops_in_box(self, box_origin_xyz, box_size_uvw):
         """
-        find_symop_of_coord(Unit_Cell self, Coord_frac thecoord, Grid_sampling grid, Spacegroup sg) -> std::pair< int,clipper::Coord_frac >
+        all_symops_in_box(Unit_Cell self, double [3] box_origin_xyz, int [3] box_size_uvw) -> Symops
 
         Parameters
         ----------
-        thecoord: clipper::Coord_frac const &
-        grid: clipper::Grid_sampling const &
-        sg: clipper::Spacegroup const &
+        box_origin_xyz: double [3]
+        box_size_uvw: int [3]
 
         """
-        return _clipper.Unit_Cell_find_symop_of_coord(self, thecoord, grid, sg)
+        return _clipper.Unit_Cell_all_symops_in_box(self, box_origin_xyz, box_size_uvw)
 
 Unit_Cell_swigregister = _clipper.Unit_Cell_swigregister
 Unit_Cell_swigregister(Unit_Cell)
@@ -14234,20 +14245,6 @@ class Xmap_float(Xmap_base):
         return _clipper.Xmap_float___isub__(self, other)
 
 
-    def all_symops_in_box(self, box_origin_xyz, box_size_uvw, unit_cell_symops):
-        """
-        all_symops_in_box(Xmap_float self, double [3] box_origin_xyz, int [3] box_size_uvw, Unit_Cell unit_cell_symops) -> Symops
-
-        Parameters
-        ----------
-        box_origin_xyz: double [3]
-        box_size_uvw: int [3]
-        unit_cell_symops: clipper::Unit_Cell &
-
-        """
-        return _clipper.Xmap_float_all_symops_in_box(self, box_origin_xyz, box_size_uvw, unit_cell_symops)
-
-
     def get_reference_coord(self, pos):
         """
         get_reference_coord(Xmap_float self, Coord_grid pos) -> clipper::Xmap< float >::Map_reference_coord
@@ -14654,20 +14651,6 @@ class Xmap_double(Xmap_base):
 
         """
         return _clipper.Xmap_double___isub__(self, other)
-
-
-    def all_symops_in_box(self, box_origin_xyz, box_size_uvw, unit_cell_symops):
-        """
-        all_symops_in_box(Xmap_double self, double [3] box_origin_xyz, int [3] box_size_uvw, Unit_Cell unit_cell_symops) -> Symops
-
-        Parameters
-        ----------
-        box_origin_xyz: double [3]
-        box_size_uvw: int [3]
-        unit_cell_symops: clipper::Unit_Cell &
-
-        """
-        return _clipper.Xmap_double_all_symops_in_box(self, box_origin_xyz, box_size_uvw, unit_cell_symops)
 
 
     def get_reference_coord(self, pos):
@@ -15113,20 +15096,6 @@ class Xmap_int(Xmap_base):
 
         """
         return _clipper.Xmap_int___isub__(self, other)
-
-
-    def all_symops_in_box(self, box_origin_xyz, box_size_uvw, unit_cell_symops):
-        """
-        all_symops_in_box(Xmap_int self, double [3] box_origin_xyz, int [3] box_size_uvw, Unit_Cell unit_cell_symops) -> Symops
-
-        Parameters
-        ----------
-        box_origin_xyz: double [3]
-        box_size_uvw: int [3]
-        unit_cell_symops: clipper::Unit_Cell &
-
-        """
-        return _clipper.Xmap_int_all_symops_in_box(self, box_origin_xyz, box_size_uvw, unit_cell_symops)
 
 
     def get_reference_coord(self, pos):

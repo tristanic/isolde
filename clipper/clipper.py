@@ -81,8 +81,31 @@ class Atom(clipper_core.Atom):
           'U3+',  'U4+',  'U6+',  'Np3+', 'Np4+', 'Np6+', 'Pu3+',
           'Pu4+', 'Pu6+'])  
                         
-    def __init__(self):
+    def __init__(self, element, coord, occ, u_iso, u_aniso):
+        '''
+        __init__(self, element, coord, occ, u_iso, u_aniso) -> Atom
+        
+        Create a new Clipper Atom with the given properties
+        Args:
+            element (string): 
+                The standard abbreviated element (or elemental ion) 
+                name. All valid names are listed in Atom.ATOM_NAMES.
+            coord ([float*3] or Clipper.Coord_orth object): 
+                (x,y,z) coordinates of the atom in Angstroms. 
+            occ (float):
+                The fractional occupancy of the atom
+            u_iso (float):
+                Isotropic B-factor
+            u_aniso ([float * 6]):
+                Anisotropic B-factor matrix as a 6-member array:
+                [u00, u11, u22, u01, u02, u12].
+        '''
         clipper_core.Atom.__init__(self)
+        self.element = element
+        self.coord = coord
+        self.occupancy = occ
+        self.u_iso = u_iso
+        self.u_aniso = u_aniso
     
     
     @property
@@ -103,12 +126,18 @@ class Atom(clipper_core.Atom):
     
     @property
     def coord(self):
-        '''(x,y,z) coordinates of the atom in Angstroms'''
+        '''
+        (x,y,z) coordinates of the atom in Angstroms. Can be set from
+        a Python list, numpy array, or a Clipper Coord_orth object.
+        '''
         return self.coord_orth.xyz
     
     @coord.setter
     def coord(self, coord):
-        self.set_coord_orth(clipper_core.Coord_orth(*coord))
+        if isinstance(coord, Coord_orth):
+            self.set_coord_orth(coord)
+        else:
+            self.set_coord_orth(clipper_core.Coord_orth(*coord))
 
     @property
     def coord_orth(self):
@@ -155,6 +184,7 @@ class Atom(clipper_core.Atom):
         '''
         Anisotropic B-factor matrix as a 6-member array:
         [u00, u11, u22, u01, u02, u12].
+        For purely isotropic values, set this to None
         '''
         return super(Atom, self).u_aniso_orth().get_vals()
     
@@ -165,7 +195,11 @@ class Atom(clipper_core.Atom):
     
     @u_aniso_orth.setter
     def u_aniso_orth(self, u_aniso):
-        self.set_u_aniso_orth(*u_aniso)
+        if u_aniso is None:
+            from math import nan
+            self.set_u_aniso_orth(clipper_core.U_aniso_orth(*([nan]*6)))
+        else:
+            self.set_u_aniso_orth(clipper_core.U_aniso_orth(*u_aniso))
     
     @property
     def is_null(self):
@@ -185,6 +219,9 @@ class Atom_list(clipper_core.Atom_list):
     '''
     def __init__(self, elements, coords, occupancies, u_isos, u_anisos):
         '''
+        __init__(self, elements, coords, occupancies, u_isos, u_anisos)
+            -> Atom_list
+            
         Arguments:
             elements:    standard elemental abbreviations (e.g. "C", "Na1+" etc.)
                          See clipper.Atom.ATOM_NAMES for a full list of legal atom names
@@ -277,7 +314,8 @@ class Atom_list(clipper_core.Atom_list):
     def _get_u_anisos(self):
         '''
         Anisotropic B-factor matrices for all atoms as an nx6 array, in the
-        format: n*[u00, u11, u22, u01, u02, u12]
+        format: n*[u00, u11, u22, u01, u02, u12]. For purely isotropic
+        atoms, set all elements in their row to math.nan or numpy.nan.
         '''
         n = len(self)
         uaniso = numpy.empty((n,6), numpy.double)
@@ -296,6 +334,8 @@ class Coord_orth(clipper_core.Coord_orth):
     '''Coordinates in orthographic (x,y,z) space.'''
     def __init__(self, xyz):
         '''
+        __init__(self, xyz) -> Coord_orth
+        
         Args:
             xyz ([float * 3]): (x, z, z) coordinates in Angstroms
         '''
@@ -303,7 +343,7 @@ class Coord_orth(clipper_core.Coord_orth):
             # Because SWIG does not correctly typemap numpy.float32
             xyz = xyz.astype(float)
         clipper_core.Coord_orth.__init__(self, *xyz)
-    
+    '''
     @property
     def x(self):
         return super(Coord_orth, self).x()
@@ -319,7 +359,17 @@ class Coord_orth(clipper_core.Coord_orth):
     @property
     def xyz(self):
         return super(Coord_orth, self).xyz()
-
+    '''
+    @property
+    def xyz(self):
+        return super(Coord_orth, self)._get_xyz()
+    
+    def __add__(self, other):
+        if isinstance(other, Coord_orth):
+            return super(Coord_orth, self).__add__(other)
+        return self + Coord_orth(other)
+    
+    
 def __newCoord_grid__(cls, *args, **kwargs):
     if cls == clipper_core.Coord_grid:
         return object.__new__(Coord_grid)
@@ -330,6 +380,8 @@ class Coord_grid(clipper_core.Coord_grid):
     '''Integer grid coordinates in crystal space.'''
     def __init__(self, uvw):
         '''
+        __init__(self, uvw) -> Coord_grid
+        
         Args:
             uvw ([int * 3]): (u, v, w) grid coordinates
         '''
@@ -339,6 +391,7 @@ class Coord_grid(clipper_core.Coord_grid):
             uvw = uvw.tolist()
         clipper_core.Coord_grid.__init__(self, *uvw)
     
+    '''
     @property
     def u(self):
         return super(Coord_grid, self).u()
@@ -354,6 +407,17 @@ class Coord_grid(clipper_core.Coord_grid):
     @property
     def uvw(self):
         return super(Coord_grid, self).uvw()
+    '''
+    
+    @property
+    def uvw(self):
+        return super(Coord_grid, self)._get_uvw()
+
+    def __add__(self, other):
+        if isinstance(other, Coord_grid):
+            return super(Coord_grid, self).__add__(other)
+        return self + Coord_grid(other)
+    
 
 def __newCoord_map__(cls, *args, **kwargs):
     if cls == clipper_core.Coord_map:
@@ -365,6 +429,8 @@ class Coord_map(clipper_core.Coord_map):
     '''Like Coord_grid, but allowing non-integer values.'''
     def __init__(self, uvw):
         '''
+        __init__(self, uvw) -> Coord_map
+        
         Args:
             uvw ([float * 3]): (u, v, w) grid coordinates
         '''
@@ -402,6 +468,8 @@ class Coord_frac(clipper_core.Coord_frac):
     '''
     def __init__(self, uvw):
         '''
+        __init__(self, uvw) -> Coord_frac
+        
         Args:
             uvw ([float * 3]): (u, v, w) fractional coordinates
         '''
@@ -409,7 +477,7 @@ class Coord_frac(clipper_core.Coord_frac):
             # Because SWIG does not correctly typemap numpy.float32
             uvw = uvw.astype(float)
         clipper_core.Coord_frac.__init__(self, *uvw)
-
+    '''
     @property
     def u(self):
         return super(Coord_frac, self).u()
@@ -425,6 +493,16 @@ class Coord_frac(clipper_core.Coord_frac):
     @property
     def uvw(self):
         return super(Coord_frac, self).uvw()
+    '''
+    
+    @property
+    def uvw(self):
+        return super(Coord_frac, self)._get_uvw()
+    
+    def __add__(self, other):
+        if isinstance(other, Coord_frac):
+            return super(Coord_frac, self).__add__(other)
+        return self + Coord_frac(other)
 
 def __newCCP4MTZfile__(cls, *args, **kwargs):
     if cls == clipper_core.CCP4MTZfile:
@@ -501,14 +579,35 @@ class CCP4MTZfile(clipper_core.CCP4MTZfile):
     '''
     
     def __init__(self):
+        '''
+        __init__(self) -> CCP4MTZfile
+        
+        Create an empty CCP4MTZfile object. Call open_read(filename) to
+        begin reading a MTZ file.
+        '''
         clipper_core.CCP4MTZfile.__init__(self)
     
     @log_clipper
     def open_read(self, filename):
+        '''Open an MTZ file for reading'''
         return super(CCP4MTZfile, self).open_read(filename)
         
     @log_clipper
     def import_hkl_data(self, cdata, mtzpath):
+        '''
+        Mark a set of data for import. NOTE: the data will not actually
+        be imported until the close_read() method has been called.
+        
+        Args:
+            cdata:   a Clipper.HKL_data_... object matched to the data types
+                     in the mtzpath (e.g. HKL_data_F_phi for amplitudes and
+                     phases).
+            mtzpath: a string giving the path to the target columns within
+                     the MTZ file. Available columns can be listed using
+                     column_labels(). To import data spanning multiple
+                     columns, use e.g.
+                        "/crystal/dataset/[2FOFCWT, PH2FOFCWT]"
+        '''
         return super(CCP4MTZfile, self).import_hkl_data(cdata, mtzpath)
 
     @property
@@ -517,20 +616,19 @@ class CCP4MTZfile(clipper_core.CCP4MTZfile):
     
     @property
     def cell(self):
+        '''Object describing the unit cell dimensions'''
         return super(CCP4MTZfile, self).cell()
     
     @property
     def column_labels(self):
+        '''List of available columns in the MTZ file'''
         return super(CCP4MTZfile, self).column_labels()
     
     @property
     def column_paths(self):
+        '''List of available columns in the MTZ file'''
         return super(CCP4MTZfile, self).column_paths()
-    
-    @property
-    def low_res_limit(self):
-        return super(CCP4MTZfile, self).low_res_limit()
-    
+        
     @property
     def high_res_limit(self):
         return super(CCP4MTZfile, self).high_res_limit()
@@ -544,19 +642,20 @@ class CCP4MTZfile(clipper_core.CCP4MTZfile):
         return super(CCP4MTZfile, self).hkl_sampling()
 
     @property
-    def resolution(self):
-        return super(CCP4MTZfile, self).resolution()
-    
-    @property
     def low_res_limit(self):
         return super(CCP4MTZfile, self).low_res_limit()
 
+    @property
+    def resolution(self):
+        return super(CCP4MTZfile, self).resolution()
+    
     @property
     def sort_order(self):
         return super(CCP4MTZfile, self).sort_order()
 
     @property
     def spacegroup(self):
+        '''Object defining the symmetry operations for this spacegroup'''
         return super(CCP4MTZfile, self).spacegroup()
     
     @property
@@ -594,6 +693,12 @@ class CIFfile(clipper_core.CIFfile):
     '''
     
     def __init__(self):
+        '''
+        __init__(self) -> CIFfile
+        
+        Create an empty CIFfile object. Call open_read to begin reading
+        a .cif structure factor file.
+        '''
         clipper_core.CIFfile.__init__(self)
     
     @log_clipper
@@ -614,6 +719,15 @@ clipper_core.HKL_info.__new__ = staticmethod(__newHKL_info__)
 
 class HKL_info(clipper_core.HKL_info):
     def __init__(self):
+        '''
+        __init__(self) -> HKL_info
+        
+        Create an empty HKL_info object to store the vital statistics
+        (h,k,l coordinates, cell parameters, spacegroup etc.) of a set 
+        of crystal data. It can be filled by passing it as an argument
+        to (CCP4MTZfile or CIFfile).import_hkl_info() after loading a
+        structure factor file.
+        '''
         clipper_core.HKL_info.__init__(self)
     
     @property
@@ -637,6 +751,14 @@ clipper_core.HKL_data_Flag.__new__ = staticmethod(__newHKL_data_Flag__)
 
 class HKL_data_Flag(clipper_core.HKL_data_Flag):
     def __init__(self):
+        '''
+        __init__(self) -> HKL_data_Flag
+        
+        Create an empty object to store an array of integer flags 
+        (e.g. for holding of R-free flags). Fill it by passing it to
+        (CCP4MTZfile or CIFfile).import_hkl_data together with the
+        address of a suitable array.
+        '''
         clipper_core.HKL_data_Flag.__init__(self)
 
 def __newHKL_data_F_sigF__(cls, *args, **kwargs):
@@ -645,9 +767,17 @@ def __newHKL_data_F_sigF__(cls, *args, **kwargs):
     return object.__new__(cls)        
 clipper_core.HKL_data_F_sigF_double.__new__ = staticmethod(__newHKL_data_F_sigF__)
 
-class HKL_data_F_phi (clipper_core.HKL_data_F_phi_double):
+class HKL_data_F_sigF (clipper_core.HKL_data_F_sigF_double):
     def __init__(self):
-        clipper_core.HKL_data_F_phi_double.__init__(self)
+        '''
+        __init__(self) -> HKL_data_F_sigF
+        
+        Create an empty object to store an array of amplitudes and
+        their associated sigmas. Fill it by passing it to
+        (CCP4MTZfile or CIFfile).import_hkl_data together with the
+        addresses of a suitable pair of arrays.
+        '''
+        clipper_core.HKL_data_F_sigF_double.__init__(self)
 
 
 def __newHKL_data_F_phi__(cls, *args, **kwargs):
@@ -658,6 +788,14 @@ clipper_core.HKL_data_F_phi_double.__new__ = staticmethod(__newHKL_data_F_phi__)
 
 class HKL_data_F_phi (clipper_core.HKL_data_F_phi_double):
     def __init__(self):
+        '''
+        __init__(self) -> HKL_data_F_phi
+        
+        Create an empty object to store an array of amplitudes and their
+        associated phases (observed or calculated). Fill it by passing it 
+        to (CCP4MTZfile or CIFfile).import_hkl_data together with the
+        addresses of a suitable pair of arrays.
+        '''
         clipper_core.HKL_data_F_phi_double.__init__(self)
 
 
@@ -669,6 +807,14 @@ clipper_core.HKL_data_I_sigI_double.__new__ = staticmethod(__newHKL_data_F_phi__
 
 class HKL_data_I_sigI(clipper_core.HKL_data_I_sigI_double):
     def __init__(self):
+        '''
+        __init__(self) -> HKL_data_I_sigI
+        
+        Create an empty object to store an array of intensities and
+        their associated sigmas. Fill it by passing it to
+        (CCP4MTZfile or CIFfile).import_hkl_data together with the
+        addresses of a suitable pair of arrays.
+        '''
         clipper_core.HKL_data_I_sigI_double.__init__(self)
 
 
@@ -683,6 +829,21 @@ class Grid_sampling(clipper_core.Grid_sampling):
     Object defining the grid used to sample points in a 3D map.
     '''
     def __init__(self, spacegroup, cell, resolution, rate = 1.5):
+        '''
+        __init__(self, spacegroup, cell, resolution, rate = 1.5) -> Grid_sampling
+        
+        Args:
+            spacegroup (clipper.Spacegroup)
+            cell (clipper.Cell)
+            resolution (clipper.Resolution)
+            rate: the over-sampling rate defining the spacing of grid
+                  points. Leave this as the default unless you know what
+                  you're doing.
+        
+        The first three arguments can be readily obtained from an HKL_info
+        object: HKL_info.spacegroup, HKL_info.cell, HKL_info.resolution.
+            
+        '''
         clipper_core.Grid_sampling.__init__(self, spacegroup, cell, resolution, rate)
     
     @property
@@ -703,11 +864,13 @@ class Cell(clipper_core.Cell):
     '''
     def __init__(self, abc, angles):
         '''
+        __init__(self, abc, angles) -> Cell
+        
         Args:
             abc ([float*3]): cell dimensions in Angstroms
             angles ([float*3]): alpha, beta and gamma angles in degrees
         '''
-        cell_descr = clipper_core.Cell_desc(*abc, *angles)
+        cell_descr = clipper_core.Cell_descr(*abc, *angles)
         clipper_core.Cell.__init__(self, cell_descr)
     
     @property
@@ -753,9 +916,16 @@ class Xmap(clipper_core.Xmap_double):
     '''
     def __init__(self, spacegroup, cell, grid_sam):
         '''
+        __init__(self, spacegroup, cell, grid_sam) -> Xmap
+        
         Generate an empty map container. This can be filled with data
         using the fft_from(fphi) method where fphi is a clipper.F_phi
         object.
+        
+        Args:
+            spacegroup (clipper.Spacegroup)
+            cell (clipper.Cell)
+            grid_sam (clipper.Grid_sampling)
         '''
         clipper_core.Xmap_double.__init__(self, spacegroup, cell, grid_sam)
         
