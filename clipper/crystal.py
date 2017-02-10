@@ -25,9 +25,9 @@ class Xtal_Project:
       maps.generate_map_from_f_phi(key)
     return maps
 
-DEFAULT_SOLID_MAP_COLOR = [0,255,255,153] # Transparent cyan
-DEFAULT_MESH_MAP_COLOR = [0,255,255,255] # Solid cyan
-DEFAULT_DIFF_MAP_COLORS = [[0,255,0,153],[255,0,0,153]]
+DEFAULT_SOLID_MAP_COLOR = [0,1.0,1.0,0.6] # Transparent cyan
+DEFAULT_MESH_MAP_COLOR = [0,1.0,1.0,1.0] # Solid cyan
+DEFAULT_DIFF_MAP_COLORS = [[1.0,0,0,0.6],[1.0,1.0,0,0.6]] #Transparent red and yellow
 
 
 class Map_set:
@@ -78,7 +78,7 @@ class Map_set:
     from chimerax.core.models import Model
     self._master_box_model = Model('Xmap display', self.session)
     
-    self._standard_contour = 1.5
+    self._standard_contour = numpy.array([1.5])
     self._standard_difference_map_contours = numpy.array([-3.0, 3.0])
     # Default "radius" (actually half-width of the rhombohedron) of
     # the box in which the maps will be drawn.
@@ -105,7 +105,9 @@ class Map_set:
     # an update once the cofr moves more than half a voxel in any direction
     # This is a bit of a fudge given that the voxels aren't necessarily on
     # orthogonal axes, but it's a useful compromise in the interest of speed.
-    self._cofr_eps = min(self.voxel_size/2)
+    v = self.session.view
+    cofr = v.center_of_rotation
+    self._cofr_eps = self.session.main_view.pixel_size(cofr)
     
     
     ################
@@ -114,6 +116,27 @@ class Map_set:
     
     # Model object to hold Drawings defining the special positions
     self._special_positions_model = None
+    
+    self._crosshairs = None
+    
+    self._show_crosshairs = True
+
+  @property
+  def show_crosshairs(self):
+    return self._show_crosshairs
+  
+  @show_crosshairs.setter
+  def show_crosshairs(self, state):
+    if state:
+      if self._crosshairs is None or self._crosshairs.deleted:
+        if self._box_handler:
+          self._crosshairs = draw_crosshairs()
+          self._master_box_model.add([self._crosshairs])
+        else:
+          print('Please initialise map drawing first!')
+          return
+    self._show_crosshairs = state
+    self._crosshairs.visible = state
   
   def generate_map_from_f_phi (self, data_key):
     name = data_key
@@ -156,6 +179,10 @@ class Map_set:
     c = self.cell
     g = self.grid
     self._box_center = v.center_of_rotation
+    if self.show_crosshairs:
+      self._crosshairs = draw_crosshairs(self._box_center)
+      self._master_box_model.add([self._crosshairs])
+
     box_corner_grid, box_corner_xyz = self._find_box_corner(self._box_center, radius, pad)
     self.box_origin_offset = box_corner_xyz - self._box_center
     self._box_dimensions = (numpy.ceil(radius / self.voxel_size * 2)+pad*2).astype(int)[::-1]
@@ -172,11 +199,14 @@ class Map_set:
       self._master_box_model.add([volume])
       if not m.is_difference_map:
         contour_val = [self._standard_contour * m.sigma]
-        volume.set_color(DEFAULT_SOLID_MAP_COLOR)
+        colorset = {'surface_colors': [DEFAULT_SOLID_MAP_COLOR]}
       else:
         contour_val = self._standard_difference_map_contours * m.sigma
-        volume.set_colors (DEFAULT_DIFF_MAP_COLORS)
+        colorset = {'surface_colors': DEFAULT_DIFF_MAP_COLORS}
+      volume.set_parameters(**{'cap_faces': False})
       self.change_contour(volume, contour_val)
+      volume.set_parameters(**colorset)
+      volume.update_surface()
       volume.show()
     self.session.models.add([self._master_box_model])
     self._box_go_live()
@@ -205,8 +235,10 @@ class Map_set:
     
     
   def update_box(self, *_, force_update = False):
+    from chimerax.core.geometry import Place
     v = self.session.view
     cofr = v.center_of_rotation
+    self._cofr_eps = self.session.main_view.pixel_size(cofr)
     if not force_update:
       if numpy.all(abs(self._box_center - cofr) < self._cofr_eps):
         return
@@ -217,11 +249,13 @@ class Map_set:
       self._array_grid_data[i].set_origin(box_corner_xyz)
       self._fill_volume_data(self.maps[i], self._volume_data[i], box_corner_grid)
       volume.update_surface()
+    if self.show_crosshairs:
+      self._crosshairs.position = Place(origin=cofr)
     
   def change_contour(self, volume, contour_vals):
     from chimerax.core.map import volumecommand
-    for cv in contour_vals:
-      volumecommand.volume(self.session, [volume], level=[[cv]], cap_faces = False)
+    volume.set_parameters(**{'surface_levels': contour_vals})
+    volume.update_surface()
     
 
   def _fill_volume_data(self, xmap, target, start_grid_coor):
@@ -258,6 +292,25 @@ class Map_set:
       self.session.triggers.remove_handler(self._box_handler)
       self._box_handler = None
 
+
+def draw_crosshairs(origin):
+  from chimerax.core.surface.shapes import cylinder_geometry
+  from chimerax.core.models import Drawing
+  from chimerax.core.geometry import Place, Places
+  d = Drawing('axis')
+  axes = Drawing('axes')
+  d.vertices, d.normals, d.triangles = cylinder_geometry(radius = 0.05, height = 0.5)
+  p = []
+  p.append(Place())
+  p.append(Place(axes = [[0,0,1],[0,1,0],[-1,0,0]]))
+  p.append(Place(axes = [[1,0,0],[0,0,-1],[0,1,0]]))
+  c = [[255,0,0,255],[0,255,0,255],[0,0,255,255]]
+  d.positions = Places(p)
+  d.colors = c
+  axes.add_drawing(d)
+  axes.position = Place(origin=origin)
+  return axes
+  
 '''
 
                   
