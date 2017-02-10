@@ -914,7 +914,7 @@ class Xmap(clipper_core.Xmap_double):
     '''
     A Clipper crystallographic map generated from reciprocal space data.
     '''
-    def __init__(self, spacegroup, cell, grid_sam):
+    def __init__(self, spacegroup, cell, grid_sam, name = None):
         '''
         __init__(self, spacegroup, cell, grid_sam) -> Xmap
         
@@ -926,11 +926,15 @@ class Xmap(clipper_core.Xmap_double):
             spacegroup (clipper.Spacegroup)
             cell (clipper.Cell)
             grid_sam (clipper.Grid_sampling)
+            name (string): 
+                Optionally, you can give the map a unique name for later
+                identification
         '''
         clipper_core.Xmap_double.__init__(self, spacegroup, cell, grid_sam)
         
         # Some extra useful variables that aren't directly available from
         # the Clipper API
+        self.name = name
         
         # Get the (nu, nv, nw) grid sampling as a numpy array
         self.grid_samples = self.grid.dim

@@ -27,7 +27,7 @@ class Xtal_Project:
 
 DEFAULT_SOLID_MAP_COLOR = [0,1.0,1.0,0.6] # Transparent cyan
 DEFAULT_MESH_MAP_COLOR = [0,1.0,1.0,1.0] # Solid cyan
-DEFAULT_DIFF_MAP_COLORS = [[1.0,0,0,0.6],[1.0,1.0,0,0.6]] #Transparent red and yellow
+DEFAULT_DIFF_MAP_COLORS = [[1.0,0,0,1],[1.0,1.0,0,1]] #Solid red and yellow
 
 
 class Map_set:
@@ -88,6 +88,9 @@ class Map_set:
     # Centre point of the box (will typically be set to the centre of
     # rotation).
     self._box_center = None
+    # Last grid coordinate of the box centre. We only need to update the
+    # map if the new centre changes
+    self._last_cofr_grid = None
     # Vector mapping the box centre to its origin
     self._box_origin_offset = None
     # ChimeraX Volume objects to draw the map into
@@ -108,7 +111,7 @@ class Map_set:
     v = self.session.view
     cofr = v.center_of_rotation
     self._cofr_eps = self.session.main_view.pixel_size(cofr)
-    
+
     
     ################
     # Variables involved in handling other useful annotations
@@ -141,7 +144,7 @@ class Map_set:
   def generate_map_from_f_phi (self, data_key):
     name = data_key
     data = self._data['F_Phi'][data_key]
-    xmap = clipper.Xmap(self.spacegroup, self.cell, self.grid)
+    xmap = clipper.Xmap(self.spacegroup, self.cell, self.grid, name = data_key)
     xmap.fft_from(data)
     # FIXME: Ugly fudge for now to find difference maps
     if '2' not in data_key:
@@ -152,7 +155,7 @@ class Map_set:
   # Live-updating map box
   ################
   
-  def initialize_box_display(self, radius = 15, pad = 0):
+  def initialize_box_display(self, radius = 15, pad = 2):
     '''
     Generate a Volume big enough to hold a sphere of the given radius,
     plus an optional padding of pad voxels on each side. The session
@@ -179,6 +182,7 @@ class Map_set:
     c = self.cell
     g = self.grid
     self._box_center = v.center_of_rotation
+    self._last_cofr_grid = clipper.Coord_orth(self._box_center).coord_frac(c).coord_grid(g)
     if self.show_crosshairs:
       self._crosshairs = draw_crosshairs(self._box_center)
       self._master_box_model.add([self._crosshairs])
@@ -193,6 +197,7 @@ class Map_set:
           step = self.voxel_size, cell_angles = c.angles_deg)
       self._array_grid_data.append(grid_data)
       volume = Volume(grid_data, self.session)
+      volume.name = m.name
       self._volumes.append(volume)
       self._fill_volume_data(m, data, box_corner_grid)
       volume.initialize_thresholds()
@@ -203,15 +208,17 @@ class Map_set:
       else:
         contour_val = self._standard_difference_map_contours * m.sigma
         colorset = {'surface_colors': DEFAULT_DIFF_MAP_COLORS}
+        volume.set_representation('mesh')
       volume.set_parameters(**{'cap_faces': False})
       self.change_contour(volume, contour_val)
       volume.set_parameters(**colorset)
       volume.update_surface()
       volume.show()
     self.session.models.add([self._master_box_model])
+    self.update_box(force_update = True)
     self._box_go_live()
 
-  def change_box_radius(self, radius, pad=0):
+  def change_box_radius(self, radius, pad=1):
     self._box_go_static()
     v = self.session.view
     cofr = v.center_of_rotation
@@ -226,7 +233,7 @@ class Map_set:
         step = self.voxel_size, cell_angles = self.cell.angles_deg)
       self._array_grid_data[i] = darray
       volume.replace_data(darray)
-      volume.new_region((0,0,0), data.size)
+      volume.new_region((0,0,0), darray.size)
     self._box_pad = pad
     self._box_dimensions = dim
     self.update_box(force_update=True)
@@ -236,21 +243,29 @@ class Map_set:
     
   def update_box(self, *_, force_update = False):
     from chimerax.core.geometry import Place
+    from chimerax.core.surface import zone
     v = self.session.view
     cofr = v.center_of_rotation
     self._cofr_eps = self.session.main_view.pixel_size(cofr)
+    # We need to redraw the crosshairs if the cofr moves by a pixel...
     if not force_update:
       if numpy.all(abs(self._box_center - cofr) < self._cofr_eps):
         return
-    
+    if self.show_crosshairs:
+      self._crosshairs.position = Place(origin=cofr)
+    # ... and redraw the box if it moves by a grid point
     self._box_center = cofr
+    cofr_grid = clipper.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
+    if not force_update:
+      if cofr_grid == self._last_cofr_grid:
+        return
+    self._last_cofr_grid = cofr_grid      
     box_corner_grid, box_corner_xyz = self._find_box_corner(cofr, self._box_radius, self._box_pad)
     for i, volume in enumerate(self._volumes):
       self._array_grid_data[i].set_origin(box_corner_xyz)
       self._fill_volume_data(self.maps[i], self._volume_data[i], box_corner_grid)
       volume.update_surface()
-    if self.show_crosshairs:
-      self._crosshairs.position = Place(origin=cofr)
+      zone.surface_zone(volume, [cofr], self._box_radius)
     
   def change_contour(self, volume, contour_vals):
     from chimerax.core.map import volumecommand

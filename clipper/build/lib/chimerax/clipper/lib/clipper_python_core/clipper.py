@@ -9531,6 +9531,18 @@ class Coord_grid(_object):
         return _clipper.Coord_grid___ne__(self, g2)
 
 
+    def __eq__(self, g2):
+        """
+        __eq__(Coord_grid self, Coord_grid g2) -> bool
+
+        Parameters
+        ----------
+        g2: clipper::Coord_grid const &
+
+        """
+        return _clipper.Coord_grid___eq__(self, g2)
+
+
     def __add__(self, g2):
         """
         __add__(Coord_grid self, Coord_grid g2) -> Coord_grid
