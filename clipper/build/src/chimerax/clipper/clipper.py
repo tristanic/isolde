@@ -904,6 +904,74 @@ class Cell(clipper_core.Cell):
         return super(Cell, self).recip_angles_deg()
 
 
+def __newUnit_Cell__(cls, *args, **kwargs):
+    if cls == clipper_core.Unit_Cell:
+        return object.__new__(Unit_Cell)
+    return object.__new__(cls)        
+clipper_core.Unit_Cell.__new__ = staticmethod(__newUnit_Cell__)
+
+class Unit_Cell(clipper_core.Unit_Cell):
+    '''
+    Clipper object holding the information necessary to construct a unit
+    cell from a given atomic model of one asymmetric unit. Also provides
+    functions returning the symmetry operations necessary to pack an
+    arbitrary box in 3D space.
+    '''
+    def __init__(self, ref, atom_list, cell, spacegroup, grid_sampling):
+        '''
+        __init__(self, ref, atom_list, cell, spacegroup, grid_sampling) -> Unit_Cell
+        
+        Note: internal calculations for finding symmetry equivalents are
+        run using integer symmetry operations on grid coordinates for
+        improved performance. This means that if you change the sampling
+        rate of your maps, you will need to create a new Unit_Cell object
+        to match.
+        
+        Args:
+            ref ([float*3]):
+                (x,y,z) coordinate of the reference you want to construct
+                the unit cell relative to. Set this to the centroid of
+                your atomic model for best results.
+            atom_list (clipper.Atom_list):
+                A Clipper Atom_list object containing your reference model.
+            cell (clipper.Cell)
+            spacegroup (clipper.Spacegroup)
+            grid_sampling (clipper.Grid_Sampling)
+        '''
+        ref_frac = Coord_orth(ref).coord_frac(cell)
+        clipper_core.Unit_Cell.__init__(self, ref_frac, atom_list, cell, spacegroup, grid_sampling)
+    
+    @property
+    def symops(self):
+        '''Symops necessary to generate a unit cell from the model asu'''
+        return super(Unit_Cell, self).symops()
+    
+    def all_symops_in_box(self, box_origin_xyz, box_size_uvw, always_include_identity = False, debug = False):
+        '''
+        Get an object defining all the symmetry operations mapping any
+        part of your reference atomic model to a given box. Calculations
+        are done in grid rather than Cartesian coordinates for performance
+        reasons, so the precise shape of the box is dependent on the
+        unit cell angles for the given spacegroup.
+        
+        Args:
+            box_origin_xyz ([float*3]):
+                The minimum (x,y,z) coordinates of the box. These will
+                be rounded to the nearest grid coordinate.
+            box_size_uvw ([int*3]):
+                The dimensions of the box in grid coordinates
+            always_include_identity(bool):
+                If True, the identity symmetry operator will always be
+                in the returned list.
+        '''
+        origin = numpy.empty(3)
+        origin[:] = box_origin_xyz
+        size = numpy.empty(3, numpy.int32)
+        size[:] = box_size_uvw
+        return super(Unit_Cell, self).all_symops_in_box(origin, size, always_include_identity, debug)
+        
+    
+
 def __newXmap_double__(cls, *args, **kwargs):
     if cls == clipper_core.Xmap_double:
         return object.__new__(Xmap)

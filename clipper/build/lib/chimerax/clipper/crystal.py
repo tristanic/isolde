@@ -1,4 +1,5 @@
 import numpy
+from .main import atom_list_from_sel
 from . import clipper
 from .clipper_mtz import Clipper_MTZ
 from .data_tree import db_levels, DataTree
@@ -27,7 +28,7 @@ class Xtal_Project:
 
 DEFAULT_SOLID_MAP_COLOR = [0,1.0,1.0,0.6] # Transparent cyan
 DEFAULT_MESH_MAP_COLOR = [0,1.0,1.0,1.0] # Solid cyan
-DEFAULT_DIFF_MAP_COLORS = [[1.0,0,0,1],[1.0,1.0,0,1]] #Solid red and yellow
+DEFAULT_DIFF_MAP_COLORS = [[1.0,0,0,1.0],[0,1.0,0,1.0]] #Solid red and yellow
 
 
 class Map_set:
@@ -63,8 +64,9 @@ class Map_set:
     self.maps = []
     
     # Atomic model associated with this object
-    self.atomic_model = None
-    
+    self._atomic_model = None
+    # A clipper Atom_list object corresponding to the ChimeraX atoms
+    self._clipper_atoms = None
     
     #############
     # Variables involved in handling live redrawing of maps in a box
@@ -91,8 +93,6 @@ class Map_set:
     # Last grid coordinate of the box centre. We only need to update the
     # map if the new centre changes
     self._last_cofr_grid = None
-    # Vector mapping the box centre to its origin
-    self._box_origin_offset = None
     # ChimeraX Volume objects to draw the map into
     self._volumes = []
     # Array_Grid_Data objects held by the Volume objects
@@ -103,15 +103,34 @@ class Map_set:
     self._box_handler = None
     # Is the box already initialised?
     self._box_initialized = False
-    # Distance any axis of the cofr has to move before triggering an update.
-    # Since we're working on Clipper's integer grid, we only need trigger
-    # an update once the cofr moves more than half a voxel in any direction
-    # This is a bit of a fudge given that the voxels aren't necessarily on
-    # orthogonal axes, but it's a useful compromise in the interest of speed.
-    v = self.session.view
-    cofr = v.center_of_rotation
-    self._cofr_eps = self.session.main_view.pixel_size(cofr)
 
+    ################
+    # Variables involved in handling of symmetry operations
+    ################
+    
+    # A C++ object holding the symmetry operations required to pack one
+    # unit cell relative to the current atomic model, along with fast
+    # functions returning the symops necessary to pack a given box in
+    # xyz space.
+    self._unit_cell = None
+    # Do we want to show symmetry equivalent molecules live as we move
+    # around?
+    self._show_symmetry = False
+    # Do we want to always have the reference model shown?
+    self.sym_always_shows_reference_model = True
+    # Trigger handler for live display of symmetry
+    self._sym_handler = None
+    # Centroid of the search space for symmetry equivalents
+    self._sym_box_center = None
+    # Half-width of the box in which we want to search
+    self._sym_box_radius = None
+    # Grid dimensions of the box
+    self._sym_box_dimensions = None
+    # Is the box already initialised?
+    self._sym_box_initialized = False
+    # Last grid coordinate for the cofr at which the symmetry was updated
+    self._sym_last_cofr_grid = None
+    
     
     ################
     # Variables involved in handling other useful annotations
@@ -123,7 +142,57 @@ class Map_set:
     self._crosshairs = None
     
     self._show_crosshairs = True
-
+  
+  @property
+  def atomic_model(self):
+    '''
+    The atomic model representing one asymmetric unit of the crystal
+    structure.
+    '''
+    return self._atomic_model
+  
+  @atomic_model.setter
+  def atomic_model(self, model):
+    from chimerax.core.atomic import AtomicStructure
+    if not isinstance(model, AtomicStructure):
+      raise TypeError('Model must be an atomic structure!')
+    self._atomic_model = model
+    # If we've previously defined a unit cell to handle our symmetry
+    # operations, we need to recalculate it against the new reference
+    # point
+    if self._unit_cell is not None:
+      pass
+  
+  @property
+  def clipper_atoms(self):
+    '''
+    Clipper Atom_list object describing the atomic model
+    '''
+    if self._clipper_atoms is None:
+      self._clipper_atoms = atom_list_from_sel(self.atomic_model.atoms)
+    return self._clipper_atoms
+  
+  
+  @property
+  def unit_cell(self):
+    if self._unit_cell is None:
+      ref = self._atomic_model.bounds().center()
+      self._unit_cell = clipper.Unit_Cell(ref, self.clipper_atoms, 
+                                self.cell, self.spacegroup, self.grid)
+    return self._unit_cell
+  
+  @property
+  def show_symmetry(self):
+    return self._show_symmetry
+  
+  @show_symmetry.setter
+  def show_symmetry(self, flag):
+    if flag:
+      if not all([self.cell, self.spacegroup, self.grid]):
+        raise RuntimeError('You need to define symmetry information first!')
+    self._show_symmetry = flag
+  
+  
   @property
   def show_crosshairs(self):
     return self._show_crosshairs
@@ -155,6 +224,14 @@ class Map_set:
   # Live-updating map box
   ################
   
+  @property
+  def sym_box_radius(self):
+    return self._sym_box_radius
+  
+  @sym_box_radius.setter
+  def sym_box_radius(self, radius):
+    self._change_sym_box_radius(radius)
+  
   def initialize_box_display(self, radius = 15, pad = 2):
     '''
     Generate a Volume big enough to hold a sphere of the given radius,
@@ -165,12 +242,12 @@ class Map_set:
     update its position and contents to reflect the local density.
     '''
     if self.maps is None or not len(self.maps):
-      print('You must generate at least one map first!')
-      return
+      raise RuntimeError('You must generate at least one map first!')
     if self._box_initialized:
-      print(''' The live map box is already initialised for this crystal.
-                If you want to reset it, run box_reset().''')
-      return
+      raise RuntimeError(''' 
+          The live map box is already initialised for this crystal.
+          If you want to reset it, run box_reset().
+          ''')
     from chimerax.core.map.data import Array_Grid_Data
     from chimerax.core.map import Volume    
     from chimerax.core.commands import camera, cofr
@@ -188,7 +265,6 @@ class Map_set:
       self._master_box_model.add([self._crosshairs])
 
     box_corner_grid, box_corner_xyz = self._find_box_corner(self._box_center, radius, pad)
-    self.box_origin_offset = box_corner_xyz - self._box_center
     self._box_dimensions = (numpy.ceil(radius / self.voxel_size * 2)+pad*2).astype(int)[::-1]
     for m in self.maps:
       data = numpy.empty(self._box_dimensions, numpy.double)
@@ -246,10 +322,10 @@ class Map_set:
     from chimerax.core.surface import zone
     v = self.session.view
     cofr = v.center_of_rotation
-    self._cofr_eps = self.session.main_view.pixel_size(cofr)
+    cofr_eps = self.session.main_view.pixel_size(cofr)
     # We need to redraw the crosshairs if the cofr moves by a pixel...
     if not force_update:
-      if numpy.all(abs(self._box_center - cofr) < self._cofr_eps):
+      if numpy.all(abs(self._box_center - cofr) < cofr_eps):
         return
     if self.show_crosshairs:
       self._crosshairs.position = Place(origin=cofr)
@@ -270,7 +346,7 @@ class Map_set:
   def change_contour(self, volume, contour_vals):
     from chimerax.core.map import volumecommand
     volume.set_parameters(**{'surface_levels': contour_vals})
-    volume.update_surface()
+    self.update_box(force_update = True)
     
 
   def _fill_volume_data(self, xmap, target, start_grid_coor):
@@ -307,7 +383,80 @@ class Map_set:
       self.session.triggers.remove_handler(self._box_handler)
       self._box_handler = None
 
+  ############
+  # Live-updating symmetry
+  ############
+  
+  def initialize_symmetry_display(self, radius = 15, always_include_identity = True):
+    '''
+    Continually update the display to show all symmetry equivalents of
+    your atomic model which enter a box of the given size, centred on the
+    centre of rotation.
+    
+    Args:
+      radius (float):
+        The search volume is actually the smallest parallelepiped defined 
+        by the same angles as the unit cell, which will contain a sphere
+        of the given radius.
+      always_include_identity(bool):
+        If this flag is set to True the reference model will always be
+        displayed, no matter where your search box is.
+    '''
+    if self._sym_box_initialized:
+      raise RuntimeError('''
+        The symmetry box is already intialised for this crystal. If you
+        want to reset it, run sym_box_reset().
+        ''')
+    from chimerax.core.commands import camera, cofr
+    camera.camera(self.session, 'ortho')
+    cofr.cofr(self.session, 'centerOfView')
+    self.sym_always_shows_reference_model = always_include_identity
+    self._sym_box_radius = radius
+    uc = self.unit_cell
+    v = self.session.view
+    c = self.cell
+    g = self.grid
+    self._sym_box_center = v.center_of_rotation
+    self._sym_last_cofr_grid = clipper.Coord_orth(self._sym_box_center).coord_frac(c).coord_grid(g)
+    box_corner_grid, box_corner_xyz = self._find_box_corner(self._sym_box_center, radius, 0)
+    self._sym_box_dimensions = (numpy.ceil(radius / self.voxel_size * 2)).astype(int)[::-1]
+    self._update_sym_box(force_update = True)
+    self._sym_box_go_live()
+  
+  def _change_sym_box_radius(self, radius):
+    dim = (numpy.ceil(radius / self.voxel_size * 2)).astype(int)[::-1]
+    self._sym_box_dimensions = dim
+    self._sym_box_radius = radius
+      
+  def _update_sym_box(self, *_, force_update = False):
+    from chimerax.core.geometry import Places
+    v = self.session.view
+    uc = self.unit_cell
+    cofr = v.center_of_rotation
+    cofr_grid = clipper.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
+    if not force_update:
+      if cofr_grid == self._sym_last_cofr_grid:
+        return
+    self._sym_last_cofr_grid = cofr_grid
+    self._sym_box_center = cofr
+    box_corner_grid, box_corner_xyz = self._find_box_corner(self._sym_box_center, self._sym_box_radius, 0)
+    symops = uc.all_symops_in_box(box_corner_xyz, self._sym_box_dimensions, self.sym_always_shows_reference_model)
+    num_symops = len(symops)
+    sym_matrices = numpy.empty([num_symops,3,4],numpy.double)
+    symops.all_matrices34_orth(self.cell, sym_matrices)
+    self._atomic_model.positions = Places(place_array=sym_matrices)
+  
+  def _sym_box_go_live(self):
+    if self._sym_handler is None:
+      self._sym_handler = self.session.triggers.add_handler('new frame', self._update_sym_box)
+  
+  def _sym_box_go_static(self):
+    if self._sym_handler is not None:
+      self.session.triggers.remove_handler(self._sym_box_handler)
+      self._sym_handler = None
+    
 
+  
 def draw_crosshairs(origin):
   from chimerax.core.surface.shapes import cylinder_geometry
   from chimerax.core.models import Drawing

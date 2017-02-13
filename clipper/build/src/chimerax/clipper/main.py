@@ -75,29 +75,7 @@ def atom_list_from_sel(atom_list):
                 #u_aniso[i] = a.aniso_u6
     clipper_atom_list = clipper.Atom_list(elements, coords, occupancies, u_iso, u_aniso)
     return clipper_atom_list
-
-def import_Xmap_from_mtz_test(session, filename):
-    myhkl = clipper.HKL_info(session)
-    fphidata =  clipper.HKL_data_F_phi()  
-    mtzin = clipper.CCP4MTZfile()
-    mtzin.open_read(filename)
-    mtzin.import_hkl_info(myhkl)
-    mtzin.import_hkl_data(fphidata, '/crystal/dataset/[2FOFCWT, PH2FOFCWT]')
-    mtzin.close_read()
-    name = '2FOFCWT'
-    mygrid = clipper.Grid_sampling(myhkl.spacegroup(), myhkl.cell(), myhkl.resolution())
-    mymap = clipper.Xmap(session, name, myhkl.spacegroup(), myhkl.cell(), mygrid)
-    mymap.fft_from(fphidata)
-    return (fphidata, myhkl, mymap)
-    
-def vol_box(hklinfo, xmap, min_coor, max_coor):
-    cell = hklifno.cell()
-    grid = xmap.grid_sampling()
-    min_ortho = clipper.Coord_orth(min_coor)
-    max_ortho = clipper.Coord_orth(max_coor)
-    min_grid = min_ortho.coord_frac(cell).coord_grid(grid)
-    max_grid = max_ortho.coord_frac(cell).coord_grid(grid)    
-    
+        
 def make_unit_cell(model, xmap, draw = True):
     from chimerax.core.geometry import Place, Places
     cell = xmap.cell()
