@@ -7,6 +7,8 @@ set(CMAKE_MODULE_PATH
 
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(CMAKE_INSTALL_RPATH "\${ORIGIN}/..")
+
+set(CMAKE_CXX_FLAGS "-std=c++11")
  
 FIND_PACKAGE(SWIG REQUIRED)
 INCLUDE(${SWIG_USE_FILE})
@@ -53,6 +55,8 @@ message(STATUS "Python interpreter: ${PYTHON}")
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS "")
+
+SET(CCP4_DIR /home/tic20/ccp4/devtools/install)
 
 find_package(CCP4 REQUIRED mmdb2 clipper-core clipper-mmdb clipper-ccp4
                            clipper-cif clipper-minimol clipper-contrib ccp4c)

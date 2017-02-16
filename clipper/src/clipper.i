@@ -2058,7 +2058,7 @@ namespace clipper
      *  unit.
      *
      */
-    Unit_Cell(Coord_frac ref, const Atom_list& atoms, const Cell& cell, const Spacegroup& sg, const Grid_sampling& grid)
+    Unit_Cell(Coord_frac ref, const Atom_list& atoms, const Cell& cell, const Spacegroup& sg, const Grid_sampling& grid, int padding=0)
     {
       ref_ = ref;
       grid_ = grid;
@@ -2073,11 +2073,12 @@ namespace clipper
       ref_ = grid_ref_.coord_frac(grid);
 
       /* Find the minimum and maximum grid coordinates of a box encompassing the atoms,
-       * pad it by 1 grid unit either side, and make a Grid_range object from it.
+       * pad it by padding grid units either side, and make a Grid_range object from it.
        */
       Coord_grid ref_min = atoms[0].coord_orth().coord_frac(cell).coord_grid(grid);
       Coord_grid ref_max = ref_min;
-      Coord_grid pad(1,1,1);
+      //Coord_grid pad(1,1,1);
+      Coord_grid pad(padding,padding,padding);
       for (Atom_list::const_iterator it = atoms.begin(); it != atoms.end(); ++it) {
         const Coord_grid& thiscoord = it->coord_orth().coord_frac(cell).coord_grid(grid);
         for (size_t i = 0; i < 3; i++) {
@@ -2085,25 +2086,23 @@ namespace clipper
           else if (thiscoord[i] > ref_max[i]) ref_max[i] = thiscoord[i];
         }
       }
-      //std::cerr << ref_min.format().c_str() << ref_max.format().c_str() << std::endl;
+      //std::cerr << "Reference box corners: " << ref_min.format().c_str() << " " << ref_max.format().c_str() << std::endl;
       //std::cerr << ref_min.coord_frac(grid).coord_orth(cell).format().c_str() << ref_max.coord_frac(grid).coord_orth(cell).format().c_str() << std::endl;
 
       reference_model_bounds_ = Grid_range( ref_min-pad, ref_max+pad );
       //std::cerr << reference_model_bounds_.min().format().c_str() << reference_model_bounds_.max().format().c_str() << std::endl;
-      std::vector<Coord_grid>::iterator it;
-      for (int u = (ref_min-pad)[0]; u < (ref_max+pad)[0]; u++) {
-        for (int v = (ref_min-pad)[1]; v < (ref_max+pad)[1]; v++) {
-          for (int w = (ref_min-pad)[2]; w < (ref_max+pad)[2]; w++) {
-            Coord_grid this_coord(u,v,w);
-            Coord_grid this_origin = this_coord - this_coord.unit(grid);
-            it = find(ref_model_cell_origins_.begin(), ref_model_cell_origins_.end(), this_origin);
-            if (it == ref_model_cell_origins_.end()) {
-              ref_model_cell_origins_.push_back(this_origin);
-            }
-          }
-        }
-      }     
       
+      // In order to catch all corner cases, we'll need to search the
+      // block of 9 unit cells surrounding our reference model
+      Coord_grid this_offset;
+      for (int i = -1; i < 2; i++) {
+        for (int j = -1; j < 2; j++) {
+          for (int k = -1; k < 2; k++) {
+            this_offset = Coord_grid(grid.nu()*i, grid.nv()*j, grid.nw()*k);
+            ref_model_cell_origins_.push_back(cell_origin_ + this_offset);
+          }
+        }    
+      }
       /* Find the side of the reference box covering the shortest
        * distance. When searching a box for relevant symops, we'll
        * sample it in steps of half this size.
@@ -2220,7 +2219,7 @@ namespace clipper
     /*! The box is defined by its origin in xyz coordinates, and the
      *  number of grid coordinates along each axis. 
      */
-    Symops all_symops_in_box(double box_origin_xyz[3], int box_size_uvw[3], bool always_include_identity = false, bool debug = false)
+    Symops all_symops_in_box(double box_origin_xyz[3], int box_size_uvw[3], bool always_include_identity = false, bool debug = false, int sample_frequency = 2)
     {
       Symops ret;
 
@@ -2243,11 +2242,11 @@ namespace clipper
       Coord_grid box_max = box_origin + Coord_grid(box_size_uvw[0], box_size_uvw[1], box_size_uvw[2]);
 
       /* We'll sample the box in steps equal to 1/2 the length of the
-       * shortest side of the box encompassing the atomic mode, making
+       * shortest side of the box encompassing the atomic model, making
        * sure we also capture the faces and corners.
        */
        
-      size_t step_size = min_side_/2;
+      size_t step_size = min_side_/sample_frequency;
       step_size = step_size == 0 ? 1 : step_size;
       if (debug) std::cerr << "Sampling step size: " << step_size << std::endl;
       bool u_done = false, v_done = false, w_done = false;
@@ -2327,7 +2326,7 @@ namespace clipper
     /* Because life is never easy, the reference model will almost certainly
      * span across multiple unit cells (unlike the nice, neat map reference
      * asu used by Clipper. Therefore, to find symmetry equivalents we 
-     * need to know which cells we need to consider
+     * need to test the main unit cell plus all 26 direct neighbours.
      */
     std::vector<Coord_grid> ref_model_cell_origins_;
   };

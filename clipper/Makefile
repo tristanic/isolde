@@ -18,7 +18,7 @@ PKG_NAME = chimerax.clipper
 # except for setup.py and no data files.
 PYSRCS = $(filter-out setup.py,$(wildcard *.py))
 DATAFILES = 
-RESOURCES = lib lib/clipper_python_core lib/data lib/pkgconfig
+RESOURCES = lib lib/clipper_python_core 
 
 # Python extension modules
 PYMOD_LINUX_EXT = so*

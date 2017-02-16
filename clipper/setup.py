@@ -19,7 +19,7 @@ for working with crystallographic data.
 
 pkg_data_list = ["/*.data", "*.so*", "*.dylib", "*.dll"]
 
-for dir in "lib lib/clipper_python_core lib/data lib/pkgconfig".split():
+for dir in "lib lib/clipper_python_core ".split():
    pkg_data_list.append(dir+'/*')
 
 setup(

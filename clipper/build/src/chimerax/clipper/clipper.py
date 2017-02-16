@@ -917,7 +917,7 @@ class Unit_Cell(clipper_core.Unit_Cell):
     functions returning the symmetry operations necessary to pack an
     arbitrary box in 3D space.
     '''
-    def __init__(self, ref, atom_list, cell, spacegroup, grid_sampling):
+    def __init__(self, ref, atom_list, cell, spacegroup, grid_sampling, padding = 0):
         '''
         __init__(self, ref, atom_list, cell, spacegroup, grid_sampling) -> Unit_Cell
         
@@ -937,6 +937,11 @@ class Unit_Cell(clipper_core.Unit_Cell):
             cell (clipper.Cell)
             spacegroup (clipper.Spacegroup)
             grid_sampling (clipper.Grid_Sampling)
+            padding (int):
+                An optional extra padding (in number of grid steps) to 
+                add around the reference model when defining the reference
+                box for finding symmetry operations. In most cases this
+                can be left as zero.
         '''
         ref_frac = Coord_orth(ref).coord_frac(cell)
         clipper_core.Unit_Cell.__init__(self, ref_frac, atom_list, cell, spacegroup, grid_sampling)
@@ -946,7 +951,7 @@ class Unit_Cell(clipper_core.Unit_Cell):
         '''Symops necessary to generate a unit cell from the model asu'''
         return super(Unit_Cell, self).symops()
     
-    def all_symops_in_box(self, box_origin_xyz, box_size_uvw, always_include_identity = False, debug = False):
+    def all_symops_in_box(self, box_origin_xyz, box_size_uvw, always_include_identity = False, debug = False, sample_frequency = 2):
         '''
         Get an object defining all the symmetry operations mapping any
         part of your reference atomic model to a given box. Calculations
@@ -968,7 +973,7 @@ class Unit_Cell(clipper_core.Unit_Cell):
         origin[:] = box_origin_xyz
         size = numpy.empty(3, numpy.int32)
         size[:] = box_size_uvw
-        return super(Unit_Cell, self).all_symops_in_box(origin, size, always_include_identity, debug)
+        return super(Unit_Cell, self).all_symops_in_box(origin, size, always_include_identity, debug, sample_frequency)
         
     
 

@@ -65,6 +65,9 @@ class Map_set:
     
     # Atomic model associated with this object
     self._atomic_model = None
+    # ... and cached coords
+    self._atomic_coords = None
+    
     # A clipper Atom_list object corresponding to the ChimeraX atoms
     self._clipper_atoms = None
     
@@ -113,6 +116,8 @@ class Map_set:
     # functions returning the symops necessary to pack a given box in
     # xyz space.
     self._unit_cell = None
+    # Do we want to be showing only atoms within the search radius?
+    self.sym_show_atoms = True
     # Do we want to show symmetry equivalent molecules live as we move
     # around?
     self._show_symmetry = False
@@ -130,6 +135,9 @@ class Map_set:
     self._sym_box_initialized = False
     # Last grid coordinate for the cofr at which the symmetry was updated
     self._sym_last_cofr_grid = None
+    # Factor defining the frequency of steps in the symmetry search 
+    # (larger number = more steps)
+    self._sym_search_frequency = 2
     
     
     ################
@@ -157,6 +165,7 @@ class Map_set:
     if not isinstance(model, AtomicStructure):
       raise TypeError('Model must be an atomic structure!')
     self._atomic_model = model
+    self._atomic_coords = model.atoms.coords
     # If we've previously defined a unit cell to handle our symmetry
     # operations, we need to recalculate it against the new reference
     # point
@@ -429,7 +438,7 @@ class Map_set:
     self._sym_box_radius = radius
       
   def _update_sym_box(self, *_, force_update = False):
-    from chimerax.core.geometry import Places
+    from chimerax.core.geometry import Places, Place
     v = self.session.view
     uc = self.unit_cell
     cofr = v.center_of_rotation
@@ -440,11 +449,36 @@ class Map_set:
     self._sym_last_cofr_grid = cofr_grid
     self._sym_box_center = cofr
     box_corner_grid, box_corner_xyz = self._find_box_corner(self._sym_box_center, self._sym_box_radius, 0)
-    symops = uc.all_symops_in_box(box_corner_xyz, self._sym_box_dimensions, self.sym_always_shows_reference_model)
+    symops = uc.all_symops_in_box(box_corner_xyz, self._sym_box_dimensions, self.sym_always_shows_reference_model, sample_frequency = self._sym_search_frequency)
     num_symops = len(symops)
     sym_matrices = numpy.empty([num_symops,3,4],numpy.double)
     symops.all_matrices34_orth(self.cell, sym_matrices)
-    self._atomic_model.positions = Places(place_array=sym_matrices)
+    #self._atomic_model.positions = Places(place_array=sym_matrices)
+    from chimerax.core.geometry import find_close_points_sets
+    l1 = []
+    search_entry = [(numpy.array([cofr], numpy.float32), Place().matrix.astype(numpy.float32))]
+    for sym in sym_matrices:
+        l1.append((self._atomic_coords.astype(numpy.float32), sym.astype(numpy.float32)))
+    final_places = []
+    i1, i2 = find_close_points_sets(l1, search_entry, self.sym_box_radius)
+    found_identity = False
+    for i, l in enumerate(i1):
+        if len(l):
+            thisplace = Place(matrix=sym_matrices[i])
+            final_places.append(thisplace)
+            if thisplace.is_identity():
+                found_identity = True
+    if not found_identity:
+        final_places.append(Place())
+    self._atomic_model.positions = Places(final_places)
+    if self.sym_show_atoms:
+        found_atom_indices = numpy.unique(numpy.concatenate(i1))
+        display_mask = numpy.array([False]*len(self.atomic_model.atoms))
+        display_mask[self.atomic_model.atoms.indices(self.atomic_model.atoms[found_atom_indices].residues.atoms)] = True
+        self.atomic_model.atoms.displays = display_mask
+ 
+        
+    
   
   def _sym_box_go_live(self):
     if self._sym_handler is None:
