@@ -904,6 +904,69 @@ class Cell(clipper_core.Cell):
         return super(Cell, self).recip_angles_deg()
 
 
+def __newRTop_frac__(cls, *args, **kwargs):
+    if cls == clipper_core.RTop_frac:
+        return object.__new__(RTop_frac)
+    return object.__new__(cls)        
+clipper_core.RTop_frac.__new__ = staticmethod(__newRTop_frac__)
+
+class RTop_frac(clipper_core.RTop_frac):
+    '''
+    Rotation/translation operator in fractional coordinates. Returned by
+    various clipper functions. It is not generally advisable to create 
+    these for yourself unless you know exactly what you are doing. 
+    '''
+    
+    @property
+    def format(self):
+        '''
+        Returns a symop-like string representation of this operator
+        (e.g. "y, -x+y-1, z-5/6")
+        '''
+        return super(RTop_frac, self).format_as_symop()
+    
+    @property
+    def matrix(self):
+        return super(RTop_frac, self).matrix()
+    
+    @property
+    def mat34(self):
+        return super(RTop_frac, self).mat34()
+    
+    
+    def __str__(self):
+        return self.format
+    
+    def __hash__(self):
+        '''
+        Allows the object itself to be used as a key in dicts.
+        '''
+        return hash(self.format)
+    
+    def __eq__(self, other):
+        return type(other) == RTop_frac and hash(self) == hash(other)
+
+def __newRTop_orth__(cls, *args, **kwargs):
+    if cls == clipper_core.RTop_orth:
+        return object.__new__(RTop_orth)
+    return object.__new__(cls)        
+clipper_core.RTop_orth.__new__ = staticmethod(__newRTop_orth__)
+        
+class RTop_orth(clipper_core.RTop_orth):
+    '''
+    Rotation/translation operator in xyz coordinates. Returned by
+    various clipper functions. It is not generally advisable to create 
+    these for yourself unless you know exactly what you are doing. 
+    '''
+    @property
+    def matrix(self):
+        return super(RTop_orth, self).matrix()
+    
+    @property
+    def mat34(self):
+        return super(RTop_orth, self).mat34()
+        
+
 def __newUnit_Cell__(cls, *args, **kwargs):
     if cls == clipper_core.Unit_Cell:
         return object.__new__(Unit_Cell)

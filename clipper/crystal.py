@@ -1,8 +1,11 @@
 import numpy
 from .main import atom_list_from_sel
 from . import clipper
+from .lib import clipper_python_core as clipper_core
 from .clipper_mtz import Clipper_MTZ
 from .data_tree import db_levels, DataTree
+from collections import defaultdict
+
 class Xtal_Project:
   '''
   The master object for handling a crystallographic data set within
@@ -71,6 +74,8 @@ class Map_set:
     # A clipper Atom_list object corresponding to the ChimeraX atoms
     self._clipper_atoms = None
     
+    self.symmetry_handler = None
+    
     #############
     # Variables involved in handling live redrawing of maps in a box
     # centred on the cofr
@@ -116,7 +121,9 @@ class Map_set:
     # functions returning the symops necessary to pack a given box in
     # xyz space.
     self._unit_cell = None
-    # Do we want to be showing only atoms within the search radius?
+    # Container for managing all the symmetry copies
+    self._sym_model_container = None
+    # We need to hang onto the known symops so they don't go out of scope
     self.sym_show_atoms = True
     # Do we want to show symmetry equivalent molecules live as we move
     # around?
@@ -219,7 +226,7 @@ class Map_set:
     self._show_crosshairs = state
     self._crosshairs.visible = state
   
-  def generate_map_from_f_phi (self, data_key):
+  def generate_map_from_f_phi(self, data_key):
     name = data_key
     data = self._data['F_Phi'][data_key]
     xmap = clipper.Xmap(self.spacegroup, self.cell, self.grid, name = data_key)
@@ -228,11 +235,13 @@ class Map_set:
     if '2' not in data_key:
       xmap.is_difference_map = True
     self.maps.append(xmap)
+  
 
   ################
   # Live-updating map box
   ################
-  
+
+
   @property
   def sym_box_radius(self):
     return self._sym_box_radius
@@ -395,7 +404,13 @@ class Map_set:
   ############
   # Live-updating symmetry
   ############
-  
+
+  @property  
+  def sym_model_container(self):
+    if self._sym_model_container is None:
+      self._sym_model_container = SymModels(self.session, self)
+    return self._sym_model_container
+    
   def initialize_symmetry_display(self, radius = 15, always_include_identity = True):
     '''
     Continually update the display to show all symmetry equivalents of
@@ -415,6 +430,10 @@ class Map_set:
       raise RuntimeError('''
         The symmetry box is already intialised for this crystal. If you
         want to reset it, run sym_box_reset().
+        ''')
+    if self.atomic_model is None or self.atomic_model.deleted:
+      raise RuntimeError('''
+        You need to set atomic_model to a valid structure first!
         ''')
     from chimerax.core.commands import camera, cofr
     camera.camera(self.session, 'ortho')
@@ -450,32 +469,54 @@ class Map_set:
     self._sym_box_center = cofr
     box_corner_grid, box_corner_xyz = self._find_box_corner(self._sym_box_center, self._sym_box_radius, 0)
     symops = uc.all_symops_in_box(box_corner_xyz, self._sym_box_dimensions, self.sym_always_shows_reference_model, sample_frequency = self._sym_search_frequency)
-    num_symops = len(symops)
-    sym_matrices = numpy.empty([num_symops,3,4],numpy.double)
-    symops.all_matrices34_orth(self.cell, sym_matrices)
-    #self._atomic_model.positions = Places(place_array=sym_matrices)
-    from chimerax.core.geometry import find_close_points_sets
-    l1 = []
-    search_entry = [(numpy.array([cofr], numpy.float32), Place().matrix.astype(numpy.float32))]
-    for sym in sym_matrices:
-        l1.append((self._atomic_coords.astype(numpy.float32), sym.astype(numpy.float32)))
-    final_places = []
-    i1, i2 = find_close_points_sets(l1, search_entry, self.sym_box_radius)
-    found_identity = False
-    for i, l in enumerate(i1):
-        if len(l):
-            thisplace = Place(matrix=sym_matrices[i])
-            final_places.append(thisplace)
-            if thisplace.is_identity():
-                found_identity = True
-    if not found_identity:
-        final_places.append(Place())
-    self._atomic_model.positions = Places(final_places)
-    if self.sym_show_atoms:
-        found_atom_indices = numpy.unique(numpy.concatenate(i1))
-        display_mask = numpy.array([False]*len(self.atomic_model.atoms))
-        display_mask[self.atomic_model.atoms.indices(self.atomic_model.atoms[found_atom_indices].residues.atoms)] = True
-        self.atomic_model.atoms.displays = display_mask
+    #l1 = []
+    #search_entry = [(numpy.array([cofr], numpy.float32), Place().matrix.astype(numpy.float32))]
+    from chimerax.core.geometry import find_close_points
+    for s in symops:
+      this_model = self.sym_model_container[s]
+      #this_set = [(this_model.atoms.coords.astype(numpy.float32), s.rtop_orth(self.cell).mat34.astype(numpy.float32))]
+      #i1, i2 = find_close_points_sets(this_set, search_entry, self.sym_box_radius)
+      i1, i2 = find_close_points(this_model.atoms.coords, [cofr], self.sym_box_radius)
+      if len(i1):
+        display_mask = numpy.array([False]*len(this_model.atoms))
+        display_mask[this_model.atoms.indices(this_model.atoms[i1].residues.atoms)] = True
+        this_model.atoms.displays = display_mask
+        if this_model is not self.atomic_model:
+          this_model.atoms.residues.ribbon_displays = display_mask
+        this_model.display = True
+      else:
+        if this_model is not self.atomic_model:
+          this_model.display = False
+    for s, m in self.sym_model_container.items():
+      if s not in symops:
+        m.display = False
+    
+    #num_symops = len(symops)
+    #sym_matrices = numpy.empty([num_symops,3,4],numpy.double)
+    #symops.all_matrices34_orth(self.cell, sym_matrices)
+    ##self._atomic_model.positions = Places(place_array=sym_matrices)
+    #from chimerax.core.geometry import find_close_points_sets
+    #l1 = []
+    #search_entry = [(numpy.array([cofr], numpy.float32), Place().matrix.astype(numpy.float32))]
+    #for sym in sym_matrices:
+        #l1.append((self._atomic_coords.astype(numpy.float32), sym.astype(numpy.float32)))
+    #final_places = []
+    #i1, i2 = find_close_points_sets(l1, search_entry, self.sym_box_radius)
+    #found_identity = False
+    #for i, l in enumerate(i1):
+        #if len(l):
+            #thisplace = Place(matrix=sym_matrices[i])
+            #final_places.append(thisplace)
+            #if thisplace.is_identity():
+                #found_identity = True
+    #if not found_identity:
+        #final_places.append(Place())
+    #self._atomic_model.positions = Places(final_places)
+    #if self.sym_show_atoms:
+        #found_atom_indices = numpy.unique(numpy.concatenate(i1))
+        #display_mask = numpy.array([False]*len(self.atomic_model.atoms))
+        #display_mask[self.atomic_model.atoms.indices(self.atomic_model.atoms[found_atom_indices].residues.atoms)] = True
+        #self.atomic_model.atoms.displays = display_mask
  
         
     
@@ -486,9 +527,71 @@ class Map_set:
   
   def _sym_box_go_static(self):
     if self._sym_handler is not None:
-      self.session.triggers.remove_handler(self._sym_box_handler)
+      self.session.triggers.remove_handler(self._sym_handler)
       self._sym_handler = None
     
+
+class SymModels(defaultdict):
+  '''
+  Handles creation, destruction and organisation of symmetry copies
+  of an atomic model. Uses the Clipper RTop_frac object for the given
+  symop as the dict key. If the key is not found, automatically creates
+  a copy of the master model, sets colours, applies the Place transform
+  for the symop, and adds the model to the session. Periodically runs
+  a purge to remove copies that are far from the current visualisation
+  region.
+  '''
+  def __init__(self, session, xmapset):
+    '''
+    Just create an empty dict.
+    Args:
+      session: 
+        The ChimeraX session.
+      master_model:
+        The model that all copies will be derived from.
+    '''
+    self.session = session
+    self.xmapset = xmapset
+    self.master = xmapset.atomic_model
+        
+    # Add a sub-model to the master to act as a container for the
+    # symmetry copies
+    from chimerax.core.models import Model
+    self._sym_container = Model('symmetry equivalents', self.session)
+    self.master.add([self._sym_container])
+    
+    master_bounds = self.master.bounds()
+    # Use the centre of the master model as the reference point when
+    # deciding when a model needs to be culled
+    self.ref_center = master_bounds.center()
+    # The maximum width of the bounding box surrounding the master model.
+    self.ref_width = master_bounds.width()
+  
+  def __missing__(self, key):
+    if type(key) is not clipper.RTop_frac:
+      raise TypeError('Key must be a clipper.RTop_frac!')
+    from chimerax.core.geometry import Place
+    thisplace = Place(matrix=key.rtop_orth(self.xmapset.cell).mat34)
+    if not thisplace.is_identity():
+      thismodel = self.master.copy(name=key.format)
+      atoms = thismodel.atoms
+      #thismodel.position = thisplace
+      coords = atoms.coords
+      thisplace.move(coords)
+      atoms.coords = coords
+      atom_colors = atoms.colors
+      atom_colors[:,0:3] = (self.master.atoms.colors[:,0:3].astype(float)*0.6).astype(numpy.uint8)
+      atoms.colors = atom_colors
+      ribbon_colors = thismodel.residues.ribbon_colors
+      ribbon_colors[:,0:3] = (self.master.residues.ribbon_colors[:,0:3].astype(float)*0.6).astype(numpy.uint8)
+      thismodel.residues.ribbon_colors = ribbon_colors
+      self._sym_container.add([thismodel])
+      self[key] = thismodel
+      return thismodel
+    return self.master
+      
+
+
 
   
 def draw_crosshairs(origin):

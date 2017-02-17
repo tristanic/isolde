@@ -6958,6 +6958,18 @@ class RTop_frac(_object):
         return _clipper.RTop_frac_matrix(self)
 
 
+    def mat34(self):
+        """
+        mat34(RTop_frac self)
+
+        Parameters
+        ----------
+        self: clipper::RTop_frac *
+
+        """
+        return _clipper.RTop_frac_mat34(self)
+
+
     def rotation(self):
         """
         rotation(RTop_frac self)
@@ -6980,6 +6992,30 @@ class RTop_frac(_object):
 
         """
         return _clipper.RTop_frac_translation(self)
+
+
+    def format(self):
+        """
+        format(RTop_frac self) -> String
+
+        Parameters
+        ----------
+        self: clipper::RTop_frac const *
+
+        """
+        return _clipper.RTop_frac_format(self)
+
+
+    def format_as_symop(self):
+        """
+        format_as_symop(RTop_frac self) -> String
+
+        Parameters
+        ----------
+        self: clipper::RTop_frac const *
+
+        """
+        return _clipper.RTop_frac_format_as_symop(self)
 
     __swig_destroy__ = _clipper.delete_RTop_frac
     __del__ = lambda self: None
@@ -8727,6 +8763,18 @@ class RTop_orth(_object):
 
         """
         return _clipper.RTop_orth_matrix(self)
+
+
+    def mat34(self):
+        """
+        mat34(RTop_orth self)
+
+        Parameters
+        ----------
+        self: clipper::RTop_orth *
+
+        """
+        return _clipper.RTop_orth_mat34(self)
 
 
     def rotation(self):

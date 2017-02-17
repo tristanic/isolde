@@ -1,3 +1,9 @@
+%{
+  #include <string>
+  #include <vector>
+%}
+
+
 %module(directors="1") clipper
 %include "std_vector.i"
 %include "std_string.i"
@@ -1754,13 +1760,13 @@ namespace clipper
       ~Symops() {}
 
       //! get element
-      inline const clipper::RTop_frac& operator []( const int& i ) const { return symops_.at(i); }
+      inline const clipper::RTop_frac operator []( const int& i ) const { return symops_.at(i); }
 
       const size_t& size() const {
         return size_;
       }
 
-      clipper::RTop_frac& __getitem__(int i)
+      clipper::RTop_frac __getitem__(int i)
       {
         i = (i < 0) ? size_ + i : i;
         if (i >= size_ || i < 0) {
@@ -1989,7 +1995,7 @@ namespace clipper
         return size_;
       }
 
-      clipper::Isymop& __getitem__(int i)
+      clipper::Isymop __getitem__(int i)
       {
         i = (i < 0) ? size_ + i : i;
         if (i >= size_ || i < 0) {
@@ -2353,6 +2359,18 @@ namespace clipper
     }
     numpy_double_out[3][3] = 1;
   }
+  //! Return the affine transform matrix excluding the final [0,0,0,1] row
+  void mat34 (double numpy_double_out[3][4])
+  {
+    for (size_t i = 0; i < 3; i++) {
+      for (size_t j = 0; j < 3; j++) {
+        numpy_double_out[i][j] = ($self)->rot()(i,j);
+      }
+    }
+    for (size_t i = 0; i < 3; i++) {
+      numpy_double_out[i][3] = ($self)->trn()[i];
+    }
+  }
   void rotation (double numpy_double_out[3][3])
   {
     for (size_t i = 0; i < 3; i++) {
@@ -2371,6 +2389,7 @@ namespace clipper
 }
 
 %extend RTop_frac {
+  //! Return a full 4x4 affine transform matrix
   void matrix (double numpy_double_out[4][4])
   {
     for (size_t i = 0; i < 3; i++) {
@@ -2384,6 +2403,19 @@ namespace clipper
     }
     numpy_double_out[3][3] = 1;
   }
+  //! Return the affine transform matrix excluding the final [0,0,0,1] row
+  void mat34 (double numpy_double_out[3][4])
+  {
+    for (size_t i = 0; i < 3; i++) {
+      for (size_t j = 0; j < 3; j++) {
+        numpy_double_out[i][j] = ($self)->rot()(i,j);
+      }
+    }
+    for (size_t i = 0; i < 3; i++) {
+      numpy_double_out[i][3] = ($self)->trn()[i];
+    }
+  }
+  
   void rotation (double numpy_double_out[3][3])
   {
     for (size_t i = 0; i < 3; i++) {
@@ -2398,6 +2430,34 @@ namespace clipper
       numpy_double_out[i] = ($self)->trn()[i];
     }
   }
+  // format() is only defined in the base class, so needs to be
+  // re-defined here.
+  String format() const {
+    return $self->format();
+  }
+
+  String format_as_symop() const
+  {
+    String s, t, xyz="xyz";
+    for ( int i = 0; i < 3; i++ ) {
+      t = "";
+      for ( int j = 0; j < 3; j++ )
+        if ( $self->rot()(i,j) != 0.0 ) {
+    t += ( $self->rot()(i,j) > 0.0 ) ? "+" : "-";
+    if ( Util::intr( fabs( $self->rot()(i,j) ) ) != 1 )
+      t += String::rational( fabs( $self->rot()(i,j) ), 24 );
+    t += xyz[j];
+        }
+      if ( $self->trn()[i] != 0.0 )
+        t += String::rational( $self->trn()[i], 24, true );
+      s += t.substr( ( t[0] == '+' ) ? 1 : 0 );
+      if ( i < 2 ) s+= ", ";
+    }
+    return s;
+  }
+  
+
+  
 
 
 }
