@@ -1,9 +1,0 @@
-prefix=/home/tic20/ccp4/devtools/install
-libdir=/home/tic20/ccp4/devtools/install/lib
-
-Name: lapack
-Description: FORTRAN reference implementation of LAPACK Linear Algebra PACKage
-Version: 3.4.2
-URL: http://www.netlib.org/lapack/
-Libs: -L/home/tic20/ccp4/devtools/install/lib -llapack
-Requires: blas

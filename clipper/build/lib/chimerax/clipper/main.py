@@ -1,7 +1,6 @@
 from . import clipper
 import numpy
 
-
 # Override logging of Clipper messages to send them to the ChimeraX log
 # rather than just printing them to the console.
 
@@ -17,18 +16,11 @@ def _log_clipper(func):
       session.logger.info(message_string)
   return func_wrapper
 
-clipper.log_clipper = _log_clipper
-
-def initialize_project_database():
-  '''
-  Generate a database to hold the map data
-  '''
-  from .data_tree import DataTree
-  return DataTree()
+clipper.log_clipper = _log_clipper  
   
-def add_crystal(session, database, name):
+def add_crystal(session, name):
   from .crystal import Xtal_Project
-  return Xtal_Project(session, database, name)
+  return Xtal_Project(session, name)
 
 
 
@@ -211,4 +203,4 @@ def box_corners(origin_xyz, size_xyz):
             for k in range(2):
                 ret.append([minmax[i][0],minmax[j][1], minmax[k][2]])
     return ret
-        
+

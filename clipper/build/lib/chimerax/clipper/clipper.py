@@ -1,18 +1,33 @@
 from .lib import clipper_python_core as clipper_core
 import numpy
 
-'''
- To make things a little more user-friendly than the raw SWIG wrapper,
- all the major Clipper classes are sub-classed here with some extra
- documentation, useful Python methods, @property decorators, etc.
- This requires overcoming one small problem: when Clipper itself creates 
- and returns objects, they're returned as the base class rather than
- the sub-class. So, we have to over-ride the __new__ method for each
- base class to make sure they're instead instantiated as the derived
- class with all the bells and whistles. Therefore, each class definition 
- is preceded by a function (e.g. __newAtom__) that makes this mapping.
-'''
+def mappedclass(old_cls):
+    '''
+     To make things a little more user-friendly than the raw SWIG wrapper,
+     all the major Clipper classes are sub-classed here with some extra
+     documentation, useful Python methods, @property decorators, etc.
+     This requires overcoming one small problem: when Clipper itself creates 
+     and returns objects, they're returned as the base class rather than
+     the sub-class. So, we have to over-ride the __new__ method for each
+     base class to make sure they're instead instantiated as the derived
+     class with all the bells and whistles. This function acts as a class
+     decorator to automate this. For example, for the class Atom derived
+     from clipper_core.Atom, place:
+     
+     @mappedclass(clipper_core.Atom)
+     
+     directly before the Atom class declaration.
+    '''
 
+    def decorator(cls):
+        def __newnew__(thiscls, *args, **kwargs):
+            if thiscls == old_cls:
+                return object.__new__(cls)
+            return object.__new__(thiscls)
+        old_cls.__new__ = __newnew__
+        
+        return cls
+    return decorator
 
 #### Message logging
 _clipper_messages = clipper_core.ClipperMessageStream()
@@ -34,14 +49,50 @@ def log_clipper(func):
             print("CLIPPER WARNING:")
             print(message_string)
     return func_wrapper
+
+
+def format_to_string(cls):
+    '''
+    Class decorator to redirect the Clipper format() function to __str__,
+    to provide pretty printing of the object.
+    '''
+    def format(self):
+        return super(self.__class__,self).format()
+    def __str__(self):
+        return self.format
+    setattr(cls, 'format', property(format))
+    setattr(cls, '__str__', __str__)
+    return cls
+
+def getters_to_properties(*funcs):
+    '''
+    Class decorator. Add the names of any getter functions with void 
+    arguments (e.g. Coord_grid.u()) to convert them to properties. If
+    you want the property name to be different from the function name,
+    add the desired name and the function name as a tuple 
+    (e.g. ('uvw', '_get_uvw'))
+    '''
+    def property_factory(func):
+        def getter(self):
+            return getattr(super(self.__class__, self), func)()
+        prop = property(getter)
+        return prop
+
+    def decorator(cls):
+        for func in funcs:
+            if type(func) == tuple:
+                setattr(cls, func[0], property_factory(func[1]))
+            else:
+                setattr(cls, func, property_factory(func)) 
+        return cls
+    return decorator
+            
+
+########################################################################
+# Atoms
+########################################################################    
     
-
-def __newAtom__(cls, *args, **kwargs):
-    if cls == clipper_core.clipper.Atom:
-        return object.__new__(Atom)
-    return object.__new__(cls)        
-clipper_core.Atom.__new__ = staticmethod(__newAtom__)
-
+@mappedclass(clipper_core.Atom)
 class Atom(clipper_core.Atom):
     '''
     A minimalist atom object containing only the properties required for
@@ -206,13 +257,7 @@ class Atom(clipper_core.Atom):
         '''Check to see if this atom has been initialised'''
         return super(Atom, self).is_null()
 
-
-def __newAtom_list__(cls, *args, **kwargs):
-    if cls == clipper_core.Atom_list:
-        return object.__new__(Atom_list)
-    return object.__new__(cls)        
-clipper_core.Atom_list.__new__ = staticmethod(__newAtom_list__)
-
+@mappedclass(clipper_core.Atom_list)
 class Atom_list(clipper_core.Atom_list):
     '''
     Generate a Clipper Atom_list object from lists or numpy arrays of data.
@@ -324,12 +369,13 @@ class Atom_list(clipper_core.Atom_list):
     
     u_anisos = property(_get_u_anisos, _set_u_anisos)
 
-def __newCoord_orth__(cls, *args, **kwargs):
-    if cls == clipper_core.Coord_orth:
-        return object.__new__(Coord_orth)
-    return object.__new__(cls)        
-clipper_core.Coord_orth.__new__ = staticmethod(__newCoord_orth__)
+########################################################################
+# Real space coordinates
+########################################################################
 
+@format_to_string
+@getters_to_properties(('xyz', '_get_xyz'))
+@mappedclass(clipper_core.Coord_orth)
 class Coord_orth(clipper_core.Coord_orth):
     '''Coordinates in orthographic (x,y,z) space.'''
     def __init__(self, xyz):
@@ -343,39 +389,15 @@ class Coord_orth(clipper_core.Coord_orth):
             # Because SWIG does not correctly typemap numpy.float32
             xyz = xyz.astype(float)
         clipper_core.Coord_orth.__init__(self, *xyz)
-    '''
-    @property
-    def x(self):
-        return super(Coord_orth, self).x()
-    
-    @property
-    def y(self):
-        return super(Coord_orth, self).y()
-        
-    @property
-    def z(self):
-        return super(Coord_orth, self).z()
-
-    @property
-    def xyz(self):
-        return super(Coord_orth, self).xyz()
-    '''
-    @property
-    def xyz(self):
-        return super(Coord_orth, self)._get_xyz()
     
     def __add__(self, other):
         if isinstance(other, Coord_orth):
             return super(Coord_orth, self).__add__(other)
         return self + Coord_orth(other)
     
-    
-def __newCoord_grid__(cls, *args, **kwargs):
-    if cls == clipper_core.Coord_grid:
-        return object.__new__(Coord_grid)
-    return object.__new__(cls)        
-clipper_core.Coord_grid.__new__ = staticmethod(__newCoord_grid__)
-        
+@format_to_string 
+@getters_to_properties(('uvw','_get_uvw'))   
+@mappedclass(clipper_core.Coord_grid)        
 class Coord_grid(clipper_core.Coord_grid):
     '''Integer grid coordinates in crystal space.'''
     def __init__(self, uvw):
@@ -386,45 +408,19 @@ class Coord_grid(clipper_core.Coord_grid):
             uvw ([int * 3]): (u, v, w) grid coordinates
         '''
         # Not sure why, but wrapped C functions fail when fed expansions
-        # of numpy int32 arrays, so we need to convert these to lists first
+        # of numpy int32 arrays, so we need to convert these to lists first.
         if isinstance(uvw, numpy.ndarray):
             uvw = uvw.tolist()
         clipper_core.Coord_grid.__init__(self, *uvw)
-    
-    '''
-    @property
-    def u(self):
-        return super(Coord_grid, self).u()
-    
-    @property
-    def v(self):
-        return super(Coord_grid, self).v()
-    
-    @property
-    def w(self):
-        return super(Coord_grid, self).w()
-    
-    @property
-    def uvw(self):
-        return super(Coord_grid, self).uvw()
-    '''
-    
-    @property
-    def uvw(self):
-        return super(Coord_grid, self)._get_uvw()
-
+        
     def __add__(self, other):
         if isinstance(other, Coord_grid):
             return super(Coord_grid, self).__add__(other)
         return self + Coord_grid(other)
     
-
-def __newCoord_map__(cls, *args, **kwargs):
-    if cls == clipper_core.Coord_map:
-        return object.__new__(Coord_map)
-    return object.__new__(cls)        
-clipper_core.Coord_map.__new__ = staticmethod(__newCoord_map__)
-    
+@format_to_string
+@getters_to_properties(('uvw', '_get_uvw'),'ceil','coord_grid','floor')   
+@mappedclass(clipper_core.Coord_map)    
 class Coord_map(clipper_core.Coord_map):
     '''Like Coord_grid, but allowing non-integer values.'''
     def __init__(self, uvw):
@@ -438,29 +434,16 @@ class Coord_map(clipper_core.Coord_map):
             # Because SWIG does not correctly typemap numpy.float32
             uvw = uvw.astype(float)
         clipper_core.Coord_map.__init__(self, *uvw)
-    
-    @property
-    def u(self):
-        return super(Coord_map, self).u()
-    
-    @property
-    def v(self):
-        return super(Coord_map, self).v()
-    
-    @property
-    def w(self):
-        return super(Coord_map, self).w()
-    
-    @property
-    def uvw(self):
-        return super(Coord_map, self).uvw()
 
-def __newCoord_frac__(cls, *args, **kwargs):
-    if cls == clipper_core.Coord_frac:
-        return object.__new__(Coord_frac)
-    return object.__new__(cls)        
-clipper_core.Coord_frac.__new__ = staticmethod(__newCoord_frac__)
+    def __add__(self, other):
+        if isinstance(other, Coord_map):
+            return super(Coord_map, self).__add__(other)
+        return self + Coord_map(other)
 
+        
+@format_to_string
+@getters_to_properties(('uvw', '_get_uvw'))
+@mappedclass(clipper_core.Coord_frac)
 class Coord_frac(clipper_core.Coord_frac):
     '''
     Fractional coordinates along unit cell axes (a,b,c), scaled to the 
@@ -477,39 +460,45 @@ class Coord_frac(clipper_core.Coord_frac):
             # Because SWIG does not correctly typemap numpy.float32
             uvw = uvw.astype(float)
         clipper_core.Coord_frac.__init__(self, *uvw)
-    '''
-    @property
-    def u(self):
-        return super(Coord_frac, self).u()
-    
-    @property
-    def v(self):
-        return super(Coord_frac, self).v()
-    
-    @property
-    def w(self):
-        return super(Coord_frac, self).w()
-    
-    @property
-    def uvw(self):
-        return super(Coord_frac, self).uvw()
-    '''
-    
-    @property
-    def uvw(self):
-        return super(Coord_frac, self)._get_uvw()
-    
+        
     def __add__(self, other):
         if isinstance(other, Coord_frac):
             return super(Coord_frac, self).__add__(other)
         return self + Coord_frac(other)
 
-def __newCCP4MTZfile__(cls, *args, **kwargs):
-    if cls == clipper_core.CCP4MTZfile:
-        return object.__new__(CCP4MTZfile)
-    return object.__new__(cls)        
-clipper_core.CCP4MTZfile.__new__ = staticmethod(__newCCP4MTZfile__)
+########################################################################
+# Reciprocal-space coordinates
+########################################################################
 
+@format_to_string
+@getters_to_properties('us','vs','ws')
+@mappedclass(clipper_core.Coord_reci_frac)
+class Coord_reci_frac(clipper_core.Coord_reci_frac):
+    '''
+    Fractional hkl coordinates
+    '''
+    def __init__(self, uvw):
+        clipper_core.Coord_reci_frac.__init__(self, *uvw)
+    
+@format_to_string
+@getters_to_properties('xs','ys','zs')
+@mappedclass(clipper_core.Coord_reci_orth)
+class Coord_reci_orth(clipper_core.Coord_reci_orth):
+    '''
+    orthogonal reciprocal coordinate (length of which is invresolsq)
+    '''
+    def __init__(self, xyz_star):
+        clipper_core.Coord_reci_orth.__init__(self, *xyz_star)
+        
+
+########################################################################
+# FILE TYPES
+########################################################################
+@getters_to_properties('ccp4_spacegroup_number', 'cell', 'column_labels',
+                       'column_paths','high_res_limit','history',
+                       'hkl_sampling','low_res_limit','resolution',
+                       'sort_order','spacegroup')
+@mappedclass(clipper_core.CCP4MTZfile)
 class CCP4MTZfile(clipper_core.CCP4MTZfile):
     '''
     MTZ import/export parent class for clipper objects.
@@ -611,54 +600,6 @@ class CCP4MTZfile(clipper_core.CCP4MTZfile):
         return super(CCP4MTZfile, self).import_hkl_data(cdata, mtzpath)
 
     @property
-    def ccp4_spacegroup_number(self):
-        return super(CCP4MTZfile, self).ccp4_spacegroup_number()
-    
-    @property
-    def cell(self):
-        '''Object describing the unit cell dimensions'''
-        return super(CCP4MTZfile, self).cell()
-    
-    @property
-    def column_labels(self):
-        '''List of available columns in the MTZ file'''
-        return super(CCP4MTZfile, self).column_labels()
-    
-    @property
-    def column_paths(self):
-        '''List of available columns in the MTZ file'''
-        return super(CCP4MTZfile, self).column_paths()
-        
-    @property
-    def high_res_limit(self):
-        return super(CCP4MTZfile, self).high_res_limit()
-    
-    @property
-    def history(self):
-        return super(CCP4MTZfile, self).history()
-            
-    @property
-    def hkl_sampling(self):
-        return super(CCP4MTZfile, self).hkl_sampling()
-
-    @property
-    def low_res_limit(self):
-        return super(CCP4MTZfile, self).low_res_limit()
-
-    @property
-    def resolution(self):
-        return super(CCP4MTZfile, self).resolution()
-    
-    @property
-    def sort_order(self):
-        return super(CCP4MTZfile, self).sort_order()
-
-    @property
-    def spacegroup(self):
-        '''Object defining the symmetry operations for this spacegroup'''
-        return super(CCP4MTZfile, self).spacegroup()
-    
-    @property
     def spacegroup_confidence(self):
         return super(CCP4MTZfile, self).spacegroup_confidence()
     
@@ -675,13 +616,7 @@ class CCP4MTZfile(clipper_core.CCP4MTZfile):
         super(CCP4MTZfile, self).set_title(title)
     
     
-
-def __newCIFfile__(cls, *args, **kwargs):
-    if cls == clipper_core.CIFfile:
-        return object.__new__(CIFfile)
-    return object.__new__(cls)        
-clipper_core.CIFfile.__new__ = staticmethod(__newCIFfile__)
-        
+@mappedclass(clipper_core.CIFfile)        
 class CIFfile(clipper_core.CIFfile):
     '''
     CIF import/export parent class for clipper objects.
@@ -710,13 +645,95 @@ class CIFfile(clipper_core.CIFfile):
         return super(CIFfile, self).resolution(cell)
 
 
+@mappedclass(clipper_core.CCP4MAPfile)
+class CCP4MAPfile(clipper_core.CCP4MAPfile):
+    pass
 
-def __newHKL_info__(cls, *args, **kwargs):
-    if cls == clipper_core.HKL_info:
-        return object.__new__(HKL_info)
-    return object.__new__(cls)        
-clipper_core.HKL_info.__new__ = staticmethod(__newHKL_info__)
 
+########################################################################
+# RECIPROCAL SPACE DATA TYPES
+########################################################################
+'''
+Data types holding individual H,K,L data points, corresponding to the 
+array forms (HKL_data_...) below.
+'''
+@getters_to_properties('data_names','data_size','vals')
+@mappedclass(clipper_core.ABCD_double)
+class ABCD(clipper_core.ABCD_double):
+    '''
+    Hendrickson-Lattman coefficients
+    '''
+    def __init__(self, abcd):
+        clipper_core.ABCD_double.__init__(self, *abcd)
+
+@format_to_string
+@getters_to_properties('h','k','l')
+@mappedclass(clipper_core.HKL)
+class HKL(clipper_core.HKL):
+    pass
+
+@getters_to_properties('cov', 'friedel', 'missing', 'sigE_mi', 'sigE_pl')
+@mappedclass(clipper_core.E_sigE_double)
+class E_sigE(clipper_core.E_sigE_double):
+    pass
+
+@getters_to_properties('a', 'b', 'friedel', 'missing', 'norm')
+@mappedclass(clipper_core.F_phi_double)
+class F_phi(clipper_core.F_phi_double):
+    pass
+
+@getters_to_properties('f', 'friedel', 'missing', 'sigf')
+@mappedclass(clipper_core.F_sigF_ano_double)
+class F_sigF_ano(clipper_core.F_sigF_ano_double):
+    pass
+
+@getters_to_properties('cov', 'f_mi', 'f_pl', 'friedel', 'missing', 'sigf_mi', 'sigf_pl')
+@mappedclass(clipper_core.F_sigF_double)
+class F_sigF(clipper_core.F_sigF_double):
+    pass
+
+@getters_to_properties('copy', 'friedel', 'missing')
+@mappedclass(clipper_core.Flag)
+class Flag(clipper_core.Flag):
+    def get_flag(self):
+        return super(Flag, self).get_flag()
+    
+    def set_flag(self, theFlag):
+        return super(Flag, self).set_flag(theFlag)
+    
+    val = property(get_flag, set_flag)
+
+@getters_to_properties('copy', 'friedel', 'missing')
+@mappedclass(clipper_core.Flag_bool)
+class Flag_bool(clipper_core.Flag_bool):
+    def get_flag(self):
+        return super(Flag, self).get_flag()
+    
+    def set_flag(self, theFlag):
+        return super(Flag, self).set_flag(theFlag)
+    
+    val = property(get_flag, set_flag)
+    
+@getters_to_properties('cov', 'friedel', 'missing', 'sigI_mi', 'sigI_pl')
+@mappedclass(clipper_core.I_sigI_double)
+class I_sigI(clipper_core.I_sigI_double):
+    pass
+
+@getters_to_properties('friedel', 'missing')
+@mappedclass(clipper_core.Phi_fom_double)
+class Phi_fom(clipper_core.Phi_fom_double):
+    pass
+
+
+
+
+########################################################################
+# HKL DATA ARRAY TYPES
+########################################################################
+
+
+@getters_to_properties('cell','spacegroup','resolution')
+@mappedclass(clipper_core.HKL_info)
 class HKL_info(clipper_core.HKL_info):
     def __init__(self):
         '''
@@ -730,25 +747,24 @@ class HKL_info(clipper_core.HKL_info):
         '''
         clipper_core.HKL_info.__init__(self)
     
-    @property
-    def cell(self):
-        return super(HKL_info, self).cell()
-    
-    @property
-    def spacegroup(self):
-        return super(HKL_info, self).spacegroup()
-        
-    @property
-    def resolution(self):
-        return super(HKL_info, self).resolution()
-    
-        
-def __newHKL_data_Flag__(cls, *args, **kwargs):
-    if cls == clipper_core.HKL_data_Flag:
-        return object.__new__(HKL_data_Flag)
-    return object.__new__(cls)        
-clipper_core.HKL_data_Flag.__new__ = staticmethod(__newHKL_data_Flag__)
+@getters_to_properties('base_cell', 'base_hkl_info', 'cell', 'first', 'first_data',
+                       'hkl_info', 'hkl_sampling', 'invresolsq_range', 
+                       'is_null', 'num_obs', 'resolution', 'spacegroup')
+@mappedclass(clipper_core.HKL_data_ABCD_double)
+class HKL_data_ABCD(clipper_core.HKL_data_ABCD_double):
+    pass
 
+@getters_to_properties('base_cell', 'base_hkl_info', 'cell', 'first', 'first_data',
+                       'hkl_info', 'hkl_sampling', 'invresolsq_range', 
+                       'is_null', 'num_obs', 'resolution', 'spacegroup')
+@mappedclass(clipper_core.HKL_data_E_sigE_double)
+class HKL_data_E_sigE(clipper_core.HKL_data_E_sigE_double):
+    pass
+
+@getters_to_properties('base_cell', 'base_hkl_info', 'cell', 'first', 'first_data',
+                       'hkl_info', 'hkl_sampling', 'invresolsq_range', 
+                       'is_null', 'num_obs', 'resolution', 'spacegroup')        
+@mappedclass(clipper_core.HKL_data_Flag)
 class HKL_data_Flag(clipper_core.HKL_data_Flag):
     def __init__(self):
         '''
@@ -761,13 +777,29 @@ class HKL_data_Flag(clipper_core.HKL_data_Flag):
         '''
         clipper_core.HKL_data_Flag.__init__(self)
 
-def __newHKL_data_F_sigF__(cls, *args, **kwargs):
-    if cls == clipper_core.HKL_data_F_sigF_double:
-        return object.__new__(HKL_data_F_sigF)
-    return object.__new__(cls)        
-clipper_core.HKL_data_F_sigF_double.__new__ = staticmethod(__newHKL_data_F_sigF__)
 
-class HKL_data_F_sigF (clipper_core.HKL_data_F_sigF_double):
+@getters_to_properties('base_cell', 'base_hkl_info', 'cell', 'first', 'first_data',
+                       'hkl_info', 'hkl_sampling', 'invresolsq_range', 
+                       'is_null', 'num_obs', 'resolution', 'spacegroup')
+@mappedclass(clipper_core.HKL_data_Flag_bool)
+class HKL_data_Flag_bool(clipper_core.HKL_data_Flag_bool):
+    def __init__(self):
+        '''
+        __init__(self) -> HKL_data_Flag_bool
+        
+        Create an empty object to store an array of bool flags 
+        (e.g. for holding of R-free flags). Fill it by passing it to
+        (CCP4MTZfile or CIFfile).import_hkl_data together with the
+        address of a suitable array.
+        '''
+        clipper_core.HKL_data_Flag_bool.__init__(self)
+
+
+@getters_to_properties('base_cell', 'base_hkl_info', 'cell', 'first', 'first_data',
+                       'hkl_info', 'hkl_sampling', 'invresolsq_range', 
+                       'is_null', 'num_obs', 'resolution', 'spacegroup')
+@mappedclass(clipper_core.HKL_data_F_sigF_double)
+class HKL_data_F_sigF(clipper_core.HKL_data_F_sigF_double):
     def __init__(self):
         '''
         __init__(self) -> HKL_data_F_sigF
@@ -778,14 +810,19 @@ class HKL_data_F_sigF (clipper_core.HKL_data_F_sigF_double):
         addresses of a suitable pair of arrays.
         '''
         clipper_core.HKL_data_F_sigF_double.__init__(self)
+        
+@getters_to_properties('base_cell', 'base_hkl_info', 'cell', 'first', 'first_data',
+                       'hkl_info', 'hkl_sampling', 'invresolsq_range', 
+                       'is_null', 'num_obs', 'resolution', 'spacegroup')
+@mappedclass(clipper_core.HKL_data_F_sigF_ano_double)
+class HKL_data_F_sigF_ano(clipper_core.HKL_data_F_sigF_ano_double):
+    pass
 
 
-def __newHKL_data_F_phi__(cls, *args, **kwargs):
-    if cls == clipper_core.HKL_data_F_phi_double:
-        return object.__new__(HKL_data_F_phi)
-    return object.__new__(cls)        
-clipper_core.HKL_data_F_phi_double.__new__ = staticmethod(__newHKL_data_F_phi__)
-
+@getters_to_properties('base_cell', 'base_hkl_info', 'cell', 'first', 'first_data',
+                       'hkl_info', 'hkl_sampling', 'invresolsq_range', 
+                       'is_null', 'num_obs', 'resolution', 'spacegroup')
+@mappedclass(clipper_core.HKL_data_F_phi_double)
 class HKL_data_F_phi (clipper_core.HKL_data_F_phi_double):
     def __init__(self):
         '''
@@ -799,12 +836,10 @@ class HKL_data_F_phi (clipper_core.HKL_data_F_phi_double):
         clipper_core.HKL_data_F_phi_double.__init__(self)
 
 
-def __newHKL_data_I_sigI__(cls, *args, **kwargs):
-    if cls == clipper_core.HKL_data_I_sigI_double:
-        return object.__new__(HKL_data_I_sigI)
-    return object.__new__(cls)        
-clipper_core.HKL_data_I_sigI_double.__new__ = staticmethod(__newHKL_data_F_phi__)
-
+@getters_to_properties('base_cell', 'base_hkl_info', 'cell', 'first', 'first_data',
+                       'hkl_info', 'hkl_sampling', 'invresolsq_range', 
+                       'is_null', 'num_obs', 'resolution', 'spacegroup')
+@mappedclass(clipper_core.HKL_data_I_sigI_double)
 class HKL_data_I_sigI(clipper_core.HKL_data_I_sigI_double):
     def __init__(self):
         '''
@@ -817,13 +852,31 @@ class HKL_data_I_sigI(clipper_core.HKL_data_I_sigI_double):
         '''
         clipper_core.HKL_data_I_sigI_double.__init__(self)
 
+@getters_to_properties('base_cell', 'base_hkl_info', 'cell', 'first', 'first_data',
+                       'hkl_info', 'hkl_sampling', 'invresolsq_range', 
+                       'is_null', 'num_obs', 'resolution', 'spacegroup')
+@mappedclass(clipper_core.HKL_data_Phi_fom_double)
+class HKL_data_Phi_fom(clipper_core.HKL_data_Phi_fom_double):
+    pass
 
-def __newGrid_sampling__(cls, *args, **kwargs):
-    if cls == clipper_core.Grid_sampling:
-        return object.__new__(Grid_sampling)
-    return object.__new__(cls)        
-clipper_core.Grid_sampling.__new__ = staticmethod(__newGrid_sampling__)
 
+########################################################################
+# CELLS, SYMMETRY, MAPS
+########################################################################
+
+@format_to_string
+@getters_to_properties('nu', 'nv', 'nw', 'size')
+@mappedclass(clipper_core.Grid)
+class Grid(clipper_core.Grid):
+    pass
+
+@format_to_string
+@mappedclass(clipper_core.Grid_range)
+class Grid_range(clipper_core.Grid_range):
+    pass
+
+@getters_to_properties('dim')
+@mappedclass(clipper_core.Grid_sampling)
 class Grid_sampling(clipper_core.Grid_sampling):
     '''
     Object defining the grid used to sample points in a 3D map.
@@ -844,18 +897,26 @@ class Grid_sampling(clipper_core.Grid_sampling):
         object: HKL_info.spacegroup, HKL_info.cell, HKL_info.resolution.
             
         '''
-        clipper_core.Grid_sampling.__init__(self, spacegroup, cell, resolution, rate)
+        clipper_core.Grid_sampling.__init__(self, spacegroup, cell, 
+                                            resolution, rate)
+
+@format_to_string    
+@mappedclass(clipper_core.Cell_descr)
+class Cell_descr(clipper_core.Cell_descr):
+    def __init__(self, abc, angles):
+        '''
+        __init__(self, abc, angles) -> Cell_descr
+        
+        Args:
+            abc ([float*3]): cell dimensions in Angstroms
+            angles ([float*3]): alpha, beta and gamma angles in degrees
+        '''
+        clipper_core.Cell_descr.__init__(self, *abc, *angles)
     
-    @property
-    def dim(self):
-        return super(Grid_sampling, self).dim()
-
-def __newCell__(cls, *args, **kwargs):
-    if cls == clipper_core.Cell:
-        return object.__new__(Cell)
-    return object.__new__(cls)        
-clipper_core.Cell.__new__ = staticmethod(__newCell__)
-
+@format_to_string
+@getters_to_properties('cell_descr', 'matrix_frac', 'matrix_orth', 
+                       'metric_real', 'metric_reci', 'volume')
+@mappedclass(clipper_core.Cell)
 class Cell(clipper_core.Cell):
     '''
     Define a crystallographic unit cell using the lengths of the three
@@ -870,8 +931,11 @@ class Cell(clipper_core.Cell):
             abc ([float*3]): cell dimensions in Angstroms
             angles ([float*3]): alpha, beta and gamma angles in degrees
         '''
-        cell_descr = clipper_core.Cell_descr(*abc, *angles)
+        cell_descr = Cell_descr(*abc, *angles)
         clipper_core.Cell.__init__(self, cell_descr)
+    
+    def __eq__(self, other):
+        return self.equals(other)
     
     @property
     def dim(self):
@@ -904,20 +968,16 @@ class Cell(clipper_core.Cell):
         return super(Cell, self).recip_angles_deg()
 
 
-def __newUnit_Cell__(cls, *args, **kwargs):
-    if cls == clipper_core.Unit_Cell:
-        return object.__new__(Unit_Cell)
-    return object.__new__(cls)        
-clipper_core.Unit_Cell.__new__ = staticmethod(__newUnit_Cell__)
-
+@mappedclass(clipper_core.Unit_Cell)
 class Unit_Cell(clipper_core.Unit_Cell):
     '''
-    Clipper object holding the information necessary to construct a unit
+    Atom-centric object holding the information necessary to construct a unit
     cell from a given atomic model of one asymmetric unit. Also provides
     functions returning the symmetry operations necessary to pack an
     arbitrary box in 3D space.
     '''
-    def __init__(self, ref, atom_list, cell, spacegroup, grid_sampling, padding = 0):
+    def __init__(self, ref, atom_list, cell, 
+                 spacegroup, grid_sampling, padding = 0):
         '''
         __init__(self, ref, atom_list, cell, spacegroup, grid_sampling) -> Unit_Cell
         
@@ -944,14 +1004,17 @@ class Unit_Cell(clipper_core.Unit_Cell):
                 can be left as zero.
         '''
         ref_frac = Coord_orth(ref).coord_frac(cell)
-        clipper_core.Unit_Cell.__init__(self, ref_frac, atom_list, cell, spacegroup, grid_sampling)
+        clipper_core.Unit_Cell.__init__(self, ref_frac, atom_list, cell, 
+                                        spacegroup, grid_sampling)
     
     @property
     def symops(self):
         '''Symops necessary to generate a unit cell from the model asu'''
         return super(Unit_Cell, self).symops()
     
-    def all_symops_in_box(self, box_origin_xyz, box_size_uvw, always_include_identity = False, debug = False, sample_frequency = 2):
+    def all_symops_in_box(self, box_origin_xyz, box_size_uvw, 
+                          always_include_identity = False, 
+                          debug = False, sample_frequency = 2):
         '''
         Get an object defining all the symmetry operations mapping any
         part of your reference atomic model to a given box. Calculations
@@ -973,26 +1036,197 @@ class Unit_Cell(clipper_core.Unit_Cell):
         origin[:] = box_origin_xyz
         size = numpy.empty(3, numpy.int32)
         size[:] = box_size_uvw
-        return super(Unit_Cell, self).all_symops_in_box(origin, size, always_include_identity, debug, sample_frequency)
+        return super(Unit_Cell, self).all_symops_in_box(origin, size, 
+                    always_include_identity, debug, sample_frequency)
+
+@format_to_string
+@mappedclass(clipper_core.Isymop)
+class Isymop(clipper_core.Isymop):
+    pass
+
+@mappedclass(clipper_core.Isymops)
+class Isymops(clipper_core.Isymops):
+    '''
+    Python-friendly array class for holding lists of integer symmetry
+    operators. For most purposes, you'll be better off using the fractional
+    equivalent, Symops.
+    '''
+    pass
+
+@mappedclass(clipper_core.RTop_frac)
+@getters_to_properties('mat34', 'matrix', 'inverse', 'rotation', 
+                       'translation')
+class RTop_frac(clipper_core.RTop_frac):
+    '''
+    Rotation/translation operator in fractional coordinates. Returned by
+    various clipper functions. It is not generally advisable to create 
+    these for yourself unless you know exactly what you are doing. 
+    '''
+    
+    @property
+    def format(self):
+        '''
+        Returns a symop-like string representation of this operator
+        (e.g. "y, -x+y-1, z-5/6")
+        '''
+        return super(RTop_frac, self).format_as_symop()
+    
+    
+    def __str__(self):
+        return self.format
+    
+    def __hash__(self):
+        '''
+        Allows the object itself to be used as a key in dicts.
+        '''
+        return hash(self.format)
+    
+    def __eq__(self, other):
+        return type(other) == RTop_frac and hash(self) == hash(other)
+
+    def __mul__(self, coord):
+        '''
+        Apply this transformation operator to either a Python (u,v,w) 
+        iterable, or to a Coord_frac. 
+        '''
+        if hasattr(coord, '__iter__'):
+            return (self.__mul__(Coord_frac(coord))).uvw
+        return super(RTop_frac, self).__mul__(coord)
+
+
+@format_to_string
+@getters_to_properties('matrix','mat34','rotation','translation')
+@mappedclass(clipper_core.Symop)
+class Symop(clipper_core.Symop):
+    def __mul__(self, coord):
+        '''
+        Apply this transformation operator to either a Python (u,v,w) 
+        iterable, or to a Coord_orth. 
+        '''
+        if hasattr(coord, '__iter__'):
+            return (self.__mul__(Coord_frac(coord))).uvw
+        return super(Symop, self).__mul__(coord)
+
+
+@mappedclass(clipper_core.Symops)
+class Symops(clipper_core.Symops):
+    '''
+    Python-friendly class for holding arrays of fractional symmetry
+    operators, with fast functions for obtaining the symmetry matrices 
+    as numpy arrays, in fractional or orthogonal coordinates. Despite 
+    the name, the stored elements are actually RTop_frac objects, since
+    Symop objects are not designed to store unit cell offsets. 
+    '''
+    
+    @property
+    def all_matrices34_frac(self):
+        '''
+        Get a (nx3x4) Numpy array summarising all the fractional symmetry 
+        operators contained in this object.
+        Each entry in the array is of the form:
         
+        [[rot00 rot01 rot02 trn0]
+         [rot10 rot11 rot12 trn1]
+         [rot20 rot21 rot22 trn2]]
+        '''
+        n = len(self)
+        ret = numpy.empty([n,3,4],numpy.double)
+        super(Symops, self).all_matrices34_frac(ret)
+        return ret
+    
+    def all_matrices34_orth(self, cell):
+        '''
+        Get a (nx3x4) Numpy array summarising all the orthographic symmetry 
+        operators contained in this object. Requires a clipper.Cell as
+        an argument.
+        Each entry in the array is of the form:
+        
+        [[rot00 rot01 rot02 trn0]
+         [rot10 rot11 rot12 trn1]
+         [rot20 rot21 rot22 trn2]]
+        '''
+        n = len(self)
+        ret = numpy.empty([n,3,4],numpy.double)
+        super(Symops, self).all_matrices34_orth(cell, ret)
+        return ret
+    
+    @property
+    def all_matrices44_frac(self):
+        '''
+        Get a (nx4x4) Numpy array summarising all the fractional symmetry 
+        operators contained in this object.
+        Each entry in the array is of the form:
+        
+        [[rot00 rot01 rot02 trn0]
+         [rot10 rot11 rot12 trn1]
+         [rot20 rot21 rot22 trn2]
+         [  0     0     0    1  ]]
+        '''
+        n = len(self)
+        ret = numpy.empty([n,4,4],numpy.double)
+        super(Symops, self).all_matrices44_frac(ret)
+        return ret
+ 
+    def all_matrices44_orth(self, cell):
+        '''
+        Get a (nx4x4) Numpy array summarising all the orthographic symmetry 
+        operators contained in this object. Requires a clipper.Cell as
+        an argument.
+        Each entry in the array is of the form:
+        
+        [[rot00 rot01 rot02 trn0]
+         [rot10 rot11 rot12 trn1]
+         [rot20 rot21 rot22 trn2]
+         [  0     0     0    1  ]]
+        '''
+        n = len(self)
+        ret = numpy.empty([n,4,4],numpy.double)
+        super(Symops, self).all_matrices44_orth(cell, ret)
+        return ret
     
 
-def __newXmap_double__(cls, *args, **kwargs):
-    if cls == clipper_core.Xmap_double:
-        return object.__new__(Xmap)
-    return object.__new__(cls)        
-clipper_core.Xmap_double.__new__ = staticmethod(__newXmap_double__)
-    
+
+@getters_to_properties('matrix', 'mat34')
+@mappedclass(clipper_core.RTop_orth)        
+class RTop_orth(clipper_core.RTop_orth):
+    '''
+    Rotation/translation operator in xyz coordinates. Returned by
+    various clipper functions. It is not generally advisable to create 
+    these for yourself unless you know exactly what you are doing. 
+    '''
+    def __mul__(self, coord):
+        '''
+        Apply this transformation operator to either a Python (x,y,z) 
+        iterable, or to a Coord_orth. 
+        '''
+        if hasattr(coord, '__iter__'):
+            return (self.__mul__(Coord_orth(coord))).xyz
+        return super(RTop_orth, self).__mul__(coord)
+
+@getters_to_properties('operator_grid_orth', 'operator_orth_grid', 'first',
+                       'grid', 'is_null')
+@mappedclass(clipper_core.NXmap_double)
+class NXmap(clipper_core.NXmap_double):
+    pass
+
+
+@getters_to_properties(('grid','grid_sampling'), 'grid_sampling', 'cell', 
+                       'spacegroup', 'operator_grid_orth', 'operator_orth_grid',
+                       'stats', 'voxel_size', 'voxel_size_frac', 'grid_asu', 
+                       'first', 'first_coord', 'is_null')
+@mappedclass(clipper_core.Xmap_double)    
 class Xmap(clipper_core.Xmap_double):
     '''
     A Clipper crystallographic map generated from reciprocal space data.
     '''
-    def __init__(self, spacegroup, cell, grid_sam, name = None):
+    def __init__(self, spacegroup, cell, grid_sam, name = None, hkldata = None):
         '''
         __init__(self, spacegroup, cell, grid_sam) -> Xmap
         
-        Generate an empty map container. This can be filled with data
-        using the fft_from(fphi) method where fphi is a clipper.F_phi
+        Generate a crystallographic map, and optionally fill it with
+        data calculated from hkldata. If the hkldata argument is omitted,
+        an empty map container will be created that can be filled with data
+        later using the fft_from(fphi) method where fphi is a clipper.HKL_data_F_phi
         object.
         
         Args:
@@ -1002,6 +1236,8 @@ class Xmap(clipper_core.Xmap_double):
             name (string): 
                 Optionally, you can give the map a unique name for later
                 identification
+            hkldata (clipper.HKL_data_F_phi)
+                Dataset from which the map will be generated
         '''
         clipper_core.Xmap_double.__init__(self, spacegroup, cell, grid_sam)
         
@@ -1027,26 +1263,20 @@ class Xmap(clipper_core.Xmap_double):
         self._sigma = None
         self._skewness = None
         self._kurtosis = None
+        
+        if hkldata is not None:
+            self.fft_from(hkldata)
        
     def recalculate_stats(self):
         '''
         Force recalculation of map statistics (max, min, mean, sigma, 
         skewness and kurtosis).
         '''
+        if self.is_null:
+            raise RuntimeError('Map has no data!')
         self._min, self._max, self._mean, \
-            self._sigma, self._skewness, self._kurtosis = self.stats()  
+            self._sigma, self._skewness, self._kurtosis = self.stats  
     
-    @property
-    def cell(self):
-        return super(Xmap, self).cell()
-    
-    @property
-    def grid(self):
-        return self.grid_sampling()
-    
-    @property
-    def spacegroup(self):
-        return super(Xmap, self).spacegroup()
     
     @property
     def max(self):
@@ -1083,8 +1313,39 @@ class Xmap(clipper_core.Xmap_double):
         if self._max is None:
             self.recalculate_stats()
         return self._kurtosis
-    
-                
+        
+    def export_numpy(self):
+        '''
+        export the map asymmetric unit as a numpy array
+        '''
+        asu = self.grid_asu
+        target = numpy.empty([asu.nu(), asu.nv(), asu.nw()],numpy.double)
+        super(Xmap, self).export_numpy(target, 'C')
+        return target
+
+########################################################################
+# ANALYSIS
+########################################################################
+
+@getters_to_properties('invresolsq_limit', 'is_null', 'limit')
+@mappedclass(clipper_core.Resolution)
+class Resolution(clipper_core.Resolution):
+    pass
+
+
+########################################################################
+# VECTORS AND MATRICES
+########################################################################
+
+@getters_to_properties('det', 'inverse', 'is_null', 'transpose', 'as_numpy')
+@format_to_string
+@mappedclass(clipper_core.mat33_float)
+class Mat33_float(clipper_core.mat33_float):
+    pass
+
+########################################################################
+# TEST FUNCTIONS
+########################################################################                
 @log_clipper
 def test_log_warn():
     clipper_core.warn_test()

@@ -159,6 +159,8 @@ void ClipperTestPassNumpyArray(double *test_numpy_a, int test_numpy_n){
 
 
 
+
+
 %ignore clipper::CCP4MTZfile::assigned_paths;
 %ignore clipper::MMDBManager::write_file(const String&);
 %ignore clipper::TargetFn_base::debug;
@@ -833,47 +835,6 @@ namespace clipper
 }
 }
 
-
-/*  I think it might make many things a whole lot easier to go this way.
- *  Simply subclass Xmap<double> and NXmap<double> up front, and define
- *  all the Python extension functions therein. That way they get full
- *  access to all protected functions of the base class and nested functions,
- *  without the code-bloat of having to define all functions needing said
- *  access separately for the <int>, <float>, and <double> implementations.
- *  At the very least, I think the <float> versions can safely go away - 
- *  particularly given that there's very little distinction between float
- *  and double these days anyway, and Python is near-exclusively 64-bit.
- *  There doesn't seem to be that much application for integer maps either,
- *  other than for binary masks...
- * 
- */ 
-
-%inline
-%{
-  namespace clipper{
-  /*
-  class PyXmap : public Xmap<double>
-  {
-  public:
-    PyXmap::Map_reference_coord map_reference_coord( const Coord_grid& coord )
-    {
-      PyXmap::Map_reference_coord ret(*this, coord);
-      return ret;
-    }
-
-    const int& symop_of_reference_coord (const PyXmap::Map_reference_coord& coord )
-    {
-      return coord.sym();
-    }
-
-  };
-  */
-
-  }
-%}
-
-
-
 %include "../clipper/core/clipper_util.h"
 %include "../clipper/core/clipper_types.h"
 
@@ -894,9 +855,6 @@ namespace clipper
   }
 %}
 
-%template (mat33_float)  clipper::Mat33<float>;
-%template (mat33_ftype)  clipper::Mat33<ftype>;
-//%template (mat33_double) clipper::Mat33<double>;
 
 namespace clipper
 {
@@ -951,7 +909,7 @@ namespace clipper
     double eps = 1e-6;
     if (a.first != b.first) return false;
     for (int i=0; i < 3; i++) {
-      if (abs(a.second[i] - b.second[i]) > eps) return false;
+      if (std::abs(a.second[i] - b.second[i]) > eps) return false;
     }
     return true;
   }
@@ -1339,10 +1297,15 @@ namespace clipper {
 namespace clipper
 {
 %extend Coord_grid {
+  /*
+   * This is not right. __cmp__() should return a negative integer if self < g2, 
+   * a positive integer if self > g2, and zero if self == g2. I don't see
+   * how this can be applied to a 3D coordinate.
   bool __cmp__(const Coord_grid& g2)
   {
     return (*($self) == g2);
   }
+  */
   bool __ne__(const Coord_grid& g2)
   {
     return (*($self) != g2);
@@ -1381,6 +1344,8 @@ namespace clipper
     $self->v() = v[1];
     $self->w() = v[2];
   }
+  Coord_grid __mul__(const int& m) { return m * *($self); }
+  Coord_grid __rmul__(const int& m) { return m * *($self); }
 
 
   /*Coord_grid __mul__(const int& i1){
@@ -1425,17 +1390,9 @@ namespace clipper
   {
     return factor * (*self);
   }
-  Coord_orth __mul__ ( const RTop_orth& op )
-  {
-    return op * (*self);
-  }
   Coord_orth __rmul__ ( const float &factor )
   {
     return factor * (*self);
-  }
-  Coord_orth __rmul__ ( const RTop_orth& op )
-  {
-    return op * (*self);
   }
 }
 
@@ -1469,19 +1426,41 @@ namespace clipper
   {
     return factor * (*self);
   }
-  Coord_frac __mul__ ( const RTop_frac& op )
-  {
-    return op * (*self);
-  }
   Coord_frac __rmul__ ( const float &factor )
   {
     return factor * (*self);
   }
-  Coord_frac __rmul__ ( const RTop_frac& op )
-  {
-    return op * (*self);
-  }
 }
+
+%extend Coord_map
+{
+  Coord_map __add__(const Coord_map &h2)
+  {
+    Coord_map ret;
+    ret = *($self)+h2;
+    return ret;
+  }
+  Coord_map __sub__(const Coord_map &h2)
+  {
+    Coord_map ret;
+    ret = *($self)-h2;
+    return ret;
+  }
+  Coord_map __neg__()
+  {
+    Coord_map ret;
+    ret = -*($self);
+    return ret;
+  }
+  void _get_uvw(double numpy_double_out[3])
+  {
+    for (int i = 0; i < 3; i++) {
+      numpy_double_out[i] = (*($self))[i];
+    }
+  }
+  
+}
+
 
 %extend Atom 
 {
@@ -2181,10 +2160,11 @@ namespace clipper
     
     // The length of the shortest side of the reference box
     const size_t& ref_box_min_side() const {return min_side_;}
-    /*
-    const Coord_frac& cell_origin() const {return shift_;} //getter
-    Coord_frac& cell_origin() {return shift_;} //setter
-    */
+    
+    Coord_grid min() {return cell_origin_;}
+    Coord_grid max() {return cell_origin_
+            + Coord_grid(grid_.nu()-1, grid_.nv()-1, grid_.nw()-1);}
+
 
 
     //! Find all symops relevant to a given grid coordinate
@@ -2346,6 +2326,11 @@ namespace clipper
 
 
 %extend RTop_orth {
+  
+  Coord_orth __mul__(const Coord_orth& c) {
+    return (*($self)) * c;
+  }
+    
   void matrix (double numpy_double_out[4][4])
   {
     for (size_t i = 0; i < 3; i++) {
@@ -2389,6 +2374,12 @@ namespace clipper
 }
 
 %extend RTop_frac {
+  
+  // No idea why, but this only works if the Coord_frac name is fully justified
+  clipper::Coord_frac __mul__(const clipper::Coord_frac& c) {
+    return (*($self)) * c;
+  }
+  
   //! Return a full 4x4 affine transform matrix
   void matrix (double numpy_double_out[4][4])
   {
@@ -2463,6 +2454,11 @@ namespace clipper
 }
 
 %extend Symop {
+  //! Return a full 4x4 affine transform matrix
+  clipper::Coord_frac __mul__(const clipper::Coord_frac& c) {
+    return (*($self)) * c;
+  }
+  
   void matrix (double numpy_double_out[4][4])
   {
     for (size_t i = 0; i < 3; i++) {
@@ -2475,6 +2471,18 @@ namespace clipper
       numpy_double_out[3][i] = 0;
     }
     numpy_double_out[3][3] = 1;
+  }
+  //! Return the affine transform matrix excluding the final [0,0,0,1] row
+  void mat34 (double numpy_double_out[3][4])
+  {
+    for (size_t i = 0; i < 3; i++) {
+      for (size_t j = 0; j < 3; j++) {
+        numpy_double_out[i][j] = ($self)->rot()(i,j);
+      }
+    }
+    for (size_t i = 0; i < 3; i++) {
+      numpy_double_out[i][3] = ($self)->trn()[i];
+    }
   }
   void rotation (double numpy_double_out[3][3])
   {
@@ -2494,6 +2502,15 @@ namespace clipper
 
 }
 
+%extend Isymop
+{
+  clipper::Coord_grid __mul__(const clipper::Coord_grid& c) {
+    return (*($self)) * c;
+  }
+  clipper::HKL __mul__(const clipper::HKL& c) {
+    return (*($self)) * c;
+  }
+}
 
 %extend Vec3 {
   std::string __str__( )
@@ -2529,12 +2546,6 @@ fail:
 }
 
 
-%template (RTop_float)  clipper::RTop<float>;
-%template (RTop_double) clipper::RTop<double>;
-%template (vec3_int)    clipper::Vec3<int>;
-%template (vec3_float)  clipper::Vec3<float>;
-%template (vec3_double) clipper::Vec3<double>;
-
 
 
 %extend Mat33 {
@@ -2549,6 +2560,15 @@ fail:
     r.row = i;
     return r;
   };
+  void as_numpy(double numpy_double_out[3][3])
+  {
+    for (size_t i = 0; i < 3; i++) {
+      for (size_t j = 0; j < 3; j++) {
+        numpy_double_out[i][j] = (*($self))(i,j);
+      }
+    }
+  }
+    
   Mat33<T> __neg__ ()
   {
     return -(*self);
@@ -2560,46 +2580,6 @@ fail:
   Vec3<T> __rmul__ (const Vec3<T> &v)
   {
     return ((*self)*v);
-  };
-  clipper::Coord_orth __mul__ (const clipper::Coord_orth &v_)
-  {
-    Vec3<T> v;
-    v[0] = v_[0];
-    v[1] = v_[1];
-    v[2] = v_[2];
-    Vec3<T> v2 = ((*self)*v);
-    Coord_orth c(v2[0],v2[1],v2[2]);
-    return c;
-  };
-  clipper::Coord_orth __rmul__ (const clipper::Coord_orth &v_)
-  {
-    Vec3<T> v;
-    v[0] = v_[0];
-    v[1] = v_[1];
-    v[2] = v_[2];
-    Vec3<T> v2 = ((*self)*v);
-    Coord_orth c(v2[0],v2[1],v2[2]);
-    return c;
-  };
-  clipper::Coord_frac __mul__ (const clipper::Coord_frac &v_)
-  {
-    Vec3<T> v;
-    v[0] = v_[0];
-    v[1] = v_[1];
-    v[2] = v_[2];
-    Vec3<float> v2 = ((*self)*v);
-    Coord_frac c(v2[0],v2[1],v2[2]);
-    return c;
-  };
-  clipper::Coord_frac __rmul__ (const clipper::Coord_frac &v_)
-  {
-    Vec3<T> v;
-    v[0] = v_[0];
-    v[1] = v_[1];
-    v[2] = v_[2];
-    Vec3<T> v2 = ((*self)*v);
-    Coord_frac c(v2[0],v2[1],v2[2]);
-    return c;
   };
   Mat33<T> __mul__ (const Mat33<T> &m)
   {
@@ -2619,6 +2599,44 @@ fail:
   };
 };
 }
+%template (mat33_float)  clipper::Mat33<float>;
+%template (mat33_ftype)  clipper::Mat33<ftype>;
+//%template (mat33_double) clipper::Mat33<double>;
+
+%template (RTop_float)  clipper::RTop<float>;
+%template (RTop_double) clipper::RTop<double>;
+%template (vec3_int)    clipper::Vec3<int>;
+%template (vec3_float)  clipper::Vec3<float>;
+%template (vec3_double) clipper::Vec3<double>;
+
+namespace clipper
+{
+%extend mat33_float
+{
+  clipper::Coord_orth __mul__ (const clipper::Coord_orth &v_)
+  {
+    Vec3<float> v;
+    v[0] = v_[0];
+    v[1] = v_[1];
+    v[2] = v_[2];
+    Vec3<float> v2 = ((*self)*v);
+    Coord_orth c(v2[0],v2[1],v2[2]);
+    return c;
+  };
+  clipper::Coord_frac __mul__ (const clipper::Coord_frac &v_)
+  {
+    Vec3<float> v;
+    v[0] = v_[0];
+    v[1] = v_[1];
+    v[2] = v_[2];
+    Vec3<float> v2 = ((*self)*v);
+    Coord_frac c(v2[0],v2[1],v2[2]);
+    return c;
+  };  
+}
+  
+}
+
 
 %include "../clipper/core/hkl_info.h"
 %include "../clipper/core/hkl_data.h"
@@ -2675,25 +2693,6 @@ class HKL_reference_index : public HKL_reference_base
 
 namespace clipper
 {
-%extend RTop {
-  std::string __str__( )
-  {
-    return (*($self)).format();
-fail:
-    return "";
-  }
-}
-
-%extend Mat33 {
-  std::string __str__( )
-  {
-    return (*($self)).format();
-fail:
-    return "";
-  }
-}
-
-
 %extend Grid_sampling {
   void dim(int numpy_int_out[3])
   {
@@ -2947,7 +2946,7 @@ fail:
     } else if (order == 'C') {
       for ( c.u() = 0; c.u() < top_u; c.u()++ )
         for ( c.v() = 0; c.v() < top_v; c.v()++ )
-          for ( c.w() = 0; c.w() < nu; c.w()++, i++ ) {
+          for ( c.w() = 0; c.w() < nw; c.w()++, i++ ) {
             if ( c.u() < map_grid.nu() && c.v() < map_grid.nv() && c.w() < map_grid.nw() )
               numpy_array[i] = (*($self)).get_data(c);
             else
@@ -3002,14 +3001,14 @@ fail:
       for ( w = start.w(); w <= end.w(); w++ )
         for ( v = start.v(); v <= end.v(); v++ )
           for ( ix.set_coord(Coord_grid(start.u(),v,w)); ix.coord().u() <= end.u(); ix.next_u(), i++ ) {
-            numpy_array[i] = (*($self)).get_data(ix.coord());
+            numpy_array[i] = (*($self))[ix];
           }
       return i;
     } else if (order == 'F') {
       for ( u = start.u(); u <= end.u(); u++ )
         for ( v = start.v(); v <= end.v(); v++ )
           for ( ix.set_coord(Coord_grid(u,v,start.w())); ix.coord().w() <= end.w(); ix.next_w(), i++ ) {
-            numpy_array[i] = (*($self)).get_data(ix.coord());
+            numpy_array[i] = (*($self))[ix];
           }
       return i;
     } else {
@@ -3029,14 +3028,14 @@ fail:
       for ( w = start.w(); w <= end.w(); w++ )
         for ( v = start.v(); v <= end.v(); v++ )
           for ( ix.set_coord(Coord_grid(start.u(),v,w)); ix.coord().u() <= end.u(); ix.next_u(), i++ ) {
-            (*($self)).set_data(ix.coord(), numpy_3d_in[i]);
+            (*($self))[ix] = numpy_3d_in[i];
           }
       return i;
     } else if (order == 'F') {
       for ( u = start.u(); u <= end.u(); u++ )
         for ( v = start.v(); v <= end.v(); v++ )
           for ( ix.set_coord(Coord_grid(u,v,start.w())); ix.coord().w() <= end.w(); ix.next_w(), i++ ) {
-            (*($self)).set_data(ix.coord(), numpy_3d_in[i]);
+            (*($self))[ix] = numpy_3d_in[i];
           }
       return i;
     } else {
@@ -3341,6 +3340,15 @@ namespace clipper
     ret = -*($self);
     return ret;
   }
+  HKL __mul__(const int& m)
+  {
+    return m * *($self);
+  }
+  HKL __rmul__(const int& m)
+  {
+    return m * *($self);
+  }
+  
 }
 
 %extend MModel {
@@ -3558,28 +3566,39 @@ namespace datatypes
 //%rename (to_complex_double) operator complex<double>();
 
 
+
 %include "../clipper/core/hkl_datatypes.h"
 
 namespace clipper
 {
-%extend HKL_data {
-  HKL_data<clipper::datatypes::Flag_bool> not_()
-  {
-    return !(*($self));
+  %extend HKL_data {
+    HKL_data<clipper::datatypes::Flag_bool> not_()
+    {
+      return !(*($self));
+    }
+    HKL_data<clipper::datatypes::Flag_bool> __or__(const HKL_data<T> &d1)
+    {
+      return (*($self)) | d1;
+    }
+    HKL_data<clipper::datatypes::Flag_bool> __xor__(const HKL_data<T> &d1)
+    {
+      return (*($self)) ^ d1;
+    }
+    HKL_data<clipper::datatypes::Flag_bool> __and__(const HKL_data<T> &d1)
+    {
+      return (*($self)) & d1;
+    }
+    
   }
-  HKL_data<clipper::datatypes::Flag_bool> __or__(const HKL_data<T> &d1)
-  {
-    return (*($self)) | d1;
+  %extend datatypes::ABCD {
+    void vals(double numpy_double_out[4]) {
+      numpy_double_out[0] = $self->a();
+      numpy_double_out[1] = $self->b();
+      numpy_double_out[2] = $self->c();
+      numpy_double_out[3] = $self->d();
+    }  
   }
-  HKL_data<clipper::datatypes::Flag_bool> __xor__(const HKL_data<T> &d1)
-  {
-    return (*($self)) ^ d1;
-  }
-  HKL_data<clipper::datatypes::Flag_bool> __and__(const HKL_data<T> &d1)
-  {
-    return (*($self)) & d1;
-  }
-}
+
 
 
 

@@ -19,7 +19,9 @@ class Clipper_ToolInstance(ToolInstance):
         self.display_name = "Clipper"
         
         from . import main
+        from .crystal import read_mtz
         self.main = main
+        self.main.read_mtz = read_mtz
         session.clipper = self.main
         session.clipper.session = session
         

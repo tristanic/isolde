@@ -36,8 +36,17 @@ class DataTree(collections.defaultdict):
   Metadata for a given node should apply to that node and all its
   children. When metadata is requested from a node, it searches for
   the key first in its own _metadata dict, and if not found passes the
-  request to its parent, and so on. A typical data tree (and the 
-  metadata at each level) might be:
+  request to its parent, and so on. 
+  
+  In addition, keys at each level above DATASET automatically become 
+  properties, allowing easier navigation from the console. For example,
+  in the below tree the user could access the dataset via:
+  Project.Experiment.Crystal.Dataset
+  
+  rather than:
+  Project['Experiment']['Crystal']['Dataset']
+  
+  A typical data tree (and the metadata at each level) might be:
   
   [Project] (name, Lab head, Experimenter, Detailed description, ...)
      |
@@ -62,6 +71,7 @@ class DataTree(collections.defaultdict):
      
   def __init__(self, *args, parent = None, project = 'Project', experiment = 'Experiment'):
     collections.defaultdict.__init__(self, *args)
+    self._prohibited_keys = self.__dict__.keys()
     # Keep track of our parents...
     self.parent = parent
     # ... and what level we are at in the tree
@@ -100,6 +110,28 @@ class DataTree(collections.defaultdict):
         raise
   
   def __missing__(self, key):
+    # Add it to the dict for programmatic lookup
     ret = self[key] = DataTree(parent = self)
     ret.set_metadata(('Name', key))
     return ret
+  
+  def pop(self, key, d = None):
+    if key in self.keys():
+      if self._level < db_levels.DATASET:
+        delattr(self, key)
+    super(DataTree, self).pop(key, d)
+  
+  def __setitem__(self, key, value):
+      # Add it as an attribute for easy user lookup
+      if self._level < db_levels.DATASET:
+        if key in self._prohibited_keys:
+          raise KeyError('Name cannot be the same as a database function!')
+        if not key.isidentifier():
+          errstring = '''
+            To allow for easy programmatic lookup, keys are limited to
+            valid Python identifiers (letters, numbers and underscores
+            only, and the first character must not be a number)'''
+          raise KeyError(errstring)
+        setattr(self, key, value)
+        #self.__dict__[key] = value
+      super(DataTree, self).__setitem__(key, value)

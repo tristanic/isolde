@@ -6566,306 +6566,6 @@ class String(_object):
 String_swigregister = _clipper.String_swigregister
 String_swigregister(String)
 
-class mat33_float(_object):
-    """Proxy of C++ clipper::Mat33<(float)> class."""
-
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, mat33_float, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, mat33_float, name)
-    __repr__ = _swig_repr
-
-    def __init__(self, *args):
-        """
-        __init__(clipper::Mat33<(float)> self) -> mat33_float
-        __init__(clipper::Mat33<(float)> self, float const & m00, float const & m01, float const & m02, float const & m10, float const & m11, float const & m12, float const & m20, float const & m21, float const & m22) -> mat33_float
-
-        Parameters
-        ----------
-        m00: float const &
-        m01: float const &
-        m02: float const &
-        m10: float const &
-        m11: float const &
-        m12: float const &
-        m20: float const &
-        m21: float const &
-        m22: float const &
-
-        """
-        this = _clipper.new_mat33_float(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-
-    def det(self):
-        """
-        det(mat33_float self) -> float
-
-        Parameters
-        ----------
-        self: clipper::Mat33< float > const *
-
-        """
-        return _clipper.mat33_float_det(self)
-
-
-    def inverse(self):
-        """
-        inverse(mat33_float self) -> mat33_float
-
-        Parameters
-        ----------
-        self: clipper::Mat33< float > const *
-
-        """
-        return _clipper.mat33_float_inverse(self)
-
-
-    def transpose(self):
-        """
-        transpose(mat33_float self) -> mat33_float
-
-        Parameters
-        ----------
-        self: clipper::Mat33< float > const *
-
-        """
-        return _clipper.mat33_float_transpose(self)
-
-
-    def equals(self, m, tol):
-        """
-        equals(mat33_float self, mat33_float m, float const & tol) -> bool
-
-        Parameters
-        ----------
-        m: clipper::Mat33< float > const &
-        tol: float const &
-
-        """
-        return _clipper.mat33_float_equals(self, m, tol)
-
-
-    def __call__(self, *args):
-        """
-        __call__(mat33_float self, int const & i, int const & j) -> float const
-
-        Parameters
-        ----------
-        i: int const &
-        j: int const &
-
-        __call__(mat33_float self, int const & i, int const & j) -> float &
-
-        Parameters
-        ----------
-        i: int const &
-        j: int const &
-
-        """
-        return _clipper.mat33_float___call__(self, *args)
-
-
-    def format(self):
-        """
-        format(mat33_float self) -> String
-
-        Parameters
-        ----------
-        self: clipper::Mat33< float > const *
-
-        """
-        return _clipper.mat33_float_format(self)
-
-
-    def identity():
-        """identity() -> mat33_float"""
-        return _clipper.mat33_float_identity()
-
-    identity = staticmethod(identity)
-
-    def null():
-        """null() -> mat33_float"""
-        return _clipper.mat33_float_null()
-
-    null = staticmethod(null)
-
-    def is_null(self):
-        """
-        is_null(mat33_float self) -> bool
-
-        Parameters
-        ----------
-        self: clipper::Mat33< float > const *
-
-        """
-        return _clipper.mat33_float_is_null(self)
-
-    __swig_destroy__ = _clipper.delete_mat33_float
-    __del__ = lambda self: None
-mat33_float_swigregister = _clipper.mat33_float_swigregister
-mat33_float_swigregister(mat33_float)
-
-def mat33_float_identity():
-    """mat33_float_identity() -> mat33_float"""
-    return _clipper.mat33_float_identity()
-
-def mat33_float_null():
-    """mat33_float_null() -> mat33_float"""
-    return _clipper.mat33_float_null()
-
-class mat33_ftype(_object):
-    """Proxy of C++ clipper::Mat33<(ftype)> class."""
-
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, mat33_ftype, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, mat33_ftype, name)
-    __repr__ = _swig_repr
-
-    def __init__(self, *args):
-        """
-        __init__(clipper::Mat33<(ftype)> self) -> mat33_ftype
-        __init__(clipper::Mat33<(ftype)> self, double const & m00, double const & m01, double const & m02, double const & m10, double const & m11, double const & m12, double const & m20, double const & m21, double const & m22) -> mat33_ftype
-
-        Parameters
-        ----------
-        m00: double const &
-        m01: double const &
-        m02: double const &
-        m10: double const &
-        m11: double const &
-        m12: double const &
-        m20: double const &
-        m21: double const &
-        m22: double const &
-
-        """
-        this = _clipper.new_mat33_ftype(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-
-    def det(self):
-        """
-        det(mat33_ftype self) -> double
-
-        Parameters
-        ----------
-        self: clipper::Mat33< ftype > const *
-
-        """
-        return _clipper.mat33_ftype_det(self)
-
-
-    def inverse(self):
-        """
-        inverse(mat33_ftype self) -> mat33_ftype
-
-        Parameters
-        ----------
-        self: clipper::Mat33< ftype > const *
-
-        """
-        return _clipper.mat33_ftype_inverse(self)
-
-
-    def transpose(self):
-        """
-        transpose(mat33_ftype self) -> mat33_ftype
-
-        Parameters
-        ----------
-        self: clipper::Mat33< ftype > const *
-
-        """
-        return _clipper.mat33_ftype_transpose(self)
-
-
-    def equals(self, m, tol):
-        """
-        equals(mat33_ftype self, mat33_ftype m, double const & tol) -> bool
-
-        Parameters
-        ----------
-        m: clipper::Mat33< double > const &
-        tol: double const &
-
-        """
-        return _clipper.mat33_ftype_equals(self, m, tol)
-
-
-    def __call__(self, *args):
-        """
-        __call__(mat33_ftype self, int const & i, int const & j) -> double const
-
-        Parameters
-        ----------
-        i: int const &
-        j: int const &
-
-        __call__(mat33_ftype self, int const & i, int const & j) -> double &
-
-        Parameters
-        ----------
-        i: int const &
-        j: int const &
-
-        """
-        return _clipper.mat33_ftype___call__(self, *args)
-
-
-    def format(self):
-        """
-        format(mat33_ftype self) -> String
-
-        Parameters
-        ----------
-        self: clipper::Mat33< ftype > const *
-
-        """
-        return _clipper.mat33_ftype_format(self)
-
-
-    def identity():
-        """identity() -> mat33_ftype"""
-        return _clipper.mat33_ftype_identity()
-
-    identity = staticmethod(identity)
-
-    def null():
-        """null() -> mat33_ftype"""
-        return _clipper.mat33_ftype_null()
-
-    null = staticmethod(null)
-
-    def is_null(self):
-        """
-        is_null(mat33_ftype self) -> bool
-
-        Parameters
-        ----------
-        self: clipper::Mat33< ftype > const *
-
-        """
-        return _clipper.mat33_ftype_is_null(self)
-
-    __swig_destroy__ = _clipper.delete_mat33_ftype
-    __del__ = lambda self: None
-mat33_ftype_swigregister = _clipper.mat33_ftype_swigregister
-mat33_ftype_swigregister(mat33_ftype)
-
-def mat33_ftype_identity():
-    """mat33_ftype_identity() -> mat33_ftype"""
-    return _clipper.mat33_ftype_identity()
-
-def mat33_ftype_null():
-    """mat33_ftype_null() -> mat33_ftype"""
-    return _clipper.mat33_ftype_null()
-
 class RTop_frac(_object):
     """Proxy of C++ clipper::RTop_frac class."""
 
@@ -6945,6 +6645,18 @@ class RTop_frac(_object):
         return _clipper.RTop_frac_null()
 
     null = staticmethod(null)
+
+    def __mul__(self, c):
+        """
+        __mul__(RTop_frac self, Coord_frac c) -> Coord_frac
+
+        Parameters
+        ----------
+        c: clipper::Coord_frac const &
+
+        """
+        return _clipper.RTop_frac___mul__(self, c)
+
 
     def matrix(self):
         """
@@ -7077,6 +6789,18 @@ class Symop(RTop_frac):
         return _clipper.Symop_format(self)
 
 
+    def __mul__(self, c):
+        """
+        __mul__(Symop self, Coord_frac c) -> Coord_frac
+
+        Parameters
+        ----------
+        c: clipper::Coord_frac const &
+
+        """
+        return _clipper.Symop___mul__(self, c)
+
+
     def matrix(self):
         """
         matrix(Symop self)
@@ -7087,6 +6811,18 @@ class Symop(RTop_frac):
 
         """
         return _clipper.Symop_matrix(self)
+
+
+    def mat34(self):
+        """
+        mat34(Symop self)
+
+        Parameters
+        ----------
+        self: clipper::Symop *
+
+        """
+        return _clipper.Symop_mat34(self)
 
 
     def rotation(self):
@@ -7148,6 +6884,24 @@ class Isymop(_object):
             self.this.append(this)
         except __builtin__.Exception:
             self.this = this
+
+    def __mul__(self, *args):
+        """
+        __mul__(Isymop self, Coord_grid c) -> Coord_grid
+
+        Parameters
+        ----------
+        c: clipper::Coord_grid const &
+
+        __mul__(Isymop self, HKL c) -> HKL
+
+        Parameters
+        ----------
+        c: clipper::HKL const &
+
+        """
+        return _clipper.Isymop___mul__(self, *args)
+
     __swig_destroy__ = _clipper.delete_Isymop
     __del__ = lambda self: None
 Isymop_swigregister = _clipper.Isymop_swigregister
@@ -8753,6 +8507,18 @@ class RTop_orth(_object):
 
     null = staticmethod(null)
 
+    def __mul__(self, c):
+        """
+        __mul__(RTop_orth self, Coord_orth c) -> Coord_orth
+
+        Parameters
+        ----------
+        c: clipper::Coord_orth const &
+
+        """
+        return _clipper.RTop_orth___mul__(self, c)
+
+
     def matrix(self):
         """
         matrix(RTop_orth self)
@@ -8997,6 +8763,30 @@ class HKL(_object):
 
         """
         return _clipper.HKL___neg__(self)
+
+
+    def __mul__(self, m):
+        """
+        __mul__(HKL self, int const & m) -> HKL
+
+        Parameters
+        ----------
+        m: int const &
+
+        """
+        return _clipper.HKL___mul__(self, m)
+
+
+    def __rmul__(self, m):
+        """
+        __rmul__(HKL self, int const & m) -> HKL
+
+        Parameters
+        ----------
+        m: int const &
+
+        """
+        return _clipper.HKL___rmul__(self, m)
 
     __swig_destroy__ = _clipper.delete_HKL
     __del__ = lambda self: None
@@ -9555,18 +9345,6 @@ class Coord_grid(_object):
         return _clipper.Coord_grid_format(self)
 
 
-    def __cmp__(self, g2):
-        """
-        __cmp__(Coord_grid self, Coord_grid g2) -> bool
-
-        Parameters
-        ----------
-        g2: clipper::Coord_grid const &
-
-        """
-        return _clipper.Coord_grid___cmp__(self, g2)
-
-
     def __ne__(self, g2):
         """
         __ne__(Coord_grid self, Coord_grid g2) -> bool
@@ -9649,6 +9427,30 @@ class Coord_grid(_object):
 
         """
         return _clipper.Coord_grid__set_uvw(self, v)
+
+
+    def __mul__(self, m):
+        """
+        __mul__(Coord_grid self, int const & m) -> Coord_grid
+
+        Parameters
+        ----------
+        m: int const &
+
+        """
+        return _clipper.Coord_grid___mul__(self, m)
+
+
+    def __rmul__(self, m):
+        """
+        __rmul__(Coord_grid self, int const & m) -> Coord_grid
+
+        Parameters
+        ----------
+        m: int const &
+
+        """
+        return _clipper.Coord_grid___rmul__(self, m)
 
     __swig_destroy__ = _clipper.delete_Coord_grid
     __del__ = lambda self: None
@@ -9959,7 +9761,7 @@ class Coord_orth(_object):
         return _clipper.Coord_orth__get_xyz(self)
 
 
-    def __mul__(self, *args):
+    def __mul__(self, factor):
         """
         __mul__(Coord_orth self, float const & factor) -> Coord_orth
 
@@ -9967,17 +9769,11 @@ class Coord_orth(_object):
         ----------
         factor: float const &
 
-        __mul__(Coord_orth self, RTop_orth op) -> Coord_orth
-
-        Parameters
-        ----------
-        op: clipper::RTop_orth const &
-
         """
-        return _clipper.Coord_orth___mul__(self, *args)
+        return _clipper.Coord_orth___mul__(self, factor)
 
 
-    def __rmul__(self, *args):
+    def __rmul__(self, factor):
         """
         __rmul__(Coord_orth self, float const & factor) -> Coord_orth
 
@@ -9985,14 +9781,8 @@ class Coord_orth(_object):
         ----------
         factor: float const &
 
-        __rmul__(Coord_orth self, RTop_orth op) -> Coord_orth
-
-        Parameters
-        ----------
-        op: clipper::RTop_orth const &
-
         """
-        return _clipper.Coord_orth___rmul__(self, *args)
+        return _clipper.Coord_orth___rmul__(self, factor)
 
     __swig_destroy__ = _clipper.delete_Coord_orth
     __del__ = lambda self: None
@@ -10336,7 +10126,7 @@ class Coord_frac(_object):
         return _clipper.Coord_frac__get_uvw(self)
 
 
-    def __mul__(self, *args):
+    def __mul__(self, factor):
         """
         __mul__(Coord_frac self, float const & factor) -> Coord_frac
 
@@ -10344,17 +10134,11 @@ class Coord_frac(_object):
         ----------
         factor: float const &
 
-        __mul__(Coord_frac self, RTop_frac op) -> Coord_frac
-
-        Parameters
-        ----------
-        op: clipper::RTop_frac const &
-
         """
-        return _clipper.Coord_frac___mul__(self, *args)
+        return _clipper.Coord_frac___mul__(self, factor)
 
 
-    def __rmul__(self, *args):
+    def __rmul__(self, factor):
         """
         __rmul__(Coord_frac self, float const & factor) -> Coord_frac
 
@@ -10362,14 +10146,8 @@ class Coord_frac(_object):
         ----------
         factor: float const &
 
-        __rmul__(Coord_frac self, RTop_frac op) -> Coord_frac
-
-        Parameters
-        ----------
-        op: clipper::RTop_frac const &
-
         """
-        return _clipper.Coord_frac___rmul__(self, *args)
+        return _clipper.Coord_frac___rmul__(self, factor)
 
     __swig_destroy__ = _clipper.delete_Coord_frac
     __del__ = lambda self: None
@@ -10568,6 +10346,54 @@ class Coord_map(_object):
 
         """
         return _clipper.Coord_map_format(self)
+
+
+    def __add__(self, h2):
+        """
+        __add__(Coord_map self, Coord_map h2) -> Coord_map
+
+        Parameters
+        ----------
+        h2: clipper::Coord_map const &
+
+        """
+        return _clipper.Coord_map___add__(self, h2)
+
+
+    def __sub__(self, h2):
+        """
+        __sub__(Coord_map self, Coord_map h2) -> Coord_map
+
+        Parameters
+        ----------
+        h2: clipper::Coord_map const &
+
+        """
+        return _clipper.Coord_map___sub__(self, h2)
+
+
+    def __neg__(self):
+        """
+        __neg__(Coord_map self) -> Coord_map
+
+        Parameters
+        ----------
+        self: clipper::Coord_map *
+
+        """
+        return _clipper.Coord_map___neg__(self)
+
+
+    def _get_uvw(self):
+        """
+        _get_uvw(Coord_map self)
+
+        Parameters
+        ----------
+        self: clipper::Coord_map *
+
+        """
+        return _clipper.Coord_map__get_uvw(self)
 
     __swig_destroy__ = _clipper.delete_Coord_map
     __del__ = lambda self: None
@@ -12169,6 +11995,30 @@ class Unit_Cell(_object):
         return _clipper.Unit_Cell_ref_box_min_side(self)
 
 
+    def min(self):
+        """
+        min(Unit_Cell self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::Unit_Cell *
+
+        """
+        return _clipper.Unit_Cell_min(self)
+
+
+    def max(self):
+        """
+        max(Unit_Cell self) -> Coord_grid
+
+        Parameters
+        ----------
+        self: clipper::Unit_Cell *
+
+        """
+        return _clipper.Unit_Cell_max(self)
+
+
     def find_symops_of_coord(self, pairlist, thecoord):
         """
         find_symops_of_coord(Unit_Cell self, std::vector< std::pair< int,clipper::Coord_grid >,std::allocator< std::pair< int,clipper::Coord_grid > > > & pairlist, Coord_grid thecoord)
@@ -12223,6 +12073,498 @@ class Unit_Cell(_object):
 
 Unit_Cell_swigregister = _clipper.Unit_Cell_swigregister
 Unit_Cell_swigregister(Unit_Cell)
+
+class mat33_float(_object):
+    """Proxy of C++ clipper::Mat33<(float)> class."""
+
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, mat33_float, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, mat33_float, name)
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        """
+        __init__(clipper::Mat33<(float)> self) -> mat33_float
+        __init__(clipper::Mat33<(float)> self, float const & m00, float const & m01, float const & m02, float const & m10, float const & m11, float const & m12, float const & m20, float const & m21, float const & m22) -> mat33_float
+
+        Parameters
+        ----------
+        m00: float const &
+        m01: float const &
+        m02: float const &
+        m10: float const &
+        m11: float const &
+        m12: float const &
+        m20: float const &
+        m21: float const &
+        m22: float const &
+
+        """
+        this = _clipper.new_mat33_float(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
+    def det(self):
+        """
+        det(mat33_float self) -> float
+
+        Parameters
+        ----------
+        self: clipper::Mat33< float > const *
+
+        """
+        return _clipper.mat33_float_det(self)
+
+
+    def inverse(self):
+        """
+        inverse(mat33_float self) -> mat33_float
+
+        Parameters
+        ----------
+        self: clipper::Mat33< float > const *
+
+        """
+        return _clipper.mat33_float_inverse(self)
+
+
+    def transpose(self):
+        """
+        transpose(mat33_float self) -> mat33_float
+
+        Parameters
+        ----------
+        self: clipper::Mat33< float > const *
+
+        """
+        return _clipper.mat33_float_transpose(self)
+
+
+    def equals(self, m, tol):
+        """
+        equals(mat33_float self, mat33_float m, float const & tol) -> bool
+
+        Parameters
+        ----------
+        m: clipper::Mat33< float > const &
+        tol: float const &
+
+        """
+        return _clipper.mat33_float_equals(self, m, tol)
+
+
+    def __call__(self, *args):
+        """
+        __call__(mat33_float self, int const & i, int const & j) -> float const
+
+        Parameters
+        ----------
+        i: int const &
+        j: int const &
+
+        __call__(mat33_float self, int const & i, int const & j) -> float &
+
+        Parameters
+        ----------
+        i: int const &
+        j: int const &
+
+        """
+        return _clipper.mat33_float___call__(self, *args)
+
+
+    def format(self):
+        """
+        format(mat33_float self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Mat33< float > const *
+
+        """
+        return _clipper.mat33_float_format(self)
+
+
+    def identity():
+        """identity() -> mat33_float"""
+        return _clipper.mat33_float_identity()
+
+    identity = staticmethod(identity)
+
+    def null():
+        """null() -> mat33_float"""
+        return _clipper.mat33_float_null()
+
+    null = staticmethod(null)
+
+    def is_null(self):
+        """
+        is_null(mat33_float self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Mat33< float > const *
+
+        """
+        return _clipper.mat33_float_is_null(self)
+
+
+    def __getitem__(self, i):
+        """
+        __getitem__(mat33_float self, int i) -> clipper::matrixRowClipper< float >
+
+        Parameters
+        ----------
+        i: int
+
+        """
+        return _clipper.mat33_float___getitem__(self, i)
+
+
+    def as_numpy(self):
+        """
+        as_numpy(mat33_float self)
+
+        Parameters
+        ----------
+        self: clipper::Mat33< float > *
+
+        """
+        return _clipper.mat33_float_as_numpy(self)
+
+
+    def __neg__(self):
+        """
+        __neg__(mat33_float self) -> mat33_float
+
+        Parameters
+        ----------
+        self: clipper::Mat33< float > *
+
+        """
+        return _clipper.mat33_float___neg__(self)
+
+
+    def __mul__(self, *args):
+        """
+        __mul__(mat33_float self, vec3_float v) -> vec3_float
+
+        Parameters
+        ----------
+        v: clipper::Vec3< float > const &
+
+        __mul__(mat33_float self, mat33_float m) -> mat33_float
+
+        Parameters
+        ----------
+        m: clipper::Mat33< float > const &
+
+        """
+        return _clipper.mat33_float___mul__(self, *args)
+
+
+    def __rmul__(self, *args):
+        """
+        __rmul__(mat33_float self, vec3_float v) -> vec3_float
+
+        Parameters
+        ----------
+        v: clipper::Vec3< float > const &
+
+        __rmul__(mat33_float self, mat33_float m) -> mat33_float
+
+        Parameters
+        ----------
+        m: clipper::Mat33< float > const &
+
+        """
+        return _clipper.mat33_float___rmul__(self, *args)
+
+
+    def __sub__(self, m):
+        """
+        __sub__(mat33_float self, mat33_float m) -> mat33_float
+
+        Parameters
+        ----------
+        m: clipper::Mat33< float > const &
+
+        """
+        return _clipper.mat33_float___sub__(self, m)
+
+
+    def __add__(self, m):
+        """
+        __add__(mat33_float self, mat33_float m) -> mat33_float
+
+        Parameters
+        ----------
+        m: clipper::Mat33< float > const &
+
+        """
+        return _clipper.mat33_float___add__(self, m)
+
+    __swig_destroy__ = _clipper.delete_mat33_float
+    __del__ = lambda self: None
+mat33_float_swigregister = _clipper.mat33_float_swigregister
+mat33_float_swigregister(mat33_float)
+
+def mat33_float_identity():
+    """mat33_float_identity() -> mat33_float"""
+    return _clipper.mat33_float_identity()
+
+def mat33_float_null():
+    """mat33_float_null() -> mat33_float"""
+    return _clipper.mat33_float_null()
+
+class mat33_ftype(_object):
+    """Proxy of C++ clipper::Mat33<(ftype)> class."""
+
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, mat33_ftype, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, mat33_ftype, name)
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        """
+        __init__(clipper::Mat33<(ftype)> self) -> mat33_ftype
+        __init__(clipper::Mat33<(ftype)> self, double const & m00, double const & m01, double const & m02, double const & m10, double const & m11, double const & m12, double const & m20, double const & m21, double const & m22) -> mat33_ftype
+
+        Parameters
+        ----------
+        m00: double const &
+        m01: double const &
+        m02: double const &
+        m10: double const &
+        m11: double const &
+        m12: double const &
+        m20: double const &
+        m21: double const &
+        m22: double const &
+
+        """
+        this = _clipper.new_mat33_ftype(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
+    def det(self):
+        """
+        det(mat33_ftype self) -> double
+
+        Parameters
+        ----------
+        self: clipper::Mat33< ftype > const *
+
+        """
+        return _clipper.mat33_ftype_det(self)
+
+
+    def inverse(self):
+        """
+        inverse(mat33_ftype self) -> mat33_ftype
+
+        Parameters
+        ----------
+        self: clipper::Mat33< ftype > const *
+
+        """
+        return _clipper.mat33_ftype_inverse(self)
+
+
+    def transpose(self):
+        """
+        transpose(mat33_ftype self) -> mat33_ftype
+
+        Parameters
+        ----------
+        self: clipper::Mat33< ftype > const *
+
+        """
+        return _clipper.mat33_ftype_transpose(self)
+
+
+    def equals(self, m, tol):
+        """
+        equals(mat33_ftype self, mat33_ftype m, double const & tol) -> bool
+
+        Parameters
+        ----------
+        m: clipper::Mat33< double > const &
+        tol: double const &
+
+        """
+        return _clipper.mat33_ftype_equals(self, m, tol)
+
+
+    def __call__(self, *args):
+        """
+        __call__(mat33_ftype self, int const & i, int const & j) -> double const
+
+        Parameters
+        ----------
+        i: int const &
+        j: int const &
+
+        __call__(mat33_ftype self, int const & i, int const & j) -> double &
+
+        Parameters
+        ----------
+        i: int const &
+        j: int const &
+
+        """
+        return _clipper.mat33_ftype___call__(self, *args)
+
+
+    def format(self):
+        """
+        format(mat33_ftype self) -> String
+
+        Parameters
+        ----------
+        self: clipper::Mat33< ftype > const *
+
+        """
+        return _clipper.mat33_ftype_format(self)
+
+
+    def identity():
+        """identity() -> mat33_ftype"""
+        return _clipper.mat33_ftype_identity()
+
+    identity = staticmethod(identity)
+
+    def null():
+        """null() -> mat33_ftype"""
+        return _clipper.mat33_ftype_null()
+
+    null = staticmethod(null)
+
+    def is_null(self):
+        """
+        is_null(mat33_ftype self) -> bool
+
+        Parameters
+        ----------
+        self: clipper::Mat33< ftype > const *
+
+        """
+        return _clipper.mat33_ftype_is_null(self)
+
+
+    def __getitem__(self, i):
+        """
+        __getitem__(mat33_ftype self, int i) -> clipper::matrixRowClipper< double >
+
+        Parameters
+        ----------
+        i: int
+
+        """
+        return _clipper.mat33_ftype___getitem__(self, i)
+
+
+    def as_numpy(self):
+        """
+        as_numpy(mat33_ftype self)
+
+        Parameters
+        ----------
+        self: clipper::Mat33< ftype > *
+
+        """
+        return _clipper.mat33_ftype_as_numpy(self)
+
+
+    def __neg__(self):
+        """
+        __neg__(mat33_ftype self) -> mat33_ftype
+
+        Parameters
+        ----------
+        self: clipper::Mat33< ftype > *
+
+        """
+        return _clipper.mat33_ftype___neg__(self)
+
+
+    def __mul__(self, *args):
+        """
+        __mul__(mat33_ftype self, vec3_double v) -> vec3_double
+
+        Parameters
+        ----------
+        v: clipper::Vec3< double > const &
+
+        __mul__(mat33_ftype self, mat33_ftype m) -> mat33_ftype
+
+        Parameters
+        ----------
+        m: clipper::Mat33< double > const &
+
+        """
+        return _clipper.mat33_ftype___mul__(self, *args)
+
+
+    def __rmul__(self, *args):
+        """
+        __rmul__(mat33_ftype self, vec3_double v) -> vec3_double
+
+        Parameters
+        ----------
+        v: clipper::Vec3< double > const &
+
+        __rmul__(mat33_ftype self, mat33_ftype m) -> mat33_ftype
+
+        Parameters
+        ----------
+        m: clipper::Mat33< double > const &
+
+        """
+        return _clipper.mat33_ftype___rmul__(self, *args)
+
+
+    def __sub__(self, m):
+        """
+        __sub__(mat33_ftype self, mat33_ftype m) -> mat33_ftype
+
+        Parameters
+        ----------
+        m: clipper::Mat33< double > const &
+
+        """
+        return _clipper.mat33_ftype___sub__(self, m)
+
+
+    def __add__(self, m):
+        """
+        __add__(mat33_ftype self, mat33_ftype m) -> mat33_ftype
+
+        Parameters
+        ----------
+        m: clipper::Mat33< double > const &
+
+        """
+        return _clipper.mat33_ftype___add__(self, m)
+
+    __swig_destroy__ = _clipper.delete_mat33_ftype
+    __del__ = lambda self: None
+mat33_ftype_swigregister = _clipper.mat33_ftype_swigregister
+mat33_ftype_swigregister(mat33_ftype)
+
+def mat33_ftype_identity():
+    """mat33_ftype_identity() -> mat33_ftype"""
+    return _clipper.mat33_ftype_identity()
+
+def mat33_ftype_null():
+    """mat33_ftype_null() -> mat33_ftype"""
+    return _clipper.mat33_ftype_null()
 
 class RTop_float(_object):
     """Proxy of C++ clipper::RTop<(float)> class."""
@@ -25126,6 +25468,18 @@ class ABCD_float(_object):
         return _clipper.ABCD_float_d(self, *args)
 
 
+    def vals(self):
+        """
+        vals(ABCD_float self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< float > *
+
+        """
+        return _clipper.ABCD_float_vals(self)
+
+
     def __add__(self, h2):
         """
         __add__(ABCD_float self, ABCD_float h2) -> ABCD_float
@@ -25334,6 +25688,18 @@ class ABCD_double(_object):
 
         """
         return _clipper.ABCD_double_d(self, *args)
+
+
+    def vals(self):
+        """
+        vals(ABCD_double self)
+
+        Parameters
+        ----------
+        self: clipper::datatypes::ABCD< double > *
+
+        """
+        return _clipper.ABCD_double_vals(self)
 
     __swig_destroy__ = _clipper.delete_ABCD_double
     __del__ = lambda self: None

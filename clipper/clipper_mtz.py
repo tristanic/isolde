@@ -39,8 +39,24 @@ class Clipper_MTZ(DataTree):
     DataTree.__init__(self, parent = parent)
     self.parent = parent
     self._temp_tree = None
+
+  def has_map_data(self, crystal_name):
+    if crystal_name in self.keys():
+      for key, dataset in self[crystal_name].items():
+        for key, data in dataset.items():
+          if key == 'F_Phi' and len(data):
+            return True
+          else:
+            return False
+    else:
+      raise KeyError('No such crystal!')
     
   def load_hkl_data(self, filename):
+    '''
+    Load in an mtz file, create Clipper objects from the data, and add
+    them to the database. Returns the name of the crystal found in the
+    mtz file.
+    '''
     import os
     if os.path.isfile(filename):
       hklfile = os.path.abspath(filename)
@@ -87,7 +103,9 @@ class Clipper_MTZ(DataTree):
         release, but for now you can split your MTZ file using tools
         available in the Phenix or CCP4 suites. Note that you *can*
         load multiple MTZ files into the one Clipper_MTZ datastructure
-        if you wish, using repeat calls to load_hkl_data. 
+        if you wish, using repeat calls to load_hkl_data. However, they
+        will all be treated as having the same unit cell parameters. If
+        in doubt, create a new Xtal_Project object for each file.
         '''
         print(errstring)
         print(temp_tree)
@@ -139,6 +157,7 @@ class Clipper_MTZ(DataTree):
                   = clipper.HKL_data_F_phi()
                 mtzin.import_hkl_data(thisFphi, 
                 '/'+'/'.join(map(str, [crystal, dataset, '[{}]'.format(keyname)])))
+    return crystal
 
 def data_labels_match(data_col, sigma_or_phase_col):
   '''
