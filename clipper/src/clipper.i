@@ -147,6 +147,10 @@ void ClipperTestPassNumpyArray(double *test_numpy_a, int test_numpy_n){
 
 %rename(equals_HKL_samp)      operator== (const HKL_sampling&, const HKL_sampling& );
 
+// All operators up to here have been mapped to Python functions in the
+// relevant objects. Is there any reason to keep these in the API as functions,
+// or could they all be switched to ignore directives?
+
 %rename(and_MMonomer)         operator&  (const MMonomer&, const MMonomer&);
 %rename(and_MPolymer)         operator&  (const MPolymer&, const MPolymer&);
 %rename(and_MModel)           operator&  (const MModel&, const MModel&);
@@ -892,6 +896,8 @@ namespace clipper
   {
   /* Some simple functions for sorting and removing duplicates from
    * vectors of (symop index, Coord_frac) or (symop index, Coord_grid) pairs.
+   * These are only used internally for finding symmetry operators mapping
+   * the atomic model to a region, and don't need to be wrapped.
    */
   bool compare_int_Coord_frac_pairs (const std::pair<int, Coord_frac > &a, const std::pair<int, Coord_frac > &b)
   {
@@ -945,172 +951,6 @@ namespace clipper
 %feature ("flatnested","1");
 %include "../clipper/core/spacegroup.h"
 %feature ("flatnested","0");
-
-
-
-
-//namespace clipper
-//{
-
-////! Metric tensor
-///*! The metric tensor is used to determine a distance in real or
-  //reciprocal space using fraction coordinates or Miller indices. It
-  //is symmetrical, so only the upper triangle is stored with the
-  //off-diagonal elements doubled.
-//*/
-//class Metric_tensor
-//{
-  //public:
-    ////! null constructor
-    //inline Metric_tensor() {} //!< Null constructor
-    ////! constructor: takes parameters of normal or inverse cell
-    //Metric_tensor( const ftype& a, const ftype& b, const ftype& c, const ftype& alph, const ftype& beta, const ftype& gamm );
-    ////! apply metric to vector
-    //inline ftype lengthsq( const Vec3<>& v ) const
-    //{
-      //return ( v[0]*(v[0]*m00 + v[1]*m01 + v[2]*m02) +
-               //v[1]*(v[1]*m11 + v[2]*m12) + v[2]*(v[2]*m22) );
-    //}
-    ////! apply metric to int vector
-    //inline ftype lengthsq( const Vec3<int>& v ) const
-    //{
-      //ftype h = ftype(v[0]);
-      //ftype k = ftype(v[1]);
-      //ftype l = ftype(v[2]);
-      //return h*(h*m00 + k*m01 + l*m02) + k*(k*m11 + l*m12) + l*(l*m22);
-    //}
-
-    //String format() const;  //!< return formatted String representation
-//};
-
-
-////! cell description (automatically converts to radians)
-///*! The cell description is a compact description of a cell,
-  //containing just the cell parameters. It is usually used to
-  //construct a full Cell object, which provides the expected
-  //functionality.
-//*/
-//class Cell_descr
-//{
-  //public:
-    //inline Cell_descr() {}  //!< null constructor
-    ////! constructor: from cell parameters
-    //Cell_descr( const ftype& a, const ftype& b, const ftype& c,
-                //const ftype& alpha=90.0f, const ftype& beta=90.0f,
-                //const ftype& gamma=90.0f );
-    //inline const ftype& a() const
-    //{
-      //return a_;  //!< get a
-    //}
-    //inline const ftype& b() const
-    //{
-      //return b_;  //!< get b
-    //}
-    //inline const ftype& c() const
-    //{
-      //return c_;  //!< get c
-    //}
-    //inline const ftype& alpha() const
-    //{
-      //return alpha_;  //!< get alpha
-    //}
-    //inline const ftype& beta() const
-    //{
-      //return beta_;  //!< get beta
-    //}
-    //inline const ftype& gamma() const
-    //{
-      //return gamma_;  //!< get gamma
-    //}
-    //ftype alpha_deg() const; //!< get alpha in degrees
-    //ftype beta_deg() const;  //!< get alpha in degrees
-    //ftype gamma_deg() const; //!< get gamma in degrees
-    //String format() const;   //!< return formatted String representation
-
-//};
-
-
-////! Cell object
-///*! The Cell class is the fully functional description of the unit
-  //cell. In addition to the cell parameters, it stores derived
-  //information including the cell volume, orthogonalising and
-  //fractionalising matrices, and the metric tensors.
- //*/
-
-
-//class Cell : public Cell_descr
-//{
-  //public:
-    ////! null constructor: must initialise later
-    //inline Cell()
-    //{
-      //vol = 0.0;
-    //}
-    ////! constructor: takes a Cell descriptor
-    //explicit Cell( const Cell_descr& cell_ )
-    //{
-      //init( cell_ );
-    //}
-    ////! initialiser
-    //void init( const Cell_descr& cell_ );
-
-    ////! test if object has been initialised
-    //bool is_null() const;
-
-    ////ftype a_star() const; //!< get a*
-    //ftype b_star() const; //!< get b*
-    //ftype c_star() const; //!< get c*
-    //ftype alpha_star() const; //!< get alpha*
-    //ftype beta_star()  const; //!< get beta*
-    //ftype gamma_star() const; //!< get gamma*
-    //// inherited functions listed for documentation purposes
-    ////-- const ftype& a() const;
-    ////-- const ftype& b() const;
-    ////-- const ftype& c() const;
-    ////-- const ftype& alpha() const;
-    ////-- const ftype& beta() const;
-    ////-- const ftype& gamma() const;
-    ////-- ftype alpha_deg() const;
-    ////-- ftype beta_deg() const;
-    ////-- ftype gamma_deg() const;
-    ////-- String format() const;
-
-    ////! return cell dimensions
-    ////inline const Cell_descr& descr() const { return (*this); }
-    ////! return cell volume
-    //inline const ftype& volume() const
-    //{
-      //return vol;
-    //}
-    ////! test equality with another cell
-    //bool equals( const Cell& other, const ftype tol=1.0 ) const;
-    ////! return orthogonalisation matrix
-    //inline const Mat33<>& matrix_orth() const
-    //{
-      //return orthmat;
-    //}
-    ////! return fractionalisation matrix
-    //inline const Mat33<>& matrix_frac() const
-    //{
-      //return fracmat;
-    //}
-    ////! return real space metric tensor
-    //inline const Metric_tensor& metric_real() const
-    //{
-      //return realmetric;
-    //}
-    ////! return reciprocal space metric tensor
-    //inline const Metric_tensor& metric_reci() const
-    //{
-      //return recimetric;
-    //}
-
-    //void debug() const;
-
-//};
-
-//} // namespace clipper
-
 
 /* Cell::descr() appears to be the only line in cell.h that SWIG balks at - 
  * rather than properly handle the implicit cast of Cell back to
@@ -1260,7 +1100,10 @@ namespace clipper {
   /* Strangely, only Coord_grid has both getter and setter accessors
    * for u, v and w. The remainder of the coordinate classes are read-
    * only for us here in SWIG. If we want to implement a setter function
-   * to replace values in-place, it'll have to be done in Python.
+   * to give the appearance of replacing values in-place, it'll have to 
+   * be done in Python. All the accessors for individual values are 
+   * renamed to hidden methods here, and a new function is defined below
+   * for each class to return (x,y,z) or (u,v,w) as a numpy array.
    */
   %rename("_u_ptr") Coord_grid::u();
   %rename("_v_ptr") Coord_grid::v();
@@ -1285,15 +1128,6 @@ namespace clipper {
 %include "../clipper/core/coords.h"
 
 
-/*
-%rename(equals_Coord_grid)    operator== (const Coord_grid&, const Coord_grid&);
-%rename(notequals_Coord_grid) operator!= (const Coord_grid&, const Coord_grid&);
-%rename(neg_Coord_grid)       operator-  (const Coord_grid&);
-%rename(add_Coord_grid)       operator+  (const Coord_grid&, const Coord_grid&);
-%rename(subs_Coord_grid)      operator-  (const Coord_grid&, const Coord_grid&);
-%rename(product_Coord_grid)   operator*  (const int&, const Coord_grid&);
-%rename(transf_Coord_grid)    operator*  (const Isymop&, const Coord_grid&);
-*/
 namespace clipper
 {
 %extend Coord_grid {
@@ -1306,32 +1140,16 @@ namespace clipper
     return (*($self) == g2);
   }
   */
-  bool __ne__(const Coord_grid& g2)
-  {
-    return (*($self) != g2);
-  }
-  bool __eq__(const Coord_grid& g2)
-  {
-    return (*($self) == g2);
-  }
-  Coord_grid __add__(const Coord_grid& g2)
-  {
-    Coord_grid ret;
-    ret = *($self) + g2;
-    return ret;
-  }
-  Coord_grid __neg__( )
-  {
-    Coord_grid ret;
-    ret = -*($self);
-    return ret;
-  }
-  Coord_grid __sub__(const Coord_grid& g2)
-  {
-    Coord_grid ret;
-    ret = *($self) - g2;
-    return ret;
-  }
+
+  bool __ne__(const Coord_grid& g2) { return *self != g2; }
+  bool __eq__(const Coord_grid& g2) { return *self == g2; }
+  Coord_grid __add__(const Coord_grid& g2) { return *self + g2; }
+  Coord_grid __neg__() { return -(*self); }
+  Coord_grid __sub__(const Coord_grid& g2) { return *self - g2; }
+  Coord_grid __mul__(const int& m) { return m * (*self); }
+  Coord_grid __rmul__(const int& m) { return m * (*self); }
+  // Transform operator handled in Isymop::__mul__()
+  
   void _get_uvw(int numpy_int_out[3])
   {
     for (int i = 0; i < 3; i++) {
@@ -1344,114 +1162,48 @@ namespace clipper
     $self->v() = v[1];
     $self->w() = v[2];
   }
-  Coord_grid __mul__(const int& m) { return m * *($self); }
-  Coord_grid __rmul__(const int& m) { return m * *($self); }
-
-
-  /*Coord_grid __mul__(const int& i1){
-    Coord_grid ret;
-    ret = *($self) * i1;
-    return ret;
-  }
-  Coord_grid __mul__(const Isymop& isym){
-    Coord_grid ret;
-    ret = *($self) * isym;
-    return ret;
-  }*/
 }
 
 %extend Coord_orth
 {
-  Coord_orth __add__(const Coord_orth &h2)
-  {
-    Coord_orth ret;
-    ret = *($self)+h2;
-    return ret;
-  }
-  Coord_orth __sub__(const Coord_orth &h2)
-  {
-    Coord_orth ret;
-    ret = *($self)-h2;
-    return ret;
-  }
-  Coord_orth __neg__()
-  {
-    Coord_orth ret;
-    ret = -*($self);
-    return ret;
-  }
+  Coord_orth __add__(const Coord_orth &h2) { return *self + h2; }
+  Coord_orth __sub__(const Coord_orth &h2) { return *self - h2; }
+  Coord_orth __neg__() { return -(*self); }
+  Coord_orth __mul__ ( const double &f ) { return f * (*self); }
+  Coord_orth __rmul__ ( const double &f ) { return f * (*self); }
+  // Transforms handled in RTop_orth::__mul__()
   void _get_xyz(double numpy_double_out[3])
   {
     for (int i = 0; i < 3; i++) {
-      numpy_double_out[i] = (*($self))[i];
+      numpy_double_out[i] = (*self)[i];
     }
-  }
-  Coord_orth __mul__ ( const float &factor )
-  {
-    return factor * (*self);
-  }
-  Coord_orth __rmul__ ( const float &factor )
-  {
-    return factor * (*self);
   }
 }
 
 %extend Coord_frac 
 {
-  Coord_frac __add__(const Coord_frac &h2)
-  {
-    Coord_frac ret;
-    ret = *($self)+h2;
-    return ret;
-  }
-  Coord_frac __sub__(const Coord_frac &h2)
-  {
-    Coord_frac ret;
-    ret = *($self)-h2;
-    return ret;
-  }
-  Coord_frac __neg__()
-  {
-    Coord_frac ret;
-    ret = -*($self);
-    return ret;
-  }
+  Coord_frac __add__(const Coord_frac &h2) { return *self + h2; }
+  Coord_frac __sub__(const Coord_frac &h2) { return *self - h2; }
+  Coord_frac __neg__() { return -(*self); }
+  Coord_frac __mul__ ( const double &f ) { return f * (*self); }
+  Coord_frac __rmul__ ( const double &f ) { return f * (*self); }
+  // Transforms handled in RTop_frac::__mul__()
   void _get_uvw(double numpy_double_out[3])
   {
     for (int i = 0; i < 3; i++) {
-      numpy_double_out[i] = (*($self))[i];
+      numpy_double_out[i] = (*self)[i];
     }
-  }
-  Coord_frac __mul__ ( const float &factor )
-  {
-    return factor * (*self);
-  }
-  Coord_frac __rmul__ ( const float &factor )
-  {
-    return factor * (*self);
   }
 }
 
 %extend Coord_map
 {
-  Coord_map __add__(const Coord_map &h2)
-  {
-    Coord_map ret;
-    ret = *($self)+h2;
-    return ret;
-  }
-  Coord_map __sub__(const Coord_map &h2)
-  {
-    Coord_map ret;
-    ret = *($self)-h2;
-    return ret;
-  }
-  Coord_map __neg__()
-  {
-    Coord_map ret;
-    ret = -*($self);
-    return ret;
-  }
+  Coord_map __add__(const Coord_map &h2) { return *self + h2; }
+  Coord_map __sub__(const Coord_map &h2) { return *self - h2; }
+  Coord_map __neg__() { return -(*self); }
+  Coord_map __mul__ ( const double &f ) { return f * (*self); }
+  Coord_map __rmul__ ( const double &f ) { return f * (*self); }
+  // No transforms for this coordinate type
   void _get_uvw(double numpy_double_out[3])
   {
     for (int i = 0; i < 3; i++) {
@@ -1461,6 +1213,11 @@ namespace clipper
   
 }
 
+%extend HKL_sampling
+{
+  bool __eq__(const HKL_sampling& hkl2) { return *self == hkl2; }
+  bool __ne__(const HKL_sampling& hkl2) { return !(*self == hkl2); }
+}
 
 %extend Atom 
 {
@@ -1481,7 +1238,7 @@ namespace clipper
     }
     return (*($self))[i];
   }
-  
+    
   void __setitem__(int i, Atom& atom)
   {
     int array_len = $self->size();
@@ -2513,12 +2270,6 @@ namespace clipper
 }
 
 %extend Vec3 {
-  std::string __str__( )
-  {
-    return (*($self)).format();
-fail:
-    return "";
-  }
 
   Vec3 ( T v[3] )
   {
@@ -2579,7 +2330,7 @@ fail:
   };
   Vec3<T> __rmul__ (const Vec3<T> &v)
   {
-    return ((*self)*v);
+    return (v*(*self));
   };
   Mat33<T> __mul__ (const Mat33<T> &m)
   {
@@ -2587,7 +2338,7 @@ fail:
   };
   Mat33<T> __rmul__ (const Mat33<T> &m)
   {
-    return (*self*m);
+    return (m*(*self));
   };
   Mat33<T> __sub__ (const Mat33<T> &m)
   {
@@ -2709,41 +2460,89 @@ namespace clipper
     return new NXmap<T>( grid, rtop );
   }
 
-  int export_numpy ( double *numpy_array, int nu, int nv, int nw )
+  int export_numpy ( double *numpy_array, int nu, int nv, int nw, char order = 'F', std::string rot = "xyz")
   {
+    std::string orders("FC");
+    int oindex = orders.find(order);
+    if (oindex == 2) {
+      throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
+    }      
     int i = 0;
     int top_u, top_v, top_w;
 
     clipper::Coord_grid c;
     clipper::Grid map_grid = (*($self)).grid();
+    
+    int temp;
+    if (rot.compare("zyx") == 0) {
+      order = orders[(oindex + 1) % 2];
+      temp = nw;
+      nw = nu;
+      nu = temp;
+    } else if (rot.compare("xyz") != 0) {
+      throw std::invalid_argument ("Rotation must be either \"xyz\" or \"zyx\"!");
+    }
+
 
     nu > map_grid.nu() ? top_u = map_grid.nu() : top_u = nu;
     nv > map_grid.nv() ? top_v = map_grid.nv() : top_v = nv;
     nw > map_grid.nw() ? top_w = map_grid.nw() : top_w = nw;
 
-    for ( c.w() = 0; c.w() < top_w; c.w()++ )
-      for ( c.v() = 0; c.v() < top_v; c.v()++ )
-        for (  c.u() = 0; c.u() < top_u; c.u()++, i++ )
-          numpy_array[i] = (*($self)).get_data(c);
+    if (order == 'F') {
+      for ( c.w() = 0; c.w() < top_w; c.w()++ )
+        for ( c.v() = 0; c.v() < top_v; c.v()++ )
+          for (  c.u() = 0; c.u() < top_u; c.u()++, i++ )
+            numpy_array[i] = (*($self)).get_data(c);
+    } else if (order == 'C') {
+     for ( c.u() = 0; c.u() < top_u; c.u()++ )
+        for ( c.v() = 0; c.v() < top_v; c.v()++ )
+          for (  c.w() = 0; c.w() < top_w; c.w()++, i++ )
+            numpy_array[i] = (*($self)).get_data(c);
+    } else {
+        throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
+    }
     return i;
+      
   }
 
-  int import_numpy ( double *numpy_3d_in, int nu, int nv, int nw )
+  int import_numpy ( double *numpy_3d_in, int nu, int nv, int nw, char order = 'F', std::string rot = "xyz" )
   {
+    std::string orders("FC");
+    int oindex = orders.find(order);
+    if (oindex == 2) {
+      throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
+    }      
     int i = 0;
     int top_u, top_v, top_w;
 
     clipper::Coord_grid c;
     clipper::Grid map_grid = (*($self)).grid();
 
+    int temp;
+    if (rot.compare("zyx") == 0) {
+      order = orders[(oindex + 1) % 2];
+      temp = nw;
+      nw = nu;
+      nu = temp;
+    } else if (rot.compare("xyz") != 0) {
+      throw std::invalid_argument ("Rotation must be either \"xyz\" or \"zyx\"!");
+    }
+
     nu > map_grid.nu() ? top_u = map_grid.nu() : top_u = nu;
     nv > map_grid.nv() ? top_v = map_grid.nv() : top_v = nv;
     nw > map_grid.nw() ? top_w = map_grid.nw() : top_w = nw;
-
-    for ( c.w() = 0; c.w() < top_w; c.w()++ )
-      for ( c.v() = 0; c.v() < top_v; c.v()++ )
-        for (  c.u() = 0; c.u() < top_u; c.u()++, i++ )
-          (*($self)).set_data(c, numpy_3d_in[i]);
+    
+    if (order == 'F') {
+      for ( c.w() = 0; c.w() < top_w; c.w()++ )
+        for ( c.v() = 0; c.v() < top_v; c.v()++ )
+          for (  c.u() = 0; c.u() < top_u; c.u()++, i++ )
+            (*($self)).set_data(c, numpy_3d_in[i]);
+    } else if (order == 'C') {
+      for ( c.u() = 0; c.u() < top_u; c.u()++ )
+        for ( c.v() = 0; c.v() < top_v; c.v()++ )
+          for (  c.w() = 0; c.w() < top_w; c.w()++, i++ )
+            (*($self)).set_data(c, numpy_3d_in[i]);
+    } 
     return i;
   }
 
@@ -2788,9 +2587,9 @@ namespace clipper
 
     clipper::Xmap_base::Map_reference_index ix;
     ix = $self->first();
-    max = min = (*($self))[ix];
+    max = min = (*self)[ix];
     for (ix = $self->first(); !ix.last(); ix.next()) {
-      const double &rho = (*($self))[ix];
+      const double &rho = (*self)[ix];
       if (! clipper::Util::is_nan(rho)) {
         n++;
         if (rho < min) min = rho;
@@ -2920,14 +2719,30 @@ namespace clipper
   
   //! Export the whole asymmetric unit as a numpy array
 
-  int export_numpy ( double *numpy_array, int nu, int nv, int nw, char order = 'F' )
+  int export_numpy ( double *numpy_array, int nu, int nv, int nw, char order = 'F', std::string rot = "xyz" )
   {
+    std::string orders("FC");
+    int oindex = orders.find(order);
+    if (oindex == 2) {
+      throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
+    }      
     int i = 0;
     int top_u, top_v, top_w;
 
     clipper::Coord_grid c;
     clipper::Grid map_grid = (*($self)).grid_asu();
-
+    
+    int temp;
+    if (rot.compare("zyx") == 0) {
+      order = orders[(oindex + 1) % 2];
+      temp = nw;
+      nw = nu;
+      nu = temp;
+    } else if (rot.compare("xyz") != 0) {
+      throw std::invalid_argument ("Rotation must be either \"xyz\" or \"zyx\"!");
+    }
+    
+    
     nu > map_grid.nu() ? top_u = map_grid.nu() : top_u = nu;
     nv > map_grid.nv() ? top_v = map_grid.nv() : top_v = nv;
     nw > map_grid.nw() ? top_w = map_grid.nw() : top_w = nw;
@@ -2953,103 +2768,171 @@ namespace clipper
               numpy_array[i] = 0.0;
           }
       return i;
-    } else {
-      throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
-    }
+    } 
   }
   
   //! Import the whole asymmetric unit as a numpy array
 
-  int import_numpy ( double *numpy_3d_in, int nu, int nv, int nw, char order = 'F' )
+  int import_numpy ( double *numpy_3d_in, int nu, int nv, int nw, char order = 'F', std::string rot = "xyz" )
   {
+    std::string orders("FC");
+    int oindex = orders.find(order);
+    if (oindex == 2) {
+      throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
+    }      
     int i = 0;
     int top_u, top_v, top_w;
 
     clipper::Coord_grid c;
     clipper::Grid map_grid = (*($self)).grid_asu();
 
+    int temp;
+    if (rot.compare("zyx") == 0) {
+      order = orders[(oindex + 1) % 2];
+      temp = nw;
+      nw = nu;
+      nu = temp;
+    } else if (rot.compare("xyz") != 0) {
+      throw std::invalid_argument ("Rotation must be either \"xyz\" or \"zyx\"!");
+    }
+
     nu > map_grid.nu() ? top_u = map_grid.nu() : top_u = nu;
     nv > map_grid.nv() ? top_v = map_grid.nv() : top_v = nv;
     nw > map_grid.nw() ? top_w = map_grid.nw() : top_w = nw;
 
-    if (order == 'C') {
+    if (order == 'F') {
       for ( c.w() = 0; c.w() < top_w; c.w()++ )
         for ( c.v() = 0; c.v() < top_v; c.v()++ )
           for (  c.u() = 0; c.u() < top_u; c.u()++, i++ )
             (*($self)).set_data(c, numpy_3d_in[i]);
       return i;
-    } else if (order == 'F') {
+    } else if (order == 'C') {
       for ( c.u() = 0; c.u() < top_u; c.u()++ )
         for ( c.v() = 0; c.v() < top_v; c.v()++ )
           for (  c.w() = 0; c.w() < top_w; c.w()++, i++ )
             (*($self)).set_data(c, numpy_3d_in[i]);
       return i;
-    } else {
-      throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
-    }
+    } 
   }
   
   //! Export an arbitrary box as a numpy array
 
-  int export_section_numpy ( double *numpy_array, int nu, int nv, int nw, clipper::Coord_grid& start, clipper::Coord_grid& end, char order = 'F' )
+  int export_section_numpy ( double *numpy_array, int nu, int nv, int nw, clipper::Coord_grid& start, char order = 'F', std::string rot = "xyz" )
   {
+    std::string orders("FC");
+    int oindex = orders.find(order);
+    if (oindex == 2) {
+      throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
+    }      
     int i = 0;
     int w, v, u;
+    int maxw, maxv, maxu;
+    maxv = start.v() + nv;
+    //Some packages choose to store their data in zyx order rather than
+    //xyz, so it's nice to provide the option to fill that way here. 
+    //Swapping z for x is equivalent (and more efficient, code-wise)
+    //to swapping the row order and the length of the u and w arrays.
+    if (rot.compare("xyz") == 0) {
+      maxu = start.u() + nu;
+      maxw = start.w() + nw;
+    } else if (rot.compare("zyx") == 0) {
+      order = orders[(oindex + 1) % 2];
+      maxu = start.u() + nw;
+      maxw = start.w() + nu;
+    } else {
+      throw std::invalid_argument ("Rotation must be either \"xyz\" or \"zyx\"!");
+    }
+
+    /*
+    Coord_grid dim = end - start;
+    if (dim.u() * dim.v() * dim.w() > nu*nv*nw) {
+      throw std::length_error("Target array is too small to hold the requested data!");
+    }
+    */
+    
     clipper::Xmap_base::Map_reference_coord ix( (*($self)) );
 
-    if (order == 'C') {
-      for ( w = start.w(); w <= end.w(); w++ )
-        for ( v = start.v(); v <= end.v(); v++ )
-          for ( ix.set_coord(Coord_grid(start.u(),v,w)); ix.coord().u() <= end.u(); ix.next_u(), i++ ) {
+    if (order == 'F') {
+      for ( w = start.w(); w < maxw; w++ )
+        for ( v = start.v(); v < maxv; v++ )
+          for ( ix.set_coord(Coord_grid(start.u(),v,w)); ix.coord().u() < maxu; ix.next_u(), i++ ) {
             numpy_array[i] = (*($self))[ix];
           }
       return i;
-    } else if (order == 'F') {
-      for ( u = start.u(); u <= end.u(); u++ )
-        for ( v = start.v(); v <= end.v(); v++ )
-          for ( ix.set_coord(Coord_grid(u,v,start.w())); ix.coord().w() <= end.w(); ix.next_w(), i++ ) {
+    } else if (order == 'C') {
+      for ( u = start.u(); u < maxu; u++ )
+        for ( v = start.v(); v < maxv; v++ )
+          for ( ix.set_coord(Coord_grid(u,v,start.w())); ix.coord().w() < maxw; ix.next_w(), i++ ) {
             numpy_array[i] = (*($self))[ix];
           }
       return i;
-    } else {
-      throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
     }
   }
   
   //! Import an arbitrary box as a numpy array
 
-  int import_section_numpy ( double *numpy_3d_in, int nu, int nv, int nw, clipper::Coord_grid& start, clipper::Coord_grid& end, char order = 'F' )
+  int import_section_numpy ( double *numpy_3d_in, int nu, int nv, int nw, clipper::Coord_grid& start, char order = 'F', std::string rot = "xyz" )
   {
+    std::string orders("FC");
+    int oindex = orders.find(order);
+    if (oindex == 2) {
+      throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
+    }      
     int i = 0;
     int w, v, u;
+    int maxw, maxv, maxu;
+    maxv = start.v() + nv;
+    //Some packages choose to store their data in zyx order rather than
+    //xyz, so it's nice to provide the option to fill that way here. 
+    //Swapping z for x is equivalent (and more efficient, code-wise)
+    //to swapping the row order and the length of the u and w arrays.
+    if (rot.compare("xyz") == 0) {
+      maxu = start.u() + nu;
+      maxw = start.w() + nw;
+    } else if (rot.compare("zyx") == 0) {
+      order = orders[(oindex + 1) % 2];
+      maxu = start.u() + nw;
+      maxw = start.w() + nu;
+    } else {
+      throw std::invalid_argument ("Rotation must be either \"xyz\" or \"zyx\"!");
+    }
+    /*
+    Coord_grid dim = end - start;
+    if (dim.u() * dim.v() * dim.w() > nu*nv*nw) {
+      throw std::length_error("Target array is too small to hold the requested data!");
+    }  
+    */  
     clipper::Xmap_base::Map_reference_coord ix( (*($self)) );
 
-    if (order == 'C') {
-      for ( w = start.w(); w <= end.w(); w++ )
-        for ( v = start.v(); v <= end.v(); v++ )
-          for ( ix.set_coord(Coord_grid(start.u(),v,w)); ix.coord().u() <= end.u(); ix.next_u(), i++ ) {
+    if (order == 'F') {
+      for ( w = start.w(); w < maxw; w++ )
+        for ( v = start.v(); v < maxv; v++ )
+          for ( ix.set_coord(Coord_grid(start.u(),v,w)); ix.coord().u() < maxu; ix.next_u(), i++ ) {
             (*($self))[ix] = numpy_3d_in[i];
           }
       return i;
-    } else if (order == 'F') {
-      for ( u = start.u(); u <= end.u(); u++ )
-        for ( v = start.v(); v <= end.v(); v++ )
-          for ( ix.set_coord(Coord_grid(u,v,start.w())); ix.coord().w() <= end.w(); ix.next_w(), i++ ) {
+    } else if (order == 'C') {
+      for ( u = start.u(); u < maxu; u++ )
+        for ( v = start.v(); v < maxv; v++ )
+          for ( ix.set_coord(Coord_grid(u,v,start.w())); ix.coord().w() < maxw; ix.next_w(), i++ ) {
             (*($self))[ix] = numpy_3d_in[i];
           }
       return i;
-    } else {
-      throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
-    }
-
+    } 
   }
   
   //! Export volume interpolated onto an orthogonal grid, as a numpy array
   
   int export_interpolated_box_numpy ( double *numpy_array, int nx, int ny, int nz, 
                                       double box_origin_xyz[3], double box_res_xyz[3], 
-                                      std::string mode = "cubic", char order = 'F' )
+                                      std::string mode = "cubic", char order = 'F',
+                                      std::string rot = "xyz")
   {
+    std::string orders("FC");
+    int oindex = orders.find(order);
+    if (oindex == 2) {
+      throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
+    }          
     int count = 0;
     double x = box_origin_xyz[0];
     double y = box_origin_xyz[1];
@@ -3067,8 +2950,18 @@ namespace clipper
     }
     bool mode_cubic = mode.compare("linear");
     
+    int temp;
+    if (rot.compare("zyx") == 0) {
+      order = orders[(oindex + 1) % 2];
+      temp = nx;
+      nx = nz;
+      nz = temp;
+    } else if (!(rot.compare("zyx") == 0)) {
+      throw std::invalid_argument ("Rotation must be either \"xyz\" or \"zyx\"!");
+    }
     
-    if (order == 'C') {
+    
+    if (order == 'F') {
       for (int k = 0; k < nz; k++) {
         for (int j = 0; j < ny; j++) {
           for (int i = 0; i < nx; i++, count++) {
@@ -3081,7 +2974,7 @@ namespace clipper
           }
         }
       }
-    } else if (order == 'F') {
+    } else if (order == 'C') {
       for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
           for (int k = 0; k < nz; k++, count++) {
@@ -3322,33 +3215,13 @@ namespace clipper
 namespace clipper
 {
 %extend HKL {
-  HKL __add__(const HKL &h2)
-  {
-    HKL ret;
-    ret = *($self)+h2;
-    return ret;
-  }
-  HKL __sub__(const HKL &h2)
-  {
-    HKL ret;
-    ret = *($self)-h2;
-    return ret;
-  }
-  HKL __neg__()
-  {
-    HKL ret;
-    ret = -*($self);
-    return ret;
-  }
-  HKL __mul__(const int& m)
-  {
-    return m * *($self);
-  }
-  HKL __rmul__(const int& m)
-  {
-    return m * *($self);
-  }
-  
+  HKL __add__(const HKL &h2) { return *self + h2; }
+  HKL __sub__(const HKL &h2) { return *self - h2; }
+  HKL __neg__() { return -(*self); }
+  HKL __mul__(const int& m) { return m * (*self); }
+  HKL __rmul__(const int& m) { return m * (*self); }
+  bool __eq__ (const HKL& h2) {return *self == h2;}
+  // Transforms are handled in the definition of Isymop::__mul__()
 }
 
 %extend MModel {
@@ -3439,27 +3312,42 @@ fail:
   std::string __str__( )
   {
     return (*($self)).id() + " " + (*($self)).coord_orth().format();
-fail:
-    return "";
   }
 }
 
 %extend U_aniso_orth {
-  std::string __str__( )
+  U_aniso_orth __add__(const U_aniso_orth& u2) { return *self + u2; }
+  U_aniso_orth __sub__(const U_aniso_orth& u2) { return *self + (-u2); }
+  U_aniso_orth __neg__() { return -(*self); }
+  U_aniso_orth __mul__(const double& f) { return f * (*self); }
+  U_aniso_orth __rmul__(const double& f) { return f * (*self); }
+  void _get_vals(double numpy_double_out[6])
   {
-    return (*($self)).format();
-fail:
-    return "";
+    numpy_double_out[0] = (*self).mat00();
+    numpy_double_out[1] = (*self).mat11();
+    numpy_double_out[2] = (*self).mat22();
+    numpy_double_out[3] = (*self).mat01();
+    numpy_double_out[4] = (*self).mat02();
+    numpy_double_out[5] = (*self).mat12();
   }
-  void get_vals(double numpy_double_out[6])
+  
+}
+%extend U_aniso_frac {
+  U_aniso_frac __add__(const U_aniso_frac& u2) { return *self + u2; }
+  U_aniso_frac __sub__(const U_aniso_frac& u2) { return *self + (-u2); }
+  U_aniso_frac __neg__() { return -(*self); }
+  U_aniso_frac __mul__(const double& f) { return f * (*self); }
+  U_aniso_frac __rmul__(const double& f) { return f * (*self); }
+  void _get_vals(double numpy_double_out[6])
   {
-    numpy_double_out[0] = (*($self)).mat00();
-    numpy_double_out[1] = (*($self)).mat11();
-    numpy_double_out[2] = (*($self)).mat22();
-    numpy_double_out[3] = (*($self)).mat01();
-    numpy_double_out[4] = (*($self)).mat02();
-    numpy_double_out[5] = (*($self)).mat12();
+    numpy_double_out[0] = (*self).mat00();
+    numpy_double_out[1] = (*self).mat11();
+    numpy_double_out[2] = (*self).mat22();
+    numpy_double_out[3] = (*self).mat01();
+    numpy_double_out[4] = (*self).mat02();
+    numpy_double_out[5] = (*self).mat12();
   }
+  
 }
 
 }

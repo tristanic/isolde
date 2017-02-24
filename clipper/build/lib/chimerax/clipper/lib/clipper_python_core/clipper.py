@@ -8788,6 +8788,18 @@ class HKL(_object):
         """
         return _clipper.HKL___rmul__(self, m)
 
+
+    def __eq__(self, h2):
+        """
+        __eq__(HKL self, HKL h2) -> bool
+
+        Parameters
+        ----------
+        h2: clipper::HKL const &
+
+        """
+        return _clipper.HKL___eq__(self, h2)
+
     __swig_destroy__ = _clipper.delete_HKL
     __del__ = lambda self: None
 HKL_swigregister = _clipper.HKL_swigregister
@@ -9405,30 +9417,6 @@ class Coord_grid(_object):
         return _clipper.Coord_grid___sub__(self, g2)
 
 
-    def _get_uvw(self):
-        """
-        _get_uvw(Coord_grid self)
-
-        Parameters
-        ----------
-        self: clipper::Coord_grid *
-
-        """
-        return _clipper.Coord_grid__get_uvw(self)
-
-
-    def _set_uvw(self, v):
-        """
-        _set_uvw(Coord_grid self, int [3] v)
-
-        Parameters
-        ----------
-        v: int [3]
-
-        """
-        return _clipper.Coord_grid__set_uvw(self, v)
-
-
     def __mul__(self, m):
         """
         __mul__(Coord_grid self, int const & m) -> Coord_grid
@@ -9451,6 +9439,30 @@ class Coord_grid(_object):
 
         """
         return _clipper.Coord_grid___rmul__(self, m)
+
+
+    def _get_uvw(self):
+        """
+        _get_uvw(Coord_grid self)
+
+        Parameters
+        ----------
+        self: clipper::Coord_grid *
+
+        """
+        return _clipper.Coord_grid__get_uvw(self)
+
+
+    def _set_uvw(self, v):
+        """
+        _set_uvw(Coord_grid self, int [3] v)
+
+        Parameters
+        ----------
+        v: int [3]
+
+        """
+        return _clipper.Coord_grid__set_uvw(self, v)
 
     __swig_destroy__ = _clipper.delete_Coord_grid
     __del__ = lambda self: None
@@ -9749,6 +9761,30 @@ class Coord_orth(_object):
         return _clipper.Coord_orth___neg__(self)
 
 
+    def __mul__(self, f):
+        """
+        __mul__(Coord_orth self, double const & f) -> Coord_orth
+
+        Parameters
+        ----------
+        f: double const &
+
+        """
+        return _clipper.Coord_orth___mul__(self, f)
+
+
+    def __rmul__(self, f):
+        """
+        __rmul__(Coord_orth self, double const & f) -> Coord_orth
+
+        Parameters
+        ----------
+        f: double const &
+
+        """
+        return _clipper.Coord_orth___rmul__(self, f)
+
+
     def _get_xyz(self):
         """
         _get_xyz(Coord_orth self)
@@ -9759,30 +9795,6 @@ class Coord_orth(_object):
 
         """
         return _clipper.Coord_orth__get_xyz(self)
-
-
-    def __mul__(self, factor):
-        """
-        __mul__(Coord_orth self, float const & factor) -> Coord_orth
-
-        Parameters
-        ----------
-        factor: float const &
-
-        """
-        return _clipper.Coord_orth___mul__(self, factor)
-
-
-    def __rmul__(self, factor):
-        """
-        __rmul__(Coord_orth self, float const & factor) -> Coord_orth
-
-        Parameters
-        ----------
-        factor: float const &
-
-        """
-        return _clipper.Coord_orth___rmul__(self, factor)
 
     __swig_destroy__ = _clipper.delete_Coord_orth
     __del__ = lambda self: None
@@ -10114,6 +10126,30 @@ class Coord_frac(_object):
         return _clipper.Coord_frac___neg__(self)
 
 
+    def __mul__(self, f):
+        """
+        __mul__(Coord_frac self, double const & f) -> Coord_frac
+
+        Parameters
+        ----------
+        f: double const &
+
+        """
+        return _clipper.Coord_frac___mul__(self, f)
+
+
+    def __rmul__(self, f):
+        """
+        __rmul__(Coord_frac self, double const & f) -> Coord_frac
+
+        Parameters
+        ----------
+        f: double const &
+
+        """
+        return _clipper.Coord_frac___rmul__(self, f)
+
+
     def _get_uvw(self):
         """
         _get_uvw(Coord_frac self)
@@ -10124,30 +10160,6 @@ class Coord_frac(_object):
 
         """
         return _clipper.Coord_frac__get_uvw(self)
-
-
-    def __mul__(self, factor):
-        """
-        __mul__(Coord_frac self, float const & factor) -> Coord_frac
-
-        Parameters
-        ----------
-        factor: float const &
-
-        """
-        return _clipper.Coord_frac___mul__(self, factor)
-
-
-    def __rmul__(self, factor):
-        """
-        __rmul__(Coord_frac self, float const & factor) -> Coord_frac
-
-        Parameters
-        ----------
-        factor: float const &
-
-        """
-        return _clipper.Coord_frac___rmul__(self, factor)
 
     __swig_destroy__ = _clipper.delete_Coord_frac
     __del__ = lambda self: None
@@ -10384,6 +10396,30 @@ class Coord_map(_object):
         return _clipper.Coord_map___neg__(self)
 
 
+    def __mul__(self, f):
+        """
+        __mul__(Coord_map self, double const & f) -> Coord_map
+
+        Parameters
+        ----------
+        f: double const &
+
+        """
+        return _clipper.Coord_map___mul__(self, f)
+
+
+    def __rmul__(self, f):
+        """
+        __rmul__(Coord_map self, double const & f) -> Coord_map
+
+        Parameters
+        ----------
+        f: double const &
+
+        """
+        return _clipper.Coord_map___rmul__(self, f)
+
+
     def _get_uvw(self):
         """
         _get_uvw(Coord_map self)
@@ -10525,28 +10561,76 @@ class U_aniso_orth(_object):
         return _clipper.U_aniso_orth_transform(self, op)
 
 
-    def __str__(self):
+    def __add__(self, u2):
         """
-        __str__(U_aniso_orth self) -> std::string
+        __add__(U_aniso_orth self, U_aniso_orth u2) -> U_aniso_orth
+
+        Parameters
+        ----------
+        u2: clipper::U_aniso_orth const &
+
+        """
+        return _clipper.U_aniso_orth___add__(self, u2)
+
+
+    def __sub__(self, u2):
+        """
+        __sub__(U_aniso_orth self, U_aniso_orth u2) -> U_aniso_orth
+
+        Parameters
+        ----------
+        u2: clipper::U_aniso_orth const &
+
+        """
+        return _clipper.U_aniso_orth___sub__(self, u2)
+
+
+    def __neg__(self):
+        """
+        __neg__(U_aniso_orth self) -> U_aniso_orth
 
         Parameters
         ----------
         self: clipper::U_aniso_orth *
 
         """
-        return _clipper.U_aniso_orth___str__(self)
+        return _clipper.U_aniso_orth___neg__(self)
 
 
-    def get_vals(self):
+    def __mul__(self, f):
         """
-        get_vals(U_aniso_orth self)
+        __mul__(U_aniso_orth self, double const & f) -> U_aniso_orth
+
+        Parameters
+        ----------
+        f: double const &
+
+        """
+        return _clipper.U_aniso_orth___mul__(self, f)
+
+
+    def __rmul__(self, f):
+        """
+        __rmul__(U_aniso_orth self, double const & f) -> U_aniso_orth
+
+        Parameters
+        ----------
+        f: double const &
+
+        """
+        return _clipper.U_aniso_orth___rmul__(self, f)
+
+
+    def _get_vals(self):
+        """
+        _get_vals(U_aniso_orth self)
 
         Parameters
         ----------
         self: clipper::U_aniso_orth *
 
         """
-        return _clipper.U_aniso_orth_get_vals(self)
+        return _clipper.U_aniso_orth__get_vals(self)
 
     __swig_destroy__ = _clipper.delete_U_aniso_orth
     __del__ = lambda self: None
@@ -10646,6 +10730,78 @@ class U_aniso_frac(_object):
 
         """
         return _clipper.U_aniso_frac_transform(self, op)
+
+
+    def __add__(self, u2):
+        """
+        __add__(U_aniso_frac self, U_aniso_frac u2) -> U_aniso_frac
+
+        Parameters
+        ----------
+        u2: clipper::U_aniso_frac const &
+
+        """
+        return _clipper.U_aniso_frac___add__(self, u2)
+
+
+    def __sub__(self, u2):
+        """
+        __sub__(U_aniso_frac self, U_aniso_frac u2) -> U_aniso_frac
+
+        Parameters
+        ----------
+        u2: clipper::U_aniso_frac const &
+
+        """
+        return _clipper.U_aniso_frac___sub__(self, u2)
+
+
+    def __neg__(self):
+        """
+        __neg__(U_aniso_frac self) -> U_aniso_frac
+
+        Parameters
+        ----------
+        self: clipper::U_aniso_frac *
+
+        """
+        return _clipper.U_aniso_frac___neg__(self)
+
+
+    def __mul__(self, f):
+        """
+        __mul__(U_aniso_frac self, double const & f) -> U_aniso_frac
+
+        Parameters
+        ----------
+        f: double const &
+
+        """
+        return _clipper.U_aniso_frac___mul__(self, f)
+
+
+    def __rmul__(self, f):
+        """
+        __rmul__(U_aniso_frac self, double const & f) -> U_aniso_frac
+
+        Parameters
+        ----------
+        f: double const &
+
+        """
+        return _clipper.U_aniso_frac___rmul__(self, f)
+
+
+    def _get_vals(self):
+        """
+        _get_vals(U_aniso_frac self)
+
+        Parameters
+        ----------
+        self: clipper::U_aniso_frac *
+
+        """
+        return _clipper.U_aniso_frac__get_vals(self)
 
     __swig_destroy__ = _clipper.delete_U_aniso_frac
     __del__ = lambda self: None
@@ -11033,6 +11189,30 @@ class HKL_sampling(_object):
 
         """
         return _clipper.HKL_sampling_format(self)
+
+
+    def __eq__(self, hkl2):
+        """
+        __eq__(HKL_sampling self, HKL_sampling hkl2) -> bool
+
+        Parameters
+        ----------
+        hkl2: clipper::HKL_sampling const &
+
+        """
+        return _clipper.HKL_sampling___eq__(self, hkl2)
+
+
+    def __ne__(self, hkl2):
+        """
+        __ne__(HKL_sampling self, HKL_sampling hkl2) -> bool
+
+        Parameters
+        ----------
+        hkl2: clipper::HKL_sampling const &
+
+        """
+        return _clipper.HKL_sampling___ne__(self, hkl2)
 
     __swig_destroy__ = _clipper.delete_HKL_sampling
     __del__ = lambda self: None
@@ -12950,18 +13130,6 @@ class vec3_float(_object):
         return _clipper.vec3_float___isub__(self, v)
 
 
-    def __str__(self):
-        """
-        __str__(vec3_float self) -> std::string
-
-        Parameters
-        ----------
-        self: clipper::Vec3< float > *
-
-        """
-        return _clipper.vec3_float___str__(self)
-
-
     def __init__(self, *args):
         """
         __init__(clipper::Vec3<(float)> self) -> vec3_float
@@ -13167,18 +13335,6 @@ class vec3_double(_object):
 
         """
         return _clipper.vec3_double___isub__(self, v)
-
-
-    def __str__(self):
-        """
-        __str__(vec3_double self) -> std::string
-
-        Parameters
-        ----------
-        self: clipper::Vec3< double > *
-
-        """
-        return _clipper.vec3_double___str__(self)
 
 
     def __init__(self, *args):
@@ -14747,6 +14903,14 @@ class Xmap_float(Xmap_base):
 
     def export_numpy(self, *args):
         """
+        export_numpy(Xmap_float self, double * numpy_array, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        order: char
+        rot: std::string
+
         export_numpy(Xmap_float self, double * numpy_array, char order) -> int
 
         Parameters
@@ -14766,6 +14930,14 @@ class Xmap_float(Xmap_base):
 
     def import_numpy(self, *args):
         """
+        import_numpy(Xmap_float self, double * numpy_3d_in, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        order: char
+        rot: std::string
+
         import_numpy(Xmap_float self, double * numpy_3d_in, char order) -> int
 
         Parameters
@@ -14785,22 +14957,29 @@ class Xmap_float(Xmap_base):
 
     def export_section_numpy(self, *args):
         """
-        export_section_numpy(Xmap_float self, double * numpy_array, Coord_grid start, Coord_grid end, char order) -> int
+        export_section_numpy(Xmap_float self, double * numpy_array, Coord_grid start, char order, std::string rot) -> int
 
         Parameters
         ----------
         numpy_array: double *
         start: clipper::Coord_grid &
-        end: clipper::Coord_grid &
+        order: char
+        rot: std::string
+
+        export_section_numpy(Xmap_float self, double * numpy_array, Coord_grid start, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        start: clipper::Coord_grid &
         order: char
 
-        export_section_numpy(Xmap_float self, double * numpy_array, Coord_grid start, Coord_grid end) -> int
+        export_section_numpy(Xmap_float self, double * numpy_array, Coord_grid start) -> int
 
         Parameters
         ----------
         numpy_array: double *
         start: clipper::Coord_grid &
-        end: clipper::Coord_grid &
 
         """
         return _clipper.Xmap_float_export_section_numpy(self, *args)
@@ -14808,22 +14987,29 @@ class Xmap_float(Xmap_base):
 
     def import_section_numpy(self, *args):
         """
-        import_section_numpy(Xmap_float self, double * numpy_3d_in, Coord_grid start, Coord_grid end, char order) -> int
+        import_section_numpy(Xmap_float self, double * numpy_3d_in, Coord_grid start, char order, std::string rot) -> int
 
         Parameters
         ----------
         numpy_3d_in: double *
         start: clipper::Coord_grid &
-        end: clipper::Coord_grid &
+        order: char
+        rot: std::string
+
+        import_section_numpy(Xmap_float self, double * numpy_3d_in, Coord_grid start, char order) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        start: clipper::Coord_grid &
         order: char
 
-        import_section_numpy(Xmap_float self, double * numpy_3d_in, Coord_grid start, Coord_grid end) -> int
+        import_section_numpy(Xmap_float self, double * numpy_3d_in, Coord_grid start) -> int
 
         Parameters
         ----------
         numpy_3d_in: double *
         start: clipper::Coord_grid &
-        end: clipper::Coord_grid &
 
         """
         return _clipper.Xmap_float_import_section_numpy(self, *args)
@@ -14831,6 +15017,17 @@ class Xmap_float(Xmap_base):
 
     def export_interpolated_box_numpy(self, *args):
         """
+        export_interpolated_box_numpy(Xmap_float self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz, std::string mode, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        box_origin_xyz: double [3]
+        box_res_xyz: double [3]
+        mode: std::string
+        order: char
+        rot: std::string
+
         export_interpolated_box_numpy(Xmap_float self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz, std::string mode, char order) -> int
 
         Parameters
@@ -15155,6 +15352,14 @@ class Xmap_double(Xmap_base):
 
     def export_numpy(self, *args):
         """
+        export_numpy(Xmap_double self, double * numpy_array, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        order: char
+        rot: std::string
+
         export_numpy(Xmap_double self, double * numpy_array, char order) -> int
 
         Parameters
@@ -15174,6 +15379,14 @@ class Xmap_double(Xmap_base):
 
     def import_numpy(self, *args):
         """
+        import_numpy(Xmap_double self, double * numpy_3d_in, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        order: char
+        rot: std::string
+
         import_numpy(Xmap_double self, double * numpy_3d_in, char order) -> int
 
         Parameters
@@ -15193,22 +15406,29 @@ class Xmap_double(Xmap_base):
 
     def export_section_numpy(self, *args):
         """
-        export_section_numpy(Xmap_double self, double * numpy_array, Coord_grid start, Coord_grid end, char order) -> int
+        export_section_numpy(Xmap_double self, double * numpy_array, Coord_grid start, char order, std::string rot) -> int
 
         Parameters
         ----------
         numpy_array: double *
         start: clipper::Coord_grid &
-        end: clipper::Coord_grid &
+        order: char
+        rot: std::string
+
+        export_section_numpy(Xmap_double self, double * numpy_array, Coord_grid start, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        start: clipper::Coord_grid &
         order: char
 
-        export_section_numpy(Xmap_double self, double * numpy_array, Coord_grid start, Coord_grid end) -> int
+        export_section_numpy(Xmap_double self, double * numpy_array, Coord_grid start) -> int
 
         Parameters
         ----------
         numpy_array: double *
         start: clipper::Coord_grid &
-        end: clipper::Coord_grid &
 
         """
         return _clipper.Xmap_double_export_section_numpy(self, *args)
@@ -15216,22 +15436,29 @@ class Xmap_double(Xmap_base):
 
     def import_section_numpy(self, *args):
         """
-        import_section_numpy(Xmap_double self, double * numpy_3d_in, Coord_grid start, Coord_grid end, char order) -> int
+        import_section_numpy(Xmap_double self, double * numpy_3d_in, Coord_grid start, char order, std::string rot) -> int
 
         Parameters
         ----------
         numpy_3d_in: double *
         start: clipper::Coord_grid &
-        end: clipper::Coord_grid &
+        order: char
+        rot: std::string
+
+        import_section_numpy(Xmap_double self, double * numpy_3d_in, Coord_grid start, char order) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        start: clipper::Coord_grid &
         order: char
 
-        import_section_numpy(Xmap_double self, double * numpy_3d_in, Coord_grid start, Coord_grid end) -> int
+        import_section_numpy(Xmap_double self, double * numpy_3d_in, Coord_grid start) -> int
 
         Parameters
         ----------
         numpy_3d_in: double *
         start: clipper::Coord_grid &
-        end: clipper::Coord_grid &
 
         """
         return _clipper.Xmap_double_import_section_numpy(self, *args)
@@ -15239,6 +15466,17 @@ class Xmap_double(Xmap_base):
 
     def export_interpolated_box_numpy(self, *args):
         """
+        export_interpolated_box_numpy(Xmap_double self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz, std::string mode, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        box_origin_xyz: double [3]
+        box_res_xyz: double [3]
+        mode: std::string
+        order: char
+        rot: std::string
+
         export_interpolated_box_numpy(Xmap_double self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz, std::string mode, char order) -> int
 
         Parameters
@@ -15600,6 +15838,14 @@ class Xmap_int(Xmap_base):
 
     def export_numpy(self, *args):
         """
+        export_numpy(Xmap_int self, double * numpy_array, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        order: char
+        rot: std::string
+
         export_numpy(Xmap_int self, double * numpy_array, char order) -> int
 
         Parameters
@@ -15619,6 +15865,14 @@ class Xmap_int(Xmap_base):
 
     def import_numpy(self, *args):
         """
+        import_numpy(Xmap_int self, double * numpy_3d_in, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        order: char
+        rot: std::string
+
         import_numpy(Xmap_int self, double * numpy_3d_in, char order) -> int
 
         Parameters
@@ -15638,22 +15892,29 @@ class Xmap_int(Xmap_base):
 
     def export_section_numpy(self, *args):
         """
-        export_section_numpy(Xmap_int self, double * numpy_array, Coord_grid start, Coord_grid end, char order) -> int
+        export_section_numpy(Xmap_int self, double * numpy_array, Coord_grid start, char order, std::string rot) -> int
 
         Parameters
         ----------
         numpy_array: double *
         start: clipper::Coord_grid &
-        end: clipper::Coord_grid &
+        order: char
+        rot: std::string
+
+        export_section_numpy(Xmap_int self, double * numpy_array, Coord_grid start, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        start: clipper::Coord_grid &
         order: char
 
-        export_section_numpy(Xmap_int self, double * numpy_array, Coord_grid start, Coord_grid end) -> int
+        export_section_numpy(Xmap_int self, double * numpy_array, Coord_grid start) -> int
 
         Parameters
         ----------
         numpy_array: double *
         start: clipper::Coord_grid &
-        end: clipper::Coord_grid &
 
         """
         return _clipper.Xmap_int_export_section_numpy(self, *args)
@@ -15661,22 +15922,29 @@ class Xmap_int(Xmap_base):
 
     def import_section_numpy(self, *args):
         """
-        import_section_numpy(Xmap_int self, double * numpy_3d_in, Coord_grid start, Coord_grid end, char order) -> int
+        import_section_numpy(Xmap_int self, double * numpy_3d_in, Coord_grid start, char order, std::string rot) -> int
 
         Parameters
         ----------
         numpy_3d_in: double *
         start: clipper::Coord_grid &
-        end: clipper::Coord_grid &
+        order: char
+        rot: std::string
+
+        import_section_numpy(Xmap_int self, double * numpy_3d_in, Coord_grid start, char order) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        start: clipper::Coord_grid &
         order: char
 
-        import_section_numpy(Xmap_int self, double * numpy_3d_in, Coord_grid start, Coord_grid end) -> int
+        import_section_numpy(Xmap_int self, double * numpy_3d_in, Coord_grid start) -> int
 
         Parameters
         ----------
         numpy_3d_in: double *
         start: clipper::Coord_grid &
-        end: clipper::Coord_grid &
 
         """
         return _clipper.Xmap_int_import_section_numpy(self, *args)
@@ -15684,6 +15952,17 @@ class Xmap_int(Xmap_base):
 
     def export_interpolated_box_numpy(self, *args):
         """
+        export_interpolated_box_numpy(Xmap_int self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz, std::string mode, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        box_origin_xyz: double [3]
+        box_res_xyz: double [3]
+        mode: std::string
+        order: char
+        rot: std::string
+
         export_interpolated_box_numpy(Xmap_int self, double * numpy_array, double [3] box_origin_xyz, double [3] box_res_xyz, std::string mode, char order) -> int
 
         Parameters
@@ -15930,8 +16209,23 @@ class NXmap_float(NXmap_base):
         except __builtin__.Exception:
             self.this = this
 
-    def export_numpy(self, numpy_array):
+    def export_numpy(self, *args):
         """
+        export_numpy(NXmap_float self, double * numpy_array, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        order: char
+        rot: std::string
+
+        export_numpy(NXmap_float self, double * numpy_array, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        order: char
+
         export_numpy(NXmap_float self, double * numpy_array) -> int
 
         Parameters
@@ -15939,11 +16233,26 @@ class NXmap_float(NXmap_base):
         numpy_array: double *
 
         """
-        return _clipper.NXmap_float_export_numpy(self, numpy_array)
+        return _clipper.NXmap_float_export_numpy(self, *args)
 
 
-    def import_numpy(self, numpy_3d_in):
+    def import_numpy(self, *args):
         """
+        import_numpy(NXmap_float self, double * numpy_3d_in, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        order: char
+        rot: std::string
+
+        import_numpy(NXmap_float self, double * numpy_3d_in, char order) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        order: char
+
         import_numpy(NXmap_float self, double * numpy_3d_in) -> int
 
         Parameters
@@ -15951,7 +16260,7 @@ class NXmap_float(NXmap_base):
         numpy_3d_in: double *
 
         """
-        return _clipper.NXmap_float_import_numpy(self, numpy_3d_in)
+        return _clipper.NXmap_float_import_numpy(self, *args)
 
 
     def operator_orth_grid(self):
@@ -16097,8 +16406,23 @@ class NXmap_double(NXmap_base):
         except __builtin__.Exception:
             self.this = this
 
-    def export_numpy(self, numpy_array):
+    def export_numpy(self, *args):
         """
+        export_numpy(NXmap_double self, double * numpy_array, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        order: char
+        rot: std::string
+
+        export_numpy(NXmap_double self, double * numpy_array, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        order: char
+
         export_numpy(NXmap_double self, double * numpy_array) -> int
 
         Parameters
@@ -16106,11 +16430,26 @@ class NXmap_double(NXmap_base):
         numpy_array: double *
 
         """
-        return _clipper.NXmap_double_export_numpy(self, numpy_array)
+        return _clipper.NXmap_double_export_numpy(self, *args)
 
 
-    def import_numpy(self, numpy_3d_in):
+    def import_numpy(self, *args):
         """
+        import_numpy(NXmap_double self, double * numpy_3d_in, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        order: char
+        rot: std::string
+
+        import_numpy(NXmap_double self, double * numpy_3d_in, char order) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        order: char
+
         import_numpy(NXmap_double self, double * numpy_3d_in) -> int
 
         Parameters
@@ -16118,7 +16457,7 @@ class NXmap_double(NXmap_base):
         numpy_3d_in: double *
 
         """
-        return _clipper.NXmap_double_import_numpy(self, numpy_3d_in)
+        return _clipper.NXmap_double_import_numpy(self, *args)
 
 
     def operator_orth_grid(self):
@@ -16264,8 +16603,23 @@ class NXmap_int(NXmap_base):
         except __builtin__.Exception:
             self.this = this
 
-    def export_numpy(self, numpy_array):
+    def export_numpy(self, *args):
         """
+        export_numpy(NXmap_int self, double * numpy_array, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        order: char
+        rot: std::string
+
+        export_numpy(NXmap_int self, double * numpy_array, char order) -> int
+
+        Parameters
+        ----------
+        numpy_array: double *
+        order: char
+
         export_numpy(NXmap_int self, double * numpy_array) -> int
 
         Parameters
@@ -16273,11 +16627,26 @@ class NXmap_int(NXmap_base):
         numpy_array: double *
 
         """
-        return _clipper.NXmap_int_export_numpy(self, numpy_array)
+        return _clipper.NXmap_int_export_numpy(self, *args)
 
 
-    def import_numpy(self, numpy_3d_in):
+    def import_numpy(self, *args):
         """
+        import_numpy(NXmap_int self, double * numpy_3d_in, char order, std::string rot) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        order: char
+        rot: std::string
+
+        import_numpy(NXmap_int self, double * numpy_3d_in, char order) -> int
+
+        Parameters
+        ----------
+        numpy_3d_in: double *
+        order: char
+
         import_numpy(NXmap_int self, double * numpy_3d_in) -> int
 
         Parameters
@@ -16285,7 +16654,7 @@ class NXmap_int(NXmap_base):
         numpy_3d_in: double *
 
         """
-        return _clipper.NXmap_int_import_numpy(self, numpy_3d_in)
+        return _clipper.NXmap_int_import_numpy(self, *args)
 
 
     def operator_orth_grid(self):

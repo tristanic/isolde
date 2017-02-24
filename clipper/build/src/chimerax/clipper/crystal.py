@@ -87,16 +87,10 @@ class Map_set:
     
     # Atomic model associated with this object
     self._atomic_model = None
-    # ... and cached coords
-    self._atomic_coords = None
     # Unit cell definition for fast symmetry operations
     self._unit_cell = None
     # Object wrapping the atomic model with functions to handle periodicity
     self._periodic_model = None
-    
-    # A clipper Atom_list object corresponding to the ChimeraX atoms
-    self._clipper_atoms = None
-    
     
     #############
     # Variables involved in handling live redrawing of maps in a box
@@ -181,9 +175,7 @@ class Map_set:
     '''
     Clipper Atom_list object describing the atomic model
     '''
-    if self._clipper_atoms is None:
-      self._clipper_atoms = atom_list_from_sel(self._atomic_model.atoms)
-    return self._clipper_atoms
+    return self.periodic_model._clipper_atoms
   
   
   @property
@@ -348,8 +340,9 @@ class Map_set:
         #continue
       if volume is None or not volume.display:
         continue
-      self._array_grid_data[i].set_origin(box_corner_xyz)
+      self._array_grid_data[i].set_origin( box_corner_xyz )#box_corner_xyz)
       self._fill_volume_data(self.maps[i], self._volume_data[i], box_corner_grid)
+
       volume.update_surface()
     surface_zones(self._volumes, [cofr], self._box_radius)
     
@@ -359,9 +352,10 @@ class Map_set:
     
 
   def _fill_volume_data(self, xmap, target, start_grid_coor):
-    shape = (numpy.array(target.shape)[::-1] - 1).tolist()
-    end_grid_coor = start_grid_coor + clipper.Coord_grid(shape)
-    xmap.export_section_numpy(target, start_grid_coor, end_grid_coor, 'C')
+    #shape = (numpy.array(target.shape)[::-1] - 1)
+    #end_grid_coor = start_grid_coor + clipper.Coord_grid(shape)
+    xmap.export_section_numpy(target, start_grid_coor, 'C', 'zyx')
+
         
   def _box_go_live(self):
     if self._box_handler is None:
@@ -386,7 +380,7 @@ class Map_set:
     uc = self.unit_cell    
     c = self.cell
     g = self.grid
-    unit_cell_model = Model('Unit Cell Maps', self.session)
+    asu_model = Model('Unit Cell Maps', self.session)
     
     box_min_grid = self.unit_cell.min()
     box_min_xyz = box_min_grid.coord_frac(g).coord_orth(c).xyz
@@ -398,7 +392,7 @@ class Map_set:
       grid_data = Array_Grid_Data(data, origin=box_min_xyz, step = self.voxel_size, cell_angles = c.angles_deg)
       volume = Volume(grid_data, self.session)
       volume.name = m.name
-      unit_cell_model.add([volume])
+      asu_model.add([volume])
       volume.initialize_thresholds()
       if not m.is_difference_map:
         contour_val = [self._standard_contour * m.sigma]
@@ -423,8 +417,8 @@ class Map_set:
           thisgrid = clipper.Coord_grid(numpy.array([i, j, k])*grid_dim)
           thisorigin = thisgrid.coord_frac(g).coord_orth(c).xyz
           places.append(Place(origin = thisorigin))
-    unit_cell_model.positions = Places(places)
-    self.session.models.add([unit_cell_model])
+    asu_model.positions = Places(places)
+    self.session.models.add([asu_model])
 
 def surface_zones(models, points, distance):
   '''
@@ -620,8 +614,8 @@ class AtomicCrystalStructure:
         a = this_model.atoms
         display_mask[a.indices(a[indices].residues.atoms)] = True
         a.displays = display_mask
-        if this_model is not self.master_model:
-          a.residues.ribbon_displays = display_mask
+        #if this_model is not self.master_model:
+          #a.residues.ribbon_displays = display_mask
         this_model.display = True
       else:
         if this_model is not self.master_model:
@@ -723,10 +717,10 @@ def draw_crosshairs(origin):
   axes = Drawing('axes')
   d.vertices, d.normals, d.triangles = cylinder_geometry(radius = 0.05, height = 0.5)
   p = []
-  p.append(Place())
   p.append(Place(axes = [[0,0,1],[0,1,0],[-1,0,0]]))
   p.append(Place(axes = [[1,0,0],[0,0,-1],[0,1,0]]))
-  c = [[255,0,0,255],[0,255,0,255],[0,0,255,255]]
+  p.append(Place())
+  c = [[255,0,0,255],[0,255,0,255],[0,0,255,255]] # red = x, green = y, blue = z
   d.positions = Places(p)
   d.colors = c
   axes.add_drawing(d)
@@ -761,7 +755,7 @@ def read_mtz(session, filename, experiment_name,
       displayed, with live updating within a sphere of 15 Angstroms radius
       around the centre of rotation.
   ''' 
-  if not hasattr(session, 'Clipper_DB') or not hasattr(session.Clipper_DB.experiments, experiment_name):
+  if not hasattr(session, 'Clipper_DB') or not hasattr(session.Clipper_DB.Experiment, experiment_name):
     project = Xtal_Project(session, experiment_name)
     xmapset = None
   else:

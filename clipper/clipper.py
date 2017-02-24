@@ -89,7 +89,7 @@ def getters_to_properties(*funcs):
             
 
 ########################################################################
-# Atoms
+# ATOMS AND ATOMIC PROPERTIES
 ########################################################################    
     
 @mappedclass(clipper_core.Atom)
@@ -237,7 +237,7 @@ class Atom(clipper_core.Atom):
         [u00, u11, u22, u01, u02, u12].
         For purely isotropic values, set this to None
         '''
-        return super(Atom, self).u_aniso_orth().get_vals()
+        return super(Atom, self).u_aniso_orth()._get_vals()
     
     @property
     def _u_aniso_orth(self):
@@ -262,7 +262,7 @@ class Atom_list(clipper_core.Atom_list):
     '''
     Generate a Clipper Atom_list object from lists or numpy arrays of data.
     '''
-    def __init__(self, elements, coords, occupancies, u_isos, u_anisos):
+    def __init__(self, elements, coords, occupancies, u_isos, u_anisos, allow_unknown_atoms = False):
         '''
         __init__(self, elements, coords, occupancies, u_isos, u_anisos)
             -> Atom_list
@@ -283,6 +283,10 @@ class Atom_list(clipper_core.Atom_list):
         self.occupancies = occupancies
         self.u_isos = u_isos
         self.u_anisos = u_anisos
+        
+        # If true, an error will be raised if any element name is not in
+        # the list of known scatterers.
+        self.allow_unknown = allow_unknown_atoms
     
     @property
     def elements(self):
@@ -292,17 +296,18 @@ class Atom_list(clipper_core.Atom_list):
     @elements.setter
     def elements(self, elements):
         # Quick check to see if all element names are legal
-        if not set(elements).issubset(Atom.ATOM_NAMES):
-            bad_atoms = []
-            for el in set(elements):
-                if el not in Atom.ATOM_NAMES:
-                    bad_atoms.append(el)
-            bad_atoms = set(bad_atoms)
-            errstring = '''
-                The following atom names are not recognised by Clipper:
-                {}
-                '''.format(bad_atoms)
-            raise TypeError(errstring)
+        if not self.allow_unknown:
+            if not set(elements).issubset(Atom.ATOM_NAMES):
+                bad_atoms = []
+                for el in set(elements):
+                    if el not in Atom.ATOM_NAMES:
+                        bad_atoms.append(el)
+                bad_atoms = set(bad_atoms)
+                errstring = '''
+                    The following atom names are not recognised by Clipper:
+                    {}
+                    '''.format(bad_atoms)
+                raise TypeError(errstring)
         super(Atom_list, self)._set_elements(elements)
             
     def _set_coord_orth(self, coords):

@@ -89,7 +89,7 @@ def getters_to_properties(*funcs):
             
 
 ########################################################################
-# Atoms
+# ATOMS AND ATOMIC PROPERTIES
 ########################################################################    
     
 @mappedclass(clipper_core.Atom)
@@ -237,7 +237,7 @@ class Atom(clipper_core.Atom):
         [u00, u11, u22, u01, u02, u12].
         For purely isotropic values, set this to None
         '''
-        return super(Atom, self).u_aniso_orth().get_vals()
+        return super(Atom, self).u_aniso_orth()._get_vals()
     
     @property
     def _u_aniso_orth(self):
