@@ -230,7 +230,7 @@ class Map_set:
   # Live-updating map box
   ################
   
-  def initialize_box_display(self, radius = 15, pad = 2):
+  def initialize_box_display(self, radius = 15, pad = 2, live = True):
     '''
     Generate a Volume big enough to hold a sphere of the given radius,
     plus an optional padding of pad voxels on each side. The session
@@ -287,10 +287,41 @@ class Map_set:
       volume.update_surface()
       volume.show()
     self.session.models.add([self._master_box_model])
-    self.update_box(force_update = True)
-    self._box_go_live()
+    if live:
+      self.update_box(force_update = True)
+      self._box_go_live()
     self._box_initialized = True
-
+  
+  def _swap_volume_data(self, new_origin, new_dim):
+    self._box_dimensions = new_dim
+    for i, volume in enumerate(self._volumes):
+      data = numpy.empty(new_dim, numpy.double)
+      self._volume_data[i] = data    
+      darray = Array_Grid_Data(data, origin = new_origin,
+        step = self.voxel_size, cell_angles = self.cell.angles_deg)
+      self._array_grid_data[i] = darray
+      volume.replace_data(darray)
+      volume.new_region((0,0,0), darray.size)
+    
+  def _fill_all_volumes(self, grid_min, origin = None):
+    for i, volume in enumerate(self._volumes):
+      # If the user has closed this map, pop it from our list.
+      #if volume not in self._master_box_model.all_models():
+        #self._volumes[i] = None
+        #self._array_grid_data[i] = None
+        #self._volume_data[i] = None
+        #continue
+      if volume is None or not volume.display:
+        continue
+      if origin is not None:
+        self._array_grid_data[i].set_origin( origin )#box_corner_xyz)
+      self._fill_volume_data(self.maps[i], self._volume_data[i], grid_min)
+    
+  def _update_all_volumes(self):
+    for volume in self._volumes:
+      volume.update_surface()
+      volume.show()
+  
   def change_box_radius(self, radius, pad=1):
     self._box_go_static()
     v = self.session.view
@@ -298,18 +329,27 @@ class Map_set:
     self._box_radius = radius
     dim = (numpy.ceil(radius / self.voxel_size * 2)+pad*2).astype(int)[::-1]
     box_corner_grid, box_corner_xyz = _find_box_corner(cofr, self.cell, self.grid, radius, pad)
-    for i, volume in enumerate(self._volumes):
-      data = numpy.empty(dim, numpy.double)
-      self._volume_data[i] = data    
-      darray = Array_Grid_Data(data, origin = box_corner_xyz,
-        step = self.voxel_size, cell_angles = self.cell.angles_deg)
-      self._array_grid_data[i] = darray
-      volume.replace_data(darray)
-      volume.new_region((0,0,0), darray.size)
+    self._swap_volume_data(box_corner_xyz, dim)
     self._box_pad = pad
     self._box_dimensions = dim
     self.update_box(force_update=True)
     self._box_go_live()
+    
+  def set_box_limits(self, minmax):
+    '''
+    Set the map box to fill a volume encompassed by the provided minimum
+    and maximum grid coordinates
+    '''
+    self._box_go_static()
+    cmin = clipper.Coord_grid(minmax[0])
+    cmin_xyz = cmin.coord_frac(self.grid).coord_orth(self.cell).xyz
+    dim = minmax[1]-minmax[0]
+    print(dim)
+    self._swap_volume_data(cmin_xyz, dim)
+    self._box_pad = 0
+    self._fill_all_volumes(cmin)
+    self._update_all_volumes()
+    
     
     
     
@@ -331,19 +371,8 @@ class Map_set:
         return
     self._last_cofr_grid = cofr_grid      
     box_corner_grid, box_corner_xyz = _find_box_corner(cofr, self.cell, self.grid, self._box_radius, self._box_pad)
-    for i, volume in enumerate(self._volumes):
-      # If the user has closed this map, pop it from our list.
-      #if volume not in self._master_box_model.all_models():
-        #self._volumes[i] = None
-        #self._array_grid_data[i] = None
-        #self._volume_data[i] = None
-        #continue
-      if volume is None or not volume.display:
-        continue
-      self._array_grid_data[i].set_origin( box_corner_xyz )#box_corner_xyz)
-      self._fill_volume_data(self.maps[i], self._volume_data[i], box_corner_grid)
-
-      volume.update_surface()
+    self._fill_all_volumes(box_corner_grid, box_corner_xyz)
+    self._update_all_volumes()
     surface_zones(self._volumes, [cofr], self._box_radius)
     
   def change_contour(self, volume, contour_vals):
@@ -365,10 +394,37 @@ class Map_set:
     if self._box_handler is not None:
       self.session.triggers.remove_handler(self._box_handler)
       self._box_handler = None
+      self.session.ui.processEvents() 
 
   ########
   # Other utility functions
   ########
+  
+  def cover_selection(self, atoms, radius = 3):
+    '''
+    Expand the map to cover a given atomic selection, then mask it to
+    within a given distance of said atoms to reduce visual clutter.
+    '''
+    # If we're in live mode, turn it off
+    self._box_go_static()
+    coords = atoms.coords
+    clipper_atoms = atom_list_from_sel(atoms)
+    pad = (numpy.ceil(radius / self.voxel_size)).astype(int)
+    box_bounds_grid = clipper_atoms.get_minmax_grid(self.cell, self.grid) \
+                            + numpy.array((-pad, pad))
+    if not self._box_initialized:
+      # Initialize a minimal box that we'll expand to cover the selection
+      self.initialize_box_display(radius = 2, pad = 0, live = False)
+    self.set_box_limits(box_bounds_grid)
+    for v in self._volumes:
+      new_levels = tuple(l+0.01 for l in v.surface_levels)
+      v.set_parameters(surface_levels = new_levels)
+      v.show()
+      new_levels = tuple(l-0.01 for l in v.surface_levels)
+      v.set_parameters(surface_levels = new_levels)
+      v.show()
+    surface_zones(self._volumes, coords, radius)
+    
     
   def draw_unit_cell_maps(self, nu = 1, nv = 1, nw = 1):
     '''

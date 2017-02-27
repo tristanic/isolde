@@ -1442,6 +1442,29 @@ namespace clipper
       numpy_array[first+5] = thisaniso.mat12();
     }
   }
+  
+  void get_minmax_grid(int numpy_int_out[2][3], const Cell& cell, const Grid_sampling& grid)
+  {
+    /* Find the minimum and maximum grid coordinates of a box encompassing the atoms,
+     * and return a numpy array [min, max].
+     */
+    Coord_grid ref_min = (*self)[0].coord_orth().coord_frac(cell).coord_grid(grid);
+    Coord_grid ref_max = ref_min;
+    for (Atom_list::const_iterator it = (*self).begin(); it != (*self).end(); ++it) {
+      const Coord_grid& thiscoord = it->coord_orth().coord_frac(cell).coord_grid(grid);
+      for (size_t i = 0; i < 3; i++) {
+        if (thiscoord[i] < ref_min[i]) ref_min[i] = thiscoord[i];
+        else if (thiscoord[i] > ref_max[i]) ref_max[i] = thiscoord[i];
+      }
+    }
+    for (size_t i = 0; i < 3; i++) {
+      numpy_int_out[0][i] = ref_min[i];
+      numpy_int_out[1][i] = ref_max[i];
+    }
+    
+      
+  }
+  
 
 }
 } // namespace clipper

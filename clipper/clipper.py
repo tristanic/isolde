@@ -276,6 +276,9 @@ class Atom_list(clipper_core.Atom_list):
             u_anisos:    the six unique entries in the anisotropic B-factor matrix
                          (u00, u11, u22, u01, u02, u12) as an N x 3 array
         '''
+        # If true, an error will be raised if any element name is not in
+        # the list of known scatterers.
+        self.allow_unknown = allow_unknown_atoms
         clipper_core.Atom_list.__init__(self)
         self.extend_by(len(elements))
         self.elements = elements
@@ -284,10 +287,7 @@ class Atom_list(clipper_core.Atom_list):
         self.u_isos = u_isos
         self.u_anisos = u_anisos
         
-        # If true, an error will be raised if any element name is not in
-        # the list of known scatterers.
-        self.allow_unknown = allow_unknown_atoms
-    
+        
     @property
     def elements(self):
         '''Ordered list of all element names'''
@@ -373,6 +373,18 @@ class Atom_list(clipper_core.Atom_list):
         return uaniso
     
     u_anisos = property(_get_u_anisos, _set_u_anisos)
+    
+    def get_minmax_grid(self, cell, grid_sampling):
+        '''
+        Get the minimum and maximum grid coordinates of a box that just
+        encloses all atoms.
+        Args:
+            cell:
+                A clipper.Cell object
+            grid_sampling:
+                A clipper.Grid_sampling object
+        '''
+        return super(Atom_list, self).get_minmax_grid(cell, grid_sampling)
 
 ########################################################################
 # Real space coordinates
