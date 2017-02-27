@@ -5,7 +5,7 @@ from .lib import clipper_python_core as clipper_core
 from .clipper_mtz import Clipper_MTZ
 from .data_tree import db_levels, DataTree
 from collections import defaultdict
-from chimerax.core.atomic import AtomicStructure
+from chimerax.core.atomic import AtomicStructure, concatenate
 from chimerax.core.geometry import Place, Places
 from chimerax.core.geometry import find_close_points, find_close_points_sets
 from chimerax.core.surface import zone
@@ -230,7 +230,7 @@ class Map_set:
   # Live-updating map box
   ################
   
-  def initialize_box_display(self, radius = 15, pad = 2, live = True):
+  def initialize_box_display(self, radius = 15, live = True):
     '''
     Generate a Volume big enough to hold a sphere of the given radius,
     plus an optional padding of pad voxels on each side. The session
@@ -248,7 +248,6 @@ class Map_set:
           ''')
     camera.camera(self.session, 'ortho')
     cofr.cofr(self.session, 'centerOfView')
-    self._box_pad = pad
     self._box_radius = radius
     v = self.session.view
     c = self.cell
@@ -258,9 +257,9 @@ class Map_set:
     if self.show_crosshairs:
       self._crosshairs = draw_crosshairs(self._box_center)
       self._master_box_model.add([self._crosshairs])
-
-    box_corner_grid, box_corner_xyz = _find_box_corner(self._box_center, c, g, radius, pad)
-    self._box_dimensions = (numpy.ceil(radius / self.voxel_size * 2)+pad*2).astype(int)[::-1]
+    
+    box_corner_grid, box_corner_xyz = _find_box_corner(self._box_center, c, g, radius)
+    self._box_dimensions = 2*calculate_grid_padding(radius, g, c)[::-1]
     for m in self.maps:
       data = numpy.empty(self._box_dimensions, numpy.double)
       self._volume_data.append(data)
@@ -293,7 +292,7 @@ class Map_set:
     self._box_initialized = True
   
   def _swap_volume_data(self, new_origin, new_dim):
-    self._box_dimensions = new_dim
+    self._box_dimensions = new_dim[::-1]
     for i, volume in enumerate(self._volumes):
       data = numpy.empty(new_dim, numpy.double)
       self._volume_data[i] = data    
@@ -322,15 +321,14 @@ class Map_set:
       volume.update_surface()
       volume.show()
   
-  def change_box_radius(self, radius, pad=1):
+  def change_box_radius(self, radius):
     self._box_go_static()
     v = self.session.view
     cofr = v.center_of_rotation
     self._box_radius = radius
-    dim = (numpy.ceil(radius / self.voxel_size * 2)+pad*2).astype(int)[::-1]
-    box_corner_grid, box_corner_xyz = _find_box_corner(cofr, self.cell, self.grid, radius, pad)
+    dim = 2*calculate_grid_padding(radius, self.grid, self.cell)[::-1]
+    box_corner_grid, box_corner_xyz = _find_box_corner(cofr, self.cell, self.grid, radius)
     self._swap_volume_data(box_corner_xyz, dim)
-    self._box_pad = pad
     self._box_dimensions = dim
     self.update_box(force_update=True)
     self._box_go_live()
@@ -346,7 +344,6 @@ class Map_set:
     dim = minmax[1]-minmax[0]
     print(dim)
     self._swap_volume_data(cmin_xyz, dim)
-    self._box_pad = 0
     self._fill_all_volumes(cmin)
     self._update_all_volumes()
     
@@ -370,7 +367,7 @@ class Map_set:
       if cofr_grid == self._last_cofr_grid:
         return
     self._last_cofr_grid = cofr_grid      
-    box_corner_grid, box_corner_xyz = _find_box_corner(cofr, self.cell, self.grid, self._box_radius, self._box_pad)
+    box_corner_grid, box_corner_xyz = _find_box_corner(cofr, self.cell, self.grid, self._box_radius)
     self._fill_all_volumes(box_corner_grid, box_corner_xyz)
     self._update_all_volumes()
     surface_zones(self._volumes, [cofr], self._box_radius)
@@ -400,21 +397,50 @@ class Map_set:
   # Other utility functions
   ########
   
-  def cover_selection(self, atoms, radius = 3):
+  def cover_selection(self, atoms, include_surrounding_residues = 5, 
+                      show_context = 5, mask_radius = 3, hide_surrounds = True):
     '''
     Expand the map to cover a given atomic selection, then mask it to
     within a given distance of said atoms to reduce visual clutter.
+    Args:
+      atoms (ChimeraX Atoms object):
+        The main selection we're interested in. The existing selection will
+        be expanded to include the whole residue for every selected atom.
+      include_surrounding_residues (float):
+        Any residue with an atom coming within this radius of the primary
+        selection will be added to the selection covered by the map. To
+        cover only the primary selection, set this value to zero.
+      show_context (float):
+        Any residue within an atom coming within this radius of the previous
+        two selections will be displayed as a thinner stick representation,
+        but will not be considered for the map masking calculation.
+      mask_radius (float):
+        Components of the map more than this distance from any atom will
+        be hidden. 
+      hide_surrounds (bool):
+        If true, all residues outside the selection region will be hidden
     '''
     # If we're in live mode, turn it off
     self._box_go_static()
+    # Same for live symmetry display
+    if self.periodic_model.is_live:
+      self.periodic_model.stop_symmetry_display()
+    atoms = atoms.residues.atoms
     coords = atoms.coords
-    clipper_atoms = atom_list_from_sel(atoms)
-    pad = (numpy.ceil(radius / self.voxel_size)).astype(int)
-    box_bounds_grid = clipper_atoms.get_minmax_grid(self.cell, self.grid) \
+    if include_surrounding_residues > 0:
+      atoms = concatenate(self.periodic_model.sym_select_within\
+                    (coords, include_surrounding_residues)).residues.atoms
+      coords = atoms.coords
+    context_atoms = None
+    if show_context > 0:
+      context_atoms = concatenate(self.periodic_model.sym_select_within\
+                    (coords, show_context)).residues.atoms.subtract(atoms)
+    pad = calculate_grid_padding(mask_radius, self.grid, self.cell)
+    box_bounds_grid = clipper.Util.get_minmax_grid(coords, self.cell, self.grid) \
                             + numpy.array((-pad, pad))
     if not self._box_initialized:
       # Initialize a minimal box that we'll expand to cover the selection
-      self.initialize_box_display(radius = 2, pad = 0, live = False)
+      self.initialize_box_display(radius = 2, live = False)
     self.set_box_limits(box_bounds_grid)
     for v in self._volumes:
       new_levels = tuple(l+0.01 for l in v.surface_levels)
@@ -423,7 +449,23 @@ class Map_set:
       new_levels = tuple(l-0.01 for l in v.surface_levels)
       v.set_parameters(surface_levels = new_levels)
       v.show()
-    surface_zones(self._volumes, coords, radius)
+    surface_zones(self._volumes, coords, mask_radius)
+    if context_atoms is not None:
+      found_models = context_atoms.unique_structures
+    else:
+      found_models = concatenate(context_atoms, atoms).unique_structures
+    for key, m in self.periodic_model.items():
+      if m not in found_models:
+        m.display = False
+      else:
+        m.display = True
+        m.atoms.displays = False
+        m.residues.ribbon_displays = False
+    atoms.displays = True
+    atoms.residues.ribbon_displays = True
+    context_atoms.displays = True
+      
+    
     
     
   def draw_unit_cell_maps(self, nu = 1, nv = 1, nw = 1):
@@ -509,18 +551,28 @@ def surface_zones(models, points, distance):
   
 
 
-def _find_box_corner(center, cell, grid, radius = 20, pad = 1):
+def _find_box_corner(center, cell, grid, radius = 20):
   '''
   Find the bottom corner (i.e. the origin) of a rhombohedral box
-  big enough to hold a sphere of the desired radius, and padded by
-  pad voxels in each dimension.
+  big enough to hold a sphere of the desired radius.
   '''
   radii_frac = clipper.Coord_frac(radius/cell.dim)
   center_frac = clipper.Coord_orth(center).coord_frac(cell)
-  bottom_corner_grid = (center_frac - radii_frac).coord_grid(grid) -\
-            clipper.Coord_grid([pad,pad,pad])
+  bottom_corner_grid = center_frac.coord_grid(grid) \
+                - calculate_grid_padding(radius, grid, cell)
   bottom_corner_orth = bottom_corner_grid.coord_frac(grid).coord_orth(cell)
   return bottom_corner_grid, bottom_corner_orth.xyz
+
+def calculate_grid_padding(radius, grid, cell):
+  '''
+  Calculate the number of grid steps needed on each crystallographic axis
+  in order to capture at least radius angstroms in x, y and z.
+  '''
+  co = clipper.Coord_orth((radius, radius, radius))
+  cm = co.coord_frac(cell).coord_grid(grid).uvw
+  grid_pad = numpy.ceil(cm).astype(int)
+  return grid_pad
+
 
 class AtomicCrystalStructure:
   '''
@@ -586,6 +638,10 @@ class AtomicCrystalStructure:
     self._sym_search_frequency = 2
     
   @property
+  def is_live(self):
+    return self._sym_handler is not None
+    
+  @property
   def sym_box_radius(self):
     return self._sym_box_radius
   
@@ -598,6 +654,46 @@ class AtomicCrystalStructure:
     if self._sym_model_container is None:
       self._sym_model_container = SymModels(self.session, self)
     return self._sym_model_container
+  
+  def items(self):
+    return ((clipper.RTop_frac.identity(), self.master_model), *self.sym_model_container.items())
+  
+  def sym_select_within(self, coords, radius):
+    '''
+    Given an array of (x,y,z) coordinates, return a list of Atoms lists
+    (one per symmetry equivalent molecule) covering all atoms within
+    radius of any input coordinate.
+    Args:
+      coords:
+        An (n * [x,y,z)) array of coordinates
+      radius:
+        Search radius in Angstroms
+    '''
+    c = numpy.empty((len(coords), 3), numpy.float32)
+    c[:] = coords
+    master_coords = self.master_model.atoms.coords.astype(numpy.float32)
+    grid_minmax = clipper.Util.get_minmax_grid(coords, self.cell, self.grid)
+    print('Minmax before padding: {}'.format(grid_minmax))
+    pad = calculate_grid_padding(radius, self.grid, self.cell)
+    grid_minmax += numpy.array((-pad, pad))
+    print('Minmax after padding: {}'.format(grid_minmax))
+    min_xyz = clipper.Coord_grid(grid_minmax[0]).coord_frac(self.grid).coord_orth(self.cell).xyz
+    dim = grid_minmax[1] - grid_minmax[0]
+    symops = self.unit_cell.all_symops_in_box(min_xyz, dim)
+    symmats = symops.all_matrices34_orth(self.cell)
+    target = [(c, Place().matrix.astype(numpy.float32))]
+    search_list = []
+    model_list = []
+    for i, s in enumerate(symops):
+      search_list.append((master_coords, symmats[i].astype(numpy.float32)))
+      model_list.append(self.sym_model_container[s])
+    i1, i2 = find_close_points_sets(search_list, target, radius)
+    
+    found = []
+    for i, c in enumerate(i1):
+      if len(c):
+        found.append(model_list[i].atoms[c])
+    return found
     
   def initialize_symmetry_display(self, radius = 20):
     '''
@@ -626,11 +722,16 @@ class AtomicCrystalStructure:
     g = self.grid
     self._sym_box_center = v.center_of_rotation
     self._sym_last_cofr_grid = clipper.Coord_orth(self._sym_box_center).coord_frac(c).coord_grid(g)
-    box_corner_grid, box_corner_xyz = _find_box_corner(self._sym_box_center, c, g, radius, 0)
+    box_corner_grid, box_corner_xyz = _find_box_corner(self._sym_box_center, c, g, radius)
     self._sym_box_dimensions = (numpy.ceil(radius / self._voxel_size * 2)).astype(int)
     self._update_sym_box(force_update = True)
     self._sym_box_go_live()
     self._sym_box_initialized = True
+  
+  def stop_symmetry_display(self):
+    self._sym_box_go_static()
+    for key, m in self.sym_model_container.items():
+      m.display = False
   
   def _change_sym_box_radius(self, radius):
     dim = (numpy.ceil(radius / self._voxel_size * 2)).astype(int)
@@ -649,7 +750,7 @@ class AtomicCrystalStructure:
     self._sym_box_center = cofr
     box_corner_grid, box_corner_xyz = _find_box_corner(
               self._sym_box_center, self.cell, 
-              self.grid, self._sym_box_radius, 0)
+              self.grid, self._sym_box_radius)
     symops = uc.all_symops_in_box(box_corner_xyz, 
               self._sym_box_dimensions, self.sym_always_shows_reference_model, 
               sample_frequency = self._sym_search_frequency)
@@ -659,7 +760,7 @@ class AtomicCrystalStructure:
     display_mask = numpy.array([False]*len(coords))
     for s in symops:
       this_model = self.sym_model_container[s]
-      this_set = (coords, this_model.position.matrix.astype(numpy.float32))
+      this_set = (coords, s.rtop_orth(self.cell).mat34.astype(numpy.float32))
       l1.append(this_set)
     i1, i2 = find_close_points_sets(l1, search_entry, self.sym_box_radius)
     #i1, i2 = find_close_points(this_model.atoms.coords, [cofr], self.sym_box_radius)
@@ -690,7 +791,7 @@ class AtomicCrystalStructure:
     dim = (numpy.ceil(box_width / self._voxel_size)).astype(int)
     box_corner_grid, box_corner_xyz = _find_box_corner(
               box_center, self.cell, 
-              self.grid, box_width/2, 0)
+              self.grid, box_width/2)
     symops = uc.all_symops_in_box(box_corner_xyz, dim, True)
     num_symops = len(symops)
     sym_matrices = symops.all_matrices34_orth(self.cell)
@@ -748,10 +849,10 @@ class SymModels(defaultdict):
     if not thisplace.is_identity():
       thismodel = self.master.copy(name=key.format)
       atoms = thismodel.atoms
-      thismodel.position = thisplace
-      #coords = atoms.coords
-      #thisplace.move(coords)
-      #atoms.coords = coords
+      #thismodel.position = thisplace
+      coords = atoms.coords
+      thisplace.move(coords)
+      atoms.coords = coords
       atom_colors = atoms.colors
       atom_colors[:,0:3] = (self.master.atoms.colors[:,0:3].astype(float)*0.6).astype(numpy.uint8)
       atoms.colors = atom_colors
@@ -760,6 +861,7 @@ class SymModels(defaultdict):
       thismodel.residues.ribbon_colors = ribbon_colors
       self._sym_container.add([thismodel])
       self[key] = thismodel
+      thismodel.display = False
       return thismodel
     return self.master
       

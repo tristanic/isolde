@@ -1,92 +1,10 @@
 from .lib import clipper_python_core as clipper_core
 import numpy
 
-def mappedclass(old_cls):
-    '''
-     To make things a little more user-friendly than the raw SWIG wrapper,
-     all the major Clipper classes are sub-classed here with some extra
-     documentation, useful Python methods, @property decorators, etc.
-     This requires overcoming one small problem: when Clipper itself creates 
-     and returns objects, they're returned as the base class rather than
-     the sub-class. So, we have to over-ride the __new__ method for each
-     base class to make sure they're instead instantiated as the derived
-     class with all the bells and whistles. This function acts as a class
-     decorator to automate this. For example, for the class Atom derived
-     from clipper_core.Atom, place:
-     
-     @mappedclass(clipper_core.Atom)
-     
-     directly before the Atom class declaration.
-    '''
-
-    def decorator(cls):
-        def __newnew__(thiscls, *args, **kwargs):
-            if thiscls == old_cls:
-                return object.__new__(cls)
-            return object.__new__(thiscls)
-        old_cls.__new__ = __newnew__
-        
-        return cls
-    return decorator
-
 #### Message logging
-_clipper_messages = clipper_core.ClipperMessageStream()
 
-def log_clipper(func):
-    '''
-    Acts as a decorator to direct Clipper messages to the Python console.
-    Any messages coming from Clipper are accumulated in _clipper_messages.
-    For any core Clipper function which has the potential to generate a
-    warning message, simply add the @log_clipper decorator to the Python
-    method. Override this function if you want the messages to go somewhere
-    else (e.g. to a log file).
-    '''
-    def func_wrapper(*args, **kwargs):
-        _clipper_messages.clear()
-        func(*args, **kwargs)
-        message_string = _clipper_messages.read_and_clear()
-        if message_string:
-            print("CLIPPER WARNING:")
-            print(message_string)
-    return func_wrapper
-
-
-def format_to_string(cls):
-    '''
-    Class decorator to redirect the Clipper format() function to __str__,
-    to provide pretty printing of the object.
-    '''
-    def format(self):
-        return super(self.__class__,self).format()
-    def __str__(self):
-        return self.format
-    setattr(cls, 'format', property(format))
-    setattr(cls, '__str__', __str__)
-    return cls
-
-def getters_to_properties(*funcs):
-    '''
-    Class decorator. Add the names of any getter functions with void 
-    arguments (e.g. Coord_grid.u()) to convert them to properties. If
-    you want the property name to be different from the function name,
-    add the desired name and the function name as a tuple 
-    (e.g. ('uvw', '_get_uvw'))
-    '''
-    def property_factory(func):
-        def getter(self):
-            return getattr(super(self.__class__, self), func)()
-        prop = property(getter)
-        return prop
-
-    def decorator(cls):
-        for func in funcs:
-            if type(func) == tuple:
-                setattr(cls, func[0], property_factory(func[1]))
-            else:
-                setattr(cls, func, property_factory(func)) 
-        return cls
-    return decorator
-            
+from .clipper_decorators import *            
+_clipper_messages = MessageStreamSingleton().clipper_messages
 
 ########################################################################
 # ATOMS AND ATOMIC PROPERTIES
@@ -132,7 +50,7 @@ class Atom(clipper_core.Atom):
           'U3+',  'U4+',  'U6+',  'Np3+', 'Np4+', 'Np6+', 'Pu3+',
           'Pu4+', 'Pu6+'])  
                         
-    def __init__(self, element, coord, occ, u_iso, u_aniso):
+    def __init__(self, element, coord, occ, u_iso, u_aniso = None, allow_unknown = False):
         '''
         __init__(self, element, coord, occ, u_iso, u_aniso) -> Atom
         
@@ -151,12 +69,13 @@ class Atom(clipper_core.Atom):
                 Anisotropic B-factor matrix as a 6-member array:
                 [u00, u11, u22, u01, u02, u12].
         '''
+        self.allow_unknown = allow_unknown
         clipper_core.Atom.__init__(self)
         self.element = element
         self.coord = coord
         self.occupancy = occ
         self.u_iso = u_iso
-        self.u_aniso = u_aniso
+        self.u_aniso_orth = u_aniso
     
     
     @property
@@ -170,9 +89,10 @@ class Atom(clipper_core.Atom):
     @element.setter
     def element(self, element_name):
         # Check common atom names first to improve performance
-        if element_name not in ('H', 'C', 'N', 'O', 'S'):
-            if element_name not in self.ATOM_NAMES:
-                raise TypeError('Unrecognised element!')
+        if not self.allow_unknown:
+            if element_name not in ('H', 'C', 'N', 'O', 'S'):
+                if element_name not in self.ATOM_NAMES:
+                    raise TypeError('Unrecognised element!')
         super(Atom, self).set_element(element_name)
     
     @property
@@ -188,7 +108,7 @@ class Atom(clipper_core.Atom):
         if isinstance(coord, Coord_orth):
             self.set_coord_orth(coord)
         else:
-            self.set_coord_orth(clipper_core.Coord_orth(*coord))
+            self.set_coord_orth(Coord_orth(coord))
 
     @property
     def coord_orth(self):
@@ -250,6 +170,8 @@ class Atom(clipper_core.Atom):
             from math import nan
             self.set_u_aniso_orth(clipper_core.U_aniso_orth(*([nan]*6)))
         else:
+            if type(u_aniso) == numpy.ndarray:
+                u_aniso = u_aniso.tolist()
             self.set_u_aniso_orth(clipper_core.U_aniso_orth(*u_aniso))
     
     @property
@@ -262,7 +184,7 @@ class Atom_list(clipper_core.Atom_list):
     '''
     Generate a Clipper Atom_list object from lists or numpy arrays of data.
     '''
-    def __init__(self, elements, coords, occupancies, u_isos, u_anisos):
+    def __init__(self, elements, coords, occupancies, u_isos, u_anisos, allow_unknown_atoms = False):
         '''
         __init__(self, elements, coords, occupancies, u_isos, u_anisos)
             -> Atom_list
@@ -276,6 +198,9 @@ class Atom_list(clipper_core.Atom_list):
             u_anisos:    the six unique entries in the anisotropic B-factor matrix
                          (u00, u11, u22, u01, u02, u12) as an N x 3 array
         '''
+        # If true, an error will be raised if any element name is not in
+        # the list of known scatterers.
+        self.allow_unknown = allow_unknown_atoms
         clipper_core.Atom_list.__init__(self)
         self.extend_by(len(elements))
         self.elements = elements
@@ -283,7 +208,8 @@ class Atom_list(clipper_core.Atom_list):
         self.occupancies = occupancies
         self.u_isos = u_isos
         self.u_anisos = u_anisos
-    
+        
+        
     @property
     def elements(self):
         '''Ordered list of all element names'''
@@ -292,17 +218,18 @@ class Atom_list(clipper_core.Atom_list):
     @elements.setter
     def elements(self, elements):
         # Quick check to see if all element names are legal
-        if not set(elements).issubset(Atom.ATOM_NAMES):
-            bad_atoms = []
-            for el in set(elements):
-                if el not in Atom.ATOM_NAMES:
-                    bad_atoms.append(el)
-            bad_atoms = set(bad_atoms)
-            errstring = '''
-                The following atom names are not recognised by Clipper:
-                {}
-                '''.format(bad_atoms)
-            raise TypeError(errstring)
+        if not self.allow_unknown:
+            if not set(elements).issubset(Atom.ATOM_NAMES):
+                bad_atoms = []
+                for el in set(elements):
+                    if el not in Atom.ATOM_NAMES:
+                        bad_atoms.append(el)
+                bad_atoms = set(bad_atoms)
+                errstring = '''
+                    The following atom names are not recognised by Clipper:
+                    {}
+                    '''.format(bad_atoms)
+                raise TypeError(errstring)
         super(Atom_list, self)._set_elements(elements)
             
     def _set_coord_orth(self, coords):
@@ -368,6 +295,18 @@ class Atom_list(clipper_core.Atom_list):
         return uaniso
     
     u_anisos = property(_get_u_anisos, _set_u_anisos)
+    
+    def get_minmax_grid(self, cell, grid_sampling):
+        '''
+        Get the minimum and maximum grid coordinates of a box that just
+        encloses all atoms.
+        Args:
+            cell:
+                A clipper.Cell object
+            grid_sampling:
+                A clipper.Grid_sampling object
+        '''
+        return super(Atom_list, self).get_minmax_grid(cell, grid_sampling)
 
 ########################################################################
 # Real space coordinates
@@ -394,6 +333,20 @@ class Coord_orth(clipper_core.Coord_orth):
         if isinstance(other, Coord_orth):
             return super(Coord_orth, self).__add__(other)
         return self + Coord_orth(other)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+    
+    def __sub__(self, other):
+        if isinstance(other, Coord_orth):
+            return super(Coord_orth, self).__sub__(other)
+        return self - Coord_orth(other)
+    
+    def __rsub__(self, other):
+        if isinstance(other, Coord_orth):
+            return other.__sub__(self)
+        return Coord_orth(other).__sub__(self)
+
     
 @format_to_string 
 @getters_to_properties(('uvw','_get_uvw'))   
@@ -417,7 +370,21 @@ class Coord_grid(clipper_core.Coord_grid):
         if isinstance(other, Coord_grid):
             return super(Coord_grid, self).__add__(other)
         return self + Coord_grid(other)
+
+    def __radd__(self, other):
+        return self.__add__(other)
     
+    def __sub__(self, other):
+        if isinstance(other, Coord_grid):
+            return super(Coord_grid, self).__sub__(other)
+        return self - Coord_grid(other)
+    
+    def __rsub__(self, other):
+        if isinstance(other, Coord_grid):
+            return other.__sub__(self)
+        return Coord_grid(other).__sub__(self)
+            
+            
 @format_to_string
 @getters_to_properties(('uvw', '_get_uvw'),'ceil','coord_grid','floor')   
 @mappedclass(clipper_core.Coord_map)    
@@ -440,6 +407,18 @@ class Coord_map(clipper_core.Coord_map):
             return super(Coord_map, self).__add__(other)
         return self + Coord_map(other)
 
+    def __radd__(self, other):
+        return self.__add__(other)
+    
+    def __sub__(self, other):
+        if isinstance(other, Coord_map):
+            return super(Coord_map, self).__sub__(other)
+        return self - Coord_map(other)
+    
+    def __rsub__(self, other):
+        if isinstance(other, Coord_map):
+            return other.__sub__(self)
+        return Coord_map(other).__sub__(self)
         
 @format_to_string
 @getters_to_properties(('uvw', '_get_uvw'))
@@ -465,6 +444,19 @@ class Coord_frac(clipper_core.Coord_frac):
         if isinstance(other, Coord_frac):
             return super(Coord_frac, self).__add__(other)
         return self + Coord_frac(other)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+    
+    def __sub__(self, other):
+        if isinstance(other, Coord_frac):
+            return super(Coord_frac, self).__sub__(other)
+        return self - Coord_frac(other)
+    
+    def __rsub__(self, other):
+        if isinstance(other, Coord_frac):
+            return other.__sub__(self)
+        return Coord_frac(other).__sub__(self)
 
 ########################################################################
 # Reciprocal-space coordinates
@@ -1342,6 +1334,32 @@ class Resolution(clipper_core.Resolution):
 @mappedclass(clipper_core.mat33_float)
 class Mat33_float(clipper_core.mat33_float):
     pass
+
+########################################################################
+# UTILITIES
+########################################################################
+
+@mappedclass(clipper_core.Util)
+class Util(clipper_core.Util):
+    '''
+    Utility functions. Every method in this class should be static, and
+    the class should never need to be instantiated.
+    '''
+    @staticmethod
+    def get_minmax_grid(coords, cell, grid_sampling):
+        '''
+        Returns a numpy array containing the minimum and maximum grid 
+        coordinates bounding the rhombohedral box encompassing the 
+        given coordinates for the given cell and grid sampling.
+        Args:
+            coords:
+                an n*3 numpy array of (x,y,z) coordinates
+            cell:
+                a clipper.Cell object
+            grid_sampling:
+                a clipper.Grid_sampling object
+        '''
+        return super(Util, Util).get_minmax_grid(coords, cell, grid_sampling)
 
 ########################################################################
 # TEST FUNCTIONS

@@ -6011,6 +6011,21 @@ class Util(_object):
         return _clipper.Util_rad2d(x)
 
     rad2d = staticmethod(rad2d)
+
+    def get_minmax_grid(numpy_2d_in, cell, grid):
+        """
+        get_minmax_grid(double * numpy_2d_in, Cell cell, Grid_sampling grid)
+
+        Parameters
+        ----------
+        numpy_2d_in: double *
+        cell: clipper::Cell const &
+        grid: clipper::Grid_sampling const &
+
+        """
+        return _clipper.Util_get_minmax_grid(numpy_2d_in, cell, grid)
+
+    get_minmax_grid = staticmethod(get_minmax_grid)
     __swig_destroy__ = _clipper.delete_Util
     __del__ = lambda self: None
 Util_swigregister = _clipper.Util_swigregister
@@ -6284,6 +6299,19 @@ def Util_rad2d(x):
 
     """
     return _clipper.Util_rad2d(x)
+
+def Util_get_minmax_grid(numpy_2d_in, cell, grid):
+    """
+    Util_get_minmax_grid(double * numpy_2d_in, Cell cell, Grid_sampling grid)
+
+    Parameters
+    ----------
+    numpy_2d_in: double *
+    cell: clipper::Cell const &
+    grid: clipper::Grid_sampling const &
+
+    """
+    return _clipper.Util_get_minmax_grid(numpy_2d_in, cell, grid)
 
 class String(_object):
     """Proxy of C++ clipper::String class."""
@@ -11762,6 +11790,19 @@ class Atom_list(_object):
 
         """
         return _clipper.Atom_list__get_u_anisos(self, numpy_array)
+
+
+    def get_minmax_grid(self, cell, grid):
+        """
+        get_minmax_grid(Atom_list self, Cell cell, Grid_sampling grid)
+
+        Parameters
+        ----------
+        cell: clipper::Cell const &
+        grid: clipper::Grid_sampling const &
+
+        """
+        return _clipper.Atom_list_get_minmax_grid(self, cell, grid)
 
     __swig_destroy__ = _clipper.delete_Atom_list
     __del__ = lambda self: None
