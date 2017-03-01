@@ -25,16 +25,9 @@ class Xtal_Project:
     self.session = session
     if not hasattr(session, 'Clipper_DB') or session.Clipper_DB is None:
       session.Clipper_DB = DataTree()
-    #if not hasattr(session.Clipper_DB, 'experiments'):
-    #  from types import SimpleNamespace
-    #  session.Clipper_DB.experiments = SimpleNamespace()
-    #if hasattr(session.Clipper_DB.experiments, name):
-    #  raise TypeError('The Clipper database already has a project of that name!')
     db = self.master_db = session.Clipper_DB
     # Store all the data safely in the database
     self.data = db['Experiment'][name] = Clipper_MTZ(parent=db['Experiment'])
-    # Add a more user-friendly handle to retrieve this project from the db
-    #setattr(session.Clipper_DB.experiments, name, self)
     
   def load_data(self, filename):
     return self.data.load_hkl_data(filename)
@@ -46,9 +39,15 @@ class Xtal_Project:
       maps.generate_map_from_f_phi(key)
     return maps
     
+  def initialise_mouse_modes(self):
+    from .mousemodes import ZoomMouseMode
+    z = ZoomMouseMode(self.session)
+    self.session.ui.mouse_modes.bind_mouse_mode('wheel',[],z)
+    self.session.ui.mouse_modes.bind_mouse_mode('right',[],z)
+    
   
 
-DEFAULT_SOLID_MAP_COLOR = [0,1.0,1.0,0.6] # Transparent cyan
+DEFAULT_SOLID_MAP_COLOR = [0,1.0,1.0,0.4] # Transparent cyan
 DEFAULT_MESH_MAP_COLOR = [0,1.0,1.0,1.0] # Solid cyan
 DEFAULT_DIFF_MAP_COLORS = [[1.0,0,0,1.0],[0,1.0,0,1.0]] #Solid red and yellow
 
@@ -128,16 +127,23 @@ class Map_set:
     self._box_initialized = False    
     
     ################
-    # Variables involved in handling other useful annotations
+    # Variables involved in handling other useful annotations and functions
     ################
     
     # Model object to hold Drawings defining the special positions
     self._special_positions_model = None
-    
-    self._crosshairs = None
-    
+        
     self._show_crosshairs = True
-
+    
+    self._stepper = None
+  
+  @property
+  def stepper(self):
+    if self._stepper is None:
+      from .structurestepper import StructureStepper
+      self._stepper = StructureStepper(self.session, self._atomic_model)
+    return self._stepper
+    
   @property
   def periodic_model(self):
     if self.atomic_model is None:
@@ -204,16 +210,20 @@ class Map_set:
   
   @show_crosshairs.setter
   def show_crosshairs(self, state):
+    from chimerax.core.commands import cofr
     if state:
-      if self._crosshairs is None or self._crosshairs.deleted:
-        if self._box_handler:
-          self._crosshairs = draw_crosshairs()
-          self._master_box_model.add([self._crosshairs])
-        else:
-          print('Please initialise map drawing first!')
-          return
+      cofr.cofr(self.session, show_pivot = (1.0, 0.05))
+      #if self._crosshairs is None or self._crosshairs.deleted:
+        #if self._box_handler:
+          #self._crosshairs = draw_crosshairs()
+          #self._master_box_model.add([self._crosshairs])
+        #else:
+          #print('Please initialise map drawing first!')
+          #return
+    else:
+      cofr.cofr(show_pivot = False)
     self._show_crosshairs = state
-    self._crosshairs.visible = state
+    #self._crosshairs.visible = state
   
   def generate_map_from_f_phi(self, data_key):
     name = data_key
@@ -254,14 +264,16 @@ class Map_set:
     g = self.grid
     self._box_center = v.center_of_rotation
     self._last_cofr_grid = clipper.Coord_orth(self._box_center).coord_frac(c).coord_grid(g)
-    if self.show_crosshairs:
-      self._crosshairs = draw_crosshairs(self._box_center)
-      self._master_box_model.add([self._crosshairs])
+    if self._show_crosshairs:
+      self.show_crosshairs = True
+      #self._crosshairs = draw_crosshairs(self._box_center)
+      #self._master_box_model.add([self._crosshairs])
     
     box_corner_grid, box_corner_xyz = _find_box_corner(self._box_center, c, g, radius)
     self._box_dimensions = 2*calculate_grid_padding(radius, g, c)[::-1]
     for m in self.maps:
       data = numpy.empty(self._box_dimensions, numpy.double)
+      self._fill_volume_data(m, data, box_corner_grid)
       self._volume_data.append(data)
       grid_data = Array_Grid_Data(data, origin = box_corner_xyz,
           step = self.voxel_size, cell_angles = c.angles_deg)
@@ -269,7 +281,6 @@ class Map_set:
       volume = Volume(grid_data, self.session)
       volume.name = m.name
       self._volumes.append(volume)
-      self._fill_volume_data(m, data, box_corner_grid)
       volume.initialize_thresholds()
       self._master_box_model.add([volume])
       if not m.is_difference_map:
@@ -282,7 +293,8 @@ class Map_set:
       volume.set_parameters(**{'cap_faces': False,
                                'surface_levels': contour_val,
                                'show_outline_box': False,
-                               'surface_colors': colorset})
+                               'surface_colors': colorset,
+                               'square_mesh': True})
       volume.update_surface()
       volume.show()
     self.session.models.add([self._master_box_model])
@@ -291,10 +303,11 @@ class Map_set:
       self._box_go_live()
     self._box_initialized = True
   
-  def _swap_volume_data(self, new_origin, new_dim):
-    self._box_dimensions = new_dim[::-1]
+  def _swap_volume_data(self, new_origin, new_grid_origin, new_dim):
+    new_dim = self._box_dimensions = new_dim[::-1]
     for i, volume in enumerate(self._volumes):
       data = numpy.empty(new_dim, numpy.double)
+      self._fill_volume_data(self.maps[i], data, new_grid_origin)
       self._volume_data[i] = data    
       darray = Array_Grid_Data(data, origin = new_origin,
         step = self.voxel_size, cell_angles = self.cell.angles_deg)
@@ -326,9 +339,9 @@ class Map_set:
     v = self.session.view
     cofr = v.center_of_rotation
     self._box_radius = radius
-    dim = 2*calculate_grid_padding(radius, self.grid, self.cell)[::-1]
+    dim = 2*calculate_grid_padding(radius, self.grid, self.cell)
     box_corner_grid, box_corner_xyz = _find_box_corner(cofr, self.cell, self.grid, radius)
-    self._swap_volume_data(box_corner_xyz, dim)
+    self._swap_volume_data(box_corner_xyz, box_corner_grid, dim)
     self._box_dimensions = dim
     self.update_box(force_update=True)
     self._box_go_live()
@@ -341,10 +354,9 @@ class Map_set:
     self._box_go_static()
     cmin = clipper.Coord_grid(minmax[0])
     cmin_xyz = cmin.coord_frac(self.grid).coord_orth(self.cell).xyz
-    dim = minmax[1]-minmax[0]
-    print(dim)
-    self._swap_volume_data(cmin_xyz, dim)
-    self._fill_all_volumes(cmin)
+    dim = (minmax[1]-minmax[0])
+    self._swap_volume_data(cmin_xyz, cmin, dim)
+    #self._fill_all_volumes(cmin)
     self._update_all_volumes()
     
     
@@ -353,13 +365,13 @@ class Map_set:
   def update_box(self, *_, force_update = False):
     v = self.session.view
     cofr = v.center_of_rotation
-    cofr_eps = self.session.main_view.pixel_size(cofr)
+    #cofr_eps = self.session.main_view.pixel_size(cofr)
     # We need to redraw the crosshairs if the cofr moves by a pixel...
-    if not force_update:
-      if numpy.all(abs(self._box_center - cofr) < cofr_eps):
-        return
-    if self.show_crosshairs:
-      self._crosshairs.position = Place(origin=cofr)
+    #if not force_update:
+    #  if numpy.all(abs(self._box_center - cofr) < cofr_eps):
+    #    return
+    #if self.show_crosshairs:
+    #  self._crosshairs.position = Place(origin=cofr)
     # ... and redraw the box if it moves by a grid point
     self._box_center = cofr
     cofr_grid = clipper.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
@@ -391,14 +403,13 @@ class Map_set:
     if self._box_handler is not None:
       self.session.triggers.remove_handler(self._box_handler)
       self._box_handler = None
-      self.session.ui.processEvents() 
 
   ########
   # Other utility functions
   ########
   
   def cover_selection(self, atoms, include_surrounding_residues = 5, 
-                      show_context = 5, mask_radius = 3, hide_surrounds = True):
+                      show_context = 5, mask_radius = 3, hide_surrounds = True, focus = True):
     '''
     Expand the map to cover a given atomic selection, then mask it to
     within a given distance of said atoms to reduce visual clutter.
@@ -419,6 +430,8 @@ class Map_set:
         be hidden. 
       hide_surrounds (bool):
         If true, all residues outside the selection region will be hidden
+      focus (bool):
+        If true, the camera will be moved to focus on the selection
     '''
     # If we're in live mode, turn it off
     self._box_go_static()
@@ -442,18 +455,12 @@ class Map_set:
       # Initialize a minimal box that we'll expand to cover the selection
       self.initialize_box_display(radius = 2, live = False)
     self.set_box_limits(box_bounds_grid)
-    for v in self._volumes:
-      new_levels = tuple(l+0.01 for l in v.surface_levels)
-      v.set_parameters(surface_levels = new_levels)
-      v.show()
-      new_levels = tuple(l-0.01 for l in v.surface_levels)
-      v.set_parameters(surface_levels = new_levels)
-      v.show()
     surface_zones(self._volumes, coords, mask_radius)
-    if context_atoms is not None:
-      found_models = context_atoms.unique_structures
+    if context_atoms is None:
+      found_models = atoms.unique_structures
     else:
-      found_models = concatenate(context_atoms, atoms).unique_structures
+      found_models = concatenate((context_atoms, atoms)).unique_structures
+    self.atomic_model.bonds.radii = 0.05
     for key, m in self.periodic_model.items():
       if m not in found_models:
         m.display = False
@@ -461,9 +468,15 @@ class Map_set:
         m.display = True
         m.atoms.displays = False
         m.residues.ribbon_displays = False
+    self.atomic_model.atoms[numpy.in1d(self.atomic_model.atoms.names, numpy.array(['N','C','CA']))].displays = True    
     atoms.displays = True
+    atoms.inter_bonds.radii = 0.2
     atoms.residues.ribbon_displays = True
-    context_atoms.displays = True
+    if context_atoms is not None:
+      context_atoms.displays = True
+      context_atoms.inter_bonds.radii = 0.1
+    if focus:
+      self.session.view.view_all(atoms.scene_bounds, 0.2)
       
     
     
@@ -673,10 +686,8 @@ class AtomicCrystalStructure:
     c[:] = coords
     master_coords = self.master_model.atoms.coords.astype(numpy.float32)
     grid_minmax = clipper.Util.get_minmax_grid(coords, self.cell, self.grid)
-    print('Minmax before padding: {}'.format(grid_minmax))
     pad = calculate_grid_padding(radius, self.grid, self.cell)
     grid_minmax += numpy.array((-pad, pad))
-    print('Minmax after padding: {}'.format(grid_minmax))
     min_xyz = clipper.Coord_grid(grid_minmax[0]).coord_frac(self.grid).coord_orth(self.cell).xyz
     dim = grid_minmax[1] - grid_minmax[0]
     symops = self.unit_cell.all_symops_in_box(min_xyz, dim)
@@ -932,7 +943,11 @@ def read_mtz(session, filename, experiment_name,
           xmapset.periodic_model.initialize_symmetry_display()
   return project, xmapset
   
-  
+      
+      
+      
+      
+      
   
 
 
