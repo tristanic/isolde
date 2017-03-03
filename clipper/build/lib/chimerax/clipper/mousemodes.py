@@ -1,6 +1,9 @@
 import numpy
 from chimerax.core.ui import mousemodes
 
+
+
+
 class ZoomMouseMode(mousemodes.ZoomMouseMode):
     def __init__(self, session):
         mousemodes.ZoomMouseMode.__init__(self, session)
@@ -38,7 +41,7 @@ class ZoomMouseMode(mousemodes.ZoomMouseMode):
             camera_to_cofr = cofr - c.position.origin()
             vd = c.view_direction()
             current_forward_distance = numpy.dot(camera_to_cofr, vd)
-            new_view_distance = c.field_width * 0.9
+            new_view_distance = c.field_width * 0.7
             shift = current_forward_distance - new_view_distance
             new_origin = c.position.origin() + shift*vd
             new_pos = place.Place(axes = c.position.axes(), origin = new_origin)

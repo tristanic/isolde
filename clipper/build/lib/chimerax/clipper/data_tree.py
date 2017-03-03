@@ -70,8 +70,8 @@ class DataTree(collections.defaultdict):
   ''' 
      
   def __init__(self, *args, parent = None, project = 'Project', experiment = 'Experiment'):
+    self._prohibited_keys = DataTree.__dict__.keys()
     collections.defaultdict.__init__(self, *args)
-    self._prohibited_keys = self.__dict__.keys()
     # Keep track of our parents...
     self.parent = parent
     # ... and what level we are at in the tree
@@ -125,12 +125,13 @@ class DataTree(collections.defaultdict):
       # Add it as an attribute for easy user lookup
       if self._level < db_levels.DATASET:
         if key in self._prohibited_keys:
-          raise KeyError('Name cannot be the same as a database function!')
+          raise KeyError('Name: {} is the same as a database function: {}!'.format(key, self._prohibited_keys))
         if not key.isidentifier():
           errstring = '''
-            To allow for easy programmatic lookup, keys are limited to
-            valid Python identifiers (letters, numbers and underscores
-            only, and the first character must not be a number)'''
+            To allow for easy programmatic lookup, keys are limited to\
+            valid Python identifiers (letters, numbers and underscores\
+            only, and the first character must not be a number).\
+            Offending key: {}'''.format(key)
           raise KeyError(errstring)
         setattr(self, key, value)
         #self.__dict__[key] = value

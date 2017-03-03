@@ -49,7 +49,7 @@ class Xtal_Project:
 
 DEFAULT_SOLID_MAP_COLOR = [0,1.0,1.0,0.4] # Transparent cyan
 DEFAULT_MESH_MAP_COLOR = [0,1.0,1.0,1.0] # Solid cyan
-DEFAULT_DIFF_MAP_COLORS = [[1.0,0,0,1.0],[0,1.0,0,1.0]] #Solid red and yellow
+DEFAULT_DIFF_MAP_COLORS = [[1.0,0,0,1.0],[0,1.0,0,1.0]] #Solid red and green
 
 
 class Map_set:
@@ -284,7 +284,7 @@ class Map_set:
       volume.initialize_thresholds()
       self._master_box_model.add([volume])
       if not m.is_difference_map:
-        contour_val = [self._standard_contour * m.sigma]
+        contour_val = self._standard_contour * m.sigma
         colorset = [DEFAULT_SOLID_MAP_COLOR]
       else:
         contour_val = self._standard_difference_map_contours * m.sigma
@@ -328,11 +328,17 @@ class Map_set:
       if origin is not None:
         self._array_grid_data[i].set_origin( origin )#box_corner_xyz)
       self._fill_volume_data(self.maps[i], self._volume_data[i], grid_min)
+      volume.data.values_changed()
+
+  def _fill_volume_data(self, xmap, target, start_grid_coor):
+    #shape = (numpy.array(target.shape)[::-1] - 1)
+    #end_grid_coor = start_grid_coor + clipper.Coord_grid(shape)
+    xmap.export_section_numpy(target, start_grid_coor, 'C', 'zyx')
     
   def _update_all_volumes(self):
     for volume in self._volumes:
       volume.update_surface()
-      volume.show()
+      #volume.show()
   
   def change_box_radius(self, radius):
     self._box_go_static()
@@ -387,13 +393,6 @@ class Map_set:
   def change_contour(self, volume, contour_vals):
     volume.set_parameters(**{'surface_levels': contour_vals})
     self.update_box(force_update = True)
-    
-
-  def _fill_volume_data(self, xmap, target, start_grid_coor):
-    #shape = (numpy.array(target.shape)[::-1] - 1)
-    #end_grid_coor = start_grid_coor + clipper.Coord_grid(shape)
-    xmap.export_section_numpy(target, start_grid_coor, 'C', 'zyx')
-
         
   def _box_go_live(self):
     if self._box_handler is None:
@@ -438,6 +437,7 @@ class Map_set:
     # Same for live symmetry display
     if self.periodic_model.is_live:
       self.periodic_model.stop_symmetry_display()
+    orig_atoms = atoms
     atoms = atoms.residues.atoms
     coords = atoms.coords
     if include_surrounding_residues > 0:
@@ -477,6 +477,8 @@ class Map_set:
       context_atoms.inter_bonds.radii = 0.1
     if focus:
       self.session.view.view_all(atoms.scene_bounds, 0.2)
+    # return the original selection in case we want to re-run with modified settings
+    return orig_atoms
       
     
     
@@ -861,9 +863,7 @@ class SymModels(defaultdict):
       thismodel = self.master.copy(name=key.format)
       atoms = thismodel.atoms
       #thismodel.position = thisplace
-      coords = atoms.coords
-      thisplace.move(coords)
-      atoms.coords = coords
+      atoms.coords = thisplace.moved(atoms.coords)
       atom_colors = atoms.colors
       atom_colors[:,0:3] = (self.master.atoms.colors[:,0:3].astype(float)*0.6).astype(numpy.uint8)
       atoms.colors = atom_colors

@@ -62,6 +62,7 @@ class StructureStepper:
         if len(residues) < self.min_gap:
           next_index = max(res_indices) + 1
           if next_index >= len(cres):
+            chain_finished = True
             # End of chain.
             break
           next_type = _res_ss_type(cres[next_index])
@@ -89,7 +90,7 @@ class StructureStepper:
           self.session.logger.info("Reached the end of the model. Returning to start...")
           self.current_polymer = self.model.polymers()[0]
         else:
-          self.current_polymer = self.model.polymers()[1]
+          self.current_polymer = self.model.polymers()[self.model.polymers().index(cres) + 1]
         self.min_element = self.current_polymer.secondary_structure_ids[0]
       return ret
     else:
