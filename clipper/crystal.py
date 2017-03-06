@@ -40,10 +40,14 @@ class Xtal_Project:
     return maps
     
   def initialise_mouse_modes(self):
-    from .mousemodes import ZoomMouseMode
+    from .mousemodes import ZoomMouseMode, SelectVolumeToContour, ContourSelectedVolume
     z = ZoomMouseMode(self.session)
+    s = SelectVolumeToContour(self.session)
+    v = ContourSelectedVolume(self.session, s, True)
     self.session.ui.mouse_modes.bind_mouse_mode('wheel',[],z)
     self.session.ui.mouse_modes.bind_mouse_mode('right',[],z)
+    self.session.ui.mouse_modes.bind_mouse_mode('wheel',['control'], s)
+    self.session.ui.mouse_modes.bind_mouse_mode('wheel',[], v) 
     
   
 
@@ -279,6 +283,8 @@ class Map_set:
           step = self.voxel_size, cell_angles = c.angles_deg)
       self._array_grid_data.append(grid_data)
       volume = Volume(grid_data, self.session)
+      # Provide the overall sigma value for this map
+      setattr(volume, 'overall_sigma', m.sigma)
       volume.name = m.name
       self._volumes.append(volume)
       volume.initialize_thresholds()
@@ -928,7 +934,7 @@ def read_mtz(session, filename, experiment_name,
     project = Xtal_Project(session, experiment_name)
     xmapset = None
   else:
-    project = getattr(session.Clipper_DB.experiments, experiment_name)
+    project = getattr(session.Clipper_DB.Experiment, experiment_name)
   # Bring in all the data from the MTZ file and add the corresponding
   # Clipper objects to the database
   crystal_name = project.load_data(filename)

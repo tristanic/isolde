@@ -53,3 +53,120 @@ class ZoomMouseMode(mousemodes.ZoomMouseMode):
             v.translate(shift)
             new_origin = c.position.origin()
             self.far_clip.plane_point = new_origin + (cofr-new_origin)*2
+
+class SelectVolumeToContour(mousemodes.MouseMode):
+    def __init__(self, session):
+        mousemodes.MouseMode.__init__(self, session)
+        self._last_picked_index = 0
+        self._picked_volume = None
+    def wheel(self, event):
+        d = int(event.wheel_value())
+        vol_list = self._get_vol_list()
+        for v in vol_list:
+            v.selected = False
+        n = len(vol_list)
+        last = self._last_picked_index
+        p = (last + d) % n
+        sv = self._picked_volume = vol_list[p]
+        sv.selected = True
+        self._last_picked_index = p
+        self.session.logger.status('Selected for contouring: {}'.format(sv.name))
+    def _get_vol_list(self):
+        from chimerax.core.map import Volume
+        return self.session.models.list(type=Volume)
+
+    @property
+    def picked_volume(self):
+        try:
+            vol_list = self._get_vol_list()
+            if not len(vol_list):
+                return None
+            if self._picked_volume is None:
+                self._picked_volume = vol_list[self._last_picked_index]
+            elif self._picked_volume.deleted:
+                self._picked_volume = vol_list[0]
+                self._last_picked_index = 0
+        except IndexError:
+            self._picked_volume = vol_list[0]
+            self._last_picked_index = 0
+        return self._picked_volume
+                
+            
+            
+            
+
+class ContourSelectedVolume(mousemodes.MouseMode):
+    def __init__(self, session, selector, symmetrical=True):
+        '''
+        Modified volume contouring method which acts on a single volume
+        at a time. By default, changes all contours towards/away from
+        zero.
+        Args:
+            selector:
+                A SelectVolumeToContour object used to define the current
+                target volume
+            symmetrical:
+                If True, scrolling up will adjust contours away from 
+                zero (that is, negative contours will get more negative).
+                If False, all contours will be shifted in the same
+                direction.
+        '''
+        mousemodes.MouseMode.__init__(self, session)
+        # SelectVolumeToContour object telling us which volume to work on
+        self.selector = selector
+        self.symmetrical = True
+    
+    def wheel(self, event):
+        d = event.wheel_value()
+        v = self.selector.picked_volume
+        if v is not None:
+            if hasattr(v, 'overall_sigma'):
+                sd = v.overall_sigma
+            else:
+                sd = v.mean_sd_rms()[1]
+            step = d/30 * sd
+            rep, levels = adjust_threshold_level(v, step, self.symmetrical)
+            lsig = tuple(l/sd for l in levels)
+            v.show()
+            if rep != 'solid':
+                lstr = ', '.join(format(l, '.3f') for l in levels)
+                sstr = ', '.join(format(s, '.3f') for s in lsig)
+                self.session.logger.status('Volume {} contour level(s): {} ({} sigma)'.format(v.name, lstr, sstr))
+            self.session.ui.update_graphics_now()
+        
+    
+    
+def adjust_threshold_level(m, step, sym):
+    if m.representation == 'solid':
+        new_levels = [(l+step,b) for l,b in m.solid_levels]
+        l,b = new_levels[-1]
+        new_levels[-1] = (max(l,1.01*ms.maximum),b)
+        m.set_parameters(solid_levels = new_levels)
+    else:
+        if sym:
+            old_levels = m.surface_levels
+            new_levels = []
+            for l in old_levels:
+                if l < 0:
+                    newl = l-step
+                    if newl > 0:
+                        newl = -(abs(step))
+                    new_levels.append(newl)
+                else:
+                    newl = l+step
+                    if newl < 0:
+                        newl = abs(step)
+                    new_levels.append(newl)
+        else:
+            new_levels = tuple(l+step for l in m.surface_levels)
+        m.set_parameters(surface_levels = new_levels)
+    return(m.representation, new_levels)
+    
+        
+
+
+        
+        
+
+    
+    
