@@ -26,20 +26,24 @@ class Xtal_Project:
     if not hasattr(session, 'Clipper_DB') or session.Clipper_DB is None:
       session.Clipper_DB = DataTree()
     db = self.master_db = session.Clipper_DB
+    if not hasattr(db, 'mouse_modes_initialized') or not db.mouse_modes_initialized:
+      self.initialize_mouse_modes()
+      db.mouse_modes_initialized = True
     # Store all the data safely in the database
     self.data = db['Experiment'][name] = Clipper_MTZ(parent=db['Experiment'])
     
   def load_data(self, filename):
     return self.data.load_hkl_data(filename)
   
-  def add_maps(self, crystal_name):
+  def add_maps(self, crystal_name, data_key):
     maps = self.data[crystal_name]['maps'] = \
-          Map_set(self.session, self.data[crystal_name]['dataset'])
-    for key in self.data[crystal_name]['dataset']['F_Phi'].keys():
+          Map_set(self.session, self.data[crystal_name][data_key])
+    for key in self.data[crystal_name][data_key]['F_Phi'].keys():
+      print('{},{},{}'.format(crystal_name,data_key,key))
       maps.generate_map_from_f_phi(key)
     return maps
     
-  def initialise_mouse_modes(self):
+  def initialize_mouse_modes(self):
     from .mousemodes import ZoomMouseMode, SelectVolumeToContour, ContourSelectedVolume
     z = ZoomMouseMode(self.session)
     s = SelectVolumeToContour(self.session)
@@ -303,6 +307,9 @@ class Map_set:
                                'square_mesh': True})
       volume.update_surface()
       volume.show()
+      # Give each volume a Surface_Zone object to support automatic 
+      # re-masking after changing contours
+      volume.surface_zone = Surface_Zone(0)
     self.session.models.add([self._master_box_model])
     if live:
       self.update_box(force_update = True)
@@ -395,6 +402,11 @@ class Map_set:
     self._fill_all_volumes(box_corner_grid, box_corner_xyz)
     self._update_all_volumes()
     surface_zones(self._volumes, [cofr], self._box_radius)
+    self._update_surface_zones(self._box_radius, None, numpy.array([cofr]))
+  
+  def _update_surface_zones(self, distance, atoms = None, coordlist = None):
+    for v in self._volumes:
+      v.surface_zone.update(distance, atoms, coordlist)
     
   def change_contour(self, volume, contour_vals):
     volume.set_parameters(**{'surface_levels': contour_vals})
@@ -462,6 +474,7 @@ class Map_set:
       self.initialize_box_display(radius = 2, live = False)
     self.set_box_limits(box_bounds_grid)
     surface_zones(self._volumes, coords, mask_radius)
+    self._update_surface_zones(mask_radius, atoms, None)
     if context_atoms is None:
       found_models = atoms.unique_structures
     else:
@@ -570,7 +583,30 @@ def surface_zones(models, points, distance):
     logical_and(tmask, mask[t[:,2]], tmask)
     d.triangle_mask = tmask
   
-
+class Surface_Zone:
+  '''
+  Add this as a property to a Volume object to provide it with the 
+  necessary information to update its triangle mask after re-contouring.
+  '''
+  def __init__(self, distance, atoms = None, coords = None):
+    '''
+    Args:
+      distance (float in Angstroms):
+        distance from points to which the map will be masked
+      atoms:
+        Atoms to mask to (coordinates will be updated upon re-masking)
+      coords:
+        (x,y,z) coordinates to mask to (will not be updated upon 
+        re-masking).
+      
+      Set both atoms and coords to None to disable automatic re-masking.
+    '''
+    self.update(distance, atoms, coords)
+    
+  def update(self, distance, atoms=None, coords = None):
+    self.distance = distance
+    self.atoms = atoms
+    self.coords = coords
 
 def _find_box_corner(center, cell, grid, radius = 20):
   '''
@@ -930,23 +966,27 @@ def read_mtz(session, filename, experiment_name,
       displayed, with live updating within a sphere of 15 Angstroms radius
       around the centre of rotation.
   ''' 
-  if not hasattr(session, 'Clipper_DB') or not hasattr(session.Clipper_DB.Experiment, experiment_name):
+  if not hasattr(session, 'Clipper_DB') or \
+        experiment_name not in session.Clipper_DB['Experiment'].keys():
     project = Xtal_Project(session, experiment_name)
     xmapset = None
   else:
-    project = getattr(session.Clipper_DB.Experiment, experiment_name)
+    project = session.Clipper_DB[Experiment][experiment_name]
   # Bring in all the data from the MTZ file and add the corresponding
   # Clipper objects to the database
   crystal_name = project.load_data(filename)
   if auto_generate_maps:
-    if project.data.has_map_data(crystal_name):
-      xmapset = project.add_maps(crystal_name)
+    data_key = project.data.find_first_map_data(crystal_name)
+    print(data_key)
+    if data_key is not None:
+      xmapset = project.add_maps(crystal_name, data_key)
       if atomic_model is not None:
         xmapset.atomic_model = atomic_model
       if live_map_display:
         xmapset.initialize_box_display()
         if atomic_model:
           xmapset.periodic_model.initialize_symmetry_display()
+  
   return project, xmapset
   
       

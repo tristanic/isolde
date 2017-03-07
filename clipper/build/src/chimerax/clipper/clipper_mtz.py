@@ -40,14 +40,20 @@ class Clipper_MTZ(DataTree):
     self.parent = parent
     self._temp_tree = None
 
-  def has_map_data(self, crystal_name):
+  def find_first_map_data(self, crystal_name):
+    '''
+    Find and return the first key in this crystal with a child containing
+    map data.
+    '''
+    found_keys = []
     if crystal_name in self.keys():
       for key, dataset in self[crystal_name].items():
-        for key, data in dataset.items():
-          if key == 'F_Phi' and len(data):
-            return True
-          else:
-            return False
+        for key2, data in dataset.items():
+          if key2 == 'F_Phi' and len(data):
+            for key3 in data.keys():
+              if 'FOFC' in key3 or 'FO-FC' in key3:
+                return key
+      return None
     else:
       raise KeyError('No such crystal!')
     

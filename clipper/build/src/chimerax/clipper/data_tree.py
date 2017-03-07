@@ -70,7 +70,7 @@ class DataTree(collections.defaultdict):
   ''' 
      
   def __init__(self, *args, parent = None, project = 'Project', experiment = 'Experiment'):
-    self._prohibited_keys = DataTree.__dict__.keys()
+    # self._prohibited_keys = DataTree.__dict__.keys()
     collections.defaultdict.__init__(self, *args)
     # Keep track of our parents...
     self.parent = parent
@@ -121,18 +121,25 @@ class DataTree(collections.defaultdict):
         delattr(self, key)
     super(DataTree, self).pop(key, d)
   
-  def __setitem__(self, key, value):
-      # Add it as an attribute for easy user lookup
-      if self._level < db_levels.DATASET:
-        if key in self._prohibited_keys:
-          raise KeyError('Name: {} is the same as a database function: {}!'.format(key, self._prohibited_keys))
-        if not key.isidentifier():
-          errstring = '''
-            To allow for easy programmatic lookup, keys are limited to\
-            valid Python identifiers (letters, numbers and underscores\
-            only, and the first character must not be a number).\
-            Offending key: {}'''.format(key)
-          raise KeyError(errstring)
-        setattr(self, key, value)
-        #self.__dict__[key] = value
-      super(DataTree, self).__setitem__(key, value)
+  
+  '''
+  The below (which would allow database entry db['a']['b']['c'] to be
+  accessed as db.a.b.c) seemed like a good idea, but in practice is too
+  problematic since MTZ files have no restrictions on the characters that
+  can be used in their directory/column labels.
+  '''
+  #def __setitem__(self, key, value):
+      ## Add it as an attribute for easy user lookup
+      #if self._level < db_levels.DATASET:
+        #if key in self._prohibited_keys:
+          #raise KeyError('Name: {} is the same as a database function: {}!'.format(key, self._prohibited_keys))
+        #if not key.isidentifier():
+          #errstring = '''
+            #To allow for easy programmatic lookup, keys are limited to\
+            #valid Python identifiers (letters, numbers and underscores\
+            #only, and the first character must not be a number).\
+            #Offending key: {}'''.format(key)
+          #raise KeyError(errstring)
+        #setattr(self, key, value)
+        ##self.__dict__[key] = value
+      #super(DataTree, self).__setitem__(key, value)
