@@ -31,6 +31,8 @@ class Xtal_Project:
       db.mouse_modes_initialized = True
     # Store all the data safely in the database
     self.data = db['Experiment'][name] = Clipper_MTZ(parent=db['Experiment'])
+    from chimerax.core.map import volumecommand
+    volumecommand.volume(session, pickable=False)
     
   def load_data(self, filename):
     return self.data.load_hkl_data(filename)

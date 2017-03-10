@@ -54,7 +54,17 @@ class ZoomMouseMode(mousemodes.ZoomMouseMode):
             new_origin = c.position.origin()
             self.far_clip.plane_point = new_origin + (cofr-new_origin)*2
 
+
 class SelectVolumeToContour(mousemodes.MouseMode):
+    '''
+    Designed to work together with ContourSelectedVolume.
+    Each step of the mouse wheel increments through the currently 
+    loaded Volume objects, temporarily selecting the current pick to
+    highlight it in the display. Stores a reference to the last selected
+    volume, accessible via picked_volume. If the last selected volume
+    has never been set or has been deleted, picked_volume defaults to
+    the first Volume object in session.models.list().
+    '''
     def __init__(self, session):
         mousemodes.MouseMode.__init__(self, session)
         self._last_picked_index = 0
@@ -107,17 +117,14 @@ class SelectVolumeToContour(mousemodes.MouseMode):
             self.session.triggers.remove_handler(self._deselect_handler)
             self._deselect_handler = None
             self._picked_volume.selected = False
-            
-                
-            
-            
 
 class ContourSelectedVolume(mousemodes.MouseMode):
     def __init__(self, session, selector, symmetrical=True):
         '''
         Modified volume contouring method which acts on a single volume
         at a time. By default, changes all contours towards/away from
-        zero.
+        zero. If the volume has a surface_zone property set, it will be
+        automatically masked back down after a short time delay.
         Args:
             selector:
                 A SelectVolumeToContour object used to define the current
@@ -154,11 +161,21 @@ class ContourSelectedVolume(mousemodes.MouseMode):
                 lstr = ', '.join(format(l, '.3f') for l in levels)
                 sstr = ', '.join(format(s, '.3f') for s in lsig)
                 self.session.logger.status('Volume {} contour level(s): {} ({} sigma)'.format(v.name, lstr, sstr))
-            self.session.ui.update_graphics_now()
             if hasattr(v, 'surface_zone'):
                 if v.surface_zone.atoms is not None or v.surface_zone.coords is not None:
-                    self._start_remask_countdown()
-    
+                    from chimerax.core.surface.zone import surface_zone
+                if v.surface_zone.atoms is not None:
+                    coords = v.surface_zone.atoms.coords
+                    if v.surface_zone.coords is not None:
+                        coords = numpy.concatenate([coords, v.surface_zone.coords])
+                else:
+                    coords = v.surface_zone.coords
+                
+                surface_zone(v, coords, v.surface_zone.distance)
+                    
+                    #self._start_remask_countdown()
+            #self.session.ui.update_graphics_now()    
+            
     def _start_remask_countdown(self):
         if self._remask_handler is None:
             self._remask_handler = self.session.triggers.add_handler('new frame', self._incr_remask_counter)
@@ -167,7 +184,7 @@ class ContourSelectedVolume(mousemodes.MouseMode):
     def _incr_remask_counter(self, *_):
         self._remask_counter += 1
         if self._remask_counter >= self._frames_until_remask:
-            from .crystal import surface_zones
+            from chimerax.core.surface.zone import surface_zone
             v = self.target_volume
             if v.surface_zone.atoms is not None:
                 coords = v.surface_zone.atoms.coords
@@ -176,7 +193,7 @@ class ContourSelectedVolume(mousemodes.MouseMode):
             else:
                 coords = v.surface_zone.coords
             
-            surface_zones([v], coords, v.surface_zone.distance)
+            surface_zone(v, coords, v.surface_zone.distance)
             self.session.triggers.remove_handler(self._remask_handler)
             self._remask_handler = None
             
@@ -206,9 +223,6 @@ def adjust_threshold_level(m, step, sym):
             new_levels = tuple(l+step for l in m.surface_levels)
         m.set_parameters(surface_levels = new_levels)
     return(m.representation, new_levels)
-    
-        
-
 
         
         

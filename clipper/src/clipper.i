@@ -1,8 +1,16 @@
 %{
-  #include <string>
-  #include <vector>
+#define SWIG_FILE_WITH_INIT
+#include <string>
+#include <vector>
+%}
+%include "numpy.i"
+
+%init %{
+    import_array();
 %}
 
+
+#define PYTHON_PROPERTIES
 
 %module(directors="1") clipper
 %include "std_vector.i"
@@ -12,18 +20,17 @@
 %include "std_except.i"
 //%include "typemaps.i"
 
-%feature("autodoc", "3");
+%include "attribute.i"
+
+//%feature("autodoc", "3");
+%include "clipper-doc.i"
 
 #pragma SWIG nowarn=312,325,361,362,363,389,401,501,505
 
-%{
-#define SWIG_FILE_WITH_INIT
-%}
 
-%include "numpy.i"
-%init %{
-  import_array();
-%}
+
+
+
 // Director for astyle auto-formatting to ignore this section
 // *INDENT-OFF*
 
@@ -834,7 +841,11 @@ namespace clipper
 %extend String {
   std::string __str__()
   {
-    return ($self)->c_str();
+    return self->c_str();
+  }
+  std::string __repr__()
+  {
+    return self->c_str();
   }
 }
 }
@@ -904,8 +915,6 @@ namespace clipper
 
 namespace clipper
 {
-%ignore Cell::matrix_orth() const;
-%ignore Cell::matrix_frac() const;
 %rename(is_nan_float) Util::is_nan(const ftype32);
 %rename(is_nan_double) Util::is_nan(const ftype64);
 %rename(is_nan_float_slow) Util::isnan(ftype32);
@@ -988,11 +997,24 @@ namespace clipper
 
 %}
 
-
 %include "../clipper/core/spacegroup_data.h"
 %feature ("flatnested","1");
 %include "../clipper/core/spacegroup.h"
 %feature ("flatnested","0");
+
+//#ifdef PYTHON_PROPERTIES
+//namespace clipper
+//{
+//%extend Spacegroup
+  //{
+  //%pythoncode %{
+    //spacegroup_number = property(spacegroup_number)
+    //symbol_hall = property(symbol_hall)
+    
+  //%}
+  //}
+//}
+//#endif
 
 /* Cell::descr() appears to be the only line in cell.h that SWIG balks at - 
  * rather than properly handle the implicit cast of Cell back to
@@ -1006,7 +1028,11 @@ namespace clipper
  */
 namespace clipper
 {
+//%ignore Cell::matrix_orth() const;
+//%ignore Cell::matrix_frac() const;
 %ignore Cell::descr() const;
+
+#ifdef PYTHON_PROPERTIES
 %ignore Cell_descr::a() const;
 %ignore Cell_descr::b() const;
 %ignore Cell_descr::c() const;
@@ -1023,87 +1049,145 @@ namespace clipper
 %ignore Cell::beta_star() const;
 %ignore Cell::gamma_star() const;
 %ignore Cell::is_null() const;
+%ignore Cell::equals(const Cell& other, const ftype tol=1.0) const;
+#endif
+
+// Redirect format() to Python __str__
+%rename(__str__) Cell::format() const;
 }
+
+
+
+
 %include "../clipper/core/cell.h"
 
 namespace clipper
 { 
 
-
-%extend Cell {
-  Mat33<float> matrix_orth()
-  {
-    Mat33<float> orth;
-    orth(0,0) = (self->matrix_orth())(0,0);
-    orth(0,1) = (self->matrix_orth())(0,1);
-    orth(0,2) = (self->matrix_orth())(0,2);
-    orth(1,0) = (self->matrix_orth())(1,0);
-    orth(1,1) = (self->matrix_orth())(1,1);
-    orth(1,2) = (self->matrix_orth())(1,2);
-    orth(2,0) = (self->matrix_orth())(2,0);
-    orth(2,1) = (self->matrix_orth())(2,1);
-    orth(2,2) = (self->matrix_orth())(2,2);
-    return orth;
-  };
-  Mat33<float> matrix_frac()
-  {
-    Mat33<float> frac;
-    frac(0,0) = (self->matrix_frac())(0,0);
-    frac(0,1) = (self->matrix_frac())(0,1);
-    frac(0,2) = (self->matrix_frac())(0,2);
-    frac(1,0) = (self->matrix_frac())(1,0);
-    frac(1,1) = (self->matrix_frac())(1,1);
-    frac(1,2) = (self->matrix_frac())(1,2);
-    frac(2,0) = (self->matrix_frac())(2,0);
-    frac(2,1) = (self->matrix_frac())(2,1);
-    frac(2,2) = (self->matrix_frac())(2,2);
-    return frac;
-  };
+%extend Cell_descr {
   void dim(double numpy_double_out[3])
   {
-    numpy_double_out[0] = $self->a();
-    numpy_double_out[1] = $self->b();
-    numpy_double_out[2] = $self->c();
+    numpy_double_out[0] = self->a();
+    numpy_double_out[1] = self->b();
+    numpy_double_out[2] = self->c();
+  }
+  void angles(double numpy_double_out[3])
+  {
+    numpy_double_out[0] = self->alpha();
+    numpy_double_out[1] = self->beta();
+    numpy_double_out[2] = self->gamma();
+  }
+  void angles_deg(double numpy_double_out[3])
+  {
+    numpy_double_out[0] = self->alpha_deg();
+    numpy_double_out[1] = self->beta_deg();
+    numpy_double_out[2] = self->gamma_deg();
+  }
+#ifdef PYTHON_PROPERTIES
+  %pythoncode %{
+    dim = property(dim)
+    angles = property(angles)
+    angles_deg = property(angles_deg)
+  %}
+#endif
+
+}  
+
+%extend Cell {
+  //Mat33<float> matrix_orth()
+  //{
+    //Mat33<float> orth;
+    //orth(0,0) = (self->matrix_orth())(0,0);
+    //orth(0,1) = (self->matrix_orth())(0,1);
+    //orth(0,2) = (self->matrix_orth())(0,2);
+    //orth(1,0) = (self->matrix_orth())(1,0);
+    //orth(1,1) = (self->matrix_orth())(1,1);
+    //orth(1,2) = (self->matrix_orth())(1,2);
+    //orth(2,0) = (self->matrix_orth())(2,0);
+    //orth(2,1) = (self->matrix_orth())(2,1);
+    //orth(2,2) = (self->matrix_orth())(2,2);
+    //return orth;
+  //};
+  //Mat33<float> matrix_frac()
+  //{
+    //Mat33<float> frac;
+    //frac(0,0) = (self->matrix_frac())(0,0);
+    //frac(0,1) = (self->matrix_frac())(0,1);
+    //frac(0,2) = (self->matrix_frac())(0,2);
+    //frac(1,0) = (self->matrix_frac())(1,0);
+    //frac(1,1) = (self->matrix_frac())(1,1);
+    //frac(1,2) = (self->matrix_frac())(1,2);
+    //frac(2,0) = (self->matrix_frac())(2,0);
+    //frac(2,1) = (self->matrix_frac())(2,1);
+    //frac(2,2) = (self->matrix_frac())(2,2);
+    //return frac;
+  //};
+  void dim(double numpy_double_out[3])
+  {
+    numpy_double_out[0] = self->a();
+    numpy_double_out[1] = self->b();
+    numpy_double_out[2] = self->c();
   }
   void recip_dim(double numpy_double_out[3])
   {
-    numpy_double_out[0] = $self->a_star();
-    numpy_double_out[1] = $self->b_star();
-    numpy_double_out[2] = $self->c_star();
+    numpy_double_out[0] = self->a_star();
+    numpy_double_out[1] = self->b_star();
+    numpy_double_out[2] = self->c_star();
   }
   
   void angles(double numpy_double_out[3])
   {
-    numpy_double_out[0] = $self->alpha();
-    numpy_double_out[1] = $self->beta();
-    numpy_double_out[2] = $self->gamma();
+    numpy_double_out[0] = self->alpha();
+    numpy_double_out[1] = self->beta();
+    numpy_double_out[2] = self->gamma();
   }
   void angles_deg(double numpy_double_out[3])
   {
-    numpy_double_out[0] = $self->alpha_deg();
-    numpy_double_out[1] = $self->beta_deg();
-    numpy_double_out[2] = $self->gamma_deg();
+    numpy_double_out[0] = self->alpha_deg();
+    numpy_double_out[1] = self->beta_deg();
+    numpy_double_out[2] = self->gamma_deg();
   }
   void recip_angles(double numpy_double_out[3])
   {
-    numpy_double_out[0] = $self->alpha_star();
-    numpy_double_out[1] = $self->beta_star();
-    numpy_double_out[2] = $self->gamma_star();
+    numpy_double_out[0] = self->alpha_star();
+    numpy_double_out[1] = self->beta_star();
+    numpy_double_out[2] = self->gamma_star();
   }
   void recip_angles_deg(double numpy_double_out[3])
   {
-    numpy_double_out[0] = Util::rad2d($self->alpha_star());
-    numpy_double_out[1] = Util::rad2d($self->beta_star());
-    numpy_double_out[2] = Util::rad2d($self->gamma_star());
+    numpy_double_out[0] = Util::rad2d(self->alpha_star());
+    numpy_double_out[1] = Util::rad2d(self->beta_star());
+    numpy_double_out[2] = Util::rad2d(self->gamma_star());
   }
-  // Functional equivalent to Cell::descr
+  // Functional equivalent to original Cell::descr
   Cell_descr cell_descr()
   {
-    return Cell_descr($self->a(), $self->b(), $self->c(),
-                      $self->alpha(), $self->beta(), $self->gamma());
+    return Cell_descr(self->a(), self->b(), self->c(),
+                      self->alpha(), self->beta(), self->gamma());
+  }
+  bool __eq__ (const Cell& other) const {
+      return self->equals(other);
   }
 
+#ifdef PYTHON_PROPERTIES  
+  %pythoncode %{
+    matrix_orth = property(matrix_orth)
+    matrix_frac = property(matrix_frac)
+    dim = property(dim)
+    recip_dim = property(recip_dim)
+    angles = property(angles)
+    angles_deg = property(angles_deg)
+    recip_angles = property(recip_angles)
+    recip_angles_deg = property(recip_angles)
+    metric_real = property(metric_real)
+    metric_reci = property(metric_reci)  
+    volume = property(volume)
+    cell_descr = property(cell_descr)
+  %}
+#endif  
+
 };
+
 }
 
 
@@ -1115,6 +1199,11 @@ namespace clipper
    $1 = s;
 }
 */
+
+/* Just some extra functions to help with finding symmetry equivalents.
+ * No need to wrap them.
+ */
+
 %{
   namespace clipper
   {
@@ -1150,6 +1239,7 @@ namespace clipper {
   %rename("_u_ptr") Coord_grid::u();
   %rename("_v_ptr") Coord_grid::v();
   %rename("_w_ptr") Coord_grid::w();
+#ifdef PYTHON_PROPERTIES
   %rename("_u") Coord_grid::u() const;
   %rename("_v") Coord_grid::v() const;
   %rename("_w") Coord_grid::w() const;
@@ -1162,8 +1252,8 @@ namespace clipper {
   %rename("_u") Coord_map::u() const;
   %rename("_v") Coord_map::v() const;
   %rename("_w") Coord_map::w() const;
-    
   %rename("_element_ptr") Atom::element() const;
+#endif    
 }
 
 
@@ -1185,13 +1275,35 @@ namespace clipper
 
   bool __ne__(const Coord_grid& g2) { return *self != g2; }
   bool __eq__(const Coord_grid& g2) { return *self == g2; }
-  Coord_grid __add__(const Coord_grid& g2) { return *self + g2; }
+  Coord_grid __add_base__(const Coord_grid& g2) { return *self + g2; }
   Coord_grid __neg__() { return -(*self); }
-  Coord_grid __sub__(const Coord_grid& g2) { return *self - g2; }
+  Coord_grid __sub_base__(const Coord_grid& g2) { return *self - g2; }
   Coord_grid __mul__(const int& m) { return m * (*self); }
   Coord_grid __rmul__(const int& m) { return m * (*self); }
   // Transform operator handled in Isymop::__mul__()
+  std::string __str__() {return self->format();}
   
+  %pythoncode %{
+    def __add__(self, other):
+      try:
+        return self.__add_base__(other)
+      except:
+        return self + Coord_grid(*other)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+    
+    def __sub__(self, other):
+      try:
+        return self.__sub_base__(other)
+      except:
+        return self - Coord_grid(*other)
+
+    def __rsub__(self, other):
+      return Coord_grid(*other).__sub__(self)
+
+  %} 
+#ifdef PYTHON_PROPERTIES
   void _get_uvw(int numpy_int_out[3])
   {
     for (int i = 0; i < 3; i++) {
@@ -1204,22 +1316,53 @@ namespace clipper
     $self->v() = v[1];
     $self->w() = v[2];
   }
+  %pythoncode %{
+    uvw = property(_get_uvw, _set_uvw)
+  %}
+#endif
+
 }
 
 %extend Coord_orth
 {
-  Coord_orth __add__(const Coord_orth &h2) { return *self + h2; }
-  Coord_orth __sub__(const Coord_orth &h2) { return *self - h2; }
+  Coord_orth __add_base__(const Coord_orth &h2) { return *self + h2; }
+  Coord_orth __sub_base__(const Coord_orth &h2) { return *self - h2; }
   Coord_orth __neg__() { return -(*self); }
   Coord_orth __mul__ ( const double &f ) { return f * (*self); }
   Coord_orth __rmul__ ( const double &f ) { return f * (*self); }
   // Transforms handled in RTop_orth::__mul__()
+  %pythoncode %{
+    def __add__(self, other):
+      try:
+        return self.__add_base__(other)
+      except:
+        return self + Coord_orth(*other)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+    
+    def __sub__(self, other):
+      try:
+        return self.__sub_base__(other)
+      except:
+        return self - Coord_orth(*other)
+
+    def __rsub__(self, other):
+      return Coord_orth(*other).__sub__(self)
+    
+  %}
+  
+  
+  
   void _get_xyz(double numpy_double_out[3])
   {
     for (int i = 0; i < 3; i++) {
       numpy_double_out[i] = (*self)[i];
     }
   }
+  
+  
+  
 }
 
 %extend Coord_frac 

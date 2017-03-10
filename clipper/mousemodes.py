@@ -161,11 +161,21 @@ class ContourSelectedVolume(mousemodes.MouseMode):
                 lstr = ', '.join(format(l, '.3f') for l in levels)
                 sstr = ', '.join(format(s, '.3f') for s in lsig)
                 self.session.logger.status('Volume {} contour level(s): {} ({} sigma)'.format(v.name, lstr, sstr))
-            self.session.ui.update_graphics_now()
             if hasattr(v, 'surface_zone'):
                 if v.surface_zone.atoms is not None or v.surface_zone.coords is not None:
-                    self._start_remask_countdown()
-    
+                    from chimerax.core.surface.zone import surface_zone
+                if v.surface_zone.atoms is not None:
+                    coords = v.surface_zone.atoms.coords
+                    if v.surface_zone.coords is not None:
+                        coords = numpy.concatenate([coords, v.surface_zone.coords])
+                else:
+                    coords = v.surface_zone.coords
+                
+                surface_zone(v, coords, v.surface_zone.distance)
+                    
+                    #self._start_remask_countdown()
+            #self.session.ui.update_graphics_now()    
+            
     def _start_remask_countdown(self):
         if self._remask_handler is None:
             self._remask_handler = self.session.triggers.add_handler('new frame', self._incr_remask_counter)
@@ -175,7 +185,6 @@ class ContourSelectedVolume(mousemodes.MouseMode):
         self._remask_counter += 1
         if self._remask_counter >= self._frames_until_remask:
             from chimerax.core.surface.zone import surface_zone
-            from chimerax.core
             v = self.target_volume
             if v.surface_zone.atoms is not None:
                 coords = v.surface_zone.atoms.coords

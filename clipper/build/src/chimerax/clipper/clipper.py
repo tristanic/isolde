@@ -312,77 +312,77 @@ class Atom_list(clipper_core.Atom_list):
 # Real space coordinates
 ########################################################################
 
-@format_to_string
-@getters_to_properties(('xyz', '_get_xyz'))
-@mappedclass(clipper_core.Coord_orth)
-class Coord_orth(clipper_core.Coord_orth):
-    '''Coordinates in orthographic (x,y,z) space.'''
-    def __init__(self, xyz):
-        '''
-        __init__(self, xyz) -> Coord_orth
+#@format_to_string
+#@getters_to_properties(('xyz', '_get_xyz'))
+#@mappedclass(clipper_core.Coord_orth)
+#class Coord_orth(clipper_core.Coord_orth):
+    #'''Coordinates in orthographic (x,y,z) space.'''
+    #def __init__(self, xyz):
+        #'''
+        #__init__(self, xyz) -> Coord_orth
         
-        Args:
-            xyz ([float * 3]): (x, z, z) coordinates in Angstroms
-        '''
-        if isinstance(xyz, numpy.ndarray):
-            # Because SWIG does not correctly typemap numpy.float32
-            xyz = xyz.astype(float)
-        clipper_core.Coord_orth.__init__(self, *xyz)
+        #Args:
+            #xyz ([float * 3]): (x, z, z) coordinates in Angstroms
+        #'''
+        #if isinstance(xyz, numpy.ndarray):
+            ## Because SWIG does not correctly typemap numpy.float32
+            #xyz = xyz.astype(float)
+        #clipper_core.Coord_orth.__init__(self, *xyz)
     
-    def __add__(self, other):
-        if isinstance(other, Coord_orth):
-            return super(Coord_orth, self).__add__(other)
-        return self + Coord_orth(other)
+    #def __add__(self, other):
+        #if isinstance(other, Coord_orth):
+            #return super(Coord_orth, self).__add__(other)
+        #return self + Coord_orth(other)
 
-    def __radd__(self, other):
-        return self.__add__(other)
+    #def __radd__(self, other):
+        #return self.__add__(other)
     
-    def __sub__(self, other):
-        if isinstance(other, Coord_orth):
-            return super(Coord_orth, self).__sub__(other)
-        return self - Coord_orth(other)
+    #def __sub__(self, other):
+        #if isinstance(other, Coord_orth):
+            #return super(Coord_orth, self).__sub__(other)
+        #return self - Coord_orth(other)
     
-    def __rsub__(self, other):
-        if isinstance(other, Coord_orth):
-            return other.__sub__(self)
-        return Coord_orth(other).__sub__(self)
+    #def __rsub__(self, other):
+        #if isinstance(other, Coord_orth):
+            #return other.__sub__(self)
+        #return Coord_orth(other).__sub__(self)
 
     
-@format_to_string 
-@getters_to_properties(('uvw','_get_uvw'))   
-@mappedclass(clipper_core.Coord_grid)        
-class Coord_grid(clipper_core.Coord_grid):
-    '''Integer grid coordinates in crystal space.'''
-    def __init__(self, uvw):
-        '''
-        __init__(self, uvw) -> Coord_grid
+#@format_to_string 
+#@getters_to_properties(('uvw','_get_uvw'))   
+#@mappedclass(clipper_core.Coord_grid)        
+#class Coord_grid(clipper_core.Coord_grid):
+    #'''Integer grid coordinates in crystal space.'''
+    #def __init__(self, uvw):
+        #'''
+        #__init__(self, uvw) -> Coord_grid
         
-        Args:
-            uvw ([int * 3]): (u, v, w) grid coordinates
-        '''
-        # Not sure why, but wrapped C functions fail when fed expansions
-        # of numpy int32 arrays, so we need to convert these to lists first.
-        if isinstance(uvw, numpy.ndarray):
-            uvw = uvw.tolist()
-        clipper_core.Coord_grid.__init__(self, *uvw)
+        #Args:
+            #uvw ([int * 3]): (u, v, w) grid coordinates
+        #'''
+        ## Not sure why, but wrapped C functions fail when fed expansions
+        ## of numpy int32 arrays, so we need to convert these to lists first.
+        #if isinstance(uvw, numpy.ndarray):
+            #uvw = uvw.tolist()
+        #clipper_core.Coord_grid.__init__(self, *uvw)
         
-    def __add__(self, other):
-        if isinstance(other, Coord_grid):
-            return super(Coord_grid, self).__add__(other)
-        return self + Coord_grid(other)
+    #def __add__(self, other):
+        #if isinstance(other, Coord_grid):
+            #return super(Coord_grid, self).__add__(other)
+        #return self + Coord_grid(other)
 
-    def __radd__(self, other):
-        return self.__add__(other)
+    #def __radd__(self, other):
+        #return self.__add__(other)
     
-    def __sub__(self, other):
-        if isinstance(other, Coord_grid):
-            return super(Coord_grid, self).__sub__(other)
-        return self - Coord_grid(other)
+    #def __sub__(self, other):
+        #if isinstance(other, Coord_grid):
+            #return super(Coord_grid, self).__sub__(other)
+        #return self - Coord_grid(other)
     
-    def __rsub__(self, other):
-        if isinstance(other, Coord_grid):
-            return other.__sub__(self)
-        return Coord_grid(other).__sub__(self)
+    #def __rsub__(self, other):
+        #if isinstance(other, Coord_grid):
+            #return other.__sub__(self)
+        #return Coord_grid(other).__sub__(self)
             
             
 @format_to_string
@@ -892,8 +892,8 @@ class Grid_sampling(clipper_core.Grid_sampling):
         clipper_core.Grid_sampling.__init__(self, spacegroup, cell, 
                                             resolution, rate)
 
-@format_to_string    
-@mappedclass(clipper_core.Cell_descr)
+#@format_to_string    
+#@mappedclass(clipper_core.Cell_descr)
 class Cell_descr(clipper_core.Cell_descr):
     def __init__(self, abc, angles):
         '''
@@ -905,59 +905,60 @@ class Cell_descr(clipper_core.Cell_descr):
         '''
         clipper_core.Cell_descr.__init__(self, *abc, *angles)
     
-@format_to_string
-@getters_to_properties('cell_descr', 'matrix_frac', 'matrix_orth', 
-                       'metric_real', 'metric_reci', 'volume')
-@mappedclass(clipper_core.Cell)
-class Cell(clipper_core.Cell):
-    '''
-    Define a crystallographic unit cell using the lengths of the three
-    sides a, b, c (in Angstroms) and the three angles alpha, beta, gamma
-    (in degrees). 
-    '''
-    def __init__(self, abc, angles):
-        '''
-        __init__(self, abc, angles) -> Cell
+#@format_to_string
+#@getters_to_properties('cell_descr', 'matrix_frac', 'matrix_orth', 
+#                       'metric_real', 'metric_reci', 'volume')
+#@mappedclass(clipper_core.Cell)
+#class Cell(clipper_core.Cell):
+    #'''
+    #Define a crystallographic unit cell using the lengths of the three
+    #sides a, b, c (in Angstroms) and the three angles alpha, beta, gamma
+    #(in degrees). 
+    #'''
+    #def __init__(self, abc, angles):
+        #'''
+        #__init__(self, abc, angles) -> Cell
         
-        Args:
-            abc ([float*3]): cell dimensions in Angstroms
-            angles ([float*3]): alpha, beta and gamma angles in degrees
-        '''
-        cell_descr = Cell_descr(*abc, *angles)
-        clipper_core.Cell.__init__(self, cell_descr)
+        #Args:
+            #abc ([float*3]): cell dimensions in Angstroms
+            #angles ([float*3]): alpha, beta and gamma angles in degrees
+        #'''
+        #cell_descr = Cell_descr(abc, angles)
+        ##cell_descr = clipper_core.Cell_descr(*abc, *angles)
+        #clipper_core.Cell.__init__(self, cell_descr)
     
-    def __eq__(self, other):
-        return self.equals(other)
+    #def __eq__(self, other):
+        #return self.equals(other)
     
-    @property
-    def dim(self):
-        '''Returns the (a,b,c) lengths of the cell axes in Angstroms'''
-        return super(Cell, self).dim()
+    #@property
+    #def dim(self):
+        #'''Returns the (a,b,c) lengths of the cell axes in Angstroms'''
+        #return super(Cell, self).dim()
     
-    @property
-    def angles(self):
-        '''Returns the cell angles (alpha, beta, gamma) in radians'''
-        return super(Cell, self).angles()
+    #@property
+    #def angles(self):
+        #'''Returns the cell angles (alpha, beta, gamma) in radians'''
+        #return super(Cell, self).angles()
     
-    @property
-    def angles_deg(self):
-        '''Returns the cell angles (alpha, beta, gamma) in degrees'''
-        return super(Cell, self).angles_deg()
+    #@property
+    #def angles_deg(self):
+        #'''Returns the cell angles (alpha, beta, gamma) in degrees'''
+        #return super(Cell, self).angles_deg()
     
-    @property
-    def recip_dim(self):
-        '''Returns the reciprocal cell lengths (a*, b*, c*) in inverse Angstroms'''
-        return super(Cell, self).recip_dim()
+    #@property
+    #def recip_dim(self):
+        #'''Returns the reciprocal cell lengths (a*, b*, c*) in inverse Angstroms'''
+        #return super(Cell, self).recip_dim()
     
-    @property    
-    def recip_angles(self):
-        '''Returns the reciprocal cell angles (alpha*, beta*, gamma*) in radians'''
-        return super(Cell, self).recip_angles()
+    #@property    
+    #def recip_angles(self):
+        #'''Returns the reciprocal cell angles (alpha*, beta*, gamma*) in radians'''
+        #return super(Cell, self).recip_angles()
     
-    @property
-    def recip_angles_deg(self):
-        '''Returns the reciprocal cell angles (alpha*, beta*, gamma*) in degrees'''
-        return super(Cell, self).recip_angles_deg()
+    #@property
+    #def recip_angles_deg(self):
+        #'''Returns the reciprocal cell angles (alpha*, beta*, gamma*) in degrees'''
+        #return super(Cell, self).recip_angles_deg()
 
 
 @mappedclass(clipper_core.Unit_Cell)
@@ -1329,11 +1330,11 @@ class Resolution(clipper_core.Resolution):
 # VECTORS AND MATRICES
 ########################################################################
 
-@getters_to_properties('det', 'inverse', 'is_null', 'transpose', 'as_numpy')
-@format_to_string
-@mappedclass(clipper_core.mat33_float)
-class Mat33_float(clipper_core.mat33_float):
-    pass
+#@getters_to_properties('det', 'inverse', 'is_null', 'transpose', 'as_numpy')
+#@format_to_string
+#@mappedclass(clipper_core.mat33_float)
+#class Mat33_float(clipper_core.mat33_float):
+    #pass
 
 ########################################################################
 # UTILITIES

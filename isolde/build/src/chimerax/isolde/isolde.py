@@ -1570,7 +1570,7 @@ class Isolde():
                     v = m.get_source_map()
                     cutoff = m.get_mask_cutoff()
                     from chimerax.core.commands import sop
-                    sop.sop_zone(self.session, v.surface_drawings, near_atoms = total_mobile, range = cutoff)
+                    sop.surface_zone(self.session, v.surface_drawings, near_atoms = total_mobile, range = cutoff)
         
         log('Preparing maps took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()

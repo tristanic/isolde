@@ -35,10 +35,10 @@ def mappedclass(old_cls):
     '''
 
     def decorator(cls):
-        def __newnew__(thiscls, *args, **kwargs):
-            if thiscls == old_cls:
+        def __newnew__(this_cls, *args, **kwargs):
+            if this_cls == old_cls:
                 return object.__new__(cls)
-            return object.__new__(thiscls)
+            return object.__new__(this_cls)
         old_cls.__new__ = __newnew__
         
         return cls
