@@ -94,8 +94,8 @@
 /
 
 
-%inline 
-%{ 
+%inline
+%{
 #include <stdio.h>
 void ClipperTestPassNumpyArray(double *test_numpy_a, int test_numpy_n){
   printf("Hello world %d\n",test_numpy_n);
@@ -120,7 +120,7 @@ void ClipperTestPassNumpyArray(double *test_numpy_a, int test_numpy_n){
 %rename(transf_HKL)           operator*  (const Isymop&, const HKL&);
 
 %rename(equals_Coord_grid)    operator== (const Coord_grid&, const Coord_grid&);
-%rename(notequals_Coord_grid) operator!= (const Coord_grid&, const Coord_grid&); 
+%rename(notequals_Coord_grid) operator!= (const Coord_grid&, const Coord_grid&);
 %rename(neg_Coord_grid)       operator-  (const Coord_grid&);
 %rename(add_Coord_grid)       operator+  (const Coord_grid&, const Coord_grid&);
 %rename(subs_Coord_grid)      operator-  (const Coord_grid&, const Coord_grid&);
@@ -185,7 +185,7 @@ namespace std {
   %template(IntIntVector) vector<vector<int> >;
   %template(FloatFloatVector) vector<vector<float> >;
   %template(DoubleDoubleVector) vector<vector<double> >;
-  
+
   //%template(_string_list) std::vector< std::string >;
 }
 
@@ -771,12 +771,12 @@ namespace clipper
   typedef float    ftype32;
   typedef double   ftype64;
 
-  
+
   std::string ClipperStringAsString(const clipper::String &a)
   {
     return (std::string)(a);
   }
-  
+
   }
 %}
 
@@ -850,33 +850,51 @@ namespace clipper
 }
 }
 
+/* Not really sure if these are needed in Python? Would probably be better to
+ * rely on the built-in Python equivalents.
+ */
+namespace clipper
+{
+%rename(is_nan_float) Util::is_nan(const ftype32);
+%rename(is_nan_double) Util::is_nan(const ftype64);
+%rename(is_nan_float_slow) Util::isnan(ftype32);
+%rename(is_nan_double_slow) Util::isnan(ftype64);
+%rename(set_null_float) Util::set_null(ftype32);
+%rename(set_null_double) Util::set_null(ftype64);
+%rename(is_null_float) Util::is_null(ftype32);
+%rename(is_null_double) Util::is_null(ftype64);
+}
+
 %include "../clipper/core/clipper_util.h"
 %include "../clipper/core/clipper_types.h"
 
+
+%feature("docstring") clipper::Util::get_minmax_grid "
+ Find the minimum and maximum grid coordinates of a box encompassing the
+ coordinates in numpy_2d_in given the cell and grid sampling, and return a
+ numpy array [min, max]."
 
 namespace clipper
 {
 %extend Util {
   //! Some useful extensions to the Util class
-  
-
   /*! Find the minimum and maximum grid coordinates of a box encompassing
-  * the coordinates in numpy_2d_in given the cell and grid sampling, 
+  * the coordinates in numpy_2d_in given the cell and grid sampling,
   * and return a numpy array [min, max].
   */
-  static void get_minmax_grid(int numpy_int_out[2][3], 
-    double* numpy_2d_in, int n1, int n2, 
+  static void get_minmax_grid(int numpy_int_out[2][3],
+    double* numpy_2d_in, int n1, int n2,
     const clipper::Cell& cell, const clipper::Grid_sampling& grid)
   {
     if (n2 != 3) {
       throw std::out_of_range("Input should be an array of 3D coordinates!");
     }
-    Coord_grid ref_min = 
+    Coord_grid ref_min =
       (Coord_orth(numpy_2d_in[0], numpy_2d_in[1], numpy_2d_in[2]))
                             .coord_frac(cell).coord_grid(grid);
     Coord_grid ref_max = ref_min;
     for (size_t i = 0; i < n1*n2; i+=n2 ) {
-      Coord_grid thiscoord = 
+      Coord_grid thiscoord =
         Coord_orth(numpy_2d_in[i], numpy_2d_in[i+1], numpy_2d_in[i+2])
                             .coord_frac(cell).coord_grid(grid);
       for (size_t j = 0; j < 3; j++) {
@@ -913,25 +931,11 @@ namespace clipper
 %}
 
 
-namespace clipper
-{
-%rename(is_nan_float) Util::is_nan(const ftype32);
-%rename(is_nan_double) Util::is_nan(const ftype64);
-%rename(is_nan_float_slow) Util::isnan(ftype32);
-%rename(is_nan_double_slow) Util::isnan(ftype64);
-%rename(set_null_float) Util::set_null(ftype32);
-%rename(set_null_double) Util::set_null(ftype64);
-%rename(is_null_float) Util::is_null(ftype32);
-%rename(is_null_double) Util::is_null(ftype64);
-}
 
 /* We are getting a load of warnings whenever SWIG is trying
    to wrap template base classes that will never be of any use
    in Python, so let's suppress the warnings for these
 */
-
-%include "../clipper/core/symop.h"
-
 
 /* Here we use immutable to deal with const char * vars */
 
@@ -939,8 +943,7 @@ namespace clipper
 %immutable hm;
 %immutable lgname;
 
-
-
+%include "../clipper/core/symop.h"
 
 %{
   namespace clipper
@@ -1010,13 +1013,13 @@ namespace clipper
   //%pythoncode %{
     //spacegroup_number = property(spacegroup_number)
     //symbol_hall = property(symbol_hall)
-    
+
   //%}
   //}
 //}
 //#endif
 
-/* Cell::descr() appears to be the only line in cell.h that SWIG balks at - 
+/* Cell::descr() appears to be the only line in cell.h that SWIG balks at -
  * rather than properly handle the implicit cast of Cell back to
  * Cell_descr, it appears to attempt to define a whole new Cell_descr
  * object and then crashes because Cell_descr already exists. Tell
@@ -1062,8 +1065,7 @@ namespace clipper
 %include "../clipper/core/cell.h"
 
 namespace clipper
-{ 
-
+{
 %extend Cell_descr {
   void dim(double numpy_double_out[3])
   {
@@ -1091,7 +1093,7 @@ namespace clipper
   %}
 #endif
 
-}  
+} // extend Cell_descr
 
 %extend Cell {
   //Mat33<float> matrix_orth()
@@ -1134,7 +1136,7 @@ namespace clipper
     numpy_double_out[1] = self->b_star();
     numpy_double_out[2] = self->c_star();
   }
-  
+
   void angles(double numpy_double_out[3])
   {
     numpy_double_out[0] = self->alpha();
@@ -1169,7 +1171,7 @@ namespace clipper
       return self->equals(other);
   }
 
-#ifdef PYTHON_PROPERTIES  
+#ifdef PYTHON_PROPERTIES
   %pythoncode %{
     matrix_orth = property(matrix_orth)
     matrix_frac = property(matrix_frac)
@@ -1180,15 +1182,15 @@ namespace clipper
     recip_angles = property(recip_angles)
     recip_angles_deg = property(recip_angles)
     metric_real = property(metric_real)
-    metric_reci = property(metric_reci)  
+    metric_reci = property(metric_reci)
     volume = property(volume)
     cell_descr = property(cell_descr)
   %}
-#endif  
+#endif
 
-};
+}; // extend Cell
 
-}
+} // namespace clipper
 
 
 /*
@@ -1200,11 +1202,10 @@ namespace clipper
 }
 */
 
-/* Just some extra functions to help with finding symmetry equivalents.
- * No need to wrap them.
- */
-
 %{
+  /* Just some extra functions to help with finding symmetry equivalents.
+   * No need to wrap them.
+   */
   namespace clipper
   {
   template <class T = Coord_frac> T cell_shift (const T& coord)
@@ -1231,8 +1232,8 @@ namespace clipper {
   /* Strangely, only Coord_grid has both getter and setter accessors
    * for u, v and w. The remainder of the coordinate classes are read-
    * only for us here in SWIG. If we want to implement a setter function
-   * to give the appearance of replacing values in-place, it'll have to 
-   * be done in Python. All the accessors for individual values are 
+   * to give the appearance of replacing values in-place, it'll have to
+   * be done in Python. All the accessors for individual values are
    * renamed to hidden methods here, and a new function is defined below
    * for each class to return (x,y,z) or (u,v,w) as a numpy array.
    */
@@ -1252,10 +1253,18 @@ namespace clipper {
   %rename("_u") Coord_map::u() const;
   %rename("_v") Coord_map::v() const;
   %rename("_w") Coord_map::w() const;
-  %rename("_element_ptr") Atom::element() const;
-#endif    
+  %rename("_get_element") Atom::element() const;
+  %rename("_set_element") Atom::set_element();
+  %rename("_get_occupancy") Atom::occupancy() const;
+  %rename("_set_occupancy") Atom::set_occupancy();
+  %rename("_get_u_iso") Atom::u_iso() const;
+  %rename("_set_u_iso") Atom::set_u_iso();
+  %rename("_get_u_aniso") Atom::u_aniso_orth() const;
+  %rename("_set_u_aniso") Atom::set_u_anso_orth();
+  %rename("_get_coord_orth") Atom::coord_orth() const;
+  %rename("_set_coord_orth") Atom::set_coord_orth();
+#endif
 }
-
 
 %include "../clipper/core/coords.h"
 
@@ -1263,15 +1272,6 @@ namespace clipper {
 namespace clipper
 {
 %extend Coord_grid {
-  /*
-   * This is not right. __cmp__() should return a negative integer if self < g2, 
-   * a positive integer if self > g2, and zero if self == g2. I don't see
-   * how this can be applied to a 3D coordinate.
-  bool __cmp__(const Coord_grid& g2)
-  {
-    return (*($self) == g2);
-  }
-  */
 
   bool __ne__(const Coord_grid& g2) { return *self != g2; }
   bool __eq__(const Coord_grid& g2) { return *self == g2; }
@@ -1282,7 +1282,8 @@ namespace clipper
   Coord_grid __rmul__(const int& m) { return m * (*self); }
   // Transform operator handled in Isymop::__mul__()
   std::string __str__() {return self->format();}
-  
+  std::string __repr__() {return "Coord_grid " + self->format();}
+  //! Allow addition and subtraction with any Python iterable of 3 numbers
   %pythoncode %{
     def __add__(self, other):
       try:
@@ -1292,7 +1293,7 @@ namespace clipper
 
     def __radd__(self, other):
         return self.__add__(other)
-    
+
     def __sub__(self, other):
       try:
         return self.__sub_base__(other)
@@ -1302,7 +1303,7 @@ namespace clipper
     def __rsub__(self, other):
       return Coord_grid(*other).__sub__(self)
 
-  %} 
+  %}
 #ifdef PYTHON_PROPERTIES
   void _get_uvw(int numpy_int_out[3])
   {
@@ -1321,7 +1322,7 @@ namespace clipper
   %}
 #endif
 
-}
+} // extend Coord_grid
 
 %extend Coord_orth
 {
@@ -1331,6 +1332,9 @@ namespace clipper
   Coord_orth __mul__ ( const double &f ) { return f * (*self); }
   Coord_orth __rmul__ ( const double &f ) { return f * (*self); }
   // Transforms handled in RTop_orth::__mul__()
+  std::string __str__() {return self->format();}
+  std::string __repr__() {return "Coord_orth " + self->format();}
+  //! Allow addition and subtraction with any Python iterable of 3 numbers
   %pythoncode %{
     def __add__(self, other):
       try:
@@ -1340,7 +1344,7 @@ namespace clipper
 
     def __radd__(self, other):
         return self.__add__(other)
-    
+
     def __sub__(self, other):
       try:
         return self.__sub_base__(other)
@@ -1349,70 +1353,199 @@ namespace clipper
 
     def __rsub__(self, other):
       return Coord_orth(*other).__sub__(self)
-    
   %}
-  
-  
-  
+
+
+#ifdef PYTHON_PROPERTIES
   void _get_xyz(double numpy_double_out[3])
   {
     for (int i = 0; i < 3; i++) {
       numpy_double_out[i] = (*self)[i];
     }
   }
-  
-  
-  
-}
 
-%extend Coord_frac 
+  %pythoncode %{
+    xyz = property(_get_xyz)
+  %}
+#endif
+
+} // extend Coord_orth
+
+%extend Coord_frac
 {
-  Coord_frac __add__(const Coord_frac &h2) { return *self + h2; }
-  Coord_frac __sub__(const Coord_frac &h2) { return *self - h2; }
+  Coord_frac __add_base__(const Coord_frac &h2) { return *self + h2; }
+  Coord_frac __sub_base__(const Coord_frac &h2) { return *self - h2; }
   Coord_frac __neg__() { return -(*self); }
   Coord_frac __mul__ ( const double &f ) { return f * (*self); }
   Coord_frac __rmul__ ( const double &f ) { return f * (*self); }
   // Transforms handled in RTop_frac::__mul__()
+  std::string __str__() {return self->format();}
+  std::string __repr__() {return "Coord_frac " + self->format();}
   void _get_uvw(double numpy_double_out[3])
   {
     for (int i = 0; i < 3; i++) {
       numpy_double_out[i] = (*self)[i];
     }
   }
+  //! Allow addition and subtraction with any Python iterable of 3 numbers
+  %pythoncode %{
+    def __add__(self, other):
+      try:
+        return self.__add_base__(other)
+      except:
+        return self + Coord_frac(*other)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+      try:
+        return self.__sub_base__(other)
+      except:
+        return self - Coord_frac(*other)
+
+    def __rsub__(self, other):
+      return Coord_frac(*other).__sub__(self)
+  %}
+
+
+#ifdef PYTHON_PROPERTIES
+  void _get_uvw(double numpy_double_out[3])
+  {
+    for (int i = 0; i < 3; i++) {
+      numpy_double_out[i] = (*self)[i];
+    }
+  }
+
+  %pythoncode %{
+    uvw = property(_get_uvw)
+  %}
+#endif
+
 }
 
 %extend Coord_map
 {
-  Coord_map __add__(const Coord_map &h2) { return *self + h2; }
-  Coord_map __sub__(const Coord_map &h2) { return *self - h2; }
+  Coord_map __add_base__(const Coord_map &h2) { return *self + h2; }
+  Coord_map __sub_base__(const Coord_map &h2) { return *self - h2; }
   Coord_map __neg__() { return -(*self); }
   Coord_map __mul__ ( const double &f ) { return f * (*self); }
   Coord_map __rmul__ ( const double &f ) { return f * (*self); }
   // No transforms for this coordinate type
+  std::string __str__() {return self->format();}
+  std::string __repr__() {return "Coord_map " + self->format();}
+  //! Allow addition and subtraction with any Python iterable of 3 numbers
+  %pythoncode %{
+    def __add__(self, other):
+      try:
+        return self.__add_base__(other)
+      except:
+        return self + Coord_map(*other)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+      try:
+        return self.__sub_base__(other)
+      except:
+        return self - Coord_map(*other)
+
+    def __rsub__(self, other):
+      return Coord_map(*other).__sub__(self)
+  %}
+
+
+#ifdef PYTHON_PROPERTIES
   void _get_uvw(double numpy_double_out[3])
   {
     for (int i = 0; i < 3; i++) {
-      numpy_double_out[i] = (*($self))[i];
+      numpy_double_out[i] = (*self)[i];
     }
   }
-  
-}
+
+  %pythoncode %{
+    uvw = property(_get_uvw)
+  %}
+#endif
+
+} // extend Coord_map
 
 %extend HKL_sampling
 {
   bool __eq__(const HKL_sampling& hkl2) { return *self == hkl2; }
   bool __ne__(const HKL_sampling& hkl2) { return !(*self == hkl2); }
-}
+} // extend HKL_sampling
 
-%extend Atom 
+%extend Atom
 {
-  std::string element()
-  {
-    return $self->element();
+#ifndef PYTHON_PROPERTIES
+  std::string element() { return $self->element(); }
+#endif
+
+#ifdef PYTHON_PROPERTIES
+  %pythoncode %{
+    element = property(_get_element, _set_element)
+    occupancy = property(_get_occupancy, _set_occupancy)
+    u_iso = property(_get_u_iso, _set_u_iso)
+    _u_aniso = property(_get_u_aniso, _set_u_aniso)
+    coord_orth = property(_get_coord_orth, _set_coord_orth)
+    is_null = property(is_null)
+
+    def _get_coord_xyz(self):
+      ''' Get the orthographic (x,y,z) coordinates as a Numpy array. '''
+      return self.coord_orth.xyz
+    def _set_coord_xyz(self, coord)
+      self.coord_orth = Coord_orth(*coord)
+    coord = property(_get_coord_xyz, _set_coord_xyz)
+
+    def _get_u_aniso_vals(self):
+      '''
+      Anisotropic B-factor matrix as a 6-member array:
+      [u00, u11, u22, u01, u02, u12].
+      For purely isotropic B-factors, set this to None
+      '''
+      return self._u_aniso._get_vals()
+
+    def _set_u_aniso_vals(self, u_aniso):
+      import numpy
+      if u_aniso is None:
+        from math import nan
+        self._set_u_aniso(U_aniso_orth(*([nan]*6)))
+      elif hasattr(u_aniso, 'len'):
+        try:
+          self._set_u_aniso(U_aniso_orth(*u_aniso))
+        except:
+          if type(u_aniso) == numpy.ndarray:
+            self._set_u_aniso(U_aniso_orth(*(u_aniso.astype(float))))
+      elif type(u_aniso) = U_aniso_orth:
+        self._set_u_aniso(u_aniso)
+      else:
+        raise TypeError('''
+          u_aniso must be None, a list of 6 numbers [u00, u11, u22, u01, u02, u12]\n
+          or a clipper U_aniso_orth object.''')
+
+    u_aniso = Property(_get_u_aniso_vals, _set_u_aniso_vals)
+  %}
   }
+
+#endif
+
 }
 
-%extend Atom_list 
+%extend Atom_list
+/* There is probably a bit more work to do here to make this object really
+ * useful for Python. The fundamental problem is that the clipper Atom_list
+ * is just a std::vector of Atom objects, meaning that indexing/slicing returns
+ * copies rather than pointers. So Atom_list[0].coord = [1,2,3], while appearing
+ * perfectly legal in Python, would not actually do anything to the stored atom.
+ * At present the only way to modify the actual Atoms stored in the array is
+ * all at once. It would be much better to create a C++ wrapper class that
+ * safely stores the actual Atom_list object, but provides individual/arrays
+ * of Atom pointers on indexing or slicing. We could also then easily create
+ * a constructor to initialise directly from arrays of atom properties.
+ *
+ */
 {
   Atom& __getitem__(int i)
   {
@@ -1423,7 +1556,7 @@ namespace clipper
     }
     return (*($self))[i];
   }
-    
+
   void __setitem__(int i, Atom& atom)
   {
     int array_len = $self->size();
@@ -1451,20 +1584,20 @@ namespace clipper
     $self -> erase(($self) -> begin() + i);
     return ret;
   }
-  
+
   size_t append (Atom& a)
   {
     ($self)->push_back(a);
     return ($self)->size();
   }
-  
+
   void extend_by(size_t n)
   {
     for (size_t i = 0; i < n; i++ ) {
       ($self)->push_back( Atom() );
     }
   }
-  
+
   void _set_elements(std::vector<std::string> elements)
   {
     size_t in_len = elements.size();
@@ -1479,7 +1612,7 @@ namespace clipper
       (*($self))[i].set_element( elements[i] );
     }
   }
-  
+
   std::vector< std::string > _get_elements()
   {
     std::vector < std::string > ret;
@@ -1488,7 +1621,7 @@ namespace clipper
     }
     return ret;
   }
-  
+
   //! Quickly set all atomic xyz coordinates from an nx3 numpy array
   void _set_coord_orth(double *numpy_2d_in, int n1, int n2)
   {
@@ -1507,7 +1640,7 @@ namespace clipper
     }
     return;
   }
-  
+
   //! Quickly fill an nx3 numpy array with all atomic xyz coordinates
   void _get_coord_orth(double* numpy_array, int n1, int n2)
   {
@@ -1528,7 +1661,7 @@ namespace clipper
       numpy_array[first+2] = thiscoord[2];
     }
   }
-    
+
   void _set_occupancies(double *numpy_1d_in, int n)
   {
     size_t my_len = ($self) -> size();
@@ -1542,7 +1675,7 @@ namespace clipper
     }
     return;
   }
-  
+
   void _get_occupancies(double *numpy_array, int n)
   {
     size_t my_len = ($self) -> size();
@@ -1555,7 +1688,7 @@ namespace clipper
       numpy_array[i] = (*($self))[i].occupancy();
     }
   }
-    
+
   void _set_u_isos(double *numpy_1d_in, int n)
   {
     size_t my_len = ($self) -> size();
@@ -1569,7 +1702,7 @@ namespace clipper
     }
     return;
   }
-  
+
   void _get_u_isos(double *numpy_array, int n)
   {
     size_t my_len = ($self) -> size();
@@ -1582,7 +1715,7 @@ namespace clipper
       numpy_array[i] = (*($self))[i].u_iso();
     }
   }
-  
+
   void _set_u_anisos(double *numpy_2d_in, int n1, int n2)
   {
     size_t my_len = ($self) -> size();
@@ -1627,7 +1760,7 @@ namespace clipper
       numpy_array[first+5] = thisaniso.mat12();
     }
   }
-  
+
   void get_minmax_grid(int numpy_int_out[2][3], const Cell& cell, const Grid_sampling& grid)
   {
     /* Find the minimum and maximum grid coordinates of a box encompassing the atoms,
@@ -1647,7 +1780,7 @@ namespace clipper
       numpy_int_out[1][i] = ref_max[i];
     }
   }
-  
+
 
 }
 } // namespace clipper
@@ -1667,7 +1800,10 @@ namespace clipper
 
 // *INDENT-ON*
 
-
+%feature("docstring") clipper::Symops "
+  Stores a list of rotation/translation operators, which can be retrieved as
+  Clipper RTOP_frac objects or numpy arrays of transformation matrices.
+"
 %inline %{
 
   namespace clipper
@@ -1747,9 +1883,9 @@ namespace clipper
       {
         return unit_translations_[i];
       }
-      
+
       //! Return all fractional symops as a single array of 4x4 matrices
-      void all_matrices44_frac(double* numpy_array, int n1, int n2, int n3)
+      void _all_matrices44_frac(double* numpy_array, int n1, int n2, int n3)
       {
         if (size_ != n1) {
           std::string errstring = "Target array length of " + std::to_string(n1) +
@@ -1785,11 +1921,11 @@ namespace clipper
               numpy_array[count] = thisval;
             }
           }
-        } 
+        }
       }
 
       //! Return all fractional symops as a single array of 3x4 matrices
-      void all_matrices34_frac(double* numpy_array, int n1, int n2, int n3)
+      void _all_matrices34_frac(double* numpy_array, int n1, int n2, int n3)
       {
         if (size_ != n1) {
           std::string errstring = "Target array length of " + std::to_string(n1) +
@@ -1816,11 +1952,11 @@ namespace clipper
               numpy_array[count] = thisval;
             }
           }
-        } 
+        }
       }
 
       //! Return all orthographic symops as a single array of 4x4 matrices
-      void all_matrices44_orth(const Cell& cell, double* numpy_array, int n1, int n2, int n3)
+      void _all_matrices44_orth(const Cell& cell, double* numpy_array, int n1, int n2, int n3)
       {
         if (size_ != n1) {
           std::string errstring = "Target array length of " + std::to_string(n1) +
@@ -1856,11 +1992,11 @@ namespace clipper
               numpy_array[count] = thisval;
             }
           }
-        } 
+        }
       }
 
       //! Return all orthographic symops as a single array of 3x4 matrices
-      void all_matrices34_orth(const Cell& cell, double* numpy_array, int n1, int n2, int n3)
+      void _all_matrices34_orth(const Cell& cell, double* numpy_array, int n1, int n2, int n3)
       {
         if (size_ != n1) {
           std::string errstring = "Target array length of " + std::to_string(n1) +
@@ -1887,17 +2023,36 @@ namespace clipper
               numpy_array[count] = thisval;
             }
           }
-        } 
+        }
       }
 
 
-      
+
     private:
       std::vector<clipper::RTop_frac >  symops_;
       std::vector<Coord_frac> unit_translations_;
       size_t size_;
-  };
+  }; // class Symops
 
+  %extend Symops
+  {
+    %pythoncode %{
+      def all_matrices_frac(self, format = '3x4'):
+        '''
+        Returns a Numpy array containing all the current symmetry operators in
+        fractional coordinates.
+        Args:
+          format (string):
+            One of '3x4' (default) or '4x4'.
+
+        '''
+
+
+
+    }
+
+
+  }
 
   /*! Similar to Symops, but for integerised symops. Initialise from
    *  a Symops and a Grid_sampling object.
@@ -1990,7 +2145,7 @@ namespace clipper
    *  cluster in the same unit cell, and a list of pre-computed inverse
    *  symops for convenience. Everything is defined relative to the
    *  given reference coordinate rather than Clipper's internal reference
-   *  asu. 
+   *  asu.
    */
 
   class Unit_Cell
@@ -2039,7 +2194,7 @@ namespace clipper
 
       reference_model_bounds_ = Grid_range( ref_min-pad, ref_max+pad );
       //std::cerr << reference_model_bounds_.min().format().c_str() << reference_model_bounds_.max().format().c_str() << std::endl;
-      
+
       // In order to catch all corner cases, we'll need to search the
       // block of 9 unit cells surrounding our reference model
       Coord_grid this_offset;
@@ -2049,7 +2204,7 @@ namespace clipper
             this_offset = Coord_grid(grid.nu()*i, grid.nv()*j, grid.nw()*k);
             ref_model_cell_origins_.push_back(cell_origin_ + this_offset);
           }
-        }    
+        }
       }
       /* Find the side of the reference box covering the shortest
        * distance. When searching a box for relevant symops, we'll
@@ -2120,10 +2275,10 @@ namespace clipper
     {
       return reference_model_bounds_; //setter
     }
-    
+
     // The length of the shortest side of the reference box
     const size_t& ref_box_min_side() const {return min_side_;}
-    
+
     Coord_grid min() {return cell_origin_;}
     Coord_grid max() {return cell_origin_
             + Coord_grid(grid_.nu()-1, grid_.nv()-1, grid_.nw()-1);}
@@ -2138,12 +2293,12 @@ namespace clipper
      *  Args:
      *    pairlist: vector to append the found symops to
      *    thecoord: input grid coordinate
-     */ 
+     */
     void find_symops_of_coord(std::vector<std::pair<int, Coord_grid> >& pairlist, const Coord_grid& thecoord)
     {
       Coord_grid shift;
       Coord_grid t_coord;
-      
+
       for (std::vector<Coord_grid>::iterator it = ref_model_cell_origins_.begin();
             it != ref_model_cell_origins_.end(); ++it) {
 
@@ -2166,7 +2321,7 @@ namespace clipper
 
     //! Find all symops mapping the reference asu to positions in a box
     /*! The box is defined by its origin in xyz coordinates, and the
-     *  number of grid coordinates along each axis. 
+     *  number of grid coordinates along each axis.
      */
     Symops all_symops_in_box(double box_origin_xyz[3], int box_size_uvw[3], bool always_include_identity = false, bool debug = false, int sample_frequency = 2)
     {
@@ -2194,7 +2349,7 @@ namespace clipper
        * shortest side of the box encompassing the atomic model, making
        * sure we also capture the faces and corners.
        */
-       
+
       size_t step_size = min_side_/sample_frequency;
       step_size = step_size == 0 ? 1 : step_size;
       if (debug) std::cerr << "Sampling step size: " << step_size << std::endl;
@@ -2232,7 +2387,7 @@ namespace clipper
              std::cerr << count << "Sorted" << count <<": " << it->first << " " << it->second.format() << std::endl;
         }
       }
-          
+
       ops_and_translations.erase( std::unique( ops_and_translations.begin(),
                                   ops_and_translations.end(),
                                   int_Coord_grid_pairs_equal
@@ -2274,7 +2429,7 @@ namespace clipper
     size_t min_side_; // The length of the smallest side of the grid box in reference_model_bounds
     /* Because life is never easy, the reference model will almost certainly
      * span across multiple unit cells (unlike the nice, neat map reference
-     * asu used by Clipper. Therefore, to find symmetry equivalents we 
+     * asu used by Clipper. Therefore, to find symmetry equivalents we
      * need to test the main unit cell plus all 26 direct neighbours.
      */
     std::vector<Coord_grid> ref_model_cell_origins_;
@@ -2289,11 +2444,11 @@ namespace clipper
 
 
 %extend RTop_orth {
-  
+
   Coord_orth __mul__(const Coord_orth& c) {
     return (*($self)) * c;
   }
-    
+
   void matrix (double numpy_double_out[4][4])
   {
     for (size_t i = 0; i < 3; i++) {
@@ -2337,12 +2492,12 @@ namespace clipper
 }
 
 %extend RTop_frac {
-  
+
   // No idea why, but this only works if the Coord_frac name is fully justified
   clipper::Coord_frac __mul__(const clipper::Coord_frac& c) {
     return (*($self)) * c;
   }
-  
+
   //! Return a full 4x4 affine transform matrix
   void matrix (double numpy_double_out[4][4])
   {
@@ -2369,7 +2524,7 @@ namespace clipper
       numpy_double_out[i][3] = ($self)->trn()[i];
     }
   }
-  
+
   void rotation (double numpy_double_out[3][3])
   {
     for (size_t i = 0; i < 3; i++) {
@@ -2409,9 +2564,9 @@ namespace clipper
     }
     return s;
   }
-  
 
-  
+
+
 
 
 }
@@ -2421,7 +2576,7 @@ namespace clipper
   clipper::Coord_frac __mul__(const clipper::Coord_frac& c) {
     return (*($self)) * c;
   }
-  
+
   void matrix (double numpy_double_out[4][4])
   {
     for (size_t i = 0; i < 3; i++) {
@@ -2525,7 +2680,7 @@ namespace clipper
       }
     }
   }
-    
+
   Mat33<T> __neg__ ()
   {
     return -(*self);
@@ -2589,9 +2744,9 @@ namespace clipper
     Vec3<float> v2 = ((*self)*v);
     Coord_frac c(v2[0],v2[1],v2[2]);
     return c;
-  };  
+  };
 }
-  
+
 }
 
 
@@ -2672,13 +2827,13 @@ namespace clipper
     int oindex = orders.find(order);
     if (oindex == 2) {
       throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
-    }      
+    }
     int i = 0;
     int top_u, top_v, top_w;
 
     clipper::Coord_grid c;
     clipper::Grid map_grid = (*($self)).grid();
-    
+
     int temp;
     if (rot.compare("zyx") == 0) {
       order = orders[(oindex + 1) % 2];
@@ -2708,7 +2863,7 @@ namespace clipper
         throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
     }
     return i;
-      
+
   }
 
   int import_numpy ( double *numpy_3d_in, int nu, int nv, int nw, char order = 'F', std::string rot = "xyz" )
@@ -2717,7 +2872,7 @@ namespace clipper
     int oindex = orders.find(order);
     if (oindex == 2) {
       throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
-    }      
+    }
     int i = 0;
     int top_u, top_v, top_w;
 
@@ -2737,7 +2892,7 @@ namespace clipper
     nu > map_grid.nu() ? top_u = map_grid.nu() : top_u = nu;
     nv > map_grid.nv() ? top_v = map_grid.nv() : top_v = nv;
     nw > map_grid.nw() ? top_w = map_grid.nw() : top_w = nw;
-    
+
     if (order == 'F') {
       for ( c.w() = 0; c.w() < top_w; c.w()++ )
         for ( c.v() = 0; c.v() < top_v; c.v()++ )
@@ -2748,7 +2903,7 @@ namespace clipper
         for ( c.v() = 0; c.v() < top_v; c.v()++ )
           for (  c.w() = 0; c.w() < top_w; c.w()++, i++ )
             (*($self)).set_data(c, numpy_3d_in[i]);
-    } 
+    }
     return i;
   }
 
@@ -2888,7 +3043,7 @@ namespace clipper
     }
     return ret;
   }
-  
+
   //! Return list of all (x,y,z) points with multiplicity greater than 1 in the unit cell.
 
   std::vector<std::vector<double> > special_positions_unit_cell_xyz (double frac_offset[3])
@@ -2922,7 +3077,7 @@ namespace clipper
     }
     return ret;
   }
-  
+
   //! Export the whole asymmetric unit as a numpy array
 
   int export_numpy ( double *numpy_array, int nu, int nv, int nw, char order = 'F', std::string rot = "xyz" )
@@ -2931,13 +3086,13 @@ namespace clipper
     int oindex = orders.find(order);
     if (oindex == 2) {
       throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
-    }      
+    }
     int i = 0;
     int top_u, top_v, top_w;
 
     clipper::Coord_grid c;
     clipper::Grid map_grid = (*($self)).grid_asu();
-    
+
     int temp;
     if (rot.compare("zyx") == 0) {
       order = orders[(oindex + 1) % 2];
@@ -2947,8 +3102,8 @@ namespace clipper
     } else if (rot.compare("xyz") != 0) {
       throw std::invalid_argument ("Rotation must be either \"xyz\" or \"zyx\"!");
     }
-    
-    
+
+
     nu > map_grid.nu() ? top_u = map_grid.nu() : top_u = nu;
     nv > map_grid.nv() ? top_v = map_grid.nv() : top_v = nv;
     nw > map_grid.nw() ? top_w = map_grid.nw() : top_w = nw;
@@ -2974,9 +3129,9 @@ namespace clipper
               numpy_array[i] = 0.0;
           }
       return i;
-    } 
+    }
   }
-  
+
   //! Import the whole asymmetric unit as a numpy array
 
   int import_numpy ( double *numpy_3d_in, int nu, int nv, int nw, char order = 'F', std::string rot = "xyz" )
@@ -2985,7 +3140,7 @@ namespace clipper
     int oindex = orders.find(order);
     if (oindex == 2) {
       throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
-    }      
+    }
     int i = 0;
     int top_u, top_v, top_w;
 
@@ -3018,9 +3173,9 @@ namespace clipper
           for (  c.w() = 0; c.w() < top_w; c.w()++, i++ )
             (*($self)).set_data(c, numpy_3d_in[i]);
       return i;
-    } 
+    }
   }
-  
+
   //! Export an arbitrary box as a numpy array
 
   int export_section_numpy ( double *numpy_array, int nu, int nv, int nw, clipper::Coord_grid& start, char order = 'F', std::string rot = "xyz" )
@@ -3029,13 +3184,13 @@ namespace clipper
     int oindex = orders.find(order);
     if (oindex == 2) {
       throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
-    }      
+    }
     int i = 0;
     int w, v, u;
     int maxw, maxv, maxu;
     maxv = start.v() + nv;
     //Some packages choose to store their data in zyx order rather than
-    //xyz, so it's nice to provide the option to fill that way here. 
+    //xyz, so it's nice to provide the option to fill that way here.
     //Swapping z for x is equivalent (and more efficient, code-wise)
     //to swapping the row order and the length of the u and w arrays.
     if (rot.compare("xyz") == 0) {
@@ -3055,7 +3210,7 @@ namespace clipper
       throw std::length_error("Target array is too small to hold the requested data!");
     }
     */
-    
+
     clipper::Xmap_base::Map_reference_coord ix( (*($self)) );
 
     if (order == 'F') {
@@ -3074,7 +3229,7 @@ namespace clipper
       return i;
     }
   }
-  
+
   //! Import an arbitrary box as a numpy array
 
   int import_section_numpy ( double *numpy_3d_in, int nu, int nv, int nw, clipper::Coord_grid& start, char order = 'F', std::string rot = "xyz" )
@@ -3083,13 +3238,13 @@ namespace clipper
     int oindex = orders.find(order);
     if (oindex == 2) {
       throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
-    }      
+    }
     int i = 0;
     int w, v, u;
     int maxw, maxv, maxu;
     maxv = start.v() + nv;
     //Some packages choose to store their data in zyx order rather than
-    //xyz, so it's nice to provide the option to fill that way here. 
+    //xyz, so it's nice to provide the option to fill that way here.
     //Swapping z for x is equivalent (and more efficient, code-wise)
     //to swapping the row order and the length of the u and w arrays.
     if (rot.compare("xyz") == 0) {
@@ -3106,8 +3261,8 @@ namespace clipper
     Coord_grid dim = end - start;
     if (dim.u() * dim.v() * dim.w() > nu*nv*nw) {
       throw std::length_error("Target array is too small to hold the requested data!");
-    }  
-    */  
+    }
+    */
     clipper::Xmap_base::Map_reference_coord ix( (*($self)) );
 
     if (order == 'F') {
@@ -3124,13 +3279,13 @@ namespace clipper
             (*($self))[ix] = numpy_3d_in[i];
           }
       return i;
-    } 
+    }
   }
-  
+
   //! Export volume interpolated onto an orthogonal grid, as a numpy array
-  
-  int export_interpolated_box_numpy ( double *numpy_array, int nx, int ny, int nz, 
-                                      double box_origin_xyz[3], double box_res_xyz[3], 
+
+  int export_interpolated_box_numpy ( double *numpy_array, int nx, int ny, int nz,
+                                      double box_origin_xyz[3], double box_res_xyz[3],
                                       std::string mode = "cubic", char order = 'F',
                                       std::string rot = "xyz")
   {
@@ -3138,7 +3293,7 @@ namespace clipper
     int oindex = orders.find(order);
     if (oindex == 2) {
       throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
-    }          
+    }
     int count = 0;
     double x = box_origin_xyz[0];
     double y = box_origin_xyz[1];
@@ -3148,14 +3303,14 @@ namespace clipper
     double y_inc = box_res_xyz[1];
     double z_inc = box_res_xyz[2];
     Coord_frac thiscoord;
-    
+
     const Cell& cell = $self->cell();
-    
+
     if (! (!mode.compare("cubic") || !mode.compare("linear")) ) {
       throw std::invalid_argument ("Interpolator must be either cubic (default) or linear");
     }
     bool mode_cubic = mode.compare("linear");
-    
+
     int temp;
     if (rot.compare("zyx") == 0) {
       order = orders[(oindex + 1) % 2];
@@ -3165,8 +3320,8 @@ namespace clipper
     } else if (!(rot.compare("zyx") == 0)) {
       throw std::invalid_argument ("Rotation must be either \"xyz\" or \"zyx\"!");
     }
-    
-    
+
+
     if (order == 'F') {
       for (int k = 0; k < nz; k++) {
         for (int j = 0; j < ny; j++) {
@@ -3197,11 +3352,11 @@ namespace clipper
       throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
     }
     return count;
-      
+
   }
-  
-  
-  
+
+
+
   //! Get the length of a voxel along each axis in Angstroms
 
   void voxel_size(double numpy_double_out[3])
@@ -3212,7 +3367,7 @@ namespace clipper
     numpy_double_out[1] = c.b() / g.nv();
     numpy_double_out[2] = c.c() / g.nw();
   }
-  
+
   //! Get the length of a voxel along each axis in fractional coordinates
 
   void voxel_size_frac(double numpy_double_out[3])
@@ -3222,22 +3377,22 @@ namespace clipper
     numpy_double_out[1] = 1.0 / g.nv();
     numpy_double_out[2] = 1.0 / g.nw();
   }
-  
+
   //! Return the interpolated density value at a given fractional coordinate
 
   T interp_cubic_frac_coord(Coord_frac f)
   {
     return $self->interp<Interp_cubic>(f);
   }
-  
+
   //! Return the interpolated density value at a given (x,y,z) coordinate
-  
+
   T interp_cubic_xyz(double numpy_1d_in[3])
   {
     Coord_frac thecoord = Coord_orth(numpy_1d_in[0], numpy_1d_in[1], numpy_1d_in[2]).coord_frac($self->cell());
     return $self->interp<Interp_cubic>(thecoord);
   }
-  
+
   //! Return the interpolated density value at a given fractional coordinate
 
   T interp_linear_frac_coord(Coord_frac f)
@@ -3246,7 +3401,7 @@ namespace clipper
   }
 
   //! Return the interpolated density value at a given (x,y,z) coordinate
-  
+
   T interp_linear_xyz(double numpy_1d_in[3])
   {
     Coord_frac thecoord = Coord_orth(numpy_1d_in[0], numpy_1d_in[1], numpy_1d_in[2]).coord_frac($self->cell());
@@ -3536,7 +3691,7 @@ fail:
     numpy_double_out[4] = (*self).mat02();
     numpy_double_out[5] = (*self).mat12();
   }
-  
+
 }
 %extend U_aniso_frac {
   U_aniso_frac __add__(const U_aniso_frac& u2) { return *self + u2; }
@@ -3553,7 +3708,7 @@ fail:
     numpy_double_out[4] = (*self).mat02();
     numpy_double_out[5] = (*self).mat12();
   }
-  
+
 }
 
 }
@@ -3682,7 +3837,7 @@ namespace clipper
     {
       return (*($self)) & d1;
     }
-    
+
   }
   %extend datatypes::ABCD {
     void vals(double numpy_double_out[4]) {
@@ -3690,7 +3845,7 @@ namespace clipper
       numpy_double_out[1] = $self->b();
       numpy_double_out[2] = $self->c();
       numpy_double_out[3] = $self->d();
-    }  
+    }
   }
 
 
@@ -4865,6 +5020,3 @@ namespace clipper
 
 %include "../clipper/core/atomsf.h"
 %include "../clipper/core/rotation.h"
-
-
-
