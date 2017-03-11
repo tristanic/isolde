@@ -78,106 +78,106 @@ class Atom(clipper_core.Atom):
         self.u_aniso_orth = u_aniso
 
 
-    @property
-    def element(self):
-        '''
-        The standard abbreviated element (or elemental ion) name. All valid
-        names are listed in Atom.ATOM_NAMES.
-        '''
-        return super(Atom, self).element()
+    #@property
+    #def element(self):
+        #'''
+        #The standard abbreviated element (or elemental ion) name. All valid
+        #names are listed in Atom.ATOM_NAMES.
+        #'''
+        #return super(Atom, self).element()
 
-    @element.setter
-    def element(self, element_name):
-        # Check common atom names first to improve performance
-        if not self.allow_unknown:
-            if element_name not in ('H', 'C', 'N', 'O', 'S'):
-                if element_name not in self.ATOM_NAMES:
-                    raise TypeError('Unrecognised element!')
-        super(Atom, self).set_element(element_name)
+    #@element.setter
+    #def element(self, element_name):
+        ## Check common atom names first to improve performance
+        #if not self.allow_unknown:
+            #if element_name not in ('H', 'C', 'N', 'O', 'S'):
+                #if element_name not in self.ATOM_NAMES:
+                    #raise TypeError('Unrecognised element!')
+        #super(Atom, self).set_element(element_name)
 
-    @property
-    def coord(self):
-        '''
-        (x,y,z) coordinates of the atom in Angstroms. Can be set from
-        a Python list, numpy array, or a Clipper Coord_orth object.
-        '''
-        return self.coord_orth.xyz
+    #@property
+    #def coord(self):
+        #'''
+        #(x,y,z) coordinates of the atom in Angstroms. Can be set from
+        #a Python list, numpy array, or a Clipper Coord_orth object.
+        #'''
+        #return self.coord_orth.xyz
 
-    @coord.setter
-    def coord(self, coord):
-        if isinstance(coord, Coord_orth):
-            self.set_coord_orth(coord)
-        else:
-            self.set_coord_orth(Coord_orth(coord))
+    #@coord.setter
+    #def coord(self, coord):
+        #if isinstance(coord, Coord_orth):
+            #self.set_coord_orth(coord)
+        #else:
+            #self.set_coord_orth(Coord_orth(coord))
 
-    @property
-    def coord_orth(self):
-        '''
-        Clipper Coord_orth object associated with this atom. Will return
-        a coord_orth object, but can be set with a simple list of 3
-        (x,y,z) coordinates.
-        '''
-        return super(Atom, self).coord_orth()
+    #@property
+    #def coord_orth(self):
+        #'''
+        #Clipper Coord_orth object associated with this atom. Will return
+        #a coord_orth object, but can be set with a simple list of 3
+        #(x,y,z) coordinates.
+        #'''
+        #return super(Atom, self).coord_orth()
 
-    @coord_orth.setter
-    def coord_orth(self, coord):
-        self.coord = coord
+    #@coord_orth.setter
+    #def coord_orth(self, coord):
+        #self.coord = coord
 
-    @property
-    def occupancy(self):
-        '''Fractional occupancy of this atom'''
-        return super(Atom, self).occupancy()
+    #@property
+    #def occupancy(self):
+        #'''Fractional occupancy of this atom'''
+        #return super(Atom, self).occupancy()
 
-    @occupancy.setter
-    def occupancy(self, occ):
-        self.set_occupancy(occ)
+    #@occupancy.setter
+    #def occupancy(self, occ):
+        #self.set_occupancy(occ)
 
-    @property
-    def u_iso(self):
-        '''Isotropic b-factor in square Angstroms.'''
-        return super(Atom, self).u_iso()
+    #@property
+    #def u_iso(self):
+        #'''Isotropic b-factor in square Angstroms.'''
+        #return super(Atom, self).u_iso()
 
-    @u_iso.setter
-    def u_iso(self, u_iso):
-        self.set_u_iso(u_iso)
+    #@u_iso.setter
+    #def u_iso(self, u_iso):
+        #self.set_u_iso(u_iso)
 
-    @property
-    def b_factor(self):
-        '''Isotropic b-factor in square Angstroms.'''
-        return self.u_iso
+    #@property
+    #def b_factor(self):
+        #'''Isotropic b-factor in square Angstroms.'''
+        #return self.u_iso
 
-    @b_factor.setter
-    def b_factor(self, b_factor):
-        self.u_iso = b_factor
+    #@b_factor.setter
+    #def b_factor(self, b_factor):
+        #self.u_iso = b_factor
 
-    @property
-    def u_aniso_orth(self):
-        '''
-        Anisotropic B-factor matrix as a 6-member array:
-        [u00, u11, u22, u01, u02, u12].
-        For purely isotropic values, set this to None
-        '''
-        return super(Atom, self).u_aniso_orth()._get_vals()
+    #@property
+    #def u_aniso_orth(self):
+        #'''
+        #Anisotropic B-factor matrix as a 6-member array:
+        #[u00, u11, u22, u01, u02, u12].
+        #For purely isotropic values, set this to None
+        #'''
+        #return super(Atom, self).u_aniso_orth()._get_vals()
 
-    @property
-    def _u_aniso_orth(self):
-        '''Get the Clipper::U_aniso_orth object'''
-        return super(Atom, self).u_aniso_orth()
+    #@property
+    #def _u_aniso_orth(self):
+        #'''Get the Clipper::U_aniso_orth object'''
+        #return super(Atom, self).u_aniso_orth()
 
-    @u_aniso_orth.setter
-    def u_aniso_orth(self, u_aniso):
-        if u_aniso is None:
-            from math import nan
-            self.set_u_aniso_orth(clipper_core.U_aniso_orth(*([nan]*6)))
-        else:
-            if type(u_aniso) == numpy.ndarray:
-                u_aniso = u_aniso.tolist()
-            self.set_u_aniso_orth(clipper_core.U_aniso_orth(*u_aniso))
+    #@u_aniso_orth.setter
+    #def u_aniso_orth(self, u_aniso):
+        #if u_aniso is None:
+            #from math import nan
+            #self.set_u_aniso_orth(clipper_core.U_aniso_orth(*([nan]*6)))
+        #else:
+            #if type(u_aniso) == numpy.ndarray:
+                #u_aniso = u_aniso.tolist()
+            #self.set_u_aniso_orth(clipper_core.U_aniso_orth(*u_aniso))
 
-    @property
-    def is_null(self):
-        '''Check to see if this atom has been initialised'''
-        return super(Atom, self).is_null()
+    #@property
+    #def is_null(self):
+        #'''Check to see if this atom has been initialised'''
+        #return super(Atom, self).is_null()
 
 @mappedclass(clipper_core.Atom_list)
 class Atom_list(clipper_core.Atom_list):
@@ -1101,81 +1101,81 @@ class Symop(clipper_core.Symop):
         return super(Symop, self).__mul__(coord)
 
 
-@mappedclass(clipper_core.Symops)
-class Symops(clipper_core.Symops):
-    '''
-    Python-friendly class for holding arrays of fractional symmetry
-    operators, with fast functions for obtaining the symmetry matrices
-    as numpy arrays, in fractional or orthogonal coordinates. Despite
-    the name, the stored elements are actually RTop_frac objects, since
-    Symop objects are not designed to store unit cell offsets.
-    '''
+#@mappedclass(clipper_core.Symops)
+#class Symops(clipper_core.Symops):
+    #'''
+    #Python-friendly class for holding arrays of fractional symmetry
+    #operators, with fast functions for obtaining the symmetry matrices
+    #as numpy arrays, in fractional or orthogonal coordinates. Despite
+    #the name, the stored elements are actually RTop_frac objects, since
+    #Symop objects are not designed to store unit cell offsets.
+    #'''
 
-    @property
-    def all_matrices34_frac(self):
-        '''
-        Get a (nx3x4) Numpy array summarising all the fractional symmetry
-        operators contained in this object.
-        Each entry in the array is of the form:
+    #@property
+    #def all_matrices34_frac(self):
+        #'''
+        #Get a (nx3x4) Numpy array summarising all the fractional symmetry
+        #operators contained in this object.
+        #Each entry in the array is of the form:
 
-        [[rot00 rot01 rot02 trn0]
-         [rot10 rot11 rot12 trn1]
-         [rot20 rot21 rot22 trn2]]
-        '''
-        n = len(self)
-        ret = numpy.empty([n,3,4],numpy.double)
-        super(Symops, self).all_matrices34_frac(ret)
-        return ret
+        #[[rot00 rot01 rot02 trn0]
+         #[rot10 rot11 rot12 trn1]
+         #[rot20 rot21 rot22 trn2]]
+        #'''
+        #n = len(self)
+        #ret = numpy.empty([n,3,4],numpy.double)
+        #super(Symops, self).all_matrices34_frac(ret)
+        #return ret
 
-    def all_matrices34_orth(self, cell):
-        '''
-        Get a (nx3x4) Numpy array summarising all the orthographic symmetry
-        operators contained in this object. Requires a clipper.Cell as
-        an argument.
-        Each entry in the array is of the form:
+    #def all_matrices34_orth(self, cell):
+        #'''
+        #Get a (nx3x4) Numpy array summarising all the orthographic symmetry
+        #operators contained in this object. Requires a clipper.Cell as
+        #an argument.
+        #Each entry in the array is of the form:
 
-        [[rot00 rot01 rot02 trn0]
-         [rot10 rot11 rot12 trn1]
-         [rot20 rot21 rot22 trn2]]
-        '''
-        n = len(self)
-        ret = numpy.empty([n,3,4],numpy.double)
-        super(Symops, self).all_matrices34_orth(cell, ret)
-        return ret
+        #[[rot00 rot01 rot02 trn0]
+         #[rot10 rot11 rot12 trn1]
+         #[rot20 rot21 rot22 trn2]]
+        #'''
+        #n = len(self)
+        #ret = numpy.empty([n,3,4],numpy.double)
+        #super(Symops, self).all_matrices34_orth(cell, ret)
+        #return ret
 
-    @property
-    def all_matrices44_frac(self):
-        '''
-        Get a (nx4x4) Numpy array summarising all the fractional symmetry
-        operators contained in this object.
-        Each entry in the array is of the form:
+    #@property
+    #def all_matrices44_frac(self):
+        #'''
+        #Get a (nx4x4) Numpy array summarising all the fractional symmetry
+        #operators contained in this object.
+        #Each entry in the array is of the form:
 
-        [[rot00 rot01 rot02 trn0]
-         [rot10 rot11 rot12 trn1]
-         [rot20 rot21 rot22 trn2]
-         [  0     0     0    1  ]]
-        '''
-        n = len(self)
-        ret = numpy.empty([n,4,4],numpy.double)
-        super(Symops, self).all_matrices44_frac(ret)
-        return ret
+        #[[rot00 rot01 rot02 trn0]
+         #[rot10 rot11 rot12 trn1]
+         #[rot20 rot21 rot22 trn2]
+         #[  0     0     0    1  ]]
+        #'''
+        #n = len(self)
+        #ret = numpy.empty([n,4,4],numpy.double)
+        #super(Symops, self).all_matrices44_frac(ret)
+        #return ret
 
-    def all_matrices44_orth(self, cell):
-        '''
-        Get a (nx4x4) Numpy array summarising all the orthographic symmetry
-        operators contained in this object. Requires a clipper.Cell as
-        an argument.
-        Each entry in the array is of the form:
+    #def all_matrices44_orth(self, cell):
+        #'''
+        #Get a (nx4x4) Numpy array summarising all the orthographic symmetry
+        #operators contained in this object. Requires a clipper.Cell as
+        #an argument.
+        #Each entry in the array is of the form:
 
-        [[rot00 rot01 rot02 trn0]
-         [rot10 rot11 rot12 trn1]
-         [rot20 rot21 rot22 trn2]
-         [  0     0     0    1  ]]
-        '''
-        n = len(self)
-        ret = numpy.empty([n,4,4],numpy.double)
-        super(Symops, self).all_matrices44_orth(cell, ret)
-        return ret
+        #[[rot00 rot01 rot02 trn0]
+         #[rot10 rot11 rot12 trn1]
+         #[rot20 rot21 rot22 trn2]
+         #[  0     0     0    1  ]]
+        #'''
+        #n = len(self)
+        #ret = numpy.empty([n,4,4],numpy.double)
+        #super(Symops, self).all_matrices44_orth(cell, ret)
+        #return ret
 
 
 

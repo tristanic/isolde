@@ -23,7 +23,7 @@
 %include "attribute.i"
 
 //%feature("autodoc", "3");
-%include "clipper-doc.i"
+//%include "clipper-doc.i"
 
 #pragma SWIG nowarn=312,325,361,362,363,389,401,501,505
 
@@ -233,6 +233,12 @@ namespace std {
   }
 
 }
+
+/* I'm thinking that Map_reference_coord is probably best left as an 
+ * internal C++ object hidden from Python. 
+ *  -- Tristan
+ */
+
 /*
  * Some jiggery-pokery to allow SWIG to handle these important nested
  * classes (needed to find the symop of a given coordinate, amongst other
@@ -250,370 +256,370 @@ namespace std {
  *
  *
  */
-namespace clipper
-{
-class NXmap_reference_base
-{
-  public:
-    inline const NXmap_base& base_nxmap() const
-    {
-      return *map_;
-    }
-    inline const int& index() const
-    {
-      return index_;
-    }
-    inline bool last() const
-    {
-      return ( index_ >= map_->grid_.size() );
-    }
-  protected:
-    const NXmap_base* map_;
-    int index_;
-};
+//namespace clipper
+//{
+//class NXmap_reference_base
+//{
+  //public:
+    //inline const NXmap_base& base_nxmap() const
+    //{
+      //return *map_;
+    //}
+    //inline const int& index() const
+    //{
+      //return index_;
+    //}
+    //inline bool last() const
+    //{
+      //return ( index_ >= map_->grid_.size() );
+    //}
+  //protected:
+    //const NXmap_base* map_;
+    //int index_;
+//};
 
 
-class NXmap_reference_index : public NXmap_reference_base
-{
-  public:
-    NXmap_reference_index() {}
-    explicit NXmap_reference_index( const NXmap_base& map )
-    {
-      map_ = &map;
-      index_ = 0;
-    }
-    NXmap_reference_index( const NXmap_base& map, const Coord_grid& pos )
-    {
-      map_ = &map;
-      index_ = map_->grid_.index( pos );
-    }
+//class NXmap_reference_index : public NXmap_reference_base
+//{
+  //public:
+    //NXmap_reference_index() {}
+    //explicit NXmap_reference_index( const NXmap_base& map )
+    //{
+      //map_ = &map;
+      //index_ = 0;
+    //}
+    //NXmap_reference_index( const NXmap_base& map, const Coord_grid& pos )
+    //{
+      //map_ = &map;
+      //index_ = map_->grid_.index( pos );
+    //}
 
-    inline Coord_grid coord() const
-    {
-      return map_->grid_.deindex(index_);
-    }
-    inline const Coord_orth coord_orth() const
-    {
-      return map_->coord_orth( coord().coord_map() );
-    }
-    inline NXmap_reference_index& set_coord( const Coord_grid& pos )
-    {
-      index_ = map_->grid_.index( pos );
-      return *this;
-    }
-    inline NXmap_reference_index& next()
-    {
-      index_++;
-      return *this;
-    }
-    inline int index_offset(const int& du,const int& dv,const int& dw) const
-    {
-      return index_ + du*map_->du + dv*map_->dv + dw*map_->dw;
-    }
-};
+    //inline Coord_grid coord() const
+    //{
+      //return map_->grid_.deindex(index_);
+    //}
+    //inline const Coord_orth coord_orth() const
+    //{
+      //return map_->coord_orth( coord().coord_map() );
+    //}
+    //inline NXmap_reference_index& set_coord( const Coord_grid& pos )
+    //{
+      //index_ = map_->grid_.index( pos );
+      //return *this;
+    //}
+    //inline NXmap_reference_index& next()
+    //{
+      //index_++;
+      //return *this;
+    //}
+    //inline int index_offset(const int& du,const int& dv,const int& dw) const
+    //{
+      //return index_ + du*map_->du + dv*map_->dv + dw*map_->dw;
+    //}
+//};
 
-class NXmap_reference_coord : public NXmap_reference_base
-{
-  public:
-    NXmap_reference_coord() {}
-    explicit NXmap_reference_coord( const NXmap_base& map )
-    {
-      map_ = &map;
-    }
-    NXmap_reference_coord( const NXmap_base& map, const Coord_grid& pos )
-    {
-      map_ = &map;
-      set_coord( pos );
-    }
-    inline Coord_grid coord() const
-    {
-      return pos_;
-    }
-    inline const Coord_orth coord_orth() const
-    {
-      return map_->coord_orth( coord().coord_map() );
-    }
-    inline NXmap_reference_coord& set_coord( const Coord_grid& pos )
-    {
-      pos_ = pos;
-      index_ = map_->grid_.index( pos_ );
-      return *this;
-    }
-    inline NXmap_reference_coord& next()
-    {
-      index_++;
-      pos_ = map_->grid_.deindex(index_);
-      return *this;
-    }
-    inline NXmap_reference_coord& next_u()
-    {
-      pos_.u()++;
-      index_ += map_->du;
-      return *this;
-    }
-    inline NXmap_reference_coord& next_v()
-    {
-      pos_.v()++;
-      index_ += map_->dv;
-      return *this;
-    }
-    inline NXmap_reference_coord& next_w()
-    {
-      pos_.w()++;
-      index_ += map_->dw;
-      return *this;
-    }
-    inline NXmap_reference_coord& prev_u()
-    {
-      pos_.u()--;
-      index_ -= map_->du;
-      return *this;
-    }
-    inline NXmap_reference_coord& prev_v()
-    {
-      pos_.v()--;
-      index_ -= map_->dv;
-      return *this;
-    }
-    inline NXmap_reference_coord& prev_w()
-    {
-      pos_.w()--;
-      index_ -= map_->dw;
-      return *this;
-    }
-    inline NXmap_reference_coord& operator =( const Coord_grid& pos )
-    {
-      return set_coord( pos );
-    }
-  protected:
-    Coord_grid pos_;
-};
+//class NXmap_reference_coord : public NXmap_reference_base
+//{
+  //public:
+    //NXmap_reference_coord() {}
+    //explicit NXmap_reference_coord( const NXmap_base& map )
+    //{
+      //map_ = &map;
+    //}
+    //NXmap_reference_coord( const NXmap_base& map, const Coord_grid& pos )
+    //{
+      //map_ = &map;
+      //set_coord( pos );
+    //}
+    //inline Coord_grid coord() const
+    //{
+      //return pos_;
+    //}
+    //inline const Coord_orth coord_orth() const
+    //{
+      //return map_->coord_orth( coord().coord_map() );
+    //}
+    //inline NXmap_reference_coord& set_coord( const Coord_grid& pos )
+    //{
+      //pos_ = pos;
+      //index_ = map_->grid_.index( pos_ );
+      //return *this;
+    //}
+    //inline NXmap_reference_coord& next()
+    //{
+      //index_++;
+      //pos_ = map_->grid_.deindex(index_);
+      //return *this;
+    //}
+    //inline NXmap_reference_coord& next_u()
+    //{
+      //pos_.u()++;
+      //index_ += map_->du;
+      //return *this;
+    //}
+    //inline NXmap_reference_coord& next_v()
+    //{
+      //pos_.v()++;
+      //index_ += map_->dv;
+      //return *this;
+    //}
+    //inline NXmap_reference_coord& next_w()
+    //{
+      //pos_.w()++;
+      //index_ += map_->dw;
+      //return *this;
+    //}
+    //inline NXmap_reference_coord& prev_u()
+    //{
+      //pos_.u()--;
+      //index_ -= map_->du;
+      //return *this;
+    //}
+    //inline NXmap_reference_coord& prev_v()
+    //{
+      //pos_.v()--;
+      //index_ -= map_->dv;
+      //return *this;
+    //}
+    //inline NXmap_reference_coord& prev_w()
+    //{
+      //pos_.w()--;
+      //index_ -= map_->dw;
+      //return *this;
+    //}
+    //inline NXmap_reference_coord& operator =( const Coord_grid& pos )
+    //{
+      //return set_coord( pos );
+    //}
+  //protected:
+    //Coord_grid pos_;
+//};
 
-class Xmap_reference_base
-{
-  public:
-    //! return the parent Xmap
-    inline const Xmap_base& base_xmap() const
-    {
-      return *map_;
-    }
-    //! Get the index into the map data array
-    inline const int& index() const
-    {
-      return index_;
-    }
-    //! Check for end of map
-    bool last() const
-    {
-      return ( index_ >= map_->map_grid.size() );
-    }
-  protected:
-    //! pointer to map for which this Xmap_reference_index is defined
-    const Xmap_base* map_;
-    //! integer index_ into map data array
-    int index_;
-};
+//class Xmap_reference_base
+//{
+  //public:
+    ////! return the parent Xmap
+    //inline const Xmap_base& base_xmap() const
+    //{
+      //return *map_;
+    //}
+    ////! Get the index into the map data array
+    //inline const int& index() const
+    //{
+      //return index_;
+    //}
+    ////! Check for end of map
+    //bool last() const
+    //{
+      //return ( index_ >= map_->map_grid.size() );
+    //}
+  //protected:
+    ////! pointer to map for which this Xmap_reference_index is defined
+    //const Xmap_base* map_;
+    ////! integer index_ into map data array
+    //int index_;
+//};
 
-//! Map reference with index-like behaviour
-/*! This is a reference to a map coordinate. It behaves like a
-  simple index into the map, but can be easily converted into a
-  coordinate as and when required. It also implements methods for
-  iterating through the unique portion of a map. It is very
-  compact, but coord() involves some overhead and loses any
-  information concerning symmetry equivelents.
+////! Map reference with index-like behaviour
+///*! This is a reference to a map coordinate. It behaves like a
+  //simple index into the map, but can be easily converted into a
+  //coordinate as and when required. It also implements methods for
+  //iterating through the unique portion of a map. It is very
+  //compact, but coord() involves some overhead and loses any
+  //information concerning symmetry equivelents.
 
-  \note The following methods are inherited from
-  Xmap_reference_base but are documented here for convenience:
-  base_xmap(), index(), last().
-*/
-class Xmap_reference_index : public Xmap_reference_base
-{
-  public:
-    //! Null constructor
-    Xmap_reference_index() {}
-    //! Constructor: takes parent map
-    explicit Xmap_reference_index( const Xmap_base& map )
-    {
-      map_ = &map;
-      index_=0;
-      next();
-    }
-    //! Constructor: takes parent map and coord
-    Xmap_reference_index( const Xmap_base& map, const Coord_grid& pos )
-    {
-      map_ = &map;
-      int sym;
-      map_->find_sym( pos, index_, sym );
-    }
-    //! Get current grid coordinate
-    inline Coord_grid coord() const
-    {
-      return map_->map_grid.deindex(index_);
-    }
-    //! Get current value of orthogonal coordinate
-    inline const Coord_orth coord_orth() const
-    {
-      return Coord_orth( map_->rt_grid_orth.rot() * coord().coord_map() );
-    }
-    //! Set current value of coordinate - optimised for nearby coords
-    inline Xmap_reference_index& set_coord( const Coord_grid& pos )
-    {
-      int sym;
-      map_->find_sym( pos, index_, sym );
-      return *this;
-    }
-    //! Simple increment
-    inline Xmap_reference_index& next()
-    {
-      do {
-        index_++;
-        if ( last() ) break;
-      } while ( map_->asu[index_] != 0 );
-      return *this;
-    }
-    //! Index of neighbouring point
-    /* Use for e.g. peak search. Valid for -1 <= du/dv/dw <= 1 only.
-    \param du/dv/dw Coordinate offset. \return Map index. */
-    inline int index_offset(const int& du,const int& dv,const int& dw) const
-    {
-      int i = index_ + du*map_->du[0] + dv*map_->dv[0] + dw*map_->dw[0];
-      if ( map_->asu[i] != 0 ) {
-        i = map_->map_grid.index( map_->to_map_unit( map_->map_grid.deindex(i).transform( map_->isymop[map_->asu[i]-1] ) ) );
-      }
-      return i;
-    }
-    // inherited functions listed for documentation purposes
-    //-- const Xmap_base& base_xmap() const;
-    //-- const int& index() const;
-    //-- bool last() const;
-};
+  //\note The following methods are inherited from
+  //Xmap_reference_base but are documented here for convenience:
+  //base_xmap(), index(), last().
+//*/
+//class Xmap_reference_index : public Xmap_reference_base
+//{
+  //public:
+    ////! Null constructor
+    //Xmap_reference_index() {}
+    ////! Constructor: takes parent map
+    //explicit Xmap_reference_index( const Xmap_base& map )
+    //{
+      //map_ = &map;
+      //index_=0;
+      //next();
+    //}
+    ////! Constructor: takes parent map and coord
+    //Xmap_reference_index( const Xmap_base& map, const Coord_grid& pos )
+    //{
+      //map_ = &map;
+      //int sym;
+      //map_->find_sym( pos, index_, sym );
+    //}
+    ////! Get current grid coordinate
+    //inline Coord_grid coord() const
+    //{
+      //return map_->map_grid.deindex(index_);
+    //}
+    ////! Get current value of orthogonal coordinate
+    //inline const Coord_orth coord_orth() const
+    //{
+      //return Coord_orth( map_->rt_grid_orth.rot() * coord().coord_map() );
+    //}
+    ////! Set current value of coordinate - optimised for nearby coords
+    //inline Xmap_reference_index& set_coord( const Coord_grid& pos )
+    //{
+      //int sym;
+      //map_->find_sym( pos, index_, sym );
+      //return *this;
+    //}
+    ////! Simple increment
+    //inline Xmap_reference_index& next()
+    //{
+      //do {
+        //index_++;
+        //if ( last() ) break;
+      //} while ( map_->asu[index_] != 0 );
+      //return *this;
+    //}
+    ////! Index of neighbouring point
+    ///* Use for e.g. peak search. Valid for -1 <= du/dv/dw <= 1 only.
+    //\param du/dv/dw Coordinate offset. \return Map index. */
+    //inline int index_offset(const int& du,const int& dv,const int& dw) const
+    //{
+      //int i = index_ + du*map_->du[0] + dv*map_->dv[0] + dw*map_->dw[0];
+      //if ( map_->asu[i] != 0 ) {
+        //i = map_->map_grid.index( map_->to_map_unit( map_->map_grid.deindex(i).transform( map_->isymop[map_->asu[i]-1] ) ) );
+      //}
+      //return i;
+    //}
+    //// inherited functions listed for documentation purposes
+    ////-- const Xmap_base& base_xmap() const;
+    ////-- const int& index() const;
+    ////-- bool last() const;
+//};
 
-//! Map reference with coordinate-like behaviour
-/*! This is a reference to a map coordinate. It behaves like a
-  coordinate, but also stores the index of the corresponding point
-  in the map, and the symmetry operator required to get there. It
-  also implements methods for iterating through the a map. Since
-  the current coordinate and symmetry are stored, coord() is
-  fast. However, it requires 1 pointer and 5 words of storage.
+////! Map reference with coordinate-like behaviour
+///*! This is a reference to a map coordinate. It behaves like a
+  //coordinate, but also stores the index of the corresponding point
+  //in the map, and the symmetry operator required to get there. It
+  //also implements methods for iterating through the a map. Since
+  //the current coordinate and symmetry are stored, coord() is
+  //fast. However, it requires 1 pointer and 5 words of storage.
 
-  \note The following methods are inherited from
-  Xmap_reference_base but are documented here for convenience:
-  base_xmap(), index(), last().
-*/
-class Xmap_reference_coord : public Xmap_reference_base
-{
-  public:
-    //! Null constructor
-    Xmap_reference_coord() {}
-    //! Constructor: takes parent map
-    explicit Xmap_reference_coord( const Xmap_base& map )
-    {
-      map_ = &map;
-      index_ = 0;
-      next();
-    }
-    //! Constructor: takes parent map and coord
-    Xmap_reference_coord( const Xmap_base& map, const Coord_grid& pos )
-    {
-      map_ = &map;
-      pos_ = pos;
-      map_->find_sym( pos_, index_, sym_ );
-    }
-    //! Get current value of coordinate
-    inline const Coord_grid& coord() const
-    {
-      return pos_;
-    }
-    //! Get current value of orthogonal coordinate
-    inline const Coord_orth coord_orth() const
-    {
-      return Coord_orth( map_->rt_grid_orth.rot() * coord().coord_map() );
-    }
-    //! Get current symmetry operator
-    inline const int& sym() const
-    {
-      return sym_;
-    }
-    //! Set current value of coordinate - optimised for nearby coords
-    Xmap_reference_coord& set_coord( const Coord_grid& pos );
-    //! Simple increment
-    /*! Use of this function resets the stored coordinate and sym */
-    inline Xmap_reference_coord& next()
-    {
-      sym_ = 0;
-      do {
-        index_++;
-        if ( last() ) break;
-      } while ( map_->asu[index_] != 0 );
-      pos_ = map_->map_grid.deindex(index_);
-      return *this;
-    }
-    // Increment u,v,w
-    inline Xmap_reference_coord& next_u()
-    {
-      pos_.u()++;  //!< increment u
-      index_ += map_->du[sym_];
-      if (map_->asu[index_] != 0) edge();
-      return *this;
-    }
-    inline Xmap_reference_coord& next_v()
-    {
-      pos_.v()++;  //!< increment v
-      index_ += map_->dv[sym_];
-      if (map_->asu[index_] != 0) edge();
-      return *this;
-    }
-    inline Xmap_reference_coord& next_w()
-    {
-      pos_.w()++;  //!< increment w
-      index_ += map_->dw[sym_];
-      if (map_->asu[index_] != 0) edge();
-      return *this;
-    }
-    inline Xmap_reference_coord& prev_u()
-    {
-      pos_.u()--;  //!< increment u
-      index_ -= map_->du[sym_];
-      if (map_->asu[index_] != 0) edge();
-      return *this;
-    }
-    inline Xmap_reference_coord& prev_v()
-    {
-      pos_.v()--;  //!< decrement v
-      index_ -= map_->dv[sym_];
-      if (map_->asu[index_] != 0) edge();
-      return *this;
-    }
-    inline Xmap_reference_coord& prev_w()
-    {
-      pos_.w()--;  //!< decrement w
-      index_ -= map_->dw[sym_];
-      if (map_->asu[index_] != 0) edge();
-      return *this;
-    }
-    //! Assignment operator from a coord
-    inline Xmap_reference_coord& operator =( const Coord_grid& pos )
-    {
-      return set_coord( pos );
-    }
-    // inherited functions listed for documentation purposes
-    //-- const Xmap_base& base_xmap() const;
-    //-- const int& index() const;
-    //-- bool last() const;
+  //\note The following methods are inherited from
+  //Xmap_reference_base but are documented here for convenience:
+  //base_xmap(), index(), last().
+//*/
+//class Xmap_reference_coord : public Xmap_reference_base
+//{
+  //public:
+    ////! Null constructor
+    //Xmap_reference_coord() {}
+    ////! Constructor: takes parent map
+    //explicit Xmap_reference_coord( const Xmap_base& map )
+    //{
+      //map_ = &map;
+      //index_ = 0;
+      //next();
+    //}
+    ////! Constructor: takes parent map and coord
+    //Xmap_reference_coord( const Xmap_base& map, const Coord_grid& pos )
+    //{
+      //map_ = &map;
+      //pos_ = pos;
+      //map_->find_sym( pos_, index_, sym_ );
+    //}
+    ////! Get current value of coordinate
+    //inline const Coord_grid& coord() const
+    //{
+      //return pos_;
+    //}
+    ////! Get current value of orthogonal coordinate
+    //inline const Coord_orth coord_orth() const
+    //{
+      //return Coord_orth( map_->rt_grid_orth.rot() * coord().coord_map() );
+    //}
+    ////! Get current symmetry operator
+    //inline const int& sym() const
+    //{
+      //return sym_;
+    //}
+    ////! Set current value of coordinate - optimised for nearby coords
+    //Xmap_reference_coord& set_coord( const Coord_grid& pos );
+    ////! Simple increment
+    ///*! Use of this function resets the stored coordinate and sym */
+    //inline Xmap_reference_coord& next()
+    //{
+      //sym_ = 0;
+      //do {
+        //index_++;
+        //if ( last() ) break;
+      //} while ( map_->asu[index_] != 0 );
+      //pos_ = map_->map_grid.deindex(index_);
+      //return *this;
+    //}
+    //// Increment u,v,w
+    //inline Xmap_reference_coord& next_u()
+    //{
+      //pos_.u()++;  //!< increment u
+      //index_ += map_->du[sym_];
+      //if (map_->asu[index_] != 0) edge();
+      //return *this;
+    //}
+    //inline Xmap_reference_coord& next_v()
+    //{
+      //pos_.v()++;  //!< increment v
+      //index_ += map_->dv[sym_];
+      //if (map_->asu[index_] != 0) edge();
+      //return *this;
+    //}
+    //inline Xmap_reference_coord& next_w()
+    //{
+      //pos_.w()++;  //!< increment w
+      //index_ += map_->dw[sym_];
+      //if (map_->asu[index_] != 0) edge();
+      //return *this;
+    //}
+    //inline Xmap_reference_coord& prev_u()
+    //{
+      //pos_.u()--;  //!< increment u
+      //index_ -= map_->du[sym_];
+      //if (map_->asu[index_] != 0) edge();
+      //return *this;
+    //}
+    //inline Xmap_reference_coord& prev_v()
+    //{
+      //pos_.v()--;  //!< decrement v
+      //index_ -= map_->dv[sym_];
+      //if (map_->asu[index_] != 0) edge();
+      //return *this;
+    //}
+    //inline Xmap_reference_coord& prev_w()
+    //{
+      //pos_.w()--;  //!< decrement w
+      //index_ -= map_->dw[sym_];
+      //if (map_->asu[index_] != 0) edge();
+      //return *this;
+    //}
+    ////! Assignment operator from a coord
+    //inline Xmap_reference_coord& operator =( const Coord_grid& pos )
+    //{
+      //return set_coord( pos );
+    //}
+    //// inherited functions listed for documentation purposes
+    ////-- const Xmap_base& base_xmap() const;
+    ////-- const int& index() const;
+    ////-- bool last() const;
 
-  protected:
-    //! Current symop
-    int sym_;
-    //! Current coord
-    Coord_grid pos_;
+  //protected:
+    ////! Current symop
+    //int sym_;
+    ////! Current coord
+    //Coord_grid pos_;
 
-    //! Reset index for a different symop when we hit the map border
-    void edge();
-};
+    ////! Reset index for a different symop when we hit the map border
+    //void edge();
+//};
 
 
 
-}
+//} // namespace clipper
 
 
 %{
@@ -908,8 +914,8 @@ namespace clipper
     }
   }
 
-}
-}
+} // extend Util
+} // namespace clipper
 
 
 
@@ -1253,6 +1259,9 @@ namespace clipper {
   %rename("_u") Coord_map::u() const;
   %rename("_v") Coord_map::v() const;
   %rename("_w") Coord_map::w() const;
+  %rename("_nu") Grid_sampling::nu() const;
+  %rename("_nv") Grid_sampling::nv() const;
+  %rename("_nw") Grid_sampling::nu() const;
   %rename("_get_element") Atom::element() const;
   %rename("_set_element") Atom::set_element();
   %rename("_get_occupancy") Atom::occupancy() const;
@@ -1477,6 +1486,26 @@ namespace clipper
   bool __ne__(const HKL_sampling& hkl2) { return !(*self == hkl2); }
 } // extend HKL_sampling
 
+{
+%extend Grid_sampling {
+  std::string __str__() const { return self->format(); }
+  void dim(int numpy_int_out[3])
+  {
+    numpy_int_out[0] = $self->nu();
+    numpy_int_out[1] = $self->nv();
+    numpy_int_out[2] = $self->nw();
+  }
+  
+#ifdef PYTHON_PROPERTIES
+  %pythoncode %{
+    dim = property(dim)
+    size = property(size)
+    format = property(format)
+  %}
+#endif
+} // extend Grid_sampling
+
+
 %extend Atom
 {
 #ifndef PYTHON_PROPERTIES
@@ -1527,11 +1556,9 @@ namespace clipper
 
     u_aniso = Property(_get_u_aniso_vals, _set_u_aniso_vals)
   %}
-  }
 
 #endif
-
-}
+} // extend Atom
 
 %extend Atom_list
 /* There is probably a bit more work to do here to make this object really
@@ -1782,7 +1809,7 @@ namespace clipper
   }
 
 
-}
+} // extend Atom_list
 } // namespace clipper
 
 %ignore clipper::Symops::size() const;
@@ -1803,7 +1830,7 @@ namespace clipper
 %feature("docstring") clipper::Symops "
   Stores a list of rotation/translation operators, which can be retrieved as
   Clipper RTOP_frac objects or numpy arrays of transformation matrices.
-"
+  "
 %inline %{
 
   namespace clipper
@@ -2033,7 +2060,11 @@ namespace clipper
       std::vector<Coord_frac> unit_translations_;
       size_t size_;
   }; // class Symops
+  } // namespace clipper
+%} //inline
 
+namespace clipper
+{
   %extend Symops
   {
     %pythoncode %{
@@ -2043,19 +2074,64 @@ namespace clipper
         fractional coordinates.
         Args:
           format (string):
-            One of '3x4' (default) or '4x4'.
-
+            One of '3x4' (default) or '4x4'. If '3x4', each operator is
+            returned as:
+            [[rot00, rot01, rot02, trn_u]
+             [rot10, rot11, rot12, trn_v]
+             [rot20, rot21, rot22, trn_w]]
+            If '4x4', the [0,0,0,1] row necessary to form a complete
+            affine transformation matrix is added.
         '''
+        import numpy
+        n = len(self)
+        if format == '3x4':
+          ret = numpy.empty((n,3,4), numpy.double)
+          self._all_matrices34_frac(ret)
+        elif format == '4x4':
+          ret = numpy.empty((n,4,4), numpy.double)
+          self._all_matrices44_frac(ret)
+        else:
+          raise TypeError("Format must be one of '3x4' or '4x4'!")
+        return ret
+
+      def all_matrices_orth(self, cell, format = '3x4'):
+        '''
+        Returns a Numpy array containing all the current symmetry operators in
+        fractional coordinates.
+        Args:
+          cell:
+            The clipper Cell object defining your crystal cell parameters
+          format (string):
+            One of '3x4' (default) or '4x4'. If '3x4', each operator is
+            returned as:
+            [[rot00, rot01, rot02, trn_x]
+             [rot10, rot11, rot12, trn_y]
+             [rot20, rot21, rot22, trn_z]]
+            If '4x4', the [0,0,0,1] row necessary to form a complete
+            affine transformation matrix is added.
+        '''
+        import numpy
+        n = len(self)
+        if format == '3x4':
+          ret = numpy.empty((n,3,4), numpy.double)
+          self._all_matrices34_orth(cell, ret)
+        elif format == '4x4':
+          ret = numpy.empty((n,4,4), numpy.double)
+          self._all_matrices44_orth(cell, ret)
+        else:
+          raise TypeError("Format must be one of '3x4' or '4x4'!")
+        return ret
+    %}
+  } // extend Symops 
+} // namespace clipper
 
 
-
-    }
-
-
-  }
-
+%{
+  namespace clipper {
   /*! Similar to Symops, but for integerised symops. Initialise from
-   *  a Symops and a Grid_sampling object.
+   *  a Symops and a Grid_sampling object. Very useful internally, but
+   *  I'm not sure if there's a need for it in Python. For now, let's not
+   * bother wrapping it.
    */
   class Isymops
   {
@@ -2136,8 +2212,64 @@ namespace clipper
       std::vector<Coord_grid> unit_translations_;
       size_t size_;
   };
+  } // namespace clipper
+%}
 
+%feature("docstring") clipper::Unit_Cell 
+  "Condensed description of a single unit cell based on an atomic model.\n
+  Contains a reference fractional coordinate (typically corresponding
+  to the centroid of the modelled asymmetric unit), a list of symmetry 
+  operators with the necessary translations added to fully pack a 
+  single unit cell, and a list of pre-computed inverse symmetry operators
+  for convenience. Also provides methods to quickly find all the symmetry
+  operators necessary to pack an arbitrary box in space with copies of
+  your atomic model.
+  "
+  
+%feature("docstring") clipper::Unit_Cell::symops 
+  "Returns a Symops object listing all the transformations mapping the
+  reference model to other positions in the unit cell. "
 
+%feature("docstring") clipper::Unit_Cell::inv_symops 
+  "Returns a Symops object listing all the transformations mapping each
+  copy in the unit cell back to the reference model. "
+
+%feature("docstring") clipper::Unit_Cell::ref_box 
+  "Returns a Grid_range object defining the smallest rhomboid in integer
+  grid coordinates that fully encloses the atomic model. "
+
+%feature("docstring") clipper::Unit_Cell::all_symops_in_box
+  "all_symops_in_box(box_origin_xyz, box_size_uvw, 
+                    always_include_identity = False, 
+                    sample_frequency = 2)
+      ---> Symops
+  Returns a Symops object providing all symmetry operators which place
+  some part of the atomic model within a box in grid space.
+  NOTE: this routine is optimised for speed rather than strictness, and
+  may occasionally return extra operators which place the model just 
+  outside the target box. Think of the result as a shortlist of operators
+  upon which more detailed atom-by-atom searches can be done if necessary.
+  Args:
+    box_origin_xyz(numpy 1x3 double):
+      Position of the bottom corner of the search box (in Angstroms)
+    box_size_uvw(numpy 1x3 int):
+      Box side lengths in grid coordinates
+    always_include_identity(bool):
+      If true, the identity operator will always be returned
+    sample_frequency(int):
+      The box will be searched in steps equal to the minimum side length
+      of the reference box divided by this number. In almost all cases
+      this should be left as is."
+  
+
+%ignore clipper::Unit_Cell::isymops() const;
+%ignore clipper::Unit_Cell::inv_isymops() const;
+%ignore clipper::Unit_Cell::ref_box_min_side() const;
+%ignore clipper::Unit_Cell::find_symops_of_coord;
+
+%inline %{
+  namespace clipper
+  {
   //! Condensed unit cell description
   /*! Contains a reference fractional coordinate (e.g. corresponding
    *  to the centroid of the modelled asu), a list of symops
@@ -2147,7 +2279,6 @@ namespace clipper
    *  given reference coordinate rather than Clipper's internal reference
    *  asu.
    */
-
   class Unit_Cell
   {
   public:
@@ -2159,7 +2290,6 @@ namespace clipper
      *  the atomic model. Additionally, create a Grid_range object
      *  defining the grid that just encloses all atoms in the asymmetric
      *  unit.
-     *
      */
     Unit_Cell(Coord_frac ref, const Atom_list& atoms, const Cell& cell, const Spacegroup& sg, const Grid_sampling& grid, int padding=0)
     {
@@ -2323,7 +2453,7 @@ namespace clipper
     /*! The box is defined by its origin in xyz coordinates, and the
      *  number of grid coordinates along each axis.
      */
-    Symops all_symops_in_box(double box_origin_xyz[3], int box_size_uvw[3], bool always_include_identity = false, bool debug = false, int sample_frequency = 2)
+    Symops all_symops_in_box(double box_origin_xyz[3], int box_size_uvw[3], bool always_include_identity = false, int sample_frequency = 2)
     {
       Symops ret;
 
@@ -2352,7 +2482,6 @@ namespace clipper
 
       size_t step_size = min_side_/sample_frequency;
       step_size = step_size == 0 ? 1 : step_size;
-      if (debug) std::cerr << "Sampling step size: " << step_size << std::endl;
       bool u_done = false, v_done = false, w_done = false;
       int u,v,w;
       Coord_grid thiscg;
@@ -2380,26 +2509,12 @@ namespace clipper
       }
       // Sort the two vectors, and remove any duplicates
       std::sort(ops_and_translations.begin(), ops_and_translations.end(), compare_int_Coord_grid_pairs);
-      if(debug) {
-        int count = 0;
-        for (std::vector<std::pair<int, Coord_grid > >::iterator it = ops_and_translations.begin();
-           it != ops_and_translations.end(); ++it, count++) {
-             std::cerr << count << "Sorted" << count <<": " << it->first << " " << it->second.format() << std::endl;
-        }
-      }
 
       ops_and_translations.erase( std::unique( ops_and_translations.begin(),
                                   ops_and_translations.end(),
                                   int_Coord_grid_pairs_equal
                                              ), ops_and_translations.end() );
-      if(debug) {
-        int count = 0;
-        for (std::vector<std::pair<int, Coord_grid > >::iterator it = ops_and_translations.begin();
-           it != ops_and_translations.end(); ++it, count++) {
-             std::cerr << count << "Unique" << count <<": " << it->first << " " << it->second.format() << std::endl;
-        }
-      }
-
+                                             
       for (std::vector<std::pair<int, Coord_grid > >::iterator it = ops_and_translations.begin();
            it != ops_and_translations.end(); ++it) {
         RTop_frac thisop = symops_[it->first];
@@ -2409,7 +2524,7 @@ namespace clipper
       }
       return ret;
 
-    }
+    } // all_symops_in_box
 
 
   private:
@@ -2433,23 +2548,37 @@ namespace clipper
      * need to test the main unit cell plus all 26 direct neighbours.
      */
     std::vector<Coord_grid> ref_model_cell_origins_;
-  };
+  }; // Unit_Cell
 
+  } // namespace clipper
+%} // %inline
+
+
+#ifdef PYTHON_PROPERTIES
+namespace clipper
+{
+  %extend Symops
+  {
+    %pythoncode %{
+      symops = property(symops)
+      inv_symops = property(inv_symops)
+      ref = property(ref)
+      ref_box = property(ref_box)
+    %}
   }
-%}
-
+}
+#endif
 
 namespace clipper
 {
-
-
-%extend RTop_orth {
+%extend RTop_orth 
+{
 
   Coord_orth __mul__(const Coord_orth& c) {
     return (*($self)) * c;
   }
 
-  void matrix (double numpy_double_out[4][4])
+  void mat44 (double numpy_double_out[4][4])
   {
     for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
@@ -2489,17 +2618,24 @@ namespace clipper
       numpy_double_out[i] = ($self)->trn()[i];
     }
   }
-}
+#ifdef PYTHON_PROPERTIES
+  %pythoncode %{
+    mat44 = property(mat44)
+    mat34 = property(mat34)
+    rotation = property(rotation)
+    translation = property(translation)
+  %}
+#endif  
+} // extend RTop_orth
 
 %extend RTop_frac {
 
-  // No idea why, but this only works if the Coord_frac name is fully justified
-  clipper::Coord_frac __mul__(const clipper::Coord_frac& c) {
+  Coord_frac __mul__(const clipper::Coord_frac& c) {
     return (*($self)) * c;
   }
 
   //! Return a full 4x4 affine transform matrix
-  void matrix (double numpy_double_out[4][4])
+  void mat44 (double numpy_double_out[4][4])
   {
     for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
@@ -2540,11 +2676,12 @@ namespace clipper
     }
   }
   // format() is only defined in the base class, so needs to be
-  // re-defined here.
-  String format() const {
-    return $self->format();
-  }
-
+  // re-defined here. Prints out a multi-line representation of the
+  // rotation/translation matrix.
+  String format() const { return $self->format(); }
+  
+  // Provides a prettier representation similar to that of bona fide
+  // Symop objects - e.g. (x, y+1/2, z)
   String format_as_symop() const
   {
     String s, t, xyz="xyz";
@@ -2564,20 +2701,30 @@ namespace clipper
     }
     return s;
   }
+  
+  std::string __str__() const { return self->format_as_symop(); }
 
-
-
-
-
+#ifdef PYTHON_PROPERTIES
+  %pythoncode %{
+    mat44 = property(mat44)
+    mat34 = property(mat34)
+    rotation = property(rotation)
+    translation = property(translation)
+    format = property(format)
+    format_as_symop = property(format_as_symop)
+  %}
+#endif
 }
 
 %extend Symop {
-  //! Return a full 4x4 affine transform matrix
-  clipper::Coord_frac __mul__(const clipper::Coord_frac& c) {
+  
+  Coord_frac __mul__(const clipper::Coord_frac& c) {
     return (*($self)) * c;
   }
-
-  void matrix (double numpy_double_out[4][4])
+  std::string __str__() { return self->format(); }
+  
+  //! Return a full 4x4 affine transform matrix
+  void mat44 (double numpy_double_out[4][4])
   {
     for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
@@ -2617,8 +2764,16 @@ namespace clipper
     }
   }
 
-
-}
+#ifdef PYTHON_PROPERTIES
+  %pythoncode %{
+    mat44 = property(mat44)
+    mat34 = property(mat34)
+    rotation = property(rotation)
+    translation = property(translation)
+    format = property(format)
+  %}
+#endif
+} // extend Symop
 
 %extend Isymop
 {
@@ -2655,7 +2810,15 @@ namespace clipper
     }
     (*self)[i] = value;
   }
-}
+  
+  std::string __str__() const { return self-> format(); }
+
+#ifdef PYTHON_PROPERTIES
+  %pythoncode %{
+    format = property(format)
+  %}
+#endif
+} // extend Vec3
 
 
 
@@ -2709,11 +2872,39 @@ namespace clipper
   {
     return ((*self)+m);
   };
-};
+  
+  clipper::Coord_orth __mul__ (const clipper::Coord_orth &v_)
+  {
+    Vec3<T> v;
+    v[0] = (T)v_[0];
+    v[1] = (T)v_[1];
+    v[2] = (T)v_[2];
+    Vec3<T> v2 = ((*self)*v);
+    Coord_orth c(v2[0],v2[1],v2[2]);
+    return c;
+  };
+  clipper::Coord_frac __mul__ (const clipper::Coord_frac &v_)
+  {
+    Vec3<T> v;
+    v[0] = (T)v_[0];
+    v[1] = (T)v_[1];
+    v[2] = (T)v_[2];
+    Vec3<T> v2 = ((*self)*v);
+    Coord_frac c(v2[0],v2[1],v2[2]);
+    return c;
+  };
+  
+#ifdef PYTHON_PROPERTIES
+  %pythoncode %{
+    as_numpy = property(as_numpy)
+  %}
+#endif
+  
+}; // extend Mat33
 }
 %template (mat33_float)  clipper::Mat33<float>;
-%template (mat33_ftype)  clipper::Mat33<ftype>;
-//%template (mat33_double) clipper::Mat33<double>;
+//%template (mat33_ftype)  clipper::Mat33<ftype>;
+%template (mat33_double) clipper::Mat33<double>;
 
 %template (RTop_float)  clipper::RTop<float>;
 %template (RTop_double) clipper::RTop<double>;
@@ -2721,33 +2912,33 @@ namespace clipper
 %template (vec3_float)  clipper::Vec3<float>;
 %template (vec3_double) clipper::Vec3<double>;
 
-namespace clipper
-{
-%extend mat33_float
-{
-  clipper::Coord_orth __mul__ (const clipper::Coord_orth &v_)
-  {
-    Vec3<float> v;
-    v[0] = v_[0];
-    v[1] = v_[1];
-    v[2] = v_[2];
-    Vec3<float> v2 = ((*self)*v);
-    Coord_orth c(v2[0],v2[1],v2[2]);
-    return c;
-  };
-  clipper::Coord_frac __mul__ (const clipper::Coord_frac &v_)
-  {
-    Vec3<float> v;
-    v[0] = v_[0];
-    v[1] = v_[1];
-    v[2] = v_[2];
-    Vec3<float> v2 = ((*self)*v);
-    Coord_frac c(v2[0],v2[1],v2[2]);
-    return c;
-  };
-}
+//namespace clipper
+//{
+//%extend mat33_float
+//{
+  //clipper::Coord_orth __mul__ (const clipper::Coord_orth &v_)
+  //{
+    //Vec3<float> v;
+    //v[0] = v_[0];
+    //v[1] = v_[1];
+    //v[2] = v_[2];
+    //Vec3<float> v2 = ((*self)*v);
+    //Coord_orth c(v2[0],v2[1],v2[2]);
+    //return c;
+  //};
+  //clipper::Coord_frac __mul__ (const clipper::Coord_frac &v_)
+  //{
+    //Vec3<float> v;
+    //v[0] = v_[0];
+    //v[1] = v_[1];
+    //v[2] = v_[2];
+    //Vec3<float> v2 = ((*self)*v);
+    //Coord_frac c(v2[0],v2[1],v2[2]);
+    //return c;
+  //};
+//}
 
-}
+//}
 
 
 %include "../clipper/core/hkl_info.h"
@@ -2787,32 +2978,23 @@ class HKL_reference_index : public HKL_reference_base
 %include "../clipper/core/xmap.h"
 %include "../clipper/core/nxmap.h"
 
-%{
-  namespace clipper {
-  typedef NXmap_base::Map_reference_base NXmap_reference_base;
-  typedef NXmap_base::Map_reference_index NXmap_reference_index;
-  typedef NXmap_base::Map_reference_coord NXmap_reference_coord;
-  typedef Xmap_base::Map_reference_base Xmap_reference_base;
-  typedef Xmap_base::Map_reference_index Xmap_reference_index;
-  typedef Xmap_base::Map_reference_coord Xmap_reference_coord;
-  }
+//%{
+  //namespace clipper {
+  //typedef NXmap_base::Map_reference_base NXmap_reference_base;
+  //typedef NXmap_base::Map_reference_index NXmap_reference_index;
+  //typedef NXmap_base::Map_reference_coord NXmap_reference_coord;
+  //typedef Xmap_base::Map_reference_base Xmap_reference_base;
+  //typedef Xmap_base::Map_reference_index Xmap_reference_index;
+  //typedef Xmap_base::Map_reference_coord Xmap_reference_coord;
+  //}
 
-%}
+//%}
 
 // numpy support for Xmap and NXmap
 // jon is currently editing this code piece
 
 
 namespace clipper
-{
-%extend Grid_sampling {
-  void dim(int numpy_int_out[3])
-  {
-    numpy_int_out[0] = $self->nu();
-    numpy_int_out[1] = $self->nv();
-    numpy_int_out[2] = $self->nw();
-  }
-}
 
 
 %extend NXmap {
@@ -3422,31 +3604,31 @@ namespace clipper
 }
 
 
-%extend Xmap<double> {
+//%extend Xmap<double> {
 
-  Xmap_reference_coord map_reference_coord( const Coord_grid& coord )
-  {
-    Xmap_reference_coord ret(*($self), coord);
-    return ret;
-  }
+  //clipper::Xmap_base::Map_reference_coord map_reference_coord( const Coord_grid& coord )
+  //{
+    //clipper::Xmap_base::Map_reference_coord Map_reference_coord ret(*($self), coord);
+    //return ret;
+  //}
 
-  const int& symop_of_reference_coord (const Xmap_reference_coord& coord )
-  {
-    return coord.sym();
-  }
-  /*! Find and add the necessary translations for each symop in order
-   *  to pack the same unit cell as a given fractional coordinate. Return a
-   *  Unit_Cell object.
-   */
+  //const int& symop_of_reference_coord (const clipper::Xmap_base::Map_reference_coord& coord )
+  //{
+    //return coord.sym();
+  //}
+  ///*! Find and add the necessary translations for each symop in order
+   //*  to pack the same unit cell as a given fractional coordinate. Return a
+   //*  Unit_Cell object.
+   //*/
 
-  clipper::Unit_Cell unit_cell_symops (clipper::Coord_frac ref, const clipper::Atom_list& atoms)
-  {
-    return clipper::Unit_Cell(ref, atoms, $self->cell(), $self->spacegroup(), $self->grid_sampling());
-  }
+  //clipper::Unit_Cell unit_cell_symops (clipper::Coord_frac ref, const clipper::Atom_list& atoms)
+  //{
+    //return clipper::Unit_Cell(ref, atoms, $self->cell(), $self->spacegroup(), $self->grid_sampling());
+  //}
 
 
 
-}
+//}
 
 
 }
@@ -3718,6 +3900,7 @@ fail:
 %include "../clipper/minimol/minimol_io.h"
 %include "../clipper/minimol/minimol_seq.h"
 
+%include "../clipper/core/hkl_datatypes.h"
 
 namespace clipper
 {
@@ -3816,7 +3999,6 @@ namespace datatypes
 
 
 
-%include "../clipper/core/hkl_datatypes.h"
 
 namespace clipper
 {
