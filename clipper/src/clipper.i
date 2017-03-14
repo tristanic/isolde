@@ -234,8 +234,8 @@ namespace std {
 
 }
 
-/* I'm thinking that Map_reference_coord is probably best left as an 
- * internal C++ object hidden from Python. 
+/* I'm thinking that Map_reference_coord is probably best left as an
+ * internal C++ object hidden from Python.
  *  -- Tristan
  */
 
@@ -1273,7 +1273,7 @@ namespace clipper {
   %rename("_get_coord_orth") Atom::coord_orth() const;
   %rename("_set_coord_orth") Atom::set_coord_orth();
 #endif
-}
+} // namespace clipper
 
 %include "../clipper/core/coords.h"
 
@@ -1315,17 +1315,25 @@ namespace clipper
   %}
 #ifdef PYTHON_PROPERTIES
   void _get_uvw(int numpy_int_out[3])
+#else
+  void get_uvw(int numpy_int_out[3])
+#endif
   {
     for (int i = 0; i < 3; i++) {
-      numpy_int_out[i] = ((*($self))[i]);
+      numpy_int_out[i] = ((*self)[i]);
     }
   }
+#ifdef PYTHON_PROPERTIES
   void _set_uvw(int v[3])
+#else
+  void set_uvw(int v[3])
+#endif
   {
-    $self->u() = v[0];
-    $self->v() = v[1];
-    $self->w() = v[2];
+    self->u() = v[0];
+    self->v() = v[1];
+    self->w() = v[2];
   }
+#ifdef PYTHON_PROPERTIES
   %pythoncode %{
     uvw = property(_get_uvw, _set_uvw)
   %}
@@ -1367,12 +1375,15 @@ namespace clipper
 
 #ifdef PYTHON_PROPERTIES
   void _get_xyz(double numpy_double_out[3])
+#else
+  void get_xyz(double numpy_double_out[3])
+#endif
   {
     for (int i = 0; i < 3; i++) {
       numpy_double_out[i] = (*self)[i];
     }
   }
-
+#ifdef PYTHON_PROPERTIES
   %pythoncode %{
     xyz = property(_get_xyz)
   %}
@@ -1390,7 +1401,11 @@ namespace clipper
   // Transforms handled in RTop_frac::__mul__()
   std::string __str__() {return self->format();}
   std::string __repr__() {return "Coord_frac " + self->format();}
+#ifdef PYTHON_PROPERTIES
   void _get_uvw(double numpy_double_out[3])
+#else
+  void get_uvw(double numpy_double_out[3])
+#endif
   {
     for (int i = 0; i < 3; i++) {
       numpy_double_out[i] = (*self)[i];
@@ -1431,7 +1446,7 @@ namespace clipper
   %}
 #endif
 
-}
+} // extend Coord_frac
 
 %extend Coord_map
 {
@@ -1467,12 +1482,15 @@ namespace clipper
 
 #ifdef PYTHON_PROPERTIES
   void _get_uvw(double numpy_double_out[3])
+#else
+  void get_uvw(double numpy_double_out[3])
+#endif
   {
     for (int i = 0; i < 3; i++) {
       numpy_double_out[i] = (*self)[i];
     }
   }
-
+#ifdef PYTHON_PROPERTIES
   %pythoncode %{
     uvw = property(_get_uvw)
   %}
@@ -1486,16 +1504,15 @@ namespace clipper
   bool __ne__(const HKL_sampling& hkl2) { return !(*self == hkl2); }
 } // extend HKL_sampling
 
-{
 %extend Grid_sampling {
   std::string __str__() const { return self->format(); }
   void dim(int numpy_int_out[3])
   {
-    numpy_int_out[0] = $self->nu();
-    numpy_int_out[1] = $self->nv();
-    numpy_int_out[2] = $self->nw();
+    numpy_int_out[0] = self->nu();
+    numpy_int_out[1] = self->nv();
+    numpy_int_out[2] = self->nw();
   }
-  
+
 #ifdef PYTHON_PROPERTIES
   %pythoncode %{
     dim = property(dim)
@@ -1509,7 +1526,7 @@ namespace clipper
 %extend Atom
 {
 #ifndef PYTHON_PROPERTIES
-  std::string element() { return $self->element(); }
+  std::string element() { return self->element(); }
 #endif
 
 #ifdef PYTHON_PROPERTIES
@@ -1576,59 +1593,59 @@ namespace clipper
 {
   Atom& __getitem__(int i)
   {
-    int array_len = $self->size();
+    int array_len = self->size();
     i = (i < 0) ? array_len + i : i;
     if (i >= array_len || i < 0) {
       throw std::out_of_range("");
     }
-    return (*($self))[i];
+    return (*self)[i];
   }
 
   void __setitem__(int i, Atom& atom)
   {
-    int array_len = $self->size();
+    int array_len = self->size();
     i = (i < 0) ? array_len + i : i;
     if (i >= array_len || i < 0) {
       throw std::out_of_range("");
     }
-    (*($self))[i] = atom;
+    (*self)[i] = atom;
     return;
   }
   size_t __len__()
   {
-    return ($self)->size();
+    return self->size();
   }
 
   Atom pop(int i)
   {
-    size_t array_len = $self->size();
+    size_t array_len = self->size();
     if (i >= array_len || -i > array_len) {
       throw std::out_of_range("");
     }
     Atom ret;
-    if (i>=0) ret = (*($self))[i];
-    else ret = (*($self))[array_len - i];
-    $self -> erase(($self) -> begin() + i);
+    if (i>=0) ret = (*self)[i];
+    else ret = (*self)[array_len - i];
+    self -> erase(self -> begin() + i);
     return ret;
   }
 
   size_t append (Atom& a)
   {
-    ($self)->push_back(a);
-    return ($self)->size();
+    self->push_back(a);
+    return self->size();
   }
 
   void extend_by(size_t n)
   {
     for (size_t i = 0; i < n; i++ ) {
-      ($self)->push_back( Atom() );
+      self->push_back( Atom() );
     }
   }
 
   void _set_elements(std::vector<std::string> elements)
   {
     size_t in_len = elements.size();
-    size_t my_len = ($self) -> size();
+    size_t my_len = self -> size();
     if (in_len != my_len) {
       std::string errString;
       errString = "Input array length of " + std::to_string(in_len)
@@ -1636,15 +1653,15 @@ namespace clipper
       throw std::length_error(errString);
     }
     for (size_t i = 0; i < my_len; i++) {
-      (*($self))[i].set_element( elements[i] );
+      (*self)[i].set_element( elements[i] );
     }
   }
 
   std::vector< std::string > _get_elements()
   {
     std::vector < std::string > ret;
-    for (size_t i = 0; i < $self -> size(); i++) {
-      ret.push_back( (*($self))[i].element() );
+    for (size_t i = 0; i < self -> size(); i++) {
+      ret.push_back( (*self)[i].element() );
     }
     return ret;
   }
@@ -1652,7 +1669,7 @@ namespace clipper
   //! Quickly set all atomic xyz coordinates from an nx3 numpy array
   void _set_coord_orth(double *numpy_2d_in, int n1, int n2)
   {
-    size_t my_len = ($self) -> size();
+    size_t my_len = self -> size();
     if (n1 != my_len) {
       std::string errString = "Input array length of " + std::to_string(n1) +
                               " does not match target array length of " + std::to_string(my_len);
@@ -1663,7 +1680,7 @@ namespace clipper
     }
     for (size_t i = 0; i < n1; i++) {
       size_t first = i * n2;
-      (*($self))[i].set_coord_orth( Coord_orth( numpy_2d_in[first], numpy_2d_in[first+1], numpy_2d_in[first+2] ) );
+      (*self)[i].set_coord_orth( Coord_orth( numpy_2d_in[first], numpy_2d_in[first+1], numpy_2d_in[first+2] ) );
     }
     return;
   }
@@ -1671,7 +1688,7 @@ namespace clipper
   //! Quickly fill an nx3 numpy array with all atomic xyz coordinates
   void _get_coord_orth(double* numpy_array, int n1, int n2)
   {
-    size_t my_len = ($self) -> size();
+    size_t my_len = self -> size();
     if (n1 != my_len) {
       std::string errString = "Target array length of " + std::to_string(n1) +
                               " does not match Atom_list length of " + std::to_string(my_len);
@@ -1682,7 +1699,7 @@ namespace clipper
     }
     for (size_t i = 0; i < n1; i++) {
       size_t first = i * n2;
-      Coord_orth thiscoord = (*($self))[i].coord_orth();
+      Coord_orth thiscoord = (*self)[i].coord_orth();
       numpy_array[first] = thiscoord[0];
       numpy_array[first+1] = thiscoord[1];
       numpy_array[first+2] = thiscoord[2];
@@ -1691,61 +1708,61 @@ namespace clipper
 
   void _set_occupancies(double *numpy_1d_in, int n)
   {
-    size_t my_len = ($self) -> size();
+    size_t my_len = self -> size();
     if (n != my_len) {
       std::string errString = "Input array length of " + std::to_string(n) +
                               " does not match target array length of " + std::to_string(my_len);
       throw std::length_error(errString);
     }
     for (size_t i = 0; i < n; i++) {
-      (*($self))[i].set_occupancy( numpy_1d_in[i] );
+      (*self)[i].set_occupancy( numpy_1d_in[i] );
     }
     return;
   }
 
   void _get_occupancies(double *numpy_array, int n)
   {
-    size_t my_len = ($self) -> size();
+    size_t my_len = self -> size();
     if (n != my_len) {
       std::string errString = "Target array length of " + std::to_string(n) +
                               " does not match Atom_list length of " + std::to_string(my_len);
       throw std::length_error(errString);
     }
     for (size_t i = 0; i < n; i++) {
-      numpy_array[i] = (*($self))[i].occupancy();
+      numpy_array[i] = (*self)[i].occupancy();
     }
   }
 
   void _set_u_isos(double *numpy_1d_in, int n)
   {
-    size_t my_len = ($self) -> size();
+    size_t my_len = self -> size();
     if (n != my_len) {
       std::string errString = "Input array length of " + std::to_string(n) +
                               " does not match target array length of " + std::to_string(my_len);
       throw std::length_error(errString);
     }
     for (int i = 0; i < n; i++) {
-      (*($self))[i].set_u_iso( numpy_1d_in[i] );
+      (*self)[i].set_u_iso( numpy_1d_in[i] );
     }
     return;
   }
 
   void _get_u_isos(double *numpy_array, int n)
   {
-    size_t my_len = ($self) -> size();
+    size_t my_len = self -> size();
     if (n != my_len) {
       std::string errString = "Target array length of " + std::to_string(n) +
                               " does not match Atom_list length of " + std::to_string(my_len);
       throw std::length_error(errString);
     }
     for (size_t i = 0; i < n; i++) {
-      numpy_array[i] = (*($self))[i].u_iso();
+      numpy_array[i] = (*self)[i].u_iso();
     }
   }
 
   void _set_u_anisos(double *numpy_2d_in, int n1, int n2)
   {
-    size_t my_len = ($self) -> size();
+    size_t my_len = self -> size();
     if (n1 != my_len) {
       std::string errString = "Input array length of " + std::to_string(n1) +
                               " does not match target array length of " + std::to_string(my_len);
@@ -1759,7 +1776,7 @@ namespace clipper
     double *ai = numpy_2d_in;
     for (size_t i = 0; i < n1; i++) {
       size_t first = i*n2;
-      (*($self))[i].set_u_aniso_orth(
+      (*self)[i].set_u_aniso_orth(
         U_aniso_orth(ai[first], ai[first+1], ai[first+2],
                      ai[first+3], ai[first+4], ai[first+5]) );
     }
@@ -1767,7 +1784,7 @@ namespace clipper
 
   void _get_u_anisos(double* numpy_array, int n1, int n2)
   {
-    size_t my_len = ($self) -> size();
+    size_t my_len = self -> size();
     if (n1 != my_len) {
       std::string errString = "Target array length of " + std::to_string(n1) +
                               " does not match Atom_list length of " + std::to_string(my_len);
@@ -1778,7 +1795,7 @@ namespace clipper
     }
     for (size_t i = 0; i < n1; i++) {
       size_t first = i * n2;
-      U_aniso_orth thisaniso = (*($self))[i].u_aniso_orth();
+      U_aniso_orth thisaniso = (*self)[i].u_aniso_orth();
       numpy_array[first] = thisaniso.mat00();
       numpy_array[first+1] = thisaniso.mat11();
       numpy_array[first+2] = thisaniso.mat22();
@@ -1795,7 +1812,7 @@ namespace clipper
      */
     Coord_grid ref_min = (*self)[0].coord_orth().coord_frac(cell).coord_grid(grid);
     Coord_grid ref_max = ref_min;
-    for (Atom_list::const_iterator it = (*self).begin(); it != (*self).end(); ++it) {
+    for (Atom_list::const_iterator it = self->begin(); it != self->end(); ++it) {
       Coord_grid thiscoord = it->coord_orth().coord_frac(cell).coord_grid(grid);
       for (size_t i = 0; i < 3; i++) {
         if (thiscoord[i] < ref_min[i]) ref_min[i] = thiscoord[i];
@@ -2122,7 +2139,7 @@ namespace clipper
           raise TypeError("Format must be one of '3x4' or '4x4'!")
         return ret
     %}
-  } // extend Symops 
+  } // extend Symops
 } // namespace clipper
 
 
@@ -2213,40 +2230,40 @@ namespace clipper
       size_t size_;
   };
   } // namespace clipper
-%}
+%} // inline
 
-%feature("docstring") clipper::Unit_Cell 
+%feature("docstring") clipper::Unit_Cell
   "Condensed description of a single unit cell based on an atomic model.\n
   Contains a reference fractional coordinate (typically corresponding
-  to the centroid of the modelled asymmetric unit), a list of symmetry 
-  operators with the necessary translations added to fully pack a 
+  to the centroid of the modelled asymmetric unit), a list of symmetry
+  operators with the necessary translations added to fully pack a
   single unit cell, and a list of pre-computed inverse symmetry operators
   for convenience. Also provides methods to quickly find all the symmetry
   operators necessary to pack an arbitrary box in space with copies of
   your atomic model.
   "
-  
-%feature("docstring") clipper::Unit_Cell::symops 
+
+%feature("docstring") clipper::Unit_Cell::symops
   "Returns a Symops object listing all the transformations mapping the
   reference model to other positions in the unit cell. "
 
-%feature("docstring") clipper::Unit_Cell::inv_symops 
+%feature("docstring") clipper::Unit_Cell::inv_symops
   "Returns a Symops object listing all the transformations mapping each
   copy in the unit cell back to the reference model. "
 
-%feature("docstring") clipper::Unit_Cell::ref_box 
+%feature("docstring") clipper::Unit_Cell::ref_box
   "Returns a Grid_range object defining the smallest rhomboid in integer
   grid coordinates that fully encloses the atomic model. "
 
 %feature("docstring") clipper::Unit_Cell::all_symops_in_box
-  "all_symops_in_box(box_origin_xyz, box_size_uvw, 
-                    always_include_identity = False, 
+  "all_symops_in_box(box_origin_xyz, box_size_uvw,
+                    always_include_identity = False,
                     sample_frequency = 2)
       ---> Symops
   Returns a Symops object providing all symmetry operators which place
   some part of the atomic model within a box in grid space.
   NOTE: this routine is optimised for speed rather than strictness, and
-  may occasionally return extra operators which place the model just 
+  may occasionally return extra operators which place the model just
   outside the target box. Think of the result as a shortlist of operators
   upon which more detailed atom-by-atom searches can be done if necessary.
   Args:
@@ -2260,7 +2277,7 @@ namespace clipper
       The box will be searched in steps equal to the minimum side length
       of the reference box divided by this number. In almost all cases
       this should be left as is."
-  
+
 
 %ignore clipper::Unit_Cell::isymops() const;
 %ignore clipper::Unit_Cell::inv_isymops() const;
@@ -2514,7 +2531,7 @@ namespace clipper
                                   ops_and_translations.end(),
                                   int_Coord_grid_pairs_equal
                                              ), ops_and_translations.end() );
-                                             
+
       for (std::vector<std::pair<int, Coord_grid > >::iterator it = ops_and_translations.begin();
            it != ops_and_translations.end(); ++it) {
         RTop_frac thisop = symops_[it->first];
@@ -2565,28 +2582,28 @@ namespace clipper
       ref = property(ref)
       ref_box = property(ref_box)
     %}
-  }
-}
+  } // extend Symops
+} // namespace clipper
 #endif
 
 namespace clipper
 {
-%extend RTop_orth 
+%extend RTop_orth
 {
 
   Coord_orth __mul__(const Coord_orth& c) {
-    return (*($self)) * c;
+    return (*self) * c;
   }
 
   void mat44 (double numpy_double_out[4][4])
   {
     for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
-        numpy_double_out[i][j] = ($self)->rot()(i,j);
+        numpy_double_out[i][j] = self->rot()(i,j);
       }
     }
     for (size_t i = 0; i < 3; i++) {
-      numpy_double_out[i][3] = ($self)->trn()[i];
+      numpy_double_out[i][3] = self->trn()[i];
       numpy_double_out[3][i] = 0;
     }
     numpy_double_out[3][3] = 1;
@@ -2596,18 +2613,18 @@ namespace clipper
   {
     for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
-        numpy_double_out[i][j] = ($self)->rot()(i,j);
+        numpy_double_out[i][j] = self->rot()(i,j);
       }
     }
     for (size_t i = 0; i < 3; i++) {
-      numpy_double_out[i][3] = ($self)->trn()[i];
+      numpy_double_out[i][3] = self->trn()[i];
     }
   }
   void rotation (double numpy_double_out[3][3])
   {
     for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
-        numpy_double_out[i][j] = ($self)->rot()(i,j);
+        numpy_double_out[i][j] = self->rot()(i,j);
       }
     }
   }
@@ -2615,7 +2632,7 @@ namespace clipper
   void translation (double numpy_double_out[3])
   {
     for (size_t i = 0; i < 3; i++) {
-      numpy_double_out[i] = ($self)->trn()[i];
+      numpy_double_out[i] = self->trn()[i];
     }
   }
 #ifdef PYTHON_PROPERTIES
@@ -2625,13 +2642,13 @@ namespace clipper
     rotation = property(rotation)
     translation = property(translation)
   %}
-#endif  
+#endif
 } // extend RTop_orth
 
 %extend RTop_frac {
 
   Coord_frac __mul__(const clipper::Coord_frac& c) {
-    return (*($self)) * c;
+    return (*self) * c;
   }
 
   //! Return a full 4x4 affine transform matrix
@@ -2639,11 +2656,11 @@ namespace clipper
   {
     for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
-        numpy_double_out[i][j] = ($self)->rot()(i,j);
+        numpy_double_out[i][j] = self->rot()(i,j);
       }
     }
     for (size_t i = 0; i < 3; i++) {
-      numpy_double_out[i][3] = ($self)->trn()[i];
+      numpy_double_out[i][3] = self->trn()[i];
       numpy_double_out[3][i] = 0;
     }
     numpy_double_out[3][3] = 1;
@@ -2653,11 +2670,11 @@ namespace clipper
   {
     for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
-        numpy_double_out[i][j] = ($self)->rot()(i,j);
+        numpy_double_out[i][j] = self->rot()(i,j);
       }
     }
     for (size_t i = 0; i < 3; i++) {
-      numpy_double_out[i][3] = ($self)->trn()[i];
+      numpy_double_out[i][3] = self->trn()[i];
     }
   }
 
@@ -2665,21 +2682,21 @@ namespace clipper
   {
     for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
-        numpy_double_out[i][j] = ($self)->rot()(i,j);
+        numpy_double_out[i][j] = self->rot()(i,j);
       }
     }
   }
   void translation (double numpy_double_out[3])
   {
     for (size_t i = 0; i < 3; i++) {
-      numpy_double_out[i] = ($self)->trn()[i];
+      numpy_double_out[i] = self->trn()[i];
     }
   }
   // format() is only defined in the base class, so needs to be
   // re-defined here. Prints out a multi-line representation of the
   // rotation/translation matrix.
-  String format() const { return $self->format(); }
-  
+  String format() const { return self->format(); }
+
   // Provides a prettier representation similar to that of bona fide
   // Symop objects - e.g. (x, y+1/2, z)
   String format_as_symop() const
@@ -2688,21 +2705,32 @@ namespace clipper
     for ( int i = 0; i < 3; i++ ) {
       t = "";
       for ( int j = 0; j < 3; j++ )
-        if ( $self->rot()(i,j) != 0.0 ) {
-    t += ( $self->rot()(i,j) > 0.0 ) ? "+" : "-";
-    if ( Util::intr( fabs( $self->rot()(i,j) ) ) != 1 )
-      t += String::rational( fabs( $self->rot()(i,j) ), 24 );
+        if ( self->rot()(i,j) != 0.0 ) {
+    t += ( self->rot()(i,j) > 0.0 ) ? "+" : "-";
+    if ( Util::intr( fabs( self->rot()(i,j) ) ) != 1 )
+      t += String::rational( fabs( self->rot()(i,j) ), 24 );
     t += xyz[j];
         }
-      if ( $self->trn()[i] != 0.0 )
-        t += String::rational( $self->trn()[i], 24, true );
+      if ( self->trn()[i] != 0.0 )
+        t += String::rational( self->trn()[i], 24, true );
       s += t.substr( ( t[0] == '+' ) ? 1 : 0 );
       if ( i < 2 ) s+= ", ";
     }
     return s;
   }
-  
-  std::string __str__() const { return self->format_as_symop(); }
+  %pythoncode %{
+    def __str__(self):
+#ifdef PYTHON_PROPERTIES
+      return self.format_as_symop
+#else
+      return self.format_as_symop()
+#endif
+    def __hash__(self):
+      return hash(self.__str__())
+
+    def __eq__(self, other):
+      return type(other) == RTop_frac and hash(self) = hash(other)
+  %}
 
 #ifdef PYTHON_PROPERTIES
   %pythoncode %{
@@ -2714,25 +2742,25 @@ namespace clipper
     format_as_symop = property(format_as_symop)
   %}
 #endif
-}
+} // extend RTop_frac
 
 %extend Symop {
-  
+
   Coord_frac __mul__(const clipper::Coord_frac& c) {
-    return (*($self)) * c;
+    return (*self) * c;
   }
   std::string __str__() { return self->format(); }
-  
+
   //! Return a full 4x4 affine transform matrix
   void mat44 (double numpy_double_out[4][4])
   {
     for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
-        numpy_double_out[i][j] = ($self)->rot()(i,j);
+        numpy_double_out[i][j] = self->rot()(i,j);
       }
     }
     for (size_t i = 0; i < 3; i++) {
-      numpy_double_out[i][3] = ($self)->trn()[i];
+      numpy_double_out[i][3] = self->trn()[i];
       numpy_double_out[3][i] = 0;
     }
     numpy_double_out[3][3] = 1;
@@ -2742,25 +2770,25 @@ namespace clipper
   {
     for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
-        numpy_double_out[i][j] = ($self)->rot()(i,j);
+        numpy_double_out[i][j] = self->rot()(i,j);
       }
     }
     for (size_t i = 0; i < 3; i++) {
-      numpy_double_out[i][3] = ($self)->trn()[i];
+      numpy_double_out[i][3] = self->trn()[i];
     }
   }
   void rotation (double numpy_double_out[3][3])
   {
     for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
-        numpy_double_out[i][j] = ($self)->rot()(i,j);
+        numpy_double_out[i][j] = self->rot()(i,j);
       }
     }
   }
   void translation (double numpy_double_out[3])
   {
     for (size_t i = 0; i < 3; i++) {
-      numpy_double_out[i] = ($self)->trn()[i];
+      numpy_double_out[i] = self->trn()[i];
     }
   }
 
@@ -2778,12 +2806,12 @@ namespace clipper
 %extend Isymop
 {
   clipper::Coord_grid __mul__(const clipper::Coord_grid& c) {
-    return (*($self)) * c;
+    return (*self) * c;
   }
   clipper::HKL __mul__(const clipper::HKL& c) {
-    return (*($self)) * c;
+    return (*self) * c;
   }
-}
+} // extend Isymop
 
 %extend Vec3 {
 
@@ -2810,7 +2838,7 @@ namespace clipper
     }
     (*self)[i] = value;
   }
-  
+
   std::string __str__() const { return self-> format(); }
 
 #ifdef PYTHON_PROPERTIES
@@ -2839,7 +2867,7 @@ namespace clipper
   {
     for (size_t i = 0; i < 3; i++) {
       for (size_t j = 0; j < 3; j++) {
-        numpy_double_out[i][j] = (*($self))(i,j);
+        numpy_double_out[i][j] = (*self)(i,j);
       }
     }
   }
@@ -2872,7 +2900,7 @@ namespace clipper
   {
     return ((*self)+m);
   };
-  
+
   clipper::Coord_orth __mul__ (const clipper::Coord_orth &v_)
   {
     Vec3<T> v;
@@ -2893,15 +2921,16 @@ namespace clipper
     Coord_frac c(v2[0],v2[1],v2[2]);
     return c;
   };
-  
+
 #ifdef PYTHON_PROPERTIES
   %pythoncode %{
     as_numpy = property(as_numpy)
   %}
 #endif
-  
+
 }; // extend Mat33
-}
+} // namespace clipper
+
 %template (mat33_float)  clipper::Mat33<float>;
 //%template (mat33_ftype)  clipper::Mat33<ftype>;
 %template (mat33_double) clipper::Mat33<double>;
@@ -2955,7 +2984,7 @@ class HKL_reference_base
     ftype invresolsq( const HKL_data_base& hkldata ) const;
     ftype invresolsq() const;
     bool last() const;
-};
+}; // class HKL_reference_base
 class HKL_reference_index : public HKL_reference_base
 {
   public:
@@ -2964,8 +2993,8 @@ class HKL_reference_index : public HKL_reference_base
     const HKL& hkl() const;
     const HKL_class& hkl_class() const;
     HKL_reference_index& next();
-};
-}
+}; // class HKL_reference_index
+} // namespace clipper
 
 %{
   namespace clipper {
@@ -2995,10 +3024,9 @@ class HKL_reference_index : public HKL_reference_base
 
 
 namespace clipper
-
-
+{
 %extend NXmap {
-  NXmap ( clipper::Grid const & grid, clipper::RTop<ftype> const & rtop)
+  NXmap ( Grid const & grid, RTop<ftype> const & rtop)
   {
     return new NXmap<T>( grid, rtop );
   }
@@ -3013,8 +3041,8 @@ namespace clipper
     int i = 0;
     int top_u, top_v, top_w;
 
-    clipper::Coord_grid c;
-    clipper::Grid map_grid = (*($self)).grid();
+    Coord_grid c;
+    Grid map_grid = self->grid();
 
     int temp;
     if (rot.compare("zyx") == 0) {
@@ -3035,14 +3063,12 @@ namespace clipper
       for ( c.w() = 0; c.w() < top_w; c.w()++ )
         for ( c.v() = 0; c.v() < top_v; c.v()++ )
           for (  c.u() = 0; c.u() < top_u; c.u()++, i++ )
-            numpy_array[i] = (*($self)).get_data(c);
-    } else if (order == 'C') {
+            numpy_array[i] = self->get_data(c);
+    } else { // order == 'C'
      for ( c.u() = 0; c.u() < top_u; c.u()++ )
         for ( c.v() = 0; c.v() < top_v; c.v()++ )
           for (  c.w() = 0; c.w() < top_w; c.w()++, i++ )
-            numpy_array[i] = (*($self)).get_data(c);
-    } else {
-        throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
+            numpy_array[i] = self->get_data(c);
     }
     return i;
 
@@ -3058,8 +3084,8 @@ namespace clipper
     int i = 0;
     int top_u, top_v, top_w;
 
-    clipper::Coord_grid c;
-    clipper::Grid map_grid = (*($self)).grid();
+    Coord_grid c;
+    Grid map_grid = self->grid();
 
     int temp;
     if (rot.compare("zyx") == 0) {
@@ -3079,43 +3105,43 @@ namespace clipper
       for ( c.w() = 0; c.w() < top_w; c.w()++ )
         for ( c.v() = 0; c.v() < top_v; c.v()++ )
           for (  c.u() = 0; c.u() < top_u; c.u()++, i++ )
-            (*($self)).set_data(c, numpy_3d_in[i]);
-    } else if (order == 'C') {
+            self->set_data(c, numpy_3d_in[i]);
+    } else { // order == 'C'
       for ( c.u() = 0; c.u() < top_u; c.u()++ )
         for ( c.v() = 0; c.v() < top_v; c.v()++ )
           for (  c.w() = 0; c.w() < top_w; c.w()++, i++ )
-            (*($self)).set_data(c, numpy_3d_in[i]);
+            self->set_data(c, numpy_3d_in[i]);
     }
     return i;
   }
 
   RTop<ftype> operator_orth_grid ()
   {
-    return (*($self)).operator_orth_grid();
+    return self->operator_orth_grid();
   }
   RTop<ftype> operator_grid_orth ()
   {
-    return (*($self)).operator_grid_orth();
+    return self->operator_grid_orth();
   }
 
-}
+} // extend NXmap
 
 
 
 
 %extend Xmap {
-
-  clipper::Xmap<T>::Map_reference_coord get_reference_coord(const Coord_grid& pos)
+  // TODO: add Python __init__ to add name and is_difference_map properties
+  // (has to be done outside of SWIG).
+  Xmap<T>::Map_reference_coord get_reference_coord(const Coord_grid& pos)
   {
 
-    clipper::Xmap<T>::Map_reference_coord ref((*($self)), pos);
+    Xmap<T>::Map_reference_coord ref(*self, pos);
     return ref;
   }
 
-  /*! Return min, max, mean, sigma, skew and kurtosis for this map.
-   *  Computationally expensive, so best to save the result on the Python side.
-   */
-  std::vector<double> stats ()
+
+
+  std::vector<double> _recalculate_stats ()
   {
     std::vector<double> ret;
     double max, min, mean, sd, skew, kurtosis;
@@ -3128,10 +3154,10 @@ namespace clipper
 
     double rho_sq, rho_3rd, rho_4th;
 
-    clipper::Xmap_base::Map_reference_index ix;
-    ix = $self->first();
+    Xmap_base::Map_reference_index ix;
+    ix = self->first();
     max = min = (*self)[ix];
-    for (ix = $self->first(); !ix.last(); ix.next()) {
+    for (ix = self->first(); !ix.last(); ix.next()) {
       const double &rho = (*self)[ix];
       if (! clipper::Util::is_nan(rho)) {
         n++;
@@ -3165,8 +3191,11 @@ namespace clipper
       ret.push_back(sd);
       ret.push_back(skew);
       ret.push_back(kurtosis);
-      return ret;
     }
+    else {
+      throw std::out_of_range("Map has no data!");
+    }
+    return ret;
   }
 
   /*! Return list of all  grid points with multiplicity greater than 1
@@ -3174,13 +3203,13 @@ namespace clipper
    */
   std::vector<std::vector<int> > special_positions ()
   {
-    clipper::Xmap_base::Map_reference_index ix;
+    Xmap_base::Map_reference_index ix;
     std::vector<std::vector<int> > ret;
-    clipper::Coord_grid this_coord;
-    ix = $self->first();
+    Coord_grid this_coord;
+    ix = self->first();
     size_t mult;
-    for (ix = $self->first(); !ix.last(); ix.next()) {
-      mult = $self-> multiplicity(ix.coord());
+    for (ix = self->first(); !ix.last(); ix.next()) {
+      mult = self-> multiplicity(ix.coord());
       if (mult > 1) {
         std::vector<int> this_sp;
         this_coord = ix.coord();
@@ -3201,17 +3230,17 @@ namespace clipper
   {
     size_t count = 0;
     std::vector<std::vector<int> > ret;
-    clipper::Coord_frac start_frac(frac_offset[0], frac_offset[1], frac_offset[2]);
-    clipper::Grid_sampling grid = $self->grid_sampling();
-    clipper::Coord_grid start_coord = start_frac.coord_grid(grid);
-    clipper::Coord_grid this_coord;
+    Coord_frac start_frac(frac_offset[0], frac_offset[1], frac_offset[2]);
+    Grid_sampling grid = self->grid_sampling();
+    Coord_grid start_coord = start_frac.coord_grid(grid);
+    Coord_grid this_coord;
     size_t mult;
     bool done = false;
     for (int i = 0; i < grid.nu(); i++) {
       for (int j = 0; j < grid.nv(); j++) {
         for (int k = 0; k < grid.nw(); k++) {
           this_coord = start_coord + clipper::Coord_grid(i,j,k);
-          mult = $self-> multiplicity(this_coord);
+          mult = self-> multiplicity(this_coord);
           if (mult > 1) {
             std::vector<int> this_sp;
             this_sp.push_back(this_coord.u());
@@ -3232,22 +3261,22 @@ namespace clipper
   {
     size_t count = 0;
     std::vector<std::vector<double> > ret;
-    clipper::Coord_frac start_frac(frac_offset[0], frac_offset[1], frac_offset[2]);
-    clipper::Grid_sampling grid = $self->grid_sampling();
-    clipper::Coord_grid start_coord = start_frac.coord_grid(grid);
-    clipper::Coord_grid this_coord;
-    clipper::Cell cell = $self->cell();
+    Coord_frac start_frac(frac_offset[0], frac_offset[1], frac_offset[2]);
+    Grid_sampling grid = self->grid_sampling();
+    Coord_grid start_coord = start_frac.coord_grid(grid);
+    Coord_grid this_coord;
+    Cell cell = self->cell();
     size_t mult;
     bool done = false;
     for (int i = 0; i < grid.nu(); i++) {
       for (int j = 0; j < grid.nv(); j++) {
         for (int k = 0; k < grid.nw(); k++) {
-          this_coord = start_coord + clipper::Coord_grid(i,j,k);
-          mult = $self-> multiplicity(this_coord);
+          this_coord = start_coord + Coord_grid(i,j,k);
+          mult = self-> multiplicity(this_coord);
           if (mult > 1) {
             std::vector<double> this_sp;
-            clipper::Coord_frac this_frac = this_coord.coord_frac(grid);
-            clipper::Coord_orth this_coord_orth = this_frac.coord_orth(cell);
+            Coord_frac this_frac = this_coord.coord_frac(grid);
+            Coord_orth this_coord_orth = this_frac.coord_orth(cell);
             this_sp.push_back(this_coord_orth.x());
             this_sp.push_back(this_coord_orth.y());
             this_sp.push_back(this_coord_orth.z());
@@ -3272,8 +3301,8 @@ namespace clipper
     int i = 0;
     int top_u, top_v, top_w;
 
-    clipper::Coord_grid c;
-    clipper::Grid map_grid = (*($self)).grid_asu();
+    Coord_grid c;
+    Grid map_grid = self->grid_asu();
 
     int temp;
     if (rot.compare("zyx") == 0) {
@@ -3296,22 +3325,23 @@ namespace clipper
         for ( c.v() = 0; c.v() < top_v; c.v()++ )
           for ( c.u() = 0; c.u() < nu; c.u()++, i++ ) {
             if ( c.u() < map_grid.nu() && c.v() < map_grid.nv() && c.w() < map_grid.nw() )
-              numpy_array[i] = (*($self)).get_data(c);
+              numpy_array[i] = self->get_data(c);
             else
               numpy_array[i] = 0.0;
           }
       return i;
-    } else if (order == 'C') {
+    } else { // order == 'C'
       for ( c.u() = 0; c.u() < top_u; c.u()++ )
         for ( c.v() = 0; c.v() < top_v; c.v()++ )
           for ( c.w() = 0; c.w() < nw; c.w()++, i++ ) {
             if ( c.u() < map_grid.nu() && c.v() < map_grid.nv() && c.w() < map_grid.nw() )
-              numpy_array[i] = (*($self)).get_data(c);
+              numpy_array[i] = self->get_data(c);
             else
               numpy_array[i] = 0.0;
           }
       return i;
     }
+
   }
 
   //! Import the whole asymmetric unit as a numpy array
@@ -3326,8 +3356,8 @@ namespace clipper
     int i = 0;
     int top_u, top_v, top_w;
 
-    clipper::Coord_grid c;
-    clipper::Grid map_grid = (*($self)).grid_asu();
+    Coord_grid c;
+    Grid map_grid = self->grid_asu();
 
     int temp;
     if (rot.compare("zyx") == 0) {
@@ -3347,20 +3377,20 @@ namespace clipper
       for ( c.w() = 0; c.w() < top_w; c.w()++ )
         for ( c.v() = 0; c.v() < top_v; c.v()++ )
           for (  c.u() = 0; c.u() < top_u; c.u()++, i++ )
-            (*($self)).set_data(c, numpy_3d_in[i]);
+            self->set_data(c, numpy_3d_in[i]);
       return i;
-    } else if (order == 'C') {
+    } else { // order == 'C'
       for ( c.u() = 0; c.u() < top_u; c.u()++ )
         for ( c.v() = 0; c.v() < top_v; c.v()++ )
           for (  c.w() = 0; c.w() < top_w; c.w()++, i++ )
-            (*($self)).set_data(c, numpy_3d_in[i]);
+            self->set_data(c, numpy_3d_in[i]);
       return i;
     }
   }
 
   //! Export an arbitrary box as a numpy array
 
-  int export_section_numpy ( double *numpy_array, int nu, int nv, int nw, clipper::Coord_grid& start, char order = 'F', std::string rot = "xyz" )
+  int _export_section_numpy ( double *numpy_array, int nu, int nv, int nw, Coord_grid& start, char order = 'F', std::string rot = "xyz" )
   {
     std::string orders("FC");
     int oindex = orders.find(order);
@@ -3393,20 +3423,20 @@ namespace clipper
     }
     */
 
-    clipper::Xmap_base::Map_reference_coord ix( (*($self)) );
+    clipper::Xmap_base::Map_reference_coord ix( *self );
 
     if (order == 'F') {
       for ( w = start.w(); w < maxw; w++ )
         for ( v = start.v(); v < maxv; v++ )
           for ( ix.set_coord(Coord_grid(start.u(),v,w)); ix.coord().u() < maxu; ix.next_u(), i++ ) {
-            numpy_array[i] = (*($self))[ix];
+            numpy_array[i] = (*self)[ix];
           }
       return i;
-    } else if (order == 'C') {
+    } else { // order == 'C'
       for ( u = start.u(); u < maxu; u++ )
         for ( v = start.v(); v < maxv; v++ )
           for ( ix.set_coord(Coord_grid(u,v,start.w())); ix.coord().w() < maxw; ix.next_w(), i++ ) {
-            numpy_array[i] = (*($self))[ix];
+            numpy_array[i] = (*self)[ix];
           }
       return i;
     }
@@ -3414,7 +3444,7 @@ namespace clipper
 
   //! Import an arbitrary box as a numpy array
 
-  int import_section_numpy ( double *numpy_3d_in, int nu, int nv, int nw, clipper::Coord_grid& start, char order = 'F', std::string rot = "xyz" )
+  int import_section_numpy ( double *numpy_3d_in, int nu, int nv, int nw, Coord_grid& start, char order = 'F', std::string rot = "xyz" )
   {
     std::string orders("FC");
     int oindex = orders.find(order);
@@ -3445,20 +3475,20 @@ namespace clipper
       throw std::length_error("Target array is too small to hold the requested data!");
     }
     */
-    clipper::Xmap_base::Map_reference_coord ix( (*($self)) );
+    Xmap_base::Map_reference_coord ix( *self );
 
     if (order == 'F') {
       for ( w = start.w(); w < maxw; w++ )
         for ( v = start.v(); v < maxv; v++ )
           for ( ix.set_coord(Coord_grid(start.u(),v,w)); ix.coord().u() < maxu; ix.next_u(), i++ ) {
-            (*($self))[ix] = numpy_3d_in[i];
+            (*self)[ix] = numpy_3d_in[i];
           }
       return i;
-    } else if (order == 'C') {
+    } else { // order == 'C'
       for ( u = start.u(); u < maxu; u++ )
         for ( v = start.v(); v < maxv; v++ )
           for ( ix.set_coord(Coord_grid(u,v,start.w())); ix.coord().w() < maxw; ix.next_w(), i++ ) {
-            (*($self))[ix] = numpy_3d_in[i];
+            (*self)[ix] = numpy_3d_in[i];
           }
       return i;
     }
@@ -3486,7 +3516,7 @@ namespace clipper
     double z_inc = box_res_xyz[2];
     Coord_frac thiscoord;
 
-    const Cell& cell = $self->cell();
+    const Cell& cell = self->cell();
 
     if (! (!mode.compare("cubic") || !mode.compare("linear")) ) {
       throw std::invalid_argument ("Interpolator must be either cubic (default) or linear");
@@ -3510,28 +3540,26 @@ namespace clipper
           for (int i = 0; i < nx; i++, count++) {
             thiscoord = (origin + Coord_orth(x_inc*i, y_inc*j, z_inc*k)).coord_frac(cell);
             if (mode_cubic) {
-              numpy_array[count] = $self->interp<Interp_cubic>(thiscoord);
+              numpy_array[count] = self->interp<Interp_cubic>(thiscoord);
             } else {
-              numpy_array[count] = $self->interp<Interp_linear>(thiscoord);
+              numpy_array[count] = self->interp<Interp_linear>(thiscoord);
             }
           }
         }
       }
-    } else if (order == 'C') {
+    } else { // order == 'C'
       for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
           for (int k = 0; k < nz; k++, count++) {
             thiscoord = (origin + Coord_orth(x_inc*i, y_inc*j, z_inc*k)).coord_frac(cell);
             if (mode_cubic) {
-              numpy_array[count] = $self->interp<Interp_cubic>(thiscoord);
+              numpy_array[count] = self->interp<Interp_cubic>(thiscoord);
             } else {
-              numpy_array[count] = $self->interp<Interp_linear>(thiscoord);
+              numpy_array[count] = self->interp<Interp_linear>(thiscoord);
             }
           }
         }
       }
-    } else {
-      throw std::invalid_argument("Order must be either F (Fortran-style wvu) or C (C-style uvw)");
     }
     return count;
 
@@ -3543,8 +3571,8 @@ namespace clipper
 
   void voxel_size(double numpy_double_out[3])
   {
-    clipper::Grid_sampling g = $self->grid_sampling();
-    clipper::Cell c = $self->cell();
+    Grid_sampling g = self->grid_sampling();
+    Cell c = self->cell();
     numpy_double_out[0] = c.a() / g.nu();
     numpy_double_out[1] = c.b() / g.nv();
     numpy_double_out[2] = c.c() / g.nw();
@@ -3554,7 +3582,7 @@ namespace clipper
 
   void voxel_size_frac(double numpy_double_out[3])
   {
-    clipper::Grid_sampling g = $self->grid_sampling();
+    Grid_sampling g = self->grid_sampling();
     numpy_double_out[0] = 1.0 / g.nu();
     numpy_double_out[1] = 1.0 / g.nv();
     numpy_double_out[2] = 1.0 / g.nw();
@@ -3564,51 +3592,137 @@ namespace clipper
 
   T interp_cubic_frac_coord(Coord_frac f)
   {
-    return $self->interp<Interp_cubic>(f);
+    return self->interp<Interp_cubic>(f);
   }
 
   //! Return the interpolated density value at a given (x,y,z) coordinate
 
   T interp_cubic_xyz(double numpy_1d_in[3])
   {
-    Coord_frac thecoord = Coord_orth(numpy_1d_in[0], numpy_1d_in[1], numpy_1d_in[2]).coord_frac($self->cell());
-    return $self->interp<Interp_cubic>(thecoord);
+    Coord_frac thecoord = Coord_orth(numpy_1d_in[0], numpy_1d_in[1], numpy_1d_in[2]).coord_frac(self->cell());
+    return self->interp<Interp_cubic>(thecoord);
   }
 
   //! Return the interpolated density value at a given fractional coordinate
 
   T interp_linear_frac_coord(Coord_frac f)
   {
-    return $self->interp<Interp_linear>(f);
+    return self->interp<Interp_linear>(f);
   }
 
   //! Return the interpolated density value at a given (x,y,z) coordinate
 
   T interp_linear_xyz(double numpy_1d_in[3])
   {
-    Coord_frac thecoord = Coord_orth(numpy_1d_in[0], numpy_1d_in[1], numpy_1d_in[2]).coord_frac($self->cell());
-    return $self->interp<Interp_linear>(thecoord);
+    Coord_frac thecoord = Coord_orth(numpy_1d_in[0], numpy_1d_in[1], numpy_1d_in[2]).coord_frac(self->cell());
+    return self->interp<Interp_linear>(thecoord);
   }
 
 
 
   RTop<ftype> operator_orth_grid ()
   {
-    return (*($self)).operator_orth_grid();
+    return self->operator_orth_grid();
   }
   RTop<ftype> operator_grid_orth ()
   {
-    return (*($self)).operator_grid_orth();
+    return self->operator_grid_orth();
   }
 
-}
+  %pythoncode %{
+    __stats = None
+    def recalculate_stats(self):
+      self.__stats = self._recalculate_stats()
+    def stats(self):
+      if self.__stats is None:
+        self.recalculate_stats()
+      return self.__stats
+
+    def max(self):
+      return self.stats()[0]
+    def min(self):
+      return self.stats()[1]
+    def mean(self):
+      return self.stats()[2]
+    def sigma(self):
+      return self.stats()[3]
+    def skewness(self):
+      return self.stats()[4]
+    def kurtosis(self):
+      return self.stats()[5]
+
+    def export_section_numpy(start_coord_grid, end_coord_grid = None,
+                            target = None, order = 'C', rot = 'xyz'):
+    '''
+    Export a section of the map into a Numpy array. Required arguments are a
+    starting grid coordinate and either a finishing coordinate or a 3D Numpy
+    array.
+    Args:
+      start_coord_grid:
+        Minimum corner of the box in grid coordinates (either a Clipper
+        Coord_grid or an iterable of 3 ints)
+      end_coord_grid (default = None; incompatible with target):
+        Maximum corner of the box in grid coordinates. If set, a Numpy array
+        of the required size will be automatically created and filled.
+      target (default = None; incompatible with end_coord_grid):
+        A pre-initialised 3D Numpy array of doubles. If set, the end_grid_coord
+        will be automatically calculated.
+      order (default = 'C'):
+        One of 'F' or 'C'. If 'C', the array will be filled in C-style row-major
+        format (the default format of Numpy arrays). If 'F' it will be filled in
+        Fortran-style column-major format.
+      rot (default = 'xyz'):
+        One of 'xyz' or 'zyx'. Some packages choose to store their data in xyz,
+        others in zyx.
+    '''
+      if end_coord_grid is None and target is None:
+        raise TypeError('Must provide either an end grid coordinate or a target Numpy array!')
+      elif end_coord_grid and target:
+        raise TypeError('Cannot specify both an end grid coordinate and a target array!')
+      if end_coord_grid:
+        import numpy
+        # Fill from start coord to end coord inclusive
+        array_size = end_coord_grid - start_coord_grid + [1,1,1]
+        if type(array_size) == Coord_grid:
+#ifdef PYTHON_PROPERTIES
+          array_size = array_size.uvw
+#else
+          array_size = array_size.get_uvw()
+#endif
+        if rot == 'zyx':
+          array_size = array_size[::-1]
+        _target = numpy.empty(array_size, numpy.double)
+      else:
+       _target = target
+      result = self._export_section_numpy(_target, start_coord_grid, order, rot)
+      if target:
+        return result
+      return _target
+
+#ifdef PYTHON_PROPERTIES
+    stats = property(stats)
+    max = property(max)
+    min = property(min)
+    mean = property(mean)
+    sigma = property(sigma)
+    skewness = property(skewness)
+    kurtosis = property(kurtosis)
+#endif
+
+  %} //pythoncode
+
+  } // extend Xmap
+
+
+
+} // namespace clipper
 
 
 //%extend Xmap<double> {
 
   //clipper::Xmap_base::Map_reference_coord map_reference_coord( const Coord_grid& coord )
   //{
-    //clipper::Xmap_base::Map_reference_coord Map_reference_coord ret(*($self), coord);
+    //clipper::Xmap_base::Map_reference_coord Map_reference_coord ret(*self, coord);
     //return ret;
   //}
 
@@ -3623,7 +3737,7 @@ namespace clipper
 
   //clipper::Unit_Cell unit_cell_symops (clipper::Coord_frac ref, const clipper::Atom_list& atoms)
   //{
-    //return clipper::Unit_Cell(ref, atoms, $self->cell(), $self->spacegroup(), $self->grid_sampling());
+    //return clipper::Unit_Cell(ref, atoms, self->cell(), self->spacegroup(), self->grid_sampling());
   //}
 
 
@@ -3631,38 +3745,32 @@ namespace clipper
 //}
 
 
-}
-
-
-
-
-
 namespace clipper
 {
 %extend Xmap<float> {
   void fft_from (const clipper::HKL_data<clipper::data32::F_phi> &fb)
   {
-    ($self)->fft_from( fb );
+    self->fft_from( fb );
   }
 
   void fft_to (clipper::HKL_data<clipper::data32::F_phi> &fphidata)
   {
-    ($self)->fft_to(fphidata, clipper::Xmap_base::Default);
+    self->fft_to(fphidata, clipper::Xmap_base::Default);
   }
 
-}
+} // extend Xmap<float>
 %extend Xmap<double> {
   void fft_from (const clipper::HKL_data<clipper::data64::F_phi> &fb)
   {
-    ($self)->fft_from( fb );
+    self->fft_from( fb );
   }
 
   void fft_to (clipper::HKL_data<clipper::data32::F_phi> &fphidata ) const
   {
-    ($self)->fft_to(fphidata, clipper::Xmap_base::Default);
+    self->fft_to(fphidata, clipper::Xmap_base::Default);
   }
 
-}
+} // extend Xmap<double>
 
 %template(Xmap_float) Xmap<float>;
 %template(Xmap_double) Xmap<double>;
@@ -3670,7 +3778,7 @@ namespace clipper
 %template(NXmap_float) NXmap<float>;
 %template(NXmap_double) NXmap<double>;
 %template(NXmap_int) NXmap<int>;
-}
+} // namespace clipper
 
 %include "../clipper/ccp4/ccp4_map_io.h"
 namespace clipper
@@ -3746,11 +3854,11 @@ namespace clipper
 
   void range(double numpy_double_out[2])
   {
-    numpy_double_out[0] = $self->range().min();
-    numpy_double_out[1] = $self->range().max();
+    numpy_double_out[0] = self->range().min();
+    numpy_double_out[1] = self->range().max();
   }
-};
-}
+}; // extend Map_stats
+} // namespace clipper
 
 %include "../clipper/core/map_utils.h"
 
@@ -3765,98 +3873,94 @@ namespace clipper
   HKL __rmul__(const int& m) { return m * (*self); }
   bool __eq__ (const HKL& h2) {return *self == h2;}
   // Transforms are handled in the definition of Isymop::__mul__()
-}
+} // extend HKL
 
 %extend MModel {
   MPolymer& __getitem__(int i)
   {
-    int array_len = $self->size();
+    int array_len = self->size();
     i = (i < 0) ? array_len + i : i;
     if (i >= array_len || i < 0) {
       throw std::out_of_range("");
     }
-    return (*($self))[i];
-fail:
-    return (*($self))[0];
+    return (*self)[i];
   }
   void __setitem__(int i, MPolymer& mpol)
   {
-    int array_len = $self->size();
+    int array_len = self->size();
     i = (i < 0) ? array_len + i : i;
     if (i >= array_len || i < 0) {
       throw std::out_of_range("");
     }
-    (*($self))[i]=mpol;
-    return;
-fail:
+    (*self)[i]=mpol;
     return;
   }
   size_t __len__()
   {
-    return ($self)->size();
+    return self->size();
   }
-}
+} // extend MModel
 
 
 %extend MPolymer {
   MMonomer& __getitem__(int i)
   {
-    int array_len = $self->size();
+    int array_len = self->size();
     i = (i < 0) ? array_len + i : i;
     if (i >= array_len || i < 0) {
       throw std::out_of_range("");
     }
-    return (*($self))[i];
+    return (*self)[i];
   }
   void __setitem__(int i, MMonomer& mmon)
   {
-    int array_len = $self->size();
+    int array_len = self->size();
     i = (i < 0) ? array_len + i : i;
     if (i >= array_len || i < 0) {
       throw std::out_of_range("");
     }
-    (*($self))[i]=mmon;
+    (*self)[i]=mmon;
     return;
   }
   size_t __len__()
   {
-    return ($self)->size();
+    return self->size();
   }
-}
+} // extend MPolymer
 
 
 %extend MMonomer {
   MAtom& __getitem__(int i)
   {
-    int array_len = $self->size();
+    int array_len = self->size();
     i = (i < 0) ? array_len + i : i;
     if (i >= array_len || i < 0) {
       throw std::out_of_range("");
     }
-    return (*($self))[i];
+    return (*self)[i];
   }
   void __setitem__(int i, MAtom& atom)
   {
-    int array_len = $self->size();
+    int array_len = self->size();
     i = (i < 0) ? array_len + i : i;
     if (i >= array_len || i < 0) {
       throw std::out_of_range("");
     }
-    (*($self))[i]=atom;
+    (*self)[i]=atom;
     return;
   }
   size_t __len__()
   {
-    return ($self)->size();
+    return self->size();
   }
-}
+} // extend MMonomer
 
 %extend MAtom {
   std::string __str__( )
   {
-    return (*($self)).id() + " " + (*($self)).coord_orth().format();
+    return self->id() + " " + self->coord_orth().format();
   }
-}
+} // extend MAtom
 
 %extend U_aniso_orth {
   U_aniso_orth __add__(const U_aniso_orth& u2) { return *self + u2; }
@@ -3866,15 +3970,15 @@ fail:
   U_aniso_orth __rmul__(const double& f) { return f * (*self); }
   void _get_vals(double numpy_double_out[6])
   {
-    numpy_double_out[0] = (*self).mat00();
-    numpy_double_out[1] = (*self).mat11();
-    numpy_double_out[2] = (*self).mat22();
-    numpy_double_out[3] = (*self).mat01();
-    numpy_double_out[4] = (*self).mat02();
-    numpy_double_out[5] = (*self).mat12();
+    numpy_double_out[0] = self->mat00();
+    numpy_double_out[1] = self->mat11();
+    numpy_double_out[2] = self->mat22();
+    numpy_double_out[3] = self->mat01();
+    numpy_double_out[4] = self->mat02();
+    numpy_double_out[5] = self->mat12();
   }
+} // extend U_aniso_orth
 
-}
 %extend U_aniso_frac {
   U_aniso_frac __add__(const U_aniso_frac& u2) { return *self + u2; }
   U_aniso_frac __sub__(const U_aniso_frac& u2) { return *self + (-u2); }
@@ -3883,17 +3987,17 @@ fail:
   U_aniso_frac __rmul__(const double& f) { return f * (*self); }
   void _get_vals(double numpy_double_out[6])
   {
-    numpy_double_out[0] = (*self).mat00();
-    numpy_double_out[1] = (*self).mat11();
-    numpy_double_out[2] = (*self).mat22();
-    numpy_double_out[3] = (*self).mat01();
-    numpy_double_out[4] = (*self).mat02();
-    numpy_double_out[5] = (*self).mat12();
+    numpy_double_out[0] = self->mat00();
+    numpy_double_out[1] = self->mat11();
+    numpy_double_out[2] = self->mat22();
+    numpy_double_out[3] = self->mat01();
+    numpy_double_out[4] = self->mat02();
+    numpy_double_out[5] = self->mat12();
   }
 
-}
+} // extend U_aniso_frac
 
-}
+} // namespace clipper
 
 %include "../clipper/mmdb/clipper_mmdb.h"
 %include "../clipper/minimol/minimol.h"
@@ -3909,89 +4013,89 @@ namespace data64
 %extend Flag_bool {
   bool get_flag()
   {
-    bool theFlag = ($self)->flag();
+    bool theFlag = self->flag();
     return theFlag;
   }
   void set_flag(bool theFlag)
   {
-    ($self)->flag() = theFlag;
+    self->flag() = theFlag;
   }
-}
+} // extend Flag_bool
 %extend Flag {
   int get_flag()
   {
-    int theFlag = ($self)->flag();
+    int theFlag = self->flag();
     return theFlag;
   }
   void set_flag(int theFlag)
   {
-    ($self)->flag() = theFlag;
+    self->flag() = theFlag;
   }
-}
-}
+} // extend Flag
+} // namespace data64
 namespace data32
 {
 %extend Flag_bool {
   bool get_flag()
   {
-    bool theFlag = ($self)->flag();
+    bool theFlag = self->flag();
     return theFlag;
   }
   void set_flag(bool theFlag)
   {
-    ($self)->flag() = theFlag;
+    self->flag() = theFlag;
   }
-}
+} // extend Flag_bool
 %extend Flag {
   int get_flag()
   {
-    int theFlag = ($self)->flag();
+    int theFlag = self->flag();
     return theFlag;
   }
   void set_flag(int theFlag)
   {
-    ($self)->flag() = theFlag;
+    self->flag() = theFlag;
   }
-}
-}
+} // extend Flag
+} // namespace data32
 namespace datatypes
 {
 %extend Flag_bool {
   bool get_flag()
   {
-    bool theFlag = ($self)->flag();
+    bool theFlag = self->flag();
     return theFlag;
   }
   void set_flag(bool theFlag)
   {
-    ($self)->flag() = theFlag;
+    self->flag() = theFlag;
   }
   clipper::datatypes::Flag_bool copy()
   {
     clipper::datatypes::Flag_bool ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend Flag_bool
 %extend Flag {
   int get_flag()
   {
-    int theFlag = ($self)->flag();
+    int theFlag = self->flag();
     return theFlag;
   }
   void set_flag(int theFlag)
   {
-    ($self)->flag() = theFlag;
+    self->flag() = theFlag;
   }
   clipper::datatypes::Flag copy()
   {
     clipper::datatypes::Flag ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
-}
-}
+} // extend Flag
+} // namespace datatypes
+} // namespace clipper
 
 
 //%rename (to_complex_float) operator complex<float>();
@@ -4005,30 +4109,30 @@ namespace clipper
   %extend HKL_data {
     HKL_data<clipper::datatypes::Flag_bool> not_()
     {
-      return !(*($self));
+      return !(*self);
     }
     HKL_data<clipper::datatypes::Flag_bool> __or__(const HKL_data<T> &d1)
     {
-      return (*($self)) | d1;
+      return (*self) | d1;
     }
     HKL_data<clipper::datatypes::Flag_bool> __xor__(const HKL_data<T> &d1)
     {
-      return (*($self)) ^ d1;
+      return (*self) ^ d1;
     }
     HKL_data<clipper::datatypes::Flag_bool> __and__(const HKL_data<T> &d1)
     {
-      return (*($self)) & d1;
+      return (*self) & d1;
     }
 
-  }
+  } // extend HKL_data
   %extend datatypes::ABCD {
     void vals(double numpy_double_out[4]) {
-      numpy_double_out[0] = $self->a();
-      numpy_double_out[1] = $self->b();
-      numpy_double_out[2] = $self->c();
-      numpy_double_out[3] = $self->d();
+      numpy_double_out[0] = self->a();
+      numpy_double_out[1] = self->b();
+      numpy_double_out[2] = self->c();
+      numpy_double_out[3] = self->d();
     }
-  }
+  } // extend datatypes::ABCD
 
 
 
@@ -4076,142 +4180,142 @@ namespace clipper
   HKL_data<clipper::datatypes::Flag_bool>  copy()
   {
     HKL_data<clipper::data32::Flag_bool> ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend HKL_data<clipper::data32::Flag_bool>
 
 %extend HKL_data<clipper::data32::Flag> {
   HKL_data<clipper::datatypes::Flag_bool> __eq__(const int& n)
   {
-    return (*($self)) == n;
+    return (*self) == n;
   }
   HKL_data<clipper::datatypes::Flag_bool> __ne__(const int& n)
   {
-    return (*($self)) != n;
+    return (*self) != n;
   }
   HKL_data<clipper::datatypes::Flag_bool> __ge__(const int& n)
   {
-    return (*($self)) >= n;
+    return (*self) >= n;
   }
   HKL_data<clipper::datatypes::Flag_bool> __le__(const int& n)
   {
-    return (*($self)) <= n;
+    return (*self) <= n;
   }
   HKL_data<clipper::datatypes::Flag_bool> __gt__(const int& n)
   {
-    return (*($self)) > n;
+    return (*self) > n;
   }
   HKL_data<clipper::datatypes::Flag_bool> __lt__(const int& n)
   {
-    return (*($self)) < n;
+    return (*self) < n;
   }
   HKL_data<clipper::datatypes::Flag>  copy()
   {
     HKL_data<clipper::data32::Flag> ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend HKL_data<clipper::data32::Flag>
 
 %extend datatypes::F_sigF<float> {
   clipper::datatypes::F_sigF<float>  copy()
   {
     clipper::data32::F_sigF ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend datatypes::F_sigF<float>
 
 %extend datatypes::F_sigF_ano<float> {
   clipper::datatypes::F_sigF_ano<float>  copy()
   {
     clipper::data32::F_sigF_ano ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend datatypes::F_sigF_ano<float>
 
 %extend datatypes::I_sigI<float> {
   clipper::datatypes::I_sigI<float>  copy()
   {
     clipper::data32::I_sigI ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend datatypes::I_sigI<float>
 
 %extend datatypes::E_sigE<float> {
   clipper::datatypes::E_sigE<float>  copy()
   {
     clipper::data32::E_sigE ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend datatypes::E_sigE<float>
 
 %extend datatypes::F_phi<float> {
   clipper::datatypes::F_phi<float>  __add__(const clipper::datatypes::F_phi<float> &h2)
   {
     clipper::data32::F_phi ret;
-    ret = *($self)+h2;
+    ret = *self+h2;
     return ret;
   }
   clipper::datatypes::F_phi<float>  __sub__(const clipper::datatypes::F_phi<float> &h2)
   {
     clipper::data32::F_phi ret;
-    ret = *($self)-h2;
+    ret = *self-h2;
     return ret;
   }
   clipper::datatypes::F_phi<float>  __neg__()
   {
     clipper::data32::F_phi ret;
-    ret = -*($self);
+    ret = -*self;
     return ret;
   }
   clipper::datatypes::F_phi<float>  copy()
   {
     clipper::data32::F_phi ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend datatypes::F_phi<float>
 
 %extend datatypes::ABCD<float> {
   clipper::datatypes::ABCD<float>  __add__(const clipper::datatypes::ABCD<float> &h2)
   {
     clipper::data32::ABCD ret;
-    ret = *($self)+h2;
+    ret = *self+h2;
     return ret;
   }
   clipper::datatypes::ABCD<float>  copy()
   {
     clipper::data32::ABCD ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend datatypes::ABCD<float>
 
 %extend HKL_data<clipper::data32::ABCD> {
   HKL_data<clipper::datatypes::ABCD<float> > __add__(const HKL_data<clipper::datatypes::ABCD<float> > &h2)
   {
     HKL_data<clipper::data32::ABCD> ret;
-    ret = *($self)+h2;
+    ret = *self+h2;
     return ret;
   }
   HKL_data<clipper::datatypes::ABCD<float> > copy()
   {
     HKL_data<clipper::data32::ABCD> ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend HKL_data<clipper::data32::ABCD>
 
 %extend HKL_data<clipper::data32::F_phi> {
   HKL_data<clipper::datatypes::F_phi<float> >  copy()
   {
     HKL_data<clipper::data32::F_phi> ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
   /*
@@ -4222,150 +4326,150 @@ namespace clipper
      But without this method os.deepcopy will never work.
   HKL_data<clipper::datatypes::F_phi<float> >  __deepcopy__(PyObject *memo){
     HKL_data<clipper::data32::F_phi> ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
   */
   HKL_data<clipper::datatypes::F_phi<float> > __add__(const HKL_data<clipper::datatypes::F_phi<float> > &h2)
   {
     HKL_data<clipper::data32::F_phi> ret;
-    ret = *($self)+h2;
+    ret = *self+h2;
     return ret;
   }
   HKL_data<clipper::datatypes::F_phi<float> > __sub__(const HKL_data<clipper::datatypes::F_phi<float> > &h2)
   {
     HKL_data<clipper::datatypes::F_phi<float> > ret;
-    ret = *($self)-h2;
+    ret = *self-h2;
     return ret;
   }
   HKL_data<clipper::datatypes::F_phi<float> > __neg__()
   {
     HKL_data<clipper::datatypes::F_phi<float> > ret;
-    ret = -*($self);
+    ret = -*self;
     return ret;
   }
   HKL_data<clipper::datatypes::F_phi<float> > __mul__(const float s)
   {
     HKL_data<clipper::datatypes::F_phi<float> > ret;
-    ret = *($self)*s;
+    ret = *self*s;
     return ret;
   }
   HKL_data<clipper::datatypes::F_phi<float> > __rmul__(const float s)
   {
     HKL_data<clipper::datatypes::F_phi<float> > ret;
-    ret = *($self)*s;
+    ret = *self*s;
     return ret;
   }
-}
+} // extend HKL_data<clipper::data32::F_phi>
 
 %extend HKL_data<clipper::data32::E_sigE> {
   void scaleBySqrtResolution(const clipper::ResolutionFn &escale)
   {
-    for ( clipper::HKL_data_base::HKL_reference_index ih = (*($self)).first(); !ih.last(); ih.next() )
-      if ( !(*($self))[ih].missing() ) (*($self))[ih].scale( sqrt( escale.f(ih) ) );
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() )
+      if ( !(*self)[ih].missing() ) (*self)[ih].scale( sqrt( escale.f(ih) ) );
   }
   void scaleByResolution(const clipper::ResolutionFn &escale)
   {
-    for ( clipper::HKL_data_base::HKL_reference_index ih = (*($self)).first(); !ih.last(); ih.next() )
-      if ( !(*($self))[ih].missing() ) (*($self))[ih].scale( escale.f(ih) );
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() )
+      if ( !(*self)[ih].missing() ) (*self)[ih].scale( escale.f(ih) );
   }
   HKL_data<clipper::datatypes::E_sigE<float> >  copy()
   {
     HKL_data<clipper::data32::E_sigE> ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend HKL_data<clipper::data32::E_sigE>
 
 %extend HKL_data<clipper::data32::ABCD> {
   void compute_from_phi_fom(const HKL_data< clipper::datatypes::Phi_fom<float> > &phiw)
   {
-    ($self)->compute( phiw, clipper::data32::Compute_abcd_from_phifom() );
+    self->compute( phiw, clipper::data32::Compute_abcd_from_phifom() );
   }
   void compute_add_abcd(const HKL_data< clipper::datatypes::ABCD<float> > &abcd1,
   const HKL_data< clipper::datatypes::ABCD<float> > &abcd2)
   {
-    ($self)->compute( abcd1, abcd2, clipper::data32::Compute_add_abcd() );
+    self->compute( abcd1, abcd2, clipper::data32::Compute_add_abcd() );
   }
-}
+} // extend HKL_data<clipper::data32::ABCD>
 
 %extend HKL_data<clipper::data32::Phi_fom> {
   void compute_from_abcd(const HKL_data< clipper::datatypes::ABCD<float> > &abcd)
   {
-    ($self)->compute( abcd, clipper::data32::Compute_phifom_from_abcd() );
+    self->compute( abcd, clipper::data32::Compute_phifom_from_abcd() );
   }
   HKL_data<clipper::datatypes::Phi_fom<float> >  copy()
   {
     HKL_data<clipper::data32::Phi_fom> ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend HKL_data<clipper::data32::Phi_fom>
 
 %extend HKL_data<clipper::data32::F_sigF> {
   void compute_mean_from_fano(const HKL_data< clipper::datatypes::F_sigF_ano<float> > &fano)
   {
-    ($self)->compute( fano, clipper::data32::Compute_mean_fsigf_from_fsigfano() );
+    self->compute( fano, clipper::data32::Compute_mean_fsigf_from_fsigfano() );
   }
   void compute_diff_from_fano(const HKL_data< clipper::datatypes::F_sigF_ano<float> > &fano)
   {
-    ($self)->compute( fano, clipper::data32::Compute_diff_fsigf_from_fsigfano() );
+    self->compute( fano, clipper::data32::Compute_diff_fsigf_from_fsigfano() );
   }
   void compute_scale_u_iso_fsigf(float scale, float u_value,
   const HKL_data< clipper::datatypes::F_sigF<float> > &fsigf )
   {
-    ($self)->compute( fsigf, clipper::data32::Compute_scale_u_iso_fsigf(scale, u_value) );
+    self->compute( fsigf, clipper::data32::Compute_scale_u_iso_fsigf(scale, u_value) );
   }
   void compute_scale_u_aniso_fsigf(float scale, clipper::U_aniso_orth u_value,
   const HKL_data< clipper::datatypes::F_sigF<float> > &fsigf )
   {
-    ($self)->compute( fsigf, clipper::data32::Compute_scale_u_aniso_fsigf(scale, u_value) );
+    self->compute( fsigf, clipper::data32::Compute_scale_u_aniso_fsigf(scale, u_value) );
   }
   HKL_data<clipper::datatypes::F_sigF<float> >  copy()
   {
     HKL_data<clipper::data32::F_sigF> ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend HKL_data<clipper::data32::F_sigF>
 
 %extend HKL_data<clipper::data32::F_sigF_ano> {
   void compute_scale_u_iso_fsigfano(float scale, float u_value,
   const HKL_data< clipper::datatypes::F_sigF_ano<float> > &fsigfano )
   {
-    ($self)->compute( fsigfano, clipper::data32::Compute_scale_u_iso_fsigfano(scale, u_value) );
+    self->compute( fsigfano, clipper::data32::Compute_scale_u_iso_fsigfano(scale, u_value) );
   }
   void compute_scale_u_aniso_fsigfano(float scale, clipper::U_aniso_orth u_value,
   const HKL_data< clipper::datatypes::F_sigF_ano<float> > &fsigfano )
   {
-    ($self)->compute( fsigfano, clipper::data32::Compute_scale_u_aniso_fsigfano(scale, u_value) );
+    self->compute( fsigfano, clipper::data32::Compute_scale_u_aniso_fsigfano(scale, u_value) );
   }
   HKL_data<clipper::datatypes::F_sigF_ano<float> >  copy()
   {
     HKL_data<clipper::data32::F_sigF_ano> ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend HKL_data<clipper::data32::F_sigF_ano>
 
 %extend HKL_data<clipper::data32::I_sigI> {
   void compute_scale_u_iso_isigi(float scale, float u_value,
   const HKL_data< clipper::datatypes::I_sigI<float> > &isigi )
   {
-    ($self)->compute( isigi, clipper::data32::Compute_scale_u_iso_isigi(scale, u_value) );
+    self->compute( isigi, clipper::data32::Compute_scale_u_iso_isigi(scale, u_value) );
   }
   void compute_scale_u_aniso_isigi(float scale, clipper::U_aniso_orth u_value,
   const HKL_data< clipper::datatypes::I_sigI<float> > &isigi )
   {
-    ($self)->compute( isigi, clipper::data32::Compute_scale_u_aniso_isigi(scale, u_value) );
+    self->compute( isigi, clipper::data32::Compute_scale_u_aniso_isigi(scale, u_value) );
   }
   HKL_data<clipper::datatypes::I_sigI<float> >  copy()
   {
     HKL_data<clipper::data32::I_sigI> ret;
-    ret = *($self);
+    ret = *self;
     return ret;
   }
-}
+} // extend HKL_data<clipper::data32::I_sigI>
 
 
 
@@ -4374,17 +4478,17 @@ namespace clipper
   void getDataNumpy(double *test_numpy_a, int test_numpy_n)
   {
     int i=0;
-    for(clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next(),i++ ) {
-      if(!((*($self))[ih].missing())) {
-        std::vector<xtype> thisData((*($self)).data_size());
-        (*($self)).data_export(ih.hkl(),&(thisData[0]));
-        std::vector<float> thisDataf((*($self)).data_size());
-        for(unsigned idat=0; idat<(*($self)).data_size(); ++idat) {
-          test_numpy_a[i*(*($self)).data_size()+idat] = thisData[idat];
+    for(clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next(),i++ ) {
+      if(!((*self)[ih].missing())) {
+        std::vector<xtype> thisData(self->data_size());
+        self->data_export(ih.hkl(),&(thisData[0]));
+        std::vector<float> thisDataf(self->data_size());
+        for(unsigned idat=0; idat<self->data_size(); ++idat) {
+          test_numpy_a[i*self->data_size()+idat] = thisData[idat];
         }
       } else {
-        for(unsigned idat=0; idat<(*($self)).data_size(); ++idat) {
-          test_numpy_a[i*(*($self)).data_size()+idat] = std::numeric_limits<float>::quiet_NaN();
+        for(unsigned idat=0; idat<self->data_size(); ++idat) {
+          test_numpy_a[i*self->data_size()+idat] = std::numeric_limits<float>::quiet_NaN();
         }
       }
     }
@@ -4393,12 +4497,12 @@ namespace clipper
   std::vector<std::vector<float> > getData()
   {
     std::vector<std::vector<float> > allData;
-    for(clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
-      if(!((*($self))[ih].missing())) {
-        std::vector<xtype> thisData((*($self)).data_size());
-        (*($self)).data_export(ih.hkl(),&(thisData[0]));
-        std::vector<float> thisDataf((*($self)).data_size());
-        for(unsigned idat=0; idat<(*($self)).data_size(); ++idat) {
+    for(clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
+      if(!((*self)[ih].missing())) {
+        std::vector<xtype> thisData(self->data_size());
+        self->data_export(ih.hkl(),&(thisData[0]));
+        std::vector<float> thisDataf(self->data_size());
+        for(unsigned idat=0; idat<self->data_size(); ++idat) {
           thisDataf[idat] = thisData[idat];
         }
         allData.push_back(thisDataf);
@@ -4409,70 +4513,70 @@ namespace clipper
   clipper::datatypes::F_phi<float>& __getitem__(int i)
   {
     int sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     i = (i < 0) ? sz + i : i;
     if (i >= sz || i < 0) {
       throw std::out_of_range("");
     }
-    return (*($self))[i];
+    return (*self)[i];
   }
   size_t __len__()
   {
     size_t sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     return sz;
   }
-}
+} // extend HKL_data< clipper::datatypes::F_phi<float> >
 
 %extend HKL_data<clipper::data32::F_phi> {
   void compute_neg(const HKL_data< clipper::datatypes::F_phi<float> > &fphi )
   {
-    ($self)->compute( fphi, clipper::data32::Compute_neg_fphi() );
+    self->compute( fphi, clipper::data32::Compute_neg_fphi() );
   }
   void compute_add_fphi(const HKL_data< clipper::datatypes::F_phi<float> > &fphi1,
   const HKL_data< clipper::datatypes::F_phi<float> > &fphi2)
   {
-    ($self)->compute( fphi1, fphi2, clipper::data32::Compute_add_fphi() );
+    self->compute( fphi1, fphi2, clipper::data32::Compute_add_fphi() );
   }
   void compute_sub_fphi(const HKL_data< clipper::datatypes::F_phi<float> > &fphi1,
   const HKL_data< clipper::datatypes::F_phi<float> > &fphi2)
   {
-    ($self)->compute( fphi1, fphi2, clipper::data32::Compute_sub_fphi() );
+    self->compute( fphi1, fphi2, clipper::data32::Compute_sub_fphi() );
   }
   void compute_from_fsigf_phifom(const HKL_data< clipper::datatypes::F_sigF<float> > &fsigf,
   const HKL_data< clipper::datatypes::Phi_fom<float> > &phifom )
   {
-    ($self)->compute( fsigf, phifom, clipper::data32::Compute_fphi_from_fsigf_phifom() );
+    self->compute( fsigf, phifom, clipper::data32::Compute_fphi_from_fsigf_phifom() );
   }
   void compute_scale_u_iso_fphi(float scale, float u_value,
   const HKL_data< clipper::datatypes::F_phi<float> > &fphi )
   {
-    ($self)->compute( fphi, clipper::data32::Compute_scale_u_iso_fphi(scale, u_value) );
+    self->compute( fphi, clipper::data32::Compute_scale_u_iso_fphi(scale, u_value) );
   }
   void compute_scale_u_aniso_fphi(float scale, clipper::U_aniso_orth u_value,
   const HKL_data< clipper::datatypes::F_phi<float> > &fphi )
   {
-    ($self)->compute( fphi, clipper::data32::Compute_scale_u_aniso_fphi(scale, u_value) );
+    self->compute( fphi, clipper::data32::Compute_scale_u_aniso_fphi(scale, u_value) );
   }
 
   void getDataNumpy(double *test_numpy_a, int test_numpy_n)
   {
     int i=0;
-    for(clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next(),i++ ) {
-      if(!((*($self))[ih].missing())) {
-        std::vector<xtype> thisData((*($self)).data_size());
-        (*($self)).data_export(ih.hkl(),&(thisData[0]));
-        std::vector<float> thisDataf((*($self)).data_size());
-        for(unsigned idat=0; idat<(*($self)).data_size(); ++idat) {
-          test_numpy_a[i*(*($self)).data_size()+idat] = thisData[idat];
+    for(clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next(),i++ ) {
+      if(!((*self)[ih].missing())) {
+        std::vector<xtype> thisData(self->data_size());
+        self->data_export(ih.hkl(),&(thisData[0]));
+        std::vector<float> thisDataf(self->data_size());
+        for(unsigned idat=0; idat<self->data_size(); ++idat) {
+          test_numpy_a[i*self->data_size()+idat] = thisData[idat];
         }
       } else {
-        for(unsigned idat=0; idat<(*($self)).data_size(); ++idat) {
-          test_numpy_a[i*(*($self)).data_size()+idat] = std::numeric_limits<float>::quiet_NaN();
+        for(unsigned idat=0; idat<self->data_size(); ++idat) {
+          test_numpy_a[i*self->data_size()+idat] = std::numeric_limits<float>::quiet_NaN();
         }
       }
     }
@@ -4481,12 +4585,12 @@ namespace clipper
   std::vector<std::vector<float> > getData()
   {
     std::vector<std::vector<float> > allData;
-    for(clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
-      if(!((*($self))[ih].missing())) {
-        std::vector<xtype> thisData((*($self)).data_size());
-        (*($self)).data_export(ih.hkl(),&(thisData[0]));
-        std::vector<float> thisDataf((*($self)).data_size());
-        for(unsigned idat=0; idat<(*($self)).data_size(); ++idat) {
+    for(clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
+      if(!((*self)[ih].missing())) {
+        std::vector<xtype> thisData(self->data_size());
+        self->data_export(ih.hkl(),&(thisData[0]));
+        std::vector<float> thisDataf(self->data_size());
+        for(unsigned idat=0; idat<self->data_size(); ++idat) {
           thisDataf[idat] = thisData[idat];
         }
         allData.push_back(thisDataf);
@@ -4497,121 +4601,123 @@ namespace clipper
   clipper::data32::F_phi& __getitem__(int i)
   {
     int sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     i = (i < 0) ? sz + i : i;
     if (i >= sz || i < 0) {
       throw std::out_of_range("");
     }
-    return (*($self))[i];
+    return (*self)[i];
   }
   size_t __len__()
   {
     size_t sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     return sz;
   }
-}
+} // extend HKL_data<clipper::data32::F_phi>
 
 %extend HKL_data<clipper::data32::E_sigE> {
   void compute_from_fsigf(const HKL_data< clipper::datatypes::F_sigF<float> > &fsigf )
   {
-    ($self)->compute( fsigf, clipper::data32::Compute_EsigE_from_FsigF() );
+    self->compute( fsigf, clipper::data32::Compute_EsigE_from_FsigF() );
   }
-}
+} // extend HKL_data<clipper::data32::E_sigE>
 
 %extend HKL_data<clipper::datatypes::Flag_bool> {
   clipper::datatypes::Flag_bool& __getitem__(int i)
   {
     int sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     i = (i < 0) ? sz + i : i;
     if (i >= sz || i < 0) {
       throw std::out_of_range("");
     }
-    return (*($self))[i];
+    return (*self)[i];
   }
   size_t __len__()
   {
     size_t sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     return sz;
   }
-}
+} // extend HKL_data<clipper::datatypes::Flag_bool>
+
 %extend HKL_data<clipper::data32::Flag_bool> {
   clipper::data32::Flag_bool& __getitem__(int i)
   {
     int sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     i = (i < 0) ? sz + i : i;
     if (i >= sz || i < 0) {
       throw std::out_of_range("");
     }
-    return (*($self))[i];
+    return (*self)[i];
   }
   size_t __len__()
   {
     size_t sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     return sz;
   }
-}
+} // extend HKL_data<clipper::data32::Flag_bool>
 
 %extend HKL_data<clipper::datatypes::Flag> {
   clipper::datatypes::Flag& __getitem__(int i)
   {
     int sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     i = (i < 0) ? sz + i : i;
     if (i >= sz || i < 0) {
       throw std::out_of_range("");
     }
-    return (*($self))[i];
+    return (*self)[i];
   }
   size_t __len__()
   {
     size_t sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     return sz;
   }
-}
+} // extend HKL_data<clipper::datatypes::Flag>
+
 %extend HKL_data<clipper::data32::Flag> {
   clipper::data32::Flag& __getitem__(int i)
   {
     int sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     i = (i < 0) ? sz + i : i;
     if (i >= sz || i < 0) {
       throw std::out_of_range("");
     }
-    return (*($self))[i];
+    return (*self)[i];
   }
   size_t __len__()
   {
     size_t sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     return sz;
   }
-}
+} // extend HKL_data<clipper::data32::Flag>
 
 
 %extend HKL_data< clipper::datatypes::F_sigF<float> > {
@@ -4619,17 +4725,17 @@ namespace clipper
   void getDataNumpy(double *test_numpy_a, int test_numpy_n)
   {
     int i=0;
-    for(clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next(),i++ ) {
-      if(!((*($self))[ih].missing())) {
-        std::vector<xtype> thisData((*($self)).data_size());
-        (*($self)).data_export(ih.hkl(),&(thisData[0]));
-        std::vector<float> thisDataf((*($self)).data_size());
-        for(unsigned idat=0; idat<(*($self)).data_size(); ++idat) {
-          test_numpy_a[i*(*($self)).data_size()+idat] = thisData[idat];
+    for(clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next(),i++ ) {
+      if(!((*self)[ih].missing())) {
+        std::vector<xtype> thisData(self->data_size());
+        self->data_export(ih.hkl(),&(thisData[0]));
+        std::vector<float> thisDataf(self->data_size());
+        for(unsigned idat=0; idat<self->data_size(); ++idat) {
+          test_numpy_a[i*self->data_size()+idat] = thisData[idat];
         }
       } else {
-        for(unsigned idat=0; idat<(*($self)).data_size(); ++idat) {
-          test_numpy_a[i*(*($self)).data_size()+idat] = std::numeric_limits<float>::quiet_NaN();
+        for(unsigned idat=0; idat<self->data_size(); ++idat) {
+          test_numpy_a[i*self->data_size()+idat] = std::numeric_limits<float>::quiet_NaN();
         }
       }
     }
@@ -4638,12 +4744,12 @@ namespace clipper
   std::vector<std::vector<float> > getData()
   {
     std::vector<std::vector<float> > allData;
-    for(clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
-      if(!((*($self))[ih].missing())) {
-        std::vector<xtype> thisData((*($self)).data_size());
-        (*($self)).data_export(ih.hkl(),&(thisData[0]));
-        std::vector<float> thisDataf((*($self)).data_size());
-        for(unsigned idat=0; idat<(*($self)).data_size(); ++idat) {
+    for(clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
+      if(!((*self)[ih].missing())) {
+        std::vector<xtype> thisData(self->data_size());
+        self->data_export(ih.hkl(),&(thisData[0]));
+        std::vector<float> thisDataf(self->data_size());
+        for(unsigned idat=0; idat<self->data_size(); ++idat) {
           thisDataf[idat] = thisData[idat];
         }
         allData.push_back(thisDataf);
@@ -4654,51 +4760,51 @@ namespace clipper
   clipper::datatypes::F_sigF<float>& __getitem__(int i)
   {
     int sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     i = (i < 0) ? sz + i : i;
     if (i >= sz || i < 0) {
       throw std::out_of_range("");
     }
-    return (*($self))[i];
+    return (*self)[i];
   }
   size_t __len__()
   {
     size_t sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     return sz;
   }
-}
+} // extend HKL_data< clipper::datatypes::F_sigF<float> >
 
 %extend HKL_data< clipper::data32::F_sigF<float> > {
   clipper::data32::F_sigF<float>& __getitem__(int i)
   {
     int sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     i = (i < 0) ? sz + i : i;
     if (i >= sz || i < 0) {
       throw std::out_of_range("");
     }
-    return (*($self))[i];
+    return (*self)[i];
 fail:
-    return (*($self))[0];
+    return (*self)[0];
   }
   size_t __len__()
   {
     size_t sz=0;
-    for ( clipper::HKL_data_base::HKL_reference_index ih = ($self)->first(); !ih.last(); ih.next() ) {
+    for ( clipper::HKL_data_base::HKL_reference_index ih = self->first(); !ih.last(); ih.next() ) {
       sz++;
     }
     return sz;
   }
-}
+} // extend HKL_data< clipper::data32::F_sigF<float> >
 
-}
+} // namespace clipper
 
 %include "../clipper/core/ramachandran.h"
 
@@ -4709,7 +4815,7 @@ fail:
 namespace clipper
 {
 %template(SFcalc_obs_bulk_float) SFcalc_obs_bulk<float>;
-}
+} // namespace clipper
 
 %include "../clipper/contrib/function_object_bases.h"
 %include "../clipper/contrib/sfscale.h"
@@ -4726,12 +4832,12 @@ namespace clipper
 %template(Skeleton_base_float) Skeleton_base<float, float>;
 %template(OriginMatch_base_float) OriginMatch_base<float>;
 %template (SFscale_aniso_float)  SFscale_aniso<float>;
-}
+} // namespace clipper
 %include "../clipper/contrib/sfweight.h"
 namespace clipper
 {
 %template(SFweight_spline_float) SFweight_spline<float>;
-}
+} // namespace clipper
 
 %include "../clipper/contrib/sfcalc.h"
 namespace clipper
@@ -4740,7 +4846,7 @@ namespace clipper
 %template(SFcalc_aniso_sum_float) SFcalc_aniso_sum<float>;
 %template(SFcalc_iso_fft_float) SFcalc_iso_fft<float>;
 %template(SFcalc_aniso_fft_float) SFcalc_aniso_fft<float>;
-}
+} // namespace clipper
 
 %{
 
@@ -5010,26 +5116,26 @@ namespace clipper
 %template(EDcalc_aniso_float) EDcalc_aniso<float>;
 %extend EDcalc_mask<float> {
   bool compute( Xmap<float>& xmap, const Atom_list& atoms ) const {
-    return (*($self))( xmap, atoms );
+    return (*self)( xmap, atoms );
   }
   bool compute( NXmap<float>& xmap, const Atom_list& atoms ) const {
-    return (*($self))( xmap, atoms );
+    return (*self)( xmap, atoms );
   }
 }
 %extend EDcalc_iso<float> {
   bool compute( Xmap<float>& xmap, const Atom_list& atoms ) const {
-    return (*($self))( xmap, atoms );
+    return (*self)( xmap, atoms );
   }
   bool compute( NXmap<float>& xmap, const Atom_list& atoms ) const {
-    return (*($self))( xmap, atoms );
+    return (*self)( xmap, atoms );
   }
 }
 %extend EDcalc_aniso<float> {
   bool compute( Xmap<float>& xmap, const Atom_list& atoms ) const {
-    return (*($self))( xmap, atoms );
+    return (*self)( xmap, atoms );
   }
   bool compute( NXmap<float>& xmap, const Atom_list& atoms ) const {
-    return (*($self))( xmap, atoms );
+    return (*self)( xmap, atoms );
   }
 }
 }
@@ -5173,12 +5279,12 @@ namespace clipper
 {
 %extend Convolution_search_slow<float> {
   bool compute( Xmap<float>& res, const NXmap<float>& srchval, const NX_operator& nxop ) const {
-    return (*($self))( res, srchval,  nxop );
+    return (*self)( res, srchval,  nxop );
   }
 }
 %extend Convolution_search_fft<float> {
   bool compute( Xmap<float>& res, const NXmap<float>& srchval, const NX_operator& nxop ) const {
-    return (*($self))( res, srchval,  nxop );
+    return (*self)( res, srchval,  nxop );
   }
 }
 }

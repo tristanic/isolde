@@ -1241,80 +1241,80 @@ class Xmap(clipper_core.Xmap_double):
         # Get the (nu, nv, nw) grid sampling as a numpy array
         self.grid_samples = self.grid.dim
 
-        # Set this flag to True if you want this to be treated as a difference
-        # map (i.e. visualisation at +/- 3 sigma, different handling in
-        # simulations).
-        self.is_difference_map = False
+        # # Set this flag to True if you want this to be treated as a difference
+        # # map (i.e. visualisation at +/- 3 sigma, different handling in
+        # # simulations).
+        # self.is_difference_map = False
 
-        ###
-        # Basic stats. Can only be set after the map has been filled with an
-        # FFT. Returned as a tuple in the below order by self.stats()
-        ###
-        self._max = None
-        self._min = None
-        self._mean = None
-        self._sigma = None
-        self._skewness = None
-        self._kurtosis = None
-
-        if hkldata is not None:
-            self.fft_from(hkldata)
-
-    def recalculate_stats(self):
-        '''
-        Force recalculation of map statistics (max, min, mean, sigma,
-        skewness and kurtosis).
-        '''
-        if self.is_null:
-            raise RuntimeError('Map has no data!')
-        self._min, self._max, self._mean, \
-            self._sigma, self._skewness, self._kurtosis = self.stats
-
-
-    @property
-    def max(self):
-        if self._max is None:
-            self.recalculate_stats()
-        return self._max
-
-    @property
-    def min(self):
-        if self._min is None:
-            self.recalculate_stats()
-        return self._min
-
-    @property
-    def mean(self):
-        if self._mean is None:
-            self.recalculate_stats()
-        return self._mean
-
-    @property
-    def sigma(self):
-        if self._sigma is None:
-            self.recalculate_stats()
-        return self._sigma
-
-    @property
-    def skewness(self):
-        if self._skewness is None:
-            self.recalculate_stats()
-        return self._skewness
-
-    @property
-    def kurtosis(self):
-        if self._max is None:
-            self.recalculate_stats()
-        return self._kurtosis
-
-    def export_numpy(self):
-        '''
-        export the map asymmetric unit as a numpy array
-        '''
-        asu = self.grid_asu
-        target = numpy.empty([asu.nu(), asu.nv(), asu.nw()],numpy.double)
-        super(Xmap, self).export_numpy(target, 'C')
-        return target
+    #     ###
+    #     # Basic stats. Can only be set after the map has been filled with an
+    #     # FFT. Returned as a tuple in the below order by self.stats()
+    #     ###
+    #     self._max = None
+    #     self._min = None
+    #     self._mean = None
+    #     self._sigma = None
+    #     self._skewness = None
+    #     self._kurtosis = None
+    #
+    #     if hkldata is not None:
+    #         self.fft_from(hkldata)
+    #
+    # def recalculate_stats(self):
+    #     '''
+    #     Force recalculation of map statistics (max, min, mean, sigma,
+    #     skewness and kurtosis).
+    #     '''
+    #     if self.is_null:
+    #         raise RuntimeError('Map has no data!')
+    #     self._min, self._max, self._mean, \
+    #         self._sigma, self._skewness, self._kurtosis = self.stats
+    #
+    #
+    # @property
+    # def max(self):
+    #     if self._max is None:
+    #         self.recalculate_stats()
+    #     return self._max
+    #
+    # @property
+    # def min(self):
+    #     if self._min is None:
+    #         self.recalculate_stats()
+    #     return self._min
+    #
+    # @property
+    # def mean(self):
+    #     if self._mean is None:
+    #         self.recalculate_stats()
+    #     return self._mean
+    #
+    # @property
+    # def sigma(self):
+    #     if self._sigma is None:
+    #         self.recalculate_stats()
+    #     return self._sigma
+    #
+    # @property
+    # def skewness(self):
+    #     if self._skewness is None:
+    #         self.recalculate_stats()
+    #     return self._skewness
+    #
+    # @property
+    # def kurtosis(self):
+    #     if self._max is None:
+    #         self.recalculate_stats()
+    #     return self._kurtosis
+    #
+    # def export_numpy(self):
+    #     '''
+    #     export the map asymmetric unit as a numpy array
+    #     '''
+    #     asu = self.grid_asu
+    #     target = numpy.empty([asu.nu(), asu.nv(), asu.nw()],numpy.double)
+    #     super(Xmap, self).export_numpy(target, 'C')
+    #     return target
 
 ########################################################################
 # ANALYSIS
