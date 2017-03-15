@@ -348,7 +348,7 @@ class Map_set:
   def _fill_volume_data(self, xmap, target, start_grid_coor):
     #shape = (numpy.array(target.shape)[::-1] - 1)
     #end_grid_coor = start_grid_coor + clipper.Coord_grid(shape)
-    xmap.export_section_numpy(target, start_grid_coor, 'C', 'zyx')
+    xmap.export_section_numpy(start_grid_coor, target = target,  order = 'C', rot = 'zyx')
     
   def _update_all_volumes(self):
     for volume in self._volumes:
@@ -668,7 +668,8 @@ class AtomicCrystalStructure:
     # unit cell relative to the current atomic model, along with fast
     # functions returning the symops necessary to pack a given box in
     # xyz space.
-    self.unit_cell = clipper.Unit_Cell(ref, self._clipper_atoms, cell, spacegroup, grid_sampling)
+    self.unit_cell = clipper.Unit_Cell(ref, 
+                self._clipper_atoms, cell, spacegroup, grid_sampling)
     
 
     # Container for managing all the symmetry copies
@@ -737,7 +738,7 @@ class AtomicCrystalStructure:
     min_xyz = clipper.Coord_grid(grid_minmax[0]).coord_frac(self.grid).coord_orth(self.cell).xyz
     dim = grid_minmax[1] - grid_minmax[0]
     symops = self.unit_cell.all_symops_in_box(min_xyz, dim)
-    symmats = symops.all_matrices34_orth(self.cell)
+    symmats = symops.all_matrices_orth(self.cell, format = '3x4')
     target = [(c, Place().matrix.astype(numpy.float32))]
     search_list = []
     model_list = []
@@ -809,7 +810,7 @@ class AtomicCrystalStructure:
               self._sym_box_center, self.cell, 
               self.grid, self._sym_box_radius)
     symops = uc.all_symops_in_box(box_corner_xyz, 
-              self._sym_box_dimensions, self.sym_always_shows_reference_model, 
+              self._sym_box_dimensions.astype(numpy.int32), self.sym_always_shows_reference_model, 
               sample_frequency = self._sym_search_frequency)
     l1 = []
     search_entry = [(numpy.array([cofr], numpy.float32), Place().matrix.astype(numpy.float32))]
@@ -851,7 +852,7 @@ class AtomicCrystalStructure:
               self.grid, box_width/2)
     symops = uc.all_symops_in_box(box_corner_xyz, dim, True)
     num_symops = len(symops)
-    sym_matrices = symops.all_matrices34_orth(self.cell)
+    sym_matrices = symops.all_matrices_orth(self.cell, format = '3x4')
     self.master_model.positions = Places(place_array=sym_matrices)
 
   def hide_large_scale_symmetry(self):

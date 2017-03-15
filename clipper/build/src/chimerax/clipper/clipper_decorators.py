@@ -1,17 +1,17 @@
 from .lib import clipper_python_core as clipper_core
 
-class MessageStreamSingleton:
-    class __Get_MessageStream:
-        def __init__(self):
-            self.clipper_messages = clipper_core.ClipperMessageStream()
-    instance = None
-    def __init__(self):
-        if not MessageStreamSingleton.instance:
-            MessageStreamSingleton.instance = MessageStreamSingleton.__Get_MessageStream()
-    def __getattr__(self, name):
-        return getattr(self.instance, name)
+#class MessageStreamSingleton:
+    #class __Get_MessageStream:
+        #def __init__(self):
+            #self.clipper_messages = clipper_core.ClipperMessageStream()
+    #instance = None
+    #def __init__(self):
+        #if not MessageStreamSingleton.instance:
+            #MessageStreamSingleton.instance = MessageStreamSingleton.__Get_MessageStream()
+    #def __getattr__(self, name):
+        #return getattr(self.instance, name)
 
-_clipper_messages = MessageStreamSingleton().clipper_messages
+#_clipper_messages = MessageStreamSingleton().clipper_messages
         
 
 
@@ -55,11 +55,12 @@ def log_clipper(func):
     '''
     def func_wrapper(*args, **kwargs):
         _clipper_messages.clear()
-        func(*args, **kwargs)
+        ret = func(*args, **kwargs)
         message_string = _clipper_messages.read_and_clear()
         if message_string:
             print("CLIPPER WARNING:")
             print(message_string)
+        return ret
     return func_wrapper
 
 

@@ -79,6 +79,7 @@
 %apply (float IN_ARRAY1[ANY]) {(float v[3])}
 %apply (double IN_ARRAY1[ANY]) {(double v[3])}
 %apply (int IN_ARRAY1[ANY]) {(int v[3])}
+%apply (long IN_ARRAY1[ANY]) {(long v[3])}
 
 
 
@@ -756,6 +757,47 @@ namespace clipper
   };
 %}
 
+%pythoncode %{
+class MessageStreamSingleton:
+  '''
+  Creates and maintains a singleton object designed to intercept
+  Clipper messages and redirect them from stderr to a string that
+  can be used in Python.
+  '''
+  class __Get_MessageStream:
+      def __init__(self):
+          self.clipper_messages = ClipperMessageStream()
+  instance = None
+  def __init__(self):
+      if not MessageStreamSingleton.instance:
+          MessageStreamSingleton.instance = MessageStreamSingleton.__Get_MessageStream()
+  def __getattr__(self, name):
+      return getattr(self.instance, name)
+
+_clipper_messages = MessageStreamSingleton().clipper_messages
+
+def log_clipper(func):
+  '''
+  Acts as a decorator to direct Clipper messages to the Python console.
+  Any messages coming from Clipper are accumulated in _clipper_messages.
+  For any core Clipper function which has the potential to generate a
+  warning message, simply add the @log_clipper decorator to the Python
+  method. Override this function if you want the messages to go somewhere
+  else (e.g. to a log file).
+  '''
+  def func_wrapper(*args, **kwargs):
+    _clipper_messages.clear()
+    ret = func(*args, **kwargs)
+    message_string = _clipper_messages.read_and_clear()
+    if message_string:
+      print("CLIPPER WARNING:")
+      print(message_string)
+    return ret
+  return func_wrapper
+
+
+%}
+
 
 %inline %{
   namespace clipper
@@ -770,7 +812,7 @@ namespace clipper
   {
     throw std::length_error("Test exception");
   }
-
+ 
 
   typedef ftype64  ftype;
   typedef ftype64  xtype;
@@ -785,6 +827,11 @@ namespace clipper
 
   }
 %}
+
+%pythoncode %{
+  warn_test = log_clipper(warn_test)
+%}
+
 
 %ignore clipper::U32;
 %ignore clipper::U64;
@@ -1263,17 +1310,56 @@ namespace clipper {
   %rename("_nv") Grid_sampling::nv() const;
   %rename("_nw") Grid_sampling::nu() const;
   %rename("_get_element") Atom::element() const;
-  %rename("_set_element") Atom::set_element();
+  %rename("_set_element") Atom::set_element;
   %rename("_get_occupancy") Atom::occupancy() const;
-  %rename("_set_occupancy") Atom::set_occupancy();
+  %rename("_set_occupancy") Atom::set_occupancy;
   %rename("_get_u_iso") Atom::u_iso() const;
-  %rename("_set_u_iso") Atom::set_u_iso();
+  %rename("_set_u_iso") Atom::set_u_iso;
   %rename("_get_u_aniso") Atom::u_aniso_orth() const;
-  %rename("_set_u_aniso") Atom::set_u_anso_orth();
+  %rename("_set_u_aniso") Atom::set_u_aniso_orth;
   %rename("_get_coord_orth") Atom::coord_orth() const;
-  %rename("_set_coord_orth") Atom::set_coord_orth();
+  %rename("_set_coord_orth") Atom::set_coord_orth;
 #endif
 } // namespace clipper
+
+%pythoncode %{
+# The complete list of scatterers found in clipper/core/atomsf.cpp.
+# Clipper itself doesn't check incoming atom names for legality, but
+# it's easy to do so here in Python. Used by setter methods in Atom and
+# Atom_list objects.
+ATOM_NAMES = set(
+     ['H',  'He', 'Li', 'Be', 'B',  'C',  'N',  'O',  'F',
+      'Ne', 'Na', 'Mg', 'Al', 'Si', 'P',  'S',  'Cl', 'Ar',
+      'K',  'Ca', 'Sc', 'Ti', 'V',  'Cr', 'Mn', 'Fe', 'Co',
+      'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr',
+      'Rb', 'Sr', 'Y',  'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh',
+      'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I',  'Xe',
+      'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu',
+      'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf',
+      'Ta', 'W',  'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl',
+      'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th',
+      'Pa', 'U',  'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf',
+      'H1-',  'Li1+', 'Be2+', 'Cval', 'O1-',  'O2-',  'F1-',
+      'Na1+', 'Mg2+', 'Al3+', 'Siva', 'Si4+', 'Cl1-', 'K1+',
+      'Ca2+', 'Sc3+', 'Ti2+', 'Ti3+', 'Ti4+', 'V2+',  'V3+',
+      'V5+',  'Cr2+', 'Cr3+', 'Mn2+', 'Mn3+', 'Mn4+', 'Fe2+',
+      'Fe3+', 'Co2+', 'Co3+', 'Ni2+', 'Ni3+', 'Cu1+', 'Cu2+',
+      'Zn2+', 'Ga3+', 'Ge4+', 'Br1-', 'Rb1+', 'Sr2+', 'Y3+',
+      'Zr4+', 'Nb3+', 'Nb5+', 'Mo3+', 'Mo5+', 'Mo6+', 'Ru3+',
+      'Ru4+', 'Rh3+', 'Rh4+', 'Pd2+', 'Pd4+', 'Ag1+', 'Ag2+',
+      'Cd2+', 'In3+', 'Sn2+', 'Sn4+', 'Sb3+', 'Sb5+', 'I1-',
+      'Cs1+', 'Ba2+', 'La3+', 'Ce3+', 'Ce4+', 'Pr3+', 'Pr4+',
+      'Nd3+', 'Pm3+', 'Sm3+', 'Eu2+', 'Eu3+', 'Gd3+', 'Tb3+',
+      'Dy3+', 'Ho3+', 'Er3+', 'Tm3+', 'Yb2+', 'Yb3+', 'Lu3+',
+      'Hf4+', 'Ta5+', 'W6+',  'Os4+', 'Ir3+', 'Ir4+', 'Pt2+',
+      'Pt4+', 'Au1+', 'Au3+', 'Hg1+', 'Hg2+', 'Tl1+', 'Tl3+',
+      'Pb2+', 'Pb4+', 'Bi3+', 'Bi5+', 'Ra2+', 'Ac3+', 'Th4+',
+      'U3+',  'U4+',  'U6+',  'Np3+', 'Np4+', 'Np6+', 'Pu3+',
+      'Pu4+', 'Pu6+'])
+
+  
+  
+%}
 
 %include "../clipper/core/coords.h"
 
@@ -1281,6 +1367,16 @@ namespace clipper {
 namespace clipper
 {
 %extend Coord_grid {
+  // Because conversion of Numpy int scalars is a nightmare, let's add
+  // an extra constructor that takes an int array directly.
+  Coord_grid(long v[3]) {
+    Coord_grid *newCoord = new Coord_grid(v[0], v[1], v[2]);
+      return newCoord;
+  }
+  Coord_grid(const long& u, const long& v, const long& w) {
+    Coord_grid *newCoord = new Coord_grid(u, v, w);
+    return newCoord;
+  }
 
   bool __ne__(const Coord_grid& g2) { return *self != g2; }
   bool __eq__(const Coord_grid& g2) { return *self == g2; }
@@ -1324,9 +1420,9 @@ namespace clipper
     }
   }
 #ifdef PYTHON_PROPERTIES
-  void _set_uvw(int v[3])
+  void _set_uvw(long v[3])
 #else
-  void set_uvw(int v[3])
+  void set_uvw(long v[3])
 #endif
   {
     self->u() = v[0];
@@ -1493,6 +1589,9 @@ namespace clipper
 #ifdef PYTHON_PROPERTIES
   %pythoncode %{
     uvw = property(_get_uvw)
+    ceil = property(ceil)
+    coord_grid = property(coord_grid)
+    floor = property(floor)
   %}
 #endif
 
@@ -1503,6 +1602,21 @@ namespace clipper
   bool __eq__(const HKL_sampling& hkl2) { return *self == hkl2; }
   bool __ne__(const HKL_sampling& hkl2) { return !(*self == hkl2); }
 } // extend HKL_sampling
+
+%extend Grid
+{
+#ifdef PYTHON_PROPERTIES
+  // TODO: Make dim a native numpy out function
+  %pythoncode %{
+    @property
+    def dim(self):
+      import numpy
+      return numpy.array([self.nu(), self.nv(), self.nw()])
+    
+    size = property(size)
+  %}
+#endif
+} // extend Grid
 
 %extend Grid_sampling {
   std::string __str__() const { return self->format(); }
@@ -1516,7 +1630,6 @@ namespace clipper
 #ifdef PYTHON_PROPERTIES
   %pythoncode %{
     dim = property(dim)
-    size = property(size)
     format = property(format)
   %}
 #endif
@@ -1531,7 +1644,24 @@ namespace clipper
 
 #ifdef PYTHON_PROPERTIES
   %pythoncode %{
-    element = property(_get_element, _set_element)
+    _allow_unknown = True
+    
+    @property
+    def allow_unknown(self):
+      return self._allow_unknown
+    
+    @allow_unknown.setter
+    def allow_unknown(self, allow):
+      self._allow_unknown = allow
+    
+    def _set_element_with_check(self, element_name):
+      if not self.allow_unknown:
+        if element_name not in ('H', 'C', 'N', 'O', 'S'):
+          if element_name not in ATOM_NAMES:
+            raise TypeError('Unrecognised element!')
+      self._set_element(element_name)
+        
+    element = property(_get_element, _set_element_with_check)
     occupancy = property(_get_occupancy, _set_occupancy)
     u_iso = property(_get_u_iso, _set_u_iso)
     _u_aniso = property(_get_u_aniso, _set_u_aniso)
@@ -1541,7 +1671,7 @@ namespace clipper
     def _get_coord_xyz(self):
       ''' Get the orthographic (x,y,z) coordinates as a Numpy array. '''
       return self.coord_orth.xyz
-    def _set_coord_xyz(self, coord)
+    def _set_coord_xyz(self, coord):
       self.coord_orth = Coord_orth(*coord)
     coord = property(_get_coord_xyz, _set_coord_xyz)
 
@@ -1558,20 +1688,20 @@ namespace clipper
       if u_aniso is None:
         from math import nan
         self._set_u_aniso(U_aniso_orth(*([nan]*6)))
-      elif hasattr(u_aniso, 'len'):
+      else:
         try:
           self._set_u_aniso(U_aniso_orth(*u_aniso))
         except:
           if type(u_aniso) == numpy.ndarray:
             self._set_u_aniso(U_aniso_orth(*(u_aniso.astype(float))))
-      elif type(u_aniso) = U_aniso_orth:
-        self._set_u_aniso(u_aniso)
-      else:
-        raise TypeError('''
-          u_aniso must be None, a list of 6 numbers [u00, u11, u22, u01, u02, u12]\n
-          or a clipper U_aniso_orth object.''')
+          elif type(u_aniso) == U_aniso_orth:
+            self._set_u_aniso(u_aniso)
+          else:
+            raise TypeError('''
+              u_aniso must be None, a list of 6 numbers [u00, u11, u22, u01, u02, u12]\n
+              or a clipper U_aniso_orth object.''')
 
-    u_aniso = Property(_get_u_aniso_vals, _set_u_aniso_vals)
+    u_aniso = property(_get_u_aniso_vals, _set_u_aniso_vals)
   %}
 
 #endif
@@ -1642,7 +1772,11 @@ namespace clipper
     }
   }
 
-  void _set_elements(std::vector<std::string> elements)
+#ifdef PYTHON_PROPERTIES
+  void _set_elements_base(std::vector<std::string> elements)
+#else
+  void set_elements(std::vector<std::string> elements)
+#endif
   {
     size_t in_len = elements.size();
     size_t my_len = self -> size();
@@ -1657,7 +1791,11 @@ namespace clipper
     }
   }
 
-  std::vector< std::string > _get_elements()
+#ifdef PYTHON_PROPERTIES
+  std::vector< std::string > _get_elements_base()
+#else
+  std::vector< std::string > get_elements()
+#endif
   {
     std::vector < std::string > ret;
     for (size_t i = 0; i < self -> size(); i++) {
@@ -1667,7 +1805,11 @@ namespace clipper
   }
 
   //! Quickly set all atomic xyz coordinates from an nx3 numpy array
-  void _set_coord_orth(double *numpy_2d_in, int n1, int n2)
+#ifdef PYTHON_PROPERTIES
+  void _set_coord_orth_base(double *numpy_2d_in, int n1, int n2)
+#else
+  void set_coord_orth(double *numpy_2d_in, int n1, int n2)
+#endif
   {
     size_t my_len = self -> size();
     if (n1 != my_len) {
@@ -1686,7 +1828,11 @@ namespace clipper
   }
 
   //! Quickly fill an nx3 numpy array with all atomic xyz coordinates
-  void _get_coord_orth(double* numpy_array, int n1, int n2)
+#ifdef PYTHON_PROPERTIES
+  void _get_coord_orth_base(double* numpy_array, int n1, int n2)
+#else
+  void get_coord_orth(double* numpy_array, int n1, int n2)
+#endif
   {
     size_t my_len = self -> size();
     if (n1 != my_len) {
@@ -1706,7 +1852,11 @@ namespace clipper
     }
   }
 
-  void _set_occupancies(double *numpy_1d_in, int n)
+#ifdef PYTHON_PROPERTIES
+  void _set_occupancies_base(double *numpy_1d_in, int n)
+#else
+  void set_occupancies(double *numpy_1d_in, int n)
+#endif
   {
     size_t my_len = self -> size();
     if (n != my_len) {
@@ -1720,7 +1870,11 @@ namespace clipper
     return;
   }
 
-  void _get_occupancies(double *numpy_array, int n)
+#ifdef PYTHON_PROPERTIES
+  void _get_occupancies_base(double *numpy_array, int n)
+#else
+  void get_occupancies(double *numpy_array, int n)
+#endif
   {
     size_t my_len = self -> size();
     if (n != my_len) {
@@ -1733,7 +1887,11 @@ namespace clipper
     }
   }
 
-  void _set_u_isos(double *numpy_1d_in, int n)
+#ifdef PYTHON_PROPERTIES
+  void _set_u_isos_base(double *numpy_1d_in, int n)
+#else
+  void set_u_isos(double *numpy_1d_in, int n)
+#endif
   {
     size_t my_len = self -> size();
     if (n != my_len) {
@@ -1747,7 +1905,11 @@ namespace clipper
     return;
   }
 
-  void _get_u_isos(double *numpy_array, int n)
+#ifdef PYTHON_PROPERTIES
+  void _get_u_isos_base(double *numpy_array, int n)
+#else
+  void get_u_isos(double *numpy_array, int n)
+#endif
   {
     size_t my_len = self -> size();
     if (n != my_len) {
@@ -1760,7 +1922,11 @@ namespace clipper
     }
   }
 
-  void _set_u_anisos(double *numpy_2d_in, int n1, int n2)
+#ifdef PYTHON_PROPERTIES
+  void _set_u_anisos_base(double *numpy_2d_in, int n1, int n2)
+#else
+  void set_u_anisos(double *numpy_2d_in, int n1, int n2)
+#endif
   {
     size_t my_len = self -> size();
     if (n1 != my_len) {
@@ -1782,7 +1948,11 @@ namespace clipper
     }
   }
 
-  void _get_u_anisos(double* numpy_array, int n1, int n2)
+#ifdef PYTHON_PROPERTIES
+  void _get_u_anisos_base(double* numpy_array, int n1, int n2)
+#else
+  void get_u_anisos(double* numpy_array, int n1, int n2)
+#endif
   {
     size_t my_len = self -> size();
     if (n1 != my_len) {
@@ -1826,7 +1996,120 @@ namespace clipper
   }
 
 
+  %pythoncode %{
+    _allow_unknown = True
+    
+    @property
+    def allow_unknown(self):
+      return self._allow_unknown
+    
+    @allow_unknown.setter
+    def allow_unknown(self, allow):
+      self._allow_unknown = allow
+    
+#ifdef PYTHON_PROPERTIES
+
+    def _get_elements(self):
+      '''Ordered list of all element names'''
+      return self._get_elements_base()
+    
+    def _set_elements(self, elements):
+      if not self.allow_unknown:
+        if not set(elements).issubset(ATOM_NAMES):
+          bad_atoms = []
+          for el in set(elements):
+            if el not in ATOM_NAMES:
+              bad_atoms.append(el)
+          bad_atoms = set(bad_atoms)
+          errstring = '''
+            The following atom names are not recognised by Clipper:
+            {}
+            '''.format(bad_atoms)
+          raise TypeError(errstring)
+      self._set_elements_base(elements)
+    
+    elements = property(_get_elements, _set_elements)
+    
+          
+      
+    def _get_coord_orth(self):
+      '''Orthographic (x,y,z) coordinates of all atoms'''
+      import numpy
+      n = len(self)
+      coords = numpy.empty((n,3), numpy.double)
+      self._get_coord_orth_base(coords)
+      return coords
+    
+    def _set_coord_orth(self, coords):
+      import numpy
+      n = len(self)
+      array_in = numpy.empty((n, 3), numpy.double)
+      array_in[:] = coords
+      self._set_coord_orth_base(array_in)
+    
+    coord_orth = property(_get_coord_orth, _set_coord_orth)
+    
+    def _get_occupancies(self):
+      '''Occupancies of all atoms.'''
+      import numpy
+      n = len(self)
+      occ = numpy.empty(n, numpy.double)
+      self._get_occupancies_base(occ)
+      return occ
+    
+    def _set_occupancies(self, occ):
+      import numpy
+      n = len(self)
+      array_in = numpy.empty(n, numpy.double)
+      array_in[:] = occ
+      self._set_occupancies_base(array_in)
+    
+    occupancies = property(_get_occupancies, _set_occupancies)
+    
+    def _get_u_isos(self):
+      '''Isotropic B-factors of all atoms.'''
+      import numpy
+      n = len(self)
+      uisos = numpy.empty(n, numpy.double)
+      self._get_u_isos_base(uisos)
+      return uisos
+    
+    def _set_u_isos(self, uisos):
+      import numpy
+      n = len(self)
+      array_in = numpy.empty(n, numpy.double)
+      array_in[:] = uisos
+      self._set_u_isos_base(array_in)
+    
+    u_isos = property(_get_u_isos, _set_u_isos)
+    
+    def _get_u_anisos(self):
+      '''
+      Anisotropic B-factor matrices for all atoms as an nx6 array, in the
+      format: n*[u00, u11, u22, u01, u02, u12]. For purely isotropic
+      atoms, set all elements in their row to math.nan or numpy.nan.
+      '''
+      import numpy
+      n = len(self)
+      uaniso = numpy.empty((n,6), numpy.double)
+      self._get_u_anisos_base(uaniso)
+      return uaniso
+    
+    def _set_u_anisos(self, u_anisos):
+      import numpy
+      n = len(self)
+      array_in = numpy.empty((n,6), numpy.double)
+      array_in[:] = u_anisos
+      self._set_u_anisos_base(array_in)
+    
+    u_anisos = property(_get_u_anisos, _set_u_anisos)
+
+#endif
+    
+  %}
+
 } // extend Atom_list
+
 } // namespace clipper
 
 %ignore clipper::Symops::size() const;
@@ -1838,7 +2121,7 @@ namespace clipper
 %apply (double IN_ARRAY1[ANY]) {(double box_origin_xyz[3])};
 %apply (double IN_ARRAY1[ANY]) {(double box_size_xyz[3])};
 %apply (double IN_ARRAY1[ANY]) {(double box_res_xyz[3])};
-%apply (int IN_ARRAY1[ANY]) {(int box_size_uvw[3])};
+%apply (long IN_ARRAY1[ANY]) {(long box_size_uvw[3])};
 %apply (double IN_ARRAY2[ANY][ANY]) {(double model_bounds_xyz[8][3])};
 %apply (double IN_ARRAY1[ANY]) {(double sides_xyz[3])};
 
@@ -2280,9 +2563,13 @@ namespace clipper
 
 
 %ignore clipper::Unit_Cell::isymops() const;
+%ignore clipper::Unit_Cell::isymops();
 %ignore clipper::Unit_Cell::inv_isymops() const;
+%ignore clipper::Unit_Cell::inv_isymops();
 %ignore clipper::Unit_Cell::ref_box_min_side() const;
 %ignore clipper::Unit_Cell::find_symops_of_coord;
+%ignore clipper::Unit_Cell::symops();
+%ignore clipper::Unit_Cell::inv_symops();
 
 %inline %{
   namespace clipper
@@ -2470,7 +2757,7 @@ namespace clipper
     /*! The box is defined by its origin in xyz coordinates, and the
      *  number of grid coordinates along each axis.
      */
-    Symops all_symops_in_box(double box_origin_xyz[3], int box_size_uvw[3], bool always_include_identity = false, int sample_frequency = 2)
+    Symops all_symops_in_box(double box_origin_xyz[3], long box_size_uvw[3], bool always_include_identity = false, int sample_frequency = 2)
     {
       Symops ret;
 
@@ -2574,7 +2861,7 @@ namespace clipper
 #ifdef PYTHON_PROPERTIES
 namespace clipper
 {
-  %extend Symops
+  %extend Unit_Cell
   {
     %pythoncode %{
       symops = property(symops)
@@ -2729,7 +3016,7 @@ namespace clipper
       return hash(self.__str__())
 
     def __eq__(self, other):
-      return type(other) == RTop_frac and hash(self) = hash(other)
+      return type(other) == RTop_frac and hash(self) == hash(other)
   %}
 
 #ifdef PYTHON_PROPERTIES
@@ -2971,6 +3258,21 @@ namespace clipper
 
 
 %include "../clipper/core/hkl_info.h"
+
+#ifdef PYTHON_PROPERTIES
+namespace clipper
+{
+%extend HKL_info
+{
+  %pythoncode %{
+    cell = property(cell)
+    spacegroup = property(spacegroup)
+    resolution = property(resolution)
+  %}
+} // extend HKL_info
+} // namespace clipper
+#endif
+
 %include "../clipper/core/hkl_data.h"
 
 namespace clipper
@@ -3138,8 +3440,14 @@ namespace clipper
     Xmap<T>::Map_reference_coord ref(*self, pos);
     return ref;
   }
-
-
+  
+  // reimplemented from Xmap_base
+  const Grid_sampling& grid_sampling() const { return self->grid_sampling(); }
+  const Cell& cell() const { return self->cell(); }
+  const Spacegroup& spacegroup() const { return self->spacegroup(); }
+  const Grid_range& grid_asu() const { return self->grid_asu(); }
+  bool is_null() const { return self->is_null(); }
+  // ~Xmap_base
 
   std::vector<double> _recalculate_stats ()
   {
@@ -3633,11 +3941,15 @@ namespace clipper
     __stats = None
     def recalculate_stats(self):
       self.__stats = self._recalculate_stats()
+#ifdef PYTHON_PROPERTIES
+    @property
+#endif
     def stats(self):
       if self.__stats is None:
         self.recalculate_stats()
       return self.__stats
 
+#ifndef PYTHON_PROPERTIES
     def max(self):
       return self.stats()[0]
     def min(self):
@@ -3650,36 +3962,56 @@ namespace clipper
       return self.stats()[4]
     def kurtosis(self):
       return self.stats()[5]
+#else
+    @property
+    def max(self):
+      return self.stats[0]
+    @property
+    def min(self):
+      return self.stats[1]
+    @property
+    def mean(self):
+      return self.stats[2]
+    @property
+    def sigma(self):
+      return self.stats[3]
+    @property
+    def skewness(self):
+      return self.stats[4]
+    @property
+    def kurtosis(self):
+      return self.stats[5]
+#endif
 
-    def export_section_numpy(start_coord_grid, end_coord_grid = None,
+    def export_section_numpy(self, start_coord_grid, end_coord_grid = None,
                             target = None, order = 'C', rot = 'xyz'):
-    '''
-    Export a section of the map into a Numpy array. Required arguments are a
-    starting grid coordinate and either a finishing coordinate or a 3D Numpy
-    array.
-    Args:
-      start_coord_grid:
-        Minimum corner of the box in grid coordinates (either a Clipper
-        Coord_grid or an iterable of 3 ints)
-      end_coord_grid (default = None; incompatible with target):
-        Maximum corner of the box in grid coordinates. If set, a Numpy array
-        of the required size will be automatically created and filled.
-      target (default = None; incompatible with end_coord_grid):
-        A pre-initialised 3D Numpy array of doubles. If set, the end_grid_coord
-        will be automatically calculated.
-      order (default = 'C'):
-        One of 'F' or 'C'. If 'C', the array will be filled in C-style row-major
-        format (the default format of Numpy arrays). If 'F' it will be filled in
-        Fortran-style column-major format.
-      rot (default = 'xyz'):
-        One of 'xyz' or 'zyx'. Some packages choose to store their data in xyz,
-        others in zyx.
-    '''
+      '''
+      Export a section of the map into a Numpy array. Required arguments are a
+      starting grid coordinate and either a finishing coordinate or a 3D Numpy
+      array.
+      Args:
+        start_coord_grid:
+          Minimum corner of the box in grid coordinates (either a Clipper
+          Coord_grid or an iterable of 3 ints)
+        end_coord_grid (default = None; incompatible with target):
+          Maximum corner of the box in grid coordinates. If set, a Numpy array
+          of the required size will be automatically created and filled.
+        target (default = None; incompatible with end_coord_grid):
+          A pre-initialised 3D Numpy array of doubles. If set, the end_grid_coord
+          will be automatically calculated.
+        order (default = 'C'):
+          One of 'F' or 'C'. If 'C', the array will be filled in C-style row-major
+          format (the default format of Numpy arrays). If 'F' it will be filled in
+          Fortran-style column-major format.
+        rot (default = 'xyz'):
+          One of 'xyz' or 'zyx'. Some packages choose to store their data in xyz,
+          others in zyx.
+      '''
       if end_coord_grid is None and target is None:
         raise TypeError('Must provide either an end grid coordinate or a target Numpy array!')
-      elif end_coord_grid and target:
+      elif end_coord_grid is not None and target is not None:
         raise TypeError('Cannot specify both an end grid coordinate and a target array!')
-      if end_coord_grid:
+      if end_coord_grid is not None:
         import numpy
         # Fill from start coord to end coord inclusive
         array_size = end_coord_grid - start_coord_grid + [1,1,1]
@@ -3695,18 +4027,51 @@ namespace clipper
       else:
        _target = target
       result = self._export_section_numpy(_target, start_coord_grid, order, rot)
-      if target:
+      if target is not None:
         return result
       return _target
 
 #ifdef PYTHON_PROPERTIES
-    stats = property(stats)
-    max = property(max)
-    min = property(min)
-    mean = property(mean)
-    sigma = property(sigma)
-    skewness = property(skewness)
-    kurtosis = property(kurtosis)
+    
+    _name = None
+    
+    @property
+    def name(self):
+      return self._name
+    
+    @name.setter
+    def name(self, name):
+      self._name = name
+    
+    _is_difference_map = False
+    
+    @property
+    def is_difference_map(self):
+      '''
+      If true, this will be treated as a difference map (with positive
+      and negative contours displayed, etc.).
+      '''
+      return self._is_difference_map
+    
+    @is_difference_map.setter
+    def is_difference_map(self, isdiff):
+      self._is_difference_map = isdiff
+    
+    grid = property(grid_sampling)
+    grid_sampling = property(grid_sampling)
+    cell = property(cell)
+    spacegroup = property(spacegroup)
+    operator_grid_orth = property(operator_grid_orth)
+    operator_orth_grid = property(operator_orth_grid)
+    voxel_size = property(voxel_size)
+    voxel_size_frac = property(voxel_size_frac)
+    grid_asu = property(grid_asu)
+    is_null = property(is_null)
+    
+    @property
+    def grid_samples(self):
+      return self.grid.dim
+        
 #endif
 
   %} //pythoncode
@@ -3795,7 +4160,36 @@ namespace clipper
 };
 }
 %include "../clipper/ccp4/ccp4_mtz_types.h"
+
+
 %include "../clipper/ccp4/ccp4_mtz_io.h"
+
+namespace clipper
+{
+%extend CCP4MTZfile
+{
+  %pythoncode %{
+    open_read = log_clipper(open_read)
+    import_hkl_data = log_clipper(import_hkl_data)
+    
+#ifdef PYTHON_PROPERTIES
+    ccp4_spacegroup_number = property(ccp4_spacegroup_number)
+    cell = property(cell)
+    column_labels = property(column_labels)
+    column_paths = property(column_paths)
+    high_res_limit = property(high_res_limit)
+    history = property(history)
+    hkl_sampling = property(hkl_sampling)
+    low_res_limit = property(low_res_limit)
+    resolution = property(resolution)
+    sort_order = property(sort_order)
+    spacegroup = property(spacegroup)
+#endif
+  %}
+} // extend CCP4MTZfile
+} // namespace clipper
+
+
 
 %include "../clipper/ccp4/ccp4_utils.h"
 
@@ -4808,7 +5202,18 @@ fail:
 
 %include "../clipper/core/ramachandran.h"
 
+
 %include "../clipper/cif/cif_data_io.h"
+namespace clipper
+{
+%extend CIFfile
+{
+  %pythoncode %{
+    open_read = log_clipper(open_read)
+  %}
+} // extend CIFfile
+} // namespace clipper
+
 %include "../clipper/contrib/sfcalc_obs.h"
 
 %include "../clipper/core/hkl_compute.h"
