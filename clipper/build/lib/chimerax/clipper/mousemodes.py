@@ -32,12 +32,12 @@ class ZoomMouseMode(mousemodes.ZoomMouseMode):
     def zoom(self, delta_z):
         v = self.view
         c = v.camera
+        cofr = v.center_of_rotation
         if c.name() == 'orthographic':
             import numpy
             c.field_width = max(c.field_width - delta_z, self.pixel_size())
             # TODO: Make camera field_width a property so it knows to redraw.
             from chimerax.core.geometry import place
-            cofr = v.center_of_rotation
             camera_to_cofr = cofr - c.position.origin()
             vd = c.view_direction()
             current_forward_distance = numpy.dot(camera_to_cofr, vd)

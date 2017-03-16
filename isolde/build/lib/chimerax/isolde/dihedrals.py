@@ -520,12 +520,26 @@ class Backbone_Dihedrals():
         CN_bonds = CN_atoms.inter_bonds
         
         bonded_C = CN_bonds.atoms[0]
-        assert(numpy.all(bonded_C.names == 'C'))
-        bonded_C_indices = C_atoms.indices(bonded_C)
-        bonded_C_resnames = bonded_C.unique_residues.names
         bonded_N = CN_bonds.atoms[1]
-        assert(numpy.all(bonded_N.names == 'N'))
+        
+        bonded_C_indices = atoms.indices(bonded_C)
+        bonded_N_indices = atoms.indices(bonded_N)
+        # usually this should be the way things work, but occassionally
+        # we end up with atoms in the wrong array. So let's catch and
+        # sort that out.
+        if not numpy.all(bonded_C.names == 'C'):
+            bad_indices = numpy.argwhere(bonded_C.names != 'C')
+            for i in bad_indices:
+                thisN = bonded_C_indices[i]
+                bonded_C_indices[i] = bonded_N_indices[i]
+                bonded_N_indices[i] = thisN
+            bonded_C = atoms[bonded_C_indices]
+            bonded_N = atoms[bonded_N_indices]
+        bonded_C_indices = C_atoms.indices(bonded_C)
         bonded_N_indices = N_atoms.indices(bonded_N)
+        bonded_C_resnames = bonded_C.unique_residues.names
+        assert(numpy.all(bonded_N.names == 'N'))
+        assert(numpy.all(bonded_C.names == 'C'))
         bonded_N_resnames = bonded_N.unique_residues.names
 
         # We also need the CA atom from the preceding residue to make up

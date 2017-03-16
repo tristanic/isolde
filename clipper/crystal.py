@@ -31,8 +31,9 @@ class Xtal_Project:
       db.mouse_modes_initialized = True
     # Store all the data safely in the database
     self.data = db['Experiment'][name] = Clipper_MTZ(parent=db['Experiment'])
-    from chimerax.core.map import volumecommand
-    volumecommand.volume(session, pickable=False)
+    # Suppress mouse interaction with volume data
+    volumecommand.volume(session, pickable=False)    
+    set_to_default_cartoon(session)
     
   def load_data(self, filename):
     return self.data.load_hkl_data(filename)
@@ -897,15 +898,22 @@ class SymModels(defaultdict):
         
     # Add a sub-model to the master to act as a container for the
     # symmetry copies
-    self._sym_container = Model('symmetry equivalents', self.session)
-    self.master.add([self._sym_container])
+    self._sym_container = None
+
+  @property
+  def sym_container(self):
+    if self._sym_container is None or self._sym_container.deleted:
+      self._sym_container = Model('symmetry equivalents', self.session)
+      self.master.add([self._sym_container])
+      self.clear()
+    return self._sym_container
 
   def __missing__(self, key):
     if type(key) is not clipper.RTop_frac:
       raise TypeError('Key must be a clipper.RTop_frac!')
     thisplace = Place(matrix=key.rtop_orth(self.parent.cell).mat34)
     if not thisplace.is_identity():
-      thismodel = self.master.copy(name=key.format)
+      thismodel = self.master.copy(name=key.format_as_symop)
       atoms = thismodel.atoms
       #thismodel.position = thisplace
       atoms.coords = thisplace.moved(atoms.coords)
@@ -915,13 +923,30 @@ class SymModels(defaultdict):
       ribbon_colors = thismodel.residues.ribbon_colors
       ribbon_colors[:,0:3] = (self.master.residues.ribbon_colors[:,0:3].astype(float)*0.6).astype(numpy.uint8)
       thismodel.residues.ribbon_colors = ribbon_colors
-      self._sym_container.add([thismodel])
+      self.sym_container.add([thismodel])
+      set_to_default_cartoon(self.session, thismodel)
       self[key] = thismodel
       thismodel.display = False
       return thismodel
     return self.master
       
+  def __getitem__(self, key):
+    s = self.sym_container
+    m = super(SymModels, self).__getitem__(key)
+    return m
+      
 
+def set_to_default_cartoon(session, model = None):
+    # Adjust the ribbon representation to provide information without
+    # getting in the way
+    from chimerax.core.commands import cartoon, atomspec
+    if model is None:
+        atoms = None
+    else:
+        arg = atomspec.AtomSpecArg('thearg')
+        atoms = arg.parse('#' + model.id_string(), session)[0]
+    cartoon.cartoon(session, atoms = atoms, suppress_backbone_display=False)
+    cartoon.cartoon_style(session, atoms = atoms, width=0.4, thickness=0.1, arrows_helix=True, arrow_scale = 2)
 
 
   
@@ -974,7 +999,7 @@ def read_mtz(session, filename, experiment_name,
     project = Xtal_Project(session, experiment_name)
     xmapset = None
   else:
-    project = session.Clipper_DB[Experiment][experiment_name]
+    project = session.Clipper_DB['Experiment'][experiment_name]
   # Bring in all the data from the MTZ file and add the corresponding
   # Clipper objects to the database
   crystal_name = project.load_data(filename)

@@ -1,4 +1,5 @@
 from .lib import clipper_python_core as _clipper
+import numpy
 
 _clipper_messages = _clipper.MessageStreamSingleton().clipper_messages
 
