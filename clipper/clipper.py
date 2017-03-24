@@ -109,15 +109,15 @@ class Coord_reci_frac(_clipper.Coord_frac):
             else:
                 raise
 
-#class Coord_grid(_clipper.Coord_grid):
-    #def __init__(self, coords):
-        #try:
-            #_clipper.Coord_grid.__init__(self, *coords)
-        #except:
-            #if type(coords) == numpy.ndarray:
-                #_clipper.Coord_grid.__init__(self, *(coords.tolist()))
-            #else:
-                #raise
+class Coord_grid(_clipper.Coord_grid):
+    def __init__(self, coords):
+        try:
+            _clipper.Coord_grid.__init__(self, *coords)
+        except:
+            if type(coords) == numpy.ndarray:
+                _clipper.Coord_grid.__init__(self, *(coords.tolist()))
+            else:
+                raise
 
 class Coord_map(_clipper.Coord_map):
     def __init__(self, coords):

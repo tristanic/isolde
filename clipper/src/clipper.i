@@ -4,6 +4,7 @@
 #include <vector>
 %}
 %include "numpy.i"
+%include "pyfragments.i"
 
 %init %{
     import_array();

@@ -486,7 +486,8 @@ class RamaPlot():
         from operator import itemgetter
         contours = itemgetter(0,2)(RAMA_CASE_DETAILS[case_key]['cutoffs'])
         P = self.P_limits = [0, -log(contours[0])]
-        self.scatter = self.axes.scatter((200),(200), cmap='bwr', picker = 2.0)
+        self.scatter = self.axes.scatter((200),(200), picker = 2.0)
+        self.scatter.set_cmap('bwr')
         self.canvas.mpl_connect('pick_event', self.on_pick)
         self.on_resize()
         

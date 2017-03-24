@@ -10,7 +10,7 @@ class EventHandler():
     event_keys = [
         'selection changed', #User has added or removed to an atom selection
         'new frame',
-        'atomic changes',
+        'shape changed',
         'add models',
         'remove models',
         'frame drawn',

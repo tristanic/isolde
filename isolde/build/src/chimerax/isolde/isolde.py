@@ -1028,7 +1028,7 @@ class Isolde():
         self._sel_res_update_counter = 0
         if 'update_selected_residue_info' not in self._event_handler.list_event_handlers():
             self._event_handler.add_event_handler('update_selected_residue_info',
-                    'atomic changes', self._update_selected_residue_info_live)
+                    'shape changed', self._update_selected_residue_info_live)
                     
                     
     def _disable_rebuild_residue_frame(self):
@@ -1133,12 +1133,13 @@ class Isolde():
         else:
             sel = model.atoms.filter(model.atoms.selected)
             residues = sel.unique_residues
-            phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
-            from . import dihedrals
-            bd = dihedrals.Backbone_Dihedrals(self.session, phi=phi, psi=psi, omega=omega)
-        #phi_vals, psi_vals, omega_vals = bd.all_vals
-        #self.rama_validator.load_structure(bd.residues, bd.resnames, phi_vals, psi_vals, omega_vals)
-        self._rama_plot.update_scatter(bd, force_update = True)
+            if len(residues):
+                phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
+                from . import dihedrals
+                bd = dihedrals.Backbone_Dihedrals(self.session, phi=phi, psi=psi, omega=omega)
+                self._rama_plot.update_scatter(bd, force_update = True)
+            else:
+                self._rama_plot.update_scatter(force_update = True)
     
     def _show_peptide_validation_frame(self, *_):
         self.iw._validate_pep_stub_frame.hide()

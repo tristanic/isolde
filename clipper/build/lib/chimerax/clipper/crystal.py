@@ -113,6 +113,8 @@ class Map_set:
     
     self._master_box_model = Model('Xmap display', self.session)
     
+    self._special_positions_model = None
+    
     self._standard_contour = numpy.array([1.5])
     self._standard_difference_map_contours = numpy.array([-3.0, 3.0])
     # Default "radius" (actually half-width of the rhombohedron) of
@@ -490,11 +492,15 @@ class Map_set:
         m.display = True
         m.atoms.displays = False
         m.residues.ribbon_displays = False
-    self.atomic_model.atoms[numpy.in1d(self.atomic_model.atoms.names, numpy.array(['N','C','CA']))].displays = True    
+    self.atomic_model.atoms[numpy.in1d(self.atomic_model.atoms.names, numpy.array(['N','C','CA']))].displays = True 
+    if not self.periodic_model.show_nonpolar_H:
+      atoms = atoms.filter(atoms.idatm_types != 'HC')   
     atoms.displays = True
     atoms.inter_bonds.radii = 0.2
     atoms.residues.ribbon_displays = True
     if context_atoms is not None:
+      if not self.periodic_model.show_nonpolar_H:
+        context_atoms = context_atoms.filter(context_atoms.idatm_types != 'HC')   
       context_atoms.displays = True
       context_atoms.inter_bonds.radii = 0.1
     if focus:
@@ -502,6 +508,71 @@ class Map_set:
     # return the original selection in case we want to re-run with modified settings
     return orig_atoms
       
+  def draw_unit_cell_and_special_positions(self, offset = None):
+    model = self.atomic_model
+    from chimerax.core.models import Model, Drawing
+    from chimerax.core.geometry import Place, Places
+    from chimerax.core.surface.shapes import sphere_geometry
+    import copy
+    
+    ref = model.bounds().center().astype(float)
+    frac_coords = clipper.Coord_orth(ref).coord_frac(self.cell).uvw
+    if offset is None:
+      offset = numpy.array([0,0,0],int)
+    corners_frac = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]],numpy.double) + offset\
+                    + self.unit_cell.min.coord_frac(self.grid).uvw
+    corners = []
+    for c in corners_frac:
+      cf = clipper.Coord_frac(c).coord_orth(self.cell)
+      corners.append(cf.xyz)
+    m = self._special_positions_model
+    
+    if m is None or m.deleted:
+      m = self.special_positions_model = Model('Special Positions',self.session)
+      xmap = self.maps[0]
+      uc = self.unit_cell
+      spc = numpy.array(xmap.special_positions_unit_cell_xyz(uc, offset))
+      coords = spc[:,0:3]
+      multiplicity = spc[:,3].astype(int)
+      sphere = numpy.array(sphere_geometry(80))
+      sphere[0]*=0.5
+      scale_2fold = numpy.identity(3)
+      scale_3fold = numpy.identity(3)* 1.5
+      scale_4fold = numpy.identity(3)* 2
+      scale_6fold = numpy.identity(3)* 3
+      rgba_2fold = numpy.array([255,255,255,255],numpy.int32)
+      rgba_3fold = numpy.array([0,255,255,255],numpy.int32)
+      rgba_4fold = numpy.array([255,255,0,255],numpy.int32)
+      rgba_6fold = numpy.array([255,0,0,255],numpy.int32)
+      rgba_corner = numpy.array([255,0,255,255],numpy.int32)
+      positions = []
+      colors = []
+      d = Drawing('points')
+      d.vertices, d.normals, d.triangles = sphere
+      
+      for coord, mult in zip(coords, multiplicity):
+        if mult == 2:
+          positions.append(Place(axes=scale_2fold, origin=coord))
+          colors.append(rgba_2fold)
+        elif mult == 3:
+          positions.append(Place(axes=scale_3fold, origin=coord))
+          colors.append(rgba_3fold)
+        elif mult == 4:
+          positions.append(Place(axes=scale_4fold, origin=coord))
+          colors.append(rgba_4fold)
+        elif mult == 6:
+          positions.append(Place(axes=scale_6fold, origin=coord))
+          colors.append(rgba_6fold)
+      for c in corners:
+        positions.append(Place(axes=scale_6fold, origin=c))
+        colors.append(rgba_corner)
+        
+      d.positions = Places(positions)
+      d.colors = numpy.array(colors)
+      m.add_drawing(d)
+      model.parent.add([m])
+    m.display = True
+   
     
     
     
@@ -517,9 +588,9 @@ class Map_set:
     g = self.grid
     asu_model = Model('Unit Cell Maps', self.session)
     
-    box_min_grid = self.unit_cell.min()
+    box_min_grid = self.unit_cell.min
     box_min_xyz = box_min_grid.coord_frac(g).coord_orth(c).xyz
-    box_max_grid = self.unit_cell.max()+clipper.Coord_grid([2,2,2])
+    box_max_grid = self.unit_cell.max+clipper.Coord_grid([2,2,2])
     box_dim = (box_max_grid-box_min_grid).uvw[::-1]
     for m in self.maps:
       data = numpy.empty(box_dim, numpy.double)
@@ -619,7 +690,7 @@ def _find_box_corner(center, cell, grid, radius = 20):
   radii_frac = clipper.Coord_frac(radius/cell.dim)
   center_frac = clipper.Coord_orth(center).coord_frac(cell)
   bottom_corner_grid = center_frac.coord_grid(grid) \
-                - calculate_grid_padding(radius, grid, cell)
+                - clipper.Coord_grid(calculate_grid_padding(radius, grid, cell))
   bottom_corner_orth = bottom_corner_grid.coord_frac(grid).coord_orth(cell)
   return bottom_corner_grid, bottom_corner_orth.xyz
 
@@ -639,7 +710,7 @@ class AtomicCrystalStructure:
   Extends an AtomicStructure with methods for finding and drawing symmetry
   equivalents in a crystallographic context.
   '''
-  def __init__(self, session, model, cell, spacegroup, grid_sampling):
+  def __init__(self, session, model, cell, spacegroup, grid_sampling, show_nonpolar_H = False):
     '''
     Args:
       session:
@@ -652,12 +723,16 @@ class AtomicCrystalStructure:
         A clipper.Spacegroup() object
       grid_sampling:
         A clipper.Grid_Sampling() object
+      show_nonpolar_H (bool):
+        If True, show all atoms including nonpolar hydrogens. Otherwise,
+        only polar hydrogens will be shown
     '''
     self.session = session
     self.master_model = model
     self.cell = cell
     self.sg = spacegroup
     self.grid = grid_sampling
+    self.show_nonpolar_H = show_nonpolar_H
     
     self._voxel_size = cell.dim / grid_sampling.dim
     
@@ -732,7 +807,8 @@ class AtomicCrystalStructure:
     '''
     c = numpy.empty((len(coords), 3), numpy.float32)
     c[:] = coords
-    master_coords = self.master_model.atoms.coords.astype(numpy.float32)
+    master_atoms = self.master_model.atoms
+    master_coords = master_atoms.coords.astype(numpy.float32)
     grid_minmax = clipper.Util.get_minmax_grid(coords, self.cell, self.grid)
     pad = calculate_grid_padding(radius, self.grid, self.cell)
     grid_minmax += numpy.array((-pad, pad))
@@ -817,6 +893,8 @@ class AtomicCrystalStructure:
     search_entry = [(numpy.array([cofr], numpy.float32), Place().matrix.astype(numpy.float32))]
     coords = self.master_model.atoms.coords.astype(numpy.float32)
     display_mask = numpy.array([False]*len(coords))
+    if not self.show_nonpolar_H:
+      h_mask = self.master_model.atoms.idatm_types != 'HC'
     for s in symops:
       this_model = self.sym_model_container[s]
       this_set = (coords, s.rtop_orth(self.cell).mat34.astype(numpy.float32))
@@ -829,6 +907,8 @@ class AtomicCrystalStructure:
         display_mask[:] = False
         a = this_model.atoms
         display_mask[a.indices(a[indices].residues.atoms)] = True
+        if not self.show_nonpolar_H:
+          display_mask = numpy.logical_and(display_mask, h_mask)
         a.displays = display_mask
         #if this_model is not self.master_model:
           #a.residues.ribbon_displays = display_mask
@@ -904,7 +984,7 @@ class SymModels(defaultdict):
   def sym_container(self):
     if self._sym_container is None or self._sym_container.deleted:
       self._sym_container = Model('symmetry equivalents', self.session)
-      self.master.add([self._sym_container])
+      self.master.parent.add([self._sym_container])
       self.clear()
     return self._sym_container
 
@@ -1009,6 +1089,13 @@ def read_mtz(session, filename, experiment_name,
     if data_key is not None:
       xmapset = project.add_maps(crystal_name, data_key)
       if atomic_model is not None:
+        # Move the model to sit beneath a head Model object to act as a
+        # container for symmetry models, annotations etc.
+        from chimerax.core.models import Model
+        m = Model(atomic_model.name, session)
+        session.models.remove([atomic_model])
+        m.add([atomic_model])
+        session.models.add([m])
         xmapset.atomic_model = atomic_model
       if live_map_display:
         xmapset.initialize_box_display()
@@ -1029,68 +1116,6 @@ def read_mtz(session, filename, experiment_name,
 
 
 
-  
-'''
+
 
                   
-  def draw_unit_cell_and_special_positions(self, model, offset = None):
-    from chimerax.core.models import Model, Drawing
-    from chimerax.core.geometry import Place, Places
-    from chimerax.core.surface.shapes import sphere_geometry
-    import copy
-    
-    ref = model.bounds().center().astype(float)
-    frac_coords = Coord_orth(ref).coord_frac(self.cell()).uvw
-    if offset is None:
-      offset = numpy.array([0,0,0],int)
-    corners_frac = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]],numpy.double) + offset
-    corners = []
-    for c in corners_frac:
-      cf = Coord_frac(c).coord_orth(self.cell())
-      corners.append(cf.xyz)
-    m = self.special_positions_model
-    
-    if m is None or m.deleted:
-      m = self.special_positions_model = Model('Special Positions',self.session)
-      spc = numpy.array(self.special_positions_unit_cell_xyz(offset))
-      coords = spc[:,0:3]
-      multiplicity = spc[:,3].astype(int)
-      sphere = numpy.array(sphere_geometry(80))
-      sphere[0]*=0.5
-      scale_2fold = numpy.identity(3)
-      scale_3fold = numpy.identity(3)* 1.5
-      scale_4fold = numpy.identity(3)* 2
-      scale_6fold = numpy.identity(3)* 3
-      rgba_2fold = numpy.array([255,255,255,255],numpy.int32)
-      rgba_3fold = numpy.array([0,255,255,255],numpy.int32)
-      rgba_4fold = numpy.array([255,255,0,255],numpy.int32)
-      rgba_6fold = numpy.array([255,0,0,255],numpy.int32)
-      rgba_corner = numpy.array([255,0,255,255],numpy.int32)
-      positions = []
-      colors = []
-      d = Drawing('points')
-      d.vertices, d.normals, d.triangles = sphere
-      
-      for coord, mult in zip(coords, multiplicity):
-        if mult == 2:
-          positions.append(Place(axes=scale_2fold, origin=coord))
-          colors.append(rgba_2fold)
-        elif mult == 3:
-          positions.append(Place(axes=scale_3fold, origin=coord))
-          colors.append(rgba_3fold)
-        elif mult == 4:
-          positions.append(Place(axes=scale_4fold, origin=coord))
-          colors.append(rgba_4fold)
-        elif mult == 6:
-          positions.append(Place(axes=scale_6fold, origin=coord))
-          colors.append(rgba_6fold)
-      for c in corners:
-        positions.append(Place(axes=scale_6fold, origin=c))
-        colors.append(rgba_corner)
-        
-      d.positions = Places(positions)
-      d.colors = numpy.array(colors)
-      m.add_drawing(d)
-      self.session.models.add([m])
-  
-'''    

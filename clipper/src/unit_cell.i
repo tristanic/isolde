@@ -354,6 +354,8 @@ namespace clipper
       inv_symops = property(inv_symops)
       ref = property(ref)
       ref_box = property(ref_box)
+      min = property(min)
+      max = property(max)
     %}
   } // extend Symops
 } // namespace clipper

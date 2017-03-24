@@ -257,15 +257,16 @@ namespace clipper
 
   //! Return list of all (x,y,z) points with multiplicity greater than 1 in the unit cell.
 
-  std::vector<std::vector<double> > special_positions_unit_cell_xyz (double frac_offset[3])
+  std::vector<std::vector<double> > special_positions_unit_cell_xyz (Unit_Cell uc, double frac_offset[3])
   {
     size_t count = 0;
-    std::vector<std::vector<double> > ret;
-    Coord_frac start_frac(frac_offset[0], frac_offset[1], frac_offset[2]);
+    Cell cell = self->cell();
     Grid_sampling grid = self->grid_sampling();
+    std::vector<std::vector<double> > ret;
+    Coord_frac origin = uc.min().coord_frac(grid);
+    Coord_frac start_frac = origin + Coord_frac(frac_offset[0], frac_offset[1], frac_offset[2]);
     Coord_grid start_coord = start_frac.coord_grid(grid);
     Coord_grid this_coord;
-    Cell cell = self->cell();
     size_t mult;
     bool done = false;
     for (int i = 0; i < grid.nu(); i++) {

@@ -63,6 +63,6 @@ setup(
 
         "Development Status :: 2 - Pre-Alpha",
         "ChimeraX :: Bundle :: General :: 1,1 :: chimerax.clipper :: :: ",
-        "ChimeraX :: Tool :: Clipper :: General :: Clipper",
+        #"ChimeraX :: Tool :: Clipper :: General :: Clipper",
     ],
 )

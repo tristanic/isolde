@@ -4018,9 +4018,115 @@ class Unit_Cell(_object):
     inv_symops = property(inv_symops)
     ref = property(ref)
     ref_box = property(ref_box)
+    min = property(min)
+    max = property(max)
 
 Unit_Cell_swigregister = _clipper.Unit_Cell_swigregister
 Unit_Cell_swigregister(Unit_Cell)
+
+class RTop_float(_object):
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, RTop_float, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, RTop_float, name)
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        this = _clipper.new_RTop_float(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
+    def inverse(self):
+        return _clipper.RTop_float_inverse(self)
+
+    def equals(self, m, tol):
+        return _clipper.RTop_float_equals(self, m, tol)
+
+    def rot(self, *args):
+        return _clipper.RTop_float_rot(self, *args)
+
+    def trn(self, *args):
+        return _clipper.RTop_float_trn(self, *args)
+    if _newclass:
+        identity = staticmethod(_clipper.RTop_float_identity)
+    else:
+        identity = _clipper.RTop_float_identity
+    if _newclass:
+        null = staticmethod(_clipper.RTop_float_null)
+    else:
+        null = _clipper.RTop_float_null
+
+    def is_null(self):
+        return _clipper.RTop_float_is_null(self)
+
+    def format(self):
+        return _clipper.RTop_float_format(self)
+    __swig_destroy__ = _clipper.delete_RTop_float
+    __del__ = lambda self: None
+RTop_float_swigregister = _clipper.RTop_float_swigregister
+RTop_float_swigregister(RTop_float)
+
+def RTop_float_identity():
+    return _clipper.RTop_float_identity()
+RTop_float_identity = _clipper.RTop_float_identity
+
+def RTop_float_null():
+    return _clipper.RTop_float_null()
+RTop_float_null = _clipper.RTop_float_null
+
+class RTop_double(_object):
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, RTop_double, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, RTop_double, name)
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        this = _clipper.new_RTop_double(*args)
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+
+    def inverse(self):
+        return _clipper.RTop_double_inverse(self)
+
+    def equals(self, m, tol):
+        return _clipper.RTop_double_equals(self, m, tol)
+
+    def rot(self, *args):
+        return _clipper.RTop_double_rot(self, *args)
+
+    def trn(self, *args):
+        return _clipper.RTop_double_trn(self, *args)
+    if _newclass:
+        identity = staticmethod(_clipper.RTop_double_identity)
+    else:
+        identity = _clipper.RTop_double_identity
+    if _newclass:
+        null = staticmethod(_clipper.RTop_double_null)
+    else:
+        null = _clipper.RTop_double_null
+
+    def is_null(self):
+        return _clipper.RTop_double_is_null(self)
+
+    def format(self):
+        return _clipper.RTop_double_format(self)
+    __swig_destroy__ = _clipper.delete_RTop_double
+    __del__ = lambda self: None
+RTop_double_swigregister = _clipper.RTop_double_swigregister
+RTop_double_swigregister(RTop_double)
+
+def RTop_double_identity():
+    return _clipper.RTop_double_identity()
+RTop_double_identity = _clipper.RTop_double_identity
+
+def RTop_double_null():
+    return _clipper.RTop_double_null()
+RTop_double_null = _clipper.RTop_double_null
 
 class mat33_float(_object):
     __swig_setmethods__ = {}
@@ -4179,110 +4285,6 @@ mat33_double_identity = _clipper.mat33_double_identity
 def mat33_double_null():
     return _clipper.mat33_double_null()
 mat33_double_null = _clipper.mat33_double_null
-
-class RTop_float(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, RTop_float, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, RTop_float, name)
-    __repr__ = _swig_repr
-
-    def __init__(self, *args):
-        this = _clipper.new_RTop_float(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-
-    def inverse(self):
-        return _clipper.RTop_float_inverse(self)
-
-    def equals(self, m, tol):
-        return _clipper.RTop_float_equals(self, m, tol)
-
-    def rot(self, *args):
-        return _clipper.RTop_float_rot(self, *args)
-
-    def trn(self, *args):
-        return _clipper.RTop_float_trn(self, *args)
-    if _newclass:
-        identity = staticmethod(_clipper.RTop_float_identity)
-    else:
-        identity = _clipper.RTop_float_identity
-    if _newclass:
-        null = staticmethod(_clipper.RTop_float_null)
-    else:
-        null = _clipper.RTop_float_null
-
-    def is_null(self):
-        return _clipper.RTop_float_is_null(self)
-
-    def format(self):
-        return _clipper.RTop_float_format(self)
-    __swig_destroy__ = _clipper.delete_RTop_float
-    __del__ = lambda self: None
-RTop_float_swigregister = _clipper.RTop_float_swigregister
-RTop_float_swigregister(RTop_float)
-
-def RTop_float_identity():
-    return _clipper.RTop_float_identity()
-RTop_float_identity = _clipper.RTop_float_identity
-
-def RTop_float_null():
-    return _clipper.RTop_float_null()
-RTop_float_null = _clipper.RTop_float_null
-
-class RTop_double(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, RTop_double, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, RTop_double, name)
-    __repr__ = _swig_repr
-
-    def __init__(self, *args):
-        this = _clipper.new_RTop_double(*args)
-        try:
-            self.this.append(this)
-        except __builtin__.Exception:
-            self.this = this
-
-    def inverse(self):
-        return _clipper.RTop_double_inverse(self)
-
-    def equals(self, m, tol):
-        return _clipper.RTop_double_equals(self, m, tol)
-
-    def rot(self, *args):
-        return _clipper.RTop_double_rot(self, *args)
-
-    def trn(self, *args):
-        return _clipper.RTop_double_trn(self, *args)
-    if _newclass:
-        identity = staticmethod(_clipper.RTop_double_identity)
-    else:
-        identity = _clipper.RTop_double_identity
-    if _newclass:
-        null = staticmethod(_clipper.RTop_double_null)
-    else:
-        null = _clipper.RTop_double_null
-
-    def is_null(self):
-        return _clipper.RTop_double_is_null(self)
-
-    def format(self):
-        return _clipper.RTop_double_format(self)
-    __swig_destroy__ = _clipper.delete_RTop_double
-    __del__ = lambda self: None
-RTop_double_swigregister = _clipper.RTop_double_swigregister
-RTop_double_swigregister(RTop_double)
-
-def RTop_double_identity():
-    return _clipper.RTop_double_identity()
-RTop_double_identity = _clipper.RTop_double_identity
-
-def RTop_double_null():
-    return _clipper.RTop_double_null()
-RTop_double_null = _clipper.RTop_double_null
 
 class vec3_float(_object):
     __swig_setmethods__ = {}
@@ -4981,8 +4983,8 @@ class Xmap_float(Xmap_base):
     def special_positions_unit_cell_grid(self, frac_offset):
         return _clipper.Xmap_float_special_positions_unit_cell_grid(self, frac_offset)
 
-    def special_positions_unit_cell_xyz(self, frac_offset):
-        return _clipper.Xmap_float_special_positions_unit_cell_xyz(self, frac_offset)
+    def special_positions_unit_cell_xyz(self, uc, frac_offset):
+        return _clipper.Xmap_float_special_positions_unit_cell_xyz(self, uc, frac_offset)
 
     def export_numpy(self, *args):
         return _clipper.Xmap_float_export_numpy(self, *args)
@@ -5231,8 +5233,8 @@ class Xmap_double(Xmap_base):
     def special_positions_unit_cell_grid(self, frac_offset):
         return _clipper.Xmap_double_special_positions_unit_cell_grid(self, frac_offset)
 
-    def special_positions_unit_cell_xyz(self, frac_offset):
-        return _clipper.Xmap_double_special_positions_unit_cell_xyz(self, frac_offset)
+    def special_positions_unit_cell_xyz(self, uc, frac_offset):
+        return _clipper.Xmap_double_special_positions_unit_cell_xyz(self, uc, frac_offset)
 
     def export_numpy(self, *args):
         return _clipper.Xmap_double_export_numpy(self, *args)
@@ -5481,8 +5483,8 @@ class Xmap_int(Xmap_base):
     def special_positions_unit_cell_grid(self, frac_offset):
         return _clipper.Xmap_int_special_positions_unit_cell_grid(self, frac_offset)
 
-    def special_positions_unit_cell_xyz(self, frac_offset):
-        return _clipper.Xmap_int_special_positions_unit_cell_xyz(self, frac_offset)
+    def special_positions_unit_cell_xyz(self, uc, frac_offset):
+        return _clipper.Xmap_int_special_positions_unit_cell_xyz(self, uc, frac_offset)
 
     def export_numpy(self, *args):
         return _clipper.Xmap_int_export_numpy(self, *args)
@@ -11831,6 +11833,51 @@ Rotation_zero = _clipper.Rotation_zero
 def Rotation_null():
     return _clipper.Rotation_null()
 Rotation_null = _clipper.Rotation_null
+
+class PHSfile(_object):
+    __swig_setmethods__ = {}
+    __setattr__ = lambda self, name, value: _swig_setattr(self, PHSfile, name, value)
+    __swig_getmethods__ = {}
+    __getattr__ = lambda self, name: _swig_getattr(self, PHSfile, name)
+    __repr__ = _swig_repr
+
+    def __init__(self):
+        this = _clipper.new_PHSfile()
+        try:
+            self.this.append(this)
+        except __builtin__.Exception:
+            self.this = this
+    __swig_destroy__ = _clipper.delete_PHSfile
+    __del__ = lambda self: None
+
+    def open_read(self, filename_in):
+        return _clipper.PHSfile_open_read(self, filename_in)
+
+    def close_read(self):
+        return _clipper.PHSfile_close_read(self)
+
+    def open_write(self, filename_out):
+        return _clipper.PHSfile_open_write(self, filename_out)
+
+    def close_write(self):
+        return _clipper.PHSfile_close_write(self)
+
+    def resolution(self, cell):
+        return _clipper.PHSfile_resolution(self, cell)
+
+    def import_hkl_info(self, target):
+        return _clipper.PHSfile_import_hkl_info(self, target)
+
+    def import_hkl_data(self, cdata):
+        return _clipper.PHSfile_import_hkl_data(self, cdata)
+
+    def export_hkl_info(self, target):
+        return _clipper.PHSfile_export_hkl_info(self, target)
+
+    def export_hkl_data(self, cdata):
+        return _clipper.PHSfile_export_hkl_data(self, cdata)
+PHSfile_swigregister = _clipper.PHSfile_swigregister
+PHSfile_swigregister(PHSfile)
 
 # This file is compatible with both classic and new-style classes.
 
