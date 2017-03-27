@@ -82,7 +82,7 @@ def dihedral_fill_plane(p0, p1, p2, p3):
     
     narray[:] = n
     tarray = array([[0,1,4],[1,2,4],[2,3,4]],int32)
-    return varray, varray, tarray
+    return varray, narray, tarray
     
 
 

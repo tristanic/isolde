@@ -3,9 +3,21 @@ from math import degrees, radians
 package_directory = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(package_directory, 'molprobity_data')
 
-# Load a MolProbity data set and return a SciPy RegularGridInterpolator 
-# object for later fast interpolation of values
 def generate_interpolator(file_prefix, wrap_axes = True):
+    '''
+    The very first time this is run after installation, it will read in
+    a MolProbity data set and return a SciPy RegularGridInterpolator 
+    object for fast interpolation of scores for given values. It will 
+    also write a pickle file of the RegularGridInterpolator object so 
+    that subsequent loading will be much faster. Why do it this way? 
+    Mainly for maximum compatibility and human readability - we want the
+    text files to be there anyway so others can read and understand them,
+    and this way ensures that changes to the pickle format can't 
+    break functionality.
+    This routine should be able to read MolProbity datasets of any
+    dimensionality, but a little more work will be needed for any 
+    dataset where only some axes are periodic (if any such set exists).
+    '''
     from scipy.interpolate import RegularGridInterpolator
     import numpy, pickle
     infile = None
@@ -162,8 +174,10 @@ RAMA_CASE_DETAILS = {
     }
 }
 
-
-
+CIS_MIN = radians(-30)
+CIS_MAX = radians(30)
+TRANS_MIN = radians(150)
+TRANS_MAX = radians(-150)
 
 def sort_into_rama_cases(counts_for_rama, rama_resnames, omega_vals):
     '''
@@ -224,13 +238,6 @@ def sort_into_rama_cases(counts_for_rama, rama_resnames, omega_vals):
         case_arrays[key] = numpy.array(arr,numpy.int32)
 
     return case_arrays, numpy.array(rama_case_list)
-    
-
-CIS_MIN = radians(-30)
-CIS_MAX = radians(30)
-TRANS_MIN = radians(150)
-TRANS_MAX = radians(-150)
-
     
 def omega_type(omega):
     if omega is None:
@@ -320,6 +327,38 @@ class RamaValidator():
     from math import pi
     
     def __init__(self, color_scale = 'PiYG'):
+        '''
+        The Ramachandran validator handles the task of looking up 
+        protein phi/psi values against the probability maps corresponding
+        to each residue pair. Once initialised, simply call get_scores()
+        with a properly-initialised Backbone_Dihedrals object and the
+        optional boolean update_colors as arguments. The latter is used
+        for live updating of C-alpha colours for tracking of Ramachandran
+        scores in a moving simulation.
+        Args:
+            color_scale:
+                One of the following:
+                    'RWB': Red-white-blue
+                    'BWR': Blue-white-red
+                    'RGB': Red-green-blue
+                    'BGR': Blue-green-red
+                    'RWG': Red-white-green
+                    'GWR': Green-white-red
+                    'GYO': Green-yellow-orange
+                    'OYG': Orange-yellow-green
+                    'PiYG': Pink-yellow-green
+                    'GYPi': Green-yellow-pink
+                Colours change according to the log of the Ramachandran
+                score, so the colours are reversed (last colour 
+                corresponds to the highest probability score and vice
+                versa). The mid-point of the scale is defined as the
+                cut-off between "favoured" and "allowed" - so, for 
+                example, the default PiYG scale for the General case 
+                will change smoothly from green to yellow for scores
+                between 1 and 0.02, and then from yellow to pink for
+                scores between 0.02 and 0.0005, with no further change
+                for lower scores.
+        '''
         # Cached phi and psi values for plotting
         self.phipsi = None
         # Generate the objects handling the interpolation for each case
@@ -335,6 +374,16 @@ class RamaValidator():
             self._rama_cases[case] = RamaCase(prefix, cutoffs, color_scale)
             
     def rama_bins(scores, types):
+        '''
+        Sort a pre-calculated set of scores into their classic "favoured,
+        allowed, outlier" bins. Might be better to roll this in as an 
+        optional argument to get_scores().
+        Args:
+            scores:
+                An iterable of Ramachandran scores
+            types:
+                An iterable of case names chosen from those in RAMA_CASES
+        '''
         score_bins = []
         for score, rt in scores, types:
             if rt is None:
@@ -390,8 +439,27 @@ class RamaValidator():
     
                         
 class RamaPlot():
-    
+    '''
+    A Ramachandran plot implementation based on MatPlotLib, optimised for
+    fast redrawing (e.g. to run live during simulation or playback of 
+    trajectories) and with functionality to select and display a residue
+    when its corresponding point is clicked. Plotted points are coloured
+    by their score in a similar fashion to the colouring of atoms by
+    RamaValidator (albeit using the MatPlotLib built-in colour scales).
+    '''
     def __init__(self, session, container, validator):
+        '''
+        Initialise the Ramachandran plot widget.
+        Args:
+            session:
+                The ChimeraX session
+            container:
+                A QtWidgets object suitable for holding and displaying
+                the plot (e.g. a QtWidgets.QWidget).
+            validator:
+                the RamaValidator object that will be responsible for
+                recalculating scores.
+        '''
         import numpy
         self.session = session
         self.container = container
@@ -431,6 +499,14 @@ class RamaPlot():
         self.change_case('General')
             
     def cache_contour_plots(self, key):
+        '''
+        The pcolor plot (which generates a smoothly-varying background 
+        coloured according to the local probability value) is very 
+        pretty and meaningful, but is somewhat expensive to calculate. 
+        Re-calculating it every time the user switches between cases 
+        causes noticeable delays, so we'll cache each one the first time
+        it's loaded.
+        '''
         import numpy
         case_data = self.validator.rama_cases[key].interpolator
         grid = numpy.degrees(case_data.grid)
@@ -448,6 +524,10 @@ class RamaPlot():
         
         
     def on_resize(self, *_):
+        '''
+        Resize and reshape the plot when its host window is resized.
+        Could use a little more work to make things prettier.
+        '''
         axes = self.axes
         axes.set_xlim(-180,180)
         axes.set_ylim(-180,180)
@@ -464,6 +544,10 @@ class RamaPlot():
         self.update_scatter(self._last_bd)
     
     def on_pick(self, event):
+        '''
+        Selects the picked residue, and updates the molecule view to
+        zoom and focus on it.
+        '''
         ind = event.ind[0]
         res_index = self._last_bd.rama_cases[self.current_case][ind]
         picked_residue = self._last_bd.residues[res_index]
@@ -471,6 +555,9 @@ class RamaPlot():
         view.focus_on_selection(self.session, self.session.main_view, picked_residue.atoms)
         
     def change_case(self, case_key):
+        '''
+        Update the plot to show the chosen Ramachandran case.
+        '''
         self.current_case = case_key
         import numpy
         self.axes.clear()
@@ -486,11 +573,24 @@ class RamaPlot():
         from operator import itemgetter
         contours = itemgetter(0,2)(RAMA_CASE_DETAILS[case_key]['cutoffs'])
         P = self.P_limits = [0, -log(contours[0])]
-        self.scatter = self.axes.scatter((200),(200), cmap='bwr', picker = 2.0)
+        self.scatter = self.axes.scatter((200),(200), picker = 2.0)
+        self.scatter.set_cmap('bwr')
         self.canvas.mpl_connect('pick_event', self.on_pick)
         self.on_resize()
         
     def update_scatter(self, bd = None, force_update = False):
+        '''
+        Update the scatter plot with dihedral values from the given 
+        Backbone_Dihedrals object, or resets it to an empty plot.
+        Args:
+            bd:
+                A Backbone_Dihedrals object defining the residues you 
+                want to plot (or None to clear the plot).
+            force_update:
+                If True the phi, psi and omega values will be recalculated
+                from the atomic coordinates. Otherwise the last values
+                stored in bd will be used.
+        '''
         import numpy
         key = self.current_case
         rv = self.validator
@@ -521,15 +621,32 @@ class RamaPlot():
         self.canvas.blit(self.axes.bbox)
 
         
-class OmegaValidator():
+class OmegaValidator:
+    '''
+    Tracking and highlighting of cis and twisted peptide bonds.
+    '''
     def __init__(self, annotation_model):
+        '''
+        The OmegaValidator is designed for fast identification, tracking
+        and highlighting of cis and twisted peptide bonds.
+        Args:
+            annotation_model:
+                A ChimeraX Model object (or subclass) to act as the 
+                container for the Drawing object highlighting problematic
+                peptides.
+        '''
         from chimerax.core.models import Drawing
         self.current_model = None
         self.omega = None
         self.m = annotation_model
         self.name = 'omega planes'
+        self.cis_drawing = Drawing('cis planes')
         self.cis_color = [255, 32, 32, 255]
+        self.cis_drawing.set_color(self.cis_color)
+        self.twisted_drawing = Drawing('twisted planes')
         self.twisted_color = [255,255,32,255]
+        self.twisted_drawing.set_color(self.twisted_color)
+        
         existing_names = [d.name for d in self.m.all_drawings()]
         if self.name not in existing_names:          
             self.master_drawing = Drawing(self.name)
@@ -538,22 +655,13 @@ class OmegaValidator():
             i = existing_names.index(self.name)
             self.master_drawing = self.m.all_drawings()[i]
             self.master_drawing.remove_all_drawings()
+        self.master_drawing.add([self.cis_drawing, self.twisted_drawing])
         
-        self.drawings = {}
-        self.currently_drawn = {}
-        
-        from math import radians
-    
+            
     def load_structure(self, model, omega_list):
         self.current_model = model
         self.clear()
         self.omega = [o for o in omega_list if o != None]
-        self.drawings = {}
-        from chimerax.core.models import Drawing
-        for o in self.omega:
-            d = self.drawings[o] = Drawing('omega plane')
-            self.master_drawing.add_drawing(d)
-        self.currently_drawn = {}
     
     def find_outliers(self):
         cis = []
@@ -567,35 +675,46 @@ class OmegaValidator():
     
     def draw_outliers(self, cis, twisted):
         from . import geometry
-        for o, d in self.drawings.items():
-            d.set_display(False)
-        self.currently_drawn = {}
+        import numpy
+        self.clear()
         
         if len(cis):
+            d = self.cis_drawing
+            vlist = []
+            nlist = []
+            tlist = []
+            
             for c in cis:
-                d = self.drawings[c]
-                d.vertices, d.normals, d.triangles = geometry.dihedral_fill_plane(*c.atoms.coords)
-                d.set_color(self.cis_color)
-                d.set_display(True)
-                self.currently_drawn[c] = d
+                tv, tn, tt = geometry.dihedral_fill_plane(*c.atoms.coords)
+                vlist.append(tv)
+                nlist.append(tn)
+                tlist.append(tt)
+            v = numpy.concatenate(vlist)
+            n = numpy.concatenate(nlist)
+            t = numpy.concatenate(tlist)
+            d.vertices, d.normals, d.triangles = (v, n, t)
+
         
         if len(twisted):
+            d = self.twisted_drawing
+            vlist = []
+            nlist = []
+            tlist = []
+            
             for t in twisted:
-                d = self.drawings[t]
-                d.vertices, d.normals, d.triangles = geometry.dihedral_fill_plane(*t.atoms.coords)
-                d.set_color(self.twisted_color)
-                d.set_display(True)
-                self.currently_drawn[t] = d
+                tv, tn, tt = geometry.dihedral_fill_plane(*t.atoms.coords)
+                vlist.append(tv)
+                nlist.append(tn)
+                tlist.append(tt)
+            v = numpy.concatenate(vlist)
+            n = numpy.concatenate(nlist)
+            t = numpy.concatenate(tlist)
+            d.vertices, d.normals, d.triangles = (v, n, t)
     
-    def update_coords(self):
-        from . import geometry
-        for o, d in self.currently_drawn.items():
-            d.vertices, d.normals, d.triangles = geometry.dihedral_fill_plane(*o.atoms.coords)
         
     def clear(self):
-        self.master_drawing.remove_all_drawings()
-        self.drawings = {}
-        self.currently_drawn = {}
+        for d in (self.cis_drawing, self.twisted_drawing):
+            d.vertices, d.normals, d.triangles = (None, None, None)
     
                 
     

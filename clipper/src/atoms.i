@@ -74,14 +74,17 @@ namespace clipper
 %extend Atom_list
 /* There is probably a bit more work to do here to make this object really
  * useful for Python. The fundamental problem is that the clipper Atom_list
- * is just a std::vector of Atom objects, meaning that indexing/slicing returns
- * copies rather than pointers. So Atom_list[0].coord = [1,2,3], while appearing
- * perfectly legal in Python, would not actually do anything to the stored atom.
- * At present the only way to modify the actual Atoms stored in the array is
- * all at once. It would be much better to create a C++ wrapper class that
- * safely stores the actual Atom_list object, but provides individual/arrays
- * of Atom pointers on indexing or slicing. We could also then easily create
- * a constructor to initialise directly from arrays of atom properties.
+ * is just a std::vector of Atom objects, meaning that a naive slicing 
+ * implementation would return a new Atom_list object filled with copies
+ * of the atoms rather than pointers. So Atom_list[0:5].coords = array, while 
+ * appearing perfectly legal in Python, would not actually do anything to 
+ * the stored atoms.
+ * At present the only ways to modify the actual Atoms stored in the array
+ * are either one at a time, or all at once. It would be much better to 
+ * create a C++ wrapper class that safely stores the actual Atom_list 
+ * object, but provides individual/arrays of Atom pointers on indexing 
+ * or slicing. We could also then easily create a constructor to initialise 
+ * directly from arrays of atom properties.
  *
  */
 {
@@ -95,7 +98,7 @@ namespace clipper
     return (*self)[i];
   }
 
-  void __setitem__(int i, Atom& atom)
+  void __setitem__(int i, Atom atom)
   {
     int array_len = self->size();
     i = (i < 0) ? array_len + i : i;

@@ -107,23 +107,35 @@ namespace clipper
   std::string __repr__() {return "Coord_grid " + self->format();}
   //! Allow addition and subtraction with any Python iterable of 3 numbers
   %pythoncode %{
+    @staticmethod
+    @safesplat_int
+    def _new_coord_grid(u, v, w):
+        return Coord_grid(u, v, w)
+    
     def __add__(self, other):
+      '''
+      This __add__ function should allow you to add any iterable of three
+      ints to your Coord_grid object, as long as your sum is written 
+            Coord_grid + other_iterable
+      Note that the reverse:
+            other_iterable + Coord_grid
+      ... will not work if other_iterable is a Numpy array, since the
+      numpy.ndarray __add__() function takes precedence and attempts to
+      do:
+        [other_iterable[0]+Coord_grid, other_iterable[1]+Coord_grid, ...]
+      For this reason, it is probably best to leave the __radd__ function
+      unimplemented.
+      '''
       try:
         return self.__add_base__(other)
       except:
-        return self + Coord_grid(*other)
-
-    def __radd__(self, other):
-        return self.__add__(other)
+        return self + self._new_coord_grid(other)
 
     def __sub__(self, other):
       try:
         return self.__sub_base__(other)
       except:
-        return self - Coord_grid(*other)
-
-    def __rsub__(self, other):
-      return Coord_grid(*other).__sub__(self)
+        return self - self._new_coord_grid(other)
 
   %}
 #ifdef PYTHON_PROPERTIES
@@ -166,23 +178,36 @@ namespace clipper
   std::string __repr__() {return "Coord_orth " + self->format();}
   //! Allow addition and subtraction with any Python iterable of 3 numbers
   %pythoncode %{
+    @staticmethod
+    @safesplat_float
+    def _new_coord_orth(x, y, z):
+        return Coord_orth(x, y, z)
+        
     def __add__(self, other):
+      '''
+      This __add__ function should allow you to add any iterable of three
+      numbers to your Coord_orth object, as long as your sum is written 
+            Coord_orth + other_iterable
+      Note that the reverse:
+            other_iterable + Coord_orth
+      ... will not work if other_iterable is a Numpy array, since the
+      numpy.ndarray __add__() function takes precedence and attempts to
+      do:
+        [other_iterable[0]+Coord_orth, other_iterable[1]+Coord_orth, ...]
+      For this reason, it is probably best to leave the __radd__ and 
+      __rsub__ functions unimplemented.
+      '''
       try:
         return self.__add_base__(other)
       except:
-        return self + Coord_orth(*other)
-
-    def __radd__(self, other):
-        return self.__add__(other)
+        return self + self._new_coord_orth(other)
 
     def __sub__(self, other):
       try:
         return self.__sub_base__(other)
       except:
-        return self - Coord_orth(*other)
+        return self - self._new_coord_orth(other)
 
-    def __rsub__(self, other):
-      return Coord_orth(*other).__sub__(self)
   %}
 
 
@@ -226,23 +251,23 @@ namespace clipper
   }
   //! Allow addition and subtraction with any Python iterable of 3 numbers
   %pythoncode %{
+    @staticmethod
+    @safesplat_float
+    def _new_coord_frac(u, v, w):
+        return Coord_frac(u, v, w)
+        
     def __add__(self, other):
       try:
         return self.__add_base__(other)
       except:
-        return self + Coord_frac(*other)
-
-    def __radd__(self, other):
-        return self.__add__(other)
+        return self + self._new_coord_frac(other)
 
     def __sub__(self, other):
       try:
         return self.__sub_base__(other)
       except:
-        return self - Coord_frac(*other)
+        return self - self._new_coord_frac(other)
 
-    def __rsub__(self, other):
-      return Coord_frac(*other).__sub__(self)
   %}
 
 
@@ -273,23 +298,23 @@ namespace clipper
   std::string __repr__() {return "Coord_map " + self->format();}
   //! Allow addition and subtraction with any Python iterable of 3 numbers
   %pythoncode %{
+    @staticmethod
+    @safesplat_float
+    def _new_coord_map(u, v, w):
+        return Coord_orth(u, v, w)
+        
     def __add__(self, other):
       try:
         return self.__add_base__(other)
       except:
-        return self + Coord_map(*other)
-
-    def __radd__(self, other):
-        return self.__add__(other)
+        return self + self._new_coord_map(other)
 
     def __sub__(self, other):
       try:
         return self.__sub_base__(other)
       except:
-        return self - Coord_map(*other)
+        return self - self._new_coord_map(other)
 
-    def __rsub__(self, other):
-      return Coord_map(*other).__sub__(self)
   %}
 
 

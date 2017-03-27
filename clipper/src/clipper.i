@@ -28,6 +28,64 @@
 
 #pragma SWIG nowarn=312,325,361,362,363,389,401,501,505
 
+%pythoncode %{
+  
+def safesplat_int(func):
+  '''
+  C or C++ functions of the form func(int, int, ...) wrapped into Python
+  are problematic when (as is quite common) one wants to call them using
+  the splat (*) operator - i.e. func(*array). Specifically, this is 
+  prone to failure for numpy.int32 and numpy.float32 types due to 
+  incorrect typemapping of the scalars. The safesplat_int and 
+  safesplat_float decorators are designed to provide a simple workaround
+  for these cases. Used as follows:
+  @safesplat_int
+  def func(arg1, arg2, arg3):
+    do stuff
+  ... it will try to do the straightforward splat first. If that fails,
+  it will assume the argument is a numpy array, and attempt to convert
+  that to something that will work. If *that* fails, it will raise a
+  TypeError.
+  '''
+  def func_wrapper(arg_array):
+    try:
+      return func(*arg_array)
+    except:
+      try:
+        return func(*(arg_array.tolist()))
+      except:
+        raise NotImplementedError('Input must be a Coord_grid or an iterable of 3 integers')
+  return func_wrapper
+
+def safesplat_float(func):
+  '''
+  C or C++ functions of the form func(int, int, ...) wrapped into Python
+  are problematic when (as is quite common) one wants to call them using
+  the splat (*) operator - i.e. func(*array). Specifically, this is 
+  prone to failure for numpy.int32 and numpy.float32 types due to 
+  incorrect typemapping of the scalars. The safesplat_int and 
+  safesplat_float decorators are designed to provide a simple workaround
+  for these cases. Used as follows:
+  @safesplat_float
+  def func(arg1, arg2, arg3):
+    do stuff
+  ... it will try to do the straightforward splat first. If that fails,
+  it will assume the argument is a numpy array, and attempt to convert
+  that to something that will work. If *that* fails, it will raise a
+  TypeError.
+  '''
+  def func_wrapper(arg_array):
+    try:
+      return func(*arg_array)
+    except:
+      try:
+        return func(*(arg_array.astype(float)))
+      except:
+        raise NotImplementedError('Input must be a Coord_orth or an iterable of 3 floats')
+  return func_wrapper
+
+
+%}
 
 
 

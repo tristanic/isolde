@@ -2,24 +2,19 @@
 class Dihedral():
     '''
     Holds information about the dihedral formed by an array of four atoms.
-    The atoms must be an Atom array, ordered so that the torsion axis is
+    The atoms must be an Atoms object, ordered so that the torsion axis is
     between the middle two atoms. This axis needn't necessarily correspond to
     a physical bond.
     '''
-    
     def __init__(self, atoms, residue = None):
         self.atoms = atoms
-        self.residue = residue # the Residue object that this dihedral belongs to
-        #self.resnames = self.residues.names
-        #self.resnums = self.residues.numbers
-        self._rama_case = None
+        self._residue = residue 
+        self._rama_case = None # Ramachandran case (if applicable)
         
-        # Index of the matching CustomTorsionForce in the simulation so
-        # we can restrain this dihedral as needed
-        self.sim_index = -1
     
     @property
     def value(self):
+        '''The dihedral angle in radians.'''
         from .geometry import get_dihedral
         return get_dihedral(*self.atoms.coords)
     
@@ -32,12 +27,53 @@ class Dihedral():
         return self.atoms.names
     
     @property
+    def residue(self):
+        '''
+        The Residue object that this dihedral belongs to. If the atoms
+        in the dihedral span more than one residue, this needs to be 
+        set manually.
+        '''
+        if self._residue is None:
+            if len(set(self.residues)) == 1:
+                self._residue = self.residues[0]
+            else:
+                errmsg = '''
+                This dihedral involves atoms from more than one residue,
+                and therefore cannot be assigned automatically to a 
+                specific residue. You can specify the residue a dihedral
+                belongs to by either using the 'residue = Residue' argument on
+                initialisation, or by '{dihedral}.residue = Residue' on an
+                existing object.
+                '''
+                raise RuntimeError(errmsg)
+        return self._residue
+    
+    @residue.setter
+    def residue (self, residue):
+        from chimerax.core.atomic.molobject import Residue
+        if type(residue) == Residue:
+            self._residue = residue
+        else:
+            raise TypeError('residue must be a ChimeraX Residue object!')
+            
+    
+    @property
     def residues(self):
-        # List of four residues corresponding to the atoms in the dihedral
+        '''List of four residues corresponding to the atoms in the dihedral.'''
         return self.atoms.residues
+    
     
     @property
     def rama_case(self):
+        ''' (Only applicable if this is a phi or psi dihedral)
+        The type of Ramachandran distribution this dihedral belongs to
+        in terms of the standard MolProbity cases. N-terminal and 
+        C-terminal residues are inapplicable to the Ramachandran plot,
+        and are sorted into special cases.
+        Valid entries:
+            'Nter', 'Cter', 'CisPro', 'TransPro', 'Glycine', 'PrePro', 
+            'IleVal', 'General'
+        '''
         return self._rama_case
     
     @rama_case.setter
@@ -47,6 +83,8 @@ class Dihedral():
             errstring = 'Invalid Ramachandran case! Must be one of {}'.format(validation.RAMA_CASES)
             raise Exception(errstring)
         self._rama_case = name
+
+
 
 class Dihedrals():
     '''
@@ -68,27 +106,31 @@ class Dihedrals():
             self._dihedrals = dlist
     
     def __len__(self):
-        return len(self.dihedrals)
+        return len(self._dihedrals)
     
     def __bool__(self):
         return len(self) > 0
     
     def __iter__(self):
-        return iter(self.dihedrals)
+        return iter(self._dihedrals)
     
     def __getitem__(self, i):
         import numpy
         if isinstance(i,(int,numpy.int32)):
-            return self.dihedrals[i]
+            return self._dihedrals[i]
         elif isinstance(i,(slice)):
-            return Dihedrals(self.dihedrals[i])
+            return Dihedrals(self._dihedrals[i])
         elif isinstance(i, numpy.ndarray):
-            return Dihedrals([self.dihedrals[j] for j in i])
+            return Dihedrals([self._dihedrals[j] for j in i])
         else:
             raise IndexError('Only integer indices allowed for %s, got %s'
                 % (self.__class__.__name__, str(type(i))))
     
     def by_residue(self, residue):
+        '''
+        Get the dihedral value for a given residue. Argument is a 
+        ChimeraX Residue object.
+        '''
         from chimerax.core.atomic import Residues
         i = self.residues.index(residue)
         if i == -1:
@@ -96,6 +138,10 @@ class Dihedrals():
         return self[i]
     
     def by_residues(self, residues):
+        '''
+        Returns a Dihedrals object containing all dihedrals corresponding
+        to the residues in the given Residues object.
+        '''
         indices = self.residues.indices(residues)
         indices = indices[indices != -1]
         if len(indices):
@@ -103,13 +149,16 @@ class Dihedrals():
         return None
    
     def append(self, d):
+        '''
+        Add one or more dihedrals to this object.
+        '''
         from chimerax.core.atomic import concatenate, Residues
         if isinstance(d, Dihedral):
-            self.dihedrals.append(d)
+            self._dihedrals.append(d)
             self._residues = concatenate([self.residues, [d.residue]])
             self._atoms = concatenate([self.atoms, d.atoms])
         elif isinstance(d, Dihedrals):
-            self.dihedrals.extend(d)
+            self._dihedrals.extend(d)
             self._residues = concatenate([self.residues, d.residues])
             self._atoms = concatenate([self.atoms, d.atoms])
         else:
@@ -124,6 +173,9 @@ class Dihedrals():
     
     @property
     def atoms(self):
+        '''
+        An ordered 1D list of all atoms corresponding to the dihedrals.
+        '''
         if self._atoms is None:
             import numpy
             atoms = numpy.empty([len(self),4],dtype='object')
@@ -135,27 +187,40 @@ class Dihedrals():
     
     @property
     def residues(self):
+        '''
+        Returns a list of the residues which "own" the dihedrals (one 
+        per dihedral).
+        '''
         if self._residues is None:
-            residues = [d.residue for d in self.dihedrals] 
+            residues = [d.residue for d in self] 
             from chimerax.core.atomic import Residues
             self._residues = Residues(residues)            
         return self._residues
         
     @property
     def coords(self):
+        '''
+        Returns an (n*4)*3 numpy array of the current coordinates of the
+        dihedral atoms.
+        '''
         return self.atoms.coords
-    
-    @property
-    def dihedrals(self):
-        return self._dihedrals
-        
+            
     @property
     def values(self):
+        '''
+        Get the current torsion angles (in radians) for all dihedrals as
+        a 1D numpy array. C++-accelerated function, about 1 millisecond
+        per 1,500 dihedrals.
+        '''
         from . import geometry
         return geometry.get_dihedrals(self.coords, len(self))
     
     @property
     def rama_cases(self):
+        '''
+        MolProbity Ramachandran cases for each dihedral (where applicable).
+        Values are managed by the wrapping Backbone_Dihedrals class.
+        '''
         # Need to check every time in case any have been changed directly
         cases = self._rama_cases = [d.rama_case for d in self]
         return cases
@@ -176,7 +241,7 @@ class Backbone_Dihedrals():
     phi, psi and omega dihedrals. If provided with a model, it will find and
     store all phi, psi and omega dihedrals as Dihedrals objects.
     '''
-    def __init__(self, session, model = None, phi = None, psi = None, omega = None, old = False):
+    def __init__(self, session, model = None, phi = None, psi = None, omega = None):
         if model == None and (phi == None or psi == None or omega == None):
             raise TypeError('You must provide either a model or all three of\
                             phi, psi and omega!')
@@ -207,8 +272,13 @@ class Backbone_Dihedrals():
             # Filter to get only amino acid residues
             from chimerax.core.atomic import Residue
             f = self.residues.polymer_types == Residue.PT_AMINO
-            self.residues = self.residues.filter(f)
-            self.residues = self.residues[numpy.lexsort((self.residues.numbers, self.residues.chains.chain_ids))]
+            self.residues = self.residues.filter(f
+            # ChimeraX provides no guarantee that residue lists will be
+            # in the right order (although they usually are), so we need
+            # to sort them explicitly by chain ID and residue number.
+            self.residues = self.residues\
+                [numpy.lexsort(\
+                    (self.residues.numbers, self.residues.chains.chain_ids))]
             self.resnames = self.residues.names
             self.atoms = self.residues.atoms
             # We want to colour C-alphas according to their status, so we'll
@@ -227,16 +297,16 @@ class Backbone_Dihedrals():
             self._phi_indices = []
             self._psi_indices = []
             self._omega_indices = []
-            if old:
-                self.find_dihedrals_old()
-                return
             self.find_dihedrals()
         else:
             self.phi = phi
             self.psi = psi
             self.omega = omega
-            
+            # Make absolutely sure we've gotten all the residues
             self.residues = phi.residues.merge(psi.residues).merge(omega.residues)
+            # ChimeraX provides no guarantee that residue lists will be
+            # in the right order (although they usually are), so we need
+            # to sort them explicitly by chain ID and residue number.
             self.residues = self.residues[numpy.lexsort((self.residues.numbers, self.residues.chains.chain_ids))]
             self.resnames = self.residues.names
             atoms = self.residues.atoms
@@ -247,7 +317,9 @@ class Backbone_Dihedrals():
             phi_indices = self.residues.indices(phi.residues)
             psi_indices = self.residues.indices(psi.residues)
             omega_indices = self.residues.indices(omega.residues)
-            
+            # Filter out dihedrals involving residues not in the input  
+            # list for that dihedral type.
+            # (return -1 in self.residues.indices())
             self._phi_indices = numpy.array(phi_indices[phi_indices != -1],numpy.int32)
             self._psi_indices = numpy.array(psi_indices[psi_indices != -1],numpy.int32)
             self._omega_indices = numpy.array(omega_indices[omega_indices != -1],numpy.int32)
@@ -268,10 +340,22 @@ class Backbone_Dihedrals():
             
     @property
     def all_vals(self):
+        '''
+        phi, psi, omega = {Backbone_Dihedrals}.all_vals
+        
+        Returns all current phi, psi and omega values in radians as three 
+        equal-length numpy arrays. Where a residue is missing a dihedral, 
+        the corresponding position in the array will be nan.
+        '''
         return self.phi_vals, self.psi_vals, self.omega_vals
     
     @property
     def phi_vals(self):
+        '''
+        Measure and return all phi values (in radians) as a numpy array 
+        of length equal to the number of residues. Where a residue has 
+        no phi dihedral, the array value will be nan. 
+        '''
         if self._phi_vals is None:
             import numpy
             self._phi_vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
@@ -280,6 +364,11 @@ class Backbone_Dihedrals():
     
     @property
     def psi_vals(self):
+        '''
+        Measure and return all psi values (in radians) as a numpy array 
+        of length equal to the number of residues. Where a residue has 
+        no psi dihedral, the array value will be nan. 
+        '''
         if self._psi_vals is None:
             import numpy
             self._psi_vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
@@ -288,6 +377,11 @@ class Backbone_Dihedrals():
     
     @property    
     def omega_vals(self):
+        '''
+        Measure and return all omega values (in radians) as a numpy array 
+        of length equal to the number of residues. Where a residue has 
+        no omega dihedral, the array value will be nan. 
+        '''
         if self._omega_vals is None:
             import numpy
             self._omega_vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
@@ -296,11 +390,28 @@ class Backbone_Dihedrals():
     
     @property
     def rama_cases(self):
+        '''
+        MolProbity Ramachandran cases for each residue. N-terminal and 
+        C-terminal residues are inapplicable to the Ramachandran plot,
+        and are sorted into special cases. The cases are initialised 
+        on creation of the object, and prolines are re-sorted into 
+        CisPro and TransPro every time this property is accessed.
+        Valid entries:
+            'Nter', 'Cter', 'CisPro', 'TransPro', 'Glycine', 'PrePro', 
+            'IleVal', 'General'
+        '''
         self.update_pro_rama_cases(self.omega_vals)
         return self._rama_cases
     
     @property
     def rama_scores(self):
+        '''
+        Numpy array holding the current MolProbity probability scores 
+        for all residues. This array is passed to the RamaValidator to
+        be filled. Until RamaValidator.get_scores() has been called on
+        this object, all scores will be -1. Residues which cannot be
+        placed on the Ramachandran plot will retain scores of -1.
+        '''
         if self._rama_scores is None:
             import numpy
             self._rama_scores = numpy.ones(len(self.residues),numpy.float32) * -1
@@ -308,6 +419,16 @@ class Backbone_Dihedrals():
     
     @property
     def rama_colors(self):
+        '''
+        Intended for mapping of Ramachandran scores to atoms for live
+        visual feedback. Holds a (n*4) numpy array of integers, where 
+        each entry corresponds to (r,g,b,alpha) on a scale of 0-255.
+        The colour scale is set by the RamaValidator. 
+        Until RamaValidator.get_scores(update_colors = True) is called
+        on this object, all colours will remain the default grey. 
+        Residues which cannot be placed on the Ramachandran plot will 
+        remain grey.
+        '''
         if self._rama_colors is None:
             import numpy
             self._rama_colors = numpy.array([[128,128,128,255]]*len(self.residues),numpy.uint8)
@@ -334,6 +455,10 @@ class Backbone_Dihedrals():
         return phi, psi, omega
     
     def update_pro_rama_cases(self, omega_vals):
+        '''
+        Re-sort Proline residues into cis and trans based on their current
+        omega dihedrals.
+        '''
         import numpy
         rc = self._rama_cases
         current_trans = rc['TransPro']
@@ -377,7 +502,9 @@ class Backbone_Dihedrals():
          
     def find_dihedrals_old(self):
         '''
-        Old, unused version. New code is about fifteen times faster.
+        Old, unused version. New code is about fifteen times faster,
+        but this is retained because it's perhaps a little easier to 
+        follow.
         '''
         if len(self.phi) or len(self.psi) or len(self.omega):
             import warnings
