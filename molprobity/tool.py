@@ -25,10 +25,10 @@ class MolProbity_ToolUI(ToolInstance):
         pp.resize(480,850) 
 
         from PyQt5 import QtWidgets, QtGui
-        from . import molprobity_widget as mw
+        from . import molprobity_master as mm
         self.mainwin = QtWidgets.QFrame(parent=parent)
-        self.mw = mw.Ui_molprobity_widget()
-        self.mw.setupUi(self.mainwin)
+        self.mm = mm.Ui_Frame()
+        self.mm.setupUi(self.mainwin)
         
         import os
         
@@ -39,13 +39,6 @@ class MolProbity_ToolUI(ToolInstance):
         self.tool_window.manage(placement=None)
         # Should load saved state here
                 
-        # Any other frames/widgets that should be hidden at the start
-        self._hidden_at_start = [
-            self.mw._validate_rama_main_frame,
-            self.mw._validate_pep_main_frame,
-            ]
-        
-        for f in self._hidden_at_start:
-            f.hide()
-        
+        from . import molprobity
+        self.core = molprobity.MolProbity_GUI(self.session, tool_gui = self)
     

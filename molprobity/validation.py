@@ -655,7 +655,8 @@ class OmegaValidator:
             i = existing_names.index(self.name)
             self.master_drawing = self.m.all_drawings()[i]
             self.master_drawing.remove_all_drawings()
-        self.master_drawing.add([self.cis_drawing, self.twisted_drawing])
+        self.master_drawing.add_drawing(self.cis_drawing)
+        self.master_drawing.add_drawing(self.twisted_drawing)
         
             
     def load_structure(self, model, omega_list):
@@ -684,11 +685,11 @@ class OmegaValidator:
             nlist = []
             tlist = []
             
-            for c in cis:
+            for i, c in enumerate(cis):
                 tv, tn, tt = geometry.dihedral_fill_plane(*c.atoms.coords)
                 vlist.append(tv)
                 nlist.append(tn)
-                tlist.append(tt)
+                tlist.append(tt + i*len(tv))
             v = numpy.concatenate(vlist)
             n = numpy.concatenate(nlist)
             t = numpy.concatenate(tlist)
@@ -701,11 +702,11 @@ class OmegaValidator:
             nlist = []
             tlist = []
             
-            for t in twisted:
+            for i, t in enumerate(twisted):
                 tv, tn, tt = geometry.dihedral_fill_plane(*t.atoms.coords)
                 vlist.append(tv)
                 nlist.append(tn)
-                tlist.append(tt)
+                tlist.append(tt + i*len(tv))
             v = numpy.concatenate(vlist)
             n = numpy.concatenate(nlist)
             t = numpy.concatenate(tlist)

@@ -18,7 +18,6 @@ PKG_NAME = chimerax.molprobity
 # except for setup.py and no data files.
 PYSRCS = $(filter-out setup.py,$(wildcard *.py))
 DATAFILES = molprobity_data
-RESOURCES = resources
 
 # Python extension modules
 PYMOD_LINUX_EXT = so

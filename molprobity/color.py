@@ -1,7 +1,9 @@
-# Define a simple continuous 3-colour scale for colouring objects by some
-# property value. Default is red-white-blue. Returns integer arrays defining
-# [red, green, blue, opacity].
 class ThreeColorScale():
+    '''
+    Define a simple continuous 3-colour scale for colouring objects by some
+    property value. Default is red-white-blue. Returns integer arrays defining
+    [red, green, blue, opacity].
+    '''
     def __init__(self, minval, maxval, midval = None, mincolor = [255,0,0,255], 
                 midcolor = [255,255,255,255], maxcolor = [0,0,255,255]):
         import numpy
@@ -16,8 +18,9 @@ class ThreeColorScale():
         self.midcolor = numpy.array(midcolor)
         self.maxcolor = numpy.array(maxcolor)
     
-    # Return the color corresponding to a single value    
+        
     def get_color(self, val):
+        '''Return the color corresponding to a single value.'''
         if val <= self.minval:
             return self.mincolor
         elif val <= self.midval:
@@ -26,8 +29,9 @@ class ThreeColorScale():
             return ((val-self.midval)/(self.maxval-self.midval)*(self.maxcolor-self.midcolor)+self.midcolor).astype('uint8')
         return self.maxcolor
     
-    # Return an array of colors corresponding to an array of input values    
+       
     def get_colors(self, vals):
+        '''Return an array of colors corresponding to an array of input values .'''
         import numpy    
         c = []
         for v in vals:
@@ -48,9 +52,11 @@ color_scales = {
         'GYPi': [[0,255,0,255],[255,240,50,255],[255,0,100,255]],      
 }
 
-# Returns an object encapsulating one of the standard three-color scales
-# defined in color_scales.
 def standard_three_color_scale(name, minv, maxv, midv = None):
+    '''
+    Returns an object encapsulating one of the standard three-color scales
+    defined in color_scales.
+    '''
     minc, midc, maxc = color_scales[name]
     return ThreeColorScale(minv, maxv, midv, 
                 minc, midc, maxc)

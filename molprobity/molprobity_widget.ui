@@ -14,12 +14,24 @@
    <string>Frame</string>
   </property>
   <property name="frameShape">
-   <enum>QFrame::StyledPanel</enum>
+   <enum>QFrame::NoFrame</enum>
   </property>
   <property name="frameShadow">
    <enum>QFrame::Raised</enum>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <property name="leftMargin">
+    <number>2</number>
+   </property>
+   <property name="topMargin">
+    <number>2</number>
+   </property>
+   <property name="rightMargin">
+    <number>2</number>
+   </property>
+   <property name="bottomMargin">
+    <number>2</number>
+   </property>
    <item>
     <widget class="QScrollArea" name="_validate_scroll_area">
      <property name="widgetResizable">
@@ -30,8 +42,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>553</width>
-        <height>808</height>
+        <width>569</width>
+        <height>824</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -257,7 +269,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QFrame" name="validate_omega_main_frame">
+        <widget class="QFrame" name="_validate_omega_main_frame">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -299,7 +311,7 @@
           <item>
            <layout class="QGridLayout" name="gridLayout_7">
             <item row="1" column="0">
-             <widget class="QListWidget" name="_validate_pep_cis_list">
+             <widget class="QListWidget" name="_validate_omega_cis_list">
               <property name="editTriggers">
                <set>QAbstractItemView::NoEditTriggers</set>
               </property>
@@ -320,7 +332,7 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QListWidget" name="_validate_pep_twisted_list"/>
+             <widget class="QListWidget" name="_validate_omega_twisted_list"/>
             </item>
            </layout>
           </item>

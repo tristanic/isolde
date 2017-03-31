@@ -272,7 +272,7 @@ class Backbone_Dihedrals():
             # Filter to get only amino acid residues
             from chimerax.core.atomic import Residue
             f = self.residues.polymer_types == Residue.PT_AMINO
-            self.residues = self.residues.filter(f
+            self.residues = self.residues.filter(f)
             # ChimeraX provides no guarantee that residue lists will be
             # in the right order (although they usually are), so we need
             # to sort them explicitly by chain ID and residue number.
