@@ -24,7 +24,7 @@
 %include "attribute.i"
 
 //%feature("autodoc", "3");
-//%include "clipper-doc.i"
+%include "clipper-doc.i"
 
 #pragma SWIG nowarn=312,325,361,362,363,389,401,501,505
 
@@ -54,7 +54,7 @@ def safesplat_int(func):
       try:
         return func(*(arg_array.tolist()))
       except:
-        raise NotImplementedError('Input must be a Coord_grid or an iterable of 3 integers')
+        raise NotImplementedError('Input is not a valid array of integers or is the wrong length!')
   return func_wrapper
 
 def safesplat_float(func):
@@ -81,7 +81,7 @@ def safesplat_float(func):
       try:
         return func(*(arg_array.astype(float)))
       except:
-        raise NotImplementedError('Input must be a Coord_orth or an iterable of 3 floats')
+        raise NotImplementedError('Input is not a valid numeric array or is the wrong length!')
   return func_wrapper
 
 
@@ -145,8 +145,9 @@ def safesplat_float(func):
 %apply std::string { clipper::String }
 %apply std::string& { clipper::String& }
 
-%apply std::string { String }
-%apply std::string& { String& }
+
+//%apply std::string { String }
+//%apply std::string& { String& }
 
 
 /*
@@ -785,29 +786,29 @@ namespace std
 
 
 
-%typemap(in) (const clipper::String&)
-{
-  %#if PY_MAJOR_VERSION >= 3
-  char *my_result;
+//%typemap(in) (const clipper::String&)
+//{
+  //%#if PY_MAJOR_VERSION >= 3
+  //char *my_result;
 
-if (PyUnicode_Check($input)) {
-    PyObject * temp_bytes = PyUnicode_AsEncodedString($input, "ASCII", "strict"); // Owned reference
-    if (temp_bytes != NULL) {
-      my_result = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
-      my_result = strdup(my_result);
-      Py_DECREF(temp_bytes);
-    } else {
-      std::cout << "Decoding error" << std::endl;
-    }
-  }
+//if (PyUnicode_Check($input)) {
+    //PyObject * temp_bytes = PyUnicode_AsEncodedString($input, "ASCII", "strict"); // Owned reference
+    //if (temp_bytes != NULL) {
+      //my_result = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
+      //my_result = strdup(my_result);
+      //Py_DECREF(temp_bytes);
+    //} else {
+      //std::cout << "Decoding error" << std::endl;
+    //}
+  //}
 
-  clipper::String *s = new clipper::String(my_result);
-  %#else
-    std::string ss = PyString_AsString($input);
-  clipper::String *s = new clipper::String(ss);
-  %#endif
-  $1 = s;
-}
+  //clipper::String *s = new clipper::String(my_result);
+  //%#else
+    //std::string ss = PyString_AsString($input);
+  //clipper::String *s = new clipper::String(ss);
+  //%#endif
+  //$1 = s;
+//}
 
 namespace clipper
 {
@@ -863,6 +864,18 @@ namespace clipper
 %feature ("flatnested","1");
 %include "../clipper/core/spacegroup.h"
 %feature ("flatnested","0");
+
+namespace clipper
+{
+%extend Spgr_descr
+{
+  Spgr_descr(std::string descr) 
+  {
+    String cstr(descr);
+    return new Spgr_descr(cstr);
+  }
+}// extend Spgr_descr
+} // namespace clipper
 
 //#ifdef PYTHON_PROPERTIES
 //namespace clipper

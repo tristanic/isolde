@@ -38,7 +38,7 @@ def openmm_topology_from_model(model):
     return top
 
 class available_forcefields():
-    # Main force field files
+    '''Main force field files'''
     main_files = [
         'amber99sbildn.xml',
         'amber99sbnmr.xml',
@@ -254,9 +254,11 @@ class SimHandler():
 
 
 
-    # Takes a volumetric map and uses it to generate an OpenMM Continuous3DFunction.
-    # Returns the function.
     def continuous3D_from_volume(self, volume):
+        '''
+        Takes a volumetric map and uses it to generate an OpenMM 
+        Continuous3DFunction. Returns the function.
+        '''
         import numpy as np
         vol_data = volume.data
         mincoor = np.array(vol_data.origin)
@@ -272,8 +274,19 @@ class SimHandler():
         from simtk.openmm.openmm import Continuous3DFunction    
         return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
         
-    # Takes a Continuous3DFunction and returns a CustomCompoundBondForce based on it
     def map_potential_force_field(self, c3d_func, global_k):
+        '''
+        Takes a Continuous3DFunction and returns a CustomCompoundBondForce 
+        based on it.
+        Args:
+            c3d_func:
+                A Continuous3DFunction
+            global_k:
+                An overall global spring constant coupling atoms to the 
+                map. This can be further adjusted per atom using 
+                the "individual_k" parameter defined in the 
+                CustomCompoundBondForce energy function.
+        '''
         from simtk.openmm import CustomCompoundBondForce
         f = CustomCompoundBondForce(1,'')
         f.addTabulatedFunction(name = 'map_potential', function = c3d_func)

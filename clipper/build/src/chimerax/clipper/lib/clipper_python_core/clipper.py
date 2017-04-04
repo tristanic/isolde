@@ -190,7 +190,7 @@ def safesplat_int(func):
       try:
         return func(*(arg_array.tolist()))
       except:
-        raise NotImplementedError('Input must be a Coord_grid or an iterable of 3 integers')
+        raise NotImplementedError('Input is not a valid array of integers or is the wrong length!')
   return func_wrapper
 
 def safesplat_float(func):
@@ -217,7 +217,7 @@ def safesplat_float(func):
       try:
         return func(*(arg_array.astype(float)))
       except:
-        raise NotImplementedError('Input must be a Coord_orth or an iterable of 3 floats')
+        raise NotImplementedError('Input is not a valid numeric array or is the wrong length!')
   return func_wrapper
 
 
@@ -1405,42 +1405,372 @@ StringVector_swigregister = _clipper.StringVector_swigregister
 StringVector_swigregister(StringVector)
 
 class Util(object):
+    """
+
+
+    Utility class.  
+
+    This class holds a set of useful static functions and values. You should never
+    need to instantiate this class: Refer to members using Util::  
+
+    C++ includes: clipper_util.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self):
+        """
+
+
+        null constructor  
+
+        """
         this = _clipper.new_Util()
         try:
             self.this.append(this)
         except __builtin__.Exception:
             self.this = this
-    nan = staticmethod(_clipper.Util_nan)
-    nanf = staticmethod(_clipper.Util_nanf)
-    nand = staticmethod(_clipper.Util_nand)
-    set_null = staticmethod(_clipper.Util_set_null)
-    is_null = staticmethod(_clipper.Util_is_null)
-    is_nan_float = staticmethod(_clipper.Util_is_nan_float)
-    is_nan_double = staticmethod(_clipper.Util_is_nan_double)
-    isnan = staticmethod(_clipper.Util_isnan)
-    sim = staticmethod(_clipper.Util_sim)
-    invsim = staticmethod(_clipper.Util_invsim)
-    sim_integ = staticmethod(_clipper.Util_sim_integ)
-    sim_deriv = staticmethod(_clipper.Util_sim_deriv)
-    sim_deriv_recur = staticmethod(_clipper.Util_sim_deriv_recur)
-    atanh = staticmethod(_clipper.Util_atanh)
-    bessel_i0 = staticmethod(_clipper.Util_bessel_i0)
-    u2b = staticmethod(_clipper.Util_u2b)
-    b2u = staticmethod(_clipper.Util_b2u)
-    intf = staticmethod(_clipper.Util_intf)
-    intc = staticmethod(_clipper.Util_intc)
-    intr = staticmethod(_clipper.Util_intr)
-    mod = staticmethod(_clipper.Util_mod)
-    pi = staticmethod(_clipper.Util_pi)
-    twopi = staticmethod(_clipper.Util_twopi)
-    twopi2 = staticmethod(_clipper.Util_twopi2)
-    eightpi2 = staticmethod(_clipper.Util_eightpi2)
-    d2rad = staticmethod(_clipper.Util_d2rad)
-    rad2d = staticmethod(_clipper.Util_rad2d)
+
+    def nan() -> "clipper::ftype const &":
+        """
+
+
+        fast Util::nan() value  
+
+        """
+        return _clipper.Util_nan()
+
+    nan = staticmethod(nan)
+
+    def nanf() -> "float const &":
+        """
+
+
+        fast Util::nan() value  
+
+        """
+        return _clipper.Util_nanf()
+
+    nanf = staticmethod(nanf)
+
+    def nand() -> "double const &":
+        """
+
+
+        fast Util::nan() value  
+
+        """
+        return _clipper.Util_nand()
+
+    nand = staticmethod(nand)
+
+    def set_null(*args) -> "void":
+        """
+
+
+        set null floating value - a specific value of NaN used for missings  
+
+        """
+        return _clipper.Util_set_null(*args)
+
+    set_null = staticmethod(set_null)
+
+    def is_null(*args) -> "bool":
+        """
+
+
+        fast test for null floating value - only works if set from Util::null()  
+
+        """
+        return _clipper.Util_is_null(*args)
+
+    is_null = staticmethod(is_null)
+
+    def is_nan_float(f: 'clipper::ftype32 const') -> "bool":
+        """
+
+
+        fast Util::nan() test  
+
+        Used for missing entries: THIS DOES NOT DISTINGUISH BETWEEN NAN & INF  
+
+        """
+        return _clipper.Util_is_nan_float(f)
+
+    is_nan_float = staticmethod(is_nan_float)
+
+    def is_nan_double(f: 'clipper::ftype64 const') -> "bool":
+        """
+
+
+        fast Util::nan() test  
+
+        Used for missing entries: THIS DOES NOT DISTINGUISH BETWEEN NAN & INF  
+
+        """
+        return _clipper.Util_is_nan_double(f)
+
+    is_nan_double = staticmethod(is_nan_double)
+
+    def isnan(*args) -> "bool":
+        """
+
+
+        slow general NaN test for compatibility  
+
+        Works for all architectures with IEEE arithmetic only  
+
+        """
+        return _clipper.Util_isnan(*args)
+
+    isnan = staticmethod(isnan)
+
+    def sim(x: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        Sim function: I1(X)/I0(X)  
+
+        Parameters
+        ----------
+        * `x` :  
+            The argument  
+
+        Returns
+        -------
+        I1(x)/I0(x)  
+
+        """
+        return _clipper.Util_sim(x)
+
+    sim = staticmethod(sim)
+
+    def invsim(x: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        Inverse Sim function: I1(X)/I0(X)  
+
+        Parameters
+        ----------
+        * `x` :  
+            I1(y)/I0(y)  
+
+        Returns
+        -------
+        y  
+
+        """
+        return _clipper.Util_invsim(x)
+
+    invsim = staticmethod(invsim)
+
+    def sim_integ(x: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        Integral of Sim function: log(I0(X))  
+
+        """
+        return _clipper.Util_sim_integ(x)
+
+    sim_integ = staticmethod(sim_integ)
+
+    def sim_deriv(x: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        Derivative of Sim function: d/dx( I1(X)/I0(x) )  
+
+        """
+        return _clipper.Util_sim_deriv(x)
+
+    sim_deriv = staticmethod(sim_deriv)
+
+    def sim_deriv_recur(x: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        Derivative of Sim function using recurrance: -sim(x)/x + (1 - sim(x)^2)  
+
+        """
+        return _clipper.Util_sim_deriv_recur(x)
+
+    sim_deriv_recur = staticmethod(sim_deriv_recur)
+
+    def atanh(x: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        Arc hyperbolic tangent.  
+
+        """
+        return _clipper.Util_atanh(x)
+
+    atanh = staticmethod(atanh)
+
+    def bessel_i0(x: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        Modified Bessel function of the first kind.  
+
+        """
+        return _clipper.Util_bessel_i0(x)
+
+    bessel_i0 = staticmethod(bessel_i0)
+
+    def u2b(x: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        Convert isotropic U-value to B-factor.  
+
+        """
+        return _clipper.Util_u2b(x)
+
+    u2b = staticmethod(u2b)
+
+    def b2u(x: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        Convert isotropic B-factor to U-value.  
+
+        """
+        return _clipper.Util_b2u(x)
+
+    b2u = staticmethod(b2u)
+
+    def intf(a: 'clipper::ftype const &') -> "int":
+        """
+
+
+        Truncate-to-integer: int(floor(a))  
+
+        """
+        return _clipper.Util_intf(a)
+
+    intf = staticmethod(intf)
+
+    def intc(a: 'clipper::ftype const &') -> "int":
+        """
+
+
+        Truncate-to-integer above: int(ceil(a))  
+
+        """
+        return _clipper.Util_intc(a)
+
+    intc = staticmethod(intc)
+
+    def intr(a: 'clipper::ftype const &') -> "int":
+        """
+
+
+        Round-to-integer: int(round(a))  
+
+        """
+        return _clipper.Util_intr(a)
+
+    intr = staticmethod(intr)
+
+    def mod(*args) -> "int":
+        """
+
+
+        Corrected mod.  
+
+        """
+        return _clipper.Util_mod(*args)
+
+    mod = staticmethod(mod)
+
+    def pi() -> "clipper::ftype const &":
+        """
+
+
+        pi  
+
+        """
+        return _clipper.Util_pi()
+
+    pi = staticmethod(pi)
+
+    def twopi() -> "clipper::ftype const &":
+        """
+
+
+        2 pi  
+
+        """
+        return _clipper.Util_twopi()
+
+    twopi = staticmethod(twopi)
+
+    def twopi2() -> "clipper::ftype const &":
+        """
+
+
+        2 pi squared  
+
+        """
+        return _clipper.Util_twopi2()
+
+    twopi2 = staticmethod(twopi2)
+
+    def eightpi2() -> "clipper::ftype const &":
+        """
+
+
+        8 pi squared  
+
+        """
+        return _clipper.Util_eightpi2()
+
+    eightpi2 = staticmethod(eightpi2)
+
+    def d2rad(x: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        degree-to-radian conversion  
+
+        Parameters
+        ----------
+        * `x` :  
+            Angle in degrees  
+
+        Returns
+        -------
+        Angle in radians  
+
+        """
+        return _clipper.Util_d2rad(x)
+
+    d2rad = staticmethod(d2rad)
+
+    def rad2d(x: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        degree-to-radian conversion  
+
+        Parameters
+        ----------
+        * `x` :  
+            Angle in radians  
+
+        Returns
+        -------
+        Angle in degrees  
+
+        """
+        return _clipper.Util_rad2d(x)
+
+    rad2d = staticmethod(rad2d)
 
     def get_minmax_grid(numpy_2d_in: 'double *', cell: 'Cell', grid: 'Grid_sampling') -> "int [ANY][ANY]":
         """
@@ -1458,112 +1788,289 @@ Util_swigregister = _clipper.Util_swigregister
 Util_swigregister(Util)
 
 def Util_nan() -> "clipper::ftype const &":
+    """
+
+
+    fast Util::nan() value  
+
+    """
     return _clipper.Util_nan()
-Util_nan = _clipper.Util_nan
 
 def Util_nanf() -> "float const &":
+    """
+
+
+    fast Util::nan() value  
+
+    """
     return _clipper.Util_nanf()
-Util_nanf = _clipper.Util_nanf
 
 def Util_nand() -> "double const &":
+    """
+
+
+    fast Util::nan() value  
+
+    """
     return _clipper.Util_nand()
-Util_nand = _clipper.Util_nand
 
 def Util_set_null(*args) -> "void":
+    """
+
+
+    set null floating value - a specific value of NaN used for missings  
+
+    """
     return _clipper.Util_set_null(*args)
-Util_set_null = _clipper.Util_set_null
 
 def Util_is_null(*args) -> "bool":
+    """
+
+
+    fast test for null floating value - only works if set from Util::null()  
+
+    """
     return _clipper.Util_is_null(*args)
-Util_is_null = _clipper.Util_is_null
 
 def Util_is_nan_float(f: 'clipper::ftype32 const') -> "bool":
+    """
+
+
+    fast Util::nan() test  
+
+    Used for missing entries: THIS DOES NOT DISTINGUISH BETWEEN NAN & INF  
+
+    """
     return _clipper.Util_is_nan_float(f)
-Util_is_nan_float = _clipper.Util_is_nan_float
 
 def Util_is_nan_double(f: 'clipper::ftype64 const') -> "bool":
+    """
+
+
+    fast Util::nan() test  
+
+    Used for missing entries: THIS DOES NOT DISTINGUISH BETWEEN NAN & INF  
+
+    """
     return _clipper.Util_is_nan_double(f)
-Util_is_nan_double = _clipper.Util_is_nan_double
 
 def Util_isnan(*args) -> "bool":
+    """
+
+
+    slow general NaN test for compatibility  
+
+    Works for all architectures with IEEE arithmetic only  
+
+    """
     return _clipper.Util_isnan(*args)
-Util_isnan = _clipper.Util_isnan
 
 def Util_sim(x: 'clipper::ftype const &') -> "clipper::ftype":
+    """
+
+
+    Sim function: I1(X)/I0(X)  
+
+    Parameters
+    ----------
+    * `x` :  
+        The argument  
+
+    Returns
+    -------
+    I1(x)/I0(x)  
+
+    """
     return _clipper.Util_sim(x)
-Util_sim = _clipper.Util_sim
 
 def Util_invsim(x: 'clipper::ftype const &') -> "clipper::ftype":
+    """
+
+
+    Inverse Sim function: I1(X)/I0(X)  
+
+    Parameters
+    ----------
+    * `x` :  
+        I1(y)/I0(y)  
+
+    Returns
+    -------
+    y  
+
+    """
     return _clipper.Util_invsim(x)
-Util_invsim = _clipper.Util_invsim
 
 def Util_sim_integ(x: 'clipper::ftype const &') -> "clipper::ftype":
+    """
+
+
+    Integral of Sim function: log(I0(X))  
+
+    """
     return _clipper.Util_sim_integ(x)
-Util_sim_integ = _clipper.Util_sim_integ
 
 def Util_sim_deriv(x: 'clipper::ftype const &') -> "clipper::ftype":
+    """
+
+
+    Derivative of Sim function: d/dx( I1(X)/I0(x) )  
+
+    """
     return _clipper.Util_sim_deriv(x)
-Util_sim_deriv = _clipper.Util_sim_deriv
 
 def Util_sim_deriv_recur(x: 'clipper::ftype const &') -> "clipper::ftype":
+    """
+
+
+    Derivative of Sim function using recurrance: -sim(x)/x + (1 - sim(x)^2)  
+
+    """
     return _clipper.Util_sim_deriv_recur(x)
-Util_sim_deriv_recur = _clipper.Util_sim_deriv_recur
 
 def Util_atanh(x: 'clipper::ftype const &') -> "clipper::ftype":
+    """
+
+
+    Arc hyperbolic tangent.  
+
+    """
     return _clipper.Util_atanh(x)
-Util_atanh = _clipper.Util_atanh
 
 def Util_bessel_i0(x: 'clipper::ftype const &') -> "clipper::ftype":
+    """
+
+
+    Modified Bessel function of the first kind.  
+
+    """
     return _clipper.Util_bessel_i0(x)
-Util_bessel_i0 = _clipper.Util_bessel_i0
 
 def Util_u2b(x: 'clipper::ftype const &') -> "clipper::ftype":
+    """
+
+
+    Convert isotropic U-value to B-factor.  
+
+    """
     return _clipper.Util_u2b(x)
-Util_u2b = _clipper.Util_u2b
 
 def Util_b2u(x: 'clipper::ftype const &') -> "clipper::ftype":
+    """
+
+
+    Convert isotropic B-factor to U-value.  
+
+    """
     return _clipper.Util_b2u(x)
-Util_b2u = _clipper.Util_b2u
 
 def Util_intf(a: 'clipper::ftype const &') -> "int":
+    """
+
+
+    Truncate-to-integer: int(floor(a))  
+
+    """
     return _clipper.Util_intf(a)
-Util_intf = _clipper.Util_intf
 
 def Util_intc(a: 'clipper::ftype const &') -> "int":
+    """
+
+
+    Truncate-to-integer above: int(ceil(a))  
+
+    """
     return _clipper.Util_intc(a)
-Util_intc = _clipper.Util_intc
 
 def Util_intr(a: 'clipper::ftype const &') -> "int":
+    """
+
+
+    Round-to-integer: int(round(a))  
+
+    """
     return _clipper.Util_intr(a)
-Util_intr = _clipper.Util_intr
 
 def Util_mod(*args) -> "int":
+    """
+
+
+    Corrected mod.  
+
+    """
     return _clipper.Util_mod(*args)
-Util_mod = _clipper.Util_mod
 
 def Util_pi() -> "clipper::ftype const &":
+    """
+
+
+    pi  
+
+    """
     return _clipper.Util_pi()
-Util_pi = _clipper.Util_pi
 
 def Util_twopi() -> "clipper::ftype const &":
+    """
+
+
+    2 pi  
+
+    """
     return _clipper.Util_twopi()
-Util_twopi = _clipper.Util_twopi
 
 def Util_twopi2() -> "clipper::ftype const &":
+    """
+
+
+    2 pi squared  
+
+    """
     return _clipper.Util_twopi2()
-Util_twopi2 = _clipper.Util_twopi2
 
 def Util_eightpi2() -> "clipper::ftype const &":
+    """
+
+
+    8 pi squared  
+
+    """
     return _clipper.Util_eightpi2()
-Util_eightpi2 = _clipper.Util_eightpi2
 
 def Util_d2rad(x: 'clipper::ftype const &') -> "clipper::ftype":
+    """
+
+
+    degree-to-radian conversion  
+
+    Parameters
+    ----------
+    * `x` :  
+        Angle in degrees  
+
+    Returns
+    -------
+    Angle in radians  
+
+    """
     return _clipper.Util_d2rad(x)
-Util_d2rad = _clipper.Util_d2rad
 
 def Util_rad2d(x: 'clipper::ftype const &') -> "clipper::ftype":
+    """
+
+
+    degree-to-radian conversion  
+
+    Parameters
+    ----------
+    * `x` :  
+        Angle in radians  
+
+    Returns
+    -------
+    Angle in degrees  
+
+    """
     return _clipper.Util_rad2d(x)
-Util_rad2d = _clipper.Util_rad2d
 
 def Util_get_minmax_grid(numpy_2d_in: 'double *', cell: 'Cell', grid: 'Grid_sampling') -> "int [ANY][ANY]":
     """
@@ -1575,9 +2082,27 @@ def Util_get_minmax_grid(numpy_2d_in: 'double *', cell: 'Cell', grid: 'Grid_samp
     return _clipper.Util_get_minmax_grid(numpy_2d_in, cell, grid)
 
 class String(object):
+    """
+
+
+    String extension with simple parsing methods.  
+
+    String extension with primitive 'split' operation for parsing and pathname
+    processing operations.  
+
+    C++ includes: clipper_types.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from double  
+
+        """
         this = _clipper.new_String(*args)
         try:
             self.this.append(this)
@@ -1585,40 +2110,124 @@ class String(object):
             self.this = this
 
     def split(self, sep: 'String') -> "std::vector< clipper::String,std::allocator< clipper::String > >":
+        """
+
+
+        String splitter - a very simple parser component.  
+
+        """
         return _clipper.String_split(self, sep)
 
+
     def trim(self) -> "clipper::String":
+        """
+
+
+        Return copy of string without leading and trailing blanks.  
+
+        """
         return _clipper.String_trim(self)
 
+
     def tail(self) -> "clipper::String":
+        """
+
+
+        get trailing path element  
+
+        """
         return _clipper.String_tail(self)
 
+
     def head(self) -> "clipper::String":
+        """
+
+
+        remove trailing path element  
+
+        """
         return _clipper.String_head(self)
 
+
     def nohead(self) -> "clipper::String":
+        """
+
+
+        get leading path element  
+
+        """
         return _clipper.String_nohead(self)
 
+
     def notail(self) -> "clipper::String":
+        """
+
+
+        remove leading path element  
+
+        """
         return _clipper.String_notail(self)
 
+
     def i(self) -> "int":
+        """
+
+
+        convert to int  
+
+        """
         return _clipper.String_i(self)
 
+
     def l(self) -> "long":
+        """
+
+
+        convert to long  
+
+        """
         return _clipper.String_l(self)
 
+
     def f32(self) -> "clipper::ftype32":
+        """
+
+
+        convert to float  
+
+        """
         return _clipper.String_f32(self)
 
+
     def f64(self) -> "clipper::ftype64":
+        """
+
+
+        convert to double  
+
+        """
         return _clipper.String_f64(self)
 
+
     def f(self) -> "clipper::ftype":
+        """
+
+
+        convert to ftype  
+
+        """
         return _clipper.String_f(self)
 
+
     def rational(self, *args) -> "clipper::ftype":
+        """
+
+
+        construct string from rational f using base b  
+
+        """
         return _clipper.String_rational(self, *args)
+
 
     def __str__(self) -> "std::string":
         return _clipper.String___str__(self)
@@ -1631,10 +2240,28 @@ String_swigregister = _clipper.String_swigregister
 String_swigregister(String)
 
 class RTop_frac(object):
+    """
+
+
+    Fractional operator class.  
+
+    This class is used for any RT-operator which operates on fractional coordinates.
+    For a full list of methods, see clipper::RTop  
+
+    C++ includes: symop.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from rotation and translation  
+
+        """
         this = _clipper.new_RTop_frac(*args)
         try:
             self.this.append(this)
@@ -1642,12 +2269,67 @@ class RTop_frac(object):
             self.this = this
 
     def rtop_orth(self, cell: 'Cell') -> "clipper::RTop_orth":
+        """
+
+
+        fractional-orthogonal conversion  
+
+        Parameters
+        ----------
+        * `cell` :  
+            The cell concerned  
+
+        Returns
+        -------
+        The transformed coordinate.  
+
+        """
         return _clipper.RTop_frac_rtop_orth(self, cell)
 
+
     def inverse(self) -> "clipper::RTop_frac":
+        """
+
+
+        inverse operator  
+
+        Returns
+        -------
+        The inverse of the operator.  
+
+        """
         return _clipper.RTop_frac_inverse(self)
-    identity = staticmethod(_clipper.RTop_frac_identity)
-    null = staticmethod(_clipper.RTop_frac_null)
+
+
+    def identity() -> "clipper::RTop_frac":
+        """
+
+
+        return identity operator  
+
+        Returns
+        -------
+        The identity operator.  
+
+        """
+        return _clipper.RTop_frac_identity()
+
+    identity = staticmethod(identity)
+
+    def null() -> "clipper::RTop_frac":
+        """
+
+
+        return null (uninitialised) operator  
+
+        Returns
+        -------
+        The null (uninitialised) operator.  
+
+        """
+        return _clipper.RTop_frac_null()
+
+    null = staticmethod(null)
 
     def __mul__(self, c: 'Coord_frac') -> "Coord_frac":
         return _clipper.RTop_frac___mul__(self, c)
@@ -1696,18 +2378,63 @@ RTop_frac_swigregister = _clipper.RTop_frac_swigregister
 RTop_frac_swigregister(RTop_frac)
 
 def RTop_frac_identity() -> "clipper::RTop_frac":
+    """
+
+
+    return identity operator  
+
+    Returns
+    -------
+    The identity operator.  
+
+    """
     return _clipper.RTop_frac_identity()
-RTop_frac_identity = _clipper.RTop_frac_identity
 
 def RTop_frac_null() -> "clipper::RTop_frac":
+    """
+
+
+    return null (uninitialised) operator  
+
+    Returns
+    -------
+    The null (uninitialised) operator.  
+
+    """
     return _clipper.RTop_frac_null()
-RTop_frac_null = _clipper.RTop_frac_null
 
 class Symop(RTop_frac):
+    """
+
+
+    Crystallographic symmetry operator.  
+
+    This is identical to a fractional RTop, but has its own class since not all
+    fractional RTops are symops. For a full list of methods, see clipper::RTop and
+    clipper::RTop_frac  
+
+    C++ includes: symop.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from 4x4 matrix  
+
+        Construct a symmetry operator and initialise it to the supplied matrix.
+        Translations are rounded to a basis of 48, and put on the range 0..1  
+
+        Parameters
+        ----------
+        * `mat` :  
+            The 4x4 matrix to use. The [i][3] elements contain the translation.  
+
+        """
         this = _clipper.new_Symop(*args)
         try:
             self.this.append(this)
@@ -1715,7 +2442,20 @@ class Symop(RTop_frac):
             self.this = this
 
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        Return formatted representation of the symmetry operator.  
+
+        Returns
+        -------
+        The formatted text string, e.g. -x, -y+1/2, z.  
+
+        """
         return _clipper.Symop_format(self)
+
 
     def __mul__(self, c: 'Coord_frac') -> "Coord_frac":
         return _clipper.Symop___mul__(self, c)
@@ -1747,10 +2487,39 @@ Symop_swigregister = _clipper.Symop_swigregister
 Symop_swigregister(Symop)
 
 class Isymop(object):
+    """
+
+
+    Integerised symmetry matrix.  
+
+    This is used for optimised calculations in real and reciprocal space  
+
+    C++ includes: symop.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor  
+
+        Integerised symops are more efficient when handling integer coordinate types,
+        e.g. HKL, Coord_grid. The rotation parts of the integerised symop are general
+        and can be used for any recirpocal space data. The translation part is specific
+        to an individual grid.  
+
+        Parameters
+        ----------
+        * `symop` :  
+            The conventional symop.  
+        * `grid` :  
+            The specific grid.  
+
+        """
         this = _clipper.new_Isymop(*args)
         try:
             self.this.append(this)
@@ -1765,10 +2534,36 @@ Isymop_swigregister = _clipper.Isymop_swigregister
 Isymop_swigregister(Isymop)
 
 class Symop_code(object):
+    """
+
+
+    Compressed encoded symmetry operator.  
+
+    This is a compresses representation of a crystallographic symmetry operator,
+    stored as a single 32-bit integer. It may be converted to or from a symop or an
+    int and compared, sorted, etc. The following guarantees are made concerning the
+    code:  
+
+    *   The identity operator has a code of zero.  
+    *   Operators with non-identity rotations will have higher codes than operators
+        with identity rotations, for the same translation.  
+    *   Operators with non-zero translations will have higher codes than operators
+        with zero translations, for the same rotation.  
+
+    C++ includes: symop.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from Isymop  
+
+        """
         this = _clipper.new_Symop_code(*args)
         try:
             self.this.append(this)
@@ -1776,30 +2571,101 @@ class Symop_code(object):
             self.this = this
 
     def init(self, op: 'Isymop') -> "void":
+        """
+
+
+        initialiser: from Isymop  
+
+        """
         return _clipper.Symop_code_init(self, op)
 
+
     def code_rot(self) -> "clipper::Symop_code":
+        """
+
+
+        return code for rotation part  
+
+        """
         return _clipper.Symop_code_code_rot(self)
 
+
     def code_trn(self) -> "clipper::Symop_code":
+        """
+
+
+        return code for translation part  
+
+        """
         return _clipper.Symop_code_code_trn(self)
 
+
     def symop(self) -> "clipper::Symop":
+        """
+
+
+        convert to symop  
+
+        Construct a symmetry operator and initialise it to the matrix encoded in the
+        given int.  
+
+        Parameters
+        ----------
+        * `code` :  
+            The integer code.  
+
+        """
         return _clipper.Symop_code_symop(self)
 
+
     def isymop(self) -> "clipper::Isymop":
+        """
+
+
+        convert to integerised symop  
+
+        Construct an integerised symmetry operator and initialise it to the matrix
+        encoded in the given int, with a grid (base) of (24,24,24).  
+
+        Parameters
+        ----------
+        * `code` :  
+            The integer code.  
+
+        """
         return _clipper.Symop_code_isymop(self)
-    identity = staticmethod(_clipper.Symop_code_identity)
+
+
+    def identity() -> "clipper::Symop_code":
+        """
+
+
+        identity code  
+
+        """
+        return _clipper.Symop_code_identity()
+
+    identity = staticmethod(identity)
     __swig_destroy__ = _clipper.delete_Symop_code
     __del__ = lambda self: None
 Symop_code_swigregister = _clipper.Symop_code_swigregister
 Symop_code_swigregister(Symop_code)
 
 def Symop_code_identity() -> "clipper::Symop_code":
+    """
+
+
+    identity code  
+
+    """
     return _clipper.Symop_code_identity()
-Symop_code_identity = _clipper.Symop_code_identity
 
 class SGdata(object):
+    """
+
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     sghash = _swig_property(_clipper.SGdata_sghash_get, _clipper.SGdata_sghash_set)
@@ -1820,6 +2686,11 @@ SGdata_swigregister = _clipper.SGdata_swigregister
 SGdata_swigregister(SGdata)
 
 class LGdata(object):
+    """
+
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     lghash = _swig_property(_clipper.LGdata_lghash_get, _clipper.LGdata_lghash_set)
@@ -1838,6 +2709,24 @@ LGdata_swigregister = _clipper.LGdata_swigregister
 LGdata_swigregister(LGdata)
 
 class Spgr_descr(object):
+    """
+
+
+    spacegroup description  
+
+    The spacegroup description is a compact description of a spacegroup. It may be
+    initialised from Hall or H-M symbols, a string of symops or a number. Internally
+    a hash code is used to refer to the spacegroup, so this object is only 32 bits
+    in size.  
+
+    For more details of spacegroup symbols, see Sydney R. Hall & Ralf W. Grosse-
+    Kunstleve 'Concise Space-Group Symbols',
+    http://www.kristall.ethz.ch/LFK/software/sginfo/hall_symbols.html  
+
+    C++ includes: spacegroup.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     Hall = _clipper.Spgr_descr_Hall
@@ -1848,33 +2737,148 @@ class Spgr_descr(object):
     Unknown = _clipper.Spgr_descr_Unknown
 
     def spacegroup_number(self) -> "int":
+        """
+
+
+        return the spacegroup number  
+
+        The spacegroup number is only available if the spacegroup exists in the internal
+        table, see Hall & Grosse-Kunstleve.  
+
+        Returns
+        -------
+        The spacegroup number, or 0 if unavailable.  
+
+        """
         return _clipper.Spgr_descr_spacegroup_number(self)
 
+
     def symbol_hall(self) -> "clipper::String":
+        """
+
+
+        return the Hall symbol  
+
+        The Hall symbol is only available if the spacegroup exists in the internal
+        table, see Hall & Grosse-Kunstleve.  
+
+        Returns
+        -------
+        The Hall symbol, or "Unknown" if unavailable.  
+
+        """
         return _clipper.Spgr_descr_symbol_hall(self)
 
+
     def symbol_hm(self) -> "clipper::String":
+        """
+
+
+        return the H-M symbol  
+
+        The H-M symbol is only available if the spacegroup exists in the internal table,
+        see Hall & Grosse-Kunstleve.  
+
+        Returns
+        -------
+        The H-M symbol, or "Unknown" if unavailable.  
+
+        """
         return _clipper.Spgr_descr_symbol_hm(self)
 
+
     def symbol_xhm(self) -> "clipper::String":
+        """
+
+
+        return the extended H-M symbol  
+
+        The extended H-M symbol is only available if the spacegroup exists in the
+        internal table, see Hall & Grosse-Kunstleve.  
+
+        Returns
+        -------
+        The extended H-M symbol, or "Unknown" if unavailable.  
+
+        """
         return _clipper.Spgr_descr_symbol_xhm(self)
 
+
     def symbol_hm_ext(self) -> "clipper::String":
+        """
+
+
+        return the extension H-M symbol  
+
+        The extension H-M symbol is only available if the spacegroup exists in the
+        internal table, see Hall & Grosse-Kunstleve.  
+
+        Returns
+        -------
+        The extension H-M symbol, or ""  
+
+        """
         return _clipper.Spgr_descr_symbol_hm_ext(self)
-    set_preferred = staticmethod(_clipper.Spgr_descr_set_preferred)
+
+
+    def set_preferred(c: 'char const &') -> "void":
+        """
+
+
+        set preferred default spacegroup choice  
+
+        Sets the preferred origin or setting for initialising all Spgr_descr objects
+        using H-M symbols or Spacegroup numbers. cctbx uses origin choice '1' by
+        default, CCP4 uses '2'. Both packages use 'H' in preference to 'R'. Preferred
+        values are stored for both. Defaults are '1' and 'H'.  
+
+        CCP4 users may wish to add the following before using H-M codes or numbers.  
+
+        Parameters
+        ----------
+        * `c` :  
+            Either '1' or '2', 'H' or 'R'.  
+
+        """
+        return _clipper.Spgr_descr_set_preferred(c)
+
+    set_preferred = staticmethod(set_preferred)
+
+    def generator_ops(self) -> "clipper::Spgr_descr::Symop_codes const &":
+        """
+
+
+        return the generators for the spacegroup  
+
+        """
+        return _clipper.Spgr_descr_generator_ops(self)
+
+
+    def hash(self) -> "unsigned int const &":
+        """
+
+
+        return the hash code for the spacegroup  
+
+        """
+        return _clipper.Spgr_descr_hash(self)
+
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from symop list.  
+
+        This is not normally used, except in conjunction with Spgr_desc::generator_ops()
+        to derive one group from another.  
+
+        """
         this = _clipper.new_Spgr_descr(*args)
         try:
             self.this.append(this)
         except __builtin__.Exception:
             self.this = this
-
-    def generator_ops(self) -> "clipper::Spgr_descr::Symop_codes const &":
-        return _clipper.Spgr_descr_generator_ops(self)
-
-    def hash(self) -> "unsigned int const &":
-        return _clipper.Spgr_descr_hash(self)
     __swig_destroy__ = _clipper.delete_Spgr_descr
     __del__ = lambda self: None
 Spgr_descr_swigregister = _clipper.Spgr_descr_swigregister
@@ -1882,51 +2886,168 @@ Spgr_descr_swigregister(Spgr_descr)
 cvar = _clipper.cvar
 
 def Spgr_descr_set_preferred(c: 'char const &') -> "void":
+    """
+
+
+    set preferred default spacegroup choice  
+
+    Sets the preferred origin or setting for initialising all Spgr_descr objects
+    using H-M symbols or Spacegroup numbers. cctbx uses origin choice '1' by
+    default, CCP4 uses '2'. Both packages use 'H' in preference to 'R'. Preferred
+    values are stored for both. Defaults are '1' and 'H'.  
+
+    CCP4 users may wish to add the following before using H-M codes or numbers.  
+
+    Parameters
+    ----------
+    * `c` :  
+        Either '1' or '2', 'H' or 'R'.  
+
+    """
     return _clipper.Spgr_descr_set_preferred(c)
-Spgr_descr_set_preferred = _clipper.Spgr_descr_set_preferred
 
 class Symop_codes(object):
+    """
+
+
+    Vector of symop codes and associated methods.  
+
+    C++ includes: spacegroup.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def init_hall(self, symb: 'String') -> "void":
+        """
+
+
+        initialise from Hall symbol  
+
+        """
         return _clipper.Symop_codes_init_hall(self, symb)
 
+
     def init_symops(self, symb: 'String') -> "void":
+        """
+
+
+        initialise from symops  
+
+        """
         return _clipper.Symop_codes_init_symops(self, symb)
 
+
     def expand(self) -> "clipper::Spgr_descr::Symop_codes":
+        """
+
+
+        expand (incomplete) list of symops  
+
+        """
         return _clipper.Symop_codes_expand(self)
 
+
     def primitive_noninversion_ops(self) -> "clipper::Spgr_descr::Symop_codes":
+        """
+
+
+        return primitive non-inversion ops (by computation)  
+
+        """
         return _clipper.Symop_codes_primitive_noninversion_ops(self)
 
+
     def inversion_ops(self) -> "clipper::Spgr_descr::Symop_codes":
+        """
+
+
+        return inversion ops (by computation)  
+
+        """
         return _clipper.Symop_codes_inversion_ops(self)
 
+
     def primitive_ops(self) -> "clipper::Spgr_descr::Symop_codes":
+        """
+
+
+        return primitive incl inversion ops (by computation)  
+
+        """
         return _clipper.Symop_codes_primitive_ops(self)
 
+
     def centering_ops(self) -> "clipper::Spgr_descr::Symop_codes":
+        """
+
+
+        return lattice centering ops (by computation)  
+
+        """
         return _clipper.Symop_codes_centering_ops(self)
 
+
     def laue_ops(self) -> "clipper::Spgr_descr::Symop_codes":
+        """
+
+
+        return Laue ops  
+
+        """
         return _clipper.Symop_codes_laue_ops(self)
 
+
     def pgrp_ops(self) -> "clipper::Spgr_descr::Symop_codes":
+        """
+
+
+        return point group ops  
+
+        """
         return _clipper.Symop_codes_pgrp_ops(self)
 
+
     def patterson_ops(self) -> "clipper::Spgr_descr::Symop_codes":
+        """
+
+
+        return Patterson ops  
+
+        """
         return _clipper.Symop_codes_patterson_ops(self)
 
+
     def generator_ops(self) -> "clipper::Spgr_descr::Symop_codes":
+        """
+
+
+        return minimal list of generator ops  
+
+        """
         return _clipper.Symop_codes_generator_ops(self)
 
+
     def product(self, ops2: 'Symop_codes') -> "clipper::Spgr_descr::Symop_codes":
+        """
+
+
+        return product of this (expanded) list by another (expanded) list  
+
+        """
         return _clipper.Symop_codes_product(self, ops2)
 
+
     def hash(self) -> "unsigned int":
+        """
+
+
+        return hash code of symop list  
+
+        """
         return _clipper.Symop_codes_hash(self)
+
 
     def __init__(self):
         this = _clipper.new_Symop_codes()
@@ -1940,10 +3061,21 @@ Symop_codes_swigregister = _clipper.Symop_codes_swigregister
 Symop_codes_swigregister(Symop_codes)
 
 class Spgr_cacheobj(object):
+    """
+
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, spgr_cachekey: 'Spgr_descr'):
+        """
+
+
+        construct entry  
+
+        """
         this = _clipper.new_Spgr_cacheobj(spgr_cachekey)
         try:
             self.this.append(this)
@@ -1951,10 +3083,24 @@ class Spgr_cacheobj(object):
             self.this = this
 
     def matches(self, spgr_cachekey: 'Spgr_descr') -> "bool":
+        """
+
+
+        compare entry  
+
+        """
         return _clipper.Spgr_cacheobj_matches(self, spgr_cachekey)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        string description  
+
+        """
         return _clipper.Spgr_cacheobj_format(self)
+
     spgr_cachekey_ = _swig_property(_clipper.Spgr_cacheobj_spgr_cachekey__get, _clipper.Spgr_cacheobj_spgr_cachekey__set)
     nsym = _swig_property(_clipper.Spgr_cacheobj_nsym_get, _clipper.Spgr_cacheobj_nsym_set)
     nsymn = _swig_property(_clipper.Spgr_cacheobj_nsymn_get, _clipper.Spgr_cacheobj_nsymn_set)
@@ -1973,6 +3119,23 @@ Spgr_cacheobj_swigregister = _clipper.Spgr_cacheobj_swigregister
 Spgr_cacheobj_swigregister(Spgr_cacheobj)
 
 class Spacegroup(Spgr_descr):
+    """
+
+
+    Spacegroup object.  
+
+    The spacegroup object is a full description of a spacegroup, including all the
+    most regularly used information in an efficient form. It may be initialised from
+    a clipper::Spgr_descr. This object.  
+
+    For more details of spacegroup symbols, see Sydney R. Hall & Ralf W. Grosse-
+    Kunstleve 'Concise Space-Group Symbols',
+    http://www.kristall.ethz.ch/LFK/software/sginfo/hall_symbols.html  
+
+    C++ includes: spacegroup.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     Null = _clipper.Spacegroup_Null
@@ -1982,6 +3145,19 @@ class Spacegroup(Spgr_descr):
     C = _clipper.Spacegroup_C
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from spacegroup description  
+
+        Construct a spacegroup and initialise with a spacegroup description.  
+
+        Parameters
+        ----------
+        * `spgr_descr` :  
+            The spacegroup description.  
+
+        """
         this = _clipper.new_Spacegroup(*args)
         try:
             self.this.append(this)
@@ -1989,93 +3165,389 @@ class Spacegroup(Spgr_descr):
             self.this = this
 
     def init(self, spgr_descr: 'Spgr_descr') -> "void":
+        """
+
+
+        initialiser: from spacegroup description  
+
+        Initialise the spacegroup.  
+
+        Parameters
+        ----------
+        * `spgr_descr` :  
+            The spacegroup description.  
+
+        """
         return _clipper.Spacegroup_init(self, spgr_descr)
 
+
     def is_null(self) -> "bool":
+        """
+
+
+        test if object has been initialised  
+
+        Returns
+        -------
+        true if the object has not been initalised.  
+
+        """
         return _clipper.Spacegroup_is_null(self)
 
+
     def descr(self) -> "clipper::Spgr_descr const &":
+        """
+
+
+        get spacegroup description  
+
+        """
         return _clipper.Spacegroup_descr(self)
 
+
     def num_symops(self) -> "int const &":
+        """
+
+
+        get number of symops  
+
+        """
         return _clipper.Spacegroup_num_symops(self)
 
+
     def num_primops(self) -> "int const &":
+        """
+
+
+        get number of primitive symops (identical to num_primitive_symops())  
+
+        """
         return _clipper.Spacegroup_num_primops(self)
 
+
     def num_primitive_symops(self) -> "int const &":
+        """
+
+
+        get number of primitive symops (inc identity and inversion)  
+
+        """
         return _clipper.Spacegroup_num_primitive_symops(self)
 
+
     def num_centering_symops(self) -> "int const &":
+        """
+
+
+        get number of centering symops (inc identity)  
+
+        """
         return _clipper.Spacegroup_num_centering_symops(self)
 
+
     def num_inversion_symops(self) -> "int const &":
+        """
+
+
+        get number of inversion symops (inc identity)  
+
+        """
         return _clipper.Spacegroup_num_inversion_symops(self)
 
+
     def num_primitive_noninversion_symops(self) -> "int const &":
+        """
+
+
+        get number of primitive non-inversion symops (inc identity)  
+
+        """
         return _clipper.Spacegroup_num_primitive_noninversion_symops(self)
 
+
     def symop(self, sym_no: 'int const &') -> "clipper::Symop const &":
+        """
+
+
+        get n'th symop  
+
+        """
         return _clipper.Spacegroup_symop(self, sym_no)
 
+
     def primitive_symop(self, sym_no: 'int const &') -> "clipper::Symop const &":
+        """
+
+
+        get n'th primitive symop (identical to symop(sym_no))  
+
+        """
         return _clipper.Spacegroup_primitive_symop(self, sym_no)
 
+
     def inversion_symop(self, sym_no: 'int const &') -> "clipper::Symop const &":
+        """
+
+
+        get n'th inversion symop (0...1 max)  
+
+        """
         return _clipper.Spacegroup_inversion_symop(self, sym_no)
 
+
     def centering_symop(self, sym_no: 'int const &') -> "clipper::Symop const &":
+        """
+
+
+        get n'th centering symop (0...3 max)  
+
+        """
         return _clipper.Spacegroup_centering_symop(self, sym_no)
 
+
     def order_of_symmetry_about_axis(self, axis: 'clipper::Spacegroup::AXIS const') -> "int":
+        """
+
+
+        get the order of rotational symmetry about a given axis  
+
+        The number of rotational operators parallel to the specified axis is returned.  
+
+        Parameters
+        ----------
+        * `axis` :  
+            The axis, A, B or C.  
+
+        Returns
+        -------
+        The order of the axis.  
+
+        """
         return _clipper.Spacegroup_order_of_symmetry_about_axis(self, axis)
 
+
     def hkl_class(self, hkl: 'HKL') -> "clipper::HKL_class":
+        """
+
+
+        get 'class' of reflection: multiplicity, allowed phase, absence  
+
+        The reflection class describes the type of a reflection in a given spacegroup,
+        including centricity, systematic absence, phase restriction, and multiplicity.  
+
+        This is a shortcut to constructing an HKL_class from the spacegroup and HKL.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL  
+
+        """
         return _clipper.Spacegroup_hkl_class(self, hkl)
 
+
     def recip_asu(self, hkl: 'HKL') -> "bool":
+        """
+
+
+        test if hkl is in default reciprocal ASU  
+
+        The reciprocal ASU is chosen from one of 47 optimised functions.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The HKL to test.  
+
+        Returns
+        -------
+        true if the HKL is in the ASU.  
+
+        """
         return _clipper.Spacegroup_recip_asu(self, hkl)
 
+
     def product_op(self, s1: 'int const &', s2: 'int &') -> "int":
+        """
+
+
+        get symop number corresponding to the product of two symops  
+
+        """
         return _clipper.Spacegroup_product_op(self, s1, s2)
 
+
     def inverse_op(self, s: 'int const &') -> "int":
+        """
+
+
+        get symop number corresponding to the inverse of a symop  
+
+        """
         return _clipper.Spacegroup_inverse_op(self, s)
 
+
     def asu_max(self) -> "clipper::Coord_frac":
+        """
+
+
+        get map ASU, upper bound  
+
+        The map ASU is an oblong which contains at least one assymetric unit. It is
+        guaranteed to be contained withing the unit box. The lower limit is always
+        0,0,0.  
+
+        Returns
+        -------
+        Fractional coordinate of the upper bound of the ASU.  
+
+        """
         return _clipper.Spacegroup_asu_max(self)
 
+
     def asu_min(self) -> "clipper::Coord_frac":
+        """
+
+
+        get map ASU, lower bound  
+
+        The map ASU is an oblong which contains at least one assymetric unit. It is
+        guaranteed to be contained withing the unit box. The lower limit is always
+        0,0,0.  
+
+        Returns
+        -------
+        Fractional coordinate of the lower bound of the ASU.  
+
+        """
         return _clipper.Spacegroup_asu_min(self)
 
+
     def invariant_under_change_of_hand(self) -> "bool":
+        """
+
+
+        test if change of hand preserves spacegroup  
+
+        Test if hand-change is possible.  
+
+        Returns
+        -------
+        true if a change of hand preserves the spacegroup.  
+
+        """
         return _clipper.Spacegroup_invariant_under_change_of_hand(self)
 
+
     def symbol_laue(self) -> "clipper::String":
+        """
+
+
+        return the Laue group symbol  
+
+        Returns
+        -------
+        The Laue group symbol. i.e. one of -1, 2/m, 2/mmm, -3, -3m, 4/m, 4/mmm, 6/m,
+        6/mmm, m-3, m-3m  
+
+        """
         return _clipper.Spacegroup_symbol_laue(self)
-    p1 = staticmethod(_clipper.Spacegroup_p1)
-    null = staticmethod(_clipper.Spacegroup_null)
+
+
+    def p1() -> "clipper::Spacegroup":
+        """
+
+
+        Return P1 spacegroup.  
+
+        """
+        return _clipper.Spacegroup_p1()
+
+    p1 = staticmethod(p1)
+
+    def null() -> "clipper::Spacegroup":
+        """
+
+
+        Return null spacegroup.  
+
+        """
+        return _clipper.Spacegroup_null()
+
+    null = staticmethod(null)
 
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.Spacegroup_debug(self)
+
     __swig_destroy__ = _clipper.delete_Spacegroup
     __del__ = lambda self: None
 Spacegroup_swigregister = _clipper.Spacegroup_swigregister
 Spacegroup_swigregister(Spacegroup)
 
 def Spacegroup_p1() -> "clipper::Spacegroup":
+    """
+
+
+    Return P1 spacegroup.  
+
+    """
     return _clipper.Spacegroup_p1()
-Spacegroup_p1 = _clipper.Spacegroup_p1
 
 def Spacegroup_null() -> "clipper::Spacegroup":
+    """
+
+
+    Return null spacegroup.  
+
+    """
     return _clipper.Spacegroup_null()
-Spacegroup_null = _clipper.Spacegroup_null
 
 class Metric_tensor(object):
+    """
+
+
+    Metric tensor.  
+
+    The metric tensor is used to determine a distance in real or reciprocal space
+    using fraction coordinates or Miller indices. It is symmetrical, so only the
+    upper triangle is stored with the off-diagonal elements doubled.  
+
+    C++ includes: cell.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: takes parameters of normal or inverse cell  
+
+        Construct and initialise a metric tensor, given a set of real or reciprocal cell
+        parameters.  
+
+        Parameters
+        ----------
+        * `a` :  
+            Length of **a** axis in Angstroms or reciprocal Angstroms.  
+        * `b` :  
+            Length of **b** axis in Angstroms or reciprocal Angstroms.  
+        * `c` :  
+            Length of **c** axis in Angstroms or reciprocal Angstroms.  
+        * `alph` :  
+            Angle between **b** and **c** in radians.  
+        * `beta` :  
+            Angle between **a** and **c** in radians.  
+        * `gamm` :  
+            Angle between **a** and **b** in radians.  
+
+        """
         this = _clipper.new_Metric_tensor(*args)
         try:
             self.this.append(this)
@@ -2083,20 +3555,68 @@ class Metric_tensor(object):
             self.this = this
 
     def lengthsq(self, *args) -> "clipper::ftype":
+        """
+
+
+        apply metric to int vector  
+
+        """
         return _clipper.Metric_tensor_lengthsq(self, *args)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        """
         return _clipper.Metric_tensor_format(self)
+
     __swig_destroy__ = _clipper.delete_Metric_tensor
     __del__ = lambda self: None
 Metric_tensor_swigregister = _clipper.Metric_tensor_swigregister
 Metric_tensor_swigregister(Metric_tensor)
 
 class Cell_descr(object):
+    """
+
+
+    cell description (automatically converts to radians)  
+
+    The cell description is a compact description of a cell, containing just the
+    cell parameters. It is usually used to construct a full Cell object, which
+    provides the expected functionality.  
+
+    C++ includes: cell.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from cell parameters  
+
+        Parameters
+        ----------
+        * `a` :  
+            A axis in Angstroms.  
+        * `b` :  
+            B axis in Angstroms.  
+        * `c` :  
+            C axis in Angstroms.  
+        * `alpha` :  
+            Angle between B and C axes in radians or degrees, default=90  
+        * `beta` :  
+            Angle between A and C axes in radians or degrees, default=90  
+        * `gamma` :  
+            Angle between A and C axes in radians or degrees, default=90  
+
+        """
         this = _clipper.new_Cell_descr(*args)
         try:
             self.this.append(this)
@@ -2104,7 +3624,18 @@ class Cell_descr(object):
             self.this = this
 
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        Returns
+        -------
+        A string describing the cell  
+
+        """
         return _clipper.Cell_descr_format(self)
+
 
     def dim(self) -> "void":
         return _clipper.Cell_descr_dim(self)
@@ -2125,10 +3656,29 @@ Cell_descr_swigregister = _clipper.Cell_descr_swigregister
 Cell_descr_swigregister(Cell_descr)
 
 class Cell(Cell_descr):
+    """
+
+
+    Cell object.  
+
+    The Cell class is the fully functional description of the unit cell. In addition
+    to the cell parameters, it stores derived information including the cell volume,
+    orthogonalising and fractionalising matrices, and the metric tensors.  
+
+    C++ includes: cell.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: takes a Cell descriptor  
+
+        """
         this = _clipper.new_Cell(*args)
         try:
             self.this.append(this)
@@ -2136,25 +3686,79 @@ class Cell(Cell_descr):
             self.this = this
 
     def init(self, cell_: 'Cell_descr') -> "void":
+        """
+
+
+        initialiser  
+
+        Initialise the Cell object from a cell description.  
+
+        Parameters
+        ----------
+        * `cell_` :  
+            The cell descirption.  
+
+        """
         return _clipper.Cell_init(self, cell_)
 
+
     def volume(self) -> "clipper::ftype const &":
+        """
+
+
+        return cell volume  
+
+        """
         return _clipper.Cell_volume(self)
 
+
     def matrix_orth(self) -> "clipper::Mat33< > const &":
+        """
+
+
+        return orthogonalisation matrix  
+
+        """
         return _clipper.Cell_matrix_orth(self)
 
+
     def matrix_frac(self) -> "clipper::Mat33< > const &":
+        """
+
+
+        return fractionalisation matrix  
+
+        """
         return _clipper.Cell_matrix_frac(self)
 
+
     def metric_real(self) -> "clipper::Metric_tensor const &":
+        """
+
+
+        return real space metric tensor  
+
+        """
         return _clipper.Cell_metric_real(self)
 
+
     def metric_reci(self) -> "clipper::Metric_tensor const &":
+        """
+
+
+        return reciprocal space metric tensor  
+
+        """
         return _clipper.Cell_metric_reci(self)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.Cell_debug(self)
+
 
     def dim(self) -> "void":
         return _clipper.Cell_dim(self)
@@ -2237,10 +3841,33 @@ ATOM_NAMES = set(
 
 
 class Resolution(object):
+    """
+
+
+    Resolution in angstroms.  
+
+    This object represents a resolution limit which will be used for all aspects of
+    a calculation. This is a base for a donor type.  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from ftype  
+
+        Parameters
+        ----------
+        * `resol_` :  
+            The resolution limit in Angstroms.  
+
+        """
         this = _clipper.new_Resolution(*args)
         try:
             self.this.append(this)
@@ -2248,26 +3875,98 @@ class Resolution(object):
             self.this = this
 
     def init(self, resol_: 'clipper::ftype const &') -> "void":
+        """
+
+
+        initialiser: from ftype  
+
+        Parameters
+        ----------
+        * `resol_` :  
+            The resolution limit in Angstroms.  
+
+        """
         return _clipper.Resolution_init(self, resol_)
 
+
     def limit(self) -> "clipper::ftype const &":
+        """
+
+
+        get resolution limit  
+
+        Returns
+        -------
+        The resolution limit in Angstroms.  
+
+        """
         return _clipper.Resolution_limit(self)
 
+
     def invresolsq_limit(self) -> "clipper::ftype":
+        """
+
+
+        get invresolsq limit  
+
+        Returns
+        -------
+        The resolution limit in inverse squared Angstroms.  
+
+        """
         return _clipper.Resolution_invresolsq_limit(self)
 
+
     def is_null(self) -> "bool":
+        """
+
+
+        test if value has been initialised  
+
+        Returns
+        -------
+        true if the object has not been initalised.  
+
+        """
         return _clipper.Resolution_is_null(self)
+
     __swig_destroy__ = _clipper.delete_Resolution
     __del__ = lambda self: None
 Resolution_swigregister = _clipper.Resolution_swigregister
 Resolution_swigregister(Resolution)
 
 class HKL_class(object):
+    """
+
+
+    reflection class  
+
+    This describes the type of a reflection in a given spacegroup, including
+    centricity, systematic absence, phase restriction, and multiplicity.  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor - from spacegroup and HKL  
+
+        Determine the class of a reflection for a give spacegroup.  
+
+        Parameters
+        ----------
+        * `spgr` :  
+            The spacegroup.  
+        * `hkl` :  
+            The reflection HKL  
+
+        """
         this = _clipper.new_HKL_class(*args)
         try:
             self.this.append(this)
@@ -2275,29 +3974,90 @@ class HKL_class(object):
             self.this = this
 
     def epsilon(self) -> "clipper::ftype":
+        """
+
+
+        get epsilon  
+
+        """
         return _clipper.HKL_class_epsilon(self)
 
+
     def epsilonc(self) -> "clipper::ftype":
+        """
+
+
+        get epsilon for acentric, 2x epsilon for centric  
+
+        """
         return _clipper.HKL_class_epsilonc(self)
 
+
     def allowed(self) -> "clipper::ftype":
+        """
+
+
+        get allowed phase  
+
+        """
         return _clipper.HKL_class_allowed(self)
 
+
     def centric(self) -> "bool":
+        """
+
+
+        is centric?  
+
+        """
         return _clipper.HKL_class_centric(self)
 
+
     def sys_abs(self) -> "bool":
+        """
+
+
+        is sys abs?  
+
+        """
         return _clipper.HKL_class_sys_abs(self)
+
     __swig_destroy__ = _clipper.delete_HKL_class
     __del__ = lambda self: None
 HKL_class_swigregister = _clipper.HKL_class_swigregister
 HKL_class_swigregister(HKL_class)
 
 class RTop_orth(object):
+    """
+
+
+    Orthogonal operator class.  
+
+    This class is used for any RT-operator which operates on orthogonal coordinates.
+    For a full list of methods, see clipper::RTop  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from two atom-list type objects  
+
+        Construct the operator which relates one atom-list like object onto another. The
+        lists must be the same size, and have the following properties:  
+
+        *   a size() method.  
+        *   a [int] operator, with int ranging from 0 to size()-1.  
+        *   the object returned by the [] operator must have a coord_orth() method.
+            Suitable objects include a vector of Atom, or an Atom_list.  
+
+        """
         this = _clipper.new_RTop_orth(*args)
         try:
             self.this.append(this)
@@ -2305,18 +4065,100 @@ class RTop_orth(object):
             self.this = this
 
     def rtop_frac(self, cell: 'Cell') -> "clipper::RTop_frac":
+        """
+
+
+        orthogonal-fractional conversion  
+
+        Parameters
+        ----------
+        * `cell` :  
+            The cell concerned  
+
+        Returns
+        -------
+        The transformed coordinate.  
+
+        """
         return _clipper.RTop_orth_rtop_frac(self, cell)
 
+
     def inverse(self) -> "clipper::RTop_orth":
+        """
+
+
+        inverse operator  
+
+        Returns
+        -------
+        The inverse of the operator.  
+
+        """
         return _clipper.RTop_orth_inverse(self)
 
+
     def axis_coordinate_near(self, centre: 'Coord_orth') -> "clipper::Coord_orth":
+        """
+
+
+        return point on axis near the specified coordinate  
+
+        Parameters
+        ----------
+        * `centre` :  
+            An arbitrary point.  
+
+        Returns
+        -------
+        point on axis near the specified coordinate, 000 if rotation is zero  
+
+        """
         return _clipper.RTop_orth_axis_coordinate_near(self, centre)
 
+
     def screw_translation(self) -> "clipper::Coord_orth":
+        """
+
+
+        return screw translation  
+
+        Returns
+        -------
+        screw translation, 000 if rotation is zero  
+
+        """
         return _clipper.RTop_orth_screw_translation(self)
-    identity = staticmethod(_clipper.RTop_orth_identity)
-    null = staticmethod(_clipper.RTop_orth_null)
+
+
+    def identity() -> "clipper::RTop_orth":
+        """
+
+
+        return identity operator  
+
+        Returns
+        -------
+        The identity operator.  
+
+        """
+        return _clipper.RTop_orth_identity()
+
+    identity = staticmethod(identity)
+
+    def null() -> "clipper::RTop_orth":
+        """
+
+
+        return null (uninitialised) operator  
+
+        Returns
+        -------
+        The null (uninitialised) operator.  
+
+        """
+        return _clipper.RTop_orth_null()
+
+    null = staticmethod(null)
 
     def __mul__(self, c: 'Coord_orth') -> "clipper::Coord_orth":
         return _clipper.RTop_orth___mul__(self, c)
@@ -2344,18 +4186,51 @@ RTop_orth_swigregister = _clipper.RTop_orth_swigregister
 RTop_orth_swigregister(RTop_orth)
 
 def RTop_orth_identity() -> "clipper::RTop_orth":
+    """
+
+
+    return identity operator  
+
+    Returns
+    -------
+    The identity operator.  
+
+    """
     return _clipper.RTop_orth_identity()
-RTop_orth_identity = _clipper.RTop_orth_identity
 
 def RTop_orth_null() -> "clipper::RTop_orth":
+    """
+
+
+    return null (uninitialised) operator  
+
+    Returns
+    -------
+    The null (uninitialised) operator.  
+
+    """
     return _clipper.RTop_orth_null()
-RTop_orth_null = _clipper.RTop_orth_null
 
 class HKL(object):
+    """
+
+
+    reflection 'Miller' index  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from H,K,L  
+
+        """
         this = _clipper.new_HKL(*args)
         try:
             self.this.append(this)
@@ -2363,31 +4238,137 @@ class HKL(object):
             self.this = this
 
     def h(self, *args) -> "int &":
+        """
+
+
+        set h  
+
+        """
         return _clipper.HKL_h(self, *args)
 
+
     def k(self, *args) -> "int &":
+        """
+
+
+        set k  
+
+        """
         return _clipper.HKL_k(self, *args)
 
+
     def l(self, *args) -> "int &":
+        """
+
+
+        set l  
+
+        """
         return _clipper.HKL_l(self, *args)
 
+
     def invresolsq(self, cell: 'Cell') -> "clipper::ftype":
+        """
+
+
+        return inverse resolution squared for this reflection in given cell  
+
+        note: Normally you would get a value through clipper::HKL_info, unless you
+            specifically want a value for a different cell.  
+
+        """
         return _clipper.HKL_invresolsq(self, cell)
 
+
     def coord_reci_frac(self) -> "clipper::Coord_reci_frac":
+        """
+
+
+        return fractional reciprocal coordinate (i.e. non-integer HKL)  
+
+        Returns
+        -------
+        The non-integer coordinate.  
+
+        """
         return _clipper.HKL_coord_reci_frac(self)
 
+
     def coord_reci_orth(self, cell: 'Cell') -> "clipper::Coord_reci_orth":
+        """
+
+
+        orthogonal-fractional reciprocal space coordinate conversion  
+
+        Parameters
+        ----------
+        * `cell` :  
+            The cell concerned  
+
+        Returns
+        -------
+        The transformed coordinate.  
+
+        """
         return _clipper.HKL_coord_reci_orth(self, cell)
 
+
     def transform(self, *args) -> "clipper::HKL":
+        """
+
+
+        return transformed hkl  
+
+        Optimal version.  
+
+        Parameters
+        ----------
+        * `op` :  
+            The symmetry operator  
+
+        Returns
+        -------
+        The transformed coordinate  
+
+        """
         return _clipper.HKL_transform(self, *args)
 
+
     def sym_phase_shift(self, op: 'Symop') -> "clipper::ftype":
+        """
+
+
+        return symmetry phase shift for this HKL under op  
+
+        Get the symmetry phase shift incurred when transforming a reflection by this
+        operator.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL to transform.  
+
+        Returns
+        -------
+        The phase shift.  
+
+        """
         return _clipper.HKL_sym_phase_shift(self, op)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        Returns
+        -------
+        The formatted text string  
+
+        """
         return _clipper.HKL_format(self)
+
 
     def __add__(self, h2: 'HKL') -> "clipper::HKL":
         return _clipper.HKL___add__(self, h2)
@@ -2432,10 +4413,25 @@ def transf_HKL(op: 'Isymop', h1: 'HKL') -> "clipper::HKL":
 transf_HKL = _clipper.transf_HKL
 
 class Coord_reci_orth(object):
+    """
+
+
+    orthogonal reciprocal coordinate (length of which is invresolsq)  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from x*,y*,z*  
+
+        """
         this = _clipper.new_Coord_reci_orth(*args)
         try:
             self.this.append(this)
@@ -2443,35 +4439,116 @@ class Coord_reci_orth(object):
             self.this = this
 
     def xs(self) -> "clipper::ftype const &":
+        """
+
+
+        get x*  
+
+        """
         return _clipper.Coord_reci_orth_xs(self)
 
+
     def ys(self) -> "clipper::ftype const &":
+        """
+
+
+        get y*  
+
+        """
         return _clipper.Coord_reci_orth_ys(self)
 
+
     def zs(self) -> "clipper::ftype const &":
+        """
+
+
+        get z*  
+
+        """
         return _clipper.Coord_reci_orth_zs(self)
 
+
     def invresolsq(self) -> "clipper::ftype":
+        """
+
+
+        return inverse resolution squared for this coord  
+
+        Returns
+        -------
+        The inverse resolution squared.  
+
+        """
         return _clipper.Coord_reci_orth_invresolsq(self)
 
+
     def coord_reci_frac(self, cell: 'Cell') -> "clipper::Coord_reci_frac":
+        """
+
+
+        orthogonal-fractional reciprocal space coordinate conversion  
+
+        Parameters
+        ----------
+        * `cell` :  
+            The cell concerned  
+
+        Returns
+        -------
+        The transformed coordinate.  
+
+        """
         return _clipper.Coord_reci_orth_coord_reci_frac(self, cell)
 
+
     def transform(self, op: 'RTop_orth') -> "clipper::Coord_reci_orth":
+        """
+
+
+        return transformed coordinate  
+
+        """
         return _clipper.Coord_reci_orth_transform(self, op)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        Returns
+        -------
+        The formatted text string  
+
+        """
         return _clipper.Coord_reci_orth_format(self)
+
     __swig_destroy__ = _clipper.delete_Coord_reci_orth
     __del__ = lambda self: None
 Coord_reci_orth_swigregister = _clipper.Coord_reci_orth_swigregister
 Coord_reci_orth_swigregister(Coord_reci_orth)
 
 class Coord_reci_frac(object):
+    """
+
+
+    fractional reciprocal coordinate (i.e. non-integer hkl)  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from HKL  
+
+        """
         this = _clipper.new_Coord_reci_frac(*args)
         try:
             self.this.append(this)
@@ -2479,82 +4556,349 @@ class Coord_reci_frac(object):
             self.this = this
 
     def hkl(self) -> "clipper::HKL":
+        """
+
+
+        round to HKL  
+
+        """
         return _clipper.Coord_reci_frac_hkl(self)
 
+
     def invresolsq(self, cell: 'Cell') -> "clipper::ftype":
+        """
+
+
+        return inverse resolution squared for this reflection in given cell  
+
+        Parameters
+        ----------
+        * `cell` :  
+            The cell concerned  
+
+        Returns
+        -------
+        The inverse resolution squared.  
+
+        """
         return _clipper.Coord_reci_frac_invresolsq(self, cell)
 
+
     def us(self) -> "clipper::ftype const &":
+        """
+
+
+        get u*  
+
+        """
         return _clipper.Coord_reci_frac_us(self)
 
+
     def vs(self) -> "clipper::ftype const &":
+        """
+
+
+        get v*  
+
+        """
         return _clipper.Coord_reci_frac_vs(self)
 
+
     def ws(self) -> "clipper::ftype const &":
+        """
+
+
+        get w*  
+
+        """
         return _clipper.Coord_reci_frac_ws(self)
 
+
     def coord_reci_orth(self, cell: 'Cell') -> "clipper::Coord_reci_orth":
+        """
+
+
+        fractional-orthogonal reciprocal space coordinate conversion  
+
+        Parameters
+        ----------
+        * `cell` :  
+            The cell concerned  
+
+        Returns
+        -------
+        The transformed coordinate.  
+
+        """
         return _clipper.Coord_reci_frac_coord_reci_orth(self, cell)
 
+
     def transform(self, op: 'RTop_frac') -> "clipper::Coord_reci_frac":
+        """
+
+
+        return transformed coordinate  
+
+        """
         return _clipper.Coord_reci_frac_transform(self, op)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        Returns
+        -------
+        The formatted text string  
+
+        """
         return _clipper.Coord_reci_frac_format(self)
+
     __swig_destroy__ = _clipper.delete_Coord_reci_frac
     __del__ = lambda self: None
 Coord_reci_frac_swigregister = _clipper.Coord_reci_frac_swigregister
 Coord_reci_frac_swigregister(Coord_reci_frac)
 
 class Coord_grid(object):
+    """
+
+
+    Grid coordinate.  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
 
     def _u(self) -> "int const &":
+        """
+
+
+        set u  
+
+        """
         return _clipper.Coord_grid__u(self)
 
+
     def _v(self) -> "int const &":
+        """
+
+
+        set v  
+
+        """
         return _clipper.Coord_grid__v(self)
 
+
     def _w(self) -> "int const &":
+        """
+
+
+        set w  
+
+        """
         return _clipper.Coord_grid__w(self)
 
+
     def _u_ptr(self) -> "int &":
+        """
+
+
+        set u  
+
+        """
         return _clipper.Coord_grid__u_ptr(self)
 
+
     def _v_ptr(self) -> "int &":
+        """
+
+
+        set v  
+
+        """
         return _clipper.Coord_grid__v_ptr(self)
 
+
     def _w_ptr(self) -> "int &":
+        """
+
+
+        set w  
+
+        """
         return _clipper.Coord_grid__w_ptr(self)
 
+
     def coord_map(self) -> "clipper::Coord_map":
+        """
+
+
+        convert to Coord_map  
+
+        Returns
+        -------
+        The non-integer coordinate.  
+
+        """
         return _clipper.Coord_grid_coord_map(self)
 
+
     def coord_frac(self, g: 'Grid_sampling') -> "clipper::Coord_frac":
+        """
+
+
+        convert to Coord_frac using given Grid_sampling  
+
+        Fractional coordinate is not normalised onto range 0..1  
+
+        Parameters
+        ----------
+        * `g` :  
+            The grid concerned  
+
+        Returns
+        -------
+        The fractional coordinate  
+
+        """
         return _clipper.Coord_grid_coord_frac(self, g)
 
+
     def transform(self, op: 'Isymop') -> "clipper::Coord_grid":
+        """
+
+
+        return transformed coordinate  
+
+        """
         return _clipper.Coord_grid_transform(self, op)
 
+
     def unit(self, g: 'Grid_sampling') -> "clipper::Coord_grid":
+        """
+
+
+        reduce to unit box: (0..nu-1, 0..nv-1, 0..nw-1)  
+
+        Parameters
+        ----------
+        * `g` :  
+            The grid concerned  
+
+        Returns
+        -------
+        The transformed coordinate.  
+
+        """
         return _clipper.Coord_grid_unit(self, g)
 
+
     def next(self, *args) -> "clipper::Coord_grid const &":
+        """
+
+
+        increment in storage order (see index())  
+
+        guaranteed to increment index(g) by 1  
+
+        The grid coordinate is incremented efficiently in a manner which is exaclty
+        equivalent to increasing index() by 1 in a non-zero based grid.  
+
+        Parameters
+        ----------
+        * `g` :  
+            The grid with which this increment is synchronised.  
+
+        """
         return _clipper.Coord_grid_next(self, *args)
 
+
     def last(self, *args) -> "bool":
+        """
+
+
+        test if done in storage order (see index())  
+
+        Test whether this coordinate has been incremented using next() beyond the end of
+        the specified non-zero based grid.  
+
+        Parameters
+        ----------
+        * `g` :  
+            The grid concerned.  
+
+        """
         return _clipper.Coord_grid_last(self, *args)
 
+
     def index(self, g: 'Grid') -> "int":
+        """
+
+
+        grid indexing operator  
+
+        Return the index in a 1-d array corresponding to this coordinate for a zero
+        based grid.  
+
+        Parameters
+        ----------
+        * `g` :  
+            The grid concerned.  
+
+        Returns
+        -------
+        The corresponding index.  
+
+        """
         return _clipper.Coord_grid_index(self, g)
 
+
     def deindex(self, g: 'Grid', index: 'int const &') -> "void":
+        """
+
+
+        grid deindexing operator  
+
+        Return the coordinate corresponding to a given index in a zero based grid.  
+
+        Parameters
+        ----------
+        * `g` :  
+            The grid concerned.  
+
+        Returns
+        -------
+        The corresponding coordinate.  
+
+        """
         return _clipper.Coord_grid_deindex(self, g, index)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        Returns
+        -------
+        The formatted text string  
+
+        """
         return _clipper.Coord_grid_format(self)
 
+
     def __init__(self, *args):
+        """
+
+
+        constructor: from a grid and an index in that grid  
+
+        """
         this = _clipper.new_Coord_grid(*args)
         try:
             self.this.append(this)
@@ -2662,9 +5006,42 @@ def transf_Coord_grid(op: 'Isymop', r1: 'Coord_grid') -> "clipper::Coord_grid":
 transf_Coord_grid = _clipper.transf_Coord_grid
 
 class Coord_orth(object):
+    """
+
+
+    orthogonal (Angstrom) coordinates  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from 3 coords and bond length, angle, torsion  
+
+        The coordinate is calculated which extends the sequence of coordinates x1, x2,
+        x3 with the specified distance to x3, angle to x2,x3, and torsion to x1,x2,x3.  
+
+        Parameters
+        ----------
+        * `x1` :  
+            First coordinate.  
+        * `x2` :  
+            Second coordinate.  
+        * `x3` :  
+            Third coordinate.  
+        * `length` :  
+            x3-new bond length in Angstroms.  
+        * `angle` :  
+            x2-x3-new opening angle in Radians.  
+        * `torsion` :  
+            x1-x2-x3-new torsion angle in Radians.  
+
+        """
         this = _clipper.new_Coord_orth(*args)
         try:
             self.this.append(this)
@@ -2672,28 +5049,136 @@ class Coord_orth(object):
             self.this = this
 
     def _x(self) -> "clipper::ftype const &":
+        """
+
+
+        get x  
+
+        """
         return _clipper.Coord_orth__x(self)
 
+
     def _y(self) -> "clipper::ftype const &":
+        """
+
+
+        get y  
+
+        """
         return _clipper.Coord_orth__y(self)
 
+
     def _z(self) -> "clipper::ftype const &":
+        """
+
+
+        get z  
+
+        """
         return _clipper.Coord_orth__z(self)
 
+
     def lengthsq(self) -> "clipper::ftype":
+        """
+
+
+        return square of length of vector in Angstroms  
+
+        Returns
+        -------
+        The squared length in Angstroms squared  
+
+        """
         return _clipper.Coord_orth_lengthsq(self)
 
+
     def coord_frac(self, cell: 'Cell') -> "clipper::Coord_frac":
+        """
+
+
+        orthogonal-fractional coordinate conversion  
+
+        Parameters
+        ----------
+        * `cell` :  
+            The cell concerned  
+
+        Returns
+        -------
+        The transformed coordinate.  
+
+        """
         return _clipper.Coord_orth_coord_frac(self, cell)
 
+
     def transform(self, op: 'RTop_orth') -> "clipper::Coord_orth":
+        """
+
+
+        return transformed coordinate  
+
+        """
         return _clipper.Coord_orth_transform(self, op)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        Returns
+        -------
+        The formatted text string  
+
+        """
         return _clipper.Coord_orth_format(self)
-    length = staticmethod(_clipper.Coord_orth_length)
-    angle = staticmethod(_clipper.Coord_orth_angle)
-    torsion = staticmethod(_clipper.Coord_orth_torsion)
+
+
+    def length(x1: 'Coord_orth', x2: 'Coord_orth') -> "clipper::ftype":
+        """
+
+
+        Return length of vector between two coord orths.  
+
+        Returns
+        -------
+        The bond length x1-x2 in Angstroms.  
+
+        """
+        return _clipper.Coord_orth_length(x1, x2)
+
+    length = staticmethod(length)
+
+    def angle(x1: 'Coord_orth', x2: 'Coord_orth', x3: 'Coord_orth') -> "clipper::ftype":
+        """
+
+
+        Return angle between three coord orths.  
+
+        Returns
+        -------
+        The bond angle x1-x2-x3 in Radians.  
+
+        """
+        return _clipper.Coord_orth_angle(x1, x2, x3)
+
+    angle = staticmethod(angle)
+
+    def torsion(x1: 'Coord_orth', x2: 'Coord_orth', x3: 'Coord_orth', x4: 'Coord_orth') -> "clipper::ftype":
+        """
+
+
+        Return torsion between four coord orths.  
+
+        Returns
+        -------
+        The bond torsion x1-x2-x3-x4 in Radians.  
+
+        """
+        return _clipper.Coord_orth_torsion(x1, x2, x3, x4)
+
+    torsion = staticmethod(torsion)
 
     def __add_base__(self, h2: 'Coord_orth') -> "clipper::Coord_orth":
         return _clipper.Coord_orth___add_base__(self, h2)
@@ -2759,16 +5244,43 @@ Coord_orth_swigregister = _clipper.Coord_orth_swigregister
 Coord_orth_swigregister(Coord_orth)
 
 def Coord_orth_length(x1: 'Coord_orth', x2: 'Coord_orth') -> "clipper::ftype":
+    """
+
+
+    Return length of vector between two coord orths.  
+
+    Returns
+    -------
+    The bond length x1-x2 in Angstroms.  
+
+    """
     return _clipper.Coord_orth_length(x1, x2)
-Coord_orth_length = _clipper.Coord_orth_length
 
 def Coord_orth_angle(x1: 'Coord_orth', x2: 'Coord_orth', x3: 'Coord_orth') -> "clipper::ftype":
+    """
+
+
+    Return angle between three coord orths.  
+
+    Returns
+    -------
+    The bond angle x1-x2-x3 in Radians.  
+
+    """
     return _clipper.Coord_orth_angle(x1, x2, x3)
-Coord_orth_angle = _clipper.Coord_orth_angle
 
 def Coord_orth_torsion(x1: 'Coord_orth', x2: 'Coord_orth', x3: 'Coord_orth', x4: 'Coord_orth') -> "clipper::ftype":
+    """
+
+
+    Return torsion between four coord orths.  
+
+    Returns
+    -------
+    The bond torsion x1-x2-x3-x4 in Radians.  
+
+    """
     return _clipper.Coord_orth_torsion(x1, x2, x3, x4)
-Coord_orth_torsion = _clipper.Coord_orth_torsion
 
 def neg_Coord_orth(x1: 'Coord_orth') -> "clipper::Coord_orth":
     return _clipper.neg_Coord_orth(x1)
@@ -2791,9 +5303,24 @@ def transf_Coord_orth(op: 'RTop_orth', x1: 'Coord_orth') -> "clipper::Coord_orth
 transf_Coord_orth = _clipper.transf_Coord_orth
 
 class Coord_frac(object):
+    """
+
+
+    fractional (cell) coordinates  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from u,v,w  
+
+        """
         this = _clipper.new_Coord_frac(*args)
         try:
             self.this.append(this)
@@ -2801,43 +5328,169 @@ class Coord_frac(object):
             self.this = this
 
     def _u(self) -> "clipper::ftype const &":
+        """
+
+
+        get u  
+
+        """
         return _clipper.Coord_frac__u(self)
 
+
     def _v(self) -> "clipper::ftype const &":
+        """
+
+
+        get v  
+
+        """
         return _clipper.Coord_frac__v(self)
 
+
     def _w(self) -> "clipper::ftype const &":
+        """
+
+
+        get w  
+
+        """
         return _clipper.Coord_frac__w(self)
 
+
     def lengthsq(self, cell: 'Cell') -> "clipper::ftype":
+        """
+
+
+        return square of length of vector in Angstroms  
+
+        Returns
+        -------
+        The squared length in Angstroms squared  
+
+        """
         return _clipper.Coord_frac_lengthsq(self, cell)
 
+
     def coord_orth(self, cell: 'Cell') -> "clipper::Coord_orth":
+        """
+
+
+        fractional-orthogonal coordinate conversion  
+
+        Parameters
+        ----------
+        * `cell` :  
+            The cell concerned  
+
+        Returns
+        -------
+        The transformed coordinate.  
+
+        """
         return _clipper.Coord_frac_coord_orth(self, cell)
 
+
     def coord_map(self, g: 'Grid') -> "clipper::Coord_map":
+        """
+
+
+        fractional-grid coordinate conversion  
+
+        Parameters
+        ----------
+        * `g` :  
+            The grid concerned  
+
+        Returns
+        -------
+        The transformed coordinate.  
+
+        """
         return _clipper.Coord_frac_coord_map(self, g)
 
+
     def coord_grid(self, g: 'Grid') -> "clipper::Coord_grid":
+        """
+
+
+        fractional-grid coordinate conversion  
+
+        Parameters
+        ----------
+        * `g` :  
+            The grid concerned  
+
+        Returns
+        -------
+        The transformed coordinate.  
+
+        """
         return _clipper.Coord_frac_coord_grid(self, g)
 
+
     def transform(self, op: 'RTop_frac') -> "clipper::Coord_frac":
+        """
+
+
+        return transformed coordinate  
+
+        """
         return _clipper.Coord_frac_transform(self, op)
 
+
     def lattice_copy_zero(self) -> "clipper::Coord_frac":
+        """
+
+
+        return lattice copy nearest origin  
+
+        """
         return _clipper.Coord_frac_lattice_copy_zero(self)
 
+
     def lattice_copy_unit(self) -> "clipper::Coord_frac":
+        """
+
+
+        return lattice copy in unit box (0...1,0...1,0...1)  
+
+        """
         return _clipper.Coord_frac_lattice_copy_unit(self)
 
+
     def lattice_copy_near(self, n: 'Coord_frac') -> "clipper::Coord_frac":
+        """
+
+
+        return lattice copy near the specified coordinate  
+
+        """
         return _clipper.Coord_frac_lattice_copy_near(self, n)
 
+
     def symmetry_copy_near(self, spgr: 'Spacegroup', cell: 'Cell', n: 'Coord_frac') -> "clipper::Coord_frac":
+        """
+
+
+        return symmetry copy near the specified coordinate  
+
+        """
         return _clipper.Coord_frac_symmetry_copy_near(self, spgr, cell, n)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        Returns
+        -------
+        The formatted text string  
+
+        """
         return _clipper.Coord_frac_format(self)
+
 
     def __add_base__(self, h2: 'Coord_frac') -> "clipper::Coord_frac":
         return _clipper.Coord_frac___add_base__(self, h2)
@@ -2910,9 +5563,24 @@ def transf_Coord_frac(op: 'RTop_frac', x1: 'Coord_frac') -> "clipper::Coord_frac
 transf_Coord_frac = _clipper.transf_Coord_frac
 
 class Coord_map(object):
+    """
+
+
+    map coordinate: this is like Coord_grid, but non-integer  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from u,v,w  
+
+        """
         this = _clipper.new_Coord_map(*args)
         try:
             self.this.append(this)
@@ -2920,28 +5588,97 @@ class Coord_map(object):
             self.this = this
 
     def coord_frac(self, g: 'Grid') -> "clipper::Coord_frac":
+        """
+
+
+        grid-fractional coordinate conversion  
+
+        Parameters
+        ----------
+        * `g` :  
+            The grid concerned  
+
+        Returns
+        -------
+        The transformed coordinate.  
+
+        """
         return _clipper.Coord_map_coord_frac(self, g)
 
+
     def coord_grid(self) -> "clipper::Coord_grid":
+        """
+
+
+        return integer Coord_grid nearest this coordinate  
+
+        """
         return _clipper.Coord_map_coord_grid(self)
 
+
     def floor(self) -> "clipper::Coord_grid":
+        """
+
+
+        return integer Coord_grid below this coordinate  
+
+        """
         return _clipper.Coord_map_floor(self)
 
+
     def ceil(self) -> "clipper::Coord_grid":
+        """
+
+
+        return integer Coord_grid above this coordinate  
+
+        """
         return _clipper.Coord_map_ceil(self)
 
+
     def _u(self) -> "clipper::ftype const &":
+        """
+
+
+        get u  
+
+        """
         return _clipper.Coord_map__u(self)
 
+
     def _v(self) -> "clipper::ftype const &":
+        """
+
+
+        get v  
+
+        """
         return _clipper.Coord_map__v(self)
 
+
     def _w(self) -> "clipper::ftype const &":
+        """
+
+
+        get w  
+
+        """
         return _clipper.Coord_map__w(self)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        Returns
+        -------
+        The formatted text string  
+
+        """
         return _clipper.Coord_map_format(self)
+
 
     def __add_base__(self, h2: 'Coord_map') -> "clipper::Coord_map":
         return _clipper.Coord_map___add_base__(self, h2)
@@ -3013,10 +5750,28 @@ def product_Coord_map(s: 'clipper::ftype const &', u1: 'Coord_map') -> "clipper:
 product_Coord_map = _clipper.product_Coord_map
 
 class U_aniso_orth(object):
+    """
+
+
+    Anisotropic orthogonal atomic displacement parameters.  
+
+    These are defined on orthogonal atomic coordinates in A-2, i.e. they are
+    anisotropic U values.  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from Uij  
+
+        """
         this = _clipper.new_U_aniso_orth(*args)
         try:
             self.this.append(this)
@@ -3024,13 +5779,59 @@ class U_aniso_orth(object):
             self.this = this
 
     def u_iso(self) -> "clipper::ftype":
+        """
+
+
+        return nearest isotropic U  
+
+        The best isotropic U is the cube root of the determinant of the matrix of
+        anisotropic coefficients. NOTE: This is not the conventional definition, but the
+        mathematically correct one, and gives a better approximation to the anisotropic
+        U (i.e. lower R-factors).  
+
+        Returns
+        -------
+        The nearest isotropic U.  
+
+        """
         return _clipper.U_aniso_orth_u_iso(self)
 
+
     def u_aniso_frac(self, cell: 'Cell') -> "clipper::U_aniso_frac":
+        """
+
+
+        orthogonal-fractional conversion  
+
+        Parameters
+        ----------
+        * `cell` :  
+            The cell concerned  
+
+        Returns
+        -------
+        The transformed coordinate.  
+
+        """
         return _clipper.U_aniso_orth_u_aniso_frac(self, cell)
 
+
     def transform(self, op: 'RTop_orth') -> "clipper::U_aniso_orth":
+        """
+
+
+        return transformed U_aniso  
+
+        The aniso U is transformed by the given RT op.  
+
+        Parameters
+        ----------
+        * `u` :  
+            The aniso U.  
+
+        """
         return _clipper.U_aniso_orth_transform(self, op)
+
 
     def __add__(self, u2: 'U_aniso_orth') -> "clipper::U_aniso_orth":
         return _clipper.U_aniso_orth___add__(self, u2)
@@ -3067,10 +5868,28 @@ def product_U_aniso_orth(s: 'clipper::ftype const &', u: 'U_aniso_orth') -> "cli
 product_U_aniso_orth = _clipper.product_U_aniso_orth
 
 class U_aniso_frac(object):
+    """
+
+
+    Anisotropic fractional atomic displacement parameters.  
+
+    These are defined on fractional atomic coordinates in A-2, i.e. they are
+    anisotropic U values.  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from Uij  
+
+        """
         this = _clipper.new_U_aniso_frac(*args)
         try:
             self.this.append(this)
@@ -3078,10 +5897,40 @@ class U_aniso_frac(object):
             self.this = this
 
     def u_aniso_orth(self, cell: 'Cell') -> "clipper::U_aniso_orth":
+        """
+
+
+        fractional-orthogonal conversion  
+
+        Parameters
+        ----------
+        * `cell` :  
+            The cell concerned  
+
+        Returns
+        -------
+        The transformed coordinate.  
+
+        """
         return _clipper.U_aniso_frac_u_aniso_orth(self, cell)
 
+
     def transform(self, op: 'RTop_frac') -> "clipper::U_aniso_frac":
+        """
+
+
+        return transformed U_aniso  
+
+        The aniso U is transformed by the given RT op.  
+
+        Parameters
+        ----------
+        * `u` :  
+            The aniso U.  
+
+        """
         return _clipper.U_aniso_frac_transform(self, op)
+
 
     def __add__(self, u2: 'U_aniso_frac') -> "clipper::U_aniso_frac":
         return _clipper.U_aniso_frac___add__(self, u2)
@@ -3118,10 +5967,27 @@ def product_U_aniso_frac(s: 'clipper::ftype const &', u: 'U_aniso_frac') -> "cli
 product_U_aniso_frac = _clipper.product_U_aniso_frac
 
 class Grid(object):
+    """
+
+
+    generic grid  
+
+    This holds the dimensions of a 3D array, indexed from 0 along each dimension.  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from nu,nv,nw  
+
+        """
         this = _clipper.new_Grid(*args)
         try:
             self.this.append(this)
@@ -3129,31 +5995,96 @@ class Grid(object):
             self.this = this
 
     def nu(self) -> "int const &":
+        """
+
+
+        get nu  
+
+        """
         return _clipper.Grid_nu(self)
 
+
     def nv(self) -> "int const &":
+        """
+
+
+        get nv  
+
+        """
         return _clipper.Grid_nv(self)
 
+
     def nw(self) -> "int const &":
+        """
+
+
+        get nw  
+
+        """
         return _clipper.Grid_nw(self)
 
+
     def size(self) -> "int":
+        """
+
+
+        return size of grid array  
+
+        """
         return _clipper.Grid_size(self)
 
+
     def in_grid(self, g: 'Coord_grid') -> "bool":
+        """
+
+
+        determine if a point is in the grid  
+
+        """
         return _clipper.Grid_in_grid(self, g)
 
+
     def index(self, c: 'Coord_grid') -> "int":
+        """
+
+
+        grid indexing operator  
+
+        """
         return _clipper.Grid_index(self, c)
 
+
     def deindex(self, index: 'int const &') -> "clipper::Coord_grid":
+        """
+
+
+        grid deindexing operator  
+
+        """
         return _clipper.Grid_deindex(self, index)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        Returns
+        -------
+        The formatted text string  
+
+        """
         return _clipper.Grid_format(self)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.Grid_debug(self)
+
 
     @property
     def dim(self):
@@ -3168,10 +6099,53 @@ Grid_swigregister = _clipper.Grid_swigregister
 Grid_swigregister(Grid)
 
 class Grid_sampling(Grid):
+    """
+
+
+    Grid sampling of a unit cell.  
+
+        This class represents the grid sampling of a unit cell. It is
+     otherwise identical to its parent, clipper::Grid_cell, but has an additional
+    constructor which takes a spacegroup, cell and resolution and produces an
+    appropriate grid obeying all of the symmetry constraints, and using efficient
+    factors for the calculation of FFTs.  
+
+    note: The following methods are inherited from Grid and Grid_cell but are
+        documented here for convenience: nu(), nv(), nw(), size(), index(),
+        deindex(), format(), coord_frac(), coord_grid(), to_unit().  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from Spacegroup, Cell, Resolution, Shannon rate  
+
+        A grid is chosen to represent the specified cell at the given resolution,
+        obeying any restrictions imposed by the spacegroup. A slightly finer grid may be
+        chosen if doing so is liable to significantly increase the speed of FFTs on that
+        grid.  
+
+        Parameters
+        ----------
+        * `spacegroup` :  
+            The spacegroup which the grid must obey.  
+        * `cell` :  
+            The cell which the grid must contain.  
+        * `resol` :  
+            The resolution to which the grid must sample.  
+        * `rate` :  
+            The linear Shannon rate (oversampling) required. If rate = 1, the grid
+            spaceing will be half the resolution (the the minimum required). For a grid
+            spaceing of resol/3, use the default rate=1.5.  
+
+        """
         this = _clipper.new_Grid_sampling(*args)
         try:
             self.this.append(this)
@@ -3179,16 +6153,80 @@ class Grid_sampling(Grid):
             self.this = this
 
     def init(self, spacegroup: 'Spacegroup', cell: 'Cell', resol: 'Resolution', rate: 'clipper::ftype const'=1.5) -> "void":
+        """
+
+
+        initialiser: from Spacegroup, Cell, Resolution, Shannon rate  
+
+        A grid is chosen to represent the specified cell at the given resolution,
+        obeying any restrictions imposed by the spacegroup. A slightly finer grid may be
+        chosen if doing so is liable to significantly increase the speed of FFTs on that
+        grid.  
+
+        Parameters
+        ----------
+        * `spacegroup` :  
+            The spacegroup which the grid must obey.  
+        * `cell` :  
+            The cell which the grid must contain.  
+        * `resol` :  
+            The resolution to which the grid must sample.  
+        * `rate` :  
+            The linear Shannon rate (oversampling) required. If rate = 1, the grid
+            spaceing will be half the resolution (the the minimum required). For a grid
+            spaceing of resol/3, use the default rate=1.5.  
+
+        """
         return _clipper.Grid_sampling_init(self, spacegroup, cell, resol, rate)
 
+
     def matrix_grid_frac(self) -> "clipper::Mat33< >":
+        """
+
+
+        return matrix which converts grid to fractional coordinates  
+
+        The result is an RT operator. This is a redudent representation, but is handy
+        for assembling compound operators.  
+
+        Returns
+        -------
+        The operator  
+
+        """
         return _clipper.Grid_sampling_matrix_grid_frac(self)
 
+
     def matrix_frac_grid(self) -> "clipper::Mat33< >":
+        """
+
+
+        return matrix which converts fractional to grid coordinates  
+
+        The result is an RT operator. This is a redudent representation, but is handy
+        for assembling compound operators.  
+
+        Returns
+        -------
+        The operator  
+
+        """
         return _clipper.Grid_sampling_matrix_frac_grid(self)
 
+
     def is_null(self) -> "bool":
+        """
+
+
+        test if object has been initialised  
+
+        Returns
+        -------
+        true if the object has not been initalised.  
+
+        """
         return _clipper.Grid_sampling_is_null(self)
+
 
     def __str__(self) -> "std::string":
         return _clipper.Grid_sampling___str__(self)
@@ -3205,10 +6243,31 @@ Grid_sampling_swigregister = _clipper.Grid_sampling_swigregister
 Grid_sampling_swigregister(Grid_sampling)
 
 class HKL_sampling(object):
+    """
+
+
+    HKL sampling of reciprocal space.  
+
+    The HKL_sampling class uniquely describes a P0 reflection list bounded by some
+    resolution limit in reciprocal space. It is described in terms of large
+    integers, and so immune from rounding errors once the object is constructed.  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: takes parameters of normal or inverse cell  
+
+        Initialise using cell and resolution.  
+
+        """
         this = _clipper.new_HKL_sampling(*args)
         try:
             self.this.append(this)
@@ -3216,19 +6275,66 @@ class HKL_sampling(object):
             self.this = this
 
     def hkl_limit(self) -> "clipper::HKL":
+        """
+
+
+        return limiting values of H, K, L  
+
+        Returned HKL contains maximum possible values of H, K, L respectively.  
+
+        Returns
+        -------
+        Limiting h,k,l.  
+
+        """
         return _clipper.HKL_sampling_hkl_limit(self)
 
+
     def resolution(self, cell: 'Cell') -> "clipper::Resolution":
+        """
+
+
+        return approximate resolution given cell  
+
+        Returned resolution is an estimate based on highest reflection in list.  
+
+        Returns
+        -------
+        The resolution.  
+
+        """
         return _clipper.HKL_sampling_resolution(self, cell)
 
+
     def in_resolution(self, h: 'HKL') -> "bool":
+        """
+
+
+        test if a reflection is within the resolution limit  
+
+        """
         return _clipper.HKL_sampling_in_resolution(self, h)
 
+
     def is_null(self) -> "bool":
+        """
+
+
+        test if object has been initialised  
+
+        """
         return _clipper.HKL_sampling_is_null(self)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        """
         return _clipper.HKL_sampling_format(self)
+
 
     def __eq__(self, hkl2: 'HKL_sampling') -> "bool":
         return _clipper.HKL_sampling___eq__(self, hkl2)
@@ -3245,10 +6351,40 @@ def equals_HKL_samp(h1: 'HKL_sampling', h2: 'HKL_sampling') -> "int":
 equals_HKL_samp = _clipper.equals_HKL_samp
 
 class Grid_range(Grid):
+    """
+
+
+    Grid range class: defines array limits for a grid.  
+
+    This class is used for describing 3D grids covering an arbitrary part of the 3D
+    space, i.e. which do not start from (0,0,0).  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: make grid to hold a sphere from cell, grid, radius  
+
+        Make a map grid large enough to fully enclose a sphere about the origin of a
+        given radius with a given cell and grid sampling.  
+
+        Parameters
+        ----------
+        * `cell` :  
+            The cell parameters.  
+        * `grid` :  
+            The grid sampling of the whole cell.  
+        * `radius` :  
+            The radius of the sphere in Angstroms.  
+
+        """
         this = _clipper.new_Grid_range(*args)
         try:
             self.this.append(this)
@@ -3256,32 +6392,101 @@ class Grid_range(Grid):
             self.this = this
 
     def min(self) -> "clipper::Coord_grid const &":
+        """
+
+
+        access grid limits  
+
+        """
         return _clipper.Grid_range_min(self)
 
+
     def max(self) -> "clipper::Coord_grid const &":
+        """
+
+
+        access grid limits  
+
+        """
         return _clipper.Grid_range_max(self)
 
+
     def add_border(self, b: 'int const') -> "void":
+        """
+
+
+        border: increase grid to include given border  
+
+        Enlarge the grid by adding `b` cells in every direction. Will shrink the grid if
+        `b` is negative.  
+
+        Parameters
+        ----------
+        * `b` :  
+            The number of cells by which to enlarge/shrink.  
+
+        """
         return _clipper.Grid_range_add_border(self, b)
 
+
     def in_grid(self, g: 'Coord_grid') -> "bool":
+        """
+
+
+        determine if a point is in the grid  
+
+        """
         return _clipper.Grid_range_in_grid(self, g)
 
+
     def index(self, c: 'Coord_grid') -> "int":
+        """
+
+
+        grid indexing operator  
+
+        """
         return _clipper.Grid_range_index(self, c)
 
+
     def deindex(self, index: 'int const &') -> "clipper::Coord_grid":
+        """
+
+
+        grid deindexing operator  
+
+        """
         return _clipper.Grid_range_deindex(self, index)
+
     __swig_destroy__ = _clipper.delete_Grid_range
     __del__ = lambda self: None
 Grid_range_swigregister = _clipper.Grid_range_swigregister
 Grid_range_swigregister(Grid_range)
 
 class Atom(object):
+    """
+
+
+    Atom class.  
+
+    This class defines a minimal atom object providing only those properties
+    required for an electron density calculation. A template constructor allows it
+    to be constructed from any other object with appropriate properties.  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self):
+        """
+
+
+        Constructor: from atom-like object.  
+
+        """
         this = _clipper.new_Atom()
         try:
             self.this.append(this)
@@ -3289,41 +6494,143 @@ class Atom(object):
             self.this = this
 
     def _get_element(self) -> "clipper::String const &":
+        """
+
+
+        get atom element name: e.g. "C", "N", "Zn2+"  
+
+        """
         return _clipper.Atom__get_element(self)
 
+
     def _get_coord_orth(self) -> "clipper::Coord_orth const &":
+        """
+
+
+        get atom orthogonal (Angstrom) coordinate  
+
+        """
         return _clipper.Atom__get_coord_orth(self)
 
+
     def _get_occupancy(self) -> "clipper::ftype const &":
+        """
+
+
+        get atom occupancy  
+
+        """
         return _clipper.Atom__get_occupancy(self)
 
+
     def _get_u_iso(self) -> "clipper::ftype const &":
+        """
+
+
+        get atom orthogonal isotropic U value  
+
+        """
         return _clipper.Atom__get_u_iso(self)
 
+
     def _get_u_aniso(self) -> "clipper::U_aniso_orth const &":
+        """
+
+
+        get atom orthogonal anisotropic U value  
+
+        """
         return _clipper.Atom__get_u_aniso(self)
 
+
     def _set_element(self, s: 'String') -> "void":
+        """
+
+
+        set element  
+
+        """
         return _clipper.Atom__set_element(self, s)
 
+
     def _set_coord_orth(self, s: 'Coord_orth') -> "void":
+        """
+
+
+        set coord_orth  
+
+        """
         return _clipper.Atom__set_coord_orth(self, s)
 
+
     def _set_occupancy(self, s: 'clipper::ftype const &') -> "void":
+        """
+
+
+        set occupancy  
+
+        """
         return _clipper.Atom__set_occupancy(self, s)
 
+
     def _set_u_iso(self, s: 'clipper::ftype const &') -> "void":
+        """
+
+
+        set u_iso  
+
+        """
         return _clipper.Atom__set_u_iso(self, s)
 
+
     def _set_u_aniso(self, s: 'U_aniso_orth') -> "void":
+        """
+
+
+        set u_aniso  
+
+        """
         return _clipper.Atom__set_u_aniso(self, s)
 
+
     def transform(self, rt: 'RTop_orth') -> "void":
+        """
+
+
+        apply a rotation-translation operator (RTop) to the atom  
+
+        The coordinates and U_aniso_orth are transformed. The sigmas are not, since
+        without the full variance-covariance matrix this transformation is impossible.  
+
+        Parameters
+        ----------
+        * `rt` :  
+            The operator to apply.  
+
+        """
         return _clipper.Atom_transform(self, rt)
 
+
     def is_null(self) -> "bool":
+        """
+
+
+        test for null atom: atom is null is coord is null  
+
+        """
         return _clipper.Atom_is_null(self)
-    null = staticmethod(_clipper.Atom_null)
+
+
+    def null() -> "clipper::Atom":
+        """
+
+
+        return null atom  
+
+        """
+        return _clipper.Atom_null()
+
+    null = staticmethod(null)
 
     _allow_unknown = True
 
@@ -3390,14 +6697,39 @@ Atom_swigregister = _clipper.Atom_swigregister
 Atom_swigregister(Atom)
 
 def Atom_null() -> "clipper::Atom":
+    """
+
+
+    return null atom  
+
+    """
     return _clipper.Atom_null()
-Atom_null = _clipper.Atom_null
 
 class Atom_list(object):
+    """
+
+
+    Atom list class.  
+
+    This class defines a minimal atom list object providing only those properties
+    required for an electron density calculation. It is a trivial derivation from
+    std::vector<Atom>. In addition a template constructor allows it to be
+    constructed from any other object with appropriate properties.  
+
+    C++ includes: coords.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        Constructor: from vector-like list of atom-like objects.  
+
+        """
         this = _clipper.new_Atom_list(*args)
         try:
             self.this.append(this)
@@ -3774,10 +7106,25 @@ Unit_Cell_swigregister = _clipper.Unit_Cell_swigregister
 Unit_Cell_swigregister(Unit_Cell)
 
 class RTop_float(object):
+    """
+
+
+    Rotation-translation operator.  
+
+    C++ includes: clipper_types.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from rotation and translation  
+
+        """
         this = _clipper.new_RTop_float(*args)
         try:
             self.this.append(this)
@@ -3785,42 +7132,129 @@ class RTop_float(object):
             self.this = this
 
     def inverse(self) -> "clipper::RTop< float >":
+        """
+
+
+        inverse  
+
+        """
         return _clipper.RTop_float_inverse(self)
 
+
     def equals(self, m: 'RTop_float', tol: 'float const &') -> "bool":
+        """
+
+
+        test equality with some tolerance  
+
+        """
         return _clipper.RTop_float_equals(self, m, tol)
 
+
     def rot(self, *args) -> "clipper::Mat33< float > &":
+        """
+
+
+        set rotation  
+
+        """
         return _clipper.RTop_float_rot(self, *args)
 
+
     def trn(self, *args) -> "clipper::Vec3< float > &":
+        """
+
+
+        set translation  
+
+        """
         return _clipper.RTop_float_trn(self, *args)
-    identity = staticmethod(_clipper.RTop_float_identity)
-    null = staticmethod(_clipper.RTop_float_null)
+
+
+    def identity() -> "clipper::RTop< float >":
+        """
+
+
+        return identity operator  
+
+        """
+        return _clipper.RTop_float_identity()
+
+    identity = staticmethod(identity)
+
+    def null() -> "clipper::RTop< float >":
+        """
+
+
+        return identity operator  
+
+        """
+        return _clipper.RTop_float_null()
+
+    null = staticmethod(null)
 
     def is_null(self) -> "bool":
+        """
+
+
+        test for null operator  
+
+        """
         return _clipper.RTop_float_is_null(self)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        """
         return _clipper.RTop_float_format(self)
+
     __swig_destroy__ = _clipper.delete_RTop_float
     __del__ = lambda self: None
 RTop_float_swigregister = _clipper.RTop_float_swigregister
 RTop_float_swigregister(RTop_float)
 
 def RTop_float_identity() -> "clipper::RTop< float >":
+    """
+
+
+    return identity operator  
+
+    """
     return _clipper.RTop_float_identity()
-RTop_float_identity = _clipper.RTop_float_identity
 
 def RTop_float_null() -> "clipper::RTop< float >":
+    """
+
+
+    return identity operator  
+
+    """
     return _clipper.RTop_float_null()
-RTop_float_null = _clipper.RTop_float_null
 
 class RTop_double(object):
+    """
+
+
+    Rotation-translation operator.  
+
+    C++ includes: clipper_types.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from rotation and translation  
+
+        """
         this = _clipper.new_RTop_double(*args)
         try:
             self.this.append(this)
@@ -3828,42 +7262,129 @@ class RTop_double(object):
             self.this = this
 
     def inverse(self) -> "clipper::RTop< double >":
+        """
+
+
+        inverse  
+
+        """
         return _clipper.RTop_double_inverse(self)
 
+
     def equals(self, m: 'RTop_double', tol: 'double const &') -> "bool":
+        """
+
+
+        test equality with some tolerance  
+
+        """
         return _clipper.RTop_double_equals(self, m, tol)
 
+
     def rot(self, *args) -> "clipper::Mat33< double > &":
+        """
+
+
+        set rotation  
+
+        """
         return _clipper.RTop_double_rot(self, *args)
 
+
     def trn(self, *args) -> "clipper::Vec3< double > &":
+        """
+
+
+        set translation  
+
+        """
         return _clipper.RTop_double_trn(self, *args)
-    identity = staticmethod(_clipper.RTop_double_identity)
-    null = staticmethod(_clipper.RTop_double_null)
+
+
+    def identity() -> "clipper::RTop< double >":
+        """
+
+
+        return identity operator  
+
+        """
+        return _clipper.RTop_double_identity()
+
+    identity = staticmethod(identity)
+
+    def null() -> "clipper::RTop< double >":
+        """
+
+
+        return identity operator  
+
+        """
+        return _clipper.RTop_double_null()
+
+    null = staticmethod(null)
 
     def is_null(self) -> "bool":
+        """
+
+
+        test for null operator  
+
+        """
         return _clipper.RTop_double_is_null(self)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        """
         return _clipper.RTop_double_format(self)
+
     __swig_destroy__ = _clipper.delete_RTop_double
     __del__ = lambda self: None
 RTop_double_swigregister = _clipper.RTop_double_swigregister
 RTop_double_swigregister(RTop_double)
 
 def RTop_double_identity() -> "clipper::RTop< double >":
+    """
+
+
+    return identity operator  
+
+    """
     return _clipper.RTop_double_identity()
-RTop_double_identity = _clipper.RTop_double_identity
 
 def RTop_double_null() -> "clipper::RTop< double >":
+    """
+
+
+    return identity operator  
+
+    """
     return _clipper.RTop_double_null()
-RTop_double_null = _clipper.RTop_double_null
 
 class mat33_float(object):
+    """
+
+
+    3x3-matrix class  
+
+    C++ includes: clipper_types.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: copy/convert from symmetric matrix  
+
+        """
         this = _clipper.new_mat33_float(*args)
         try:
             self.this.append(this)
@@ -3871,27 +7392,89 @@ class mat33_float(object):
             self.this = this
 
     def det(self) -> "float":
+        """
+
+
+        determinant  
+
+        """
         return _clipper.mat33_float_det(self)
 
+
     def inverse(self) -> "clipper::Mat33< float >":
+        """
+
+
+        inverse  
+
+        """
         return _clipper.mat33_float_inverse(self)
 
+
     def transpose(self) -> "clipper::Mat33< float >":
+        """
+
+
+        transpose  
+
+        """
         return _clipper.mat33_float_transpose(self)
 
+
     def equals(self, m: 'mat33_float', tol: 'float const &') -> "bool":
+        """
+
+
+        test equality  
+
+        """
         return _clipper.mat33_float_equals(self, m, tol)
+
 
     def __call__(self, *args) -> "float &":
         return _clipper.mat33_float___call__(self, *args)
 
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        """
         return _clipper.mat33_float_format(self)
-    identity = staticmethod(_clipper.mat33_float_identity)
-    null = staticmethod(_clipper.mat33_float_null)
+
+
+    def identity() -> "clipper::Mat33< float >":
+        """
+
+
+        return identity matrix  
+
+        """
+        return _clipper.mat33_float_identity()
+
+    identity = staticmethod(identity)
+
+    def null() -> "clipper::Mat33< float >":
+        """
+
+
+        return null matrix (only valid for floating point types)  
+
+        """
+        return _clipper.mat33_float_null()
+
+    null = staticmethod(null)
 
     def is_null(self) -> "bool":
+        """
+
+
+        test for null matrix (only valid for floating point types)  
+
+        """
         return _clipper.mat33_float_is_null(self)
+
 
     def __getitem__(self, i: 'int') -> "clipper::matrixRowClipper< float >":
         return _clipper.mat33_float___getitem__(self, i)
@@ -3922,18 +7505,43 @@ mat33_float_swigregister = _clipper.mat33_float_swigregister
 mat33_float_swigregister(mat33_float)
 
 def mat33_float_identity() -> "clipper::Mat33< float >":
+    """
+
+
+    return identity matrix  
+
+    """
     return _clipper.mat33_float_identity()
-mat33_float_identity = _clipper.mat33_float_identity
 
 def mat33_float_null() -> "clipper::Mat33< float >":
+    """
+
+
+    return null matrix (only valid for floating point types)  
+
+    """
     return _clipper.mat33_float_null()
-mat33_float_null = _clipper.mat33_float_null
 
 class mat33_double(object):
+    """
+
+
+    3x3-matrix class  
+
+    C++ includes: clipper_types.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: copy/convert from symmetric matrix  
+
+        """
         this = _clipper.new_mat33_double(*args)
         try:
             self.this.append(this)
@@ -3941,27 +7549,89 @@ class mat33_double(object):
             self.this = this
 
     def det(self) -> "double":
+        """
+
+
+        determinant  
+
+        """
         return _clipper.mat33_double_det(self)
 
+
     def inverse(self) -> "clipper::Mat33< double >":
+        """
+
+
+        inverse  
+
+        """
         return _clipper.mat33_double_inverse(self)
 
+
     def transpose(self) -> "clipper::Mat33< double >":
+        """
+
+
+        transpose  
+
+        """
         return _clipper.mat33_double_transpose(self)
 
+
     def equals(self, m: 'mat33_double', tol: 'double const &') -> "bool":
+        """
+
+
+        test equality  
+
+        """
         return _clipper.mat33_double_equals(self, m, tol)
+
 
     def __call__(self, *args) -> "double &":
         return _clipper.mat33_double___call__(self, *args)
 
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        """
         return _clipper.mat33_double_format(self)
-    identity = staticmethod(_clipper.mat33_double_identity)
-    null = staticmethod(_clipper.mat33_double_null)
+
+
+    def identity() -> "clipper::Mat33< double >":
+        """
+
+
+        return identity matrix  
+
+        """
+        return _clipper.mat33_double_identity()
+
+    identity = staticmethod(identity)
+
+    def null() -> "clipper::Mat33< double >":
+        """
+
+
+        return null matrix (only valid for floating point types)  
+
+        """
+        return _clipper.mat33_double_null()
+
+    null = staticmethod(null)
 
     def is_null(self) -> "bool":
+        """
+
+
+        test for null matrix (only valid for floating point types)  
+
+        """
         return _clipper.mat33_double_is_null(self)
+
 
     def __getitem__(self, i: 'int') -> "clipper::matrixRowClipper< double >":
         return _clipper.mat33_double___getitem__(self, i)
@@ -3992,32 +7662,119 @@ mat33_double_swigregister = _clipper.mat33_double_swigregister
 mat33_double_swigregister(mat33_double)
 
 def mat33_double_identity() -> "clipper::Mat33< double >":
+    """
+
+
+    return identity matrix  
+
+    """
     return _clipper.mat33_double_identity()
-mat33_double_identity = _clipper.mat33_double_identity
 
 def mat33_double_null() -> "clipper::Mat33< double >":
+    """
+
+
+    return null matrix (only valid for floating point types)  
+
+    """
     return _clipper.mat33_double_null()
-mat33_double_null = _clipper.mat33_double_null
 
 class vec3_float(object):
+    """
+
+
+    3-vector class  
+
+    C++ includes: clipper_types.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def equals(self, v: 'vec3_float', tol: 'float const &') -> "bool":
+        """
+
+
+        test equality  
+
+        """
         return _clipper.vec3_float_equals(self, v, tol)
 
+
     def unit(self) -> "clipper::Vec3< float >":
+        """
+
+
+        return unit vector with same direction as this vector  
+
+        """
         return _clipper.vec3_float_unit(self)
-    zero = staticmethod(_clipper.vec3_float_zero)
-    null = staticmethod(_clipper.vec3_float_null)
+
+
+    def zero() -> "clipper::Vec3< float >":
+        """
+
+
+        return zero vector  
+
+        """
+        return _clipper.vec3_float_zero()
+
+    zero = staticmethod(zero)
+
+    def null() -> "clipper::Vec3< float >":
+        """
+
+
+        return null vector (only valid for floating point types)  
+
+        """
+        return _clipper.vec3_float_null()
+
+    null = staticmethod(null)
 
     def is_null(self) -> "bool":
+        """
+
+
+        test for null vector  
+
+        """
         return _clipper.vec3_float_is_null(self)
-    dot = staticmethod(_clipper.vec3_float_dot)
-    cross = staticmethod(_clipper.vec3_float_cross)
+
+
+    def dot(v1: 'vec3_float', v2: 'vec3_float') -> "float":
+        """
+
+
+        Vector dot product (equivalent to *)  
+
+        """
+        return _clipper.vec3_float_dot(v1, v2)
+
+    dot = staticmethod(dot)
+
+    def cross(v1: 'vec3_float', v2: 'vec3_float') -> "clipper::Vec3< float >":
+        """
+
+
+        Vector cross product.  
+
+        """
+        return _clipper.vec3_float_cross(v1, v2)
+
+    cross = staticmethod(cross)
 
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        """
         return _clipper.vec3_float_format(self)
+
 
     def __iadd__(self, v: 'vec3_float') -> "clipper::Vec3< float > const &":
         return _clipper.vec3_float___iadd__(self, v)
@@ -4026,6 +7783,12 @@ class vec3_float(object):
         return _clipper.vec3_float___isub__(self, v)
 
     def __init__(self, *args):
+        """
+
+
+        constructor: copy/convert  
+
+        """
         this = _clipper.new_vec3_float(*args)
         try:
             self.this.append(this)
@@ -4049,40 +7812,137 @@ vec3_float_swigregister = _clipper.vec3_float_swigregister
 vec3_float_swigregister(vec3_float)
 
 def vec3_float_zero() -> "clipper::Vec3< float >":
+    """
+
+
+    return zero vector  
+
+    """
     return _clipper.vec3_float_zero()
-vec3_float_zero = _clipper.vec3_float_zero
 
 def vec3_float_null() -> "clipper::Vec3< float >":
+    """
+
+
+    return null vector (only valid for floating point types)  
+
+    """
     return _clipper.vec3_float_null()
-vec3_float_null = _clipper.vec3_float_null
 
 def vec3_float_dot(v1: 'vec3_float', v2: 'vec3_float') -> "float":
+    """
+
+
+    Vector dot product (equivalent to *)  
+
+    """
     return _clipper.vec3_float_dot(v1, v2)
-vec3_float_dot = _clipper.vec3_float_dot
 
 def vec3_float_cross(v1: 'vec3_float', v2: 'vec3_float') -> "clipper::Vec3< float >":
+    """
+
+
+    Vector cross product.  
+
+    """
     return _clipper.vec3_float_cross(v1, v2)
-vec3_float_cross = _clipper.vec3_float_cross
 
 class vec3_double(object):
+    """
+
+
+    3-vector class  
+
+    C++ includes: clipper_types.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def equals(self, v: 'vec3_double', tol: 'double const &') -> "bool":
+        """
+
+
+        test equality  
+
+        """
         return _clipper.vec3_double_equals(self, v, tol)
 
+
     def unit(self) -> "clipper::Vec3< double >":
+        """
+
+
+        return unit vector with same direction as this vector  
+
+        """
         return _clipper.vec3_double_unit(self)
-    zero = staticmethod(_clipper.vec3_double_zero)
-    null = staticmethod(_clipper.vec3_double_null)
+
+
+    def zero() -> "clipper::Vec3< double >":
+        """
+
+
+        return zero vector  
+
+        """
+        return _clipper.vec3_double_zero()
+
+    zero = staticmethod(zero)
+
+    def null() -> "clipper::Vec3< double >":
+        """
+
+
+        return null vector (only valid for floating point types)  
+
+        """
+        return _clipper.vec3_double_null()
+
+    null = staticmethod(null)
 
     def is_null(self) -> "bool":
+        """
+
+
+        test for null vector  
+
+        """
         return _clipper.vec3_double_is_null(self)
-    dot = staticmethod(_clipper.vec3_double_dot)
-    cross = staticmethod(_clipper.vec3_double_cross)
+
+
+    def dot(v1: 'vec3_double', v2: 'vec3_double') -> "double":
+        """
+
+
+        Vector dot product (equivalent to *)  
+
+        """
+        return _clipper.vec3_double_dot(v1, v2)
+
+    dot = staticmethod(dot)
+
+    def cross(v1: 'vec3_double', v2: 'vec3_double') -> "clipper::Vec3< double >":
+        """
+
+
+        Vector cross product.  
+
+        """
+        return _clipper.vec3_double_cross(v1, v2)
+
+    cross = staticmethod(cross)
 
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        """
         return _clipper.vec3_double_format(self)
+
 
     def __iadd__(self, v: 'vec3_double') -> "clipper::Vec3< double > const &":
         return _clipper.vec3_double___iadd__(self, v)
@@ -4091,6 +7951,12 @@ class vec3_double(object):
         return _clipper.vec3_double___isub__(self, v)
 
     def __init__(self, *args):
+        """
+
+
+        constructor: copy/convert  
+
+        """
         this = _clipper.new_vec3_double(*args)
         try:
             self.this.append(this)
@@ -4114,26 +7980,83 @@ vec3_double_swigregister = _clipper.vec3_double_swigregister
 vec3_double_swigregister(vec3_double)
 
 def vec3_double_zero() -> "clipper::Vec3< double >":
+    """
+
+
+    return zero vector  
+
+    """
     return _clipper.vec3_double_zero()
-vec3_double_zero = _clipper.vec3_double_zero
 
 def vec3_double_null() -> "clipper::Vec3< double >":
+    """
+
+
+    return null vector (only valid for floating point types)  
+
+    """
     return _clipper.vec3_double_null()
-vec3_double_null = _clipper.vec3_double_null
 
 def vec3_double_dot(v1: 'vec3_double', v2: 'vec3_double') -> "double":
+    """
+
+
+    Vector dot product (equivalent to *)  
+
+    """
     return _clipper.vec3_double_dot(v1, v2)
-vec3_double_dot = _clipper.vec3_double_dot
 
 def vec3_double_cross(v1: 'vec3_double', v2: 'vec3_double') -> "clipper::Vec3< double >":
+    """
+
+
+    Vector cross product.  
+
+    """
     return _clipper.vec3_double_cross(v1, v2)
-vec3_double_cross = _clipper.vec3_double_cross
 
 class HKL_info(object):
+    """
+
+
+    HKL list container and tree root.  
+
+    This object contains contains a reflection list, and all the properties on which
+    such a list depends, i.e. spacegroup, cell, resolution. It also keeps a fast
+    reflection lookup list and lookup lists for resolutions and reflection classes.  
+
+    C++ includes: hkl_info.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: Takes spacegroup, cell, and resolution  
+
+        Construct and initialise HKL_info object. This updates the spacegroup and cell
+        and clears the reflection list. The resolution is used as a rejection criterion
+        for reflections - no HKL will be stored beyond the given limit. Initially there
+        are no reflections in the reflection list: see generate_hkl_list().  
+
+        If any of the parameters have null values, the existing values will be
+        unchanged. The object will only be fully initialised once all parameters are
+        available.  
+
+        Parameters
+        ----------
+        * `spacegroup` :  
+            The spacegroup.  
+        * `cell` :  
+            The unit cell.  
+        * `resolution` :  
+            The resolution limit.  
+
+        """
         this = _clipper.new_HKL_info(*args)
         try:
             self.this.append(this)
@@ -4141,55 +8064,228 @@ class HKL_info(object):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        initialiser: Takes spacegroup, cell, and HKL_sampling  
+
+        Initialise the HKL_info object. This updates the spacegroup and cell and clears
+        the reflection list. The HKL_sampling determines the reflection list.  
+
+        If any of the parameters have null values, the existing values will be
+        unchanged. The object will only be fully initialised once all parameters are
+        available.  
+
+        Parameters
+        ----------
+        * `spacegroup` :  
+            The spacegroup.  
+        * `cell` :  
+            The unit cell.  
+        * `hkl_sampling` :  
+            The resolution limit.  
+        * `generate` :  
+            If true, a reflection list will be generated for an ASU.  
+
+        """
         return _clipper.HKL_info_init(self, *args)
 
+
     def is_null(self) -> "bool":
+        """
+
+
+        test if object has been initialised  
+
+        Returns
+        -------
+        true if the object has not been initalised.  
+
+        """
         return _clipper.HKL_info_is_null(self)
 
+
     def cell(self) -> "clipper::Cell const &":
+        """
+
+
+        get the cell  
+
+        """
         return _clipper.HKL_info_cell(self)
 
+
     def spacegroup(self) -> "clipper::Spacegroup const &":
+        """
+
+
+        get the spacegroup  
+
+        """
         return _clipper.HKL_info_spacegroup(self)
 
+
     def hkl_sampling(self) -> "clipper::HKL_sampling const &":
+        """
+
+
+        [CLIPPER2] get HKL_sampling  
+
+        """
         return _clipper.HKL_info_hkl_sampling(self)
 
+
     def resolution(self) -> "clipper::Resolution const &":
+        """
+
+
+        get the resolution  
+
+        """
         return _clipper.HKL_info_resolution(self)
 
+
     def generate_hkl_list(self) -> "void":
+        """
+
+
+        synthesize hkl list  
+
+        Using current cell, spacegroup, resolution.  
+
+        """
         return _clipper.HKL_info_generate_hkl_list(self)
 
+
     def add_hkl_list(self, add: 'HKLVector') -> "void":
+        """
+
+
+        add new reflections to the list  
+
+        The new HKLs are transformed to the default reciprocal ASU, and added to the
+        reflection list. Duplicates and reflections outside the resoluution limit are
+        ignored. Then the fast lookup tables for HKL, invresolsq, and reflection class
+        are rebuilt.  
+
+        Parameters
+        ----------
+        * `add` :  
+            The list of new reflections to add.  
+
+        """
         return _clipper.HKL_info_add_hkl_list(self, add)
 
+
     def num_reflections(self) -> "int":
+        """
+
+
+        get number of reflections in the object  
+
+        """
         return _clipper.HKL_info_num_reflections(self)
 
+
     def hkl_of(self, index: 'int const &') -> "clipper::HKL const &":
+        """
+
+
+        reflection hkl from index  
+
+        Parameters
+        ----------
+        * `index` :  
+            The index.  
+
+        Returns
+        -------
+        The corresponding HKL.  
+
+        """
         return _clipper.HKL_info_hkl_of(self, index)
 
+
     def index_of(self, rfl: 'HKL') -> "int":
+        """
+
+
+        reflection index from hkl  
+
+        This does not check symmetry equivalents (see find_sym).  
+
+        Parameters
+        ----------
+        * `rfl` :  
+            The HKL.  
+
+        Returns
+        -------
+        The index, or -1 if it does not exist.  
+
+        """
         return _clipper.HKL_info_index_of(self, rfl)
 
+
     def invresolsq(self, index: 'int const &') -> "clipper::ftype32 const &":
+        """
+
+
+        get reflection resolution using lookup  
+
+        """
         return _clipper.HKL_info_invresolsq(self, index)
 
+
     def invresolsq_range(self) -> "Range< clipper::ftype > const &":
+        """
+
+
+        get resolution limits of the list  
+
+        """
         return _clipper.HKL_info_invresolsq_range(self)
 
+
     def hkl_class(self, index: 'int const &') -> "clipper::HKL_class const &":
+        """
+
+
+        get reflection class using lookup  
+
+        """
         return _clipper.HKL_info_hkl_class(self, index)
 
+
     def find_sym(self, rfl: 'HKL', sym: 'int &', friedel: 'bool &') -> "clipper::HKL":
+        """
+
+
+        find symop no and friedel to bring an HKL into ASU  
+
+        Returns the index of the reflection, the sym no. and Friedel flag.  
+
+        """
         return _clipper.HKL_info_find_sym(self, rfl, sym, friedel)
 
+
     def first(self) -> "clipper::HKL_info::HKL_reference_index":
+        """
+
+
+        return HKL_reference_index pointing to first reflection  
+
+        """
         return _clipper.HKL_info_first(self)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_info_debug(self)
+
 
     cell = property(cell)
     spacegroup = property(spacegroup)
@@ -4201,10 +8297,19 @@ HKL_info_swigregister = _clipper.HKL_info_swigregister
 HKL_info_swigregister(HKL_info)
 
 class HKL_data_cacheobj(HKL_info):
+    """
+
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data_cachekey: 'clipper::HKL_data_cacheobj::Key const &'):
+        """
+
+
+        """
         this = _clipper.new_HKL_data_cacheobj(hkl_data_cachekey)
         try:
             self.this.append(this)
@@ -4212,10 +8317,20 @@ class HKL_data_cacheobj(HKL_info):
             self.this = this
 
     def matches(self, hkl_data_cachekey: 'clipper::HKL_data_cacheobj::Key const &') -> "bool":
+        """
+
+
+        """
         return _clipper.HKL_data_cacheobj_matches(self, hkl_data_cachekey)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        """
         return _clipper.HKL_data_cacheobj_format(self)
+
     mutex = _swig_property(_clipper.HKL_data_cacheobj_mutex_get, _clipper.HKL_data_cacheobj_mutex_set)
     __swig_destroy__ = _clipper.delete_HKL_data_cacheobj
     __del__ = lambda self: None
@@ -4223,6 +8338,34 @@ HKL_data_cacheobj_swigregister = _clipper.HKL_data_cacheobj_swigregister
 HKL_data_cacheobj_swigregister(HKL_data_cacheobj)
 
 class Datatype_base(object):
+    """
+
+
+    Reflection data type objects.  
+
+    A class from which data type objects are usually derived  
+
+    To define a new type for use in an HKL_data structure, subclass this class and
+    override the following methods:  
+
+    *   constructor - initialises to NAN  
+    *   type() - returns type name, which is a list of the contained data  
+    *   friedel() - applies Fridel transformation  
+    *   shift_phase() - applies phase shift transformation  
+    *   missing() - checks if data is present  
+    *   data_size() - number of data elements in this type  
+    *   data_names() - names of data elements in this type  
+    *   data_export() - conversion to array (for I/O)  
+    *   data_import() - conversion from array (for I/O)  
+    *   scale() - (OPTIONAL) apply magnitude scale factor to data  
+
+    note: polymorphism is NOT used here because virtual tables would be to expensive
+        for every individual reflection, both in terms of space and cpu cycles.  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
@@ -4238,83 +8381,313 @@ Datatype_base_swigregister = _clipper.Datatype_base_swigregister
 Datatype_base_swigregister(Datatype_base)
 
 class HKL_data_base(object):
+    """
+
+
+    HKL_data_base.  
+
+    This is the virtual base for the typed hkl_data objects. It exists to guarantee
+    and interface by which data can be managed without knowledge of the specific
+    data type.  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from spacegroup, cell, and HKL_sampling  
+
+        Initialise the object using a given spacegroup, cell, and sampling.  
+
+        Parameters
+        ----------
+        * `spacegroup` :  
+            The spacegroup for this datalist.  
+        * `cell` :  
+            The unit cell for this datalist.  
+        * `hkl_sampling` :  
+            The reflection list description.  
+
+        """
         return _clipper.HKL_data_base_init(self, *args)
 
+
     def is_null(self) -> "bool":
+        """
+
+
+        test if object has been initialised  
+
+        Returns
+        -------
+        true if the object has not been initalised.  
+
+        """
         return _clipper.HKL_data_base_is_null(self)
 
+
     def base_hkl_info(self) -> "clipper::HKL_info const &":
+        """
+
+
+        get the parent HKL_info object  
+
+        """
         return _clipper.HKL_data_base_base_hkl_info(self)
 
+
     def base_cell(self) -> "clipper::Cell const &":
+        """
+
+
+        get the parent cell  
+
+        """
         return _clipper.HKL_data_base_base_cell(self)
 
+
     def spacegroup(self) -> "clipper::Spacegroup const &":
+        """
+
+
+        [CLIPPER2] get spacegroup  
+
+        """
         return _clipper.HKL_data_base_spacegroup(self)
 
+
     def cell(self) -> "clipper::Cell const &":
+        """
+
+
+        [CLIPPER2] get cell  
+
+        """
         return _clipper.HKL_data_base_cell(self)
 
+
     def resolution(self) -> "clipper::Resolution const &":
+        """
+
+
+        [CLIPPER2] get resolution  
+
+        """
         return _clipper.HKL_data_base_resolution(self)
 
+
     def hkl_sampling(self) -> "clipper::HKL_sampling const &":
+        """
+
+
+        [CLIPPER2] get HKL_sampling  
+
+        """
         return _clipper.HKL_data_base_hkl_sampling(self)
 
+
     def hkl_info(self) -> "clipper::HKL_info const &":
+        """
+
+
+        [CLIPPER2] get HKL_info object  
+
+        """
         return _clipper.HKL_data_base_hkl_info(self)
 
+
     def invresolsq(self, index: 'int const &') -> "clipper::ftype":
+        """
+
+
+        get resolution by reflection index (based on true cell)  
+
+        Return the resolution of a particular reflection. If the cell of this list
+        closely matches (to within 0.5A) the cell of the parent list, this is a simple
+        lookup, otherwise a metric calculation is required.  
+
+        """
         return _clipper.HKL_data_base_invresolsq(self, index)
 
+
     def invresolsq_range(self) -> "Range< clipper::ftype >":
+        """
+
+
+        get resolution limits of the list (based on true cell and missing data)  
+
+        Returns
+        -------
+        The high and low resolution limits of the non-missing data.  
+
+        """
         return _clipper.HKL_data_base_invresolsq_range(self)
 
+
     def num_obs(self) -> "int":
+        """
+
+
+        get number of observations in this list (based on missing data)  
+
+        Returns
+        -------
+        The number of non-missing data in the object.  
+
+        """
         return _clipper.HKL_data_base_num_obs(self)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        """
         return _clipper.HKL_data_base_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_base_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_base_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_base_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_base_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_base_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_base_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_base_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        mask the data by marking any data missing in 'mask' as missing  
+
+        """
         return _clipper.HKL_data_base_mask(self, mask)
 
+
     def first(self) -> "clipper::HKL_data_base::HKL_reference_index":
+        """
+
+
+        return HKL_reference_index pointing to first reflection  
+
+        Returns
+        -------
+        HKL reference to the first data in this object.  
+
+        """
         return _clipper.HKL_data_base_first(self)
 
+
     def first_data(self) -> "clipper::HKL_data_base::HKL_reference_index":
+        """
+
+
+        return HKL_reference_index pointing to first non-missing data  
+
+        Returns
+        -------
+        HKL reference to the first non-missing data in this object.  
+
+        """
         return _clipper.HKL_data_base_first_data(self)
 
+
     def next_data(self, ih: 'clipper::HKL_data_base::HKL_reference_index &') -> "clipper::HKL_data_base::HKL_reference_index &":
+        """
+
+
+        increment HKL_reference_index to next non-missing data  
+
+        Parameters
+        ----------
+        * `ih` :  
+            The HKL reference to increment.  
+
+        Returns
+        -------
+        HKL reference to the next non-missing data in this object.  
+
+        """
         return _clipper.HKL_data_base_next_data(self, ih)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_base_debug(self)
+
 
     def __init__(self):
         if self.__class__ == HKL_data_base:
@@ -4385,10 +8758,21 @@ HKL_reference_index_swigregister = _clipper.HKL_reference_index_swigregister
 HKL_reference_index_swigregister(HKL_reference_index)
 
 class Xmap_cacheobj(object):
+    """
+
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, xmap_cachekey: 'clipper::Xmap_cacheobj::Key const &'):
+        """
+
+
+        construct entry  
+
+        """
         this = _clipper.new_Xmap_cacheobj(xmap_cachekey)
         try:
             self.this.append(this)
@@ -4396,10 +8780,24 @@ class Xmap_cacheobj(object):
             self.this = this
 
     def matches(self, xmap_cachekey: 'clipper::Xmap_cacheobj::Key const &') -> "bool":
+        """
+
+
+        compare entry  
+
+        """
         return _clipper.Xmap_cacheobj_matches(self, xmap_cachekey)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        string description  
+
+        """
         return _clipper.Xmap_cacheobj_format(self)
+
     key = _swig_property(_clipper.Xmap_cacheobj_key_get, _clipper.Xmap_cacheobj_key_set)
     xtl_grid = _swig_property(_clipper.Xmap_cacheobj_xtl_grid_get, _clipper.Xmap_cacheobj_xtl_grid_set)
     asu_grid = _swig_property(_clipper.Xmap_cacheobj_asu_grid_get, _clipper.Xmap_cacheobj_asu_grid_set)
@@ -4419,6 +8817,23 @@ Xmap_cacheobj_swigregister = _clipper.Xmap_cacheobj_swigregister
 Xmap_cacheobj_swigregister(Xmap_cacheobj)
 
 class Xmap_base(object):
+    """
+
+
+    Xmap_base: base for crystallographic map class.  
+
+    The crystallographic map class stores a map of arbitrary data type. Its main
+    difference from a 3-d array is that the data extent appears to be infinite, and
+    yet internally only a unique ASU is stored. Iterators provide efficient access
+    to data.  
+
+    This base contains everything except the data, which is templated in the derived
+    type Xmap<T>  
+
+    C++ includes: xmap.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
 
     def __init__(self, *args, **kwargs):
@@ -4429,28 +8844,108 @@ class Xmap_base(object):
     Sparse = _clipper.Xmap_base_Sparse
 
     def is_null(self) -> "bool":
+        """
+
+
+        test if object has been initialised  
+
+        Returns
+        -------
+        true if the object has not been initalised.  
+
+        """
         return _clipper.Xmap_base_is_null(self)
 
+
     def cell(self) -> "clipper::Cell const &":
+        """
+
+
+        get the cell  
+
+        """
         return _clipper.Xmap_base_cell(self)
 
+
     def spacegroup(self) -> "clipper::Spacegroup const &":
+        """
+
+
+        get the spacegroup  
+
+        """
         return _clipper.Xmap_base_spacegroup(self)
 
+
     def grid_sampling(self) -> "clipper::Grid_sampling const &":
+        """
+
+
+        get the cell grid  
+
+        """
         return _clipper.Xmap_base_grid_sampling(self)
 
+
     def grid_asu(self) -> "clipper::Grid_range const &":
+        """
+
+
+        get the ASU grid  
+
+        """
         return _clipper.Xmap_base_grid_asu(self)
 
+
     def coord_of(self, index: 'int const &') -> "clipper::Coord_grid":
+        """
+
+
+        map coordinate from index  
+
+        Parameters
+        ----------
+        * `index` :  
+            The index.  
+
+        Returns
+        -------
+        The corresponding grid coordinate.  
+
+        """
         return _clipper.Xmap_base_coord_of(self, index)
 
+
     def index_of(self, coord: 'Coord_grid') -> "int":
+        """
+
+
+        map index from coordinate  
+
+        This does not check symmetry equivalents.  
+
+        Parameters
+        ----------
+        * `coord` :  
+            The coordinate.  
+
+        Returns
+        -------
+        The index, or -1 if it does not exist.  
+
+        """
         return _clipper.Xmap_base_index_of(self, coord)
 
+
     def to_map_unit(self, pos: 'Coord_grid') -> "clipper::Coord_grid":
+        """
+
+
+        function to pick right cell repeat for any grid coord  
+
+        """
         return _clipper.Xmap_base_to_map_unit(self, pos)
+
 
     def operator_orth_grid(self) -> "clipper::RTop< > const &":
         return _clipper.Xmap_base_operator_orth_grid(self)
@@ -4459,33 +8954,139 @@ class Xmap_base(object):
         return _clipper.Xmap_base_operator_grid_orth(self)
 
     def coord_orth(self, cm: 'Coord_map') -> "clipper::Coord_orth":
+        """
+
+
+        convert map coordinate to orthogonal  
+
+        Parameters
+        ----------
+        * `cm` :  
+            The grid coordinate to be converted.  
+
+        Returns
+        -------
+        The equivalent orthogonal coordinate.  
+
+        """
         return _clipper.Xmap_base_coord_orth(self, cm)
 
+
     def coord_map(self, co: 'Coord_orth') -> "clipper::Coord_map":
+        """
+
+
+        convert orthogonal coordinate to map  
+
+        Parameters
+        ----------
+        * `co` :  
+            The orthogonal coordinate to be converted.  
+
+        Returns
+        -------
+        The equivalent grid coordinate.  
+
+        """
         return _clipper.Xmap_base_coord_map(self, co)
 
+
     def in_map(self, arg2: 'Coord_grid') -> "bool":
+        """
+
+
+        (This method is for compatibility with NXmap - it always returns true)  
+
+        """
         return _clipper.Xmap_base_in_map(self, arg2)
 
+
     def multiplicity(self, pos: 'Coord_grid') -> "int":
+        """
+
+
+        get multiplicity of a map grid point  
+
+        The multiplicity is the number of times the spacegroup operators map a
+        particular grid point onto itself. This is required in order to properly weight
+        map statistics so as to get the same result from just an ASU as using the whole
+        cell.  
+
+        Parameters
+        ----------
+        * `pos` :  
+            The coordinate of the grid point.  
+
+        Returns
+        -------
+        The multiplicty of the point.  
+
+        """
         return _clipper.Xmap_base_multiplicity(self, pos)
 
+
     def first(self) -> "clipper::Xmap_base::Map_reference_index":
+        """
+
+
+        return a Map_reference_index for this map  
+
+        """
         return _clipper.Xmap_base_first(self)
 
+
     def first_coord(self) -> "clipper::Xmap_base::Map_reference_coord":
+        """
+
+
+        return a Map_reference_coord for this map  
+
+        """
         return _clipper.Xmap_base_first_coord(self)
-    default_type = staticmethod(_clipper.Xmap_base_default_type)
+
+
+    def default_type() -> "clipper::Xmap_base::FFTtype &":
+        """
+
+
+        set/get default backend type  
+
+        """
+        return _clipper.Xmap_base_default_type()
+
+    default_type = staticmethod(default_type)
     __swig_destroy__ = _clipper.delete_Xmap_base
     __del__ = lambda self: None
 Xmap_base_swigregister = _clipper.Xmap_base_swigregister
 Xmap_base_swigregister(Xmap_base)
 
 def Xmap_base_default_type() -> "clipper::Xmap_base::FFTtype &":
+    """
+
+
+    set/get default backend type  
+
+    """
     return _clipper.Xmap_base_default_type()
-Xmap_base_default_type = _clipper.Xmap_base_default_type
 
 class NXmap_base(object):
+    """
+
+
+    NXmap_base: base for non-crystallographic map class.  
+
+    The non-crystallographic map class stores a map of arbitrary data type. Unlike
+    an Xmap it is finite in extent and has no symmetry. An RT operator provides
+    mapping onto an arbitrary orthogonal coordinate frame. Iterators provide
+    efficient access to data.  
+
+    This base contains everything except the data, which is templated in the derived
+    type clipper::NXmap<T>.  
+
+    C++ includes: nxmap.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
 
     def __init__(self, *args, **kwargs):
@@ -4493,10 +9094,28 @@ class NXmap_base(object):
     __repr__ = _swig_repr
 
     def is_null(self) -> "bool":
+        """
+
+
+        test if object has been initialised  
+
+        Returns
+        -------
+        true if the object has not been initalised.  
+
+        """
         return _clipper.NXmap_base_is_null(self)
 
+
     def grid(self) -> "clipper::Grid const &":
+        """
+
+
+        return the grid dimensions for this map  
+
+        """
         return _clipper.NXmap_base_grid(self)
+
 
     def operator_orth_grid(self) -> "clipper::RTop< > const &":
         return _clipper.NXmap_base_operator_orth_grid(self)
@@ -4505,32 +9124,131 @@ class NXmap_base(object):
         return _clipper.NXmap_base_operator_grid_orth(self)
 
     def coord_orth(self, cm: 'Coord_map') -> "clipper::Coord_orth":
+        """
+
+
+        convert map coordinate to orthogonal  
+
+        Parameters
+        ----------
+        * `cm` :  
+            The grid coordinate to be converted.  
+
+        Returns
+        -------
+        The equivalent orthogonal coordinate.  
+
+        """
         return _clipper.NXmap_base_coord_orth(self, cm)
 
+
     def coord_map(self, co: 'Coord_orth') -> "clipper::Coord_map":
+        """
+
+
+        convert orthogonal coordinate to map  
+
+        Parameters
+        ----------
+        * `co` :  
+            The orthogonal coordinate to be converted.  
+
+        Returns
+        -------
+        The equivalent grid coordinate.  
+
+        """
         return _clipper.NXmap_base_coord_map(self, co)
 
+
     def in_map(self, pos: 'Coord_grid') -> "bool":
+        """
+
+
+        is the given coord available in the map using the given interpolant?  
+
+        Note that the higher the order of the interpolant, the more of the boundary of
+        the map becomes inaccessible.  
+
+        Parameters
+        ----------
+        * `cm` :  
+            The coord_map to test.  
+
+        Returns
+        -------
+        true if interpolation can be performed at that coordinate.  
+
+        """
         return _clipper.NXmap_base_in_map(self, pos)
 
+
     def multiplicity(self, arg2: 'Coord_grid') -> "int":
+        """
+
+
+        get multiplicity of a map grid point (always 1 for NXmap)  
+
+        """
         return _clipper.NXmap_base_multiplicity(self, arg2)
 
+
     def first(self) -> "clipper::NXmap_base::Map_reference_index":
+        """
+
+
+        return a basic Map_reference_index for this map  
+
+        """
         return _clipper.NXmap_base_first(self)
 
+
     def first_coord(self) -> "clipper::NXmap_base::Map_reference_coord":
+        """
+
+
+        return a coord Map_reference_index for this map  
+
+        """
         return _clipper.NXmap_base_first_coord(self)
+
     __swig_destroy__ = _clipper.delete_NXmap_base
     __del__ = lambda self: None
 NXmap_base_swigregister = _clipper.NXmap_base_swigregister
 NXmap_base_swigregister(NXmap_base)
 
 class Xmap_float(Xmap_base):
+    """
+
+
+    Xmap<T>: actual crystallographic map class.  
+
+    The crystallographic map class stores a map of arbitrary data type. Its main
+    difference from a 3-d array is that the data extent appears to be infinite, and
+    yet internally only a unique ASU is stored. Iterators provide efficient access
+    to data.  
+
+    This is derived from Xmap_base, and adds the templatised data itself and the
+    methods which deal with it.  
+
+    note: The following methods are inherited from Xmap_base but are documented here
+        for convenience: cell(), spacegroup(), grid_sampling(), grid_asu(),
+        in_asu(), multiplicity(), to_map_unit(), first(), first_coord().  
+
+    C++ includes: xmap.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from spacegroup, cell, and grid  
+
+        """
         this = _clipper.new_Xmap_float(*args)
         try:
             self.this.append(this)
@@ -4538,13 +9256,50 @@ class Xmap_float(Xmap_base):
             self.this = this
 
     def init(self, spacegroup: 'Spacegroup', cell: 'Cell', grid_sam: 'Grid_sampling') -> "void":
+        """
+
+
+        initialiser: from spacegroup, cell, and grid  
+
+        """
         return _clipper.Xmap_float_init(self, spacegroup, cell, grid_sam)
 
+
     def get_data(self, *args) -> "float const &":
+        """
+
+
+        get data by index (not recommended)  
+
+        Accessing the data by index, rather than by Map_reference_index or
+        Map_reference_coord, is generally to be avoided since the indices do not start
+        at zero and do not increase contiguously. These methods are only useful when a
+        large number of references into a map must be stored, e.g. for sorting into
+        density order.  
+
+        """
         return _clipper.Xmap_float_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by index (not recommended)  
+
+        Accessing the data by index, rather than by Map_reference_index or
+        Map_reference_coord, is generally to be avoided since the indices do not start
+        at zero and do not increase contiguously. These methods are only useful when a
+        large number of references into a map must be stored, e.g. for sorting into
+        density order.  
+
+        Returns
+        -------
+        true if data was set, i.e. index is valid.  
+
+        """
         return _clipper.Xmap_float_set_data(self, *args)
+
 
     def __iadd__(self, other: 'Xmap_float') -> "clipper::Xmap< float > const &":
         return _clipper.Xmap_float___iadd__(self, other)
@@ -4556,19 +9311,50 @@ class Xmap_float(Xmap_base):
         return _clipper.Xmap_float_get_reference_coord(self, pos)
 
     def grid_sampling(self) -> "clipper::Grid_sampling const &":
+        """
+
+
+        """
         return _clipper.Xmap_float_grid_sampling(self)
 
+
     def cell(self) -> "clipper::Cell const &":
+        """
+
+
+        """
         return _clipper.Xmap_float_cell(self)
 
+
     def spacegroup(self) -> "clipper::Spacegroup const &":
+        """
+
+
+        """
         return _clipper.Xmap_float_spacegroup(self)
 
+
     def grid_asu(self) -> "clipper::Grid_range const &":
+        """
+
+
+        """
         return _clipper.Xmap_float_grid_asu(self)
 
+
     def is_null(self) -> "bool":
+        """
+
+
+        test if object has been initialised  
+
+        Returns
+        -------
+        true if the object has not been initalised.  
+
+        """
         return _clipper.Xmap_float_is_null(self)
+
 
     def _recalculate_stats(self) -> "std::vector< double,std::allocator< double > >":
         return _clipper.Xmap_float__recalculate_stats(self)
@@ -4760,20 +9546,81 @@ class Xmap_float(Xmap_base):
 
 
     def fft_from(self, fb: 'HKL_data_F_phi_float') -> "void":
+        """
+
+
+        FFT from reflection list to map.  
+
+        An FFT is calculated using the provided reflection list of F_phi, and used to
+        fill this map. The reflection list is unchanged.  
+
+        Parameters
+        ----------
+        * `fphidata` :  
+            The reflection data list to use  
+
+        """
         return _clipper.Xmap_float_fft_from(self, fb)
 
+
     def fft_to(self, fphidata: 'HKL_data_F_phi_float') -> "void":
+        """
+
+
+        FFT from map to reflection list.  
+
+        The Fourier transform of this map is calculated and used to fill a reflection
+        list of F_phi. The map is unchanged.  
+
+        Arguably this should be part of hkl_data<F_phi<T>>. But that requires writing a
+        specialisation of hkl_data for F_phi. This is simpler and imposes less demands
+        on the compiler.  
+
+        Parameters
+        ----------
+        * `fphidata` :  
+            The reflection data list to set.  
+
+        """
         return _clipper.Xmap_float_fft_to(self, fphidata)
+
     __swig_destroy__ = _clipper.delete_Xmap_float
     __del__ = lambda self: None
 Xmap_float_swigregister = _clipper.Xmap_float_swigregister
 Xmap_float_swigregister(Xmap_float)
 
 class Xmap_double(Xmap_base):
+    """
+
+
+    Xmap<T>: actual crystallographic map class.  
+
+    The crystallographic map class stores a map of arbitrary data type. Its main
+    difference from a 3-d array is that the data extent appears to be infinite, and
+    yet internally only a unique ASU is stored. Iterators provide efficient access
+    to data.  
+
+    This is derived from Xmap_base, and adds the templatised data itself and the
+    methods which deal with it.  
+
+    note: The following methods are inherited from Xmap_base but are documented here
+        for convenience: cell(), spacegroup(), grid_sampling(), grid_asu(),
+        in_asu(), multiplicity(), to_map_unit(), first(), first_coord().  
+
+    C++ includes: xmap.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from spacegroup, cell, and grid  
+
+        """
         this = _clipper.new_Xmap_double(*args)
         try:
             self.this.append(this)
@@ -4781,13 +9628,50 @@ class Xmap_double(Xmap_base):
             self.this = this
 
     def init(self, spacegroup: 'Spacegroup', cell: 'Cell', grid_sam: 'Grid_sampling') -> "void":
+        """
+
+
+        initialiser: from spacegroup, cell, and grid  
+
+        """
         return _clipper.Xmap_double_init(self, spacegroup, cell, grid_sam)
 
+
     def get_data(self, *args) -> "double const &":
+        """
+
+
+        get data by index (not recommended)  
+
+        Accessing the data by index, rather than by Map_reference_index or
+        Map_reference_coord, is generally to be avoided since the indices do not start
+        at zero and do not increase contiguously. These methods are only useful when a
+        large number of references into a map must be stored, e.g. for sorting into
+        density order.  
+
+        """
         return _clipper.Xmap_double_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by index (not recommended)  
+
+        Accessing the data by index, rather than by Map_reference_index or
+        Map_reference_coord, is generally to be avoided since the indices do not start
+        at zero and do not increase contiguously. These methods are only useful when a
+        large number of references into a map must be stored, e.g. for sorting into
+        density order.  
+
+        Returns
+        -------
+        true if data was set, i.e. index is valid.  
+
+        """
         return _clipper.Xmap_double_set_data(self, *args)
+
 
     def __iadd__(self, other: 'Xmap_double') -> "clipper::Xmap< double > const &":
         return _clipper.Xmap_double___iadd__(self, other)
@@ -4799,19 +9683,50 @@ class Xmap_double(Xmap_base):
         return _clipper.Xmap_double_get_reference_coord(self, pos)
 
     def grid_sampling(self) -> "clipper::Grid_sampling const &":
+        """
+
+
+        """
         return _clipper.Xmap_double_grid_sampling(self)
 
+
     def cell(self) -> "clipper::Cell const &":
+        """
+
+
+        """
         return _clipper.Xmap_double_cell(self)
 
+
     def spacegroup(self) -> "clipper::Spacegroup const &":
+        """
+
+
+        """
         return _clipper.Xmap_double_spacegroup(self)
 
+
     def grid_asu(self) -> "clipper::Grid_range const &":
+        """
+
+
+        """
         return _clipper.Xmap_double_grid_asu(self)
 
+
     def is_null(self) -> "bool":
+        """
+
+
+        test if object has been initialised  
+
+        Returns
+        -------
+        true if the object has not been initalised.  
+
+        """
         return _clipper.Xmap_double_is_null(self)
+
 
     def _recalculate_stats(self) -> "std::vector< double,std::allocator< double > >":
         return _clipper.Xmap_double__recalculate_stats(self)
@@ -5003,20 +9918,81 @@ class Xmap_double(Xmap_base):
 
 
     def fft_from(self, fb: 'HKL_data_F_phi_double') -> "void":
+        """
+
+
+        FFT from reflection list to map.  
+
+        An FFT is calculated using the provided reflection list of F_phi, and used to
+        fill this map. The reflection list is unchanged.  
+
+        Parameters
+        ----------
+        * `fphidata` :  
+            The reflection data list to use  
+
+        """
         return _clipper.Xmap_double_fft_from(self, fb)
 
+
     def fft_to(self, fphidata: 'HKL_data_F_phi_float') -> "void":
+        """
+
+
+        FFT from map to reflection list.  
+
+        The Fourier transform of this map is calculated and used to fill a reflection
+        list of F_phi. The map is unchanged.  
+
+        Arguably this should be part of hkl_data<F_phi<T>>. But that requires writing a
+        specialisation of hkl_data for F_phi. This is simpler and imposes less demands
+        on the compiler.  
+
+        Parameters
+        ----------
+        * `fphidata` :  
+            The reflection data list to set.  
+
+        """
         return _clipper.Xmap_double_fft_to(self, fphidata)
+
     __swig_destroy__ = _clipper.delete_Xmap_double
     __del__ = lambda self: None
 Xmap_double_swigregister = _clipper.Xmap_double_swigregister
 Xmap_double_swigregister(Xmap_double)
 
 class Xmap_int(Xmap_base):
+    """
+
+
+    Xmap<T>: actual crystallographic map class.  
+
+    The crystallographic map class stores a map of arbitrary data type. Its main
+    difference from a 3-d array is that the data extent appears to be infinite, and
+    yet internally only a unique ASU is stored. Iterators provide efficient access
+    to data.  
+
+    This is derived from Xmap_base, and adds the templatised data itself and the
+    methods which deal with it.  
+
+    note: The following methods are inherited from Xmap_base but are documented here
+        for convenience: cell(), spacegroup(), grid_sampling(), grid_asu(),
+        in_asu(), multiplicity(), to_map_unit(), first(), first_coord().  
+
+    C++ includes: xmap.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from spacegroup, cell, and grid  
+
+        """
         this = _clipper.new_Xmap_int(*args)
         try:
             self.this.append(this)
@@ -5024,13 +10000,50 @@ class Xmap_int(Xmap_base):
             self.this = this
 
     def init(self, spacegroup: 'Spacegroup', cell: 'Cell', grid_sam: 'Grid_sampling') -> "void":
+        """
+
+
+        initialiser: from spacegroup, cell, and grid  
+
+        """
         return _clipper.Xmap_int_init(self, spacegroup, cell, grid_sam)
 
+
     def get_data(self, *args) -> "int const &":
+        """
+
+
+        get data by index (not recommended)  
+
+        Accessing the data by index, rather than by Map_reference_index or
+        Map_reference_coord, is generally to be avoided since the indices do not start
+        at zero and do not increase contiguously. These methods are only useful when a
+        large number of references into a map must be stored, e.g. for sorting into
+        density order.  
+
+        """
         return _clipper.Xmap_int_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by index (not recommended)  
+
+        Accessing the data by index, rather than by Map_reference_index or
+        Map_reference_coord, is generally to be avoided since the indices do not start
+        at zero and do not increase contiguously. These methods are only useful when a
+        large number of references into a map must be stored, e.g. for sorting into
+        density order.  
+
+        Returns
+        -------
+        true if data was set, i.e. index is valid.  
+
+        """
         return _clipper.Xmap_int_set_data(self, *args)
+
 
     def __iadd__(self, other: 'Xmap_int') -> "clipper::Xmap< int > const &":
         return _clipper.Xmap_int___iadd__(self, other)
@@ -5042,19 +10055,50 @@ class Xmap_int(Xmap_base):
         return _clipper.Xmap_int_get_reference_coord(self, pos)
 
     def grid_sampling(self) -> "clipper::Grid_sampling const &":
+        """
+
+
+        """
         return _clipper.Xmap_int_grid_sampling(self)
 
+
     def cell(self) -> "clipper::Cell const &":
+        """
+
+
+        """
         return _clipper.Xmap_int_cell(self)
 
+
     def spacegroup(self) -> "clipper::Spacegroup const &":
+        """
+
+
+        """
         return _clipper.Xmap_int_spacegroup(self)
 
+
     def grid_asu(self) -> "clipper::Grid_range const &":
+        """
+
+
+        """
         return _clipper.Xmap_int_grid_asu(self)
 
+
     def is_null(self) -> "bool":
+        """
+
+
+        test if object has been initialised  
+
+        Returns
+        -------
+        true if the object has not been initalised.  
+
+        """
         return _clipper.Xmap_int_is_null(self)
+
 
     def _recalculate_stats(self) -> "std::vector< double,std::allocator< double > >":
         return _clipper.Xmap_int__recalculate_stats(self)
@@ -5250,17 +10294,73 @@ Xmap_int_swigregister = _clipper.Xmap_int_swigregister
 Xmap_int_swigregister(Xmap_int)
 
 class NXmap_float(NXmap_base):
+    """
+
+
+    NXmap<T>: actual non-crystallographic map class.  
+
+    The non-crystallographic map class stores a map of arbitrary data type. Unlike
+    an Xmap it is finite in extent and has no symmetry. An RT operator provides
+    mapping onto an arbitrary orthogonal coordinate frame. Iterators provide
+    efficient access to data.  
+
+    This is derived from NXmap_base, and adds the templatised data itself and the
+    methods which deal with it.  
+
+    note: The following methods are inherited from NXmap_base but are documented
+        here for convenience: grid(), coord_orth(), coord_grid(), first(),
+        first_coord().  
+
+    C++ includes: nxmap.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def init(self, *args) -> "void":
+        """
+
+
+        initialiser: takes grid, cell, and fraction limits  
+
+        Initialise an NXmap to some rhomboid chosen from within a crystal grid
+        coordinate space, specified by a cell, sampling and box within that grid. This
+        is useful for creating an NXmap which exactly matches some subregion of a
+        crystallographic map.  
+
+        Parameters
+        ----------
+        * `cell` :  
+            Unit cell defining the crystal space.  
+        * `grid` :  
+            The grid sampling of the given unit cell.  
+        * `grid_extent` :  
+            The map extent within that cell.  
+
+        """
         return _clipper.NXmap_float_init(self, *args)
 
+
     def get_data(self, pos: 'Coord_grid') -> "float const &":
+        """
+
+
+        get a density value for an arbitrary position  
+
+        """
         return _clipper.NXmap_float_get_data(self, pos)
 
+
     def set_data(self, pos: 'Coord_grid', val: 'float const &') -> "void":
+        """
+
+
+        set a density value for an arbitrary position  
+
+        """
         return _clipper.NXmap_float_set_data(self, pos, val)
+
 
     def __iadd__(self, other: 'NXmap_float') -> "clipper::NXmap< float > const &":
         return _clipper.NXmap_float___iadd__(self, other)
@@ -5269,6 +10369,26 @@ class NXmap_float(NXmap_base):
         return _clipper.NXmap_float___isub__(self, other)
 
     def __init__(self, *args):
+        """
+
+
+        Constructor: takes grid, cell, and extent.  
+
+        Initialise an NXmap to some rhomboid chosen from within a crystal grid
+        coordinate space, specified by a cell, sampling and box within that grid. This
+        is useful for creating an NXmap which exactly matches some subregion of a
+        crystallographic map.  
+
+        Parameters
+        ----------
+        * `cell` :  
+            Unit cell defining the crystal space.  
+        * `grid` :  
+            The grid sampling of the given unit cell.  
+        * `grid_extent` :  
+            The map extent within that cell.  
+
+        """
         this = _clipper.new_NXmap_float(*args)
         try:
             self.this.append(this)
@@ -5292,17 +10412,73 @@ NXmap_float_swigregister = _clipper.NXmap_float_swigregister
 NXmap_float_swigregister(NXmap_float)
 
 class NXmap_double(NXmap_base):
+    """
+
+
+    NXmap<T>: actual non-crystallographic map class.  
+
+    The non-crystallographic map class stores a map of arbitrary data type. Unlike
+    an Xmap it is finite in extent and has no symmetry. An RT operator provides
+    mapping onto an arbitrary orthogonal coordinate frame. Iterators provide
+    efficient access to data.  
+
+    This is derived from NXmap_base, and adds the templatised data itself and the
+    methods which deal with it.  
+
+    note: The following methods are inherited from NXmap_base but are documented
+        here for convenience: grid(), coord_orth(), coord_grid(), first(),
+        first_coord().  
+
+    C++ includes: nxmap.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def init(self, *args) -> "void":
+        """
+
+
+        initialiser: takes grid, cell, and fraction limits  
+
+        Initialise an NXmap to some rhomboid chosen from within a crystal grid
+        coordinate space, specified by a cell, sampling and box within that grid. This
+        is useful for creating an NXmap which exactly matches some subregion of a
+        crystallographic map.  
+
+        Parameters
+        ----------
+        * `cell` :  
+            Unit cell defining the crystal space.  
+        * `grid` :  
+            The grid sampling of the given unit cell.  
+        * `grid_extent` :  
+            The map extent within that cell.  
+
+        """
         return _clipper.NXmap_double_init(self, *args)
 
+
     def get_data(self, pos: 'Coord_grid') -> "double const &":
+        """
+
+
+        get a density value for an arbitrary position  
+
+        """
         return _clipper.NXmap_double_get_data(self, pos)
 
+
     def set_data(self, pos: 'Coord_grid', val: 'double const &') -> "void":
+        """
+
+
+        set a density value for an arbitrary position  
+
+        """
         return _clipper.NXmap_double_set_data(self, pos, val)
+
 
     def __iadd__(self, other: 'NXmap_double') -> "clipper::NXmap< double > const &":
         return _clipper.NXmap_double___iadd__(self, other)
@@ -5311,6 +10487,26 @@ class NXmap_double(NXmap_base):
         return _clipper.NXmap_double___isub__(self, other)
 
     def __init__(self, *args):
+        """
+
+
+        Constructor: takes grid, cell, and extent.  
+
+        Initialise an NXmap to some rhomboid chosen from within a crystal grid
+        coordinate space, specified by a cell, sampling and box within that grid. This
+        is useful for creating an NXmap which exactly matches some subregion of a
+        crystallographic map.  
+
+        Parameters
+        ----------
+        * `cell` :  
+            Unit cell defining the crystal space.  
+        * `grid` :  
+            The grid sampling of the given unit cell.  
+        * `grid_extent` :  
+            The map extent within that cell.  
+
+        """
         this = _clipper.new_NXmap_double(*args)
         try:
             self.this.append(this)
@@ -5334,17 +10530,73 @@ NXmap_double_swigregister = _clipper.NXmap_double_swigregister
 NXmap_double_swigregister(NXmap_double)
 
 class NXmap_int(NXmap_base):
+    """
+
+
+    NXmap<T>: actual non-crystallographic map class.  
+
+    The non-crystallographic map class stores a map of arbitrary data type. Unlike
+    an Xmap it is finite in extent and has no symmetry. An RT operator provides
+    mapping onto an arbitrary orthogonal coordinate frame. Iterators provide
+    efficient access to data.  
+
+    This is derived from NXmap_base, and adds the templatised data itself and the
+    methods which deal with it.  
+
+    note: The following methods are inherited from NXmap_base but are documented
+        here for convenience: grid(), coord_orth(), coord_grid(), first(),
+        first_coord().  
+
+    C++ includes: nxmap.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def init(self, *args) -> "void":
+        """
+
+
+        initialiser: takes grid, cell, and fraction limits  
+
+        Initialise an NXmap to some rhomboid chosen from within a crystal grid
+        coordinate space, specified by a cell, sampling and box within that grid. This
+        is useful for creating an NXmap which exactly matches some subregion of a
+        crystallographic map.  
+
+        Parameters
+        ----------
+        * `cell` :  
+            Unit cell defining the crystal space.  
+        * `grid` :  
+            The grid sampling of the given unit cell.  
+        * `grid_extent` :  
+            The map extent within that cell.  
+
+        """
         return _clipper.NXmap_int_init(self, *args)
 
+
     def get_data(self, pos: 'Coord_grid') -> "int const &":
+        """
+
+
+        get a density value for an arbitrary position  
+
+        """
         return _clipper.NXmap_int_get_data(self, pos)
 
+
     def set_data(self, pos: 'Coord_grid', val: 'int const &') -> "void":
+        """
+
+
+        set a density value for an arbitrary position  
+
+        """
         return _clipper.NXmap_int_set_data(self, pos, val)
+
 
     def __iadd__(self, other: 'NXmap_int') -> "clipper::NXmap< int > const &":
         return _clipper.NXmap_int___iadd__(self, other)
@@ -5353,6 +10605,26 @@ class NXmap_int(NXmap_base):
         return _clipper.NXmap_int___isub__(self, other)
 
     def __init__(self, *args):
+        """
+
+
+        Constructor: takes grid, cell, and extent.  
+
+        Initialise an NXmap to some rhomboid chosen from within a crystal grid
+        coordinate space, specified by a cell, sampling and box within that grid. This
+        is useful for creating an NXmap which exactly matches some subregion of a
+        crystallographic map.  
+
+        Parameters
+        ----------
+        * `cell` :  
+            Unit cell defining the crystal space.  
+        * `grid` :  
+            The grid sampling of the given unit cell.  
+        * `grid_extent` :  
+            The map extent within that cell.  
+
+        """
         this = _clipper.new_NXmap_int(*args)
         try:
             self.this.append(this)
@@ -5737,10 +11009,25 @@ CCP4Program_swigregister = _clipper.CCP4Program_swigregister
 CCP4Program_swigregister(CCP4Program)
 
 class Range_sampling(object):
+    """
+
+
+    Range sampling: discrete sampling of a real range.  
+
+    C++ includes: clipper_stats.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from range and number of samplings  
+
+        """
         this = _clipper.new_Range_sampling(*args)
         try:
             self.this.append(this)
@@ -5748,35 +11035,103 @@ class Range_sampling(object):
             self.this = this
 
     def indexf(self, x: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        return fractional posn in counting range from x-value (0..n)  
+
+        """
         return _clipper.Range_sampling_indexf(self, x)
 
+
     def index(self, x: 'clipper::ftype const &') -> "int":
+        """
+
+
+        return nearest index to particular x-value  
+
+        """
         return _clipper.Range_sampling_index(self, x)
 
+
     def index_bounded(self, x: 'clipper::ftype const &') -> "int":
+        """
+
+
+        return nearest index to particular x-value (bounded 0...n-1)  
+
+        """
         return _clipper.Range_sampling_index_bounded(self, x)
 
+
     def x(self, *args) -> "clipper::ftype":
+        """
+
+
+        return x-value corresponding to centre of i'th range  
+
+        """
         return _clipper.Range_sampling_x(self, *args)
 
+
     def x_min(self, i: 'int const &') -> "clipper::ftype":
+        """
+
+
+        return x-value corresponding to bottom of i'th range  
+
+        """
         return _clipper.Range_sampling_x_min(self, i)
 
+
     def x_max(self, i: 'int const &') -> "clipper::ftype":
+        """
+
+
+        return x-value corresponding to top of i'th range  
+
+        """
         return _clipper.Range_sampling_x_max(self, i)
 
+
     def size(self) -> "int":
+        """
+
+
+        return number of samplings in range  
+
+        """
         return _clipper.Range_sampling_size(self)
+
     __swig_destroy__ = _clipper.delete_Range_sampling
     __del__ = lambda self: None
 Range_sampling_swigregister = _clipper.Range_sampling_swigregister
 Range_sampling_swigregister(Range_sampling)
 
 class Histogram(Range_sampling):
+    """
+
+
+    General histogram class.  
+
+    This class is used to accumulate and access a histogram of values spread over a
+    specified range. On storing data or retrieving by interpolation the range is
+    checked.  
+
+    C++ includes: clipper_stats.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from range and sampling  
+
+        """
         this = _clipper.new_Histogram(*args)
         try:
             self.this.append(this)
@@ -5784,13 +11139,34 @@ class Histogram(Range_sampling):
             self.this = this
 
     def accumulate(self, *args) -> "void":
+        """
+
+
+        add specified value to histogram (if it is in range)  
+
+        """
         return _clipper.Histogram_accumulate(self, *args)
 
+
     def sum(self) -> "clipper::ftype":
+        """
+
+
+        return sum of whole histogram  
+
+        """
         return _clipper.Histogram_sum(self)
 
+
     def y(self, *args) -> "clipper::ftype":
+        """
+
+
+        return value at interpolated position in histogram  
+
+        """
         return _clipper.Histogram_y(self, *args)
+
 
     def __iadd__(self, h: 'Histogram') -> "clipper::Histogram const &":
         return _clipper.Histogram___iadd__(self, h)
@@ -5800,10 +11176,37 @@ Histogram_swigregister = _clipper.Histogram_swigregister
 Histogram_swigregister(Histogram)
 
 class Generic_ordinal(object):
+    """
+
+
+    Generic ordinal gernerator.  
+
+    This is a generic fast ordinal calculator. It is supplied with a list of values,
+    from which it prepares a cumulative distribution function. This may the used to
+    return the approximate fracitonal ordinal (in the range 0...1) for any given
+    value from the distibution.  
+
+    The distibution may be initialised by providing a vector of values from the
+    distribution, or by adding the values and calling prep_ordinal().  
+
+    This distribution may also be inverted. Generation of a value from an ordinal
+    may be used for generating random values from a given distribution, or for
+    histogram matching.  
+
+    C++ includes: clipper_stats.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from range and sampling  
+
+        """
         this = _clipper.new_Generic_ordinal(*args)
         try:
             self.this.append(this)
@@ -5811,50 +11214,157 @@ class Generic_ordinal(object):
             self.this = this
 
     def ordinal(self, value: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        return reflection ordinal  
+
+        """
         return _clipper.Generic_ordinal_ordinal(self, value)
 
+
     def accumulate(self, *args) -> "void":
+        """
+
+
+        accumulate values to build the distribution  
+
+        """
         return _clipper.Generic_ordinal_accumulate(self, *args)
 
+
     def prep_ordinal(self) -> "void":
+        """
+
+
+        generate the ordinal histogram  
+
+        """
         return _clipper.Generic_ordinal_prep_ordinal(self)
 
+
     def invert(self) -> "void":
+        """
+
+
+        invert distribution to get value from ordinal  
+
+        """
         return _clipper.Generic_ordinal_invert(self)
 
+
     def init(self, *args) -> "void":
+        """
+
+
+        DEPRECATED: initialiser: takes a number of bins for histogram.  
+
+        """
         return _clipper.Generic_ordinal_init(self, *args)
 
+
     def add_pass_1(self, value: 'clipper::ftype const &') -> "void":
+        """
+
+
+        DEPRECATED: add a value to the distribution (pass 1 of 2)  
+
+        """
         return _clipper.Generic_ordinal_add_pass_1(self, value)
 
+
     def add_pass_2(self, value: 'clipper::ftype const &') -> "void":
+        """
+
+
+        DEPRECATED: add a value to the distribution (pass 2 of 2)  
+
+        """
         return _clipper.Generic_ordinal_add_pass_2(self, value)
+
     __swig_destroy__ = _clipper.delete_Generic_ordinal
     __del__ = lambda self: None
 Generic_ordinal_swigregister = _clipper.Generic_ordinal_swigregister
 Generic_ordinal_swigregister(Generic_ordinal)
 
 class Map_stats(object):
+    """
+
+
+    Generic map statistics class.  
+
+    This class is used to calculate and store the mean and standard deviation of a
+    generic map object of scalar types (e.g. Xmap, NXmap). If the map contains NaN
+    values, those points are excluded for the calculation. In the case of an Xmap,
+    the proper multiplicty corrections are applied to give statistics for a whole
+    unit cell  
+
+    C++ includes: map_utils.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def mean(self) -> "clipper::ftype const &":
+        """
+
+
+        Mean of map.  
+
+        """
         return _clipper.Map_stats_mean(self)
 
+
     def std_dev(self) -> "clipper::ftype const &":
+        """
+
+
+        Std deviation of map.  
+
+        """
         return _clipper.Map_stats_std_dev(self)
 
+
     def min(self) -> "clipper::ftype const &":
+        """
+
+
+        Minimum of map.  
+
+        """
         return _clipper.Map_stats_min(self)
 
+
     def max(self) -> "clipper::ftype const &":
+        """
+
+
+        Maximum of map.  
+
+        """
         return _clipper.Map_stats_max(self)
 
+
     def _range_ptr(self) -> "clipper::Range< > const":
+        """
+
+
+        Range.  
+
+        """
         return _clipper.Map_stats__range_ptr(self)
 
+
     def __init__(self, *args):
+        """
+
+
+        Constructor: from Xmap.  
+
+        For float and double maps  map The map for which moments are to be calculated.  
+
+        """
         this = _clipper.new_Map_stats(*args)
         try:
             self.this.append(this)
@@ -5862,13 +11372,34 @@ class Map_stats(object):
             self.this = this
 
     def range(self) -> "void":
+        """
+
+
+        Range.  
+
+        """
         return _clipper.Map_stats_range(self)
+
     __swig_destroy__ = _clipper.delete_Map_stats
     __del__ = lambda self: None
 Map_stats_swigregister = _clipper.Map_stats_swigregister
 Map_stats_swigregister(Map_stats)
 
 class Map_index_sort(object):
+    """
+
+
+    Generic map sorting class.  
+
+    This class is used to sort a vector of integer indices into a map. This includes
+    sorting the whole map to get highest or lowest density first, or sorting some
+    subset, e.g. a list of peak indices. Integer indices are used because they are
+    the most compact way of referencing a unique map location. e.g.  
+
+    C++ includes: map_utils.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
@@ -6625,10 +12156,23 @@ MSequenceAlign_swigregister = _clipper.MSequenceAlign_swigregister
 MSequenceAlign_swigregister(MSequenceAlign)
 
 class Flag(object):
+    """
+
+
+    Reflection data type: Free-R flag.  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        """
         this = _clipper.new_Flag(*args)
         try:
             self.this.append(this)
@@ -6636,28 +12180,87 @@ class Flag(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.Flag_set_null(self)
-    type = staticmethod(_clipper.Flag_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.Flag_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.Flag_friedel(self)
 
+
     def shift_phase(self, arg2: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.Flag_shift_phase(self, arg2)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.Flag_missing(self)
-    data_size = staticmethod(_clipper.Flag_data_size)
-    data_names = staticmethod(_clipper.Flag_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.Flag_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.Flag_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.Flag_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.Flag_data_import(self, array)
 
+
     def flag(self, *args) -> "int &":
+        """
+
+
+        """
         return _clipper.Flag_flag(self, *args)
+
 
     def get_flag(self) -> "int":
         return _clipper.Flag_get_flag(self)
@@ -6673,22 +12276,44 @@ Flag_swigregister = _clipper.Flag_swigregister
 Flag_swigregister(Flag)
 
 def Flag_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.Flag_type()
-Flag_type = _clipper.Flag_type
 
 def Flag_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.Flag_data_size()
-Flag_data_size = _clipper.Flag_data_size
 
 def Flag_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.Flag_data_names()
-Flag_data_names = _clipper.Flag_data_names
 
 class Flag_bool(object):
+    """
+
+
+    Reflection data type: boolean (false = missing)  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self):
+        """
+
+
+        """
         this = _clipper.new_Flag_bool()
         try:
             self.this.append(this)
@@ -6696,28 +12321,87 @@ class Flag_bool(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.Flag_bool_set_null(self)
-    type = staticmethod(_clipper.Flag_bool_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.Flag_bool_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.Flag_bool_friedel(self)
 
+
     def shift_phase(self, arg2: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.Flag_bool_shift_phase(self, arg2)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.Flag_bool_missing(self)
-    data_size = staticmethod(_clipper.Flag_bool_data_size)
-    data_names = staticmethod(_clipper.Flag_bool_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.Flag_bool_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.Flag_bool_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.Flag_bool_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.Flag_bool_data_import(self, array)
 
+
     def flag(self, *args) -> "bool &":
+        """
+
+
+        """
         return _clipper.Flag_bool_flag(self, *args)
+
 
     def get_flag(self) -> "bool":
         return _clipper.Flag_bool_get_flag(self)
@@ -6733,22 +12417,48 @@ Flag_bool_swigregister = _clipper.Flag_bool_swigregister
 Flag_bool_swigregister(Flag_bool)
 
 def Flag_bool_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.Flag_bool_type()
-Flag_bool_type = _clipper.Flag_bool_type
 
 def Flag_bool_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.Flag_bool_data_size()
-Flag_bool_data_size = _clipper.Flag_bool_data_size
 
 def Flag_bool_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.Flag_bool_data_names()
-Flag_bool_data_names = _clipper.Flag_bool_data_names
 
 class F_sigF_float(object):
+    """
+
+
+    Reflection data type: F + sigF.  
+
+    Note that F_sigF also has methods for returning f_pl(), sigf_pl(), f_mi,
+    sigf_mi(), so you can use this type in any template type where you would use
+    F_sigF_ano.  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        """
         this = _clipper.new_F_sigF_float(*args)
         try:
             self.this.append(this)
@@ -6756,49 +12466,145 @@ class F_sigF_float(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_float_set_null(self)
-    type = staticmethod(_clipper.F_sigF_float_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.F_sigF_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_float_friedel(self)
 
+
     def shift_phase(self, arg2: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_float_shift_phase(self, arg2)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.F_sigF_float_missing(self)
-    data_size = staticmethod(_clipper.F_sigF_float_data_size)
-    data_names = staticmethod(_clipper.F_sigF_float_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.F_sigF_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.F_sigF_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_float_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_float_data_import(self, array)
 
+
     def scale(self, s: 'clipper::ftype const &') -> "void":
+        """
+
+
+        this type is scalable - apply magnitude scale factor  
+
+        """
         return _clipper.F_sigF_float_scale(self, s)
 
+
     def f(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.F_sigF_float_f(self, *args)
 
+
     def sigf(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.F_sigF_float_sigf(self, *args)
 
+
     def f_pl(self) -> "float const &":
+        """
+
+
+        """
         return _clipper.F_sigF_float_f_pl(self)
 
+
     def sigf_pl(self) -> "float const &":
+        """
+
+
+        """
         return _clipper.F_sigF_float_sigf_pl(self)
 
+
     def f_mi(self) -> "float const &":
+        """
+
+
+        """
         return _clipper.F_sigF_float_f_mi(self)
 
+
     def sigf_mi(self) -> "float const &":
+        """
+
+
+        """
         return _clipper.F_sigF_float_sigf_mi(self)
 
+
     def cov(self) -> "float":
+        """
+
+
+        """
         return _clipper.F_sigF_float_cov(self)
+
 
     def copy(self) -> "clipper::datatypes::F_sigF< float >":
         return _clipper.F_sigF_float_copy(self)
@@ -6808,22 +12614,48 @@ F_sigF_float_swigregister = _clipper.F_sigF_float_swigregister
 F_sigF_float_swigregister(F_sigF_float)
 
 def F_sigF_float_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.F_sigF_float_type()
-F_sigF_float_type = _clipper.F_sigF_float_type
 
 def F_sigF_float_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.F_sigF_float_data_size()
-F_sigF_float_data_size = _clipper.F_sigF_float_data_size
 
 def F_sigF_float_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.F_sigF_float_data_names()
-F_sigF_float_data_names = _clipper.F_sigF_float_data_names
 
 class F_sigF_double(object):
+    """
+
+
+    Reflection data type: F + sigF.  
+
+    Note that F_sigF also has methods for returning f_pl(), sigf_pl(), f_mi,
+    sigf_mi(), so you can use this type in any template type where you would use
+    F_sigF_ano.  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        """
         this = _clipper.new_F_sigF_double(*args)
         try:
             self.this.append(this)
@@ -6831,71 +12663,207 @@ class F_sigF_double(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_double_set_null(self)
-    type = staticmethod(_clipper.F_sigF_double_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.F_sigF_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_double_friedel(self)
 
+
     def shift_phase(self, arg2: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_double_shift_phase(self, arg2)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.F_sigF_double_missing(self)
-    data_size = staticmethod(_clipper.F_sigF_double_data_size)
-    data_names = staticmethod(_clipper.F_sigF_double_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.F_sigF_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.F_sigF_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_double_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_double_data_import(self, array)
 
+
     def scale(self, s: 'clipper::ftype const &') -> "void":
+        """
+
+
+        this type is scalable - apply magnitude scale factor  
+
+        """
         return _clipper.F_sigF_double_scale(self, s)
 
+
     def f(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.F_sigF_double_f(self, *args)
 
+
     def sigf(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.F_sigF_double_sigf(self, *args)
 
+
     def f_pl(self) -> "double const &":
+        """
+
+
+        """
         return _clipper.F_sigF_double_f_pl(self)
 
+
     def sigf_pl(self) -> "double const &":
+        """
+
+
+        """
         return _clipper.F_sigF_double_sigf_pl(self)
 
+
     def f_mi(self) -> "double const &":
+        """
+
+
+        """
         return _clipper.F_sigF_double_f_mi(self)
 
+
     def sigf_mi(self) -> "double const &":
+        """
+
+
+        """
         return _clipper.F_sigF_double_sigf_mi(self)
 
+
     def cov(self) -> "double":
+        """
+
+
+        """
         return _clipper.F_sigF_double_cov(self)
+
     __swig_destroy__ = _clipper.delete_F_sigF_double
     __del__ = lambda self: None
 F_sigF_double_swigregister = _clipper.F_sigF_double_swigregister
 F_sigF_double_swigregister(F_sigF_double)
 
 def F_sigF_double_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.F_sigF_double_type()
-F_sigF_double_type = _clipper.F_sigF_double_type
 
 def F_sigF_double_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.F_sigF_double_data_size()
-F_sigF_double_data_size = _clipper.F_sigF_double_data_size
 
 def F_sigF_double_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.F_sigF_double_data_names()
-F_sigF_double_data_names = _clipper.F_sigF_double_data_names
 
 class HKL_data_F_sigF_float(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_F_sigF_float(*args)
         try:
             self.this.append(this)
@@ -6903,43 +12871,179 @@ class HKL_data_F_sigF_float(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_F_sigF_float_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_F_sigF_float_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_F_sigF_float_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_F_sigF_float_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_F_sigF_float_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_F_sigF_float_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_F_sigF_float_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_F_sigF_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_F_sigF_float_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_F_sigF_float_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_F_sigF_float_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_F_sigF_float_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_F_sigF_float_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_F_sigF_float_not_(self)
@@ -6970,10 +13074,41 @@ HKL_data_F_sigF_float_swigregister = _clipper.HKL_data_F_sigF_float_swigregister
 HKL_data_F_sigF_float_swigregister(HKL_data_F_sigF_float)
 
 class HKL_data_F_sigF_double(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_F_sigF_double(*args)
         try:
             self.this.append(this)
@@ -6981,43 +13116,179 @@ class HKL_data_F_sigF_double(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_F_sigF_double_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_F_sigF_double_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_F_sigF_double_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_F_sigF_double_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_F_sigF_double_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_F_sigF_double_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_F_sigF_double_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_F_sigF_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_F_sigF_double_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_F_sigF_double_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_F_sigF_double_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_F_sigF_double_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_F_sigF_double_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_F_sigF_double_not_(self)
@@ -7036,10 +13307,26 @@ HKL_data_F_sigF_double_swigregister = _clipper.HKL_data_F_sigF_double_swigregist
 HKL_data_F_sigF_double_swigregister(HKL_data_F_sigF_double)
 
 class F_sigF_ano_float(object):
+    """
+
+
+    Reflection data type: F(+) F(+) sigF(+) sigF(-) cov+-.  
+
+    Note that F_sigF_ano also has methods for returning f(), sigf(), so you can use
+    this type in any template type where you would use F_sigF.  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self):
+        """
+
+
+        """
         this = _clipper.new_F_sigF_ano_float()
         try:
             self.this.append(this)
@@ -7047,49 +13334,145 @@ class F_sigF_ano_float(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_float_set_null(self)
-    type = staticmethod(_clipper.F_sigF_ano_float_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.F_sigF_ano_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_float_friedel(self)
 
+
     def shift_phase(self, arg2: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_float_shift_phase(self, arg2)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_float_missing(self)
-    data_size = staticmethod(_clipper.F_sigF_ano_float_data_size)
-    data_names = staticmethod(_clipper.F_sigF_ano_float_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.F_sigF_ano_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.F_sigF_ano_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, a: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_float_data_export(self, a)
 
+
     def data_import(self, a: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_float_data_import(self, a)
 
+
     def scale(self, s: 'clipper::ftype const &') -> "void":
+        """
+
+
+        this type is scalable - apply magnitude scale factor  
+
+        """
         return _clipper.F_sigF_ano_float_scale(self, s)
 
+
     def f_pl(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_float_f_pl(self, *args)
 
+
     def sigf_pl(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_float_sigf_pl(self, *args)
 
+
     def f_mi(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_float_f_mi(self, *args)
 
+
     def sigf_mi(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_float_sigf_mi(self, *args)
 
+
     def cov(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_float_cov(self, *args)
 
+
     def f(self) -> "float":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_float_f(self)
 
+
     def sigf(self) -> "float":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_float_sigf(self)
+
 
     def copy(self) -> "clipper::datatypes::F_sigF_ano< float >":
         return _clipper.F_sigF_ano_float_copy(self)
@@ -7099,22 +13482,47 @@ F_sigF_ano_float_swigregister = _clipper.F_sigF_ano_float_swigregister
 F_sigF_ano_float_swigregister(F_sigF_ano_float)
 
 def F_sigF_ano_float_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.F_sigF_ano_float_type()
-F_sigF_ano_float_type = _clipper.F_sigF_ano_float_type
 
 def F_sigF_ano_float_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.F_sigF_ano_float_data_size()
-F_sigF_ano_float_data_size = _clipper.F_sigF_ano_float_data_size
 
 def F_sigF_ano_float_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.F_sigF_ano_float_data_names()
-F_sigF_ano_float_data_names = _clipper.F_sigF_ano_float_data_names
 
 class F_sigF_ano_double(object):
+    """
+
+
+    Reflection data type: F(+) F(+) sigF(+) sigF(-) cov+-.  
+
+    Note that F_sigF_ano also has methods for returning f(), sigf(), so you can use
+    this type in any template type where you would use F_sigF.  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self):
+        """
+
+
+        """
         this = _clipper.new_F_sigF_ano_double()
         try:
             self.this.append(this)
@@ -7122,71 +13530,207 @@ class F_sigF_ano_double(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_double_set_null(self)
-    type = staticmethod(_clipper.F_sigF_ano_double_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.F_sigF_ano_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_double_friedel(self)
 
+
     def shift_phase(self, arg2: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_double_shift_phase(self, arg2)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_double_missing(self)
-    data_size = staticmethod(_clipper.F_sigF_ano_double_data_size)
-    data_names = staticmethod(_clipper.F_sigF_ano_double_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.F_sigF_ano_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.F_sigF_ano_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, a: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_double_data_export(self, a)
 
+
     def data_import(self, a: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_double_data_import(self, a)
 
+
     def scale(self, s: 'clipper::ftype const &') -> "void":
+        """
+
+
+        this type is scalable - apply magnitude scale factor  
+
+        """
         return _clipper.F_sigF_ano_double_scale(self, s)
 
+
     def f_pl(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_double_f_pl(self, *args)
 
+
     def sigf_pl(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_double_sigf_pl(self, *args)
 
+
     def f_mi(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_double_f_mi(self, *args)
 
+
     def sigf_mi(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_double_sigf_mi(self, *args)
 
+
     def cov(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_double_cov(self, *args)
 
+
     def f(self) -> "double":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_double_f(self)
 
+
     def sigf(self) -> "double":
+        """
+
+
+        """
         return _clipper.F_sigF_ano_double_sigf(self)
+
     __swig_destroy__ = _clipper.delete_F_sigF_ano_double
     __del__ = lambda self: None
 F_sigF_ano_double_swigregister = _clipper.F_sigF_ano_double_swigregister
 F_sigF_ano_double_swigregister(F_sigF_ano_double)
 
 def F_sigF_ano_double_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.F_sigF_ano_double_type()
-F_sigF_ano_double_type = _clipper.F_sigF_ano_double_type
 
 def F_sigF_ano_double_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.F_sigF_ano_double_data_size()
-F_sigF_ano_double_data_size = _clipper.F_sigF_ano_double_data_size
 
 def F_sigF_ano_double_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.F_sigF_ano_double_data_names()
-F_sigF_ano_double_data_names = _clipper.F_sigF_ano_double_data_names
 
 class HKL_data_F_sigF_ano_float(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_F_sigF_ano_float(*args)
         try:
             self.this.append(this)
@@ -7194,43 +13738,179 @@ class HKL_data_F_sigF_ano_float(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_F_sigF_ano_float_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_F_sigF_ano_float_not_(self)
@@ -7258,10 +13938,41 @@ HKL_data_F_sigF_ano_float_swigregister = _clipper.HKL_data_F_sigF_ano_float_swig
 HKL_data_F_sigF_ano_float_swigregister(HKL_data_F_sigF_ano_float)
 
 class HKL_data_F_sigF_ano_double(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_F_sigF_ano_double(*args)
         try:
             self.this.append(this)
@@ -7269,43 +13980,179 @@ class HKL_data_F_sigF_ano_double(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_F_sigF_ano_double_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_F_sigF_ano_double_not_(self)
@@ -7324,10 +14171,27 @@ HKL_data_F_sigF_ano_double_swigregister = _clipper.HKL_data_F_sigF_ano_double_sw
 HKL_data_F_sigF_ano_double_swigregister(HKL_data_F_sigF_ano_double)
 
 class I_sigI_float(object):
+    """
+
+
+    Reflection data type: I + sigI.  
+
+    Note that I_sigI also has methods for returning I_pl(), sigI_pl(), I_mi,
+    sigI_mi(), so you can use this type in any template type where you would use
+    I_sigI_ano.  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        """
         this = _clipper.new_I_sigI_float(*args)
         try:
             self.this.append(this)
@@ -7335,49 +14199,145 @@ class I_sigI_float(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.I_sigI_float_set_null(self)
-    type = staticmethod(_clipper.I_sigI_float_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.I_sigI_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.I_sigI_float_friedel(self)
 
+
     def shift_phase(self, arg2: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.I_sigI_float_shift_phase(self, arg2)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.I_sigI_float_missing(self)
-    data_size = staticmethod(_clipper.I_sigI_float_data_size)
-    data_names = staticmethod(_clipper.I_sigI_float_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.I_sigI_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.I_sigI_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.I_sigI_float_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.I_sigI_float_data_import(self, array)
 
+
     def scale(self, s: 'clipper::ftype const &') -> "void":
+        """
+
+
+        this type is scalable - apply magnitude scale factor  
+
+        """
         return _clipper.I_sigI_float_scale(self, s)
 
+
     def I(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.I_sigI_float_I(self, *args)
 
+
     def sigI(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.I_sigI_float_sigI(self, *args)
 
+
     def I_pl(self) -> "float const &":
+        """
+
+
+        """
         return _clipper.I_sigI_float_I_pl(self)
 
+
     def sigI_pl(self) -> "float const &":
+        """
+
+
+        """
         return _clipper.I_sigI_float_sigI_pl(self)
 
+
     def I_mi(self) -> "float const &":
+        """
+
+
+        """
         return _clipper.I_sigI_float_I_mi(self)
 
+
     def sigI_mi(self) -> "float const &":
+        """
+
+
+        """
         return _clipper.I_sigI_float_sigI_mi(self)
 
+
     def cov(self) -> "float":
+        """
+
+
+        """
         return _clipper.I_sigI_float_cov(self)
+
 
     def copy(self) -> "clipper::datatypes::I_sigI< float >":
         return _clipper.I_sigI_float_copy(self)
@@ -7387,22 +14347,48 @@ I_sigI_float_swigregister = _clipper.I_sigI_float_swigregister
 I_sigI_float_swigregister(I_sigI_float)
 
 def I_sigI_float_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.I_sigI_float_type()
-I_sigI_float_type = _clipper.I_sigI_float_type
 
 def I_sigI_float_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.I_sigI_float_data_size()
-I_sigI_float_data_size = _clipper.I_sigI_float_data_size
 
 def I_sigI_float_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.I_sigI_float_data_names()
-I_sigI_float_data_names = _clipper.I_sigI_float_data_names
 
 class I_sigI_double(object):
+    """
+
+
+    Reflection data type: I + sigI.  
+
+    Note that I_sigI also has methods for returning I_pl(), sigI_pl(), I_mi,
+    sigI_mi(), so you can use this type in any template type where you would use
+    I_sigI_ano.  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        """
         this = _clipper.new_I_sigI_double(*args)
         try:
             self.this.append(this)
@@ -7410,71 +14396,207 @@ class I_sigI_double(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.I_sigI_double_set_null(self)
-    type = staticmethod(_clipper.I_sigI_double_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.I_sigI_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.I_sigI_double_friedel(self)
 
+
     def shift_phase(self, arg2: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.I_sigI_double_shift_phase(self, arg2)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.I_sigI_double_missing(self)
-    data_size = staticmethod(_clipper.I_sigI_double_data_size)
-    data_names = staticmethod(_clipper.I_sigI_double_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.I_sigI_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.I_sigI_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.I_sigI_double_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.I_sigI_double_data_import(self, array)
 
+
     def scale(self, s: 'clipper::ftype const &') -> "void":
+        """
+
+
+        this type is scalable - apply magnitude scale factor  
+
+        """
         return _clipper.I_sigI_double_scale(self, s)
 
+
     def I(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.I_sigI_double_I(self, *args)
 
+
     def sigI(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.I_sigI_double_sigI(self, *args)
 
+
     def I_pl(self) -> "double const &":
+        """
+
+
+        """
         return _clipper.I_sigI_double_I_pl(self)
 
+
     def sigI_pl(self) -> "double const &":
+        """
+
+
+        """
         return _clipper.I_sigI_double_sigI_pl(self)
 
+
     def I_mi(self) -> "double const &":
+        """
+
+
+        """
         return _clipper.I_sigI_double_I_mi(self)
 
+
     def sigI_mi(self) -> "double const &":
+        """
+
+
+        """
         return _clipper.I_sigI_double_sigI_mi(self)
 
+
     def cov(self) -> "double":
+        """
+
+
+        """
         return _clipper.I_sigI_double_cov(self)
+
     __swig_destroy__ = _clipper.delete_I_sigI_double
     __del__ = lambda self: None
 I_sigI_double_swigregister = _clipper.I_sigI_double_swigregister
 I_sigI_double_swigregister(I_sigI_double)
 
 def I_sigI_double_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.I_sigI_double_type()
-I_sigI_double_type = _clipper.I_sigI_double_type
 
 def I_sigI_double_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.I_sigI_double_data_size()
-I_sigI_double_data_size = _clipper.I_sigI_double_data_size
 
 def I_sigI_double_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.I_sigI_double_data_names()
-I_sigI_double_data_names = _clipper.I_sigI_double_data_names
 
 class HKL_data_I_sigI_float(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_I_sigI_float(*args)
         try:
             self.this.append(this)
@@ -7482,43 +14604,179 @@ class HKL_data_I_sigI_float(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_I_sigI_float_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_I_sigI_float_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_I_sigI_float_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_I_sigI_float_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_I_sigI_float_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_I_sigI_float_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_I_sigI_float_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_I_sigI_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_I_sigI_float_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_I_sigI_float_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_I_sigI_float_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_I_sigI_float_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_I_sigI_float_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_I_sigI_float_not_(self)
@@ -7546,10 +14804,41 @@ HKL_data_I_sigI_float_swigregister = _clipper.HKL_data_I_sigI_float_swigregister
 HKL_data_I_sigI_float_swigregister(HKL_data_I_sigI_float)
 
 class HKL_data_I_sigI_double(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_I_sigI_double(*args)
         try:
             self.this.append(this)
@@ -7557,43 +14846,179 @@ class HKL_data_I_sigI_double(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_I_sigI_double_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_I_sigI_double_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_I_sigI_double_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_I_sigI_double_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_I_sigI_double_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_I_sigI_double_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_I_sigI_double_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_I_sigI_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_I_sigI_double_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_I_sigI_double_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_I_sigI_double_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_I_sigI_double_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_I_sigI_double_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_I_sigI_double_not_(self)
@@ -7612,10 +15037,29 @@ HKL_data_I_sigI_double_swigregister = _clipper.HKL_data_I_sigI_double_swigregist
 HKL_data_I_sigI_double_swigregister(HKL_data_I_sigI_double)
 
 class E_sigE_float(object):
+    """
+
+
+    Reflection data type: E + sigE.  
+
+    This is not strictly a type for storing E values, but rather a type for storing
+    any sturcture factor magnitude-like quantity which has already had a symmetry
+    enhancement factor (epsilon) removed from it. E's are most commonly stored in
+    this form, wheras F's and U's are not. You can compute corrected F's from
+    uncorrected F's using:  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        """
         this = _clipper.new_E_sigE_float(*args)
         try:
             self.this.append(this)
@@ -7623,49 +15067,145 @@ class E_sigE_float(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.E_sigE_float_set_null(self)
-    type = staticmethod(_clipper.E_sigE_float_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.E_sigE_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.E_sigE_float_friedel(self)
 
+
     def shift_phase(self, arg2: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.E_sigE_float_shift_phase(self, arg2)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.E_sigE_float_missing(self)
-    data_size = staticmethod(_clipper.E_sigE_float_data_size)
-    data_names = staticmethod(_clipper.E_sigE_float_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.E_sigE_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.E_sigE_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.E_sigE_float_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.E_sigE_float_data_import(self, array)
 
+
     def scale(self, s: 'clipper::ftype const &') -> "void":
+        """
+
+
+        this type is scalable - apply magnitude scale factor  
+
+        """
         return _clipper.E_sigE_float_scale(self, s)
 
+
     def E(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.E_sigE_float_E(self, *args)
 
+
     def sigE(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.E_sigE_float_sigE(self, *args)
 
+
     def E_pl(self) -> "float const &":
+        """
+
+
+        """
         return _clipper.E_sigE_float_E_pl(self)
 
+
     def sigE_pl(self) -> "float const &":
+        """
+
+
+        """
         return _clipper.E_sigE_float_sigE_pl(self)
 
+
     def E_mi(self) -> "float const &":
+        """
+
+
+        """
         return _clipper.E_sigE_float_E_mi(self)
 
+
     def sigE_mi(self) -> "float const &":
+        """
+
+
+        """
         return _clipper.E_sigE_float_sigE_mi(self)
 
+
     def cov(self) -> "float":
+        """
+
+
+        """
         return _clipper.E_sigE_float_cov(self)
+
 
     def copy(self) -> "clipper::datatypes::E_sigE< float >":
         return _clipper.E_sigE_float_copy(self)
@@ -7675,22 +15215,50 @@ E_sigE_float_swigregister = _clipper.E_sigE_float_swigregister
 E_sigE_float_swigregister(E_sigE_float)
 
 def E_sigE_float_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.E_sigE_float_type()
-E_sigE_float_type = _clipper.E_sigE_float_type
 
 def E_sigE_float_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.E_sigE_float_data_size()
-E_sigE_float_data_size = _clipper.E_sigE_float_data_size
 
 def E_sigE_float_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.E_sigE_float_data_names()
-E_sigE_float_data_names = _clipper.E_sigE_float_data_names
 
 class E_sigE_double(object):
+    """
+
+
+    Reflection data type: E + sigE.  
+
+    This is not strictly a type for storing E values, but rather a type for storing
+    any sturcture factor magnitude-like quantity which has already had a symmetry
+    enhancement factor (epsilon) removed from it. E's are most commonly stored in
+    this form, wheras F's and U's are not. You can compute corrected F's from
+    uncorrected F's using:  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        """
         this = _clipper.new_E_sigE_double(*args)
         try:
             self.this.append(this)
@@ -7698,71 +15266,207 @@ class E_sigE_double(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.E_sigE_double_set_null(self)
-    type = staticmethod(_clipper.E_sigE_double_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.E_sigE_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.E_sigE_double_friedel(self)
 
+
     def shift_phase(self, arg2: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.E_sigE_double_shift_phase(self, arg2)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.E_sigE_double_missing(self)
-    data_size = staticmethod(_clipper.E_sigE_double_data_size)
-    data_names = staticmethod(_clipper.E_sigE_double_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.E_sigE_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.E_sigE_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.E_sigE_double_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.E_sigE_double_data_import(self, array)
 
+
     def scale(self, s: 'clipper::ftype const &') -> "void":
+        """
+
+
+        this type is scalable - apply magnitude scale factor  
+
+        """
         return _clipper.E_sigE_double_scale(self, s)
 
+
     def E(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.E_sigE_double_E(self, *args)
 
+
     def sigE(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.E_sigE_double_sigE(self, *args)
 
+
     def E_pl(self) -> "double const &":
+        """
+
+
+        """
         return _clipper.E_sigE_double_E_pl(self)
 
+
     def sigE_pl(self) -> "double const &":
+        """
+
+
+        """
         return _clipper.E_sigE_double_sigE_pl(self)
 
+
     def E_mi(self) -> "double const &":
+        """
+
+
+        """
         return _clipper.E_sigE_double_E_mi(self)
 
+
     def sigE_mi(self) -> "double const &":
+        """
+
+
+        """
         return _clipper.E_sigE_double_sigE_mi(self)
 
+
     def cov(self) -> "double":
+        """
+
+
+        """
         return _clipper.E_sigE_double_cov(self)
+
     __swig_destroy__ = _clipper.delete_E_sigE_double
     __del__ = lambda self: None
 E_sigE_double_swigregister = _clipper.E_sigE_double_swigregister
 E_sigE_double_swigregister(E_sigE_double)
 
 def E_sigE_double_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.E_sigE_double_type()
-E_sigE_double_type = _clipper.E_sigE_double_type
 
 def E_sigE_double_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.E_sigE_double_data_size()
-E_sigE_double_data_size = _clipper.E_sigE_double_data_size
 
 def E_sigE_double_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.E_sigE_double_data_names()
-E_sigE_double_data_names = _clipper.E_sigE_double_data_names
 
 class HKL_data_E_sigE_float(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_E_sigE_float(*args)
         try:
             self.this.append(this)
@@ -7770,43 +15474,179 @@ class HKL_data_E_sigE_float(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_E_sigE_float_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_E_sigE_float_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_E_sigE_float_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_E_sigE_float_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_E_sigE_float_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_E_sigE_float_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_E_sigE_float_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_E_sigE_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_E_sigE_float_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_E_sigE_float_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_E_sigE_float_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_E_sigE_float_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_E_sigE_float_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_E_sigE_float_not_(self)
@@ -7837,10 +15677,41 @@ HKL_data_E_sigE_float_swigregister = _clipper.HKL_data_E_sigE_float_swigregister
 HKL_data_E_sigE_float_swigregister(HKL_data_E_sigE_float)
 
 class HKL_data_E_sigE_double(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_E_sigE_double(*args)
         try:
             self.this.append(this)
@@ -7848,43 +15719,179 @@ class HKL_data_E_sigE_double(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_E_sigE_double_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_E_sigE_double_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_E_sigE_double_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_E_sigE_double_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_E_sigE_double_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_E_sigE_double_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_E_sigE_double_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_E_sigE_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_E_sigE_double_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_E_sigE_double_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_E_sigE_double_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_E_sigE_double_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_E_sigE_double_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_E_sigE_double_not_(self)
@@ -7903,10 +15910,23 @@ HKL_data_E_sigE_double_swigregister = _clipper.HKL_data_E_sigE_double_swigregist
 HKL_data_E_sigE_double_swigregister(HKL_data_E_sigE_double)
 
 class ABCD_float(object):
+    """
+
+
+    Reflection data type: Hendrickson-Lattman coeff.  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        """
         this = _clipper.new_ABCD_float(*args)
         try:
             self.this.append(this)
@@ -7914,37 +15934,111 @@ class ABCD_float(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.ABCD_float_set_null(self)
-    type = staticmethod(_clipper.ABCD_float_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.ABCD_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.ABCD_float_friedel(self)
 
+
     def shift_phase(self, dphi: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.ABCD_float_shift_phase(self, dphi)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.ABCD_float_missing(self)
-    data_size = staticmethod(_clipper.ABCD_float_data_size)
-    data_names = staticmethod(_clipper.ABCD_float_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.ABCD_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.ABCD_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.ABCD_float_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.ABCD_float_data_import(self, array)
 
+
     def a(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.ABCD_float_a(self, *args)
 
+
     def b(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.ABCD_float_b(self, *args)
 
+
     def c(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.ABCD_float_c(self, *args)
 
+
     def d(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.ABCD_float_d(self, *args)
+
 
     def vals(self) -> "void":
         return _clipper.ABCD_float_vals(self)
@@ -7960,22 +16054,44 @@ ABCD_float_swigregister = _clipper.ABCD_float_swigregister
 ABCD_float_swigregister(ABCD_float)
 
 def ABCD_float_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.ABCD_float_type()
-ABCD_float_type = _clipper.ABCD_float_type
 
 def ABCD_float_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.ABCD_float_data_size()
-ABCD_float_data_size = _clipper.ABCD_float_data_size
 
 def ABCD_float_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.ABCD_float_data_names()
-ABCD_float_data_names = _clipper.ABCD_float_data_names
 
 class ABCD_double(object):
+    """
+
+
+    Reflection data type: Hendrickson-Lattman coeff.  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        """
         this = _clipper.new_ABCD_double(*args)
         try:
             self.this.append(this)
@@ -7983,37 +16099,111 @@ class ABCD_double(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.ABCD_double_set_null(self)
-    type = staticmethod(_clipper.ABCD_double_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.ABCD_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.ABCD_double_friedel(self)
 
+
     def shift_phase(self, dphi: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.ABCD_double_shift_phase(self, dphi)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.ABCD_double_missing(self)
-    data_size = staticmethod(_clipper.ABCD_double_data_size)
-    data_names = staticmethod(_clipper.ABCD_double_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.ABCD_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.ABCD_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.ABCD_double_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.ABCD_double_data_import(self, array)
 
+
     def a(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.ABCD_double_a(self, *args)
 
+
     def b(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.ABCD_double_b(self, *args)
 
+
     def c(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.ABCD_double_c(self, *args)
 
+
     def d(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.ABCD_double_d(self, *args)
+
 
     def vals(self) -> "void":
         return _clipper.ABCD_double_vals(self)
@@ -8023,22 +16213,62 @@ ABCD_double_swigregister = _clipper.ABCD_double_swigregister
 ABCD_double_swigregister(ABCD_double)
 
 def ABCD_double_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.ABCD_double_type()
-ABCD_double_type = _clipper.ABCD_double_type
 
 def ABCD_double_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.ABCD_double_data_size()
-ABCD_double_data_size = _clipper.ABCD_double_data_size
 
 def ABCD_double_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.ABCD_double_data_names()
-ABCD_double_data_names = _clipper.ABCD_double_data_names
 
 class HKL_data_ABCD_float(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_ABCD_float(*args)
         try:
             self.this.append(this)
@@ -8046,43 +16276,179 @@ class HKL_data_ABCD_float(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_ABCD_float_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_ABCD_float_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_ABCD_float_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_ABCD_float_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_ABCD_float_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_ABCD_float_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_ABCD_float_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_ABCD_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_ABCD_float_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_ABCD_float_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_ABCD_float_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_ABCD_float_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_ABCD_float_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_ABCD_float_not_(self)
@@ -8113,10 +16479,41 @@ HKL_data_ABCD_float_swigregister = _clipper.HKL_data_ABCD_float_swigregister
 HKL_data_ABCD_float_swigregister(HKL_data_ABCD_float)
 
 class HKL_data_ABCD_double(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_ABCD_double(*args)
         try:
             self.this.append(this)
@@ -8124,43 +16521,179 @@ class HKL_data_ABCD_double(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_ABCD_double_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_ABCD_double_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_ABCD_double_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_ABCD_double_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_ABCD_double_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_ABCD_double_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_ABCD_double_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_ABCD_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_ABCD_double_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_ABCD_double_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_ABCD_double_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_ABCD_double_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_ABCD_double_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_ABCD_double_not_(self)
@@ -8179,10 +16712,23 @@ HKL_data_ABCD_double_swigregister = _clipper.HKL_data_ABCD_double_swigregister
 HKL_data_ABCD_double_swigregister(HKL_data_ABCD_double)
 
 class Phi_fom_float(object):
+    """
+
+
+    Reflection data type: best phi + fom.  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        """
         this = _clipper.new_Phi_fom_float(*args)
         try:
             self.this.append(this)
@@ -8190,53 +16736,139 @@ class Phi_fom_float(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.Phi_fom_float_set_null(self)
-    type = staticmethod(_clipper.Phi_fom_float_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.Phi_fom_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.Phi_fom_float_friedel(self)
 
+
     def shift_phase(self, dphi: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.Phi_fom_float_shift_phase(self, dphi)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.Phi_fom_float_missing(self)
-    data_size = staticmethod(_clipper.Phi_fom_float_data_size)
-    data_names = staticmethod(_clipper.Phi_fom_float_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.Phi_fom_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.Phi_fom_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.Phi_fom_float_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.Phi_fom_float_data_import(self, array)
 
+
     def phi(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.Phi_fom_float_phi(self, *args)
 
+
     def fom(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.Phi_fom_float_fom(self, *args)
+
     __swig_destroy__ = _clipper.delete_Phi_fom_float
     __del__ = lambda self: None
 Phi_fom_float_swigregister = _clipper.Phi_fom_float_swigregister
 Phi_fom_float_swigregister(Phi_fom_float)
 
 def Phi_fom_float_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.Phi_fom_float_type()
-Phi_fom_float_type = _clipper.Phi_fom_float_type
 
 def Phi_fom_float_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.Phi_fom_float_data_size()
-Phi_fom_float_data_size = _clipper.Phi_fom_float_data_size
 
 def Phi_fom_float_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.Phi_fom_float_data_names()
-Phi_fom_float_data_names = _clipper.Phi_fom_float_data_names
 
 class Phi_fom_double(object):
+    """
+
+
+    Reflection data type: best phi + fom.  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        """
         this = _clipper.new_Phi_fom_double(*args)
         try:
             self.this.append(this)
@@ -8244,53 +16876,157 @@ class Phi_fom_double(object):
             self.this = this
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.Phi_fom_double_set_null(self)
-    type = staticmethod(_clipper.Phi_fom_double_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.Phi_fom_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.Phi_fom_double_friedel(self)
 
+
     def shift_phase(self, dphi: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.Phi_fom_double_shift_phase(self, dphi)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.Phi_fom_double_missing(self)
-    data_size = staticmethod(_clipper.Phi_fom_double_data_size)
-    data_names = staticmethod(_clipper.Phi_fom_double_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.Phi_fom_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.Phi_fom_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.Phi_fom_double_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.Phi_fom_double_data_import(self, array)
 
+
     def phi(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.Phi_fom_double_phi(self, *args)
 
+
     def fom(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.Phi_fom_double_fom(self, *args)
+
     __swig_destroy__ = _clipper.delete_Phi_fom_double
     __del__ = lambda self: None
 Phi_fom_double_swigregister = _clipper.Phi_fom_double_swigregister
 Phi_fom_double_swigregister(Phi_fom_double)
 
 def Phi_fom_double_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.Phi_fom_double_type()
-Phi_fom_double_type = _clipper.Phi_fom_double_type
 
 def Phi_fom_double_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.Phi_fom_double_data_size()
-Phi_fom_double_data_size = _clipper.Phi_fom_double_data_size
 
 def Phi_fom_double_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.Phi_fom_double_data_names()
-Phi_fom_double_data_names = _clipper.Phi_fom_double_data_names
 
 class HKL_data_Phi_fom_float(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_Phi_fom_float(*args)
         try:
             self.this.append(this)
@@ -8298,43 +17034,179 @@ class HKL_data_Phi_fom_float(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_Phi_fom_float_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_Phi_fom_float_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_Phi_fom_float_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_Phi_fom_float_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_Phi_fom_float_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_Phi_fom_float_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_Phi_fom_float_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_Phi_fom_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_Phi_fom_float_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_Phi_fom_float_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_Phi_fom_float_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_Phi_fom_float_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_Phi_fom_float_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_Phi_fom_float_not_(self)
@@ -8359,10 +17231,41 @@ HKL_data_Phi_fom_float_swigregister = _clipper.HKL_data_Phi_fom_float_swigregist
 HKL_data_Phi_fom_float_swigregister(HKL_data_Phi_fom_float)
 
 class HKL_data_Phi_fom_double(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_Phi_fom_double(*args)
         try:
             self.this.append(this)
@@ -8370,43 +17273,179 @@ class HKL_data_Phi_fom_double(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_Phi_fom_double_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_Phi_fom_double_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_Phi_fom_double_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_Phi_fom_double_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_Phi_fom_double_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_Phi_fom_double_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_Phi_fom_double_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_Phi_fom_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_Phi_fom_double_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_Phi_fom_double_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_Phi_fom_double_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_Phi_fom_double_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_Phi_fom_double_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_Phi_fom_double_not_(self)
@@ -8425,46 +17464,146 @@ HKL_data_Phi_fom_double_swigregister = _clipper.HKL_data_Phi_fom_double_swigregi
 HKL_data_Phi_fom_double_swigregister(HKL_data_Phi_fom_double)
 
 class F_phi_float(object):
+    """
+
+
+    Reflection data type: F + phi model or map coeff (e.g. Fcalc, Fbest)  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.F_phi_float_set_null(self)
-    type = staticmethod(_clipper.F_phi_float_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.F_phi_float_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.F_phi_float_friedel(self)
 
+
     def shift_phase(self, dphi: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.F_phi_float_shift_phase(self, dphi)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.F_phi_float_missing(self)
-    data_size = staticmethod(_clipper.F_phi_float_data_size)
-    data_names = staticmethod(_clipper.F_phi_float_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.F_phi_float_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.F_phi_float_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.F_phi_float_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.F_phi_float_data_import(self, array)
 
+
     def scale(self, s: 'clipper::ftype const &') -> "void":
+        """
+
+
+        this type is scalable - apply magnitude scale factor  
+
+        """
         return _clipper.F_phi_float_scale(self, s)
 
+
     def f(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.F_phi_float_f(self, *args)
 
+
     def phi(self, *args) -> "float &":
+        """
+
+
+        """
         return _clipper.F_phi_float_phi(self, *args)
 
+
     def a(self) -> "float":
+        """
+
+
+        read real part  
+
+        """
         return _clipper.F_phi_float_a(self)
 
+
     def b(self) -> "float":
+        """
+
+
+        read imag part  
+
+        """
         return _clipper.F_phi_float_b(self)
 
+
     def __init__(self, *args):
+        """
+
+
+        convert from complex  
+
+        """
         this = _clipper.new_F_phi_float(*args)
         try:
             self.this.append(this)
@@ -8472,10 +17611,24 @@ class F_phi_float(object):
             self.this = this
 
     def resolve(self, phi: 'float const') -> "float":
+        """
+
+
+        resolve along phase direction  
+
+        """
         return _clipper.F_phi_float_resolve(self, phi)
 
+
     def norm(self) -> "clipper::datatypes::F_phi< float > const &":
+        """
+
+
+        tidy up so that real part is positive and phase 0...twopi  
+
+        """
         return _clipper.F_phi_float_norm(self)
+
 
     def __add__(self, h2: 'F_phi_float') -> "clipper::datatypes::F_phi< float >":
         return _clipper.F_phi_float___add__(self, h2)
@@ -8494,58 +17647,167 @@ F_phi_float_swigregister = _clipper.F_phi_float_swigregister
 F_phi_float_swigregister(F_phi_float)
 
 def F_phi_float_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.F_phi_float_type()
-F_phi_float_type = _clipper.F_phi_float_type
 
 def F_phi_float_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.F_phi_float_data_size()
-F_phi_float_data_size = _clipper.F_phi_float_data_size
 
 def F_phi_float_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.F_phi_float_data_names()
-F_phi_float_data_names = _clipper.F_phi_float_data_names
 
 class F_phi_double(object):
+    """
+
+
+    Reflection data type: F + phi model or map coeff (e.g. Fcalc, Fbest)  
+
+    C++ includes: hkl_datatypes.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def set_null(self) -> "void":
+        """
+
+
+        """
         return _clipper.F_phi_double_set_null(self)
-    type = staticmethod(_clipper.F_phi_double_type)
+
+
+    def type() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.F_phi_double_type()
+
+    type = staticmethod(type)
 
     def friedel(self) -> "void":
+        """
+
+
+        """
         return _clipper.F_phi_double_friedel(self)
 
+
     def shift_phase(self, dphi: 'clipper::ftype const &') -> "void":
+        """
+
+
+        """
         return _clipper.F_phi_double_shift_phase(self, dphi)
 
+
     def missing(self) -> "bool":
+        """
+
+
+        """
         return _clipper.F_phi_double_missing(self)
-    data_size = staticmethod(_clipper.F_phi_double_data_size)
-    data_names = staticmethod(_clipper.F_phi_double_data_names)
+
+
+    def data_size() -> "int":
+        """
+
+
+        """
+        return _clipper.F_phi_double_data_size()
+
+    data_size = staticmethod(data_size)
+
+    def data_names() -> "clipper::String":
+        """
+
+
+        """
+        return _clipper.F_phi_double_data_names()
+
+    data_names = staticmethod(data_names)
 
     def data_export(self, array: 'clipper::xtype []') -> "void":
+        """
+
+
+        """
         return _clipper.F_phi_double_data_export(self, array)
 
+
     def data_import(self, array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        """
         return _clipper.F_phi_double_data_import(self, array)
 
+
     def scale(self, s: 'clipper::ftype const &') -> "void":
+        """
+
+
+        this type is scalable - apply magnitude scale factor  
+
+        """
         return _clipper.F_phi_double_scale(self, s)
 
+
     def f(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.F_phi_double_f(self, *args)
 
+
     def phi(self, *args) -> "double &":
+        """
+
+
+        """
         return _clipper.F_phi_double_phi(self, *args)
 
+
     def a(self) -> "double":
+        """
+
+
+        read real part  
+
+        """
         return _clipper.F_phi_double_a(self)
 
+
     def b(self) -> "double":
+        """
+
+
+        read imag part  
+
+        """
         return _clipper.F_phi_double_b(self)
 
+
     def __init__(self, *args):
+        """
+
+
+        convert from complex  
+
+        """
         this = _clipper.new_F_phi_double(*args)
         try:
             self.this.append(this)
@@ -8553,32 +17815,86 @@ class F_phi_double(object):
             self.this = this
 
     def resolve(self, phi: 'double const') -> "double":
+        """
+
+
+        resolve along phase direction  
+
+        """
         return _clipper.F_phi_double_resolve(self, phi)
 
+
     def norm(self) -> "clipper::datatypes::F_phi< double > const &":
+        """
+
+
+        tidy up so that real part is positive and phase 0...twopi  
+
+        """
         return _clipper.F_phi_double_norm(self)
+
     __swig_destroy__ = _clipper.delete_F_phi_double
     __del__ = lambda self: None
 F_phi_double_swigregister = _clipper.F_phi_double_swigregister
 F_phi_double_swigregister(F_phi_double)
 
 def F_phi_double_type() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.F_phi_double_type()
-F_phi_double_type = _clipper.F_phi_double_type
 
 def F_phi_double_data_size() -> "int":
+    """
+
+
+    """
     return _clipper.F_phi_double_data_size()
-F_phi_double_data_size = _clipper.F_phi_double_data_size
 
 def F_phi_double_data_names() -> "clipper::String":
+    """
+
+
+    """
     return _clipper.F_phi_double_data_names()
-F_phi_double_data_names = _clipper.F_phi_double_data_names
 
 class HKL_data_F_phi_float(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_F_phi_float(*args)
         try:
             self.this.append(this)
@@ -8586,43 +17902,179 @@ class HKL_data_F_phi_float(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_F_phi_float_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_F_phi_float_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_F_phi_float_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_F_phi_float_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_F_phi_float_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_F_phi_float_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_F_phi_float_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_F_phi_float_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_F_phi_float_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_F_phi_float_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_F_phi_float_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_F_phi_float_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_F_phi_float_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_F_phi_float_not_(self)
@@ -8689,10 +18141,41 @@ HKL_data_F_phi_float_swigregister = _clipper.HKL_data_F_phi_float_swigregister
 HKL_data_F_phi_float_swigregister(HKL_data_F_phi_float)
 
 class HKL_data_F_phi_double(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_F_phi_double(*args)
         try:
             self.this.append(this)
@@ -8700,43 +18183,179 @@ class HKL_data_F_phi_double(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_F_phi_double_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_F_phi_double_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_F_phi_double_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_F_phi_double_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_F_phi_double_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_F_phi_double_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_F_phi_double_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_F_phi_double_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_F_phi_double_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_F_phi_double_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_F_phi_double_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_F_phi_double_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_F_phi_double_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_F_phi_double_not_(self)
@@ -8755,10 +18374,41 @@ HKL_data_F_phi_double_swigregister = _clipper.HKL_data_F_phi_double_swigregister
 HKL_data_F_phi_double_swigregister(HKL_data_F_phi_double)
 
 class HKL_data_Flag(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_Flag(*args)
         try:
             self.this.append(this)
@@ -8766,43 +18416,179 @@ class HKL_data_Flag(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_Flag_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_Flag_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_Flag_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_Flag_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_Flag_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_Flag_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_Flag_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_Flag_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_Flag_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_Flag_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_Flag_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_Flag_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_Flag_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_Flag_not_(self)
@@ -8848,10 +18634,41 @@ HKL_data_Flag_swigregister = _clipper.HKL_data_Flag_swigregister
 HKL_data_Flag_swigregister(HKL_data_Flag)
 
 class HKL_data_Flag_bool(HKL_data_base):
+    """
+
+
+    HKL_data<>  
+
+    An actual hkl_data object, containing actual data of type T. This implements the
+    generic interface, and in addition provides type-specific access functions.  
+
+    note: The following methods are inherited from HKL_data_base but are documented
+        here for convenience: base_hkl_info(), base_cell(), invresolsq(),
+        invresolsq_range(), num_obs(), first(), first_data(), next_data().  
+
+    C++ includes: hkl_data.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        [CLIPPER2] constructor: from another HKL_data object  
+
+            Construct the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         this = _clipper.new_HKL_data_Flag_bool(*args)
         try:
             self.this.append(this)
@@ -8859,43 +18676,179 @@ class HKL_data_Flag_bool(HKL_data_base):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        [CLIPPER2] initialiser: from another HKL_data object  
+
+            Initialise the object using a given HKL_data object. The
+         properties of the object (spacegroup, cell, sampling) are the copied, but the
+        actual data is not.  
+
+        Parameters
+        ----------
+        * `hkl_data` :  
+            The HKL_data object to provide the data.  
+
+        """
         return _clipper.HKL_data_Flag_bool_init(self, *args)
 
+
     def update(self) -> "void":
+        """
+
+
+        update: synchornize info with parent HKL_info  
+
+        The datalist is resized if necessary to match the parent.  
+
+        """
         return _clipper.HKL_data_Flag_bool_update(self)
 
+
     def type(self) -> "clipper::String":
+        """
+
+
+        get data type (a list of names corresponding to the im/export values)  
+
+        """
         return _clipper.HKL_data_Flag_bool_type(self)
 
+
     def missing(self, index: 'int const &') -> "bool":
+        """
+
+
+        check if a data entry in the list is marked as 'missing'  
+
+        """
         return _clipper.HKL_data_Flag_bool_missing(self, index)
 
+
     def set_null(self, index: 'int const &') -> "void":
+        """
+
+
+        set data entry in the list to its null value  
+
+        """
         return _clipper.HKL_data_Flag_bool_set_null(self, index)
 
+
     def data_size(self) -> "int":
+        """
+
+
+        return number of data elements in this type  
+
+        """
         return _clipper.HKL_data_Flag_bool_data_size(self)
 
+
     def data_names(self) -> "clipper::String":
+        """
+
+
+        return names of data elements in this type  
+
+        """
         return _clipper.HKL_data_Flag_bool_data_names(self)
 
+
     def data_export(self, hkl: 'HKL', array: 'clipper::xtype []') -> "void":
+        """
+
+
+        conversion to array (for I/O)  
+
+        """
         return _clipper.HKL_data_Flag_bool_data_export(self, hkl, array)
 
+
     def data_import(self, hkl: 'HKL', array: 'clipper::xtype const []') -> "void":
+        """
+
+
+        conversion from array (for I/O)  
+
+        """
         return _clipper.HKL_data_Flag_bool_data_import(self, hkl, array)
 
+
     def mask(self, mask: 'HKL_data_base') -> "void":
+        """
+
+
+        For each data element, if the corresponding element in `mask` is missing, then
+        that element in this list is also set to missing.  
+
+        Parameters
+        ----------
+        * `mask` :  
+            The list to provide the mask.  
+
+        """
         return _clipper.HKL_data_Flag_bool_mask(self, mask)
 
+
     def get_data(self, *args) -> "bool":
+        """
+
+
+        get data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and the supplied datatype is set, otherwise
+        the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Returned with the value of the data.  
+
+        Returns
+        -------
+        true if the data was returned.  
+
+        """
         return _clipper.HKL_data_Flag_bool_get_data(self, *args)
 
+
     def set_data(self, *args) -> "bool":
+        """
+
+
+        set data by hkl (returns false if no equivalent hkl)  
+
+        If a symmetry mate of the requested HKL exists in the list, then the correct
+        symmetry transformations are applied and data is set to the supplied values,
+        otherwise the function returns false.  
+
+        Parameters
+        ----------
+        * `hkl` :  
+            The reflection HKL.  
+        * `data` :  
+            Value of the data to set.  
+
+        Returns
+        -------
+        true if the data was set.  
+
+        """
         return _clipper.HKL_data_Flag_bool_set_data(self, *args)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.HKL_data_Flag_bool_debug(self)
+
 
     def not_(self) -> "clipper::HKL_data< clipper::datatypes::Flag_bool >":
         return _clipper.HKL_data_Flag_bool_not_(self)
@@ -8920,26 +18873,86 @@ HKL_data_Flag_bool_swigregister = _clipper.HKL_data_Flag_bool_swigregister
 HKL_data_Flag_bool_swigregister(HKL_data_Flag_bool)
 
 class Prob_phi_2d(object):
+    """
+
+
+    2-d angular probability distibution class  
+
+    Base for Ramachandran class (and other similar classes, such as a pseudo-
+    ramachandran plot or the JPD of two phases ).  
+
+    C++ includes: ramachandran.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def init(self, size: 'int const &') -> "void":
+        """
+
+
+        initialise: with sampling  
+
+        """
         return _clipper.Prob_phi_2d_init(self, size)
 
+
     def accumulate(self, *args) -> "void":
+        """
+
+
+        accumulate new sample to probability  
+
+        linear interpolation onto grid  
+
+        """
         return _clipper.Prob_phi_2d_accumulate(self, *args)
 
+
     def normalise(self) -> "void":
+        """
+
+
+        normalise to integrate to 1/(2pi)^2  
+
+        normalise mean value to 1/(2pi)^2  
+
+        """
         return _clipper.Prob_phi_2d_normalise(self)
 
+
     def probability(self, phi1: 'clipper::ftype const &', phi2: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        get probability for a particular pair of angles  
+
+        linear interpolation off of grid  
+
+        """
         return _clipper.Prob_phi_2d_probability(self, phi1, phi2)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        formatted string representation (as C++ code)  
+
+        """
         return _clipper.Prob_phi_2d_format(self)
 
+
     def data(self, *args) -> "clipper::ftype &":
+        """
+
+
+        2d write access  
+
+        """
         return _clipper.Prob_phi_2d_data(self, *args)
+
 
     def __init__(self):
         this = _clipper.new_Prob_phi_2d()
@@ -8953,6 +18966,23 @@ Prob_phi_2d_swigregister = _clipper.Prob_phi_2d_swigregister
 Prob_phi_2d_swigregister(Prob_phi_2d)
 
 class Ramachandran(object):
+    """
+
+
+    Ramachandran plot class.  
+
+    This class provides a reference Ramachandran plot for Gly, Pro, other, and
+    combinations of those types of residues. The source data comes from the best
+    residues from the 'top500' best-determined structures list of D. C. and J. S.
+    Richardson, http://kinemage.biochem.duke.edu/index.html  
+
+    The Ramachandran plot is normalised in inverse radians squared, so the mean
+    value of a probability is 1/(2 pi)2.  
+
+    C++ includes: ramachandran.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     Gly = _clipper.Ramachandran_Gly
@@ -8967,6 +18997,21 @@ class Ramachandran(object):
     All5 = _clipper.Ramachandran_All5
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from standard plot  
+
+        Construct a Ramachandran plot of a given type.  
+
+        Parameters
+        ----------
+        * `type` :  
+            The residue type of the plot. Options include: Ramachandran::Gly,
+            Ramachandran::Pro, Ramachandran::NonGlyPro, Ramachandran::NonGly,
+            Ramachandran::All  
+
+        """
         this = _clipper.new_Ramachandran(*args)
         try:
             self.this.append(this)
@@ -8974,19 +19019,74 @@ class Ramachandran(object):
             self.this = this
 
     def init(self, type: 'clipper::Ramachandran::TYPE') -> "void":
+        """
+
+
+        initialise: from standard plot  
+
+        Construct a Ramachandran plot of a given type.  
+
+        Parameters
+        ----------
+        * `type` :  
+            The residue type of the plot. Options include: Ramachandran::Gly,
+            Ramachandran::Pro, Ramachandran::NonGlyPro, Ramachandran::NonGly,
+            Ramachandran::All  
+
+        """
         return _clipper.Ramachandran_init(self, type)
 
+
     def set_thresholds(self, prob_favored: 'clipper::ftype'=0.01, prob_allowed: 'clipper::ftype'=0.0005) -> "void":
+        """
+
+
+        change threshholds to different values  
+
+        Set thresholds for favorable and allowed regions of the Ramachandran plot. The
+        US spelling is used because it is the same length as 'allowed'. I should get out
+        more. Sorry.  
+
+        Parameters
+        ----------
+        * `prob_favored` :  
+            The probability threshold for the favored region.  
+        * `prob_allowed` :  
+            The probability threshold for the allowed region.  
+
+        """
         return _clipper.Ramachandran_set_thresholds(self, prob_favored, prob_allowed)
 
+
     def probability(self, phi: 'clipper::ftype const &', psi: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        get probability for a particular pair of angles  
+
+        """
         return _clipper.Ramachandran_probability(self, phi, psi)
 
+
     def favored(self, phi: 'clipper::ftype const &', psi: 'clipper::ftype const &') -> "bool":
+        """
+
+
+        test if a pair of angles are in the favored region  
+
+        """
         return _clipper.Ramachandran_favored(self, phi, psi)
 
+
     def allowed(self, phi: 'clipper::ftype const &', psi: 'clipper::ftype const &') -> "bool":
+        """
+
+
+        test if a pair of angles are in the allowed region  
+
+        """
         return _clipper.Ramachandran_allowed(self, phi, psi)
+
     __swig_destroy__ = _clipper.delete_Ramachandran
     __del__ = lambda self: None
 Ramachandran_swigregister = _clipper.Ramachandran_swigregister
@@ -9537,12 +19637,40 @@ EDcalc_aniso_float_swigregister = _clipper.EDcalc_aniso_float_swigregister
 EDcalc_aniso_float_swigregister(EDcalc_aniso_float)
 
 class BasisFn_base(object):
+    """
+
+
+    abstract base class for resolution function basis functions  
+
+    A basis function must be able to return its value and derivatives for any given
+    HKL.  
+
+    Optionally, performance can be improved by returning a flag to indicate if the
+    value of the basis function for a given reflection is linearly dependent on the
+    values of the parameter, and a value indicating whether the curvature matrix
+    takes an N-diagonal form.  
+
+    **NOTE:** for performance reasons the derivatives are returned as a reference to
+    an internal object, so if you store a reference to the result (which is also
+    good for performance, it will be overwritten on the next call. If this matters,
+    store a copy rather than a reference.  
+
+    C++ includes: resol_fn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     GENERAL = _clipper.BasisFn_base_GENERAL
     LINEAR = _clipper.BasisFn_base_LINEAR
 
     def __init__(self, *args):
+        """
+
+
+        constructor: takes number of parameters  
+
+        """
         if self.__class__ == BasisFn_base:
             _self = None
         else:
@@ -9554,19 +19682,72 @@ class BasisFn_base(object):
             self.this = this
 
     def num_params(self) -> "int const &":
+        """
+
+
+        the number of parameters of this basis function  
+
+        """
         return _clipper.BasisFn_base_num_params(self)
 
+
     def f(self, hkl: 'HKL', cell: 'Cell', params: 'DoubleVector') -> "clipper::ftype":
+        """
+
+
+        the value of the resolution function  
+
+        """
         return _clipper.BasisFn_base_f(self, hkl, cell, params)
 
+
     def fderiv(self, hkl: 'HKL', cell: 'Cell', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the value of the resolution function and its first two derivatives  
+
+        """
         return _clipper.BasisFn_base_fderiv(self, hkl, cell, params)
 
+
     def type(self) -> "clipper::BasisFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        Defaults to GENERAL, which will always work. If the basis function is linearly
+        dependent on the parameters, override this with a function returning LINEAR for
+        improved performance. See the provided basis functions for examples.  
+
+        Returns
+        -------
+        The function type enumeration.  
+
+        """
         return _clipper.BasisFn_base_type(self)
 
+
     def num_diagonals(self) -> "int":
+        """
+
+
+        number of non-zero diagonals in the upper triangle of the curvatures  
+
+        Defaults to 0, which will always work. If the basis function has compact support
+        among the parameters, i.e. the value for any HKL depends only on a few
+        parameters, then set this to the number of non-zero diagonals in the upper
+        triangle of the matrix, i.e. 1 for a diagonal matrix, 2 for a tri-diagonal
+        matrix etc.  
+
+        Returns
+        -------
+        The number of non-zero upper diagonals, or zero for full-matrix.  
+
+        """
         return _clipper.BasisFn_base_num_diagonals(self)
+
     def __disown__(self):
         self.this.disown()
         _clipper.disown_BasisFn_base(self)
@@ -9575,16 +19756,48 @@ BasisFn_base_swigregister = _clipper.BasisFn_base_swigregister
 BasisFn_base_swigregister(BasisFn_base)
 
 class TargetFn_base(object):
+    """
+
+
+    abstract base class for least-squares resolution function target functions  
+
+    A target function must be able to return its value given the value of the basis
+    function for all HKL, and its derivative with respect the values of the basis
+    function for all HKL.  
+
+    Optionally, performance can be improved by returning a flag to indicate if the
+    target function is quadratic.  
+
+    C++ includes: resol_fn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     GENERAL = _clipper.TargetFn_base_GENERAL
     QUADRATIC = _clipper.TargetFn_base_QUADRATIC
 
     def rderiv(self, ih: 'clipper::HKL_info::HKL_reference_index const &', fh: 'clipper::ftype const &') -> "clipper::TargetFn_base::Rderiv":
+        """
+
+
+        return the value and derivatives of the target function  
+
+        If the value of f(h) is invalid, rderiv.r should be set to NaN  
+
+        """
         return _clipper.TargetFn_base_rderiv(self, ih, fh)
 
+
     def type(self) -> "clipper::TargetFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        """
         return _clipper.TargetFn_base_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_base
     __del__ = lambda self: None
 
@@ -9606,10 +19819,65 @@ TargetFn_base_swigregister = _clipper.TargetFn_base_swigregister
 TargetFn_base_swigregister(TargetFn_base)
 
 class ResolutionFn(object):
+    """
+
+
+    2nd order resolution function evaluator  
+
+    This is an automatic evaluator for arbitrary functions of HKL, most commonly
+    used for evaluating a function of resolution (such a mean F^2 or sigmaa),
+    although more general tasks including local scaling of reflections and
+    anisotropic functions can also be handled. This form is for target functions
+    which approach zero quadratically, e.g. least-squares targets.  
+
+    This version implements a naive Newton-Raphson minimiser, which only uses the
+    gradient and curvature of the target function, ignoring its value. It is ideal
+    for quadratic targets with linear basis functions.  
+
+    To evaluate a resolution function, this class must be provided with two objects:  
+
+    *   The basis function (and gradients), which describes the value of the
+        function for any reflection given a set of paramters.  
+    *   The target function (and derivatives), which is used to determine the values
+        of the basis function parameters.  
+
+    For example, the following code may be used to calculate a smooth scaling
+    function to scale one set of data to another using an anisotropic Gaussian
+    scaling function:  
+
+    The most useful isotropic resolution function is the BasisFn_spline, since it is
+    linear and provides a good fit to most data.  
+
+    C++ includes: resol_fn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, hkl_info: 'HKL_info', basisfn: 'BasisFn_base', targetfn: 'TargetFn_base', params: 'DoubleVector', damp: 'clipper::ftype const'=0.0, debug: 'bool const'=False):
+        """
+
+
+        constructor: need reflections, basis fn and target fn.  
+
+        The constructor performs the full minimisation calculation.  
+
+        Parameters
+        ----------
+        * `hkl_info` :  
+            HKL_info object which provides the reflection list.  
+        * `basisfn` :  
+            The basis function used to describe the desired property.  
+        * `targetfn` :  
+            The target function to be minimised.  
+        * `params` :  
+            Initial values for the function parameters.  
+        * `damp_` :  
+            If > 0.0, shifts are fdamped during early cycles to help convergence with
+            difficult bases/target conbinations.  
+
+        """
         this = _clipper.new_ResolutionFn(hkl_info, basisfn, targetfn, params, damp, debug)
         try:
             self.this.append(this)
@@ -9617,20 +19885,84 @@ class ResolutionFn(object):
             self.this = this
 
     def f(self, ih: 'clipper::HKL_info::HKL_reference_index const &') -> "clipper::ftype":
+        """
+
+
+        return the value of the basis function with the current paramters  
+
+        """
         return _clipper.ResolutionFn_f(self, ih)
 
+
     def params(self) -> "std::vector< clipper::ftype,std::allocator< clipper::ftype > > const &":
+        """
+
+
+        return the values of the parameters  
+
+        Returns
+        -------
+        The refined basis function parameters  
+
+        """
         return _clipper.ResolutionFn_params(self)
+
     __swig_destroy__ = _clipper.delete_ResolutionFn
     __del__ = lambda self: None
 ResolutionFn_swigregister = _clipper.ResolutionFn_swigregister
 ResolutionFn_swigregister(ResolutionFn)
 
 class ResolutionFn_nonlinear(ResolutionFn):
+    """
+
+
+    2nd order resolution function evaluator  
+
+    This is an automatic evaluator for arbitrary functions of HKL, most commonly
+    used for evaluating a function of resolution (such a mean F^2 or sigmaa),
+    although more general tasks including local scaling of reflections and
+    anisotropic functions can also be handled. This form is for target functions
+    which approach zero quadratically, e.g. least-squares targets.  
+
+    note: This version implements a minimiser which uses both Newton-Raphson and
+        gradient steps depending on the situation. It can be used for non-quadratic
+        targets or non-linear basis functions.  
+
+    To evaluate a resolution function, this class must be provided with two objects:  
+
+    *   The basis function (and gradients), which describes the value of the
+        function for any reflection given a set of paramters.  
+    *   The target function (and derivatives), which is used to determine the values
+        of the basis function parameters.  
+
+    C++ includes: resol_fn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, hkl_info: 'HKL_info', basisfn: 'BasisFn_base', targetfn: 'TargetFn_base', params: 'DoubleVector', damp: 'clipper::ftype const'=0.0, debug: 'bool const'=False):
+        """
+
+
+        constructor: need reflections, basis fn and target fn.  
+
+        The constructor performs the full minimisation calculation.  
+
+        Parameters
+        ----------
+        * `hkl_info` :  
+            HKL_info object which provides the reflection list.  
+        * `basisfn` :  
+            The basis function used to describe the desired property.  
+        * `targetfn` :  
+            The target function to be minimised.  
+        * `damp_` :  
+            If > 0.0, shifts are fdamped during early cycles to help convergence with
+            difficult bases/target conbinations  
+
+        """
         this = _clipper.new_ResolutionFn_nonlinear(hkl_info, basisfn, targetfn, params, damp, debug)
         try:
             self.this.append(this)
@@ -9642,11 +19974,33 @@ ResolutionFn_nonlinear_swigregister = _clipper.ResolutionFn_nonlinear_swigregist
 ResolutionFn_nonlinear_swigregister(ResolutionFn_nonlinear)
 
 class Resolution_ordinal(Generic_ordinal):
+    """
+
+
+    Resolution ordinal gernerator.  
+
+    This class is a helper class for functions which need to divide reflections up
+    by resolution whilst guaranteeing a certain distribution of number of
+    reflections per range. It takes a list of reflections, one at a time, and
+    calculates a function to get the approximate ordinal number of a reflection in a
+    list sorted by resolution.  
+
+    C++ includes: resol_basisfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def init(self, *args) -> "void":
+        """
+
+
+        initialiser: takes an HKL_data + Cell & uses non-missing reflections.  
+
+        """
         return _clipper.Resolution_ordinal_init(self, *args)
+
 
     def __init__(self):
         this = _clipper.new_Resolution_ordinal()
@@ -9660,10 +20014,28 @@ Resolution_ordinal_swigregister = _clipper.Resolution_ordinal_swigregister
 Resolution_ordinal_swigregister(Resolution_ordinal)
 
 class BasisFn_binner(BasisFn_base):
+    """
+
+
+    simple binning basis function  
+
+    This class bins reflections on the basis of resolution, i.e. it generates a
+    resolution function from spherical shells.  
+
+    C++ includes: resol_basisfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: include only non-missing reflections in histogram  
+
+        """
         this = _clipper.new_BasisFn_binner(*args)
         try:
             self.this.append(this)
@@ -9671,32 +20043,92 @@ class BasisFn_binner(BasisFn_base):
             self.this = this
 
     def f_s(self, s: 'clipper::ftype const &', params: 'DoubleVector') -> "clipper::ftype":
+        """
+
+
+        the value of the resolution function (override for speed)  
+
+        """
         return _clipper.BasisFn_binner_f_s(self, s, params)
 
+
     def fderiv_s(self, s: 'clipper::ftype const &', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the derivative of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_binner_fderiv_s(self, s, params)
 
+
     def type(self) -> "clipper::BasisFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        """
         return _clipper.BasisFn_binner_type(self)
 
+
     def num_diagonals(self) -> "int":
+        """
+
+
+        number of non-zero diagonals in the upper triangle of the curvatures  
+
+        """
         return _clipper.BasisFn_binner_num_diagonals(self)
 
+
     def f(self, hkl: 'HKL', cell: 'Cell', params: 'DoubleVector') -> "clipper::ftype":
+        """
+
+
+        the value of the resolution function (override for speed)  
+
+        """
         return _clipper.BasisFn_binner_f(self, hkl, cell, params)
 
+
     def fderiv(self, hkl: 'HKL', cell: 'Cell', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the derivatives of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_binner_fderiv(self, hkl, cell, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_binner
     __del__ = lambda self: None
 BasisFn_binner_swigregister = _clipper.BasisFn_binner_swigregister
 BasisFn_binner_swigregister(BasisFn_binner)
 
 class BasisFn_linear(BasisFn_base):
+    """
+
+
+    simple linear basis function  
+
+    This class fits a piecewise linear function through reflections on the basis of
+    resolution.  
+
+    C++ includes: resol_basisfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: include only non-missing reflections in histogram  
+
+        """
         this = _clipper.new_BasisFn_linear(*args)
         try:
             self.this.append(this)
@@ -9704,32 +20136,91 @@ class BasisFn_linear(BasisFn_base):
             self.this = this
 
     def f_s(self, s: 'clipper::ftype const &', params: 'DoubleVector') -> "clipper::ftype":
+        """
+
+
+        the value of the resolution function (override for speed)  
+
+        """
         return _clipper.BasisFn_linear_f_s(self, s, params)
 
+
     def fderiv_s(self, s: 'clipper::ftype const &', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the derivative of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_linear_fderiv_s(self, s, params)
 
+
     def type(self) -> "clipper::BasisFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        """
         return _clipper.BasisFn_linear_type(self)
 
+
     def num_diagonals(self) -> "int":
+        """
+
+
+        number of non-zero diagonals in the upper triangle of the curvatures  
+
+        """
         return _clipper.BasisFn_linear_num_diagonals(self)
 
+
     def f(self, hkl: 'HKL', cell: 'Cell', params: 'DoubleVector') -> "clipper::ftype":
+        """
+
+
+        the value of the resolution function (override for speed)  
+
+        """
         return _clipper.BasisFn_linear_f(self, hkl, cell, params)
 
+
     def fderiv(self, hkl: 'HKL', cell: 'Cell', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the derivatives of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_linear_fderiv(self, hkl, cell, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_linear
     __del__ = lambda self: None
 BasisFn_linear_swigregister = _clipper.BasisFn_linear_swigregister
 BasisFn_linear_swigregister(BasisFn_linear)
 
 class BasisFn_spline(BasisFn_base):
+    """
+
+
+    simple smooth basis function  
+
+    This class fits a Bspline through reflections on the basis of resolution.  
+
+    C++ includes: resol_basisfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: include only non-missing reflections in histogram  
+
+        """
         this = _clipper.new_BasisFn_spline(*args)
         try:
             self.this.append(this)
@@ -9737,32 +20228,91 @@ class BasisFn_spline(BasisFn_base):
             self.this = this
 
     def f_s(self, s: 'clipper::ftype const &', params: 'DoubleVector') -> "clipper::ftype":
+        """
+
+
+        the value of the resolution function (override for speed)  
+
+        """
         return _clipper.BasisFn_spline_f_s(self, s, params)
 
+
     def fderiv_s(self, s: 'clipper::ftype const &', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the derivative of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_spline_fderiv_s(self, s, params)
 
+
     def type(self) -> "clipper::BasisFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        """
         return _clipper.BasisFn_spline_type(self)
 
+
     def num_diagonals(self) -> "int":
+        """
+
+
+        number of non-zero diagonals in the upper triangle of the curvatures  
+
+        """
         return _clipper.BasisFn_spline_num_diagonals(self)
 
+
     def f(self, hkl: 'HKL', cell: 'Cell', params: 'DoubleVector') -> "clipper::ftype":
+        """
+
+
+        the value of the resolution function (override for speed)  
+
+        """
         return _clipper.BasisFn_spline_f(self, hkl, cell, params)
 
+
     def fderiv(self, hkl: 'HKL', cell: 'Cell', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the derivatives of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_spline_fderiv(self, hkl, cell, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_spline
     __del__ = lambda self: None
 BasisFn_spline_swigregister = _clipper.BasisFn_spline_swigregister
 BasisFn_spline_swigregister(BasisFn_spline)
 
 class BasisFn_gaussian(BasisFn_base):
+    """
+
+
+    simple Gaussian basis function  
+
+    This class provides a Gaussian basis function.  
+
+    C++ includes: resol_basisfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self):
+        """
+
+
+        constructor:  
+
+        """
         this = _clipper.new_BasisFn_gaussian()
         try:
             self.this.append(this)
@@ -9770,26 +20320,75 @@ class BasisFn_gaussian(BasisFn_base):
             self.this = this
 
     def fderiv_s(self, s: 'clipper::ftype const &', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the value of the resolution function  
+
+        the derivatives of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_gaussian_fderiv_s(self, s, params)
 
+
     def fderiv(self, hkl: 'HKL', cell: 'Cell', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the value of the resolution function (override for speed)  
+
+        the derivatives of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_gaussian_fderiv(self, hkl, cell, params)
 
+
     def scale(self, params: 'DoubleVector') -> "clipper::ftype":
+        """
+
+
+        return the scale factor corresponding to the Gaussian parameters  
+
+        """
         return _clipper.BasisFn_gaussian_scale(self, params)
 
+
     def u_iso(self, params: 'DoubleVector') -> "clipper::ftype":
+        """
+
+
+        return the isotropic U corresponding to the Gaussian parameters  
+
+        """
         return _clipper.BasisFn_gaussian_u_iso(self, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_gaussian
     __del__ = lambda self: None
 BasisFn_gaussian_swigregister = _clipper.BasisFn_gaussian_swigregister
 BasisFn_gaussian_swigregister(BasisFn_gaussian)
 
 class BasisFn_aniso_gaussian(BasisFn_base):
+    """
+
+
+    simple anisotropic Gaussian basis function  
+
+    This class provides a anisotropic Gaussian basis function.  
+
+    C++ includes: resol_basisfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self):
+        """
+
+
+        constructor:  
+
+        """
         this = _clipper.new_BasisFn_aniso_gaussian()
         try:
             self.this.append(this)
@@ -9797,26 +20396,75 @@ class BasisFn_aniso_gaussian(BasisFn_base):
             self.this = this
 
     def fderiv_coord(self, xs: 'Coord_reci_orth', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the derivatives of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_aniso_gaussian_fderiv_coord(self, xs, params)
 
+
     def fderiv(self, hkl: 'HKL', cell: 'Cell', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the value of the resolution function (override for speed)  
+
+        the derivatives of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_aniso_gaussian_fderiv(self, hkl, cell, params)
 
+
     def scale(self, params: 'DoubleVector') -> "clipper::ftype":
+        """
+
+
+        return the scale factor corresponding to the Gaussian parameters  
+
+        """
         return _clipper.BasisFn_aniso_gaussian_scale(self, params)
 
+
     def u_aniso_orth(self, params: 'DoubleVector') -> "clipper::U_aniso_orth":
+        """
+
+
+        return the anisotropic U corresponding to the Gaussian parameters  
+
+        """
         return _clipper.BasisFn_aniso_gaussian_u_aniso_orth(self, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_aniso_gaussian
     __del__ = lambda self: None
 BasisFn_aniso_gaussian_swigregister = _clipper.BasisFn_aniso_gaussian_swigregister
 BasisFn_aniso_gaussian_swigregister(BasisFn_aniso_gaussian)
 
 class BasisFn_log_gaussian(BasisFn_base):
+    """
+
+
+    simple log Gaussian basis function  
+
+    This class provides a Log Gaussian basis function. i.e. a quadratic function of
+    resolution. Use this in conjunction with a Log-target function to get a fast
+    estimate to a Gaussian fit.  
+
+    C++ includes: resol_basisfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self):
+        """
+
+
+        constructor:  
+
+        """
         this = _clipper.new_BasisFn_log_gaussian()
         try:
             self.this.append(this)
@@ -9824,29 +20472,87 @@ class BasisFn_log_gaussian(BasisFn_base):
             self.this = this
 
     def fderiv_s(self, s: 'clipper::ftype const &', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the value of the resolution function  
+
+        the derivatives of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_log_gaussian_fderiv_s(self, s, params)
 
+
     def fderiv(self, hkl: 'HKL', cell: 'Cell', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the value of the resolution function (override for speed)  
+
+        the derivatives of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_log_gaussian_fderiv(self, hkl, cell, params)
 
+
     def type(self) -> "clipper::BasisFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        """
         return _clipper.BasisFn_log_gaussian_type(self)
 
+
     def scale(self, params: 'DoubleVector') -> "clipper::ftype":
+        """
+
+
+        return the scale factor corresponding to the Gaussian parameters  
+
+        """
         return _clipper.BasisFn_log_gaussian_scale(self, params)
 
+
     def u_iso(self, params: 'DoubleVector') -> "clipper::ftype":
+        """
+
+
+        return the isotropic U corresponding to the Gaussian parameters  
+
+        """
         return _clipper.BasisFn_log_gaussian_u_iso(self, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_log_gaussian
     __del__ = lambda self: None
 BasisFn_log_gaussian_swigregister = _clipper.BasisFn_log_gaussian_swigregister
 BasisFn_log_gaussian_swigregister(BasisFn_log_gaussian)
 
 class BasisFn_log_aniso_gaussian(BasisFn_base):
+    """
+
+
+    simple anisotropic Gaussian basis function  
+
+    This class provides a anisotropic Gaussian basis function. i.e. a general
+    quadratic function of resolution. Use this in conjunction with a Log-target
+    function to get a fast estimate to a Gaussian fit.  
+
+    C++ includes: resol_basisfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self):
+        """
+
+
+        constructor:  
+
+        """
         this = _clipper.new_BasisFn_log_aniso_gaussian()
         try:
             self.this.append(this)
@@ -9854,29 +20560,83 @@ class BasisFn_log_aniso_gaussian(BasisFn_base):
             self.this = this
 
     def fderiv_coord(self, xs: 'Coord_reci_orth', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the derivatives of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_log_aniso_gaussian_fderiv_coord(self, xs, params)
 
+
     def fderiv(self, hkl: 'HKL', cell: 'Cell', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the value of the resolution function (override for speed)  
+
+        the derivatives of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_log_aniso_gaussian_fderiv(self, hkl, cell, params)
 
+
     def type(self) -> "clipper::BasisFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        """
         return _clipper.BasisFn_log_aniso_gaussian_type(self)
 
+
     def scale(self, params: 'DoubleVector') -> "clipper::ftype":
+        """
+
+
+        return the scale factor corresponding to the Gaussian parameters  
+
+        """
         return _clipper.BasisFn_log_aniso_gaussian_scale(self, params)
 
+
     def u_aniso_orth(self, params: 'DoubleVector') -> "clipper::U_aniso_orth":
+        """
+
+
+        return the anisotropic U corresponding to the Gaussian parameters  
+
+        """
         return _clipper.BasisFn_log_aniso_gaussian_u_aniso_orth(self, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_log_aniso_gaussian
     __del__ = lambda self: None
 BasisFn_log_aniso_gaussian_swigregister = _clipper.BasisFn_log_aniso_gaussian_swigregister
 BasisFn_log_aniso_gaussian_swigregister(BasisFn_log_aniso_gaussian)
 
 class BasisFn_expcubic(BasisFn_base):
+    """
+
+
+    simple Expcubic basis function  
+
+    This class provides a Expcubic basis function.  
+
+    C++ includes: resol_basisfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self):
+        """
+
+
+        constructor  
+
+        """
         this = _clipper.new_BasisFn_expcubic()
         try:
             self.this.append(this)
@@ -9884,20 +20644,57 @@ class BasisFn_expcubic(BasisFn_base):
             self.this = this
 
     def fderiv_s(self, s: 'clipper::ftype const &', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the derivatives of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_expcubic_fderiv_s(self, s, params)
 
+
     def fderiv(self, hkl: 'HKL', cell: 'Cell', params: 'DoubleVector') -> "clipper::BasisFn_base::Fderiv const &":
+        """
+
+
+        the value of the resolution function (override for speed)  
+
+        the derivatives of the resolution function w.r.t. the parameters  
+
+        """
         return _clipper.BasisFn_expcubic_fderiv(self, hkl, cell, params)
+
     __swig_destroy__ = _clipper.delete_BasisFn_expcubic
     __del__ = lambda self: None
 BasisFn_expcubic_swigregister = _clipper.BasisFn_expcubic_swigregister
 BasisFn_expcubic_swigregister(BasisFn_expcubic)
 
 class TargetFn_scaleEsq_E_sigE_T(TargetFn_base):
+    """
+
+
+    |E|2 scaling target  
+
+    This class implements the target function for calculating the scale factor to
+    normalise to <|E|2> = 1. Note that this is not the same as dividing by <|E|2>,
+    except in a few special cases, e.g. a simple resolution bins calculation. The
+    resulting targen function is the square of the value by which |E| should be
+    multiplied to acheive the correct normalisation.  
+
+    C++ includes: resol_targetfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data_: 'HKL_data_E_sigE_float'):
+        """
+
+
+        constructor: takes the datalist against which to calc target  
+
+        """
         this = _clipper.new_TargetFn_scaleEsq_E_sigE_T(hkl_data_)
         try:
             self.this.append(this)
@@ -9905,20 +20702,56 @@ class TargetFn_scaleEsq_E_sigE_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih: 'clipper::HKL_info::HKL_reference_index const &', fh: 'clipper::ftype const &') -> "clipper::TargetFn_base::Rderiv":
+        """
+
+
+        return the value and derivatives of the target function  
+
+        """
         return _clipper.TargetFn_scaleEsq_E_sigE_T_rderiv(self, ih, fh)
 
+
     def type(self) -> "clipper::TargetFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        """
         return _clipper.TargetFn_scaleEsq_E_sigE_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_scaleEsq_E_sigE_T
     __del__ = lambda self: None
 TargetFn_scaleEsq_E_sigE_T_swigregister = _clipper.TargetFn_scaleEsq_E_sigE_T_swigregister
 TargetFn_scaleEsq_E_sigE_T_swigregister(TargetFn_scaleEsq_E_sigE_T)
 
 class TargetFn_meanFnth_F_phi_T(TargetFn_base):
+    """
+
+
+    simple mean |F|n target  
+
+    This class implements the target function for calculating mean |F|n as a
+    function of position in reciprocal space. It includes the appropriate
+    multiplicity correction, and so can be applied to any type with an 'f' member
+    with the same dimensions as an |F| or |U| (or an uncorrected |E|).  
+
+    This function should not be used to scale F's to E's. See TargetFn_scaleEsq.  
+
+    C++ includes: resol_targetfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data_: 'HKL_data_F_phi_float', n: 'clipper::ftype const &'):
+        """
+
+
+        constructor: takes the datalist against which to calc target, and power  
+
+        """
         this = _clipper.new_TargetFn_meanFnth_F_phi_T(hkl_data_, n)
         try:
             self.this.append(this)
@@ -9926,20 +20759,53 @@ class TargetFn_meanFnth_F_phi_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih: 'clipper::HKL_info::HKL_reference_index const &', fh: 'clipper::ftype const &') -> "clipper::TargetFn_base::Rderiv":
+        """
+
+
+        return the value and derivatives of the target function  
+
+        """
         return _clipper.TargetFn_meanFnth_F_phi_T_rderiv(self, ih, fh)
 
+
     def type(self) -> "clipper::TargetFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        """
         return _clipper.TargetFn_meanFnth_F_phi_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_meanFnth_F_phi_T
     __del__ = lambda self: None
 TargetFn_meanFnth_F_phi_T_swigregister = _clipper.TargetFn_meanFnth_F_phi_T_swigregister
 TargetFn_meanFnth_F_phi_T_swigregister(TargetFn_meanFnth_F_phi_T)
 
 class TargetFn_scaleF1F2_F_sigF_2_T(TargetFn_base):
+    """
+
+
+    |F|2 scaling target  
+
+    This class implements the target function for calculating the scale factor to
+    scale one set of F's to another. The resulting scale is the square of the factor
+    that scales the first set of data to match the second.  
+
+    C++ includes: resol_targetfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data1_: 'HKL_data_F_sigF_float', hkl_data2_: 'HKL_data_F_sigF_float'):
+        """
+
+
+        constructor: takes the datalist against which to calc target  
+
+        """
         this = _clipper.new_TargetFn_scaleF1F2_F_sigF_2_T(hkl_data1_, hkl_data2_)
         try:
             self.this.append(this)
@@ -9947,20 +20813,55 @@ class TargetFn_scaleF1F2_F_sigF_2_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih: 'clipper::HKL_info::HKL_reference_index const &', fh: 'clipper::ftype const &') -> "clipper::TargetFn_base::Rderiv":
+        """
+
+
+        return the value and derivatives of the target function  
+
+        """
         return _clipper.TargetFn_scaleF1F2_F_sigF_2_T_rderiv(self, ih, fh)
 
+
     def type(self) -> "clipper::TargetFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        """
         return _clipper.TargetFn_scaleF1F2_F_sigF_2_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_scaleF1F2_F_sigF_2_T
     __del__ = lambda self: None
 TargetFn_scaleF1F2_F_sigF_2_T_swigregister = _clipper.TargetFn_scaleF1F2_F_sigF_2_T_swigregister
 TargetFn_scaleF1F2_F_sigF_2_T_swigregister(TargetFn_scaleF1F2_F_sigF_2_T)
 
 class TargetFn_scaleLogF1F2_F_sigF_2_T(TargetFn_base):
+    """
+
+
+    log |F|2 scaling target  
+
+    This class implements the target function for calculating the scale factor to
+    scale the weighted log of one set of F's to another. The resulting scale is the
+    square of the factor that scales the first set of data to match the second. The
+    log scaling target is used in conjunction with the log-Gaussian basis functions
+    for a fast and robust approximation to iso/aniso Gaussian scaling.  
+
+    C++ includes: resol_targetfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data1_: 'HKL_data_F_sigF_float', hkl_data2_: 'HKL_data_F_sigF_float'):
+        """
+
+
+        constructor: takes the datalist against which to calc target  
+
+        """
         this = _clipper.new_TargetFn_scaleLogF1F2_F_sigF_2_T(hkl_data1_, hkl_data2_)
         try:
             self.this.append(this)
@@ -9968,20 +20869,51 @@ class TargetFn_scaleLogF1F2_F_sigF_2_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih: 'clipper::HKL_info::HKL_reference_index const &', fh: 'clipper::ftype const &') -> "clipper::TargetFn_base::Rderiv":
+        """
+
+
+        return the value and derivatives of the target function  
+
+        """
         return _clipper.TargetFn_scaleLogF1F2_F_sigF_2_T_rderiv(self, ih, fh)
 
+
     def type(self) -> "clipper::TargetFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        """
         return _clipper.TargetFn_scaleLogF1F2_F_sigF_2_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_scaleLogF1F2_F_sigF_2_T
     __del__ = lambda self: None
 TargetFn_scaleLogF1F2_F_sigF_2_T_swigregister = _clipper.TargetFn_scaleLogF1F2_F_sigF_2_T_swigregister
 TargetFn_scaleLogF1F2_F_sigF_2_T_swigregister(TargetFn_scaleLogF1F2_F_sigF_2_T)
 
 class TargetFn_scaleI1I2_I_sigI_2_T(TargetFn_base):
+    """
+
+
+    This class implements the target function for calculating the scale factor to
+    scale one set of I's to another. The resulting scale is the square of the factor
+    that scales the first set of data to match the second.  
+
+    C++ includes: resol_targetfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data1_: 'HKL_data_I_sigI_float', hkl_data2_: 'HKL_data_I_sigI_float'):
+        """
+
+
+        constructor: takes the datalist against which to calc target  
+
+        """
         this = _clipper.new_TargetFn_scaleI1I2_I_sigI_2_T(hkl_data1_, hkl_data2_)
         try:
             self.this.append(this)
@@ -9989,20 +20921,55 @@ class TargetFn_scaleI1I2_I_sigI_2_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih: 'clipper::HKL_info::HKL_reference_index const &', fh: 'clipper::ftype const &') -> "clipper::TargetFn_base::Rderiv":
+        """
+
+
+        return the value and derivatives of the target function  
+
+        """
         return _clipper.TargetFn_scaleI1I2_I_sigI_2_T_rderiv(self, ih, fh)
 
+
     def type(self) -> "clipper::TargetFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        """
         return _clipper.TargetFn_scaleI1I2_I_sigI_2_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_scaleI1I2_I_sigI_2_T
     __del__ = lambda self: None
 TargetFn_scaleI1I2_I_sigI_2_T_swigregister = _clipper.TargetFn_scaleI1I2_I_sigI_2_T_swigregister
 TargetFn_scaleI1I2_I_sigI_2_T_swigregister(TargetFn_scaleI1I2_I_sigI_2_T)
 
 class TargetFn_scaleLogI1I2_I_sigI_2_T(TargetFn_base):
+    """
+
+
+    log |I| scaling target  
+
+    This class implements the target function for calculating the scale factor to
+    scale the weighted log of one set of I's to another. The resulting scale is the
+    square of the factor that scales the first set of data to match the second. The
+    log scaling target is used in conjunction with the log-Gaussian basis functions
+    for a fast and robust approximation to iso/aniso Gaussian scaling.  
+
+    C++ includes: resol_targetfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data1_: 'HKL_data_I_sigI_float', hkl_data2_: 'HKL_data_I_sigI_float'):
+        """
+
+
+        constructor: takes the datalist against which to calc target  
+
+        """
         this = _clipper.new_TargetFn_scaleLogI1I2_I_sigI_2_T(hkl_data1_, hkl_data2_)
         try:
             self.this.append(this)
@@ -10010,20 +20977,56 @@ class TargetFn_scaleLogI1I2_I_sigI_2_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih: 'clipper::HKL_info::HKL_reference_index const &', fh: 'clipper::ftype const &') -> "clipper::TargetFn_base::Rderiv":
+        """
+
+
+        return the value and derivatives of the target function  
+
+        """
         return _clipper.TargetFn_scaleLogI1I2_I_sigI_2_T_rderiv(self, ih, fh)
 
+
     def type(self) -> "clipper::TargetFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        """
         return _clipper.TargetFn_scaleLogI1I2_I_sigI_2_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_scaleLogI1I2_I_sigI_2_T
     __del__ = lambda self: None
 TargetFn_scaleLogI1I2_I_sigI_2_T_swigregister = _clipper.TargetFn_scaleLogI1I2_I_sigI_2_T_swigregister
 TargetFn_scaleLogI1I2_I_sigI_2_T_swigregister(TargetFn_scaleLogI1I2_I_sigI_2_T)
 
 class TargetFn_meanEnth_E_sigE_T(TargetFn_base):
+    """
+
+
+    simple mean |E|n target  
+
+    This class implements the target function for calculating mean |E|n as a
+    function of position in reciprocal space. It includes the appropriate
+    multiplicity correction, and so can be applied to any type with an 'E' member
+    with the same dimensions as an |E| (or corrected |F| or |U|).  
+
+    This function should not be used to scale F's to E's. See TargetFn_scaleEsq.  
+
+    C++ includes: resol_targetfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, hkl_data_: 'HKL_data_E_sigE_float', n: 'clipper::ftype const &'):
+        """
+
+
+        constructor: takes the datalist against which to calc target, and power  
+
+        """
         this = _clipper.new_TargetFn_meanEnth_E_sigE_T(hkl_data_, n)
         try:
             self.this.append(this)
@@ -10031,20 +21034,63 @@ class TargetFn_meanEnth_E_sigE_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih: 'clipper::HKL_info::HKL_reference_index const &', fh: 'clipper::ftype const &') -> "clipper::TargetFn_base::Rderiv":
+        """
+
+
+        return the value and derivatives of the target function  
+
+        """
         return _clipper.TargetFn_meanEnth_E_sigE_T_rderiv(self, ih, fh)
 
+
     def type(self) -> "clipper::TargetFn_base::FNtype":
+        """
+
+
+        the type of the function: optionally used to improve convergence  
+
+        """
         return _clipper.TargetFn_meanEnth_E_sigE_T_type(self)
+
     __swig_destroy__ = _clipper.delete_TargetFn_meanEnth_E_sigE_T
     __del__ = lambda self: None
 TargetFn_meanEnth_E_sigE_T_swigregister = _clipper.TargetFn_meanEnth_E_sigE_T_swigregister
 TargetFn_meanEnth_E_sigE_T_swigregister(TargetFn_meanEnth_E_sigE_T)
 
 class TargetFn_sigmaa_omegaa_E_sigE_T(TargetFn_base):
+    """
+
+
+    Deprecated
+    simple sigma_a target function  
+
+    This class implements the target function for calculating sigma_a. Required is a
+    datalist containing Eo, Ec.  
+
+    It actually refines omegaa = sigmaa/(1-sigmaa^2). This has better proerties for
+    refinement. To get sigmaa use  This is available as a static function:  
+
+    This version simplifies terms in |Eo|^2 and |Ec|^2 which should average out to 1
+    if the normalisation scheme is consistent with the sigmaa calc.  
+
+    Convergence is good for calculations using the 'binner' basis function, however
+    the smooth basis function have convergence problems. This is still under
+    investigation.  
+
+    C++ includes: resol_targetfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, eo: 'HKL_data_E_sigE_float', ec: 'HKL_data_E_sigE_float'):
+        """
+
+
+        constructor: takes the datalist against which to calc target  
+
+        """
         this = _clipper.new_TargetFn_sigmaa_omegaa_E_sigE_T(eo, ec)
         try:
             self.this.append(this)
@@ -10052,22 +21098,70 @@ class TargetFn_sigmaa_omegaa_E_sigE_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih: 'clipper::HKL_info::HKL_reference_index const &', omegaa: 'clipper::ftype const &') -> "clipper::TargetFn_base::Rderiv":
+        """
+
+
+        return the value and derivatives of the target function  
+
+        """
         return _clipper.TargetFn_sigmaa_omegaa_E_sigE_T_rderiv(self, ih, omegaa)
-    sigmaa = staticmethod(_clipper.TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa)
+
+
+    def sigmaa(omegaa: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        convert omegaa to sigmaa  
+
+        """
+        return _clipper.TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa(omegaa)
+
+    sigmaa = staticmethod(sigmaa)
     __swig_destroy__ = _clipper.delete_TargetFn_sigmaa_omegaa_E_sigE_T
     __del__ = lambda self: None
 TargetFn_sigmaa_omegaa_E_sigE_T_swigregister = _clipper.TargetFn_sigmaa_omegaa_E_sigE_T_swigregister
 TargetFn_sigmaa_omegaa_E_sigE_T_swigregister(TargetFn_sigmaa_omegaa_E_sigE_T)
 
 def TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa(omegaa: 'clipper::ftype const &') -> "clipper::ftype":
+    """
+
+
+    convert omegaa to sigmaa  
+
+    """
     return _clipper.TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa(omegaa)
-TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa = _clipper.TargetFn_sigmaa_omegaa_E_sigE_T_sigmaa
 
 class TargetFn_sigmaa_E_sigE_T(TargetFn_base):
+    """
+
+
+    Deprecated
+    simple sigma_a target function  
+
+    par: Warning: Convergence of this basis-function can be
+        unreliable under some circumstances. Use clipper::TargetFn_sigmaa_omegaa
+        instead, except for development purposes.  
+
+    This class implements the target function for calculating sigma_a. Required is a
+    datalist containing Eo, Ec.  
+
+    This version simplifies terms in |Eo|^2 and |Ec|^2 which should average out to 1
+    if the normalisation scheme is consistent with the sigmaa calc.  
+
+    C++ includes: resol_targetfn.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, eo: 'HKL_data_E_sigE_float', ec: 'HKL_data_E_sigE_float'):
+        """
+
+
+        constructor: takes the datalist against which to calc target  
+
+        """
         this = _clipper.new_TargetFn_sigmaa_E_sigE_T(eo, ec)
         try:
             self.this.append(this)
@@ -10075,16 +21169,38 @@ class TargetFn_sigmaa_E_sigE_T(TargetFn_base):
             self.this = this
 
     def rderiv(self, ih: 'clipper::HKL_info::HKL_reference_index const &', sigmaa0: 'clipper::ftype const &') -> "clipper::TargetFn_base::Rderiv":
+        """
+
+
+        return the value and derivatives of the target function  
+
+        """
         return _clipper.TargetFn_sigmaa_E_sigE_T_rderiv(self, ih, sigmaa0)
-    sigmaa = staticmethod(_clipper.TargetFn_sigmaa_E_sigE_T_sigmaa)
+
+
+    def sigmaa(sigm: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        convert function to sigmaa  
+
+        """
+        return _clipper.TargetFn_sigmaa_E_sigE_T_sigmaa(sigm)
+
+    sigmaa = staticmethod(sigmaa)
     __swig_destroy__ = _clipper.delete_TargetFn_sigmaa_E_sigE_T
     __del__ = lambda self: None
 TargetFn_sigmaa_E_sigE_T_swigregister = _clipper.TargetFn_sigmaa_E_sigE_T_swigregister
 TargetFn_sigmaa_E_sigE_T_swigregister(TargetFn_sigmaa_E_sigE_T)
 
 def TargetFn_sigmaa_E_sigE_T_sigmaa(sigm: 'clipper::ftype const &') -> "clipper::ftype":
+    """
+
+
+    convert function to sigmaa  
+
+    """
     return _clipper.TargetFn_sigmaa_E_sigE_T_sigmaa(sigm)
-TargetFn_sigmaa_E_sigE_T_sigmaa = _clipper.TargetFn_sigmaa_E_sigE_T_sigmaa
 
 
 def TargetFn_scaleEsq_E_sigE(hkl_data_: 'HKL_data_E_sigE_float') -> "clipper::TargetFn_scaleEsq< clipper::data32::E_sigE >":
@@ -10123,10 +21239,50 @@ def TargetFn_sigmaa_E_sigE_2(eo: 'HKL_data_E_sigE_float', ec: 'HKL_data_E_sigE_f
     return _clipper.TargetFn_sigmaa_E_sigE_2(eo, ec)
 TargetFn_sigmaa_E_sigE_2 = _clipper.TargetFn_sigmaa_E_sigE_2
 class NX_operator(object):
+    """
+
+
+    NX_operator: non-crystal map operator.  
+
+    This class holds a reference to a non-crystal map frame from somewhere within a
+    crystallographic map frame. In the general case, an orthogonal rotation-
+    translation operator is provided which maps the orthogonal frame of the crystal
+    space onto the orthogonal frame of the NXmap space.  
+
+    The object calculates and stores optimised transformations between the
+    crystallgoraphic frame (described either in fractional or grid coordinates), and
+    the NXmap grid. Fast paths are generated automatically if the grids are related.  
+
+    C++ includes: nxmap_operator.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from cell, grid sampling, NXmap, and operator  
+
+        The operator and inverse operator, together with any possible optimisations, are
+        constructed to relate the give crystallographic and non-crystallographic grid
+        frames, using the supplied orthogonal operator.  
+
+        Parameters
+        ----------
+        * `cell` :  
+            The cell defining the crystal grid frame.  
+        * `grid` :  
+            The grid defining the crystal grid frame.  
+        * `nxmap` :  
+            An NXmap defining the non-crystal grid frame.  
+        * `rtop` :  
+            The operator relating the orthogonal frame of the NXmap onto the orthogonal
+            frame of the Xmap.  
+
+        """
         this = _clipper.new_NX_operator(*args)
         try:
             self.this.append(this)
@@ -10134,29 +21290,105 @@ class NX_operator(object):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        initialiser:: from cell, grid sampling, NXmap, and operator  
+
+        The operator and inverse operator, together with any possible optimisations, are
+        constructed to relate the give crystallographic and non-crystallographic grid
+        frames, using the supplied orthogonal operator.  
+
+        Parameters
+        ----------
+        * `cell` :  
+            The cell defining the crystal grid frame.  
+        * `grid` :  
+            The grid defining the crystal grid frame.  
+        * `nxmap` :  
+            An NXmap defining the non-crystal grid frame.  
+        * `rtop` :  
+            The operator relating the orthogonal frame of the NXmap onto the orthogonal
+            frame of the Xmap.  
+
+        """
         return _clipper.NX_operator_init(self, *args)
 
+
     def coord_map(self, c: 'Coord_frac') -> "clipper::Coord_map":
+        """
+
+
+        convert xtal frac coord to nxmap map coord  
+
+        """
         return _clipper.NX_operator_coord_map(self, c)
 
+
     def coord_frac(self, c: 'Coord_map') -> "clipper::Coord_frac":
+        """
+
+
+        convert nxmap map coord to xtal frac coord  
+
+        """
         return _clipper.NX_operator_coord_frac(self, c)
 
+
     def is_null(self) -> "bool":
+        """
+
+
+        test if object has been initialised  
+
+        """
         return _clipper.NX_operator_is_null(self)
 
+
     def debug(self) -> "void":
+        """
+
+
+        """
         return _clipper.NX_operator_debug(self)
+
     __swig_destroy__ = _clipper.delete_NX_operator
     __del__ = lambda self: None
 NX_operator_swigregister = _clipper.NX_operator_swigregister
 NX_operator_swigregister(NX_operator)
 
 class NXmap_operator_float(NX_operator):
+    """
+
+
+    NXmap_operator: non-crystal map operator referencing a particular NXmap.  
+
+    This class holds a reference to a non-crystal map object from somewhere within a
+    crystallographic map frame. In the general case, an orthogonal rotation-
+    translation operator is provided which maps the orthogonal frame of the crystal
+    space onto the orthogonal frame of the NXmap space.  
+
+    The object calculates and stores optimised transformations between the
+    crystallgoraphic frame (described either in fractional or grid coordinates), and
+    the NXmap grid. Fast paths are generated automatically if the grids are related.  
+
+    note: This object differes from NX_operator in that it keeps a reference to an
+        individual NXmap, which may be used to access that object directly.  
+
+    C++ includes: nxmap_operator.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from cell, grid sampling, NXmap, and operator  
+
+        """
         this = _clipper.new_NXmap_operator_float(*args)
         try:
             self.this.append(this)
@@ -10164,10 +21396,24 @@ class NXmap_operator_float(NX_operator):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        initialiser:: from cell, grid sampling, NXmap, and operator  
+
+        """
         return _clipper.NXmap_operator_float_init(self, *args)
 
+
     def nxmap(self) -> "clipper::NXmap< float > const &":
+        """
+
+
+        get the target NXmap of this operator  
+
+        """
         return _clipper.NXmap_operator_float_nxmap(self)
+
     __swig_destroy__ = _clipper.delete_NXmap_operator_float
     __del__ = lambda self: None
 NXmap_operator_float_swigregister = _clipper.NXmap_operator_float_swigregister
@@ -10350,6 +21596,29 @@ OriginMatch_float_swigregister = _clipper.OriginMatch_float_swigregister
 OriginMatch_float_swigregister(OriginMatch_float)
 
 class AtomShapeFn(object):
+    """
+
+
+    Atomic shape function object.  
+
+    The atomic scattering factor object is instantiated for each atom in turn,
+    giving the atom parameters: position, element, occupancy and the isotropic or
+    anisotropic U-value. (See clipper::Util for conversion from B-factors.). The
+    methods of the class may then be called to return the scattering in reciprocal
+    space or density in real space using either isotropic or anistropic models as
+    required.  
+
+    If the atom only has an isotropic U, the faster isotropic methods will be used
+    where available.  
+
+    This implementation uses the coefficients from Waasmaier & Kirfel (1995), Acta
+    Cryst. A51, 416-431. The source data can be found at: ftp://wrzx02.rz.uni-
+    wuerzburg.de/pub/local/Crystallography/sfac.dat  
+
+    C++ includes: atomsf.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     X = _clipper.AtomShapeFn_X
@@ -10365,6 +21634,25 @@ class AtomShapeFn(object):
     U23 = _clipper.AtomShapeFn_U23
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from coord, element, anisotropic U, occupancy  
+
+        The atom is initialised as anisotropic.  
+
+        Parameters
+        ----------
+        * `xyz` :  
+            The atom coordinate.  
+        * `element` :  
+            The atom element.  
+        * `u_aniso` :  
+            The anisotropic U-value.  
+        * `occ` :  
+            The occupancy.  
+
+        """
         this = _clipper.new_AtomShapeFn(*args)
         try:
             self.this.append(this)
@@ -10372,32 +21660,139 @@ class AtomShapeFn(object):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        initialiser: from coord, element, anisotropic U, occupancy  
+
+        The atom is initialised as anisotropic.  
+
+        Parameters
+        ----------
+        * `xyz` :  
+            The atom coordinate.  
+        * `element` :  
+            The atom element.  
+        * `u_aniso` :  
+            The anisotropic U-value.  
+        * `occ` :  
+            The occupancy.  
+
+        """
         return _clipper.AtomShapeFn_init(self, *args)
 
+
     def rho_curv(self, xyz: 'Coord_orth', rho: 'clipper::ftype &', grad: 'DoubleVector', curv: 'clipper::Matrix< clipper::ftype > &') -> "bool":
+        """
+
+
+        return Agarwal density gradient/curvature as a function of coordinate  
+
+        Return the Agarwal gradients of the density with respect to tha atomic
+        parameters as a function of position in real space in electrons. The parameter
+        list is defined by assignment to agarwal_params().  
+
+        Parameters
+        ----------
+        * `xyz` :  
+            Position in real space.  rho The density in electrons.  
+        * `grad` :  
+            Vector gradient in electrons (pre-size for best performance).  
+        * `curv` :  
+            Matrix curvature in electrons (pre-size for best performance).  
+
+        """
         return _clipper.AtomShapeFn_rho_curv(self, xyz, rho, grad, curv)
 
+
     def rho_grad(self, *args) -> "bool":
+        """
+
+
+        Deprecated
+        return Agarwal density gradients as a function of coordinate  
+
+        """
         return _clipper.AtomShapeFn_rho_grad(self, *args)
 
+
     def f(self, *args) -> "clipper::ftype":
+        """
+
+
+        return (isotropic) scattering factor as a function of resolution  
+
+        Return the scattering factor as a function of position in reciprocal space in
+        electrons.  
+
+        Parameters
+        ----------
+        * `invresolsq` :  
+            Inverse resolution squared in inverse Angstroms squared.  
+
+        Returns
+        -------
+        The scattering factor in electrons.  
+
+        """
         return _clipper.AtomShapeFn_f(self, *args)
 
+
     def rho(self, *args) -> "clipper::ftype":
+        """
+
+
+        return (isotropic) electron density as a function of radius  
+
+        Return the density as a function of position in real space in electrons.  
+
+        Parameters
+        ----------
+        * `invresolsq` :  
+            Radius squared in Angstroms squared.  
+        * `The` :  
+            density in electrons.  
+
+        """
         return _clipper.AtomShapeFn_rho(self, *args)
 
+
     def agarwal_params(self) -> "std::vector< clipper::AtomShapeFn::TYPE,std::allocator< clipper::AtomShapeFn::TYPE > > &":
+        """
+
+
+        define parameters for Agarwal gradient/curvature calcs  
+
+        """
         return _clipper.AtomShapeFn_agarwal_params(self)
+
     __swig_destroy__ = _clipper.delete_AtomShapeFn
     __del__ = lambda self: None
 AtomShapeFn_swigregister = _clipper.AtomShapeFn_swigregister
 AtomShapeFn_swigregister(AtomShapeFn)
 
 class AtomSF(object):
+    """
+
+
+    Atomic scattering factor object.  
+
+    Deprecated
+    This class has been replaced by AtomShapeFn, which is smaller, faster, and more
+    capable. This class is now a wrapper for that class.  
+
+    C++ includes: atomsf.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        """
         this = _clipper.new_AtomSF(*args)
         try:
             self.this.append(this)
@@ -10405,29 +21800,69 @@ class AtomSF(object):
             self.this = this
 
     def init(self, *args) -> "void":
+        """
+
+
+        """
         return _clipper.AtomSF_init(self, *args)
 
+
     def f_iso(self, s: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        """
         return _clipper.AtomSF_f_iso(self, s)
 
+
     def f_aniso(self, rfl: 'Coord_reci_orth') -> "clipper::ftype":
+        """
+
+
+        """
         return _clipper.AtomSF_f_aniso(self, rfl)
 
+
     def rho_iso(self, d2: 'clipper::ftype const &') -> "clipper::ftype":
+        """
+
+
+        """
         return _clipper.AtomSF_rho_iso(self, d2)
 
+
     def rho_aniso(self, uvw: 'Coord_orth') -> "clipper::ftype":
+        """
+
+
+        """
         return _clipper.AtomSF_rho_aniso(self, uvw)
+
     __swig_destroy__ = _clipper.delete_AtomSF
     __del__ = lambda self: None
 AtomSF_swigregister = _clipper.AtomSF_swigregister
 AtomSF_swigregister(AtomSF)
 
 class Euler_ccp4(object):
+    """
+
+
+    Euler_ccp4 angle class.  
+
+    C++ includes: rotation.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from specified angles  
+
+        """
         this = _clipper.new_Euler_ccp4(*args)
         try:
             self.this.append(this)
@@ -10435,26 +21870,69 @@ class Euler_ccp4(object):
             self.this = this
 
     def alpha(self) -> "clipper::ftype const &":
+        """
+
+
+        return alpha  
+
+        """
         return _clipper.Euler_ccp4_alpha(self)
 
+
     def beta(self) -> "clipper::ftype const &":
+        """
+
+
+        return beta  
+
+        """
         return _clipper.Euler_ccp4_beta(self)
 
+
     def gamma(self) -> "clipper::ftype const &":
+        """
+
+
+        return gamma  
+
+        """
         return _clipper.Euler_ccp4_gamma(self)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        """
         return _clipper.Euler_ccp4_format(self)
+
     __swig_destroy__ = _clipper.delete_Euler_ccp4
     __del__ = lambda self: None
 Euler_ccp4_swigregister = _clipper.Euler_ccp4_swigregister
 Euler_ccp4_swigregister(Euler_ccp4)
 
 class Polar_ccp4(object):
+    """
+
+
+    Polar_ccp4 angle class.  
+
+    C++ includes: rotation.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from specified angles  
+
+        """
         this = _clipper.new_Polar_ccp4(*args)
         try:
             self.this.append(this)
@@ -10462,29 +21940,83 @@ class Polar_ccp4(object):
             self.this = this
 
     def psi(self) -> "clipper::ftype const &":
+        """
+
+
+        return omega  
+
+        """
         return _clipper.Polar_ccp4_psi(self)
 
+
     def omega(self) -> "clipper::ftype const &":
+        """
+
+
+        return omega  
+
+        """
         return _clipper.Polar_ccp4_omega(self)
 
+
     def phi(self) -> "clipper::ftype const &":
+        """
+
+
+        return phi  
+
+        """
         return _clipper.Polar_ccp4_phi(self)
 
+
     def kappa(self) -> "clipper::ftype const &":
+        """
+
+
+        return kappa  
+
+        """
         return _clipper.Polar_ccp4_kappa(self)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        """
         return _clipper.Polar_ccp4_format(self)
+
     __swig_destroy__ = _clipper.delete_Polar_ccp4
     __del__ = lambda self: None
 Polar_ccp4_swigregister = _clipper.Polar_ccp4_swigregister
 Polar_ccp4_swigregister(Polar_ccp4)
 
 class Rotation(object):
+    """
+
+
+    Rotation class.  
+
+    This class represents a rotation. The internal representation is as a unit
+    quaternion, which is easily combined, inverted, or converted to or from other
+    commonly used forms.  
+
+    C++ includes: rotation.h
+
+    """
+
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
 
     def __init__(self, *args):
+        """
+
+
+        constructor: from components  
+
+        """
         this = _clipper.new_Rotation(*args)
         try:
             self.this.append(this)
@@ -10492,42 +22024,175 @@ class Rotation(object):
             self.this = this
 
     def w(self) -> "clipper::ftype const &":
+        """
+
+
+        return w component  
+
+        """
         return _clipper.Rotation_w(self)
 
+
     def x(self) -> "clipper::ftype const &":
+        """
+
+
+        return x component  
+
+        """
         return _clipper.Rotation_x(self)
 
+
     def y(self) -> "clipper::ftype const &":
+        """
+
+
+        return y component  
+
+        """
         return _clipper.Rotation_y(self)
 
+
     def z(self) -> "clipper::ftype const &":
+        """
+
+
+        return z component  
+
+        """
         return _clipper.Rotation_z(self)
 
+
     def euler_ccp4(self) -> "clipper::Euler_ccp4":
+        """
+
+
+        return Euler_ccp4 angles  
+
+        If beta ~= 0, then alpha is set to zero.  
+
+        Returns
+        -------
+        The Euler_ccp4 angles.  
+
+        """
         return _clipper.Rotation_euler_ccp4(self)
 
+
     def polar_ccp4(self) -> "clipper::Polar_ccp4":
+        """
+
+
+        return Polar_ccp4 angles  
+
+        If omega ~= 0, then phi is set to zero.  
+
+        Returns
+        -------
+        The Polar_ccp4 angles.  
+
+        """
         return _clipper.Rotation_polar_ccp4(self)
 
+
     def matrix(self) -> "clipper::Mat33< >":
+        """
+
+
+        return 3x3 matrix  
+
+        The resulting rotation matrix would commonly be used to construct a
+        clipper::RTop_orth.  
+
+        Returns
+        -------
+        The rotation matrix.  
+
+        """
         return _clipper.Rotation_matrix(self)
 
+
     def norm(self) -> "clipper::Rotation const &":
+        """
+
+
+        normalise this quaternion  
+
+        The normalisation is performed in-place. If a rotation becomes significantly
+        denormalised, the conversion methods will fail. Therefore it may be safer to
+        call this before a conversion.  
+
+        """
         return _clipper.Rotation_norm(self)
 
+
     def abs_angle(self) -> "clipper::ftype":
+        """
+
+
+        return absolute rotation angle  
+
+        Positive magnitude of the angle of rotation.  
+
+        Returns
+        -------
+        The angle in radians.  
+
+        """
         return _clipper.Rotation_abs_angle(self)
 
+
     def inverse(self) -> "clipper::Rotation":
+        """
+
+
+        return inverse rotation  
+
+        """
         return _clipper.Rotation_inverse(self)
-    zero = staticmethod(_clipper.Rotation_zero)
-    null = staticmethod(_clipper.Rotation_null)
+
+
+    def zero() -> "clipper::Rotation":
+        """
+
+
+        return zero rotation  
+
+        """
+        return _clipper.Rotation_zero()
+
+    zero = staticmethod(zero)
+
+    def null() -> "clipper::Rotation":
+        """
+
+
+        return null rotation  
+
+        """
+        return _clipper.Rotation_null()
+
+    null = staticmethod(null)
 
     def is_null(self) -> "bool":
+        """
+
+
+        test for null (uninitialised) rotation  
+
+        """
         return _clipper.Rotation_is_null(self)
 
+
     def format(self) -> "clipper::String":
+        """
+
+
+        return formatted String representation  
+
+        """
         return _clipper.Rotation_format(self)
+
     EulerXYZr = _clipper.Rotation_EulerXYZr
     EulerXYZs = _clipper.Rotation_EulerXYZs
     EulerXYXr = _clipper.Rotation_EulerXYXr
@@ -10558,12 +22223,22 @@ Rotation_swigregister = _clipper.Rotation_swigregister
 Rotation_swigregister(Rotation)
 
 def Rotation_zero() -> "clipper::Rotation":
+    """
+
+
+    return zero rotation  
+
+    """
     return _clipper.Rotation_zero()
-Rotation_zero = _clipper.Rotation_zero
 
 def Rotation_null() -> "clipper::Rotation":
+    """
+
+
+    return null rotation  
+
+    """
     return _clipper.Rotation_null()
-Rotation_null = _clipper.Rotation_null
 
 class PHSfile(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')

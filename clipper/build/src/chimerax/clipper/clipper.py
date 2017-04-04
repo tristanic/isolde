@@ -20,9 +20,9 @@ from .lib.clipper_python_core import HKL_info, HKL_data_ABCD_double as HKL_data_
                      HKL_data_F_phi_double as HKL_data_F_phi, \
                      HKL_data_I_sigI_double as HKL_data_I_sigI, \
                      HKL_data_Phi_fom_double as HKL_data_Phi_fom
-from .lib.clipper_python_core import Grid, Grid_range, Grid_sampling, Cell_descr, \
-                     Isymop, RTop_frac, Symop, Symops, RTop_orth, \
-                     Resolution
+from .lib.clipper_python_core import Grid, Grid_range, Grid_sampling, Cell, \
+                     Cell_descr, Spacegroup, Spgr_descr, Isymop, RTop_frac, \
+                     Symop, Symops, RTop_orth, Resolution
 from .lib.clipper_python_core import Util
 from .lib.clipper_python_core import warn_test, except_test
 
@@ -36,6 +36,7 @@ you should generally limit extensions here to new __init__ functions
 that would be difficult to implement in SWIG. Anything else should be
 added to the SWIG wrapper itself.
 '''
+
 class Unit_Cell(_clipper.Unit_Cell):
    def __init__(self, ref, atom_list, cell,
                  spacegroup, grid_sampling, padding = 0):
