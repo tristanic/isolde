@@ -43,18 +43,59 @@ def move_model(session, model, new_parent):
 def symmetry_from_model_metadata(model):
     '''
     Generate Cell, Spacegroup and a default Grid_Sampling from the PDB
-    CRYST1 card
+    CRYST1 card (or mmCIF equivalent metadata once it's available in 
+    ChimeraX).
     '''
     if 'CRYST1' in model.metadata.keys():
         cryst1 = model.metadata['CRYST1'][0].split()
         abc = cryst1[1:4]
         angles = cryst1[4:7]
-        
-        # Safest to infer the spacegroup from the list of symmetry 
-        # operators at REMARK 290
-        
+
         remarks = model.metadata['REMARK']
         i = 0
+        
+        '''
+        Get the resolution. We need this to define a Grid_sampling
+        for the unit cell (needed even in the absence of a map since
+        atomic symmetry lookups are done with integerised symops for
+        performance). We want to be as forgiving as possible at this
+        stage - we'll use the official resolution if we find it, and
+        set a default resolution if we don't. This will be overridden
+        by the value from any mtz file that's loaded later.
+        '''
+        try:
+            while 'REMARK   2' not in remarks[i]:
+                i += 1
+            # The first 'REMARK   2' line is blank by convention, and
+            # resolution is on the second line 
+            i += 1
+            line = remarks[i].split()
+            res = line[3]
+        except:
+            res = 3.0
+        
+        '''
+        The spacegroup identifier tends to be the most unreliable part
+        of the CRYST1 card, so it's considered safer to let Clipper 
+        infer it from the list of symmetry operators at remark 290. This
+        typically looks something like the following:
+        
+        REMARK 290      SYMOP   SYMMETRY                                                
+        REMARK 290     NNNMMM   OPERATOR                                                
+        REMARK 290       1555   X,Y,Z                                                   
+        REMARK 290       2555   -X,-Y,Z+1/2                                             
+        REMARK 290       3555   -Y+1/2,X+1/2,Z+1/4                                      
+        REMARK 290       4555   Y+1/2,-X+1/2,Z+3/4                                      
+        REMARK 290       5555   -X+1/2,Y+1/2,-Z+1/4                                     
+        REMARK 290       6555   X+1/2,-Y+1/2,-Z+3/4                                     
+        REMARK 290       7555   Y,X,-Z                                                  
+        REMARK 290       8555   -Y,-X,-Z+1/2
+        
+        Clipper is able to initialise a Spacegroup object from a 
+        string containing a semicolon-delimited list of the symop
+        descriptors in the SYMMETRY OPERATOR column, so we need to 
+        parse those out.                                            
+        '''        
         # Find the start of the REMARK 290 section
         while remarks[i][0:10] != 'REMARK 290':
             i += 1
@@ -70,7 +111,6 @@ def symmetry_from_model_metadata(model):
             symstr += splitline[3]
             i+=1
             thisline = remarks[i]
-        return abc, angles, symstr
             
         
     
@@ -79,6 +119,11 @@ def symmetry_from_model_metadata(model):
     
     cell_descr = clipper.Cell_descr(*abc, *angles)
     cell = clipper.Cell(cell_descr)
+    spgr_descr = clipper.Spgr_descr(symstr)
+    spacegroup = clipper.Spacegroup(spgr_descr)
+    resolution = clipper.Resolution(res)
+    grid_sampling = clipper.Grid_sampling(spacegroup, cell, resolution)
+    return cell, spacegroup, grid_sampling
     
         
 
@@ -101,15 +146,22 @@ class CrystalStructure(Model):
     |    |
     |    -- ...
     |
-    -- reciprocal space data (MTZData)
+    -- reciprocal space data (ReflectionDataContainer)
     |    |
-    |    -- clippper.HKL_info
+    |    -- Free Flags (ReflectionData_FreeFlags)
     |    |
-    |    -- clipper.HKL_data_Flag
+    |    -- Experimental (ReflectionData_Node)
+    |    |    |
+    |    |    -- F/SigF (ReflectionData_Exp)
+    |    |    | 
+    |    |    -- ...
     |    |
-    |    -- clipper.HKL_data_F_Phi
-    |    |
-    |    -- ...
+    |    -- Calculated (ReflectionData_Calc)
+    |         |
+    |         -- 2mFo-DFc (ReflectionData_Calc)
+    |         | 
+    |         -- ...
+    |     
     |
     -- real-space maps (XMapSet)
          |
@@ -118,7 +170,7 @@ class CrystalStructure(Model):
          -- ...
   '''
   
-  def __init__(self, session, model, mtzdata = None, show_nonpolar_H = False):
+  def __init__(self, session, model, mtzfile = None, show_nonpolar_H = False):
     '''
     Create a new crystal structure object from an atomic model and 
     (optionally) a set of reciprocal-space data.
@@ -141,14 +193,16 @@ class CrystalStructure(Model):
     self.session.models.add([self])
     move_model(self.session, model, self)
     self.master_model = model
-    if mtzdata is not None:
+    if mtzfile is not None:
+        from .clipper_mtz_new import ReflectionDataContainer
+        self.mtzdata = ReflectionDataContainer(self.session, mtzfile)
+        self.add([self.mtzdata])
         self.cell = mtzdata.cell
         self.sg = mtzdata.spacegroup
         self.grid = mtzdata.grid_sampling
         self._voxel_size = cell.dim / grid_sampling.dim
     else:
-        # Need to generate the above from the PDB header
-        pass
+        self.cell, self.sg, self.grid = symmetry_from_model_metadata(model)
     
     self.show_nonpolar_H = show_nonpolar_H
     
@@ -371,3 +425,137 @@ class CrystalStructure(Model):
     if self._sym_handler is not None:
       self.session.triggers.remove_handler(self._sym_handler)
       self._sym_handler = None
+
+class SymModels(defaultdict):
+  '''
+  Handles creation, destruction and organisation of symmetry copies
+  of an atomic model. Uses the Clipper RTop_frac object for the given
+  symop as the dict key. If the key is not found, automatically creates
+  a copy of the master model, sets colours, applies the Place transform
+  for the symop, and adds the model to the session. 
+  NOTE: the coordinates in each symmetry model are identical to
+  those of the master model - the transform is only applied to the 
+  *visualisation* of the model, not the coordinates themselves.
+  '''
+  def __init__(self, session, parent):
+    '''
+    Just create an empty dict.
+    Args:
+      session: 
+        The ChimeraX session.
+      parent:
+        The AtomicCrystalStructure describing the master model and symmetry
+    '''
+    self.session = session
+    self.parent = parent
+    self.master = parent.master_model
+        
+    # Add a sub-model to the master to act as a container for the
+    # symmetry copies
+    self._sym_container = None
+
+  @property
+  def sym_container(self):
+    if self._sym_container is None or self._sym_container.deleted:
+      self._sym_container = Model('symmetry equivalents', self.session)
+      self.parent.add([self._sym_container])
+      self.clear()
+    return self._sym_container
+
+  def __missing__(self, key):
+    if type(key) is not clipper.RTop_frac:
+      raise TypeError('Key must be a clipper.RTop_frac!')
+    thisplace = Place(matrix=key.rtop_orth(self.parent.cell).mat34)
+    if not thisplace.is_identity():
+      thismodel = self.master.copy(name=key.format_as_symop)
+      atoms = thismodel.atoms
+      #thismodel.position = thisplace
+      atoms.coords = thisplace.moved(atoms.coords)
+      atom_colors = atoms.colors
+      atom_colors[:,0:3] = (self.master.atoms.colors[:,0:3].astype(float)*0.6).astype(numpy.uint8)
+      atoms.colors = atom_colors
+      ribbon_colors = thismodel.residues.ribbon_colors
+      ribbon_colors[:,0:3] = (self.master.residues.ribbon_colors[:,0:3].astype(float)*0.6).astype(numpy.uint8)
+      thismodel.residues.ribbon_colors = ribbon_colors
+      self.sym_container.add([thismodel])
+      set_to_default_cartoon(self.session, thismodel)
+      self[key] = thismodel
+      thismodel.display = False
+      return thismodel
+    return self.master
+      
+  def __getitem__(self, key):
+    s = self.sym_container
+    m = super(SymModels, self).__getitem__(key)
+    return m
+
+
+def set_to_default_cartoon(session, model = None):
+    # Adjust the ribbon representation to provide information without
+    # getting in the way
+    from chimerax.core.commands import cartoon, atomspec
+    if model is None:
+        atoms = None
+    else:
+        arg = atomspec.AtomSpecArg('thearg')
+        atoms = arg.parse('#' + model.id_string(), session)[0]
+    cartoon.cartoon(session, atoms = atoms, suppress_backbone_display=False)
+    cartoon.cartoon_style(session, atoms = atoms, width=0.4, thickness=0.1, arrows_helix=True, arrow_scale = 2)
+
+def read_mtz(session, filename, experiment_name, 
+              atomic_model = None, 
+              auto_generate_maps = True,
+              live_map_display = True):
+  '''
+  Read in an MTZ file and add its contents to the session.Clipper_DB
+  database. Optionally, register an atomic model with the data to allow
+  live display of symmetry equivalents, and/or automatically generate
+  maps for any map data found in the file.
+  Args:
+    session:
+      The ChimeraX session
+    filename (string):
+      The mtz file itself
+    experiment_name (string):
+      Name of the Xtal_Project to which this data will be added. If the
+      name does not match an existing Xtal_Project, a new one will be
+      created.
+    atomic_model:
+      A currently loaded ChimeraX AtomicStructure
+    auto_generate_maps (bool):
+      If true, a Map_Set object will be created containing one Xmap for
+      each set of (F, Phi) data found in the MTZ file. 
+    live_map_display (bool):
+      Only has an effect if auto_generated_maps is True. Maps will be
+      displayed, with live updating within a sphere of 15 Angstroms radius
+      around the centre of rotation.
+  ''' 
+  if not hasattr(session, 'Clipper_DB') or \
+        experiment_name not in session.Clipper_DB['Experiment'].keys():
+    project = Xtal_Project(session, experiment_name)
+    xmapset = None
+  else:
+    project = session.Clipper_DB['Experiment'][experiment_name]
+  # Bring in all the data from the MTZ file and add the corresponding
+  # Clipper objects to the database
+  crystal_name = project.load_data(filename)
+  if auto_generate_maps:
+    data_key = project.data.find_first_map_data(crystal_name)
+    print(data_key)
+    if data_key is not None:
+      xmapset = project.add_maps(crystal_name, data_key)
+      if atomic_model is not None:
+        # Move the model to sit beneath a head Model object to act as a
+        # container for symmetry models, annotations etc.
+        from chimerax.core.models import Model
+        m = Model(atomic_model.name, session)
+        session.models.remove([atomic_model])
+        m.add([atomic_model])
+        session.models.add([m])
+        xmapset.atomic_model = atomic_model
+      if live_map_display:
+        xmapset.initialize_box_display()
+        if atomic_model:
+          xmapset.periodic_model.initialize_symmetry_display()
+  
+  return project, xmapset

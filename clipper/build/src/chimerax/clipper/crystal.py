@@ -700,10 +700,24 @@ def calculate_grid_padding(radius, grid, cell):
   in order to capture at least radius angstroms in x, y and z.
   '''
   co = clipper.Coord_orth((radius, radius, radius))
-  cm = co.coord_frac(cell).coord_grid(grid).uvw
+  cm = co.coord_frac(cell).coord_map(grid).uvw
   grid_pad = numpy.ceil(cm).astype(int)
   return grid_pad
 
+def calculate_grid_padding(radius, grid, cell):
+  '''
+  Calculate the number of grid steps needed on each crystallographic axis
+  in order to capture at least radius angstroms in x, y and z.
+  '''
+  import numpy
+  corner_mask = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,0,0],[1,1,1]])
+  corners = (corner_mask * radius).astype(float)
+  grid_corners = numpy.zeros([8,3], numpy.int)
+  for i, c in enumerate(corners):
+    co = clipper.Coord_orth(c)
+    cm = co.coord_frac(cell).coord_map(grid).uvw
+    grid_corners[i,:] = numpy.ceil(cm).astype(int)
+  return grid_corners.max(axis=0) - grid_corners.min(axis=0)
 
 class AtomicCrystalStructure:
   '''
