@@ -33,7 +33,7 @@ class ZoomMouseMode(mousemodes.ZoomMouseMode):
         v = self.view
         c = v.camera
         cofr = v.center_of_rotation
-        if c.name() == 'orthographic':
+        if c.name == 'orthographic':
             import numpy
             c.field_width = max(c.field_width - delta_z, self.pixel_size())
             # TODO: Make camera field_width a property so it knows to redraw.
@@ -78,6 +78,8 @@ class SelectVolumeToContour(mousemodes.MouseMode):
         for v in vol_list:
             v.selected = False
         n = len(vol_list)
+        if n == 0:
+            return
         last = self._last_picked_index
         p = (last + d) % n
         sv = self._picked_volume = vol_list[p]
@@ -161,17 +163,13 @@ class ContourSelectedVolume(mousemodes.MouseMode):
                 lstr = ', '.join(format(l, '.3f') for l in levels)
                 sstr = ', '.join(format(s, '.3f') for s in lsig)
                 self.session.logger.status('Volume {} contour level(s): {} ({} sigma)'.format(v.name, lstr, sstr))
-            if hasattr(v, 'surface_zone'):
-                if v.surface_zone.atoms is not None or v.surface_zone.coords is not None:
+            if hasattr(v, '_surface_zone'):
+                coords = v._surface_zone.coords
+                distance = v._surface_zone.distance
+                if coords is not None:
                     from chimerax.core.surface.zone import surface_zone
-                if v.surface_zone.atoms is not None:
-                    coords = v.surface_zone.atoms.coords
-                    if v.surface_zone.coords is not None:
-                        coords = numpy.concatenate([coords, v.surface_zone.coords])
-                else:
-                    coords = v.surface_zone.coords
                 
-                surface_zone(v, coords, v.surface_zone.distance)
+                    surface_zone(v, coords, distance)
                     
                     #self._start_remask_countdown()
             #self.session.ui.update_graphics_now()    

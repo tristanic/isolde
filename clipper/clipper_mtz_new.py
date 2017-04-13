@@ -46,24 +46,24 @@ class ReflectionDataContainer(Model):
                 'Calculated', self.session, calc_dict)
             self.add([self.calculated_data])
         
-        @property
-        def cell(self):
-            return self.hklinfo.cell
+    @property
+    def cell(self):
+        return self.hklinfo.cell
+    
+    @property
+    def spacegroup(self):
+        return self.hklinfo.spacegroup
         
-        @property
-        def spacegroup(self):
-            return self.hklinfo.spacegroup
-            
-        @property
-        def resolution(self):
-            return self.hklinfo.resolution
-        
-        @property
-        def grid_sampling(self):
-            if self._grid_sampling is None:
-                self._grid_sampling = clipper.Grid_sampling(
-                    self.spacegroup, self.cell, self.resolution)
-            return self._grid_sampling
+    @property
+    def resolution(self):
+        return self.hklinfo.resolution
+    
+    @property
+    def grid_sampling(self):
+        if self._grid_sampling is None:
+            self._grid_sampling = clipper.Grid_sampling(
+                self.spacegroup, self.cell, self.resolution)
+        return self._grid_sampling
         
         
         
@@ -80,6 +80,13 @@ class ReflectionData_Node(Model):
         self.datasets = datasets
         for name, data in datasets.items():
             self.add([data])
+    
+    def __iter__(self):
+        return iter(self.datasets.values())
+    
+    def __getitem__(self, key):
+        return self.datasets[key]
+        
                 
 class ReflectionData(Model):
     '''
@@ -116,7 +123,7 @@ class ReflectionData_Exp(ReflectionData):
         
 class ReflectionData_Calc(ReflectionData):
     '''Holds one set of calculated reflections and phases.'''
-    def __init__(self, name, session, data, is_difference_map = False):
+    def __init__(self, name, session, data, is_difference_map = None):
         '''
         Args:
             name:
@@ -126,11 +133,20 @@ class ReflectionData_Calc(ReflectionData):
             data:
                 A Clipper HKL_data_F_phi object
             is_difference_map(bool):
-                If true, maps generated from this data will be displayed
-                with both positive and negative contours.
+                If True, maps generated from this data will be displayed
+                with both positive and negative contours. If None, the 
+                code will attempt to guess from the name
         '''
         ReflectionData.__init__(self, name, session, data)
-        self.is_difference_map = is_difference_map
+        if is_difference_map is None:
+            self.is_difference_map = self._guess_if_difference_map(name)
+        else:
+            self.is_difference_map = is_difference_map
+        
+    def _guess_if_difference_map(self, name):
+        if '2' in name:
+            return False
+        return True
     
     
 def data_labels_match(data_col, sigma_or_phase_col):
