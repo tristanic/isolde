@@ -126,11 +126,13 @@ class ContourSelectedVolume(mousemodes.MouseMode):
         Modified volume contouring method which acts on a single volume
         at a time. By default, changes all contours towards/away from
         zero. If the volume has a surface_zone property set, it will be
-        automatically masked back down after a short time delay.
+        automatically masked back down after contouring.
         Args:
+            session:
+                The ChimeraX session.
             selector:
                 A SelectVolumeToContour object used to define the current
-                target volume
+                target volume.
             symmetrical:
                 If True, scrolling up will adjust contours away from 
                 zero (that is, negative contours will get more negative).
@@ -170,31 +172,7 @@ class ContourSelectedVolume(mousemodes.MouseMode):
                     from chimerax.core.surface.zone import surface_zone
                 
                     surface_zone(v, coords, distance)
-                    
-                    #self._start_remask_countdown()
-            #self.session.ui.update_graphics_now()    
-            
-    def _start_remask_countdown(self):
-        if self._remask_handler is None:
-            self._remask_handler = self.session.triggers.add_handler('new frame', self._incr_remask_counter)
-        self._remask_counter = 0
-    
-    def _incr_remask_counter(self, *_):
-        self._remask_counter += 1
-        if self._remask_counter >= self._frames_until_remask:
-            from chimerax.core.surface.zone import surface_zone
-            v = self.target_volume
-            if v.surface_zone.atoms is not None:
-                coords = v.surface_zone.atoms.coords
-                if v.surface_zone.coords is not None:
-                    coords = numpy.concatenate([coords, v.surface_zone.coords])
-            else:
-                coords = v.surface_zone.coords
-            
-            surface_zone(v, coords, v.surface_zone.distance)
-            self.session.triggers.remove_handler(self._remask_handler)
-            self._remask_handler = None
-            
+                                
     
 def adjust_threshold_level(m, step, sym):
     if m.representation == 'solid':

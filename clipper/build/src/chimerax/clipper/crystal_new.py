@@ -1,17 +1,28 @@
 import numpy
-from .main import atom_list_from_sel
-from . import clipper, triggers
-from .lib import clipper_python_core as clipper_core
-from .data_tree import db_levels, DataTree
+import copy
 from collections import defaultdict
+
+from chimerax.core.triggerset import TriggerSet
 from chimerax.core.atomic import AtomicStructure, concatenate
 from chimerax.core.geometry import Place, Places
 from chimerax.core.geometry import find_close_points, find_close_points_sets
 from chimerax.core.surface import zone
+from chimerax.core.surface.shapes import sphere_geometry
+
 from chimerax.core.models import Model, Drawing
-from chimerax.core.commands import camera, cofr
+from chimerax.core.commands import camera, cofr, cartoon, atomspec
 from chimerax.core.map.data import Array_Grid_Data
 from chimerax.core.map import Volume, volumecommand
+
+from . import initialize_mouse_modes
+from .main import atom_list_from_sel
+from . import clipper
+from .lib import clipper_python_core as clipper_core
+from .data_tree import db_levels, DataTree
+from .clipper_mtz_new import ReflectionDataContainer
+
+DEFAULT_BOND_RADIUS = 0.2
+
 
 def move_model(session, model, new_parent):
     '''
@@ -210,12 +221,15 @@ class CrystalStructure(Model):
         '''
         name = 'Crystal (' + model.name +')'
         Model.__init__(self, name, session)
+
+        initialize_mouse_modes(session)
+        volumecommand.volume(session, pickable=False)
+
         self.session.models.add([self])
         move_model(self.session, model, self)
         self.master_model = model
         self.mtzdata = None
         if mtzfile is not None:
-            from .clipper_mtz_new import ReflectionDataContainer
             self.mtzdata = ReflectionDataContainer(self.session, mtzfile)
             self.add([self.mtzdata])
             self.cell = self.mtzdata.cell
@@ -224,6 +238,24 @@ class CrystalStructure(Model):
             self.hklinfo = self.mtzdata.hklinfo
         else:
             self.cell, self.spacegroup, self.grid = symmetry_from_model_metadata(model)
+
+        '''
+        Named triggers to simplify handling of changes on key events (e.g. live
+        updating of maps/symmetry).
+        '''
+        self.triggers = TriggerSet()
+        trigger_names = (
+            'map box changed',  # Changed shape of box for map viewing
+            'map box moved',    # Changed location of box for map viewing
+            'atom box changed', # Changed shape of box for showing symmetry atoms
+            'atom box moved',   # Changed location of box for showing symmetry atoms
+        )
+        for t in trigger_names:
+            self.triggers.add_trigger(t)
+
+
+
+
 
         self._voxel_size = self.cell.dim / self.grid.dim
 
@@ -242,6 +274,9 @@ class CrystalStructure(Model):
         
         # Container for managing all the symmetry copies
         self._sym_model_container = None
+        
+        # Container for drawing of special positions
+        self._special_positions_model = None
         
         ###
         # LIVE ATOMIC SYMMETRY
@@ -289,10 +324,6 @@ class CrystalStructure(Model):
 
 
     @property
-    def is_live(self):
-        return self._sym_handler is not None
-
-    @property
     def live_atomic_symmetry_radius(self):
         '''
         Set the radius (in Angstroms) of the volume in which to show 
@@ -316,12 +347,14 @@ class CrystalStructure(Model):
         if switch:
             if not self._sym_box_initialized:
                 self.initialize_symmetry_display(self.live_atomic_symmetry_radius)
-            else:
-                self.start_live_atomic_symmetry()
+            set_to_default_cartoon(self.session, self.master_model)
+            for key, m in self.items():
+                m.bonds.radii = DEFAULT_BOND_RADIUS
+            self._start_live_atomic_symmetry()
         else:
-            self.stop_live_atomic_symmetry()
+            self._stop_live_atomic_symmetry()
         self._live_atomic_symmetry = switch
-
+    
 
     @property
     def sym_model_container(self):
@@ -329,6 +362,21 @@ class CrystalStructure(Model):
             self._sym_model_container = SymModels(self.session, self)
         return self._sym_model_container
         
+    @property
+    def display(self):
+        return super().display
+    
+    @display.setter
+    def display(self, switch):
+        if switch:
+            if self.live_atomic_symmetry:
+                self._start_live_atomic_symmetry()
+            if self.xmaps.live_scrolling:
+                self.xmaps._start_live_scrolling()
+        else:
+            self._stop_live_atomic_symmetry()
+            self.xmaps._stop_live_scrolling()
+        Model.display.fset(self, switch)
         
 
     def items(self):
@@ -393,7 +441,7 @@ class CrystalStructure(Model):
               want to reset it, run sym_box_reset().
               ''')
         camera.camera(self.session, 'ortho')
-        cofr.cofr(self.session, 'centerOfView')
+        cofr.cofr(self.session, 'centerOfView', show_pivot = True)
         self.sym_always_shows_reference_model = True
         self._sym_box_radius = radius
         uc = self.unit_cell
@@ -405,7 +453,6 @@ class CrystalStructure(Model):
         box_corner_grid, box_corner_xyz = _find_box_corner(self._sym_box_center, c, g, radius)
         self._sym_box_dimensions = (numpy.ceil(radius / self._voxel_size * 2)).astype(int)
         self._update_sym_box(force_update = True)
-        self.start_live_atomic_symmetry()
         self._sym_box_initialized = True
 
     def _change_sym_box_radius(self, radius):
@@ -466,7 +513,7 @@ class CrystalStructure(Model):
         representation of the master model. NOTE: this will automatically
         stop live atomic symmetry updating.
         '''
-        self.stop_live_atomic_symmetry()
+        self.live_atomic_symmetry = False
         box_center = self.master_model.bounds().center()
         uc = self.unit_cell
         dim = (numpy.ceil(box_width / self._voxel_size)).astype(int)
@@ -480,19 +527,193 @@ class CrystalStructure(Model):
 
     def hide_large_scale_symmetry(self, restart_live_atomic_symmetry = True):
         self.master_model.position = Place()
-        if restart_live_atomic_symmetry:
-            self.start_live_atomic_symmetry()
+        self.live_atomic_symmetry = restart_live_atomic_symmetry
 
-    def start_live_atomic_symmetry(self):
+    def _start_live_atomic_symmetry(self):
+        self.hide_large_scale_symmetry(restart_live_atomic_symmetry = False)
+        set_to_default_cartoon(self.session)
         if self._sym_handler is None:
             self._sym_handler = self.session.triggers.add_handler('new frame', self._update_sym_box)
 
-    def stop_live_atomic_symmetry(self):
+    def _stop_live_atomic_symmetry(self):
         if self._sym_handler is not None:
             self.session.triggers.remove_handler(self._sym_handler)
             self._sym_handler = None
         for key, m in self.sym_model_container.items():
             m.display = False
+
+    def isolate_and_cover_selection(self, atoms, include_surrounding_residues = 5,
+                        show_context = 5, mask_radius = 3, hide_surrounds = True, focus = True):
+        '''
+        Expand the map to cover a given atomic selection, then mask it to
+        within a given distance of said atoms to reduce visual clutter. Adjust
+        the atomic visualisation to show only the selected atoms, plus an
+        optional surrounding buffer zone.
+        Args:
+          atoms (ChimeraX Atoms object):
+            The main selection we're interested in. The existing selection will
+            be expanded to include the whole residue for every selected atom.
+          include_surrounding_residues (float):
+            Any residue with an atom coming within this radius of the primary
+            selection will be added to the selection covered by the map. To
+            cover only the primary selection, set this value to zero.
+          show_context (float):
+            Any residue within an atom coming within this radius of the previous
+            two selections will be displayed as a thinner stick representation,
+            but will not be considered for the map masking calculation.
+          mask_radius (float):
+            Components of the map more than this distance from any atom will
+            be hidden.
+          hide_surrounds (bool):
+            If true, all residues outside the selection region will be hidden
+          focus (bool):
+            If true, the camera will be moved to focus on the selection
+        '''
+        # If we're in live mode, turn it off
+        self.live_atomic_symmetry = False
+        self.xmaps.live_scrolling = False
+        orig_atoms = atoms
+        atoms = atoms.residues.atoms
+        coords = atoms.coords
+        if include_surrounding_residues > 0:
+            atoms = concatenate(
+              self.sym_select_within(
+                  coords, include_surrounding_residues)).residues.atoms
+            coords = atoms.coords
+        context_atoms = None
+        if show_context > 0:
+            context_atoms = concatenate(
+              self.sym_select_within(
+                  coords, show_context)).residues.atoms.subtract(atoms)
+        pad = calculate_grid_padding(mask_radius, self.grid, self.cell)
+        box_bounds_grid = clipper.Util.get_minmax_grid(coords, self.cell, self.grid) \
+                                + numpy.array((-pad, pad))
+        self.xmaps.set_box_limits(box_bounds_grid)
+
+        self.xmaps._surface_zone.update(mask_radius, atoms, None)
+        self.xmaps._reapply_zone()
+        if context_atoms is None:
+            found_models = atoms.unique_structures
+        else:
+            found_models = concatenate((context_atoms, atoms)).unique_structures
+        self.master_model.bonds.radii = 0.05
+        for key, m in self.items():
+            if m not in found_models:
+                m.display = False
+            else:
+                m.display = True
+                m.atoms.displays = False
+                m.residues.ribbon_displays = False
+        self.master_model.atoms[numpy.in1d(
+            self.master_model.atoms.names, numpy.array(
+                ['N','C','CA']))].displays = True
+        if not self.show_nonpolar_H:
+            atoms = atoms.filter(atoms.idatm_types != 'HC')
+        atoms.displays = True
+        atoms.inter_bonds.radii = 0.2
+        atoms.residues.ribbon_displays = True
+        if context_atoms is not None:
+            if not self.show_nonpolar_H:
+                context_atoms = context_atoms.filter(context_atoms.idatm_types != 'HC')
+            context_atoms.displays = True
+            context_atoms.inter_bonds.radii = 0.1
+        if focus:
+            self.session.view.view_all(atoms.scene_bounds, 0.2)
+        # return the original selection in case we want to re-run with modified settings
+        return orig_atoms
+
+    def draw_unit_cell_and_special_positions(self, offset = None):
+        '''
+        Quick-and-dirty drawing mapping out the special positions 
+        (positions which map back to themselves by at least one 
+        non-unity symop) within one unit cell. A sphere will be drawn 
+        at each grid-point with non-unit multiplicity, and colour-coded
+        according to multiplicity:
+            2-fold: white
+            3-fold: cyan
+            4-fold: yellow
+            6-fold: magenta
+        
+        Ultimately it would be nice to replace this with something more
+        elegant, that masks and scrolls continuously along with the model/
+        map visualisation.
+        
+        Args:
+            offset (1x3 numpy array, default = None):
+                Optional (u,v,w) offset (in fractions of a unit cell axis)
+        '''
+        m = self._special_positions_model
+        if not (m is None or m.deleted):
+            # Just show the existing model
+            m.display = True
+            return
+        model = self.master_model
+
+        ref = model.bounds().center().astype(float)
+        frac_coords = clipper.Coord_orth(ref).coord_frac(self.cell).uvw
+        if offset is None:
+            offset = numpy.array([0,0,0],int)
+            
+        positions = []
+        colors = []
+        rgba_corner = numpy.array([255,0,255,128],numpy.int32)
+        corners_frac = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]],numpy.double) + offset\
+                        + self.unit_cell.min.coord_frac(self.grid).uvw
+
+        corners = []
+        for c in corners_frac:
+            co = clipper.Coord_frac(c).coord_orth(self.cell)
+            positions.append(Place(axes=numpy.identity(3)*4, origin=co.xyz))
+            colors.append(rgba_corner)
+    
+        
+        m = self.special_positions_model = Model('Special Positions',self.session)
+        xmap = self.xmaps.child_models()[0].xmap
+        uc = self.unit_cell
+        spc = numpy.array(xmap.special_positions_unit_cell_xyz(uc, offset))
+        d = Drawing('points')
+        sphere = numpy.array(sphere_geometry(80))
+        sphere[0]*=0.25
+        d.vertices, d.normals, d.triangles = sphere
+
+        if len(spc):
+            
+            coords = spc[:,0:3]
+            multiplicity = spc[:,3].astype(int)
+            scale_2fold = numpy.identity(3)
+            scale_3fold = numpy.identity(3)* 1.5
+            scale_4fold = numpy.identity(3)* 2
+            scale_6fold = numpy.identity(3)* 3
+            rgba_2fold = numpy.array([255,255,255,255],numpy.int32)
+            rgba_3fold = numpy.array([0,255,255,255],numpy.int32)
+            rgba_4fold = numpy.array([255,255,0,255],numpy.int32)
+            rgba_6fold = numpy.array([255,0,0,255],numpy.int32)
+
+            for coord, mult in zip(coords, multiplicity):
+                if mult == 2:
+                    positions.append(Place(axes=scale_2fold, origin=coord))
+                    colors.append(rgba_2fold)
+                elif mult == 3:
+                    positions.append(Place(axes=scale_3fold, origin=coord))
+                    colors.append(rgba_3fold)
+                elif mult == 4:
+                    positions.append(Place(axes=scale_4fold, origin=coord))
+                    colors.append(rgba_4fold)
+                elif mult == 6:
+                    positions.append(Place(axes=scale_6fold, origin=coord))
+                    colors.append(rgba_6fold)
+            for c in corners:
+                positions.append(Place(axes=scale_6fold, origin=c))
+                colors.append(rgba_corner)
+
+        d.positions = Places(positions)
+        d.colors = numpy.array(colors)
+        m.add_drawing(d)
+        model.parent.add([m])
+        m.display = True
+
+
+
 
 class SymModels(defaultdict):
     '''
@@ -555,9 +776,10 @@ class SymModels(defaultdict):
         return m
 
 def set_to_default_cartoon(session, model = None):
-        # Adjust the ribbon representation to provide information without
-        # getting in the way
-    from chimerax.core.commands import cartoon, atomspec
+    '''
+    Adjust the ribbon representation to provide information without
+    getting in the way.
+    '''
     if model is None:
         atoms = None
     else:
@@ -565,6 +787,7 @@ def set_to_default_cartoon(session, model = None):
         atoms = arg.parse('#' + model.id_string(), session)[0]
     cartoon.cartoon(session, atoms = atoms, suppress_backbone_display=False)
     cartoon.cartoon_style(session, atoms = atoms, width=0.4, thickness=0.1, arrows_helix=True, arrow_scale = 2)
+
 
 class Surface_Zone:
     '''
@@ -621,14 +844,13 @@ def surface_zones(models, points, distance):
     for vp, i, d in zip(vlist, i1, dlist):
         v = vp[0]
         nv = len(v)
-        from numpy import zeros, bool, put, logical_and
-        mask = zeros((nv,), bool)
-        put(mask, i, 1)
+        mask = numpy.zeros((nv,), numpy.bool)
+        numpy.put(mask, i, 1)
         t = d.triangles
         if t is None:
             return
-        tmask = logical_and(mask[t[:,0]], mask[t[:,1]])
-        logical_and(tmask, mask[t[:,2]], tmask)
+        tmask = numpy.logical_and(mask[t[:,0]], mask[t[:,1]])
+        numpy.logical_and(tmask, mask[t[:,2]], tmask)
         d.triangle_mask = tmask
 
 
@@ -694,6 +916,11 @@ class XmapSet(Model):
         self._box_update_handler = None
         # Is the box already initialised?
         self._box_initialized = False
+        # Object storing the parameters required for masking (used after
+        # adjusting contours)
+        self._surface_zone = Surface_Zone(display_radius, None, None)
+        # Is the map box moving with the centre of rotation?
+        self._live_scrolling = False
         # Radius of the sphere in which the map will be displayed when
         # in live-scrolling mode
         self.display_radius = display_radius
@@ -709,26 +936,16 @@ class XmapSet(Model):
         self._box_corner_xyz = None
         # Minimum corner of the box in grid coordinates
         self._box_corner_grid = None
-        # Object storing the parameters required for masking (used after
-        # adjusting contours)
-        self._surface_zone = Surface_Zone(display_radius, None, None)
         
-        
-        if live_scrolling:
-            # Get the initial box parameters based on cofr and radius
-            v = self.session.view
-            cofr = v.center_of_rotation
-            self._box_dimensions = \
-                2 * calculate_grid_padding(display_radius, self.grid, self.cell)
-            self._box_corner_grid, self._box_corner_xyz = \
-                _find_box_corner(cofr, self.cell, self.grid, display_radius)
-            self._surface_zone.update(display_radius, coords = [cofr])
-            
-        else:
+        self.live_scrolling = live_scrolling
+
+        if not live_scrolling:
             # Get the initial box parameters based on atom_selection and padding
             self._box_corner_grid, self._box_corner_xyz, self._box_dimensions = \
                 _get_bounding_box(atom_selection.coords, padding, self.grid, self.cell)
             self._surface_zone.update(padding, atoms = atom_selection)
+        
+        self._box_initialized = True
         
         for dataset in datasets:
             print('Working on dataset: {}'.format(dataset.name))
@@ -737,9 +954,150 @@ class XmapSet(Model):
         # Apply the surface mask
         # self._reapply_zone()
 
-        if live_scrolling:
-            self.start_live_scrolling()
+
+    @property
+    def hklinfo(self):
+        return self.crystal.hklinfo
         
+    @property
+    def spacegroup(self):
+        return self.crystal.spacegroup
+    
+    @property
+    def cell(self):
+        return self.crystal.cell
+    
+    @property
+    def res(self):
+        return self.hklinfo.resolution
+    
+    @property
+    def grid(self):
+        return self.crystal.grid
+    
+    @property
+    def voxel_size(self):
+        return self.cell.dim / self.grid.dim
+    
+    @property
+    def voxel_size_frac(self):
+        return 1/ self.grid.dim
+    
+    @property
+    def unit_cell(self):
+        return self.crystal.unit_cell
+    
+    @property
+    def display_radius(self):
+        return self._display_radius
+    
+    @display_radius.setter
+    def display_radius(self, radius):
+        '''Set the radius (in Angstroms) of the live map display sphere.'''
+        self._display_radius = radius
+        v = self.session.view
+        cofr = v.center_of_rotation
+        dim = self._box_dimensions = \
+            2 * calculate_grid_padding(radius, self.grid, self.cell)
+        self._box_corner_grid, self._box_corner_xyz = _find_box_corner(
+            cofr, self.cell, self.grid, radius)
+        self.crystal.triggers.activate_trigger('map box changed', 
+            (self._box_corner_xyz, self._box_corner_grid, dim))
+        self._surface_zone.update(radius, coords = numpy.array([cofr]))
+        self._reapply_zone()
+
+    @property
+    def live_scrolling(self):
+        '''Turn live map scrolling on and off.'''
+        return self._live_scrolling
+    
+    @live_scrolling.setter
+    def live_scrolling(self, switch):
+        if switch:
+            self.position = Place()
+            if not self._live_scrolling:
+                '''
+                Set the box dimensions to match the stored radius.
+                '''
+                self.display_radius = self._display_radius
+            self._start_live_scrolling()
+        else:
+            self._stop_live_scrolling()
+        self._live_scrolling = switch
+
+    def _start_live_scrolling(self):
+        if self._box_update_handler is None:
+            self._box_update_handler = self.session.triggers.add_handler(
+                'new frame', self.update_box)
+    
+    def _stop_live_scrolling(self):
+        if self._box_update_handler is not None:
+            self.session.triggers.remove_handler(self._box_update_handler)
+            self._box_update_handler = None
+        
+    
+    
+    
+    def __getitem__(self, name):
+        '''Get one of the child maps by name.'''
+        for m in self.child_models():
+            if m.name == name:
+                return m
+        raise KeyError('No map with that name!')
+    
+
+    def set_box_limits(self, minmax):
+        '''
+        Set the map box to fill a volume encompassed by the provided minimum
+        and maximum grid coordinates. Automatically turns off live scrolling.
+        '''
+        self.live_scrolling = False
+        cmin = clipper.Coord_grid(minmax[0])
+        cmin_xyz = cmin.coord_frac(self.grid).coord_orth(self.cell).xyz
+        dim = (minmax[1]-minmax[0])
+        self.crystal.triggers.activate_trigger('map box changed', 
+            (cmin_xyz, cmin, dim))
+    
+    def cover_unit_cells(self, nuvw = [1,1,1], offset = [0,0,0]):
+        '''
+        Expand the map(s) to cover multiple unit cells. In order to 
+        maintain reasonable performance, this method cheats a little by
+        filling just one unit cell and then tiling it using the graphics
+        engine. This leaves some minor artefacts at the cell edges, but
+        is a worthwhile tradeoff.
+        Automatically turns off live scrolling.
+        Args:
+            nuvw (array of 3 positive integers):
+                Number of unit cells to show in each direction.
+            offset (array of 3 integers):
+                Shifts the starting corner of the displayed volume by
+                this number of unit cells in each direction.
+        '''
+        self.live_scrolling = False
+        uc = self.unit_cell
+        box_min_grid = uc.min.uvw
+        # Add a little padding to the max to create a slight overlap between copies
+        box_max_grid = (uc.max+clipper.Coord_grid([2,2,2])).uvw
+        minmax = [box_min_grid, box_max_grid]
+        self.set_box_limits(minmax)
+        # Tile by the desired number of cells
+        places = []
+        grid_dim = self.grid.dim
+        nu, nv, nw = nuvw
+        ou, ov, ow = offset
+        for i in range(ou, nu+ou):
+            for j in range(ov, nv+ov):
+                for k in range(ow, nw+ow):
+                    thisgrid = clipper.Coord_grid(numpy.array([i,j,k])*grid_dim)
+                    thisorigin = thisgrid.coord_frac(self.grid).coord_orth(self.cell).xyz
+                    places.append(Place(origin = thisorigin))
+        self.positions = Places(places)
+                    
+        
+        
+        
+    
+    
     def add_map_handler(self, dataset, is_difference_map = None, 
                 color = None, style = None, contour = None):
         '''
@@ -809,58 +1167,6 @@ class XmapSet(Model):
                                   'square_mesh': True})
         new_handler.update_surface()
         new_handler.show()
-        
-        
-    
-    @property
-    def hklinfo(self):
-        return self.crystal.hklinfo
-        
-    @property
-    def spacegroup(self):
-        return self.crystal.spacegroup
-    
-    @property
-    def cell(self):
-        return self.crystal.cell
-    
-    @property
-    def res(self):
-        return self.hklinfo.resolution
-    
-    @property
-    def grid(self):
-        return self.crystal.grid
-    
-    @property
-    def voxel_size(self):
-        return self.cell.dim / self.grid.dim
-    
-    @property
-    def voxel_size_frac(self):
-        return 1/ self.grid.dim
-    
-    @property
-    def unit_cell(self):
-        return self.crystal.unit_cell
-    
-    @property
-    def display_radius(self):
-        return self._display_radius
-    
-    @display_radius.setter
-    def display_radius(self, radius):
-        '''Set the radius (in Angstroms) of the live map display sphere.'''
-        self._display_radius = radius
-        self.stop_live_scrolling()
-        v = self.session.view
-        cofr = v.center_of_rotation
-        dim = self._box_dimensions = \
-            2 * calculate_grid_padding(radius, self.grid, self.cell)
-        box_corner_grid, box_corner_xyz = _find_box_corner(cofr, self.cell, self.grid, radius)
-        triggers.activate_trigger('map box changed', (box_corner_xyz, box_corner_grid, dim))
-        self.start_live_scrolling()
-    
     
     def update_box(self, *_, force_update = False):
         '''Update the map box to surround the current centre of rotation.'''
@@ -874,7 +1180,7 @@ class XmapSet(Model):
                     return
         self._last_box_center_grid = cofr_grid      
         box_corner_grid, box_corner_xyz = _find_box_corner(cofr, self.cell, self.grid, self.display_radius)
-        triggers.activate_trigger('map box moved', (box_corner_xyz, box_corner_grid, self._box_dimensions))
+        self.crystal.triggers.activate_trigger('map box moved', (box_corner_xyz, box_corner_grid, self._box_dimensions))
         self._surface_zone.update(self.display_radius, coords = numpy.array([cofr]))
         self._reapply_zone()
      
@@ -887,19 +1193,9 @@ class XmapSet(Model):
         radius = self._surface_zone.distance
         if coords is not None:
             surface_zones(self.child_models(), coords, radius)
-        
-
-    def start_live_scrolling(self):
-        if self._box_update_handler is None:
-            self._box_update_handler = self.session.triggers.add_handler('new frame', self.update_box)
-  
-    def stop_live_scrolling(self):
-        if self._box_update_handler is not None:
-            self.session.triggers.remove_handler(self._box_handler)
-            self._box_update_handler = None
-
+            
     def delete(self):
-        self.stop_live_scrolling()
+        self.live_scrolling = False
         super(XmapSet, self).delete()
 
     
@@ -988,9 +1284,9 @@ class XmapHandler(Volume):
         # will not be applied until it's shown again.
         self._needs_update = True
         self.show()
-        self._box_shape_changed_cb_handler = triggers.add_handler(
+        self._box_shape_changed_cb_handler = self.crystal.triggers.add_handler(
             'map box changed', self._box_changed_cb)
-        self._box_moved_cb_handler = triggers.add_handler(
+        self._box_moved_cb_handler = self.crystal.triggers.add_handler(
             'map box moved', self._box_moved_cb)
 
         
@@ -1044,8 +1340,8 @@ class XmapHandler(Volume):
 
     def _box_changed_cb(self, name, params):
         self.box_params = params
+        self._needs_update = True
         if not self.display:
-            self._needs_update = True
             # No sense in wasting cycles on this if the volume is hidden.
             # We'll just store the params and apply them when we show the
             # volume.
@@ -1054,7 +1350,8 @@ class XmapHandler(Volume):
             return
         self._swap_volume_data(params)
         self.data.values_changed()
-    
+        self.show()
+        
     def _box_moved_cb(self, name, params):
         self.box_params = params
         if not self.display:
@@ -1066,10 +1363,10 @@ class XmapHandler(Volume):
     
     def delete(self):
         if self._box_shape_changed_cb_handler is not None:
-            triggers.remove_handler(self._box_shape_changed_cb_handler)
+            self.triggers.remove_handler(self._box_shape_changed_cb_handler)
             self._box_shape_changed_cb_handler = None
         if self._box_moved_cb_handler is not None:
-            triggers.remove_handler(self._box_moved_cb_handler)
+            self.crystal.triggers.remove_handler(self._box_moved_cb_handler)
             self._box_moved_cb_handler = None
         super(XmapHandler, self).delete()
     
