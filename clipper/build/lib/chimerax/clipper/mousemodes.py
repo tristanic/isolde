@@ -1,6 +1,13 @@
 import numpy
 from chimerax.core.ui import mousemodes
 
+def initialize_mouse_modes(session):
+    z = ZoomMouseMode(session)
+    s = SelectVolumeToContour(session)
+    v = ContourSelectedVolume(session, s, True)
+    session.ui.mouse_modes.bind_mouse_mode('right',[],z)
+    session.ui.mouse_modes.bind_mouse_mode('wheel',['control'], s)
+    session.ui.mouse_modes.bind_mouse_mode('wheel',[], v) 
 
 
 
@@ -70,9 +77,10 @@ class SelectVolumeToContour(mousemodes.MouseMode):
         self._last_picked_index = 0
         self._picked_volume = None
         self._deselect_handler = None
-        self._frames_until_deselect = 100
+        self._frames_until_deselect = 200
         self._deselect_counter = 0
     def wheel(self, event):
+        '''Select the next visible volume.'''
         d = int(event.wheel_value())
         vol_list = self._get_vol_list()
         for v in vol_list:
@@ -88,8 +96,14 @@ class SelectVolumeToContour(mousemodes.MouseMode):
         self.session.logger.status('Selected for contouring: {}'.format(sv.name))
         self._start_deselect_timer()
     def _get_vol_list(self):
+        '''Get a list of currently visible volumes.'''
         from chimerax.core.map import Volume
-        return self.session.models.list(type=Volume)
+        vlist = self.session.models.list(type=Volume)
+        for i in reversed(range(len(vlist))):
+            if not vlist[i].visible:
+                vlist.pop(i)
+        return vlist
+            
 
     @property
     def picked_volume(self):
@@ -99,7 +113,7 @@ class SelectVolumeToContour(mousemodes.MouseMode):
                 return None
             if self._picked_volume is None:
                 self._picked_volume = vol_list[self._last_picked_index]
-            elif self._picked_volume.deleted:
+            elif self._picked_volume.deleted or not self._picked_volume.visible:
                 self._picked_volume = vol_list[0]
                 self._last_picked_index = 0
         except IndexError:
@@ -144,9 +158,7 @@ class ContourSelectedVolume(mousemodes.MouseMode):
         self.selector = selector
         self.symmetrical = True
         self.target_volume = None
-        self._remask_handler = None
-        self._frames_until_remask = 10
-        self._remask_counter = 0
+
     
     def wheel(self, event):
         d = event.wheel_value()
@@ -166,7 +178,7 @@ class ContourSelectedVolume(mousemodes.MouseMode):
                 sstr = ', '.join(format(s, '.3f') for s in lsig)
                 self.session.logger.status('Volume {} contour level(s): {} ({} sigma)'.format(v.name, lstr, sstr))
             if hasattr(v, '_surface_zone'):
-                coords = v._surface_zone.coords
+                coords = v._surface_zone.all_coords
                 distance = v._surface_zone.distance
                 if coords is not None:
                     from chimerax.core.surface.zone import surface_zone
