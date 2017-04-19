@@ -5,6 +5,7 @@
 # Author:    Tristan Croll
 #            Cambridge Institute for Medical Research
 #            University of Cambridge
+import numpy
 
 from PyQt5.QtCore import QObject, pyqtSignal
 import chimerax
@@ -313,14 +314,14 @@ class Isolde():
         # is harder to determine
         self._integrator_type = 'fixed'
         # Constraints (e.g. rigid bonds) need their own tolerance
-        self._constraint_tolerance = 0.001
+        self._constraint_tolerance = 0.0001
         # Friction term for coupling to heat bath. Using a relatively high
         # value helps keep the simulation under control in response to
         # very large forces.
         self._friction = 5.0/unit.picoseconds
         # Limit on the net force on a single atom to detect instability and
         # force a minimisation
-        self._max_allowable_force = 50000.0 # kJ mol-1 nm-1
+        self._max_allowable_force = 20000.0 # kJ mol-1 nm-1
         # We need to store the last measured maximum force to determine
         # when minimisation has converged.
         self._last_max_force = inf
@@ -1556,11 +1557,13 @@ class Isolde():
         if self.sim_mode in [sm.xtal, sm.em]:
             for mkey in self.master_map_list:
                 m = self.master_map_list[mkey]
-                vol = m.mask_volume_to_selection(
-                    total_mobile, invert = False)
+                #vol = m.mask_volume_to_selection(
+                #    total_mobile, invert = False)
+                vol = m._source_map
                 c3d = sh.continuous3D_from_volume(vol)
                 m.set_c3d_function(c3d)
-                f = sh.map_potential_force_field(c3d, m.get_coupling_constant())
+                from copy import copy
+                f = sh.map_potential_force_field(c3d, m.get_coupling_constant(), numpy.copy(vol.data.xyz_to_ijk_transform.matrix))
                 m.set_potential_function(f)
                 # Register the map with the SimHandler
                 sh.register_map(m)
@@ -1628,6 +1631,26 @@ class Isolde():
             self._log('Setting platform to ' + self.sim_platform)
         platform = si.platform(self.sim_platform)
 
+
+        # Apply fixed atoms to System
+        if self._logging:
+            self._log('Applying fixed atoms')
+        
+        fixed = numpy.array(len(sc)*[False],numpy.bool)
+        fixed[sc.indices(self._hard_shell_atoms)] = True
+        if self.fix_soft_shell_backbone:
+            indices = sc.indices(self._soft_shell_atoms)
+            names = self._soft_shell_atoms.names
+            for i, n in zip(indices, names):
+                if n in ['N','C','O','H','H1','H2','H3']:
+                    fixed[i] = True        
+        for i, f in enumerate(fixed):
+            if f:
+                self._system.setParticleMass(i, 0)
+            
+        log('Applying fixed atoms took {0:0.4f} seconds'.format(time() - last_time))
+        last_time = time()
+
         if self._logging:
             self._log('Generating simulation')
                                     
@@ -1635,7 +1658,7 @@ class Isolde():
         
         log('Finalising sim platform took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
-            
+        '''
         # Apply fixed atoms to System
         if self._logging:
             self._log('Applying fixed atoms')
@@ -1656,7 +1679,7 @@ class Isolde():
             
         log('Applying fixed atoms took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
-
+        '''
         
         # Save the current positions in case of reversion
         self._saved_positions = self._particle_positions
@@ -1846,7 +1869,7 @@ class Isolde():
             or discard the existing coordinates, and/or start a simulation
             with a wider selection to give the minimiser more room to work.
             '''
-            pass
+            return self.discard_sim()
         elif outcome[0] == outcomes.FAIL_TO_START:
             '''
             TODO: Pop up a dialog box giving the details of the exception, then

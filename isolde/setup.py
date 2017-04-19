@@ -13,8 +13,14 @@ import sys
 pkg_dir = "build/src/chimerax/isolde"  # DO NOT CHANGE
 
 description = """
-ISOLDE is an ChimeraX interface to Interactive Molecular Dynamics
-Flexible Fitting, or iMDFF.
+ISOLDE: Interactive Structure Optimisation by Local Direct Exploration
+
+ISOLDE is a next-generation environment for interactive building and
+real-space refinement of atomic models into electron density maps. 
+It applies interactive molecular dynamics to allow real-time, intuitive
+performance of structural rearrangements from the small to the quite
+drastic, while constantly maintaining physically reasonable interactions
+with the surroundings.
 """
 
 setup(
@@ -37,6 +43,7 @@ setup(
 	},
     install_requires=[
         "ChimeraX-Core >= 0.1",
+        "ChimeraX-Clipper >= 0.1.0",
         # TODO: Should list numpy, OpenMM, simtk, etc.
     ],
     classifiers=[
