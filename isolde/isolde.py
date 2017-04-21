@@ -1557,13 +1557,13 @@ class Isolde():
         if self.sim_mode in [sm.xtal, sm.em]:
             for mkey in self.master_map_list:
                 m = self.master_map_list[mkey]
-                #vol = m.mask_volume_to_selection(
-                #    total_mobile, invert = False)
-                vol = m._source_map
+                vol = m.mask_volume_to_selection(
+                    total_mobile, invert = False)
+                #vol = m._source_map
                 c3d = sh.continuous3D_from_volume(vol)
                 m.set_c3d_function(c3d)
                 from copy import copy
-                f = sh.map_potential_force_field(c3d, m.get_coupling_constant(), numpy.copy(vol.data.xyz_to_ijk_transform.matrix))
+                f = sh.map_potential_force_field(c3d, m.get_coupling_constant())
                 m.set_potential_function(f)
                 # Register the map with the SimHandler
                 sh.register_map(m)
@@ -1579,10 +1579,20 @@ class Isolde():
         log('Preparing maps took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
 
+        fixed = numpy.array(len(sc)*[False],numpy.bool)
+        fixed[sc.indices(self._hard_shell_atoms)] = True
+        if self.fix_soft_shell_backbone:
+            indices = sc.indices(self._soft_shell_atoms)
+            names = self._soft_shell_atoms.names
+            for i, n in zip(indices, names):
+                if n in ['N','C','O','H','H1','H2','H3']:
+                    fixed[i] = True        
+
+
         self._status('Preparing simulation topology...')
         # Generate topology
         self._topology, self._particle_positions = sh.openmm_topology_and_external_forces(
-            sc, sb, tug_hydrogens = False, hydrogens_feel_maps = False,
+            sc, sb, fixed, tug_hydrogens = False, hydrogens_feel_maps = False,
             logging = self._logging, log = self._log)
         
         log('Preparing topology took {0:0.4f} seconds'.format(time() - last_time))
@@ -1603,6 +1613,14 @@ class Isolde():
         
         # Define simulation System
         sys = self._system = si.create_openmm_system(self._topology, self._ff)
+
+        # Apply fixed atoms to System
+        if self._logging:
+            self._log('Applying fixed atoms')
+        
+        for i, f in enumerate(fixed):
+            if f:
+                self._system.setParticleMass(i, 0)
         
         log('Creating system took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
@@ -1630,23 +1648,6 @@ class Isolde():
         if self._logging:
             self._log('Setting platform to ' + self.sim_platform)
         platform = si.platform(self.sim_platform)
-
-
-        # Apply fixed atoms to System
-        if self._logging:
-            self._log('Applying fixed atoms')
-        
-        fixed = numpy.array(len(sc)*[False],numpy.bool)
-        fixed[sc.indices(self._hard_shell_atoms)] = True
-        if self.fix_soft_shell_backbone:
-            indices = sc.indices(self._soft_shell_atoms)
-            names = self._soft_shell_atoms.names
-            for i, n in zip(indices, names):
-                if n in ['N','C','O','H','H1','H2','H3']:
-                    fixed[i] = True        
-        for i, f in enumerate(fixed):
-            if f:
-                self._system.setParticleMass(i, 0)
             
         log('Applying fixed atoms took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
@@ -1685,6 +1686,7 @@ class Isolde():
         self._saved_positions = self._particle_positions
         # Go
         c = self.sim.context
+
         from simtk import unit
         c.setPositions(self._particle_positions/10) # OpenMM uses nanometers
         c.setVelocitiesToTemperature(self.simulation_temperature)
@@ -2138,7 +2140,8 @@ class Isolde():
 
         
         if startup:
-            s.minimizeEnergy(maxIterations = steps)
+            #s.minimizeEnergy(maxIterations = steps)
+            s.minimizeEnergy(maxIterations = 1000)
             self._sim_startup_counter += 1
         elif self._sim_is_unstable:
             # Run a few timesteps to jiggle out of local minima

@@ -178,8 +178,7 @@ class SimHandler():
     # H-bond or dihedral restraints) will have to be handled in separate
     # loops.
     def openmm_topology_and_external_forces(self, sim_construct,
-                                        sim_bonds,
-                                        fix_shell_backbones = False,
+                                        sim_bonds, fixed_flags,
                                         tug_hydrogens = False,
                                         hydrogens_feel_maps = False,
                                         logging = False,
@@ -207,20 +206,21 @@ class SimHandler():
                 rmap[rid] = top.addResidue(rname[i], cmap[cid])
             element = Element.getBySymbol(ename[i])
             atoms[i] = top.addAtom(aname[i], element,rmap[rid])
- 
-            # Register atoms with forces
-            if ename is not 'H' or (ename is 'H' and tug_hydrogens):
-                # All CustomExternalForces
-                for key, ff in self._custom_external_forces.items():
-                    f = ff[0]
-                    per_particle_param_vals = ff[3]
-                    index_map = ff[4]
-                    index_map[i] = f.addParticle(i, per_particle_param_vals)
-        
-            if ename is not 'H' or (ename is 'H' and hydrogens_feel_maps):
-                # All map forces
-                for m in self._maps:
-                    self.couple_atom_to_map(i, m)
+            
+            if not fixed_flags[i]:
+                # Register atoms with forces
+                if ename is not 'H' or (ename is 'H' and tug_hydrogens):
+                    # All CustomExternalForces
+                    for key, ff in self._custom_external_forces.items():
+                        f = ff[0]
+                        per_particle_param_vals = ff[3]
+                        index_map = ff[4]
+                        index_map[i] = f.addParticle(i, per_particle_param_vals)
+            
+                if ename is not 'H' or (ename is 'H' and hydrogens_feel_maps):
+                    # All map forces
+                    for m in self._maps:
+                        self.couple_atom_to_map(i, m)
 
         
         a1, a2 = sim_bonds.atoms
@@ -301,57 +301,58 @@ class SimHandler():
     # /OLD VERSIONS
     #######################
 
-    def continuous3D_from_volume(self, volume):
-        '''
-        Takes a volumetric map and uses it to generate an OpenMM 
-        Continuous3DFunction. Returns the function.
-        '''
-        import numpy as np
-        vol_data = volume.data
-        vol_dimensions = vol_data.size
-        mincoor = np.array([0,0,0], np.double)
-        maxcoor = np.array(vol_dimensions, np.double) - 1
-        # Continuous3DFunction expects the minimum and maximum coordinates as
-        # arguments xmin, xmax, ymin, ...
-        minmax = [val for pair in zip(mincoor, maxcoor) for val in pair]
-        vol_data_1d = np.ravel(vol_data.matrix(), order = 'C')
-        from simtk.openmm.openmm import Continuous3DFunction    
-        return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
+    #def continuous3D_from_volume(self, volume):
+        #'''
+        #Takes a volumetric map and uses it to generate an OpenMM 
+        #Continuous3DFunction. Returns the function.
+        #'''
+        #import numpy as np
+        #vol_data = volume.data
+        #vol_dimensions = vol_data.size
+        #mincoor = np.array([0,0,0], np.double)
+        #maxcoor = (np.array(vol_dimensions, np.double) - 1) / 10
+        ## Continuous3DFunction expects the minimum and maximum coordinates as
+        ## arguments xmin, xmax, ymin, ...
+        #minmax = [val for pair in zip(mincoor, maxcoor) for val in pair]
+        #vol_data_1d = np.ravel(vol_data.matrix(), order = 'C')
+        #from simtk.openmm.openmm import Continuous3DFunction    
+        #return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
 
 
-    def map_potential_force_field(self, c3d_func, global_k, xyz_to_ijk_transform):
-        '''
-        Takes a Continuous3DFunction and returns a CustomCompoundBondForce 
-        based on it.
-        Args:
-            c3d_func:
-                A Continuous3DFunction
-            global_k:
-                An overall global spring constant coupling atoms to the 
-                map. This can be further adjusted per atom using 
-                the "individual_k" parameter defined in the 
-                CustomCompoundBondForce energy function.
-            xyz_to_ijk_transform:
-                The affine transformation matrix mapping (x,y,z) coordinates
-                back to (i,j,k) in the c3d_func array
-        '''
-        from simtk.openmm import CustomCompoundBondForce
-        f = CustomCompoundBondForce(1,'')
-        f.addTabulatedFunction(name = 'map_potential', function = c3d_func)
-        f.addGlobalParameter(name = 'global_k', defaultValue = global_k)
-        f.addPerBondParameter(name = 'individual_k')
-        tf = xyz_to_ijk_transform
-        tf [0:3, 0:3] *= 10 # OpenMM in nm, ChimeraX in Angstroms
-        i_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(
-            tf[0][0], tf[0][1], tf[0][2], tf[0][3])
-        j_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(
-            tf[1][0], tf[1][1], tf[1][2], tf[1][3])
-        k_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(
-            tf[2][0], tf[2][1], tf[2][2], tf[2][3])
+    #def map_potential_force_field(self, c3d_func, global_k, xyz_to_ijk_transform):
+        #'''
+        #Takes a Continuous3DFunction and returns a CustomCompoundBondForce 
+        #based on it.
+        #Args:
+            #c3d_func:
+                #A Continuous3DFunction
+            #global_k:
+                #An overall global spring constant coupling atoms to the 
+                #map. This can be further adjusted per atom using 
+                #the "individual_k" parameter defined in the 
+                #CustomCompoundBondForce energy function.
+            #xyz_to_ijk_transform:
+                #The affine transformation matrix mapping (x,y,z) coordinates
+                #back to (i,j,k) in the c3d_func array
+        #'''
+        #from simtk.openmm import CustomCompoundBondForce
+        #f = CustomCompoundBondForce(1,'')
+        #f.addTabulatedFunction(name = 'map_potential', function = c3d_func)
+        #f.addGlobalParameter(name = 'global_k', defaultValue = global_k)
+        #f.addPerBondParameter(name = 'individual_k')
+        #tf = xyz_to_ijk_transform
+        ##tf [0:3, 0:3] *= 10 # OpenMM in nm, ChimeraX in Angstroms
+        #tf[:,3] /= 10
+        #i_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(
+            #tf[0][0], tf[0][1], tf[0][2], tf[0][3])
+        #j_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(
+            #tf[1][0], tf[1][1], tf[1][2], tf[1][3])
+        #k_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(
+            #tf[2][0], tf[2][1], tf[2][2], tf[2][3])
         
-        f.setEnergyFunction('-global_k * individual_k * map_potential({},{},{})'.format(
-        i_str, j_str, k_str))
-        return f
+        #f.setEnergyFunction('-global_k * individual_k * map_potential({},{},{})'.format(
+        #i_str, j_str, k_str))
+        #return f
 
     
     def update_force_in_context(self, force_name, context):
@@ -372,7 +373,7 @@ def create_openmm_system(top, ff):
     try:
         system = ff.createSystem(top,
                                 nonbondedMethod = app.CutoffNonPeriodic,
-                                nonbondedCutoff = 1.5*unit.nanometers,
+                                nonbondedCutoff = 1.0*unit.nanometers,
                                 constraints = app.HBonds,
                                 rigidWater = True,
                                 removeCMMotion = False,
