@@ -1429,13 +1429,13 @@ class Isolde():
         log = self.session.logger.info
         from time import time
         last_time = time()
-        if self._logging:
-            self._log('Initialising simulation')
             
-        print('Simulation should start now')
         if self._simulation_running:
             print('You already have a simulation running!')
             return
+        if self._logging:
+            self._log('Initialising simulation')
+        print('Simulation should start now')
         
         sm = self._sim_modes
         if self.sim_mode in [sm.xtal, sm.em]:
@@ -1464,7 +1464,7 @@ class Isolde():
             )
         
         sc = self._total_sim_construct = total_mobile.merge(self._hard_shell_atoms)
-        #sb = self._total_sim_bonds = sc.inter_bonds
+        #sb = self._total_sim_bonds = sc.intra_bonds
         
         self._total_mobile_indices = sc.indices(total_mobile)
             
@@ -1592,8 +1592,7 @@ class Isolde():
         self._status('Preparing simulation topology...')
         # Generate topology
         self._topology, self._particle_positions = sh.openmm_topology_and_external_forces(
-            sc, sb, fixed, tug_hydrogens = False, hydrogens_feel_maps = False,
-            logging = self._logging, log = self._log)
+            sc, sb, fixed, tug_hydrogens = False, hydrogens_feel_maps = False)
         
         log('Preparing topology took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
@@ -1620,7 +1619,7 @@ class Isolde():
         
         for i, f in enumerate(fixed):
             if f:
-                self._system.setParticleMass(i, 0)
+                sys.setParticleMass(i, 0)
         
         log('Creating system took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
@@ -1690,7 +1689,8 @@ class Isolde():
         from simtk import unit
         c.setPositions(self._particle_positions/10) # OpenMM uses nanometers
         c.setVelocitiesToTemperature(self.simulation_temperature)
-        
+    
+
         self._sim_startup = True
         self._sim_startup_counter = 0
 
@@ -1701,6 +1701,8 @@ class Isolde():
         from . import mousemodes
         mt = self._mouse_tugger = mousemodes.TugAtomsMode(self.session, total_mobile, self._annotations)
         self._mouse_modes.register_mode(mt.name, mt, 'right', [])
+        
+        self._get_positions_and_max_force(save_forces = True)
         
         self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
                                               'new frame',
@@ -2186,7 +2188,7 @@ class Isolde():
             ov.draw_outliers(cis, twisted)
         ov.update_coords()
         
-    def _get_positions_and_max_force (self):
+    def _get_positions_and_max_force (self, save_forces = False):
         import numpy
         c = self.sim.context
         from simtk.unit import kilojoule_per_mole, nanometer, angstrom
@@ -2198,7 +2200,10 @@ class Isolde():
         forcesx = forces[:,0]
         forcesy = forces[:,1]
         forcesz = forces[:,2]
-        magnitudes =numpy.sqrt(forcesx*forcesx + forcesy*forcesy + forcesz*forcesz)
+        if save_forces:
+            self.forces = numpy.column_stack((forcesx, forcesy, forcesz))
+            self.starting_positions = state.getPositions(asNumpy=True) / angstrom
+        magnitudes = numpy.sqrt(forcesx*forcesx + forcesy*forcesy + forcesz*forcesz)
         max_mag = max(magnitudes)
         # Only look up the index if the maximum force is too high
         if max_mag > self._max_allowable_force:

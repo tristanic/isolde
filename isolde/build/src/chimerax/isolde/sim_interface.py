@@ -170,19 +170,31 @@ class SimHandler():
         return f
     
     
-    # Prepares the openmm topology and binds atoms to existing force fields.
-    # Since looping over all atoms can take a long time, it's best to do
-    # topology generation and force binding as a single concerted loop as
-    # much as we can. This should be possible for all external-type forces
-    # (tugging and map forces). Forces involving two or more atoms (e.g.
-    # H-bond or dihedral restraints) will have to be handled in separate
-    # loops.
     def openmm_topology_and_external_forces(self, sim_construct,
                                         sim_bonds, fixed_flags,
                                         tug_hydrogens = False,
-                                        hydrogens_feel_maps = False,
-                                        logging = False,
-                                        log = None):        
+                                        hydrogens_feel_maps = False):        
+        '''
+        Prepares the openmm topology and binds atoms to existing force fields.
+        Since looping over all atoms can take a long time, it's best to do
+        topology generation and force binding as a single concerted loop as
+        much as we can. This should be possible for all external-type forces
+        (tugging and map forces). Forces involving two or more atoms (e.g.
+        H-bond or dihedral restraints) will have to be handled in separate
+        loops.
+        Args:
+            sim_construct:
+                The atoms to be simulated
+            sim_bonds:
+                The set of all bonds between simulated atoms
+            fixed_flags:
+                A boolean array indicating which atoms will be fixed. No
+                need to add these to any custom forces.
+            tug_hydrogens:
+                Do we want to be able to interactively pull on hydrogens?
+            hydrogens_feel_maps:
+                Do we want the hydrogens to be pulled into the maps?
+        '''
         a = sim_construct
         n = len(a)
         r = a.residues
@@ -206,10 +218,10 @@ class SimHandler():
                 rmap[rid] = top.addResidue(rname[i], cmap[cid])
             element = Element.getBySymbol(ename[i])
             atoms[i] = top.addAtom(aname[i], element,rmap[rid])
-            
+
             if not fixed_flags[i]:
                 # Register atoms with forces
-                if ename is not 'H' or (ename is 'H' and tug_hydrogens):
+                if ename[i] is not 'H' or (ename[i] is 'H' and tug_hydrogens):
                     # All CustomExternalForces
                     for key, ff in self._custom_external_forces.items():
                         f = ff[0]
@@ -217,7 +229,7 @@ class SimHandler():
                         index_map = ff[4]
                         index_map[i] = f.addParticle(i, per_particle_param_vals)
             
-                if ename is not 'H' or (ename is 'H' and hydrogens_feel_maps):
+                if ename[i] is not 'H' or (ename[i] is 'H' and hydrogens_feel_maps):
                     # All map forces
                     for m in self._maps:
                         self.couple_atom_to_map(i, m)
@@ -227,27 +239,22 @@ class SimHandler():
         for i1, i2 in zip(a.indices(a1), a.indices(a2)):
             if -1 not in [i1, i2]:
                 top.addBond(atoms[i1],  atoms[i2])
-        
-        from simtk.openmm import Vec3
+
         pos = a.coords # in Angstrom (convert to nm for OpenMM)
         return top, pos
 
 
-    # Take the atoms in a topology, and add them to a map-derived potential field.
-    # per_atom_coupling must be either a single value, or an array with one value
-    # per atom
     def couple_atom_to_map(self, index, map_object):
+        '''
+        Adds an atom to a map-derived potential field.
+        The argument per_atom_coupling must be either a single value, 
+        or an array with one value per atom
+        '''
         m = map_object
-        if not m.per_atom_coupling():
-            global_coupling = True
-            k = m.get_per_atom_coupling_params()
-        else:
-            global_coupling = False
-            per_atom_k = m.get_per_atom_coupling_params()
-        # Find the global coupling constant parameter in the Force and set its new value
         map_field = m.get_potential_function()
-        if not global_coupling:
-            k = per_atom_k[index]
+        k = m.get_per_atom_coupling_params()
+        if m.per_atom_coupling():
+            k = k[index]
         map_field.addBond([index],[k])
 
 
@@ -273,6 +280,8 @@ class SimHandler():
         minmax = [val for pair in zip(mincoor, maxcoor) for val in pair]
         vol_data_1d = np.ravel(vol_data.matrix(), order = 'C')
         vol_dimensions = (vol_data.size)
+        print('Volume dimensions: {}; expected number: {}; actual number: {}'\
+                .format(vol_dimensions, np.product(vol_dimensions), len(vol_data_1d)))
         from simtk.openmm.openmm import Continuous3DFunction    
         return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
         

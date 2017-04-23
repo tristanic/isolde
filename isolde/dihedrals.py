@@ -517,7 +517,7 @@ class Backbone_Dihedrals():
         CN_atoms = atoms.filter(numpy.any(numpy.column_stack(
             [atoms.names == 'N', atoms.names == 'C']), axis = 1))
             
-        CN_bonds = CN_atoms.inter_bonds
+        CN_bonds = CN_atoms.intra_bonds
         
         bonded_C = CN_bonds.atoms[0]
         bonded_N = CN_bonds.atoms[1]
