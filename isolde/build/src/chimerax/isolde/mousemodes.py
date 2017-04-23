@@ -8,7 +8,7 @@ class TugAtomsMode(MouseMode):
     name = 'tug'
     #icon_file = 'tug.png'
 
-    def __init__(self, session, atoms, annotations):
+    def __init__(self, session, atoms, annotations, tug_hydrogens = False):
         MouseMode.__init__(self, session)
         self._tugging = False
         self._last_xy = None

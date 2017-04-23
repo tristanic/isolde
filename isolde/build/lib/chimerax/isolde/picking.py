@@ -3,7 +3,7 @@
 # planes and within cutoff of the line will be considered. Optionally the
 # selection can be further limited to include only displayed atoms and/or
 # exclude hydrogens.
-def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, no_hydrogens = False):
+def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, tug_hydrogens = False):
     closest = None
     if atoms is None:
         return None
@@ -21,7 +21,7 @@ def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, 
     xyzlist = numpy.array(xyzlist)
     if displayed_only:
         atoms = atoms.filter(atoms.displays)
-    if no_hydrogens:
+    if not tug_hydrogens:
         atoms = atoms.filter(atoms.element_names != 'H')
     atomic_coords = atoms.coords
     from chimerax.core.geometry import find_close_points
@@ -41,12 +41,12 @@ def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, 
 # Pick the atom closest to an (x,y,z) point in space. Optionally the
 # selection can be limited to include only displayed atoms and/or
 # exclude hydrogens.    
-def pick_closest_to_point(session, xyz, atoms, cutoff, displayed_only = True, no_hydrogens = False):
+def pick_closest_to_point(session, xyz, atoms, cutoff, displayed_only = True, tug_hydrogens = False):
     closest = None
     import numpy
     if displayed_only:
         atoms = atoms.filter(atoms.displays)
-    if no_hydrogens:
+    if not tug_hydrogens:
         atoms = atoms.filter(atoms.element_names != 'H')
     atomic_coords = atoms.coords
     

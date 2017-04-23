@@ -627,13 +627,13 @@ class CrystalStructure(Model):
         if not self.show_nonpolar_H:
             atoms = atoms.filter(atoms.idatm_types != 'HC')
         atoms.displays = True
-        atoms.inter_bonds.radii = 0.2
+        atoms.intra_bonds.radii = 0.2
         atoms.residues.ribbon_displays = True
         if context_atoms is not None:
             if not self.show_nonpolar_H:
                 context_atoms = context_atoms.filter(context_atoms.idatm_types != 'HC')
             context_atoms.displays = True
-            context_atoms.inter_bonds.radii = 0.1
+            context_atoms.intra_bonds.radii = 0.1
         if focus:
             self.session.view.view_all(atoms.scene_bounds, 0.2)
         # return the original selection in case we want to re-run with modified settings

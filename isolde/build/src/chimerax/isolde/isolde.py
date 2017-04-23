@@ -373,6 +373,10 @@ class Isolde():
         # To ensure we do only one simulation round per graphics redraw
         self._last_frame_number = None
         
+        self.tug_hydrogens = False
+        self.hydrogens_feel_maps = False
+        
+        
         self.initialize_haptics()
         
         ####
@@ -1592,7 +1596,9 @@ class Isolde():
         self._status('Preparing simulation topology...')
         # Generate topology
         self._topology, self._particle_positions = sh.openmm_topology_and_external_forces(
-            sc, sb, fixed, tug_hydrogens = False, hydrogens_feel_maps = False)
+            sc, sb, fixed, 
+            tug_hydrogens = self.tug_hydrogens, 
+            hydrogens_feel_maps = self.hydrogens_feel_maps)
         
         log('Preparing topology took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
@@ -1699,8 +1705,10 @@ class Isolde():
         
         # Register simulation-specific mouse modes
         from . import mousemodes
-        mt = self._mouse_tugger = mousemodes.TugAtomsMode(self.session, total_mobile, self._annotations)
-        self._mouse_modes.register_mode(mt.name, mt, 'right', [])
+        mt = self._mouse_tugger = mousemodes.TugAtomsMode(
+            self.session, total_mobile, self._annotations, 
+            tug_hydrogens = self.tug_hydrogens)
+        self._mouse_modes.register_mode(mt.name, mt, 'right', ['control'])
         
         self._get_positions_and_max_force(save_forces = True)
         
@@ -2108,8 +2116,10 @@ class Isolde():
                 # Button 0 controls tugging
                 if b[0]:
                     if not d.tugging:
-                        a = self._haptic_tug_atom[i] = picking.pick_closest_to_point(self.session, 
-                            pointer_pos, self._total_mobile, 3.0)
+                        a = self._haptic_tug_atom[i] = picking.pick_closest_to_point(
+                            self.session, pointer_pos, self._total_mobile, 
+                            3.0, displayed_only = True, 
+                            tug_hydrogens = self.tug_hydrogens)
                         if a is not None:
                             tug_index = self._haptic_tug_index[i] = self._total_sim_construct.index(a)
                             # Start the haptic device feedback loop

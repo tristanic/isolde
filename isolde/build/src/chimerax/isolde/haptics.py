@@ -39,6 +39,8 @@ class HapticTugger():
             a.display = False
 
     def cleanup(self):
+        if self.tugging:
+            self.stop_tugging()
         self._delete_arrow()
         
     def _draw_arrow(self, xyz1, xyz2, radius = 0.1):
