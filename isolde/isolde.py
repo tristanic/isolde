@@ -1618,7 +1618,7 @@ class Isolde():
         
         # Define simulation System
         sys = self._system = si.create_openmm_system(self._topology, self._ff)
-
+        
         # Apply fixed atoms to System
         if self._logging:
             self._log('Applying fixed atoms')
@@ -1659,6 +1659,11 @@ class Isolde():
 
         if self._logging:
             self._log('Generating simulation')
+
+        ### FIXME: testing code
+        for i, f in enumerate(sys.getForces()):
+            f.setForceGroup(i)
+        ### /FIXME
                                     
         self.sim = si.create_sim(self._topology, self._system, integrator, platform)
         
@@ -1700,8 +1705,7 @@ class Isolde():
         self._sim_startup = True
         self._sim_startup_counter = 0
 
-        if self._logging:
-            self._log('Starting sim')
+        log('Starting sim')
         
         # Register simulation-specific mouse modes
         from . import mousemodes
@@ -2211,8 +2215,10 @@ class Isolde():
         forcesy = forces[:,1]
         forcesz = forces[:,2]
         if save_forces:
-            self.forces = numpy.column_stack((forcesx, forcesy, forcesz))
+            self.forces = forces
             self.starting_positions = state.getPositions(asNumpy=True) / angstrom
+            for i, f in enumerate(self._system.getForces()):
+                print(f, c.getState(getEnergy=True, groups = {i}).getPotentialEnergy())
         magnitudes = numpy.sqrt(forcesx*forcesx + forcesy*forcesy + forcesz*forcesz)
         max_mag = max(magnitudes)
         # Only look up the index if the maximum force is too high

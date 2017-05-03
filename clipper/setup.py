@@ -24,7 +24,7 @@ for dir in "lib lib/clipper_python_core ".split():
 
 setup(
     name="ChimeraX-Clipper",
-    version="0.1.0",  # PEP 440, should match Development Status below
+    version="0.1.2",  # PEP 440, should match Development Status below
     description="Interface to Kevin Cowtan's Clipper libraries",  # one line synopsis
     long_description=description,  # see above
     author="Tristan Croll",

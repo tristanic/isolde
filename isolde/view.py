@@ -3,11 +3,13 @@ def focus_on_selection(session, view, atoms):
     v = view
     pad = 5.0
     bounds = atoms.scene_bounds
-    v.center_of_rotation = center = bounds.center()
     bounds.xyz_min = bounds.xyz_min - pad
     bounds.xyz_max = bounds.xyz_max + pad
     radius = bounds.radius() + pad
     v.view_all(bounds)
+    cofr_method = v.center_of_rotation_method
+    v.center_of_rotation = center = bounds.center()
+    v.center_of_rotation_method = cofr_method
     cam = v.camera
     vd = cam.view_direction()
     cp = v.clip_planes

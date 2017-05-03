@@ -278,10 +278,14 @@ class SimHandler():
         # Continuous3DFunction expects the minimum and maximum coordinates as
         # arguments xmin, xmax, ymin, ...
         minmax = [val for pair in zip(mincoor, maxcoor) for val in pair]
-        vol_data_1d = np.ravel(vol_data.matrix(), order = 'C')
+        vol_data_1d = np.ravel(vol_data.matrix(), order = 'C').astype(np.double)
         vol_dimensions = (vol_data.size)
         print('Volume dimensions: {}; expected number: {}; actual number: {}'\
                 .format(vol_dimensions, np.product(vol_dimensions), len(vol_data_1d)))
+        print('Max: {}, min: {}, nans: {}, infs: {}'.format(
+            vol_data_1d.max(), vol_data_1d.min(), 
+            np.argwhere(np.isnan(vol_data_1d)),
+            np.argwhere(np.isinf(vol_data_1d))))
         from simtk.openmm.openmm import Continuous3DFunction    
         return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
         

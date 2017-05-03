@@ -326,6 +326,11 @@ class CrystalStructure(Model):
                         self.add([self.xmaps])
 
     
+    def delete(self):
+        if self._sym_handler is not None:
+            self.session.triggers.remove_handler(self._sym_handler)
+        super(CrystalStructure, self).delete()
+    
     @property
     def stepper(self):
         '''
@@ -1394,7 +1399,7 @@ class XmapHandler(Volume):
     
     def delete(self):
         if self._box_shape_changed_cb_handler is not None:
-            self.triggers.remove_handler(self._box_shape_changed_cb_handler)
+            self.crystal.triggers.remove_handler(self._box_shape_changed_cb_handler)
             self._box_shape_changed_cb_handler = None
         if self._box_moved_cb_handler is not None:
             self.crystal.triggers.remove_handler(self._box_moved_cb_handler)

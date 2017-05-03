@@ -11,7 +11,7 @@ CHIMERAX_APP = /home/tic20/apps/chimerax
 # and the ChimeraX toolshed code apparently really wants
 # the "chimerax." part of the package name (for now).
 BUNDLE_NAME = ChimeraX-Clipper
-BUNDLE_VERSION = 0.1.0
+BUNDLE_VERSION = 0.1.2
 PKG_NAME = chimerax.clipper
 
 # Source and data files.  By default, all .py files

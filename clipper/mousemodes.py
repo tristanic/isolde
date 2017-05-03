@@ -156,7 +156,7 @@ class ContourSelectedVolume(mousemodes.MouseMode):
         mousemodes.MouseMode.__init__(self, session)
         # SelectVolumeToContour object telling us which volume to work on
         self.selector = selector
-        self.symmetrical = True
+        self.symmetrical = symmetrical
         self.target_volume = None
 
     
@@ -172,17 +172,16 @@ class ContourSelectedVolume(mousemodes.MouseMode):
             step = d/30 * sd
             rep, levels = adjust_threshold_level(v, step, self.symmetrical)
             lsig = tuple(l/sd for l in levels)
-            v.show()
             if rep != 'solid':
                 lstr = ', '.join(format(l, '.3f') for l in levels)
                 sstr = ', '.join(format(s, '.3f') for s in lsig)
                 self.session.logger.status('Volume {} contour level(s): {} ({} sigma)'.format(v.name, lstr, sstr))
+            v.update_surface()
             if hasattr(v, '_surface_zone'):
                 coords = v._surface_zone.all_coords
                 distance = v._surface_zone.distance
                 if coords is not None:
                     from chimerax.core.surface.zone import surface_zone
-                
                     surface_zone(v, coords, distance)
                                 
     
