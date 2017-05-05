@@ -106,8 +106,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>527</width>
-        <height>691</height>
+        <width>157</width>
+        <height>72</height>
        </rect>
       </property>
       <attribute name="label">
@@ -117,7 +117,7 @@
        <item>
         <widget class="QTabWidget" name="_build_tab_widget">
          <property name="currentIndex">
-          <number>0</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
@@ -176,9 +176,9 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>0</y>
-                  <width>470</width>
-                  <height>1078</height>
+                  <y>-445</y>
+                  <width>471</width>
+                  <height>1166</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0,0,0,0">
@@ -528,25 +528,126 @@
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>50</height>
+                    </size>
+                   </property>
                    <property name="frameShape">
                     <enum>QFrame::StyledPanel</enum>
                    </property>
                    <property name="frameShadow">
                     <enum>QFrame::Raised</enum>
                    </property>
-                   <layout class="QHBoxLayout" name="horizontalLayout_9">
+                   <layout class="QVBoxLayout" name="verticalLayout_17">
                     <item>
-                     <widget class="QPushButton" name="_sim_basic_xtal_reflections_button">
+                     <widget class="QPushButton" name="_sim_basic_xtal_init_open_button">
                       <property name="text">
-                       <string>Choose reflection data</string>
+                       <string>Initialise model/MTZ combo</string>
                       </property>
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="_sim_basic_xtal_specs_button">
-                      <property name="text">
-                       <string>Map specifications</string>
-                      </property>
+                     <widget class="QFrame" name="_sim_basic_xtal_init_main_frame">
+                      <layout class="QVBoxLayout" name="_sim_basic_xtal_init_frame">
+                       <property name="topMargin">
+                        <number>1</number>
+                       </property>
+                       <item>
+                        <layout class="QHBoxLayout" name="horizontalLayout_9">
+                         <item>
+                          <widget class="QLabel" name="label_10">
+                           <property name="text">
+                            <string>Atomic model</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QComboBox" name="_sim_basic_xtal_init_model_combo_box"/>
+                         </item>
+                         <item>
+                          <widget class="QLabel" name="label_23">
+                           <property name="text">
+                            <string>Map MTZ:</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <spacer name="horizontalSpacer_5">
+                           <property name="orientation">
+                            <enum>Qt::Horizontal</enum>
+                           </property>
+                           <property name="sizeHint" stdset="0">
+                            <size>
+                             <width>40</width>
+                             <height>20</height>
+                            </size>
+                           </property>
+                          </spacer>
+                         </item>
+                         <item>
+                          <widget class="QPushButton" name="_sim_basic_xtal_init_reflections_file_button">
+                           <property name="minimumSize">
+                            <size>
+                             <width>150</width>
+                             <height>0</height>
+                            </size>
+                           </property>
+                           <property name="text">
+                            <string>Choose ...</string>
+                           </property>
+                          </widget>
+                         </item>
+                        </layout>
+                       </item>
+                       <item>
+                        <layout class="QHBoxLayout" name="horizontalLayout_26">
+                         <property name="topMargin">
+                          <number>0</number>
+                         </property>
+                         <item>
+                          <widget class="QPushButton" name="_sim_basic_xtal_init_go_button">
+                           <property name="sizePolicy">
+                            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                             <horstretch>0</horstretch>
+                             <verstretch>0</verstretch>
+                            </sizepolicy>
+                           </property>
+                           <property name="maximumSize">
+                            <size>
+                             <width>16777215</width>
+                             <height>16777215</height>
+                            </size>
+                           </property>
+                           <property name="text">
+                            <string>Initialise</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <spacer name="horizontalSpacer_16">
+                           <property name="orientation">
+                            <enum>Qt::Horizontal</enum>
+                           </property>
+                           <property name="sizeHint" stdset="0">
+                            <size>
+                             <width>40</width>
+                             <height>20</height>
+                            </size>
+                           </property>
+                          </spacer>
+                         </item>
+                         <item>
+                          <widget class="QPushButton" name="_sim_basic_xtal_init_done_button">
+                           <property name="text">
+                            <string>Done</string>
+                           </property>
+                          </widget>
+                         </item>
+                        </layout>
+                       </item>
+                      </layout>
                      </widget>
                     </item>
                    </layout>
@@ -921,8 +1022,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>483</width>
-                  <height>538</height>
+                  <width>423</width>
+                  <height>222</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1086,7 +1187,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>487</width>
-                  <height>475</height>
+                  <height>174</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_15">

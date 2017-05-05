@@ -1,3 +1,4 @@
+from chimerax.core.commands import camera, cofr
 
 def cone_geometry(radius = 1, height = 1, nc = 10, caps = True, flipped = False):
     '''
@@ -86,16 +87,14 @@ class HapticHandler(QObject):
     button_2_released = pyqtSignal(int)
     button_3_released = pyqtSignal(int)
     button_4_released = pyqtSignal(int)
-    
-        
-
-
    
     def __init__ (self, session):
         QObject.__init__(self)
         self.session = session
         self.log = session.logger.info
         self._MAX_DEVICES = 16
+        
+        self.session.ui.lastWindowClosed.connect(self._on_shutdown)
         
         self._running = False
         
@@ -197,15 +196,19 @@ class HapticHandler(QObject):
         self._getButtonStates = self._HapticHandler.getButtonStates
         self._getButtonStates.argtypes = [ctypes.c_int]
         self._getButtonStates.restype = ctypes.POINTER(ctypes.c_bool * 4)
-         
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, type, value, traceback):
+        self.stopHaptics()
          
     # Initialise all connected haptic devices
     def startHaptics(self):
+        camera.camera(self.session, 'ortho')
+        cofr.cofr(self.session, 'centerOfView', show_pivot = True)
         if not self._running:
             self._startHaptics()
-            from chimerax.core.commands import camera, cofr
-            camera.camera(self.session, 'ortho')
-            cofr.cofr(self.session, 'centerOfView')
             self._event_handler = self.session.triggers.add_handler('new frame', self.on_refresh)
         self._running = True
         self.getNumDevices()
@@ -222,7 +225,12 @@ class HapticHandler(QObject):
                     self.session.models.close([a])
                 
         self._running = False
-        
+    
+    def _on_shutdown(self):
+        if self._running:
+            self.session.triggers.remove_handler(self._event_handler)
+            self._event_handler = None
+            self._stopHaptics()    
     
     # Get the number of detected haptic devices
     def getNumDevices(self):
@@ -345,7 +353,7 @@ class HapticHandler(QObject):
         camera_view_direction = c.view_direction()
         camera_axes = camera_place.axes()
         window_scale = max(v.window_size) / 1000
-        #near_far = v.near_far_distances(c, 0)
+        near_far = v.near_far_distances(c, 0)
         #origin = (near_far[0] + near_far[1])/2 * camera_view_direction + camera_origin
         origin = v.center_of_rotation
         from chimerax.core.geometry import place
