@@ -5,11 +5,17 @@
 # Author:    Tristan Croll
 #            Cambridge Institute for Medical Research
 #            University of Cambridge
+import os
 import numpy
-
-from PyQt5.QtCore import QObject, pyqtSignal
-import chimerax
 from math import inf
+
+import PyQt5
+from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtWidgets import QFileDialog
+
+import chimerax
+
+from chimerax import clipper
 
 class Isolde():
     
@@ -410,8 +416,6 @@ class Isolde():
         # Make sure the splash screen is actually shown
         for i in range(5):
             self.session.ui.processEvents()
-        from time import sleep
-        sleep(1)
         self.start_gui(gui)
         
         splash.destroy()
@@ -664,6 +668,23 @@ class Isolde():
         self._change_soft_shell_fix_backbone()
         self._change_sim_platform()
         
+        
+        ####
+        # Xtal map parameters (can only be set before starting simulation)
+        ####
+        iw._sim_basic_xtal_init_open_button.clicked.connect(
+            self._show_xtal_init_frame
+            )
+        iw._sim_basic_xtal_init_done_button.clicked.connect(
+            self._hide_xtal_init_frame
+            )
+        iw._sim_basic_xtal_init_reflections_file_button.clicked.connect(
+            self._choose_mtz_file
+            )
+        iw._sim_basic_xtal_init_go_button.clicked.connect(
+            self._initialize_xtal_structure
+            )
+        
         ####
         # EM map parameters (can only be set before starting simulation)
         ####
@@ -824,9 +845,12 @@ class Isolde():
     def _update_model_list(self, *_):
         self.iw._master_model_combo_box.clear()
         self.iw._em_map_model_combo_box.clear()
+        self.iw._sim_basic_xtal_init_model_combo_box.clear()
         models = self.session.models.list()
         atomic_model_list = []
         atomic_model_name_list = []
+        potential_xtal_list = []
+        potential_xtal_name_list = []
         volume_model_list = []
         volume_model_name_list = []
         sorted_models = sorted(models, key=lambda m: m.id)
@@ -835,11 +859,26 @@ class Isolde():
             # appropriate lists
             for i, m in enumerate(sorted_models):
                 if m.atomspec_has_atoms():
+                    # Ignore all symmetry-equivalent copies
+                    if m.parent.name == 'symmetry equivalents':
+                        continue
                     id_str = m.id_string() + ' ' + m.name
+                    if type(m.parent) == clipper.CrystalStructure:
+                        if self.sim_mode == self._sim_modes.em:
+                            continue
+                    elif self.sim_mode == self._sim_modes.xtal:
+                        # Add it to the list of potential models to turn into crystal structures
+                        potential_xtal_name_list.append(id_str)
+                        potential_xtal_list.append(m)
+                        continue
                     self._available_models[id_str] = m
                     atomic_model_name_list.append(id_str)
                     atomic_model_list.append(m)
-                elif hasattr(m, 'grid_data'):
+            for i, m in enumerate(sorted_models):
+                if hasattr(m, 'grid_data'):
+                    # This menu is only for real-space maps. Ignore clipper maps
+                    if type(m) == clipper.crystal.XmapHandler:
+                        continue
                     id_str = m.id_string() + ' ' + m.name
                     self._available_volumes[id_str] = m
                     volume_model_name_list.append(id_str)
@@ -849,6 +888,8 @@ class Isolde():
                     continue
         for l, m in zip(atomic_model_name_list, atomic_model_list):
             self.iw._master_model_combo_box.addItem(l, m)
+        for l, m in zip(potential_xtal_name_list, potential_xtal_list):
+            self.iw._sim_basic_xtal_init_model_combo_box.addItem(l, m)
         for l, m in zip(volume_model_name_list, volume_model_list):
             self.iw._em_map_model_combo_box.addItem(l, m)
 
@@ -933,6 +974,49 @@ class Isolde():
             iw._sim_basic_mobile_custom_frame.show()
         else:
             raise Exception('No or unrecognised mode selected!')
+    
+    ####
+    # Xtal
+    ####
+    def _show_xtal_init_frame(self, *_):
+        self.iw._sim_basic_xtal_init_main_frame.show()
+        self.iw._sim_basic_xtal_init_open_button.setEnabled(False)
+    
+    def _hide_xtal_init_frame(self, *_):
+        self.iw._sim_basic_xtal_init_main_frame.hide()
+        self.iw._sim_basic_xtal_init_open_button.setEnabled(True)
+    
+    def _choose_mtz_file(self, *_):
+        options = QFileDialog.Options()
+        #options |= QFileDialog.DontUseNativeDialog
+        caption = 'Choose a file containing map structure factors'
+        filetypes = 'MTZ files (*.mtz)'
+        filename, _ = QFileDialog.getOpenFileName(None, caption, filetypes, filetypes, options = options)
+        if filename:
+            self.iw._sim_basic_xtal_init_reflections_file_name.setText(filename)
+        else:
+            self.iw._sim_basic_xtal_init_reflections_file_name.setText('None')
+    
+    def _initialize_xtal_structure(self, *_):
+        cb = self.iw._sim_basic_xtal_init_model_combo_box
+        fname = self.iw._sim_basic_xtal_init_reflections_file_name.text()
+        if not cb.count:
+            errstring = 'No atomic structures are available that are not \
+                already part of an existing crystal structure. Please load \
+                one first.'
+            _generic_waring(errstring)
+        if not os.path.isfile(fname):
+            errstring = 'Please select a valid MTZ file!'
+            _generic_warning(errstring)
+        m = cb.currentData()
+        clipper.CrystalStructure(self.session, m, fname)
+                
+    
+        
+    
+    ####
+    # EM
+    ####
         
     def _show_em_map_chooser(self, *_):
         self.iw._em_map_chooser_frame.show()
@@ -1207,6 +1291,7 @@ class Isolde():
         sm = self.iw._sim_basic_mode_combo_box.currentData()
         self.sim_mode = sm
         self.gui._change_experience_level_or_sim_mode()
+        self._update_model_list()
     
     def _change_force_field(self):
         ffindex = self.iw._sim_force_field_combo_box.currentIndex()
@@ -2286,6 +2371,13 @@ class Isolde():
         # Revert mouse modes
         self._set_chimerax_mouse_mode_panel_enabled(True)
         self._mouse_modes.remove_all_modes()
+
+def _generic_warning(message):
+    msg = QMessageBox()
+    ms.setIcon(QMessageBox.Warning)
+    msg.setText(message)
+    msg.setStandardButtons(QMessageBox.Ok)
+    msg.exec()
 
 
 _openmm_initialized = False
