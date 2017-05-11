@@ -1,0 +1,9 @@
+#!/bin/bash
+
+export LD_LIBRARY_PATH=/home/tic20/apps/gcc-4.9.2/lib64:$LD_LIBRARY_PATH
+pyrcc5 -o resources_rc.py resources/resources.qrc
+pyuic IsoldeFrame.ui -o isoldewidget.py
+sed -i "s/import resources_rc/from . import resources_rc/" isoldewidget.py
+
+make clean
+make app-install

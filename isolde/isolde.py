@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import QFileDialog
 import chimerax
 
 from chimerax import clipper
+from . import rotamers
 
 class Isolde():
     
@@ -731,6 +732,21 @@ class Isolde():
         iw._rebuild_sel_res_pep_flip_button.clicked.connect(
             self._flip_peptide_bond
             )
+        iw._rebuild_sel_res_last_rotamer_button.clicked.connect(
+            self._prev_rotamer
+            )
+        iw._rebuild_sel_res_next_rotamer_button.clicked.connect(
+            self._next_rotamer
+            )
+        iw._rebuild_sel_res_rot_commit_button.clicked.connect(
+            self._commit_rotamer
+            )
+        iw._rebuild_sel_res_rot_target_button.clicked.connect(
+            self._set_rotamer_target
+            )
+        iw._rebuild_sel_res_rot_discard_button.clicked.connect(
+            self._clear_rotamer
+            )
         
         ####
         # Validation tab
@@ -1096,7 +1112,10 @@ class Isolde():
         if -1 in self._total_mobile.indices(res.atoms):
             self._disable_rebuild_residue_frame()
             return
-        self._get_rotamer_list_for_selected_residue()
+        
+        
+        # Peptide cis/trans flips
+        self._get_rotamer_list_for_selected_residue(res)
         bd = self._mobile_backbone_dihedrals
         self._rebuild_residue = res
         omega = bd.omega.by_residue(res)
@@ -1109,6 +1128,15 @@ class Isolde():
         self._rebuild_res_update_omega = True
         self._rebuild_res_omega = omega
         self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
+        
+        try:
+            rot = self._selected_rotamer = rotamers.Rotamer(res)
+            self._set_rotamer_buttons_enabled(True)
+        except:
+            # This residue has no rotamers
+            self._selected_rotamer = None
+            self._set_rotamer_buttons_enabled(False)
+        
         self.iw._rebuild_sel_residue_frame.setEnabled(True)
         chain_id, resnum, resname = (res.chain_id, res.number, res.name)
         self.iw._rebuild_sel_residue_info.setText(str(chain_id) + ' ' + str(resnum) + ' ' + resname)
@@ -1119,7 +1147,48 @@ class Isolde():
             self._event_handler.add_event_handler('update_selected_residue_info',
                     'shape changed', self._update_selected_residue_info_live)
                     
-                    
+    def _set_rotamer_buttons_enabled(self, switch):
+        self.iw._rebuild_sel_res_last_rotamer_button.setEnabled(switch)
+        self.iw._rebuild_sel_res_next_rotamer_button.setEnabled(switch)
+        self.iw._rebuild_sel_res_last_rotamer_button.setEnabled(switch)
+        self.iw._rebuild_sel_res_rot_commit_button.setEnabled(switch)
+        self.iw._rebuild_sel_res_rot_target_button.setEnabled(switch)
+        self.iw._rebuild_sel_res_rot_discard_button.setEnabled(switch)
+    
+    
+    
+    def _next_rotamer(self, *_):
+        r = self._selected_rotamer
+        thisr = self._target_rotamer = r.next_rotamer(preview = True)
+        self.iw._rebuild_sel_res_rot_info.setText('{} ({:.3f})'\
+            .format(thisr.name, thisr.relative_abundance(self._rebuild_residue)))
+    
+    def _prev_rotamer(self, *_):
+        r = self._selected_rotamer
+        thisr = self._target_rotamer = r.previous_rotamer(preview = True)
+        self.iw._rebuild_sel_res_rot_info.setText('{} ({:.3f})'\
+            .format(thisr.name, thisr.relative_abundance(self._rebuild_residue)))
+        
+    def _commit_rotamer(self, *_):
+        self._selected_rotamer.commit_current_preview()
+    
+    def _set_rotamer_target(self, *_):
+        dihedrals = self._selected_rotamer.dihedrals
+        sh = self._sim_handler
+        for i, d in enumerate(dihedrals):
+            if target is None:
+                dval = d.value
+                if dval < cr[1] and dval > cr[0]:
+                    t = 0
+                else:
+                    t = pi
+            sh.set_dihedral_restraint(context, sc, d, indices[i], t, k)
+        
+    
+    def _clear_rotamer(self, *_):
+        self._selected_rotamer.cleanup()
+    
+    
     def _disable_rebuild_residue_frame(self):
         if 'update_selected_residue_info' in self._event_handler.list_event_handlers():
             self._event_handler.remove_event_handler('update_selected_residue_info')
@@ -1127,13 +1196,11 @@ class Isolde():
         self.iw._rebuild_sel_res_pep_info.setText('')
         self.iw._rebuild_sel_res_rot_info.setText('')
         self.iw._rebuild_sel_res_rot_target_button.setText('Set target')
-        self.iw._rebuild_sel_res_rot_combo_box.clear()
-        self.iw._rebuild_sel_res_rot_combo_box.addItem('Pause sim to adjust')
         self.iw._rebuild_sel_residue_frame.setDisabled(True)
         
-    def _get_rotamer_list_for_selected_residue(self, *_):
-        # stub
+    def _get_rotamer_list_for_selected_residue(self, res):
         pass
+        
     
     def _update_selected_residue_info_live(self, *_):
         from math import degrees
@@ -1512,6 +1579,7 @@ class Isolde():
         except Exception as e:
             self.triggers.activate_trigger('simulation terminated', 
                                         (self.sim_outcome.FAIL_TO_START, e))
+            raise
     
     
     def _start_sim(self):
@@ -1800,6 +1868,7 @@ class Isolde():
         self._mouse_modes.register_mode(mt.name, mt, 'right', ['control'])
         
         self._get_positions_and_max_force(save_forces = True)
+        self.do_sim_steps()
         
         self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
                                               'new frame',
@@ -1976,6 +2045,7 @@ class Isolde():
             TODO: Pop up a dialog box giving the details of the exception, then
             clean up.
             '''
+            print('Failed to start')
             pass
         # Otherwise just clean up            
         self._simulation_running = False
@@ -2083,6 +2153,7 @@ class Isolde():
     #############################################
     
     def do_sim_steps(self,*_):
+        print('Doing step')
         if self._logging:
             self._log('Running ' + str(self.sim_steps_per_update) + ' steps')
 

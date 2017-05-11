@@ -160,7 +160,7 @@
             </sizepolicy>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>2</number>
            </property>
            <widget class="QWidget" name="_sim_basic_tab">
             <attribute name="title">
@@ -176,7 +176,7 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-215</y>
+                  <y>0</y>
                   <width>470</width>
                   <height>1158</height>
                  </rect>
@@ -1037,8 +1037,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>423</width>
-                  <height>222</height>
+                  <width>483</width>
+                  <height>554</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1201,8 +1201,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>487</width>
-                  <height>174</height>
+                  <width>483</width>
+                  <height>554</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -1218,7 +1218,7 @@
                     <item row="2" column="0">
                      <widget class="QLabel" name="label_28">
                       <property name="text">
-                       <string>Current rotamer:</string>
+                       <string>Set rotamer:</string>
                       </property>
                      </widget>
                     </item>
@@ -1232,7 +1232,7 @@
                     <item row="3" column="5">
                      <widget class="QPushButton" name="_rebuild_sel_res_rot_discard_button">
                       <property name="text">
-                       <string>Revert</string>
+                       <string>Clear</string>
                       </property>
                      </widget>
                     </item>
@@ -1264,15 +1264,6 @@
                       </property>
                      </widget>
                     </item>
-                    <item row="2" column="4" colspan="2">
-                     <widget class="QComboBox" name="_rebuild_sel_res_rot_combo_box">
-                      <item>
-                       <property name="text">
-                        <string>Pause sim to adjust</string>
-                       </property>
-                      </item>
-                     </widget>
-                    </item>
                     <item row="0" column="0">
                      <widget class="QLabel" name="label_24">
                       <property name="text">
@@ -1293,6 +1284,32 @@
                        <string>Placeholder</string>
                       </property>
                      </widget>
+                    </item>
+                    <item row="2" column="5">
+                     <layout class="QHBoxLayout" name="horizontalLayout_30">
+                      <item>
+                       <widget class="QPushButton" name="_rebuild_sel_res_last_rotamer_button">
+                        <property name="text">
+                         <string/>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="resources/resources.qrc">
+                          <normaloff>:/newPrefix/reverse_icon.png</normaloff>:/newPrefix/reverse_icon.png</iconset>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="_rebuild_sel_res_next_rotamer_button">
+                        <property name="text">
+                         <string/>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="resources/resources.qrc">
+                          <normaloff>:/newPrefix/play_icon.png</normaloff>:/newPrefix/play_icon.png</iconset>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
                     </item>
                    </layout>
                   </widget>
@@ -1331,7 +1348,7 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>412</width>
+                  <width>470</width>
                   <height>796</height>
                  </rect>
                 </property>
@@ -1866,6 +1883,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="resources/resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

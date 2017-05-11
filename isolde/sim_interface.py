@@ -390,7 +390,7 @@ def create_openmm_system(top, ff):
                                 constraints = app.HBonds,
                                 rigidWater = True,
                                 removeCMMotion = False,
-                                ignoreMissingExternalBonds = True)
+                                ignoreExternalBonds = True)
     except ValueError as e:
         raise Exception('Missing atoms or parameterisation needed by force field.\n' +
                               'All heavy atoms and hydrogens with standard names are required.\n' +

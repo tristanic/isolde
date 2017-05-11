@@ -1,0 +1,8 @@
+<RCC>
+  <qresource prefix="newPrefix">
+    <file>pause_icon.png</file>
+    <file>logo_small.png</file>
+    <file>reverse_icon.png</file>
+    <file>play_icon.png</file>
+  </qresource>
+</RCC>

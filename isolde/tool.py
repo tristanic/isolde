@@ -86,6 +86,20 @@ class ISOLDE_ToolUI(ToolInstance):
         
         for f in self._hidden_at_start:
             f.hide()
+        
+        # Any frames/widgets that should be disabled at the start
+        self._disabled_at_start = [
+            self.iw._rebuild_sel_res_pep_flip_button,
+            self.iw._rebuild_sel_res_last_rotamer_button,
+            self.iw._rebuild_sel_res_next_rotamer_button,
+            self.iw._rebuild_sel_res_rot_commit_button,
+            self.iw._rebuild_sel_res_rot_target_button,
+            self.iw._rebuild_sel_res_rot_discard_button,
+            ]
+        for f in self._disabled_at_start:
+            f.setEnabled(False)
+            
+
                 
         # Apply custom palettes to intermediate and expert frames
         from . import palettes
