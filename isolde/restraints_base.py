@@ -1,5 +1,5 @@
 import numpy
-from simtk.unit import kilojoule_per_mole, angstrom, nanometer)
+from simtk.unit import kilojoule_per_mole, angstrom, nanometer
 from chimerax.core.atomic import Atom, Atoms, concatenate
 
 class Distance_Restraint:
@@ -152,13 +152,13 @@ class Distance_Restraints:
     def targets(self):
         return numpy.array([r.target_distance for r in self])
     
-    @targets.setter:
-        def targets(self, targets):
-            if len(targets) != len(self):
-                raise IndexError('Target array length must equal the number of restraints!')
-            for r, t in zip(self, targets):
-                r.target_distance = t
-    
+    @targets.setter
+    def targets(self, targets):
+        if len(targets) != len(self):
+            raise IndexError('Target array length must equal the number of restraints!')
+        for r, t in zip(self, targets):
+            r.target_distance = t
+
     @property
     def all_distances(self):
         '''Returns the current distances between restrained atom pairs, in Angstroms.'''

@@ -830,7 +830,7 @@ class ForceField(object):
                     allMatches.append((t, match))
             if len(allMatches) == 0 and ignoreExternalBonds:
                 for t in templateSignatures[signature]:
-                    match = _matchResidue(res, t, bondedToAtom, ignoreMissingExternalBonds)
+                    match = _matchResidue(res, t, bondedToAtom, ignoreExternalBonds)
                     if match is not None:
                         allMatches.append((t, match))
             if len(allMatches) == 1:

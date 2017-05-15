@@ -1774,7 +1774,7 @@ class Isolde():
 
         self._status('Preparing simulation topology...')
         # Generate topology
-        self._topology, self._particle_positions = sh.openmm_topology_and_external_forces(
+        self._topology, self._particle_positions, templates = sh.openmm_topology_and_external_forces(
             sc, sb, fixed, 
             tug_hydrogens = self.tug_hydrogens, 
             hydrogens_feel_maps = self.hydrogens_feel_maps)
@@ -1796,7 +1796,7 @@ class Isolde():
             self._log('Preparing system')
         
         # Define simulation System
-        sys = self._system = si.create_openmm_system(self._topology, self._ff)
+        sys = self._system = si.create_openmm_system(self._topology, self._ff, templates)
         
         # Apply fixed atoms to System
         if self._logging:

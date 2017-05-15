@@ -2,12 +2,16 @@
 
 import numpy
 from simtk.openmm.openmm import CustomBondForce
+from chimerax.core.atomic import concatenate
+
 
 def openmm_topology_from_model(model):
     '''
     Take an AtomicStructure model from ChimeraX and return an OpenMM
     topology (e.g. for use with the OpenMM Modeller class).
     '''
+    
+    
     a = model.atoms
     b = model.bonds
     n = len(a)
@@ -29,7 +33,7 @@ def openmm_topology_from_model(model):
             cmap[cid] = top.addChain()   # OpenMM chains have no name
         rid = (rname[i], rnum[i], cid)
         if not rid in rmap:
-            rmap[rid] = top.addResidue(rname[i], cmap[cid])
+            res = rmap[rid] = top.addResidue(rname[i], cmap[cid])
         element = Element.getBySymbol(ename[i])
         atoms[i] = top.addAtom(aname[i], element,rmap[rid])
 
@@ -37,8 +41,23 @@ def openmm_topology_from_model(model):
     for i1, i2 in zip(a.indices(a1), a.indices(a2)):
         if -1 not in [i1, i2]:
             top.addBond(atoms[i1],  atoms[i2])
-            
+        
     return top
+
+def cys_type(residue):
+    sulfur_atom = residue.atoms.filter(residue.atoms.names == 'SG')[0]
+    bonds = sulfur_atom.bonds
+    if len(bonds) == 1:
+        # Deprotonated
+        return 'CYM'
+    bonded_atoms = concatenate(bonds.atoms)
+    for a in bonded_atoms:
+        if a.residue != residue:
+            return 'CYX'
+        if a.name == 'SG':
+            return 'CYS'
+
+
 
 class available_forcefields():
     '''Main force field files'''
@@ -229,6 +248,12 @@ class SimHandler():
             hydrogens_feel_maps:
                 Do we want the hydrogens to be pulled into the maps?
         '''
+        # When we allow missing external bonds, some residues become ambiguous.
+        # In particular, a cysteine with a bare sulphur might be part of a 
+        # disulphide bond but have the connecting residue missing, or may be
+        # a deprotonated (negatively-charged) Cys. In such cases, we need to 
+        # explicitly tell OpenMM which templates to use.
+        templates = {}
         a = sim_construct
         n = len(a)
         r = a.residues
@@ -249,7 +274,12 @@ class SimHandler():
                 cmap[cid] = top.addChain()   # OpenMM chains have no name
             rid = (rname[i], rnum[i], cid)
             if not rid in rmap:
-                rmap[rid] = top.addResidue(rname[i], cmap[cid])
+                res = rmap[rid] = top.addResidue(rname[i], cmap[cid])
+                if rname[i] == 'CYS':
+                    ctype = cys_type(r[i])
+                    if ctype != 'CYS':
+                        templates[res] = ctype
+
             element = Element.getBySymbol(ename[i])
             atoms[i] = top.addAtom(aname[i], element,rmap[rid])
 
@@ -275,7 +305,7 @@ class SimHandler():
                 top.addBond(atoms[i1],  atoms[i2])
 
         pos = a.coords # in Angstrom (convert to nm for OpenMM)
-        return top, pos
+        return top, pos, templates
 
 
     def couple_atom_to_map(self, index, map_object):
@@ -412,7 +442,7 @@ def define_forcefield (forcefield_list):
     ff = self_forcefield = ForceField(*forcefield_list)
     return ff
     
-def create_openmm_system(top, ff):
+def create_openmm_system(top, ff, templatedict):
     from simtk.openmm import app
     from simtk import openmm as mm
     from simtk import unit
@@ -424,6 +454,7 @@ def create_openmm_system(top, ff):
                                 constraints = app.HBonds,
                                 rigidWater = True,
                                 removeCMMotion = False,
+                                residueTemplates = templatedict,
                                 ignoreExternalBonds = True)
     except ValueError as e:
         raise Exception('Missing atoms or parameterisation needed by force field.\n' +
