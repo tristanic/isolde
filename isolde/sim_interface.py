@@ -1,5 +1,8 @@
 # vim: set expandtab shiftwidth=4 softtabstop=4:
 
+import numpy
+from simtk.openmm.openmm import CustomBondForce
+
 def openmm_topology_from_model(model):
     '''
     Take an AtomicStructure model from ChimeraX and return an OpenMM
@@ -80,6 +83,37 @@ def get_available_platforms():
             name = p.getName()
             platform_names.append(name)
         return platform_names
+
+class TopOutBondForce(CustomBondForce):
+    '''
+    Wraps an OpenMM CustomBondForce defined as a standard harmonic potential
+    (0.5 * k * (r - r0)^2) with a user-defined fixed maximum cutoff on the
+    applied force. This is meant for steering the simulation into new 
+    conformations where the starting distance may be far from the target
+    bond length, leading to catastrophically large forces with a standard
+    harmonic potential.
+    '''
+    def __init__(self, max_force):
+        super().__init__(self, 'min(0.5*k*(r-r0)^2, max_force')
+        self._max_force = max_force
+        self.k_index = self.addPerBondParameter('k')
+        self.r0_index = self.addPerBondParameter('r0')
+        self.max_force_index = self.addGlobalParameter('max_force', self.max_force)
+    
+    @property
+    def max_force(self):
+        '''Maximum force applied to any given atom, in kJ/mol/nm.'''
+        return self._max_force
+    
+    @max_force.setter
+    def max_force(self, force):
+        self.setGlobalParameterDefaultValue(self.max_force_index, force)
+        self._max_force = force
+    
+    
+        
+
+
 
 class SimHandler():
     

@@ -109,6 +109,8 @@ class Isolde():
     trigger_names = [
         'simulation started',    # Successful initiation of a simulation
         'simulation terminated', # Simulation finished, crashed or failed to start
+        'simulation paused',
+        'simulation resumed',
         'selected model changed', # Changed the master model selection
         ]
     for t in trigger_names:
@@ -280,7 +282,7 @@ class Isolde():
         
         # A {Residue: Rotamer} dict encompassing all mobile rotameric residues
         self.rotamers = None
-        self.rotamer_restraints_k = 100
+        self.rotamer_restraints_k = 500
         # Range of dihedral values which will be interpreted as a cis peptide
         # bond (-30 to 30 degrees). If restrain_peptide_bonds is True, anything
         # outside of this range at the start of the simulation will be forced
@@ -1135,6 +1137,9 @@ class Isolde():
         
         try:
             rot = self._selected_rotamer = self.rotamers[res]
+            if rot != self._selected_rotamer:
+                self.iw._rebuild_sel_res_rot_info.setText('')
+            self._selected_rotamer = rot
             self._set_rotamer_buttons_enabled(True)
         except KeyError:
             # This residue has no rotamers
@@ -1177,7 +1182,7 @@ class Isolde():
         self._selected_rotamer.commit_current_preview()
     
     def _set_rotamer_target(self, *_):
-        target = self._target_rotamer.angles
+        target = self._selected_rotamer.target = self._target_rotamer.angles
         dihedrals = self._selected_rotamer.dihedrals
         context = self.sim.context
         sc = self._total_sim_construct
@@ -1186,14 +1191,15 @@ class Isolde():
         indices = numpy.reshape(sc.indices(dihedrals.atoms),[len(dihedrals),4])
 
         for i, (d, t) in enumerate((zip(dihedrals, target))):
-            print('{}: {}'.format(i, indices[i]))
             sh.set_dihedral_restraint(context, sc, d, indices[i], t, k)
         
+        self._selected_rotamer.restrained = True
         self._clear_rotamer()
         
     
     def _clear_rotamer(self, *_):
-        self._selected_rotamer.cleanup()
+        if self._selected_rotamer is not None:
+            self._selected_rotamer.cleanup()
     
     
     def _disable_rebuild_residue_frame(self):
@@ -1378,7 +1384,6 @@ class Isolde():
         self._sim_water_ff = self._available_ffs.explicit_water_files[ffindex]
     
     def _change_selected_model(self, *_, model = None):
-        self._status('Finding backbone dihedrals. Please be patient.')
         if len(self._available_models) == 0:
             return
         if self._simulation_running:
@@ -1392,6 +1397,7 @@ class Isolde():
             return
         m = iw._master_model_combo_box.currentData()
         if self._selected_model != m and m is not None:
+            self._status('Finding backbone dihedrals. Please be patient.')
             self._selected_model = m
             self.session.selection.clear()
             self._selected_model.selected = True
@@ -1698,6 +1704,8 @@ class Isolde():
             for i, d in enumerate(dlist):
                 d_indices = indices[i]
                 d.sim_index = sh.initialize_dihedral_restraint(d, d_indices)
+            if thisrot.restrained:
+                self._set_rotamer_target(thisrot.target)
                 
         
         
@@ -1885,8 +1893,8 @@ class Isolde():
             tug_hydrogens = self.tug_hydrogens)
         self._mouse_modes.register_mode(mt.name, mt, 'right', ['control'])
         
-        self._get_positions_and_max_force(save_forces = True)
-        self.do_sim_steps()
+        #self._get_positions_and_max_force(save_forces = True)
+        #self.do_sim_steps()
         
         self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
                                               'new frame',
@@ -2017,11 +2025,13 @@ class Isolde():
         print('This function should toggle pause/resume of the sim')
         if self._simulation_running:
             if not self._sim_paused:
+                self.triggers.activate_trigger('simulation paused', None)
                 self._event_handler.remove_event_handler('do_sim_steps_on_gui_update')
                 self._sim_paused = True
                 self._status('Simulation paused')
                 self.iw._sim_pause_button.setText('Resume')
             else:
+                self.triggers.activate_trigger('simulation resumed', None)
                 self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
                                       'new frame',
                                       self.do_sim_steps)
@@ -2082,6 +2092,7 @@ class Isolde():
         self._simulation_running = False
         if 'do_sim_steps_on_gui_update' in self._event_handler.list_event_handlers():
             self._event_handler.remove_event_handler('do_sim_steps_on_gui_update')
+        self._disable_rebuild_residue_frame()
         self.sim = None
         self._system = None
         self._update_menu_after_sim()

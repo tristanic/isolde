@@ -320,6 +320,11 @@ class Rotamer:
         self._current_rotamer_index = 0
         self._current_rotamer = None
         
+        # Is this rotamer currently being restrained?
+        self.restrained = False
+        # Current target conformation (if self.restrained == True)
+        self.target = None
+        
         self._atoms_to_move, self.dihedrals = self.find_atoms_to_move(self.residue)
     
     def __enter__(self):

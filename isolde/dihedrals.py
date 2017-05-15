@@ -78,7 +78,7 @@ class Dihedrals():
     
     def __getitem__(self, i):
         import numpy
-        if isinstance(i,(int,numpy.int32)):
+        if isinstance(i,(int, numpy.integer)):
             return self.dihedrals[i]
         elif isinstance(i,(slice)):
             return Dihedrals(self.dihedrals[i])
@@ -105,13 +105,19 @@ class Dihedrals():
     def append(self, d):
         from chimerax.core.atomic import concatenate, Residues
         if isinstance(d, Dihedral):
-            self.dihedrals.append(d)
-            self._residues = concatenate([self.residues, [d.residue]])
-            self._atoms = concatenate([self.atoms, d.atoms])
+            if self.atoms is None:
+                self._dihedrals = [d]
+            else:
+                self.dihedrals.append(d)
+                self._residues = concatenate([self.residues, [d.residue]])
+                self._atoms = concatenate([self.atoms, d.atoms])
         elif isinstance(d, Dihedrals):
-            self.dihedrals.extend(d)
-            self._residues = concatenate([self.residues, d.residues])
-            self._atoms = concatenate([self.atoms, d.atoms])
+            if self.atoms is None:
+                self._dihedrals = d
+            else:
+                self.dihedrals.extend(d)
+                self._residues = concatenate([self.residues, d.residues])
+                self._atoms = concatenate([self.atoms, d.atoms])
         else:
             raise TypeError('Can only append a single Dihedral or a Dihedrals object.')    
     
@@ -124,6 +130,8 @@ class Dihedrals():
     
     @property
     def atoms(self):
+        if not len(self):
+            return None
         if self._atoms is None:
             import numpy
             atoms = numpy.empty([len(self),4],dtype='object')
