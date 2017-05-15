@@ -120,6 +120,20 @@ def load_rotamers(file_prefix):
         out.close()
     return rotamers 
 
+def all_rotamers_in_selection(session, atoms):
+    '''
+    Returns a {Residue: Rotamer} dict covering every rotameric residue 
+    in the input Atoms object.
+    '''
+    residues = atoms.unique_residues
+    ret = {}
+    for r in residues:
+        try:
+            ret[r] = Rotamer(session, r)
+        except KeyError:
+            continue
+    return ret
+
             
 class Residue_rotamers:
     '''
@@ -303,8 +317,8 @@ class Rotamer:
         self._counter = 0
         self._frames_per_rotamer = 50
         self._cycle_handler = None
-        self._current_rotamer = 0
-        
+        self._current_rotamer_index = 0
+        self._current_rotamer = None
         
         self._atoms_to_move, self.dihedrals = self.find_atoms_to_move(self.residue)
     
@@ -358,9 +372,9 @@ class Rotamer:
     
     
     def _iter_rotamer(self, incr):
-        self._current_rotamer += incr
-        self._current_rotamer %= len(self.available_rotamers)
-        rot = self.available_rotamers[self._current_rotamer]
+        self._current_rotamer_index += incr
+        self._current_rotamer_index %= len(self.available_rotamers)
+        rot = self.available_rotamers[self._current_rotamer_index]
         return rot
         
     

@@ -277,6 +277,10 @@ class Isolde():
         ####
         self.restrain_peptide_bonds = True
         self.peptide_bond_restraints_k = 200
+        
+        # A {Residue: Rotamer} dict encompassing all mobile rotameric residues
+        self.rotamers = None
+        self.rotamer_restraints_k = 100
         # Range of dihedral values which will be interpreted as a cis peptide
         # bond (-30 to 30 degrees). If restrain_peptide_bonds is True, anything
         # outside of this range at the start of the simulation will be forced
@@ -1130,9 +1134,9 @@ class Isolde():
         self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
         
         try:
-            rot = self._selected_rotamer = rotamers.Rotamer(res)
+            rot = self._selected_rotamer = self.rotamers[res]
             self._set_rotamer_buttons_enabled(True)
-        except:
+        except KeyError:
             # This residue has no rotamers
             self._selected_rotamer = None
             self._set_rotamer_buttons_enabled(False)
@@ -1173,16 +1177,19 @@ class Isolde():
         self._selected_rotamer.commit_current_preview()
     
     def _set_rotamer_target(self, *_):
+        target = self._target_rotamer.angles
         dihedrals = self._selected_rotamer.dihedrals
+        context = self.sim.context
+        sc = self._total_sim_construct
         sh = self._sim_handler
-        for i, d in enumerate(dihedrals):
-            if target is None:
-                dval = d.value
-                if dval < cr[1] and dval > cr[0]:
-                    t = 0
-                else:
-                    t = pi
+        k = self.rotamer_restraints_k
+        indices = numpy.reshape(sc.indices(dihedrals.atoms),[len(dihedrals),4])
+
+        for i, (d, t) in enumerate((zip(dihedrals, target))):
+            print('{}: {}'.format(i, indices[i]))
             sh.set_dihedral_restraint(context, sc, d, indices[i], t, k)
+        
+        self._clear_rotamer()
         
     
     def _clear_rotamer(self, *_):
@@ -1389,7 +1396,8 @@ class Isolde():
             self.session.selection.clear()
             self._selected_model.selected = True
             from . import dihedrals
-            self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(self.session, m)            
+            self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(self.session, m)
+            self.rotamers = rotamers.all_rotamers_in_selection(self.session, m.atoms)            
             self._update_chain_list()
             self.triggers.activate_trigger('selected model changed', data=m)
         self._status('')
@@ -1677,12 +1685,22 @@ class Isolde():
         self._status('Preparing restraints...')            
         # Register each dihedral with the CustomTorsionForce, so we can
         # restrain them at will during the 
-        for dlist in (bd.phi, bd.psi, bd.omega):
+        self._initialize_backbone_restraints(bd, sh)
+        
+        for res in total_mobile.unique_residues:
+            try:
+                thisrot = self.rotamers[res]
+            except KeyError:
+                continue
+            dlist = thisrot.dihedrals
             atoms = dlist.atoms
             indices = numpy.reshape(sc.indices(atoms),[len(dlist),4])
             for i, d in enumerate(dlist):
                 d_indices = indices[i]
                 d.sim_index = sh.initialize_dihedral_restraint(d, d_indices)
+                
+        
+        
         log('Defining dihedral restraint forces took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
 
@@ -1884,6 +1902,19 @@ class Isolde():
         log('Everything else took {0:0.4f} seconds'.format(time() - last_time))
         self._status('Simulation running')
         
+
+    def _initialize_backbone_restraints(self, bd, sh):
+        '''
+        Register all phi, psi and omega dihedrals with the simulation
+        '''
+        sc = self._total_sim_construct
+        for dlist in (bd.phi, bd.psi, bd.omega):
+            atoms = dlist.atoms
+            indices = numpy.reshape(sc.indices(atoms),[len(dlist),4])
+            for i, d in enumerate(dlist):
+                d_indices = indices[i]
+                d.sim_index = sh.initialize_dihedral_restraint(d, d_indices)
+
     # Get the mobile selection. The method will vary depending on
     # the selection mode chosen
     def _get_final_sim_selection(self):
@@ -2153,7 +2184,6 @@ class Isolde():
     #############################################
     
     def do_sim_steps(self,*_):
-        print('Doing step')
         if self._logging:
             self._log('Running ' + str(self.sim_steps_per_update) + ' steps')
 
