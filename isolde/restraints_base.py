@@ -25,9 +25,9 @@ class Distance_Restraint:
         self._spring_constant = spring_constant
         # Placeholder for the index returned when this restraint is added
         # to an OpenMM Force object.
-        self._sim_force_index = None
-        # The actual OpenMM Force object this restraint is associated with
-        self._sim_force = None
+        self._sim_force_index = -1
+        # The SimHandler object handling the current simulation
+        self._sim_handler = None
     
     @property
     def target_distance(self):
@@ -39,11 +39,14 @@ class Distance_Restraint:
     @target_distance.setter
     def target_distance(self, distance):
         self._target_distance = distance
-        if self._sim_force is not None:
-            # OpenMM distances are in nm
-            self._sim_force.setBondParameters(self._sim_force_index, 
-                (self.spring_constant/1000, self.target_distance/10))
-            self._sim_force.update_needed = True
+        if self._sim_handler is not None:
+            self._sim_handler.change_distance_restraint_parameters(self)
+    
+    @property
+    def distance(self):
+        '''The current distance between the restrained atoms in Angstroms.'''
+        coords = self.atoms.coords
+        return numpy.linalg.norm(coords[1]-coords[0])
     
     @property
     def spring_constant(self):
@@ -55,11 +58,29 @@ class Distance_Restraint:
     @spring_constant.setter
     def spring_constant(self, k):
         self._spring_constant = k
-        if self._sim_force is not None:
-            # OpenMM distances are in nm
-            self._sim_force.setBondParameters(self._sim_force_index, 
-                (self.spring_constant/1000, self.target_distance/10))
-            self._sim_force.update_needed = True
+        if self._sim_handler is not None:
+            self._sim_handler.change_distance_restraint_parameters(self)
+     
+    @property
+    def sim_handler(self):
+        '''The SimHandler object handling the current simulation'''
+        return self._sim_handler
+    
+    @sim_handler.setter
+    def sim_handler(self, handler):
+        self._sim_handler = handler
+    
+    @property
+    def sim_force_index(self):
+        '''The index of this restraint in the OpenMM Force object.'''
+        return self._sim_force_index
+    
+    @sim_force_index.setter
+    def sim_force_index(self, index):
+        if self.sim_handler is None:
+            self._sim_force_index = -1
+            raise RuntimeError('This restraint is not associated with a Force!')
+        self._sim_force_index = index
 
 class Distance_Restraints:
     '''
@@ -90,14 +111,18 @@ class Distance_Restraints:
     
     def __getitem__(self, i):
         if isinstance(i,(int, numpy.integer)):
-            return self._restraints[i]
+            try:
+                return self._restraints[i]
+            except IndexError:
+                return None
         if isinstance(i,(slice)):
-            return Distance_Restraints(self._restraints[i])
+            return self.__class__(self._restraints[i])
         if isinstance(i, numpy.ndarray):
-            return Distance_Restraints([self._restraints[j] for j in i])
+            return self.__class__([self._restraints[j] for j in i])
         if isinstance(i, Atom):
             # Find and return all restraints this atom is involved in
             atom_indices = self.atoms.indices(Atoms([i]))
+            atom_indices = atom_indices[numpy.where(atom_indices != -1)]
             restraint_indices = atom_indices//2
             return self[restraint_indices]
         raise IndexError('Only integer indices allowed for {}, got {}'
@@ -126,6 +151,18 @@ class Distance_Restraints:
         else:
             raise TypeError('Can only append a single Distance_Restraint or \
                              a Distance_Restraints object.')
+    
+    def in_selection(self, sel):
+        '''
+        Returns a Distance_Restraints object encompassing all distance
+        restraints where both atoms are in the given selection.
+        Args:
+            sel:
+                An Atoms object.
+        '''
+        atom_indices = sel.indices(self.atoms).reshape((len(self.atoms)//2, 2))
+        return self[numpy.argwhere(numpy.all(atom_indices != -1, axis = 1)).ravel()]
+        
     
     @property
     def atoms(self):

@@ -1,6 +1,7 @@
 # vim: set expandtab shiftwidth=4 softtabstop=4:
 
 import numpy
+from math import pi
 from simtk.openmm.openmm import CustomBondForce
 from chimerax.core.atomic import concatenate
 
@@ -113,11 +114,12 @@ class TopOutBondForce(CustomBondForce):
     harmonic potential.
     '''
     def __init__(self, max_force):
-        super().__init__(self, 'min(0.5*k*(r-r0)^2, max_force')
+        super().__init__('min(0.5*k*(r-r0)^2, max_force)')
         self._max_force = max_force
         self.k_index = self.addPerBondParameter('k')
         self.r0_index = self.addPerBondParameter('r0')
         self.max_force_index = self.addGlobalParameter('max_force', self.max_force)
+        self.update_needed = False
     
     @property
     def max_force(self):
@@ -144,6 +146,8 @@ class SimHandler():
         self._topology = None
         # Atoms in simulation topology
         self._atoms = None
+        # Atoms in ChimeraX construct
+        self._chimerax_atoms = None
         
         # Dict holding each custom external force object, its global and its
         # per-particle parameters. Format:
@@ -167,14 +171,64 @@ class SimHandler():
         
         self._dihedral_restraint_force = PeriodicTorsionForce()
         
-
+    def initialize_distance_restraints_force(self, max_force):
+        tf = self._distance_restraints_force = TopOutBondForce(max_force*1000)
+        return tf
+    
+    def add_distance_restraints(self, restraints, sim_construct):
+        for r in restraints:
+            self.add_distance_restraint(r, sim_construct)
+    
+    def add_distance_restraint(self, restraint, sim_construct):
+        r = restraint
+        atoms = r.atoms
+        indices = sim_construct.indices(atoms)
+        tf = self._distance_restraints_force
+        r.sim_handler = self
+        r.sim_force_index = tf.addBond(*indices.tolist(), (r.spring_constant, r.target_distance))
         
+    def disconnect_distance_restraints_from_sim(self, restraints):
+        for r in restraints:
+            r.sim_force_index = -1
+            r.sim_handler = None
+    
+    def change_distance_restraint_parameters(self, restraint):
+        tf = self._distance_restraints_force
+        indices = self._chimerax_atoms.indices(restraint.atoms).tolist()
+        tf.setBondParameters(restraint._sim_force_index, *indices, 
+            (restraint.spring_constant*1000, restraint.target_distance/10))
+        tf.update_needed = True
+        
+    def update_distance_restraints_in_context(self, context):
+        tf = self._distance_restraints_force
+        if tf.update_needed:
+            tf.updateParametersInContext(context)
+        tf.update_needed = False
     
     def initialize_dihedral_restraint(self, dihedral, indices):
         #top = self._topology
         force = self._dihedral_restraint_force
         index_in_force = force.addTorsion(*indices.tolist(), 1, 0, 0)
         return index_in_force
+    
+    
+    def set_dihedral_restraints(self, context, sim_construct, dihedrals, target, k, degrees = False):
+        indices = numpy.reshape(sim_construct.indices(dihedrals.atoms), [len(dihedrals),4])
+        variable_t = hasattr(target, '__iter__')
+        variable_k = hasattr(k, '__iter__')
+        for i, d in enumerate(dihedrals):
+            if variable_t:
+                t = target[i]
+            else:
+                t = target
+            if degrees:
+                t = radians(t)
+            if variable_k:
+                thisk = k[i]
+            else:
+                thisk = k
+                
+            self.set_dihedral_restraint(context, sim_construct, d, indices[i], t, thisk)
         
     def set_dihedral_restraint(self, context, sim_construct, dihedral, indices, target, k, degrees=False):
         from math import pi, radians
@@ -254,7 +308,7 @@ class SimHandler():
         # a deprotonated (negatively-charged) Cys. In such cases, we need to 
         # explicitly tell OpenMM which templates to use.
         templates = {}
-        a = sim_construct
+        a = self._chimerax_atoms = sim_construct
         n = len(a)
         r = a.residues
         aname = a.names

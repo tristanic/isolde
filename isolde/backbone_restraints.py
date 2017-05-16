@@ -3,8 +3,10 @@ Classes and functions for handling of secondary structure restraints,
 register shifts, and other operations on the protein backbone.
 '''
 import numpy
-from chimerax.core.atomic import Residue, Atoms
+from chimerax.core.atomic import Residue, Atoms, AtomicStructure
 from .restraints_base import Distance_Restraint, Distance_Restraints    
+
+MAX_RESTRAINT_FORCE = 10.0 # kJ/mol/A^3 
 
 class CA_to_CA_plus_Two(Distance_Restraints):
     '''
@@ -12,31 +14,37 @@ class CA_to_CA_plus_Two(Distance_Restraints):
     specific secondary structures - in particular, beta strands, where
     simply forcing the backbone dihedrals is almost never enough. 
     '''
-    def __init__(self, model):
+    HELIX_DISTANCE = 5.43
+    STRAND_DISTANCE = 6.81    
+    def __init__(self, model_or_list):
         '''
         Finds all connected CA - (CA+2) atom pairs in an atomic model, and
         creates a Distance_Restraints object covering all of them.
         '''
-        fragments = model.polymers(consider_missing_structure = False)
-        restraints = []
-        for f in fragments:
-            if numpy.all(numpy.invert(f.polymer_types == Residue.PT_AMINO)):
-                continue
-            ca_atoms = f.atoms.filter(f.atoms.names == 'CA')
-            for c1, c2 in zip(ca_atoms[0:-2], ca_atoms[2:]):
-                restraints.append(Distance_Restraint(Atoms((c1, c2)), 0, 0))
-        super().__init__(self, restraints)
+        if isinstance(model_or_list, AtomicStructure):
+            model = model_or_list
+            fragments = model.polymers(consider_missing_structure = False)
+            restraints = []
+            for f in fragments:
+                if numpy.all(numpy.invert(f.polymer_types == Residue.PT_AMINO)):
+                    continue
+                ca_atoms = f.atoms.filter(f.atoms.names == 'CA')
+                for c1, c2 in zip(ca_atoms[0:-2], ca_atoms[2:]):
+                    restraints.append(Distance_Restraint(Atoms((c1, c2)), 0, 0))
+        else:
+            restraints = model_or_list
+        super().__init__(restraints)
     
     def __getitem__(self, i):
         if isinstance(i, Residue):
-            return self[i.atoms.filter(i.atoms.names == 'CA')[0]]
-        return super().__getitem__(self, i)
+            return self[i.atoms.filter(i.atoms.names == 'CA')[0]][0]
+        return super().__getitem__(i)
         
     
     
     pass
 
-class O_to_N_plus_Four(Distance_Restraint):
+class O_to_N_plus_Four(Distance_Restraints):
     '''
     For restraining alpha helices, the standard approach is to apply 
     distance restraints to the (n, n+4) H-bonds as well as the standard
@@ -44,24 +52,30 @@ class O_to_N_plus_Four(Distance_Restraint):
     hydrogens, so here we'll connect the carbonyl oxygens to the (n+4)
     nitrogens.
     '''
-    def __init__(self, model):
+    HELIX_DISTANCE = 3.05
+    STRAND_DISTANCE = 11.4
+    def __init__(self, model_or_list):
         '''
         Finds all connected O - (N+4) atom pairs in an atomic model, and
         creates a Distance_Restraints object covering all of them.
         '''
-        fragments = model.polymers(consider_missing_structure = False)
-        restraints = []
-        for f in fragments:
-            if numpy.all(numpy.invert(f.polymer_types == Residue.PT_AMINO)):
-                continue
-            o_atoms = f.atoms.filter(f.atoms.names == 'O')
-            n_atoms = f.atoms.filter(f.atoms.names == 'N')
-            for o, n in zip(o_atoms[0:-4], n_atoms[4:]):
-                restraints.append(Distance_Restraint(Atoms((o, n)), 0, 0))
-        super().__init__(self, restraints)
+        if isinstance(model_or_list, AtomicStructure):
+            model = model_or_list
+            fragments = model.polymers(consider_missing_structure = False)
+            restraints = []
+            for f in fragments:
+                if numpy.all(numpy.invert(f.polymer_types == Residue.PT_AMINO)):
+                    continue
+                o_atoms = f.atoms.filter(f.atoms.names == 'O')
+                n_atoms = f.atoms.filter(f.atoms.names == 'N')
+                for o, n in zip(o_atoms[0:-4], n_atoms[4:]):
+                    restraints.append(Distance_Restraint(Atoms((o, n)), 0, 0))
+        else:
+            restraints = model_or_list
+        super().__init__(restraints)
     
     def __getitem__(self, i):
         if isinstance(i, Residue):
-            return self[i.atoms.filter(i.atoms.names == 'O')[0]]
-        return super().__getitem__(self, i)
+            return self[i.atoms.filter(i.atoms.names == 'O')[0]][0]
+        return super().__getitem__(i)
          

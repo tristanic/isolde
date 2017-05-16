@@ -1,3 +1,4 @@
+from math import degrees, radians
 
 class Dihedral():
     '''
@@ -184,6 +185,16 @@ class Backbone_Dihedrals():
     phi, psi and omega dihedrals. If provided with a model, it will find and
     store all phi, psi and omega dihedrals as Dihedrals objects.
     '''
+    
+    # (phi, psi) angles for common secondary structures
+    standard_phi_psi_angles = {
+        'helix': (radians(-64.0), radians(-41.0)),
+        'parallel beta': (radians(-119), radians(113)),
+        'antiparallel beta': (radians(-139.0), radians(135.0)),
+        }
+        
+    
+    
     def __init__(self, session, model = None, phi = None, psi = None, omega = None, old = False):
         if model == None and (phi == None or psi == None or omega == None):
             raise TypeError('You must provide either a model or all three of\

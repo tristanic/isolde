@@ -278,7 +278,19 @@ class Isolde():
         # Restraints settings
         ####
         self.restrain_peptide_bonds = True
-        self.peptide_bond_restraints_k = 200
+        self.peptide_bond_restraints_k = 500
+        self.secondary_structure_restraints_k = 200
+        
+        ##
+        # Distance retraint objects
+        ##
+        # (CA_n - CA_n+2) atom pairs (mainly for stretching beta strands) 
+        self.ca_to_ca_plus_two = None
+        # (O_n - N_n+4) atom pairs (for alpha helix H-bonds)
+        self.o_to_n_plus_four = None
+        self.distance_restraints_k = 5
+
+        
         
         # A {Residue: Rotamer} dict encompassing all mobile rotameric residues
         self.rotamers = None
@@ -578,6 +590,11 @@ class Isolde():
         iw._rebuild_sel_res_pep_info.setText('')
         iw._rebuild_sel_res_rot_info.setText('')
         
+        from . import dihedrals
+        phipsi = dihedrals.Backbone_Dihedrals.standard_phi_psi_angles
+        iw._rebuild_2ry_struct_restr_chooser_combo_box.clear()
+        for key, pair in phipsi.items():
+            iw._rebuild_2ry_struct_restr_chooser_combo_box.addItem(key, pair)
         
         ####
         # Validate tab
@@ -732,6 +749,7 @@ class Isolde():
             self._change_peptide_bond_restraints
             )
         
+        
         ####
         # Rebuild tab
         ####
@@ -753,6 +771,23 @@ class Isolde():
         iw._rebuild_sel_res_rot_discard_button.clicked.connect(
             self._clear_rotamer
             )
+        
+        iw._rebuild_2ry_struct_restr_show_button.clicked.connect(
+            self._toggle_secondary_structure_dialog
+            )
+        iw._rebuild_2ry_struct_restr_extend_N_button.clicked.connect(
+            self._extend_selection_by_one_res_N
+            )
+        iw._rebuild_2ry_struct_restr_extend_C_button.clicked.connect(
+            self._extend_selection_by_one_res_C
+            )
+        iw._rebuild_2ry_struct_restr_chooser_go_button.clicked.connect(
+            self._apply_selected_secondary_structure_restraints
+            )
+        iw._rebuild_2ry_struct_restr_clear_button.clicked.connect(
+            self.clear_secondary_structure_restraints_for_selection
+            )
+        
         
         ####
         # Validation tab
@@ -925,6 +960,7 @@ class Isolde():
 
     def _selection_changed(self, *_):
         from chimerax.core.atomic import selected_atoms
+        from .util import is_continuous_protein_chain
         sel = selected_atoms(self.session)
         selres = sel.unique_residues
         if self._simulation_running:
@@ -932,9 +968,13 @@ class Isolde():
                 self._enable_rebuild_residue_frame(selres[0])
             else:
                 self._disable_rebuild_residue_frame()
+            if is_continuous_protein_chain(sel):
+                self._enable_secondary_structure_restraints_frame()
+            else:
+                self._disable_secondary_structure_restraints_frame()
+            
             # A running simulation takes precedence for memory control
             return
-        
         if self.session.selection.empty():
             flag = False
         else:
@@ -1155,6 +1195,139 @@ class Isolde():
         if 'update_selected_residue_info' not in self._event_handler.list_event_handlers():
             self._event_handler.add_event_handler('update_selected_residue_info',
                     'shape changed', self._update_selected_residue_info_live)
+    
+    def _enable_secondary_structure_restraints_frame(self, *_):
+        self.iw._rebuild_2ry_struct_restr_container.setEnabled(True)
+        self.iw._rebuild_2ry_struct_restr_top_label.setText('')
+    
+    def _disable_secondary_structure_restraints_frame(self, *_):
+        self.iw._rebuild_2ry_struct_restr_container.setEnabled(False)
+        t = 'Select a protein atom or residue to begin'
+        self.iw._rebuild_2ry_struct_restr_top_label.setText(t)
+        t = 'Invalid selection'
+        self.iw._rebuild_2ry_struct_restr_sel_text.setText(t)
+    
+    def _toggle_secondary_structure_dialog(self, *_):
+        button = self.iw._rebuild_2ry_struct_restr_show_button
+        frame = self.iw._rebuild_2ry_struct_restr_container
+        show_text = 'Show secondary structure dialog'
+        hide_text = 'Hide secondary structure dialog'
+        if button.text() == show_text:
+            frame.show()
+            button.setText(hide_text)
+        else:
+            frame.hide()
+            button.setText(show_text)
+        
+    def _extend_selection_by_one_res_N(self, *_):
+        self._extend_selection_by_one_res(-1)
+    
+    def _extend_selection_by_one_res_C(self, *_):
+        self._extend_selection_by_one_res(1)
+    
+    def _extend_selection_by_one_res(self, direction):
+        '''
+        Extends a selection by one residue in the given direction, stopping
+        at the ends of the chain
+        Args:
+            direction:
+                -1 or 1
+        '''
+        from chimerax.core.atomic import selected_atoms
+        sel = selected_atoms(self.session)
+        residues = sel.unique_residues
+        # expand the selection to cover all atoms in the existing residues
+        residues.atoms.selected = True
+        m = sel.unique_structures[0]
+        polymers = m.polymers(consider_missing_structure = False)
+        for p in polymers:
+            indices = p.indices(residues)
+            if indices[0] != -1:
+                break
+        indices = numpy.sort(indices)
+        residues = p[indices]
+        first = residues[0]
+        last = residues[-1]
+        if direction == -1:
+            i0 = indices[0]
+            if i0 > 0:
+                first = p[i0-1]
+                first.atoms.selected = True
+        else:
+            iend = indices[-1]
+            if iend < len(p) - 1:
+                last = p[iend+1]
+                last.atoms.selected = True
+        
+            
+        seltext = 'Chain {}: residues {} to {}'.format(
+            p.unique_chain_ids[0], first.number, last.number)
+        self.iw._rebuild_2ry_struct_restr_sel_text.setText(seltext)
+            
+        
+    def _apply_selected_secondary_structure_restraints(self, *_):
+        from chimerax.core.atomic import selected_atoms
+        sh = self._sim_handler
+        sc = self._total_sim_construct
+        context = self.sim.context
+        dihed_k = self.secondary_structure_restraints_k
+        sel = selected_atoms(self.session)
+        residues = sel.unique_residues
+        cb = self.iw._rebuild_2ry_struct_restr_chooser_combo_box
+        structure_type = cb.currentText()
+        target_phipsi = cb.currentData()
+        phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
+        sh.set_dihedral_restraints(context, sc, phi, target_phipsi[0], dihed_k)
+        sh.set_dihedral_restraints(context, sc, psi, target_phipsi[1], dihed_k)
+        
+        dist_k = self.distance_restraints_k
+        rca = self._sim_ca_ca2_restr
+        ron = self._sim_o_n4_restr
+        if structure_type == 'helix':
+            ca_distance = rca.HELIX_DISTANCE
+            on_distance = ron.HELIX_DISTANCE
+        else:
+            ca_distance = rca.STRAND_DISTANCE
+            on_distance = ron.STRAND_DISTANCE
+        for r in residues:
+            cad = rca[r]
+            if cad is not None:
+                cad.target_distance = ca_distance
+                cad.spring_constant = dist_k
+            ond = ron[r]
+            if ond is not None:
+                ond.target_distance = on_distance
+                ond.spring_constant = dist_k
+    
+    def clear_secondary_structure_restraints_for_selection(self, *_):
+        '''
+        Clear all secondary structure restraints for currently selected
+        atoms.
+        '''
+        from chimerax.core.atomic import selected_atoms
+        sh = self._sim_handler
+        sc = self._total_sim_construct
+        context = self.sim.context
+        sel = selected_atoms(self.session)
+        residues = sel.unique_residues
+        phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
+        sh.set_dihedral_restraints(context, sc, phi, 0, 0)
+        sh.set_dihedral_restraints(context, sc, psi, 0, 0)
+        for r in residues:
+            cad = self._sim_ca_ca2_restr[r]
+            ond = self._sim_o_n4_restr[r]
+            if cad is not None:
+                cad.target_distance = 0
+                cad.spring_constant = 0
+            if ond is not None:
+                ond.target_distance = 0
+                ond.spring_constant = 0
+        
+            
+    
+        
+        
+    
                     
     def _set_rotamer_buttons_enabled(self, switch):
         self.iw._rebuild_sel_res_last_rotamer_button.setEnabled(switch)
@@ -1401,12 +1574,31 @@ class Isolde():
             self._selected_model = m
             self.session.selection.clear()
             self._selected_model.selected = True
-            from . import dihedrals
-            self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(self.session, m)
-            self.rotamers = rotamers.all_rotamers_in_selection(self.session, m.atoms)            
+            self._prepare_all_interactive_restraints(m)
             self._update_chain_list()
             self.triggers.activate_trigger('selected model changed', data=m)
         self._status('')
+    
+    def _prepare_all_interactive_restraints(self, model):
+        '''
+        Any restraints you may want to turn on and off interactively must
+        be defined at the beginning of each simulation. Otherwise, adding
+        a new restraint would require a costly reinitialisation of the 
+        simulation context. For the most commonly-used restraints it's
+        therefore best to pre-define the necessary objects for the entire
+        model at the point the model is selected, and pull out the 
+        necessary pieces from these each time a simulation is started.
+        '''
+        m = model
+        from . import dihedrals, rotamers
+        from . import backbone_restraints as br
+        # Torsion restraints
+        self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(self.session, m)
+        self.rotamers = rotamers.all_rotamers_in_selection(self.session, m.atoms)            
+        # Distance restraints
+        self.ca_to_ca_plus_two = br.CA_to_CA_plus_Two(m)
+        self.o_to_n_plus_four = br.O_to_N_plus_Four(m)
+    
     
     def _select_whole_model(self, *_):
         if self._selected_model:
@@ -1669,6 +1861,8 @@ class Isolde():
         log('Initial phase took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
         
+        
+        
         self._status('Organising dihedrals...')
         
         from . import dihedrals
@@ -1689,6 +1883,11 @@ class Isolde():
         sh = self._sim_handler = si.SimHandler(self.session)        
         
         self._status('Preparing restraints...')            
+       
+        ####
+        # Torsion restraints
+        ####
+        
         # Register each dihedral with the CustomTorsionForce, so we can
         # restrain them at will during the 
         self._initialize_backbone_restraints(bd, sh)
@@ -1719,6 +1918,18 @@ class Isolde():
         log('Adding peptide bond restraints took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
 
+        ####
+        # Distance restraints
+        ####
+        
+        from . import backbone_restraints as br
+        sh.initialize_distance_restraints_force(br.MAX_RESTRAINT_FORCE)
+        
+        self._sim_ca_ca2_restr = self.ca_to_ca_plus_two.in_selection(sc)
+        print(type(self._sim_ca_ca2_restr))
+        self._sim_o_n4_restr = self.o_to_n_plus_four.in_selection(sc)
+        sh.add_distance_restraints(self._sim_ca_ca2_restr, sc)
+        sh.add_distance_restraints(self._sim_o_n4_restr, sc)
         
         if self._logging:
             self._log('Generating topology')
@@ -1813,12 +2024,14 @@ class Isolde():
         for key, f in sh.get_all_custom_external_forces().items():
             sys.addForce(f[0])
         
+        
         sm = self._sim_modes
         if self.sim_mode in [sm.xtal, sm.em]:
             for key,m in self.master_map_list.items():
                 sys.addForce(m.get_potential_function())
         
         sys.addForce(sh._dihedral_restraint_force)
+        sys.addForce(sh._distance_restraints_force)
 
         if self._logging:
             self._log('Choosing integrator')
@@ -1840,8 +2053,8 @@ class Isolde():
             self._log('Generating simulation')
 
         ### FIXME: testing code
-        for i, f in enumerate(sys.getForces()):
-            f.setForceGroup(i)
+        #for i, f in enumerate(sys.getForces()):
+        #    f.setForceGroup(i)
         ### /FIXME
                                     
         self.sim = si.create_sim(self._topology, self._system, integrator, platform)
@@ -2088,11 +2301,15 @@ class Isolde():
             '''
             print('Failed to start')
             pass
+        sh = self._sim_handler
         # Otherwise just clean up            
         self._simulation_running = False
         if 'do_sim_steps_on_gui_update' in self._event_handler.list_event_handlers():
             self._event_handler.remove_event_handler('do_sim_steps_on_gui_update')
         self._disable_rebuild_residue_frame()
+        sh.disconnect_distance_restraints_from_sim(self._sim_ca_ca2_restr)
+        sh.disconnect_distance_restraints_from_sim(self._sim_o_n4_restr)
+
         self.sim = None
         self._system = None
         self._update_menu_after_sim()
@@ -2228,6 +2445,8 @@ class Isolde():
         elif self._surroundings_hidden:
             surr.displays = True
             self._surroundings_hidden = False
+        
+        sh.update_distance_restraints_in_context(c)
         
         newpos, max_force, max_index = self._get_positions_and_max_force()
         if startup:
