@@ -4,7 +4,8 @@ register shifts, and other operations on the protein backbone.
 '''
 import numpy
 from chimerax.core.atomic import Residue, Atoms, AtomicStructure
-from .restraints_base import Distance_Restraint, Distance_Restraints    
+from .restraints_base import Distance_Restraint, Distance_Restraints 
+from .restraints_base import Position_Restraint, Position_Restraints   
 
 MAX_RESTRAINT_FORCE = 10.0 # kJ/mol/A^3 
 
@@ -79,3 +80,5 @@ class O_to_N_plus_Four(Distance_Restraints):
             return self[i.atoms.filter(i.atoms.names == 'O')[0]][0]
         return super().__getitem__(i)
          
+        
+

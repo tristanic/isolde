@@ -96,6 +96,8 @@ class ISOLDE_ToolUI(ToolInstance):
             self.iw._rebuild_sel_res_rot_commit_button,
             self.iw._rebuild_sel_res_rot_target_button,
             self.iw._rebuild_sel_res_rot_discard_button,
+            self.iw._rebuild_pos_restraint_one_atom_frame,
+            self.iw._rebuild_pos_restraint_clear_button,
             ]
         for f in self._disabled_at_start:
             f.setEnabled(False)

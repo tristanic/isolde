@@ -2,7 +2,7 @@
 
 import numpy
 from math import pi
-from simtk.openmm.openmm import CustomBondForce
+from simtk.openmm.openmm import CustomBondForce, CustomExternalForce
 from chimerax.core.atomic import concatenate
 
 
@@ -114,7 +114,7 @@ class TopOutBondForce(CustomBondForce):
     harmonic potential.
     '''
     def __init__(self, max_force):
-        super().__init__('min(0.5*k*(r-r0)^2, max_force)')
+        super().__init__('min(0.5*k*(r-r0)^2, max_force*abs(r-r0))')
         self._max_force = max_force
         self.k_index = self.addPerBondParameter('k')
         self.r0_index = self.addPerBondParameter('r0')
@@ -130,6 +130,39 @@ class TopOutBondForce(CustomBondForce):
     def max_force(self, force):
         self.setGlobalParameterDefaultValue(self.max_force_index, force)
         self._max_force = force
+        self.update_needed = True
+    
+
+class TopOutRestraintForce(CustomExternalForce):
+    '''
+    Wraps an OpenMM CustomExternalForce to restrain atoms to defined positions
+    via a standard harmonic potential (0.5 * k * r^2) with a user-defined
+    fixed maximum cutoff on the applied force. This is meant for steering 
+    the simulation into new conformations where the starting positions
+    may be far from the target positions, leading to catastrophically 
+    large forces with a standard harmonic potential.
+    '''
+    def __init__(self, max_force):
+        super().__init__('min(0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2), max_force *(abs(x-x0)+abs(y-y0)+abs(z-z0)))')
+        self._max_force = max_force
+        per_particle_parameters = ['k','x0','y0','z0']
+        for p in per_particle_parameters:
+            self.addPerParticleParameter(p)
+        self.addGlobalParameter('max_force', max_force)
+        self.update_needed = False
+    
+    @property
+    def max_force(self):
+        '''Maximum force applied to any given atom, in kJ/mol/nm.'''
+        return self._max_force
+    
+    @max_force.setter
+    def max_force(self, force):
+        self.setGlobalParameterDefaultValue(0, force)
+        self._max_force = force
+        self.update_needed = True
+    
+    
     
     
         
@@ -170,6 +203,68 @@ class SimHandler():
         from simtk.openmm.openmm import PeriodicTorsionForce
         
         self._dihedral_restraint_force = PeriodicTorsionForce()
+    
+    ####
+    # Positional Restraints
+    ####
+    
+        ##
+        # Before simulation starts
+        ##
+    
+    def initialize_position_restraints_force(self, max_force):
+        '''Just create the force object.'''
+        rf = self._position_restraints_force = TopOutRestraintForce(max_force*1000)
+        return rf
+    
+    def add_position_restraints(self, restraints, sim_construct):
+        '''Add all atoms in a Position_Restraints object to the force.'''
+        for r in restraints:
+            self.add_position_restraint(r, sim_construct)
+    
+    def add_position_restraint(self, restraint, sim_construct):
+        '''Add one Position_Restraint object to the force.'''
+        r = restraint
+        atom = r.atom
+        sc = sim_construct
+        index = sc.index(atom)
+        rf = self._position_restraints_force
+        r.sim_handler = self
+        r.sim_force_index = rf.addParticle(index, (r.spring_constant * 1000, *(r.target/10)))
+
+        ##
+        # During simulation
+        ##
+    
+    def change_position_restraint_parameters(self, restraint):
+        rf = self._position_restraints_force
+        index = self._chimerax_atoms.index(restraint.atom)
+        rf.setParticleParameters(restraint.sim_force_index, index, 
+            (restraint.spring_constant*1000, *(restraint.target/10)))
+        rf.update_needed = True
+    
+    def update_position_restraints_in_context(self, context):
+        rf = self._position_restraints_force
+        if rf.update_needed:
+            rf.updateParametersInContext(context)
+        rf.update_needed = False
+
+        ##
+        # Cleanup on simulation termination
+        ##
+
+    def disconnect_position_restraints_from_sim(self, restraints):
+        for r in restraints:
+            r.sim_force_index = -1
+            r.sim_handler = None
+    
+    ####
+    # Distance Restraints
+    ####
+    
+        ##
+        # Before simulation starts
+        ##
         
     def initialize_distance_restraints_force(self, max_force):
         tf = self._distance_restraints_force = TopOutBondForce(max_force*1000)
@@ -185,13 +280,12 @@ class SimHandler():
         indices = sim_construct.indices(atoms)
         tf = self._distance_restraints_force
         r.sim_handler = self
-        r.sim_force_index = tf.addBond(*indices.tolist(), (r.spring_constant, r.target_distance))
+        r.sim_force_index = tf.addBond(*indices.tolist(), (r.spring_constant*1000, r.target_distance/10))
         
-    def disconnect_distance_restraints_from_sim(self, restraints):
-        for r in restraints:
-            r.sim_force_index = -1
-            r.sim_handler = None
-    
+        ##
+        # During simulation
+        ##
+
     def change_distance_restraint_parameters(self, restraint):
         tf = self._distance_restraints_force
         indices = self._chimerax_atoms.indices(restraint.atoms).tolist()
@@ -205,12 +299,32 @@ class SimHandler():
             tf.updateParametersInContext(context)
         tf.update_needed = False
     
+        ##
+        # Cleanup on simulation termination
+        ##
+    
+    def disconnect_distance_restraints_from_sim(self, restraints):
+        for r in restraints:
+            r.sim_force_index = -1
+            r.sim_handler = None
+    
+    ####
+    # Dihedral restraints
+    ####
+    
+        ##
+        # Before simulation starts
+        ##
+    
     def initialize_dihedral_restraint(self, dihedral, indices):
         #top = self._topology
         force = self._dihedral_restraint_force
         index_in_force = force.addTorsion(*indices.tolist(), 1, 0, 0)
         return index_in_force
-    
+
+        ##
+        # During simulation
+        ##
     
     def set_dihedral_restraints(self, context, sim_construct, dihedrals, target, k, degrees = False):
         indices = numpy.reshape(sim_construct.indices(dihedrals.atoms), [len(dihedrals),4])
@@ -241,6 +355,8 @@ class SimHandler():
         if context is not None:
             force.updateParametersInContext(context)
     
+    
+    
         
     def register_custom_external_force(self, name, force, global_params, 
                                         per_particle_params, 
@@ -262,7 +378,6 @@ class SimHandler():
        
     def register_map(self, map_object):
         self._maps.append(map_object)
-
 
     
     def initialize_tugging_force(self, potential_equation, g_params, g_vals, pp_params):

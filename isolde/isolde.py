@@ -261,7 +261,7 @@ class Isolde():
         # Nearest atom's normal color
         self._haptic_current_nearest_atom_color = []
         # Spring constant felt by atoms tugged by the haptic device
-        self._haptic_force_constant = 2500
+        self._haptic_force_constant = 2500 # FIXME kJ/mol/nm3 (to kJ/mol/A3)
         
         ####
         # Settings for handling of maps
@@ -278,8 +278,8 @@ class Isolde():
         # Restraints settings
         ####
         self.restrain_peptide_bonds = True
-        self.peptide_bond_restraints_k = 500
-        self.secondary_structure_restraints_k = 200
+        self.peptide_bond_restraints_k = 500 # FIXME units?
+        self.secondary_structure_restraints_k = 200 # FIXME units?
         
         ##
         # Distance retraint objects
@@ -288,13 +288,20 @@ class Isolde():
         self.ca_to_ca_plus_two = None
         # (O_n - N_n+4) atom pairs (for alpha helix H-bonds)
         self.o_to_n_plus_four = None
-        self.distance_restraints_k = 5
-
+        self.distance_restraints_k = 5 # kJ/mol/A3
+        
+        ##
+        # Position restraint objects
+        ##
+        
+        # A Position_Restraints object defining all restrainable atoms
+        self.position_restraints = None
+        self.position_restraints_default_k = 2 # kJ/mol/A3
         
         
         # A {Residue: Rotamer} dict encompassing all mobile rotameric residues
         self.rotamers = None
-        self.rotamer_restraints_k = 500
+        self.rotamer_restraints_k = 500 # FIXME units?
         # Range of dihedral values which will be interpreted as a cis peptide
         # bond (-30 to 30 degrees). If restrain_peptide_bonds is True, anything
         # outside of this range at the start of the simulation will be forced
@@ -363,7 +370,9 @@ class Isolde():
         # Placeholder for tugging forces
         self._tugging_force = None
         # Force constant for mouse/haptic tugging. Need to make this user-adjustable
-        self.tug_force_constant = 10000 # kJ/mol/nm
+        self.tug_force_constant = 10000 # kJ/mol/nm^3
+        # Upper limit on the strength of the tugging force
+        self.tug_max_force = 10000 # kJ/mol/nm
         
         
         
@@ -788,6 +797,14 @@ class Isolde():
             self.clear_secondary_structure_restraints_for_selection
             )
         
+        iw._rebuild_pos_restraint_go_button.clicked.connect(
+            self._restrain_selected_atom_to_xyz
+            )
+        iw._rebuild_pos_restraint_clear_button.clicked.connect(
+            self.release_xyz_restraints_on_selected_atoms
+            )
+        
+        
         
         ####
         # Validation tab
@@ -964,6 +981,16 @@ class Isolde():
         sel = selected_atoms(self.session)
         selres = sel.unique_residues
         if self._simulation_running:
+            natoms = len(sel)
+            if natoms == 1:
+                self._enable_atom_position_restraints_frame()
+            else:
+                self._disable_atom_position_restraints_frame()
+            if natoms:
+                self._enable_position_restraints_clear_button()
+            else:
+                self._disable_position_restraints_clear_button()
+            
             if len(selres) == 1:
                 self._enable_rebuild_residue_frame(selres[0])
             else:
@@ -1158,8 +1185,7 @@ class Isolde():
         if -1 in self._total_mobile.indices(res.atoms):
             self._disable_rebuild_residue_frame()
             return
-        
-        
+ 
         # Peptide cis/trans flips
         self._get_rotamer_list_for_selected_residue(res)
         bd = self._mobile_backbone_dihedrals
@@ -1195,6 +1221,19 @@ class Isolde():
         if 'update_selected_residue_info' not in self._event_handler.list_event_handlers():
             self._event_handler.add_event_handler('update_selected_residue_info',
                     'shape changed', self._update_selected_residue_info_live)
+
+    def _enable_atom_position_restraints_frame(self):
+        self.iw._rebuild_pos_restraint_one_atom_frame.setEnabled(True)
+    
+    def _disable_atom_position_restraints_frame(self):
+        self.iw._rebuild_pos_restraint_one_atom_frame.setEnabled(False)
+    
+    def _enable_position_restraints_clear_button(self):
+        self.iw._rebuild_pos_restraint_clear_button.setEnabled(True)
+    
+    def _disable_position_restraints_clear_button(self):
+        self.iw._rebuild_pos_restraint_clear_button.setEnabled(False)
+
     
     def _enable_secondary_structure_restraints_frame(self, *_):
         self.iw._rebuild_2ry_struct_restr_container.setEnabled(True)
@@ -1324,7 +1363,24 @@ class Isolde():
                 ond.spring_constant = 0
         
             
+    def _restrain_selected_atom_to_xyz(self, *_):
+        from chimerax.core.atomic import selected_atoms
+        atom = selected_atoms(self.session)[0]
+        choice = self.iw._rebuild_pos_restraint_combo_box.currentIndex()
+        if choice == 0:
+            target = atom.coord
+        else:
+            target = self.session.view.center_of_rotation
+        spring_constant = self.iw._rebuild_pos_restraint_spring_constant.value()
+        pr = self.position_restraints[atom]
+        pr.target = target
+        pr.spring_constant = spring_constant
     
+    def release_xyz_restraints_on_selected_atoms(self, *_):
+        from chimerax.core.atomic import selected_atoms
+        sel = selected_atoms(self.session)
+        restraints = self.position_restraints.in_selection(sel)
+        restraints.release()
         
         
     
@@ -1592,12 +1648,15 @@ class Isolde():
         m = model
         from . import dihedrals, rotamers
         from . import backbone_restraints as br
+        from . import position_restraints as pr
         # Torsion restraints
         self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(self.session, m)
         self.rotamers = rotamers.all_rotamers_in_selection(self.session, m.atoms)            
         # Distance restraints
         self.ca_to_ca_plus_two = br.CA_to_CA_plus_Two(m)
         self.o_to_n_plus_four = br.O_to_N_plus_Four(m)
+        # Positional restraints (one per heavy atom)
+        self.position_restraints = pr.Atom_Position_Restraints(m.atoms)
     
     
     def _select_whole_model(self, *_):
@@ -1926,16 +1985,27 @@ class Isolde():
         sh.initialize_distance_restraints_force(br.MAX_RESTRAINT_FORCE)
         
         self._sim_ca_ca2_restr = self.ca_to_ca_plus_two.in_selection(sc)
-        print(type(self._sim_ca_ca2_restr))
         self._sim_o_n4_restr = self.o_to_n_plus_four.in_selection(sc)
         sh.add_distance_restraints(self._sim_ca_ca2_restr, sc)
         sh.add_distance_restraints(self._sim_o_n4_restr, sc)
+        
+        ####
+        # Position restraints
+        ####
+        
+        from . import position_restraints as pr
+        sh.initialize_position_restraints_force(pr.MAX_RESTRAINT_FORCE)
+        
+        self._sim_pos_restr = self.position_restraints.in_selection(total_mobile)
+        sh.add_position_restraints(self._sim_pos_restr, sc)
+        
+        
         
         if self._logging:
             self._log('Generating topology')
             
         # Setup pulling force, to be used by mouse and/or haptic tugging
-        e = 'k*((x-x0)^2+(y-y0)^2+(z-z0)^2)'
+        e = '0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2)'
         per_particle_parameters = ['k','x0','y0','z0']
         per_particle_defaults = [0,0,0,0]
         global_parameters = None
@@ -2032,7 +2102,8 @@ class Isolde():
         
         sys.addForce(sh._dihedral_restraint_force)
         sys.addForce(sh._distance_restraints_force)
-
+        sys.addForce(sh._position_restraints_force)
+    
         if self._logging:
             self._log('Choosing integrator')
         
@@ -2309,6 +2380,7 @@ class Isolde():
         self._disable_rebuild_residue_frame()
         sh.disconnect_distance_restraints_from_sim(self._sim_ca_ca2_restr)
         sh.disconnect_distance_restraints_from_sim(self._sim_o_n4_restr)
+        sh.disconnect_position_restraints_from_sim(self._sim_pos_restr)
 
         self.sim = None
         self._system = None
@@ -2447,6 +2519,7 @@ class Isolde():
             self._surroundings_hidden = False
         
         sh.update_distance_restraints_in_context(c)
+        sh.update_position_restraints_in_context(c)
         
         newpos, max_force, max_index = self._get_positions_and_max_force()
         if startup:
