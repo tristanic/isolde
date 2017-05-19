@@ -7,7 +7,7 @@ from chimerax.core.atomic import Residue, Atoms, AtomicStructure
 from .restraints_base import Distance_Restraint, Distance_Restraints 
 from .restraints_base import Position_Restraint, Position_Restraints   
 
-MAX_RESTRAINT_FORCE = 10.0 # kJ/mol/A^3 
+MAX_RESTRAINT_FORCE = 100.0 # kJ/mol/A 
 
 class CA_to_CA_plus_Two(Distance_Restraints):
     '''
@@ -24,7 +24,8 @@ class CA_to_CA_plus_Two(Distance_Restraints):
         '''
         if isinstance(model_or_list, AtomicStructure):
             model = model_or_list
-            fragments = model.polymers(consider_missing_structure = False)
+            fragments = model.polymers(
+                missing_structure_treatment = model.PMS_NEVER_CONNECTS)
             restraints = []
             for f in fragments:
                 if numpy.all(numpy.invert(f.polymer_types == Residue.PT_AMINO)):
@@ -62,7 +63,8 @@ class O_to_N_plus_Four(Distance_Restraints):
         '''
         if isinstance(model_or_list, AtomicStructure):
             model = model_or_list
-            fragments = model.polymers(consider_missing_structure = False)
+            fragments = model.polymers(
+                missing_structure_treatment = model.PMS_NEVER_CONNECTS)
             restraints = []
             for f in fragments:
                 if numpy.all(numpy.invert(f.polymer_types == Residue.PT_AMINO)):

@@ -283,7 +283,7 @@ class Rotamer_info:
         return [degrees(a) for a in self._angles]
     
     def relative_abundance(self, residue):
-        ss_type = residue.ss_type()
+        ss_type = residue.ss_type
         if ss_type == Residue.SS_COIL:
             return self.coil_P
         if ss_type == Residue.SS_HELIX:
@@ -348,7 +348,7 @@ class Rotamer:
     
     @property
     def available_rotamers(self):
-        return _rotamer_info[self.residue.name].by_ss_type(self.residue.ss_type())
+        return _rotamer_info[self.residue.name].by_ss_type(self.residue.ss_type)
     
     def find_atoms_to_move(self, residue):
         ratoms = residue.atoms

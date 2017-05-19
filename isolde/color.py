@@ -28,11 +28,43 @@ class ThreeColorScale():
     
     # Return an array of colors corresponding to an array of input values    
     def get_colors(self, vals):
-        import numpy    
-        c = []
-        for v in vals:
-            c.append(self.get_color(v))
-        return numpy.array(c)
+        import numpy
+        minc = self.mincolor
+        midc = self.midcolor
+        maxc = self.maxcolor
+        minv = self.minval
+        midv = self.midval
+        maxv = self.maxval
+        invals = numpy.array(vals)
+        above_max = numpy.argwhere(invals >= maxv).ravel()
+        below_min = numpy.argwhere(invals < minv).ravel()
+        between_min_and_mid = numpy.argwhere(
+            numpy.logical_and(invals >= minv, invals < midv)).ravel()
+        between_mid_and_max = numpy.argwhere(
+            numpy.logical_and(invals >= midv, invals < maxv)).ravel()
+        
+        
+        outvals = numpy.empty([len(invals),4], numpy.uint8)
+        if len(above_max):
+            outvals[above_max] = maxc
+        if len(below_min):
+            outvals[below_min] = minc
+        if len(between_min_and_mid):
+            lm_vals = invals[between_min_and_mid]
+            lm_colors = numpy.empty([len(lm_vals), 4])
+            multiplier = (lm_vals - minv)/(midv-minv)
+            for i in range(len(lm_vals)):
+                lm_colors[i,:] = multiplier[i]*(midc-minc)+minc
+            outvals[between_min_and_mid] = lm_colors
+        if len(between_mid_and_max):
+            mm_vals = invals[between_mid_and_max]
+            mm_colors = numpy.empty([len(mm_vals), 4])
+            multiplier = (mm_vals-midv)/(maxv-midv)
+            for i in range(len(mm_vals)):
+                mm_colors[i,:] = multiplier[i]*(maxc-midc)+midc
+            outvals[between_mid_and_max] = mm_colors
+        
+        return outvals
 
 # Some default colour gradients    
 color_scales = {

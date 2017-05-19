@@ -226,6 +226,11 @@ class Position_Restraint:
         '''
         self._atom = atom
         self._target = numpy.array([0,0,0], float)
+        # Optionally, we can provide an atom representing the target and
+        # a pseudobond between the master and target atoms, to provide a
+        # visual representation of the restraint.
+        self._target_atom = None
+        self._pseudobond = None
         self._spring_constant = 0
         self._sim_force_index = -1
         self._sim_handler = None
@@ -241,6 +246,8 @@ class Position_Restraint:
     @target.setter
     def target(self, xyz):
         self._target = xyz
+        if self._target_atom is not None:
+            self._target_atom.coord = xyz
         if self._sim_handler is not None:
             self._sim_handler.change_position_restraint_parameters(self)
         
@@ -251,6 +258,12 @@ class Position_Restraint:
     @spring_constant.setter
     def spring_constant(self, k):
         self._spring_constant = k
+        ta = self._target_atom
+        if ta is not None:
+            if k == 0:
+                ta.display = False
+            else:
+                ta.display = True
         if self._sim_handler is not None:
             self._sim_handler.change_position_restraint_parameters(self)
     
@@ -367,7 +380,9 @@ class Position_Restraints:
         if isinstance(i,(slice)):
             return self.__class__(self._restraints[i])
         if isinstance(i, numpy.ndarray):
-            return self.__class__([self._restraints[j] for j in i])
+            if len(i):
+                return self.__class__([self._restraints[j] for j in i])
+            raise IndexError('No indices in array!')
         if isinstance(i, Atom):
             return self[self.atoms.index(i)]
         raise IndexError('Only integer indices allowed for {}, got {}'

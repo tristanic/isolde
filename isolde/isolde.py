@@ -37,6 +37,11 @@ class Isolde():
         xtal    = 0
         em      = 1
         free    = 2
+    
+    _force_groups = {
+        'main':                         0,
+        'position restraints':          1,
+        }
 
     _human_readable_sim_modes = {
         _sim_modes.xtal:  "Crystallography mode",
@@ -109,6 +114,7 @@ class Isolde():
     trigger_names = [
         'simulation started',    # Successful initiation of a simulation
         'simulation terminated', # Simulation finished, crashed or failed to start
+        'completed simulation step',
         'simulation paused',
         'simulation resumed',
         'selected model changed', # Changed the master model selection
@@ -261,7 +267,7 @@ class Isolde():
         # Nearest atom's normal color
         self._haptic_current_nearest_atom_color = []
         # Spring constant felt by atoms tugged by the haptic device
-        self._haptic_force_constant = 2500 # FIXME kJ/mol/nm3 (to kJ/mol/A3)
+        self._haptic_force_constant = 2500 # FIXME kJ/mol/nm2 (to kJ/mol/A2)
         
         ####
         # Settings for handling of maps
@@ -288,7 +294,7 @@ class Isolde():
         self.ca_to_ca_plus_two = None
         # (O_n - N_n+4) atom pairs (for alpha helix H-bonds)
         self.o_to_n_plus_four = None
-        self.distance_restraints_k = 5 # kJ/mol/A3
+        self.distance_restraints_k = 50 # kJ/mol/A2
         
         ##
         # Position restraint objects
@@ -296,7 +302,7 @@ class Isolde():
         
         # A Position_Restraints object defining all restrainable atoms
         self.position_restraints = None
-        self.position_restraints_default_k = 2 # kJ/mol/A3
+        self.position_restraints_default_k = 20 # kJ/mol/A2
         
         
         # A {Residue: Rotamer} dict encompassing all mobile rotameric residues
@@ -1278,7 +1284,8 @@ class Isolde():
         # expand the selection to cover all atoms in the existing residues
         residues.atoms.selected = True
         m = sel.unique_structures[0]
-        polymers = m.polymers(consider_missing_structure = False)
+        polymers = m.polymers(
+            missing_structure_treatment = m.PMS_NEVER_CONNECTS)
         for p in polymers:
             indices = p.indices(residues)
             if indices[0] != -1:
@@ -1338,17 +1345,25 @@ class Isolde():
                 ond.target_distance = on_distance
                 ond.spring_constant = dist_k
     
-    def clear_secondary_structure_restraints_for_selection(self, *_):
+    def clear_secondary_structure_restraints_for_selection(self, *_, atoms = None, residues = None):
         '''
-        Clear all secondary structure restraints for currently selected
-        atoms.
+        Clear all secondary structure restraints selection. If no atoms 
+        or residues are provided, restraints will be cleared for any 
+        atoms selected in the main window.
         '''
         from chimerax.core.atomic import selected_atoms
         sh = self._sim_handler
         sc = self._total_sim_construct
         context = self.sim.context
-        sel = selected_atoms(self.session)
-        residues = sel.unique_residues
+        sel = None
+        if atoms is not None:
+            if residues is not None:
+                raise TypeError('Cannot provide both atoms and residues!')
+            sel = atoms
+        elif residues is None:
+            sel = selected_atoms(self.session)
+        if sel is not None:
+            residues = sel.unique_residues
         phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
         sh.set_dihedral_restraints(context, sc, phi, 0, 0)
         sh.set_dihedral_restraints(context, sc, psi, 0, 0)
@@ -1376,9 +1391,10 @@ class Isolde():
         pr.target = target
         pr.spring_constant = spring_constant
     
-    def release_xyz_restraints_on_selected_atoms(self, *_):
+    def release_xyz_restraints_on_selected_atoms(self, *_, sel = None):
         from chimerax.core.atomic import selected_atoms
-        sel = selected_atoms(self.session)
+        if sel is None:
+            sel = selected_atoms(self.session)
         restraints = self.position_restraints.in_selection(sel)
         restraints.release()
         
@@ -1419,8 +1435,8 @@ class Isolde():
         k = self.rotamer_restraints_k
         indices = numpy.reshape(sc.indices(dihedrals.atoms),[len(dihedrals),4])
 
-        for i, (d, t) in enumerate((zip(dihedrals, target))):
-            sh.set_dihedral_restraint(context, sc, d, indices[i], t, k)
+        for i, d, t in zip(indices, dihedrals, target):
+            sh.set_dihedral_restraint(context, sc, d, i, t, k)
         
         self._selected_rotamer.restrained = True
         self._clear_rotamer()
@@ -1429,6 +1445,22 @@ class Isolde():
     def _clear_rotamer(self, *_):
         if self._selected_rotamer is not None:
             self._selected_rotamer.cleanup()
+    
+    def release_rotamers(self, residues):
+        for r in residues:
+            self.release_rotamer(r)
+    
+    def release_rotamer(self, residue):
+        try:
+            rot = self.rotamers[residue]
+        except KeyError:
+            return
+        dihedrals = rot.dihedrals
+        sc = self._total_sim_construct
+        sh = self._sim_handler
+        indices = numpy.reshape(sc.indices(dihedrals.atoms), [len(dihedrals), 4])
+        for i, d in zip(indices, dihedrals):
+            sh.set_dihedral_restraint(self.sim.context, sc, d, i, 0, 0)
     
     
     def _disable_rebuild_residue_frame(self):
@@ -1656,7 +1688,7 @@ class Isolde():
         self.ca_to_ca_plus_two = br.CA_to_CA_plus_Two(m)
         self.o_to_n_plus_four = br.O_to_N_plus_Four(m)
         # Positional restraints (one per heavy atom)
-        self.position_restraints = pr.Atom_Position_Restraints(m.atoms)
+        self.position_restraints = pr.Atom_Position_Restraints(m.atoms, create_target=True)
     
     
     def _select_whole_model(self, *_):
@@ -1997,6 +2029,13 @@ class Isolde():
         sh.initialize_position_restraints_force(pr.MAX_RESTRAINT_FORCE)
         
         self._sim_pos_restr = self.position_restraints.in_selection(total_mobile)
+        spr_atoms = self._sim_pos_restr.atoms
+        self._sim_pos_restr_indices_in_master_restr = \
+            self.position_restraints.atoms.indices(
+                spr_atoms)
+        self._sim_pos_restr_indices_in_sim = total_mobile.indices(spr_atoms)
+        
+        
         sh.add_position_restraints(self._sim_pos_restr, sc)
         
         
@@ -2102,8 +2141,12 @@ class Isolde():
         
         sys.addForce(sh._dihedral_restraint_force)
         sys.addForce(sh._distance_restraints_force)
+        
+        
         sys.addForce(sh._position_restraints_force)
-    
+        sh._position_restraints_force.setForceGroup(self._force_groups['position restraints'])
+        
+        
         if self._logging:
             self._log('Choosing integrator')
         
@@ -2522,6 +2565,8 @@ class Isolde():
         sh.update_position_restraints_in_context(c)
         
         newpos, max_force, max_index = self._get_positions_and_max_force()
+        #self._sim_pos_restr.update_pseudobonds(
+        #    self._pos_restraint_forces, self._sim_pos_restr_indices_in_master_restr) 
         if startup:
             print('Startup round {} max force: {:0.0f} kJ/mol/nm'
                     .format(self._sim_startup_counter, max_force))
@@ -2583,6 +2628,9 @@ class Isolde():
             self._last_tugged_index = None
 
         # If both cur_tug and tugging are false, do nothing
+        
+        self.triggers.activate_trigger('completed simulation step', data=None)
+        
         
         # Haptic interaction
         if self._use_haptics:
@@ -2700,15 +2748,18 @@ class Isolde():
         # if the simulation is unstable
         forces = (state.getForces(asNumpy = True) \
             /(kilojoule_per_mole/nanometer))[self._total_mobile_indices]
-        forcesx = forces[:,0]
-        forcesy = forces[:,1]
-        forcesz = forces[:,2]
+        magnitudes = numpy.linalg.norm(forces, axis=1)
+        rstate = c.getState(
+            getForces=True, 
+            groups = {self._force_groups['position restraints']})
+        f = (rstate.getForces(asNumpy=True) \
+            / (kilojoule_per_mole/nanometer))[self._sim_pos_restr_indices_in_sim]
+        #self._pos_restraint_forces = numpy.linalg.norm(f, axis = 1)
         if save_forces:
             self.forces = forces
             self.starting_positions = state.getPositions(asNumpy=True) / angstrom
             for i, f in enumerate(self._system.getForces()):
                 print(f, c.getState(getEnergy=True, groups = {i}).getPotentialEnergy())
-        magnitudes = numpy.sqrt(forcesx*forcesx + forcesy*forcesy + forcesz*forcesz)
         max_mag = max(magnitudes)
         # Only look up the index if the maximum force is too high
         if max_mag > self._max_allowable_force:

@@ -214,7 +214,7 @@ class SimHandler():
     
     def initialize_position_restraints_force(self, max_force):
         '''Just create the force object.'''
-        rf = self._position_restraints_force = TopOutRestraintForce(max_force*1000)
+        rf = self._position_restraints_force = TopOutRestraintForce(max_force*10)
         return rf
     
     def add_position_restraints(self, restraints, sim_construct):
@@ -230,7 +230,7 @@ class SimHandler():
         index = sc.index(atom)
         rf = self._position_restraints_force
         r.sim_handler = self
-        r.sim_force_index = rf.addParticle(index, (r.spring_constant * 1000, *(r.target/10)))
+        r.sim_force_index = rf.addParticle(index, (r.spring_constant * 100, *(r.target/10)))
 
         ##
         # During simulation
@@ -240,7 +240,7 @@ class SimHandler():
         rf = self._position_restraints_force
         index = self._chimerax_atoms.index(restraint.atom)
         rf.setParticleParameters(restraint.sim_force_index, index, 
-            (restraint.spring_constant*1000, *(restraint.target/10)))
+            (restraint.spring_constant*100, *(restraint.target/10)))
         rf.update_needed = True
     
     def update_position_restraints_in_context(self, context):
@@ -267,7 +267,7 @@ class SimHandler():
         ##
         
     def initialize_distance_restraints_force(self, max_force):
-        tf = self._distance_restraints_force = TopOutBondForce(max_force*1000)
+        tf = self._distance_restraints_force = TopOutBondForce(max_force*10)
         return tf
     
     def add_distance_restraints(self, restraints, sim_construct):
@@ -280,7 +280,7 @@ class SimHandler():
         indices = sim_construct.indices(atoms)
         tf = self._distance_restraints_force
         r.sim_handler = self
-        r.sim_force_index = tf.addBond(*indices.tolist(), (r.spring_constant*1000, r.target_distance/10))
+        r.sim_force_index = tf.addBond(*indices.tolist(), (r.spring_constant*100, r.target_distance/10))
         
         ##
         # During simulation
@@ -290,7 +290,7 @@ class SimHandler():
         tf = self._distance_restraints_force
         indices = self._chimerax_atoms.indices(restraint.atoms).tolist()
         tf.setBondParameters(restraint._sim_force_index, *indices, 
-            (restraint.spring_constant*1000, restraint.target_distance/10))
+            (restraint.spring_constant*100, restraint.target_distance/10))
         tf.update_needed = True
         
     def update_distance_restraints_in_context(self, context):
