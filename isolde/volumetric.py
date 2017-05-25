@@ -1,8 +1,7 @@
 # vim: set expandtab shiftwidth=4 softtabstop=4:
 
-# Generic class to hold the details of maps to be used in the simulation
 class IsoldeMap(object):
-    
+    '''Generic class to hold the details of maps to be used in the simulation'''
     def __init__(self, session, name, source_map, cutoff, coupling_constant, 
         style = None, color = None, contour = None, contour_units = None, 
         mask = None, per_atom_coupling = False):
@@ -163,12 +162,43 @@ class IsoldeMap(object):
         return self._potential_function
         
     
-    # Mask a given map down to a selection and interpolate it onto an orthogonal
-    # grid of the specified resolution. Resolution must be either a single
-    # number or an (x,y,z) numpy array. If resolution is not specified, 
-    # the resolution of the source map will be used. Optionally, the map 
-    # may also be inverted or normalised such that its standard deviation = 1.
+    
+    def crop_to_selection(self, selection, padding, normalize = False):
+        '''
+        Crop a map to surround a selection, plus the given padding (in 
+        Angstroms). 
+        Args:
+            selection:
+                an Atoms object
+            padding:
+                the minimum distance of the box edge from any atom
+            normalize:
+                if true, all values within the returned map will be divided
+                by the overall standard deviation of the parent map.
+        '''
+        points = selection.scene_coords
+        self._source_map.position.inverse().move(points) # Convert points to map coordinates
+        from chimerax.core.map.data.regions import points_ijk_bounds, \
+            clamp_region, integer_region
+        data = self._source_map.data
+        r = points_ijk_bounds(points, padding, data)
+        r = clamp_region(integer_region(r), data.size)
+        from chimerax.core.map.data.griddata import Grid_Subregion
+        grid_data = Grid_Subregion(data, r[0],r[1])
+        if normalize:
+            m = grid_data.matrix() 
+            m /= self._source_map.mean_sd_rms()[1]
+        return grid_data
+    
     def mask_volume_to_selection(self, selection, resolution = None, invert = False, normalize = False):
+        '''
+        Mask a given map down to a selection and interpolate it onto an orthogonal
+        grid of the specified resolution. Resolution must be either a single
+        number or an (x,y,z) numpy array. If resolution is not specified, 
+        the resolution of the source map will be used. Optionally, the map 
+        may also be inverted or normalised such that its standard deviation = 1.
+        '''
+
         big_map = self._source_map
         cutoff = self._mask_cutoff
         sel = selection

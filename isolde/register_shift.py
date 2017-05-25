@@ -23,7 +23,9 @@ class ProteinRegisterShifter:
         self._spline_step = 1/self.spline_steps_per_residue
         # Current value of the spline parameter
         self._current_position_on_spline = 0
-
+        
+        self.finished = False
+        
         # Trigger handler to update position along spline
         self._handler = None
          
@@ -31,6 +33,8 @@ class ProteinRegisterShifter:
         self.isolde = isolde
         self.polymer = find_polymer(atoms)
         residues = self.residues = atoms.unique_residues
+        self._extended_atoms = None
+        
         nres = len(residues)
         # We need to build up the array of atoms procedurally here, since
         # we want to know where there's a gap in the CB positions.
@@ -125,6 +129,10 @@ class ProteinRegisterShifter:
         
         self._handler = isolde.triggers.add_handler('completed simulation step', self._step_forward)
     
+    def release_all(self):
+        if self._extended_residues is not None:
+            self.isolde.release_xyz_restraints_on_selected_atoms(sel = self._extended_residues.atoms)
+    
     def _step_forward(self, *_):
         '''
         Move one step forward along the spline, and adjust the target 
@@ -138,11 +146,12 @@ class ProteinRegisterShifter:
             # final "polishing" routine
             isolde.triggers.remove_handler(self._handler)
             self._handler = None
+            self.finished = True
             #self._handler = self.isolde.triggers.add_handler('completed simulation step', self._final_polish)
         self._current_position_on_spline += self._spline_step
         sp = self._positions_along_spline 
         sp += self._spline_step
-        outside = numpy.logical_or(sp < 0, sp >= self._spline_length)
+        outside = numpy.logical_or(sp < 0, sp > self._spline_length-1)
         inside = numpy.argwhere(numpy.invert(outside)).ravel()
         outside = numpy.argwhere(outside).ravel()
         # Release restraints on atoms outside of the spline

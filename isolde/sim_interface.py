@@ -1,8 +1,10 @@
 # vim: set expandtab shiftwidth=4 softtabstop=4:
 
 import numpy
-from math import pi
-from simtk.openmm.openmm import CustomBondForce, CustomExternalForce
+from math import pi, radians, degrees, cos
+from simtk.openmm.openmm import CustomBondForce, CustomExternalForce, \
+                                CustomCompoundBondForce, CustomTorsionForce
+from simtk.openmm.openmm import Continuous1DFunction, Continuous3DFunction    
 from chimerax.core.atomic import concatenate
 
 
@@ -114,8 +116,14 @@ class TopOutBondForce(CustomBondForce):
     harmonic potential.
     '''
     def __init__(self, max_force):
-        super().__init__('min(0.5*k*(r-r0)^2, max_force*abs(r-r0))')
+        #super().__init__('min(0.5*k*(r-r0)^2, max_force*abs(r-r0))')
+        linear_eqn = 'max_force * abs(r-r0)'# - 0.5*max_force^2/k'
+        quadratic_eqn = '0.5*k*(r-r0)^2'
+        transition_eqn = 'step(r - max_force/k)'
+        force_str = 'select(' + ','.join((transition_eqn, linear_eqn, quadratic_eqn)) + ')'
+        super().__init__(force_str)
         self._max_force = max_force
+        
         self.k_index = self.addPerBondParameter('k')
         self.r0_index = self.addPerBondParameter('r0')
         self.max_force_index = self.addGlobalParameter('max_force', self.max_force)
@@ -143,9 +151,14 @@ class TopOutRestraintForce(CustomExternalForce):
     large forces with a standard harmonic potential.
     '''
     def __init__(self, max_force):
-        super().__init__('min(0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2), max_force *(abs(x-x0)+abs(y-y0)+abs(z-z0)))')
+        #super().__init__('min(0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2), max_force *(abs(x-x0)+abs(y-y0)+abs(z-z0)))')
+        linear_eqn = 'max_force * sqrt((x-x0)^2+(y-y0)^2+(z-z0)^2)'# - 0.5*max_force^2/k'
+        quadratic_eqn = '0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2)'
+        transition_eqn = 'step(sqrt((x-x0)^2+(y-y0)^2+(z-z0)^2) - max_force/k)'
+        force_str = 'select(' + ','.join((transition_eqn, linear_eqn, quadratic_eqn)) + ')'
+        super().__init__(force_str)
         self._max_force = max_force
-        per_particle_parameters = ['k','x0','y0','z0']
+        per_particle_parameters = ('k','x0','y0','z0')
         for p in per_particle_parameters:
             self.addPerParticleParameter(p)
         self.addGlobalParameter('max_force', max_force)
@@ -161,6 +174,41 @@ class TopOutRestraintForce(CustomExternalForce):
         self.setGlobalParameterDefaultValue(0, force)
         self._max_force = force
         self.update_needed = True
+    
+class FlatBottomTorsionRestraintForce(CustomTorsionForce):
+    '''
+    Wraps an OpenMM CustomTorsionForce to restrain torsion angles while 
+    allowing free movement within a range (target +/- cutoff). Within 
+    the cutoff range the potential is constant, while outside it 
+    is defined as -k * cos (theta-theta0). 
+    '''
+    def __init__(self):
+        standard_energy = '-k*cos(theta-theta0)'
+        flat_energy = '-k*cos_cutoff'
+        switch_function = 'step(cos(theta-theta0)-cos_cutoff)'
+        complete_function = 'select({},{},{})'.format(
+            switch_function, flat_energy, standard_energy)
+        super().__init__(complete_function)
+        per_bond_parameters = ('k', 'theta0', 'cos_cutoff')
+        for p in per_bond_parameters:
+            self.addPerTorsionParameter(p)
+        self.update_needed = False
+    
+    def set_cutoff_angle(self, i, angle):
+        '''
+        Set the cut-off angle (below which no force will be applied) in 
+        radians for one dihedral.
+        '''
+        p1, p2, p3, p4, current_params = self.getTorsionParameters(i)
+        current_params[2] = cos(angle)
+        self.setTorsionParameters(i, p1, p2, p3, p4, current_params)
+        self.update_needed = True
+    
+    def get_cutoff_angle(self, i):
+        '''
+        Get the cut-off angle in radians for one dihedral.
+        '''
+        return self.getBondParameters(i)[5][2]
     
     
     
@@ -199,10 +247,11 @@ class SimHandler():
         # Dict for mapping atom indices in the topology to indices in the tugging force
         self._tug_force_lookup = {}
         
-        
-        from simtk.openmm.openmm import PeriodicTorsionForce
-        
-        self._dihedral_restraint_force = PeriodicTorsionForce()
+    
+    def update_restraints_in_context(self, context):
+        self.update_distance_restraints_in_context(context)
+        self.update_position_restraints_in_context(context)
+        self.update_dihedral_restraints_in_context(context)    
     
     ####
     # Positional Restraints
@@ -316,17 +365,31 @@ class SimHandler():
         # Before simulation starts
         ##
     
-    def initialize_dihedral_restraint(self, dihedral, indices):
+    def initialize_dihedral_restraint_force(self, default_cutoff):
+        
+        self._dihedral_restraint_force = FlatBottomTorsionRestraintForce()
+        self.default_torsion_cutoff = default_cutoff
+
+    
+    def initialize_dihedral_restraint(self, dihedral, indices, cutoff = None):
         #top = self._topology
+        c = (cutoff or self.default_torsion_cutoff)
         force = self._dihedral_restraint_force
-        index_in_force = force.addTorsion(*indices.tolist(), 1, 0, 0)
+        index_in_force = force.addTorsion(*indices.tolist(), [0, 0, cos(c)])
         return index_in_force
 
         ##
         # During simulation
         ##
     
-    def set_dihedral_restraints(self, context, sim_construct, dihedrals, target, k, degrees = False):
+    def update_dihedral_restraints_in_context(self, context):
+        rf = self._dihedral_restraint_force
+        if rf.update_needed:
+            rf.updateParametersInContext(context)
+        rf.update_needed = False
+
+    def set_dihedral_restraints(self, sim_construct, dihedrals, target, k, degrees = False, cutoffs = None):
+        c = (cutoffs or [self.default_torsion_cutoff]*len(dihedrals))
         indices = numpy.reshape(sim_construct.indices(dihedrals.atoms), [len(dihedrals),4])
         variable_t = hasattr(target, '__iter__')
         variable_k = hasattr(k, '__iter__')
@@ -342,18 +405,18 @@ class SimHandler():
             else:
                 thisk = k
                 
-            self.set_dihedral_restraint(context, sim_construct, d, indices[i], t, thisk)
+            self.set_dihedral_restraint(sim_construct, d, indices[i], t, thisk, cutoff = c[i])
         
-    def set_dihedral_restraint(self, context, sim_construct, dihedral, indices, target, k, degrees=False):
+    def set_dihedral_restraint(self, sim_construct, dihedral, indices, target, k, degrees=False, cutoff = None):
         from math import pi, radians
+        c = (cutoff or self.default_torsion_cutoff)
         force = self._dihedral_restraint_force
         atoms = dihedral.atoms
         if degrees:
             target = radians(target)
-        target += pi
-        force.setTorsionParameters(dihedral.sim_index, *indices.tolist(), 1, target, k)
-        if context is not None:
-            force.updateParametersInContext(context)
+        #target += pi
+        force.setTorsionParameters(dihedral.sim_index, *indices.tolist(), (k, target, cos(c)))
+        force.update_needed = True
     
     
     
@@ -496,57 +559,6 @@ class SimHandler():
     #######################
 
 
-    def continuous3D_from_volume(self, volume):
-        '''
-        Takes a volumetric map and uses it to generate an OpenMM 
-        Continuous3DFunction. Returns the function.
-        '''
-        import numpy as np
-        vol_data = volume.data
-        mincoor = np.array(vol_data.origin)
-        maxcoor = mincoor + volume.data_origin_and_step()[1]*(np.array(vol_data.size)-1)
-        #Map data is in Angstroms. Need to convert (x,y,z) positions to nanometres
-        mincoor = mincoor/10
-        maxcoor = maxcoor/10
-        # Continuous3DFunction expects the minimum and maximum coordinates as
-        # arguments xmin, xmax, ymin, ...
-        minmax = [val for pair in zip(mincoor, maxcoor) for val in pair]
-        vol_data_1d = np.ravel(vol_data.matrix(), order = 'C').astype(np.double)
-        vol_dimensions = (vol_data.size)
-        print('Volume dimensions: {}; expected number: {}; actual number: {}'\
-                .format(vol_dimensions, np.product(vol_dimensions), len(vol_data_1d)))
-        print('Max: {}, min: {}, nans: {}, infs: {}'.format(
-            vol_data_1d.max(), vol_data_1d.min(), 
-            np.argwhere(np.isnan(vol_data_1d)),
-            np.argwhere(np.isinf(vol_data_1d))))
-        from simtk.openmm.openmm import Continuous3DFunction    
-        return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
-        
-    def map_potential_force_field(self, c3d_func, global_k):
-        '''
-        Takes a Continuous3DFunction and returns a CustomCompoundBondForce 
-        based on it.
-        Args:
-            c3d_func:
-                A Continuous3DFunction
-            global_k:
-                An overall global spring constant coupling atoms to the 
-                map. This can be further adjusted per atom using 
-                the "individual_k" parameter defined in the 
-                CustomCompoundBondForce energy function.
-        '''
-        from simtk.openmm import CustomCompoundBondForce
-        f = CustomCompoundBondForce(1,'')
-        f.addTabulatedFunction(name = 'map_potential', function = c3d_func)
-        f.addGlobalParameter(name = 'global_k', defaultValue = global_k)
-        f.addPerBondParameter(name = 'individual_k')
-        f.setEnergyFunction('-global_k * individual_k * map_potential(x1,y1,z1)')
-        return f
-    
-    #######################
-    # /OLD VERSIONS
-    #######################
-
     #def continuous3D_from_volume(self, volume):
         #'''
         #Takes a volumetric map and uses it to generate an OpenMM 
@@ -554,18 +566,25 @@ class SimHandler():
         #'''
         #import numpy as np
         #vol_data = volume.data
-        #vol_dimensions = vol_data.size
-        #mincoor = np.array([0,0,0], np.double)
-        #maxcoor = (np.array(vol_dimensions, np.double) - 1) / 10
+        #mincoor = np.array(vol_data.origin)
+        #maxcoor = mincoor + volume.data_origin_and_step()[1]*(np.array(vol_data.size)-1)
+        ##Map data is in Angstroms. Need to convert (x,y,z) positions to nanometres
+        #mincoor = mincoor/10
+        #maxcoor = maxcoor/10
         ## Continuous3DFunction expects the minimum and maximum coordinates as
         ## arguments xmin, xmax, ymin, ...
         #minmax = [val for pair in zip(mincoor, maxcoor) for val in pair]
-        #vol_data_1d = np.ravel(vol_data.matrix(), order = 'C')
-        #from simtk.openmm.openmm import Continuous3DFunction    
+        #vol_data_1d = np.ravel(vol_data.matrix(), order = 'C').astype(np.double)
+        #vol_dimensions = (vol_data.size)
+        #print('Volume dimensions: {}; expected number: {}; actual number: {}'\
+                #.format(vol_dimensions, np.product(vol_dimensions), len(vol_data_1d)))
+        #print('Max: {}, min: {}, nans: {}, infs: {}'.format(
+            #vol_data_1d.max(), vol_data_1d.min(), 
+            #np.argwhere(np.isnan(vol_data_1d)),
+            #np.argwhere(np.isinf(vol_data_1d))))
         #return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
-
-
-    #def map_potential_force_field(self, c3d_func, global_k, xyz_to_ijk_transform):
+        
+    #def map_potential_force_field(self, c3d_func, global_k):
         #'''
         #Takes a Continuous3DFunction and returns a CustomCompoundBondForce 
         #based on it.
@@ -577,28 +596,71 @@ class SimHandler():
                 #map. This can be further adjusted per atom using 
                 #the "individual_k" parameter defined in the 
                 #CustomCompoundBondForce energy function.
-            #xyz_to_ijk_transform:
-                #The affine transformation matrix mapping (x,y,z) coordinates
-                #back to (i,j,k) in the c3d_func array
         #'''
         #from simtk.openmm import CustomCompoundBondForce
         #f = CustomCompoundBondForce(1,'')
         #f.addTabulatedFunction(name = 'map_potential', function = c3d_func)
         #f.addGlobalParameter(name = 'global_k', defaultValue = global_k)
         #f.addPerBondParameter(name = 'individual_k')
-        #tf = xyz_to_ijk_transform
-        ##tf [0:3, 0:3] *= 10 # OpenMM in nm, ChimeraX in Angstroms
-        #tf[:,3] /= 10
-        #i_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(
-            #tf[0][0], tf[0][1], tf[0][2], tf[0][3])
-        #j_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(
-            #tf[1][0], tf[1][1], tf[1][2], tf[1][3])
-        #k_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(
-            #tf[2][0], tf[2][1], tf[2][2], tf[2][3])
-        
-        #f.setEnergyFunction('-global_k * individual_k * map_potential({},{},{})'.format(
-        #i_str, j_str, k_str))
+        #f.setEnergyFunction('-global_k * individual_k * map_potential(x1,y1,z1)')
         #return f
+    
+    #######################
+    # /OLD VERSIONS
+    #######################
+
+    def continuous3D_from_volume(self, vol_data):
+        '''
+        Takes a volumetric map and uses it to generate an OpenMM 
+        Continuous3DFunction. Returns the function.
+        '''
+        import numpy as np
+        vol_data
+        vol_dimensions = vol_data.size
+        mincoor = np.array([0,0,0], np.double)
+        maxcoor = (np.array(vol_dimensions, np.double) - 1) / 10
+        # Continuous3DFunction expects the minimum and maximum coordinates as
+        # arguments xmin, xmax, ymin, ...
+        minmax = [val for pair in zip(mincoor, maxcoor) for val in pair]
+        vol_data_1d = np.ravel(vol_data.matrix(), order = 'C')
+        from simtk.openmm.openmm import Continuous3DFunction    
+        return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
+
+
+    def map_potential_force_field(self, c3d_func, global_k, xyz_to_ijk_transform):
+        '''
+        Takes a Continuous3DFunction and returns a CustomCompoundBondForce 
+        based on it.
+        Args:
+            c3d_func:
+                A Continuous3DFunction
+            global_k:
+                An overall global spring constant coupling atoms to the 
+                map. This can be further adjusted per atom using 
+                the "individual_k" parameter defined in the 
+                CustomCompoundBondForce energy function.
+            xyz_to_ijk_transform:
+                The affine transformation matrix mapping (x,y,z) coordinates
+                back to (i,j,k) in the c3d_func array
+        '''
+        from simtk.openmm import CustomCompoundBondForce
+        f = CustomCompoundBondForce(1,'')
+        f.addTabulatedFunction(name = 'map_potential', function = c3d_func)
+        f.addGlobalParameter(name = 'global_k', defaultValue = global_k)
+        f.addPerBondParameter(name = 'individual_k')
+        tf = xyz_to_ijk_transform.matrix
+        #tf [0:3, 0:3] *= 10 # OpenMM in nm, ChimeraX in Angstroms
+        tf[:,3] /= 10
+        i_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(
+            tf[0][0], tf[0][1], tf[0][2], tf[0][3])
+        j_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(
+            tf[1][0], tf[1][1], tf[1][2], tf[1][3])
+        k_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(
+            tf[2][0], tf[2][1], tf[2][2], tf[2][3])
+        
+        f.setEnergyFunction('-global_k * individual_k * map_potential({},{},{})'.format(
+        i_str, j_str, k_str))
+        return f
 
     
     def update_force_in_context(self, force_name, context):

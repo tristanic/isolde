@@ -7,7 +7,7 @@ from chimerax.core.atomic import Residue, Atoms, AtomicStructure
 from .restraints_base import Distance_Restraint, Distance_Restraints 
 from .restraints_base import Position_Restraint, Position_Restraints   
 
-MAX_RESTRAINT_FORCE = 100.0 # kJ/mol/A 
+MAX_RESTRAINT_FORCE = 250.0 # kJ/mol/A 
 
 class CA_to_CA_plus_Two(Distance_Restraints):
     '''

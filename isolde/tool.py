@@ -66,6 +66,35 @@ class ISOLDE_ToolUI(ToolInstance):
             self.iw._sim_basic_custom_selection_button,
             )        
         
+        ###
+        # Selection manipulation buttons
+        ###
+        
+        # Grow selection at N-terminus
+        self._sel_grow_n_terminal_buttons = (
+            self.iw._rebuild_2ry_struct_restr_extend_N_button,
+            self.iw._rebuild_register_shift_extend_N_button,
+            )
+        
+        # Shrink selection at N-terminus
+        self._sel_shrink_n_terminal_buttons = (
+            self.iw._rebuild_2ry_struct_restr_shrink_N_button,
+            self.iw._rebuild_register_shift_shrink_N_button,
+            )
+        
+        # Shrink selection at C-terminus
+        self._sel_shrink_c_terminal_buttons = (
+            self.iw._rebuild_2ry_struct_restr_shrink_C_button,
+            self.iw._rebuild_register_shift_shrink_C_button,
+            )
+        
+        # Grow selection at C-terminus
+        self._sel_grow_c_terminal_buttons = (
+            self.iw._rebuild_2ry_struct_restr_extend_C_button,
+            self.iw._rebuild_register_shift_extend_C_button,
+            )
+
+        
         
         # Define intermediate and expert frames
         self._intermediate_frames = [
@@ -83,6 +112,8 @@ class ISOLDE_ToolUI(ToolInstance):
             self.iw._validate_pep_main_frame,
             self.iw._sim_basic_xtal_init_main_frame,
             self.iw._rebuild_2ry_struct_restr_container,
+            self.iw._rebuild_register_shift_container,
+            self.iw._rebuild_pos_restraint_one_atom_frame,
             ]
         
         for f in self._hidden_at_start:
@@ -98,6 +129,7 @@ class ISOLDE_ToolUI(ToolInstance):
             self.iw._rebuild_sel_res_rot_discard_button,
             self.iw._rebuild_pos_restraint_one_atom_frame,
             self.iw._rebuild_pos_restraint_clear_button,
+            self.iw._rebuild_register_shift_container,
             ]
         for f in self._disabled_at_start:
             f.setEnabled(False)

@@ -7,7 +7,7 @@
 #            University of Cambridge
 import os
 import numpy
-from math import inf
+from math import inf, degrees, radians
 
 import PyQt5
 from PyQt5.QtCore import QObject, pyqtSignal
@@ -287,6 +287,13 @@ class Isolde():
         self.peptide_bond_restraints_k = 500 # FIXME units?
         self.secondary_structure_restraints_k = 200 # FIXME units?
         
+        # The difference between the dihedral angle and target beyond which
+        # restraints begin to be applied. Below this angle there is no 
+        # extra biasing force. This cutoff can be changed on a per-dihedral
+        # basis.
+        self.default_dihedral_restraint_cutoff_angle = radians(30)
+        
+        
         ##
         # Distance retraint objects
         ##
@@ -307,13 +314,17 @@ class Isolde():
         
         # A {Residue: Rotamer} dict encompassing all mobile rotameric residues
         self.rotamers = None
-        self.rotamer_restraints_k = 500 # FIXME units?
+        self.rotamer_restraints_k = 1000 # FIXME units?
         # Range of dihedral values which will be interpreted as a cis peptide
         # bond (-30 to 30 degrees). If restrain_peptide_bonds is True, anything
         # outside of this range at the start of the simulation will be forced
         # to trans.
         from math import pi 
         self.cis_peptide_bond_range = (-pi/6, pi/6)
+        
+        # Handler for shifting stretches in register.
+        self._register_shifter = None
+        
         
         ####
         # Settings for OpenMM
@@ -359,7 +370,7 @@ class Isolde():
         self._friction = 5.0/unit.picoseconds
         # Limit on the net force on a single atom to detect instability and
         # force a minimisation
-        self._max_allowable_force = 20000.0 # kJ mol-1 nm-1
+        self._max_allowable_force = 40000.0 # kJ mol-1 nm-1
         # We need to store the last measured maximum force to determine
         # when minimisation has converged.
         self._last_max_force = inf
@@ -376,7 +387,7 @@ class Isolde():
         # Placeholder for tugging forces
         self._tugging_force = None
         # Force constant for mouse/haptic tugging. Need to make this user-adjustable
-        self.tug_force_constant = 10000 # kJ/mol/nm^3
+        self.tug_force_constant = 10000 # kJ/mol/nm^2
         # Upper limit on the strength of the tugging force
         self.tug_max_force = 10000 # kJ/mol/nm
         
@@ -709,6 +720,21 @@ class Isolde():
         
         
         ####
+        # Buttons to grow/shrink a continuous selection
+        ####
+        for b in self.gui._sel_grow_n_terminal_buttons:
+            b.clicked.connect(self._extend_selection_by_one_res_N)
+        
+        for b in self.gui._sel_shrink_n_terminal_buttons:
+            b.clicked.connect(self._shrink_selection_by_one_res_N)
+        
+        for b in self.gui._sel_shrink_c_terminal_buttons:
+            b.clicked.connect(self._shrink_selection_by_one_res_C)
+        
+        for b in self.gui._sel_grow_c_terminal_buttons:
+            b.clicked.connect(self._extend_selection_by_one_res_C)
+        
+        ####
         # Xtal map parameters (can only be set before starting simulation)
         ####
         iw._sim_basic_xtal_init_open_button.clicked.connect(
@@ -716,6 +742,9 @@ class Isolde():
             )
         iw._sim_basic_xtal_init_done_button.clicked.connect(
             self._hide_xtal_init_frame
+            )
+        iw._sim_basic_xtal_init_model_combo_box.currentIndexChanged.connect(
+            self._check_for_valid_xtal_init
             )
         iw._sim_basic_xtal_init_reflections_file_button.clicked.connect(
             self._choose_mtz_file
@@ -790,12 +819,6 @@ class Isolde():
         iw._rebuild_2ry_struct_restr_show_button.clicked.connect(
             self._toggle_secondary_structure_dialog
             )
-        iw._rebuild_2ry_struct_restr_extend_N_button.clicked.connect(
-            self._extend_selection_by_one_res_N
-            )
-        iw._rebuild_2ry_struct_restr_extend_C_button.clicked.connect(
-            self._extend_selection_by_one_res_C
-            )
         iw._rebuild_2ry_struct_restr_chooser_go_button.clicked.connect(
             self._apply_selected_secondary_structure_restraints
             )
@@ -803,6 +826,26 @@ class Isolde():
             self.clear_secondary_structure_restraints_for_selection
             )
         
+        iw._rebuild_register_shift_dialog_toggle_button.clicked.connect(
+            self._toggle_register_shift_dialog
+            )
+        iw._rebuild_register_shift_reduce_button.clicked.connect(
+            self._decrement_register_shift
+            )
+        iw._rebuild_register_shift_increase_button.clicked.connect(
+            self._increment_register_shift
+            )
+        iw._rebuild_register_shift_go_button.clicked.connect(
+            self._apply_register_shift
+            )
+        iw._rebuild_register_shift_release_button.clicked.connect(
+            self._release_register_shifter
+            )
+        
+        
+        iw._rebuild_pos_restraint_dialog_toggle_button.clicked.connect(
+            self._toggle_position_restraints_dialog
+            )
         iw._rebuild_pos_restraint_go_button.clicked.connect(
             self._restrain_selected_atom_to_xyz
             )
@@ -908,7 +951,6 @@ class Isolde():
                 d[i] = haptics.HapticTugger(self.session, i, self._annotations)
             self._use_haptics = True
             self._status('')
-            self.session.view.center_of_rotation_method = 'fixed'
         else:
             self._use_haptics = False
         
@@ -1003,8 +1045,10 @@ class Isolde():
                 self._disable_rebuild_residue_frame()
             if is_continuous_protein_chain(sel):
                 self._enable_secondary_structure_restraints_frame()
+                self._enable_register_shift_frame()
             else:
                 self._disable_secondary_structure_restraints_frame()
+                self._disable_register_shift_frame()
             
             # A running simulation takes precedence for memory control
             return
@@ -1081,17 +1125,23 @@ class Isolde():
         self.iw._sim_basic_xtal_init_main_frame.hide()
         self.iw._sim_basic_xtal_init_open_button.setEnabled(True)
     
+    def _check_for_valid_xtal_init(self, *_):
+        cb = self.iw._sim_basic_xtal_init_model_combo_box
+        if cb.currentData is not None:
+            if os.path.isfile(self.iw._sim_basic_xtal_init_reflections_file_name.text()):
+                self.iw._sim_basic_xtal_init_go_button.setEnabled(True)
+                return
+        self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
+    
     def _choose_mtz_file(self, *_):
         options = QFileDialog.Options()
         #options |= QFileDialog.DontUseNativeDialog
         caption = 'Choose a file containing map structure factors'
         filetypes = 'MTZ files (*.mtz)'
         filename, _ = QFileDialog.getOpenFileName(None, caption, filetypes, filetypes, options = options)
-        if filename:
-            self.iw._sim_basic_xtal_init_reflections_file_name.setText(filename)
-        else:
-            self.iw._sim_basic_xtal_init_reflections_file_name.setText('None')
-    
+        self._check_for_valid_xtal_init()
+        
+        
     def _initialize_xtal_structure(self, *_):
         cb = self.iw._sim_basic_xtal_init_model_combo_box
         fname = self.iw._sim_basic_xtal_init_reflections_file_name.text()
@@ -1105,6 +1155,8 @@ class Isolde():
             _generic_warning(errstring)
         m = cb.currentData()
         clipper.CrystalStructure(self.session, m, fname)
+        self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
+        self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
                 
     
         
@@ -1245,30 +1297,69 @@ class Isolde():
         self.iw._rebuild_2ry_struct_restr_container.setEnabled(True)
         self.iw._rebuild_2ry_struct_restr_top_label.setText('')
     
+    def _enable_register_shift_frame(self, *_):
+        self.iw._rebuild_register_shift_container.setEnabled(True)
+   
     def _disable_secondary_structure_restraints_frame(self, *_):
         self.iw._rebuild_2ry_struct_restr_container.setEnabled(False)
         t = 'Select a protein atom or residue to begin'
         self.iw._rebuild_2ry_struct_restr_top_label.setText(t)
         t = 'Invalid selection'
         self.iw._rebuild_2ry_struct_restr_sel_text.setText(t)
+   
+    def _disable_register_shift_frame(self, *_):
+        self.iw._rebuild_register_shift_container.setEnabled(False)
+   
     
     def _toggle_secondary_structure_dialog(self, *_):
         button = self.iw._rebuild_2ry_struct_restr_show_button
         frame = self.iw._rebuild_2ry_struct_restr_container
-        show_text = 'Show secondary structure dialog'
-        hide_text = 'Hide secondary structure dialog'
+        show_text = 'Show secondary structure dialogue'
+        hide_text = 'Hide secondary structure dialogue'
         if button.text() == show_text:
             frame.show()
             button.setText(hide_text)
         else:
             frame.hide()
             button.setText(show_text)
+    
+    def _toggle_register_shift_dialog(self, *_):
+        button = self.iw._rebuild_register_shift_dialog_toggle_button
+        frame = self.iw._rebuild_register_shift_container
+        show_text = 'Show register shift dialogue'
+        hide_text = 'Hide register shift dialogue'
+        if button.text() == show_text:
+            frame.show()
+            button.setText(hide_text)
+        else:
+            frame.hide()
+            button.setText(show_text)
+    
+    def _toggle_position_restraints_dialog(self, *_):
+        button = self.iw._rebuild_pos_restraint_dialog_toggle_button
+        frame = self.iw._rebuild_pos_restraint_one_atom_frame
+        show_text = 'Show position restraints dialogue'
+        hide_text = 'Hide position restraints dialogue'
+        if button.text() == show_text:
+            frame.show()
+            button.setText(hide_text)
+        else:
+            frame.hide()
+            button.setText(show_text)
+    
+    
         
     def _extend_selection_by_one_res_N(self, *_):
         self._extend_selection_by_one_res(-1)
     
+    def _shrink_selection_by_one_res_N(self, *_):
+        self._shrink_selection_by_one_res(1)
+    
     def _extend_selection_by_one_res_C(self, *_):
         self._extend_selection_by_one_res(1)
+    
+    def _shrink_selection_by_one_res_C(self, *_):
+        self._shrink_selection_by_one_res(-1)
     
     def _extend_selection_by_one_res(self, direction):
         '''
@@ -1304,27 +1395,45 @@ class Isolde():
             if iend < len(p) - 1:
                 last = p[iend+1]
                 last.atoms.selected = True
-        
+    
+    def _shrink_selection_by_one_res(self, direction):
+        '''
+        Shrinks the current selection by one residue from one end. If 
+        direction == 1 the first residue will be removed from the selection,
+        otherwise the last will be removed. The selection will never be
+        shrunk to less than a single residue.
+        '''
+        from chimerax.core.atomic import selected_atoms
+        sel = selected_atoms(self.session)
+        residues = sel.unique_residues
+        if len(residues) > 1:
+            if direction == 1:
+                residues[0].atoms.selected = False
+            elif direction == -1:
+                residues[-1].atoms.selected = False
+            else:
+                raise TypeError('Direction must be either 1 or -1!')
+                
             
-        seltext = 'Chain {}: residues {} to {}'.format(
-            p.unique_chain_ids[0], first.number, last.number)
-        self.iw._rebuild_2ry_struct_restr_sel_text.setText(seltext)
+        #~ seltext = 'Chain {}: residues {} to {}'.format(
+            #~ p.unique_chain_ids[0], first.number, last.number)
+        #~ self.iw._rebuild_2ry_struct_restr_sel_text.setText(seltext)
             
         
     def _apply_selected_secondary_structure_restraints(self, *_):
         from chimerax.core.atomic import selected_atoms
         sh = self._sim_handler
         sc = self._total_sim_construct
-        context = self.sim.context
         dihed_k = self.secondary_structure_restraints_k
         sel = selected_atoms(self.session)
         residues = sel.unique_residues
+        sel = residues.atoms
         cb = self.iw._rebuild_2ry_struct_restr_chooser_combo_box
         structure_type = cb.currentText()
         target_phipsi = cb.currentData()
         phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
-        sh.set_dihedral_restraints(context, sc, phi, target_phipsi[0], dihed_k)
-        sh.set_dihedral_restraints(context, sc, psi, target_phipsi[1], dihed_k)
+        sh.set_dihedral_restraints(sc, phi, target_phipsi[0], dihed_k)
+        sh.set_dihedral_restraints(sc, psi, target_phipsi[1], dihed_k)
         
         dist_k = self.distance_restraints_k
         rca = self._sim_ca_ca2_restr
@@ -1338,12 +1447,14 @@ class Isolde():
         for r in residues:
             cad = rca[r]
             if cad is not None:
-                cad.target_distance = ca_distance
-                cad.spring_constant = dist_k
+                if cad.atoms[1] in sel:
+                    cad.target_distance = ca_distance
+                    cad.spring_constant = dist_k
             ond = ron[r]
             if ond is not None:
-                ond.target_distance = on_distance
-                ond.spring_constant = dist_k
+                if ond.atoms[1] in sel:
+                    ond.target_distance = on_distance
+                    ond.spring_constant = dist_k
     
     def clear_secondary_structure_restraints_for_selection(self, *_, atoms = None, residues = None):
         '''
@@ -1365,8 +1476,8 @@ class Isolde():
         if sel is not None:
             residues = sel.unique_residues
         phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
-        sh.set_dihedral_restraints(context, sc, phi, 0, 0)
-        sh.set_dihedral_restraints(context, sc, psi, 0, 0)
+        sh.set_dihedral_restraints(sc, phi, 0, 0)
+        sh.set_dihedral_restraints(sc, psi, 0, 0)
         for r in residues:
             cad = self._sim_ca_ca2_restr[r]
             ond = self._sim_o_n4_restr[r]
@@ -1376,6 +1487,44 @@ class Isolde():
             if ond is not None:
                 ond.target_distance = 0
                 ond.spring_constant = 0
+
+
+
+    def _increment_register_shift(self, *_):
+        self.iw._rebuild_register_shift_nres_spinbox.stepUp()
+    
+    def _decrement_register_shift(self, *_):
+        self.iw._rebuild_register_shift_nres_spinbox.stepDown()
+    
+    def _apply_register_shift(self, *_):
+        from chimerax.core.atomic import selected_atoms
+        from .register_shift import ProteinRegisterShifter
+        nshift = self.iw._rebuild_register_shift_nres_spinbox.value()
+        sel = selected_atoms(self.session)
+        rs = self._register_shifter = ProteinRegisterShifter(self.session, self, sel)
+        rs.shift_register(nshift)
+        self.iw._rebuild_register_shift_release_button.setEnabled(False)
+        self.iw._rebuild_register_shift_go_button.setEnabled(False)
+        self._register_finished_check_handler = self.triggers.add_handler(
+            'completed simulation step', self._check_if_register_shift_finished)
+            
+    def _check_if_register_shift_finished(self, *_):
+        if self._register_shifter.finished:
+            self.iw._rebuild_register_shift_release_button.setEnabled(True)
+            self.triggers.remove_handler(self._register_finished_check_handler)
+            self._register_finished_check_handler = None
+
+    def _release_register_shifter(self, *_):
+        if self._register_shifter is not None:
+            self._register_shifter.release_all()
+        self._register_shifter = None
+        self.iw._rebuild_register_shift_go_button.setEnabled(True)
+        self.iw._rebuild_register_shift_release_button.setEnabled(False)
+
+
+
+
+
         
             
     def _restrain_selected_atom_to_xyz(self, *_):
@@ -1428,18 +1577,22 @@ class Isolde():
     
     def _set_rotamer_target(self, *_):
         target = self._selected_rotamer.target = self._target_rotamer.angles
-        dihedrals = self._selected_rotamer.dihedrals
-        context = self.sim.context
+        self._apply_rotamer_target_to_sim(self._selected_rotamer)
+        self._clear_rotamer()
+    
+    def _apply_rotamer_target_to_sim(self, rotamer):
+        dihedrals = rotamer.dihedrals
+        target = rotamer.target
         sc = self._total_sim_construct
         sh = self._sim_handler
         k = self.rotamer_restraints_k
         indices = numpy.reshape(sc.indices(dihedrals.atoms),[len(dihedrals),4])
 
         for i, d, t in zip(indices, dihedrals, target):
-            sh.set_dihedral_restraint(context, sc, d, i, t, k)
+            sh.set_dihedral_restraint(sc, d, i, t, k)
         
-        self._selected_rotamer.restrained = True
-        self._clear_rotamer()
+        rotamer.restrained = True
+
         
     
     def _clear_rotamer(self, *_):
@@ -1460,7 +1613,7 @@ class Isolde():
         sh = self._sim_handler
         indices = numpy.reshape(sc.indices(dihedrals.atoms), [len(dihedrals), 4])
         for i, d in zip(indices, dihedrals):
-            sh.set_dihedral_restraint(self.sim.context, sc, d, i, 0, 0)
+            sh.set_dihedral_restraint(sc, d, i, 0, 0)
     
     
     def _disable_rebuild_residue_frame(self):
@@ -1981,6 +2134,7 @@ class Isolde():
         
         # Register each dihedral with the CustomTorsionForce, so we can
         # restrain them at will during the 
+        sh.initialize_dihedral_restraint_force(self.default_dihedral_restraint_cutoff_angle)
         self._initialize_backbone_restraints(bd, sh)
         
         for res in total_mobile.unique_residues:
@@ -1995,7 +2149,7 @@ class Isolde():
                 d_indices = indices[i]
                 d.sim_index = sh.initialize_dihedral_restraint(d, d_indices)
             if thisrot.restrained:
-                self._set_rotamer_target(thisrot.target)
+                self._apply_rotamer_target_to_sim(thisrot)
                 
         
         
@@ -2060,13 +2214,13 @@ class Isolde():
         if self.sim_mode in [sm.xtal, sm.em]:
             for mkey in self.master_map_list:
                 m = self.master_map_list[mkey]
-                vol = m.mask_volume_to_selection(
-                    total_mobile, invert = False)
+                vol_data = m.crop_to_selection(
+                    total_mobile, m._mask_cutoff*1.5, normalize = True)
                 #vol = m._source_map
-                c3d = sh.continuous3D_from_volume(vol)
+                c3d = sh.continuous3D_from_volume(vol_data)
                 m.set_c3d_function(c3d)
                 from copy import copy
-                f = sh.map_potential_force_field(c3d, m.get_coupling_constant())
+                f = sh.map_potential_force_field(c3d, m.get_coupling_constant(), vol_data.xyz_to_ijk_transform)
                 m.set_potential_function(f)
                 # Register the map with the SimHandler
                 sh.register_map(m)
@@ -2504,7 +2658,7 @@ class Isolde():
                     t = 0
                 else:
                     t = pi
-            sh.set_dihedral_restraint(context, sc, d, indices[i], t, k)
+            sh.set_dihedral_restraint(sc, d, indices[i], t, k)
                     
     def remove_peptide_bond_restraints(self, dihedrals):
         '''
@@ -2514,12 +2668,11 @@ class Isolde():
         import numpy
         sc = self._total_sim_construct
         sh = self._sim_handler
-        context = self.sim.context
         # Get all atom indices in one go because the lookup is expensive
         indices = numpy.reshape(sc.indices(dihedrals.atoms),[len(dihedrals),4])
         for i, d in enumerate(dihedrals):
             if d is not None:
-                sh.set_dihedral_restraint(context, sc, d, indices[i], 0, 0)        
+                sh.set_dihedral_restraint(sc, d, indices[i], 0, 0)        
 
 
     #############################################
@@ -2561,8 +2714,9 @@ class Isolde():
             surr.displays = True
             self._surroundings_hidden = False
         
-        sh.update_distance_restraints_in_context(c)
-        sh.update_position_restraints_in_context(c)
+        sh.update_restraints_in_context(c)
+        #sh.update_distance_restraints_in_context(c)
+        #sh.update_position_restraints_in_context(c)
         
         newpos, max_force, max_index = self._get_positions_and_max_force()
         #self._sim_pos_restr.update_pseudobonds(

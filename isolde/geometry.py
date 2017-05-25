@@ -249,5 +249,48 @@ def arrow_along_force_vector(arrow, xyz0, force, scale = 1.0):
     sc = scale(l)
     arrow.position = product((trans,rot,sc))
     
+def pin_drawing(handle_radius, pin_radius, total_height):
+    '''
+    Simple 3D representation of a drawing pin.
+    Args:
+        handle_radius:
+            The radius of the "handle" in Angstroms
+        pin_radius:
+            The radius of the "pin" in Angstroms
+        height:
+            The overall height of the drawing
+    '''
+    import numpy
+    from chimerax.core.surface.shapes import cylinder_geometry, cone_geometry
+    from chimerax.core.geometry import translation
+    pin_height = total_height*5/12
+    handle_height = total_height*7/12
+    tb_height = total_height/4
+    
+    pin = list(cone_geometry(radius = pin_radius, height = pin_height, points_up = False))
+    handle_bottom = list(cone_geometry(radius = handle_radius, height = tb_height, nc = 8))
+    handle_middle = list(cylinder_geometry(radius = handle_radius/2, height = handle_height, nc = 8, caps = False))
+    handle_top = list(cone_geometry(radius = handle_radius, height = tb_height, nc = 8, points_up = False))
+    
+    
+    pint = translation((0,0,pin_height/2))
+    pin[0] = pint.moved(pin[0])
+    hbt = translation((0,0, pin_height + tb_height/2.05))
+    handle_bottom[0] = hbt.moved(handle_bottom[0])
+    hmt = translation((0,0, handle_height/2 + pin_height))
+    handle_middle[0] = hmt.moved(handle_middle[0])
+    htt = translation((0,0,total_height - tb_height/2.05))
+    handle_top[0] = htt.moved(handle_top[0])
+    
+    vertices = numpy.concatenate((pin[0], handle_bottom[0], handle_middle[0], handle_top[0]))
+    normals = numpy.concatenate((pin[1], handle_bottom[1], handle_middle[1], handle_top[1]))
+    
+    ntri = len(pin[0])
+    triangles = pin[2]
+    for d in (handle_bottom, handle_middle, handle_top):
+        triangles = numpy.concatenate((triangles, d[2]+ntri))
+        ntri += len(d[0])
+    
+    return vertices, normals, triangles
     
         

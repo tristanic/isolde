@@ -229,7 +229,7 @@ class Position_Restraint:
         # Optionally, we can provide an atom representing the target and
         # a pseudobond between the master and target atoms, to provide a
         # visual representation of the restraint.
-        self._target_atom = None
+        self._target_atom = None 
         self._pseudobond = None
         self._spring_constant = 0
         self._sim_force_index = -1
@@ -252,6 +252,20 @@ class Position_Restraint:
             self._sim_handler.change_position_restraint_parameters(self)
         
     @property
+    def target_indicator(self):
+        '''
+        Visual representation of the target position. Read-only.
+        '''
+        return self._target_atom
+        
+    @property
+    def target_bond(self):
+        '''
+        Dashed bond linking the restrained atom to its target. Read-only.
+        '''
+        return self._pseudobond
+    
+    @property
     def spring_constant(self):
         return self._spring_constant
     
@@ -259,11 +273,19 @@ class Position_Restraint:
     def spring_constant(self, k):
         self._spring_constant = k
         ta = self._target_atom
-        if ta is not None:
-            if k == 0:
+        pb = self._pseudobond
+        if k == 0:
+            if ta is not None:
                 ta.display = False
-            else:
+                ta.hide = True
+            if pb is not None:
+                pb.display = False
+        else:
+            if ta is not None:
                 ta.display = True
+                ta.hide = False
+            if pb is not None:
+                pb.display = True
         if self._sim_handler is not None:
             self._sim_handler.change_position_restraint_parameters(self)
     
@@ -298,6 +320,8 @@ class Position_Restraints:
         self._targets = None
         # Current actual distances
         self._distances = None
+        # Atoms object for visualising the target positions
+        self._target_indicators = None
         
     @property
     def atoms(self):
@@ -322,15 +346,27 @@ class Position_Restraints:
     
     @property
     def targets(self):
-        return numpy.array([r.target_distance for r in self])
+        if self.target_indicators is not None:
+            return self.target_indicators.coords
+        return numpy.array([r.target for r in self])
     
     @targets.setter
     def targets(self, targets):
         if len(targets) != len(self):
             raise IndexError('Target array length must equal the number of restraints!')
         for r, t in zip(self, targets):
-            r.target_distance = t
-
+            r.target = t
+    
+    @property
+    def target_indicators(self):
+        
+        if self._target_indicators is None:
+            targets = [r.target_indicator for r in self if r.target_indicator is not None]
+            if not len(targets):
+                self._target_indicators = None
+            self._target_indicators = Atoms(targets)
+        return self._target_indicators
+    
     @property
     def all_distances(self):
         '''Returns the current distances between atoms and their targets, in Angstroms.'''
