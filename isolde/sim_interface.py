@@ -183,15 +183,25 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
     is defined as -k * cos (theta-theta0). 
     '''
     def __init__(self):
-        standard_energy = '-k*cos(theta-theta0)'
-        flat_energy = '-k*cos_cutoff'
-        switch_function = 'step(cos(theta-theta0)-cos_cutoff)'
-        complete_function = 'select({},{},{})'.format(
-            switch_function, flat_energy, standard_energy)
+        normalize_fn = '((theta-theta0 + pi) - floor((theta-theta0 + pi) / two_pi) * two_pi - pi)' 
+        standard_energy = '0.5*k * dtheta^2'
+        flat_energy = '0.5* k * cutoff^2'
+        switch_function = 'step(cutoff-dtheta)'
+        complete_function = 'select({},{},{});dtheta = {}'.format(
+            switch_function, flat_energy, standard_energy, normalize_fn)
+        #~ standard_energy = '-k*cos(theta-theta0)'
+        #~ flat_energy = '-k*cos_cutoff'
+        #~ switch_function = 'step(cos(theta-theta0)-cos_cutoff)'
+        #~ complete_function = 'select({},{},{})'.format(
+            #~ switch_function, flat_energy, standard_energy)
         super().__init__(complete_function)
-        per_bond_parameters = ('k', 'theta0', 'cos_cutoff')
+        #~ per_bond_parameters = ('k', 'theta0', 'cos_cutoff')
+        per_bond_parameters = ('k', 'theta0', 'cutoff')
         for p in per_bond_parameters:
             self.addPerTorsionParameter(p)
+        self.addGlobalParameter('pi', pi)
+        self.addGlobalParameter('two_pi', 2*pi)
+        
         self.update_needed = False
     
     def set_cutoff_angle(self, i, angle):
@@ -200,7 +210,7 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
         radians for one dihedral.
         '''
         p1, p2, p3, p4, current_params = self.getTorsionParameters(i)
-        current_params[2] = cos(angle)
+        current_params[2] = angle
         self.setTorsionParameters(i, p1, p2, p3, p4, current_params)
         self.update_needed = True
     
@@ -375,7 +385,7 @@ class SimHandler():
         #top = self._topology
         c = (cutoff or self.default_torsion_cutoff)
         force = self._dihedral_restraint_force
-        index_in_force = force.addTorsion(*indices.tolist(), [0, 0, cos(c)])
+        index_in_force = force.addTorsion(*indices.tolist(), [0, 0, c])
         return index_in_force
 
         ##
