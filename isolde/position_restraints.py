@@ -92,10 +92,17 @@ class Atom_Position_Restraints(Position_Restraints):
         self._pb_radii = numpy.array([self.min_pb_radius]*len(self), numpy.float32)
         self._pb_colors = numpy.zeros([4, len(self)], numpy.uint8)
     
+    @property
+    def hidden_indicators(self):
+        return self._target_model.atoms[self.spring_constants == 0]
+    
     def _update_target_display(self, trigger_name, changes):
         if 'display changed' in changes.atom_reasons():
             if self.master_model in changes.modified_atoms().unique_structures:
                 self.target_indicators.displays = self.atoms.displays
+        if 'hide changed' in changes.atom_reasons():
+            if self._target_model in changes.modified_atoms().unique_structures:
+                self.hidden_indicators.hides = True
     
     def _check_if_master_deleted(self, trigger_name, models):
         if self.master_model in models:
@@ -162,8 +169,12 @@ class PositionRestraintIndicator(Structure):
     def atomspec_has_atoms(self):
         return False
         
-    def atomspec_atoms(self):
-        return None
+    #def atomspec_atoms(self):
+    #    return None
+    
+    @property
+    def ribbon_display_count(self):
+        return 0
     
     def _update_level_of_detail(self, total_atoms):
         atoms = self.atoms  # optimzation, avoid making new numpy array from C++
@@ -199,21 +210,9 @@ def atom_residues(atoms):
      
 def restraint_indicator_from_atoms(m, atoms, name = None):
 
-    from chimerax.core.atomic import AtomicStructure, Structure
-    structure_class = PositionRestraintIndicator
-    cm = structure_class(m.session, name = (name or m.name), auto_style = False)
+    cm = PositionRestraintIndicator(m.session, name = (name or m.name), auto_style = False)
     cm.ss_assigned = True
-#    cm.color = m.color
     cm.display = m.display
-#    cm.lineWidth = m.lineWidth
-#    cm.pointSize = m.pointSize
-#    cm.ballScale = m.ballScale
-
-#    cm.pdbVersion = m.pdbVersion
-#    if hasattr(m, 'pdbHeaders'):
-#        cm.setAllPDBHeaders(m.pdbHeaders)
-#    if hasattr(m, 'mmCIFHeaders'):
-#        cm.mmCIFHeaders = m.mmCIFHeaders
 
     rmap = {}
     rlist = atom_residues(atoms)
@@ -221,12 +220,8 @@ def restraint_indicator_from_atoms(m, atoms, name = None):
     rlist.sort(key = lambda r: rorder[r])
     for r in rlist:
         cr = cm.new_residue(r.name, r.chain_id, r.number)
-#        cr.isHet = r.isHet
         cr.is_helix = r.is_helix
         cr.is_strand = r.is_strand
-        cr.ribbon_color = r.ribbon_color
-#        cr.ribbonStyle = r.ribbonStyle
-#        cr.ribbonDrawMode = r.ribbonDrawMode
         cr.ribbon_display = False
         rmap[r] = cr
 
@@ -234,7 +229,6 @@ def restraint_indicator_from_atoms(m, atoms, name = None):
     for a in atoms:
         ca = cm.new_atom(a.name, a.element_name)
         ca.coord = a.coord
-#        ca.altLoc = a.altLoc
         ca.color = a.color
         ca.draw_mode = a.draw_mode
         ca.display = a.display
@@ -246,9 +240,102 @@ def restraint_indicator_from_atoms(m, atoms, name = None):
     cm.new_atoms()
     
     return cm
+
+
+#~ class CustomPropertyManager:
+    #~ '''
+    #~ A handler to maintain custom atomic properties for a model.
+    #~ '''
+    #~ def __init__(self, model, level):
+        #~ '''
+        #~ Create a container for custom per-atom or per-residue properties.
+        #~ Args:
+            #~ model:
+                #~ A Structure or AtomicStructure
+            #~ level:
+                #~ 'atom' or 'residue'
+        #~ '''
+        #~ # A dict with direct 1:1 mapping between reference atom/residue 
+        #~ # and index in the property value arrays. Only used to update the 
+        #~ # index lookups when the number of atoms and/or residues within the 
+        #~ # model changes.
+        #~ self._dict_map = {}
+        #~ self.model = model
+        #~ self._level = level
+        #~ self._properties = {}
+    
+    #~ def add_new_custom_property(self, name, dtype, default_value):
+        #~ import numpy
+
+   #~ def _model_changed(self, new_reference_list):
+        #~ import numpy
+        #~ new_array = numpy.empty(len(new_reference_list), self.dtype)
+        #~ new_dict_map = {}
+        #~ for i, a in enumerate(new_reference_list):
+            #~ try:
+                #~ new_array[i] = self.data[self._dict_map[a]]
+            #~ except KeyError:
+                #~ new_array[i] = self.default_value
+            #~ new_dict_map[a] = i
+        #~ self.data = data
+
+
+#~ class CustomProperty:
+    #~ '''
+    #~ Associates a set of atoms (or residues) with an array of custom values
+    #~ or objects.
+    #~ '''
+    #~ def __init__(self, reference_objects, dtype, default_value):
+        #~ ''' Prepare the custom property array with default values. '''
+        #~ self._ref_objects = reference_objects
+        #~ self._ref_type = type(reference_objects[0])
+        #~ self._plural_ref_type = type(reference_objects)
+        #~ self.dtype = dtype
+        
+        #~ import numpy
+        #~ data = self.data = numpy.array([default_value]*len(reference_objects), dtype)
+        #~ for i, r in enumerate(reference_objects):
+            #~ self._dict_map[r] = i
+    
+    #~ def __getitem__(self, key):
+        #~ import numpy
+        #~ if not len(self):
+            #~ return None
+        #~ if isinstance(key,(int, numpy.integer, slice, numpy.ndarray)):
+            #~ return self.data[key]
+        #~ if isinstance(key, self._ref_type):
+            #~ index = self._ref_objects.index(key)
+            #~ return self.data[index]
+        #~ if isinstance(key, self._plural_ref_type):
+            #~ indices = self._ref_objects.indices(key)
+            #~ return self.data[indices]
+        
+        #~ raise TypeError('Unrecognised key!')
+    
+         
+    
     
 
         
+        
+        
     
+#~ class AtomicStructureWithCustomProperties(AtomicStructure):
+    #~ def __init__(self, *args, **kwargs)
+        #~ self.custom_atomic_properties = CustomPropertyManager()
+        #~ super().__init__(*args, **kwargs)
             
+    #~ def add_custom_atomic_property(self, key, dtype, default_val):
+        #~ '''
+        #~ Add a custom property to all atoms in this structure.
+        #~ Args:
+            #~ key:
+                #~ A string, number or hashable object to be used for recall
+                #~ of this property
+            #~ dtype:
+                #~ A numpy dtype indicating the type of data stored
+            #~ default_val:
+                #~ The default value to be associated with new atoms. The 
+                #~ initial array will be populated with this value.
+        #~ '''
         

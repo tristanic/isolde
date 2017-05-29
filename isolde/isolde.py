@@ -1132,6 +1132,7 @@ class Isolde():
                 self.iw._sim_basic_xtal_init_go_button.setEnabled(True)
                 return
         self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
+        self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
     
     def _choose_mtz_file(self, *_):
         options = QFileDialog.Options()
@@ -1139,6 +1140,7 @@ class Isolde():
         caption = 'Choose a file containing map structure factors'
         filetypes = 'MTZ files (*.mtz)'
         filename, _ = QFileDialog.getOpenFileName(None, caption, filetypes, filetypes, options = options)
+        self.iw._sim_basic_xtal_init_reflections_file_name.setText(filename)
         self._check_for_valid_xtal_init()
         
         
@@ -1189,7 +1191,8 @@ class Isolde():
             name, vol, cutoff, coupling, style, color, contour, contour_units, \
                 mask_vis, is_per_atom, per_atom_k = current_map.get_map_parameters()
             iw._em_map_name_field.setText(name)
-            iw._em_map_model_combo_box.setCurrentText(vol.id_string())
+            id_str = vol.id_string() + ' ' + vol.name
+            iw._em_map_model_combo_box.setCurrentText(id_str)
             iw._em_map_cutoff_spin_box.setValue(cutoff)
             iw._em_map_coupling_spin_box.setValue(coupling)
             if style is not None:

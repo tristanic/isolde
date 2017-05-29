@@ -1,14 +1,73 @@
 # vim: set expandtab shiftwidth=4 softtabstop=4:
 
-class IsoldeMap(object):
+class IsoldeMap:
     '''Generic class to hold the details of maps to be used in the simulation'''
-    def __init__(self, session, name, source_map, cutoff, coupling_constant, 
-        style = None, color = None, contour = None, contour_units = None, 
-        mask = None, per_atom_coupling = False):
+    def __init__(self, session, name, source_map, mask_cutoff, 
+        coupling_constant, is_difference_map = False, style = None, 
+        color = None, contour = None, contour_units = 'sigma', mask = True, 
+        crop = True, per_atom_coupling = False, per_atom_scaling_factors = None):
+        '''
+        Wraps a ChimeraX Volume object (or subclass) with all the added
+        information necessary to couple it to an ISOLDE simulation, along
+        with some generic methods to adjust its visualisation.
+        Args:
+            session:
+                The ChimeraX session.
+            name:
+                A descriptive name for this volume to be displayed in the
+                GUI etc.
+            source_map:
+                The existing Volume object
+            cutoff:
+                The distance (in Angstroms) beyond which the map will be
+                masked out during simulations
+            coupling_constant:
+                A global scaling constant defining how strongly the map 
+                pulls on atoms. At each timepoint, atom i feels a force
+                equal to:
+                    
+                    per_atom_scaling_factors[i] * coupling_constant * (map gradient)
+                
+                along each axis.
+            is_difference_map:
+                Is this map a difference map? If so, it will be displayed
+                with symmetric positive and negative contours.
+            style:
+                Contour display style for this map. One of "mesh" or "surface"
+            color:
+                Colour of the map surface. For a standard map, this should
+                be a single array [r,g,b,opacity], with each entry in the
+                range 0-255. For a difference map, a tuple of two such 
+                arrays is required, with the colour for the negative 
+                contour first.
+            contour:
+                The desired contour level of the map display, in units 
+                defined by the contour_units argument. Default is 1.0 
+                sigma.
+            contour_units:
+                'sigma' (default): contour will be interpreted as a 
+                    multiple of the map standard deviation
+                'map units': contour will be interpreted as an absolute
+                    value in whatever units the map uses.
+            mask:
+                boolean (default True). Do we want to mask the map to 
+                the mobile atoms during a simulation?
+            crop:
+                boolean (default True). Do we need to crop down from a 
+                bigger map before starting the simulation? If true, the
+                default padding will be set to twice the mask radius.
+            per_atom_coupling:
+                (NOT YET IMPLEMENTED)
+                boolean (default False). If true, then the coupling of 
+                each atom to the map will be scaled according to its entry
+                in per_atom_scaling_factors
+            
+                
+        '''
         self.session = session # Handle for current ChimeraX session
         self._name = name     # User-specified name (e.g. '2mFo-DFc')
         self._source_map = source_map # A model currently loaded into ChimeraX
-        self._mask_cutoff = cutoff # in Angstroms 
+        self._mask_cutoff = mask_cutoff # in Angstroms 
         self._coupling_constant = coupling_constant # How hard map pulls on atoms
         self._per_atom_coupling = per_atom_coupling # Do we vary map pull by atom type?
         self._style = style # Map surface style
@@ -20,6 +79,7 @@ class IsoldeMap(object):
         # to be associated with a particular map (e.g. anomalous scatterers with
         # an anomalous difference map; omitted fragments with the mFo-DFc density
         # in an omit map, etc.)
+        self._crop = crop # Do we crop the map before starting the simulation?
         
         # Optionally, we can scale the strength of each atom's individual coupling to the map
         if per_atom_coupling:

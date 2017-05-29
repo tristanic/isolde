@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'IsoldeFrame.ui'
 #
-# Created by: PyQt5 UI code generator 5.8
+# Created by: PyQt5 UI code generator 5.6
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -93,7 +93,7 @@ class Ui_isolde_widget(object):
         self._sim_basic_tab_scroll_area.setWidgetResizable(True)
         self._sim_basic_tab_scroll_area.setObjectName("_sim_basic_tab_scroll_area")
         self._sim_basic_scroll_area_contents = QtWidgets.QWidget()
-        self._sim_basic_scroll_area_contents.setGeometry(QtCore.QRect(0, 0, 470, 1158))
+        self._sim_basic_scroll_area_contents.setGeometry(QtCore.QRect(0, -295, 470, 1158))
         self._sim_basic_scroll_area_contents.setObjectName("_sim_basic_scroll_area_contents")
         self.verticalLayout_8 = QtWidgets.QVBoxLayout(self._sim_basic_scroll_area_contents)
         self.verticalLayout_8.setContentsMargins(0, 0, 0, 0)
@@ -577,7 +577,7 @@ class Ui_isolde_widget(object):
         self._sim_remodel_scroll_area.setWidgetResizable(True)
         self._sim_remodel_scroll_area.setObjectName("_sim_remodel_scroll_area")
         self.scrollAreaWidgetContents_5 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_5.setGeometry(QtCore.QRect(0, -240, 488, 781))
+        self.scrollAreaWidgetContents_5.setGeometry(QtCore.QRect(0, 0, 488, 781))
         self.scrollAreaWidgetContents_5.setObjectName("scrollAreaWidgetContents_5")
         self.verticalLayout_15 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents_5)
         self.verticalLayout_15.setContentsMargins(0, 0, 0, 0)
@@ -1081,7 +1081,7 @@ class Ui_isolde_widget(object):
         self.retranslateUi(isolde_widget)
         self.toolBox.setCurrentIndex(1)
         self._build_tab_widget.setCurrentIndex(1)
-        self._sim_tab_widget.setCurrentIndex(2)
+        self._sim_tab_widget.setCurrentIndex(0)
         self._restraints_pep_on_off_combo_box.setCurrentIndex(1)
         self._restraints_pep_all_sel_combo_box.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(isolde_widget)
