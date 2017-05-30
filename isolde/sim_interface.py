@@ -57,7 +57,7 @@ def cys_type(residue):
     for a in bonded_atoms:
         if a.residue != residue:
             return 'CYX'
-        if a.name == 'SG':
+        if a.name == 'HG':
             return 'CYS'
 
 
@@ -625,19 +625,18 @@ class SimHandler():
         Continuous3DFunction. Returns the function.
         '''
         import numpy as np
-        vol_data
-        vol_dimensions = vol_data.size
+        vol_dimensions = vol_data.shape[::-1]
         mincoor = np.array([0,0,0], np.double)
         maxcoor = (np.array(vol_dimensions, np.double) - 1) / 10
         # Continuous3DFunction expects the minimum and maximum coordinates as
         # arguments xmin, xmax, ymin, ...
         minmax = [val for pair in zip(mincoor, maxcoor) for val in pair]
-        vol_data_1d = np.ravel(vol_data.matrix(), order = 'C')
+        vol_data_1d = np.ravel(vol_data, order = 'C')
         from simtk.openmm.openmm import Continuous3DFunction    
         return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
 
 
-    def map_potential_force_field(self, c3d_func, global_k, xyz_to_ijk_transform):
+    def map_potential_force_field(self, c3d_func, global_k, region):
         '''
         Takes a Continuous3DFunction and returns a CustomCompoundBondForce 
         based on it.
@@ -653,14 +652,14 @@ class SimHandler():
                 The affine transformation matrix mapping (x,y,z) coordinates
                 back to (i,j,k) in the c3d_func array
         '''
+        xyz_to_ijk_transform = region.xyz_to_ijk_transform
         from simtk.openmm import CustomCompoundBondForce
         f = CustomCompoundBondForce(1,'')
         f.addTabulatedFunction(name = 'map_potential', function = c3d_func)
         f.addGlobalParameter(name = 'global_k', defaultValue = global_k)
         f.addPerBondParameter(name = 'individual_k')
         tf = xyz_to_ijk_transform.matrix
-        #tf [0:3, 0:3] *= 10 # OpenMM in nm, ChimeraX in Angstroms
-        tf[:,3] /= 10
+        tf[:,3] /= 10 # OpenMM in nm, ChimeraX in Angstroms
         i_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(
             tf[0][0], tf[0][1], tf[0][2], tf[0][3])
         j_str = 'x1* {} + y1 * {} + z1 * {} + {}'.format(

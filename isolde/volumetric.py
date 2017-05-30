@@ -69,6 +69,7 @@ class IsoldeMap:
         self._source_map = source_map # A model currently loaded into ChimeraX
         self._mask_cutoff = mask_cutoff # in Angstroms 
         self._coupling_constant = coupling_constant # How hard map pulls on atoms
+        self._is_difference_map = is_difference_map # Is this a Fo-Fc or similar difference map?
         self._per_atom_coupling = per_atom_coupling # Do we vary map pull by atom type?
         self._style = style # Map surface style
         self._color = color # Map display color
@@ -107,22 +108,34 @@ class IsoldeMap:
     def change_map_parameters(self, source_map = None, 
                                 cutoff = None, 
                                 coupling_constant = None,
+                                is_difference_map = None,
                                 style = None,
                                 color = None,
                                 contour = None,
                                 contour_units = None,
                                 mask = None,
+                                crop = None,
                                 per_atom_coupling = None 
                                 ):
-        if source_map is not None: self._source_map = source_map 
-        if cutoff is not None: self._mask_cutoff = cutoff 
-        if coupling_constant is not None: self._coupling_constant = coupling_constant 
-        if style is not None: self._style = style
-        if color is not None: self._color = color 
+        if source_map is not None: 
+            self._source_map = source_map 
+        if cutoff is not None: 
+            self._mask_cutoff = cutoff 
+        if coupling_constant is not None: 
+            self._coupling_constant = coupling_constant 
+        if style is not None: 
+            self._style = style
+        if color is not None: 
+            self._color = color 
         if contour is not None: self._contour = contour 
-        if contour_units is not None: self._contour_units = contour_units 
-        if mask is not None: self._mask = mask 
-        if per_atom_coupling is not None: self._per_atom_coupling = per_atom_coupling 
+        if contour_units is not None: 
+            self._contour_units = contour_units 
+        if mask is not None: 
+            self._mask = mask 
+        if crop is not None:
+            self._crop = crop
+        if per_atom_coupling is not None: 
+            self._per_atom_coupling = per_atom_coupling 
         
     
     def set_source_map(self, source_map):
@@ -142,12 +155,20 @@ class IsoldeMap:
         else:
             self._style = style
     
-    def set_color(self, color_name):
+    def set_color(self, color1_name, color2_name = None):
+        if self._is_difference_map:
+            if color2_name is None:
+                raise TypeError('A difference map requires two colours!')
+        else:
+            if color2_name is not None:
+                raise TypeError('A standard map has only one colour!')
         from chimerax.core.map import volumecommand
         from chimerax.core import colors
-        rgba = colors.BuiltinColors[color_name]
+        rgba = [colors.BuiltinColors[color1_name]]
+        if color2_name is not None:
+            rgba.append(colors.BuiltinColors[color2_name])
         volumecommand.volume(session, [self._source_map], color = [rgba])
-        self._color = color_name
+        self._color = [color1_name, color2_name]
         
     def set_contour(self, contour):
         self._contour = contour
@@ -236,19 +257,27 @@ class IsoldeMap:
                 if true, all values within the returned map will be divided
                 by the overall standard deviation of the parent map.
         '''
-        points = selection.scene_coords
-        self._source_map.position.inverse().move(points) # Convert points to map coordinates
-        from chimerax.core.map.data.regions import points_ijk_bounds, \
-            clamp_region, integer_region
-        data = self._source_map.data
-        r = points_ijk_bounds(points, padding, data)
-        r = clamp_region(integer_region(r), data.size)
-        from chimerax.core.map.data.griddata import Grid_Subregion
-        grid_data = Grid_Subregion(data, r[0],r[1])
+        import numpy
+        if self._crop:
+            points = selection.scene_coords
+            self._source_map.position.inverse().move(points) # Convert points to map coordinates
+            from chimerax.core.map.data.regions import points_ijk_bounds, \
+                clamp_region, integer_region
+            data = self._source_map.data
+            r = points_ijk_bounds(points, padding, data)
+            r = clamp_region(integer_region(r), data.size)
+            from chimerax.core.map.data.griddata import Grid_Subregion
+            grid_data = Grid_Subregion(data, r[0],r[1])
+            m = numpy.empty(grid_data.matrix().shape, numpy.float64)
+            m[:] = grid_data.matrix()
+        else:
+            grid_data = self._source_map.data
+            orig_data = grid_data.matrix()
+            m = numpy.empty(orig_data.shape, numpy.float64)
+            m[:] = orig_data
         if normalize:
-            m = grid_data.matrix() 
             m /= self._source_map.mean_sd_rms()[1]
-        return grid_data
+        return m, grid_data
     
     def mask_volume_to_selection(self, selection, resolution = None, invert = False, normalize = False):
         '''

@@ -7,7 +7,7 @@
 #            University of Cambridge
 import os
 import numpy
-from math import inf, degrees, radians
+from math import inf, degrees, radians, pi
 
 import PyQt5
 from PyQt5.QtCore import QObject, pyqtSignal
@@ -278,7 +278,12 @@ class Isolde():
         self.master_map_list = {}
         # Are we adding a new map to the simulation list?
         self._add_new_map = True
-        
+        # Default coupling constants
+        self.default_standard_map_k = 5.0
+        self.default_difference_map_k = 1.0
+        # Default masking cutoffs
+        self.default_standard_map_cutoff = 4.0 # Angstroms
+        self.default_difference_map_cutoff = 8.0 # Angstroms
         
         ####
         # Restraints settings
@@ -752,6 +757,15 @@ class Isolde():
         iw._sim_basic_xtal_init_go_button.clicked.connect(
             self._initialize_xtal_structure
             )
+        iw._sim_basic_xtal_map_settings_show_button.clicked.connect(
+            self._toggle_xtal_map_dialog
+            )
+        iw._sim_basic_xtal_settings_map_combo_box.currentIndexChanged.connect(
+            self._populate_xtal_map_params
+            )
+        iw._sim_basic_xtal_settings_set_button.clicked.connect(
+            self._apply_xtal_map_params
+            )
         
         ####
         # EM map parameters (can only be set before starting simulation)
@@ -1127,7 +1141,7 @@ class Isolde():
     
     def _check_for_valid_xtal_init(self, *_):
         cb = self.iw._sim_basic_xtal_init_model_combo_box
-        if cb.currentData is not None:
+        if cb.currentData() is not None:
             if os.path.isfile(self.iw._sim_basic_xtal_init_reflections_file_name.text()):
                 self.iw._sim_basic_xtal_init_go_button.setEnabled(True)
                 return
@@ -1160,7 +1174,64 @@ class Isolde():
         self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
         self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
                 
+    def _initialize_xtal_maps(self, model):
+        '''
+        Set up all crystallographic maps associated with a model, ready 
+        for simulation.
+        '''
+        self.master_map_list.clear()
+        xmaps = model.xmaps.child_models()
+        cb = self.iw._sim_basic_xtal_settings_map_combo_box
+        cb.clear()
+        for xmap in xmaps:
+            name = xmap.name
+            is_difference_map = xmap.is_difference_map
+            if is_difference_map:
+                cutoff = self.default_difference_map_cutoff
+                coupling_constant = self.default_difference_map_k
+            else:
+                cutoff = self.default_standard_map_cutoff
+                coupling_constant = self.default_standard_map_k
+            new_map = self.add_map(name, xmap, cutoff, coupling_constant,
+                is_difference_map = is_difference_map, mask = True, 
+                crop = False)
+            cb.addItem(name, new_map)
+        
+    def _toggle_xtal_map_dialog(self, *_):
+        button = self.iw._sim_basic_xtal_map_settings_show_button
+        frame = self.iw._sim_basic_xtal_map_settings_frame
+        show_text = 'Show map settings dialogue'
+        hide_text = 'Hide map settings dialogue'
+        if button.text() == show_text:
+            frame.show()
+            button.setText(hide_text)
+        else:
+            frame.hide()
+            button.setText(show_text)
     
+    def _populate_xtal_map_params(self, *_):
+        cb = self.iw._sim_basic_xtal_settings_map_combo_box
+        tb = self.iw._sim_basic_xtal_settings_map_name
+        this_map = cb.currentData()
+        if cb.currentIndex() == -1 or this_map is None:
+            tb.setText('No maps loaded!')
+            return
+        self.iw._sim_basic_xtal_map_cutoff_spin_box.setValue(
+            this_map.get_mask_cutoff())
+        self.iw._sim_basic_xtal_map_weight_spin_box.setValue(
+            this_map.get_coupling_constant())
+        self.iw._sim_basic_xtal_settings_map_masked_checkbox.setCheckState(
+            this_map.get_mask_vis())
+    
+    def _apply_xtal_map_params(self, *_):
+        cb = self.iw._sim_basic_xtal_settings_map_combo_box
+        this_map = cb.currentData()
+        this_map.set_mask_cutoff(
+            self.iw._sim_basic_xtal_map_cutoff_spin_box.value())
+        this_map.set_coupling_constant(
+            self.iw._sim_basic_xtal_map_weight_spin_box.value())
+        this_map.set_mask_vis(
+            self.iw._sim_basic_xtal_settings_map_masked_checkbox.checkState())
         
     
     ####
@@ -1176,6 +1247,8 @@ class Isolde():
         self.iw._sim_basic_em_map_button.setEnabled(True)
     
     def _show_em_map_in_menu_or_add_new(self, *_):
+        if self.sim_mode != self._sim_modes.em:
+            return
         iw = self.iw
         seltext = iw._em_map_chooser_combo_box.currentText()
         if seltext == 'Add map':
@@ -1453,11 +1526,15 @@ class Isolde():
                 if cad.atoms[1] in sel:
                     cad.target_distance = ca_distance
                     cad.spring_constant = dist_k
+                else:
+                    cad.spring_constant = 0
             ond = ron[r]
             if ond is not None:
                 if ond.atoms[1] in sel:
                     ond.target_distance = on_distance
                     ond.spring_constant = dist_k
+                else:
+                    ond.spring_constant = 0
     
     def clear_secondary_structure_restraints_for_selection(self, *_, atoms = None, residues = None):
         '''
@@ -1715,6 +1792,7 @@ class Isolde():
         if whole_model:
             sel = model.atoms
             bd = self.backbone_dihedrals
+            self._rama_plot.update_scatter(bd, force_update = True)
             
         else:
             sel = model.atoms.filter(model.atoms.selected)
@@ -1814,12 +1892,16 @@ class Isolde():
             return
         m = iw._master_model_combo_box.currentData()
         if self._selected_model != m and m is not None:
-            self._status('Finding backbone dihedrals. Please be patient.')
+            self._status('Analysing model and preparing restraints. Please be patient.')
+            from . import util
+            util.add_disulfides_from_model_metadata(m)
             self._selected_model = m
             self.session.selection.clear()
             self._selected_model.selected = True
             self._prepare_all_interactive_restraints(m)
             self._update_chain_list()
+            if isinstance(m.parent, clipper.CrystalStructure):
+                self._initialize_xtal_maps(m.parent)
             self.triggers.activate_trigger('selected model changed', data=m)
         self._status('')
     
@@ -1955,8 +2037,9 @@ class Isolde():
 
 
 
-    def add_map(self, name, vol, cutoff, coupling_constant, style = None, 
-                color = None, contour = None, contour_units = None, mask = True):
+    def add_map(self, name, vol, cutoff, coupling_constant, 
+        is_difference_map = False, style = None, color = None, 
+        contour = None, contour_units = None, mask = True, crop = True):
         if name in self.master_map_list:
             for key in self.master_map_list:
                 print(key)
@@ -1966,9 +2049,13 @@ class Isolde():
             raise Exception('vol must be a single volumetric map object')
         
         from .volumetric import IsoldeMap
-        new_map = IsoldeMap(self.session, name, vol, cutoff, coupling_constant, style, color, contour, contour_units, mask)
+        new_map = IsoldeMap(self.session, name, vol, cutoff, coupling_constant, 
+        is_difference_map = is_difference_map, style = style, 
+        color = color, contour = contour, contour_units = contour_units, 
+        mask = mask, crop = crop)
         self.master_map_list[name] = new_map
         self._update_master_map_list_combo_box()
+        return new_map
 
         
     def remove_map(self, name):
@@ -2077,6 +2164,13 @@ class Isolde():
         #sb = self._total_sim_bonds = sc.intra_bonds
         
         self._total_mobile_indices = sc.indices(total_mobile)
+        
+        if self.sim_mode == sm.xtal:
+            self.selected_model.parent.isolate_and_cover_selection(
+                total_mobile, include_surrounding_residues = 0, 
+                show_context = self.hard_shell_cutoff, 
+                mask_radius = 4, extra_padding = 10, 
+                hide_surrounds = True, focus = False)
             
         sc.selected = True
         from chimerax.core.atomic import selected_atoms, selected_bonds
@@ -2178,6 +2272,10 @@ class Isolde():
         sh.add_distance_restraints(self._sim_ca_ca2_restr, sc)
         sh.add_distance_restraints(self._sim_o_n4_restr, sc)
         
+        log('Preparing distance restraints took {0:0.4f} seconds.'.format(time() - last_time))
+        last_time = time()
+
+
         ####
         # Position restraints
         ####
@@ -2210,20 +2308,22 @@ class Isolde():
         
         sh.register_custom_external_force('tug', tug_force, global_parameters,
                 per_particle_parameters, per_particle_defaults)
-        
-        
+
+        log('Preparing position restraints took {0:0.4f} seconds.'.format(time() - last_time))
+        last_time = time()
+
         self._status('Preparing maps...')
         # Crop down maps and convert to potential fields
         if self.sim_mode in [sm.xtal, sm.em]:
             for mkey in self.master_map_list:
                 m = self.master_map_list[mkey]
-                vol_data = m.crop_to_selection(
+                vol_data, region = m.crop_to_selection(
                     total_mobile, m._mask_cutoff*1.5, normalize = True)
                 #vol = m._source_map
                 c3d = sh.continuous3D_from_volume(vol_data)
                 m.set_c3d_function(c3d)
                 from copy import copy
-                f = sh.map_potential_force_field(c3d, m.get_coupling_constant(), vol_data.xyz_to_ijk_transform)
+                f = sh.map_potential_force_field(c3d, m.get_coupling_constant(), region)
                 m.set_potential_function(f)
                 # Register the map with the SimHandler
                 sh.register_map(m)

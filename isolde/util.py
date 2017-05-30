@@ -40,5 +40,29 @@ def find_polymer(sel):
             
    
 def add_disulfides_from_model_metadata(model):
+    m_id = model.id_string()
+    from chimerax.core.commands import atomspec
     metadata = model.metadata
+    try:
+        disulfide_list = metadata['SSBOND']
+    except KeyError:
+        return
+    for disulfide in disulfide_list:
+        d = disulfide.split()
+        chain1, res1, sym1 = d[3], d[4], d[8]
+        chain2, res2, sym2 = d[6], d[7], d[9]
+        if sym1 != sym2:
+            # Disulfide across a symmetry interface. Ignore for now.
+            continue
+        arg = atomspec.AtomSpecArg('ss')
+        thearg = '#{}/{}:{}@{}|#{}/{}:{}@{}'.format(
+            m_id, chain1, res1, 'SG', m_id, chain2, res2, 'SG')
+        aspec = arg.parse(thearg, model.session)
+        atoms = aspec[0].evaluate(model.session).atoms
+        bonds = atoms.intra_bonds
+        if not len(bonds):
+            a1, a2 = atoms
+            b = model.new_bond(a1, a2)
+                
+    
     

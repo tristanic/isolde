@@ -193,6 +193,8 @@ class AtomPicker(MouseMode):
     
     def mouse_up(self, event):
         self._undraw_drag_rectangle()
+        if self._atoms is None:
+            return
         if self._is_drag(event):
             # Select atoms in rectangle
             self._mouse_drag_select(self.mouse_down_position, event)
@@ -238,8 +240,6 @@ class AtomPicker(MouseMode):
         # ... then weed out the non-atomic ones
         #add_toggle = event.shift_down()
         #sub_toggle = event.alt_down()
-        found_atoms = False
-        found_ribbons = False
         if pick is None:
             if not toggle and not sub_toggle:
                 session.selection.clear()
@@ -263,24 +263,20 @@ class AtomPicker(MouseMode):
                             p.residues.selected = False
             else:
                 import numpy
-                if not found_atoms and hasattr(p, 'atoms'):
+                if hasattr(p, 'atoms'):
                     patoms = p.atoms.filter(self._atoms.indices(p.atoms) != -1)
                     if len(patoms):
-                        found_atoms = True
                         if not mode == 'subtract':
                             patoms.selected = True
                         else:
                             patoms.selected = False
-                elif not found_ribbons and hasattr(p, 'residues'):
-                    presidues = p.residues.filter(self._atoms.unique_residues.indices(p.residues) != 1)
+                elif hasattr(p, 'residues'):
+                    presidues = p.residues.filter(self._atoms.unique_residues.indices(p.residues) != -1)
                     if len(presidues):
-                        found_ribbons = True
                         if not mode == 'subtract':
                             presidues.atoms.selected = True
                         else:
                             presidues.atoms.selected = False
-                if found_atoms and found_ribbons:
-                    break
                         
 
     def _mouse_select(self, event):

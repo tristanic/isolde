@@ -325,7 +325,11 @@ class Rotamer:
         # Current target conformation (if self.restrained == True)
         self.target = None
         
-        self._atoms_to_move, self.dihedrals = self.find_atoms_to_move(self.residue)
+        try:
+            self._atoms_to_move, self.dihedrals = self.find_atoms_to_move(self.residue)
+        except:
+            self._atoms_to_move = None
+            self.dihedrals = None
     
     def __enter__(self):
         return self
@@ -353,12 +357,23 @@ class Rotamer:
     def find_atoms_to_move(self, residue):
         ratoms = residue.atoms
         anames = ratoms.names
+        anames_list = anames.tolist()
         dihedrals = []
         atoms_to_move = []
         for c in self.rotamers.dihedrals:
             indices = []
             for a in c.atom_names:
-                indices.append(anames.tolist().index(a))
+                try:
+                    indices.append(anames_list.index(a))
+                except ValueError:
+                    warn_string = \
+                    'Residue {}-{} on chain {} is missing atom {}! You \
+                    can still analyse the structure, but simulation will\
+                    be impossible until this is fixed.'.format(
+                        residue.name, residue.number, residue.chain_id, a)
+                    import warnings
+                    warnings.warn(warn_string)
+                    return
             dihedrals.append(Dihedral(ratoms[numpy.array(indices)], residue))
             
             atoms_to_move.append(ratoms[numpy.in1d(anames, c.moving_names)])

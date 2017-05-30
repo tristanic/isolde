@@ -111,6 +111,7 @@ class ISOLDE_ToolUI(ToolInstance):
             self.iw._validate_rama_main_frame,
             self.iw._validate_pep_main_frame,
             self.iw._sim_basic_xtal_init_main_frame,
+            self.iw._sim_basic_xtal_map_settings_frame,
             self.iw._rebuild_2ry_struct_restr_container,
             self.iw._rebuild_register_shift_container,
             self.iw._rebuild_pos_restraint_one_atom_frame,
@@ -121,6 +122,8 @@ class ISOLDE_ToolUI(ToolInstance):
         
         # Any frames/widgets that should be disabled at the start
         self._disabled_at_start = [
+            self.iw._sim_basic_xtal_map_settings_frame,
+            self.iw._sim_basic_xtal_settings_map_name,
             self.iw._rebuild_sel_res_pep_flip_button,
             self.iw._rebuild_sel_res_last_rotamer_button,
             self.iw._rebuild_sel_res_next_rotamer_button,
