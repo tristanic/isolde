@@ -235,6 +235,13 @@ class Isolde():
         # Internal counter for Ramachandran update
         self._rama_counter = 0
         
+        ####
+        # Settings for handling of map visualisation
+        ####
+        # For updating map zoning to current coordinates
+        self._map_rezone_counter = 0
+        self._steps_per_map_rezone = 20
+        self._map_rezone_handler = None
         
         ####
         # Mouse modes
@@ -290,14 +297,13 @@ class Isolde():
         ####
         self.restrain_peptide_bonds = True
         self.peptide_bond_restraints_k = 500 # FIXME units?
-        self.secondary_structure_restraints_k = 200 # FIXME units?
+        self.secondary_structure_restraints_k = 250 # FIXME units?
         
         # The difference between the dihedral angle and target beyond which
         # restraints begin to be applied. Below this angle there is no 
         # extra biasing force. This cutoff can be changed on a per-dihedral
         # basis.
         self.default_dihedral_restraint_cutoff_angle = radians(30)
-        
         
         ##
         # Distance retraint objects
@@ -320,6 +326,8 @@ class Isolde():
         # A {Residue: Rotamer} dict encompassing all mobile rotameric residues
         self.rotamers = None
         self.rotamer_restraints_k = 1000 # FIXME units?
+        self.default_rotamer_restraint_cutoff_angle = radians(15)
+
         # Range of dihedral values which will be interpreted as a cis peptide
         # bond (-30 to 30 degrees). If restrain_peptide_bonds is True, anything
         # outside of this range at the start of the simulation will be forced
@@ -366,7 +374,7 @@ class Isolde():
         # Type of integrator to use. Should give the choice in the expert level
         # of the menu. Variable is more stable, but simulated time per gui update
         # is harder to determine
-        self._integrator_type = 'fixed'
+        self._integrator_type = 'variable'
         # Constraints (e.g. rigid bonds) need their own tolerance
         self._constraint_tolerance = 0.0001
         # Friction term for coupling to heat bath. Using a relatively high
@@ -811,6 +819,9 @@ class Isolde():
         ####
         # Rebuild tab
         ####
+        iw._rebuild_sel_res_cis_trans_flip_button.clicked.connect(
+            self._flip_cis_trans
+            )
         iw._rebuild_sel_res_pep_flip_button.clicked.connect(
             self._flip_peptide_bond
             )
@@ -1328,11 +1339,13 @@ class Isolde():
         if omega is None:
             # This is a terminal residue without an omega dihedral
             self.iw._rebuild_sel_res_pep_info.setText('N/A')
+            self.iw._rebuild_sel_res_cis_trans_flip_button.setDisabled(True)
             self.iw._rebuild_sel_res_pep_flip_button.setDisabled(True)
             self._rebuild_res_update_omega = False
             return
         self._rebuild_res_update_omega = True
         self._rebuild_res_omega = omega
+        self.iw._rebuild_sel_res_cis_trans_flip_button.setEnabled(True)
         self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
         
         try:
@@ -1562,10 +1575,8 @@ class Isolde():
             cad = self._sim_ca_ca2_restr[r]
             ond = self._sim_o_n4_restr[r]
             if cad is not None:
-                cad.target_distance = 0
                 cad.spring_constant = 0
             if ond is not None:
-                ond.target_distance = 0
                 ond.spring_constant = 0
 
 
@@ -1666,10 +1677,7 @@ class Isolde():
         sc = self._total_sim_construct
         sh = self._sim_handler
         k = self.rotamer_restraints_k
-        indices = numpy.reshape(sc.indices(dihedrals.atoms),[len(dihedrals),4])
-
-        for i, d, t in zip(indices, dihedrals, target):
-            sh.set_dihedral_restraint(sc, d, i, t, k)
+        sh.set_dihedral_restraints(sc, dihedrals, target, k, self.default_rotamer_restraint_cutoff_angle)
         
         rotamer.restrained = True
 
@@ -1691,9 +1699,7 @@ class Isolde():
         dihedrals = rot.dihedrals
         sc = self._total_sim_construct
         sh = self._sim_handler
-        indices = numpy.reshape(sc.indices(dihedrals.atoms), [len(dihedrals), 4])
-        for i, d in zip(indices, dihedrals):
-            sh.set_dihedral_restraint(sc, d, i, 0, 0)
+        sh.set_dihedral_restraints(sc, dihedrals, 0, 0)
     
     
     def _disable_rebuild_residue_frame(self):
@@ -1731,6 +1737,68 @@ class Isolde():
     
     def _flip_peptide_bond(self, *_):
         res = self._rebuild_residue
+        self.flip_peptide_bond(res)
+    
+    def flip_peptide_bond(self, res):
+        '''
+        A bit tricky. This involves flipping phi for this residue and 
+        psi for the preceding residue. Ideally, we don't want to leave
+        them restrained once the flip is complete.
+        '''
+        from math import pi
+        import numpy
+        from . import dihedrals
+        bd = self._mobile_backbone_dihedrals
+        phi = bd.phi.by_residue(res)
+        prev_c = phi.atoms.filter(phi.atoms.names == 'C')[0]
+        prev_r = prev_c.residue
+        psi = bd.psi.by_residue(prev_r)
+        sh = self._sim_handler
+        sc = self._total_sim_construct
+        phipsi = dihedrals.Dihedrals([phi,psi])
+        k = self.secondary_structure_restraints_k
+        targets = []
+        for i, d in enumerate(phipsi):
+            v = d.value
+            if v > 0:
+                target = v - pi
+            else:
+                target = v + pi
+            targets.append(target)
+        
+        sh.set_dihedral_restraints(sc, phipsi, targets, k)
+        self._pep_flip_targets = numpy.array(targets)
+        self._pep_flip_dihedrals = phipsi
+        self._pep_flip_timeout_counter = 0
+        self._pep_flip_timeout_handler = self.triggers.add_handler(
+            'completed simulation step', self._check_pep_flip)
+        
+        
+    def _check_pep_flip(self, *_):
+        from math import pi
+        import numpy
+        done = False
+        if self._pep_flip_timeout_counter >= 20:
+            print('Unable to flip peptide. Giving up.')
+            done = True
+        dihedrals = self._pep_flip_dihedrals
+        if not done:
+            v = dihedrals.values
+            if numpy.all(numpy.abs(v - self._pep_flip_targets) < pi/6):
+                done = True
+        if not done:
+            self._pep_flip_timeout_counter += 1
+            return
+        else:
+            sh = self._sim_handler
+            sc = self._total_sim_construct
+            sh.set_dihedral_restraints(sc, dihedrals, 0, 0)
+            self.triggers.remove_handler(self._pep_flip_timeout_handler)
+                
+    
+    
+    def _flip_cis_trans(self, *_):
+        res = self._rebuild_residue
         self.flip_peptide_omega(res)
     
     def flip_peptide_omega(self, res):
@@ -1749,8 +1817,8 @@ class Isolde():
             target = 0
         from . import dihedrals
         self.apply_peptide_bond_restraints(dihedrals.Dihedrals([omega]), target = target, units = 'deg')
-
-
+    
+    
     
     ####
     # Validation tab
@@ -2491,6 +2559,9 @@ class Isolde():
         if self.track_rama and self._rama_plot is not None:
             self._rama_go_live()
         
+        self._map_rezone_handler = self.triggers.add_handler(
+            'completed simulation step', self._rezone_maps)
+        
         log('Everything else took {0:0.4f} seconds'.format(time() - last_time))
         self._status('Simulation running')
         
@@ -2677,6 +2748,10 @@ class Isolde():
         self._simulation_running = False
         if 'do_sim_steps_on_gui_update' in self._event_handler.list_event_handlers():
             self._event_handler.remove_event_handler('do_sim_steps_on_gui_update')
+        if self._map_rezone_handler is not None:
+            self.triggers.remove_handler(self._map_rezone_handler)
+            self._map_rezone_handler = None
+        
         self._disable_rebuild_residue_frame()
         sh.disconnect_distance_restraints_from_sim(self._sim_ca_ca2_restr)
         sh.disconnect_distance_restraints_from_sim(self._sim_o_n4_restr)
@@ -2771,11 +2846,7 @@ class Isolde():
         import numpy
         sc = self._total_sim_construct
         sh = self._sim_handler
-        # Get all atom indices in one go because the lookup is expensive
-        indices = numpy.reshape(sc.indices(dihedrals.atoms),[len(dihedrals),4])
-        for i, d in enumerate(dihedrals):
-            if d is not None:
-                sh.set_dihedral_restraint(sc, d, indices[i], 0, 0)        
+        sh.set_dihedral_restraints(sc, dihedrals, 0, 0)
 
 
     #############################################
@@ -2977,7 +3048,21 @@ class Isolde():
             self.update_ramachandran()
             self.update_omega_check()
         
+    def _rezone_maps(self, *_):
+        self._map_rezone_counter += 1
+        self._map_rezone_counter %= self._steps_per_map_rezone
+        if self._map_rezone_counter == 0:
+            self.rezone_maps()
         
+    def rezone_maps(self):
+        from chimerax.core.commands.sop import surface_zone
+        for key, m in self.master_map_list.items():
+            v = m.get_source_map()
+            cutoff = m.get_mask_cutoff()
+            surface_zone(self.session, v.surface_drawings, 
+                near_atoms = self._total_mobile, range = cutoff)
+            
+
     def update_ramachandran(self):
         self._rama_counter = (self._rama_counter + 1) % self.steps_per_rama_update
         if self._rama_counter == 0:
@@ -3006,11 +3091,11 @@ class Isolde():
         forces = (state.getForces(asNumpy = True) \
             /(kilojoule_per_mole/nanometer))[self._total_mobile_indices]
         magnitudes = numpy.linalg.norm(forces, axis=1)
-        rstate = c.getState(
-            getForces=True, 
-            groups = {self._force_groups['position restraints']})
-        f = (rstate.getForces(asNumpy=True) \
-            / (kilojoule_per_mole/nanometer))[self._sim_pos_restr_indices_in_sim]
+        #~ rstate = c.getState(
+            #~ getForces=True, 
+            #~ groups = {self._force_groups['position restraints']})
+        #~ f = (rstate.getForces(asNumpy=True) \
+            #~ / (kilojoule_per_mole/nanometer))[self._sim_pos_restr_indices_in_sim]
         #self._pos_restraint_forces = numpy.linalg.norm(f, axis = 1)
         if save_forces:
             self.forces = forces

@@ -7,6 +7,7 @@ from simtk.openmm.openmm import CustomBondForce, CustomExternalForce, \
 from simtk.openmm.openmm import Continuous1DFunction, Continuous3DFunction    
 from chimerax.core.atomic import concatenate
 
+MIN_K = 0.01 # Spring constants below this value will be treated as zero
 
 def openmm_topology_from_model(model):
     '''
@@ -120,13 +121,17 @@ class TopOutBondForce(CustomBondForce):
         linear_eqn = 'max_force * abs(r-r0)'# - 0.5*max_force^2/k'
         quadratic_eqn = '0.5*k*(r-r0)^2'
         transition_eqn = 'step(r - max_force/k)'
-        force_str = 'select(' + ','.join((transition_eqn, linear_eqn, quadratic_eqn)) + ')'
-        super().__init__(force_str)
+        zero_k_eqn = 'step(min_k - k)'
+        energy_str = 'select({},0,select({},{},{}))'.format(
+            zero_k_eqn, transition_eqn, linear_eqn, quadratic_eqn)
+        #force_str = 'select(' + ','.join((transition_eqn, linear_eqn, quadratic_eqn)) + ')'
+        super().__init__(energy_str)
         self._max_force = max_force
         
         self.k_index = self.addPerBondParameter('k')
         self.r0_index = self.addPerBondParameter('r0')
         self.max_force_index = self.addGlobalParameter('max_force', self.max_force)
+        self.min_k_index = self.addGlobalParameter('min_k', MIN_K)
         self.update_needed = False
     
     @property
@@ -145,7 +150,7 @@ class TopOutRestraintForce(CustomExternalForce):
     '''
     Wraps an OpenMM CustomExternalForce to restrain atoms to defined positions
     via a standard harmonic potential (0.5 * k * r^2) with a user-defined
-    fixed maximum cutoff on the applied force. This is meant for steering 
+    fixed maximum cutoff on the appli5ed force. This is meant for steering 
     the simulation into new conformations where the starting positions
     may be far from the target positions, leading to catastrophically 
     large forces with a standard harmonic potential.
@@ -155,13 +160,19 @@ class TopOutRestraintForce(CustomExternalForce):
         linear_eqn = 'max_force * sqrt((x-x0)^2+(y-y0)^2+(z-z0)^2)'# - 0.5*max_force^2/k'
         quadratic_eqn = '0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2)'
         transition_eqn = 'step(sqrt((x-x0)^2+(y-y0)^2+(z-z0)^2) - max_force/k)'
-        force_str = 'select(' + ','.join((transition_eqn, linear_eqn, quadratic_eqn)) + ')'
-        super().__init__(force_str)
+        zero_k_eqn = 'step(min_k - k)'
+        energy_str = 'select({},0,select({},{},{}))'.format(
+            zero_k_eqn, transition_eqn, linear_eqn, quadratic_eqn)
+        
+        #force_str = 'select(' + ','.join((transition_eqn, linear_eqn, quadratic_eqn)) + ')'
+        super().__init__(energy_str)
         self._max_force = max_force
         per_particle_parameters = ('k','x0','y0','z0')
         for p in per_particle_parameters:
             self.addPerParticleParameter(p)
         self.addGlobalParameter('max_force', max_force)
+        self.addGlobalParameter('min_k', MIN_K)
+
         self.update_needed = False
     
     @property
@@ -175,6 +186,7 @@ class TopOutRestraintForce(CustomExternalForce):
         self._max_force = force
         self.update_needed = True
     
+
 class FlatBottomTorsionRestraintForce(CustomTorsionForce):
     '''
     Wraps an OpenMM CustomTorsionForce to restrain torsion angles while 
@@ -183,26 +195,40 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
     is defined as -k * cos (theta-theta0). 
     '''
     def __init__(self):
-        normalize_fn = '((theta-theta0 + pi) - floor((theta-theta0 + pi) / two_pi) * two_pi - pi)' 
-        standard_energy = '0.5*k * dtheta^2'
-        flat_energy = '0.5* k * cutoff^2'
-        switch_function = 'step(cutoff-dtheta)'
-        complete_function = 'select({},{},{});dtheta = {}'.format(
-            switch_function, flat_energy, standard_energy, normalize_fn)
-        #~ standard_energy = '-k*cos(theta-theta0)'
-        #~ flat_energy = '-k*cos_cutoff'
-        #~ switch_function = 'step(cos(theta-theta0)-cos_cutoff)'
-        #~ complete_function = 'select({},{},{})'.format(
-            #~ switch_function, flat_energy, standard_energy)
+        standard_energy = '-k*cos(theta-theta0)'
+        flat_energy = '-k*cos_cutoff'
+        switch_function = 'step(cos(theta-theta0)-cos_cutoff)'
+        complete_function = 'select({},{},{})'.format(
+            switch_function, flat_energy, standard_energy)
         super().__init__(complete_function)
-        #~ per_bond_parameters = ('k', 'theta0', 'cos_cutoff')
-        per_bond_parameters = ('k', 'theta0', 'cutoff')
+        per_bond_parameters = ('k', 'theta0', 'cos_cutoff')
         for p in per_bond_parameters:
             self.addPerTorsionParameter(p)
-        self.addGlobalParameter('pi', pi)
-        self.addGlobalParameter('two_pi', 2*pi)
+
+        self.update_needed = True
+
+#~ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
+    #~ '''
+    #~ Wraps an OpenMM CustomTorsionForce to restrain torsion angles while 
+    #~ allowing free movement within a range (target +/- cutoff). Within 
+    #~ the cutoff range the potential is constant, while outside it 
+    #~ is defined as -k * cos (theta-theta0). 
+    #~ '''
+    #~ def __init__(self):
+        #~ normalize_fn = '((theta-theta0 + pi) - floor((theta-theta0 + pi) / two_pi) * two_pi - pi)' 
+        #~ standard_energy = '0.5*k * dtheta^2'
+        #~ flat_energy = '0.5* k * cutoff^2'
+        #~ switch_function = 'step(cutoff-dtheta)'
+        #~ complete_function = 'select({},{},{});dtheta = {}'.format(
+            #~ switch_function, flat_energy, standard_energy, normalize_fn)
+        #~ super().__init__(complete_function)
+        #~ per_bond_parameters = ('k', 'theta0', 'cutoff')
+        #~ for p in per_bond_parameters:
+            #~ self.addPerTorsionParameter(p)
+        #~ self.addGlobalParameter('pi', pi)
+        #~ self.addGlobalParameter('two_pi', 2*pi)
         
-        self.update_needed = False
+        #~ self.update_needed = False
     
     def set_cutoff_angle(self, i, angle):
         '''
@@ -385,7 +411,7 @@ class SimHandler():
         #top = self._topology
         c = (cutoff or self.default_torsion_cutoff)
         force = self._dihedral_restraint_force
-        index_in_force = force.addTorsion(*indices.tolist(), [0, 0, c])
+        index_in_force = force.addTorsion(*indices.tolist(), [0, 0, cos(c)])
         return index_in_force
 
         ##
@@ -403,6 +429,7 @@ class SimHandler():
         indices = numpy.reshape(sim_construct.indices(dihedrals.atoms), [len(dihedrals),4])
         variable_t = hasattr(target, '__iter__')
         variable_k = hasattr(k, '__iter__')
+        variable_c = hasattr(c, '__iter__')
         for i, d in enumerate(dihedrals):
             if variable_t:
                 t = target[i]
@@ -414,8 +441,12 @@ class SimHandler():
                 thisk = k[i]
             else:
                 thisk = k
+            if variable_c:
+                thisc = c[i]
+            else:
+                thisc = c
                 
-            self.set_dihedral_restraint(sim_construct, d, indices[i], t, thisk, cutoff = c[i])
+            self.set_dihedral_restraint(sim_construct, d, indices[i], t, thisk, cutoff = thisc)
         
     def set_dihedral_restraint(self, sim_construct, dihedral, indices, target, k, degrees=False, cutoff = None):
         from math import pi, radians

@@ -48,10 +48,14 @@ def add_disulfides_from_model_metadata(model):
     except KeyError:
         return
     for disulfide in disulfide_list:
+        sym1 = None
+        sym2 = None
         d = disulfide.split()
-        chain1, res1, sym1 = d[3], d[4], d[8]
-        chain2, res2, sym2 = d[6], d[7], d[9]
-        if sym1 != sym2:
+        chain1, res1 = d[3], d[4]
+        chain2, res2 = d[6], d[7]
+        if len(d) > 8:
+            sym1, sym2 = d[8], d[9]
+        if sym1 is not None and sym1 != sym2:
             # Disulfide across a symmetry interface. Ignore for now.
             continue
         arg = atomspec.AtomSpecArg('ss')

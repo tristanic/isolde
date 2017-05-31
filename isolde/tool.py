@@ -125,6 +125,7 @@ class ISOLDE_ToolUI(ToolInstance):
             self.iw._sim_basic_xtal_map_settings_frame,
             self.iw._sim_basic_xtal_settings_map_name,
             self.iw._rebuild_sel_res_pep_flip_button,
+            self.iw._rebuild_sel_res_cis_trans_flip_button,
             self.iw._rebuild_sel_res_last_rotamer_button,
             self.iw._rebuild_sel_res_next_rotamer_button,
             self.iw._rebuild_sel_res_rot_commit_button,
