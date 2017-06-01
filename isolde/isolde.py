@@ -466,7 +466,7 @@ class Isolde():
         
         splash_pix = QPixmap(os.path.join(
             self._root_dir,'resources/isolde_splash_screen.jpg'))
-        splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+        splash = self._splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
         splash.setMask(splash_pix.mask())
         splash.showMessage('\n\n\n\nAnalysing your structure. Please be patient...', 
                 alignment = Qt.AlignRight | Qt.AlignVCenter)
@@ -474,9 +474,14 @@ class Isolde():
         # Make sure the splash screen is actually shown
         for i in range(5):
             self.session.ui.processEvents()
+        self._splash_destroy_countdown = 100
+        self._splash_handler = self.session.triggers.add_handler('new frame', 
+            self._splash_destroy_cb)
+        
         self.start_gui(gui)
         
-        splash.destroy()
+    
+    
     
     @property
     def selected_model(self):
@@ -3196,6 +3201,18 @@ class Isolde():
         # Revert mouse modes
         self._set_chimerax_mouse_mode_panel_enabled(True)
         self._mouse_modes.remove_all_modes()
+
+    ##############################################
+    # General housekeeping
+    ##############################################
+
+    def _splash_destroy_cb(self, *_):
+        self._splash_destroy_countdown -= 1
+        if self._splash_destroy_countdown <= 0:
+            self.session.triggers.remove_handler(self._splash_handler)
+            self._splash_handler = None
+            self._splash.destroy()
+
 
 def _generic_warning(message):
     msg = QMessageBox()
