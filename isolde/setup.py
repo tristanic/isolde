@@ -25,7 +25,7 @@ with the surroundings.
 
 setup(
     name="ChimeraX-ISOLDE",
-    version="0.9.11",  # PEP 440, should match Development Status below
+    version="0.9.12",  # PEP 440, should match Development Status below
     description="Interactive molecular dynamics based model building, manipulation and refinement",  # one line synopsis
     long_description=description,  # see above
     author="Tristan Croll",
@@ -43,7 +43,7 @@ setup(
 	},
     install_requires=[
         "ChimeraX-Core >= 0.1",
-        "ChimeraX-Clipper >= 0.1.0",
+        #"ChimeraX-Clipper >= 0.1.0",
         # TODO: Should list numpy, OpenMM, simtk, etc.
     ],
     classifiers=[

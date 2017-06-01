@@ -2,6 +2,8 @@ import numpy
 from simtk.unit import kilojoule_per_mole, angstrom, nanometer
 from chimerax.core.atomic import Atom, Atoms, concatenate
 
+HIDE_ISOLDE = 0x2
+
 class Distance_Restraint:
     '''
     Base class for distance restraints between atoms. Defines the scheme
@@ -277,13 +279,13 @@ class Position_Restraint:
         if k == 0:
             if ta is not None:
                 ta.display = False
-                ta.hide = True
+                ta.hide |= HIDE_ISOLDE
             if pb is not None:
                 pb.display = False
         else:
             if ta is not None:
                 ta.display = True
-                ta.hide = False
+                ta.hide ^= HIDE_ISOLDE
             if pb is not None:
                 pb.display = True
         if self._sim_handler is not None:

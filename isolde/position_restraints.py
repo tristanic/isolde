@@ -1,8 +1,10 @@
 import numpy
 from chimerax.core.atomic import Residue, Atoms, AtomicStructure, Structure
 from .restraints_base import Position_Restraint, Position_Restraints   
+from .restraints_base import HIDE_ISOLDE
 
 MAX_RESTRAINT_FORCE = 2000.0 # kJ/mol/A
+
 
 class Atom_Position_Restraints(Position_Restraints):
     '''
@@ -45,7 +47,7 @@ class Atom_Position_Restraints(Position_Restraints):
             t = self._target_model = restraint_indicator_from_atoms(
                 master_model, self.atoms, name = 'xyz restraint targets')
             # Atoms with hide == True will override display == True
-            t.atoms.hides = True
+            t.atoms.hides |= HIDE_ISOLDE
             #t.atoms.draw_modes = t.atoms.BALL_STYLE
             #t.atoms.radii = t.atoms.radii * 0.5
             master_model.add([t])
@@ -100,9 +102,9 @@ class Atom_Position_Restraints(Position_Restraints):
         if 'display changed' in changes.atom_reasons():
             if self.master_model in changes.modified_atoms().unique_structures:
                 self.target_indicators.displays = self.atoms.displays
-        if 'hide changed' in changes.atom_reasons():
-            if self._target_model in changes.modified_atoms().unique_structures:
-                self.hidden_indicators.hides = True
+        #~ if 'hide changed' in changes.atom_reasons():
+            #~ if self._target_model in changes.modified_atoms().unique_structures:
+                #~ self.hidden_indicators.hides = True
     
     def _check_if_master_deleted(self, trigger_name, models):
         if self.master_model in models:

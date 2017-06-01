@@ -91,6 +91,13 @@
           </property>
          </spacer>
         </item>
+        <item>
+         <widget class="QPushButton" name="_save_model_button">
+          <property name="text">
+           <string>Save current model as...</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </item>
@@ -107,7 +114,7 @@
         <x>0</x>
         <y>0</y>
         <width>527</width>
-        <height>707</height>
+        <height>705</height>
        </rect>
       </property>
       <attribute name="label">
@@ -139,7 +146,7 @@
         <x>0</x>
         <y>0</y>
         <width>527</width>
-        <height>707</height>
+        <height>705</height>
        </rect>
       </property>
       <attribute name="label">
@@ -160,7 +167,7 @@
             </sizepolicy>
            </property>
            <property name="currentIndex">
-            <number>2</number>
+            <number>0</number>
            </property>
            <widget class="QWidget" name="_sim_basic_tab">
             <attribute name="title">
@@ -176,7 +183,7 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>0</y>
+                  <y>-443</y>
                   <width>470</width>
                   <height>1314</height>
                  </rect>
@@ -1353,7 +1360,7 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>0</y>
+                  <y>-252</y>
                   <width>488</width>
                   <height>791</height>
                  </rect>

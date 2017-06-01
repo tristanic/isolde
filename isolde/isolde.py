@@ -732,6 +732,10 @@ class Isolde():
         self._change_sim_platform()
         
         
+        iw._save_model_button.clicked.connect(
+            self._save_cif_file
+            )
+        
         ####
         # Buttons to grow/shrink a continuous selection
         ####
@@ -1140,6 +1144,25 @@ class Isolde():
             raise Exception('No or unrecognised mode selected!')
     
     ####
+    # General
+    ####
+
+    def _save_cif_file(self, *_):
+        options = QFileDialog.Options()
+        #options |= QFileDialog.DontUseNativeDialog
+        caption = 'Save structure as...'
+        filetypes = 'mmCIF files (*.cif)'
+        filename, _ = QFileDialog.getSaveFileName(None, caption, '', filetypes, options = options)
+        if filename:
+            self.save_cif_file(self._selected_model, filename)
+    
+    def save_cif_file(self, model, filename):
+        from chimerax.core.commands import save
+        save.save(self.session, filename, [model])
+
+    
+    
+    ####
     # Xtal
     ####
     def _show_xtal_init_frame(self, *_):
@@ -1184,6 +1207,7 @@ class Isolde():
         clipper.CrystalStructure(self.session, m, fname)
         self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
         self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
+        self._change_selected_model(force = True)
                 
     def _initialize_xtal_maps(self, model):
         '''
@@ -1677,7 +1701,7 @@ class Isolde():
         sc = self._total_sim_construct
         sh = self._sim_handler
         k = self.rotamer_restraints_k
-        sh.set_dihedral_restraints(sc, dihedrals, target, k, self.default_rotamer_restraint_cutoff_angle)
+        sh.set_dihedral_restraints(sc, dihedrals, target, k, cutoffs = self.default_rotamer_restraint_cutoff_angle)
         
         rotamer.restrained = True
 
@@ -1946,7 +1970,7 @@ class Isolde():
         ffindex = self.iw._sim_water_model_combo_box.currentIndex()
         self._sim_water_ff = self._available_ffs.explicit_water_files[ffindex]
     
-    def _change_selected_model(self, *_, model = None):
+    def _change_selected_model(self, *_, model = None, force = False):
         if len(self._available_models) == 0:
             return
         if self._simulation_running:
@@ -1959,7 +1983,7 @@ class Isolde():
             iw._master_model_combo_box.setCurrentIndex(index)
             return
         m = iw._master_model_combo_box.currentData()
-        if self._selected_model != m and m is not None:
+        if force or (self._selected_model != m and m is not None):
             self._status('Analysing model and preparing restraints. Please be patient.')
             from . import util
             util.add_disulfides_from_model_metadata(m)
@@ -2786,6 +2810,10 @@ class Isolde():
         self._last_max_force = inf
         self._unstable_min_rounds = 0
         self._sim_is_unstable = False
+        if self.sim_mode == self._sim_modes['xtal']:
+            cs = self._selected_model.parent
+            cs.xmaps.live_scrolling = True
+            cs.live_atomic_symmetry = True
         self._status('')
     
     ####
