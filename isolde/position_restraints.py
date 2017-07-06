@@ -110,8 +110,9 @@ class Atom_Position_Restraints(Position_Restraints):
     
     def _update_target_display(self, trigger_name, changes):
         if 'display changed' in changes.atom_reasons():
-            if self.master_model in changes.modified_atoms().unique_structures:
-                self.target_indicators.displays = self.atoms.displays
+            self.target_indicators.displays = self.atoms.displays
+            #if self.master_model in changes.modified_atoms().unique_structures:
+            #    self.target_indicators.displays = self.atoms.displays
         #~ if 'hide changed' in changes.atom_reasons():
             #~ if self._target_model in changes.modified_atoms().unique_structures:
                 #~ self.hidden_indicators.hides = True
