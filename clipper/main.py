@@ -16,7 +16,7 @@ def _log_clipper(func):
       session.logger.info(message_string)
   return func_wrapper
 
-clipper.log_clipper = _log_clipper  
+clipper._clipper.log_clipper = _log_clipper  
   
 def add_crystal(session, name):
   from .crystal import Xtal_Project

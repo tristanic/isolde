@@ -30,7 +30,7 @@ def move_model(session, model, new_parent):
     core. Picks up a model from the ChimeraX model tree and transplants
     it (with all its children intact) as the child of a different model.
     '''
-
+    model._auto_style = False
     mlist = model.all_models()
     model_id = model.id
     if new_parent in mlist:
@@ -225,8 +225,6 @@ class CrystalStructure(Model):
         initialize_mouse_modes(session)
         volumecommand.volume(session, pickable=False)
 
-        self.session.models.add([self])
-        move_model(self.session, model, self)
         self.master_model = model
         self.mtzdata = None
         if mtzfile is not None:
@@ -324,6 +322,9 @@ class CrystalStructure(Model):
                             live_scrolling = live_map_scrolling,
                             display_radius = map_scrolling_radius)
                         self.add([self.xmaps])
+        self.add([model])
+        #move_model(self.session, model, self)
+        self.session.models.add([self])
 
     
     def delete(self):
@@ -565,7 +566,7 @@ class CrystalStructure(Model):
             m.display = False
 
     def isolate_and_cover_selection(self, atoms, include_surrounding_residues = 5,
-                        show_context = 5, mask_radius = 3, hide_surrounds = True, focus = True):
+                        show_context = 5, mask_radius = 3, extra_padding = 0, hide_surrounds = True, focus = True):
         '''
         Expand the map to cover a given atomic selection, then mask it to
         within a given distance of said atoms to reduce visual clutter. Adjust
@@ -586,6 +587,9 @@ class CrystalStructure(Model):
           mask_radius (float):
             Components of the map more than this distance from any atom will
             be hidden.
+          pad (float):
+            Optionally, further pad the volume by this distance. The extra 
+            volume will be hidden, but available for calculations.
           hide_surrounds (bool):
             If true, all residues outside the selection region will be hidden
           focus (bool):
@@ -608,8 +612,9 @@ class CrystalStructure(Model):
               self.sym_select_within(
                   coords, show_context)).residues.atoms.subtract(atoms)
         pad = calculate_grid_padding(mask_radius, self.grid, self.cell)
+        ep = calculate_grid_padding(extra_padding, self.grid, self.cell)
         box_bounds_grid = clipper.Util.get_minmax_grid(coords, self.cell, self.grid) \
-                                + numpy.array((-pad, pad))
+                                + numpy.array((-pad, pad)) + numpy.array((-ep, ep))
         self.xmaps.set_box_limits(box_bounds_grid)
 
         self.xmaps._surface_zone.update(mask_radius, atoms, None)
@@ -802,13 +807,16 @@ def set_to_default_cartoon(session, model = None):
     Adjust the ribbon representation to provide information without
     getting in the way.
     '''
-    if model is None:
-        atoms = None
-    else:
-        arg = atomspec.AtomSpecArg('thearg')
-        atoms = arg.parse('#' + model.id_string(), session)[0]
-    cartoon.cartoon(session, atoms = atoms, suppress_backbone_display=False)
-    cartoon.cartoon_style(session, atoms = atoms, width=0.4, thickness=0.1, arrows_helix=True, arrow_scale = 2)
+    try:
+        if model is None:
+            atoms = None
+        else:
+            arg = atomspec.AtomSpecArg('thearg')
+            atoms = arg.parse('#' + model.id_string(), session)[0]
+        cartoon.cartoon(session, atoms = atoms, suppress_backbone_display=False)
+        cartoon.cartoon_style(session, atoms = atoms, width=0.4, thickness=0.1, arrows_helix=True, arrow_scale = 2)
+    except:
+        return
 
 
 class Surface_Zone:
@@ -1373,7 +1381,18 @@ class XmapHandler(Volume):
     @property
     def _surface_zone(self):
         return self.parent._surface_zone
-
+    
+    def mean_sd_rms(self):
+        '''
+        Overrides the standard Volume method to give the overall values
+        from the Clipper object.
+        '''
+        x = self.xmap
+        # RMS is not currently calculated by Clipper, so we'll just return
+        # the sigma twice.
+        return (x.mean, x.sigma, x.sigma)
+    
+    
     def _box_changed_cb(self, name, params):
         self.box_params = params
         self._needs_update = True
