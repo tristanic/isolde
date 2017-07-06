@@ -39,7 +39,7 @@ setup(
         "chimerax.isolde",
     ],
     package_data={
-		"chimerax.isolde": ["molprobity_data/*.data","resources/*","*.so", "*.dylib", "*.dll"]
+		"chimerax.isolde": ["molprobity_data/*.data", "amberff/*.xml", "amberff/amap/*.txt", "resources/*","*.so", "*.dylib", "*.dll"]
 	},
     install_requires=[
         "ChimeraX-Core >= 0.1",

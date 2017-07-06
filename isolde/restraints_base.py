@@ -221,17 +221,23 @@ class Position_Restraint:
     Restrains one atom to an (x,y,z) position in space via a harmonic spring
     with a maximum limit on the applied force.
     '''
-    def __init__(self, atom):
+    def __init__(self, atom, pseudobond_group):
         '''
         Just prepare the internal data structure and initialise spring 
         constant to zero and target to (0,0,0).
+        Args:
+            atom:
+                The atom managed by this object
+            pseudobond_group:
+                The PseudobondGroup object that will manage visualisation
         '''
         self._atom = atom
         self._target = numpy.array([0,0,0], float)
         # Optionally, we can provide an atom representing the target and
         # a pseudobond between the master and target atoms, to provide a
         # visual representation of the restraint.
-        self._target_atom = None 
+        self._target_atom = None
+        self._pbg = pseudobond_group 
         self._pseudobond = None
         self._spring_constant = 0
         self._sim_force_index = -1
@@ -259,6 +265,10 @@ class Position_Restraint:
         Visual representation of the target position. Read-only.
         '''
         return self._target_atom
+    
+    @target_indicator.setter
+    def target_indicator(self, atom):
+        self._target_atom = atom
         
     @property
     def target_bond(self):
@@ -281,12 +291,14 @@ class Position_Restraint:
                 ta.display = False
                 ta.hide |= HIDE_ISOLDE
             if pb is not None:
-                pb.display = False
+                pb.delete()
+                self._pseudobond = None
         else:
             if ta is not None:
                 ta.display = True
                 ta.hide ^= HIDE_ISOLDE
-            if pb is not None:
+                if pb is None:
+                    pb = self._pseudobond = self._pbg.new_pseudobond(self._atom, ta)
                 pb.display = True
         if self._sim_handler is not None:
             self._sim_handler.change_position_restraint_parameters(self)
@@ -314,7 +326,9 @@ class Position_Restraint:
 
 class Position_Restraints:
     '''Holds an array of Position_Restraint objects.'''
-    def __init__(self, restraints_list):
+    def __init__(self, session, master_model, restraints_list):
+        self.session = session
+        self.master_model = master_model
         self._restraints = restraints_list
         # ChimeraX Atoms object holding all atoms in this object.
         self._atoms = None
@@ -419,7 +433,7 @@ class Position_Restraints:
             return self.__class__(self._restraints[i])
         if isinstance(i, numpy.ndarray):
             if len(i):
-                return self.__class__([self._restraints[j] for j in i])
+                return self.__class__(self.session, self.master_model, [self._restraints[j] for j in i])
             raise IndexError('No indices in array!')
         if isinstance(i, Atom):
             return self[self.atoms.index(i)]

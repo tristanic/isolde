@@ -19,6 +19,8 @@ class Dihedral():
         # we can restrain this dihedral as needed
         self.sim_index = -1
     
+    
+    
     @property
     def value(self):
         from .geometry import get_dihedral

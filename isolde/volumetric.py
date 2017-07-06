@@ -318,7 +318,7 @@ class IsoldeMap:
         mask_1d[map_points] = 1
         vol_array = np.reshape(mask_1d, (sizek, sizej, sizei))
         if normalize:
-            std = big_map.data.full_matrix().std()
+            std = big_map.mean_sd_rms()[1]
             cropped_map = big_map.interpolate_on_grid(vol) / std
         else:
             cropped_map = big_map.interpolate_on_grid(vol)

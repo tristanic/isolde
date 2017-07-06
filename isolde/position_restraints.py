@@ -10,70 +10,80 @@ class Atom_Position_Restraints(Position_Restraints):
     '''
     For restraining of atoms to specific points in space.
     '''
-    def __init__(self, atoms_or_list, include_hydrogens = False, create_target = False):
+    def __init__(self, session, master_model, atoms_or_list, include_hydrogens = False, create_target = False):
         '''
         Initialises restraint objects for the atoms in the given selection.
         By default, hydrogens are ignored.
         '''
-        if type(atoms_or_list) == Atoms:
-            if not include_hydrogens:
-                atoms = atoms_or_list
-                atoms = atoms.filter(atoms.element_names != 'H')
-            restraints = []
-            for a in atoms:
-                restraints.append(Position_Restraint(a))
-        else:
-            restraints = atoms_or_list
-        super().__init__(restraints)
-        
-        
-        # Create a minimal AtomicStructure containing only atom information
-        # to act as anchor points for Pseudobonds representing the active
-        # restraints.
-        master_model = self.master_model = self.atoms.unique_structures[0]     
-        session = self.session = master_model.session  
-
-        self._master_display_change_handler = None
-        self._master_delete_handler = None
-        
+        self.session = session
+        self.master_model = master_model     
         # In order to allow pseudobonds between atoms in different 
         # AtomicStructure objects, the Pseudobondgroup must be in the 
         # global manager.
         pbg = self._pseudobondgroup = session.pb_manager.get_group(master_model.name + 'restraint pseudobonds')
         if pbg not in session.models.list():
             master_model.add([pbg])
+            
+        if type(atoms_or_list) == Atoms:
+            if not include_hydrogens:
+                atoms = atoms_or_list
+                atoms = atoms.filter(atoms.element_names != 'H')
+            restraints = []
+            for a in atoms:
+                restraints.append(Position_Restraint(a, pbg))
+        else:
+            restraints = atoms_or_list
+        super().__init__(session, master_model, restraints)
         
+        self._master_display_change_handler = None
+        self._master_delete_handler = None
+        # Create a minimal AtomicStructure containing only atom information
+        # to act as anchor points for Pseudobonds representing the active
+        # restraints.
+         
         if create_target:
-            t = self._target_model = restraint_indicator_from_atoms(
-                master_model, self.atoms, name = 'xyz restraint targets')
-            # Atoms with hide == True will override display == True
-            t.atoms.hides |= HIDE_ISOLDE
-            #t.atoms.draw_modes = t.atoms.BALL_STYLE
-            #t.atoms.radii = t.atoms.radii * 0.5
-            master_model.add([t])
+            children = master_model.parent.child_models()
+            t = None
+            for c in children:
+                if isinstance(c, PositionRestraintIndicator):
+                    t = self._target_model = c
+                    break
+            if t is None:
+                t = self._target_model = restraint_indicator_from_atoms(
+                    master_model, self.atoms, name = 'xyz restraint targets')
+                # Atoms with hide == True will override display == True
+                t.atoms.hides |= HIDE_ISOLDE
+                #t.atoms.draw_modes = t.atoms.BALL_STYLE
+                #t.atoms.radii = t.atoms.radii * 0.5
+                master_model.parent.add([t])
 
         
-            # Create a Pseudobond for each restrainable atom, connecting it
-            # to its target. This will be automatically displayed if the 
-            # target atom is displayed. 
-            for r, ta in zip(self, t.atoms):
-                r._target_atom = ta
-                pb = r._pseudobond = pbg.new_pseudobond(r.atom, ta)
-                pb.display = False
+                # Create a Pseudobond for each restrainable atom, connecting it
+                # to its target. This will be automatically displayed if the 
+                # target atom is displayed. 
+                #~ for r, ta in zip(self, t.atoms):
+                    #~ r._target_atom = ta
+                    #~ pb = r._pseudobond = pbg.new_pseudobond(r.atom, ta)
+                    #~ pb.display = False
             
+            for r, ta in zip(self, t.atoms):
+                r.target_indicator = ta
+        
+        
             from chimerax.core.atomic import get_triggers
             t = get_triggers(self.session)
             self._master_display_change_handler = t.add_handler(
                 'changes', self._update_target_display)
             self._master_delete_handler = session.triggers.add_handler(
                 'remove models', self._check_if_master_deleted)
-     
+ 
         else:
             ta = self._restraints[0]._target_atom
             if ta is not None:
                 t = self._target_model = ta.structure
             else:
                 t = self._target_model = None
+
         
        
         

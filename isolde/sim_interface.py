@@ -2,12 +2,23 @@
 
 import numpy
 from math import pi, radians, degrees, cos
+from simtk import unit, openmm
+from simtk.openmm import app
 from simtk.openmm.openmm import CustomBondForce, CustomExternalForce, \
-                                CustomCompoundBondForce, CustomTorsionForce
-from simtk.openmm.openmm import Continuous1DFunction, Continuous3DFunction    
+                                CustomCompoundBondForce, CustomTorsionForce, \
+                                NonbondedForce
+from simtk.openmm.openmm import Continuous1DFunction, Continuous3DFunction 
+from simtk.openmm.app.internal import customgbforces   
 from chimerax.core.atomic import concatenate
+from .custom_forces import LinearInterpMapForce, TopOutBondForce, \
+                           TopOutRestraintForce, FlatBottomTorsionRestraintForce, \
+                           GBSAForce, AmberCMAPForce
 
-MIN_K = 0.01 # Spring constants below this value will be treated as zero
+
+
+
+
+
 
 def openmm_topology_from_model(model):
     '''
@@ -65,37 +76,45 @@ def cys_type(residue):
 
 class available_forcefields():
     '''Main force field files'''
-    main_files = [
-        'amber99sbildn.xml',
-        'amber99sbnmr.xml',
-        'amber10.xml'
-        ]
+    main_files = (
+        ['amberff14SB.xml','tip3p_standard.xml','tip3p_HFE_multivalent.xml', 'tip3p_IOD_multivalent.xml'],
+        ['amber99sbildn.xml',],
+        ['amber99sbnmr.xml',],
+        ['amber10.xml',],
+        ['charmm36.xml',],
+        )
     
-    main_file_descriptions = [
+    main_file_descriptions = (
+        'AMBER14 withi improved backbone & sidechain torsions',
         'AMBER99 with improved backbone & sidechain torsions',
         'AMBER99 with modifications to fit NMR data',
-        'AMBER10'
-        ]
+        'AMBER10',
+        'CHARMM36',
+        )
     
     # Implicit solvent force field files. The main file and the implicit
     # solvent file must match.
     implicit_solvent_files = [
+        None,
         'amber99_obc.xml',
         'amber99_obc.xml',
-        'amber10_obc.xml'
+        'amber10_obc.xml',
+        None
         ]
     
     # Explicit water models
     explicit_water_files = [
+        None,
         'tip3pfb.xml',
         'tip4pfb.xml',
-        'tip3p.xml'
+        'tip3p.xml',
         ]
     
     explicit_water_descriptions = [
+        None,
         'TIP3P-FB (DOI: 10.1021/jz500737m)',
         'TIP4P-FB (DOI: 10.1021/jz500737m)',
-        'Original TIP3P water (not recommended)'
+        'Original TIP3P water (not recommended)',
         ]
 
 def get_available_platforms():
@@ -107,149 +126,27 @@ def get_available_platforms():
             platform_names.append(name)
         return platform_names
 
-class TopOutBondForce(CustomBondForce):
-    '''
-    Wraps an OpenMM CustomBondForce defined as a standard harmonic potential
-    (0.5 * k * (r - r0)^2) with a user-defined fixed maximum cutoff on the
-    applied force. This is meant for steering the simulation into new 
-    conformations where the starting distance may be far from the target
-    bond length, leading to catastrophically large forces with a standard
-    harmonic potential.
-    '''
-    def __init__(self, max_force):
-        #super().__init__('min(0.5*k*(r-r0)^2, max_force*abs(r-r0))')
-        linear_eqn = 'max_force * abs(r-r0)'# - 0.5*max_force^2/k'
-        quadratic_eqn = '0.5*k*(r-r0)^2'
-        transition_eqn = 'step(r - max_force/k)'
-        zero_k_eqn = 'step(min_k - k)'
-        energy_str = 'select({},0,select({},{},{}))'.format(
-            zero_k_eqn, transition_eqn, linear_eqn, quadratic_eqn)
-        #force_str = 'select(' + ','.join((transition_eqn, linear_eqn, quadratic_eqn)) + ')'
-        super().__init__(energy_str)
-        self._max_force = max_force
+
         
-        self.k_index = self.addPerBondParameter('k')
-        self.r0_index = self.addPerBondParameter('r0')
-        self.max_force_index = self.addGlobalParameter('max_force', self.max_force)
-        self.min_k_index = self.addGlobalParameter('min_k', MIN_K)
-        self.update_needed = False
-    
-    @property
-    def max_force(self):
-        '''Maximum force applied to any given atom, in kJ/mol/nm.'''
-        return self._max_force
-    
-    @max_force.setter
-    def max_force(self, force):
-        self.setGlobalParameterDefaultValue(self.max_force_index, force)
-        self._max_force = force
-        self.update_needed = True
-    
-
-class TopOutRestraintForce(CustomExternalForce):
-    '''
-    Wraps an OpenMM CustomExternalForce to restrain atoms to defined positions
-    via a standard harmonic potential (0.5 * k * r^2) with a user-defined
-    fixed maximum cutoff on the appli5ed force. This is meant for steering 
-    the simulation into new conformations where the starting positions
-    may be far from the target positions, leading to catastrophically 
-    large forces with a standard harmonic potential.
-    '''
-    def __init__(self, max_force):
-        #super().__init__('min(0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2), max_force *(abs(x-x0)+abs(y-y0)+abs(z-z0)))')
-        linear_eqn = 'max_force * sqrt((x-x0)^2+(y-y0)^2+(z-z0)^2)'# - 0.5*max_force^2/k'
-        quadratic_eqn = '0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2)'
-        transition_eqn = 'step(sqrt((x-x0)^2+(y-y0)^2+(z-z0)^2) - max_force/k)'
-        zero_k_eqn = 'step(min_k - k)'
-        energy_str = 'select({},0,select({},{},{}))'.format(
-            zero_k_eqn, transition_eqn, linear_eqn, quadratic_eqn)
+class GenericMapObject:
+    def __init__(self, c3dfunc, per_atom_coupling, coupling_k):
+        '''
+        A minimal class to hold a Continuous3DFunction and its parameters.
+        '''
+        self._potential_function = c3dfunc
+        self._per_atom_coupling = per_atom_coupling
+        self._k = coupling_k
         
-        #force_str = 'select(' + ','.join((transition_eqn, linear_eqn, quadratic_eqn)) + ')'
-        super().__init__(energy_str)
-        self._max_force = max_force
-        per_particle_parameters = ('k','x0','y0','z0')
-        for p in per_particle_parameters:
-            self.addPerParticleParameter(p)
-        self.addGlobalParameter('max_force', max_force)
-        self.addGlobalParameter('min_k', MIN_K)
+    def get_potential_function(self):
+        return self._potential_function
+    
+    def get_per_atom_coupling_params(self):
+        return self._k
+    
+    def per_atom_coupling(self):
+        return hasattr(self._k, '__len__') or hasattr(self._k, '__iter__')
 
-        self.update_needed = False
-    
-    @property
-    def max_force(self):
-        '''Maximum force applied to any given atom, in kJ/mol/nm.'''
-        return self._max_force
-    
-    @max_force.setter
-    def max_force(self, force):
-        self.setGlobalParameterDefaultValue(0, force)
-        self._max_force = force
-        self.update_needed = True
-    
 
-class FlatBottomTorsionRestraintForce(CustomTorsionForce):
-    '''
-    Wraps an OpenMM CustomTorsionForce to restrain torsion angles while 
-    allowing free movement within a range (target +/- cutoff). Within 
-    the cutoff range the potential is constant, while outside it 
-    is defined as -k * cos (theta-theta0). 
-    '''
-    def __init__(self):
-        standard_energy = '-k*cos(theta-theta0)'
-        flat_energy = '-k*cos_cutoff'
-        switch_function = 'step(cos(theta-theta0)-cos_cutoff)'
-        complete_function = 'select({},{},{})'.format(
-            switch_function, flat_energy, standard_energy)
-        super().__init__(complete_function)
-        per_bond_parameters = ('k', 'theta0', 'cos_cutoff')
-        for p in per_bond_parameters:
-            self.addPerTorsionParameter(p)
-
-        self.update_needed = True
-
-#~ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
-    #~ '''
-    #~ Wraps an OpenMM CustomTorsionForce to restrain torsion angles while 
-    #~ allowing free movement within a range (target +/- cutoff). Within 
-    #~ the cutoff range the potential is constant, while outside it 
-    #~ is defined as -k * cos (theta-theta0). 
-    #~ '''
-    #~ def __init__(self):
-        #~ normalize_fn = '((theta-theta0 + pi) - floor((theta-theta0 + pi) / two_pi) * two_pi - pi)' 
-        #~ standard_energy = '0.5*k * dtheta^2'
-        #~ flat_energy = '0.5* k * cutoff^2'
-        #~ switch_function = 'step(cutoff-dtheta)'
-        #~ complete_function = 'select({},{},{});dtheta = {}'.format(
-            #~ switch_function, flat_energy, standard_energy, normalize_fn)
-        #~ super().__init__(complete_function)
-        #~ per_bond_parameters = ('k', 'theta0', 'cutoff')
-        #~ for p in per_bond_parameters:
-            #~ self.addPerTorsionParameter(p)
-        #~ self.addGlobalParameter('pi', pi)
-        #~ self.addGlobalParameter('two_pi', 2*pi)
-        
-        #~ self.update_needed = False
-    
-    def set_cutoff_angle(self, i, angle):
-        '''
-        Set the cut-off angle (below which no force will be applied) in 
-        radians for one dihedral.
-        '''
-        p1, p2, p3, p4, current_params = self.getTorsionParameters(i)
-        current_params[2] = angle
-        self.setTorsionParameters(i, p1, p2, p3, p4, current_params)
-        self.update_needed = True
-    
-    def get_cutoff_angle(self, i):
-        '''
-        Get the cut-off angle in radians for one dihedral.
-        '''
-        return self.getBondParameters(i)[5][2]
-    
-    
-    
-    
-        
 
 
 
@@ -287,7 +184,11 @@ class SimHandler():
     def update_restraints_in_context(self, context):
         self.update_distance_restraints_in_context(context)
         self.update_position_restraints_in_context(context)
-        self.update_dihedral_restraints_in_context(context)    
+        self.update_dihedral_restraints_in_context(context)
+        for m in self._maps:
+            pf = m.get_potential_function()
+            pf.update_context_if_needed(context)
+            
     
     ####
     # Positional Restraints
@@ -392,6 +293,38 @@ class SimHandler():
         for r in restraints:
             r.sim_force_index = -1
             r.sim_handler = None
+    
+    
+    ####
+    # AMBER CMAP corrections
+    ####
+        
+        ##
+        # Before simulation starts
+        ##
+    
+    def initialize_amber_cmap_force(self):
+        self._amber_cmap_force = AmberCMAPForce()
+    
+    def add_amber_cmap_torsions(self, phi_array, psi_array, sim_construct):
+        cf = self._amber_cmap_force
+        sc = sim_construct
+        phi_has_psi = phi_array.residues.indices(psi_array.residues)
+        psi_has_phi = psi_array.residues.indices(phi_array.residues)
+        good_phi = phi_array[phi_has_psi[phi_has_psi != -1]]
+        good_psi = psi_array[psi_has_phi[psi_has_phi != -1]]
+        phi_resnames = good_phi.residues.names
+        psi_resnames = good_psi.residues.names
+        n = len(good_psi)
+        phi_indices = sc.indices(good_phi.atoms).reshape((n,4))
+        psi_indices = sc.indices(good_psi.atoms).reshape((n,4))
+        
+        for pname, fname, pi, fi in zip(phi_resnames, psi_resnames, 
+                                        phi_indices, psi_indices):
+            assert(pname == fname)
+            cf.addTorsion(pname, pi, fi)
+        
+    
     
     ####
     # Dihedral restraints
@@ -546,6 +479,7 @@ class SimHandler():
             if not cid in cmap:
                 cmap[cid] = top.addChain()   # OpenMM chains have no name
             rid = (rname[i], rnum[i], cid)
+            rid = (rname[i], rnum[i], cid)
             if not rid in rmap:
                 res = rmap[rid] = top.addResidue(rname[i], cmap[cid])
                 if rname[i] == 'CYS':
@@ -650,6 +584,20 @@ class SimHandler():
     # /OLD VERSIONS
     #######################
 
+    def map_to_force_field(self, imap, atoms, 
+                            pad, normalize = True):
+        '''
+        Takes an IsoldeMap object, masks down the map to cover the atoms
+        with the desired padding, and converts it into a LinearInterpMapForce
+        object. 
+        '''
+        vd, r = imap.crop_to_selection(atoms, pad, normalize)
+        tf = r.xyz_to_ijk_transform.matrix
+        f = LinearInterpMapForce(vd, tf, units='angstroms')
+        f.set_global_k(imap.get_coupling_constant())
+        imap.set_potential_function(f)
+    
+    
     def continuous3D_from_volume(self, vol_data):
         '''
         Takes a volumetric map and uses it to generate an OpenMM 
@@ -665,7 +613,27 @@ class SimHandler():
         vol_data_1d = np.ravel(vol_data, order = 'C')
         from simtk.openmm.openmm import Continuous3DFunction    
         return Continuous3DFunction(*vol_dimensions, vol_data_1d, *minmax)
-
+    
+    def continuous3D_from_maps(self, master_map_list, keys, atoms, pad, normalize):
+        '''
+        Combine multiple maps into a single Continuous3DFunction by 
+        summing their data with applied weights. 
+        '''
+        from . import volumetric
+        combined_map = None
+        for key in keys:
+            m = master_map_list[key]
+            vd, r = m.crop_to_selection(atoms, pad, normalize)
+            weighted_map = vd*m.get_coupling_constant()
+            if combined_map is None:
+                combined_map = weighted_map
+            else:
+                combined_map += weighted_map
+        c3d = self.continuous3D_from_volume(combined_map)
+        f = self.map_potential_force_field(c3d, 1.0, r)
+        ret = GenericMapObject(f, False, 1.0)
+        return ret
+        
 
     def map_potential_force_field(self, c3d_func, global_k, region):
         '''
@@ -710,23 +678,64 @@ class SimHandler():
 
 def define_forcefield (forcefield_list):
     from simtk.openmm.app import ForceField
-    ff = self_forcefield = ForceField(*forcefield_list)
+    ff = self_forcefield = ForceField(*[f for f in forcefield_list if f is not None])
     return ff
+
+def initialize_implicit_solvent(system, top):
+    '''Add a Generalised Born Implicit Solvent (GBIS) formulation.'''
+    # Somewhat annoyingly, OpenMM doesn't store atomic charges in a 
+    # nice accessible format. So, we have to pull it back out of the
+    # NonbondedForce term.
+    for f in system.getForces():
+        if isinstance(f, NonbondedForce):
+            break
+    charges = []
+    for i in range(f.getNumParticles()):
+        charges.append(f.getParticleParameters(i)[0])
+    gbforce = GBSAForce()
+    params = GBSAForce.getStandardParameters(top)
+    print('charge length: {}, param length: {}, natoms: {}, top_n: {}'.format(
+        len(charges), len(params), f.getNumParticles(), top.getNumAtoms()))
+    i = 0
+    for charge, param in zip(charges, params):
+        gbforce.addParticle([charge, *param])
+        i+= 1
+    print(i)
+    gbforce.finalize()
+    print('GB Force num particles: '.format(gbforce.getNumParticles()))
+    system.addForce(gbforce)
+
+
     
-def create_openmm_system(top, ff, templatedict):
+def create_openmm_system(top, ff, templatedict, force_implicit=False):
     from simtk.openmm import app
     from simtk import openmm as mm
     from simtk import unit
+
+    params = {
+        'nonbondedMethod':      app.CutoffNonPeriodic,
+        'nonbondedCutoff':      1.0*unit.nanometers,
+        'constraints':          app.HBonds,
+        'rigidWater':           True,
+        'removeCMMotion':       False,
+        'residueTemplates':     templatedict,
+        'ignoreExternalBonds':  True,
+        }
     
+        
     try:
-        system = ff.createSystem(top,
-                                nonbondedMethod = app.CutoffNonPeriodic,
-                                nonbondedCutoff = 1.0*unit.nanometers,
-                                constraints = app.HBonds,
-                                rigidWater = True,
-                                removeCMMotion = False,
-                                residueTemplates = templatedict,
-                                ignoreExternalBonds = True)
+        #~ system = ff.createSystem(top,
+                                #~ nonbondedMethod = app.CutoffNonPeriodic,
+                                #~ nonbondedCutoff = 1.0*unit.nanometers,
+                                #~ constraints = app.HBonds,
+                                #~ rigidWater = True,
+                                #~ removeCMMotion = False,
+                                #~ residueTemplates = templatedict,
+                                #~ ignoreExternalBonds = True)
+        system = ff.createSystem(top, **params)
+        if force_implicit:
+            print('Setting up implicit solvent...')
+            initialize_implicit_solvent(system, top)
     except ValueError as e:
         raise Exception('Missing atoms or parameterisation needed by force field.\n' +
                               'All heavy atoms and hydrogens with standard names are required.\n' +

@@ -486,11 +486,13 @@ class Isolde():
     @property
     def selected_model(self):
         return self._selected_model
+        
     @selected_model.setter
     def selected_model(self, model):
         if not isinstance(model, chimerax.core.atomic.AtomicStructure):
             raise TypeError('Selection must be a single AtomicStructure model!')
         self._change_selected_model(model = model)
+        
     @property
     def fixed_atoms(self):
         return self._hard_shell_atoms
@@ -1086,10 +1088,7 @@ class Isolde():
             
             # A running simulation takes precedence for memory control
             return
-        if self.session.selection.empty():
-            flag = False
-        else:
-            flag = True
+        flag = not(self.session.selection.empty())
         iw = self.iw        
         iw._sim_basic_mobile_selection_frame.setEnabled(flag)
         iw._sim_go_button.setEnabled(flag)
@@ -1796,9 +1795,10 @@ class Isolde():
             targets.append(target)
         
         sh.set_dihedral_restraints(sc, phipsi, targets, k)
+        self._pep_flip_timeout_counter = 0
         self._pep_flip_targets = numpy.array(targets)
         self._pep_flip_dihedrals = phipsi
-        self._pep_flip_timeout_counter = 0
+        self.iw._rebuild_sel_res_pep_flip_button.setEnabled(False)
         self._pep_flip_timeout_handler = self.triggers.add_handler(
             'completed simulation step', self._check_pep_flip)
         
@@ -1823,6 +1823,7 @@ class Isolde():
             sc = self._total_sim_construct
             sh.set_dihedral_restraints(sc, dihedrals, 0, 0)
             self.triggers.remove_handler(self._pep_flip_timeout_handler)
+            self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
                 
     
     
@@ -2023,7 +2024,7 @@ class Isolde():
         self.ca_to_ca_plus_two = br.CA_to_CA_plus_Two(m)
         self.o_to_n_plus_four = br.O_to_N_plus_Four(m)
         # Positional restraints (one per heavy atom)
-        self.position_restraints = pr.Atom_Position_Restraints(m.atoms, create_target=True)
+        self.position_restraints = pr.Atom_Position_Restraints(self.session, self.selected_model, m.atoms, create_target=True)
     
     
     def _select_whole_model(self, *_):
@@ -2331,6 +2332,10 @@ class Isolde():
         sh.initialize_dihedral_restraint_force(self.default_dihedral_restraint_cutoff_angle)
         self._initialize_backbone_restraints(bd, sh)
         
+        sh.initialize_amber_cmap_force()
+        sh.add_amber_cmap_torsions(sim_phi, sim_psi, total_mobile)
+        
+        
         for res in total_mobile.unique_residues:
             try:
                 thisrot = self.rotamers[res]
@@ -2412,27 +2417,27 @@ class Isolde():
         self._status('Preparing maps...')
         # Crop down maps and convert to potential fields
         if self.sim_mode in [sm.xtal, sm.em]:
+#            self._combined_maps = None
             for mkey in self.master_map_list:
+                combined_keys = []
                 m = self.master_map_list[mkey]
-                vol_data, region = m.crop_to_selection(
-                    total_mobile, m._mask_cutoff*1.5, normalize = True)
-                #vol = m._source_map
-                c3d = sh.continuous3D_from_volume(vol_data)
-                m.set_c3d_function(c3d)
-                from copy import copy
-                f = sh.map_potential_force_field(c3d, m.get_coupling_constant(), region)
-                m.set_potential_function(f)
-                # Register the map with the SimHandler
+                sh.map_to_force_field(m, total_mobile, m._mask_cutoff*1.5, normalize=True)
+                #~ vol_data, region = m.crop_to_selection(
+                    #~ total_mobile, m._mask_cutoff*1.5, normalize = True)
+                #~ #vol = m._source_map
+                #~ c3d = sh.continuous3D_from_volume(vol_data)
+                #~ m.set_c3d_function(c3d)
+                #~ from copy import copy
+                #~ f = sh.map_potential_force_field(c3d, m.get_coupling_constant(), region)
+                #~ m.set_potential_function(f)
+                #~ # Register the map with the SimHandler
                 sh.register_map(m)
-                
-                # If required, mask the map visualisation down to the mobile selection
                 do_mask = m.get_mask_vis()
                 if do_mask:
                     v = m.get_source_map()
                     cutoff = m.get_mask_cutoff()
                     from chimerax.core.commands import sop
                     sop.surface_zone(self.session, v.surface_drawings, near_atoms = total_mobile, range = cutoff)
-        
         log('Preparing maps took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
 
@@ -2460,7 +2465,7 @@ class Isolde():
         if self._logging:
             self._log('Generating forcefield')
         
-        forcefield_list = [self._sim_main_ff,
+        forcefield_list = [*self._sim_main_ff,
                             self._sim_implicit_solvent_ff,
                             self._sim_water_ff]
         
@@ -2470,7 +2475,12 @@ class Isolde():
             self._log('Preparing system')
         
         # Define simulation System
-        sys = self._system = si.create_openmm_system(self._topology, self._ff, templates)
+        if self._sim_implicit_solvent_ff is None:
+            force_implicit = True
+        else:
+            force_implicit = False
+        sys = self._system = si.create_openmm_system(self._topology, self._ff, templates, force_implicit = force_implicit)
+        
         
         # Apply fixed atoms to System
         if self._logging:
@@ -2491,7 +2501,9 @@ class Isolde():
         sm = self._sim_modes
         if self.sim_mode in [sm.xtal, sm.em]:
             for key,m in self.master_map_list.items():
-                sys.addForce(m.get_potential_function())
+                pf = m.get_potential_function()
+                if pf is not None:
+                    sys.addForce(pf)
         
         sys.addForce(sh._dihedral_restraint_force)
         sys.addForce(sh._distance_restraints_force)
@@ -2902,7 +2914,7 @@ class Isolde():
         minsteps = self.min_steps_per_update
         mode = self.simulation_type
         startup = self._sim_startup
-        self._sim_startup_counter
+        self._sim_startup_counter += 1
         s_max_count = self._sim_startup_rounds
         if self._sim_startup and self._sim_startup_counter >= s_max_count:
             print('Maximum number of startup minimisation rounds reached. \
@@ -3002,7 +3014,7 @@ class Isolde():
                 pointer_pos = hh.getPosition(i, scene_coords = True)
                 if self._haptic_highlight_nearest_atom[i] and not d.tugging:
                     a = self._haptic_current_nearest_atom[i]
-                    if a is not None:
+                    if a is not None and not a.deleted:
                         # set the previously picked atom back to standard
                         a.draw_mode = self._haptic_current_nearest_atom_draw_mode[i]
                         a.color = self._haptic_current_nearest_atom_color[i]
@@ -3124,7 +3136,7 @@ class Isolde():
         forces = (state.getForces(asNumpy = True) \
             /(kilojoule_per_mole/nanometer))[self._total_mobile_indices]
         magnitudes = numpy.linalg.norm(forces, axis=1)
-        #~ rstate = c.getState(
+        #~ rstate = c.getState(Unab
             #~ getForces=True, 
             #~ groups = {self._force_groups['position restraints']})
         #~ f = (rstate.getForces(asNumpy=True) \
