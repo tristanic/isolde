@@ -1,90 +1,78 @@
 # The "make" targets are:
 # 	wheel: build a Python wheel in "dist" directory.
-# 	app-install: build wheel (if needed) and install in ChimeraX
+# 	app-install: build wheel (if needed) and install in ChimeraX.
+# 	test: run ChimeraX
+# 	debug: run ChimeraX with debugging flag set
 # 	clean: remove files used in building wheel
+# 	distclean: remove files used in building wheel and license file
 
-# CHIMERAX_APP should be the ChimeraX install folder
-CHIMERAX_APP = /home/tic20/apps/chimerax
+# These parameters may be changed as needed.
 
-# These bundle data may be changed as needed.
-# By convention, ChimeraX bundles start with "ChimeraX-"
-# and the ChimeraX toolshed code apparently really wants
-# the "chimerax." part of the package name (for now).
+# ChimeraX bundle names must start with "ChimeraX_"
+# to avoid clashes with package names in pypi.python.org.
+# When uploaded to the ChimeraX toolshed, the bundle
+# will be displayed without the ChimeraX- prefix.
 BUNDLE_NAME = ChimeraX-ISOLDE
-BUNDLE_VERSION = 0.9.11
+BUNDLE_VERSION = 0.9.13
+# ChimeraX bundles should only include packages
+# that install as chimerax.package_name.
+# General Python packages should be uploaded to
+# pypi.python.org rather than the ChimeraX toolshed.
 PKG_NAME = chimerax.isolde
 
-# Source and data files.  By default, all .py files
-# except for setup.py and no data files.
-PYSRCS = $(filter-out setup.py,$(wildcard *.py))
-DATAFILES = molprobity_data
-RESOURCES = resources
-
-# Python extension modules
-PYMOD_LINUX_EXT = so
-PYMOD_MAC_EXT = dylib
-PYMOD_WIN_EXT = dll
-PYMOD_FILES = $(wildcard *.$(PYMOD_LINUX_EXT))
-PYMOD_FILES += $(wildcard *.$(PYMOD_MAC_EXT))
-PYMOD_FILES += $(wildcard *.$(PYMOD_WIN_EXT))
+# Define where ChimeraX is installed.
+OS = $(patsubst CYGWIN_NT%,CYGWIN_NT,$(shell uname -s))
+# CHIMERAX_APP is the ChimeraX install folder
+ifeq ($(OS),CYGWIN_NT)
+# Windows
+CHIMERAX_APP = "/c/Program Files/ChimeraX.app"
+endif
+ifeq ($(OS),Darwin)
+# Mac
+CHIMERAX_APP = /Applications/ChimeraX.app
+endif
+ifeq ($(OS),Linux)
+CHIMERAX_APP = /home/tic20/apps/chimerax
+endif
 
 # ==================================================================
-# Theoretically, no changes should be needed below here.
+# Theoretically, no changes are needed below this line
 
 # Platform-dependent settings.  Should not need fixing.
 # For Windows, we assume Cygwin is being used.
-OS = $(patsubst CYGWIN_NT%,CYGWIN_NT,$(shell uname -s))
 ifeq ($(OS),CYGWIN_NT)
-PYTHON_EXE = $(CHIMERAX_APP)/bin/python.exe
 CHIMERAX_EXE = $(CHIMERAX_APP)/bin/ChimeraX.exe
 endif
 ifeq ($(OS),Darwin)
-PYTHON_EXE = $(CHIMERAX_APP)/Contents/bin/python3.6
 CHIMERAX_EXE = $(CHIMERAX_APP)/Contents/bin/ChimeraX
 endif
 ifeq ($(OS),Linux)
-PYTHON_EXE = $(CHIMERAX_APP)/bin/python3.6
 CHIMERAX_EXE = $(CHIMERAX_APP)/bin/ChimeraX
 endif
-COPY = cp -r
 
-# Paths used for constructing the installation "wheel"
-PKG_PATH = $(shell echo $(PKG_NAME) | sed 's,\.,/,'g)
-PKG_DIR = build/src/$(PKG_PATH)
-ifeq ($(OS),CYGWIN_NT)
-PKG_DIR := $(shell cygpath -m '$(PKG_DIR)' | sed 's,/,\\\\\\\\,g')
-endif
-WHL_BNDL_NAME = $(subst -,_,$(BUNDLE_NAME))
-WHEEL = dist/$(WHL_BNDL_NAME)-$(BUNDLE_VERSION)-py3-none-any.whl
+BUNDLE_BASE_NAME = $(subst ChimeraX-,,$(BUNDLE_NAME))
+SOURCE = src
+SRCS = $(SOURCE)/*.py $(SOURCE)/*.cpp
+
 
 #
 # Actual make dependencies!
 #
 
-wheel $(WHEEL): $(PKG_DIR) $(PYSRCS) setup.py
-	$(PYTHON_EXE) setup.py --no-user-cfg bdist_wheel
-	rm -rf $(WHL_BNDL_NAME).egg-info
+wheel $(WHEEL): bundle_info.xml $(SRCS)
+	$(CHIMERAX_EXE) --nogui --cmd "devel build . ; exit"
 
-app-install:	$(WHEEL)
-	$(CHIMERAX_EXE) -m pip install -U $(WHEEL)
+install app-install:	$(WHEEL)
+	$(CHIMERAX_EXE) --nogui --cmd "devel install . ; exit"
 
-setup.py: setup.py.in Makefile
-	sed -e 's,PKG_DIR,$(PKG_DIR),' \
-		-e 's,BUNDLE_NAME,$(BUNDLE_NAME),' \
-		-e 's,BUNDLE_VERSION,$(BUNDLE_VERSION),' \
-		-e 's,PKG_NAME,$(PKG_NAME),' \
-		-e 's,PKG_DIR,$(PKG_DIR),' \
-		-e 's,PYMOD_LINUX_EXT,$(PYMOD_LINUX_EXT),' \
-		-e 's,PYMOD_MAC_EXT,$(PYMOD_MAC_EXT),' \
-		-e 's,PYMOD_WIN_EXT,$(PYMOD_WIN_EXT),' \
-		-e 's,DATAFILES,$(DATAFILES),' \
-		-e 's,RESOURCES,$(RESOURCES),' \
-		< setup.py.in > setup.py
+uninstall app-uninstall:	$(WHEEL)
+	$(CHIMERAX_EXE) --nogui --cmd "toolshed uninstall $(BUNDLE_BASE_NAME) ; exit"
 
-$(PKG_DIR):	$(PYSRCS) $(DATAFILES) $(RESOURCES) $(PYMOD_FILES)
-	if [ ! -d "$(PKG_DIR)" ]; then mkdir -p $(PKG_DIR); fi
-	$(PYTHON_EXE) -B -m py_compile $(PYSRCS)
-	$(COPY) $(PYSRCS) $(DATAFILES) $(RESOURCES) $(PYMOD_FILES) $(PKG_DIR)
+test:
+	$(CHIMERAX_EXE)
+
+debug:
+	$(CHIMERAX_EXE) --debug
 
 clean:
-	rm -rf __pycache__ build dist $(WHL_BNDL_NAME).egg-info setup.py
+	$(CHIMERAX_EXE) --nogui --cmd "devel clean . ; exit"

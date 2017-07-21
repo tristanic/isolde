@@ -1,0 +1,69 @@
+<BundleInfo name="ChimeraX-ISOLDE" version="0.9.13" package="chimerax.isolde"
+  	    minSessionVersion="1" maxSessionVersion="1">
+
+  <!-- Additional information about bundle source -->
+  <Author>Tristan Croll</Author>
+  <Email>tic20@cam.ac.uk</Email>
+  <URL>To be completed</URL>
+
+  <!-- Synopsis is a one-line description
+       Description is a full multi-line description -->
+  <Synopsis>Sample code for implementing ChimeraX bundle</Synopsis>
+  <Description>ISOLDE: Interactive Structure Optimisation by Local Direct Exploration
+
+ISOLDE is a next-generation environment for interactive building and
+real-space refinement of atomic models into electron density maps. 
+It applies interactive molecular dynamics to allow real-time, intuitive
+performance of structural rearrangements from the small to the quite
+drastic, while constantly maintaining physically reasonable interactions
+with the surroundings.
+  </Description>
+
+  <!-- Categories is a list where this bundle should appear -->
+  <Categories>
+    <Category name="General"/>
+  </Categories>
+
+  <!-- Compiled modules in bundle
+       CModule gives the name of the module
+       Source files are listed in one or more SourceFile elements -->
+  <CModule name="_geometry">
+    <SourceFile>src/_geometry.cpp</SourceFile>
+    <Library>atomstruct</Library>
+  </CModule>
+
+  <!-- Dependencies on other ChimeraX/Python packages -->
+  <Dependencies>
+    <Dependency name="ChimeraX-Core" version=">=0.1"/>
+  </Dependencies>
+
+  <!-- Python and ChimeraX-specific classifiers
+       From https://pypi.python.org/pypi?%3Aaction=list_classifiers
+       Some Python classifiers are always inserted by the build process.
+       These include the Environment and Operating System classifiers
+       as well as:
+         Framework :: ChimeraX
+         Intended Audience :: Science/Research
+         Programming Language :: Python :: 3
+         Topic :: Scientific/Engineering :: Visualization
+         Topic :: Scientific/Engineering :: Chemistry
+         Topic :: Scientific/Engineering :: Bio-Informatics
+       The "ChimeraX :: Bundle" classifier is also supplied automatically.  -->
+  <DataFiles>
+    <DataFile>amberff/*</DataFile>
+    <DataFile>amberff/amap/*</DataFile>
+    <DataFile>molprobity_data/*</DataFile>
+    <DataFile>resources</DataFile>
+  </DataFiles>
+  <Classifiers>
+    <!-- Development Status should be compatible with bundle version number -->
+    <PythonClassifier>Development Status :: 2 - Pre-Alpha</PythonClassifier>
+    <PythonClassifier>License :: Mozilla Public License version 2.0. Contact tic20@cam.ac.uk for alternative license terms.</PythonClassifier>
+]
+    <ChimeraXClassifier>ChimeraX :: Tool :: ISOLDE :: General :: Interactive Molecular Dynamics Flexible Fitting (iMDFF)</ChimeraXClassifier>
+    <ChimeraXClassifier>ChimeraX :: Command :: fps :: General :: Display graphics frame rate</ChimeraXClassifier>
+    <ChimeraXClassifier>ChimeraX :: Command :: isolde :: General :: Command-line control of ISOLDE simulations</ChimeraXClassifier>
+]
+  </Classifiers>
+
+</BundleInfo>
