@@ -557,6 +557,7 @@ class OmegaValidator():
         self.clear()
         self._initialize_drawings()
         self.omega = [o for o in omega_list if o != None]
+        self.find_outliers()
     
     def _initialize_drawings(self):
         from chimerax.core.models import Drawing
