@@ -89,14 +89,29 @@ def dihedral_fill_plane(p0, p1, p2, p3):
     # This surface should always be almost planar, so we'll assign it a
     # single normal
     
-    n = cross(varray[3]-varray[0], varray[1]-varray[0])
+    n = cross(varray[1]-varray[0], varray[3]-varray[0])
     
     narray[:] = n
     tarray = array([[0,1,4],[1,2,4],[2,3,4]],int32)
     return varray, narray, tarray
     
 
-
+def dihedral_fill_planes(dihedrals, target_drawing):
+    import numpy
+    dw = target_drawing
+    varray = numpy.empty([5*len(dihedrals), 3], numpy.float32)
+    narray = numpy.empty([5*len(dihedrals), 3], numpy.float32)
+    tarray = numpy.empty([3*len(dihedrals), 3], numpy.int32)
+    ntri = 0
+    for i, d in enumerate(dihedrals):
+        thisv, thisn, thist = dihedral_fill_plane(*d.coords)
+        start, end = i*5, i*5+5
+        varray[start:end] = thisv
+        narray[start:end] = thisn
+        thist += i*5
+        tarray[ntri:ntri+3] = thist
+        ntri += 3
+    dw.vertices, dw.normals, dw.triangles = varray, narray, tarray
 
 def cone_geometry(radius = 1, height = 1, nc = 10, caps = True, flipped = False):
     '''

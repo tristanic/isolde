@@ -5,7 +5,10 @@
 
 
 import os
+import numpy
 from math import degrees, radians
+from . import geometry
+
 package_directory = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(package_directory, 'molprobity_data')
 
@@ -545,22 +548,32 @@ class OmegaValidator():
             i = existing_names.index(self.name)
             self.master_drawing = self.m.all_drawings()[i]
             self.master_drawing.remove_all_drawings()
-        
-        self.drawings = {}
-        self.currently_drawn = {}
+        self._initialize_drawings()
         
         from math import radians
     
     def load_structure(self, model, omega_list):
         self.current_model = model
         self.clear()
+        self._initialize_drawings()
         self.omega = [o for o in omega_list if o != None]
-        self.drawings = {}
+    
+    def _initialize_drawings(self):
         from chimerax.core.models import Drawing
-        for o in self.omega:
-            d = self.drawings[o] = Drawing('omega plane')
-            self.master_drawing.add_drawing(d)
-        self.currently_drawn = {}
+        #~ for o in self.omega:
+            #~ d = self.drawings[o] = Drawing('omega plane')
+            #~ self.master_drawing.add_drawing(d)
+        c = self._cis_drawing = Drawing('cis peptides')
+        c.set_color(self.cis_color)
+        t = self._twisted_drawing = Drawing('twisted peptides')
+        t.set_color(self.twisted_color)
+        for d in (c,t):
+            d.vertices = numpy.zeros([0,3],numpy.float32)
+            d.normals = numpy.zeros([0,3],numpy.float32)
+            d.triangles = numpy.zeros([0,3], numpy.int32)
+        self.master_drawing.add_drawing(self._cis_drawing)
+        self.master_drawing.add_drawing(self._twisted_drawing)
+        
     
     def find_outliers(self):
         cis = []
@@ -570,40 +583,31 @@ class OmegaValidator():
                 cis.append(o)
             elif abs(o.value) <= TRANS_MIN:
                 twisted.append(o)
+        self._current_cis = cis
+        self._current_twisted = twisted
         return cis, twisted
     
     def draw_outliers(self, cis, twisted):
-        from . import geometry
-        for o, d in self.drawings.items():
-            d.set_display(False)
-        self.currently_drawn = {}
-        
-        if len(cis):
-            for c in cis:
-                d = self.drawings[c]
-                d.vertices, d.normals, d.triangles = geometry.dihedral_fill_plane(*c.atoms.coords)
-                d.set_color(self.cis_color)
-                d.set_display(True)
-                self.currently_drawn[c] = d
-        
-        if len(twisted):
-            for t in twisted:
-                d = self.drawings[t]
-                d.vertices, d.normals, d.triangles = geometry.dihedral_fill_plane(*t.atoms.coords)
-                d.set_color(self.twisted_color)
-                d.set_display(True)
-                self.currently_drawn[t] = d
+        #self._cis_drawing.set_display(False)
+        #self._twisted_drawing.set_display(False)
+        self._update_coords(cis, self._cis_drawing, self.cis_color)
+        self._update_coords(twisted, self._twisted_drawing, self.twisted_color)
+
+    
+    def _update_coords(self, dihedrals, drawing, color):
+        if len(dihedrals):
+            d = drawing
+            geometry.dihedral_fill_planes(dihedrals, d)
+            d.set_color(color)
+            d.set_display(True)
+            
     
     def update_coords(self):
-        from . import geometry
-        for o, d in self.currently_drawn.items():
-            d.vertices, d.normals, d.triangles = geometry.dihedral_fill_plane(*o.atoms.coords)
-        
+        self._update_coords(self._current_cis, self._cis_drawing, self.cis_color)
+        self._update_coords(self._current_twisted, self._twisted_drawing, self.twisted_color)
+                
     def clear(self):
         self.master_drawing.remove_all_drawings()
-        self.drawings = {}
-        self.currently_drawn = {}
-    
                 
     
     
