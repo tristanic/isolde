@@ -533,7 +533,13 @@ class Isolde():
         
         # Function to remove all event handlers, mouse modes etc. when
         # ISOLDE is closed, and return ChimeraX to its standard state.
-        self.gui.tool_window.ui_area.destroyed.connect(self._on_close)
+        
+        self.gui.tool_window.ui_area.parentWidget().destroyed.connect(self._on_close)
+        #self.gui.tool_window.destroyed.connect(self._on_close)
+        self._event_handler.add_event_handler('close on app quit',
+                                      'app quit',
+                                      self._on_close)
+        
         
         # Any values in the Qt Designer .ui file are placeholders only.
         # Combo boxes need to be repopulated, and variables need to be
@@ -2948,6 +2954,8 @@ class Isolde():
         #sh.update_position_restraints_in_context(c)
         
         newpos, max_force, max_index = self._get_positions_and_max_force()
+        self._particle_positions = newpos
+        sc.coords = self._particle_positions
         #self._sim_pos_restr.update_pseudobonds(
         #    self._pos_restraint_forces, self._sim_pos_restr_indices_in_master_restr) 
         if startup:
@@ -3012,7 +3020,6 @@ class Isolde():
 
         # If both cur_tug and tugging are false, do nothing
         
-        self.triggers.activate_trigger('completed simulation step', data=None)
         
         
         # Haptic interaction
@@ -3094,14 +3101,15 @@ class Isolde():
         
         
         from simtk import unit
-        self._particle_positions = newpos
-        sc.coords = self._particle_positions
         self._last_frame_number = v.frame_number
         if self._logging:
             self._log('Ran ' + str(self.sim_steps_per_update) + ' steps')
         if self.track_rama:
             self.update_ramachandran()
             self.update_omega_check()
+
+        self.triggers.activate_trigger('completed simulation step', data=None)
+
         
     def _rezone_maps(self, *_):
         self._map_rezone_counter += 1
@@ -3157,7 +3165,7 @@ class Isolde():
             self.starting_positions = state.getPositions(asNumpy=True) / angstrom
             for i, f in enumerate(self._system.getForces()):
                 print(f, c.getState(getEnergy=True, groups = {i}).getPotentialEnergy())
-        max_mag = max(magnitudes)
+        max_mag = magnitudes.max()
         # Only look up the index if the maximum force is too high
         if max_mag > self._max_allowable_force:
             max_index = numpy.where(magnitudes == max_mag)[0][0]
@@ -3212,7 +3220,7 @@ class Isolde():
     #############################################
     # Final cleanup
     #############################################
-    def _on_close(self):
+    def _on_close(self, *_):
         self.session.logger.status('Closing ISOLDE and cleaning up')
     
         # Remove all registered event handlers
@@ -3233,7 +3241,7 @@ class Isolde():
         if self._splash_destroy_countdown <= 0:
             self.session.triggers.remove_handler(self._splash_handler)
             self._splash_handler = None
-            self._splash.destroy()
+            self._splash.close()
 
 
 def _generic_warning(message):

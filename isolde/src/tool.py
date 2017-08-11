@@ -161,7 +161,10 @@ class ISOLDE_ToolUI(ToolInstance):
 
         from . import isolde
         self.isolde = isolde.Isolde(self)
-
+    
+    def delete(self):
+        self.isolde._on_close()
+        super().delete()
 
     def _change_experience_level_or_sim_mode(self):
         exp_index = self.iw._experience_level_combo_box.currentIndex()

@@ -20,7 +20,8 @@ class EventHandler():
         'add models',
         'remove models',
         'frame drawn',
-        'graphics update'
+        'graphics update',
+        'app quit'
         ]
 
     

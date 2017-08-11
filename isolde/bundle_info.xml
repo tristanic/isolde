@@ -1,4 +1,4 @@
-<BundleInfo name="ChimeraX-ISOLDE" version="0.9.13" package="chimerax.isolde"
+<BundleInfo name="ChimeraX-ISOLDE" version="0.9.15" package="chimerax.isolde"
   	    minSessionVersion="1" maxSessionVersion="1">
 
   <!-- Additional information about bundle source -->
@@ -35,6 +35,7 @@ with the surroundings.
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>
     <Dependency name="ChimeraX-Core" version=">=0.1"/>
+    <Dependency name="ChimeraX-Clipper" version=">=0.1"/>
   </Dependencies>
 
   <!-- Python and ChimeraX-specific classifiers
@@ -53,7 +54,7 @@ with the surroundings.
     <DataFile>amberff/*</DataFile>
     <DataFile>amberff/amap/*</DataFile>
     <DataFile>molprobity_data/*</DataFile>
-    <DataFile>resources</DataFile>
+    <DataFile>resources/*</DataFile>
   </DataFiles>
   <Classifiers>
     <!-- Development Status should be compatible with bundle version number -->

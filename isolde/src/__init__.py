@@ -30,13 +30,13 @@ class _MyAPI(BundleAPI):
         
 
     @staticmethod
-    def register_command(command_name):
+    def register_command(command_name, logger):
         # 'register_command' is lazily called when the command is referenced
         from . import fps
         from chimerax.core.commands import register
         if command_name == 'fps':
-            register(command_name + " start", fps.fps_start_desc, fps.fps_start)
-            register(command_name + " stop", fps.fps_stop_desc, fps.fps_stop)
+            register(command_name + " start", fps.fps_start_desc, fps.fps_start, logger)
+            register(command_name + " stop", fps.fps_stop_desc, fps.fps_stop, logger)
         elif command_name == 'isolde':
             from . import cmd
             cmd.register_isolde()

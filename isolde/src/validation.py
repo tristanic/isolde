@@ -601,6 +601,8 @@ class OmegaValidator():
             geometry.dihedral_fill_planes(dihedrals, d)
             d.set_color(color)
             d.set_display(True)
+        else:
+            drawing.set_display(False)
             
     
     def update_coords(self):
