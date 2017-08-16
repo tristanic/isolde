@@ -389,9 +389,11 @@ class Isolde():
         # value helps keep the simulation under control in response to
         # very large forces.
         self._friction = 5.0/unit.picoseconds
-        # Limit on the net force on a single atom to detect instability and
-        # force a minimisation
+        # Limit on the net force on a single atom 
         self._max_allowable_force = 40000.0 # kJ mol-1 nm-1
+        # For dynamics it's more efficient to just check that atoms aren't
+        # moving too quickly.
+        self._max_atom_movement_per_step = 5 # Angstroms
         # We need to store the last measured maximum force to determine
         # when minimisation has converged.
         self._last_max_force = inf
@@ -2950,14 +2952,11 @@ class Isolde():
             self._surroundings_hidden = False
         
         sh.update_restraints_in_context(c)
-        #sh.update_distance_restraints_in_context(c)
-        #sh.update_position_restraints_in_context(c)
-        
-        newpos, max_force, max_index = self._get_positions_and_max_force()
-        self._particle_positions = newpos
-        sc.coords = self._particle_positions
-        #self._sim_pos_restr.update_pseudobonds(
-        #    self._pos_restraint_forces, self._sim_pos_restr_indices_in_master_restr) 
+        if mode == 'min':
+            newpos, max_force, max_index = self._get_positions_and_max_force()
+        else:
+            newpos, fast_indices = self._get_and_check_positions()
+        sc.coords = self._particle_positions = newpos
         if startup:
             print('Startup round {} max force: {:0.0f} kJ/mol/nm'
                     .format(self._sim_startup_counter, max_force))
@@ -2965,9 +2964,8 @@ class Isolde():
                 print('Minimisation converged. Starting dynamics.')
                 startup = self._sim_startup = False
             self._last_max_force = max_force
-        elif max_force > self._max_allowable_force and not self._sim_is_unstable:
+        elif mode == 'equil' and fast_indices is not None:
             self._sim_is_unstable = True
-            self._oldmode = mode
             if mode == 'equil':
                 # revert to the coordinates before this simulation step
                 #c.setPositions(pos/10)
@@ -2990,7 +2988,7 @@ class Isolde():
             if max_force < self._max_allowable_force:
                 # We're back to stability. We can go back to equilibrating
                 self._sim_is_unstable = False
-                self.simulation_type = self._oldmode
+                self.simulation_type = 'equil'
                 self._unstable_min_rounds = 0
             
 
@@ -3144,6 +3142,25 @@ class Isolde():
             ov.draw_outliers(cis, twisted)
         ov.update_coords()
         
+    
+    def _get_and_check_positions(self):
+        import numpy
+        from simtk.unit import angstrom
+        c = self.sim.context
+        state = c.getState(getPositions = True)
+        indices = self._total_mobile_indices
+        old_pos = self._particle_positions
+        pos = state.getPositions(asNumpy = True)/angstrom
+        delta = pos[indices] - old_pos[indices]
+        distances = numpy.linalg.norm(delta, axis=1)
+        max_distance = distances.max()
+        if max_distance > self._max_atom_movement_per_step:
+            fast_indices = numpy.where(distances > self._max_atom_movement_per_step)[0]
+        else:
+            fast_indices = None
+        return pos, fast_indices
+        
+    
     def _get_positions_and_max_force (self, save_forces = False):
         import numpy
         c = self.sim.context
