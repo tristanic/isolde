@@ -352,7 +352,7 @@ class MouseModeRegistry():
         standard_modes = (
             ('left', ['control',], 'select', AtomPicker, (self.session, self._isolde)),
             ('left', ['control','shift'], 'select add', AtomPickAdd, (self.session, self._isolde)),
-            ('left', ['control','alt'], 'select', AtomPickSubtract, (self.session, self._isolde)),
+            ('left', ['control','alt'], 'select subtract', AtomPickSubtract, (self.session, self._isolde)),
             )
         for m in standard_modes:
             self.register_mode(m[2], m[3](*m[4]), m[0], m[1])

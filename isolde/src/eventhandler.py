@@ -9,30 +9,15 @@
 # Generic wrapper for handling of events. It would also make sense to put
 # custom mouse modes here
 class EventHandler():
-    def __init__(self, session):
-        self.session = session
+    def __init__(self, owner):
+        self.owner = owner
         self.registered_handlers = {}
-    # Types of event available in ChimeraX that are useful for ISOLDE
-    event_keys = [
-        'selection changed', #User has added or removed to an atom selection
-        'new frame',
-        'shape changed',
-        'add models',
-        'remove models',
-        'frame drawn',
-        'graphics update',
-        'app quit'
-        ]
 
     
 
     def add_event_handler(self, name, event_type, callback):
-        if event_type not in self.event_keys:
-            raise Exception('Tried to add handler for unrecognised event')
-        if name in self.registered_handlers:
-            raise Exception('Handler must have a unique name')
         
-        handler = self.session.triggers.add_handler(event_type, callback)
+        handler = self.owner.triggers.add_handler(event_type, callback)
         self.registered_handlers[name] = handler
         return handler
         
@@ -41,8 +26,15 @@ class EventHandler():
         if name not in self.registered_handlers:
             raise Exception('Tried to remove unrecognised handler')
         handler = self.registered_handlers[name]
-        self.session.triggers.remove_handler(handler)
-        self.registered_handlers.pop(name,'Handler not found')
+        self.owner.triggers.remove_handler(handler)
+        self.registered_handlers.pop(name)
+    
+    def remove_all_handlers(self):
+        names = list(self.list_event_handlers())
+        for name in names:
+            handler = self.registered_handlers[name]
+            self.owner.triggers.remove_handler(handler)
+            self.registered_handlers.pop(name)
     
     def list_event_handlers(self):
         return self.registered_handlers.keys()

@@ -22,7 +22,11 @@ from PyQt5.QtWidgets import QFileDialog
 import chimerax
 
 from chimerax import clipper
+
+from chimerax.core import triggerset
+
 from . import rotamers
+from .eventhandler import EventHandler
 
 class Isolde():
     
@@ -115,8 +119,6 @@ class Isolde():
     functionality could be achieved without too much trouble using the
     PyQt signal/slot system.
     '''    
-    from chimerax.core import triggerset
-    triggers = triggerset.TriggerSet()
     trigger_names = (
         'simulation started',    # Successful initiation of a simulation
         'simulation terminated', # Simulation finished, crashed or failed to start
@@ -127,12 +129,14 @@ class Isolde():
         'position restraint added',
         'position restraint removed',
         )
-    for t in trigger_names:
-        triggers.add_trigger(t)
-    
     
     
     def __init__(self, gui):
+        self.triggers = triggerset.TriggerSet()
+        for t in self.trigger_names:
+            self.triggers.add_trigger(t)
+        
+        self._isolde_events = EventHandler(self)
         self._logging = False
         self._log = Logger('isolde.log')
         
@@ -140,7 +144,7 @@ class Isolde():
         
         self._status = self.session.logger.status
 
-        from .eventhandler import EventHandler
+        #~ from .eventhandler import EventHandler
         self._event_handler = EventHandler(self.session)
         
         initialize_openmm()
@@ -462,10 +466,18 @@ class Isolde():
         # button for tugging atoms. Therefore, the ChimeraX right mouse
         # mode selection panel needs to be disabled for the duration of
         # each simulation.
-        self.triggers.add_handler('simulation started', self._disable_chimerax_mouse_mode_panel)
-        self.triggers.add_handler('simulation terminated', self._enable_chimerax_mouse_mode_panel)
-        
-        self.triggers.add_handler('simulation terminated', self._cleanup_after_sim)
+        self._isolde_events.add_event_handler('disable chimerax mouse mode panel',
+                                              'simulation started',
+                                              self._disable_chimerax_mouse_mode_panel)
+        self._isolde_events.add_event_handler('enable chimerax mouse mode panel',
+                                              'simulation terminated',
+                                              self._enable_chimerax_mouse_mode_panel)
+        #~ self.triggers.add_handler('simulation started', self._disable_chimerax_mouse_mode_panel)
+        #~ self.triggers.add_handler('simulation terminated', self._enable_chimerax_mouse_mode_panel)
+        self._isolde_events.add_event_handler('cleanup after sim', 
+                                              'simulation terminated',
+                                              self._cleanup_after_sim)
+        #~ self.triggers.add_handler('simulation terminated', self._cleanup_after_sim)
         
         self.gui_mode = False
         
@@ -1640,14 +1652,19 @@ class Isolde():
         rs.shift_register(nshift)
         self.iw._rebuild_register_shift_release_button.setEnabled(False)
         self.iw._rebuild_register_shift_go_button.setEnabled(False)
-        self._register_finished_check_handler = self.triggers.add_handler(
-            'completed simulation step', self._check_if_register_shift_finished)
+        self._isolde_events.add_event_handler('register shift finish check', 
+                                              'completed simulation step',
+                                              self._check_if_register_shift_finished)
+        
+        #~ self._register_finished_check_handler = self.triggers.add_handler(
+            #~ 'completed simulation step', self._check_if_register_shift_finished)
             
     def _check_if_register_shift_finished(self, *_):
         if self._register_shifter.finished:
             self.iw._rebuild_register_shift_release_button.setEnabled(True)
-            self.triggers.remove_handler(self._register_finished_check_handler)
-            self._register_finished_check_handler = None
+            self._isolde_events.remove_event_handler('register shift finish check')
+            #~ self.triggers.remove_handler(self._register_finished_check_handler)
+            #~ self._register_finished_check_handler = None
 
     def _release_register_shifter(self, *_):
         if self._register_shifter is not None:
@@ -1815,8 +1832,12 @@ class Isolde():
         self._pep_flip_targets = numpy.array(targets)
         self._pep_flip_dihedrals = phipsi
         self.iw._rebuild_sel_res_pep_flip_button.setEnabled(False)
-        self._pep_flip_timeout_handler = self.triggers.add_handler(
-            'completed simulation step', self._check_pep_flip)
+        self._isolde_events.add_event_handler('pep flip timeout', 
+                                              'completed simulation step',
+                                              self._check_pep_flip)
+        
+        #~ self._pep_flip_timeout_handler = self.triggers.add_handler(
+            #~ 'completed simulation step', self._check_pep_flip)
         
         
     def _check_pep_flip(self, *_):
@@ -1838,7 +1859,8 @@ class Isolde():
             sh = self._sim_handler
             sc = self._total_sim_construct
             sh.set_dihedral_restraints(sc, dihedrals, 0, 0)
-            self.triggers.remove_handler(self._pep_flip_timeout_handler)
+            self._isolde_events._remove_event_handler('pep flip timeout')
+            #~ self.triggers.remove_handler(self._pep_flip_timeout_handler)
             self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
                 
     
@@ -2617,9 +2639,13 @@ class Isolde():
 
         if self.track_rama and self._rama_plot is not None:
             self._rama_go_live()
+
+        self._isolde_events.add_event_handler('rezone maps during sim', 
+                                              'completed simulation step',
+                                              self._rezone_maps)
         
-        self._map_rezone_handler = self.triggers.add_handler(
-            'completed simulation step', self._rezone_maps)
+        #~ self._map_rezone_handler = self.triggers.add_handler(
+            #~ 'completed simulation step', self._rezone_maps)
         
         log('Everything else took {0:0.4f} seconds'.format(time() - last_time))
         self._status('Simulation running')
@@ -2807,9 +2833,11 @@ class Isolde():
         self._simulation_running = False
         if 'do_sim_steps_on_gui_update' in self._event_handler.list_event_handlers():
             self._event_handler.remove_event_handler('do_sim_steps_on_gui_update')
-        if self._map_rezone_handler is not None:
-            self.triggers.remove_handler(self._map_rezone_handler)
-            self._map_rezone_handler = None
+        if 'rezone maps during sim' in self._isolde_events.list_event_handlers():
+            self._isolde_events.remove_event_handler('rezone maps during sim') 
+
+            #~ self.triggers.remove_handler(self._map_rezone_handler)
+            #~ self._map_rezone_handler = None
         
         self._disable_rebuild_residue_frame()
         sh.disconnect_distance_restraints_from_sim(self._sim_ca_ca2_restr)
@@ -2952,7 +2980,7 @@ class Isolde():
             self._surroundings_hidden = False
         
         sh.update_restraints_in_context(c)
-        if mode == 'min':
+        if startup or mode == 'min':
             newpos, max_force, max_index = self._get_positions_and_max_force()
         else:
             newpos, fast_indices = self._get_and_check_positions()
@@ -3241,10 +3269,9 @@ class Isolde():
         self.session.logger.status('Closing ISOLDE and cleaning up')
     
         # Remove all registered event handlers
-        eh_keys = list(self._event_handler.list_event_handlers())
-        for e in eh_keys:
-            self._event_handler.remove_event_handler(e)
-        
+        self._event_handler.remove_all_handlers()
+        self._isolde_events.remove_all_handlers()
+                
         # Revert mouse modes
         self._set_chimerax_mouse_mode_panel_enabled(True)
         self._mouse_modes.remove_all_modes()
