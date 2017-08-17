@@ -8,6 +8,8 @@
 
 import numpy
 import os
+import multiprocessing as mp
+import ctypes
 from math import pi, radians, degrees, cos
 from simtk import unit, openmm
 from simtk.openmm import app
@@ -21,9 +23,235 @@ from .custom_forces import LinearInterpMapForce, TopOutBondForce, \
                            TopOutRestraintForce, FlatBottomTorsionRestraintForce, \
                            GBSAForce, AmberCMAPForce
 
+DEFAULT_DIHEDRAL_RESTRAINT_CUTOFF = 30 # degrees
+DEFAULT_MAX_RESTRAINT_FORCE = 250 # kJ/mol/A 
+DEFAULT_ROTAMER_SPRING_CONSTANT = 1000
+DEFAULT_ROTAMER_RESTRAINT_CUTOFF = 15 # degrees
+
+class SimParams:
+    '''
+    Container for all the parameters needed to initialise a simulation
+    '''
+    _default_params = {
+            'dihedral_restraint_cutoff_angle': (DEFAULT_DIHEDRAL_RESTRAINT_CUTOFF, unit.degrees),
+            'restraint_max_force': (DEFAULT_MAX_RESTRAINT_FORCE, unit.kilojoule_per_mole/unit.angstrom),
+            'rotamer_restraint_cutoff_angle': (DEFAULT_ROTAMER_RESTRAINT_CUTOFF, unit.degrees),
+            'rotamer_spring_constant': (DEFAULT_ROTAMER_SPRING_CONSTANT, unit.kilojoule_per_mole/unit.radians),
+            'tug_hydrogens': (False, 'bool'),
+            'hydrogens_feel_maps': (False, 'bool'),
+            }
+    def __init__(self, **kw):
+        self.params = self._default_params
+        valid_keys = self.params.keys()
+        for key, val in kw.items():
+            try:
+                self.params[key]
+            except KeyError:
+                raise KeyError('Invalid parameter!')
+            self.params[key][0] = val
+        for key, item in self.params.items():
+            if type(item[1]) == unit.unit.Unit:
+                self.params[key] = item[0]*item[1]
+            else:
+                self.params[key] = item[0]
+        
+    _init_docstring = '''
+        Initialise the simulation parameters, specifying any non-default
+        values.\n'''
+    param_list = ''
+    for key, val in _default_params.items():
+        param_list += '\t@param {:>} \t ({} {})\n'.format(key, val[0], val[1]).expandtabs(20)
+    __init__.__doc__ = _init_docstring+param_list
+    
+    
+
+def start_sim_thread(sim_params, all_atoms, fixed_atoms, mobile_atoms, 
+                     backbone_dihedrals, rotamers, maps = None):
+    '''
+    Start an OpenMM simulation in a separate Python instance, with 
+    communication via shared variables. Returns a dict containing all
+    variables to be used for communication/control, with descriptive
+    names.
+    '''
+    manager = mp.Manager()
+    
+    comms_object = {
+        'error'                     : mp.Queue(),
+        'status'                    : mp.Queue(),
+        'initialization complete'   : mp.Value(ctypes.c_bool, False),
+        'pause'                     : mp.Value(ctypes.c_bool, False),
+        'unstable'                  : mp.Value(ctypes.c_bool, False),
+        'sim mode'                  : mp.Value('i', 0),
+        'constants'                 : manager.Namespace(),
+        'rotamer map'               : manager.dict(),
+        'rotamer targets'           : manager.dict(),
+    }
+    
+    
+    
+    fixed_indices = all_atoms.indices(fixed_atoms)
+    mobile_indices = all_atoms.indices(mobile_atoms)
+    residues = all_atoms.residues
+    atom_names    = all_atoms.names
+    element_names = all_atoms.element_names
+    residue_names = residues.names
+    residue_nums  = residues.numbers
+    chain_ids     = residues.chain_ids 
+    coords        = all_atoms.coords
+    
+    bonds               = all_atoms.intra_bonds
+    bond_atoms          = bonds.atoms
+    bond_atom_indices   = (all_atoms.indices(ba) for ba in bond_atoms)
+    
+    # Secondary structure and peptide bond backbone restraints
+
+    bd = backbone_dihedrals
+    phi = bd.phi
+    n_phi = len(phi)
+    phi_i = numpy.reshape(all_atoms.indices(phi.atoms), [n_phi,4])
+    comms_object['phi sim indices'] = mp.Array('i', n_phi)
+    
+    
+    psi = bd.psi
+    n_psi = len(psi)
+    psi_i = numpy.reshape(all_atoms.indices(psi.atoms), [n_psi,4])
+    comms_object['psi sim indices'] = mp.Array('i', n_psi)
+    
+    omega = bd.omega
+    n_omega = len(omega)
+    omega_i = numpy.reshape(all_atoms.indices(omega.atoms), [n_omega,4])
+    comms_object['omega sim indices'] = mp.Array('i', n_omega)
+   
+    # CMAP corrections only apply to residues that have both phi and
+    # psi dihedrals
+    phi_has_psi = phi.residues.indices(psi.residues)
+    psi_has_phi = psi.residues.indices(phi.residues)
+    good_phi = phi[phi_has_psi[phi_has_psi != -1]]
+    good_psi = psi[psi_has_phi[psi_has_phi != -1]]
+    phi_cmap_resnames = good_phi.residues.names
+    psi_cmap_resnames = good_psi.residues.names
+    n = len(good_psi)
+    phi_cmap_indices = all_atoms.indices(good_phi.atoms).reshape((n,4))
+    psi_cmap_indices = all_atoms.indices(good_psi.atoms).reshape((n,4))
+    
+    # Rotamers are tricky. Each rotamer holds a set of dihedrals which
+    # must individually be targeted in the simulation.
+    input_rotamer_map = {}
+    input_rotamer_targets = comms_object['rotamer targets']
+    mobile_res = mobile_atoms.unique_residues
+    for i, r in enumerate(mobile_res):
+        try:
+            rot = self.rotamers[res]
+        except KeyError:
+            # Non-rotameric residue
+            continue
+        dlist = rot.dihedrals
+        atoms = dlist.atoms
+        indices = all_atoms.indices(atoms).reshape(len(dlist),4)
+        input_rotamer_map[i] = indices
+        
+        if rot.restrained:
+            input_rotamer_targets[i] = rot.target
+        else:
+            input_rotamer_targets[i] = None
+    
+    
+    
+    sim_data = {
+        'fixed indices':        fixed_indices,
+        'mobile indices':       mobile_indices,
+        'atom names':           atom_names,
+        'element names':        element_names,
+        'residue names':        residue_names,
+        'residue numbers':      residue_nums,
+        'chain ids':            chain_ids,
+        'coords':               coords,
+        'bonded atom indices':  bond_atom_indices,
+        'phi atom indices':     phi_i,
+        'psi atom indices':     psi_i,
+        'omega atom indices':   omega_i,
+        'phi cmap resnames':    phi_cmap_resnames,
+        'phi cmap indices':     phi_cmap_indices,
+        'psi cmap resnames':    psi_cmap_resnames,
+        'psi cmap indices':     psi_cmap_indices,
+        'rotamer spring k':     rotamer_spring_k,
+        'rotamer map':          input_rotamer_map,
+        'rotamer targets':      input_rotamer_targets,
+    }
 
 
 
+    return comms_object
+    
+def _start_sim_thread(sim_params, sim_data, comms_object
+                        
+                    ):
+    '''
+    Start a Python multiprocessing thread to hold a running OpenMM 
+    simulation. The simulation needs to be entirely self-contained in
+    this thread, so inputs should be only generic Python objects (e.g.
+    Numpy arrays) and multiprocessing communication variables.
+    '''
+    try:
+        params = sim_params.params
+        sh = SimHandler()
+        
+        
+        # Just initialize the forces. They're empty at this stage.
+        sh.initialize_dihedral_restraint_force(params['dihedral_restraint_cutoff_angle'][0])
+        sh.initialize_amber_cmap_force()
+        sh.initialize_distance_restraints_force(params['restraint_max_force'][0])
+        sh.initialize_position_restraints_force(params['restraint_max_force'][0])
+        sh.initialize_tugging_force()
+        
+        
+        # Backbone dihedral restraints
+        phi_sim_i = comms_object['phi sim indices']
+        for i, atom_indices in enumerate(sim_data['phi atom indices']):
+            phi_sim_i[i] = sh.initialize_dihedral_restraint(atom_indices)
+        
+        psi_sim_i = comms_object['psi sim indices']
+        for i, atom_indices in enumerate(sim_data['psi atom indices']):
+            psi_sim_i[i] = sh.initialize_dihedral_restraint(atom_indices)
+        
+        omega_sim_i = comms_object['omega sim indices']
+        for i, atom_indices in enumerate(sim_data['omega atom indices']):
+            omega_sim_i[i] = sh.initialize_dihedral_restraint(atom_indices)
+        
+        # CMAP corrections
+        sh._add_amber_cmap_torsions(sim_data['phi cmap resnames'],
+                                    sim_data['psi cmap resnames'],
+                                    sim_data['phi cmap indices'],
+                                    sim_data['psi cmap indices'])
+        
+        # Rotamers
+        in_rotamer_map = sim_data['rotamer map']
+        rotamer_targets = comms_object['rotamer targets']
+        out_rotamer_map = comms_object['rotamer map']
+        rotamer_restraint_k = sim_params['rotamer_restraint_cutoff_angle'] / unit.radians
+        for key, indices in in_rotamer_map.items():
+            force_indices = out_rotamer_map[key] = []
+            for d_indices in indices:
+                force_indices.append(sh.initialize_dihedral_restraint(d_indices))
+            targets = rotamer_targets[key]
+            if targets is not None:
+                for fi, di, t in zip(force_indices, indices, targets):
+                    sh.set_dihedral_restraint(fi, di, t) 
+        
+        
+        
+        
+        
+        top, templates = sh._openmm_topology_and_external_forces(sim_data,
+                            tug_hydrogens = params['tug_hydrogens'],
+                            hydrogens_feel_maps = params['hydrogens_feel_maps']
+                            )
+    except Exception as e:
+        comms_object['error'].put(e)
+        return
+        
+    
+    
 
 
 
@@ -161,7 +389,7 @@ class GenericMapObject:
 
 class SimHandler():
     
-    def __init__(self, session):
+    def __init__(self, session = None):
         self.session = session
         # Forcefield used in this simulation
         self._forcefield = None
@@ -349,7 +577,7 @@ class SimHandler():
         self.default_torsion_cutoff = default_cutoff
 
     
-    def initialize_dihedral_restraint(self, dihedral, indices, cutoff = None):
+    def initialize_dihedral_restraint(self, indices, cutoff = None):
         #top = self._topology
         c = (cutoff or self.default_torsion_cutoff)
         force = self._dihedral_restraint_force
@@ -365,10 +593,9 @@ class SimHandler():
         if rf.update_needed:
             rf.updateParametersInContext(context)
         rf.update_needed = False
-
-    def set_dihedral_restraints(self, sim_construct, dihedrals, target, k, degrees = False, cutoffs = None):
+    
+    def set_dihedral_restraints(self, dihedrals, target, k, degrees = False, cutoffs = None):
         c = (cutoffs or [self.default_torsion_cutoff]*len(dihedrals))
-        indices = numpy.reshape(sim_construct.indices(dihedrals.atoms), [len(dihedrals),4])
         variable_t = hasattr(target, '__iter__')
         variable_k = hasattr(k, '__iter__')
         variable_c = hasattr(c, '__iter__')
@@ -387,22 +614,14 @@ class SimHandler():
                 thisc = c[i]
             else:
                 thisc = c
-                
-            self.set_dihedral_restraint(sim_construct, d, indices[i], t, thisk, cutoff = thisc)
-        
-    def set_dihedral_restraint(self, sim_construct, dihedral, indices, target, k, degrees=False, cutoff = None):
-        from math import pi, radians
-        c = (cutoff or self.default_torsion_cutoff)
-        force = self._dihedral_restraint_force
-        atoms = dihedral.atoms
-        if degrees:
+            
+            self.update_dihedral_restraint(d.sim_index, target=t, k=thisk, cutoff=thisc)    
+            
+    def update_dihedral_restraint(self, sim_index, target = None, 
+                            k = None, cutoff = None, degrees = False):
+        if target is not None and degrees:
             target = radians(target)
-        #target += pi
-        force.setTorsionParameters(dihedral.sim_index, *indices.tolist(), (k, target, cos(c)))
-        force.update_needed = True
-    
-    
-    
+        self._dihedral_restraint_force.update_target(sim_index, target=target, k=k, cutoff=cutoff)
         
     def register_custom_external_force(self, name, force, global_params, 
                                         per_particle_params, 
@@ -425,18 +644,86 @@ class SimHandler():
     def register_map(self, map_object):
         self._maps.append(map_object)
 
-    
-    def initialize_tugging_force(self, potential_equation, g_params, g_vals, pp_params):
+    #TODO: Define the tugging force as a subclass in custom_forces.py
+    def initialize_tugging_force(self):
         from simtk import openmm as mm
+        potential_equation = '0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2)'
+        per_particle_parameters = ['k','x0','y0','z0']
+        per_particle_defaults = [0,0,0,0]
+        global_parameters = None
+        global_defaults = None
         f = self._tugging_force = mm.CustomExternalForce(potential_equation)
-        if g_params is not None:
-            for p, v in zip(g_params, g_vals):
+        if global_parameters is not None:
+            for p, v in zip(global_parameters, g_vals):
                 f.addGlobalParameter(g, v)
-        if pp_params is not None:
-            for p in pp_params:
+        if per_particle_parameters is not None:
+            for p in per_particle_parameters:
                 f.addPerParticleParameter(p)
+        self.register_custom_external_force('tug', f, global_parameters,
+                per_particle_parameters, per_particle_defaults)
+
         return f
     
+    def _openmm_topology_and_external_forces(self, sim_data, 
+                                            tug_hydrogens = False,
+                                            hydrogens_feel_maps = False):
+        aname   = sim_data['atom names']
+        ename   = sim_data['element names']
+        rname   = sim_data['residue names']
+        rnum    = sim_data['residue numbers']
+        cids    = sim_data['chain ids']
+        coords  = sim_data['coords']
+        bond_i  = sim_data['bonded atom indices']
+        
+        fixed_indices = sim_data['fixed indices']
+        fixed_flags = numpy.zeros(len(aname),numpy.bool)
+        fixed_flags[fixed_indices] = True
+
+        from simtk.openmm.app import Topology, Element
+        from simtk import unit
+        top = self._simulation_topology = Topology()
+        cmap = {}
+        rmap = {}
+        atoms = self._atoms = {}
+        for i in range(n):
+            cid = cids[i]
+            if not cid in cmap:
+                cmap[cid] = top.addChain()   # OpenMM chains have no name
+            rid = (rname[i], rnum[i], cid)
+            rid = (rname[i], rnum[i], cid)
+            if not rid in rmap:
+                res = rmap[rid] = top.addResidue(rname[i], cmap[cid])
+                if rname[i] == 'CYS':
+                    ctype = cys_type(r[i])
+                    if ctype != 'CYS':
+                        templates[res] = ctype
+
+            element = Element.getBySymbol(ename[i])
+            atoms[i] = top.addAtom(aname[i], element,rmap[rid])
+
+            if not fixed_flags[i]:
+                # Register atoms with forces
+                if ename[i] is not 'H' or (ename[i] is 'H' and tug_hydrogens):
+                    # All CustomExternalForces
+                    for key, ff in self._custom_external_forces.items():
+                        f = ff[0]
+                        per_particle_param_vals = ff[3]
+                        index_map = ff[4]
+                        index_map[i] = f.addParticle(i, per_particle_param_vals)
+            
+                if ename[i] is not 'H' or (ename[i] is 'H' and hydrogens_feel_maps):
+                    # All map forces
+                    for m in self._maps:
+                        self.couple_atom_to_map(i, m)
+
+        for i1, i2 in zip(*bond_i):
+            top.addBond(atoms[i1],  atoms[i2])
+
+        return top, templates
+
+
+        
+        
     
     def openmm_topology_and_external_forces(self, sim_construct,
                                         sim_bonds, fixed_flags,

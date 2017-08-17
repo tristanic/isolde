@@ -1577,8 +1577,8 @@ class Isolde():
         structure_type = cb.currentText()
         target_phipsi = cb.currentData()
         phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
-        sh.set_dihedral_restraints(sc, phi, target_phipsi[0], dihed_k)
-        sh.set_dihedral_restraints(sc, psi, target_phipsi[1], dihed_k)
+        sh.set_dihedral_restraints(phi, target_phipsi[0], dihed_k)
+        sh.set_dihedral_restraints(psi, target_phipsi[1], dihed_k)
         
         dist_k = self.distance_restraints_k
         rca = self._sim_ca_ca2_restr
@@ -1625,8 +1625,8 @@ class Isolde():
         if sel is not None:
             residues = sel.unique_residues
         phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
-        sh.set_dihedral_restraints(sc, phi, 0, 0)
-        sh.set_dihedral_restraints(sc, psi, 0, 0)
+        sh.set_dihedral_restraints(phi, 0, 0)
+        sh.set_dihedral_restraints(psi, 0, 0)
         for r in residues:
             cad = self._sim_ca_ca2_restr[r]
             ond = self._sim_o_n4_restr[r]
@@ -1738,7 +1738,7 @@ class Isolde():
         sc = self._total_sim_construct
         sh = self._sim_handler
         k = self.rotamer_restraints_k
-        sh.set_dihedral_restraints(sc, dihedrals, target, k, cutoffs = self.default_rotamer_restraint_cutoff_angle)
+        sh.set_dihedral_restraints(dihedrals, target, k, cutoffs = self.default_rotamer_restraint_cutoff_angle)
         
         rotamer.restrained = True
 
@@ -1760,7 +1760,7 @@ class Isolde():
         dihedrals = rot.dihedrals
         sc = self._total_sim_construct
         sh = self._sim_handler
-        sh.set_dihedral_restraints(sc, dihedrals, 0, 0)
+        sh.set_dihedral_restraints(dihedrals, 0, 0)
     
     
     def _disable_rebuild_residue_frame(self):
@@ -1827,7 +1827,7 @@ class Isolde():
                 target = v + pi
             targets.append(target)
         
-        sh.set_dihedral_restraints(sc, phipsi, targets, k)
+        sh.set_dihedral_restraints(phipsi, targets, k)
         self._pep_flip_timeout_counter = 0
         self._pep_flip_targets = numpy.array(targets)
         self._pep_flip_dihedrals = phipsi
@@ -1858,8 +1858,8 @@ class Isolde():
         else:
             sh = self._sim_handler
             sc = self._total_sim_construct
-            sh.set_dihedral_restraints(sc, dihedrals, 0, 0)
-            self._isolde_events._remove_event_handler('pep flip timeout')
+            sh.set_dihedral_restraints(dihedrals, 0, 0)
+            self._isolde_events.remove_event_handler('pep flip timeout')
             #~ self.triggers.remove_handler(self._pep_flip_timeout_handler)
             self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
                 
@@ -2386,7 +2386,7 @@ class Isolde():
             indices = numpy.reshape(sc.indices(atoms),[len(dlist),4])
             for i, d in enumerate(dlist):
                 d_indices = indices[i]
-                d.sim_index = sh.initialize_dihedral_restraint(d, d_indices)
+                d.sim_index = sh.initialize_dihedral_restraint(d_indices)
             if thisrot.restrained:
                 self._apply_rotamer_target_to_sim(thisrot)
                 
@@ -2441,15 +2441,8 @@ class Isolde():
             self._log('Generating topology')
             
         # Setup pulling force, to be used by mouse and/or haptic tugging
-        e = '0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2)'
-        per_particle_parameters = ['k','x0','y0','z0']
-        per_particle_defaults = [0,0,0,0]
-        global_parameters = None
-        global_defaults = None
-        tug_force = sh.initialize_tugging_force(e, global_parameters, global_defaults, per_particle_parameters)
+        tug_force = sh.initialize_tugging_force()
         
-        sh.register_custom_external_force('tug', tug_force, global_parameters,
-                per_particle_parameters, per_particle_defaults)
 
         log('Preparing position restraints took {0:0.4f} seconds.'.format(time() - last_time))
         last_time = time()
@@ -2661,7 +2654,7 @@ class Isolde():
             indices = numpy.reshape(sc.indices(atoms),[len(dlist),4])
             for i, d in enumerate(dlist):
                 d_indices = indices[i]
-                d.sim_index = sh.initialize_dihedral_restraint(d, d_indices)
+                d.sim_index = sh.initialize_dihedral_restraint(d_indices)
 
     # Get the mobile selection. The method will vary depending on
     # the selection mode chosen
@@ -2918,7 +2911,7 @@ class Isolde():
         
         import numpy
         # Get all atom indices in one go because the lookup is expensive
-        indices = numpy.reshape(sc.indices(dihedrals.atoms),[len(dihedrals),4])
+        #indices = numpy.reshape(sc.indices(dihedrals.atoms),[len(dihedrals),4])
         
         for i, d in enumerate(dihedrals):
             if target is None:
@@ -2927,8 +2920,9 @@ class Isolde():
                     t = 0
                 else:
                     t = pi
-            sh.set_dihedral_restraint(sc, d, indices[i], t, k)
-                    
+            #sh.set_dihedral_restraint(d.sim_index, indices[i], t, k)
+            sh.update_dihedral_restraint(d.sim_index, target=t, k=k)
+            
     def remove_peptide_bond_restraints(self, dihedrals):
         '''
         Remove restraints on a list of peptide bonds (actually, just set
@@ -2937,7 +2931,7 @@ class Isolde():
         import numpy
         sc = self._total_sim_construct
         sh = self._sim_handler
-        sh.set_dihedral_restraints(sc, dihedrals, 0, 0)
+        sh.set_dihedral_restraints(dihedrals, 0, 0)
 
 
     #############################################

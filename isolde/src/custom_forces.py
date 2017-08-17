@@ -213,6 +213,7 @@ class TopOutRestraintForce(CustomExternalForce):
         self._max_force = force
         self.update_needed = True
     
+        
 
 class FlatBottomTorsionRestraintForce(CustomTorsionForce):
     '''
@@ -233,6 +234,21 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
             self.addPerTorsionParameter(p)
 
         self.update_needed = True
+
+    def update_target(self, index, target = None, k = None, cutoff = None):
+        current_params = self.getTorsionParameters(index)
+        indices = current_params[0:4]
+        new_k, new_theta0, new_cutoff = current_params[4]
+        if target is not None:
+            new_theta0 = target
+        if k is not None:
+            new_k = k
+        if cutoff is not None:
+            new_cutoff = cos(cutoff)
+        self.setTorsionParameters(index, *indices, (new_k, new_theta0, new_cutoff))
+        self.update_needed = True
+
+
 
 #~ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
     #~ '''
