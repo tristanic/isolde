@@ -44,7 +44,7 @@ class AmberCMAPForce(CMAPTorsionForce):
 
 class LinearInterpMapForce(CustomCompoundBondForce):
     '''
-    Converts a map of (u,v,w) data and a (x,y,z)->(u,v,w) transformation
+    Converts a map of (i,j,k) data and a (x,y,z)->(i,j,k) transformation
     matrix to a potential field, with trilinear interpolation of values.
     '''
     def __init__(self, data, xyz_to_ijk_transform, units = 'angstroms'):
@@ -92,14 +92,6 @@ class LinearInterpMapForce(CustomCompoundBondForce):
             
         i_str, j_str, k_str = tf_strings
         
-        
-        
-        #~ i_str = 'i = x1* {} + y1 * {} + z1 * {} + {}'.format(
-            #~ tf[0][0], tf[0][1], tf[0][2], tf[0][3])
-        #~ j_str = 'j = x1* {} + y1 * {} + z1 * {} + {}'.format(
-            #~ tf[1][0], tf[1][1], tf[1][2], tf[1][3])
-        #~ k_str = 'k = x1* {} + y1 * {} + z1 * {} + {}'.format(
-            #~ tf[2][0], tf[2][1], tf[2][2], tf[2][3])
         
         min_str = 'min_i = floor(i); min_j = floor(j); min_k = floor(k)'
         max_str = 'max_i = ceil(i); max_j = ceil(j); max_k = ceil(k)'
