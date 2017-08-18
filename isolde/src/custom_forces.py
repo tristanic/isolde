@@ -74,13 +74,32 @@ class LinearInterpMapForce(CustomCompoundBondForce):
             raise TypeError('Units must be either "angstroms" or "nanometers"!')
         map_func = self._discrete3D_from_volume(data)
         
+        eps = 1e-6
         # Transform xyz to ijk
-        i_str = 'i = x1* {} + y1 * {} + z1 * {} + {}'.format(
-            tf[0][0], tf[0][1], tf[0][2], tf[0][3])
-        j_str = 'j = x1* {} + y1 * {} + z1 * {} + {}'.format(
-            tf[1][0], tf[1][1], tf[1][2], tf[1][3])
-        k_str = 'k = x1* {} + y1 * {} + z1 * {} + {}'.format(
-            tf[2][0], tf[2][1], tf[2][2], tf[2][3])
+        tf_strings = ['i = ', 'j = ', 'k = ']
+        entries = ('x1 * {}','y1 * {}','z1 * {}','{}')
+        for i in range(3):
+            vals = tf[i]
+            count = 0
+            for (entry, val) in zip(entries, vals):
+                if count > 0:
+                    spacer = ' + '
+                else:
+                    spacer = ''
+                if abs(val) > eps:
+                    count += 1
+                    tf_strings[i] += spacer + entry.format(val)
+            
+        i_str, j_str, k_str = tf_strings
+        
+        
+        
+        #~ i_str = 'i = x1* {} + y1 * {} + z1 * {} + {}'.format(
+            #~ tf[0][0], tf[0][1], tf[0][2], tf[0][3])
+        #~ j_str = 'j = x1* {} + y1 * {} + z1 * {} + {}'.format(
+            #~ tf[1][0], tf[1][1], tf[1][2], tf[1][3])
+        #~ k_str = 'k = x1* {} + y1 * {} + z1 * {} + {}'.format(
+            #~ tf[2][0], tf[2][1], tf[2][2], tf[2][3])
         
         min_str = 'min_i = floor(i); min_j = floor(j); min_k = floor(k)'
         max_str = 'max_i = ceil(i); max_j = ceil(j); max_k = ceil(k)'

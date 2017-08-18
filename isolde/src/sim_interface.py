@@ -23,20 +23,19 @@ from .custom_forces import LinearInterpMapForce, TopOutBondForce, \
                            TopOutRestraintForce, FlatBottomTorsionRestraintForce, \
                            GBSAForce, AmberCMAPForce
 
-DEFAULT_DIHEDRAL_RESTRAINT_CUTOFF = 30 # degrees
-DEFAULT_MAX_RESTRAINT_FORCE = 250 # kJ/mol/A 
-DEFAULT_ROTAMER_SPRING_CONSTANT = 1000
-DEFAULT_ROTAMER_RESTRAINT_CUTOFF = 15 # degrees
+from .constants import defaults
 
 class SimParams:
     '''
     Container for all the parameters needed to initialise a simulation
     '''
     _default_params = {
-            'dihedral_restraint_cutoff_angle': (DEFAULT_DIHEDRAL_RESTRAINT_CUTOFF, unit.degrees),
-            'restraint_max_force': (DEFAULT_MAX_RESTRAINT_FORCE, unit.kilojoule_per_mole/unit.angstrom),
-            'rotamer_restraint_cutoff_angle': (DEFAULT_ROTAMER_RESTRAINT_CUTOFF, unit.degrees),
-            'rotamer_spring_constant': (DEFAULT_ROTAMER_SPRING_CONSTANT, unit.kilojoule_per_mole/unit.radians),
+            'dihedral_restraint_cutoff_angle': (defaults.DIHEDRAL_RESTRAINT_CUTOFF, unit.degrees),
+            'restraint_max_force': (defaults.MAX_RESTRAINT_FORCE, unit.kilojoule_per_mole/unit.angstrom**2),
+            'rotamer_restraint_cutoff_angle': (defaults.ROTAMER_RESTRAINT_CUTOFF, unit.degrees),
+            'rotamer_spring_constant': (defaults.ROTAMER_SPRING_CONSTANT, unit.kilojoule_per_mole/unit.radians**2),
+            'peptide_bond_spring_constant': (defaults.PEPTIDE_SPRING_CONSTANT, unit.kilojoule_per_mole/unit.radians**2),
+            'cis_peptide_bond_cutoff_angle': (defaults.CIS_PEPTIDE_BOND_CUTOFF, unit.degrees),
             'tug_hydrogens': (False, 'bool'),
             'hydrogens_feel_maps': (False, 'bool'),
             }
@@ -65,13 +64,32 @@ class SimParams:
     
     
 
-def start_sim_thread(sim_params, all_atoms, fixed_atoms, mobile_atoms, 
-                     backbone_dihedrals, rotamers, maps = None):
+def start_sim_thread(sim_params, all_atoms, fixed_flags,  
+                     backbone_dihedrals, rotamers, distance_restraints,
+                     position_restraints, 
+                     density_maps = None):
     '''
     Start an OpenMM simulation in a separate Python instance, with 
     communication via shared variables. Returns a dict containing all
     variables to be used for communication/control, with descriptive
     names.
+        @param  sim_params:
+            An instance of SimParams.params defining the basic simulation
+            settings
+        @param all_atoms:
+            The set of all ChimeraX atoms defining the complete simulation
+            construct
+        @param fixed_flags:
+            A numpy boolean array flagging atoms to be fixed in space.
+        @param backbone_dihedrals:
+            An ISOLDE Backbone_Dihedrals object defining all phi, psi and
+            omega dihedrals in the simulation
+        @param rotamers
+            An ISOLDE Rotamers object
+        @param distance_restraints
+            A {name: object} dict of Distance_Restraints objects.
+        @param maps
+            A tuple of ISOLDE map objects
     '''
     manager = mp.Manager()
     
@@ -85,12 +103,15 @@ def start_sim_thread(sim_params, all_atoms, fixed_atoms, mobile_atoms,
         'constants'                 : manager.Namespace(),
         'rotamer map'               : manager.dict(),
         'rotamer targets'           : manager.dict(),
+        'position restraints map'   : manager.dict(),
     }
     
     
     
-    fixed_indices = all_atoms.indices(fixed_atoms)
-    mobile_indices = all_atoms.indices(mobile_atoms)
+    fixed_indices = numpy.where(fixed_flags)
+    mobile_indices = numpy.where(numpy.invert(fixed_flags))
+    fixed_atoms = all_atoms[fixed_indices]
+    mobile_atoms = all_atoms[mobile_indices]
     residues = all_atoms.residues
     atom_names    = all_atoms.names
     element_names = all_atoms.element_names
@@ -121,6 +142,15 @@ def start_sim_thread(sim_params, all_atoms, fixed_atoms, mobile_atoms,
     n_omega = len(omega)
     omega_i = numpy.reshape(all_atoms.indices(omega.atoms), [n_omega,4])
     comms_object['omega sim indices'] = mp.Array('i', n_omega)
+    
+    cis_offset = sim_params['cis_peptide_bond_cutoff_angle']/unit.radians
+    cr = (-cis_offset, cis_offset)
+    o_vals = omega.vals
+    omega_targets = numpy.logical_or(
+                o_vals > cr[1], o_vals < cr[0]).astype(float) * pi
+    o_t = comms_object['omega targets'] = mp.Array('f', n_omega)
+    o_t[:] = omega_targets
+
    
     # CMAP corrections only apply to residues that have both phi and
     # psi dihedrals
@@ -141,7 +171,7 @@ def start_sim_thread(sim_params, all_atoms, fixed_atoms, mobile_atoms,
     mobile_res = mobile_atoms.unique_residues
     for i, r in enumerate(mobile_res):
         try:
-            rot = self.rotamers[res]
+            rot= rotamers[res]
         except KeyError:
             # Non-rotameric residue
             continue
@@ -156,34 +186,72 @@ def start_sim_thread(sim_params, all_atoms, fixed_atoms, mobile_atoms,
             input_rotamer_targets[i] = None
     
     
+    # Distance restraints. These are handled as a {name: object} dict of
+    # different types of restraints (e.g. CA-CA+2, O-N+4, etc.)
+    distance_restraint_keys = []
+    distance_restraint_indices = {}    
+    for key, d_r in distance_restraints.items():
+        n_restraints = len(d_r)
+        distance_restraint_keys.append(key)
+        force_map_key = key + ' map'
+        force_map = comms_object[force_map_key] = manager.dict()
+        atom_index_key = key + ' atom indices'
+        target_key = key + ' targets'
+        k_key = key + 'k'
+        t_array = comms_object[target_key] = mp.Array('f', n_restraints)
+        k_array = comms_object[k_key] = mp.array('f', n_restraints)
+        i_array = distance_restraint_indices[atom_index_key] = []
+        for i,r in enumerate(d_r):
+            t_array[i] = r.target_distance
+            k_array[i] = r.spring_constant
+            i_array.append(all_atoms.indices(d_r.atoms).tolist())
+            
+    # Position restraints. One per heavy atom
+    pr_atoms = position_restraints.atoms
+    pr_indices = all_atoms.indices(pr_atoms)
+    n_pr = len(pr_indices)
+    pr_ks = comms_object['position restraint spring constants'] = mp.Array('f', n_pr)
+    pr_ks[:] = position_restraints.spring_constants
+    pr_targets_base = comms_object['position restraint targets'] = mp.Array('f', n_pr*3)
+    
+    pr_targets = numpy.frombuffer(pr_targets.get_obj()).reshape((n_pr,3))
+    pr_targets[:] = position_restraints.targets
+    
+    # Density maps. Even though updating these during a simulation is not
+    # yet possible, we want to leave the option open.
+    
+    
+    
+    
     
     sim_data = {
-        'fixed indices':        fixed_indices,
-        'mobile indices':       mobile_indices,
-        'atom names':           atom_names,
-        'element names':        element_names,
-        'residue names':        residue_names,
-        'residue numbers':      residue_nums,
-        'chain ids':            chain_ids,
-        'coords':               coords,
-        'bonded atom indices':  bond_atom_indices,
-        'phi atom indices':     phi_i,
-        'psi atom indices':     psi_i,
-        'omega atom indices':   omega_i,
-        'phi cmap resnames':    phi_cmap_resnames,
-        'phi cmap indices':     phi_cmap_indices,
-        'psi cmap resnames':    psi_cmap_resnames,
-        'psi cmap indices':     psi_cmap_indices,
-        'rotamer spring k':     rotamer_spring_k,
-        'rotamer map':          input_rotamer_map,
-        'rotamer targets':      input_rotamer_targets,
+        'fixed indices':                    fixed_indices,
+        'mobile indices':                   mobile_indices,
+        'atom names':                       atom_names,
+        'element names':                    element_names,
+        'residue names':                    residue_names,
+        'residue numbers':                  residue_nums,
+        'chain ids':                        chain_ids,
+        'coords':                           coords,
+        'bonded atom indices':              bond_atom_indices,
+        'phi atom indices':                 phi_i,
+        'psi atom indices':                 psi_i,
+        'omega atom indices':               omega_i,
+        'phi cmap resnames':                phi_cmap_resnames,
+        'phi cmap indices':                 phi_cmap_indices,
+        'psi cmap resnames':                psi_cmap_resnames,
+        'psi cmap indices':                 psi_cmap_indices,
+        'rotamer map':                      input_rotamer_map,
+        'rotamer targets':                  input_rotamer_targets,
+        'distance restraint keys':          distance_restraint_keys,
+        'position restraint indices':       pr_indices,
     }
-
+    sim_data.update(distance_restraint_indices)
 
 
     return comms_object
     
-def _start_sim_thread(sim_params, sim_data, comms_object
+def _sim_thread(sim_params, sim_data, comms_object
                         
                     ):
     '''
@@ -211,12 +279,20 @@ def _start_sim_thread(sim_params, sim_data, comms_object
             phi_sim_i[i] = sh.initialize_dihedral_restraint(atom_indices)
         
         psi_sim_i = comms_object['psi sim indices']
-        for i, atom_indices in enumerate(sim_data['psi atom indices']):
-            psi_sim_i[i] = sh.initialize_dihedral_restraint(atom_indices)
+        with psi_sim_i.get_lock():
+            for i, atom_indices in enumerate(sim_data['psi atom indices']):
+                psi_sim_i[i] = sh.initialize_dihedral_restraint(atom_indices)
         
         omega_sim_i = comms_object['omega sim indices']
-        for i, atom_indices in enumerate(sim_data['omega atom indices']):
-            omega_sim_i[i] = sh.initialize_dihedral_restraint(atom_indices)
+        omega_targets = comms_object['omega targets']
+        with omega_sim_i.get_lock(), omega_targets.get_lock():
+            for i, (atom_indices, target) in enumerate(zip(sim_data['omega atom indices'], omega_targets)):
+                si = omega_sim_i[i] = sh.initialize_dihedral_restraint(atom_indices)
+                sh.update_dihedral_restraint(si, target = target, 
+                            k = sim_params['peptide_bond_spring_constant'])
+        
+        
+        
         
         # CMAP corrections
         sh._add_amber_cmap_torsions(sim_data['phi cmap resnames'],
@@ -229,16 +305,42 @@ def _start_sim_thread(sim_params, sim_data, comms_object
         rotamer_targets = comms_object['rotamer targets']
         out_rotamer_map = comms_object['rotamer map']
         rotamer_restraint_k = sim_params['rotamer_restraint_cutoff_angle'] / unit.radians
-        for key, indices in in_rotamer_map.items():
-            force_indices = out_rotamer_map[key] = []
-            for d_indices in indices:
-                force_indices.append(sh.initialize_dihedral_restraint(d_indices))
-            targets = rotamer_targets[key]
-            if targets is not None:
-                for fi, di, t in zip(force_indices, indices, targets):
-                    sh.set_dihedral_restraint(fi, di, t) 
+        with rotamer_targets.get_lock(), out_rotamer_map.get_lock():
+            for key, indices in in_rotamer_map.items():
+                force_indices = out_rotamer_map[key] = []
+                for d_indices in indices:
+                    force_indices.append(sh.initialize_dihedral_restraint(d_indices))
+                targets = rotamer_targets[key]
+                if targets is not None:
+                    for (fi, di, t) in zip(force_indices, indices, targets):
+                        sh.update_dihedral_restraint(fi, target = t, 
+                                k = sim_params['rotamer_spring_constant']) 
         
         
+        # Distance restraints
+        distance_restraint_keys = sim_data['distance restraint keys']
+        drf = sh._distance_restraints_force    
+        for key in distance_restraint_keys:
+            force_map = comms_object[key + ' map']
+            t_array = comms_object[key + ' targets']
+            k_array = comms_object[key + ' k']
+            i_array = sim_data[key + ' atom indices']
+            with force_map.get_lock(), t_array.get_lock(), k_array.get_lock(): 
+                for (indices, t, k) in zip(i_array, t_array, k_array):
+                    force_map[i] = drf.addBond(*indices, (k, t))
+            
+        #Position restraints
+        pr_force = sh._position_restraints_force
+        pr_force_map = comms_object['position restraints map']
+        pr_indices =    sim_data['position restraint indices']
+        pr_ks =         comms_object['position restraint spring constants']
+        pr_targets_base = comms_object['position restraint targets']
+        pr_targets = numpy.frombuffer(pr_targets.get_obj()).reshape((n_pr,3))
+        
+        
+        with pr_ks.get_lock(), pr_targets_base.get_lock():
+            for i, (index, k, target) in enumerate(zip(pr_indices, pr_ks, pr_targets)):
+                 pr_force_map[i] = pr_force.addParticle(index, (k, target))
         
         
         
@@ -889,9 +991,17 @@ class SimHandler():
         '''
         vd, r = imap.crop_to_selection(atoms, pad, normalize)
         tf = r.xyz_to_ijk_transform.matrix
-        f = LinearInterpMapForce(vd, tf, units='angstroms')
-        f.set_global_k(imap.get_coupling_constant())
+        f = self._map_to_force_field(vd, r, tf, imap.get_coupling_constant())
         imap.set_potential_function(f)
+    
+    def _map_to_force_field(self, volume_data, region, xyz_to_ijk_transform,
+                            coupling_constant):
+        vd = volume_data
+        r = region
+        tf = xyz_to_ijk_transform
+        f = LinearInterpMapForce(vd, tf, units='angstroms')
+        f.set_global_k(coupling_constant)
+        return f
     
     
     def continuous3D_from_volume(self, vol_data):

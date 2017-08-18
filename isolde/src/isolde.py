@@ -27,6 +27,7 @@ from chimerax.core import triggerset
 
 from . import rotamers
 from .eventhandler import EventHandler
+from .constants import defaults
 
 class Isolde():
     
@@ -179,19 +180,19 @@ class Isolde():
         self._selected_atoms = None
         # Number of residues before and after each selected residue to add
         # to the mobile selection
-        self.b_and_a_padding = 5
+        self.b_and_a_padding = defaults.SELECTION_SEQUENCE_PADDING
         # Extra mobile shell of surrounding atoms to provide a soft buffer to
         # the simulation. Whole residues only.
         self._soft_shell_atoms = None
         # User-definable distance cutoff to define the soft shell
-        self.soft_shell_cutoff = 5      # Angstroms
+        self.soft_shell_cutoff = defaults.SOFT_SHELL_CUTOFF
         # Do we fix the backbone atoms of the soft shell?
-        self.fix_soft_shell_backbone = False
+        self.fix_soft_shell_backbone = defaults.FIX_SOFT_SHELL_BACKBONE
         # Shell of fixed atoms surrounding all mobile atoms to maintain 
         # the context of the simulation. Whole residues only.
         self._hard_shell_atoms = None
         # User-definable distance cutoff to define the hard shell
-        self.hard_shell_cutoff = 8      # Angstroms
+        self.hard_shell_cutoff = defaults.HARD_SHELL_CUTOFF 
         # Construct containing all mobile atoms in the simulation
         self._total_mobile = None
         # Indices of mobile atoms in the total simulation construct
@@ -286,7 +287,7 @@ class Isolde():
         # Nearest atom's normal color
         self._haptic_current_nearest_atom_color = []
         # Spring constant felt by atoms tugged by the haptic device
-        self._haptic_force_constant = 2500 # FIXME kJ/mol/nm2 (to kJ/mol/A2)
+        self._haptic_force_constant = defaults.HAPTIC_SPRING_CONSTANT 
         
         ####
         # Settings for handling of maps
@@ -308,14 +309,15 @@ class Isolde():
         # Restraints settings
         ####
         self.restrain_peptide_bonds = True
-        self.peptide_bond_restraints_k = 500 # FIXME units?
-        self.secondary_structure_restraints_k = 250 # FIXME units?
+        self.peptide_bond_restraints_k = defaults.PEPTIDE_SPRING_CONSTANT # kJ/mol/radian
+        self.secondary_structure_restraints_k = defaults.PHI_PSI_SPRING_CONSTANT # kJ/mol/radian
         
         # The difference between the dihedral angle and target beyond which
         # restraints begin to be applied. Below this angle there is no 
         # extra biasing force. This cutoff can be changed on a per-dihedral
         # basis.
-        self.default_dihedral_restraint_cutoff_angle = radians(30)
+        self.default_dihedral_restraint_cutoff_angle = radians(
+            defaults.DIHEDRAL_RESTRAINT_CUTOFF)
         
         ##
         # Distance retraint objects
@@ -338,14 +340,14 @@ class Isolde():
         # A {Residue: Rotamer} dict encompassing all mobile rotameric residues
         self.rotamers = None
         self.rotamer_restraints_k = 1000 # FIXME units?
-        self.default_rotamer_restraint_cutoff_angle = radians(15)
+        self.rotamer_restraint_cutoff_angle = radians(defaults.ROTAMER_RESTRAINT_CUTOFF)
 
         # Range of dihedral values which will be interpreted as a cis peptide
         # bond (-30 to 30 degrees). If restrain_peptide_bonds is True, anything
         # outside of this range at the start of the simulation will be forced
         # to trans.
-        from math import pi 
-        self.cis_peptide_bond_range = (-pi/6, pi/6)
+        cis_offset = radians(defaults.CIS_PEPTIDE_BOND_CUTOFF)
+        self.cis_peptide_bond_range = (-cis_offset, cis_offset)
         
         # Handler for shifting stretches in register.
         self._register_shifter = None
@@ -548,7 +550,7 @@ class Isolde():
         # Function to remove all event handlers, mouse modes etc. when
         # ISOLDE is closed, and return ChimeraX to its standard state.
         
-        self.gui.tool_window.ui_area.parentWidget().destroyed.connect(self._on_close)
+        #self.gui.tool_window.ui_area.parentWidget().destroyed.connect(self._on_close)
         #self.gui.tool_window.destroyed.connect(self._on_close)
         self._event_handler.add_event_handler('close on app quit',
                                       'app quit',
@@ -1738,7 +1740,7 @@ class Isolde():
         sc = self._total_sim_construct
         sh = self._sim_handler
         k = self.rotamer_restraints_k
-        sh.set_dihedral_restraints(dihedrals, target, k, cutoffs = self.default_rotamer_restraint_cutoff_angle)
+        sh.set_dihedral_restraints(dihedrals, target, k, cutoffs = self.rotamer_restraint_cutoff_angle)
         
         rotamer.restrained = True
 
@@ -1806,8 +1808,7 @@ class Isolde():
         psi for the preceding residue. Ideally, we don't want to leave
         them restrained once the flip is complete.
         '''
-        from math import pi
-        import numpy
+
         from . import dihedrals
         bd = self._mobile_backbone_dihedrals
         phi = bd.phi.by_residue(res)
@@ -1841,8 +1842,6 @@ class Isolde():
         
         
     def _check_pep_flip(self, *_):
-        from math import pi
-        import numpy
         done = False
         if self._pep_flip_timeout_counter >= 20:
             print('Unable to flip peptide. Giving up.')
@@ -2314,7 +2313,6 @@ class Isolde():
         from chimerax.core.atomic import selected_atoms, selected_bonds
         sc = self._total_sim_construct = selected_atoms(self.session)
         sb = self._total_sim_bonds = selected_bonds(self.session)
-        import numpy
         surr = self._surroundings = self._selected_model.atoms.filter(numpy.invert(
             self._selected_model.atoms.selected))
         
@@ -2430,7 +2428,7 @@ class Isolde():
         self._sim_pos_restr_indices_in_master_restr = \
             self.position_restraints.atoms.indices(
                 spr_atoms)
-        self._sim_pos_restr_indices_in_sim = total_mobile.indices(spr_atoms)
+        #self._sim_pos_restr_indices_in_sim = total_mobile.indices(spr_atoms)
         
         
         sh.add_position_restraints(self._sim_pos_restr, sc)
@@ -2652,6 +2650,7 @@ class Isolde():
         for dlist in (bd.phi, bd.psi, bd.omega):
             atoms = dlist.atoms
             indices = numpy.reshape(sc.indices(atoms),[len(dlist),4])
+            assert numpy.all(indices != -1)
             for i, d in enumerate(dlist):
                 d_indices = indices[i]
                 d.sim_index = sh.initialize_dihedral_restraint(d_indices)
@@ -2673,7 +2672,6 @@ class Isolde():
             # the selection by the specified number of residues.                        
             pad = self.b_and_a_padding
             from chimerax.core.atomic import selected_atoms
-            import numpy
             selatoms = selected_atoms(self.session)
             us = selatoms.unique_structures
             if len(us) != 1:
@@ -2908,18 +2906,17 @@ class Isolde():
                 t = target
         elif target is not None:
             raise Exception('Target must be either a number, "trans", "cis", or None')
+        else:
+            dvals = dihedrals.values
+            targets = (numpy.logical_or(dvals > cr[1], dvals < cr[0])).astype(float) * pi
         
-        import numpy
         # Get all atom indices in one go because the lookup is expensive
         #indices = numpy.reshape(sc.indices(dihedrals.atoms),[len(dihedrals),4])
         
+        
         for i, d in enumerate(dihedrals):
             if target is None:
-                dval = d.value
-                if dval < cr[1] and dval > cr[0]:
-                    t = 0
-                else:
-                    t = pi
+                t = targets[i]
             #sh.set_dihedral_restraint(d.sim_index, indices[i], t, k)
             sh.update_dihedral_restraint(d.sim_index, target=t, k=k)
             
@@ -2928,7 +2925,6 @@ class Isolde():
         Remove restraints on a list of peptide bonds (actually, just set
         their spring constants to zero). Simulation must already be running.
         '''
-        import numpy
         sc = self._total_sim_construct
         sh = self._sim_handler
         sh.set_dihedral_restraints(dihedrals, 0, 0)
@@ -3166,7 +3162,6 @@ class Isolde():
         
     
     def _get_and_check_positions(self):
-        import numpy
         from simtk.unit import angstrom
         c = self.sim.context
         state = c.getState(getPositions = True)
@@ -3184,7 +3179,6 @@ class Isolde():
         
     
     def _get_positions_and_max_force (self, save_forces = False):
-        import numpy
         c = self.sim.context
         from simtk.unit import kilojoule_per_mole, nanometer, angstrom
         state = c.getState(getForces = True, getPositions = True)
