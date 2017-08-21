@@ -219,8 +219,22 @@ def start_sim_thread(sim_params, all_atoms, fixed_flags,
     
     # Density maps. Even though updating these during a simulation is not
     # yet possible, we want to leave the option open.
-    
-    
+    density_map_names = []
+    density_map_transforms = {}
+    if density_maps is not None:
+        for key, imap in density_maps.items():
+            density_map_names.append(imap.get_name())
+            volume_data_key = name + ' data'
+            transform_key = name + ' transform'
+            vd, r = imap.crop_to_selection(atoms, pad, normalize)
+            
+            tf = r.xyz_to_ijk_transform.matrix
+            densit_map_transforms[transform_key] = tf
+            
+            vd_comms_base = comms_object[volume_data_key] = mp.Array('f', vd.size)
+            vd_comms_base[:] = vd.ravel('C')
+        
+            
     
     
     
@@ -245,9 +259,10 @@ def start_sim_thread(sim_params, all_atoms, fixed_flags,
         'rotamer targets':                  input_rotamer_targets,
         'distance restraint keys':          distance_restraint_keys,
         'position restraint indices':       pr_indices,
+        'density map names':                density_map_names,
     }
     sim_data.update(distance_restraint_indices)
-
+    sim_data.update(density_map_transforms)
 
     return comms_object
     
