@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/IsoldeFrame.ui'
 #
-# Created by: PyQt5 UI code generator 5.6
+# Created by: PyQt5 UI code generator 5.9
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -90,7 +90,6 @@ class Ui_isolde_widget(object):
         self._sim_basic_tab = QtWidgets.QWidget()
         self._sim_basic_tab.setObjectName("_sim_basic_tab")
         self.verticalLayout_5 = QtWidgets.QVBoxLayout(self._sim_basic_tab)
-        self.verticalLayout_5.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self._sim_basic_tab_scroll_area = QtWidgets.QScrollArea(self._sim_basic_tab)
         self._sim_basic_tab_scroll_area.setWidgetResizable(True)
@@ -569,7 +568,6 @@ class Ui_isolde_widget(object):
         self._sim_restrain_tab = QtWidgets.QWidget()
         self._sim_restrain_tab.setObjectName("_sim_restrain_tab")
         self.verticalLayout_7 = QtWidgets.QVBoxLayout(self._sim_restrain_tab)
-        self.verticalLayout_7.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_7.setObjectName("verticalLayout_7")
         self._restraints_scroll_area = QtWidgets.QScrollArea(self._sim_restrain_tab)
         self._restraints_scroll_area.setWidgetResizable(True)
@@ -635,7 +633,6 @@ class Ui_isolde_widget(object):
         self._sim_remodel_tab = QtWidgets.QWidget()
         self._sim_remodel_tab.setObjectName("_sim_remodel_tab")
         self.verticalLayout_6 = QtWidgets.QVBoxLayout(self._sim_remodel_tab)
-        self.verticalLayout_6.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_6.setObjectName("verticalLayout_6")
         self._sim_remodel_scroll_area = QtWidgets.QScrollArea(self._sim_remodel_tab)
         self._sim_remodel_scroll_area.setWidgetResizable(True)
@@ -927,7 +924,6 @@ class Ui_isolde_widget(object):
         self._sim_validate_tab = QtWidgets.QWidget()
         self._sim_validate_tab.setObjectName("_sim_validate_tab")
         self.horizontalLayout_20 = QtWidgets.QHBoxLayout(self._sim_validate_tab)
-        self.horizontalLayout_20.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_20.setObjectName("horizontalLayout_20")
         self._validate_scroll_area = QtWidgets.QScrollArea(self._sim_validate_tab)
         self._validate_scroll_area.setWidgetResizable(True)

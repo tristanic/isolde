@@ -245,7 +245,9 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
             self.addPerTorsionParameter(p)
 
         self.update_needed = True
-
+    
+        
+    
     def update_target(self, index, target = None, k = None, cutoff = None):
         current_params = self.getTorsionParameters(index)
         indices = current_params[0:4]

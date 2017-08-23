@@ -178,6 +178,14 @@ class Residue_rotamers:
         
     
     @property
+    def zeros(self):
+        ''' 
+        Return a numpy array of zeros, one for each chi dihedral. Used
+        to initialise the target array.
+        '''
+        return numpy.zeros(self.num_torsions, float)
+    
+    @property
     def rotamers(self):
         return self._rotamers
 
@@ -278,7 +286,7 @@ class Rotamer_info:
         self.alpha_P = alpha_P
         self.beta_P = beta_P
         self.coil_P = coil_P
-        self._angles = [radians(a) for a in chi_angles]
+        self._angles = numpy.array([radians(a) for a in chi_angles])
     
     @property
     def angles(self):
@@ -329,7 +337,7 @@ class Rotamer:
         # Is this rotamer currently being restrained?
         self.restrained = False
         # Current target conformation (if self.restrained == True)
-        self.target = None
+        self.target = _rotamer_info[self.resname].zeros
         
         try:
             self._atoms_to_move, self.dihedrals = self.find_atoms_to_move(self.residue)
@@ -358,7 +366,7 @@ class Rotamer:
     
     @property
     def available_rotamers(self):
-        return _rotamer_info[self.residue.name].by_ss_type(self.residue.ss_type)
+        return _rotamer_info[self.resname].by_ss_type(self.residue.ss_type)
     
     def find_atoms_to_move(self, residue):
         ratoms = residue.atoms

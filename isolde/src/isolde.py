@@ -19,6 +19,8 @@ import PyQt5
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
 
+from simtk import unit
+
 import chimerax
 
 from chimerax import clipper
@@ -28,6 +30,14 @@ from chimerax.core import triggerset
 from . import rotamers
 from .eventhandler import EventHandler
 from .constants import defaults
+
+OPENMM_LENGTH_UNIT = defaults.OPENMM_LENGTH_UNIT
+OPENMM_FORCE_UNIT = defaults.OPENMM_FORCE_UNIT
+OPENMM_SPRING_UNIT = defaults.OPENMM_SPRING_UNIT
+OPENMM_RADIAL_SPRING_UNIT = defaults.OPENMM_RADIAL_SPRING_UNIT
+OPENMM_ENERGY_UNIT = defaults.OPENMM_ENERGY_UNIT
+OPENMM_ANGLE_UNIT = defaults.OPENMM_ANGLE_UNIT
+
 
 class Isolde():
     
@@ -244,7 +254,7 @@ class Isolde():
         # Do we track and display residues' status on the Ramachandran plot?
         self.track_rama = True
         # How often do we want to update our Ramachandran statistics?
-        self.steps_per_rama_update = 5
+        self.steps_per_rama_update = defaults.ROUNDS_PER_RAMA_UPDATE
         # Internal counter for Ramachandran update
         self._rama_counter = 0
         
@@ -253,7 +263,7 @@ class Isolde():
         ####
         # For updating map zoning to current coordinates
         self._map_rezone_counter = 0
-        self._steps_per_map_rezone = 20
+        self._steps_per_map_rezone = defaults.ROUNDS_PER_MAP_REMASK
         self._map_rezone_handler = None
         
         ####
@@ -299,25 +309,24 @@ class Isolde():
         # Are we adding a new map to the simulation list?
         self._add_new_map = True
         # Default coupling constants
-        self.default_standard_map_k = 5.0
-        self.default_difference_map_k = 1.0
+        self.default_standard_map_k = defaults.STANDARD_MAP_K
+        self.default_difference_map_k = defaults.DIFFERENCE_MAP_K
         # Default masking cutoffs
-        self.default_standard_map_cutoff = 4.0 # Angstroms
-        self.default_difference_map_cutoff = 8.0 # Angstroms
+        self.default_standard_map_cutoff = defaults.STANDARD_MAP_MASK_RADIUS
+        self.default_difference_map_cutoff = defaults.DIFFERENCE_MAP_MASK_RADIUS
         
         ####
         # Restraints settings
         ####
         self.restrain_peptide_bonds = True
-        self.peptide_bond_restraints_k = defaults.PEPTIDE_SPRING_CONSTANT # kJ/mol/radian
-        self.secondary_structure_restraints_k = defaults.PHI_PSI_SPRING_CONSTANT # kJ/mol/radian
+        self.peptide_bond_restraints_k = defaults.PEPTIDE_SPRING_CONSTANT 
+        self.secondary_structure_restraints_k = defaults.PHI_PSI_SPRING_CONSTANT 
         
         # The difference between the dihedral angle and target beyond which
         # restraints begin to be applied. Below this angle there is no 
         # extra biasing force. This cutoff can be changed on a per-dihedral
         # basis.
-        self.default_dihedral_restraint_cutoff_angle = radians(
-            defaults.DIHEDRAL_RESTRAINT_CUTOFF)
+        self.default_dihedral_restraint_cutoff_angle = defaults.DIHEDRAL_RESTRAINT_CUTOFF
         
         ##
         # Distance retraint objects
@@ -326,7 +335,7 @@ class Isolde():
         self.ca_to_ca_plus_two = None
         # (O_n - N_n+4) atom pairs (for alpha helix H-bonds)
         self.o_to_n_plus_four = None
-        self.distance_restraints_k = 50 # kJ/mol/A2
+        self.distance_restraints_k = defaults.DISTANCE_RESTRAINT_SPRING_CONSTANT
         
         ##
         # Position restraint objects
@@ -334,19 +343,19 @@ class Isolde():
         
         # A Position_Restraints object defining all restrainable atoms
         self.position_restraints = None
-        self.position_restraints_default_k = 20 # kJ/mol/A2
+        self.position_restraints_default_k = defaults.POSITION_RESTRAINT_SPRING_CONSTANT
         
         
         # A {Residue: Rotamer} dict encompassing all mobile rotameric residues
         self.rotamers = None
-        self.rotamer_restraints_k = 1000 # FIXME units?
-        self.rotamer_restraint_cutoff_angle = radians(defaults.ROTAMER_RESTRAINT_CUTOFF)
+        self.rotamer_restraints_k = defaults.ROTAMER_SPRING_CONSTANT
+        self.rotamer_restraint_cutoff_angle = defaults.ROTAMER_RESTRAINT_CUTOFF
 
         # Range of dihedral values which will be interpreted as a cis peptide
         # bond (-30 to 30 degrees). If restrain_peptide_bonds is True, anything
         # outside of this range at the start of the simulation will be forced
         # to trans.
-        cis_offset = radians(defaults.CIS_PEPTIDE_BOND_CUTOFF)
+        cis_offset = defaults.CIS_PEPTIDE_BOND_CUTOFF
         self.cis_peptide_bond_range = (-cis_offset, cis_offset)
         
         # Handler for shifting stretches in register.
@@ -378,28 +387,28 @@ class Isolde():
         # Computational platform to run the simulation on
         self.sim_platform = None
         # Number of steps to run in before updating coordinates in ChimeraX
-        self.sim_steps_per_update = 50
+        self.sim_steps_per_update = defaults.SIM_STEPS_PER_GUI_UPDATE
         # Number of steps per GUI update in minimization mode
-        self.min_steps_per_update = 100
+        self.min_steps_per_update = defaults.MIN_STEPS_PER_GUI_UPDATE
         # If using the VariableLangevinIntegrator, we define a tolerance
-        self._integrator_tolerance = 0.0001
+        self._integrator_tolerance = defaults.OPENMM_VAR_INTEGRATOR_TOL
         # ... otherwise, we simply set the time per step
-        self._sim_time_step = 1.0*unit.femtoseconds
+        self._sim_time_step = defaults.OPENMM_FIXED_INTEGRATOR_TS
         # Type of integrator to use. Should give the choice in the expert level
         # of the menu. Variable is more stable, but simulated time per gui update
         # is harder to determine
-        self._integrator_type = 'variable'
+        self._integrator_type = defaults.OPENMM_INTEGRATOR_TYPE
         # Constraints (e.g. rigid bonds) need their own tolerance
-        self._constraint_tolerance = 0.0001
+        self._constraint_tolerance = defaults.OPENMM_CONSTRAINT_TOL
         # Friction term for coupling to heat bath. Using a relatively high
         # value helps keep the simulation under control in response to
         # very large forces.
-        self._friction = 5.0/unit.picoseconds
+        self._friction = defaults.OPENMM_FRICTION
         # Limit on the net force on a single atom 
-        self._max_allowable_force = 40000.0 # kJ mol-1 nm-1
+        self._max_allowable_force = defaults.MAX_ALLOWABLE_FORCE # kJ mol-1 nm-1
         # For dynamics it's more efficient to just check that atoms aren't
         # moving too quickly.
-        self._max_atom_movement_per_step = 5 # Angstroms
+        self._max_atom_movement_per_step = defaults.MAX_ATOM_MOVEMENT_PER_STEP # Angstroms
         # We need to store the last measured maximum force to determine
         # when minimisation has converged.
         self._last_max_force = inf
@@ -409,16 +418,16 @@ class Isolde():
         self._unstable_min_rounds = 0
         # Maximum number of rounds to attempt minimisation of an unstable
         # simulation
-        self.max_unstable_rounds = 20
+        self.max_unstable_rounds = defaults.MAX_UNSTABLE_ROUNDS
         
         # Are we currently tugging on an atom?
         self._currently_tugging = False
         # Placeholder for tugging forces
         self._tugging_force = None
         # Force constant for mouse/haptic tugging. Need to make this user-adjustable
-        self.tug_force_constant = 10000 # kJ/mol/nm^2
+        self.tug_force_constant = defaults.MOUSE_TUG_SPRING_CONSTANT
         # Upper limit on the strength of the tugging force
-        self.tug_max_force = 10000 # kJ/mol/nm
+        self.tug_max_force = defaults.MAX_TUG_FORCE # kJ/mol/nm
         
         
         
@@ -430,12 +439,12 @@ class Isolde():
         # If running, is the simulation in startup mode?
         self._sim_startup = True
         # Maximum number of rounds of minimisation to run on startup
-        self._sim_startup_rounds = 10
+        self._sim_startup_rounds = defaults.SIM_STARTUP_ROUNDS
         # Counter for how many rounds we've done on startup
         self._sim_startup_counter = 0
         
         # Simulation temperature in Kelvin
-        self.simulation_temperature = 100.0
+        self.simulation_temperature = defaults.TEMPERATURE
         # Flag to update the temperature of a running simulation
         self._temperature_changed = False
         

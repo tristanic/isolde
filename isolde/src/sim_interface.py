@@ -12,6 +12,7 @@ import multiprocessing as mp
 import ctypes
 from math import pi, radians, degrees, cos
 from simtk import unit, openmm
+from simtk.unit import Quantity
 from simtk.openmm import app
 from simtk.openmm.openmm import CustomBondForce, CustomExternalForce, \
                                 CustomCompoundBondForce, CustomTorsionForce, \
@@ -319,12 +320,13 @@ def _sim_thread(sim_params, sim_data, comms_object
         in_rotamer_map = sim_data['rotamer map']
         rotamer_targets = comms_object['rotamer targets']
         out_rotamer_map = comms_object['rotamer map']
-        rotamer_restraint_k = sim_params['rotamer_restraint_cutoff_angle'] / unit.radians
+        rotamer_restraint_cutoff = sim_params['rotamer_restraint_cutoff_angle'] / unit.radians
+        rotamer_restraint_k = sim_params['rotamer_spring_constant'] / (unit.kilojoule_per_mole/unit.radians**2)
         with rotamer_targets.get_lock(), out_rotamer_map.get_lock():
             for key, indices in in_rotamer_map.items():
                 force_indices = out_rotamer_map[key] = []
                 for d_indices in indices:
-                    force_indices.append(sh.initialize_dihedral_restraint(d_indices))
+                    force_indices.append(sh.initialize_dihedral_restraint(d_indices, rotamer_restraint_cutoff))
                 targets = rotamer_targets[key]
                 if targets is not None:
                     for (fi, di, t) in zip(force_indices, indices, targets):
@@ -439,7 +441,7 @@ class available_forcefields():
         )
     
     main_file_descriptions = (
-        'AMBER14 withi improved backbone & sidechain torsions',
+        'AMBER14 with improved backbone & sidechain torsions',
         'AMBER99 with improved backbone & sidechain torsions',
         'AMBER99 with modifications to fit NMR data',
         'AMBER10',
@@ -697,6 +699,8 @@ class SimHandler():
     def initialize_dihedral_restraint(self, indices, cutoff = None):
         #top = self._topology
         c = (cutoff or self.default_torsion_cutoff)
+        if type(c) == Quantity:
+            c = c.value_in_unit(defaults.OPENMM_ANGLE_UNIT)
         force = self._dihedral_restraint_force
         index_in_force = force.addTorsion(*indices.tolist(), [0, 0, cos(c)])
         return index_in_force

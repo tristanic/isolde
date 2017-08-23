@@ -2,4 +2,5 @@ setpaths.sh
 build/
 dist/
 ChimeraX_ISOLDE.egg-info/
+src/__pycache__/
 

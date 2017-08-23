@@ -6,6 +6,7 @@
 
 # vim: set expandtab shiftwidth=4 softtabstop=4:
 
+# TODO: Re-do this to a better standard
 class IsoldeMap:
     '''Generic class to hold the details of maps to be used in the simulation'''
     def __init__(self, session, name, source_map, mask_cutoff, 
@@ -248,7 +249,7 @@ class IsoldeMap:
     def get_potential_function(self):
         return self._potential_function
         
-    
+    coupling_constant = property(get_coupling_constant, set_coupling_constant)
     
     def crop_to_selection(self, selection, padding, normalize = False):
         '''
