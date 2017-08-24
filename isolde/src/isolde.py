@@ -37,6 +37,9 @@ OPENMM_SPRING_UNIT = defaults.OPENMM_SPRING_UNIT
 OPENMM_RADIAL_SPRING_UNIT = defaults.OPENMM_RADIAL_SPRING_UNIT
 OPENMM_ENERGY_UNIT = defaults.OPENMM_ENERGY_UNIT
 OPENMM_ANGLE_UNIT = defaults.OPENMM_ANGLE_UNIT
+CHIMERAX_LENGTH_UNIT        = defaults.CHIMERAX_LENGTH_UNIT
+CHIMERAX_FORCE_UNIT         = defaults.CHIMERAX_FORCE_UNIT
+CHIMERAX_SPRING_UNIT        = defaults.CHIMERAX_SPRING_UNIT
 
 
 class Isolde():
@@ -408,7 +411,7 @@ class Isolde():
         self._max_allowable_force = defaults.MAX_ALLOWABLE_FORCE # kJ mol-1 nm-1
         # For dynamics it's more efficient to just check that atoms aren't
         # moving too quickly.
-        self._max_atom_movement_per_step = defaults.MAX_ATOM_MOVEMENT_PER_STEP # Angstroms
+        self._max_atom_movement_per_step = defaults.MAX_ATOM_MOVEMENT_PER_STEP * OPENMM_LENGTH_UNIT
         # We need to store the last measured maximum force to determine
         # when minimisation has converged.
         self._last_max_force = inf
@@ -2261,13 +2264,124 @@ class Isolde():
     
     def start_sim(self):
         try:
-            self._start_sim()
+            #~ self._start_sim()
+            self._start_threaded_sim()
         except Exception as e:
             self.triggers.activate_trigger('simulation terminated', 
                                         (self.sim_outcome.FAIL_TO_START, e))
             raise
     
     
+    def _start_threaded_sim(self):
+        log = self.session.logger.info
+            
+        if self._simulation_running:
+            print('You already have a simulation running!')
+            return
+        if self._logging:
+            self._log('Initialising simulation')
+        log('Simulation should start now')
+        
+        sm = self._sim_modes
+        if self.sim_mode in [sm.xtal, sm.em]:
+            if not len(self.master_map_list):
+                self._no_maps_warning()
+                return
+                
+        self._status('Defining simulation selection...')
+        
+        # Define final mobile selection
+        self._get_final_sim_selection()
+        
+        # Define "soft shell" of mobile atoms surrounding main selection
+        self._soft_shell_atoms = self.get_shell_of_residues(
+            self._selected_atoms,
+            self.soft_shell_cutoff
+            )
+        
+        
+        # Define fixed selection (whole residues with atoms coming within
+        # a cutoff of the mobile selection
+        total_mobile = self._total_mobile = self._selected_atoms.merge(self._soft_shell_atoms)
+        hard_shell = self._hard_shell_atoms = self.get_shell_of_residues(
+            total_mobile,
+            self.hard_shell_cutoff
+            )
+        
+        sc = self._total_sim_construct = total_mobile.merge(self._hard_shell_atoms)
+        #sb = self._total_sim_bonds = sc.intra_bonds
+        
+        self._total_mobile_indices = sc.indices(total_mobile)
+
+        fixed_flags = numpy.zeros(len(sc), numpy.bool)
+        fixed_flags[sc.indices(hard_shell)] = True
+
+        
+        if self.sim_mode == sm.xtal:
+            self.selected_model.parent.isolate_and_cover_selection(
+                total_mobile, include_surrounding_residues = 0, 
+                show_context = self.hard_shell_cutoff, 
+                mask_radius = 4, extra_padding = 10, 
+                hide_surrounds = True, focus = False)
+            
+        sc.selected = True
+        from chimerax.core.atomic import selected_atoms, selected_bonds
+        sc = self._total_sim_construct = selected_atoms(self.session)
+        sb = self._total_sim_bonds = selected_bonds(self.session)
+        surr = self._surroundings = self._selected_model.atoms.filter(numpy.invert(
+            self._selected_model.atoms.selected))
+        
+        
+        # Cache all the colors so we can revert at the end of the simulation
+        self._original_atom_colors = sc.colors
+        self._original_atom_draw_modes = sc.draw_modes
+        self._original_bond_radii = sb.radii
+        self._original_atom_radii = sc.radii
+        self._original_display_state = self._selected_model.atoms.displays
+        
+        sc.selected = False
+        self._hard_shell_atoms.selected = True
+        hsb = selected_bonds(self.session)
+        hsb.radii = 0.1
+        self._hard_shell_atoms.radii = 0.1
+        self._hard_shell_atoms.draw_modes = 3
+        
+        sc.selected = True
+        
+        # Collect backbone dihedral atoms and prepare the Ramachandran
+        # validator
+        
+        self._status('Organising dihedrals...')
+        
+        from . import dihedrals
+        all_bd = self.backbone_dihedrals
+        sim_phi, sim_psi, sim_omega = all_bd.by_residues(total_mobile.unique_residues)
+        bd = self._mobile_backbone_dihedrals \
+            = dihedrals.Backbone_Dihedrals(self.session, phi = sim_phi, psi = sim_psi, omega = sim_omega)
+
+        if self.track_rama:
+            bd.CAs.draw_modes = 1
+
+            self.omega_validator.load_structure(self._selected_model, bd.omega)
+
+        
+        distance_restraints = {
+            'ca_to_ca_plus_two':    self.ca_to_ca_plus_two.in_selection(sc),
+            'o_to_n_plus_four':     self.o_to_n_plus_four.in_selection(sc),
+            }
+
+        position_restraints = self._sim_pos_restr =\
+            self.position_restraints.in_selection(total_mobile)
+
+        
+        from .openmm.sim_interface import SimParams, ChimeraXSimInterface
+        sp = self._sim_params = SimParams()
+        si = self._sim_interface = ChimeraXSimInterface(self.session, self)
+        si.start_sim_thread(sp, total_mobile, fixed_flags, bd, self.rotamers,
+                            distance_restraints, position_restraints, self.master_map_list)
+                            
+        
+
     def _start_sim(self):
         log = self.session.logger.info
         from time import time
@@ -2278,7 +2392,7 @@ class Isolde():
             return
         if self._logging:
             self._log('Initialising simulation')
-        print('Simulation should start now')
+        log('Simulation should start now')
         
         sm = self._sim_modes
         if self.sim_mode in [sm.xtal, sm.em]:
@@ -2364,7 +2478,7 @@ class Isolde():
             self.omega_validator.load_structure(self._selected_model, bd.omega)
             log('Preparing peptide bond validation took {0:0.4f} seconds'.format(time() - last_time))
             last_time = time()
-
+        
         from . import sim_interface as si
         sh = self._sim_handler = si.SimHandler(self.session)        
         
@@ -2521,6 +2635,8 @@ class Isolde():
             force_implicit = False
         sys = self._system = si.create_openmm_system(self._topology, self._ff, templates, force_implicit = force_implicit)
         
+        log('Creating system took {0:0.4f} seconds'.format(time() - last_time))
+        last_time = time()
         
         # Apply fixed atoms to System
         if self._logging:
@@ -2529,9 +2645,11 @@ class Isolde():
         for i, f in enumerate(fixed):
             if f:
                 sys.setParticleMass(i, 0)
-        
-        log('Creating system took {0:0.4f} seconds'.format(time() - last_time))
+
+        log('Applying fixed atoms took {0:0.4f} seconds'.format(time() - last_time))
         last_time = time()
+
+        
         
         # Register extra forces
         for key, f in sh.get_all_custom_external_forces().items():
@@ -2566,8 +2684,6 @@ class Isolde():
             self._log('Setting platform to ' + self.sim_platform)
         platform = si.platform(self.sim_platform)
             
-        log('Applying fixed atoms took {0:0.4f} seconds'.format(time() - last_time))
-        last_time = time()
 
         if self._logging:
             self._log('Generating simulation')
@@ -3176,12 +3292,13 @@ class Isolde():
         state = c.getState(getPositions = True)
         indices = self._total_mobile_indices
         old_pos = self._particle_positions
-        pos = state.getPositions(asNumpy = True)/angstrom
+        pos = state.getPositions(asNumpy = True).value_in_unit(CHIMERAX_LENGTH_UNIT)
         delta = pos[indices] - old_pos[indices]
         distances = numpy.linalg.norm(delta, axis=1)
         max_distance = distances.max()
-        if max_distance > self._max_atom_movement_per_step:
-            fast_indices = numpy.where(distances > self._max_atom_movement_per_step)[0]
+        max_allowed = self._max_atom_movement_per_step.value_in_unit(CHIMERAX_LENGTH_UNIT)
+        if max_distance > max_allowed:
+            fast_indices = numpy.where(distances > max_allowed)[0]
         else:
             fast_indices = None
         return pos, fast_indices

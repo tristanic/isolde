@@ -1,0 +1,7 @@
+setup.cfg
+setup.py
+ISOLDE.egg-info/PKG-INFO
+ISOLDE.egg-info/SOURCES.txt
+ISOLDE.egg-info/dependency_links.txt
+ISOLDE.egg-info/requires.txt
+ISOLDE.egg-info/top_level.txt

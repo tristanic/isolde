@@ -1,8 +1,10 @@
 import numpy
 import simtk
 import os
+from math import cos
 
 from simtk import unit, openmm
+from simtk.unit import Unit, Quantity
 from simtk.openmm import app
 from simtk.openmm.openmm import CustomBondForce, CustomExternalForce, \
                                 CustomCompoundBondForce, CustomTorsionForce, \
@@ -162,7 +164,7 @@ class SimHandler():
     def add_position_restraints(self, force_index_map, atom_indices, ks, targets):
         rf = self._position_restraints_force
         for i, (index, k, target) in enumerate(zip(atom_indices, ks, targets)):
-            force_index_map[i] = rf.addParticle(index, (k, target))
+            force_index_map[i] = rf.addParticle(int(index), (k, *target))
     
         ##
         # During simulation
@@ -199,7 +201,7 @@ class SimHandler():
         ##
         
     def initialize_distance_restraints_force(self, max_force):
-        tf = self._distance_restraints_force = TopOutBondForce(max_force*10)
+        tf = self._distance_restraints_force = TopOutBondForce(max_force)
         self.all_forces.append(tf)
         return tf
     
@@ -213,7 +215,7 @@ class SimHandler():
         indices = sim_construct.indices(atoms)
         tf = self._distance_restraints_force
         r.sim_handler = self
-        r.sim_force_index = tf.addBond(*indices.tolist(), (r.spring_constant*100, r.target_distance/10))
+        r.sim_force_index = tf.addBond(*indices.tolist(), (r.spring_constant, r.target_distance))
         
         ##
         # During simulation
@@ -254,7 +256,7 @@ class SimHandler():
         cf = self._amber_cmap_force = AmberCMAPForce()
         self.all_forces.append(cf)
     
-    def add_amber_cmap_torsions(self, phi_array, psi_array, sim_construct):
+    def _add_amber_cmap_torsions(self, phi_array, psi_array, sim_construct):
         cf = self._amber_cmap_force
         sc = sim_construct
         phi_has_psi = phi_array.residues.indices(psi_array.residues)
@@ -266,6 +268,15 @@ class SimHandler():
         n = len(good_psi)
         phi_indices = sc.indices(good_phi.atoms).reshape((n,4))
         psi_indices = sc.indices(good_psi.atoms).reshape((n,4))
+        
+        for pname, fname, pi, fi in zip(phi_resnames, psi_resnames, 
+                                        phi_indices, psi_indices):
+            assert(pname == fname)
+            cf.addTorsion(pname, pi, fi)
+
+    def add_amber_cmap_torsions(self, phi_resnames, psi_resnames, 
+                                phi_indices, psi_indices):
+        cf = self._amber_cmap_force
         
         for pname, fname, pi, fi in zip(phi_resnames, psi_resnames, 
                                         phi_indices, psi_indices):
@@ -291,6 +302,8 @@ class SimHandler():
     def initialize_dihedral_restraint(self, indices, cutoff = None):
         #top = self._topology
         c = (cutoff or self.default_torsion_cutoff)
+        if type(c) == Quantity:
+            c = c.value_in_unit(unit.radians)
         force = self._dihedral_restraint_force
         index_in_force = force.addTorsion(*indices.tolist(), [0, 0, cos(c)])
         return index_in_force
@@ -379,7 +392,7 @@ class SimHandler():
     def couple_atoms_to_tugging_force(self, indices, force_map):
         force = self._tugging_force
         for i, index in enumerate(indices):
-            force_map[i] = force.addParticle(i, (0,))
+            force_map[i] = force.addParticle(i, (0,0,0,0))
     
     def create_openmm_topology(self, atom_names, element_names,
                             residue_names, residue_numbers, chain_ids, 
@@ -403,7 +416,7 @@ class SimHandler():
         '''
         
         anames   = atom_names
-        n = len(aname)
+        n = len(anames)
         enames   = element_names
         rnames   = residue_names
         rnums    = residue_numbers
@@ -423,7 +436,6 @@ class SimHandler():
             rid = (rname, rnum, cid)
             if not rid in rmap:
                 res = rmap[rid] = top.addResidue(rname, cmap[cid])
-                template = residue_templates[rcount]
                 
 
             element = Element.getBySymbol(ename)
@@ -434,11 +446,44 @@ class SimHandler():
 
         return top
 
+    def define_forcefield (self, forcefield_list):
+        from simtk.openmm.app import ForceField
+        ff = self.forcefield = ForceField(*[f for f in forcefield_list if f is not None])
+        return ff
 
-    def create_openmm_system(self, topology, forcefield, templates, force_implicit = True):
-        sys = self.system = create_openmm_system(topology, forcefield, templates, force_implicit)
-        return sys    
-    
+
+    def create_openmm_system(self, top, params):
+        ff = self.forcefield
+        try:
+            system = self.system = ff.createSystem(top, **params)
+        except ValueError as e:
+            raise Exception('Missing atoms or parameterisation needed by force field.\n' +
+                                  'All heavy atoms and hydrogens with standard names are required.\n' +
+                                  str(e))
+        return system
+
+    def initialize_implicit_solvent(self, params):
+        '''Add a Generalised Born Implicit Solvent (GBIS) formulation.'''
+        # Somewhat annoyingly, OpenMM doesn't store atomic charges in a 
+        # nice accessible format. So, we have to pull it back out of the
+        # NonbondedForce term.
+        top = self.topology
+        system = self.system
+        for f in system.getForces():
+            if isinstance(f, NonbondedForce):
+                break
+        charges = []
+        for i in range(f.getNumParticles()):
+            charges.append(f.getParticleParameters(i)[0])
+        gbforce = self._gbsa_force = GBSAForce(**params)
+        params = gbforce.getStandardParameters(top)
+        for charge, param in zip(charges, params):
+            gbforce.addParticle([charge, *param])
+        gbforce.finalize()
+        print('GB Force num particles: '.format(gbforce.getNumParticles()))
+        self.all_forces.append(gbforce)
+
+   
     
     def set_fixed_atoms(self, fixed_indices):
         '''
@@ -450,6 +495,7 @@ class SimHandler():
         sys = self.system
         for index in fixed_indices:
             sys.setParticleMass(index, 0)
+        
             
     def register_all_forces_with_system(self):
         sys = self.system
@@ -457,92 +503,28 @@ class SimHandler():
         for f in forces:
             sys.addForce(f)
     
-    def set_integrator(self, name, temperature, friction, tolerance, timestep):
-        self.integrator = integrator(name, temperature, friction, tolerance, timestep)
+    def initialize_integrator(self, integrator, params):
+        self.integrator = integrator(*params)
     
-    def openmm_topology_and_external_forces(self, sim_construct,
-                                        sim_bonds, fixed_flags,
-                                        tug_hydrogens = False,
-                                        hydrogens_feel_maps = False):        
-        '''
-        Prepares the openmm topology and binds atoms to existing force fields.
-        Since looping over all atoms can take a long time, it's best to do
-        topology generation and force binding as a single concerted loop as
-        much as we can. This should be possible for all external-type forces
-        (tugging and map forces). Forces involving two or more atoms (e.g.
-        H-bond or dihedral restraints) will have to be handled in separate
-        loops.
-        Args:
-            sim_construct:
-                The atoms to be simulated
-            sim_bonds:
-                The set of all bonds between simulated atoms
-            fixed_flags:
-                A boolean array indicating which atoms will be fixed. No
-                need to add these to any custom forces.
-            tug_hydrogens:
-                Do we want to be able to interactively pull on hydrogens?
-            hydrogens_feel_maps:
-                Do we want the hydrogens to be pulled into the maps?
-        '''
-        # When we allow missing external bonds, some residues become ambiguous.
-        # In particular, a cysteine with a bare sulphur might be part of a 
-        # disulphide bond but have the connecting residue missing, or may be
-        # a deprotonated (negatively-charged) Cys. In such cases, we need to 
-        # explicitly tell OpenMM which templates to use.
-        templates = {}
-        a = self._chimerax_atoms = sim_construct
-        n = len(a)
-        r = a.residues
-        aname = a.names
-        ename = a.element_names
-        rname = r.names
-        rnum = r.numbers
-        cids = r.chain_ids
-        from simtk.openmm.app import Topology, Element
-        from simtk import unit
-        top = self._simulation_topology = Topology()
-        cmap = {}
-        rmap = {}
-        atoms = self._atoms = {}
-        for i in range(n):
-            cid = cids[i]
-            if not cid in cmap:
-                cmap[cid] = top.addChain()   # OpenMM chains have no name
-            rid = (rname[i], rnum[i], cid)
-            if not rid in rmap:
-                res = rmap[rid] = top.addResidue(rname[i], cmap[cid])
-                if rname[i] == 'CYS':
-                    ctype = cys_type(r[i])
-                    if ctype != 'CYS':
-                        templates[res] = ctype
+    def set_platform(self, name):
+        from simtk.openmm import Platform
+        self.platform = Platform.getPlatformByName(name)
 
-            element = Element.getBySymbol(ename[i])
-            atoms[i] = top.addAtom(aname[i], element,rmap[rid])
 
-            if not fixed_flags[i]:
-                # Register atoms with forces
-                if ename[i] is not 'H' or (ename[i] is 'H' and tug_hydrogens):
-                    # All CustomExternalForces
-                    for key, ff in self._custom_external_forces.items():
-                        f = ff[0]
-                        per_particle_param_vals = ff[3]
-                        index_map = ff[4]
-                        index_map[i] = f.addParticle(i, per_particle_param_vals)
-            
-                if ename[i] is not 'H' or (ename[i] is 'H' and hydrogens_feel_maps):
-                    # All map forces
-                    for m in self._maps:
-                        self.couple_atom_to_map(i, m)
+ 
+    def create_sim(self):
+        from simtk.openmm.app import Simulation
+        sim = self.sim = Simulation(
+            self.topology, self.system, self.integrator, self.platform)
+        return sim
+    
+    def set_initial_positions_and_velocities(self, coords, temperature):
+        c = self.context = self.sim.context
+        c.setPositions(coords)
+        c.setVelocitiesToTemperature(temperature)
+        self.old_positions = coords
 
-        
-        a1, a2 = sim_bonds.atoms
-        for i1, i2 in zip(a.indices(a1), a.indices(a2)):
-            if -1 not in [i1, i2]:
-                top.addBond(atoms[i1],  atoms[i2])
-
-        pos = a.coords # in Angstrom (convert to nm for OpenMM)
-        return top, pos, templates
+    
 
     def couple_atoms_to_map(self, indices, ks, force, force_map):
         for i, (index, k) in enumerate(zip(indices, ks)):
@@ -660,12 +642,63 @@ class SimHandler():
     def update_force_in_context(self, force_name, context):
         force = self._custom_external_forces[force_name][0]
         force.updateParametersInContext(context)
+    
+    def equil_step(self, steps, max_movement):
+        '''
+        Do the required number of equilibration steps and perform a 
+        safety check to ensure no atom has moved more than the given
+        maximum. Returns the new coordinates and None if the safety
+        check was successful, or the coordinates and an array of indices
+        corresponding to atoms for which the safety check failed.
+        '''
+        sim = self.sim
+        sim.step(steps)
+        coords, fast_indices = self.get_and_check_positions(steps, max_movement)
+        self.old_positions = coords
+        return coords, fast_indices
+    
+    
+    def get_and_check_positions(self, max_allowed_movement):
+        max_allowed_movement = max_allowed_movement.value_in_unit
+        c = self.sim.context
+        state = c.getState(getPositions = True)
+        old_pos = self.old_positions
+        pos = state.getPositions(asNumpy = True).value_in_unit
+        delta = pos - old_pos
+        distances = numpy.linalg.norm(delta, axis=1)*OPENMM_LENGTH_UNIT
+        max_distance = distances.max()
+        if max_distance > max_allowed_movement:
+            fast_indices = numpy.where(distances > self._max_atom_movement_per_step)[0]
+        else:
+            fast_indices = None
+        return pos, fast_indices
+    
+    
+    def min_step(self, steps, max_force):
+        sim = self.sim
+        sim.minimizeEnergy(maxIterations = steps)
+        coords, max_mag, max_index = self.get_positions_and_max_force(max_force)
+        self.old_positions = coords
+        return coords, max_mag, max_index
+    
+    def get_positions_and_max_force (self, max_allowed_force):
+        c = self.sim.context
+        max_force = max_force
+        state = c.getState(getForces = True, getPositions = True)
+        forces = state.getForces(asNumpy = True)
+        magnitudes = numpy.linalg.norm(forces, axis=1)*OPENMM_FORCE_UNIT
+        max_mag = magnitudes.max()
+        # Only look up the index if the maximum force is too high
+        if max_mag > max_allowed_force:
+            max_index = numpy.where(magnitudes == max_mag)[0][0]
+        else:
+            max_index = -1
+        pos = state.getPositions(asNumpy = True)
+        return pos, max_mag, max_index
 
 
-def define_forcefield (forcefield_list):
-    from simtk.openmm.app import ForceField
-    ff = self_forcefield = ForceField(*[f for f in forcefield_list if f is not None])
-    return ff
+
+
 
 
 def initialize_implicit_solvent(system, top):
@@ -738,12 +771,6 @@ def integrator(i_type, temperature, friction, tolerance, timestep):
         integrator = mm.LangevinIntegrator(temperature, friction, timestep)
     return integrator
     
-def platform(name):
-    from simtk.openmm import Platform
-    return Platform.getPlatformByName(name)
 
 
-def create_sim(topology, system, integrator, platform):
-    from simtk.openmm.app import Simulation
-    return Simulation(topology, system, integrator, platform)
 

@@ -25,6 +25,7 @@ from .custom_forces import LinearInterpMapForce, TopOutBondForce, \
                            GBSAForce, AmberCMAPForce
 
 from ..threading.shared_array import TypedMPArray, SharedNumpyArray
+from . import sim_thread
 from .sim_thread import SimComms, SimThread, ChangeTracker
 from ..constants import defaults
 
@@ -35,13 +36,17 @@ OPENMM_RADIAL_SPRING_UNIT = defaults.OPENMM_RADIAL_SPRING_UNIT
 OPENMM_ENERGY_UNIT = defaults.OPENMM_ENERGY_UNIT
 OPENMM_ANGLE_UNIT = defaults.OPENMM_ANGLE_UNIT
 OPENMM_TIME_UNIT = defaults.OPENMM_TIME_UNIT
-
+OPENMM_DIPOLE_UNIT = defaults.OPENMM_DIPOLE_UNIT
+CHIMERAX_LENGTH_UNIT        = defaults.CHIMERAX_LENGTH_UNIT
+CHIMERAX_FORCE_UNIT         = defaults.CHIMERAX_FORCE_UNIT
+CHIMERAX_SPRING_UNIT        = defaults.CHIMERAX_SPRING_UNIT
 
 
 try:
     from chimerax import app_bin_dir
     import os
     spawn.set_executable(os.path.join(app_bin_dir, 'python3.6'))
+    #mp.set_start_method('spawn')
 except:
     # We're not in ChimeraX any more, Toto!
     pass
@@ -71,9 +76,23 @@ class SimParams:
             'cis_peptide_bond_cutoff_angle':    (defaults.CIS_PEPTIDE_BOND_CUTOFF, OPENMM_ANGLE_UNIT),
             'max_atom_movement_per_step':       (defaults.MAX_ATOM_MOVEMENT_PER_STEP, OPENMM_LENGTH_UNIT),
             'max_allowable_force':              (defaults.MAX_ALLOWABLE_FORCE, OPENMM_FORCE_UNIT),
-            'nonbonded_cutoff_distance':        (defaults.OPENMM_NONBONDED_CUTOFF, OPENMM_LENGTH_UNIT),
             'friction_coefficient':             (defaults.OPENMM_FRICTION, 1/OPENMM_TIME_UNIT),
             
+            'nonbonded_cutoff_method':          (defaults.OPENMM_NONBONDED_METHOD, None),
+            'nonbonded_cutoff_distance':        (defaults.OPENMM_NONBONDED_CUTOFF, OPENMM_LENGTH_UNIT),
+            
+            'gbsa_cutoff_method':               (defaults.GBSA_NONBONDED_METHOD, None),
+            'gbsa_solvent_dielectric':          (defaults.GBSA_SOLVENT_DIELECTRIC, OPENMM_DIPOLE_UNIT),
+            'gbsa_solute_dielectric':           (defaults.GBSA_SOLUTE_DIELECTRIC, OPENMM_DIPOLE_UNIT),
+            'gbsa_sa_method':                   (defaults.GBSA_SA_METHOD, None), 
+            'gbsa_cutoff':                      (defaults.GBSA_CUTOFF, OPENMM_LENGTH_UNIT),
+            'gbsa_kappa':                       (defaults.GBSA_KAPPA, 1/OPENMM_LENGTH_UNIT),
+            
+            'rigid_bonds':                      (defaults.RIGID_BONDS, None),
+            'rigid_water':                      (defaults.RIGID_WATER, None),
+            'remove_c_of_m_motion':             (defaults.REMOVE_C_OF_M_MOTION, None),
+            
+            'platform':                         (defaults.OPENMM_PLATFORM, None),
             'forcefield':                       (amber14, None),
             'integrator':                       (defaults.OPENMM_INTEGRATOR_TYPE, None),
             'variable_integrator_tolerance':    (defaults.OPENMM_VAR_INTEGRATOR_TOL, None),
@@ -141,6 +160,15 @@ class SimParams:
         elif type(value) == Quantity:
             raise TypeError('Tried to set a unitless quantity with units!')
             
+    def set_to_default(self, key):
+        '''Set one parameter back to the default value.'''
+        self.set_param(key, self._defaults[key][0])
+    
+    def reset_to_defaults(self):
+        '''Reset all parameters to defaults.'''
+        for key in self.param_names():
+            self.set_to_default(key)
+    
         
     _init_docstring = '''
         Initialise the simulation parameters, specifying any non-default
@@ -163,7 +191,7 @@ class ChimeraXSimInterface:
     '''
     TIMEOUT = 20 # seconds
     
-    def __init__(self, session, isolde, forcefield = None):
+    def __init__(self, session, isolde):
         self.session = session
         self.isolde = isolde
         self._sim_thread = None
@@ -236,26 +264,29 @@ class ChimeraXSimInterface:
         to self._sim_loop_handler().
         '''
         if time() - self._init_start_time > self.TIMEOUT:
-            # TODO: kill the worker thread
+            self._sim_thread.terminate()
             raise RuntimeError('Simulation thread initialisation timed out!')
         
-        comms = self.comms_obj
+        comms = self.comms_object
         ct = self.change_tracker
-        changes = ct.changes.value
+        with ct.changes.get_lock():
+            changes = ct.changes.value
+            ct.clear_outputs()
         
         if changes & ct.ERROR:
+            self.session.triggers.remove_handler(self._update_handler)
             error_queue = comms['error']
-            if error_queue.full():
-                e = error_queue.get()
-                raise e
+            err, traceback = error_queue.get()
+            self._sim_thread.terminate()
+            print(traceback)
+            raise err
                 
         if changes & ct.INIT_COMPLETE:
             self.session.logger.status('Initialisation complete')
-            self.session.triggers.remove_handler(self._handler)
-            ct.clear_outputs()
+            self.session.triggers.remove_handler(self._update_handler)
             # Tell the thread it's ok to start
             comms['status'].put('Go')
-            self._handler = self.session.triggers.add_handler(
+            self._update_handler = self.session.triggers.add_handler(
                 'new frame', self._sim_loop_handler)
         
     
@@ -268,40 +299,52 @@ class ChimeraXSimInterface:
         the next cycle.
         '''
         session = self.session
-        comms = self.comms_obj
+        comms = self.comms_object
         ct = self.change_tracker
         thread = self._sim_thread
-        changes = ct.changes.value
-        ct.clear_outputs()
-        
+        with ct.changes.get_lock():
+            changes = ct.changes.value
+            ct.clear_outputs()
+            
+        if self.startup_counter >= 10:
+            cm = comms['mode']
+            with cm.get_lock():
+                cm.value = 1
+            with ct.changes.get_lock():
+                ct.changes.value |= ct.MODE
         
         if changes & ct.ERROR:
-            session.triggers.remove_handler(self._handler)
+            session.triggers.remove_handler(self._update_handler)
             err_q = comms['error']
             if err_q.full():
-                err = err_q.get()
+                err, traceback = err_q.get()
             else:
                 err_str = '''
                 Simulation thread returned an error code but not an
                 exception. This should not happen.
                 '''
                 err = RuntimeError(err_str)
+                traceback = ''
             if thread.is_alive():
                 thread.terminate()
+            print(traceback)
             raise err
 
-        if not thread.is_alive():
-            session.triggers.remove_handler(self._handler)
-            raise RuntimeError('Simulation thread terminated unexpectedly!')
+        #~ if not thread.is_alive():
+            #~ session.triggers.remove_handler(self._update_handler)
+            #~ print(bin(changes))
+            #~ raise RuntimeError('Simulation thread terminated unexpectedly!')
                 
-        if changes & ct.SIM_UNSTABLE:
+        if changes & ct.UNSTABLE:
             warn_str = 'Simulation is unstable! Attempting to minimise excessive force...'
             session.logger.log(warn_str)
         
         if changes & ct.COORDS_READY:
+            print('New coords!')
             new_coords = comms['coords']
-            self.all_atoms.coords = new_coords
-
+            with new_coords.get_lock():
+                self.all_atoms.coords = new_coords
+            self.startup_counter += 1
         
         
     def start_sim_thread(self, sim_params, all_atoms, fixed_flags,  
@@ -323,12 +366,14 @@ class ChimeraXSimInterface:
             @param backbone_dihedrals:
                 An ISOLDE Backbone_Dihedrals object defining all phi, psi and
                 omega dihedrals in the simulation
-            @param rotamers
+            @param rotamers:
                 An ISOLDE Rotamers object
-            @param distance_restraints
+            @param distance_restraints:
                 A {name: object} dict of Distance_Restraints objects.
+            @param position_restraints
+                An ISOLDE Position_Restraints object
             @param maps
-                A tuple of ISOLDE map objects
+                A dict of ISOLDE map objects
         '''
         if self.sim_running:
             raise RuntimeError('You already have a simulation running!')
@@ -338,12 +383,12 @@ class ChimeraXSimInterface:
         
         # Container for all data that can be changed by ISOLDE, the simulation
         # thread, or both
-        comms = self._comms_object = SimComms()
+        comms = self.comms_object = SimComms()
         
         self.sim_params = sim_params
                 
-        fixed_indices = self.fixed_indices = numpy.where(fixed_flags)
-        mobile_indices = self.mobile_indices = numpy.where(numpy.invert(fixed_flags))
+        fixed_indices = self.fixed_indices = numpy.where(fixed_flags)[0]
+        mobile_indices = self.mobile_indices = numpy.where(numpy.invert(fixed_flags))[0]
         self.all_atoms = all_atoms
         fixed_atoms = self.fixed_atoms = all_atoms[fixed_indices]
         mobile_atoms = self.mobile_atoms = all_atoms[mobile_indices]
@@ -361,6 +406,13 @@ class ChimeraXSimInterface:
         bond_atom_indices   = (all_atoms.indices(ba) for ba in bond_atoms)
 
         unique_residues = self.unique_residues = all_atoms.unique_residues
+        
+        comms_coords = comms['coords'] = SharedNumpyArray(
+            TypedMPArray(
+                FLOAT_TYPE, coords.value_in_unit(
+                    CHIMERAX_LENGTH_UNIT).ravel())).reshape(coords.shape)
+        ct.add_managed_array(ct.COORDS_READY, 'coords', comms_coords)
+        
         
         # Container for data describing the model that will be fixed for
         # the duration of the simulation
@@ -410,7 +462,7 @@ class ChimeraXSimInterface:
         self._define_cmap_residues(phi, psi)
         
         # Prepare rotamer mappings and apply any current targets
-        self._prepare_rotamers()
+        self._prepare_rotamers(rotamers)
         
         # Prepare distance restraint mappings and apply any current targets
         self._prepare_distance_restraints(distance_restraints)
@@ -423,15 +475,16 @@ class ChimeraXSimInterface:
         # TODO: need a _start_sim_thread() function to get the SimThread
         # object running in a worker thread.
         
-        thread = self._sim_thread = Process(target = sim_thread._sim_thread, 
-                                    args = (self.sim_params,
-                                            self.sim_data,
-                                            self.sim_comms,
-                                            self.change_tracker))
+        thread = self._sim_thread = mp.Process(target = sim_thread._sim_thread, 
+                                        args = (self.sim_params,
+                                                self.sim_data,
+                                                self.comms_object,
+                                                self.change_tracker))
                                     
         self._init_start_time = time()
+        self.startup_counter = 0
         thread.start()
-        self._update_handler = self.session.triggers.add_handler('new_frame', self._sim_init_handler)
+        self._update_handler = self.session.triggers.add_handler('new frame', self._sim_init_handler)
         
 
     def _prepare_dihedral_restraints(self, dihedrals, name):
@@ -439,6 +492,7 @@ class ChimeraXSimInterface:
         Prepare dihedral restraint arrays, and set current targets/spring constants.
         '''
         n_dihe = len(dihedrals)
+        all_atoms = self.all_atoms
         dihe_i = numpy.reshape(all_atoms.indices(dihedrals.atoms), (n_dihe, 4))
         atom_key = name + ' atom indices'
         target_key = name + ' targets'
@@ -456,7 +510,7 @@ class ChimeraXSimInterface:
         whether to restrain each bond to cis or trans.
         '''
         cis_offset = self.sim_params['cis_peptide_bond_cutoff_angle']/unit.radians
-        o_vals = omega.vals
+        o_vals = omega.values
         omega_targets = numpy.logical_or(
                     o_vals > cis_offset, o_vals < -cis_offset).astype(float) * pi
         self._omega_targets[:] = omega_targets
@@ -467,6 +521,7 @@ class ChimeraXSimInterface:
         '''
         Define residues subject to AMBER CMAP corrections.
         '''
+        all_atoms = self.all_atoms
         phi_has_psi = phi.residues.indices(psi.residues)
         psi_has_phi = psi.residues.indices(phi.residues)
         good_phi = phi[phi_has_psi[phi_has_psi != -1]]
@@ -477,11 +532,12 @@ class ChimeraXSimInterface:
         self.sim_data['phi cmap indices'] = all_atoms.indices(good_phi.atoms).reshape((n,4))
         self.sim_data['psi cmap indices'] = all_atoms.indices(good_psi.atoms).reshape((n,4))
 
-    def _prepare_rotamers(self):
+    def _prepare_rotamers(self, rotamers):
         '''
         Prepare rotamer communication arrays and fill them with current
         target values.
         '''
+        all_atoms = self.all_atoms
         comms = self.comms_object
         input_rotamer_map = {}
         input_rotamer_targets = comms['rotamer targets'] = {}
@@ -490,7 +546,7 @@ class ChimeraXSimInterface:
         restrained_mask = SharedNumpyArray(TypedMPArray(ctypes.c_bool, len(mobile_res)))
         comms['restrained rotamers'] = restrained_mask
         
-        for i, r in zip(rotamer_indices, mobile_res):
+        for i, res in enumerate(mobile_res):
             try:
                 rot= rotamers[res]
             except KeyError:
@@ -513,7 +569,7 @@ class ChimeraXSimInterface:
         change_tracker = self.change_tracker
         change_bit = change_tracker.ROTAMER_RESTRAINT
         change_tracker.add_managed_array(change_bit, 
-            'restrained rotamers', rotamer_indices) 
+            'restrained rotamers', restrained_mask) 
         
         
     def _prepare_distance_restraints(self, distance_restraints):
@@ -521,6 +577,7 @@ class ChimeraXSimInterface:
         Prepare distance restraint communication arrays and fill them in
         with current targets and spring constants.
         '''
+        all_atoms = self.all_atoms
         distance_restraint_keys = []
         sim_data = self.sim_data
         comms = self.comms_object
@@ -533,14 +590,14 @@ class ChimeraXSimInterface:
             n_restraints = len(d_r)
             distance_restraint_keys.append(key)
             target_key = key + ' targets'
-            k_key = key + 'k'
+            k_key = key + ' k'
             t_array = comms[target_key] = SharedNumpyArray(TypedMPArray(FLOAT_TYPE, n_restraints))
             k_array = comms[k_key] = SharedNumpyArray(TypedMPArray(FLOAT_TYPE, n_restraints))
             i_array = distance_restraint_indices[key] = []
             for i,r in enumerate(d_r):
                 t_array[i] = r.target_distance
                 k_array[i] = r.spring_constant
-                i_array.append(all_atoms.indices(d_r.atoms).tolist())
+                i_array.append(all_atoms.indices(r.atoms).tolist())
             change_tracker.add_managed_array(change_bit, target_key, t_array)
             change_tracker.add_managed_array(change_bit, k_key, k_array)
 
@@ -551,14 +608,18 @@ class ChimeraXSimInterface:
         on involves setting the target and setting the constant to a 
         positive non-zero value.
         '''
+        all_atoms = self.all_atoms
+        comms = self.comms_object
+        data = self.sim_data
         pr_atoms = position_restraints.atoms
         pr_indices = all_atoms.indices(pr_atoms)
+        data['position restraint indices'] = pr_indices
         n_pr = len(pr_indices)
         pr_ks = SharedNumpyArray(TypedMPArray(FLOAT_TYPE, n_pr))
-        comms_object['position restraint spring constants'] = pr_ks
+        comms['position restraint spring constants'] = pr_ks
         pr_ks[:] = position_restraints.spring_constants
         pr_targets = SharedNumpyArray(TypedMPArray(FLOAT_TYPE, n_pr*3)).reshape((n_pr,3))
-        comms_object['position restraint targets'] = pr_targets
+        comms['position restraint targets'] = pr_targets
         pr_targets[:] = position_restraints.targets
         change_tracker = self.change_tracker
         change_bit = change_tracker.POSITION_RESTRAINT
@@ -621,7 +682,7 @@ class ChimeraXSimInterface:
         '''
         residues = self.unique_residues
         templates = self.sim_data['residue templates']
-        cys_indices = numpy.where(residues.names == 'CYS')
+        cys_indices = numpy.where(residues.names == 'CYS')[0]
         for c_i in cys_indices:
             templates[c_i] = cys_type(residues[c_i])
         

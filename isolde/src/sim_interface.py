@@ -1170,11 +1170,11 @@ def create_openmm_system(top, ff, templatedict, force_implicit=False):
 
 def integrator(i_type, temperature, friction, tolerance, timestep):
     from simtk import openmm as mm
-    if i_type == 'variable':
-        integrator = mm.VariableLangevinIntegrator(temperature, friction, tolerance)
-    elif i_type == 'fixed':
-        integrator = mm.LangevinIntegrator(temperature, friction, timestep)
-    return integrator
+    if i_type == mm.VariableLangevinIntegrator:
+        return i_type(temperature, friction, tolerance)
+    elif i_type == mm.LangevinIntegrator:
+        return i_type(temperature, friction, timestep)
+    raise TypeError('Unrecognised integrator!')
     
 def platform(name):
     from simtk.openmm import Platform

@@ -1,4 +1,5 @@
 from simtk import unit, openmm
+from simtk.openmm import app
 from math import pi
 import ctypes
 
@@ -18,12 +19,15 @@ _defaults = {
     'OPENMM_ENERGY_UNIT':         unit.kilojoule_per_mole,
     'OPENMM_ANGLE_UNIT':          unit.radians,
     'OPENMM_TIME_UNIT':           unit.picoseconds,
+    'OPENMM_DIPOLE_UNIT':         unit.debye,
 
     ###
     # Simulation parameters
     ###
+    'OPENMM_PLATFORM':            'CPU', # alternatively 'OpenCL' or 'CUDA'
     'OPENMM_INTEGRATOR_TYPE':     openmm.VariableLangevinIntegrator,
-    'OPENMM_NONBONDED_CUTOFF':    1.0, #* unit.nanometers,
+    'OPENMM_NONBONDED_METHOD':    app.CutoffNonPeriodic,
+    'OPENMM_NONBONDED_CUTOFF':    1.5, #* unit.nanometers,
     'OPENMM_FRICTION':            5.0, #/ unit.picoseconds,
     'OPENMM_VAR_INTEGRATOR_TOL':  1e-4,
     'OPENMM_CONSTRAINT_TOL':      1e-4,
@@ -36,6 +40,15 @@ _defaults = {
     'ROUNDS_PER_MAP_REMASK':      20,
     'FIX_SOFT_SHELL_BACKBONE':    False,
     'TEMPERATURE':                100.0, # * unit.kelvin,
+    'GBSA_NONBONDED_METHOD':      openmm.CustomGBForce.CutoffNonPeriodic,
+    'GBSA_SOLVENT_DIELECTRIC':    78.5, # * unit.debye,
+    'GBSA_SOLUTE_DIELECTRIC':     1.0, # * unit.debye,
+    'GBSA_SA_METHOD':             'ACE', # alternative is None
+    'GBSA_CUTOFF':                1.3, # *unit.nanometer,
+    'GBSA_KAPPA':                 3.0, # /unit.nanometer,
+    'RIGID_BONDS':                app.HBonds,
+    'RIGID_WATER':                True,
+    'REMOVE_C_OF_M_MOTION':       False,
     
     ###
     # Force constants
@@ -68,6 +81,10 @@ _defaults = {
     ###
     # Constants specific to ChimeraX - lengths in Angstroms beyond this point!
     ###
+    
+    'CHIMERAX_LENGTH_UNIT':         unit.angstrom,
+    'CHIMERAX_FORCE_UNIT':          unit.kilojoule_per_mole/unit.angstrom,
+    'CHIMERAX_SPRING_UNIT':         unit.kilojoule_per_mole/unit.angstrom**2,
     
     'SELECTION_SEQUENCE_PADDING':   3,      # residues
     'SOFT_SHELL_CUTOFF':            5,      # Angstroms

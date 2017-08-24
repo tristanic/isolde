@@ -28,6 +28,7 @@ OPENMM_RADIAL_SPRING_UNIT = defaults.OPENMM_RADIAL_SPRING_UNIT
 OPENMM_ENERGY_UNIT = defaults.OPENMM_ENERGY_UNIT
 OPENMM_ANGLE_UNIT = defaults.OPENMM_ANGLE_UNIT
 OPENMM_TIME_UNIT = defaults.OPENMM_TIME_UNIT
+OPENMM_DIPOLE_UNIT = defaults.OPENMM_DIPOLE_UNIT
 
 
 class AmberCMAPForce(CMAPTorsionForce):
@@ -196,7 +197,7 @@ class TopOutBondForce(CustomBondForce):
     
     @max_force.setter
     def max_force(self, force):
-        if type(max_force) == Quantity:
+        if type(force) == Quantity:
             force = force.value_in_unit(OPENMM_FORCE_UNIT)
         self.setGlobalParameterDefaultValue(self.max_force_index, force)
         self._max_force = force
@@ -281,6 +282,11 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
         self.update_needed = True
 
     def update_target(self, index, target = None, k = None, cutoff = None):
+        '''
+        Change the target, spring constant and/or cutoff angle for the given torsion.
+        '''
+        # For compatibility with int32
+        index = int(index)
         current_params = self.getTorsionParameters(index)
         indices = current_params[0:4]
         new_k, new_theta0, new_cutoff = current_params[4]
@@ -319,11 +325,31 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
         return self.getBondParameters(i)[5][2]*OPENMM_ANGLE_UNIT
     
 class GBSAForce(customgbforces.GBSAGBn2Force):
-    def __init__(self):
+    def __init__(self, solventDielectric=78.5, soluteDielectric=1,
+                SA='ACE', cutoff=1.0, kappa=3.0, 
+                nonbonded_method = openmm.CustomGBForce.CutoffNonPeriodic):
         '''
-        kappa = 3.0 --> approx. 0.5M ion concentration at 100K
+        kappa = 3.0/nm --> approx. 0.5M ion concentration at 100K
         '''
-        super().__init__(solventDielectric=78.5, soluteDielectric=1,
-                        SA = 'ACE', cutoff = 1.0, kappa = 3.0)
-        self.setNonbondedMethod(openmm.NonbondedForce.CutoffNonPeriodic)
+        if type(solventDielectric) == Quantity:
+            solventDielectric = solventDielectric.value_in_unit(OPENMM_DIPOLE_UNIT)
+        if type(soluteDielectric) == Quantity:
+            soluteDielectric = soluteDielectric.value_in_unit(OPENMM_DIPOLE_UNIT)
+        if type(cutoff) == Quantity:
+            cutoff = cutoff.value_in_unit(OPENMM_LENGTH_UNIT)
+        if type(kappa) == Quantity:
+            kappa = kappa.value_in_unit(1/OPENMM_LENGTH_UNIT)
+            
+        
+        
+        super().__init__(solventDielectric=solventDielectric,
+                         soluteDielectric=soluteDielectric,
+                         SA=SA, 
+                         cutoff=cutoff, 
+                         kappa=kappa)
+        try:
+            self.setNonbondedMethod(nonbonded_method)
+        except:
+            err_str = '{}'.format(nonbonded_method)
+            raise Exception(err_str)
 

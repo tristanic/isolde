@@ -1,0 +1,5 @@
+--- ISOLDE ---
+Copyright 2016 Tristan Croll, University of Cambridge
+Prerelease software for evaluation only. All rights reserved.
+Not for commercial use. This file must be included 
+unchanged in any distribution.

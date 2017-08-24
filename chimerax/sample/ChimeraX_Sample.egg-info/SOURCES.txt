@@ -1,0 +1,15 @@
+MANIFEST.in
+README
+setup.cfg
+ChimeraX_Sample.egg-info/PKG-INFO
+ChimeraX_Sample.egg-info/SOURCES.txt
+ChimeraX_Sample.egg-info/dependency_links.txt
+ChimeraX_Sample.egg-info/requires.txt
+ChimeraX_Sample.egg-info/top_level.txt
+src/__init__.py
+src/_sample.cpp
+src/cmd.py
+src/io.py
+src/tool.py
+src/data_1/test1.txt
+src/data_2/test2.txt

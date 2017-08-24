@@ -1,0 +1,31 @@
+Metadata-Version: 1.2
+Name: ISOLDE
+Version: 0.9
+Summary: Interactive MD-based model building and real-space refinement
+Home-page: http://www.ks.uiuc.edu/Research/mdff/
+Author: Tristan Croll
+Author-email: tic20@cam.ac.uk
+License: UNKNOWN
+Description: 
+        ISOLDE is an ChimeraX interface to Molecular Dynamics
+        Flexible Fitting, or MDFF.
+        
+Platform: UNKNOWN
+Classifier: Environment :: MacOS X :: Aqua
+Classifier: Environment :: Win32 (MS Windows)
+Classifier: Environment :: X11 Applications
+Classifier: Framework :: ChimeraX
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: Free for non-commercial use
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: Microsoft :: Windows :: Windows 10
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Scientific/Engineering :: Visualization
+Classifier: Topic :: Scientific/Engineering :: Chemistry
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: ChimeraX-Bundle :: General :: 1,1 :: chimerax.isolde :: 
+Classifier: ChimeraX-Tool :: ISOLDE :: General :: Interactive Molecular Dynamics Flexible Fitting (iMDFF)
+Classifier: ChimeraX-Command :: fps :: General :: Display graphics FPS rate
+Requires-Python: >= 3.5
