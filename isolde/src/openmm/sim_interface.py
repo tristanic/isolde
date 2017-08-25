@@ -4,7 +4,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import numpy
-import os
+import os, sys
 import multiprocessing as mp
 from multiprocessing import spawn
 import ctypes
@@ -37,19 +37,36 @@ OPENMM_ENERGY_UNIT = defaults.OPENMM_ENERGY_UNIT
 OPENMM_ANGLE_UNIT = defaults.OPENMM_ANGLE_UNIT
 OPENMM_TIME_UNIT = defaults.OPENMM_TIME_UNIT
 OPENMM_DIPOLE_UNIT = defaults.OPENMM_DIPOLE_UNIT
+OPENMM_TEMPERATURE_UNIT = defaults.OPENMM_TEMPERATURE_UNIT
 CHIMERAX_LENGTH_UNIT        = defaults.CHIMERAX_LENGTH_UNIT
 CHIMERAX_FORCE_UNIT         = defaults.CHIMERAX_FORCE_UNIT
 CHIMERAX_SPRING_UNIT        = defaults.CHIMERAX_SPRING_UNIT
+
+
 
 
 try:
     from chimerax import app_bin_dir
     import os
     spawn.set_executable(os.path.join(app_bin_dir, 'python3.6'))
-    #mp.set_start_method('spawn')
+    #~ mp.set_start_method('spawn')
 except:
     # We're not in ChimeraX any more, Toto!
     pass
+
+# Workaround since opening the ChimeraX shell breaks the multiprocessing
+# spawn method (even for tools that aren't launched from the console).
+# After opening the shell, sys.modules['__main__'] will return:
+# <IPython.core.interactiveshell.DummyMod>
+# which has no __spec__ attribute.
+main = sys.modules['__main__']
+if not hasattr(main, '__spec__'):
+    main.__spec__ = None
+
+
+def error_cb(e):
+    print(e.__traceback__)
+    print(e)
 
 FLOAT_TYPE = defaults.FLOAT_TYPE
 
@@ -77,6 +94,7 @@ class SimParams:
             'max_atom_movement_per_step':       (defaults.MAX_ATOM_MOVEMENT_PER_STEP, OPENMM_LENGTH_UNIT),
             'max_allowable_force':              (defaults.MAX_ALLOWABLE_FORCE, OPENMM_FORCE_UNIT),
             'friction_coefficient':             (defaults.OPENMM_FRICTION, 1/OPENMM_TIME_UNIT),
+            'temperature':                      (defaults.TEMPERATURE, OPENMM_TEMPERATURE_UNIT),
             
             'nonbonded_cutoff_method':          (defaults.OPENMM_NONBONDED_METHOD, None),
             'nonbonded_cutoff_distance':        (defaults.OPENMM_NONBONDED_CUTOFF, OPENMM_LENGTH_UNIT),
@@ -126,10 +144,10 @@ class SimParams:
         return sorted(self._params.keys())
     
     def __repr__(self):
-        return self._params.__repr__
+        return self._params.__repr__()
     
     def __str__(self):
-        return self._params.__str__
+        return self._params.__str__()
     
     def set_param(self, key, value):
         '''
@@ -181,7 +199,19 @@ class SimParams:
             val0 = val[0]
         _param_list += '\t@param {:>} \t ({} {})\n'.format(key, val0, val[1]).expandtabs(20)
     __init__.__doc__ = _init_docstring+_param_list
-    
+
+
+
+
+
+def start_pool(sim_params, sim_data, _comms_object, _change_tracker):
+    try:
+        from chimerax import app_bin_dir
+    except:
+        return
+    thread_pool = mp.Pool(processes=1, initializer=sim_thread._init_sim_thread,
+        initargs=(sim_params, sim_data, _comms_object, _change_tracker))
+    return thread_pool
 
 class ChimeraXSimInterface:
     '''
@@ -195,10 +225,11 @@ class ChimeraXSimInterface:
         self.session = session
         self.isolde = isolde
         self._sim_thread = None
+        self._pool = None
     
     @property
     def sim_running(self):
-        return self._sim_thread is not None
+        return self._pool is not None
     
     def toggle_pause(self):
         if not self.sim_running:
@@ -212,15 +243,23 @@ class ChimeraXSimInterface:
         '''
         if not self.sim_running:
             return
-        self.change_tracker.changes |= self.change_tracker.STOP
+        self.change_tracker.register_change(self.change_tracker.STOP)
+        if self._update_handler is not None:
+            self.session.triggers.remove_handler(self._update_handler)
+            self._update_handler = None
+        self._pool.terminate()
+        self._pool = None
         # TODO: Add handler for timeout situations
     
     def _set_temperature(self, temperature):
-        self.comms_obj['temperature'].value = temperature
-        self.change_tracker.changes |= self.change_tracker.TEMPERATURE
+        t = self.comms_object['temperature']
+        ct = self.change_tracker
+        with t.get_lock():
+            t.value = temperature
+        ct.register_change(ct.TEMPERATURE)
     
     def _get_temperature(self):
-        return self.comms_obj['temperature'].value
+        return self.comms_object['temperature'].value
     
     temperature = property(_get_temperature, _set_temperature)
     
@@ -269,19 +308,23 @@ class ChimeraXSimInterface:
         
         comms = self.comms_object
         ct = self.change_tracker
+        err_q = comms['error']
+        status_q = comms['status']
+        while status_q.full():
+            print(status_q.get())
+
         with ct.changes.get_lock():
             changes = ct.changes.value
             ct.clear_outputs()
         
         if changes & ct.ERROR:
-            self.session.triggers.remove_handler(self._update_handler)
-            error_queue = comms['error']
-            err, traceback = error_queue.get()
-            self._sim_thread.terminate()
+            err, traceback = err_q.get()
+            self.stop_sim()
             print(traceback)
             raise err
                 
         if changes & ct.INIT_COMPLETE:
+            print(bin(changes))
             self.session.logger.status('Initialisation complete')
             self.session.triggers.remove_handler(self._update_handler)
             # Tell the thread it's ok to start
@@ -302,19 +345,22 @@ class ChimeraXSimInterface:
         comms = self.comms_object
         ct = self.change_tracker
         thread = self._sim_thread
+        err_q = comms['error']
+        status_q = comms['status']
+        while status_q.full():
+            print(status_q.get())
         with ct.changes.get_lock():
             changes = ct.changes.value
             ct.clear_outputs()
             
         if self.startup_counter >= 10:
-            cm = comms['mode']
+            cm = comms['sim mode']
             with cm.get_lock():
                 cm.value = 1
             with ct.changes.get_lock():
                 ct.changes.value |= ct.MODE
         
         if changes & ct.ERROR:
-            session.triggers.remove_handler(self._update_handler)
             err_q = comms['error']
             if err_q.full():
                 err, traceback = err_q.get()
@@ -325,8 +371,9 @@ class ChimeraXSimInterface:
                 '''
                 err = RuntimeError(err_str)
                 traceback = ''
-            if thread.is_alive():
-                thread.terminate()
+            #~ if thread.is_alive():
+                #~ thread.terminate()
+            self.stop_sim()
             print(traceback)
             raise err
 
@@ -337,13 +384,12 @@ class ChimeraXSimInterface:
                 
         if changes & ct.UNSTABLE:
             warn_str = 'Simulation is unstable! Attempting to minimise excessive force...'
-            session.logger.log(warn_str)
+            session.logger.info(warn_str)
         
         if changes & ct.COORDS_READY:
-            print('New coords!')
             new_coords = comms['coords']
             with new_coords.get_lock():
-                self.all_atoms.coords = new_coords
+                self.all_atoms.coords = new_coords[:]
             self.startup_counter += 1
         
         
@@ -378,7 +424,7 @@ class ChimeraXSimInterface:
         if self.sim_running:
             raise RuntimeError('You already have a simulation running!')
         
-        manager = self.manager = mp.Manager()
+        #~ manager = self.manager = mp.Manager()
         ct = self.change_tracker = ChangeTracker()
         
         # Container for all data that can be changed by ISOLDE, the simulation
@@ -386,6 +432,8 @@ class ChimeraXSimInterface:
         comms = self.comms_object = SimComms()
         
         self.sim_params = sim_params
+        self.temperature = sim_params['temperature'].value_in_unit(OPENMM_TEMPERATURE_UNIT)
+
                 
         fixed_indices = self.fixed_indices = numpy.where(fixed_flags)[0]
         mobile_indices = self.mobile_indices = numpy.where(numpy.invert(fixed_flags))[0]
@@ -403,16 +451,14 @@ class ChimeraXSimInterface:
         
         bonds               = all_atoms.intra_bonds
         bond_atoms          = bonds.atoms
-        bond_atom_indices   = (all_atoms.indices(ba) for ba in bond_atoms)
+        bond_atom_indices   = tuple([all_atoms.indices(ba) for ba in bond_atoms])
 
         unique_residues = self.unique_residues = all_atoms.unique_residues
         
         comms_coords = comms['coords'] = SharedNumpyArray(
             TypedMPArray(
-                FLOAT_TYPE, coords.value_in_unit(
-                    CHIMERAX_LENGTH_UNIT).ravel())).reshape(coords.shape)
+                FLOAT_TYPE, coords.size)).reshape(coords.shape)
         ct.add_managed_array(ct.COORDS_READY, 'coords', comms_coords)
-        
         
         # Container for data describing the model that will be fixed for
         # the duration of the simulation
@@ -435,7 +481,7 @@ class ChimeraXSimInterface:
             'psi cmap resnames':                None,
             'psi cmap indices':                 None,
             'rotamer map':                      None,
-            'rotamer targets':                  None,
+            #'rotamer targets':                  None,
             'distance restraint keys':          None,
             'distance restraint indices':       dict(),
             'position restraint indices':       None,
@@ -472,18 +518,11 @@ class ChimeraXSimInterface:
         if density_maps is not None:
             self._prepare_density_maps(density_maps)
         
-        # TODO: need a _start_sim_thread() function to get the SimThread
-        # object running in a worker thread.
-        
-        thread = self._sim_thread = mp.Process(target = sim_thread._sim_thread, 
-                                        args = (self.sim_params,
-                                                self.sim_data,
-                                                self.comms_object,
-                                                self.change_tracker))
+        self._pool = start_pool(sim_params, sim_data, comms, ct)
                                     
         self._init_start_time = time()
         self.startup_counter = 0
-        thread.start()
+        self.thread_result = self._pool.apply_async(sim_thread._sim_thread, args=(), error_callback = error_cb)
         self._update_handler = self.session.triggers.add_handler('new frame', self._sim_init_handler)
         
 

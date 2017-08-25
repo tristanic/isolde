@@ -480,7 +480,7 @@ class SimHandler():
         for charge, param in zip(charges, params):
             gbforce.addParticle([charge, *param])
         gbforce.finalize()
-        print('GB Force num particles: '.format(gbforce.getNumParticles()))
+        #print('GB Force num particles: '.format(gbforce.getNumParticles()))
         self.all_forces.append(gbforce)
 
    
@@ -494,7 +494,7 @@ class SimHandler():
         '''
         sys = self.system
         for index in fixed_indices:
-            sys.setParticleMass(index, 0)
+            sys.setParticleMass(int(index), 0)
         
             
     def register_all_forces_with_system(self):
@@ -524,6 +524,12 @@ class SimHandler():
         c.setVelocitiesToTemperature(temperature)
         self.old_positions = coords
 
+    
+    def set_temperature(self, temperature):
+        integrator = self.integrator
+        c = self.context
+        integrator.setTemperature(temperature)
+        c.setVelocitiesToTemperature(temperature)
     
 
     def couple_atoms_to_map(self, indices, ks, force, force_map):
@@ -653,17 +659,17 @@ class SimHandler():
         '''
         sim = self.sim
         sim.step(steps)
-        coords, fast_indices = self.get_and_check_positions(steps, max_movement)
+        coords, fast_indices = self.get_and_check_positions(max_movement)
         self.old_positions = coords
         return coords, fast_indices
     
     
     def get_and_check_positions(self, max_allowed_movement):
-        max_allowed_movement = max_allowed_movement.value_in_unit
+        max_allowed_movement
         c = self.sim.context
         state = c.getState(getPositions = True)
         old_pos = self.old_positions
-        pos = state.getPositions(asNumpy = True).value_in_unit
+        pos = state.getPositions(asNumpy = True)
         delta = pos - old_pos
         distances = numpy.linalg.norm(delta, axis=1)*OPENMM_LENGTH_UNIT
         max_distance = distances.max()
@@ -683,7 +689,7 @@ class SimHandler():
     
     def get_positions_and_max_force (self, max_allowed_force):
         c = self.sim.context
-        max_force = max_force
+        max_force = max_allowed_force
         state = c.getState(getForces = True, getPositions = True)
         forces = state.getForces(asNumpy = True)
         magnitudes = numpy.linalg.norm(forces, axis=1)*OPENMM_FORCE_UNIT

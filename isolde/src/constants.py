@@ -20,20 +20,21 @@ _defaults = {
     'OPENMM_ANGLE_UNIT':          unit.radians,
     'OPENMM_TIME_UNIT':           unit.picoseconds,
     'OPENMM_DIPOLE_UNIT':         unit.debye,
+    'OPENMM_TEMPERATURE_UNIT':    unit.kelvin,
 
     ###
     # Simulation parameters
     ###
-    'OPENMM_PLATFORM':            'CPU', # alternatively 'OpenCL' or 'CUDA'
+    'OPENMM_PLATFORM':            'CUDA', # alternatively 'OpenCL' or 'CUDA'
     'OPENMM_INTEGRATOR_TYPE':     openmm.VariableLangevinIntegrator,
     'OPENMM_NONBONDED_METHOD':    app.CutoffNonPeriodic,
-    'OPENMM_NONBONDED_CUTOFF':    1.5, #* unit.nanometers,
+    'OPENMM_NONBONDED_CUTOFF':    1.0, #* unit.nanometers,
     'OPENMM_FRICTION':            5.0, #/ unit.picoseconds,
     'OPENMM_VAR_INTEGRATOR_TOL':  1e-4,
     'OPENMM_CONSTRAINT_TOL':      1e-4,
     'OPENMM_FIXED_INTEGRATOR_TS': 0.001, #* unit.picoseconds,
     'SIM_STEPS_PER_GUI_UPDATE':   50,
-    'MIN_STEPS_PER_GUI_UPDATE':   100,
+    'MIN_STEPS_PER_GUI_UPDATE':   20,
     'SIM_STARTUP_ROUNDS':         10,
     'MAX_UNSTABLE_ROUNDS':        20,
     'ROUNDS_PER_RAMA_UPDATE':     5,
@@ -44,7 +45,7 @@ _defaults = {
     'GBSA_SOLVENT_DIELECTRIC':    78.5, # * unit.debye,
     'GBSA_SOLUTE_DIELECTRIC':     1.0, # * unit.debye,
     'GBSA_SA_METHOD':             'ACE', # alternative is None
-    'GBSA_CUTOFF':                1.3, # *unit.nanometer,
+    'GBSA_CUTOFF':                1.0, # *unit.nanometer,
     'GBSA_KAPPA':                 3.0, # /unit.nanometer,
     'RIGID_BONDS':                app.HBonds,
     'RIGID_WATER':                True,
@@ -98,7 +99,7 @@ _defaults = {
     ###
     # Types for shared variables
     ###
-    'FLOAT_TYPE' :                  ctypes.c_float,
+    'FLOAT_TYPE' :                  ctypes.c_double,
 }
 
 class _Defaults:

@@ -6,6 +6,7 @@ from ..threading import TypedMPArray, SharedNumpyArray
 from .sim_handler import SimHandler
 from simtk import unit, openmm
 from ..constants import defaults
+from time import sleep
 
 FLOAT_TYPE = defaults.FLOAT_TYPE
 
@@ -136,7 +137,7 @@ class SimComms:
     SimComms object is required for each simulation run.
     '''
     def __init__(self):
-        manager = self.manager = mp.Manager()
+        #manager = self.manager = mp.Manager()
         self._comms_obj = {
             'changes'                   : ChangeTracker(),
             'error'                     : mp.Queue(),
@@ -151,35 +152,50 @@ class SimComms:
     def __setitem__(self, key, obj):
         self._comms_obj[key] = obj
     
+    
+
+#~ def _init_sim_thread(sim_params, sim_data, sim_comms, change_tracker):
+    #~ global sim_thread
+    #~ sim_thread = SimThread(sim_params, sim_data, sim_comms, change_tracker)
+
+def _init_sim_thread(sim_params, sim_data, sim_comms, change_tracker):
+    global _sim_thread_obj
+    _sim_thread_obj = SimThread(sim_params, sim_data, sim_comms, change_tracker)
 
 
-def _sim_thread(sim_params, sim_data, sim_comms, change_tracker):
+
+def _sim_thread():
     '''
     Initialisation function for the simulation thread.
     '''
-    status_q = sim_comms['status']
-    error_q = sim_comms['error']
-    sim_thread = SimThread(sim_params, sim_data, sim_comms, change_tracker)
+    global _sim_thread_obj
+    
+    so = _sim_thread_obj
+    comms = so.comms
+    ct = so.change_tracker
+    status_q = comms['status']
+    error_q = comms['error']
     # Wait for ISOLDE to give the signal to go ahead:
     status_q.get()
-    changes = change_tracker.changes
+    changes = ct.changes
     while True:
         with changes.get_lock():
             current_changes = changes.value
-            change_tracker.clear_inputs()
+            ct.clear_inputs()
         if current_changes & ct.STOP:
-            with error_q.get_lock():
-                error_q.put((Exception(),'Stopped on command: {}'.format(bin(current_changes))))
-            change_tracker.error()
+            error_q.put((Exception(),'Stopped on command: {}'.format(bin(current_changes))))
+            ct.error()
             break
             
         try:
-            sim_thread.main_loop(current_changes)
+            so.main_loop(current_changes)
         except Exception as e:
             tb = traceback.format_exc()
-            with error_q.get_lock():
-                error_q.put((e, tb))
-            change_tracker.error()
+            main_str = e.args[0]
+            raise Exception(main_str + tb)
+            error_q.put((e, tb))
+            sleep(0.1)
+            ct.error()
             break
             
 
@@ -342,7 +358,7 @@ class SimThread:
         
     def main_loop(self, changes):
         par = self.sim_params
-        comms = self.comms_object
+        comms = self.comms
         sh = self.sim_handler
         ct = self.change_tracker
         status_q = comms['status']
@@ -352,7 +368,14 @@ class SimThread:
             with mode.get_lock():
                 self.sim_mode = mode.value
         
+        if changes & ct.TEMPERATURE:
+            temperature = comms['temperature'].value
+            sh.set_temperature(temperature)
+            
+        
         sim_mode = self.sim_mode
+        
+        
             
         if sim_mode == self.SIM_MODE_EQUIL:
             max_allowed_movement = par['max_atom_movement_per_step']
@@ -362,21 +385,21 @@ class SimThread:
                 out_str = 'Simulation has become unstable! The following '\
                          +'atoms are moving too fast: {}'\
                          .format(fast_indices)
-                with status_q.get_lock():
-                    status_q.put(out_str)
+                status_q.put(out_str)
                 
             
         elif sim_mode == self.SIM_MODE_MIN:
             max_allowed_force = par['max_allowable_force']
             steps = par['minimization_steps_per_gui_update']
+            #coords, max_force, max_index = sh.get_positions_and_max_force(max_allowed_force)
             coords, max_force, max_index = sh.min_step(steps, max_allowed_force)
             if max_index != -1:
                 ct.register_change(ct.UNSTABLE)
                 out_str = 'Excessive force of {} on atom {}. Trying to '\
-                         +'minimise...'\
-                         .format(max_force.in_units_of(CHIMERAX_FORCE_UNIT), max_index)
-                with status_q.get_lock():
-                    status_q.put(out_str)
+                         +'minimise...'
+                out_str = out_str.format(max_force.in_units_of(CHIMERAX_FORCE_UNIT), max_index)
+                #~ raise Exception(out_str)
+                status_q.put(out_str)
         
         master_coords = comms['coords']
         with master_coords.get_lock():
@@ -394,26 +417,37 @@ class SimThread:
         for i, ai in enumerate(dihedral_atom_indices):
             force_map[i] = sh.initialize_dihedral_restraint(ai)
         if target_array is not None:
-            with target_array.get_lock():
-                for si, target in zip(force_map, target_array):
-                    sh.update_dihedral_restraint(si, target, 
-                        k = self.sim_params['peptide_bond_spring_constant'])
+            try:
+                with target_array.get_lock():
+                    for si, target in zip(force_map, target_array):
+                        sh.update_dihedral_restraint(si, target, 
+                            k = self.sim_params['peptide_bond_spring_constant'])
+            except:
+                str = dir(target_array)
+                raise Exception(str)
         self.dihedral_force_maps[name] = force_map
     
     def init_rotamers(self, in_map, targets, cutoff, k):
         sh = self.sim_handler
         force_map = self.rotamer_force_map
-        for index, dihedrals in in_map.items():
-            if dihedrals is None:
-                continue
-            force_indices = force_map[index] = []
-            for d_indices in dihedrals:
-                force_indices.append(sh.initialize_dihedral_restraint(d_indices, cutoff))
-            d_targets = targets[index]
-            with d_targets.get_lock():
-                if d_targets is not None:
-                    for (fi, di, t) in zip(force_indices, dihedrals, d_targets):
-                        sh.update_dihedral_restraint(fi, target= t, k=k)
+        comms = self.comms
+        restrained_rotamers = comms['restrained rotamers']
+        with restrained_rotamers.get_lock():
+            for index, dihedrals in in_map.items():
+                if dihedrals is None:
+                    continue
+                force_indices = force_map[index] = []
+                for d_indices in dihedrals:
+                    force_indices.append(sh.initialize_dihedral_restraint(d_indices, cutoff))
+                d_targets = targets[index]
+                with d_targets.get_lock():
+                    if restrained_rotamers[index]:
+                        this_k = k
+                    else:
+                        this_k = 0.0
+                    if d_targets is not None:
+                        for (fi, di, t) in zip(force_indices, dihedrals, d_targets):
+                            sh.update_dihedral_restraint(fi, target= t, k=this_k)
                     
     def init_distance_restraints(self, keys, force):
         comms = self.comms

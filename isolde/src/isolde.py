@@ -2313,8 +2313,6 @@ class Isolde():
         
         self._total_mobile_indices = sc.indices(total_mobile)
 
-        fixed_flags = numpy.zeros(len(sc), numpy.bool)
-        fixed_flags[sc.indices(hard_shell)] = True
 
         
         if self.sim_mode == sm.xtal:
@@ -2330,6 +2328,7 @@ class Isolde():
         sb = self._total_sim_bonds = selected_bonds(self.session)
         surr = self._surroundings = self._selected_model.atoms.filter(numpy.invert(
             self._selected_model.atoms.selected))
+
         
         
         # Cache all the colors so we can revert at the end of the simulation
@@ -2345,6 +2344,10 @@ class Isolde():
         hsb.radii = 0.1
         self._hard_shell_atoms.radii = 0.1
         self._hard_shell_atoms.draw_modes = 3
+
+        fixed_flags = numpy.zeros(len(sc), numpy.bool)
+        fixed_flags[sc.indices(hard_shell)] = True
+
         
         sc.selected = True
         
@@ -2377,7 +2380,7 @@ class Isolde():
         from .openmm.sim_interface import SimParams, ChimeraXSimInterface
         sp = self._sim_params = SimParams()
         si = self._sim_interface = ChimeraXSimInterface(self.session, self)
-        si.start_sim_thread(sp, total_mobile, fixed_flags, bd, self.rotamers,
+        si.start_sim_thread(sp, sc, fixed_flags, bd, self.rotamers,
                             distance_restraints, position_restraints, self.master_map_list)
                             
         
@@ -2864,7 +2867,7 @@ class Isolde():
         selcoords = selatoms.coords
         unselcoords = unselected_atoms.coords
         ignore, shell_indices = find_close_points(selcoords, unselcoords, dist_cutoff)
-        shell_atoms = unselected_atoms[shell_indices].residues.atoms
+        shell_atoms = unselected_atoms[shell_indices].unique_residues.atoms
         return shell_atoms
 
         
