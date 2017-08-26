@@ -42,7 +42,9 @@ CHIMERAX_LENGTH_UNIT        = defaults.CHIMERAX_LENGTH_UNIT
 CHIMERAX_FORCE_UNIT         = defaults.CHIMERAX_FORCE_UNIT
 CHIMERAX_SPRING_UNIT        = defaults.CHIMERAX_SPRING_UNIT
 
-
+SIM_MODE_MIN                = defaults.SIM_MODE_MIN
+SIM_MODE_EQUIL              = defaults.SIM_MODE_EQUIL
+SIM_MODE_UNSTABLE           = defaults.SIM_MODE_UNSTABLE
 
 
 try:
@@ -93,6 +95,7 @@ class SimParams:
             'cis_peptide_bond_cutoff_angle':    (defaults.CIS_PEPTIDE_BOND_CUTOFF, OPENMM_ANGLE_UNIT),
             'max_atom_movement_per_step':       (defaults.MAX_ATOM_MOVEMENT_PER_STEP, OPENMM_LENGTH_UNIT),
             'max_allowable_force':              (defaults.MAX_ALLOWABLE_FORCE, OPENMM_FORCE_UNIT),
+            'max_stable_force':                 (defaults.MAX_STABLE_FORCE, OPENMM_FORCE_UNIT),
             'friction_coefficient':             (defaults.OPENMM_FRICTION, 1/OPENMM_TIME_UNIT),
             'temperature':                      (defaults.TEMPERATURE, OPENMM_TEMPERATURE_UNIT),
             
@@ -234,7 +237,7 @@ class ChimeraXSimInterface:
     def toggle_pause(self):
         if not self.sim_running:
             return
-        self.change_tracker.changes |= self.change_tracker.PAUSE_TOGGLE
+        self.change_tracker.register_change(self.change_tracker.PAUSE_TOGGLE)
     
     def stop_sim(self):
         '''
@@ -252,10 +255,7 @@ class ChimeraXSimInterface:
         # TODO: Add handler for timeout situations
     
     def _set_temperature(self, temperature):
-        t = self.comms_object['temperature']
-        ct = self.change_tracker
-        with t.get_lock():
-            t.value = temperature
+        self.comms_object.thread_safe_set_value('temperature', temperature)
         ct.register_change(ct.TEMPERATURE)
     
     def _get_temperature(self):
@@ -278,22 +278,69 @@ class ChimeraXSimInterface:
     @property
     def sim_mode(self):
         mode = self.comms_obj['sim mode'].value
-        if mode == SimThread.SIM_MODE_MIN:
+        if mode == SIM_MODE_MIN:
             return 'min'
-        elif mode == SimThread.SIM_MODE_EQUIL:
+        elif mode == SIM_MODE_EQUIL:
             return 'equil'
+        elif mode == SIM_MODE_UNSTABLE:
+            return 'unstable!'
         else:
             raise RuntimeError('Simulation is in unrecognised state!')
     
     @sim_mode.setter
     def sim_mode(self, mode):
+        comms = self.comms_obj
         if mode not in ('min', 'equil'):
             raise RuntimeError('Simulation mode should be either "min" or "equil"!')
         if mode == 'min':
-            self.comms_obj['sim mode'].value = SimThread.SIM_MODE_MIN
+            comms.thread_safe_set_value('sim mode', SIM_MODE_MIN)
         elif mode == 'equil':
-            self.comms_obj['sim mode'].value = SimThread.SIM_MODE_EQUIL
-        self.change_tracker.changes |= self.change_tracker.MODE
+            comms.thread_safe_set_value('sim mode', SIM_MODE_EQUIL)
+        self.change_tracker.register_change(self.change_tracker.MODE)
+    
+    
+    def tug_atom_to(self, index, target, spring_constant = None):
+        '''
+        Tug an atom towards the target (x,y,z) position.
+        @ param index: 
+            The index of the atom in the array of tuggable atoms.
+        @param target:
+            The (x,y,z) coordinates to tug the atom towards, either in
+            Angstroms or as a simtk Quantity.
+        @param spring_constant:
+            The spring constant to tug with, either in kJ mol-1 Angstrom-2
+            or as a simtk Quantity. If no spring constant is given, the
+            default mouse tugging spring constant will be used.
+        '''
+        #index = self.all_atoms.index(atom)
+        params = self.sim_params
+        comms = self.comms_object
+        ct = self.change_tracker
+        if spring_constant is None:
+            spring_constant = params['mouse_tug_spring_constant']
+        if type(spring_constant) == Quantity:
+            spring_constant = spring_constant.value_in_unit(OPENMM_SPRING_UNIT)
+        else:
+            spring_constant = \
+                spring_constant * CHIMERAX_SPRING_UNIT/OPENMM_SPRING_UNIT
+        if type(target) == Quantity:
+            target = target.value_in_unit(OPENMM_LENGTH_UNIT)
+        else:
+            target = target * CHIMERAX_LENGTH_UNIT/OPENMM_LENGTH_UNIT
+        target_key = 'tugging targets'
+        k_key = 'tugging spring constants'
+        target_array = comms[target_key]
+        k_array = comms[k_key]
+        with target_array.get_lock(), k_array.get_lock():
+            target_array[index] = target
+            k_array[index] = spring_constant
+        ct.register_array_changes(target_key, indices = (index, ))
+        ct.register_array_changes(k_key, indices = (index, ))
+        
+        
+    def release_tugged_atom(self, index):
+        zeros = numpy.array([0,0,0], numpy.double)
+        self.tug_atom_to(index, zeros, spring_constant = 0)
     
     
     def _sim_init_handler(self, *_):
@@ -354,11 +401,8 @@ class ChimeraXSimInterface:
             ct.clear_outputs()
             
         if self.startup_counter >= 10:
-            cm = comms['sim mode']
-            with cm.get_lock():
-                cm.value = 1
-            with ct.changes.get_lock():
-                ct.changes.value |= ct.MODE
+            comms.thread_safe_set_value('sim mode', SIM_MODE_EQUIL)
+            ct.register_change(ct.MODE)
         
         if changes & ct.ERROR:
             err_q = comms['error']
@@ -389,7 +433,7 @@ class ChimeraXSimInterface:
         if changes & ct.COORDS_READY:
             new_coords = comms['coords']
             with new_coords.get_lock():
-                self.all_atoms.coords = new_coords[:]
+                self.all_atoms.coords = new_coords
             self.startup_counter += 1
         
         
@@ -458,7 +502,7 @@ class ChimeraXSimInterface:
         comms_coords = comms['coords'] = SharedNumpyArray(
             TypedMPArray(
                 FLOAT_TYPE, coords.size)).reshape(coords.shape)
-        ct.add_managed_array(ct.COORDS_READY, 'coords', comms_coords)
+        ct.add_managed_array(ct.EDIT_COORDS, 'coords', (comms_coords, ), 'coords_changed_cb')
         
         # Container for data describing the model that will be fixed for
         # the duration of the simulation
@@ -473,6 +517,7 @@ class ChimeraXSimInterface:
             'chain ids':                        chain_ids,
             'coords':                           coords,
             'bonded atom indices':              bond_atom_indices,
+            'tuggable indices':                 None,
             'phi atom indices':                 None,
             'psi atom indices':                 None,
             'omega atom indices':               None,
@@ -524,7 +569,20 @@ class ChimeraXSimInterface:
         self.startup_counter = 0
         self.thread_result = self._pool.apply_async(sim_thread._sim_thread, args=(), error_callback = error_cb)
         self._update_handler = self.session.triggers.add_handler('new frame', self._sim_init_handler)
-        
+    
+    def _prepare_tugging_force(self, allowed_targets):
+        data = self.sim_data
+        comms = self.comms_object
+        par = self.sim_params
+        ct = self.change_tracker
+        n_targets = len(allowed_targets)
+        atom_indices = data['tuggable indices'] = self.all_atoms.indices(allowed_targets)
+        targets = comms['tugging targets'] = SharedNumpyArray(
+            TypedMPArray(FLOAT_TYPE, n_targets*3)).reshape((n_targets, 3))
+        spring_constants = comms['tugging spring constants'] = SharedNumpyArray(
+            TypedMPArray(FLOAT_TYPE, n_targets))
+        change_bit = ct.TUG
+        ct.add_managed_arrays(change_bit, 'tugging', (targets, spring_constants), 'tugging_cb')
 
     def _prepare_dihedral_restraints(self, dihedrals, name):
         '''
@@ -535,12 +593,14 @@ class ChimeraXSimInterface:
         dihe_i = numpy.reshape(all_atoms.indices(dihedrals.atoms), (n_dihe, 4))
         atom_key = name + ' atom indices'
         target_key = name + ' targets'
+        k_key = name + 'spring constants'
         self.sim_data[atom_key] = dihe_i
         t_array = self.comms_object[target_key] = SharedNumpyArray(TypedMPArray(FLOAT_TYPE, n_dihe))
+        k_array = self.comms_object[k_key] = SharedNumpyArray(TypedMPArray(FLOAT_TYPE, n_dihe))
 
         change_tracker = self.change_tracker
         change_bit = change_tracker.DIHEDRAL_RESTRAINT
-        change_tracker.add_managed_array(change_bit, target_key, t_array)
+        change_tracker.add_managed_arrays(change_bit, name, (t_array, k_array) 'dihedral_restraint_cb')
         return t_array
 
     def _set_all_omega_restraints_from_current_geometry(self, omega, track_changes = True):
@@ -554,7 +614,7 @@ class ChimeraXSimInterface:
                     o_vals > cis_offset, o_vals < -cis_offset).astype(float) * pi
         self._omega_targets[:] = omega_targets
         if track_changes:
-            self.change_tracker.register_array_changes('omega targets')
+            self.change_tracker.register_array_changes('omega')
 
     def _define_cmap_residues(self, phi, psi):
         '''
@@ -607,8 +667,8 @@ class ChimeraXSimInterface:
         self.sim_data['rotamer map'] = input_rotamer_map
         change_tracker = self.change_tracker
         change_bit = change_tracker.ROTAMER_RESTRAINT
-        change_tracker.add_managed_array(change_bit, 
-            'restrained rotamers', restrained_mask) 
+        change_tracker.add_managed_arrays(change_bit, 
+            'rotamer targets', (restrained_mask, ), 'rotamer_restraint_cb') 
         
         
     def _prepare_distance_restraints(self, distance_restraints):
@@ -637,8 +697,7 @@ class ChimeraXSimInterface:
                 t_array[i] = r.target_distance
                 k_array[i] = r.spring_constant
                 i_array.append(all_atoms.indices(r.atoms).tolist())
-            change_tracker.add_managed_array(change_bit, target_key, t_array)
-            change_tracker.add_managed_array(change_bit, k_key, k_array)
+            change_tracker.add_managed_arrays(change_bit, key, (t_array, k_array), 'distance_restraint_cb')
 
     def _prepare_position_restraints(self, position_restraints):
         '''
@@ -662,8 +721,8 @@ class ChimeraXSimInterface:
         pr_targets[:] = position_restraints.targets
         change_tracker = self.change_tracker
         change_bit = change_tracker.POSITION_RESTRAINT
-        change_tracker.add_managed_array(change_bit, 'position restraint spring constants', pr_ks)
-        change_tracker.add_managed_array(change_bit, 'position restraint targets', pr_targets)
+        change_tracker.add_managed_arrays(
+            change_bit, 'position restraints', (pr_targets, pr_ks), 'position_restraint_cb')
 
     def _prepare_density_maps(self, density_maps):
         '''
@@ -686,7 +745,8 @@ class ChimeraXSimInterface:
         data_change_bit = change_tracker.MAP_DATA
         if density_maps is not None:
             for key, imap in density_maps.items():
-                density_map_names.append(imap.get_name())
+                name = imap.get_name()
+                density_map_names.append(name)
                 vd, r = imap.crop_to_selection(atoms, pad, normalize)
                 
                 tf = r.xyz_to_ijk_transform.matrix
@@ -702,10 +762,10 @@ class ChimeraXSimInterface:
                 global_k = comms[global_k_key] = mp.Value(FLOAT_TYPE, imap.coupling_constant)
                 default_ks = numpy.ones(len(self.mobile_heavy_atoms))
                 atom_ks = comms[atom_k_key] = SharedNumpyArray(TypedMPArray(FLOAT_TYPE, default_ks))
-                change_tracker.add_managed_array(coupling_change_bit,
-                        atom_k_key, atom_ks)
-                change_tracker.add_managed_array(data_change_bit,
-                        map_data_key, map_data)
+                change_tracker.add_managed_arrays(
+                    coupling_change_bit, name, (atom_ks,), 'density_map_coupling_cb')
+                change_tracker.add_managed_arrays(
+                    data_change_bit, map_data_key, (map_data, ), 'density_map_data_change_cb')
                  
     def find_residue_templates(self):
         '''

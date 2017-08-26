@@ -299,13 +299,13 @@ class SimHandler():
         self.default_torsion_cutoff = default_cutoff
         self.all_forces.append(df)
     
-    def initialize_dihedral_restraint(self, indices, cutoff = None):
+    def initialize_dihedral_restraint(self, indices, target = 0, k = 0, cutoff = None):
         #top = self._topology
         c = (cutoff or self.default_torsion_cutoff)
         if type(c) == Quantity:
             c = c.value_in_unit(unit.radians)
         force = self._dihedral_restraint_force
-        index_in_force = force.addTorsion(*indices.tolist(), [0, 0, cos(c)])
+        index_in_force = force.addTorsion(*indices.tolist(), (target, k, cos(c)))
         return index_in_force
 
         ##
@@ -317,30 +317,17 @@ class SimHandler():
         if rf.update_needed:
             rf.updateParametersInContext(context)
         rf.update_needed = False
+                
     
-    def set_dihedral_restraints(self, dihedrals, target, k, degrees = False, cutoffs = None):
-        c = (cutoffs or [self.default_torsion_cutoff]*len(dihedrals))
-        variable_t = hasattr(target, '__iter__')
-        variable_k = hasattr(k, '__iter__')
-        variable_c = hasattr(c, '__iter__')
-        for i, d in enumerate(dihedrals):
-            if variable_t:
-                t = target[i]
-            else:
-                t = target
-            if degrees:
-                t = radians(t)
-            if variable_k:
-                thisk = k[i]
-            else:
-                thisk = k
-            if variable_c:
-                thisc = c[i]
-            else:
-                thisc = c
-            
-            self.update_dihedral_restraint(d.sim_index, target=t, k=thisk, cutoff=thisc)    
-            
+    def update_dihedral_restraints(self, indices, targets, ks):
+        if hasattr(ks, '__len__'):
+            for index, target, k in zip(indices, targets, ks):
+                self.update_dihedral_restraint(index, target, k)
+        else:
+            k = ks
+            for index, target in zip(indices, targets):
+                self.update_dihedral_restraint(index, target, k)
+    
     def update_dihedral_restraint(self, sim_index, target = None, 
                             k = None, cutoff = None, degrees = False):
         if target is not None and degrees:
@@ -570,6 +557,27 @@ class SimHandler():
         f.set_global_k(coupling_constant)
         self.all_forces.append(f)
         return f
+    
+        
+    def change_coords(self, coords):
+        context = self.context
+        context.setPositions(coords)
+        temperature = self.integrator.getTemperature()
+        # Run a brief minimisation to avoid crashes
+        self.min_step(50)
+        context.setVelocitiesToTemperature(temperature)
+    
+    def tug(force_indices, atom_indices, targets, ks):
+        tf = self._tugging_force
+        ai = tf.getParticleParameters(fi)[0]
+        for fi, ai, t, k in zip(force_indices, targets, ks):
+            tf.setParticleParameters(fi, ai, (k, *t))
+            
+            
+        
+    
+    
+    
     
     
     def continuous3D_from_volume(self, vol_data):

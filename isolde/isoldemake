@@ -1,6 +1,6 @@
 #!/bin/bash
 pyrcc5 -o src/resources_rc.py src/resources/resources.qrc
-pyuic src/IsoldeFrame.ui -o src/isoldewidget.py
+./pyuic src/IsoldeFrame.ui -o src/isoldewidget.py
 sed -i "s/import resources_rc/from . import resources_rc/" src/isoldewidget.py
 
 make clean

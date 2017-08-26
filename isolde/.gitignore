@@ -3,4 +3,5 @@ build/
 dist/
 ChimeraX_ISOLDE.egg-info/
 src/__pycache__/
+src/_geometry.cpy*
 

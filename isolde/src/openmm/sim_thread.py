@@ -20,6 +20,10 @@ CHIMERAX_LENGTH_UNIT        = defaults.CHIMERAX_LENGTH_UNIT
 CHIMERAX_FORCE_UNIT         = defaults.CHIMERAX_FORCE_UNIT
 CHIMERAX_SPRING_UNIT        = defaults.CHIMERAX_SPRING_UNIT
 
+SIM_MODE_MIN                = defaults.SIM_MODE_MIN
+SIM_MODE_EQUIL              = defaults.SIM_MODE_EQUIL
+SIM_MODE_UNSTABLE           = defaults.SIM_MODE_UNSTABLE
+
 class ChangeTracker:
     '''
     A simple bit-field to handle notifications for I/O between the 
@@ -38,6 +42,7 @@ class ChangeTracker:
     ROTAMER_RESTRAINT       = 1<<8
     MAP_COUPLING            = 1<<9
     MAP_DATA                = 1<<10
+    EDIT_COORDS             = 1<<11
     
     #Outputs
     INIT_COMPLETE = 1<<28
@@ -50,44 +55,90 @@ class ChangeTracker:
     
     def __init__(self):
         self._change_var = mp.Value(ctypes.c_int32, 0)
-        self._array_change_keys = dict()
-        self._array_change_flags = dict()
-        self._array_change_masks = dict()
-        self._array_change_bits = dict()
+        self._managed_arrays = dict()
+        self._possible_modified_arrays = dict()
     
     def clear_inputs(self):
         self._change_var.value &= ~self.ALL_INPUTS
     
     def clear_outputs(self):
         self._change_var.value &= ~self.ALL_OUTPUTS
-    
-    def add_managed_array(self, change_bit_mask, key, array):
+
+    def _find_callbacks(self, sim_thread):
         '''
-        Registers a shared array with the change tracker. Once registered,
-        call register_array_changes(key, [change_mask]) to let the manager
-        know that the array has changed, and optionally which elements
-        have changed.
+        To be run (only) by the SimThread in the worker process after 
+        initialisation. Replaces the names of the callback functions 
+        with pointers to the functions themselves.
+        '''
+        sh = self.sim_handler
+        for key, arr in self._managed_arrays.items():
+            cb_name = arr[-1]
+            arr[-1] = getattr(sim_thread, cb_name)
+            
+    def run_all_necessary_callbacks(self, changes):
+        '''
+        Runs the callbacks to apply the changes for any arrays whose
+        contents have changed since the last iteration. Callbacks should
+        be defined in SimThread, and take as arguments a Boolean array
+        identifying which entries have changed, and a tuple of 
+        SharedNumpyArray objects containing the actual information.
+        '''
+        pma = self._possible_modified_arrays
+        for change_bit in pma.keys():
+            if changes & change_bit:
+                for managed_array in pma[change_bit]:
+                    callback = managed_array[-1]
+                    key = managed_array[-2]
+                    change_mask, arrays = managed_array[2,3]
+                    
+                    callback(change_mask, key, arrays)
+    
+    
+    def add_managed_arrays(self, change_bit_mask, key, arrays, callback_name):
+        '''
+        Registers a combined set of shared arrays with the change 
+        tracker, and the name of the callback function that the 
+        simulation handler should run when it changes. Once registered, 
+        call register_array_changes(key, [change_mask]) to let the 
+        manager know that the array has changed, and optionally which 
+        elements have changed.
             
         @param change_bit_mask:
             The bit (e.g. ChangeTracker.DISTANCE_RESTRAINT) to be flipped
             to notify the top-level change tracker
         @param key:
             The key to the array in the SimComms dict
-        @param array:
-            The array itself.
+        @param arrays:
+            A tuple containing the arrays themselves. All arrays must be
+            the same length in the first dimension.
+        @param callback_name:
+            The name of the callback function in the SimThread to be 
+            run when the array changes.
         '''
-        self._array_change_flags[key] = mp.Value(ctypes.c_bool, False)
-        self._array_change_masks[key] = SharedNumpyArray(
-                TypedMPArray(ctypes.c_bool, len(array)))
-        self._array_change_bits[key] = change_bit_mask
-        change_keys = self._array_change_keys
+        length = len(arrays[0])
+        if len(arrays) > 1:
+            for arr in arrays[2:]:
+                if len(arr) != length:
+                    raise TypeError(
+                        'All arrays must be the same length in their '
+                       +'first dimension!')
+                        
+        change_flag = mp.Value(ctypes.c_bool, False)
+        change_mask = SharedNumpyArray(TypedMPArray(ctypes.c_bool, length))
+        
+        
+        # After the simulation thread has changed, callback_name will 
+        # be replaced with a pointer to the actual function.
+        ma = self._managed_arrays[key] =\
+            [change_bit_mask, change_flag, change_mask, arrays, key, callback_name]
         try:
-            key_list = change_keys[change_bit_mask]
+            self._possible_modified_arrays[change_bit_mask].append(ma)
         except KeyError:
-            key_list = change_keys[change_bit_mask] = list()
-        key_list.append(key)
+            cl = self._possible_modified_arrays[change_bit_mask] = []
+            cl.append(ma)
+        
     
-    def register_array_changes(self, key, change_mask = None):
+    def register_array_changes(self, key, change_mask = None, indices = None):
         '''
         Let the change tracker know that an array has changed.
         @param key:
@@ -97,24 +148,29 @@ class ChangeTracker:
             dimension of the array, True where an element has changed.
             If not provided, it will be assumed that all elements of
             the array have changed.
+        @param indices:
+            A numpy int array listing the indices that have changed.
         '''
-        shared_flag = self._array_change_flags[key]
-        shared_mask = self._array_change_masks[key]
-        with shared_flag.get_lock(), shared_mask.get_lock():
-            shared_flag.value = True
+        if change_mask is not None and indices is not None:
+            raise TypeError("Can't provide both change_mask and indices!")
+        _change_bit, _change_flag, _change_mask = self._managed_arrays[key][0:3]
+        with _change_flag.get_lock(), _change_mask.get_lock():
+            _change_flag.value = True
             if change_mask is not None:
-                shared_mask[:] = change_mask
+                numpy.logical_or(change_mask, _change_mask, target=_change_mask)
+            elif indices is not None:
+                _change_mask[indices] = True
             else:
-                shared_mask[:] = True
-        self.changes.value |= self._array_change_bits[key]
+                _change_mask[:] = True
+            
+        self.register_change(_change_bit)
         
     
     def clear_array_changes(self, key):
-        shared_flag = self._array_change_flags[key]
-        shared_mask = self._array_change_masks[key]
-        with shared_flag.get_lock(), shared_mask.get_lock():
-            shared_flag.value = False
-            shared_mask[:] = False
+        _change_flag, _change_mask = self._managed_arrays[key][1:3]
+        with _change_flag.get_lock(), _change_mask.get_lock():
+            _change_flag.value = False
+            _change_mask[:] = False
     
     @property
     def changes(self):
@@ -152,7 +208,20 @@ class SimComms:
     def __setitem__(self, key, obj):
         self._comms_obj[key] = obj
     
+    def thread_safe_set_value(self, key, val):
+        '''Set the value of a mp.Value object in a thread-safe way.'''
+        target = self[key]
+        with target.get_lock():
+            target.value = val
     
+    def thread_safe_set_array_values(self, key, values, indices_or_mask = None):
+        '''Change values within a SharedNumpyArray in a thread-safe way.'''
+        target = self[key]
+        with target.get_lock():
+            if indices_or_mask is not None:
+                target[indices_or_mask] = values
+            else:
+                target[:] = values
 
 #~ def _init_sim_thread(sim_params, sim_data, sim_comms, change_tracker):
     #~ global sim_thread
@@ -206,17 +275,27 @@ class SimThread:
     input and returning coordinates and simulation information at each
     iteration.
     '''
-    SIM_MODE_MIN = 0
-    SIM_MODE_EQUIL = 1
     def __init__(self, sim_params, sim_data, sim_comms, change_tracker):
         par = self.sim_params = sim_params
         data = self.sim_data = sim_data
         comms = self.comms = sim_comms
         ct = self.change_tracker = change_tracker
         changes = ct.changes
-        force_maps = self.force_index_maps = {}
+        force_maps = self.force_index_maps = {
+            'tugging':              None
+            'dihedrals':            {}
+            'rotamers':             {}
+            'distance restraints':  {}
+            'position restraints':  None
+            'density maps':         {}
+        }
         error_queue = comms['error']
-        self.sim_mode = self.SIM_MODE_MIN
+        self.sim_mode = SIM_MODE_MIN
+        
+        # Counters for potential timeout conditions
+        self.unstable_counter = 0
+        self.MAX_UNSTABLE_ROUNDS = 20
+        
         try:
             sh = self.sim_handler = SimHandler()
             
@@ -228,12 +307,11 @@ class SimThread:
             sh.initialize_tugging_force()
             
             # Tugging force
-            mobile_indices = data['mobile indices']
-            tfm = self.tug_force_map = numpy.empty(len(mobile_indices), int)            
-            sh.couple_atoms_to_tugging_force(mobile_indices, tfm)
+            self.tugging_force_map = force_maps['tugging']
+            self.init_tugging()       
             
             # Backbone dihedral restraints
-            self.dihedral_force_maps = force_maps['dihedrals'] = {}
+            self.dihedral_force_maps = force_maps['dihedrals']
             self.init_dihedrals('phi')
             self.init_dihedrals('psi')
             self.init_dihedrals('omega', comms['omega targets'])
@@ -245,7 +323,7 @@ class SimThread:
                                         sim_data['psi cmap indices'])
             
             #Rotamers
-            self.rotamer_force_map = force_maps['rotamers'] = {}
+            self.rotamer_force_map = force_maps['rotamers']
             self.init_rotamers(sim_data['rotamer map'], 
                comms['rotamer targets'],
                par['rotamer_restraint_cutoff_angle'] / unit.radians,
@@ -260,7 +338,7 @@ class SimThread:
                                          )
             
             # Position restraints
-            self.position_restraints_force_map = force_maps['position restraints'] = None
+            self.position_restraints_force_map = force_maps['position restraints']
             self.init_position_restraints(data['position restraint indices'],
                                           comms['position restraint spring constants'],
                                           comms['position restraint targets']
@@ -268,7 +346,7 @@ class SimThread:
             
             # Density maps
             self.density_map_forces = {}
-            self.density_map_force_maps = force_maps['density maps'] = {}
+            self.density_map_force_maps = force_maps['density maps']
             self.init_map_forces(data['density map names'])
             
             top = sh.create_openmm_topology(data['atom names'],
@@ -313,8 +391,7 @@ class SimThread:
             sh.register_all_forces_with_system()
             
             t = comms['temperature']
-            with t.get_lock():
-                temperature = t.value
+            temperature = t.value
             
             integrator = par['integrator']
             if integrator == openmm.VariableLangevinIntegrator:
@@ -365,30 +442,24 @@ class SimThread:
         
         if changes & ct.MODE:
             mode = comms['sim mode']
-            with mode.get_lock():
-                self.sim_mode = mode.value
+            sim_mode = self.sim_mode = mode.value
         
         if changes & ct.TEMPERATURE:
             temperature = comms['temperature'].value
             sh.set_temperature(temperature)
-            
         
-        sim_mode = self.sim_mode
-        
-        
-            
-        if sim_mode == self.SIM_MODE_EQUIL:
+        if sim_mode == SIM_MODE_EQUIL:
             max_allowed_movement = par['max_atom_movement_per_step']
             coords, fast_indices = sh.equil_step(par['sim_steps_per_gui_update'], max_allowed_movement)
             if fast_indices:
+                comms.thread_safe_set_value('mode', SIM_MODE_UNSTABLE)
                 ct.register_change(ct.UNSTABLE)
                 out_str = 'Simulation has become unstable! The following '\
                          +'atoms are moving too fast: {}'\
                          .format(fast_indices)
                 status_q.put(out_str)
                 
-            
-        elif sim_mode == self.SIM_MODE_MIN:
+        elif sim_mode == SIM_MODE_MIN:
             max_allowed_force = par['max_allowable_force']
             steps = par['minimization_steps_per_gui_update']
             #coords, max_force, max_index = sh.get_positions_and_max_force(max_allowed_force)
@@ -398,33 +469,136 @@ class SimThread:
                 out_str = 'Excessive force of {} on atom {}. Trying to '\
                          +'minimise...'
                 out_str = out_str.format(max_force.in_units_of(CHIMERAX_FORCE_UNIT), max_index)
-                #~ raise Exception(out_str)
                 status_q.put(out_str)
         
-        master_coords = comms['coords']
-        with master_coords.get_lock():
-            master_coords[:] = coords.value_in_unit(CHIMERAX_LENGTH_UNIT)
-        with ct.changes.get_lock():
-            ct.changes.value |= ct.COORDS_READY
-                
+        elif sim_mode == SIM_MODE_UNSTABLE:
+            stable_force_limit = par['max_stable_force']
+            max_allowed_force = par['max_allowable_force']
+            steps = par['minimization_steps_per_gui_update']
+            coords, max_force, max_index = sh.min_step(steps, stable_force_limit)
+            if max_index == -1:
+                out_str = 'Forces back within stable limits. Returning to '\
+                         +'equilibration.'
+                status_q.put(out_str)
+                comms.thread_safe_set_value('mode', SIM_MODE_EQUIL)
+                self.unstable_counter = 0
+            elif max_force < max_allowed_force and self.unstable_counter == self.MAX_UNSTABLE_ROUNDS:
+                out_str = 'Maximum number of minimisation rounds reached. '\
+                        +'Maximum force of {} is problematic, but potentially '\
+                        +'stable. Attempting to return to equilibration...'\
+                        .format(max_force)
+                status_q.put(out_str)
+                comms.thread_safe_set_value('mode', SIM_MODE_EQUIL)
+                self.unstable_counter = 0
+            elif self.unstable_counter >= self.MAX_UNSTABLE_ROUNDS:
+                err_str = 'Unable to reduce forces to within tolerable '\
+                        +'limits within {} steps. Giving up.'.format(
+                            self.MAX_UNSTABLE_ROUNDS)
+                err_q.put((RuntimeError(err_str), ''))
+                ct.error()
+            else:
+                self.unstable_counter += 1
         
+        self.current_coords = coords
+        comms.thread_safe_set_array_values('coords', coords.value_in_unit(CHIMERAX_LENGTH_UNIT))
+        ct.register_change(ct.COORDS_READY)
+                
+    
+    def coords_changed_cb(self, change_mask, _, arrays):
+        '''
+        Apply changes in coordinates to the simulation if they've been
+        edited externally.
+        '''    
+        sh = self.sim_handler
+        new_coords = arrays[0]
+        with change_mask.get_lock():
+            changed_indices = numpy.where(change_mask)[0]
+            change_mask[:] = False
+        #OpenMM can only change coordinates all at once, so we'll make sure
+        # we're only changing the flagged ones to avoid nasty surprises.
+        with new_coords.get_lock():
+            self.current_coords[changed_indices] = new_coords[changed_indices]*CHIMERAX_LENGTH_UNIT
+        sh.change_coords(self.current_coords)
+    
+    def tugging_cb(self, change_mask, _, arrays):
+        '''
+        Tug or release atoms.
+        '''
+        sh = self.sim_handler
+        m_targets, m_ks = arrays
+        with targets.get_lock(), change_mask.get_lock(), ks.get_lock():
+            indices = numpy.where(change_mask)[0]
+            change_mask[:] = False
+            ts = m_targets[indices].copy()*CHIMERAX_LENGTH_UNIT
+            ks = m_ks[indices].copy()*CHIMERAX_SPRING_UNIT
+        force_map = self.force_index_maps['tugging']
+        sh.tug(force_map[indices], ts, ks)
+    
+    def dihedral_restraint_cb(self, change_mask, name, arrays):
+        '''
+        Adjust dihedral targets and spring constants 
+        '''
+        sh = self.sim_handler
+        force_map = self.dihedral_force_maps[name]
+        m_ts, m_ks = arrays
+        with ts.get_lock(), ks.get_lock(), change_mask.get_lock():
+            indices = numpy.where(change_mask)[0]
+            change_mask[:] = False
+            ts = m_ts[indices].copy()
+            ks = m_ks[indices].copy()
+        sh.update_dihedral_restraints(force_map[indices], ts, ks)
+            
+        
+    def rotamer_restraint_cb(self, change_mask, key, arrays):
+        sh = self.sim_handler
+        comms = self.comms
+        rotamer_dict = comms[key]
+        k = self.sim_params['rotamer_spring_constant']
+        restrained_mask = arrays
+        with change_mask.get_lock(), restrained_mask.get_lock():
+            indices = numpy.where(change_mask)[0]
+            change_mask[:] = False
+            ks = numpy.array(len(indices), FLOAT_TYPE)
+            ks[:] = k * restrained_mask[indices]
+        force_maps = self.rotamer_force_maps
+        for i in indices:
+            targets = rotamer_dict[i]
+            with targets.get_lock():
+                sh.update_dihedral_restraints(force_maps[i], targets, ks)
+        
+    def distance_restraint_cb(self, change_mask, key, arrays):
+        pass
+        
+    def position_restraint_cb(self, change_mask, key, arrays):
+        pass
+    
+    def density_map_coupling_cb(self, change_mask, key, arrays):
+        pass
+    
+    def density_map_data_change_cb(self, change_mask, key, arrays):
+        pass
+    
+    
+    def init_tugging(self):
+        data = self.sim_data
+        tuggable_indices = data['tuggable indices']
+        self.force_index_maps['tugging'] = numpy.empty(len(tuggable_indices), int)            
+        sh.couple_atoms_to_tugging_force(tuggable_indices, tfm)
+
     def init_dihedrals(self, name, target_array = None):
         sh = self.sim_handler
+        comms = self.comms
         atom_key = name + ' atom indices'
+        target_key = name + ' targets'
+        k_key = name + ' spring constants'
         dihedral_atom_indices = self.sim_data[atom_key]
+        targets = comms[target_key]
+        ks = comms[k_key]
         n_dihe = len(dihedral_atom_indices)
         force_map = numpy.empty(n_dihe, int)
-        for i, ai in enumerate(dihedral_atom_indices):
-            force_map[i] = sh.initialize_dihedral_restraint(ai)
-        if target_array is not None:
-            try:
-                with target_array.get_lock():
-                    for si, target in zip(force_map, target_array):
-                        sh.update_dihedral_restraint(si, target, 
-                            k = self.sim_params['peptide_bond_spring_constant'])
-            except:
-                str = dir(target_array)
-                raise Exception(str)
+        with targets.get_lock(), ks.get_lock():        
+            for i, (ai, target, k) in enumerate(zip(dihedral_atom_indices, targets, ks)):
+                force_map[i] = sh.initialize_dihedral_restraint(ai, target=target, k=k)
         self.dihedral_force_maps[name] = force_map
     
     def init_rotamers(self, in_map, targets, cutoff, k):

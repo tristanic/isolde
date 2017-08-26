@@ -34,7 +34,7 @@ _defaults = {
     'OPENMM_CONSTRAINT_TOL':      1e-4,
     'OPENMM_FIXED_INTEGRATOR_TS': 0.001, #* unit.picoseconds,
     'SIM_STEPS_PER_GUI_UPDATE':   50,
-    'MIN_STEPS_PER_GUI_UPDATE':   20,
+    'MIN_STEPS_PER_GUI_UPDATE':   100,
     'SIM_STARTUP_ROUNDS':         10,
     'MAX_UNSTABLE_ROUNDS':        20,
     'ROUNDS_PER_RAMA_UPDATE':     5,
@@ -50,6 +50,10 @@ _defaults = {
     'RIGID_BONDS':                app.HBonds,
     'RIGID_WATER':                True,
     'REMOVE_C_OF_M_MOTION':       False,
+    'SIM_MODE_MIN':               0,
+    'SIM_MODE_EQUIL':             1,
+    'SIM_MODE_UNSTABLE':          2,
+    
     
     ###
     # Force constants
@@ -70,6 +74,7 @@ _defaults = {
     # Safety limits
     ###
     'MAX_ALLOWABLE_FORCE':        4.0e4, # * unit.kilojoule_per_mole/unit.nanometer,
+    'MAX_STABLE_FORCE':            5000, # * unit.kilojoule_per_mole/unit.nanometer, 
     'MAX_ATOM_MOVEMENT_PER_STEP':   0.5, # * unit.nanometer,
     
     ###
