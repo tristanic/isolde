@@ -45,6 +45,7 @@ class AmberCMAPForce(CMAPTorsionForce):
         super().__init__()
         for m in self._cmaps:
             self.addMap(m.shape[0], m.flatten())
+        self.update_needed = False
 
     def addTorsion(self, resname, phi_indices, psi_indices):
         map_index = self._map_loader.map_index(resname)
@@ -222,7 +223,7 @@ class TopOutBondForce(CustomBondForce):
             kJ mol-1 nm-2). Leave as None to preserve the existing spring
             constant.
         '''
-        current_params = self.getBondParameters(index)
+        current_params = self.getBondParameters(int(index))
         atom1, atom2 = current_params[0,1]
         new_k, new_target = current_params[2]
         if target is not None:
@@ -233,7 +234,7 @@ class TopOutBondForce(CustomBondForce):
             if type(k) == Quantity:
                 k = k.value_in_unit(OPENMM_SPRING_UNIT)
             new_k = k
-        self.setBondParameters(index, atom1, atom2, (new_k, new_t))
+        self.setBondParameters(int(index), atom1, atom2, (new_k, new_t))
         self.update_needed = True
 
 
@@ -280,7 +281,7 @@ class TopOutRestraintForce(CustomExternalForce):
         self.update_needed = True
 
     def update_target(self, index, target=None, k = None):
-        current_params = self.getParticleParameters(index)
+        current_params = self.getParticleParameters(int(index))
         atom_index = current_params[0]
         new_k, new_x, new_y, new_z = current_params[1]
         if target is not None:
@@ -291,7 +292,7 @@ class TopOutRestraintForce(CustomExternalForce):
             if type(k) == Quantity:
                 k = k.value_in_unit(OPENMM_SPRING_UNIT)
             new_k = k
-        self.setParticleParameters(index, atom_index, (new_k, new_x, new_y, new_z))
+        self.setParticleParameters(int(index), atom_index, (new_k, new_x, new_y, new_z))
         self.update_needed = True
 
     def release_restraint(self, index):
@@ -316,7 +317,7 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
         for p in per_bond_parameters:
             self.addPerTorsionParameter(p)
 
-        self.update_needed = True
+        self.update_needed = False
 
     def update_target(self, index, target = None, k = None, cutoff = None):
         '''
@@ -378,14 +379,11 @@ class GBSAForce(customgbforces.GBSAGBn2Force):
             kappa = kappa.value_in_unit(1/OPENMM_LENGTH_UNIT)
 
 
-
         super().__init__(solventDielectric=solventDielectric,
                          soluteDielectric=soluteDielectric,
                          SA=SA,
                          cutoff=cutoff,
                          kappa=kappa)
-        try:
-            self.setNonbondedMethod(nonbonded_method)
-        except:
-            err_str = '{}'.format(nonbonded_method)
-            raise Exception(err_str)
+        
+        self.setNonbondedMethod(nonbonded_method)
+        self.update_needed = False

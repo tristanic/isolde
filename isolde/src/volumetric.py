@@ -152,6 +152,18 @@ class IsoldeMap:
     def set_mask_vis(self, mask):
         self._mask = mask
 
+    @property
+    def mask_cutoff(self):
+        ''' 
+        Cutoff in Angstroms beyond which the map will be masked out 
+        during simulations.
+        '''
+        return self._mask_cutoff
+    
+    @mask_cutoff.setter
+    def mask_cutoff(self, cutoff):
+        self._mask_cutoff = cutoff
+    
     def set_mask_cutoff(self, cutoff):
         self._mask_cutoff = cutoff
         

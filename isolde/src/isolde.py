@@ -201,7 +201,6 @@ class Isolde():
         #~ from .eventhandler import EventHandler
         self._event_handler = EventHandler(self.session)
 
-        self._initialize_sim_params()
         initialize_openmm()
 
         # Available pre-defined colors
@@ -2286,12 +2285,11 @@ class Isolde():
     # Simulation prep
     ##############################################################
 
-    def _initialize_sim_params(self):
+    def reset_sim_params(self):
         '''
-        A dict holding all parameters important to the simulation. Ultimately
-        this should replace the use of individual object variables for these.
+        Reset all the simulation parameters back to their defaults.
         '''
-        from .opemm.sim_interface import SimParams
+        from .openmm.sim_interface import SimParams
         self.sim_params = SimParams()
 
 
@@ -2364,7 +2362,10 @@ class Isolde():
                 show_context = self.params.hard_shell_cutoff_distance,
                 mask_radius = 4, extra_padding = 10,
                 hide_surrounds = self.params.hide_surroundings_during_sim, focus = False)
-
+        
+        else:
+            surr.displays = False
+        
         # Cache all the colors so we can revert at the end of the simulation
         self._original_atom_colors = sc.colors
         self._original_atom_draw_modes = sc.draw_modes
@@ -2412,19 +2413,17 @@ class Isolde():
 
         position_restraints = self._sim_pos_restr =\
             self.position_restraints.in_selection(total_mobile)
-
-
+        
+        
+        tuggable_atoms = total_mobile[total_mobile.element_names != 'H']
+        
         from .openmm.sim_interface import ChimeraXSimInterface
         sp = self.sim_params
         si = self._sim_interface = ChimeraXSimInterface(self.session, self)
-        si.start_sim_thread(sp, sc, fixed_flags, bd, self.rotamers,
+        si.start_sim_thread(sp, sc, tuggable_atoms, fixed_flags, bd, self.rotamers,
                             distance_restraints, position_restraints, self.master_map_list)
 
 
-        self.triggers.activate_trigger('simulation started', None)
-        # Register simulation-specific mouse modes
-        # TODO: Put this under control of the 'simulation started'/
-        # 'simulation terminated' triggers
 
 
 
@@ -2436,15 +2435,8 @@ class Isolde():
         Register all event handlers etc. that have to be running during the
         simulation.
         '''
-        from . import mousemodes
-        mt = self._mouse_tugger = mousemodes.TugAtomsMode(
-            self.session, self._total_mobile, self._annotations,
-            tug_hydrogens = self.tug_hydrogens)
-        self._mouse_modes.register_mode(mt.name, mt, 'right', ['control'])
 
-        self._event_handler.add_event_handler('mouse tugging', 'new frame',
-                                            self._update_mouse_tugging)
-
+        
         if self.params.track_ramachandran_status and self._rama_plot is not None:
             self._rama_go_live()
 
@@ -2484,14 +2476,10 @@ class Isolde():
             #~ self._map_rezone_handler = None
 
         self._disable_rebuild_residue_frame()
-        sh.disconnect_distance_restraints_from_sim(self._sim_ca_ca2_restr)
-        sh.disconnect_distance_restraints_from_sim(self._sim_o_n4_restr)
-        sh.disconnect_position_restraints_from_sim(self._sim_pos_restr)
 
         self.sim = None
         self._system = None
         self._update_menu_after_sim()
-        self._mouse_modes.remove_mode(self._mouse_tugger.name)
         #mouse_mode_names = self._mouse_modes.get_names()
         #for n in mouse_mode_names:
             #self._mouse_modes.remove_mode(n)
@@ -2558,7 +2546,7 @@ class Isolde():
             # selchains = [row[1] for row in selatoms_by_chain]
             all_atoms = sm.atoms
             all_res = sm.residues
-            sel_res = selected_atoms.unique_residues
+            sel_res = selatoms.unique_residues
             sel_res_indices = all_res.indices(sel_res)
             from chimerax.core.atomic.structure import Structure
 
@@ -2570,7 +2558,7 @@ class Isolde():
                 if not frag.atoms.num_selected:
                     continue
                 sel_frags.append(frag)
-                sel_frags.append(all_residues.indices(frag))
+                sel_frags.append(all_res.indices(frag))
 
 
             for frag, frag_indices in zip(sel_frags, sel_frag_res_indices):
@@ -2622,24 +2610,6 @@ class Isolde():
     ##############################################################
     # Simulation on-the-fly control functions
     ##############################################################
-
-    def _update_mouse_tugging(self, *_):
-        mtug = self._mouse_tugger
-        si = self._sim_interface
-        cur_tug = self._currently_tugging
-        tugging, tug_atom, xyz0 = mtug.status
-        if tugging:
-            if not cur_tug:
-                tug_index = self._total_sim_construct.index(tug_atom)
-                self._last_tugged_index = tug_index
-                self._currently_tugging = True
-            else:
-                tug_index = self._last_tugged_index
-            si.tug_atom_to(tug_index, xyz0)
-        elif cur_tug:
-            si.release_tugged_atom(self._last_tugged_index)
-            self._last_tugged_index = None
-            self._currently_tugging = False
 
 
 
@@ -2964,7 +2934,7 @@ class Isolde():
                 near_atoms = self._total_mobile, range = cutoff)
 
 
-    def update_ramachandran(self):
+    def update_ramachandran(self, *_):
         self._rama_counter = (self._rama_counter + 1) % self.params.rounds_per_rama_update
         if self._rama_counter == 0:
             rv = self.rama_validator
@@ -2977,7 +2947,8 @@ class Isolde():
     def update_omega_check(self, *_):
         rc = self._rama_counter
         ov = self.omega_validator
-        if self._rama_counter == 0:
+        # Stagger Ramachandran and omega validation to reduce jerkiness
+        if self._rama_counter == self.params.rounds_per_rama_update//2:
             cis, twisted = ov.find_outliers()
             ov.draw_outliers(cis, twisted)
         ov.update_coords()

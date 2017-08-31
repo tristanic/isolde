@@ -6,10 +6,13 @@ def _property_factory(name):
         return self._params[name]
     def fset(self, val):
         units = self._default_params[name][1]
-        if type(val) == Quantity:
-            self._params[name] = val.in_units_of(units)
+        if type(units) == Unit:
+            if type(val) == Quantity:
+                self._params[name] = val.in_units_of(units)
+            else:
+                self._params[name] = val*units
         else:
-            self._params[name] = val*units
+            self._params[name] = val
     return property(fget, fset)
 
 def autodoc(cls):

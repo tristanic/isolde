@@ -1,6 +1,7 @@
 setpaths.sh
 build/
 dist/
+./pyuic
 ChimeraX_ISOLDE.egg-info/
 src/__pycache__/
 src/_geometry.cpy*

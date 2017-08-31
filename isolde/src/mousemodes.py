@@ -14,7 +14,7 @@ class TugAtomsMode(MouseMode):
     name = 'tug'
     #icon_file = 'tug.png'
 
-    def __init__(self, session, atoms, annotations, tug_hydrogens = False):
+    def __init__(self, session, atoms, annotations):
         MouseMode.__init__(self, session)
         self._tugging = False
         self._last_xy = None
@@ -28,6 +28,10 @@ class TugAtomsMode(MouseMode):
         self._atoms = atoms
         # Model to draw the arrow into
         self._annotations = annotations
+        
+        # Variables to be set by the caller
+        self.last_tugged_index = None
+        self.already_tugging = False
 
     def cleanup(self):
         self._delete_arrow()

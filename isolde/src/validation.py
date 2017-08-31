@@ -6,8 +6,10 @@
 
 import os
 import numpy
-from math import degrees, radians
+from math import degrees, radians, pi
 from . import geometry
+from .constants import defaults
+from .dihedrals import Dihedrals
 
 package_directory = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(package_directory, 'molprobity_data')
@@ -235,10 +237,10 @@ def sort_into_rama_cases(counts_for_rama, rama_resnames, omega_vals):
     return case_arrays, numpy.array(rama_case_list)
     
 
-CIS_MIN = radians(-30)
-CIS_MAX = radians(30)
-TRANS_MIN = radians(150)
-TRANS_MAX = radians(-150)
+CIS_MAX = defaults.CIS_PEPTIDE_BOND_CUTOFF
+CIS_MIN = -CIS_MAX
+TRANS_MIN = pi - defaults.TWISTED_PEPTIDE_BOND_DELTA
+TRANS_MAX = -TRANS_MIN
 
     
 def omega_type(omega):
@@ -556,7 +558,7 @@ class OmegaValidator():
         self.current_model = model
         self.clear()
         self._initialize_drawings()
-        self.omega = [o for o in omega_list if o != None]
+        self.omega = Dihedrals([o for o in omega_list if o is not None])
         self.find_outliers()
     
     def _initialize_drawings(self):
@@ -577,16 +579,27 @@ class OmegaValidator():
         
     
     def find_outliers(self):
-        cis = []
-        twisted = []
-        for o in self.omega:
-            if abs(o.value)  <= CIS_MAX:
-                cis.append(o)
-            elif abs(o.value) <= TRANS_MIN:
-                twisted.append(o)
+        omegas = self.omega
+        abs_o_vals = abs(omegas.values)
+        cis_mask = abs_o_vals <= CIS_MAX
+        cis_indices = numpy.where(cis_mask)[0]
+        cis = omegas[cis_indices]
+        twisted_indices = numpy.where(numpy.logical_xor(
+                            abs_o_vals <= TRANS_MIN, cis_mask))[0]
+        twisted = omegas[twisted_indices]
         self._current_cis = cis
         self._current_twisted = twisted
         return cis, twisted
+        
+        
+        #~ for o in self.omega:
+            #~ if abs(o.value)  <= CIS_MAX:
+                #~ cis.append(o)
+            #~ elif abs(o.value) <= TRANS_MIN:
+                #~ twisted.append(o)
+        #~ self._current_cis = cis
+        #~ self._current_twisted = twisted
+        #~ return cis, twisted
     
     def draw_outliers(self, cis, twisted):
         #self._cis_drawing.set_display(False)

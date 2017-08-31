@@ -50,6 +50,7 @@ _defaults = {
     'SIM_MODE_MIN':               0,
     'SIM_MODE_EQUIL':             1,
     'SIM_MODE_UNSTABLE':          2,
+    'MIN_CONVERGENCE_FORCE_TOL':  50.0, # *unit.kilojoule_per_mole/unit.nanometer
 
 
     ###
@@ -81,6 +82,7 @@ _defaults = {
     'DIHEDRAL_RESTRAINT_CUTOFF':    pi/6,  # * unit.radians, # 30 degrees
     'ROTAMER_RESTRAINT_CUTOFF':     pi/12, # * unit.radians, # 15 degrees
     'CIS_PEPTIDE_BOND_CUTOFF':      pi/6,  # * unit.radians, # 30 degrees
+    'TWISTED_PEPTIDE_BOND_DELTA':  pi/6,  # * unit.radians,
 
     ###
     # Constants specific to ChimeraX - lengths in Angstroms beyond this point!
@@ -95,7 +97,7 @@ _defaults = {
     'HARD_SHELL_CUTOFF':            8,      # Angstroms
     'FIX_SOFT_SHELL_BACKBONE':      False,
     'TRACK_RAMACHANDRAN_STATUS':    True,
-    'ROUNDS_PER_RAMA_UPDATE':       5,
+    'ROUNDS_PER_RAMA_UPDATE':       20,
     'REMASK_MAPS_DURING_SIM':       True,
     'ROUNDS_PER_MAP_REMASK':        20,
     'HIDE_SURROUNDINGS_DURING_SIM': True,

@@ -490,34 +490,34 @@ class Position_Restraints:
         return self[numpy.argwhere(atom_indices != -1).ravel()]
     
     
-class Restraint_Bond_Drawings:
-    '''
-    Handles visual representations of positional and distance restraints.
-    Yet to be implemented.
-    '''
-    pass
+#~ class Restraint_Bond_Drawings:
+    #~ '''
+    #~ Handles visual representations of positional and distance restraints.
+    #~ Yet to be implemented.
+    #~ '''
+    #~ pass
 
 
         
-def restraint_bond_geometry():
-    '''
-    Create a simple prototype dashed bond of length 1.
-    '''
-    from chimerax.core.surface.shapes import cylinder_geometry
-    from chimerax.core.geometry import translation
-    from copy import copy
-    v0, n0, t0 = cylinder_geometry(0.075, 0.15)
-    v = copy(v0)
-    n = copy(n0)
-    t = copy(t0)
-    for i in range(1, 5):
-        tz = translation((0,0,0.2*i))
-        nv = len(v)
-        v = numpy.concatenate((v, tz.moved(v0)))
-        n = numpy.concatenate((n, n0))
-        t = numpy.concatenate((t, t0 + nv))
+#~ def restraint_bond_geometry():
+    #~ '''
+    #~ Create a simple prototype dashed bond of length 1.
+    #~ '''
+    #~ from chimerax.core.surface.shapes import cylinder_geometry
+    #~ from chimerax.core.geometry import translation
+    #~ from copy import copy
+    #~ v0, n0, t0 = cylinder_geometry(0.075, 0.15)
+    #~ v = copy(v0)
+    #~ n = copy(n0)
+    #~ t = copy(t0)
+    #~ for i in range(1, 5):
+        #~ tz = translation((0,0,0.2*i))
+        #~ nv = len(v)
+        #~ v = numpy.concatenate((v, tz.moved(v0)))
+        #~ n = numpy.concatenate((n, n0))
+        #~ t = numpy.concatenate((t, t0 + nv))
     
-    return (v, n, t)
+    #~ return (v, n, t)
      
 
 

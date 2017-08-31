@@ -20,7 +20,7 @@ from ..threading.shared_array import TypedMPArray, SharedNumpyArray
 from . import sim_thread
 from .sim_thread import SimComms, SimThread, ChangeTracker
 from ..constants import defaults
-from ..param_mgr import Param_Mgr, autodoc
+from ..param_mgr import Param_Mgr, autodoc, param_properties
 
 OPENMM_LENGTH_UNIT = defaults.OPENMM_LENGTH_UNIT
 OPENMM_FORCE_UNIT = defaults.OPENMM_FORCE_UNIT
@@ -118,8 +118,10 @@ class SimParams(Param_Mgr):
             'minimization_steps_per_gui_update':(defaults.MIN_STEPS_PER_GUI_UPDATE, None),
             'simulation_startup_rounds':        (defaults.SIM_STARTUP_ROUNDS, None),
             'maximum_unstable_rounds':          (defaults.MAX_UNSTABLE_ROUNDS, None),
+            'minimization_convergence_tol':     (defaults.MIN_CONVERGENCE_FORCE_TOL, OPENMM_FORCE_UNIT),
             'tug_hydrogens':                    (False, None),
             'hydrogens_feel_maps':              (False, None),
+            
             }
 
 
@@ -139,16 +141,80 @@ class ChimeraXSimInterface:
     '''
     Application-facing interface between ChimeraX and a SimThread object.
     Handles interconversion between ChimeraX and generic Numpy types and
-    bi-directional communication.
+    bi-directional communication. A new instance is created for each
+    simulation, and should be discarded once the simulation is done.
     '''
     TIMEOUT = 20 # seconds
 
-    def __init__(self, session, isolde):
+    def __init__(self, session, isolde, time_loops = False):
         self.session = session
         self.isolde = isolde
         self._sim_thread = None
         self._pool = None
+        self.time_loops = time_loops
+        self._last_time = None
+        
+            # Registry for all the event handlers that should only be 
+            # active when a simulation is running. NOTE: these will 
+            # automatically be destroyed on simulation termination.
+        self._sim_event_names = {
+            'isolde': [],
+            'session': []
+            }
+        self.isolde._isolde_events.add_event_handler('sim_interface_sim_start', 
+            'simulation started', self._sim_start_cb)
+        self.isolde._isolde_events.add_event_handler('cleanup_on_sim_termination',
+            'simulation terminated', self.finalize)
+    
+    def finalize(self, *_):
+        #self.stop_sim()
+        self._release_all_sim_events()
+        self._disable_mouse_tugging()
+        self.isolde._isolde_events.remove_event_handler('sim_interface_sim_start')
+        self.isolde._isolde_events.remove_event_handler('cleanup_on_sim_termination')
+        
+    def _sim_start_cb(self, *_):
+        self._initialize_mouse_tugging()
+        self._register_sim_event('ramachandran update', 'isolde', 
+                                 'completed simulation step',
+                                  self.isolde.update_ramachandran)
+        self._register_sim_event('omega update', 'isolde', 
+                                 'completed simulation step',
+                                 self.isolde.update_omega_check)
+    
+    
+    
+    def _initialize_mouse_tugging(self):
+        from .. import mousemodes
+        isolde = self.isolde
+        mt = self._mouse_tugger = mousemodes.TugAtomsMode(
+            self.session, self.tuggable_atoms, isolde._annotations)
+        isolde._mouse_modes.register_mode(mt.name, mt, 'right', ('control',))
+        self._register_sim_event('mouse tugging', 'session', 'new frame', 
+                                 self._update_mouse_tugging)
+    
+    def _disable_mouse_tugging(self):
+        self.isolde._mouse_modes.remove_mode(self._mouse_tugger.name)
+    
+    def _update_mouse_tugging(self, *_):
+        mtug = self._mouse_tugger
+        cur_tug = mtug.already_tugging
+        tugging, tug_atom, xyz0 = mtug.status
+        if tugging:
+            if not cur_tug:
+                tug_index = self.tuggable_atoms.index(tug_atom)
+                mtug.last_tugged_index = tug_index
+                mtug.already_tugging = True
+            else:
+                tug_index = mtug.last_tugged_index
+            self.tug_atom_to(tug_index, xyz0)
+        elif cur_tug:
+            self.release_tugged_atom(mtug.last_tugged_index)
+            mtug.last_tugged_index = None
+            mtug.already_tugging = False
 
+    
+    
     @property
     def sim_running(self):
         return self._pool is not None
@@ -158,7 +224,7 @@ class ChimeraXSimInterface:
             return
         self.change_tracker.register_change(self.change_tracker.PAUSE_TOGGLE)
 
-    def stop_sim(self):
+    def stop_sim(self, reason, err = None):
         '''
         Try to stop the simulation gracefully, or halt the simulation
         thread on a timeout.
@@ -168,18 +234,11 @@ class ChimeraXSimInterface:
         self.change_tracker.register_change(self.change_tracker.STOP)
         self._pool.terminate()
         self._pool = None
-        self._cleanup_event_handlers()
+        self.isolde.triggers.activate_trigger('simulation terminated', (reason, err))
         # TODO: Add handler for timeout situations
 
-    def _cleanup_event_handlers(self):
-        eh = self.isolde._event_handler
-        ih = self.isolde._isolde_events
-        eh.remove_event_handler('simulation_initialization', error_on_missing = False)
-        eh.remove_event_handler('check_sim_on_gui_update', error_on_missing = False)
-        ih.remove_all_handlers_for_trigger('completed simulation step')
-
-
     def _set_temperature(self, temperature):
+        ct = self.change_tracker
         self.comms_object.thread_safe_set_value('temperature', temperature)
         ct.register_change(ct.TEMPERATURE)
 
@@ -202,7 +261,7 @@ class ChimeraXSimInterface:
 
     @property
     def sim_mode(self):
-        mode = self.comms_obj['sim mode'].value
+        mode = self.comms_object['sim mode'].value
         if mode == SIM_MODE_MIN:
             return 'min'
         elif mode == SIM_MODE_EQUIL:
@@ -214,7 +273,7 @@ class ChimeraXSimInterface:
 
     @sim_mode.setter
     def sim_mode(self, mode):
-        comms = self.comms_obj
+        comms = self.comms_object
         if mode not in ('min', 'equil'):
             raise RuntimeError('Simulation mode should be either "min" or "equil"!')
         if mode == 'min':
@@ -259,15 +318,37 @@ class ChimeraXSimInterface:
         with target_array.get_lock(), k_array.get_lock():
             target_array[index] = target
             k_array[index] = spring_constant
-        ct.register_array_changes(target_key, indices = (index, ))
-        ct.register_array_changes(k_key, indices = (index, ))
+        ct.register_array_changes('tugging', indices = index)
 
 
     def release_tugged_atom(self, index):
         zeros = numpy.array([0,0,0], numpy.double)
         self.tug_atom_to(index, zeros, spring_constant = 0)
 
-
+    def _register_sim_event(self, name, owner, trigger_name, callback):
+        if owner == 'isolde':
+            registry = self.isolde._isolde_events
+        elif owner == 'session':
+            registry = self.isolde._event_handler
+        registry.add_event_handler(name, trigger_name, callback)
+        self._sim_event_names[owner].append(name)
+    
+    def _release_sim_event(self, name, owner):
+        name_list = self._sim_event_names[owner]
+        name_index = name_list.index(name)
+        if owner == 'isolde':
+            registry = self.isolde._isolde_events
+        elif owner == 'session':
+            registry = self.isolde._event_handler
+        registry.remove_event_handler(name)
+        name_list.pop(name_index)
+    
+    def _release_all_sim_events(self, *_):
+        for owner, name_list in self._sim_event_names.items():
+            for name in reversed(name_list):
+                self._release_sim_event(name, owner)
+        
+    
     def _sim_init_handler(self, *_):
         '''
         Handler to run on ChimeraX 'new frame' trigger while the simulation
@@ -292,20 +373,19 @@ class ChimeraXSimInterface:
 
         if changes & ct.ERROR:
             err, traceback = err_q.get()
-            self.stop_sim()
             print(traceback)
+            self.stop_sim(self.isolde.sim_outcome.DISCARD, err)
             raise err
 
         if changes & ct.INIT_COMPLETE:
             print(bin(changes))
             self.session.logger.status('Initialisation complete')
-            eh = self.isolde._event_handler
-            eh.remove_event_handler('simulation_initialization')
+            self._release_sim_event('simulation_initialization', 'session')
             # Tell the thread it's ok to start
             comms['status'].put('Go')
-            eh.add_event_handler('check_sim_on_gui_update',
-                                'new frame', self._sim_loop_handler)
-            ih = isolde._isolde_events
+            self.isolde.triggers.activate_trigger('simulation started', None)
+            self._register_sim_event('check_sim_on_gui_update', 
+                    'session', 'new frame', self._sim_loop_handler)
 
 
 
@@ -318,10 +398,10 @@ class ChimeraXSimInterface:
         the next cycle.
         '''
         session = self.session
+        isolde = self.isolde
         comms = self.comms_object
         ct = self.change_tracker
         thread = self._sim_thread
-        step_counter = self.step_counter
         err_q = comms['error']
         status_q = comms['status']
         while status_q.full():
@@ -330,9 +410,11 @@ class ChimeraXSimInterface:
             changes = ct.changes.value
             ct.clear_outputs()
 
-        if step_counter == 10:
-            comms.thread_safe_set_value('sim mode', SIM_MODE_EQUIL)
-            ct.register_change(ct.MODE)
+        if self.step_counter == 10:
+            self.sim_mode = 'equil'
+        
+        if self.step_counter < 10 and (changes & ct.MIN_COMPLETE):
+            self.sim_mode = 'equil'
 
         if changes & ct.ERROR:
             err_q = comms['error']
@@ -347,8 +429,8 @@ class ChimeraXSimInterface:
                 traceback = ''
             #~ if thread.is_alive():
                 #~ thread.terminate()
-            self.stop_sim()
             print(traceback)
+            self.stop_sim(self.isolde.sim_outcome.DISCARD, err)
             raise err
 
         #~ if not thread.is_alive():
@@ -361,14 +443,19 @@ class ChimeraXSimInterface:
             session.logger.info(warn_str)
 
         if changes & ct.COORDS_READY:
+            if self.time_loops:
+                if self._last_time is None:
+                    self._last_time = time()
+                self.loop_time = time()-self._last_time
+                self._last_time = time()
             new_coords = comms['coords']
             with new_coords.get_lock():
                 self.all_atoms.coords = new_coords
-            step_counter += 1
-            isolde.triggers.activate_trigger('completed simulation step', step_counter)
+            self.step_counter += 1
+            isolde.triggers.activate_trigger('completed simulation step', self.step_counter)
 
 
-    def start_sim_thread(self, sim_params, all_atoms, fixed_flags,
+    def start_sim_thread(self, sim_params, all_atoms, tuggable_atoms, fixed_flags,
                          backbone_dihedrals, rotamers, distance_restraints,
                          position_restraints, density_maps = None):
         '''
@@ -409,7 +496,7 @@ class ChimeraXSimInterface:
         self.sim_params = sim_params
         self.temperature = sim_params['temperature'].value_in_unit(OPENMM_TEMPERATURE_UNIT)
 
-
+        self.tuggable_atoms = tuggable_atoms
         fixed_indices = self.fixed_indices = numpy.where(fixed_flags)[0]
         mobile_indices = self.mobile_indices = numpy.where(numpy.invert(fixed_flags))[0]
         self.all_atoms = all_atoms
@@ -433,7 +520,7 @@ class ChimeraXSimInterface:
         comms_coords = comms['coords'] = SharedNumpyArray(
             TypedMPArray(
                 FLOAT_TYPE, coords.size)).reshape(coords.shape)
-        ct.add_managed_array(ct.EDIT_COORDS, 'coords', (comms_coords, ), 'coords_changed_cb')
+        ct.add_managed_arrays(ct.EDIT_COORDS, 'coords', (comms_coords, ), 'coords_changed_cb')
 
         # Container for data describing the model that will be fixed for
         # the duration of the simulation
@@ -470,15 +557,17 @@ class ChimeraXSimInterface:
         # Provide pre-defined residue templates for residues OpenMM can't
         # identify on its own.
         self.find_residue_templates()
-
+        
+        self._prepare_tugging_force(tuggable_atoms)
+        
         # Secondary structure and peptide bond backbone restraints
         bd = self.backbone_dihedrals = backbone_dihedrals
         phi, psi, omega = (bd.phi, bd.psi, bd.omega)
-        self._phi_targets = self._prepare_dihedral_restraints(phi, 'phi')
-        self._phi_targets = self._prepare_dihedral_restraints(psi, 'psi')
-        self._omega_targets = self._prepare_dihedral_restraints(omega, 'omega')
+        self._phi_targets, self._phi_ks = self._prepare_dihedral_restraints(phi, 'phi')
+        self._psi_targets, self._psi_ks = self._prepare_dihedral_restraints(psi, 'psi')
+        self._omega_targets, self._omega_ks = self._prepare_dihedral_restraints(omega, 'omega')
 
-        self._set_all_omega_restraints_from_current_geometry(omega, track_changes = False)
+        self._set_all_omega_restraints_from_current_geometry(omega)
 
         # AMBER CMAP corrections for implicit solvent
         self._define_cmap_residues(phi, psi)
@@ -493,13 +582,14 @@ class ChimeraXSimInterface:
 
         if density_maps is not None:
             self._prepare_density_maps(density_maps)
-
+        
         self._pool = start_pool(sim_params, sim_data, comms, ct)
 
         self._init_start_time = time()
         self.step_counter = 0
         self.thread_result = self._pool.apply_async(sim_thread._sim_thread, args=(), error_callback = error_cb)
-        self.isolde._event_handler.add_event_handler('simulation_initialization', 'new frame', self._sim_init_handler)
+        self._register_sim_event('simulation_initialization', 'session', 
+                                 'new frame', self._sim_init_handler)
 
     def _prepare_tugging_force(self, allowed_targets):
         data = self.sim_data
@@ -524,7 +614,7 @@ class ChimeraXSimInterface:
         dihe_i = numpy.reshape(all_atoms.indices(dihedrals.atoms), (n_dihe, 4))
         atom_key = name + ' atom indices'
         target_key = name + ' targets'
-        k_key = name + 'spring constants'
+        k_key = name + ' spring constants'
         self.sim_data[atom_key] = dihe_i
         t_array = self.comms_object[target_key] = SharedNumpyArray(TypedMPArray(FLOAT_TYPE, n_dihe))
         k_array = self.comms_object[k_key] = SharedNumpyArray(TypedMPArray(FLOAT_TYPE, n_dihe))
@@ -533,8 +623,8 @@ class ChimeraXSimInterface:
 
         change_tracker = self.change_tracker
         change_bit = change_tracker.DIHEDRAL_RESTRAINT
-        change_tracker.add_managed_arrays(change_bit, name, (t_array, k_array) 'dihedral_restraint_cb')
-        return t_array
+        change_tracker.add_managed_arrays(change_bit, name, (t_array, k_array), 'dihedral_restraint_cb')
+        return t_array, k_array
 
     def _set_all_omega_restraints_from_current_geometry(self, omega, track_changes = True):
         '''
@@ -543,9 +633,12 @@ class ChimeraXSimInterface:
         '''
         cis_offset = self.sim_params['cis_peptide_bond_cutoff_angle']/unit.radians
         o_vals = omega.values
-        omega_targets = numpy.logical_or(
+        omega_targets = omega.targets = numpy.logical_or(
                     o_vals > cis_offset, o_vals < -cis_offset).astype(float) * pi
         self._omega_targets[:] = omega_targets
+        k = self.sim_params.peptide_bond_spring_constant.value_in_unit(OPENMM_RADIAL_SPRING_UNIT)
+        self._omega_ks[:] = k
+        omega.spring_constants = k
         if track_changes:
             self.change_tracker.register_array_changes('omega')
 
@@ -629,7 +722,7 @@ class ChimeraXSimInterface:
             for i,r in enumerate(d_r):
                 t_array[i] = r.target_distance
                 k_array[i] = r.spring_constant
-                i_array.append(all_atoms.indices(r.atoms).tolist())
+                i_array.append(all_atoms.indices(r.atoms))
             change_tracker.add_managed_arrays(change_bit, key, (t_array, k_array), 'distance_restraint_cb')
 
     def _prepare_position_restraints(self, position_restraints):
@@ -657,7 +750,7 @@ class ChimeraXSimInterface:
         change_tracker.add_managed_arrays(
             change_bit, 'position restraints', (pr_targets, pr_ks), 'position_restraint_cb')
 
-    def _prepare_density_maps(self, density_maps):
+    def _prepare_density_maps(self, density_maps, normalize = False):
         '''
         Even though updating these during a simulation is not yet possible,
         we want to leave the option open. For now, all mobile heavy atoms
@@ -680,6 +773,7 @@ class ChimeraXSimInterface:
             for key, imap in density_maps.items():
                 name = imap.get_name()
                 density_map_names.append(name)
+                pad = imap.mask_cutoff
                 vd, r = imap.crop_to_selection(atoms, pad, normalize)
 
                 tf = r.xyz_to_ijk_transform.matrix

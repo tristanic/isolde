@@ -45,6 +45,7 @@ class ChangeTracker:
     EDIT_COORDS             = 1<<11
 
     #Outputs
+    MIN_COMPLETE = 1<<27
     INIT_COMPLETE = 1<<28
     COORDS_READY = 1<<29
     UNSTABLE = 1<<30
@@ -73,9 +74,9 @@ class ChangeTracker:
         sh = self.sim_handler
         for key, arr in self._managed_arrays.items():
             cb_name = arr[-1]
-            arr[-1] = getattr(sim_thread, cb_name)
+            self._callbacks[key] = getattr(sim_thread, cb_name)
 
-    def run_all_necessary_callbacks(self, changes):
+    def run_all_necessary_callbacks(self, sim_thread, changes):
         '''
         Runs the callbacks to apply the changes for any arrays whose
         contents have changed since the last iteration. Callbacks should
@@ -87,10 +88,9 @@ class ChangeTracker:
         for change_bit in pma.keys():
             if changes & change_bit:
                 for managed_array in pma[change_bit]:
-                    callback = managed_array[-1]
                     key = managed_array[-2]
-                    change_mask, arrays = managed_array[2,3]
-
+                    callback = getattr(sim_thread, managed_array[-1])
+                    change_mask, arrays = managed_array[2:4]
                     callback(change_mask, key, arrays)
 
 
@@ -282,16 +282,18 @@ class SimThread:
         ct = self.change_tracker = change_tracker
         changes = ct.changes
         force_maps = self.force_index_maps = {
-            'tugging':              None
-            'dihedrals':            {}
-            'rotamers':             {}
-            'distance restraints':  {}
-            'position restraints':  None
-            'density maps':         {}
+            'tugging':              None,
+            'dihedrals':            {},
+            'rotamers':             {},
+            'distance restraints':  {},
+            'position restraints':  None,
+            'density maps':         {},
         }
         error_queue = comms['error']
         self.sim_mode = SIM_MODE_MIN
-
+        self.last_max_force = par['max_allowable_force']
+        
+        
         # Counters for potential timeout conditions
         self.unstable_counter = 0
         self.MAX_UNSTABLE_ROUNDS = 20
@@ -437,7 +439,12 @@ class SimThread:
         sh = self.sim_handler
         ct = self.change_tracker
         status_q = comms['status']
-
+        sim_mode = self.sim_mode
+        
+        # Update parameters for all arrays that have changed
+        ct.run_all_necessary_callbacks(self, changes)
+        sh.update_restraints_in_context_if_needed()
+        
         if changes & ct.MODE:
             mode = comms['sim mode']
             sim_mode = self.sim_mode = mode.value
@@ -449,8 +456,9 @@ class SimThread:
         if sim_mode == SIM_MODE_EQUIL:
             max_allowed_movement = par['max_atom_movement_per_step']
             coords, fast_indices = sh.equil_step(par['sim_steps_per_gui_update'], max_allowed_movement)
-            if fast_indices:
-                comms.thread_safe_set_value('mode', SIM_MODE_UNSTABLE)
+            if fast_indices is not None:
+                comms.thread_safe_set_value('sim mode', SIM_MODE_UNSTABLE)
+                self.last_max_force = par['max_allowable_force']
                 ct.register_change(ct.UNSTABLE)
                 out_str = 'Simulation has become unstable! The following '\
                          +'atoms are moving too fast: {}'\
@@ -468,6 +476,11 @@ class SimThread:
                          +'minimise...'
                 out_str = out_str.format(max_force.in_units_of(CHIMERAX_FORCE_UNIT), max_index)
                 status_q.put(out_str)
+            elif abs(self.last_max_force - max_force) < par.minimization_convergence_tol:
+                ct.register_change(ct.MIN_COMPLETE)
+                self.last_max_force = max_allowed_force
+            else:
+                self.last_max_force = max_force
 
         elif sim_mode == SIM_MODE_UNSTABLE:
             stable_force_limit = par['max_stable_force']
@@ -478,7 +491,7 @@ class SimThread:
                 out_str = 'Forces back within stable limits. Returning to '\
                          +'equilibration.'
                 status_q.put(out_str)
-                comms.thread_safe_set_value('mode', SIM_MODE_EQUIL)
+                comms.thread_safe_set_value('sim mode', SIM_MODE_EQUIL)
                 self.unstable_counter = 0
             elif max_force < max_allowed_force and self.unstable_counter == self.MAX_UNSTABLE_ROUNDS:
                 out_str = 'Maximum number of minimisation rounds reached. '\
@@ -486,7 +499,7 @@ class SimThread:
                         +'stable. Attempting to return to equilibration...'\
                         .format(max_force)
                 status_q.put(out_str)
-                comms.thread_safe_set_value('mode', SIM_MODE_EQUIL)
+                comms.thread_safe_set_value('sim mode', SIM_MODE_EQUIL)
                 self.unstable_counter = 0
             elif self.unstable_counter >= self.MAX_UNSTABLE_ROUNDS:
                 err_str = 'Unable to reduce forces to within tolerable '\
@@ -524,13 +537,13 @@ class SimThread:
         '''
         sh = self.sim_handler
         m_targets, m_ks = arrays
-        with targets.get_lock(), change_mask.get_lock(), ks.get_lock():
+        with m_targets.get_lock(), change_mask.get_lock(), m_ks.get_lock():
             indices = numpy.where(change_mask)[0]
             change_mask[:] = False
-            ts = m_targets[indices].copy()*CHIMERAX_LENGTH_UNIT
-            ks = m_ks[indices].copy()*CHIMERAX_SPRING_UNIT
+            ts = m_targets[indices].copy()
+            ks = m_ks[indices].copy()
         force_map = self.force_index_maps['tugging']
-        sh.tug(force_map[indices], ts, ks)
+        sh.tug_atoms(force_map[indices], ts, ks)
 
     def dihedral_restraint_cb(self, change_mask, name, arrays):
         '''
@@ -539,7 +552,7 @@ class SimThread:
         sh = self.sim_handler
         force_map = self.dihedral_force_maps[name]
         m_ts, m_ks = arrays
-        with ts.get_lock(), ks.get_lock(), change_mask.get_lock():
+        with m_ts.get_lock(), m_ks.get_lock(), change_mask.get_lock():
             indices = numpy.where(change_mask)[0]
             change_mask[:] = False
             ts = m_ts[indices].copy()
@@ -607,8 +620,9 @@ class SimThread:
 
     def init_tugging(self):
         data = self.sim_data
+        sh = self.sim_handler
         tuggable_indices = data['tuggable indices']
-        self.force_index_maps['tugging'] = numpy.empty(len(tuggable_indices), int)
+        tfm = self.force_index_maps['tugging'] = numpy.empty(len(tuggable_indices), int)
         sh.couple_atoms_to_tugging_force(tuggable_indices, tfm)
 
     def init_dihedrals(self, name, target_array = None):
@@ -653,14 +667,14 @@ class SimThread:
         comms = self.comms
         data = self.sim_data
         force_map_container = self.distance_restraint_force_maps
+        sh = self.sim_handler
         for key in keys:
             t_array = comms[key + ' targets']
             k_array = comms[key + ' k']
             i_array = data['distance restraint indices'][key]
             with t_array.get_lock(), k_array.get_lock():
                 force_map = force_map_container[key] = numpy.empty(len(k_array), int)
-                for i, (indices, t, k) in enumerate(zip(i_array, t_array, k_array)):
-                    force_map[i] = force.addBond(*indices, (k, t))
+                sh.add_distance_restraints(i_array, t_array, k_array, force_map)
 
 
     def init_position_restraints(self, atom_indices, ks, targets):
@@ -684,7 +698,7 @@ class SimThread:
             atom_ks = comms['density map atom ks - ' + name]
             global_k = comms['density map global ks - ' + name]
             transform = data['density map transforms'][name]
-            force_map = force_maps[name]
+            force_map = force_maps[name] = numpy.empty(len(atom_indices), int)
             with map_data.get_lock(), global_k.get_lock():
                 g_k = global_k.value
                 map_force = force_dict[name] = sh.map_to_force_field(

@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-
+import numpy
 from math import degrees, radians
 
 class Dihedral():
@@ -21,6 +21,9 @@ class Dihedral():
         #self.resnums = self.residues.numbers
         self._rama_case = None
         
+        self._target = 0.0
+        self._spring_constant = 0.0
+        
         # Index of the matching CustomTorsionForce in the simulation so
         # we can restrain this dihedral as needed
         self.sim_index = -1
@@ -31,6 +34,30 @@ class Dihedral():
     def value(self):
         from .geometry import get_dihedral
         return get_dihedral(*self.atoms.coords)
+    
+    @property
+    def target(self):
+        '''
+        The target angle to push this dihedral towards, in radians.
+        '''
+        return self._target
+    
+    @target.setter
+    def target(self, val):
+        self._target = val
+        
+    @property
+    def spring_constant(self):
+        '''
+        The spring constant to restrain this dihedral with, in 
+        kJ mol-1 rad-2
+        '''
+        return self._spring_constant
+    
+    @spring_constant.setter
+    def spring_constant(self, k):
+        self._spring_constant = k
+    
     
     @property
     def coords(self):
@@ -86,7 +113,6 @@ class Dihedrals():
         return iter(self.dihedrals)
     
     def __getitem__(self, i):
-        import numpy
         if isinstance(i,(int, numpy.integer)):
             return self.dihedrals[i]
         elif isinstance(i,(slice)):
@@ -142,7 +168,6 @@ class Dihedrals():
         if not len(self):
             return None
         if self._atoms is None:
-            import numpy
             atoms = numpy.empty([len(self),4],dtype='object')
             for i, d in enumerate(self):
                 atoms[i] = d.atoms
@@ -158,6 +183,33 @@ class Dihedrals():
             self._residues = Residues(residues)            
         return self._residues
         
+    
+    @property
+    def targets(self):
+        return numpy.array([d.target for d in self], numpy.float32)
+    
+    @targets.setter
+    def targets(self, t_or_t_array):
+        if hasattr(t_or_t_array, '__len__'):
+            for d, t in zip(self, t_or_t_array):
+                d.target = t
+        else:
+            for d in self:
+                d.target = t_or_t_array
+                
+    
+    @property
+    def spring_constants(self):
+        return numpy.array([d.spring_constant for d in self], numpy.float32)
+    
+    @spring_constants.setter
+    def spring_constants(self, k_or_k_array):
+        if hasattr(k_or_k_array, '__len__'):
+            for d, k in zip(self, k_or_k_array):
+                d.spring_constant = k
+        else:
+            for d in self:
+                d.spring_constant = k_or_k_array
     @property
     def coords(self):
         return self.atoms.coords
@@ -213,7 +265,6 @@ class Backbone_Dihedrals():
             raise TypeError('Please provide a model containing atoms!')
         
         self.session = session
-        import numpy
         # It's most convenient to determine and store the Ramachandran case
         # for each residue here, otherwise things start to get messy when
         # working with subsets. We'll also keep a list of all proline indices
@@ -300,7 +351,6 @@ class Backbone_Dihedrals():
     @property
     def phi_vals(self):
         if self._phi_vals is None:
-            import numpy
             self._phi_vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
         self._phi_vals[self._phi_indices] = self.phi.values
         return self._phi_vals
@@ -308,7 +358,6 @@ class Backbone_Dihedrals():
     @property
     def psi_vals(self):
         if self._psi_vals is None:
-            import numpy
             self._psi_vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
         self._psi_vals[self._psi_indices] = self.psi.values
         return self._psi_vals
@@ -316,7 +365,6 @@ class Backbone_Dihedrals():
     @property    
     def omega_vals(self):
         if self._omega_vals is None:
-            import numpy
             self._omega_vals = numpy.ones(len(self.residues),numpy.float32)*numpy.nan
         self._omega_vals[self._omega_indices] = self.omega.values
         return self._omega_vals
@@ -329,14 +377,12 @@ class Backbone_Dihedrals():
     @property
     def rama_scores(self):
         if self._rama_scores is None:
-            import numpy
             self._rama_scores = numpy.ones(len(self.residues),numpy.float32) * -1
         return self._rama_scores
     
     @property
     def rama_colors(self):
         if self._rama_colors is None:
-            import numpy
             self._rama_colors = numpy.array([[128,128,128,255]]*len(self.residues),numpy.uint8)
         return self._rama_colors
         
@@ -354,14 +400,12 @@ class Backbone_Dihedrals():
         Return phi, psi and omega dihedrals for all residues in a 
         Residues array.
         '''
-        import numpy
         phi = self.phi.by_residues(reslist)
         psi = self.psi.by_residues(reslist)
         omega = self.omega.by_residues(reslist)
         return phi, psi, omega
     
     def update_pro_rama_cases(self, omega_vals):
-        import numpy
         rc = self._rama_cases
         current_trans = rc['TransPro']
         current_cis = rc['CisPro']
@@ -417,7 +461,6 @@ class Backbone_Dihedrals():
         last_residue = None
         last_atoms = None
         last_names = None
-        import numpy
         from copy import copy
         # Loop through all residues in the selection held by the object,
         # picking out amino acid residues and storing Atom arrays defining
@@ -521,7 +564,6 @@ class Backbone_Dihedrals():
                            If you want to update them, create a new \
                            Backbone_Dihedrals object.')
             return            
-        import numpy
         from chimerax.core.atomic import Residue
         
         self.session.ui.processEvents()

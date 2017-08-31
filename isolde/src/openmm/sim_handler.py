@@ -135,13 +135,12 @@ class SimHandler():
 
 
 
-    def update_restraints_in_context(self, context):
-        self.update_distance_restraints_in_context(context)
-        self.update_position_restraints_in_context(context)
-        self.update_dihedral_restraints_in_context(context)
-        for m in self._maps:
-            pf = m.get_potential_function()
-            pf.update_context_if_needed(context)
+    def update_restraints_in_context_if_needed(self):
+        context = self.context
+        for f in self.all_forces:
+            if f.update_needed:
+                f.updateParametersInContext(context)
+                f.update_needed = False
 
 
     ####
@@ -176,6 +175,17 @@ class SimHandler():
     def update_position_restraint(self, force_index, target=None, k=None):
         rf = self._position_restraints_force
         rf.update_target(force_index, k, target)
+
+    def tug_atom(self, force_index, target, k):
+        tf = self._tugging_force
+        tf.update_target(force_index, target, k)
+    
+    def tug_atoms(self, force_indices, targets, ks):
+        tf = self._tugging_force
+        for i, t, k in zip(force_indices, targets, ks):
+            tf.update_target(i, t, k)
+    
+
 
     def release_position_restraint(self, force_index):
         self._position_restraints_force.release_restraint(force_index)
@@ -223,7 +233,7 @@ class SimHandler():
     def update_distance_restraint(self, force_index, target=None, k=None):
         tf = self._distance_restraints_force
         tf.update_target(force_index, target, k)
-
+    
         ##
         # During simulation
         ##
@@ -390,7 +400,7 @@ class SimHandler():
     def couple_atoms_to_tugging_force(self, indices, force_map):
         force = self._tugging_force
         for i, index in enumerate(indices):
-            force_map[i] = force.addParticle(i, (0,0,0,0))
+            force_map[i] = force.addParticle(int(index), (0,0,0,0))
 
     def create_openmm_topology(self, atom_names, element_names,
                             residue_names, residue_numbers, chain_ids,
@@ -543,7 +553,7 @@ class SimHandler():
 
     def couple_atoms_to_map(self, indices, ks, force, force_map):
         for i, (index, k) in enumerate(zip(indices, ks)):
-            force_map[i] = force.addBond(index, (k,))
+            force_map[i] = force.addBond([int(index)], [k])
 
     def couple_atom_to_map(self, index, map_object):
         '''
@@ -567,11 +577,6 @@ class SimHandler():
         self.min_step(50)
         context.setVelocitiesToTemperature(temperature)
 
-    def tug(force_indices, atom_indices, targets, ks):
-        tf = self._tugging_force
-        ai = tf.getParticleParameters(fi)[0]
-        for fi, ai, t, k in zip(force_indices, targets, ks):
-            tf.setParticleParameters(fi, ai, (k, *t))
 
 
 
@@ -682,7 +687,7 @@ class SimHandler():
         distances = numpy.linalg.norm(delta, axis=1)*OPENMM_LENGTH_UNIT
         max_distance = distances.max()
         if max_distance > max_allowed_movement:
-            fast_indices = numpy.where(distances > self._max_atom_movement_per_step)[0]
+            fast_indices = numpy.where(distances > max_allowed_movement)[0]
         else:
             fast_indices = None
         return pos, fast_indices

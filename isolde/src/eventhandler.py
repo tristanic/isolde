@@ -18,20 +18,21 @@ class EventHandler():
 
 
     def add_event_handler(self, name, event_type, callback):
-
+        
         handler = self.owner.triggers.add_handler(event_type, callback)
         self.registered_handlers[name] = handler
         self.handlers_by_trigger_name[event_type] = name
-        return handler
+        return name
 
 
     def remove_event_handler(self, name, error_on_missing = True):
-        if error_on_missing:
-            if name not in self.registered_handlers:
-                raise Exception('Tried to remove unrecognised handler')
-        handler = self.registered_handlers[name]
-        self.owner.triggers.remove_handler(handler)
-        self.registered_handlers.pop(name)
+        try:
+            handler = self.registered_handlers[name]
+            self.owner.triggers.remove_handler(handler)
+            self.registered_handlers.pop(name)
+        except KeyError as e:
+            if error_on_missing:
+                raise e
 
     def remove_all_handlers_for_trigger(self, trigger_name):
         '''
