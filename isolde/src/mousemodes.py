@@ -24,20 +24,20 @@ class TugAtomsMode(MouseMode):
         self._xyz0 = None
         self._xy = None
         self.name = 'ISOLDE_mouse_tug'
-        self._handler = None
         # Atomic array to pick from
         self._atoms = atoms
         # Model to draw the arrow into
         self._annotations = annotations
-    
+
     def cleanup(self):
         self._delete_arrow()
-        
-    def get_status(self):
+
+    @property
+    def status(self):
         return self._tugging, self._picked_atom, self._xyz0
         print('Atom coords: ' + str(self._picked_atom.scene_coord) + ' xyz0: ' + str(self._xyz0))
-        
-            
+
+
     def mouse_down(self, event):
         MouseMode.mouse_down(self, event)
         x,y = event.position()
@@ -50,7 +50,7 @@ class TugAtomsMode(MouseMode):
             atom_xyz, self._pull_vector = self._pull_direction(x, y)
             self._xyz0 = atom_xyz + self._pull_vector
             self._tugging = True
-        
+
 
     def mouse_drag(self, event):
         if not self._tugging:
@@ -59,15 +59,15 @@ class TugAtomsMode(MouseMode):
         atom_xyz, self._pull_vector = self._pull_direction(x, y)
         self._xyz0 = atom_xyz + self._pull_vector
         self._draw_arrow(self._xyz0, atom_xyz)
-        
-        
+
+
     def mouse_up(self, event):
         MouseMode.mouse_up(self, event)
         self._tugging = False
         a = self._arrow_model
         if a:
             a.display = False
-                
+
     def _pull_direction(self, x, y):
         v = self.session.main_view
         x0,x1 = v.clip_plane_points(x, y)
@@ -80,11 +80,11 @@ class TugAtomsMode(MouseMode):
         return axyz, -offset
 
     def _draw_arrow(self, xyz1, xyz2, radius = 0.1):
-        from . import geometry        
+        from . import geometry
         a = self._arrow_model
         if a is None:
             s = self.session
-            self._arrow_model = a = geometry.simple_arrow(radius = radius, 
+            self._arrow_model = a = geometry.simple_arrow(radius = radius,
                     color = [0,255,0,255])
             self._annotations.add_drawing(a)
         # Scale and rotate prototype cylinder.
@@ -103,18 +103,18 @@ class AtomPicker(MouseMode):
     Pick atom(s) only using the mouse, ignoring other objects. Select
     either from only a defined Atoms selection, or from all available
     AtomicStructure models.
-    
+
     Standard binding is ctrl-click (and drag)
-    
+
     Modifiers:
         - ctrl-shift: Add to current selection
         - ctrl-alt: Subtract from current selection
-        
+
         If shift is pressed, alt will be ignored.
     '''
     def __init__(self, session, isolde, all_models = False):
         MouseMode.__init__(self, session)
-        
+
         self.mode = {'select': 'replace',
                      'select add': 'add',
                      'select subtract': 'subtract'}[self.name]
@@ -137,24 +137,24 @@ class AtomPicker(MouseMode):
             'simulation started', self._on_sim_start)
         self._sim_end_handler = isolde.triggers.add_handler(
             'simulation terminated', self._on_sim_end)
-    
+
     def _isolde_changed_model(self, trigger_name, m):
         self._atoms = m.atoms
-    
+
     def _on_sim_start(self, *_):
         self._atoms = self._isolde.mobile_atoms
-    
+
     def _on_sim_end(self, *_):
         if self._choose_from_all_models:
             self.pick_from_any()
         else:
             self._atoms = self._isolde.selected_model.atoms
-        
+
     def pick_from_any(self):
         self._choose_from_all_models = True
         self._update_atomic_models()
         self._add_handlers()
-    
+
     def _update_atomic_models(self, *_):
         self._atoms = None
         for m in self.session.models.list():
@@ -163,7 +163,7 @@ class AtomPicker(MouseMode):
                     self._atoms = m.atoms
                 else:
                     self._atoms = self._atoms.merge(m.atoms)
-    
+
     def pick_from_selection(atoms):
         from chimerax.core.atomic.molarray import Atoms
         if type(atoms) != Atoms:
@@ -171,13 +171,13 @@ class AtomPicker(MouseMode):
         self._choose_from_all_models = False
         self._atoms = atoms
         self._remove_handlers()
-        
+
     def _add_handlers(self):
         self._add_trigger = self.session.triggers.add_handler(
                         'add models', self._update_atomic_models)
         self._remove_trigger = self.session.triggers.add_handler(
                         'remove models', self._update_atomic_models)
-    
+
     def _remove_handlers(self):
         if self._add_trigger is not None:
             self.session.triggers.remove_handler(self._add_trigger)
@@ -185,18 +185,18 @@ class AtomPicker(MouseMode):
         if self._remove_trigger is not None:
             self.session.triggers.remove_handler(self._remove_trigger)
             self._remove_trigger = None
-    
+
     def cleanup(self):
         self._remove_handlers()
-        
+
     def mouse_down(self, event):
         MouseMode.mouse_down(self, event)
-    
+
     def mouse_drag(self, event):
         if self._is_drag(event):
             self._undraw_drag_rectangle()
             self._draw_drag_rectangle(event)
-    
+
     def mouse_up(self, event):
         self._undraw_drag_rectangle()
         if self._atoms is None:
@@ -207,7 +207,7 @@ class AtomPicker(MouseMode):
         else:
             # Select closest atom to a ray projecting from the pointer
             self._mouse_select(event)
-        
+
     def _is_drag(self, event):
         dp = self.mouse_down_position
         if dp is None:
@@ -224,7 +224,7 @@ class AtomPicker(MouseMode):
         w,h = v.window_size
         v.draw_xor_rectangle(dx, h-dy, x, h-y, self.drag_color)
         self._drawn_rectangle = (dx,dy), (x,y)
-        
+
     def _undraw_drag_rectangle(self):
         dr = self._drawn_rectangle
         if dr:
@@ -233,7 +233,7 @@ class AtomPicker(MouseMode):
             w,h = v.window_size
             v.draw_xor_rectangle(dx, h-dy, x, h-y, self.drag_color)
             self._drawn_rectangle = None
-    
+
 
     def _mouse_drag_select(self, start_xy, event):
         session = self.session
@@ -283,7 +283,7 @@ class AtomPicker(MouseMode):
                             presidues.atoms.selected = True
                         else:
                             presidues.atoms.selected = False
-                        
+
 
     def _mouse_select(self, event):
         session = self.session
@@ -307,8 +307,8 @@ class AtomPicker(MouseMode):
             picked_atom.selected = True
         else:
             picked_atom.selected = False
-    
-    
+
+
 class AtomPickAdd(AtomPicker):
     name = 'select add'
     icon = None
@@ -317,23 +317,23 @@ class AtomPickSubtract(AtomPicker):
     name = 'select subtract'
     icon = None
 
-    
+
 class MouseModeRegistry():
     def __init__(self, session, isolde):
         self._isolde = isolde
         self.session = session
         self._registered_modes = {}
         self._existing_modes = {}
-    
+
     def get_names(self):
         return list(self._registered_modes.keys())
-    
+
     def get_mode(self, name):
         if name in list(self._registered_modes.keys()):
             return self._registered_modes[name][0]
         else:
             raise Exception('Unrecognised mouse mode name!')
-        
+
     def register_mode(self, name, mode, button, modifiers = []):
         mm = self.session.ui.mouse_modes
         existing_bindings = mm.bindings
@@ -343,10 +343,10 @@ class MouseModeRegistry():
                 break
             else:
                 self._existing_modes[name] = (None)
-        
+
         mm.bind_mouse_mode(button, modifiers, mode)
         self._registered_modes[name] = (mode, button, modifiers)
-    
+
     def register_all_isolde_modes(self):
         # Button, modifier(s), name, class, args
         standard_modes = (
@@ -356,8 +356,8 @@ class MouseModeRegistry():
             )
         for m in standard_modes:
             self.register_mode(m[2], m[3](*m[4]), m[0], m[1])
-    
-        
+
+
     def remove_mode(self, name):
         mm = self.session.ui.mouse_modes
         if self._existing_modes[name] is not None:
@@ -371,9 +371,8 @@ class MouseModeRegistry():
             mode.cleanup()
         self._existing_modes.pop(name)
         self._registered_modes.pop(name)
-    
+
     def remove_all_modes(self):
         names = list(self.get_names())
         for name in names:
             self.remove_mode(name)
-        

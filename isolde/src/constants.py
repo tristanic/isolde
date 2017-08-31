@@ -5,7 +5,7 @@ import ctypes
 
 '''
 Constants are a slightly difficult problem here, in that ChimeraX works
-in Angstroms while OpenMM works in 
+in Angstroms while OpenMM works in
 '''
 
 _defaults = {
@@ -37,9 +37,6 @@ _defaults = {
     'MIN_STEPS_PER_GUI_UPDATE':   100,
     'SIM_STARTUP_ROUNDS':         10,
     'MAX_UNSTABLE_ROUNDS':        20,
-    'ROUNDS_PER_RAMA_UPDATE':     5,
-    'ROUNDS_PER_MAP_REMASK':      20,
-    'FIX_SOFT_SHELL_BACKBONE':    False,
     'TEMPERATURE':                100.0, # * unit.kelvin,
     'GBSA_NONBONDED_METHOD':      openmm.CustomGBForce.CutoffNonPeriodic,
     'GBSA_SOLVENT_DIELECTRIC':    78.5, # * unit.debye,
@@ -53,8 +50,8 @@ _defaults = {
     'SIM_MODE_MIN':               0,
     'SIM_MODE_EQUIL':             1,
     'SIM_MODE_UNSTABLE':          2,
-    
-    
+
+
     ###
     # Force constants
     ###
@@ -64,43 +61,51 @@ _defaults = {
     'MAX_TUG_FORCE':                        10000.0, # * unit.kilojoule_per_mole/unit.nanometer,
     'DISTANCE_RESTRAINT_SPRING_CONSTANT':    5000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
     'POSITION_RESTRAINT_SPRING_CONSTANT':    2000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
-    'PEPTIDE_SPRING_CONSTANT':                500.0, # * unit.kilojoule_per_mole/unit.radians**2,  
-    'PHI_PSI_SPRING_CONSTANT':                250.0, # * unit.kilojoule_per_mole/unit.radians**2, 
+    'PEPTIDE_SPRING_CONSTANT':                500.0, # * unit.kilojoule_per_mole/unit.radians**2,
+    'PHI_PSI_SPRING_CONSTANT':                250.0, # * unit.kilojoule_per_mole/unit.radians**2,
     'ROTAMER_SPRING_CONSTANT':               1000.0, # * unit.kilojoule_per_mole/unit.radians**2,
-    'STANDARD_MAP_K':                           5.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
-    'DIFFERENCE_MAP_K':                         1.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
-    
+    'STANDARD_MAP_K':                           5.0, # * unit.kilojoule_per_mole*unit.angstrom**3,
+    'DIFFERENCE_MAP_K':                         1.0, # * unit.kilojoule_per_mole*unit.angstrom**3,
+
     ###
-    # Safety limits
+    # Numeric limits
     ###
     'MAX_ALLOWABLE_FORCE':        4.0e4, # * unit.kilojoule_per_mole/unit.nanometer,
-    'MAX_STABLE_FORCE':            5000, # * unit.kilojoule_per_mole/unit.nanometer, 
+    'MAX_STABLE_FORCE':            5000, # * unit.kilojoule_per_mole/unit.nanometer,
     'MAX_ATOM_MOVEMENT_PER_STEP':   0.5, # * unit.nanometer,
-    
+    'NEARLY_ZERO':                 1e-6,
+
     ###
     # Geometric parameters
     ###
-    'DIHEDRAL_RESTRAINT_CUTOFF':    pi/6,  # * unit.radians, # 30 degrees  
+    'DIHEDRAL_RESTRAINT_CUTOFF':    pi/6,  # * unit.radians, # 30 degrees
     'ROTAMER_RESTRAINT_CUTOFF':     pi/12, # * unit.radians, # 15 degrees
     'CIS_PEPTIDE_BOND_CUTOFF':      pi/6,  # * unit.radians, # 30 degrees
-    
+
     ###
     # Constants specific to ChimeraX - lengths in Angstroms beyond this point!
     ###
-    
+
     'CHIMERAX_LENGTH_UNIT':         unit.angstrom,
     'CHIMERAX_FORCE_UNIT':          unit.kilojoule_per_mole/unit.angstrom,
     'CHIMERAX_SPRING_UNIT':         unit.kilojoule_per_mole/unit.angstrom**2,
-    
+
     'SELECTION_SEQUENCE_PADDING':   3,      # residues
     'SOFT_SHELL_CUTOFF':            5,      # Angstroms
     'HARD_SHELL_CUTOFF':            8,      # Angstroms
-    
-    'STANDARD_MAP_MASK_RADIUS':   4.0, # Angstroms  
+    'FIX_SOFT_SHELL_BACKBONE':      False,
+    'TRACK_RAMACHANDRAN_STATUS':    True,
+    'ROUNDS_PER_RAMA_UPDATE':       5,
+    'REMASK_MAPS_DURING_SIM':       True,
+    'ROUNDS_PER_MAP_REMASK':        20,
+    'HIDE_SURROUNDINGS_DURING_SIM': True,
+    'USE_HAPTIC_DEVICE_IF_AVAIL':   True,
+
+    'STANDARD_MAP_MASK_RADIUS':   4.0, # Angstroms
     'DIFFERENCE_MAP_MASK_RADIUS': 8.0, # Angstroms
 
-    
-    
+
+
     ###
     # Types for shared variables
     ###
@@ -124,8 +129,3 @@ for (name, val) in _defaults.items():
     setattr(_Defaults, name, property(_fget_factory(val), _fset_factory()))
 
 defaults = _Defaults()
-
-        
-    
-
-

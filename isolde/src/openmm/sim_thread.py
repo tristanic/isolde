@@ -26,8 +26,8 @@ SIM_MODE_UNSTABLE           = defaults.SIM_MODE_UNSTABLE
 
 class ChangeTracker:
     '''
-    A simple bit-field to handle notifications for I/O between the 
-    master session and the simulation thread. The first 16 bits are 
+    A simple bit-field to handle notifications for I/O between the
+    master session and the simulation thread. The first 16 bits are
     dedicated to inputs; the last 16 bits to outputs.
     '''
     #Control Inputs
@@ -43,44 +43,44 @@ class ChangeTracker:
     MAP_COUPLING            = 1<<9
     MAP_DATA                = 1<<10
     EDIT_COORDS             = 1<<11
-    
+
     #Outputs
     INIT_COMPLETE = 1<<28
     COORDS_READY = 1<<29
     UNSTABLE = 1<<30
     ERROR = 1<<31
-    
+
     ALL_OUTPUTS           = 0xffff0000
     ALL_INPUTS            = 0x0000ffff
-    
+
     def __init__(self):
         self._change_var = mp.Value(ctypes.c_int32, 0)
         self._managed_arrays = dict()
         self._possible_modified_arrays = dict()
-    
+
     def clear_inputs(self):
         self._change_var.value &= ~self.ALL_INPUTS
-    
+
     def clear_outputs(self):
         self._change_var.value &= ~self.ALL_OUTPUTS
 
     def _find_callbacks(self, sim_thread):
         '''
-        To be run (only) by the SimThread in the worker process after 
-        initialisation. Replaces the names of the callback functions 
+        To be run (only) by the SimThread in the worker process after
+        initialisation. Replaces the names of the callback functions
         with pointers to the functions themselves.
         '''
         sh = self.sim_handler
         for key, arr in self._managed_arrays.items():
             cb_name = arr[-1]
             arr[-1] = getattr(sim_thread, cb_name)
-            
+
     def run_all_necessary_callbacks(self, changes):
         '''
         Runs the callbacks to apply the changes for any arrays whose
         contents have changed since the last iteration. Callbacks should
         be defined in SimThread, and take as arguments a Boolean array
-        identifying which entries have changed, and a tuple of 
+        identifying which entries have changed, and a tuple of
         SharedNumpyArray objects containing the actual information.
         '''
         pma = self._possible_modified_arrays
@@ -90,19 +90,19 @@ class ChangeTracker:
                     callback = managed_array[-1]
                     key = managed_array[-2]
                     change_mask, arrays = managed_array[2,3]
-                    
+
                     callback(change_mask, key, arrays)
-    
-    
+
+
     def add_managed_arrays(self, change_bit_mask, key, arrays, callback_name):
         '''
-        Registers a combined set of shared arrays with the change 
-        tracker, and the name of the callback function that the 
-        simulation handler should run when it changes. Once registered, 
-        call register_array_changes(key, [change_mask]) to let the 
-        manager know that the array has changed, and optionally which 
+        Registers a combined set of shared arrays with the change
+        tracker, and the name of the callback function that the
+        simulation handler should run when it changes. Once registered,
+        call register_array_changes(key, [change_mask]) to let the
+        manager know that the array has changed, and optionally which
         elements have changed.
-            
+
         @param change_bit_mask:
             The bit (e.g. ChangeTracker.DISTANCE_RESTRAINT) to be flipped
             to notify the top-level change tracker
@@ -112,7 +112,7 @@ class ChangeTracker:
             A tuple containing the arrays themselves. All arrays must be
             the same length in the first dimension.
         @param callback_name:
-            The name of the callback function in the SimThread to be 
+            The name of the callback function in the SimThread to be
             run when the array changes.
         '''
         length = len(arrays[0])
@@ -122,12 +122,12 @@ class ChangeTracker:
                     raise TypeError(
                         'All arrays must be the same length in their '
                        +'first dimension!')
-                        
+
         change_flag = mp.Value(ctypes.c_bool, False)
         change_mask = SharedNumpyArray(TypedMPArray(ctypes.c_bool, length))
-        
-        
-        # After the simulation thread has changed, callback_name will 
+
+
+        # After the simulation thread has changed, callback_name will
         # be replaced with a pointer to the actual function.
         ma = self._managed_arrays[key] =\
             [change_bit_mask, change_flag, change_mask, arrays, key, callback_name]
@@ -136,15 +136,15 @@ class ChangeTracker:
         except KeyError:
             cl = self._possible_modified_arrays[change_bit_mask] = []
             cl.append(ma)
-        
-    
+
+
     def register_array_changes(self, key, change_mask = None, indices = None):
         '''
         Let the change tracker know that an array has changed.
         @param key:
             The key to this array in the SimComms dict
         @param change_mask:
-            A numpy Boolean array of the same length as the first 
+            A numpy Boolean array of the same length as the first
             dimension of the array, True where an element has changed.
             If not provided, it will be assumed that all elements of
             the array have changed.
@@ -162,34 +162,34 @@ class ChangeTracker:
                 _change_mask[indices] = True
             else:
                 _change_mask[:] = True
-            
+
         self.register_change(_change_bit)
-        
-    
+
+
     def clear_array_changes(self, key):
         _change_flag, _change_mask = self._managed_arrays[key][1:3]
         with _change_flag.get_lock(), _change_mask.get_lock():
             _change_flag.value = False
             _change_mask[:] = False
-    
+
     @property
     def changes(self):
         return self._change_var
-    
+
     def error(self):
         self.changes.value |= self.ERROR
-    
+
     def register_change(self, change):
         changes = self.changes
         with changes.get_lock():
             changes.value |= change
-    
+
 class SimComms:
     '''
     Holds all the shared variables/arrays needed to communicate with the
     simulation. Those that are common to all simulations are defined on
     initialisation of the SimComms object, while the remainder will be
-    added during initialisation of the simulation. Therefore, a new 
+    added during initialisation of the simulation. Therefore, a new
     SimComms object is required for each simulation run.
     '''
     def __init__(self):
@@ -201,19 +201,19 @@ class SimComms:
             'sim mode'                  : mp.Value('i', 0),
             'temperature'               : mp.Value(FLOAT_TYPE, 0),
         }
-    
+
     def __getitem__(self, key):
         return self._comms_obj[key]
-    
+
     def __setitem__(self, key, obj):
         self._comms_obj[key] = obj
-    
+
     def thread_safe_set_value(self, key, val):
         '''Set the value of a mp.Value object in a thread-safe way.'''
         target = self[key]
         with target.get_lock():
             target.value = val
-    
+
     def thread_safe_set_array_values(self, key, values, indices_or_mask = None):
         '''Change values within a SharedNumpyArray in a thread-safe way.'''
         target = self[key]
@@ -238,7 +238,7 @@ def _sim_thread():
     Initialisation function for the simulation thread.
     '''
     global _sim_thread_obj
-    
+
     so = _sim_thread_obj
     comms = so.comms
     ct = so.change_tracker
@@ -255,7 +255,7 @@ def _sim_thread():
             error_q.put((Exception(),'Stopped on command: {}'.format(bin(current_changes))))
             ct.error()
             break
-            
+
         try:
             so.main_loop(current_changes)
         except Exception as e:
@@ -266,7 +266,7 @@ def _sim_thread():
             sleep(0.1)
             ct.error()
             break
-            
+
 
 class SimThread:
     '''
@@ -291,64 +291,62 @@ class SimThread:
         }
         error_queue = comms['error']
         self.sim_mode = SIM_MODE_MIN
-        
+
         # Counters for potential timeout conditions
         self.unstable_counter = 0
         self.MAX_UNSTABLE_ROUNDS = 20
-        
+
         try:
             sh = self.sim_handler = SimHandler()
-            
+
             # Just initialize the forces. They're empty at this stage.
             sh.initialize_dihedral_restraint_force(par['dihedral_restraint_cutoff_angle'])
             sh.initialize_amber_cmap_force()
             sh.initialize_distance_restraints_force(par['restraint_max_force'])
             sh.initialize_position_restraints_force(par['restraint_max_force'])
-            sh.initialize_tugging_force()
-            
+            sh.initialize_tugging_force(par['restraint_max_force'])
+
             # Tugging force
             self.tugging_force_map = force_maps['tugging']
-            self.init_tugging()       
-            
+            self.init_tugging()
+
             # Backbone dihedral restraints
             self.dihedral_force_maps = force_maps['dihedrals']
             self.init_dihedrals('phi')
             self.init_dihedrals('psi')
             self.init_dihedrals('omega', comms['omega targets'])
-            
+
             #CMAP corrections
             sh.add_amber_cmap_torsions(sim_data['phi cmap resnames'],
                                         sim_data['psi cmap resnames'],
                                         sim_data['phi cmap indices'],
                                         sim_data['psi cmap indices'])
-            
+
             #Rotamers
             self.rotamer_force_map = force_maps['rotamers']
-            self.init_rotamers(sim_data['rotamer map'], 
+            self.init_rotamers(sim_data['rotamer map'],
                comms['rotamer targets'],
                par['rotamer_restraint_cutoff_angle'] / unit.radians,
                par['rotamer_spring_constant'] / (unit.kilojoule_per_mole/unit.radians**2),
                )
-            
+
             #Distance restraints
             #TODO: improve abstraction here
             self.distance_restraint_force_maps = force_maps['distance restraints'] = {}
-            self.init_distance_restraints(data['distance restraint keys'], 
-                                          sh._distance_restraints_force
-                                         )
-            
+            self.init_distance_restraints(data['distance restraint keys'])
+
             # Position restraints
             self.position_restraints_force_map = force_maps['position restraints']
             self.init_position_restraints(data['position restraint indices'],
                                           comms['position restraint spring constants'],
                                           comms['position restraint targets']
                                           )
-            
+
             # Density maps
             self.density_map_forces = {}
             self.density_map_force_maps = force_maps['density maps']
             self.init_map_forces(data['density map names'])
-            
+
             top = sh.create_openmm_topology(data['atom names'],
                                             data['element names'],
                                             data['residue names'],
@@ -356,12 +354,12 @@ class SimThread:
                                             data['chain ids'],
                                             data['bonded atom indices']
                                             )
-            
+
             self.topology = top
-            
+
             sh.define_forcefield(par['forcefield'])
-            
-            
+
+
             system_params = {
                 'nonbondedMethod':      par['nonbonded_cutoff_method'],
                 'nonbondedCutoff':      par['nonbonded_cutoff_distance'],
@@ -371,7 +369,7 @@ class SimThread:
                 'ignoreExternalBonds':  True,
                 'residueTemplates':     data['residue templates'],
                 }
-            
+
             system = sh.create_openmm_system(top, system_params)
             self.system = system
 
@@ -386,13 +384,13 @@ class SimThread:
 
             sh.initialize_implicit_solvent(gbsa_params)
 
-            
+
             sh.set_fixed_atoms(data['fixed indices'])
             sh.register_all_forces_with_system()
-            
+
             t = comms['temperature']
             temperature = t.value
-            
+
             integrator = par['integrator']
             if integrator == openmm.VariableLangevinIntegrator:
                 integrator_params = (
@@ -410,44 +408,44 @@ class SimThread:
                 raise RuntimeError('Multiple timestepping not yet implemented!')
             else:
                 raise RuntimeError('Unrecognised or unsupported integrator: {}!'.format(integrator))
-            
+
             sh.initialize_integrator(integrator, integrator_params)
-            
+
             sh.set_platform(par['platform'])
-            
+
             self.sim = sh.create_sim()
-            
-            coords = data['coords']    
+
+            coords = data['coords']
             sh.set_initial_positions_and_velocities(coords, temperature)
-            
-            
+
+
             self.startup = True
             self.sim_startup_counter = 0
-            
+
             with changes.get_lock():
                 changes.value |= ct.INIT_COMPLETE
-            
-        
+
+
         except Exception as e:
             tb = traceback.format_exc()
             error_queue.put((e, tb))
             change_tracker.error()
-        
+
     def main_loop(self, changes):
         par = self.sim_params
         comms = self.comms
         sh = self.sim_handler
         ct = self.change_tracker
         status_q = comms['status']
-        
+
         if changes & ct.MODE:
             mode = comms['sim mode']
             sim_mode = self.sim_mode = mode.value
-        
+
         if changes & ct.TEMPERATURE:
             temperature = comms['temperature'].value
             sh.set_temperature(temperature)
-        
+
         if sim_mode == SIM_MODE_EQUIL:
             max_allowed_movement = par['max_atom_movement_per_step']
             coords, fast_indices = sh.equil_step(par['sim_steps_per_gui_update'], max_allowed_movement)
@@ -458,7 +456,7 @@ class SimThread:
                          +'atoms are moving too fast: {}'\
                          .format(fast_indices)
                 status_q.put(out_str)
-                
+
         elif sim_mode == SIM_MODE_MIN:
             max_allowed_force = par['max_allowable_force']
             steps = par['minimization_steps_per_gui_update']
@@ -470,7 +468,7 @@ class SimThread:
                          +'minimise...'
                 out_str = out_str.format(max_force.in_units_of(CHIMERAX_FORCE_UNIT), max_index)
                 status_q.put(out_str)
-        
+
         elif sim_mode == SIM_MODE_UNSTABLE:
             stable_force_limit = par['max_stable_force']
             max_allowed_force = par['max_allowable_force']
@@ -498,17 +496,17 @@ class SimThread:
                 ct.error()
             else:
                 self.unstable_counter += 1
-        
+
         self.current_coords = coords
         comms.thread_safe_set_array_values('coords', coords.value_in_unit(CHIMERAX_LENGTH_UNIT))
         ct.register_change(ct.COORDS_READY)
-                
-    
+
+
     def coords_changed_cb(self, change_mask, _, arrays):
         '''
         Apply changes in coordinates to the simulation if they've been
         edited externally.
-        '''    
+        '''
         sh = self.sim_handler
         new_coords = arrays[0]
         with change_mask.get_lock():
@@ -519,7 +517,7 @@ class SimThread:
         with new_coords.get_lock():
             self.current_coords[changed_indices] = new_coords[changed_indices]*CHIMERAX_LENGTH_UNIT
         sh.change_coords(self.current_coords)
-    
+
     def tugging_cb(self, change_mask, _, arrays):
         '''
         Tug or release atoms.
@@ -533,10 +531,10 @@ class SimThread:
             ks = m_ks[indices].copy()*CHIMERAX_SPRING_UNIT
         force_map = self.force_index_maps['tugging']
         sh.tug(force_map[indices], ts, ks)
-    
+
     def dihedral_restraint_cb(self, change_mask, name, arrays):
         '''
-        Adjust dihedral targets and spring constants 
+        Adjust dihedral targets and spring constants
         '''
         sh = self.sim_handler
         force_map = self.dihedral_force_maps[name]
@@ -547,8 +545,8 @@ class SimThread:
             ts = m_ts[indices].copy()
             ks = m_ks[indices].copy()
         sh.update_dihedral_restraints(force_map[indices], ts, ks)
-            
-        
+
+
     def rotamer_restraint_cb(self, change_mask, key, arrays):
         sh = self.sim_handler
         comms = self.comms
@@ -565,24 +563,52 @@ class SimThread:
             targets = rotamer_dict[i]
             with targets.get_lock():
                 sh.update_dihedral_restraints(force_maps[i], targets, ks)
-        
+
     def distance_restraint_cb(self, change_mask, key, arrays):
-        pass
-        
+        sh = self.sim_handler
+        comms = self.comms
+        force_map = self.distance_restraint_force_maps[key]
+        m_ts, m_ks = arrays
+        with change_mask.get_lock(), m_ts.get_lock(), m_ks.get_lock():
+            indices = numpy.where(change_mask)[0]
+            change_mask[:] = False
+            ts = m_ts[indices].copy()*CHIMERAX_LENGTH_UNIT
+            ks = m_ks[indices].copy()*CHIMERAX_SPRING_UNIT
+        sh.update_distance_restraints(indices, ts, ks)
+
     def position_restraint_cb(self, change_mask, key, arrays):
-        pass
-    
+        sh = self.sim_handler
+        comms = self.comms
+        force_map = self.position_restraints_force_map
+        m_ts, m_ks = arrays
+        with change_mask.get_lock(), m_ts.get_lock(), m_ks.get_lock():
+            indices = numpy.where(change_mask)[0]
+            change_mask[:] = False
+            ts = m_ts[indices].copy()*CHIMERAX_LENGTH_UNIT
+            ks = m_ks[indices].copy()*CHIMERAX_SPRING_UNIT
+        sh.update_position_restraints(indices, ts, ks)
+
     def density_map_coupling_cb(self, change_mask, key, arrays):
-        pass
-    
+        sh = self.sim_handler
+        comms = self.comms
+        force_map = self.density_map_force_maps[key]
+        force = self.density_map_forces[name]
+        m_ks = arrays[0]
+        with change_mask.get_lock(), m_ks.get_lock():
+            indices = numpy.where(change_mask)[0]
+            change_mask[:] = False
+            ks = m_ks[indices].copy()
+        sh.update_density_map_individual_ks(indices, ks)
+
+
     def density_map_data_change_cb(self, change_mask, key, arrays):
-        pass
-    
-    
+        raise NotImplementedError('Changing a map in a running simulation is not yet possible.')
+
+
     def init_tugging(self):
         data = self.sim_data
         tuggable_indices = data['tuggable indices']
-        self.force_index_maps['tugging'] = numpy.empty(len(tuggable_indices), int)            
+        self.force_index_maps['tugging'] = numpy.empty(len(tuggable_indices), int)
         sh.couple_atoms_to_tugging_force(tuggable_indices, tfm)
 
     def init_dihedrals(self, name, target_array = None):
@@ -596,11 +622,11 @@ class SimThread:
         ks = comms[k_key]
         n_dihe = len(dihedral_atom_indices)
         force_map = numpy.empty(n_dihe, int)
-        with targets.get_lock(), ks.get_lock():        
+        with targets.get_lock(), ks.get_lock():
             for i, (ai, target, k) in enumerate(zip(dihedral_atom_indices, targets, ks)):
                 force_map[i] = sh.initialize_dihedral_restraint(ai, target=target, k=k)
         self.dihedral_force_maps[name] = force_map
-    
+
     def init_rotamers(self, in_map, targets, cutoff, k):
         sh = self.sim_handler
         force_map = self.rotamer_force_map
@@ -622,8 +648,8 @@ class SimThread:
                     if d_targets is not None:
                         for (fi, di, t) in zip(force_indices, dihedrals, d_targets):
                             sh.update_dihedral_restraint(fi, target= t, k=this_k)
-                    
-    def init_distance_restraints(self, keys, force):
+
+    def init_distance_restraints(self, keys):
         comms = self.comms
         data = self.sim_data
         force_map_container = self.distance_restraint_force_maps
@@ -644,7 +670,7 @@ class SimThread:
             force_map = self.position_restraints_force_map =\
                 force_maps['position restraints'] = numpy.empty(len(ks), int)
             sh.add_position_restraints(force_map, atom_indices, ks, targets)
-    
+
     def init_map_forces(self, names):
         force_maps = self.density_map_force_maps
         force_dict = self.density_map_forces
@@ -661,9 +687,7 @@ class SimThread:
             force_map = force_maps[name]
             with map_data.get_lock(), global_k.get_lock():
                 g_k = global_k.value
-                map_force = force_dict[name] = sh._map_to_force_field(
+                map_force = force_dict[name] = sh.map_to_force_field(
                     map_data, transform, g_k)
             with atom_ks.get_lock():
                 sh.couple_atoms_to_map(atom_indices, atom_ks, map_force, force_map)
-    
-        
