@@ -1644,9 +1644,8 @@ class Isolde():
         atoms selected in the main window.
         '''
         from chimerax.core.atomic import selected_atoms
-        sh = self._sim_handler
+        si = self._sim_interface
         sc = self._total_sim_construct
-        context = self.sim.context
         sel = None
         if atoms is not None:
             if residues is not None:
@@ -1657,8 +1656,11 @@ class Isolde():
         if sel is not None:
             residues = sel.unique_residues
         phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
-        sh.set_dihedral_restraints(phi, 0, 0)
-        sh.set_dihedral_restraints(psi, 0, 0)
+        for dlist in (phi, psi):
+            dlist.targets = 0
+            dlist.spring_constants = 0
+            self.apply_dihedral_restraints(dlist)
+            
         for r in residues:
             cad = self._sim_ca_ca2_restr[r]
             ond = self._sim_o_n4_restr[r]
@@ -1796,7 +1798,7 @@ class Isolde():
         except KeyError:
             return
         rot.restrained = False
-        self._apply_rotamer_target_to_sim(self, rotamer)
+        self._apply_rotamer_target_to_sim(rot)
 
 
     def _disable_rebuild_residue_frame(self):
@@ -1879,6 +1881,16 @@ class Isolde():
             taken from its properties
         '''
         self._sim_interface.update_dihedral_restraint(dihedral)
+    
+    def apply_dihedral_restraints(self, dihedrals):
+        '''
+        Apply restraints for a set of dihedrals at once. All dihedrals 
+        must be of the same type.
+        '''
+        names = numpy.unique(dihedrals.names)
+        if len(names) != 1:
+            raise TypeError('All dihedrals must be of the same type!')
+        self._sim_interface.update_dihedral_restraints(dihedrals)
     
     def release_dihedral_restraint(self, dihedral):
         dihedral.target = 0

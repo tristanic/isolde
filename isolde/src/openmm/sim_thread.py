@@ -586,7 +586,6 @@ class SimThread:
         force_maps = self.rotamer_force_map
         for i in indices:
             targets = rotamer_dict[i]
-            #raise Exception('Index: {} Indices: {} type {}, targets {} type {}, k {} type {}'.format(i, force_maps[i], type(force_maps[i][0]), targets, targets.dtype, k, type(k)))
             with targets.get_lock():
                 sh.update_dihedral_restraints(force_maps[i], targets, k)
 

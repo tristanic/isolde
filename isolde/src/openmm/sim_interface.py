@@ -331,8 +331,20 @@ class ChimeraXSimInterface:
         ct.register_array_changes('tugging', indices = index)
     
     
+    def update_dihedral_restraints(self, dihedrals):
+        ct = self.change_tracker
+        name = dihedrals[0].name
+        master_array = self.named_dihedrals[name]
+        indices = master_array.indices(dihedrals)
+        sim_targets, sim_ks = ct.get_managed_arrays(name)
+        with sim_targets.get_lock(), sim_ks.get_lock():
+            sim_targets[indices] = dihedrals.targets
+            sim_ks.indices = dihedrals.spring_constants
+        ct.register_array_changes(name, indices = indices)
+        
+        
+        
     def update_dihedral_restraint(self, dihedral):
-        comms = self.comms_object
         ct = self.change_tracker
         name = dihedral.name
         master_array = self.named_dihedrals[name]
@@ -342,7 +354,6 @@ class ChimeraXSimInterface:
             sim_targets[index] = dihedral.target
             sim_ks[index] = dihedral.spring_constant
         ct.register_array_changes(name, indices = index)
-        
         
     def update_rotamer_target(self, rotamer):
         key = 'rotamer targets'

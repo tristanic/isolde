@@ -104,6 +104,7 @@ class Dihedrals():
         self._rama_cases = None
         if dlist is not None:
             self._dihedrals = dlist
+        self._names = None
     
     def __len__(self):
         return len(self.dihedrals)
@@ -165,6 +166,9 @@ class Dihedrals():
             return -1
         return i
     
+    def indices(self, d_list):
+        return numpy.array([self.index(d) for d in d_list])
+        
     @property
     def atoms(self):
         if not len(self):
@@ -198,6 +202,13 @@ class Dihedrals():
         else:
             for d in self:
                 d.target = t_or_t_array
+    
+    @property
+    def names(self):
+        if self._names is None:
+            self._names = numpy.array([d.name for d in self])
+        return self._names
+        
                 
     
     @property
