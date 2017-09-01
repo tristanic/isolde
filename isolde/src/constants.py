@@ -63,9 +63,6 @@ class _Defaults:
         'RIGID_BONDS':                app.HBonds,
         'RIGID_WATER':                True,
         'REMOVE_C_OF_M_MOTION':       False,
-        'SIM_MODE_MIN':               0,
-        'SIM_MODE_EQUIL':             1,
-        'SIM_MODE_UNSTABLE':          2,
         'MIN_CONVERGENCE_FORCE_TOL':  50.0, # *unit.kilojoule_per_mole/unit.nanometer
 
 
@@ -122,8 +119,6 @@ class _Defaults:
         'STANDARD_MAP_MASK_RADIUS':   4.0, # Angstroms
         'DIFFERENCE_MAP_MASK_RADIUS': 8.0, # Angstroms
 
-
-
         ###
         # Types for shared variables
         ###
@@ -141,7 +136,19 @@ class _Sim_Outcomes:
         'ERROR':          5,
         }
 
+@_constant_properties
+class _Control:
+    _constants = {
+        'HIDE_ISOLDE':    0x2,  # For Atom.hide bitmask, dedicated to ISOLDE
+
+        'SIM_MODE_MIN':               0,
+        'SIM_MODE_EQUIL':             1,
+        'SIM_MODE_UNSTABLE':          2,
+
+    }
+
 
 
 defaults = _Defaults()
 sim_outcomes = _Sim_Outcomes()
+control = _Control()

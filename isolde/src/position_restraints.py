@@ -31,12 +31,12 @@ class Atom_Position_Restraints(Position_Restraints):
             master_model.add([pbg])
             
         if type(atoms_or_list) == Atoms:
+            atoms = atoms_or_list
             if not include_hydrogens:
-                atoms = atoms_or_list
                 atoms = atoms.filter(atoms.element_names != 'H')
             restraints = []
             for a in atoms:
-                restraints.append(Position_Restraint(a, pbg, triggers))
+                restraints.append(Position_Restraint(a, pbg, triggers = triggers))
         else:
             restraints = atoms_or_list
         super().__init__(session, master_model, restraints)
@@ -57,10 +57,7 @@ class Atom_Position_Restraints(Position_Restraints):
             if t is None:
                 t = self._target_model = restraint_indicator_from_atoms(
                     master_model, self.atoms, name = 'xyz restraint targets')
-                # Atoms with hide == True will override display == True
                 t.atoms.hides |= HIDE_ISOLDE
-                #t.atoms.draw_modes = t.atoms.BALL_STYLE
-                #t.atoms.radii = t.atoms.radii * 0.5
                 master_model.parent.add([t])
 
         
@@ -123,7 +120,7 @@ class Atom_Position_Restraints(Position_Restraints):
                     'position restraint removed', self._update_active_list)
 
     def _update_active_list(self, trigger_name, restraint):
-        active_filter = (self.atoms.hides&HIDE_ISOLDE).astype(numpy.bool)
+        active_filter = numpy.invert((self.target_indicators.hides&HIDE_ISOLDE).astype(numpy.bool))
         self._active_atoms = self.atoms[active_filter]
         self._active_targets = self.target_indicators[active_filter]
 
@@ -134,12 +131,7 @@ class Atom_Position_Restraints(Position_Restraints):
     
     def _update_target_display(self, trigger_name, changes):
         if 'display changed' in changes.atom_reasons():
-            self._active_targets.displays = self._active_atoms.displays
-            #if self.master_model in changes.modified_atoms().unique_structures:
-            #    self.target_indicators.displays = self.atoms.displays
-        #~ if 'hide changed' in changes.atom_reasons():
-            #~ if self._target_model in changes.modified_atoms().unique_structures:
-                #~ self.hidden_indicators.hides = True
+            self._active_targets.displays = self._active_atoms.visibles
     
     def _check_if_master_deleted(self, trigger_name, models):
         if self.master_model in models:

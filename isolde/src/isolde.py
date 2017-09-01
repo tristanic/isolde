@@ -29,7 +29,7 @@ from chimerax.core import triggerset
 
 from . import rotamers
 from .eventhandler import EventHandler
-from .constants import defaults, sim_outcomes
+from .constants import defaults, sim_outcomes, control
 from .param_mgr import Param_Mgr, autodoc, param_properties
 from .openmm.sim_interface import SimParams
 
@@ -495,20 +495,21 @@ class Isolde():
         # button for tugging atoms. Therefore, the ChimeraX right mouse
         # mode selection panel needs to be disabled for the duration of
         # each simulation.
-        self._isolde_events.add_event_handler('disable chimerax mouse mode panel',
+        ie = self._isolde_events
+        ie.add_event_handler('disable chimerax mouse mode panel',
                                               'simulation started',
                                               self._disable_chimerax_mouse_mode_panel)
-        self._isolde_events.add_event_handler('enable chimerax mouse mode panel',
+        ie.add_event_handler('enable chimerax mouse mode panel',
                                               'simulation terminated',
                                               self._enable_chimerax_mouse_mode_panel)
-        #~ self.triggers.add_handler('simulation started', self._disable_chimerax_mouse_mode_panel)
-        #~ self.triggers.add_handler('simulation terminated', self._enable_chimerax_mouse_mode_panel)
-        self._isolde_events.add_event_handler('on sim start',
+        ie.add_event_handler('on sim start',
                                               'simulation started',
                                               self._sim_start_cb)
-        self._isolde_events.add_event_handler('cleanup after sim',
+        ie.add_event_handler('cleanup after sim',
                                               'simulation terminated',
                                               self._sim_end_cb)
+        ie.add_event_handler('sim pause', 'simulation paused', self._sim_pause_cb)
+        ie.add_event_handler('sim resume', 'simulation resumed', self._sim_resume_cb)
 
         self.gui_mode = False
 
@@ -1722,6 +1723,8 @@ class Isolde():
         pr = self.position_restraints[atom]
         pr.target = target
         pr.spring_constant = spring_constant
+        self._sim_interface.update_position_restraint(pr)
+        
 
     def release_xyz_restraints_on_selected_atoms(self, *_, sel = None):
         from chimerax.core.atomic import selected_atoms
@@ -1729,6 +1732,7 @@ class Isolde():
             sel = selected_atoms(self.session)
         restraints = self.position_restraints.in_selection(sel)
         restraints.release()
+        self._sim_interface.update_position_restraints(restraints)
 
 
 
@@ -1759,21 +1763,24 @@ class Isolde():
         self._selected_rotamer.commit_current_preview()
 
     def _set_rotamer_target(self, *_):
-        target = self._selected_rotamer.target = self._target_rotamer.angles
-        self._apply_rotamer_target_to_sim(self._selected_rotamer)
+        rot = self._selected_rotamer
+        target = rot.target = self._target_rotamer.angles
+        rot.restrained = True
+        self._apply_rotamer_target_to_sim(rot)
         self._clear_rotamer()
 
+    #~ def _apply_rotamer_target_to_sim(self, rotamer):
+        #~ dihedrals = rotamer.dihedrals
+        #~ target = rotamer.target
+        #~ sc = self._total_sim_construct
+        #~ sh = self._sim_handler
+        #~ k = self.rotamer_restraints_k
+        #~ sh.set_dihedral_restraints(dihedrals, target, k, cutoffs = self.rotamer_restraint_cutoff_angle)
+
+        #~ rotamer.restrained = True
+
     def _apply_rotamer_target_to_sim(self, rotamer):
-        dihedrals = rotamer.dihedrals
-        target = rotamer.target
-        sc = self._total_sim_construct
-        sh = self._sim_handler
-        k = self.rotamer_restraints_k
-        sh.set_dihedral_restraints(dihedrals, target, k, cutoffs = self.rotamer_restraint_cutoff_angle)
-
-        rotamer.restrained = True
-
-
+        self._sim_interface.update_rotamer_target(rotamer)
 
     def _clear_rotamer(self, *_):
         if self._selected_rotamer is not None:
@@ -1788,10 +1795,8 @@ class Isolde():
             rot = self.rotamers[residue]
         except KeyError:
             return
-        dihedrals = rot.dihedrals
-        sc = self._total_sim_construct
-        sh = self._sim_handler
-        sh.set_dihedral_restraints(dihedrals, 0, 0)
+        rot.restrained = False
+        self._apply_rotamer_target_to_sim(self, rotamer)
 
 
     def _disable_rebuild_residue_frame(self):
@@ -1838,37 +1843,47 @@ class Isolde():
         them restrained once the flip is complete.
         '''
 
-        from . import dihedrals
         bd = self._mobile_backbone_dihedrals
         phi = bd.phi.by_residue(res)
         prev_c = phi.atoms.filter(phi.atoms.names == 'C')[0]
         prev_r = prev_c.residue
         psi = bd.psi.by_residue(prev_r)
-        sh = self._sim_handler
-        sc = self._total_sim_construct
-        phipsi = dihedrals.Dihedrals([phi,psi])
-        k = self.secondary_structure_restraints_k
+        
         targets = []
-        for i, d in enumerate(phipsi):
+        for d in (phi, psi):
             v = d.value
-            if v > 0:
-                target = v - pi
+            if v < 0:
+                d.target = v+pi
             else:
-                target = v + pi
-            targets.append(target)
-
-        sh.set_dihedral_restraints(phipsi, targets, k)
+                d.target = v-pi
+            d.spring_constant = defaults.PHI_PSI_SPRING_CONSTANT
+        
+        self.apply_dihedral_restraint(phi)
+        self.apply_dihedral_restraint(psi)
+                
         self._pep_flip_timeout_counter = 0
-        self._pep_flip_targets = numpy.array(targets)
-        self._pep_flip_dihedrals = phipsi
+        self._pep_flip_dihedrals = (phi, psi)
         self.iw._rebuild_sel_res_pep_flip_button.setEnabled(False)
         self._isolde_events.add_event_handler('pep flip timeout',
                                               'completed simulation step',
                                               self._check_pep_flip)
 
-        #~ self._pep_flip_timeout_handler = self.triggers.add_handler(
-            #~ 'completed simulation step', self._check_pep_flip)
-
+    def apply_dihedral_restraint(self, dihedral):
+        '''
+        Restrain a dihedral to a desired angle with a spring constant.
+        @param dihedral_type:
+            One of 'phi', 'psi' or 'omega'. Sidechain torsions are handled
+            collectively as rotamers
+        @param dihedral:
+            The dihedral object. The target and spring constant will be
+            taken from its properties
+        '''
+        self._sim_interface.update_dihedral_restraint(dihedral)
+    
+    def release_dihedral_restraint(self, dihedral):
+        dihedral.target = 0
+        dihedral.spring_constant = 0
+        self.apply_dihedral_restraint(dihedral)
 
     def _check_pep_flip(self, *_):
         done = False
@@ -1877,18 +1892,17 @@ class Isolde():
             done = True
         dihedrals = self._pep_flip_dihedrals
         if not done:
-            v = dihedrals.values
-            if numpy.all(numpy.abs(v - self._pep_flip_targets) < pi/6):
-                done = True
+            done = True
+            for d in dihedrals:
+                if abs(d.value - d.target) > pi/6:
+                    done = False
         if not done:
             self._pep_flip_timeout_counter += 1
             return
         else:
-            sh = self._sim_handler
-            sc = self._total_sim_construct
-            sh.set_dihedral_restraints(dihedrals, 0, 0)
+            self.release_dihedral_restraint(dihedrals[0])
+            self.release_dihedral_restraint(dihedrals[1])
             self._isolde_events.remove_event_handler('pep flip timeout')
-            #~ self.triggers.remove_handler(self._pep_flip_timeout_handler)
             self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
 
 
@@ -1898,22 +1912,21 @@ class Isolde():
         self.flip_peptide_omega(res)
 
     def flip_peptide_omega(self, res):
-        from math import degrees
         bd = self._mobile_backbone_dihedrals
         omega = bd.omega.by_residue(res)
         if omega is None:
             import warnings
             warnings.warn('Could not find residue or residue has no omega dihedral.')
             return
-        oval = degrees(omega.value)
-        if oval >= -30 and oval <= 30:
+        oval = omega.value
+        if abs(oval) <= defaults.CIS_PEPTIDE_BOND_CUTOFF:
             # cis, flip to trans
-            target = 180
+            target = pi
         else:
             target = 0
-        from . import dihedrals
-        self.apply_peptide_bond_restraints(dihedrals.Dihedrals([omega]), target = target, units = 'deg')
-
+        omega.target = target
+        self.apply_dihedral_restraint(omega)
+        
 
 
     ####
@@ -2092,7 +2105,7 @@ class Isolde():
         # Positional restraints (one per heavy atom)
         self.position_restraints = pr.Atom_Position_Restraints(
                 self.session, self.selected_model,
-                m.atoms, self.triggers, create_target=True)
+                m.atoms, triggers = self.triggers, create_target=True)
 
 
     def _select_whole_model(self, *_):
@@ -2301,7 +2314,7 @@ class Isolde():
         session = self.session
         log = session.logger.info
         sel_model = self.selected_model
-
+        
         if self._simulation_running:
             print('You already have a simulation running!')
             return
@@ -2316,7 +2329,7 @@ class Isolde():
                 return
 
         self._status('Defining simulation selection...')
-
+        
         # Define final mobile selection
         main_sel = self._get_main_sim_selection()
 
@@ -2349,7 +2362,6 @@ class Isolde():
         sb = self._total_sim_bonds = sc.intra_bonds
         surr = self._surroundings = all_a.subtract(sc)
 
-
         if self.sim_mode == sm.xtal:
             sel_model.parent.isolate_and_cover_selection(
                 total_mobile, include_surrounding_residues = 0,
@@ -2358,7 +2370,8 @@ class Isolde():
                 hide_surrounds = self.params.hide_surroundings_during_sim, focus = False)
         
         else:
-            surr.displays = False
+            surr.hides |= control.HIDE_ISOLDE
+            self._surroundings_hidden = True
         
         # Cache all the colors so we can revert at the end of the simulation
         self._original_atom_colors = sc.colors
@@ -2387,7 +2400,7 @@ class Isolde():
         # validator
 
         self._status('Organising dihedrals...')
-
+        
         from . import dihedrals
         all_bd = self.backbone_dihedrals
         sim_phi, sim_psi, sim_omega = all_bd.by_residues(total_mobile.unique_residues)
@@ -2442,6 +2455,7 @@ class Isolde():
                                                   self._rezone_maps)
 
     def _sim_end_cb(self, name, outcome):
+        pass
         if outcome[0] == sim_outcomes.UNSTABLE:
             print('''Unable to minimise excessive force. Giving up. Try starting
                 a simulation on a larger selection to give the surroundings
@@ -2481,6 +2495,7 @@ class Isolde():
         for d in self._haptic_devices:
             d.cleanup()
         self._selected_model.atoms.displays = self._original_display_state
+        self._surroundings.hides &= ~control.HIDE_ISOLDE
         self._surroundings_hidden = False
         self._total_sim_construct.colors = self._original_atom_colors
         self._total_sim_construct.draw_modes = self._original_atom_draw_modes
@@ -2610,32 +2625,26 @@ class Isolde():
     def pause_sim_toggle(self):
         print('This function should toggle pause/resume of the sim')
         if self._simulation_running:
-            if not self._sim_paused:
-                self.triggers.activate_trigger('simulation paused', None)
-                self._event_handler.remove_event_handler('do_sim_steps_on_gui_update')
-                self._sim_paused = True
-                self._status('Simulation paused')
-                self.iw._sim_pause_button.setText('Resume')
-            else:
-                self.triggers.activate_trigger('simulation resumed', None)
-                self._event_handler.add_event_handler('do_sim_steps_on_gui_update',
-                                      'new frame',
-                                      self.do_sim_steps)
-                self._sim_paused = False
-                self._status('Simulation running')
-                self.iw._sim_pause_button.setText('Pause')
-
+            self._sim_interface.toggle_pause()
+    
+    def _sim_pause_cb(self, *_):
+        self._sim_paused = True
+        self._status('Simulation paused')
+        self.iw._sim_pause_button.setText('Resume')
+    
+    def _sim_resume_cb(self, *_):
+        self._sim_paused = False
+        self._status('Simulation running')
+        self.iw._sim_pause_button.setText('Pause')
+    
+    
     def discard_sim(self):
         print("""This function should stop the simulation and revert to
                  the original coordinates""")
         if not self._simulation_running:
             print('No simulation running!')
             return
-        if self._saved_positions is not None:
-            self._total_sim_construct.coords = self._saved_positions
-        if self.params.track_ramachandran_status:
-            self.update_omega_check()
-        self.triggers.activate_trigger('simulation terminated', (sim_outcomes.DISCARD, None))
+        self._sim_interface.stop_sim(sim_outcomes.DISCARD, None)
 
     def commit_sim(self):
         print("""This function should stop the simulation and write the
@@ -2643,7 +2652,7 @@ class Isolde():
         if not self._simulation_running:
             print('No simulation running!')
             return
-        self.triggers.activate_trigger('simulation terminated', (sim_outcomes.COMMIT, None))
+        self._sim_interface.stop_sim(sim_outcomes.COMMIT, None)
 
     def minimize(self):
         print('Minimisation mode')

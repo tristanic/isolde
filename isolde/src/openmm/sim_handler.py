@@ -436,7 +436,7 @@ class SimHandler():
         cids    = chain_ids
         bond_is  = bonded_atom_indices
         
-        template_indices = list(residue_templates.keys())
+        #template_indices = list(residue_templates.keys())
         templates_out = {}
         from simtk.openmm.app import Topology, Element
         top = self.topology = Topology()
@@ -451,7 +451,7 @@ class SimHandler():
             rid = (rname, rnum, cid)
             if not rid in rmap:
                 res = rmap[rid] = top.addResidue(rname, cmap[cid])
-                if rid in template_indices:
+                if rid in residue_templates.keys():
                     templates_out[res] = residue_templates[rid]
 
 

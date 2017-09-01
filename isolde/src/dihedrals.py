@@ -14,12 +14,14 @@ class Dihedral():
     a physical bond.
     '''
     
-    def __init__(self, atoms, residue = None):
+    def __init__(self, atoms, residue = None, name = None):
         self.atoms = atoms
         self.residue = residue # the Residue object that this dihedral belongs to
         #self.resnames = self.residues.names
         #self.resnums = self.residues.numbers
         self._rama_case = None
+        
+        self.name = name # The type of dihedral this is (e.g. phi, psi, omega)
         
         self._target = 0.0
         self._spring_constant = 0.0
@@ -652,21 +654,21 @@ class Backbone_Dihedrals():
         omega_res = res[ome_i]
         omega = []
         for i in range(len(raw_omegas)):
-            omega.append(Dihedral(Atoms(omega_1d[4*i:4*i+4]), omega_res[i]))
+            omega.append(Dihedral(Atoms(omega_1d[4*i:4*i+4]), omega_res[i], name = 'omega'))
         omega = self.omega = Dihedrals(omega)
         
         phi_1d = numpy.ravel(raw_phis)
         phi_res = res[phi_i]
         phi = []
         for i in range(len(raw_phis)):
-            phi.append(Dihedral(Atoms(phi_1d[4*i:4*i+4]), phi_res[i]))
+            phi.append(Dihedral(Atoms(phi_1d[4*i:4*i+4]), phi_res[i], name = 'phi'))
         phi = self.phi = Dihedrals(phi)
         
         psi_1d = numpy.ravel(raw_psis)
         psi_res = res[psi_i]
         psi = []
         for i in range(len(raw_psis)):
-            psi.append(Dihedral(Atoms(psi_1d[4*i:4*i+4]), psi_res[i]))
+            psi.append(Dihedral(Atoms(psi_1d[4*i:4*i+4]), psi_res[i], name = 'psi'))
         psi = self.psi = Dihedrals(psi)
         
 

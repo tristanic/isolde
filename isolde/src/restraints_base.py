@@ -31,11 +31,7 @@ class Distance_Restraint:
         self._atoms = atoms
         self._target_distance = target_distance
         self._spring_constant = spring_constant
-        # Placeholder for the index returned when this restraint is added
-        # to an OpenMM Force object.
-        self._sim_force_index = -1
-        # The SimHandler object handling the current simulation
-        self._sim_handler = None
+
     
     @property
     def atoms(self):
@@ -51,8 +47,7 @@ class Distance_Restraint:
     @target_distance.setter
     def target_distance(self, distance):
         self._target_distance = distance
-        if self._sim_handler is not None:
-            self._sim_handler.change_distance_restraint_parameters(self)
+
     
     @property
     def distance(self):
@@ -70,29 +65,7 @@ class Distance_Restraint:
     @spring_constant.setter
     def spring_constant(self, k):
         self._spring_constant = k
-        if self._sim_handler is not None:
-            self._sim_handler.change_distance_restraint_parameters(self)
-     
-    @property
-    def sim_handler(self):
-        '''The SimHandler object handling the current simulation'''
-        return self._sim_handler
-    
-    @sim_handler.setter
-    def sim_handler(self, handler):
-        self._sim_handler = handler
-    
-    @property
-    def sim_force_index(self):
-        '''The index of this restraint in the OpenMM Force object.'''
-        return self._sim_force_index
-    
-    @sim_force_index.setter
-    def sim_force_index(self, index):
-        if self.sim_handler is None:
-            self._sim_force_index = -1
-            raise RuntimeError('This restraint is not associated with a Force!')
-        self._sim_force_index = index
+
 
 class Distance_Restraints:
     '''
@@ -248,8 +221,6 @@ class Position_Restraint:
         self._pbg = pseudobond_group 
         self._pseudobond = None
         self._spring_constant = 0
-        self._sim_force_index = -1
-        self._sim_handler = None
         self._triggers = triggers
     
     @property
@@ -265,8 +236,6 @@ class Position_Restraint:
         self._target = xyz
         if self._target_atom is not None:
             self._target_atom.coord = xyz
-        if self._sim_handler is not None:
-            self._sim_handler.change_position_restraint_parameters(self)
         
     @property
     def target_indicator(self):
@@ -307,35 +276,13 @@ class Position_Restraint:
         else:
             if ta is not None:
                 ta.display = True
-                ta.hide ^= HIDE_ISOLDE
+                ta.hide &= ~HIDE_ISOLDE
                 if pb is None:
                     pb = self._pseudobond = self._pbg.new_pseudobond(self._atom, ta)
                 pb.display = True
             if self._triggers is not None:
                 self._triggers.activate_trigger('position restraint added', self)
-        if self._sim_handler is not None:
-            self._sim_handler.change_position_restraint_parameters(self)
     
-    @property
-    def sim_handler(self):
-        '''The SimHandler object handling the current simulation'''
-        return self._sim_handler
-    
-    @sim_handler.setter
-    def sim_handler(self, handler):
-        self._sim_handler = handler
-    
-    @property
-    def sim_force_index(self):
-        '''The index of this restraint in the OpenMM Force object.'''
-        return self._sim_force_index
-    
-    @sim_force_index.setter
-    def sim_force_index(self, index):
-        if self.sim_handler is None:
-            self._sim_force_index = -1
-            raise RuntimeError('This restraint is not associated with a Force!')
-        self._sim_force_index = index
 
 class Position_Restraints:
     '''Holds an array of Position_Restraint objects.'''
@@ -450,16 +397,15 @@ class Position_Restraints:
                 return self.__class__(self.session, self.master_model, [self._restraints[j] for j in i])
             raise IndexError('No indices in array!')
         if isinstance(i, Atom):
-            return self[self.atoms.index(i)]
+            index = self.atoms.index(i)
+            if index == -1:
+                raise TypeError('Not a restrainable atom!')
+            return self._restraints[index]
         raise IndexError('Only integer indices allowed for {}, got {}'
             .format(self.__class__.__name__, str(type(i))))
     
     def index(self, restraint):
-        try:
-            i = self._restraints.index(restraint)
-        except ValueError:
-            return -1
-        return i
+        return self.atoms.index(restraint.atom)
     
     def append(self, r):
         if isinstance(r, Position_Restraint):

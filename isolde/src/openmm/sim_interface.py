@@ -19,7 +19,7 @@ from chimerax.core.atomic import concatenate
 from ..threading.shared_array import TypedMPArray, SharedNumpyArray
 from . import sim_thread
 from .sim_thread import SimComms, SimThread, ChangeTracker
-from ..constants import defaults, sim_outcomes
+from ..constants import defaults, sim_outcomes, control
 from ..param_mgr import Param_Mgr, autodoc, param_properties
 
 OPENMM_LENGTH_UNIT = defaults.OPENMM_LENGTH_UNIT
@@ -35,9 +35,9 @@ CHIMERAX_LENGTH_UNIT        = defaults.CHIMERAX_LENGTH_UNIT
 CHIMERAX_FORCE_UNIT         = defaults.CHIMERAX_FORCE_UNIT
 CHIMERAX_SPRING_UNIT        = defaults.CHIMERAX_SPRING_UNIT
 
-SIM_MODE_MIN                = defaults.SIM_MODE_MIN
-SIM_MODE_EQUIL              = defaults.SIM_MODE_EQUIL
-SIM_MODE_UNSTABLE           = defaults.SIM_MODE_UNSTABLE
+SIM_MODE_MIN                = control.SIM_MODE_MIN
+SIM_MODE_EQUIL              = control.SIM_MODE_EQUIL
+SIM_MODE_UNSTABLE           = control.SIM_MODE_UNSTABLE
 
 
 try:
@@ -222,8 +222,16 @@ class ChimeraXSimInterface:
     def toggle_pause(self):
         if not self.sim_running:
             return
-        self.change_tracker.register_change(self.change_tracker.PAUSE_TOGGLE)
-
+        comms = self.comms_object
+        ct = self.change_tracker
+        currently_paused = comms['pause'].value
+        comms.thread_safe_set_value('pause', not currently_paused)
+        ct.register_change(ct.PAUSE_TOGGLE)
+        if currently_paused:
+            self.isolde.triggers.activate_trigger('simulation resumed', None)
+        else:
+            self.isolde.triggers.activate_trigger('simulation paused', None)
+        
     def stop_sim(self, reason, err = None):
         '''
         Try to stop the simulation gracefully, or halt the simulation
@@ -231,7 +239,7 @@ class ChimeraXSimInterface:
         '''
         if not self.sim_running:
             return
-        #self.change_tracker.register_change(self.change_tracker.STOP)
+        self.change_tracker.register_change(self.change_tracker.STOP)
         self._pool.terminate()
         self._pool = None
         if reason == sim_outcomes.DISCARD or reason == sim_outcomes.UNSTABLE:
@@ -321,7 +329,72 @@ class ChimeraXSimInterface:
             target_array[index] = target
             k_array[index] = spring_constant
         ct.register_array_changes('tugging', indices = index)
-
+    
+    
+    def update_dihedral_restraint(self, dihedral):
+        comms = self.comms_object
+        ct = self.change_tracker
+        name = dihedral.name
+        master_array = self.named_dihedrals[name]
+        index = master_array.index(dihedral)
+        sim_targets, sim_ks = ct.get_managed_arrays(name)
+        with sim_targets.get_lock(), sim_ks.get_lock():
+            sim_targets[index] = dihedral.target
+            sim_ks[index] = dihedral.spring_constant
+        ct.register_array_changes(name, indices = index)
+        
+        
+    def update_rotamer_target(self, rotamer):
+        key = 'rotamer targets'
+        comms = self.comms_object
+        ct = self.change_tracker
+        r_index = self.mobile_residues.index(rotamer.residue)
+        restrained_mask = ct.get_managed_arrays(key)[0]
+        target_array = comms[key][r_index]
+        with restrained_mask.get_lock(), target_array.get_lock():
+            restrained_mask[r_index] = rotamer.restrained
+            target_array[:] = rotamer.target
+            ct.register_array_changes(key, indices = r_index)
+    
+    def update_position_restraint(self, position_restraint):
+        '''
+        Restrain an atom to an (x,y,z) position with the given spring constant.
+        @param position_restraint:
+            A ChimeraX Position_Restraint object.
+        '''
+        comms = self.comms_object
+        ct = self.change_tracker
+        (targets, ks) = ct.get_managed_arrays('position restraints')
+        pr = position_restraint
+        atom = pr.atom
+        index = self._restrainable_atoms.index(atom)
+        target = pr.target
+        k = pr.spring_constant
+        with targets.get_lock(), ks.get_lock():
+            targets[index] = target
+            ks[index] = k
+            ct.register_array_changes('position restraints', indices = index)
+        
+    def update_position_restraints(self, position_restraints):
+        '''
+        Update a set of position restraints in the simulation
+        '''
+        comms = self.comms_object
+        ct = self.change_tracker
+        
+        pr = position_restraints
+        atoms = pr.atoms
+        indices = self._restrainable_atoms.indices(atoms)
+        targets = pr.targets
+        ks = pr.spring_constants
+        sim_targets, sim_ks = ct.get_managed_arrays('position restraints')
+        with sim_targets.get_lock(), sim_ks.get_lock():
+            sim_targets[indices] = targets
+            sim_ks[indices] = ks
+            ct.register_array_changes('position restraints', indices = indices)
+        
+        
+    
 
     def release_tugged_atom(self, index):
         zeros = numpy.array([0,0,0], numpy.double)
@@ -514,6 +587,7 @@ class ChimeraXSimInterface:
         self.all_atoms = all_atoms
         fixed_atoms = self.fixed_atoms = all_atoms[fixed_indices]
         mobile_atoms = self.mobile_atoms = all_atoms[mobile_indices]
+        self.mobile_residues = mobile_atoms.unique_residues
         self.mobile_heavy_atoms = mobile_atoms[mobile_atoms.element_numbers != 1]
         residues = all_atoms.residues
         atom_names    = all_atoms.names
@@ -576,6 +650,14 @@ class ChimeraXSimInterface:
         # Secondary structure and peptide bond backbone restraints
         bd = self.backbone_dihedrals = backbone_dihedrals
         phi, psi, omega = (bd.phi, bd.psi, bd.omega)
+        
+        self.named_dihedrals = {
+            'phi':      phi,
+            'psi':      psi,
+            'omega':    omega,
+            }
+        
+        
         self._phi_targets, self._phi_ks = self._prepare_dihedral_restraints(phi, 'phi')
         self._psi_targets, self._psi_ks = self._prepare_dihedral_restraints(psi, 'psi')
         self._omega_targets, self._omega_ks = self._prepare_dihedral_restraints(omega, 'omega')
@@ -679,7 +761,7 @@ class ChimeraXSimInterface:
         comms = self.comms_object
         input_rotamer_map = {}
         input_rotamer_targets = comms['rotamer targets'] = {}
-        mobile_res = self.mobile_atoms.unique_residues
+        mobile_res = self.mobile_residues
 
         restrained_mask = SharedNumpyArray(TypedMPArray(ctypes.c_bool, len(mobile_res)))
         comms['restrained rotamers'] = restrained_mask
@@ -748,7 +830,7 @@ class ChimeraXSimInterface:
         all_atoms = self.all_atoms
         comms = self.comms_object
         data = self.sim_data
-        pr_atoms = position_restraints.atoms
+        pr_atoms = self._restrainable_atoms = position_restraints.atoms
         pr_indices = all_atoms.indices(pr_atoms)
         data['position restraint indices'] = pr_indices
         n_pr = len(pr_indices)
