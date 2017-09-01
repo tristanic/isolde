@@ -29,7 +29,7 @@ from chimerax.core import triggerset
 
 from . import rotamers
 from .eventhandler import EventHandler
-from .constants import defaults
+from .constants import defaults, sim_outcomes
 from .param_mgr import Param_Mgr, autodoc, param_properties
 from .openmm.sim_interface import SimParams
 
@@ -157,12 +157,6 @@ class Isolde():
         _map_styles.solid_opaque: {'style': 'surface', 'transparency': 0.0}
         }
 
-    # Possible outcomes of simulation
-    class sim_outcome(IntEnum):
-        COMMIT          = 0
-        DISCARD         = 1
-        FAIL_TO_START   = 2
-        UNSTABLE        = 3
 
     '''
     Named triggers to simplify handling of changes on key ISOLDE events,
@@ -2299,7 +2293,7 @@ class Isolde():
             self._start_threaded_sim()
         except Exception as e:
             self.triggers.activate_trigger('simulation terminated',
-                                        (self.sim_outcome.FAIL_TO_START, e))
+                                        (sim_outcomes.FAIL_TO_START, e))
             raise
 
 
@@ -2435,6 +2429,8 @@ class Isolde():
         Register all event handlers etc. that have to be running during the
         simulation.
         '''
+        self._simulation_running = True
+        self._update_sim_control_button_states()
 
         
         if self.params.track_ramachandran_status and self._rama_plot is not None:
@@ -2446,8 +2442,7 @@ class Isolde():
                                                   self._rezone_maps)
 
     def _sim_end_cb(self, name, outcome):
-        outcomes = self.sim_outcome
-        if outcome[0] == outcomes.UNSTABLE:
+        if outcome[0] == sim_outcomes.UNSTABLE:
             print('''Unable to minimise excessive force. Giving up. Try starting
                 a simulation on a larger selection to give the surroundings
                 more room to settle.''')
@@ -2456,8 +2451,7 @@ class Isolde():
             or discard the existing coordinates, and/or start a simulation
             with a wider selection to give the minimiser more room to work.
             '''
-            return self.discard_sim()
-        elif outcome[0] == outcomes.FAIL_TO_START:
+        elif outcome[0] == sim_outcomes.FAIL_TO_START:
             '''
             TODO: Pop up a dialog box giving the details of the exception, then
             clean up.
@@ -2641,7 +2635,7 @@ class Isolde():
             self._total_sim_construct.coords = self._saved_positions
         if self.params.track_ramachandran_status:
             self.update_omega_check()
-        self.triggers.activate_trigger('simulation terminated', (self.sim_outcome.DISCARD, None))
+        self.triggers.activate_trigger('simulation terminated', (sim_outcomes.DISCARD, None))
 
     def commit_sim(self):
         print("""This function should stop the simulation and write the
@@ -2649,7 +2643,7 @@ class Isolde():
         if not self._simulation_running:
             print('No simulation running!')
             return
-        self.triggers.activate_trigger('simulation terminated', (self.sim_outcome.COMMIT, None))
+        self.triggers.activate_trigger('simulation terminated', (sim_outcomes.COMMIT, None))
 
     def minimize(self):
         print('Minimisation mode')
@@ -2784,7 +2778,7 @@ class Isolde():
         if self._sim_is_unstable:
             if self._unstable_min_rounds >= self.max_unstable_rounds:
                 # We have a problem we can't fix. Terminate the simulation
-                self.triggers.activate_trigger('simulation terminated', (self.sim_outcome.UNSTABLE, None))
+                self.triggers.activate_trigger('simulation terminated', (sim_outcomes.UNSTABLE, None))
                 return
             bad_atom = self._total_mobile[max_index]
             bad_res = bad_atom.residue

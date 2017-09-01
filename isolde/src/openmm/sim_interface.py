@@ -19,7 +19,7 @@ from chimerax.core.atomic import concatenate
 from ..threading.shared_array import TypedMPArray, SharedNumpyArray
 from . import sim_thread
 from .sim_thread import SimComms, SimThread, ChangeTracker
-from ..constants import defaults
+from ..constants import defaults, sim_outcomes
 from ..param_mgr import Param_Mgr, autodoc, param_properties
 
 OPENMM_LENGTH_UNIT = defaults.OPENMM_LENGTH_UNIT
@@ -231,9 +231,11 @@ class ChimeraXSimInterface:
         '''
         if not self.sim_running:
             return
-        self.change_tracker.register_change(self.change_tracker.STOP)
+        #self.change_tracker.register_change(self.change_tracker.STOP)
         self._pool.terminate()
         self._pool = None
+        if reason == sim_outcomes.DISCARD or reason == sim_outcomes.UNSTABLE:
+            self.all_atoms.coords = self.starting_coords
         self.isolde.triggers.activate_trigger('simulation terminated', (reason, err))
         # TODO: Add handler for timeout situations
 
@@ -356,8 +358,14 @@ class ChimeraXSimInterface:
         to self._sim_loop_handler().
         '''
         if time() - self._init_start_time > self.TIMEOUT:
-            self._sim_thread.terminate()
-            raise RuntimeError('Simulation thread initialisation timed out!')
+            self._pool.terminate()
+            self._pool = None
+            err = TimeoutError('Timed out after {:0.1f} seconds waiting for '\
+                               'the simulation thread to start. Unless your '\
+                               'simulation construct is extremely large, this '\
+                               'indicates a serious error.'.format(
+                               self.TIMEOUT))
+            self.isolde.triggers.activate_trigger('simulation terminated', (sim_outcomes.TIMEOUT, err))
 
         comms = self.comms_object
         ct = self.change_tracker
@@ -374,8 +382,9 @@ class ChimeraXSimInterface:
         if changes & ct.ERROR:
             err, traceback = err_q.get()
             print(traceback)
-            self.stop_sim(self.isolde.sim_outcome.DISCARD, err)
-            raise err
+            self.stop_sim(sim_outcomes.ERROR, err)
+            #TODO: provide the user with a dialog to choose whether to 
+            #keep or discard the coordinates in this case.
 
         if changes & ct.INIT_COMPLETE:
             print(bin(changes))
@@ -417,6 +426,10 @@ class ChimeraXSimInterface:
             self.sim_mode = 'equil'
 
         if changes & ct.ERROR:
+            if changes & ct.UNSTABLE:
+                self.stop_sim(sim_outcomes.UNSTABLE)
+                return
+            
             err_q = comms['error']
             if err_q.full():
                 err, traceback = err_q.get()
@@ -430,8 +443,7 @@ class ChimeraXSimInterface:
             #~ if thread.is_alive():
                 #~ thread.terminate()
             print(traceback)
-            self.stop_sim(self.isolde.sim_outcome.DISCARD, err)
-            raise err
+            self.stop_sim(sim_outcomes.DISCARD, err)
 
         #~ if not thread.is_alive():
             #~ session.triggers.remove_handler(self._update_handler)
@@ -509,7 +521,8 @@ class ChimeraXSimInterface:
         residue_names = residues.names
         residue_nums  = residues.numbers
         chain_ids     = residues.chain_ids
-        coords        = all_atoms.coords * unit.angstrom
+        self.starting_coords = all_atoms.coords
+        coords        = self.starting_coords * unit.angstrom
 
         bonds               = all_atoms.intra_bonds
         bond_atoms          = bonds.atoms

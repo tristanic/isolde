@@ -404,7 +404,7 @@ class SimHandler():
 
     def create_openmm_topology(self, atom_names, element_names,
                             residue_names, residue_numbers, chain_ids,
-                            bonded_atom_indices):
+                            bonded_atom_indices, residue_templates):
         '''
         Generate a simulation topology from generic Python and numpy
         objects describing the simulation construct.
@@ -421,6 +421,11 @@ class SimHandler():
         @param bonded_atom_indices:
             A tuple of two numpy arrays, where element i of each array
             provides the index of one of the two atoms involved in bond i
+        @param residue_templates:
+            A {residue_index: residue_type} dict for residues whose 
+            topology is otherwise ambiguous. OpenMM requires a 
+            {openmm_residue_object: residue_type} dict, so we need to 
+            do the conversion here.
         '''
 
         anames   = atom_names
@@ -430,7 +435,9 @@ class SimHandler():
         rnums    = residue_numbers
         cids    = chain_ids
         bond_is  = bonded_atom_indices
-
+        
+        template_indices = list(residue_templates.keys())
+        templates_out = {}
         from simtk.openmm.app import Topology, Element
         top = self.topology = Topology()
         cmap = {}
@@ -444,6 +451,8 @@ class SimHandler():
             rid = (rname, rnum, cid)
             if not rid in rmap:
                 res = rmap[rid] = top.addResidue(rname, cmap[cid])
+                if rid in template_indices:
+                    templates_out[res] = residue_templates[rid]
 
 
             element = Element.getBySymbol(ename)
@@ -452,7 +461,7 @@ class SimHandler():
         for i1, i2 in zip(*bond_is):
             top.addBond(atoms[i1],  atoms[i2])
 
-        return top
+        return top, templates_out
 
     def define_forcefield (self, forcefield_list):
         from simtk.openmm.app import ForceField

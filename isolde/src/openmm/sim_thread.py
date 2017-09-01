@@ -252,8 +252,7 @@ def _sim_thread():
             current_changes = changes.value
             ct.clear_inputs()
         if current_changes & ct.STOP:
-            error_q.put((Exception(),'Stopped on command: {}'.format(bin(current_changes))))
-            ct.error()
+            status_q.put('Simulation terminated on command.')
             break
 
         try:
@@ -349,12 +348,13 @@ class SimThread:
             self.density_map_force_maps = force_maps['density maps']
             self.init_map_forces(data['density map names'])
 
-            top = sh.create_openmm_topology(data['atom names'],
+            top, templates = sh.create_openmm_topology(data['atom names'],
                                             data['element names'],
                                             data['residue names'],
                                             data['residue numbers'],
                                             data['chain ids'],
-                                            data['bonded atom indices']
+                                            data['bonded atom indices'],
+                                            data['residue templates']
                                             )
 
             self.topology = top
@@ -369,7 +369,7 @@ class SimThread:
                 'rigidWater':           par['rigid_water'],
                 'removeCMMotion':       par['remove_c_of_m_motion'],
                 'ignoreExternalBonds':  True,
-                'residueTemplates':     data['residue templates'],
+                'residueTemplates':     templates,
                 }
 
             system = sh.create_openmm_system(top, system_params)
@@ -502,11 +502,7 @@ class SimThread:
                 comms.thread_safe_set_value('sim mode', SIM_MODE_EQUIL)
                 self.unstable_counter = 0
             elif self.unstable_counter >= self.MAX_UNSTABLE_ROUNDS:
-                err_str = 'Unable to reduce forces to within tolerable '\
-                        +'limits within {} steps. Giving up.'.format(
-                            self.MAX_UNSTABLE_ROUNDS)
-                err_q.put((RuntimeError(err_str), ''))
-                ct.error()
+                ct.register_change(ct.UNSTABLE&ct.ERROR)
             else:
                 self.unstable_counter += 1
 
