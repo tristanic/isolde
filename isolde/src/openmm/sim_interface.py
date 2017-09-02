@@ -121,7 +121,7 @@ class SimParams(Param_Mgr):
             'minimization_convergence_tol':     (defaults.MIN_CONVERGENCE_FORCE_TOL, OPENMM_FORCE_UNIT),
             'tug_hydrogens':                    (False, None),
             'hydrogens_feel_maps':              (False, None),
-            
+
             }
 
 
@@ -153,49 +153,49 @@ class ChimeraXSimInterface:
         self._pool = None
         self.time_loops = time_loops
         self._last_time = None
-        
-            # Registry for all the event handlers that should only be 
-            # active when a simulation is running. NOTE: these will 
+
+            # Registry for all the event handlers that should only be
+            # active when a simulation is running. NOTE: these will
             # automatically be destroyed on simulation termination.
         self._sim_event_names = {
             'isolde': [],
             'session': []
             }
-        self.isolde._isolde_events.add_event_handler('sim_interface_sim_start', 
+        self.isolde._isolde_events.add_event_handler('sim_interface_sim_start',
             'simulation started', self._sim_start_cb)
         self.isolde._isolde_events.add_event_handler('cleanup_on_sim_termination',
             'simulation terminated', self.finalize)
-    
+
     def finalize(self, *_):
         #self.stop_sim()
         self._release_all_sim_events()
         self._disable_mouse_tugging()
         self.isolde._isolde_events.remove_event_handler('sim_interface_sim_start')
         self.isolde._isolde_events.remove_event_handler('cleanup_on_sim_termination')
-        
+
     def _sim_start_cb(self, *_):
         self._initialize_mouse_tugging()
-        self._register_sim_event('ramachandran update', 'isolde', 
+        self._register_sim_event('ramachandran update', 'isolde',
                                  'completed simulation step',
                                   self.isolde.update_ramachandran)
-        self._register_sim_event('omega update', 'isolde', 
+        self._register_sim_event('omega update', 'isolde',
                                  'completed simulation step',
                                  self.isolde.update_omega_check)
-    
-    
-    
+
+
+
     def _initialize_mouse_tugging(self):
         from .. import mousemodes
         isolde = self.isolde
         mt = self._mouse_tugger = mousemodes.TugAtomsMode(
             self.session, self.tuggable_atoms, isolde._annotations)
         isolde._mouse_modes.register_mode(mt.name, mt, 'right', ('control',))
-        self._register_sim_event('mouse tugging', 'session', 'new frame', 
+        self._register_sim_event('mouse tugging', 'session', 'new frame',
                                  self._update_mouse_tugging)
-    
+
     def _disable_mouse_tugging(self):
         self.isolde._mouse_modes.remove_mode(self._mouse_tugger.name)
-    
+
     def _update_mouse_tugging(self, *_):
         mtug = self._mouse_tugger
         cur_tug = mtug.already_tugging
@@ -213,8 +213,8 @@ class ChimeraXSimInterface:
             mtug.last_tugged_index = None
             mtug.already_tugging = False
 
-    
-    
+
+
     @property
     def sim_running(self):
         return self._pool is not None
@@ -231,7 +231,7 @@ class ChimeraXSimInterface:
             self.isolde.triggers.activate_trigger('simulation resumed', None)
         else:
             self.isolde.triggers.activate_trigger('simulation paused', None)
-        
+
     def stop_sim(self, reason, err = None):
         '''
         Try to stop the simulation gracefully, or halt the simulation
@@ -292,7 +292,7 @@ class ChimeraXSimInterface:
             comms.thread_safe_set_value('sim mode', SIM_MODE_EQUIL)
         self.change_tracker.register_change(self.change_tracker.MODE)
 
-    
+
     def tug_atom_to(self, index, target, spring_constant = None):
         '''
         Tug an atom towards the target (x,y,z) position.
@@ -329,8 +329,8 @@ class ChimeraXSimInterface:
             target_array[index] = target
             k_array[index] = spring_constant
         ct.register_array_changes('tugging', indices = index)
-    
-    
+
+
     def update_dihedral_restraints(self, dihedrals):
         ct = self.change_tracker
         name = dihedrals[0].name
@@ -341,9 +341,9 @@ class ChimeraXSimInterface:
             sim_targets[indices] = dihedrals.targets
             sim_ks.indices = dihedrals.spring_constants
         ct.register_array_changes(name, indices = indices)
-        
-        
-        
+
+
+
     def update_dihedral_restraint(self, dihedral):
         ct = self.change_tracker
         name = dihedral.name
@@ -354,7 +354,7 @@ class ChimeraXSimInterface:
             sim_targets[index] = dihedral.target
             sim_ks[index] = dihedral.spring_constant
         ct.register_array_changes(name, indices = index)
-        
+
     def update_rotamer_target(self, rotamer):
         key = 'rotamer targets'
         comms = self.comms_object
@@ -366,7 +366,7 @@ class ChimeraXSimInterface:
             restrained_mask[r_index] = rotamer.restrained
             target_array[:] = rotamer.target
             ct.register_array_changes(key, indices = r_index)
-    
+
     def update_position_restraint(self, position_restraint):
         '''
         Restrain an atom to an (x,y,z) position with the given spring constant.
@@ -385,14 +385,14 @@ class ChimeraXSimInterface:
             targets[index] = target
             ks[index] = k
             ct.register_array_changes('position restraints', indices = index)
-        
+
     def update_position_restraints(self, position_restraints):
         '''
         Update a set of position restraints in the simulation
         '''
         comms = self.comms_object
         ct = self.change_tracker
-        
+
         pr = position_restraints
         atoms = pr.atoms
         indices = self._restrainable_atoms.indices(atoms)
@@ -403,9 +403,21 @@ class ChimeraXSimInterface:
             sim_targets[indices] = targets
             sim_ks[indices] = ks
             ct.register_array_changes('position restraints', indices = indices)
-        
-        
-    
+
+    def update_distance_restraint(self, distance_restraint):
+        '''
+        Update a distance restraint in the simulation.
+        '''
+        name = distance_restraint.name
+        master_list = self.distance_restraints_dict[name]
+        index = master_list.index(distance_restraint)
+        ct = self.change_tracker
+        sim_targets, sim_ks = ct.get_managed_arrays(names)
+        with sim_targets.get_lock(), sim_ks.get_lock():
+            sim_targets[index] = distance_restraint.target
+            sim_ks[index] = distance_restraint.spring_constant
+        ct.register_array_changes(name, indices = index)
+
 
     def release_tugged_atom(self, index):
         zeros = numpy.array([0,0,0], numpy.double)
@@ -418,7 +430,7 @@ class ChimeraXSimInterface:
             registry = self.isolde._event_handler
         registry.add_event_handler(name, trigger_name, callback)
         self._sim_event_names[owner].append(name)
-    
+
     def _release_sim_event(self, name, owner):
         name_list = self._sim_event_names[owner]
         name_index = name_list.index(name)
@@ -428,13 +440,13 @@ class ChimeraXSimInterface:
             registry = self.isolde._event_handler
         registry.remove_event_handler(name)
         name_list.pop(name_index)
-    
+
     def _release_all_sim_events(self, *_):
         for owner, name_list in self._sim_event_names.items():
             for name in reversed(name_list):
                 self._release_sim_event(name, owner)
-        
-    
+
+
     def _sim_init_handler(self, *_):
         '''
         Handler to run on ChimeraX 'new frame' trigger while the simulation
@@ -467,7 +479,7 @@ class ChimeraXSimInterface:
             err, traceback = err_q.get()
             print(traceback)
             self.stop_sim(sim_outcomes.ERROR, err)
-            #TODO: provide the user with a dialog to choose whether to 
+            #TODO: provide the user with a dialog to choose whether to
             #keep or discard the coordinates in this case.
 
         if changes & ct.INIT_COMPLETE:
@@ -477,7 +489,7 @@ class ChimeraXSimInterface:
             # Tell the thread it's ok to start
             comms['status'].put('Go')
             self.isolde.triggers.activate_trigger('simulation started', None)
-            self._register_sim_event('check_sim_on_gui_update', 
+            self._register_sim_event('check_sim_on_gui_update',
                     'session', 'new frame', self._sim_loop_handler)
 
 
@@ -505,7 +517,7 @@ class ChimeraXSimInterface:
 
         if self.step_counter == 10:
             self.sim_mode = 'equil'
-        
+
         if self.step_counter < 10 and (changes & ct.MIN_COMPLETE):
             self.sim_mode = 'equil'
 
@@ -513,7 +525,7 @@ class ChimeraXSimInterface:
             if changes & ct.UNSTABLE:
                 self.stop_sim(sim_outcomes.UNSTABLE)
                 return
-            
+
             err_q = comms['error']
             if err_q.full():
                 err, traceback = err_q.get()
@@ -588,7 +600,7 @@ class ChimeraXSimInterface:
         # Container for all data that can be changed by ISOLDE, the simulation
         # thread, or both
         comms = self.comms_object = SimComms()
-
+        self.distance_restraints_dict = distance_restraints
         self.sim_params = sim_params
         self.temperature = sim_params['temperature'].value_in_unit(OPENMM_TEMPERATURE_UNIT)
 
@@ -655,20 +667,20 @@ class ChimeraXSimInterface:
         # Provide pre-defined residue templates for residues OpenMM can't
         # identify on its own.
         self.find_residue_templates()
-        
+
         self._prepare_tugging_force(tuggable_atoms)
-        
+
         # Secondary structure and peptide bond backbone restraints
         bd = self.backbone_dihedrals = backbone_dihedrals
         phi, psi, omega = (bd.phi, bd.psi, bd.omega)
-        
+
         self.named_dihedrals = {
             'phi':      phi,
             'psi':      psi,
             'omega':    omega,
             }
-        
-        
+
+
         self._phi_targets, self._phi_ks = self._prepare_dihedral_restraints(phi, 'phi')
         self._psi_targets, self._psi_ks = self._prepare_dihedral_restraints(psi, 'psi')
         self._omega_targets, self._omega_ks = self._prepare_dihedral_restraints(omega, 'omega')
@@ -688,13 +700,13 @@ class ChimeraXSimInterface:
 
         if density_maps is not None:
             self._prepare_density_maps(density_maps)
-        
+
         self._pool = start_pool(sim_params, sim_data, comms, ct)
 
         self._init_start_time = time()
         self.step_counter = 0
         self.thread_result = self._pool.apply_async(sim_thread._sim_thread, args=(), error_callback = error_cb)
-        self._register_sim_event('simulation_initialization', 'session', 
+        self._register_sim_event('simulation_initialization', 'session',
                                  'new frame', self._sim_init_handler)
 
     def _prepare_tugging_force(self, allowed_targets):

@@ -1660,7 +1660,7 @@ class Isolde():
             dlist.targets = 0
             dlist.spring_constants = 0
             self.apply_dihedral_restraints(dlist)
-            
+
         for r in residues:
             cad = self._sim_ca_ca2_restr[r]
             ond = self._sim_o_n4_restr[r]
@@ -1669,6 +1669,12 @@ class Isolde():
             if ond is not None:
                 ond.spring_constant = 0
 
+
+    def apply_distance_restraints(self, distance_restraints):
+        self._sim_interface.update_distance_restraints(distance_restraints)
+
+    def apply_distance_restraint(self, distance_restraint):
+        self._sim_interface.update_distance_restraint(distance_restraint)
 
 
     def _increment_register_shift(self, *_):
@@ -1707,12 +1713,6 @@ class Isolde():
         self.iw._rebuild_register_shift_go_button.setEnabled(True)
         self.iw._rebuild_register_shift_release_button.setEnabled(False)
 
-
-
-
-
-
-
     def _restrain_selected_atom_to_xyz(self, *_):
         from chimerax.core.atomic import selected_atoms
         atom = selected_atoms(self.session)[0]
@@ -1726,7 +1726,7 @@ class Isolde():
         pr.target = target
         pr.spring_constant = spring_constant
         self._sim_interface.update_position_restraint(pr)
-        
+
 
     def release_xyz_restraints_on_selected_atoms(self, *_, sel = None):
         from chimerax.core.atomic import selected_atoms
@@ -1770,16 +1770,6 @@ class Isolde():
         rot.restrained = True
         self._apply_rotamer_target_to_sim(rot)
         self._clear_rotamer()
-
-    #~ def _apply_rotamer_target_to_sim(self, rotamer):
-        #~ dihedrals = rotamer.dihedrals
-        #~ target = rotamer.target
-        #~ sc = self._total_sim_construct
-        #~ sh = self._sim_handler
-        #~ k = self.rotamer_restraints_k
-        #~ sh.set_dihedral_restraints(dihedrals, target, k, cutoffs = self.rotamer_restraint_cutoff_angle)
-
-        #~ rotamer.restrained = True
 
     def _apply_rotamer_target_to_sim(self, rotamer):
         self._sim_interface.update_rotamer_target(rotamer)
@@ -1850,7 +1840,7 @@ class Isolde():
         prev_c = phi.atoms.filter(phi.atoms.names == 'C')[0]
         prev_r = prev_c.residue
         psi = bd.psi.by_residue(prev_r)
-        
+
         targets = []
         for d in (phi, psi):
             v = d.value
@@ -1859,10 +1849,10 @@ class Isolde():
             else:
                 d.target = v-pi
             d.spring_constant = defaults.PHI_PSI_SPRING_CONSTANT
-        
+
         self.apply_dihedral_restraint(phi)
         self.apply_dihedral_restraint(psi)
-                
+
         self._pep_flip_timeout_counter = 0
         self._pep_flip_dihedrals = (phi, psi)
         self.iw._rebuild_sel_res_pep_flip_button.setEnabled(False)
@@ -1881,17 +1871,22 @@ class Isolde():
             taken from its properties
         '''
         self._sim_interface.update_dihedral_restraint(dihedral)
-    
+
     def apply_dihedral_restraints(self, dihedrals):
         '''
-        Apply restraints for a set of dihedrals at once. All dihedrals 
+        Apply restraints for a set of dihedrals at once. All dihedrals
         must be of the same type.
         '''
-        names = numpy.unique(dihedrals.names)
-        if len(names) != 1:
-            raise TypeError('All dihedrals must be of the same type!')
-        self._sim_interface.update_dihedral_restraints(dihedrals)
-    
+        all_names = dihedrals.names
+        unique_names = numpy.unique(names)
+        if len(names) == 1:
+            self._sim_interface.update_dihedral_restraints(dihedrals)
+        else:
+            for name in names:
+                indices = numpy.where(all_names == name)[0]
+                self._sim_interface.update_dihedral_restraints(dihedrals[indices])
+
+
     def release_dihedral_restraint(self, dihedral):
         dihedral.target = 0
         dihedral.spring_constant = 0
@@ -1938,7 +1933,7 @@ class Isolde():
             target = 0
         omega.target = target
         self.apply_dihedral_restraint(omega)
-        
+
 
 
     ####
@@ -2326,7 +2321,7 @@ class Isolde():
         session = self.session
         log = session.logger.info
         sel_model = self.selected_model
-        
+
         if self._simulation_running:
             print('You already have a simulation running!')
             return
@@ -2341,7 +2336,7 @@ class Isolde():
                 return
 
         self._status('Defining simulation selection...')
-        
+
         # Define final mobile selection
         main_sel = self._get_main_sim_selection()
 
@@ -2380,11 +2375,11 @@ class Isolde():
                 show_context = self.params.hard_shell_cutoff_distance,
                 mask_radius = 4, extra_padding = 10,
                 hide_surrounds = self.params.hide_surroundings_during_sim, focus = False)
-        
+
         else:
             surr.hides |= control.HIDE_ISOLDE
             self._surroundings_hidden = True
-        
+
         # Cache all the colors so we can revert at the end of the simulation
         self._original_atom_colors = sc.colors
         self._original_atom_draw_modes = sc.draw_modes
@@ -2412,7 +2407,7 @@ class Isolde():
         # validator
 
         self._status('Organising dihedrals...')
-        
+
         from . import dihedrals
         all_bd = self.backbone_dihedrals
         sim_phi, sim_psi, sim_omega = all_bd.by_residues(total_mobile.unique_residues)
@@ -2425,17 +2420,17 @@ class Isolde():
             self.omega_validator.load_structure(sel_model, bd.omega)
 
 
-        distance_restraints = {
+        distance_restraints =  {
             'ca_to_ca_plus_two':    self.ca_to_ca_plus_two.in_selection(sc),
             'o_to_n_plus_four':     self.o_to_n_plus_four.in_selection(sc),
             }
 
         position_restraints = self._sim_pos_restr =\
             self.position_restraints.in_selection(total_mobile)
-        
-        
+
+
         tuggable_atoms = total_mobile[total_mobile.element_names != 'H']
-        
+
         from .openmm.sim_interface import ChimeraXSimInterface
         sp = self.sim_params
         si = self._sim_interface = ChimeraXSimInterface(self.session, self)
@@ -2457,7 +2452,7 @@ class Isolde():
         self._simulation_running = True
         self._update_sim_control_button_states()
 
-        
+
         if self.params.track_ramachandran_status and self._rama_plot is not None:
             self._rama_go_live()
 
@@ -2638,18 +2633,18 @@ class Isolde():
         print('This function should toggle pause/resume of the sim')
         if self._simulation_running:
             self._sim_interface.toggle_pause()
-    
+
     def _sim_pause_cb(self, *_):
         self._sim_paused = True
         self._status('Simulation paused')
         self.iw._sim_pause_button.setText('Resume')
-    
+
     def _sim_resume_cb(self, *_):
         self._sim_paused = False
         self._status('Simulation running')
         self.iw._sim_pause_button.setText('Pause')
-    
-    
+
+
     def discard_sim(self):
         print("""This function should stop the simulation and revert to
                  the original coordinates""")

@@ -179,12 +179,12 @@ class SimHandler():
     def tug_atom(self, force_index, target, k):
         tf = self._tugging_force
         tf.update_target(force_index, target, k)
-    
+
     def tug_atoms(self, force_indices, targets, ks):
         tf = self._tugging_force
         for i, t, k in zip(force_indices, targets, ks):
             tf.update_target(i, t, k)
-    
+
 
 
     def release_position_restraint(self, force_index):
@@ -233,7 +233,7 @@ class SimHandler():
     def update_distance_restraint(self, force_index, target=None, k=None):
         tf = self._distance_restraints_force
         tf.update_target(force_index, target, k)
-    
+
         ##
         # During simulation
         ##
@@ -422,9 +422,9 @@ class SimHandler():
             A tuple of two numpy arrays, where element i of each array
             provides the index of one of the two atoms involved in bond i
         @param residue_templates:
-            A {residue_index: residue_type} dict for residues whose 
-            topology is otherwise ambiguous. OpenMM requires a 
-            {openmm_residue_object: residue_type} dict, so we need to 
+            A {residue_index: residue_type} dict for residues whose
+            topology is otherwise ambiguous. OpenMM requires a
+            {openmm_residue_object: residue_type} dict, so we need to
             do the conversion here.
         '''
 
@@ -435,7 +435,7 @@ class SimHandler():
         rnums    = residue_numbers
         cids    = chain_ids
         bond_is  = bonded_atom_indices
-        
+
         #template_indices = list(residue_templates.keys())
         templates_out = {}
         from simtk.openmm.app import Topology, Element
@@ -451,8 +451,9 @@ class SimHandler():
             rid = (rname, rnum, cid)
             if not rid in rmap:
                 res = rmap[rid] = top.addResidue(rname, cmap[cid])
-                if rid in residue_templates.keys():
-                    templates_out[res] = residue_templates[rid]
+                if rcount in residue_templates.keys():
+                    templates_out[res] = residue_templates[rcount]
+                rcount += 1
 
 
             element = Element.getBySymbol(ename)

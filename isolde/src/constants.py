@@ -11,10 +11,10 @@ in Angstroms while OpenMM works in nanometres
 def _constant_property_factory(key):
     def fget(self):
         return self._constants[key]
-    
+
     def fset(self, val):
         raise TypeError("Can't change value of a constant!")
-    
+
     return property(fget, fset)
 
 def _constant_properties(cls):
@@ -41,7 +41,7 @@ class _Defaults:
         ###
         # Simulation parameters
         ###
-        'OPENMM_PLATFORM':            'OpenCL', # alternatively 'OpenCL' or 'CUDA'
+        'OPENMM_PLATFORM':            'CPU', # 'CPU', 'OpenCL' or 'CUDA'
         'OPENMM_INTEGRATOR_TYPE':     openmm.VariableLangevinIntegrator,
         'OPENMM_NONBONDED_METHOD':    app.CutoffNonPeriodic,
         'OPENMM_NONBONDED_CUTOFF':    1.0, #* unit.nanometers,
@@ -124,7 +124,7 @@ class _Defaults:
         ###
         'FLOAT_TYPE' :                  ctypes.c_double,
     }
-    
+
 @_constant_properties
 class _Sim_Outcomes:
     _constants = {

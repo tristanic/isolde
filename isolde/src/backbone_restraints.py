@@ -10,24 +10,25 @@ register shifts, and other operations on the protein backbone.
 '''
 import numpy
 from chimerax.core.atomic import Residue, Atoms, AtomicStructure
-from .restraints_base import Distance_Restraint, Distance_Restraints 
-from .restraints_base import Position_Restraint, Position_Restraints   
+from .restraints_base import Distance_Restraint, Distance_Restraints
+from .restraints_base import Position_Restraint, Position_Restraints
 
-MAX_RESTRAINT_FORCE = 250.0 # kJ/mol/A 
+MAX_RESTRAINT_FORCE = 250.0 # kJ/mol/A
 
 class CA_to_CA_plus_Two(Distance_Restraints):
     '''
-    Restraining the CA - (CA+2) distance is very useful when forcing 
+    Restraining the CA - (CA+2) distance is very useful when forcing
     specific secondary structures - in particular, beta strands, where
-    simply forcing the backbone dihedrals is almost never enough. 
+    simply forcing the backbone dihedrals is almost never enough.
     '''
     HELIX_DISTANCE = 5.43
-    STRAND_DISTANCE = 6.81    
+    STRAND_DISTANCE = 6.81
     def __init__(self, model_or_list):
         '''
         Finds all connected CA - (CA+2) atom pairs in an atomic model, and
         creates a Distance_Restraints object covering all of them.
         '''
+        self._name = '_o_to_n_plus_four'
         if isinstance(model_or_list, AtomicStructure):
             model = model_or_list
             fragments = model.polymers(
@@ -38,25 +39,25 @@ class CA_to_CA_plus_Two(Distance_Restraints):
                     continue
                 ca_atoms = f.atoms.filter(f.atoms.names == 'CA')
                 for c1, c2 in zip(ca_atoms[0:-2], ca_atoms[2:]):
-                    restraints.append(Distance_Restraint(Atoms((c1, c2)), 0, 0))
+                    restraints.append(Distance_Restraint(Atoms((c1, c2)), 'ca_to_ca_plus_two', 0, 0))
         else:
             restraints = model_or_list
         super().__init__(restraints)
-    
+
     def __getitem__(self, i):
         if isinstance(i, Residue):
             return self[i.atoms.filter(i.atoms.names == 'CA')[0]][0]
         return super().__getitem__(i)
-        
-    
-    
+
+
+
     pass
 
 class O_to_N_plus_Four(Distance_Restraints):
     '''
-    For restraining alpha helices, the standard approach is to apply 
+    For restraining alpha helices, the standard approach is to apply
     distance restraints to the (n, n+4) H-bonds as well as the standard
-    phi/psi backbone restraints. Better to avoid applying restraints to 
+    phi/psi backbone restraints. Better to avoid applying restraints to
     hydrogens, so here we'll connect the carbonyl oxygens to the (n+4)
     nitrogens.
     '''
@@ -67,6 +68,7 @@ class O_to_N_plus_Four(Distance_Restraints):
         Finds all connected O - (N+4) atom pairs in an atomic model, and
         creates a Distance_Restraints object covering all of them.
         '''
+        self._name = 'o_to_n_plus_four'
         if isinstance(model_or_list, AtomicStructure):
             model = model_or_list
             fragments = model.polymers(
@@ -78,15 +80,12 @@ class O_to_N_plus_Four(Distance_Restraints):
                 o_atoms = f.atoms.filter(f.atoms.names == 'O')
                 n_atoms = f.atoms.filter(f.atoms.names == 'N')
                 for o, n in zip(o_atoms[0:-4], n_atoms[4:]):
-                    restraints.append(Distance_Restraint(Atoms((o, n)), 0, 0))
+                    restraints.append(Distance_Restraint(Atoms((o, n)), 'o_to_n_plus_four', 0, 0))
         else:
             restraints = model_or_list
         super().__init__(restraints)
-    
+
     def __getitem__(self, i):
         if isinstance(i, Residue):
             return self[i.atoms.filter(i.atoms.names == 'O')[0]][0]
         return super().__getitem__(i)
-         
-        
-

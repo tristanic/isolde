@@ -13,10 +13,10 @@ HIDE_ISOLDE = 0x2
 class Distance_Restraint:
     '''
     Base class for distance restraints between atoms. Defines the scheme
-    for fast look-up of restraints and control within the context of 
+    for fast look-up of restraints and control within the context of
     simulations.
     '''
-    def __init__(self, atoms, target_distance, spring_constant):
+    def __init__(self, name, atoms, target_distance, spring_constant):
         '''
         Defines a distance restraint between a pair of atoms.
         Args:
@@ -28,40 +28,45 @@ class Distance_Restraint:
                 The spring constant for the harmonic restraining potential,
                 in kJ/mol/A^3
         '''
+        self._name = name
         self._atoms = atoms
         self._target_distance = target_distance
         self._spring_constant = spring_constant
 
-    
+
+    @property
+    def name(self):
+        return self._name
+
     @property
     def atoms(self):
         return self._atoms
-    
+
     @property
     def target_distance(self):
         '''
         The target separation of this atom pair in Angstroms.
         '''
         return self._target_distance
-    
+
     @target_distance.setter
     def target_distance(self, distance):
         self._target_distance = distance
 
-    
+
     @property
     def distance(self):
         '''The current distance between the restrained atoms in Angstroms.'''
         coords = self.atoms.coords
         return numpy.linalg.norm(coords[1]-coords[0])
-    
+
     @property
     def spring_constant(self):
         '''
         Set the spring constant for this restraint, in kJ/mol/A^3
          '''
         return self._spring_constant
-    
+
     @spring_constant.setter
     def spring_constant(self, k):
         self._spring_constant = k
@@ -69,12 +74,13 @@ class Distance_Restraint:
 
 class Distance_Restraints:
     '''
-    Holds an array of Distance_Restraint objects 
+    Holds an array of Distance_Restraint objects
     '''
     def __init__(self, restraints_list):
         '''
         Initialise from an array of Distance_Restraint objects
         '''
+        self._name = None
         self._restraints = restraints_list
         # ChimeraX Atoms object holding all atoms in this object. The atoms
         # corresponding to restraint i will be found at [2*i: 2*i+2]
@@ -83,17 +89,21 @@ class Distance_Restraints:
         self._targets = None
         # Current actual distances
         self._distances = None
-        
-    
+
+
+    @property
+    def name(self):
+        return self._name
+
     def __len__(self):
         return len(self._restraints)
-    
+
     def __bool__(self):
         return len(self) > 0
-    
+
     def __iter__(self):
         return iter(self._restraints)
-    
+
     def __getitem__(self, i):
         if not len(self):
             return None
@@ -111,14 +121,17 @@ class Distance_Restraints:
             return self[restraint_indices]
         raise IndexError('Only integer indices allowed for {}, got {}'
             .format(self.__class__.__name__, str(type(i))))
-    
+
     def index(self, restraint):
         try:
             i = self._restraints.index(restraint)
         except ValueError:
             return -1
         return i
-    
+
+    def indices(self, restraints):
+        return numpy.array([self.index(r) for r in restraints])
+
     def append(self, r):
         if isinstance(r, Distance_Restraint):
             if self.atoms is None:
@@ -135,7 +148,7 @@ class Distance_Restraints:
         else:
             raise TypeError('Can only append a single Distance_Restraint or \
                              a Distance_Restraints object.')
-    
+
     def in_selection(self, sel):
         '''
         Returns a Distance_Restraints object encompassing all distance
@@ -146,8 +159,8 @@ class Distance_Restraints:
         '''
         atom_indices = sel.indices(self.atoms).reshape((len(self.atoms)//2, 2))
         return self[numpy.argwhere(numpy.all(atom_indices != -1, axis = 1)).ravel()]
-        
-    
+
+
     @property
     def atoms(self):
         if not len(self):
@@ -158,21 +171,21 @@ class Distance_Restraints:
                 atoms[i] = r.atoms
             self._atoms = Atoms(numpy.ravel(atoms))
         return self._atoms
-    
+
     @property
     def restraints(self):
         return self._restraints
-    
+
     @property
     def coords(self):
         if self.atoms is None:
             return None
         return self.atoms.coords
-    
+
     @property
     def targets(self):
         return numpy.array([r.target_distance for r in self])
-    
+
     @targets.setter
     def targets(self, targets):
         if len(targets) != len(self):
@@ -185,16 +198,16 @@ class Distance_Restraints:
         '''Returns the current distances between restrained atom pairs, in Angstroms.'''
         coords = numpy.reshape(self.coords, [len(self)//2, 2,3])
         return numpy.linalg.norm(coords[:,1]-coords[:,0],axis=1)
-    
+
     @property
     def spring_constants(self):
         '''Returns the spring constants for all restraints, in kJ/mol/A^3.'''
         return numpy.array([r.spring_constant for r in self.restraints])
-    
-    
-    
-    
-    
+
+
+
+
+
 class Position_Restraint:
     '''
     Restrains one atom to an (x,y,z) position in space via a harmonic spring
@@ -202,7 +215,7 @@ class Position_Restraint:
     '''
     def __init__(self, atom, pseudobond_group, triggers = None):
         '''
-        Just prepare the internal data structure and initialise spring 
+        Just prepare the internal data structure and initialise spring
         constant to zero and target to (0,0,0).
         Args:
             atom:
@@ -218,47 +231,47 @@ class Position_Restraint:
         # a pseudobond between the master and target atoms, to provide a
         # visual representation of the restraint.
         self._target_atom = None
-        self._pbg = pseudobond_group 
+        self._pbg = pseudobond_group
         self._pseudobond = None
         self._spring_constant = 0
         self._triggers = triggers
-    
+
     @property
     def atom(self):
         return self._atom
-    
+
     @property
     def target(self):
         return self._target
-    
+
     @target.setter
     def target(self, xyz):
         self._target = xyz
         if self._target_atom is not None:
             self._target_atom.coord = xyz
-        
+
     @property
     def target_indicator(self):
         '''
         Visual representation of the target position. Read-only.
         '''
         return self._target_atom
-    
+
     @target_indicator.setter
     def target_indicator(self, atom):
         self._target_atom = atom
-        
+
     @property
     def target_bond(self):
         '''
         Dashed bond linking the restrained atom to its target. Read-only.
         '''
         return self._pseudobond
-    
+
     @property
     def spring_constant(self):
         return self._spring_constant
-    
+
     @spring_constant.setter
     def spring_constant(self, k):
         self._spring_constant = k
@@ -282,7 +295,7 @@ class Position_Restraint:
                 pb.display = True
             if self._triggers is not None:
                 self._triggers.activate_trigger('position restraint added', self)
-    
+
 
 class Position_Restraints:
     '''Holds an array of Position_Restraint objects.'''
@@ -298,8 +311,8 @@ class Position_Restraints:
         self._distances = None
         # Atoms object for visualising the target positions
         self._target_indicators = None
-     
-        
+
+
     @property
     def atoms(self):
         if not len(self):
@@ -310,50 +323,50 @@ class Position_Restraints:
                 atoms[i] = r.atom
             self._atoms = Atoms(atoms)
         return self._atoms
-    
+
     @property
     def restraints(self):
         return self._restraints
-    
+
     @property
     def coords(self):
         if self.atoms is None:
             return None
         return self.atoms.coords
-    
+
     @property
     def targets(self):
         if self.target_indicators is not None:
             return self.target_indicators.coords
         return numpy.array([r.target for r in self])
-    
+
     @targets.setter
     def targets(self, targets):
         if len(targets) != len(self):
             raise IndexError('Target array length must equal the number of restraints!')
         for r, t in zip(self, targets):
             r.target = t
-    
+
     @property
     def target_indicators(self):
-        
+
         if self._target_indicators is None:
             targets = [r.target_indicator for r in self if r.target_indicator is not None]
             if not len(targets):
                 self._target_indicators = None
             self._target_indicators = Atoms(targets)
         return self._target_indicators
-    
+
     @property
     def all_distances(self):
         '''Returns the current distances between atoms and their targets, in Angstroms.'''
         return numpy.linalg.norm(self.coords - self.targets,axis=1)
-    
+
     @property
     def spring_constants(self):
         '''Returns the spring constants for all restraints, in kJ/mol/A^3.'''
         return numpy.array([r.spring_constant for r in self.restraints])
-    
+
     @property
     def restrained_bond_vectors(self):
         '''
@@ -366,7 +379,7 @@ class Position_Restraints:
         indices = numpy.argwhere(kraw != 0).ravel()
         vectors = (self.targets - self.coords)[indices]
         return (indices, vectors)
-        
+
     def release(self):
         '''
         Release all restraints (last target values will be unchanged, but
@@ -374,17 +387,17 @@ class Position_Restraints:
         '''
         for r in self:
             r.spring_constant = 0
-    
-    
+
+
     def __len__(self):
         return len(self._restraints)
-    
+
     def __bool__(self):
         return len(self) > 0
-    
+
     def __iter__(self):
         return iter(self._restraints)
-    
+
     def __getitem__(self, i):
         if not len(self):
             return None
@@ -403,10 +416,10 @@ class Position_Restraints:
             return self._restraints[index]
         raise IndexError('Only integer indices allowed for {}, got {}'
             .format(self.__class__.__name__, str(type(i))))
-    
+
     def index(self, restraint):
         return self.atoms.index(restraint.atom)
-    
+
     def append(self, r):
         if isinstance(r, Position_Restraint):
             if self.atoms is None:
@@ -423,7 +436,7 @@ class Position_Restraints:
         else:
             raise TypeError('Can only append a single Distance_Restraint or \
                              a Distance_Restraints object.')
-    
+
     def in_selection(self, sel):
         '''
         Returns a Position_Restraints object encompassing all restraints
@@ -434,8 +447,8 @@ class Position_Restraints:
         '''
         atom_indices = sel.indices(self.atoms)
         return self[numpy.argwhere(atom_indices != -1).ravel()]
-    
-    
+
+
 #~ class Restraint_Bond_Drawings:
     #~ '''
     #~ Handles visual representations of positional and distance restraints.
@@ -444,7 +457,7 @@ class Position_Restraints:
     #~ pass
 
 
-        
+
 #~ def restraint_bond_geometry():
     #~ '''
     #~ Create a simple prototype dashed bond of length 1.
@@ -462,8 +475,5 @@ class Position_Restraints:
         #~ v = numpy.concatenate((v, tz.moved(v0)))
         #~ n = numpy.concatenate((n, n0))
         #~ t = numpy.concatenate((t, t0 + nv))
-    
+
     #~ return (v, n, t)
-     
-
-
