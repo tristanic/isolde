@@ -339,7 +339,7 @@ class ChimeraXSimInterface:
         sim_targets, sim_ks = ct.get_managed_arrays(name)
         with sim_targets.get_lock(), sim_ks.get_lock():
             sim_targets[indices] = dihedrals.targets
-            sim_ks.indices = dihedrals.spring_constants
+            sim_ks[indices] = dihedrals.spring_constants
         ct.register_array_changes(name, indices = indices)
 
 
@@ -412,9 +412,9 @@ class ChimeraXSimInterface:
         master_list = self.distance_restraints_dict[name]
         index = master_list.index(distance_restraint)
         ct = self.change_tracker
-        sim_targets, sim_ks = ct.get_managed_arrays(names)
+        sim_targets, sim_ks = ct.get_managed_arrays(name)
         with sim_targets.get_lock(), sim_ks.get_lock():
-            sim_targets[index] = distance_restraint.target
+            sim_targets[index] = distance_restraint.target_distance
             sim_ks[index] = distance_restraint.spring_constant
         ct.register_array_changes(name, indices = index)
 
@@ -483,7 +483,6 @@ class ChimeraXSimInterface:
             #keep or discard the coordinates in this case.
 
         if changes & ct.INIT_COMPLETE:
-            print(bin(changes))
             self.session.logger.status('Initialisation complete')
             self._release_sim_event('simulation_initialization', 'session')
             # Tell the thread it's ok to start

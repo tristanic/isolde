@@ -232,7 +232,7 @@ class SimHandler():
 
     def update_distance_restraint(self, force_index, target=None, k=None):
         tf = self._distance_restraints_force
-        tf.update_target(force_index, target, k)
+        tf.update_target(force_index, target=target, k=k)
 
         ##
         # During simulation

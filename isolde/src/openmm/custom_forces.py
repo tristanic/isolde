@@ -224,7 +224,7 @@ class TopOutBondForce(CustomBondForce):
             constant.
         '''
         current_params = self.getBondParameters(int(index))
-        atom1, atom2 = current_params[0,1]
+        atom1, atom2 = current_params[0:2]
         new_k, new_target = current_params[2]
         if target is not None:
             if type(target) == Quantity:
@@ -234,7 +234,7 @@ class TopOutBondForce(CustomBondForce):
             if type(k) == Quantity:
                 k = k.value_in_unit(OPENMM_SPRING_UNIT)
             new_k = k
-        self.setBondParameters(int(index), atom1, atom2, (new_k, new_t))
+        self.setBondParameters(int(index), atom1, atom2, (new_k, new_target))
         self.update_needed = True
 
 

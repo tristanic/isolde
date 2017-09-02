@@ -23,13 +23,15 @@ class CA_to_CA_plus_Two(Distance_Restraints):
     '''
     HELIX_DISTANCE = 5.43
     STRAND_DISTANCE = 6.81
-    def __init__(self, model_or_list):
+    def __init__(self, session, model_or_list, name = 'ca_to_ca_plus_two'):
         '''
         Finds all connected CA - (CA+2) atom pairs in an atomic model, and
         creates a Distance_Restraints object covering all of them.
         '''
-        self._name = '_o_to_n_plus_four'
+        self.session = session
         if isinstance(model_or_list, AtomicStructure):
+            model = model_or_list
+            pbg = self._pseudobondgroup = session.pb_manager.get_group(model.name + 'restraint pseudobonds')
             model = model_or_list
             fragments = model.polymers(
                 missing_structure_treatment = model.PMS_NEVER_CONNECTS)
@@ -39,14 +41,15 @@ class CA_to_CA_plus_Two(Distance_Restraints):
                     continue
                 ca_atoms = f.atoms.filter(f.atoms.names == 'CA')
                 for c1, c2 in zip(ca_atoms[0:-2], ca_atoms[2:]):
-                    restraints.append(Distance_Restraint(Atoms((c1, c2)), 'ca_to_ca_plus_two', 0, 0))
+                    restraints.append(Distance_Restraint(Atoms((c1, c2)), name, 0, 0, pseudobond_group = pbg))
         else:
             restraints = model_or_list
-        super().__init__(restraints)
+            pbg = None
+        super().__init__(session, restraints, name = name)
 
     def __getitem__(self, i):
         if isinstance(i, Residue):
-            return self[i.atoms.filter(i.atoms.names == 'CA')[0]][0]
+            return self[i.atoms.filter(i.atoms.names == 'CA')[0]]
         return super().__getitem__(i)
 
 
@@ -63,14 +66,15 @@ class O_to_N_plus_Four(Distance_Restraints):
     '''
     HELIX_DISTANCE = 3.05
     STRAND_DISTANCE = 11.4
-    def __init__(self, model_or_list):
+    def __init__(self, session, model_or_list, name = 'o_to_n_plus_four'):
         '''
         Finds all connected O - (N+4) atom pairs in an atomic model, and
         creates a Distance_Restraints object covering all of them.
         '''
-        self._name = 'o_to_n_plus_four'
+        self.session=session
         if isinstance(model_or_list, AtomicStructure):
             model = model_or_list
+            pbg = self._pseudobondgroup = session.pb_manager.get_group(model.name + 'restraint pseudobonds')
             fragments = model.polymers(
                 missing_structure_treatment = model.PMS_NEVER_CONNECTS)
             restraints = []
@@ -80,12 +84,12 @@ class O_to_N_plus_Four(Distance_Restraints):
                 o_atoms = f.atoms.filter(f.atoms.names == 'O')
                 n_atoms = f.atoms.filter(f.atoms.names == 'N')
                 for o, n in zip(o_atoms[0:-4], n_atoms[4:]):
-                    restraints.append(Distance_Restraint(Atoms((o, n)), 'o_to_n_plus_four', 0, 0))
+                    restraints.append(Distance_Restraint(Atoms((o, n)), name, 0, 0, pseudobond_group = pbg))
         else:
             restraints = model_or_list
-        super().__init__(restraints)
+        super().__init__(session, restraints, name = name)
 
     def __getitem__(self, i):
         if isinstance(i, Residue):
-            return self[i.atoms.filter(i.atoms.names == 'O')[0]][0]
+            return self[i.atoms.filter(i.atoms.names == 'O')[0]]
         return super().__getitem__(i)

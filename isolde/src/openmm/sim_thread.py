@@ -583,11 +583,16 @@ class SimThread:
         with change_mask.get_lock(), restrained_mask.get_lock():
             indices = numpy.where(change_mask)[0]
             change_mask[:] = False
+            restrained = restrained_mask[indices].copy()
         force_maps = self.rotamer_force_map
-        for i in indices:
+        for i, r in zip(indices, restrained):
+            if r:
+                this_k = k
+            else:
+                this_k = 0.0
             targets = rotamer_dict[i]
             with targets.get_lock():
-                sh.update_dihedral_restraints(force_maps[i], targets, k)
+                sh.update_dihedral_restraints(force_maps[i], targets, this_k)
 
     def distance_restraint_cb(self, change_mask, key, arrays):
         sh = self.sim_handler
@@ -599,7 +604,7 @@ class SimThread:
             change_mask[:] = False
             ts = m_ts[indices].copy()*CHIMERAX_LENGTH_UNIT
             ks = m_ks[indices].copy()*CHIMERAX_SPRING_UNIT
-        sh.update_distance_restraints(indices, ts, ks)
+        sh.update_distance_restraints(force_map[indices], ts, ks)
 
     def position_restraint_cb(self, change_mask, key, arrays):
         sh = self.sim_handler

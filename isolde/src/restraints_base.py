@@ -16,7 +16,9 @@ class Distance_Restraint:
     for fast look-up of restraints and control within the context of
     simulations.
     '''
-    def __init__(self, name, atoms, target_distance, spring_constant):
+    PB_COLOR = numpy.array([138, 43, 226, 255], numpy.uint8) # violet
+    def __init__(self, atoms, name, target_distance, spring_constant, 
+                 pseudobond_group = None):
         '''
         Defines a distance restraint between a pair of atoms.
         Args:
@@ -32,6 +34,8 @@ class Distance_Restraint:
         self._atoms = atoms
         self._target_distance = target_distance
         self._spring_constant = spring_constant
+        self._pbg = pseudobond_group
+        self._pseudobond = None
 
 
     @property
@@ -67,20 +71,34 @@ class Distance_Restraint:
          '''
         return self._spring_constant
 
+
     @spring_constant.setter
     def spring_constant(self, k):
         self._spring_constant = k
+        pb = self._pseudobond
+        if k == 0:
+            if pb is not None:
+                pb.delete()
+                self._pseudobond = None
+        else:
+                if pb is None:
+                    pb = self._pseudobond = self._pbg.new_pseudobond(*self.atoms)
+                    pb.color = self.PB_COLOR
+                pb.display = True
+
+
 
 
 class Distance_Restraints:
     '''
     Holds an array of Distance_Restraint objects
     '''
-    def __init__(self, restraints_list):
+    def __init__(self, session, restraints_list, name = None):
         '''
         Initialise from an array of Distance_Restraint objects
         '''
-        self._name = None
+        self.session = session
+        self._name = name
         self._restraints = restraints_list
         # ChimeraX Atoms object holding all atoms in this object. The atoms
         # corresponding to restraint i will be found at [2*i: 2*i+2]
@@ -110,12 +128,12 @@ class Distance_Restraints:
         if isinstance(i,(int, numpy.integer)):
             return self._restraints[i]
         if isinstance(i,(slice)):
-            return self.__class__(self._restraints[i])
+            return self.__class__(self.session, self._restraints[i], name = self.name)
         if isinstance(i, numpy.ndarray):
-            return self.__class__([self._restraints[j] for j in i])
+            return self.__class__(self.session, [self._restraints[j] for j in i], name = self.name)
         if isinstance(i, Atom):
             # Find and return all restraints this atom is involved in
-            atom_indices = self.atoms.indices(Atoms([i]))
+            atom_indices = self.atoms.indices(Atoms([i,]))
             atom_indices = atom_indices[numpy.where(atom_indices != -1)]
             restraint_indices = atom_indices//2
             return self[restraint_indices]
@@ -188,10 +206,14 @@ class Distance_Restraints:
 
     @targets.setter
     def targets(self, targets):
-        if len(targets) != len(self):
-            raise IndexError('Target array length must equal the number of restraints!')
-        for r, t in zip(self, targets):
-            r.target_distance = t
+        if hasattr(targets, '__len__'):
+            if len(targets) != len(self):
+                raise IndexError('Target array length must equal the number of restraints!')
+            for r, t in zip(self, targets):
+                r.target_distance = t
+        else:
+            for r in self:
+                r.target_distance = target
 
     @property
     def all_distances(self):
@@ -204,7 +226,14 @@ class Distance_Restraints:
         '''Returns the spring constants for all restraints, in kJ/mol/A^3.'''
         return numpy.array([r.spring_constant for r in self.restraints])
 
-
+    @spring_constants.setter
+    def spring_constants(self, val_or_vals):
+        if hasattr(val_or_vals, '__len__'):
+            for r, v in zip(self, val_or_vals):
+                r.spring_constant = v
+        else:
+            for r in self:
+                r.spring_constant = val_or_vals
 
 
 

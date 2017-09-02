@@ -1607,35 +1607,49 @@ class Isolde():
         sel = residues.atoms
         cb = self.iw._rebuild_2ry_struct_restr_chooser_combo_box
         structure_type = cb.currentText()
-        target_phipsi = cb.currentData()
+        target_phi, target_psi = cb.currentData()
         phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
-        sh.set_dihedral_restraints(phi, target_phipsi[0], dihed_k)
-        sh.set_dihedral_restraints(psi, target_phipsi[1], dihed_k)
+        phi.targets = target_phi
+        psi.targets = target_psi
+        phi.spring_constants = dihed_k
+        psi.spring_constants = dihed_k
+        self.apply_dihedral_restraints(phi)
+        self.apply_dihedral_restraints(psi)
+
 
         dist_k = self.distance_restraints_k
-        rca = self._sim_ca_ca2_restr
-        ron = self._sim_o_n4_restr
+        rca = self._sim_distance_restraint_dict['ca_to_ca_plus_two']
+        ron = self._sim_distance_restraint_dict['o_to_n_plus_four']
         if structure_type == 'helix':
             ca_distance = rca.HELIX_DISTANCE
             on_distance = ron.HELIX_DISTANCE
-        else:
+        elif structure_type in ('parallel beta', 'antiparallel beta'):
             ca_distance = rca.STRAND_DISTANCE
             on_distance = ron.STRAND_DISTANCE
+        else:
+            raise TypeError('Unknown secondary structure type: {}!'.format(structure_type))
         for r in residues:
-            cad = rca[r]
-            if cad is not None:
-                if cad.atoms[1] in sel:
-                    cad.target_distance = ca_distance
-                    cad.spring_constant = dist_k
-                else:
-                    cad.spring_constant = 0
-            ond = ron[r]
-            if ond is not None:
-                if ond.atoms[1] in sel:
-                    ond.target_distance = on_distance
-                    ond.spring_constant = dist_k
-                else:
-                    ond.spring_constant = 0
+            cad_candidates = rca[r]
+            #print('Residue number: {}, cad residue numbers: {}'.format(r.number, cad.atoms.residues.numbers))
+            for cad in cad_candidates:
+                if cad is not None:
+                    if -1 not in sel.indices(cad.atoms):
+                        print('setting CA-CA distance to {}'.format(ca_distance))
+                        cad.target_distance = ca_distance
+                        cad.spring_constant = dist_k
+                    else:
+                        cad.spring_constant = 0
+                    self.apply_distance_restraint(cad)
+            ond_candidates = ron[r]
+            for ond in ond_candidates:
+                if ond is not None:
+                    if -1 not in sel.indices(ond.atoms):
+                        ond.target_distance = on_distance
+                        print('setting O-N distance to {}'.format(on_distance))
+                        ond.spring_constant = dist_k
+                    else:
+                        ond.spring_constant = 0
+                    self.apply_distance_restraint(ond)
 
     def clear_secondary_structure_restraints_for_selection(self, *_, atoms = None, residues = None):
         '''
@@ -1657,17 +1671,18 @@ class Isolde():
             residues = sel.unique_residues
         phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
         for dlist in (phi, psi):
-            dlist.targets = 0
-            dlist.spring_constants = 0
-            self.apply_dihedral_restraints(dlist)
+            if dlist is not None:
+                dlist.targets = 0
+                dlist.spring_constants = 0
+                self.apply_dihedral_restraints(dlist)
 
         for r in residues:
-            cad = self._sim_ca_ca2_restr[r]
-            ond = self._sim_o_n4_restr[r]
-            if cad is not None:
-                cad.spring_constant = 0
-            if ond is not None:
-                ond.spring_constant = 0
+            for key, rlist in self._sim_distance_restraint_dict.items():
+                drs = rlist[r]
+                for dr in drs:
+                    if dr is not None:
+                        dr.spring_constant = 0
+                        self.apply_distance_restraint(dr)
 
 
     def apply_distance_restraints(self, distance_restraints):
@@ -1729,15 +1744,22 @@ class Isolde():
 
 
     def release_xyz_restraints_on_selected_atoms(self, *_, sel = None):
-        from chimerax.core.atomic import selected_atoms
         if sel is None:
+            from chimerax.core.atomic import selected_atoms
             sel = selected_atoms(self.session)
         restraints = self.position_restraints.in_selection(sel)
         restraints.release()
         self._sim_interface.update_position_restraints(restraints)
 
-
-
+    def apply_xyz_restraints_to_selected_atoms(self, *_, sel = None):
+        if sel is None:
+            from chimerax.core.atomic import selected_atoms
+            sel = selected_atoms(self.session)
+        restraints = self.position_restraints.in_selection(sel)
+        self._sim_interface.update_position_restraints(restraints)
+         
+        
+    
 
     def _set_rotamer_buttons_enabled(self, switch):
         self.iw._rebuild_sel_res_last_rotamer_button.setEnabled(switch)
@@ -1878,11 +1900,11 @@ class Isolde():
         must be of the same type.
         '''
         all_names = dihedrals.names
-        unique_names = numpy.unique(names)
-        if len(names) == 1:
+        unique_names = numpy.unique(all_names)
+        if len(unique_names) == 1:
             self._sim_interface.update_dihedral_restraints(dihedrals)
         else:
-            for name in names:
+            for name in unique_names:
                 indices = numpy.where(all_names == name)[0]
                 self._sim_interface.update_dihedral_restraints(dihedrals[indices])
 
@@ -2107,8 +2129,8 @@ class Isolde():
         self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(self.session, m)
         self.rotamers = rotamers.all_rotamers_in_selection(self.session, m.atoms)
         # Distance restraints
-        self.ca_to_ca_plus_two = br.CA_to_CA_plus_Two(m)
-        self.o_to_n_plus_four = br.O_to_N_plus_Four(m)
+        self.ca_to_ca_plus_two = br.CA_to_CA_plus_Two(self.session, m)
+        self.o_to_n_plus_four = br.O_to_N_plus_Four(self.session, m)
         # Positional restraints (one per heavy atom)
         self.position_restraints = pr.Atom_Position_Restraints(
                 self.session, self.selected_model,
@@ -2420,7 +2442,7 @@ class Isolde():
             self.omega_validator.load_structure(sel_model, bd.omega)
 
 
-        distance_restraints =  {
+        distance_restraints = self._sim_distance_restraint_dict = {
             'ca_to_ca_plus_two':    self.ca_to_ca_plus_two.in_selection(sc),
             'o_to_n_plus_four':     self.o_to_n_plus_four.in_selection(sc),
             }

@@ -183,26 +183,38 @@ class ProteinRegisterShifter:
         c_targets = numpy.column_stack(splev(in_pos, cspl[0]))
         cb_targets = numpy.column_stack(splev(in_pos, cbspl[0]))
         #all_targets = numpy.column_stack((n_targets, ca_targets, c_targets, cb_targets))
+        r_list = []
         
         for n_t, ca_t, c_t, cb_t, atoms in zip(n_targets, ca_targets, c_targets, cb_targets, in_a):
-            n = atoms[0]
-            rest = restraints[n]
-            rest.target = n_t
-            rest.spring_constant = k
-            ca = atoms[1]
-            rest = restraints[ca]
-            rest.target = ca_t
-            rest.spring_constant = k
-            c = atoms[2]
-            rest = restraints[c]
-            rest.target = c_t
-            rest.spring_constant = k
-            cb = atoms[3]
-            if cb is not None:
-                rest = restraints[cb]
-                rest.target = cb_t
-                rest.spring_constant = k
+            for t, a in zip((n_t, ca_t, c_t, cb_t), atoms):
+                if a is not None:
+                    rest = restraints[a]
+                    rest.target = t
+                    rest.spring_constant = k
+                    r_list.append(restraints.index(rest))
+        r_list = numpy.array(r_list, numpy.int)
+        isolde._sim_interface.update_position_restraints(restraints[r_list])
             
+            #~ n = atoms[0]
+            #~ rest = restraints[n]
+            #~ rest.target = n_t
+            #~ rest.spring_constant = k
+            #~ isolde._sim_interface.update_position_restraint(rest)
+            #~ ca = atoms[1]
+            #~ rest = restraints[ca]
+            #~ rest.target = ca_t
+            #~ rest.spring_constant = k
+            #~ isolde._sim_interface.update_position_restraint(rest)
+            #~ c = atoms[2]
+            #~ rest = restraints[c]
+            #~ rest.target = c_t
+            #~ rest.spring_constant = k
+            #~ isolde._sim_interface.update_position_restraint(rest)
+            #~ cb = atoms[3]
+            #~ if cb is not None:
+                #~ rest = restraints[cb]
+                #~ rest.target = cb_t
+                #~ rest.spring_constant = k
         
         
         
