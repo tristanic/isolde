@@ -16,6 +16,11 @@ class Dihedral():
     
     def __init__(self, atoms, residue = None, name = None):
         self.atoms = atoms
+        cb = atoms[1:3].intra_bonds
+        if len(cb):
+            self.axis_bond = cb[0]
+        else:
+            self.axis_bond = None
         self.residue = residue # the Residue object that this dihedral belongs to
         #self.resnames = self.residues.names
         #self.resnums = self.residues.numbers
@@ -180,6 +185,11 @@ class Dihedrals():
             from chimerax.core.atomic import Atoms
             self._atoms = Atoms(numpy.ravel(atoms))
         return self._atoms    
+    
+    @property
+    def axis_bonds(self):
+        from chimerax.core.atomic import Bonds
+        return Bonds([d.axis_bond for d in self])
     
     @property
     def residues(self):

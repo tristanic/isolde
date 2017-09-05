@@ -691,7 +691,7 @@ class SimThread:
             i_array = data['distance restraint indices'][key]
             with t_array.get_lock(), k_array.get_lock():
                 force_map = force_map_container[key] = numpy.empty(len(k_array), int)
-                sh.add_distance_restraints(i_array, t_array, k_array, force_map)
+                sh.add_distance_restraints(i_array, t_array*CHIMERAX_LENGTH_UNIT, k_array*CHIMERAX_SPRING_UNIT, force_map)
 
 
     def init_position_restraints(self, atom_indices, ks, targets):
@@ -700,7 +700,7 @@ class SimThread:
         with ks.get_lock(), targets.get_lock():
             force_map = self.position_restraints_force_map =\
                 force_maps['position restraints'] = numpy.empty(len(ks), int)
-            sh.add_position_restraints(force_map, atom_indices, ks, targets)
+            sh.add_position_restraints(force_map, atom_indices, ks*CHIMERAX_SPRING_UNIT, targets*CHIMERAX_LENGTH_UNIT)
 
     def init_map_forces(self, names):
         force_maps = self.density_map_force_maps

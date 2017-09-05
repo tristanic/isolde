@@ -319,4 +319,35 @@ def pin_drawing(handle_radius, pin_radius, total_height):
     
     return vertices, normals, triangles
     
+
+
         
+def split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segments):
+    '''
+    Define a torus (doughnut), where major_radius is the distance from 
+    the centre of the ring to the axis of the solid portion, and 
+    minor_radius defines the thickness of the solid_portion.
+    '''
+    from chimerax.core.surface import tube
+    from chimerax.core.geometry import rotation
+    path = tube.circle_points(ring_segments, major_radius)
+    return tube.tube_spline(path[:-3], minor_radius, circle_segments)
+    
+def ring_arrow(major_radius, minor_radius, circle_segments, ring_segments, head_length, head_radius):
+    import numpy
+    vr, nr, tr = split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segments)
+    vh, nh, th = cone_geometry(head_radius, head_length, circle_segments)
+    from chimerax.core.geometry import rotation
+    # Rotate the cone
+    r = rotation((1,0,0), -90)
+    r.move(vh)
+    # ... and move it into position
+    vh += numpy.array((major_radius, -head_length, 0), numpy.float32)
+    #vh [:,0] += major_radius
+    
+    from numpy import concatenate
+    v = concatenate((vr, vh))
+    n = concatenate((nr, nh))
+    t = concatenate((tr, th+len(vr)))
+    
+    return v, n, t
