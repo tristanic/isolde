@@ -7,7 +7,6 @@
 import numpy
 from simtk.openmm.app import modeller
 from simtk.openmm import unit
-from . import sim_interface as sh
 
 def add_hydrogens_to_model(model):
     top = sh.openmm_topology_from_model(model)

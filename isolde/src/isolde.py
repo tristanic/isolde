@@ -31,6 +31,7 @@ from . import rotamers
 from .eventhandler import EventHandler
 from .constants import defaults, sim_outcomes, control
 from .param_mgr import Param_Mgr, autodoc, param_properties
+from .openmm import sim_interface
 from .openmm.sim_interface import SimParams
 
 OPENMM_LENGTH_UNIT = defaults.OPENMM_LENGTH_UNIT
@@ -389,7 +390,6 @@ class Isolde():
         # Placeholder for the sim_interface.SimHandler object used to perform
         # simulation setup and management
         self._sim_handler = None
-        from . import sim_interface
         # List of forcefields available to the MD package
         self._available_ffs = sim_interface.available_forcefields()
         # Variables holding current forcefield choices
@@ -618,7 +618,7 @@ class Isolde():
 
 
 
-
+    
     def _populate_menus_and_update_params(self):
         iw = self.iw
         # Clear experience mode placeholders from QT Designer and repopulate
@@ -634,7 +634,8 @@ class Isolde():
             text = self._human_readable_sim_modes[mode]
             cb.addItem(text, mode)
 
-        iw._sim_temp_spin_box.setProperty('value', self.simulation_temperature)
+        iw._sim_temp_spin_box.setProperty('value', 
+            defaults.TEMPERATURE)
 
         # Populate force field combo box with available forcefields
         cb = iw._sim_force_field_combo_box
@@ -649,8 +650,7 @@ class Isolde():
         # Populate OpenMM platform combo box with available platforms
         cb = iw._sim_platform_combo_box
         cb.clear()
-        from . import sim_interface as si
-        platform_names = si.get_available_platforms()
+        platform_names = sim_interface.get_available_platforms()
         cb.addItems(platform_names)
 
         # Set to the fastest available platform
@@ -661,12 +661,22 @@ class Isolde():
         elif 'CPU' in platform_names:
             cb.setCurrentIndex(platform_names.index('CPU'))
 
+        iw._sim_basic_mobile_b_and_a_spinbox.setProperty('value',
+            defaults.SELECTION_SEQUENCE_PADDING)
+        iw._sim_basic_mobile_sel_within_spinbox.setProperty('value',
+            defaults.SOFT_SHELL_CUTOFF)
+        iw._sim_basic_mobile_chains_within_spinbox.setProperty('value',
+            defaults.SOFT_SHELL_CUTOFF)
+       
+        
+
         # The last entry in the EM map chooser combo box should always be "Add map"
         cb = iw._em_map_chooser_combo_box
         cb.clear()
         cb.addItem('Add map')
         cb.setCurrentText('Add map')
-
+        
+        
         # Map display style options
         cb = iw._em_map_style_combo_box
         cb.clear()
@@ -686,7 +696,15 @@ class Isolde():
         cb.addItem('sigma')
         cb.addItem('map units')
         cb.setCurrentIndex(0)
-
+        
+        iw._sim_basic_xtal_map_cutoff_spin_box.setProperty('value',
+            defaults.STANDARD_MAP_MASK_RADIUS)
+        iw._sim_basic_xtal_map_weight_spin_box.setProperty('value',
+            defaults.STANDARD_MAP_K)
+        iw._em_map_cutoff_spin_box.setProperty('value',
+            defaults.STANDARD_MAP_MASK_RADIUS)
+        iw._em_map_coupling_spin_box.setProperty('value', 
+            defaults.STANDARD_MAP_K)
         ####
         # Rebuild tab
         ####
@@ -701,7 +719,10 @@ class Isolde():
         iw._rebuild_2ry_struct_restr_chooser_combo_box.clear()
         for key, pair in phipsi.items():
             iw._rebuild_2ry_struct_restr_chooser_combo_box.addItem(key, pair)
-
+        
+        iw._rebuild_pos_restraint_spring_constant.setProperty('value',
+            defaults.POSITION_RESTRAINT_SPRING_CONSTANT)
+        
         ####
         # Validate tab
         ####
@@ -773,13 +794,19 @@ class Isolde():
             self._change_selected_chains
             )
         iw._sim_basic_mobile_sel_within_spinbox.valueChanged.connect(
-            self._change_soft_shell_cutoff
+            self._change_soft_shell_cutoff_from_sel_menu
             )
         iw._sim_basic_mobile_b_and_a_spinbox.valueChanged.connect(
             self._change_b_and_a_padding
             )
         iw._sim_basic_mobile_sel_backbone_checkbox.stateChanged.connect(
-            self._change_soft_shell_fix_backbone
+            self._change_soft_shell_fix_backbone_from_sel_menu
+            )
+        iw._sim_basic_mobile_chains_within_spinbox.valueChanged.connect(
+            self._change_soft_shell_cutoff_from_chains_menu
+            )
+        iw._sim_basic_mobile_chain_backbone_checkbox.stateChanged.connect(
+            self._change_soft_shell_fix_backbone_from_chains_menu
             )
         iw._sim_platform_combo_box.currentIndexChanged.connect(
             self._change_sim_platform
@@ -793,9 +820,7 @@ class Isolde():
         self._change_water_model()
         self._change_selected_model()
         self._change_selected_chains()
-        self._change_soft_shell_cutoff()
         self._change_b_and_a_padding()
-        self._change_soft_shell_fix_backbone()
         self._change_sim_platform()
 
 
@@ -1063,9 +1088,7 @@ class Isolde():
 
     def _update_sim_temperature(self):
         t = self.iw._sim_temp_spin_box.value()
-        self.simulation_temperature = t
-        # So we know to update the temperature in any running simulation
-        self._temperature_changed = True
+        self._sim_interface.temperature = t
 
     ##############################################################
     # Menu control functions to run on key events
@@ -2172,13 +2195,38 @@ class Isolde():
 
     def _change_b_and_a_padding(self, *_):
         self.params.num_selection_padding_residues = self.iw._sim_basic_mobile_b_and_a_spinbox.value()
+    
+    def _change_soft_shell_cutoff_from_sel_menu(self, *_):
+        iw = self.iw
+        val = iw._sim_basic_mobile_sel_within_spinbox.value()
+        sb2 = iw._sim_basic_mobile_chains_within_spinbox
+        if sb2.value() != val:
+            sb2.setValue(val)
+        self.params.soft_shell_cutoff_distance = val
 
-    def _change_soft_shell_cutoff(self, *_):
-        self.params.soft_shell_cutoff_distance = self.iw._sim_basic_mobile_sel_within_spinbox.value()
+    def _change_soft_shell_cutoff_from_chains_menu(self, *_):
+        iw = self.iw
+        val = iw._sim_basic_mobile_chains_within_spinbox.value()
+        sb2 = iw._sim_basic_mobile_sel_within_spinbox
+        if sb2.value() != val:
+            sb2.setValue(val)
+        self.params.soft_shell_cutoff_distance = val
 
-    def _change_soft_shell_fix_backbone(self, *_):
-        self.params.fix_soft_shell_backbone = not self.iw._sim_basic_mobile_sel_backbone_checkbox.checkState()
+    def _change_soft_shell_fix_backbone_from_sel_menu(self, *_):
+        mobile = self.iw._sim_basic_mobile_sel_backbone_checkbox.checkState()
+        self.params.fix_soft_shell_backbone = not mobile
+        cb2 = self.iw._sim_basic_mobile_chain_backbone_checkbox
+        if cb2.checkState() != mobile:
+            cb2.setChecked(mobile)
 
+    def _change_soft_shell_fix_backbone_from_chains_menu(self, *_):
+        mobile = self.iw._sim_basic_mobile_chain_backbone_checkbox.checkState()
+        self.params.fix_soft_shell_backbone = not mobile
+        cb2 = self.iw._sim_basic_mobile_sel_backbone_checkbox
+        if cb2.checkState() != mobile:
+            cb2.setChecked(mobile)
+
+    
     def _change_sim_platform(self, *_):
         self.sim_platform = self.iw._sim_platform_combo_box.currentText()
 
@@ -2431,7 +2479,7 @@ class Isolde():
             names = soft_shell.names
             for i, n in zip(indices, names):
                 if n in ['N','C','O','H','H1','H2','H3']:
-                    fixed[i] = True
+                    fixed_flags[i] = True
 
 
         # Collect backbone dihedral atoms and prepare the Ramachandran
@@ -2623,13 +2671,16 @@ class Isolde():
         selection by the desired padding up and down the chain (stopping at
         chain breaks and ends).
         '''
-
+        
         mode = self._sim_selection_mode
         modes = self._sim_selection_modes
-
+        sm = self._selected_model
+        all_atoms = sm.atoms
         if mode == modes.chain or mode == modes.whole_model:
             # Then everything is easy. The selection is already defined
-            pass
+            # FIXME: Amend this pipeline to allow better command-line 
+            # control
+            return self._selected_atoms
         elif mode == modes.from_picked_atoms:
             # A bit more complex. Have to work through the model to find
             # the picked atoms (making sure only one model is selected!),
@@ -2644,10 +2695,10 @@ class Isolde():
                 for m in us:
                     print(m.category)
                 raise Exception('Selected atoms must all be in the same model!')
-            sm = self._selected_model = us[0]
+            if sm != us[0]:
+                raise Exception('Selection must be in the model currently chosen for ISOLDE!')
             # selatoms_by_chain = selatoms.by_chain
             # selchains = [row[1] for row in selatoms_by_chain]
-            all_atoms = sm.atoms
             all_res = sm.residues
             sel_res = selatoms.unique_residues
             sel_res_indices = all_res.indices(sel_res)
@@ -2661,9 +2712,8 @@ class Isolde():
                 if not frag.atoms.num_selected:
                     continue
                 sel_frags.append(frag)
-                sel_frags.append(all_res.indices(frag))
-
-
+                sel_frag_res_indices.append(all_res.indices(frag))
+            
             for frag, frag_indices in zip(sel_frags, sel_frag_res_indices):
                 frag_nres = len(frag_indices)
                 sel_mask = numpy.isin(frag_indices, sel_res_indices, assume_unique=True)

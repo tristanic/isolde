@@ -183,7 +183,7 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-443</y>
+                  <y>-37</y>
                   <width>470</width>
                   <height>1314</height>
                  </rect>
@@ -422,7 +422,7 @@
                         <item>
                          <layout class="QHBoxLayout" name="horizontalLayout_6">
                           <item>
-                           <widget class="QSpinBox" name="_sim_basic_mobile_chains_within_spin_box">
+                           <widget class="QSpinBox" name="_sim_basic_mobile_chains_within_spinbox">
                             <property name="value">
                              <number>5</number>
                             </property>
@@ -955,7 +955,7 @@
                          <item row="1" column="1">
                           <widget class="QDoubleSpinBox" name="_em_map_contour_spin_box">
                            <property name="minimum">
-                            <double>-9999.989999999999782</double>
+                            <double>0.010000000000000</double>
                            </property>
                            <property name="maximum">
                             <double>9999.989999999999782</double>
@@ -964,7 +964,7 @@
                             <double>0.100000000000000</double>
                            </property>
                            <property name="value">
-                            <double>1.000000000000000</double>
+                            <double>1.500000000000000</double>
                            </property>
                           </widget>
                          </item>
@@ -1197,8 +1197,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>423</width>
-                  <height>222</height>
+                  <width>483</width>
+                  <height>552</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1360,7 +1360,7 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-252</y>
+                  <y>0</y>
                   <width>488</width>
                   <height>791</height>
                  </rect>

@@ -76,10 +76,24 @@ class LinearInterpMapForce(CustomCompoundBondForce):
                 The units in which the transformation matrix is defined.
                 Either 'angstroms' or 'nanometers'
         '''
-        tf = xyz_to_ijk_transform
+        tf = self._transform = xyz_to_ijk_transform
         # Only the 3x3 rotation/scale portion of the transformation
         # matrix changes with length units. The translation is applied
         # after scaling to the map coordinate system.
+        map_func = self._discrete3D_from_volume(data)
+
+        energy_func = self._set_energy_function(tf, units)
+
+        super().__init__(1, energy_func)
+        self._map_potential_index = self.addTabulatedFunction(
+            name = 'map_potential', function = map_func)
+        self._global_k_index = self.addGlobalParameter(
+            name = 'global_k', defaultValue = 1.0)
+        self._individual_k_index = self.addPerBondParameter(
+            name = 'individual_k')
+        self.update_needed = False
+    
+    def _set_energy_function(self, tf, units):
         if type(tf) == Quantity:
             rot_and_scale = tf[:,0:3].value_in_unit(OPENMM_LENGTH_UNIT)
             tf = tf.value_in_unit(tf.unit)
@@ -91,7 +105,6 @@ class LinearInterpMapForce(CustomCompoundBondForce):
             tf[:,0:3] *= 10
         elif units != 'nanometers':
             raise TypeError('Units must be either "angstroms" or "nanometers"!')
-        map_func = self._discrete3D_from_volume(data)
 
         # Transform xyz to ijk
         tf_strings = ['i = ', 'j = ', 'k = ']
@@ -138,17 +151,9 @@ class LinearInterpMapForce(CustomCompoundBondForce):
 
         func = ';'.join((energy_str, norm_str, val_str, min_str, max_str,
                         i_str, j_str, k_str))
-
-
-        super().__init__(1, func)
-        self._map_potential_index = self.addTabulatedFunction(
-            name = 'map_potential', function = map_func)
-        self._global_k_index = self.addGlobalParameter(
-            name = 'global_k', defaultValue = 1.0)
-        self._individual_k_index = self.addPerBondParameter(
-            name = 'individual_k')
-        self.update_needed = False
-
+        
+        return func
+    
     def _discrete3D_from_volume(self, data):
         dim = data.shape[::-1]
         data_1d = numpy.ravel(data, order = 'C')
@@ -160,6 +165,15 @@ class LinearInterpMapForce(CustomCompoundBondForce):
         self.setGlobalParameterDefaultValue(self._global_k_index, k)
         self.update_needed = True
 
+    #~ def update_volume_data(self, data, xyz_to_ijk_transform):
+        #~ if not numpy.allclose(xyz_to_ijk_transform, self._transform):
+            #~ raise TypeError('New map must be on the same grid as the original!')
+        #~ dim = data.shape[::-1]
+        #~ data_1d = numpy.ravel(data, order = 'C')
+        #~ f = self.getTabulatedFunction(0)
+        #~ f.setFunctionParameters(*dim, data_1d)
+        #~ self.update_needed = True
+    
     def update_spring_constant(self, index, k):
         params = self.getBondParameters(index)
         atom_i = params[0]
@@ -361,6 +375,88 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
         Get the cut-off angle in radians for one dihedral.
         '''
         return self.getBondParameters(i)[5][2]*OPENMM_ANGLE_UNIT
+
+class TorsionNCSForce(CustomCompoundBondForce):
+    '''
+    Provides torsion-angle non-crystallographic symmetry (NCS) 
+    restraints for a defined number of NCS copies. For a given set of 
+    NCS-equivalent dihedrals, each dihedral will receive a scaling term 
+    (defining how strongly it is restrained towards the weighted vector 
+    mean of all the dihedral angles) and a weighting term (defining how 
+    much it contributes to the weighted mean angle). Setting the 
+    weights for all but one dihedral to zero will yield a 
+    "master-slave" mode where all NCS copies are forced to follow the 
+    one with the non-zero weight.
+    '''
+    def __init__(self, num_copies):
+        '''
+        Initialise a torsion-angle non-crystallographic symmetry (NCS)
+        restraint force for a given number of NCS copies.
+        '''
+        if num_copies < 2:
+            raise TypeError('NCS is only applicable if you have multiple '\
+                +'equivalent chains!')
+        dihedral_def_strings = []
+        k_params = []
+        w_params = []
+        sum_sin_string = 'sum_sin = ('
+        sum_cos_string = 'sum_cos = ('
+        energy_string = 'global_k *('
+        for i in range(num_copies):
+            d_particles = []
+            for j in range(4):
+                d_particles.append('p{}'.format(4*i+j+1))
+            d_def = 'd{} = dihedral({})'.format(i+1, ','.join(d_particles))
+            dihedral_def_strings.append(d_def)
+            d = 'd{}'.format(i+1)
+            k = 'k{}'.format(i+1)
+            k_params.append(k)
+            w = 'w{}'.format(i+1)
+            w_params.append(w)
+            
+            if i != 0:
+                sum_sin_string += '+'
+                sum_cos_string += '+'
+                energy_string += '+'
+            sum_sin_string += '{}*sin({})'.format(w, d)
+            sum_cos_string+='{}*cos({})'.format(w, d)
+            energy_string += '{}*(cos({})-target)'.format(k, d)
+        
+        sum_sin_string += ')'
+        sum_cos_string += ')'
+        energy_string += ')'
+        
+        cos_switch_str = 'cos_switch = step(sum_cos)'
+        sin_switch_str = 'sin_switch = step(sum_sin)'
+        quadrant_select = \
+            'offset = select(cos_switch, 0, select(sin_switch, {}, {}))'\
+                .format(str(pi/2), str(-pi/2))
+        
+        target_string = 'target = cos(atan(sum_sin/sum_cos) + offset)'
+        
+        string_list = [
+            energy_string, 
+            target_string,
+            quadrant_select, 
+            cos_switch_str,
+            sin_switch_str,
+            sum_sin_string, 
+            sum_cos_string,
+            ]
+        string_list.extend(dihedral_def_strings)
+            
+        
+        final_eq = ';'.join(string_list)
+        super().__init__(num_copies*4, final_eq)
+        self._weight_indices = []
+        self._k_indices = []
+        for w in w_params:
+            self._weight_indices.append(self.addPerBondParameter(w))
+        for k in k_params:
+            self._k_indices.append(self.addPerBondParameter(k))
+        self.addGlobalParameter('global_k', 1.0)
+        
+
 
 class GBSAForce(customgbforces.GBSAGBn2Force):
     def __init__(self, solventDielectric=78.5, soluteDielectric=1,
