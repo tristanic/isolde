@@ -385,18 +385,22 @@ class SimThread:
 
             system = sh.create_openmm_system(top, system_params)
             self.system = system
+            
+            if par['use_gbsa']:
+            
+                gbsa_params = {
+                    'solventDielectric':    par['gbsa_solvent_dielectric'],
+                    'soluteDielectric':     par['gbsa_solute_dielectric'],
+                    'SA':                   par['gbsa_sa_method'],
+                    'cutoff':               par['gbsa_cutoff'],
+                    'kappa':                par['gbsa_kappa'],
+                    'nonbonded_method':     par['gbsa_cutoff_method'],
+                    }
 
-            gbsa_params = {
-                'solventDielectric':    par['gbsa_solvent_dielectric'],
-                'soluteDielectric':     par['gbsa_solute_dielectric'],
-                'SA':                   par['gbsa_sa_method'],
-                'cutoff':               par['gbsa_cutoff'],
-                'kappa':                par['gbsa_kappa'],
-                'nonbonded_method':     par['gbsa_cutoff_method'],
-                }
-
-            sh.initialize_implicit_solvent(gbsa_params)
-
+                sh.initialize_implicit_solvent(gbsa_params)
+            
+            else:
+                sh.set_vacuum_permittivity(par['vacuum_dielectric_correction'])
 
             sh.set_fixed_atoms(data['fixed indices'])
             sh.register_all_forces_with_system()

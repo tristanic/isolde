@@ -51,8 +51,6 @@ with the surroundings.
          Topic :: Scientific/Engineering :: Bio-Informatics
        The "ChimeraX :: Bundle" classifier is also supplied automatically.  -->
   <DataFiles>
-    <DataFile>amberff/*</DataFile>
-    <DataFile>amberff/amap/*</DataFile>
     <DataFile>openmm/amberff/*</DataFile>
     <DataFile>openmm/amberff/amap/*</DataFile>
     <DataFile>molprobity_data/*</DataFile>

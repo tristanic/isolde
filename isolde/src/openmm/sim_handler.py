@@ -498,9 +498,14 @@ class SimHandler():
         for charge, param in zip(charges, params):
             gbforce.addParticle([charge, *param])
         gbforce.finalize()
-        #print('GB Force num particles: '.format(gbforce.getNumParticles()))
         self.all_forces.append(gbforce)
-
+    
+    def set_vacuum_permittivity(self, dielectric):
+        for f in self.system.getForces():
+            if isinstance(f, NonbondedForce):
+                break
+        f.setReactionFieldDielectric(dielectric)
+    
     def map_to_force_field(self, volume_data, xyz_to_ijk_transform,
                             coupling_constant):
         vd = volume_data

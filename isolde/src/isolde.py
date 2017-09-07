@@ -570,6 +570,11 @@ class Isolde():
 
         self.gui = gui
         self.iw = gui.iw
+        
+        # FIXME Remove 'Custom restraints' tab from the gui while I decide
+        # whether to keep it
+        self.iw._sim_tab_widget.removeTab(1)
+        
         self.gui_mode = True
 
          # Register ISOLDE-specific mouse modes
@@ -648,27 +653,35 @@ class Isolde():
         cb.addItems(self._available_ffs.explicit_water_descriptions)
 
         # Populate OpenMM platform combo box with available platforms
+        # The current threaded implementation only works for the CPU 
+        # platform on Mac systems.
         cb = iw._sim_platform_combo_box
         cb.clear()
-        platform_names = sim_interface.get_available_platforms()
-        cb.addItems(platform_names)
 
-        # Set to the fastest available platform
-        if 'CUDA' in platform_names:
-            cb.setCurrentIndex(platform_names.index('CUDA'))
-        elif 'OpenCL' in platform_names:
-            cb.setCurrentIndex(platform_names.index('OpenCL'))
-        elif 'CPU' in platform_names:
-            cb.setCurrentIndex(platform_names.index('CPU'))
+        if self._platform == 'linux':
+            platform_names = sim_interface.get_available_platforms()
+            cb.addItems(platform_names)
 
+            # Set to the fastest available platform
+            if 'CUDA' in platform_names:
+                cb.setCurrentIndex(platform_names.index('CUDA'))
+            elif 'OpenCL' in platform_names:
+                cb.setCurrentIndex(platform_names.index('OpenCL'))
+            elif 'CPU' in platform_names:
+                cb.setCurrentIndex(platform_names.index('CPU'))
+
+       
+        else:
+            cb.addItem('Reference')
+            cb.addItem('CPU')
+            cb.setCurrentIndex(1)
+            
         iw._sim_basic_mobile_b_and_a_spinbox.setProperty('value',
             defaults.SELECTION_SEQUENCE_PADDING)
         iw._sim_basic_mobile_sel_within_spinbox.setProperty('value',
             defaults.SOFT_SHELL_CUTOFF)
         iw._sim_basic_mobile_chains_within_spinbox.setProperty('value',
             defaults.SOFT_SHELL_CUTOFF)
-       
-        
 
         # The last entry in the EM map chooser combo box should always be "Add map"
         cb = iw._em_map_chooser_combo_box
@@ -2387,6 +2400,7 @@ class Isolde():
 
 
     def start_sim(self):
+        self.sim_params.platform = self.iw._sim_platform_combo_box.currentText()
         try:
             #~ self._start_sim()
             self._start_threaded_sim()

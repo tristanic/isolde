@@ -96,7 +96,10 @@ class SimParams(Param_Mgr):
 
             'nonbonded_cutoff_method':          (defaults.OPENMM_NONBONDED_METHOD, None),
             'nonbonded_cutoff_distance':        (defaults.OPENMM_NONBONDED_CUTOFF, OPENMM_LENGTH_UNIT),
-
+            
+            'vacuum_dielectric_correction':     (defaults.VACUUM_DIELECTRIC_CORR, OPENMM_DIPOLE_UNIT),
+            
+            'use_gbsa':                         (defaults.USE_GBSA, None),
             'gbsa_cutoff_method':               (defaults.GBSA_NONBONDED_METHOD, None),
             'gbsa_solvent_dielectric':          (defaults.GBSA_SOLVENT_DIELECTRIC, OPENMM_DIPOLE_UNIT),
             'gbsa_solute_dielectric':           (defaults.GBSA_SOLUTE_DIELECTRIC, OPENMM_DIPOLE_UNIT),
