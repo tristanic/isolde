@@ -1939,6 +1939,33 @@ class Isolde():
                                               'completed simulation step',
                                               self._check_pep_flip)
 
+    def _check_pep_flip(self, *_):
+        if self._pep_flip_timeout_counter * self.sim_params.sim_steps_per_gui_update < 100:
+            self._pep_flip_timeout_counter += 1
+            # Need to give it some time to settle first
+            return
+        done = False
+        if self._pep_flip_timeout_counter * self.sim_params.sim_steps_per_gui_update >= 1000:
+            print('Unable to flip peptide. Giving up.')
+            done = True
+        dihedrals = self._pep_flip_dihedrals
+        if not done:
+            done = True
+            for d in dihedrals:
+                diff = abs(d.value-d.target)
+                if diff > pi:
+                    diff -= 2*pi
+                if abs(diff) > pi/12:
+                    done = False
+        if not done:
+            self._pep_flip_timeout_counter += 1
+            return
+        else:
+            self.release_dihedral_restraint(dihedrals[0])
+            self.release_dihedral_restraint(dihedrals[1])
+            self._isolde_events.remove_event_handler('pep flip timeout')
+            self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
+            
     def apply_dihedral_restraint(self, dihedral):
         '''
         Restrain a dihedral to a desired angle with a spring constant.
@@ -1971,25 +1998,6 @@ class Isolde():
         dihedral.spring_constant = 0
         self.apply_dihedral_restraint(dihedral)
 
-    def _check_pep_flip(self, *_):
-        done = False
-        if self._pep_flip_timeout_counter >= 20:
-            print('Unable to flip peptide. Giving up.')
-            done = True
-        dihedrals = self._pep_flip_dihedrals
-        if not done:
-            done = True
-            for d in dihedrals:
-                if abs(d.value - d.target) > pi/6:
-                    done = False
-        if not done:
-            self._pep_flip_timeout_counter += 1
-            return
-        else:
-            self.release_dihedral_restraint(dihedrals[0])
-            self.release_dihedral_restraint(dihedrals[1])
-            self._isolde_events.remove_event_handler('pep flip timeout')
-            self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
 
 
 
