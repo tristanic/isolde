@@ -105,6 +105,12 @@
    </item>
    <item>
     <widget class="QToolBox" name="toolBox">
+     <property name="minimumSize">
+      <size>
+       <width>250</width>
+       <height>450</height>
+      </size>
+     </property>
      <property name="currentIndex">
       <number>1</number>
      </property>
@@ -167,7 +173,7 @@
             </sizepolicy>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>2</number>
            </property>
            <widget class="QWidget" name="_sim_basic_tab">
             <attribute name="title">
@@ -1730,7 +1736,7 @@
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_15">
                  <property name="spacing">
-                  <number>1</number>
+                  <number>4</number>
                  </property>
                  <property name="leftMargin">
                   <number>1</number>
@@ -1766,7 +1772,7 @@
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_18">
                     <property name="spacing">
-                     <number>2</number>
+                     <number>4</number>
                     </property>
                     <property name="leftMargin">
                      <number>1</number>
@@ -1785,7 +1791,7 @@
                       <property name="maximumSize">
                        <size>
                         <width>16777215</width>
-                        <height>20</height>
+                        <height>30</height>
                        </size>
                       </property>
                       <property name="text">
@@ -2007,7 +2013,7 @@
                       <property name="maximumSize">
                        <size>
                         <width>16777215</width>
-                        <height>20</height>
+                        <height>30</height>
                        </size>
                       </property>
                       <property name="text">
@@ -2053,7 +2059,7 @@
                       <property name="maximumSize">
                        <size>
                         <width>16777215</width>
-                        <height>20</height>
+                        <height>30</height>
                        </size>
                       </property>
                       <property name="text">
@@ -2393,10 +2399,16 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="_rebuild_pos_restraint_dialog_toggle_button">
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
+                      </property>
                       <property name="maximumSize">
                        <size>
                         <width>16777215</width>
-                        <height>20</height>
+                        <height>30</height>
                        </size>
                       </property>
                       <property name="text">
@@ -2539,7 +2551,7 @@
                       <property name="maximumSize">
                        <size>
                         <width>16777215</width>
-                        <height>20</height>
+                        <height>30</height>
                        </size>
                       </property>
                       <property name="text">
