@@ -372,27 +372,6 @@ class SimHandler():
     def register_map(self, map_object):
         self._maps.append(map_object)
 
-    # #TODO: Define the tugging force as a subclass in custom_forces.py
-    # def initialize_tugging_force(self):
-    #     from simtk import openmm as mm
-    #     potential_equation = '0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2)'
-    #     per_particle_parameters = ['k','x0','y0','z0']
-    #     per_particle_defaults = [0,0,0,0]
-    #     global_parameters = None
-    #     global_defaults = None
-    #     f = self._tugging_force = mm.CustomExternalForce(potential_equation)
-    #     if global_parameters is not None:
-    #         for p, v in zip(global_parameters, g_vals):
-    #             f.addGlobalParameter(g, v)
-    #     if per_particle_parameters is not None:
-    #         for p in per_particle_parameters:
-    #             f.addPerParticleParameter(p)
-    #     self.register_custom_external_force('tug', f, global_parameters,
-    #             per_particle_parameters, per_particle_defaults)
-    #
-    #     self.all_forces.append(f)
-    #     return f
-
     def initialize_tugging_force(self, max_force):
         f = self._tugging_force = TopOutRestraintForce(max_force)
         self.all_forces.append(f)
@@ -584,12 +563,12 @@ class SimHandler():
         map_field.addBond([index],[k])
 
 
-    def change_coords(self, coords):
+    def change_coords(self, coords, force_threshold):
         context = self.context
         context.setPositions(coords)
         temperature = self.integrator.getTemperature()
         # Run a brief minimisation to avoid crashes
-        self.min_step(50)
+        self.min_step(50, force_threshold)
         context.setVelocitiesToTemperature(temperature)
 
 
@@ -687,7 +666,7 @@ class SimHandler():
         '''
         sim = self.sim
         sim.step(steps)
-        coords, fast_indices = self.get_and_check_positions(max_movement)
+        coords, fast_indices = self.get_and_check_positions(steps*max_movement)
         self.old_positions = coords
         return coords, fast_indices
 

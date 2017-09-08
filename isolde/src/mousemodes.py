@@ -30,7 +30,7 @@ class TugAtomsMode(MouseMode):
         self._annotations = annotations
         
         # Variables to be set by the caller
-        self.last_tugged_index = None
+        self.last_tugged_atom = None
         self.already_tugging = False
 
     def cleanup(self):

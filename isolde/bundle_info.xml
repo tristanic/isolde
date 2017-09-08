@@ -1,4 +1,4 @@
-<BundleInfo name="ChimeraX-ISOLDE" version="0.9.15" package="chimerax.isolde"
+<BundleInfo name="ChimeraX-ISOLDE" version="0.9.16" package="chimerax.isolde"
   	    minSessionVersion="1" maxSessionVersion="1">
 
   <!-- Additional information about bundle source -->
@@ -8,9 +8,8 @@
 
   <!-- Synopsis is a one-line description
        Description is a full multi-line description -->
-  <Synopsis>Sample code for implementing ChimeraX bundle</Synopsis>
-  <Description>ISOLDE: Interactive Structure Optimisation by Local Direct Exploration
-
+  <Synopsis>ISOLDE: Interactive Structure Optimisation by Local Direct Exploration</Synopsis>
+  <Description>
 ISOLDE is a next-generation environment for interactive building and
 real-space refinement of atomic models into electron density maps. 
 It applies interactive molecular dynamics to allow real-time, intuitive

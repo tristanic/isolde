@@ -432,9 +432,8 @@ class SimThread:
 
             self.sim = sh.create_sim()
 
-            coords = data['coords']
+            coords = self.current_coords = data['coords']
             sh.set_initial_positions_and_velocities(coords, temperature)
-
 
             self.startup = True
             self.sim_startup_counter = 0
@@ -459,6 +458,12 @@ class SimThread:
         # Update parameters for all arrays that have changed
         ct.run_all_necessary_callbacks(self, changes)
         sh.update_restraints_in_context_if_needed()
+        
+        # Update coordinates from the last round AFTER checking to see
+        # if the master thread has changed any.
+        comms.thread_safe_set_array_values('coords', self.current_coords.value_in_unit(CHIMERAX_LENGTH_UNIT))
+        ct.register_change(ct.COORDS_READY)
+
         
         if changes & ct.PAUSE_TOGGLE:
            self.pause = comms['pause'].value
@@ -529,8 +534,6 @@ class SimThread:
                 self.unstable_counter += 1
 
         self.current_coords = coords
-        comms.thread_safe_set_array_values('coords', coords.value_in_unit(CHIMERAX_LENGTH_UNIT))
-        ct.register_change(ct.COORDS_READY)
 
 
     def coords_changed_cb(self, change_mask, _, arrays):
@@ -547,7 +550,7 @@ class SimThread:
         # we're only changing the flagged ones to avoid nasty surprises.
         with new_coords.get_lock():
             self.current_coords[changed_indices] = new_coords[changed_indices]*CHIMERAX_LENGTH_UNIT
-        sh.change_coords(self.current_coords)
+        sh.change_coords(self.current_coords, self.sim_params['max_stable_force'])
 
     def tugging_cb(self, change_mask, _, arrays):
         '''

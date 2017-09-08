@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>547</width>
-    <height>966</height>
+    <height>863</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -120,7 +120,7 @@
         <x>0</x>
         <y>0</y>
         <width>527</width>
-        <height>705</height>
+        <height>602</height>
        </rect>
       </property>
       <attribute name="label">
@@ -152,7 +152,7 @@
         <x>0</x>
         <y>0</y>
         <width>527</width>
-        <height>705</height>
+        <height>602</height>
        </rect>
       </property>
       <attribute name="label">
@@ -173,7 +173,7 @@
             </sizepolicy>
            </property>
            <property name="currentIndex">
-            <number>2</number>
+            <number>0</number>
            </property>
            <widget class="QWidget" name="_sim_basic_tab">
             <attribute name="title">
@@ -189,7 +189,7 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-355</y>
+                  <y>0</y>
                   <width>470</width>
                   <height>1087</height>
                  </rect>

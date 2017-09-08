@@ -49,8 +49,8 @@ class _Defaults:
         'OPENMM_VAR_INTEGRATOR_TOL':  1e-4,
         'OPENMM_CONSTRAINT_TOL':      1e-4,
         'OPENMM_FIXED_INTEGRATOR_TS': 0.001, #* unit.picoseconds,
-        'SIM_STEPS_PER_GUI_UPDATE':   5,
-        'MIN_STEPS_PER_GUI_UPDATE':   100,
+        'SIM_STEPS_PER_GUI_UPDATE':   20,
+        'MIN_STEPS_PER_GUI_UPDATE':   50,
         'SIM_STARTUP_ROUNDS':         10,
         'MAX_UNSTABLE_ROUNDS':        20,
         'TEMPERATURE':                100.0, # * unit.kelvin,
@@ -88,7 +88,7 @@ class _Defaults:
         ###
         'MAX_ALLOWABLE_FORCE':        4.0e4, # * unit.kilojoule_per_mole/unit.nanometer,
         'MAX_STABLE_FORCE':            5000, # * unit.kilojoule_per_mole/unit.nanometer,
-        'MAX_ATOM_MOVEMENT_PER_STEP':   0.5, # * unit.nanometer,
+        'MAX_ATOM_MOVEMENT_PER_STEP':  0.01, # * unit.nanometer,
         'NEARLY_ZERO':                 1e-6,
 
         ###
@@ -114,7 +114,7 @@ class _Defaults:
         'TRACK_RAMACHANDRAN_STATUS':    True,
         'ROUNDS_PER_RAMA_UPDATE':       20,
         'REMASK_MAPS_DURING_SIM':       True,
-        'ROUNDS_PER_MAP_REMASK':        20,
+        'ROUNDS_PER_MAP_REMASK':        50,
         'HIDE_SURROUNDINGS_DURING_SIM': True,
         'USE_HAPTIC_DEVICE_IF_AVAIL':   True,
 

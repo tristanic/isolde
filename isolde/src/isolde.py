@@ -198,6 +198,8 @@ class Isolde():
         self._isolde_events = EventHandler(self)
         self._logging = False
         self._log = Logger('isolde.log')
+        
+        self._sim_interface = None
 
         self.session = gui.session
 
@@ -547,7 +549,9 @@ class Isolde():
         self.start_gui(gui)
 
 
-
+    @property
+    def simulation_running(self):
+        return self._sim_interface is not None
 
     @property
     def selected_model(self):
@@ -961,6 +965,9 @@ class Isolde():
         iw._rebuild_sel_res_rot_discard_button.clicked.connect(
             self._clear_rotamer
             )
+        iw._rebuild_sel_res_rot_release_button.clicked.connect(
+            self._release_rotamer
+            )
 
         iw._rebuild_2ry_struct_restr_show_button.clicked.connect(
             self._toggle_secondary_structure_dialog
@@ -1113,7 +1120,9 @@ class Isolde():
 
     def _update_sim_temperature(self):
         t = self.iw._sim_temp_spin_box.value()
-        self._sim_interface.temperature = t
+        self.sim_params.temperature = t
+        if self.simulation_running:
+            self._sim_interface.temperature = t
 
     ##############################################################
     # Menu control functions to run on key events
@@ -1583,8 +1592,6 @@ class Isolde():
             frame.hide()
             button.setText(show_text)
 
-
-
     def _extend_selection_by_one_res_N(self, *_):
         self._extend_selection_by_one_res(-1)
 
@@ -1600,7 +1607,7 @@ class Isolde():
     def _extend_selection_by_one_res(self, direction):
         '''
         Extends a selection by one residue in the given direction, stopping
-        at the ends of the chain
+        when it hits a chain break or the end of a chain
         Args:
             direction:
                 -1 or 1
@@ -1649,12 +1656,6 @@ class Isolde():
                 residues[-1].atoms.selected = False
             else:
                 raise TypeError('Direction must be either 1 or -1!')
-
-
-        #~ seltext = 'Chain {}: residues {} to {}'.format(
-            #~ p.unique_chain_ids[0], first.number, last.number)
-        #~ self.iw._rebuild_2ry_struct_restr_sel_text.setText(seltext)
-
 
     def _apply_selected_secondary_structure_restraints(self, *_):
         from chimerax.core.atomic import selected_atoms
@@ -1708,45 +1709,6 @@ class Isolde():
                         ond.spring_constant = 0
                     self.apply_distance_restraint(ond)
 
-    def clear_secondary_structure_restraints_for_selection(self, *_, atoms = None, residues = None):
-        '''
-        Clear all secondary structure restraints selection. If no atoms
-        or residues are provided, restraints will be cleared for any
-        atoms selected in the main window.
-        '''
-        from chimerax.core.atomic import selected_atoms
-        si = self._sim_interface
-        sc = self._total_sim_construct
-        sel = None
-        if atoms is not None:
-            if residues is not None:
-                raise TypeError('Cannot provide both atoms and residues!')
-            sel = atoms
-        elif residues is None:
-            sel = selected_atoms(self.session)
-        if sel is not None:
-            residues = sel.unique_residues
-        phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
-        for dlist in (phi, psi):
-            if dlist is not None:
-                dlist.targets = 0
-                dlist.spring_constants = 0
-                self.apply_dihedral_restraints(dlist)
-
-        for r in residues:
-            for key, rlist in self._sim_distance_restraint_dict.items():
-                drs = rlist[r]
-                for dr in drs:
-                    if dr is not None:
-                        dr.spring_constant = 0
-                        self.apply_distance_restraint(dr)
-
-
-    def apply_distance_restraints(self, distance_restraints):
-        self._sim_interface.update_distance_restraints(distance_restraints)
-
-    def apply_distance_restraint(self, distance_restraint):
-        self._sim_interface.update_distance_restraint(distance_restraint)
 
 
     def _increment_register_shift(self, *_):
@@ -1768,15 +1730,11 @@ class Isolde():
                                               'completed simulation step',
                                               self._check_if_register_shift_finished)
 
-        #~ self._register_finished_check_handler = self.triggers.add_handler(
-            #~ 'completed simulation step', self._check_if_register_shift_finished)
 
     def _check_if_register_shift_finished(self, *_):
         if self._register_shifter.finished:
             self.iw._rebuild_register_shift_release_button.setEnabled(True)
             self._isolde_events.remove_event_handler('register shift finish check')
-            #~ self.triggers.remove_handler(self._register_finished_check_handler)
-            #~ self._register_finished_check_handler = None
 
     def _release_register_shifter(self, *_):
         if self._register_shifter is not None:
@@ -1797,27 +1755,40 @@ class Isolde():
         pr = self.position_restraints[atom]
         pr.target = target
         pr.spring_constant = spring_constant
-        self._sim_interface.update_position_restraint(pr)
+        if self.simulation_running:
+            self._sim_interface.update_position_restraint(pr)
 
 
     def release_xyz_restraints_on_selected_atoms(self, *_, sel = None):
+        '''
+        Release current position restraints on a set of atoms. If a 
+        simulation is currently running, it will be automatically 
+        notified of the change.
+        '''
         if sel is None:
             from chimerax.core.atomic import selected_atoms
             sel = selected_atoms(self.session)
         restraints = self.position_restraints.in_selection(sel)
         restraints.release()
-        self._sim_interface.update_position_restraints(restraints)
+        if self.simulation_running:
+            self._sim_interface.update_position_restraints(restraints)
 
     def apply_xyz_restraints_to_selected_atoms(self, *_, sel = None):
+        '''
+        After setting targets and/or spring constants for a set of 
+        position restraints, run this to apply them to the currently 
+        running simulation. Note: If no simulation is running this step
+        is unnecessary. The restraints will be automatically applied to
+        all future simulations.
+        '''
+        if not self.simulation_running:
+            return
         if sel is None:
             from chimerax.core.atomic import selected_atoms
             sel = selected_atoms(self.session)
         restraints = self.position_restraints.in_selection(sel)
         self._sim_interface.update_position_restraints(restraints)
          
-        
-    
-
     def _set_rotamer_buttons_enabled(self, switch):
         self.iw._rebuild_sel_res_last_rotamer_button.setEnabled(switch)
         self.iw._rebuild_sel_res_next_rotamer_button.setEnabled(switch)
@@ -1825,8 +1796,6 @@ class Isolde():
         self.iw._rebuild_sel_res_rot_commit_button.setEnabled(switch)
         self.iw._rebuild_sel_res_rot_target_button.setEnabled(switch)
         self.iw._rebuild_sel_res_rot_discard_button.setEnabled(switch)
-
-
 
     def _next_rotamer(self, *_):
         r = self._selected_rotamer
@@ -1841,22 +1810,36 @@ class Isolde():
             .format(thisr.name, thisr.relative_abundance(self._rebuild_residue)))
 
     def _commit_rotamer(self, *_):
-        self._selected_rotamer.commit_current_preview()
+        rot = self._selected_rotamer
+        rot.commit_current_preview()
+        if self.simulation_running:
+            self._sim_interface.update_coords(rot.residue.atoms)
+        self._clear_rotamer()
 
     def _set_rotamer_target(self, *_):
         rot = self._selected_rotamer
         target = rot.target = self._target_rotamer.angles
         rot.restrained = True
-        self._apply_rotamer_target_to_sim(rot)
+        if self.simulation_running:
+            self._apply_rotamer_target_to_sim(rot)
         self._clear_rotamer()
 
     def _apply_rotamer_target_to_sim(self, rotamer):
+        if not self.simulation_running:
+            print('No simulation running!')
+            return
         self._sim_interface.update_rotamer_target(rotamer)
 
     def _clear_rotamer(self, *_):
         if self._selected_rotamer is not None:
             self._selected_rotamer.cleanup()
-
+    
+    def _release_rotamer(self, *_):
+        rot = self._selected_rotamer
+        rot.restrained = False
+        if self.simulation_running:
+            self._apply_rotamer_target_to_sim(rot)
+    
     def release_rotamers(self, residues):
         for r in residues:
             self.release_rotamer(r)
@@ -1867,8 +1850,8 @@ class Isolde():
         except KeyError:
             return
         rot.restrained = False
-        self._apply_rotamer_target_to_sim(rot)
-
+        if self.simulation_running:
+            self._apply_rotamer_target_to_sim(rot)
 
     def _disable_rebuild_residue_frame(self):
         if 'update_selected_residue_info' in self._event_handler.list_event_handlers():
@@ -1880,8 +1863,8 @@ class Isolde():
         self.iw._rebuild_sel_residue_frame.setDisabled(True)
 
     def _get_rotamer_list_for_selected_residue(self, res):
+        #TODO
         pass
-
 
     def _update_selected_residue_info_live(self, *_):
         from math import degrees
@@ -1907,119 +1890,9 @@ class Isolde():
         res = self._rebuild_residue
         self.flip_peptide_bond(res)
 
-    def flip_peptide_bond(self, res):
-        '''
-        A bit tricky. This involves flipping phi for this residue and
-        psi for the preceding residue. Ideally, we don't want to leave
-        them restrained once the flip is complete.
-        '''
-
-        bd = self._mobile_backbone_dihedrals
-        phi = bd.phi.by_residue(res)
-        prev_c = phi.atoms.filter(phi.atoms.names == 'C')[0]
-        prev_r = prev_c.residue
-        psi = bd.psi.by_residue(prev_r)
-
-        targets = []
-        for d in (phi, psi):
-            v = d.value
-            if v < 0:
-                d.target = v+pi
-            else:
-                d.target = v-pi
-            d.spring_constant = defaults.PHI_PSI_SPRING_CONSTANT
-
-        self.apply_dihedral_restraint(phi)
-        self.apply_dihedral_restraint(psi)
-
-        self._pep_flip_timeout_counter = 0
-        self._pep_flip_dihedrals = (phi, psi)
-        self.iw._rebuild_sel_res_pep_flip_button.setEnabled(False)
-        self._isolde_events.add_event_handler('pep flip timeout',
-                                              'completed simulation step',
-                                              self._check_pep_flip)
-
-    def _check_pep_flip(self, *_):
-        if self._pep_flip_timeout_counter * self.sim_params.sim_steps_per_gui_update < 100:
-            self._pep_flip_timeout_counter += 1
-            # Need to give it some time to settle first
-            return
-        done = False
-        if self._pep_flip_timeout_counter * self.sim_params.sim_steps_per_gui_update >= 1000:
-            print('Unable to flip peptide. Giving up.')
-            done = True
-        dihedrals = self._pep_flip_dihedrals
-        if not done:
-            done = True
-            for d in dihedrals:
-                diff = abs(d.value-d.target)
-                if diff > pi:
-                    diff -= 2*pi
-                if abs(diff) > pi/12:
-                    done = False
-        if not done:
-            self._pep_flip_timeout_counter += 1
-            return
-        else:
-            self.release_dihedral_restraint(dihedrals[0])
-            self.release_dihedral_restraint(dihedrals[1])
-            self._isolde_events.remove_event_handler('pep flip timeout')
-            self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
-            
-    def apply_dihedral_restraint(self, dihedral):
-        '''
-        Restrain a dihedral to a desired angle with a spring constant.
-        @param dihedral_type:
-            One of 'phi', 'psi' or 'omega'. Sidechain torsions are handled
-            collectively as rotamers
-        @param dihedral:
-            The dihedral object. The target and spring constant will be
-            taken from its properties
-        '''
-        self._sim_interface.update_dihedral_restraint(dihedral)
-
-    def apply_dihedral_restraints(self, dihedrals):
-        '''
-        Apply restraints for a set of dihedrals at once. All dihedrals
-        must be of the same type.
-        '''
-        all_names = dihedrals.names
-        unique_names = numpy.unique(all_names)
-        if len(unique_names) == 1:
-            self._sim_interface.update_dihedral_restraints(dihedrals)
-        else:
-            for name in unique_names:
-                indices = numpy.where(all_names == name)[0]
-                self._sim_interface.update_dihedral_restraints(dihedrals[indices])
-
-
-    def release_dihedral_restraint(self, dihedral):
-        dihedral.target = 0
-        dihedral.spring_constant = 0
-        self.apply_dihedral_restraint(dihedral)
-
-
-
-
     def _flip_cis_trans(self, *_):
         res = self._rebuild_residue
         self.flip_peptide_omega(res)
-
-    def flip_peptide_omega(self, res):
-        bd = self._mobile_backbone_dihedrals
-        omega = bd.omega.by_residue(res)
-        if omega is None:
-            import warnings
-            warnings.warn('Could not find residue or residue has no omega dihedral.')
-            return
-        oval = omega.value
-        if abs(oval) <= defaults.CIS_PEPTIDE_BOND_CUTOFF:
-            # cis, flip to trans
-            target = pi
-        else:
-            target = 0
-        omega.target = target
-        self.apply_dihedral_restraint(omega)
 
 
 
@@ -2390,12 +2263,6 @@ class Isolde():
             k = 0
 
         omegas = bd.omega.by_residues(res)
-        #omegas = []
-
-        #for r in res:
-            #rindex = bd.residues.index(r)
-            #if rindex != -1:
-                #omegas.append(bd.omega[rindex])
 
         if enable:
             self.apply_peptide_bond_restraints(omegas)
@@ -2491,6 +2358,7 @@ class Isolde():
 
         else:
             surr.hides |= control.HIDE_ISOLDE
+            surr.displays = False
             self._surroundings_hidden = True
 
         # Cache all the colors so we can revert at the end of the simulation
@@ -2594,22 +2462,23 @@ class Isolde():
                         3.0, displayed_only = True,
                         tug_hydrogens = self.tug_hydrogens)
                     if a is not None:
-                        tug_index = self._haptic_tug_index[i] = si.tuggable_atoms.index(a)
+                        #tug_index = self._haptic_tug_index[i] = si.tuggable_atoms.index(a)
                         # Start the haptic device feedback loop
                         d.start_tugging(a)
                         target = hh.getPosition(i, scene_coords = True)
-                        si.tug_atom_to(tug_index, target)
+                        si.tug_atom_to(a, target)
 
                 else:
                     d.update_target()
                     # Update the target for the tugged atom in the simulation
-                    tug_index = self._haptic_tug_index[i]
-                    si.tug_atom_to(tug_index, hh.getPosition(i, scene_coords = True))
+                    #tug_index = self._haptic_tug_index[i]
+                    a = self._haptic_tug_atom[i]
+                    si.tug_atom_to(a, hh.getPosition(i, scene_coords = True))
             else:
                 if d.tugging:
                     d.stop_tugging()
-                    tug_index = self._haptic_tug_index[i]
-                    si.release_tugged_atom(tug_index)
+                    a = self._haptic_tug_atom[i]
+                    si.release_tugged_atom(a)
 
 
 
@@ -2661,8 +2530,6 @@ class Isolde():
 
         self._disable_rebuild_residue_frame()
 
-        self.sim = None
-        self._system = None
         self._update_menu_after_sim()
         #mouse_mode_names = self._mouse_modes.get_names()
         #for n in mouse_mode_names:
@@ -2686,15 +2553,17 @@ class Isolde():
                 self.update_omega_check()
         self._rama_go_static()
         self.iw._rebuild_sel_residue_frame.setDisabled(True)
-        self.omega_validator.current_model = None
-        self._last_max_force = inf
-        self._unstable_min_rounds = 0
+        self.omega_validator.load_structure(self.selected_model, self.backbone_dihedrals.omega)
+        self.update_omega_check(force=True)
+        
         self._sim_is_unstable = False
         if self.sim_mode == self._sim_modes['xtal']:
             cs = self._selected_model.parent
             cs.xmaps.live_scrolling = True
             cs.live_atomic_symmetry = True
         self._status('')
+        self._sim_interface = None
+        self.equilibrate()
 
 
     def _get_main_sim_selection(self):
@@ -2802,7 +2671,7 @@ class Isolde():
 
     def pause_sim_toggle(self):
         print('This function should toggle pause/resume of the sim')
-        if self._simulation_running:
+        if self.simulation_running:
             self._sim_interface.toggle_pause()
 
     def _sim_pause_cb(self, *_):
@@ -2819,7 +2688,7 @@ class Isolde():
     def discard_sim(self):
         print("""This function should stop the simulation and revert to
                  the original coordinates""")
-        if not self._simulation_running:
+        if not self.simulation_running:
             print('No simulation running!')
             return
         self._sim_interface.stop_sim(sim_outcomes.DISCARD, None)
@@ -2827,22 +2696,50 @@ class Isolde():
     def commit_sim(self):
         print("""This function should stop the simulation and write the
                  coordinates to the target molecule""")
-        if not self._simulation_running:
+        if not self.simulation_running:
             print('No simulation running!')
             return
         self._sim_interface.stop_sim(sim_outcomes.COMMIT, None)
 
     def minimize(self):
         print('Minimisation mode')
+        if self.simulation_running:
+            self._sim_interface.sim_mode = 'min'
         self.simulation_type = 'min'
         self._update_sim_control_button_states()
 
     def equilibrate(self):
         print('Equilibration mode')
+        if self.simulation_running:
+            self._sim_interface.sim_mode = 'equil'
         self.simulation_type = 'equil'
         self._update_sim_control_button_states()
-
-
+    
+    def tug_atom_to(self, atom, target, spring_constant = None):
+        '''
+        Tug an atom towards the given target coordinates in the context 
+        of a running simulation. If no spring constant is given, a 
+        default value will be used. NOTE: the tugging effect will 
+        remain in place until updated with a new call to tug_atom_to() 
+        or removed with stop_tugging(atom).
+        Args:
+            atom:
+                The atom to be tugged. Must be a heavy atom that is 
+                mobile in the current simulation
+            target:
+                An (x,y,z) Numpy array (in Angstroms)
+            spring constant (default None):
+                An optional spring constant (in kJ mol-1 A-2)
+        '''
+        if not self.simulation_running:
+            return
+        self._sim_interface.tug_atom_to(atom, target, spring_constant)
+    
+    def stop_tugging(self, atom):
+        if not self.simulation_running:
+            return
+        self._sim_interface.release_tugged_atom(atom)
+    
     ####
     # Restraint controls
     ####
@@ -2859,7 +2756,6 @@ class Isolde():
             raise Exception('Units should be either "deg" or "rad"')
 
         cr = self.cis_peptide_bond_range
-        sh = self._sim_handler
         sc = self._total_sim_construct
         k = self.peptide_bond_restraints_k
         sim = self.sim
@@ -2881,170 +2777,195 @@ class Isolde():
             raise Exception('Target must be either a number, "trans", "cis", or None')
         else:
             dvals = dihedrals.values
-            targets = (numpy.logical_or(dvals > cr[1], dvals < cr[0])).astype(float) * pi
-
-        # Get all atom indices in one go because the lookup is expensive
-        #indices = numpy.reshape(sc.indices(dihedrals.atoms),[len(dihedrals),4])
-
-
-        for i, d in enumerate(dihedrals):
-            if target is None:
-                t = targets[i]
-            #sh.set_dihedral_restraint(d.sim_index, indices[i], t, k)
-            sh.update_dihedral_restraint(d.sim_index, target=t, k=k)
-
+            t = (numpy.logical_or(dvals > cr[1], dvals < cr[0])).astype(float) * pi
+        
+        dihedrals.targets = t
+        dihedrals.spring_constants = k
+        if self.simulation_running:
+            self._sim_interface.update_dihedral_restraints(dihedrals)
+        
     def remove_peptide_bond_restraints(self, dihedrals):
         '''
         Remove restraints on a list of peptide bonds (actually, just set
         their spring constants to zero). Simulation must already be running.
         '''
-        sc = self._total_sim_construct
-        sh = self._sim_handler
-        sh.set_dihedral_restraints(dihedrals, 0, 0)
+        if self.simulation_running:
+            self._sim_interface.update_dihedral_restraints(dihedrals)
+
+    def flip_peptide_bond(self, res):
+        '''
+        A bit tricky. This involves flipping phi for this residue and
+        psi for the preceding residue. Ideally, we don't want to leave
+        them restrained once the flip is complete.
+        '''
+
+        bd = self._mobile_backbone_dihedrals
+        phi = bd.phi.by_residue(res)
+        prev_c = phi.atoms.filter(phi.atoms.names == 'C')[0]
+        prev_r = prev_c.residue
+        psi = bd.psi.by_residue(prev_r)
+
+        targets = []
+        for d in (phi, psi):
+            v = d.value
+            if v < 0:
+                d.target = v+pi
+            else:
+                d.target = v-pi
+            d.spring_constant = defaults.PHI_PSI_SPRING_CONSTANT
+
+        self.apply_dihedral_restraint(phi)
+        self.apply_dihedral_restraint(psi)
+
+        self._pep_flip_timeout_counter = 0
+        self._pep_flip_dihedrals = (phi, psi)
+        self.iw._rebuild_sel_res_pep_flip_button.setEnabled(False)
+        self._isolde_events.add_event_handler('pep flip timeout',
+                                              'completed simulation step',
+                                              self._check_pep_flip)
+
+    def _check_pep_flip(self, *_):
+        if self._pep_flip_timeout_counter * self.sim_params.sim_steps_per_gui_update < 100:
+            self._pep_flip_timeout_counter += 1
+            # Need to give it some time to settle first
+            return
+        done = False
+        if self._pep_flip_timeout_counter * self.sim_params.sim_steps_per_gui_update >= 1000:
+            print('Unable to flip peptide. Giving up.')
+            done = True
+        dihedrals = self._pep_flip_dihedrals
+        if not done:
+            done = True
+            for d in dihedrals:
+                diff = abs(d.value-d.target)
+                if diff > pi:
+                    diff -= 2*pi
+                if abs(diff) > pi/12:
+                    done = False
+        if not done:
+            self._pep_flip_timeout_counter += 1
+            return
+        else:
+            self.release_dihedral_restraint(dihedrals[0])
+            self.release_dihedral_restraint(dihedrals[1])
+            self._isolde_events.remove_event_handler('pep flip timeout')
+            self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
+            
+    def apply_dihedral_restraint(self, dihedral):
+        '''
+        Apply the current restraint parameters for a dihedral to the 
+        currently-running simulation.
+        '''
+        if not self.simulation_running:
+            print('No simulation running!')
+            return
+        self._sim_interface.update_dihedral_restraint(dihedral)
+
+    def apply_dihedral_restraints(self, dihedrals):
+        '''
+        Apply restraints for a set of dihedrals at once.
+        '''
+        if not self.simulation_running:
+            print('No simulation running!')
+            return            
+        all_names = dihedrals.names
+        unique_names = numpy.unique(all_names)
+        if len(unique_names) == 1:
+            self._sim_interface.update_dihedral_restraints(dihedrals)
+        else:
+            for name in unique_names:
+                indices = numpy.where(all_names == name)[0]
+                self._sim_interface.update_dihedral_restraints(dihedrals[indices])
+
+    def release_dihedral_restraint(self, dihedral):
+        dihedral.target = 0
+        dihedral.spring_constant = 0
+        self.apply_dihedral_restraint(dihedral)
+
+    def clear_secondary_structure_restraints_for_selection(self, *_, atoms = None, residues = None):
+        '''
+        Clear all secondary structure restraints in the selection. If 
+        no atoms or residues are provided, restraints will be cleared 
+        for any atoms selected in the main window.
+        '''
+        from chimerax.core.atomic import selected_atoms
+        sel = None
+        if atoms is not None:
+            if residues is not None:
+                raise TypeError('Cannot provide both atoms and residues!')
+            sel = atoms
+        elif residues is None:
+            sel = selected_atoms(self.session)
+        if sel is not None:
+            residues = sel.unique_residues
+        phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
+        for dlist in (phi, psi):
+            if dlist is not None:
+                dlist.targets = 0
+                dlist.spring_constants = 0
+                if self.simulation_running:
+                    self.apply_dihedral_restraints(dlist)
+
+        for r in residues:
+            for key, rlist in self._sim_distance_restraint_dict.items():
+                drs = rlist[r]
+                for dr in drs:
+                    if dr is not None:
+                        dr.spring_constant = 0
+                        if self.simulation_running:
+                            self.apply_distance_restraint(dr)
+
+
+    def apply_distance_restraints(self, distance_restraints):
+        '''
+        After changing the target distances and/or spring constants of a
+        set of distance restraints, call this function to apply them to
+        a currently running simulation. 
+        '''
+        if not self.simulation_running:
+            print('No simulation running!')
+            return
+        self._sim_interface.update_distance_restraints(distance_restraints)
+
+    def apply_distance_restraint(self, distance_restraint):
+        '''
+        After changing the target distance and/or spring constant of a
+        distance restraint, call this function to apply the changes to
+        a currently running simulation. 
+        '''
+        if not self.simulation_running:
+            print('No simulation running!')
+            return
+        self._sim_interface.update_distance_restraint(distance_restraint)
+
+    def flip_peptide_omega(self, res):
+        '''
+        Flip the peptide bond N-terminal to this residue from cis to 
+        trans or vice versa. Only usable when a simulation is running.
+        '''
+        if not self.simulation_running:
+            print('No simulation running!')
+            return
+        bd = self._mobile_backbone_dihedrals
+        omega = bd.omega.by_residue(res)
+        if omega is None:
+            import warnings
+            warnings.warn('Could not find residue or residue has no omega dihedral.')
+            return
+        oval = omega.value
+        if abs(oval) <= defaults.CIS_PEPTIDE_BOND_CUTOFF:
+            # cis, flip to trans
+            target = pi
+        else:
+            target = 0
+        omega.target = target
+        self.apply_dihedral_restraint(omega)
+
 
 
     #############################################
     # Main simulation functions to be run once per GUI update
     #############################################
-
-    def do_sim_steps(self,*_):
-        if self._logging:
-            self._log('Running ' + str(self.sim_steps_per_update) + ' steps')
-
-        v = self.session.main_view
-#        if v.frame_number == self._last_frame_number:
-#            return # Make sure we draw a frame before doing another MD calculation
-        sh = self._sim_handler
-
-        s = self.sim
-        c = s.context
-        integrator = c.getIntegrator()
-        steps = self.sim_steps_per_update
-        minsteps = self.min_steps_per_update
-        mode = self.simulation_type
-        startup = self._sim_startup
-        self._sim_startup_counter += 1
-        s_max_count = self._sim_startup_rounds
-        if self._sim_startup and self._sim_startup_counter >= s_max_count:
-            print('Maximum number of startup minimisation rounds reached. \
-                    starting dynamics anyway...')
-            startup = self._sim_startup = False
-        pos = self._particle_positions
-        sc = self._total_sim_construct
-        surr = self._surroundings
-
-        # Check if we need to hide or show the surroundings
-        if self.params.hide_surroundings_during_sim:
-            if not self._surroundings_hidden:
-                surr.displays = False
-                self._surroundings_hidden = True
-        elif self._surroundings_hidden:
-            surr.displays = True
-            self._surroundings_hidden = False
-
-        sh.update_restraints_in_context(c)
-        if startup or mode == 'min':
-            newpos, max_force, max_index = self._get_positions_and_max_force()
-        else:
-            newpos, fast_indices = self._get_and_check_positions()
-        sc.coords = self._particle_positions = newpos
-        if startup:
-            print('Startup round {} max force: {:0.0f} kJ/mol/nm'
-                    .format(self._sim_startup_counter, max_force))
-            if abs(max_force - self._last_max_force) < 1.0 and max_force < self._max_allowable_force:
-                print('Minimisation converged. Starting dynamics.')
-                startup = self._sim_startup = False
-            self._last_max_force = max_force
-        elif mode == 'equil' and fast_indices is not None:
-            self._sim_is_unstable = True
-            if mode == 'equil':
-                # revert to the coordinates before this simulation step
-                #c.setPositions(pos/10)
-                self.simulation_type = 'min'
-                return
-        if self._sim_is_unstable:
-            if self._unstable_min_rounds >= self.max_unstable_rounds:
-                # We have a problem we can't fix. Terminate the simulation
-                self.triggers.activate_trigger('simulation terminated', (sim_outcomes.UNSTABLE, None))
-                return
-            bad_atom = self._total_mobile[max_index]
-            bad_res = bad_atom.residue
-            outstr = '''
-            Simulation is unstable! Atom {} from residue {} of chain {}
-            is experiencing a net force of {:0.0f} kJ/mol/nm.
-            '''.format(bad_atom.name, bad_res.number, bad_atom.chain_id,
-                        max_force)
-            print(outstr)
-            self._unstable_min_rounds += 1
-            if max_force < self._max_allowable_force:
-                # We're back to stability. We can go back to equilibrating
-                self._sim_is_unstable = False
-                self.simulation_type = 'equil'
-                self._unstable_min_rounds = 0
-
-
-
-        # Mouse interaction
-        mtug = self._mouse_tugger
-        t_force = self._tugging_force
-        t_k = self.tug_force_constant
-        cur_tug = self._currently_tugging
-        tugging, tug_atom, xyz0 = mtug.status
-        # If tugging is true, we need to update the parameters for the picked atom
-        if tugging:
-            xyz0 = xyz0 / 10 # OpenMM coordinates are in nanometres
-            params = [t_k, *xyz0]
-            tug_index = self._total_sim_construct.index(tug_atom)
-            if not cur_tug:
-                self._last_tugged_index = tug_index
-                self._currently_tugging = True
-            sh.set_custom_external_force_particle_params('tug', tug_index, params)
-            sh.update_force_in_context('tug', c)
-        # If cur_tug is true and tugging is false, we need to disconnect the atom from the tugging force
-        elif cur_tug:
-            sh.set_custom_external_force_particle_params('tug', self._last_tugged_index, [0,0,0,0])
-            sh.update_force_in_context('tug', c)
-            self._currently_tugging = False
-            self._last_tugged_index = None
-
-        # If both cur_tug and tugging are false, do nothing
-
-
-
-
-        if self._temperature_changed:
-            integrator.setTemperature(self.simulation_temperature)
-            c.setVelocitiesToTemperature(self.simulation_temperature)
-            self._temperature_changed = False
-
-
-        if startup:
-            #s.minimizeEnergy(maxIterations = steps)
-            s.minimizeEnergy(maxIterations = 1000)
-            self._sim_startup_counter += 1
-        elif self._sim_is_unstable:
-            # Run a few timesteps to jiggle out of local minima
-            s.step(5)
-            s.minimizeEnergy()
-            c.setVelocitiesToTemperature(self.simulation_temperature)
-        elif mode == 'min':
-            s.minimizeEnergy(maxIterations = minsteps)
-            c.setVelocitiesToTemperature(self.simulation_temperature)
-        elif mode == 'equil':
-            s.step(steps)
-        else:
-            raise Exception('Unrecognised simulation mode!')
-
-
-        from simtk import unit
-        self._last_frame_number = v.frame_number
-        if self._logging:
-            self._log('Ran ' + str(self.sim_steps_per_update) + ' steps')
-        if self.params.track_ramachandran_status:
-            self.update_ramachandran()
-            self.update_omega_check()
-
-        self.triggers.activate_trigger('completed simulation step', data=None)
 
 
     def _rezone_maps(self, *_):
@@ -3072,62 +2993,16 @@ class Isolde():
             if self._update_rama_plot:
                 self._rama_plot.update_scatter(bd)
 
-    def update_omega_check(self, *_):
+    def update_omega_check(self, *_, force = False):
         rc = self._rama_counter
         ov = self.omega_validator
         # Stagger Ramachandran and omega validation to reduce jerkiness
-        if self._rama_counter == self.params.rounds_per_rama_update//2:
+        if force or self._rama_counter == self.params.rounds_per_rama_update//2:
             cis, twisted = ov.find_outliers()
             ov.draw_outliers(cis, twisted)
         ov.update_coords()
 
 
-    def _get_and_check_positions(self):
-        from simtk.unit import angstrom
-        c = self.sim.context
-        state = c.getState(getPositions = True)
-        indices = self._total_mobile_indices
-        old_pos = self._particle_positions
-        pos = state.getPositions(asNumpy = True).value_in_unit(CHIMERAX_LENGTH_UNIT)
-        delta = pos[indices] - old_pos[indices]
-        distances = numpy.linalg.norm(delta, axis=1)
-        max_distance = distances.max()
-        max_allowed = self._max_atom_movement_per_step.value_in_unit(CHIMERAX_LENGTH_UNIT)
-        if max_distance > max_allowed:
-            fast_indices = numpy.where(distances > max_allowed)[0]
-        else:
-            fast_indices = None
-        return pos, fast_indices
-
-
-    def _get_positions_and_max_force (self, save_forces = False):
-        c = self.sim.context
-        from simtk.unit import kilojoule_per_mole, nanometer, angstrom
-        state = c.getState(getForces = True, getPositions = True)
-        # We only want to consider forces on the mobile atoms to decide
-        # if the simulation is unstable
-        forces = (state.getForces(asNumpy = True) \
-            /(kilojoule_per_mole/nanometer))[self._total_mobile_indices]
-        magnitudes = numpy.linalg.norm(forces, axis=1)
-        #~ rstate = c.getState(Unab
-            #~ getForces=True,
-            #~ groups = {self._force_groups['position restraints']})
-        #~ f = (rstate.getForces(asNumpy=True) \
-            #~ / (kilojoule_per_mole/nanometer))[self._sim_pos_restr_indices_in_sim]
-        #self._pos_restraint_forces = numpy.linalg.norm(f, axis = 1)
-        if save_forces:
-            self.forces = forces
-            self.starting_positions = state.getPositions(asNumpy=True) / angstrom
-            for i, f in enumerate(self._system.getForces()):
-                print(f, c.getState(getEnergy=True, groups = {i}).getPotentialEnergy())
-        max_mag = magnitudes.max()
-        # Only look up the index if the maximum force is too high
-        if max_mag > self._max_allowable_force:
-            max_index = numpy.where(magnitudes == max_mag)[0][0]
-        else:
-            max_index = -1
-        pos = state.getPositions(asNumpy = True)/angstrom
-        return pos, max_mag, max_index
 
     #############
     # Commands for script/command-line control
