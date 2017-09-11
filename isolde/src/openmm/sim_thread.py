@@ -461,8 +461,9 @@ class SimThread:
         
         # Update coordinates from the last round AFTER checking to see
         # if the master thread has changed any.
-        comms.thread_safe_set_array_values('coords', self.current_coords.value_in_unit(CHIMERAX_LENGTH_UNIT))
-        ct.register_change(ct.COORDS_READY)
+        if not self.pause:
+            comms.thread_safe_set_array_values('coords', self.current_coords.value_in_unit(CHIMERAX_LENGTH_UNIT))
+            ct.register_change(ct.COORDS_READY)
 
         
         if changes & ct.PAUSE_TOGGLE:

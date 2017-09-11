@@ -806,7 +806,8 @@ class Isolde():
 
         self._change_sim_selection_mode()
 
-
+        iw._demo_load_button.clicked.connect(self.load_demo_data)
+        
         ####
         # Simulation global parameters (can only be set before running)
         ####
@@ -1243,9 +1244,6 @@ class Isolde():
             iw._sim_equil_button.setStyleSheet('background-color: red')
             iw._sim_min_button.setStyleSheet('background-color: green')
 
-        # Undo/redo will only lead to trouble while a simulation is running
-        iw._undo_button.setDisabled(flag)
-        iw._redo_button.setDisabled(flag)
 
         # Update the status of the Go button
         self._selection_changed()
@@ -2349,6 +2347,14 @@ class Isolde():
         sb = self._total_sim_bonds = sc.intra_bonds
         surr = self._surroundings = all_a.subtract(sc)
 
+        # Cache all the colors so we can revert at the end of the simulation
+        self._original_atom_colors = sc.colors
+        self._original_atom_draw_modes = sc.draw_modes
+        self._original_bond_radii = sb.radii
+        self._original_atom_radii = sc.radii
+        self._original_display_state = sel_model.atoms.displays
+        self._original_ribbon_state = sel_model.residues.ribbon_displays
+
         if self.sim_mode == sm.xtal:
             sel_model.parent.isolate_and_cover_selection(
                 total_mobile, include_surrounding_residues = 0,
@@ -2361,13 +2367,8 @@ class Isolde():
             surr.displays = False
             self._surroundings_hidden = True
 
-        # Cache all the colors so we can revert at the end of the simulation
-        self._original_atom_colors = sc.colors
-        self._original_atom_draw_modes = sc.draw_modes
-        self._original_bond_radii = sb.radii
-        self._original_atom_radii = sc.radii
-        self._original_display_state = self._selected_model.atoms.displays
-
+        sel_model.residues.ribbon_displays = False
+        
         hsb = hard_shell.intra_bonds
         hsb.radii = 0.1
         hard_shell.radii = 0.1
@@ -2537,14 +2538,19 @@ class Isolde():
         self._mouse_tugger = None
         for d in self._haptic_devices:
             d.cleanup()
-        self._selected_model.atoms.displays = self._original_display_state
+        sel_model = self._selected_model
+        sc = self._total_sim_construct
+        sb = self._total_sim_bonds
+        sel_model.atoms.displays = self._original_display_state
+        sel_model.residues.ribbon_displays = self._original_ribbon_state
         self._surroundings.hides &= ~control.HIDE_ISOLDE
         self._surroundings_hidden = False
-        self._total_sim_construct.colors = self._original_atom_colors
-        self._total_sim_construct.draw_modes = self._original_atom_draw_modes
-        self._total_sim_construct.radii = self._original_atom_radii
-        self._total_sim_bonds.radii = self._original_bond_radii
+        sc.colors = self._original_atom_colors
+        sc.draw_modes = self._original_atom_draw_modes
+        sc.radii = self._original_atom_radii
+        sb.radii = self._original_bond_radii
         self._total_sim_construct = None
+ 
         self._surroundings = None
         if self.params.track_ramachandran_status:
             # Update one last time
@@ -3072,6 +3078,22 @@ class Isolde():
             self._splash_handler = None
             self._splash.close()
 
+
+    ##############################################
+    # Demo
+    ##############################################
+    
+    def load_demo_data(self):
+        from chimerax.core.commands import open
+        data_dir = os.path.join(self._root_dir, 'demo_data', '2b9r')
+        before_struct = open.open(self.session, os.path.join(data_dir, 'before.cif'))[0]
+        before_cs = clipper.CrystalStructure(self.session, before_struct, 
+            os.path.join(data_dir, 'before_maps.mtz'))
+        #~ from chimerax.clipper import crystal
+        #~ crystal.set_to_default_cartoon(self.session, model=before_struct)
+        from . import view
+        view.focus_on_selection(self.session, self.session.main_view, before_struct.atoms) 
+        
 
 def _generic_warning(message):
     msg = QMessageBox()

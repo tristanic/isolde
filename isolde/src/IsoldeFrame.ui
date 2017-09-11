@@ -92,6 +92,13 @@
          </spacer>
         </item>
         <item>
+         <widget class="QPushButton" name="_demo_load_button">
+          <property name="text">
+           <string>Load demo</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="_save_model_button">
           <property name="text">
            <string>Save current model as...</string>
@@ -112,47 +119,15 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
-     <widget class="QWidget" name="_build_page">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>527</width>
-        <height>602</height>
-       </rect>
-      </property>
-      <attribute name="label">
-       <string>Build</string>
-      </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_4">
-       <item>
-        <widget class="QTabWidget" name="_build_tab_widget">
-         <property name="currentIndex">
-          <number>1</number>
-         </property>
-         <widget class="QWidget" name="tab">
-          <attribute name="title">
-           <string>Tab 1</string>
-          </attribute>
-         </widget>
-         <widget class="QWidget" name="tab_2">
-          <attribute name="title">
-           <string>Tab 2</string>
-          </attribute>
-         </widget>
-        </widget>
-       </item>
-      </layout>
-     </widget>
      <widget class="QWidget" name="_simulate_page">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
         <width>527</width>
-        <height>602</height>
+        <height>695</height>
        </rect>
       </property>
       <attribute name="label">
@@ -173,7 +148,7 @@
             </sizepolicy>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>2</number>
            </property>
            <widget class="QWidget" name="_sim_basic_tab">
             <attribute name="title">
@@ -191,7 +166,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>470</width>
-                  <height>1087</height>
+                  <height>1063</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0,0,0,0">
@@ -213,7 +188,7 @@
                  <item>
                   <widget class="QFrame" name="_sim_basic_selection_mode_frame">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
@@ -298,7 +273,7 @@
                  <item>
                   <widget class="QFrame" name="_sim_basic_mobile_selection_frame">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
@@ -1294,7 +1269,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>483</width>
-                  <height>552</height>
+                  <height>547</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1731,7 +1706,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>483</width>
-                  <height>421</height>
+                  <height>416</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -2597,7 +2572,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>470</width>
-                  <height>796</height>
+                  <height>781</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -3098,32 +3073,6 @@
           <string>Developer</string>
          </property>
         </item>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QFrame" name="_undo_redo_frame">
-     <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
-     </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <widget class="QPushButton" name="_undo_button">
-        <property name="text">
-         <string>Undo</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="_redo_button">
-        <property name="text">
-         <string>Redo</string>
-        </property>
        </widget>
       </item>
      </layout>

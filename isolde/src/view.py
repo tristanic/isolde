@@ -5,7 +5,7 @@
 
 
 
-def focus_on_selection(session, view, atoms):
+def focus_on_selection(session, view, atoms, clip = False):
     v = view
     pad = 5.0
     bounds = atoms.scene_bounds
@@ -18,8 +18,9 @@ def focus_on_selection(session, view, atoms):
     v.center_of_rotation_method = cofr_method
     cam = v.camera
     vd = cam.view_direction()
-    cp = v.clip_planes
-    cp.set_clip_position('near', center - radius*vd, cam)
-    cp.set_clip_position('far', center + radius*vd, cam)
+    if clip:
+        cp = v.clip_planes
+        cp.set_clip_position('near', center - radius*vd, cam)
+        cp.set_clip_position('far', center + radius*vd, cam)
     session.selection.clear()
     atoms.selected=True    
