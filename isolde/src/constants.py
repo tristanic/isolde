@@ -121,6 +121,8 @@ class _Defaults:
         'STANDARD_MAP_MASK_RADIUS':   4.0, # Angstroms
         'DIFFERENCE_MAP_MASK_RADIUS': 8.0, # Angstroms
 
+        'COMMS_TIMEOUT':              0.5, # seconds
+
         ###
         # Types for shared variables
         ###

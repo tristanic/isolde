@@ -467,7 +467,11 @@ class SimThread:
 
         
         if changes & ct.PAUSE_TOGGLE:
-           self.pause = comms['pause'].value
+            p = self.pause = comms['pause'].value
+            if p:
+                status_q.put('Paused')
+            else:
+                status_q.put('Resumed')
                 
         if changes & ct.MODE:
             mode = comms['sim mode']

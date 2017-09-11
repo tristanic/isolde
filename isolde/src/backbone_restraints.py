@@ -49,7 +49,8 @@ class CA_to_CA_plus_Two(Distance_Restraints):
 
     def __getitem__(self, i):
         if isinstance(i, Residue):
-            return self[i.atoms.filter(i.atoms.names == 'CA')[0]]
+            a = i.atoms
+            return self[a[a.names == 'CA']]
         return super().__getitem__(i)
 
 
@@ -91,5 +92,6 @@ class O_to_N_plus_Four(Distance_Restraints):
 
     def __getitem__(self, i):
         if isinstance(i, Residue):
-            return self[i.atoms.filter(i.atoms.names == 'O')[0]]
+            a = i.atoms
+            return self[a[numpy.in1d(a.names, ['N','O'])]]
         return super().__getitem__(i)

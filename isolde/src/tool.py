@@ -33,13 +33,13 @@ class ISOLDE_ToolUI(ToolInstance):
         from PyQt5 import QtWidgets, QtGui
         from . import isoldewidget
         self.mainwin = QtWidgets.QFrame(parent=parent)
-        self.iw = isoldewidget.Ui_isolde_widget()
-        self.iw.setupUi(self.mainwin)
+        iw = self.iw = isoldewidget.Ui_isolde_widget()
+        iw.setupUi(self.mainwin)
         
         import os
         icon_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources/logo_small.png')
         isolde_icon = QtGui.QPixmap(icon_file)
-        self.iw._isolde_icon.setPixmap(isolde_icon)
+        iw._isolde_icon.setPixmap(isolde_icon)
         
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.mainwin)
@@ -50,10 +50,10 @@ class ISOLDE_ToolUI(ToolInstance):
         
         # Define frames specific to crystallograpy, EM or free mode
         self._xtal_frames = [
-            self.iw._sim_basic_xtal_map_frame,
+            iw._sim_basic_xtal_map_frame,
             ]
         self._em_frames = [
-            self.iw._sim_basic_em_map_frame,
+            iw._sim_basic_em_map_frame,
             ]
         self._free_frames = [
             ]
@@ -66,10 +66,10 @@ class ISOLDE_ToolUI(ToolInstance):
         
         # Radio buttons to choose different selection modes
         self._selection_mode_buttons = (
-            self.iw._sim_basic_by_selected_atoms_button,
-            self.iw._sim_basic_by_chain_button,
-            self.iw._sim_basic_whole_structure_button,
-            self.iw._sim_basic_custom_selection_button,
+            iw._sim_basic_by_selected_atoms_button,
+            iw._sim_basic_by_chain_button,
+            iw._sim_basic_whole_structure_button,
+            iw._sim_basic_custom_selection_button,
             )        
         
         ###
@@ -78,49 +78,49 @@ class ISOLDE_ToolUI(ToolInstance):
         
         # Grow selection at N-terminus
         self._sel_grow_n_terminal_buttons = (
-            self.iw._rebuild_2ry_struct_restr_extend_N_button,
-            self.iw._rebuild_register_shift_extend_N_button,
+            iw._rebuild_2ry_struct_restr_extend_N_button,
+            iw._rebuild_register_shift_extend_N_button,
             )
         
         # Shrink selection at N-terminus
         self._sel_shrink_n_terminal_buttons = (
-            self.iw._rebuild_2ry_struct_restr_shrink_N_button,
-            self.iw._rebuild_register_shift_shrink_N_button,
+            iw._rebuild_2ry_struct_restr_shrink_N_button,
+            iw._rebuild_register_shift_shrink_N_button,
             )
         
         # Shrink selection at C-terminus
         self._sel_shrink_c_terminal_buttons = (
-            self.iw._rebuild_2ry_struct_restr_shrink_C_button,
-            self.iw._rebuild_register_shift_shrink_C_button,
+            iw._rebuild_2ry_struct_restr_shrink_C_button,
+            iw._rebuild_register_shift_shrink_C_button,
             )
         
         # Grow selection at C-terminus
         self._sel_grow_c_terminal_buttons = (
-            self.iw._rebuild_2ry_struct_restr_extend_C_button,
-            self.iw._rebuild_register_shift_extend_C_button,
+            iw._rebuild_2ry_struct_restr_extend_C_button,
+            iw._rebuild_register_shift_extend_C_button,
             )
 
         
         
         # Define intermediate and expert frames
         self._intermediate_frames = [
-            self.iw._sim_platform_frame,
+            iw._sim_platform_frame,
             ]
         self._expert_frames = [
-            self.iw._force_field_selection_frame,
-            self.iw._sim_basic_custom_selection_button,
-            self.iw._restraints_stub_frame,
+            iw._force_field_selection_frame,
+            iw._sim_basic_custom_selection_button,
+            iw._restraints_stub_frame,
             ]
         
         # Any other frames/widgets that should be hidden at the start
         self._hidden_at_start = [
-            self.iw._validate_rama_main_frame,
-            self.iw._validate_pep_main_frame,
-            self.iw._sim_basic_xtal_init_main_frame,
-            self.iw._sim_basic_xtal_map_settings_frame,
-            self.iw._rebuild_2ry_struct_restr_container,
-            self.iw._rebuild_register_shift_container,
-            self.iw._rebuild_pos_restraint_one_atom_frame,
+            iw._validate_rama_main_frame,
+            iw._validate_pep_main_frame,
+            iw._sim_basic_xtal_init_main_frame,
+            iw._sim_basic_xtal_map_settings_frame,
+            iw._rebuild_2ry_struct_restr_container,
+            iw._rebuild_register_shift_container,
+            iw._rebuild_pos_restraint_one_atom_frame,
             ]
         
         for f in self._hidden_at_start:
@@ -128,18 +128,18 @@ class ISOLDE_ToolUI(ToolInstance):
         
         # Any frames/widgets that should be disabled at the start
         self._disabled_at_start = [
-            self.iw._sim_basic_xtal_map_settings_frame,
-            self.iw._sim_basic_xtal_settings_map_name,
-            self.iw._rebuild_sel_res_pep_flip_button,
-            self.iw._rebuild_sel_res_cis_trans_flip_button,
-            self.iw._rebuild_sel_res_last_rotamer_button,
-            self.iw._rebuild_sel_res_next_rotamer_button,
-            self.iw._rebuild_sel_res_rot_commit_button,
-            self.iw._rebuild_sel_res_rot_target_button,
-            self.iw._rebuild_sel_res_rot_discard_button,
-            self.iw._rebuild_pos_restraint_one_atom_frame,
-            self.iw._rebuild_pos_restraint_clear_button,
-            self.iw._rebuild_register_shift_container,
+            iw._sim_basic_xtal_map_settings_frame,
+            iw._sim_basic_xtal_settings_map_name,
+            iw._rebuild_sel_res_pep_flip_button,
+            iw._rebuild_sel_res_cis_trans_flip_button,
+            iw._rebuild_sel_res_last_rotamer_button,
+            iw._rebuild_sel_res_next_rotamer_button,
+            iw._rebuild_sel_res_rot_commit_button,
+            iw._rebuild_sel_res_rot_target_button,
+            iw._rebuild_sel_res_rot_discard_button,
+            iw._rebuild_pos_restraint_one_atom_frame,
+            iw._rebuild_pos_restraint_clear_button,
+            iw._rebuild_register_shift_container,
             ]
         for f in self._disabled_at_start:
             f.setEnabled(False)
@@ -159,16 +159,23 @@ class ISOLDE_ToolUI(ToolInstance):
             f.setPalette(self._pe.palette)
             f.setAutoFillBackground(True)
 
+        iw._sim_commit_button.setStyleSheet('background-color: green')
+        iw._sim_discard_button.setStyleSheet('background-color: red')
+        iw._sim_discard_revert_combo_box.setStyleSheet('background-color: red')
+        
         from . import isolde
         self.isolde = isolde.Isolde(self)
-    
+        
+        
+        
     def delete(self):
         self.isolde._on_close()
         super().delete()
 
     def _change_experience_level_or_sim_mode(self):
-        exp_index = self.iw._experience_level_combo_box.currentIndex()
-        mode_index = self.iw._sim_basic_mode_combo_box.currentIndex()
+        iw = self.iw
+        exp_index = iw._experience_level_combo_box.currentIndex()
+        mode_index = iw._sim_basic_mode_combo_box.currentIndex()
         # Need to consider both at once to ensure we don't show/hide
         # something we shouldn't. For the simulation mode, we need to
         # ensure all frames associated with the *other* two modes remain

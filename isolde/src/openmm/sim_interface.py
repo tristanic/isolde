@@ -11,11 +11,12 @@ import multiprocessing as mp
 import ctypes
 from math import pi, radians, degrees, cos
 from warnings import warn
-from time import time
+from time import time, sleep
 from simtk import unit
 from simtk.unit import Quantity, Unit
 from chimerax.core.atomic import concatenate
 
+from ..checkpoint import CheckPoint
 from ..threading.shared_array import TypedMPArray, SharedNumpyArray
 from . import sim_thread
 from .sim_thread import SimComms, SimThread, ChangeTracker
@@ -219,19 +220,66 @@ class ChimeraXSimInterface:
     def sim_running(self):
         return self._pool is not None
 
-    def toggle_pause(self):
+    def toggle_pause(self, acknowledge = False, timeout = defaults.COMMS_TIMEOUT):
+        '''
+        Toggle between pause and resume, optionally waiting for an 
+        acknowledgement that the simulation is actually paused before
+        continuing
+        '''
         if not self.sim_running:
             return
         comms = self.comms_object
         ct = self.change_tracker
+        status_q = comms['status']
         currently_paused = comms['pause'].value
         comms.thread_safe_set_value('pause', not currently_paused)
         ct.register_change(ct.PAUSE_TOGGLE)
+        if acknowledge:
+            start_time = time()
+            elapsed_time = 0
+            message_received = False
+            while elapsed_time < timeout:
+                if not status_q.empty():
+                    break
+                else:
+                    sleep(1e-2)
+                    elapsed_time = time() - start_time
+            if elapsed_time < timeout:
+                m = status_q.get()
+                if not ((currently_paused and m == 'Resumed') or \
+                        (not currently_paused and m == 'Paused')):
+                    raise RuntimeError('Unexpected message: "{}" received '\
+                        +'while attempting to toggle pause state!'.format(m))
+            else:
+                raise RuntimeError('Timed out waiting for acknowledgement!')
+            print(m)
         if currently_paused:
             self.isolde.triggers.activate_trigger('simulation resumed', None)
         else:
             self.isolde.triggers.activate_trigger('simulation paused', None)
-
+    
+    @property
+    def paused(self):
+        return self.comms_object['pause'].value
+    
+    @paused.setter
+    def paused(self, flag):
+        comms = self.comms_object
+        ct = self.change_tracker
+        if flag != comms['pause'].value:
+            self.toggle_pause()
+    
+    def pause_and_acknowledge(self, timeout=defaults.COMMS_TIMEOUT):
+        if self.paused:
+            return
+        self.toggle_pause(acknowledge=True, timeout=timeout)
+    
+    def resume_and_acknowledge(self, timeout=defaults.COMMS_TIMEOUT):
+        if not self.paused:
+            return
+        self.toggle_pause(acknowledge=True, timeout=timeout)
+        
+    
     def stop_sim(self, reason, err = None):
         '''
         Try to stop the simulation gracefully, or halt the simulation
@@ -242,8 +290,8 @@ class ChimeraXSimInterface:
         self.change_tracker.register_change(self.change_tracker.STOP)
         self._pool.terminate()
         self._pool = None
-        if reason == sim_outcomes.DISCARD or reason == sim_outcomes.UNSTABLE:
-            self.all_atoms.coords = self.starting_coords
+        if reason == sim_outcomes.DISCARD:
+            self.starting_checkpoint.revert()
         self.isolde.triggers.activate_trigger('simulation terminated', (reason, err))
         # TODO: Add handler for timeout situations
 
@@ -408,6 +456,24 @@ class ChimeraXSimInterface:
             sim_ks[indices] = ks
             ct.register_array_changes('position restraints', indices = indices)
 
+    
+    def update_distance_restraints(self, distance_restraints):
+        '''
+        Update a set of distance restraints in the simulation at once.
+        Args:
+            distance_restraints:
+                A Distance_Restraints object
+        '''
+        name = distance_restraints.name
+        master_list = self.distance_restraints_dict[name]
+        indices = master_list.indices(distance_restraints)
+        ct = self.change_tracker
+        sim_targets, sim_ks = ct.get_managed_arrays(name)
+        with sim_targets.get_lock(), sim_ks.get_lock():
+            sim_targets[indices] = distance_restraints.targets
+            sim_ks[indices] = distance_restraints.spring_constants
+        ct.register_array_changes(name, indices = indices)
+    
     def update_distance_restraint(self, distance_restraint):
         '''
         Update a distance restraint in the simulation.
@@ -521,8 +587,13 @@ class ChimeraXSimInterface:
         thread = self._sim_thread
         err_q = comms['error']
         status_q = comms['status']
-        while status_q.full():
-            print(status_q.get())
+        self.message_received = False
+        self.messages = []
+        while not status_q.empty():
+            self.message_received = True
+            m = status_q.get()
+            self.messages.append(m)
+            print(m)
         with ct.changes.get_lock():
             changes = ct.changes.value
             ct.clear_outputs()
@@ -717,6 +788,7 @@ class ChimeraXSimInterface:
 
         self._init_start_time = time()
         self.step_counter = 0
+        self.starting_checkpoint = CheckPoint(self.isolde)
         self.thread_result = self._pool.apply_async(sim_thread._sim_thread, args=(), error_callback = error_cb)
         self._register_sim_event('simulation_initialization', 'session',
                                  'new frame', self._sim_init_handler)

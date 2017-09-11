@@ -331,7 +331,7 @@ class Rotamer:
         self._counter = 0
         self._frames_per_rotamer = 50
         self._cycle_handler = None
-        self._current_rotamer_index = 0
+        self._current_rotamer_index = -1
         self._current_rotamer = None
         
         # Is this rotamer currently being restrained?

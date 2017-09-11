@@ -133,10 +133,13 @@ class Distance_Restraints:
             return self.__class__(self.session, [self._restraints[j] for j in i], name = self.name)
         if isinstance(i, Atom):
             # Find and return all restraints this atom is involved in
-            atom_indices = self.atoms.indices(Atoms([i,]))
-            atom_indices = atom_indices[numpy.where(atom_indices != -1)]
-            restraint_indices = atom_indices//2
+            return self[Atoms([i,])]
+        if isinstance(i, Atoms):
+            atom_indices = self.atoms.indices(i)
+            atom_indices = atom_indices[numpy.where(atom_indices != -1)[0]]
+            restraint_indices = numpy.unique(atom_indices//2)
             return self[restraint_indices]
+            
         raise IndexError('Only integer indices allowed for {}, got {}'
             .format(self.__class__.__name__, str(type(i))))
 
@@ -395,6 +398,13 @@ class Position_Restraints:
     def spring_constants(self):
         '''Returns the spring constants for all restraints, in kJ/mol/A^3.'''
         return numpy.array([r.spring_constant for r in self.restraints])
+    
+    @spring_constants.setter
+    def spring_constants(self, ks):
+        if len(ks) != len(self):
+            raise IndexError('Target array length must equal the number of restraints!')
+        for r, k in zip(self, ks):
+            r.spring_constant = k
 
     @property
     def restrained_bond_vectors(self):

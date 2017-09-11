@@ -44,8 +44,11 @@ from . import rotamers
 from .eventhandler import EventHandler
 from .constants import defaults, sim_outcomes, control
 from .param_mgr import Param_Mgr, autodoc, param_properties
+from .checkpoint import CheckPoint
 from .openmm import sim_interface
 from .openmm.sim_interface import SimParams
+
+from PyQt5.QtWidgets import QMessageBox
 
 OPENMM_LENGTH_UNIT = defaults.OPENMM_LENGTH_UNIT
 OPENMM_FORCE_UNIT = defaults.OPENMM_FORCE_UNIT
@@ -200,6 +203,10 @@ class Isolde():
         self._log = Logger('isolde.log')
         
         self._sim_interface = None
+        
+        self._can_checkpoint = True
+        self.checkpoint_disabled_reasons = {}
+        self._last_checkpoint = None
 
         self.session = gui.session
 
@@ -548,7 +555,23 @@ class Isolde():
 
         self.start_gui(gui)
 
-
+    
+    @property
+    def can_checkpoint(self):
+        '''Is checkpoint save/revert currently allowed?'''
+        return self._can_checkpoint
+    
+    @can_checkpoint.setter
+    def can_checkpoint(self, flag):
+        self._can_checkpoint = flag
+    
+    
+    @property
+    def sim_interface(self):
+        if self._sim_interface is None:
+            raise TypeError('No simulation is currently running!')
+        return self._sim_interface
+    
     @property
     def simulation_running(self):
         return self._sim_interface is not None
@@ -601,8 +624,6 @@ class Isolde():
         # Function to remove all event handlers, mouse modes etc. when
         # ISOLDE is closed, and return ChimeraX to its standard state.
 
-        #self.gui.tool_window.ui_area.parentWidget().destroyed.connect(self._on_close)
-        #self.gui.tool_window.destroyed.connect(self._on_close)
         self._event_handler.add_event_handler('close on app quit',
                                       'app quit',
                                       self._on_close)
@@ -1055,11 +1076,15 @@ class Isolde():
         iw._sim_pause_button.clicked.connect(
             self.pause_sim_toggle
             )
+        iw._sim_save_checkpoint_button.clicked.connect(
+            self.checkpoint)
+        iw._sim_revert_to_checkpoint_button.clicked.connect(
+            self.revert_to_checkpoint)
         iw._sim_commit_button.clicked.connect(
             self.commit_sim
             )
         iw._sim_discard_button.clicked.connect(
-            self.discard_sim
+            self._discard_sim
             )
         iw._sim_min_button.clicked.connect(
             self.minimize
@@ -1329,7 +1354,7 @@ class Isolde():
             errstring = 'No atomic structures are available that are not \
                 already part of an existing crystal structure. Please load \
                 one first.'
-            _generic_waring(errstring)
+            _generic_warning(errstring)
         if not os.path.isfile(fname):
             errstring = 'Please select a valid MTZ file!'
             _generic_warning(errstring)
@@ -1539,6 +1564,7 @@ class Isolde():
     def _enable_secondary_structure_restraints_frame(self, *_):
         self.iw._rebuild_2ry_struct_restr_container.setEnabled(True)
         self.iw._rebuild_2ry_struct_restr_top_label.setText('')
+        self.iw._rebuild_2ry_struct_restr_sel_text.setText('')
 
     def _enable_register_shift_frame(self, *_):
         self.iw._rebuild_register_shift_container.setEnabled(True)
@@ -1724,6 +1750,7 @@ class Isolde():
         rs.shift_register(nshift)
         self.iw._rebuild_register_shift_release_button.setEnabled(False)
         self.iw._rebuild_register_shift_go_button.setEnabled(False)
+        self.add_checkpoint_block(rs, 'Register shift in progress')
         self._isolde_events.add_event_handler('register shift finish check',
                                               'completed simulation step',
                                               self._check_if_register_shift_finished)
@@ -1735,8 +1762,10 @@ class Isolde():
             self._isolde_events.remove_event_handler('register shift finish check')
 
     def _release_register_shifter(self, *_):
-        if self._register_shifter is not None:
-            self._register_shifter.release_all()
+        rs = self._register_shifter
+        if rs is not None:
+            rs.release_all()
+            self.remove_checkpoint_block(rs)
         self._register_shifter = None
         self.iw._rebuild_register_shift_go_button.setEnabled(True)
         self.iw._rebuild_register_shift_release_button.setEnabled(False)
@@ -2418,7 +2447,7 @@ class Isolde():
         si = self._sim_interface = ChimeraXSimInterface(self.session, self)
         si.start_sim_thread(sp, sc, tuggable_atoms, fixed_flags, bd, self.rotamers,
                             distance_restraints, position_restraints, self.master_map_list)
-
+        self._last_checkpoint = si.starting_checkpoint
 
 
 
@@ -2511,6 +2540,7 @@ class Isolde():
             or discard the existing coordinates, and/or start a simulation
             with a wider selection to give the minimiser more room to work.
             '''
+            self.revert_to_checkpoint()
         elif outcome[0] == sim_outcomes.FAIL_TO_START:
             '''
             TODO: Pop up a dialog box giving the details of the exception, then
@@ -2690,14 +2720,38 @@ class Isolde():
         self._status('Simulation running')
         self.iw._sim_pause_button.setText('Pause')
 
-
-    def discard_sim(self):
-        print("""This function should stop the simulation and revert to
-                 the original coordinates""")
+    def _discard_sim(self, *_):
+        revert_to = self.iw._sim_discard_revert_combo_box.currentText()
+        self.discard_sim(revert_to)
+    
+    def discard_sim(self, revert_to='checkpoint'):
+        '''
+        Stop the simulation and revert to either the starting state or 
+        the last saved checkpoint.
+        Args:
+            revert_to (default: 'checkpoint'):
+                Either 'checkpoint' or 'start'
+        '''
+        
         if not self.simulation_running:
             print('No simulation running!')
+            return        
+        self._release_register_shifter()
+        if revert_to == 'start':
+            msg = 'All changes since you started this simulation will be '\
+                +'lost! Are you sure you want to continue?'
+            ok = _choice_warning(msg)
+            if ok:
+                self._sim_interface.stop_sim(sim_outcomes.DISCARD, None)
             return
-        self._sim_interface.stop_sim(sim_outcomes.DISCARD, None)
+        elif revert_to == 'checkpoint':
+            print('Stopping and reverting to the last saved checkpoint.')
+            self.revert_to_checkpoint()
+            self._sim_interface.stop_sim(sim_outcomes.COMMIT, None)
+        else:
+            raise TypeError('Unrecognised option! Argument should be '\
+                +'either "checkpoint" or "start".')
+        
 
     def commit_sim(self):
         print("""This function should stop the simulation and write the
@@ -2705,6 +2759,7 @@ class Isolde():
         if not self.simulation_running:
             print('No simulation running!')
             return
+        self._release_register_shifter()
         self._sim_interface.stop_sim(sim_outcomes.COMMIT, None)
 
     def minimize(self):
@@ -2746,6 +2801,55 @@ class Isolde():
             return
         self._sim_interface.release_tugged_atom(atom)
     
+    def add_checkpoint_block(self, obj, reason):
+        '''
+        Some processes are incompatible with checkpointing. We need to 
+        know when these are running and disable checkpointing until
+        they're done.
+        '''
+        self.can_checkpoint = False
+        self.checkpoint_disabled_reasons[obj] = reason
+        self.iw._sim_save_checkpoint_button.setEnabled(False)
+        self.iw._sim_revert_to_checkpoint_button.setEnabled(False)
+    
+    def remove_checkpoint_block(self, obj):
+        '''
+        Release a block on checkpointing. When all blocks are removed,
+        checkpointing will be re-enabled.
+        '''
+        r = self.checkpoint_disabled_reasons
+        r.pop(obj)
+        if len(r) ==0:
+            self.can_checkpoint = True
+            self.iw._sim_save_checkpoint_button.setEnabled(True)
+            self.iw._sim_revert_to_checkpoint_button.setEnabled(True)
+            
+        
+    
+    def checkpoint(self, *_):
+        if self.can_checkpoint:
+            self._last_checkpoint = CheckPoint(self)
+        else:
+            err_str = 'Checkpointing is currently disabled by the '\
+                +'following scripts and will be re-enabled when they '\
+                +'terminate: \n{}'.format(
+                    '\n'.join([r for r in self.checkpoint_disabled_reasons.values()]))
+            raise TypeError(err_str)
+    
+    def revert_to_checkpoint(self, *_):
+        if self.can_checkpoint:
+            if self._last_checkpoint is None:
+                raise TypeError('No saved checkpoint available!')
+            self._last_checkpoint.revert()
+        else:
+            err_str = 'Checkpointing is currently disabled by the '\
+                +'following scripts and will be re-enabled when they '\
+                +'terminate: \n{}'.format(
+                    '\n'.join([r for r in self.checkpoint_disabled_reasons.values()]))
+            raise TypeError(err_str)
+            
+    
+
     ####
     # Restraint controls
     ####
@@ -3087,6 +3191,9 @@ class Isolde():
         from chimerax.core.commands import open
         data_dir = os.path.join(self._root_dir, 'demo_data', '2b9r')
         before_struct = open.open(self.session, os.path.join(data_dir, 'before.cif'))[0]
+        from chimerax.core.commands import color
+        color.color(self.session, before_struct, color='bychain', target='ac')
+        color.color(self.session, before_struct, color='byhetero', target='a')
         before_cs = clipper.CrystalStructure(self.session, before_struct, 
             os.path.join(data_dir, 'before_maps.mtz'))
         #~ from chimerax.clipper import crystal
@@ -3097,11 +3204,24 @@ class Isolde():
 
 def _generic_warning(message):
     msg = QMessageBox()
-    ms.setIcon(QMessageBox.Warning)
+    msg.setIcon(QMessageBox.Warning)
     msg.setText(message)
     msg.setStandardButtons(QMessageBox.Ok)
     msg.exec()
 
+def _choice_warning(message):
+    '''
+    Pop up a warning dialog box with the given message, and return True
+    if the user wants to go ahead.
+    '''
+    msg = QMessageBox()
+    msg.setIcon(QMessageBox.Warning)
+    msg.setText(message)
+    msg.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
+    reply = msg.exec()
+    if reply == QMessageBox.Ok:
+        return True
+    return False
 
 
 
