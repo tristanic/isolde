@@ -92,6 +92,41 @@ void get_dihedrals(double * coords, int n, double * out)
 
 }
 
+void normalize_vector_3d(double vector[3])
+{
+    double norm = l2_norm_3d(vector);
+    for (int i = 0; i < 3; ++i) {
+        vector[i] /= norm;
+    }
+}
+
+void rotations(double axis[3], double* angles, int n, double* out)
+// Fill out with a nx3x4 matrix of rotation matrices (translation = 0)
+{
+    normalize_vector_3d(axis);
+    double angle, sa, ca, k, ax, ay, az;
+    int start;
+    ax = axis[0]; ay = axis[1]; az = axis[2];
+    for (int i = 0; i < n; ++i) {
+        start = i*12;
+        angle = angles[i];
+        sa = sin(angle);
+        ca = cos(angle);
+        k = 1 - ca;
+        out[start  ] = 1 + k*( ax*ax -1);
+        out[start+1] = -az*sa + k*ax*ay;
+        out[start+2] = ay*sa + k*ax*ax;
+        out[start+3] = 0;
+        out[start+4] = az*sa + k*ax*ay;
+        out[start+5] = 1 + k*(ay*ay - 1);
+        out[start+6] = -ax*sa + k*ay*az;
+        out[start+7] = 0;
+        out[start+8] = -ay*sa + k*ax*az;
+        out[start+9] = ax*sa + k*ay*az;
+        out[start+10] = 1 + k*(az*az - 1);
+        out[start+11] = 0;
+    }
+}
 
 
 }

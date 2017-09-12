@@ -4,7 +4,11 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import numpy
-from math import degrees, radians
+from math import degrees, radians, pi
+from . import color, geometry
+from chimerax.core.geometry import Places
+from chimerax.core.atomic import Bonds
+from chimerax.core.models import Drawing
 
 class Dihedral():
     '''
@@ -16,6 +20,7 @@ class Dihedral():
     
     def __init__(self, atoms, residue = None, name = None):
         self.atoms = atoms
+        self._axial_bond = None
         cb = atoms[1:3].intra_bonds
         if len(cb):
             self.axis_bond = cb[0]
@@ -36,6 +41,15 @@ class Dihedral():
         self.sim_index = -1
     
     
+    @property
+    def axial_bond(self):
+        if self._axial_bond is None:
+            cb = self.atoms[1:3].intra_bonds
+            if len(cb):
+                self._axial_bond = cb[0]
+            else:
+                raise TypeError('The axis of this dihedral is not a bond!')
+        return self._axial_bond
     
     @property
     def value(self):
@@ -96,13 +110,16 @@ class Dihedrals():
     Holds an array of Dihedral objects and their statistics, arranged for
     fast look-up and handling.
     '''
-    def __init__(self, dlist = None):
-        self._dihedrals = None
+    def __init__(self, dlist = None, drawing = None):
+        self._dihedrals = []
         # ChimeraX Residues object in the same order as the list of dihedrals
         self._residues = None
         # ChimeraX Atoms object holding all dihedral atoms. The atoms 
         # corresponding to dihedral i will be found at [4*i:4*i+4]
         self._atoms = None
+        # A ChimeraX Bonds object made up of the axial bond for each 
+        # dihedral.
+        self._axial_bonds = None
         # Current dihedral values
         self._values = None
         # Array of Ramachandran cases (if applicable to this dihedral type)
@@ -110,6 +127,85 @@ class Dihedrals():
         if dlist is not None:
             self._dihedrals = dlist
         self._names = None
+        # ChimeraX Drawing object to draw restraint annotations into 
+        # if desired
+        self.colors = None
+        self.set_target_drawing(drawing)
+        self.color_scale = color.standard_three_color_scale('GYPi', 0, pi/2, radians(30))
+        self._restrained_bonds = Bonds()
+        self._restrained_dihedrals = None
+        self.update_needed = True
+    
+    def set_target_drawing(self, drawing):
+        d = self._drawing = drawing
+        if d is not None:
+            r = self._ring_drawing = Drawing('rings')
+            p = self._post_drawing = Drawing('posts')
+            d.add_drawing(r)
+            d.add_drawing(p)
+            r.vertices, r.normals, r.triangles = geometry.ring_arrow_with_post(0.5, 0.05, 3, 6, 0.25, 0.1, 0.05, 1)
+            p.vertices, p.normals, p.triangles = geometry.post_geometry(0.05, 1, caps=False)
+            r.positions = Places(places=[])
+            p.positions = Places(places=[])
+        
+    
+    def update_graphics(self, *_, update_needed = None):
+        if update_needed is None:
+            update_needed = self.update_needed
+        if self._drawing is None:
+            return
+        r = self._ring_drawing
+        p = self._post_drawing
+        if update_needed:
+            self._update_restrained_bonds()
+        r_d = self._restrained_dihedrals
+        if not len(r_d):
+            r.positions = Places(places=[])
+            p.positions = Places(places=[])
+            return
+        rb = self._restrained_bonds
+        b = rb[rb.displays]
+        # otherwise just update positions and colours
+        targets = self._cached_targets
+        offsets = (r_d.values - targets + pi) % (2*pi) - pi 
+        axis = numpy.array([0,0,1],numpy.double)
+        from chimerax.core.geometry import rotation
+        flip = rotation([1,0,0], 180)
+        flip_mask = offsets<0
+        rotations = Places(place_array=geometry.rotations(axis, offsets))
+        flipped = []
+        for rr, f in zip(rotations, flip_mask):
+            if f:
+                rr = rr*flip
+            flipped.append(rr)
+        rotations = Places(flipped)
+        shifts = geometry.bond_cylinder_placements(b)
+        r.positions = Places([s*r for r, s in zip(rotations, shifts)])
+        p.positions = shifts
+        colors = self.color_scale.get_colors(numpy.abs(offsets))
+        r.colors = colors
+        p.colors = colors
+    
+    
+    def _update_restrained_bonds(self):
+        restrained_bond_mask = (self.spring_constants > 0)
+        indices = numpy.where(restrained_bond_mask)[0]
+        self._restrained_bonds = self.axial_bonds[restrained_bond_mask]
+        rd = self._restrained_dihedrals = self[indices]
+        self._cached_targets = rd.targets
+        
+        self.update_needed = False
+    
+    @property
+    def axial_bonds(self):
+        if self._axial_bonds is None:
+            try:
+                from chimerax.core.atomic import Bonds
+                self._axial_bonds = Bonds([d.axial_bond for d in self])
+            except:
+                raise TypeError('At least one dihedral in this array '\
+                    +'has no axial bond!')
+        return self._axial_bonds
     
     def __len__(self):
         return len(self.dihedrals)
@@ -124,7 +220,7 @@ class Dihedrals():
         if isinstance(i,(int, numpy.integer)):
             return self.dihedrals[i]
         elif isinstance(i,(slice)):
-            return Dihedrals(self.dihedrals[i])
+            return Dihedrals(dlist=self.dihedrals[i])
         elif isinstance(i, numpy.ndarray):
             return Dihedrals([self.dihedrals[j] for j in i])
         else:
@@ -155,12 +251,9 @@ class Dihedrals():
                 self._residues = concatenate([self.residues, [d.residue]])
                 self._atoms = concatenate([self.atoms, d.atoms])
         elif isinstance(d, Dihedrals):
-            if self.atoms is None:
-                self._dihedrals = d
-            else:
-                self.dihedrals.extend(d)
-                self._residues = concatenate([self.residues, d.residues])
-                self._atoms = concatenate([self.atoms, d.atoms])
+            self.dihedrals.extend(d.dihedrals)
+            self._residues = concatenate([self.residues, d.residues])
+            self._atoms = concatenate([self.atoms, d.atoms])
         else:
             raise TypeError('Can only append a single Dihedral or a Dihedrals object.')    
     

@@ -4,7 +4,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-
+import numpy
 
 # Fully pythonic version.    
 def get_dihedral(p0, p1, p2, p3):
@@ -13,20 +13,18 @@ def get_dihedral(p0, p1, p2, p3):
     p1-p2 axis. p0, p1, p2 and p3 should be (x,y,z) coordinates as numpy
     arrays.
     '''
-    import numpy as np
-    
     b0 = p0 - p1
     b1 = p2 - p1
     b2 = p3 - p2
     
-    b1 /= np.linalg.norm(b1)
+    b1 /= numpy.linalg.norm(b1)
     
-    v = b0 - np.dot(b0, b1)*b1
-    w = b2 - np.dot(b2, b1)*b1
+    v = b0 - numpy.dot(b0, b1)*b1
+    w = b2 - numpy.dot(b2, b1)*b1
     
-    x = np.dot(v, w)
-    y = np.dot(np.cross(b1, v), w)
-    return np.arctan2(y, x)
+    x = numpy.dot(v, w)
+    y = numpy.dot(numpy.cross(b1, v), w)
+    return numpy.arctan2(y, x)
 
 # C version. Saves about 16 microseconds per dihedral. 
 import sys, os, glob
@@ -63,13 +61,27 @@ _get_dihedrals = _geometry.get_dihedrals
 def get_dihedrals(coords, n):
     full_len = n*4*3
     INTYPE = ctypes.POINTER(ctypes.c_double*full_len)
-    RTYPE = ctypes.c_double*n
-    _get_dihedrals.argtypes = [INTYPE, ctypes.c_int, ctypes.POINTER(RTYPE)]
-    import numpy
-    ret = RTYPE(*numpy.empty(n))
-    _get_dihedrals(numpy.reshape(coords, -1).ctypes.data_as(INTYPE), n, ctypes.byref(ret))
-    return numpy.array(ret, numpy.float32)
-
+    ret = numpy.empty(n, numpy.double)
+    RTYPE = ctypes.POINTER(ctypes.c_double)
+    _get_dihedrals.argtypes = [INTYPE, ctypes.c_int, RTYPE]
+    _get_dihedrals(numpy.reshape(coords, -1).ctypes.data_as(INTYPE), n, ret.ctypes.data_as(RTYPE))
+    return ret
+    
+    
+_rotations = _geometry.rotations
+def rotations(axis, angles):
+    '''
+    Get the rotation matrices around the given axis for an array of angles.
+    '''
+    n = len(angles)
+    ANGLE_TYPE = ctypes.POINTER(ctypes.c_double*n)
+    ret = numpy.empty((n,3,4), numpy.double)
+    RTYPE=ctypes.POINTER(ctypes.c_double)
+    _rotations.argtypes = [COORTYPE, ANGLE_TYPE, ctypes.c_int, RTYPE]
+    _rotations(axis.ctypes.data_as(COORTYPE), angles.ctypes.data_as(ANGLE_TYPE), 
+               n, ret.ctypes.data_as(RTYPE))
+    return ret
+    
 
 
 
@@ -321,6 +333,16 @@ def pin_drawing(handle_radius, pin_radius, total_height):
     
 
 
+def arc_points(n, radius, final_angle):
+    from numpy import arange, float32, empty, sin, cos
+    from math import pi
+    a = arange(n) * (final_angle/n)
+    c = empty((n,3), float32)
+    c[:,0] = radius*cos(a)
+    c[:,1] = radius*sin(a)
+    c[:,2] = 0
+    return c
+
         
 def split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segments):
     '''
@@ -328,10 +350,11 @@ def split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segme
     the centre of the ring to the axis of the solid portion, and 
     minor_radius defines the thickness of the solid_portion.
     '''
+    from math import pi
     from chimerax.core.surface import tube
     from chimerax.core.geometry import rotation
-    path = tube.circle_points(ring_segments, major_radius)
-    return tube.tube_spline(path[:-3], minor_radius, circle_segments)
+    path = arc_points(ring_segments, major_radius, final_angle = 6*pi/4)
+    return tube.tube_spline(path, minor_radius, segment_subdivisions = 2, circle_subdivisions = circle_segments)
     
 def ring_arrow(major_radius, minor_radius, circle_segments, ring_segments, head_length, head_radius):
     import numpy
@@ -351,3 +374,47 @@ def ring_arrow(major_radius, minor_radius, circle_segments, ring_segments, head_
     t = concatenate((tr, th+len(vr)))
     
     return v, n, t
+
+def ring_arrow_with_post(major_radius, minor_radius, circle_segments, 
+                         ring_segments, head_length, head_radius,
+                         post_radius, post_height):
+    v, n, t = ring_arrow(major_radius, minor_radius, circle_segments, 
+                         ring_segments, head_length, head_radius)
+    pv, pn, pt = post_geometry(post_radius, post_height)
+    from numpy import concatenate
+    rv = concatenate((v, pv))
+    rn = concatenate((n, pn))
+    rt = concatenate((t, pt+len(v)))
+    return rv, rn, rt
+
+def post_geometry(radius, height, caps=False):
+    '''
+    Returns a simple cylinder, rotated and translated so its base is on
+    the origin and it points along (1,0,0)
+    '''
+    from chimerax.core.surface.shapes import cylinder_geometry
+    from chimerax.core.geometry import rotation, translation
+    v, n, t = cylinder_geometry(radius=radius, height=height, caps=caps, nc=6)
+    tr = translation([0,0,height/2])
+    tr.move(v)
+    r = rotation([0,1,0], 90)
+    r.move(v)
+    r.apply_without_translation(n)
+    return v,n,t
+    
+def bond_cylinder_placements(bonds):
+    '''From chimerax.core.structure._bond_cylinder_placements.'''
+
+    n = len(bonds)
+    from numpy import empty, float32
+    p = empty((n,4,4), float32)
+
+    radii = numpy.ones(len(bonds))
+    from chimerax.core.geometry import cylinder_rotations, Places
+    axyz0, axyz1 = [a.coords for a in bonds.atoms]
+    cylinder_rotations(axyz0, axyz1, radii, p)
+
+    p[:,3,:3] = 0.5*(axyz0 + axyz1)
+
+    pl = Places(opengl_array = p)
+    return pl

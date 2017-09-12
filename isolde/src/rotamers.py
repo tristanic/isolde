@@ -13,7 +13,7 @@ from chimerax.core.geometry import Place, rotation, matrix
 from chimerax.core.atomic import Residue, Atom
 
 from .dihedrals import Dihedral, Dihedrals
-
+from .constants import defaults
 package_directory = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(package_directory, 'molprobity_data')
 
@@ -311,7 +311,8 @@ class Rotamer:
     methods necessary to query/change it.
     '''
     
-    def __init__(self, session, residue):
+    def __init__(self, session, residue, 
+                spring_constant = defaults.ROTAMER_SPRING_CONSTANT ):
         '''
         Just create the rotamer object. No querying yet.
         Args:
@@ -335,15 +336,31 @@ class Rotamer:
         self._current_rotamer = None
         
         # Is this rotamer currently being restrained?
-        self.restrained = False
+        self._restrained = False
         # Current target conformation (if self.restrained == True)
-        self.target = _rotamer_info[self.resname].zeros
+        self._target = _rotamer_info[self.resname].zeros
         
         try:
             self._atoms_to_move, self.dihedrals = self.find_atoms_to_move(self.residue)
         except:
             self._atoms_to_move = None
             self.dihedrals = None
+        self.spring_constant = spring_constant
+    
+    @property
+    def restrained(self):
+        return self._restrained
+    
+    @restrained.setter
+    def restrained(self, flag):
+        curr = self._restrained
+        if flag == curr:
+            return
+        if flag:
+            self.dihedrals.spring_constants = self.spring_constant
+        else:
+            self.dihedrals.spring_constants = 0
+        self._restrained = flag
     
     def __enter__(self):
         return self
@@ -355,6 +372,15 @@ class Rotamer:
         if self._cycle_handler is not None:
             self.session.triggers.remove_handler(self._cycle1_handler)
         self.remove_preview()
+    
+    @property
+    def target(self):
+        return self._target
+    
+    @target.setter
+    def target(self, target):
+        self._target = target
+        self.dihedrals.targets = target
     
     @property
     def chi_angles(self):

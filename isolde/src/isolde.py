@@ -39,8 +39,10 @@ import chimerax
 from chimerax import clipper
 
 from chimerax.core import triggerset
+from chimerax.core.models import Drawing
 
-from . import rotamers
+
+from . import rotamers, dihedrals
 from .eventhandler import EventHandler
 from .constants import defaults, sim_outcomes, control
 from .param_mgr import Param_Mgr, autodoc, param_properties
@@ -298,6 +300,9 @@ class Isolde():
         # Object holding only the backbone dihedrals that are mobile in
         # the current simulation
         self._mobile_backbone_dihedrals = None
+        # A single Dihedrals array containing all proper dihedrals that
+        # we want to be able to draw annotations for.
+        self._all_annotated_dihedrals = dihedrals.Dihedrals(drawing=self._annotations)
 
 
         # Internal counter for Ramachandran update
@@ -764,7 +769,6 @@ class Isolde():
         iw._rebuild_sel_res_pep_info.setText('')
         iw._rebuild_sel_res_rot_info.setText('')
 
-        from . import dihedrals
         phipsi = dihedrals.Backbone_Dihedrals.standard_phi_psi_angles
         iw._rebuild_2ry_struct_restr_chooser_combo_box.clear()
         for key, pair in phipsi.items():
@@ -1699,6 +1703,7 @@ class Isolde():
         psi.spring_constants = dihed_k
         self.apply_dihedral_restraints(phi)
         self.apply_dihedral_restraints(psi)
+        self._update_dihedral_restraints_drawing()
 
 
         dist_k = self.distance_restraints_k
@@ -1850,12 +1855,14 @@ class Isolde():
         if self.simulation_running:
             self._apply_rotamer_target_to_sim(rot)
         self._clear_rotamer()
-
+        self._update_dihedral_restraints_drawing()
+    
     def _apply_rotamer_target_to_sim(self, rotamer):
         if not self.simulation_running:
             print('No simulation running!')
             return
         self._sim_interface.update_rotamer_target(rotamer)
+        self._all_annotated_dihedrals.update_needed = True
 
     def _clear_rotamer(self, *_):
         if self._selected_rotamer is not None:
@@ -1866,6 +1873,7 @@ class Isolde():
         rot.restrained = False
         if self.simulation_running:
             self._apply_rotamer_target_to_sim(rot)
+        self._update_dihedral_restraints_drawing()
     
     def release_rotamers(self, residues):
         for r in residues:
@@ -2087,12 +2095,16 @@ class Isolde():
         necessary pieces from these each time a simulation is started.
         '''
         m = model
-        from . import dihedrals, rotamers
         from . import backbone_restraints as br
         from . import position_restraints as pr
         # Torsion restraints
-        self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(self.session, m)
+        bd = self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(self.session, m)
+        ad = self._all_annotated_dihedrals
+        ad.append(bd.phi)
+        ad.append(bd.psi)
         self.rotamers = rotamers.all_rotamers_in_selection(self.session, m.atoms)
+        for r in self.rotamers.values():
+            ad.append(r.dihedrals)
         # Distance restraints
         self.ca_to_ca_plus_two = br.CA_to_CA_plus_Two(self.session, m)
         self.o_to_n_plus_four = br.O_to_N_plus_Four(self.session, m)
@@ -2421,7 +2433,8 @@ class Isolde():
 
         from . import dihedrals
         all_bd = self.backbone_dihedrals
-        sim_phi, sim_psi, sim_omega = all_bd.by_residues(total_mobile.unique_residues)
+        sim_phi, sim_psi, sim_omega = all_bd.by_residues(total_mobile.unique_residues)        
+        
         bd = self._mobile_backbone_dihedrals \
             = dihedrals.Backbone_Dihedrals(self.session, phi = sim_phi, psi = sim_psi, omega = sim_omega)
 
@@ -2528,7 +2541,13 @@ class Isolde():
             self._isolde_events.add_event_handler('rezone maps during sim',
                                                   'completed simulation step',
                                                   self._rezone_maps)
-
+        self._event_handler.add_event_handler('update dihedral restraint drawings',
+                                    'graphics update',
+                                    self._all_annotated_dihedrals.update_graphics)
+        
+        
+        
+        
     def _sim_end_cb(self, name, outcome):
         pass
         if outcome[0] == sim_outcomes.UNSTABLE:
@@ -2555,7 +2574,9 @@ class Isolde():
             'do_sim_steps_on_gui_update', error_on_missing = False)
         self._isolde_events.remove_event_handler(
             'rezone maps during sim', error_on_missing = False)
-
+        self._event_handler.remove_event_handler('update dihedral restraint drawings',
+                                               error_on_missing=False)
+        self._update_dihedral_restraints_drawing()
             #~ self.triggers.remove_handler(self._map_rezone_handler)
             #~ self._map_rezone_handler = None
 
@@ -2714,11 +2735,18 @@ class Isolde():
         self._sim_paused = True
         self._status('Simulation paused')
         self.iw._sim_pause_button.setText('Resume')
+        self._event_handler.remove_event_handler('update dihedral restraint drawings')
 
     def _sim_resume_cb(self, *_):
         self._sim_paused = False
         self._status('Simulation running')
         self.iw._sim_pause_button.setText('Pause')
+        self._event_handler.add_event_handler('update dihedral restraint drawings',
+                                    'graphics update',
+                                    self._all_annotated_dihedrals.update_graphics)
+        
+
+
 
     def _discard_sim(self, *_):
         revert_to = self.iw._sim_discard_revert_combo_box.currentText()
@@ -2841,13 +2869,13 @@ class Isolde():
             if self._last_checkpoint is None:
                 raise TypeError('No saved checkpoint available!')
             self._last_checkpoint.revert()
+        self._update_dihedral_restraints_drawing()
         else:
             err_str = 'Checkpointing is currently disabled by the '\
                 +'following scripts and will be re-enabled when they '\
                 +'terminate: \n{}'.format(
                     '\n'.join([r for r in self.checkpoint_disabled_reasons.values()]))
             raise TypeError(err_str)
-            
     
 
     ####
@@ -2926,6 +2954,7 @@ class Isolde():
 
         self.apply_dihedral_restraint(phi)
         self.apply_dihedral_restraint(psi)
+        self._update_dihedral_restraints_drawing()
 
         self._pep_flip_timeout_counter = 0
         self._pep_flip_dihedrals = (phi, psi)
@@ -2970,6 +2999,7 @@ class Isolde():
             print('No simulation running!')
             return
         self._sim_interface.update_dihedral_restraint(dihedral)
+        self._all_annotated_dihedrals.update_needed = True
 
     def apply_dihedral_restraints(self, dihedrals):
         '''
@@ -2986,11 +3016,15 @@ class Isolde():
             for name in unique_names:
                 indices = numpy.where(all_names == name)[0]
                 self._sim_interface.update_dihedral_restraints(dihedrals[indices])
+        self._all_annotated_dihedrals.update_needed = True
 
     def release_dihedral_restraint(self, dihedral):
         dihedral.target = 0
         dihedral.spring_constant = 0
-        self.apply_dihedral_restraint(dihedral)
+        if self.simulation_running:
+            self.apply_dihedral_restraint(dihedral)
+        else:
+            self._update_dihedral_restraints_drawing()
 
     def clear_secondary_structure_restraints_for_selection(self, *_, atoms = None, residues = None):
         '''
@@ -3015,6 +3049,7 @@ class Isolde():
                 dlist.spring_constants = 0
                 if self.simulation_running:
                     self.apply_dihedral_restraints(dlist)
+        self._update_dihedral_restraints_drawing()
 
         for r in residues:
             for key, rlist in self._sim_distance_restraint_dict.items():
@@ -3111,6 +3146,10 @@ class Isolde():
             cis, twisted = ov.find_outliers()
             ov.draw_outliers(cis, twisted)
         ov.update_coords()
+
+    def _update_dihedral_restraints_drawing(self):
+        d = self._all_annotated_dihedrals
+        d.update_graphics(update_needed = True)
 
 
 
