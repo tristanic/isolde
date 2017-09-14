@@ -5,8 +5,11 @@
 
 
 import numpy
-from simtk.unit import kilojoule_per_mole, angstrom, nanometer
+from simtk.unit import Quantity
 from chimerax.core.atomic import Atom, Atoms, concatenate
+from .constants import defaults
+CHIMERAX_SPRING_UNIT = defaults.CHIMERAX_SPRING_UNIT
+CHIMERAX_LENGTH_UNIT = defaults.CHIMERAX_LENGTH_UNIT
 
 HIDE_ISOLDE = 0x2
 
@@ -55,6 +58,8 @@ class Distance_Restraint:
 
     @target_distance.setter
     def target_distance(self, distance):
+        if isinstance(distance, Quantity):
+            distance = distance.value_in_unit(CHIMERAX_LENGTH_UNIT)
         self._target_distance = distance
 
 
@@ -74,6 +79,8 @@ class Distance_Restraint:
 
     @spring_constant.setter
     def spring_constant(self, k):
+        if isinstance(k, Quantity):
+            k = k.value_in_unit(CHIMERAX_SPRING_UNIT)
         self._spring_constant = k
         pb = self._pseudobond
         if k == 0:
@@ -135,8 +142,8 @@ class Distance_Restraints:
             # Find and return all restraints this atom is involved in
             return self[Atoms([i,])]
         if isinstance(i, Atoms):
-            atom_indices = self.atoms.indices(i)
-            atom_indices = atom_indices[numpy.where(atom_indices != -1)[0]]
+            atom_indices = i.indices(self.atoms)
+            atom_indices = numpy.where(atom_indices != -1)[0]
             restraint_indices = numpy.unique(atom_indices//2)
             return self[restraint_indices]
             
@@ -209,6 +216,8 @@ class Distance_Restraints:
 
     @targets.setter
     def targets(self, targets):
+        if isinstance(targets, Quantity):
+            targets = targets.value_in_unit(CHIMERAX_LENGTH_UNIT)
         if hasattr(targets, '__len__'):
             if len(targets) != len(self):
                 raise IndexError('Target array length must equal the number of restraints!')
@@ -231,6 +240,8 @@ class Distance_Restraints:
 
     @spring_constants.setter
     def spring_constants(self, val_or_vals):
+        if isinstance(val_or_vals, Quantity):
+            val_or_vals = val_or_vals.value_in_unit(CHIMERAX_SPRING_UNIT)
         if hasattr(val_or_vals, '__len__'):
             for r, v in zip(self, val_or_vals):
                 r.spring_constant = v
@@ -306,6 +317,8 @@ class Position_Restraint:
 
     @spring_constant.setter
     def spring_constant(self, k):
+        if isinstance(k, Quantity):
+            k = k.value_in_unit(CHIMERAX_SPRING_UNIT)
         self._spring_constant = k
         ta = self._target_atom
         pb = self._pseudobond
@@ -401,6 +414,8 @@ class Position_Restraints:
     
     @spring_constants.setter
     def spring_constants(self, ks):
+        if isinstance(ks, Quantity):
+            ks = ks.value_in_unit(CHIMERAX_SPRING_UNIT)
         if len(ks) != len(self):
             raise IndexError('Target array length must equal the number of restraints!')
         for r, k in zip(self, ks):
@@ -486,33 +501,3 @@ class Position_Restraints:
         '''
         atom_indices = sel.indices(self.atoms)
         return self[numpy.argwhere(atom_indices != -1).ravel()]
-
-
-#~ class Restraint_Bond_Drawings:
-    #~ '''
-    #~ Handles visual representations of positional and distance restraints.
-    #~ Yet to be implemented.
-    #~ '''
-    #~ pass
-
-
-
-#~ def restraint_bond_geometry():
-    #~ '''
-    #~ Create a simple prototype dashed bond of length 1.
-    #~ '''
-    #~ from chimerax.core.surface.shapes import cylinder_geometry
-    #~ from chimerax.core.geometry import translation
-    #~ from copy import copy
-    #~ v0, n0, t0 = cylinder_geometry(0.075, 0.15)
-    #~ v = copy(v0)
-    #~ n = copy(n0)
-    #~ t = copy(t0)
-    #~ for i in range(1, 5):
-        #~ tz = translation((0,0,0.2*i))
-        #~ nv = len(v)
-        #~ v = numpy.concatenate((v, tz.moved(v0)))
-        #~ n = numpy.concatenate((n, n0))
-        #~ t = numpy.concatenate((t, t0 + nv))
-
-    #~ return (v, n, t)

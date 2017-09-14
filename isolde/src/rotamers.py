@@ -12,6 +12,8 @@ from math import degrees, radians
 from chimerax.core.geometry import Place, rotation, matrix
 from chimerax.core.atomic import Residue, Atom
 
+from simtk.unit import Quantity
+
 from .dihedrals import Dihedral, Dihedrals
 from .constants import defaults
 package_directory = os.path.dirname(os.path.abspath(__file__))
@@ -345,7 +347,19 @@ class Rotamer:
         except:
             self._atoms_to_move = None
             self.dihedrals = None
-        self.spring_constant = spring_constant
+        self._spring_constant = spring_constant
+    
+    @property
+    def spring_constant(self):
+        return self._spring_constant
+    
+    @spring_constant.setter
+    def spring_constant(self, k):
+        if isinstance(k, Quantity):
+            k = k.value_in_unit(defaults.OPENMM_RADIAL_SPRING_UNIT)
+        self._spring_constant = k
+        self.dihedrals.spring_constants = k
+
     
     @property
     def restrained(self):
@@ -360,6 +374,7 @@ class Rotamer:
             self.dihedrals.spring_constants = self.spring_constant
         else:
             self.dihedrals.spring_constants = 0
+            self._current_rotamer = None
         self._restrained = flag
     
     def __enter__(self):
@@ -372,6 +387,12 @@ class Rotamer:
         if self._cycle_handler is not None:
             self.session.triggers.remove_handler(self._cycle1_handler)
         self.remove_preview()
+        if not self.restrained:
+            self._current_rotamer = None
+    
+    @property
+    def current_target_rotamer(self):
+        return self._current_rotamer
     
     @property
     def target(self):

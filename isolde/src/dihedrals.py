@@ -6,9 +6,17 @@
 import numpy
 from math import degrees, radians, pi
 from . import color, geometry
-from chimerax.core.geometry import Places
+from chimerax.core.geometry import Places, rotation
 from chimerax.core.atomic import Bonds
 from chimerax.core.models import Drawing
+from simtk.unit import Quantity
+from .constants import defaults
+
+OPENMM_RADIAL_SPRING_UNIT = defaults.OPENMM_RADIAL_SPRING_UNIT
+
+TWO_PI = 2*pi
+FLIP_ON_X = rotation([1,0,0], 180).matrix
+Z_AXIS = numpy.array([0,0,1],numpy.double)
 
 class Dihedral():
     '''
@@ -77,6 +85,8 @@ class Dihedral():
     
     @spring_constant.setter
     def spring_constant(self, k):
+        if isinstance(k, Quantity):
+            k = k.value_in_unit(OPENMM_RADIAL_SPRING_UNIT)
         self._spring_constant = k
     
     
@@ -110,7 +120,8 @@ class Dihedrals():
     Holds an array of Dihedral objects and their statistics, arranged for
     fast look-up and handling.
     '''
-    def __init__(self, dlist = None, drawing = None):
+    def __init__(self, dlist = None, drawing = None, session = None):
+        self.session = session
         self._dihedrals = []
         # ChimeraX Residues object in the same order as the list of dihedrals
         self._residues = None
@@ -147,7 +158,18 @@ class Dihedrals():
             p.vertices, p.normals, p.triangles = geometry.post_geometry(0.05, 1, caps=False)
             r.positions = Places(places=[])
             p.positions = Places(places=[])
-        
+            if self.session is not None:
+                from chimerax.core.atomic import get_triggers
+                triggers = get_triggers(self.session)
+                self._handler = triggers.add_handler('changes', self._update_graphics)
+
+    
+    def _update_graphics(self, trigger_name, changes):
+        reasons = changes.atom_reasons()
+        dchanged = 'display changed' in reasons
+        cchanged = 'coord changed' in reasons
+        if dchanged or cchanged:
+            self.update_graphics()
     
     def update_graphics(self, *_, update_needed = None):
         if update_needed is None:
@@ -159,28 +181,27 @@ class Dihedrals():
         if update_needed:
             self._update_restrained_bonds()
         r_d = self._restrained_dihedrals
-        if not len(r_d):
-            r.positions = Places(places=[])
-            p.positions = Places(places=[])
+        if len(r_d) == 0:
+            r.positions = Places([])
+            p.positions = Places([])
             return
         rb = self._restrained_bonds
-        b = rb[rb.displays]
-        # otherwise just update positions and colours
-        targets = self._cached_targets
-        offsets = (r_d.values - targets + pi) % (2*pi) - pi 
-        axis = numpy.array([0,0,1],numpy.double)
-        from chimerax.core.geometry import rotation
-        flip = rotation([1,0,0], 180)
+        showns = rb.showns
+        shown_indices = numpy.where(showns)[0]
+        r_d = r_d[shown_indices]
+        b = rb[showns]
+        if len(b) == 0:
+            r.positions = Places([])
+            p.positions = Places([])
+            return
+        targets = self._cached_targets[shown_indices]
+        offsets = (r_d.values - targets + pi) % TWO_PI - pi 
         flip_mask = offsets<0
-        rotations = Places(place_array=geometry.rotations(axis, offsets))
-        flipped = []
-        for rr, f in zip(rotations, flip_mask):
-            if f:
-                rr = rr*flip
-            flipped.append(rr)
-        rotations = Places(flipped)
+        rotations = geometry.rotations(Z_AXIS, offsets)
         shifts = geometry.bond_cylinder_placements(b)
-        r.positions = Places([s*r for r, s in zip(rotations, shifts)])
+        tf = geometry.flip_rotate_and_shift(flip_mask, FLIP_ON_X,
+                rotations, shifts.array())
+        r.positions = Places(place_array = tf)
         p.positions = shifts
         colors = self.color_scale.get_colors(numpy.abs(offsets))
         r.colors = colors
@@ -320,6 +341,8 @@ class Dihedrals():
     
     @spring_constants.setter
     def spring_constants(self, k_or_k_array):
+        if isinstance(k_or_k_array, Quantity):
+            k_or_k_array = k_or_k_array.value_in_unit(OPENMM_RADIAL_SPRING_UNIT)
         if hasattr(k_or_k_array, '__len__'):
             for d, k in zip(self, k_or_k_array):
                 d.spring_constant = k

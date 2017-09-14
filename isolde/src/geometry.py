@@ -32,16 +32,7 @@ import ctypes
 
 dpath = os.path.dirname(os.path.abspath(__file__))
 libfile = glob.glob(os.path.join(dpath, '_geometry.cpython*'))[0]
-#libfile = glob.glob('./_geometry.cpython*')[0]
-#~ platform = sys.platform
-#~ if platform == 'linux':
-    #~ libfile = './lib_geometry.so'
-#~ elif platform == 'darwin':
-    #~ libfile = './lib_geometry.dylib'
-#~ elif platform == 'win32':
-    #~ libfile = './_geometry.dll'
 _geometry = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)), libfile))
-#from . import _geometry
 COORTYPE = ctypes.POINTER(ctypes.c_double * 3)
   
 _get_dihedral = _geometry.get_dihedral
@@ -82,8 +73,59 @@ def rotations(axis, angles):
                n, ret.ctypes.data_as(RTYPE))
     return ret
     
+_multiply_transforms = _geometry.multiply_transforms
+def multiply_transforms(tf1, tf2):
+    TF_TYPE = ctypes.POINTER(ctypes.c_double*12)
+    ret = numpy.empty((3,4), numpy.double)
+    _multiply_transforms.argtypes = [TF_TYPE, TF_TYPE, TF_TYPE]
+    _multiply_transforms(tf1.ctypes.data_as(TF_TYPE), 
+                         tf2.ctypes.data_as(TF_TYPE), 
+                         ret.ctypes.data_as(TF_TYPE))
+    return ret
+
+def convert_and_sanitize_numpy_array(array, dtype):
+    '''
+    Convert a numpy array to the specified data type, and ensure its
+    contents are C-contiguous in memory.
+    '''
+    if array.flags.c_contiguous:
+        if array.dtype == dtype:
+            return array
+        return array.as_type(dtype)
+    ret = numpy.empty(array.shape, dtype)
+    ret[:] = array
+    return ret
 
 
+_flip_rotate_shift = _geometry.flip_rotate_and_shift
+def flip_rotate_and_shift(flip_mask, flip_tf, rotations, shifts):
+    n = len(flip_mask)
+    if len(rotations) != n or len(shifts) != n:
+        raise TypeError('flip_mask, rotations and shifts must all be the '\
+            +'same length!')
+    #~ ftf = numpy.empty(flip_tf.shape, numpy.double)
+    #~ ftf[:] = flip_tf
+    from numpy import double
+    ftf = convert_and_sanitize_numpy_array(flip_tf, double)
+    rot = convert_and_sanitize_numpy_array(rotations, double)
+    sh = convert_and_sanitize_numpy_array(shifts, double)
+    #~ shape = rotations.shape
+    #~ rot = numpy.empty(shape, numpy.double)
+    #~ rot[:] = rotations
+    #~ sh = numpy.empty(shape, numpy.double)
+    #~ sh[:] = shifts
+    FLAG_TYPE = ctypes.POINTER(ctypes.c_bool*n)
+    TF_TYPE = ctypes.POINTER(ctypes.c_double*12)
+    TF_ARRAY_TYPE = ctypes.POINTER(ctypes.c_double*12*n)
+    ret = numpy.empty(rotations.shape, numpy.double)
+    _flip_rotate_shift.argtypes = [ctypes.c_int, FLAG_TYPE, TF_TYPE, 
+                                   TF_ARRAY_TYPE, TF_ARRAY_TYPE, TF_ARRAY_TYPE]
+    _flip_rotate_shift(n, flip_mask.ctypes.data_as(FLAG_TYPE),
+                          ftf.ctypes.data_as(TF_TYPE),
+                          rot.ctypes.data_as(TF_ARRAY_TYPE),
+                          sh.ctypes.data_as(TF_ARRAY_TYPE),
+                          ret.ctypes.data_as(TF_ARRAY_TYPE))
+    return ret
 
 def dihedral_fill_plane(p0, p1, p2, p3):
     '''
@@ -202,10 +244,11 @@ def simple_arrow(radius = 0.1, height = 1, nc = 20, color = [255, 0, 0, 255], ca
     '''
     from chimerax.core.models import Drawing
     d = Drawing(name='Arrow')
-    head = Drawing(name = 'arrow_head')
-    shaft = Drawing(name = 'arrow_shaft')
-    head.color = color
-    shaft.color = color
+    #~ head = Drawing(name = 'arrow_head')
+    #~ shaft = Drawing(name = 'arrow_shaft')
+    d.color = color
+    #~ head.color = color
+    #~ shaft.color = color
     head_base_width = radius
     shaft_base_width = radius / head_width_ratio
     head_length = height * head_length_fraction
@@ -234,17 +277,17 @@ def simple_arrow(radius = 0.1, height = 1, nc = 20, color = [255, 0, 0, 255], ca
         sver[nc2+1:,2] = head_length
         
     import numpy
-    head.vertices = hver
-    head.normals = hn
-    head.triangles = ht
-    shaft.vertices = sver
-    shaft.normals = sn
-    shaft.triangles = st
-    d.add_drawing(head)
-    d.add_drawing(shaft)
-    #d.vertices = numpy.concatenate((hver, sver))
-    #d.normals = numpy.concatenate((hn, sn))
-    #d.triangles = numpy.concatenate((ht, st))
+    #~ head.vertices = hver
+    #~ head.normals = hn
+    #~ head.triangles = ht
+    #~ shaft.vertices = sver
+    #~ shaft.normals = sn
+    #~ shaft.triangles = st
+    #~ d.add_drawing(head)
+    #~ d.add_drawing(shaft)
+    d.vertices = numpy.concatenate((hver, sver))
+    d.normals = numpy.concatenate((hn, sn))
+    d.triangles = numpy.concatenate((ht, st+len(hver)))
     
     return d
     
@@ -333,10 +376,11 @@ def pin_drawing(handle_radius, pin_radius, total_height):
     
 
 
-def arc_points(n, radius, final_angle):
+def arc_points(n, radius, starting_angle, final_angle):
+    final_angle = final_angle*n/(n-1)
     from numpy import arange, float32, empty, sin, cos
     from math import pi
-    a = arange(n) * (final_angle/n)
+    a = arange(n) * ((final_angle-starting_angle)/n) + starting_angle
     c = empty((n,3), float32)
     c[:,0] = radius*cos(a)
     c[:,1] = radius*sin(a)
@@ -344,7 +388,7 @@ def arc_points(n, radius, final_angle):
     return c
 
         
-def split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segments):
+def split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segments, starting_angle, final_angle):
     '''
     Define a torus (doughnut), where major_radius is the distance from 
     the centre of the ring to the axis of the solid portion, and 
@@ -353,20 +397,27 @@ def split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segme
     from math import pi
     from chimerax.core.surface import tube
     from chimerax.core.geometry import rotation
-    path = arc_points(ring_segments, major_radius, final_angle = 6*pi/4)
+    path = arc_points(ring_segments, major_radius, starting_angle, final_angle)
     return tube.tube_spline(path, minor_radius, segment_subdivisions = 2, circle_subdivisions = circle_segments)
     
 def ring_arrow(major_radius, minor_radius, circle_segments, ring_segments, head_length, head_radius):
     import numpy
-    vr, nr, tr = split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segments)
+    #Find the starting angle from the length of the arrow head
+    from math import asin, pi, degrees
+    starting_angle = 2*asin(head_length/(2*major_radius))
+    vr, nr, tr = split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segments, starting_angle*0.8, 3*pi/2)
     vh, nh, th = cone_geometry(head_radius, head_length, circle_segments)
     from chimerax.core.geometry import rotation
     # Rotate the cone
-    r = rotation((1,0,0), -90)
-    r.move(vh)
+    move_dir = numpy.array(((major_radius, 0, -head_length),), numpy.double)
+    r1 = rotation((1,0,0), -90)
+    r1.move(vh)
+    r1.move(move_dir)
+    r2 = rotation((0,0,1), degrees(starting_angle))
+    r2.move(vh)
+    r2.move(move_dir)
     # ... and move it into position
-    vh += numpy.array((major_radius, -head_length, 0), numpy.float32)
-    #vh [:,0] += major_radius
+    vh += move_dir
     
     from numpy import concatenate
     v = concatenate((vr, vh))
@@ -386,6 +437,14 @@ def ring_arrow_with_post(major_radius, minor_radius, circle_segments,
     rn = concatenate((n, pn))
     rt = concatenate((t, pt+len(v)))
     return rv, rn, rt
+
+def test_ra(session):
+    from chimerax.core.models import Model, Drawing
+    m = Model('test', session)
+    d = Drawing('ring')
+    d.vertices, d.normals, d.triangles = ring_arrow_with_post(0.5, 0.05, 4, 6, 0.3, 0.1, 0.05, 1)
+    m.add_drawing(d)
+    session.models.add([m])
 
 def post_geometry(radius, height, caps=False):
     '''

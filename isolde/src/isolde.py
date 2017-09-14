@@ -249,6 +249,8 @@ class Isolde():
         # Atoms within the model that are the primary focus of the simulation.
         # Should be whole residues
         self._selected_atoms = None
+        self._selected_rotamer = None
+        self._target_rotamer = None
         # Extra mobile shell of surrounding atoms to provide a soft buffer to
         # the simulation. Whole residues only.
         self._soft_shell_atoms = None
@@ -302,7 +304,7 @@ class Isolde():
         self._mobile_backbone_dihedrals = None
         # A single Dihedrals array containing all proper dihedrals that
         # we want to be able to draw annotations for.
-        self._all_annotated_dihedrals = dihedrals.Dihedrals(drawing=self._annotations)
+        self._all_annotated_dihedrals = dihedrals.Dihedrals(drawing=self._annotations, session=self.session)
 
 
         # Internal counter for Ramachandran update
@@ -775,7 +777,7 @@ class Isolde():
             iw._rebuild_2ry_struct_restr_chooser_combo_box.addItem(key, pair)
         
         iw._rebuild_pos_restraint_spring_constant.setProperty('value',
-            defaults.POSITION_RESTRAINT_SPRING_CONSTANT)
+            self.sim_params.position_restraint_spring_constant.value_in_unit(CHIMERAX_SPRING_UNIT))
         
         ####
         # Validate tab
@@ -1234,8 +1236,10 @@ class Isolde():
                 self._disable_position_restraints_clear_button()
 
             if len(selres) == 1:
-                self._enable_rebuild_residue_frame(selres[0])
+                r = selres[0]
+                self._enable_rebuild_residue_frame(r)
             else:
+                self._clear_rotamer()
                 self._disable_rebuild_residue_frame()
             if is_continuous_protein_chain(sel):
                 self._enable_secondary_structure_restraints_frame()
@@ -1530,15 +1534,24 @@ class Isolde():
         self._rebuild_res_omega = omega
         self.iw._rebuild_sel_res_cis_trans_flip_button.setEnabled(True)
         self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
+        rot_text = self.iw._rebuild_sel_res_rot_info
 
         try:
-            rot = self._selected_rotamer = self.rotamers[res]
+            rot = self.rotamers[res]
             if rot != self._selected_rotamer:
-                self.iw._rebuild_sel_res_rot_info.setText('')
+                self._clear_rotamer()
+            self._selected_rotamer = rot
+            t = rot.current_target_rotamer
+            if t is None:
+                rot_text.setText('')
+            else:
+                rot_text.setText('{} ({:.3f})'\
+                    .format(t.name, t.relative_abundance(res)))
             self._selected_rotamer = rot
             self._set_rotamer_buttons_enabled(True)
         except KeyError:
             # This residue has no rotamers
+            rot_text.setText('')
             self._selected_rotamer = None
             self._set_rotamer_buttons_enabled(False)
 
@@ -1706,7 +1719,7 @@ class Isolde():
         self._update_dihedral_restraints_drawing()
 
 
-        dist_k = self.distance_restraints_k
+        dist_k = self.sim_params.distance_restraint_spring_constant
         rca = self._sim_distance_restraint_dict['ca_to_ca_plus_two']
         ron = self._sim_distance_restraint_dict['o_to_n_plus_four']
         if structure_type == 'helix':
@@ -1719,7 +1732,6 @@ class Isolde():
             raise TypeError('Unknown secondary structure type: {}!'.format(structure_type))
         for r in residues:
             cad_candidates = rca[r]
-            #print('Residue number: {}, cad residue numbers: {}'.format(r.number, cad.atoms.residues.numbers))
             for cad in cad_candidates:
                 if cad is not None:
                     if -1 not in sel.indices(cad.atoms):
@@ -1850,7 +1862,13 @@ class Isolde():
 
     def _set_rotamer_target(self, *_):
         rot = self._selected_rotamer
-        target = rot.target = self._target_rotamer.angles
+        tr = self._target_rotamer
+        if tr is None:
+            print('No target set!')
+            return
+        target = rot.target = tr.angles
+        rot.spring_constant = \
+            self.sim_params.rotamer_spring_constant
         rot.restrained = True
         if self.simulation_running:
             self._apply_rotamer_target_to_sim(rot)
@@ -1867,6 +1885,7 @@ class Isolde():
     def _clear_rotamer(self, *_):
         if self._selected_rotamer is not None:
             self._selected_rotamer.cleanup()
+        self._target_rotamer = None
     
     def _release_rotamer(self, *_):
         rot = self._selected_rotamer
@@ -2483,38 +2502,34 @@ class Isolde():
             i = d.index
             pointer_pos = hh.getPosition(i, scene_coords = True)
             if self._haptic_highlight_nearest_atom[i] and not d.tugging:
-                a = self._haptic_current_nearest_atom[i]
-                if a is not None and not a.deleted:
-                    # set the previously picked atom back to standard
-                    a.draw_mode = self._haptic_current_nearest_atom_draw_mode[i]
-                    a.color = self._haptic_current_nearest_atom_color[i]
-                a = self._haptic_current_nearest_atom[i] = picking.pick_closest_to_point(
-                        self.session, pointer_pos, self._total_mobile,3.0)
-                if a is not None:
-                    self._haptic_current_nearest_atom_draw_mode[i] = a.draw_mode
-                    a.draw_mode = 1
-                    self._haptic_current_nearest_atom_color[i] = a.color
-                    a.color = [0, 255, 255, 255] # bright cyan
+                cur_a = self._haptic_current_nearest_atom[i]
+                new_a = self._haptic_current_nearest_atom[i] = picking.pick_closest_to_point(
+                        self.session, pointer_pos, self._total_mobile, 3.0,
+                        displayed_only = True, tug_hydrogens = self.tug_hydrogens)
+                if new_a != cur_a:
+                    if cur_a is not None and not cur_a.deleted:
+                        # set the previously picked atom back to standard
+                        cur_a.draw_mode = self._haptic_current_nearest_atom_draw_mode[i]
+                        cur_a.color = self._haptic_current_nearest_atom_color[i]
+                    if new_a is not None:
+                        self._haptic_current_nearest_atom_draw_mode[i] = new_a.draw_mode
+                        new_a.draw_mode = 1
+                        self._haptic_current_nearest_atom_color[i] = new_a.color
+                        new_a.color = [0, 255, 255, 255] # bright cyan
+            
 
             b = hh.getButtonStates(i)
             # Button 0 controls tugging
             if b[0]:
                 if not d.tugging:
-                    a = self._haptic_tug_atom[i] = picking.pick_closest_to_point(
-                        self.session, pointer_pos, self._total_mobile,
-                        3.0, displayed_only = True,
-                        tug_hydrogens = self.tug_hydrogens)
+                    a = self._haptic_tug_atom[i] = cur_a
                     if a is not None:
-                        #tug_index = self._haptic_tug_index[i] = si.tuggable_atoms.index(a)
-                        # Start the haptic device feedback loop
                         d.start_tugging(a)
                         target = hh.getPosition(i, scene_coords = True)
                         si.tug_atom_to(a, target)
 
                 else:
                     d.update_target()
-                    # Update the target for the tugged atom in the simulation
-                    #tug_index = self._haptic_tug_index[i]
                     a = self._haptic_tug_atom[i]
                     si.tug_atom_to(a, hh.getPosition(i, scene_coords = True))
             else:
@@ -2522,6 +2537,7 @@ class Isolde():
                     d.stop_tugging()
                     a = self._haptic_tug_atom[i]
                     si.release_tugged_atom(a)
+                    self._haptic_tug_atom[i] = None
 
 
 
@@ -2541,9 +2557,9 @@ class Isolde():
             self._isolde_events.add_event_handler('rezone maps during sim',
                                                   'completed simulation step',
                                                   self._rezone_maps)
-        self._event_handler.add_event_handler('update dihedral restraint drawings',
-                                    'graphics update',
-                                    self._all_annotated_dihedrals.update_graphics)
+        #~ self._event_handler.add_event_handler('update dihedral restraint drawings',
+                                    #~ 'graphics update',
+                                    #~ self._all_annotated_dihedrals.update_graphics)
         
         
         
@@ -2574,8 +2590,8 @@ class Isolde():
             'do_sim_steps_on_gui_update', error_on_missing = False)
         self._isolde_events.remove_event_handler(
             'rezone maps during sim', error_on_missing = False)
-        self._event_handler.remove_event_handler('update dihedral restraint drawings',
-                                               error_on_missing=False)
+        #~ self._event_handler.remove_event_handler('update dihedral restraint drawings',
+                                               #~ error_on_missing=False)
         self._update_dihedral_restraints_drawing()
             #~ self.triggers.remove_handler(self._map_rezone_handler)
             #~ self._map_rezone_handler = None
@@ -2735,15 +2751,15 @@ class Isolde():
         self._sim_paused = True
         self._status('Simulation paused')
         self.iw._sim_pause_button.setText('Resume')
-        self._event_handler.remove_event_handler('update dihedral restraint drawings')
+        #~ self._event_handler.remove_event_handler('update dihedral restraint drawings')
 
     def _sim_resume_cb(self, *_):
         self._sim_paused = False
         self._status('Simulation running')
         self.iw._sim_pause_button.setText('Pause')
-        self._event_handler.add_event_handler('update dihedral restraint drawings',
-                                    'graphics update',
-                                    self._all_annotated_dihedrals.update_graphics)
+        #~ self._event_handler.add_event_handler('update dihedral restraint drawings',
+                                    #~ 'graphics update',
+                                    #~ self._all_annotated_dihedrals.update_graphics)
         
 
 
@@ -2869,7 +2885,7 @@ class Isolde():
             if self._last_checkpoint is None:
                 raise TypeError('No saved checkpoint available!')
             self._last_checkpoint.revert()
-        self._update_dihedral_restraints_drawing()
+            self._update_dihedral_restraints_drawing()
         else:
             err_str = 'Checkpointing is currently disabled by the '\
                 +'following scripts and will be re-enabled when they '\
@@ -2895,7 +2911,7 @@ class Isolde():
 
         cr = self.cis_peptide_bond_range
         sc = self._total_sim_construct
-        k = self.peptide_bond_restraints_k
+        k = self.sim_params.peptide_bond_spring_constant
         sim = self.sim
         context = None
         if sim is not None and hasattr(sim, 'context'):
@@ -2950,7 +2966,7 @@ class Isolde():
                 d.target = v+pi
             else:
                 d.target = v-pi
-            d.spring_constant = defaults.PHI_PSI_SPRING_CONSTANT
+            d.spring_constant = self.sim_params.phi_psi_spring_constant
 
         self.apply_dihedral_restraint(phi)
         self.apply_dihedral_restraint(psi)
@@ -3235,6 +3251,13 @@ class Isolde():
         color.color(self.session, before_struct, color='byhetero', target='a')
         before_cs = clipper.CrystalStructure(self.session, before_struct, 
             os.path.join(data_dir, 'before_maps.mtz'))
+        sharp_map = before_cs.xmaps['2FOFCWT_sharp, PH2FOFCWT_sharp']
+        sd = sharp_map.mean_sd_rms()[1]
+        styleargs= self._map_style_settings[self._map_styles.solid_t40]
+        from chimerax.core.map import volumecommand
+        volumecommand.volume(self.session, [sharp_map], **styleargs)
+        sharp_map.set_parameters(surface_levels = (2.5*sd,))
+
         #~ from chimerax.clipper import crystal
         #~ crystal.set_to_default_cartoon(self.session, model=before_struct)
         from . import view

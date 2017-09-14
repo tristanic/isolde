@@ -75,10 +75,10 @@ class _Defaults:
         'HAPTIC_SPRING_CONSTANT':                2500.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
         'MOUSE_TUG_SPRING_CONSTANT':            10000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
         'MAX_TUG_FORCE':                        10000.0, # * unit.kilojoule_per_mole/unit.nanometer,
-        'DISTANCE_RESTRAINT_SPRING_CONSTANT':     100.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
-        'POSITION_RESTRAINT_SPRING_CONSTANT':     100.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
+        'DISTANCE_RESTRAINT_SPRING_CONSTANT':   10000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
+        'POSITION_RESTRAINT_SPRING_CONSTANT':   10000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
         'PEPTIDE_SPRING_CONSTANT':                500.0, # * unit.kilojoule_per_mole/unit.radians**2,
-        'PHI_PSI_SPRING_CONSTANT':               1000.0, # * unit.kilojoule_per_mole/unit.radians**2,
+        'PHI_PSI_SPRING_CONSTANT':                500.0, # * unit.kilojoule_per_mole/unit.radians**2,
         'ROTAMER_SPRING_CONSTANT':               1000.0, # * unit.kilojoule_per_mole/unit.radians**2,
         'STANDARD_MAP_K':                          50.0, # * unit.kilojoule_per_mole*unit.angstrom**3,
         'DIFFERENCE_MAP_K':                        10.0, # * unit.kilojoule_per_mole*unit.angstrom**3,
@@ -88,7 +88,7 @@ class _Defaults:
         ###
         'MAX_ALLOWABLE_FORCE':        4.0e4, # * unit.kilojoule_per_mole/unit.nanometer,
         'MAX_STABLE_FORCE':            5000, # * unit.kilojoule_per_mole/unit.nanometer,
-        'MAX_ATOM_MOVEMENT_PER_STEP':  0.01, # * unit.nanometer,
+        'MAX_ATOM_MOVEMENT_PER_STEP':  0.015, # * unit.nanometer,
         'NEARLY_ZERO':                 1e-6,
 
         ###

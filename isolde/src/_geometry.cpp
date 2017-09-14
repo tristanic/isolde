@@ -128,6 +128,50 @@ void rotations(double axis[3], double* angles, int n, double* out)
     }
 }
 
+void multiply_transforms(double tf1[3][4], double tf2[3][4], double out[3][4])
+{
+    double ll[4] = {0, 0, 0, 1};
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            out[i][j] = tf1[i][0]*tf2[0][j] + tf1[i][1]*tf2[1][j] 
+                      + tf1[i][2]*tf2[2][j] + tf1[i][3]*ll[j];
+        }
+    }
+    
+}
+
+void flip_rotate_and_shift(int n, bool* flip, double flip_op[3][4], double* rot, double* shift, double* out)
+{
+    double intermediate_result[3][4];
+    double current_rot[3][4];
+    double current_shift[3][4];
+    double current_out[3][4];
+    int tf_start;
+    for (int i = 0; i < n; ++i) {
+        tf_start = i*12;
+        for (int j = 0, count = 0; j < 3; ++j) {
+            for (int k = 0; k < 4; ++k, ++count) {
+                current_rot[j][k] = rot[tf_start + count];
+                current_shift[j][k] = shift[tf_start + count];
+            }
+        }
+        
+        if (flip[i]) {
+            multiply_transforms(current_rot, flip_op, intermediate_result);
+            multiply_transforms(current_shift, intermediate_result, current_out);
+        } else {
+            multiply_transforms(current_shift, current_rot, current_out);
+        }
+        for (int j = 0, count = 0; j < 3; ++j) {
+            for (int k = 0; k < 4; ++k, ++count) {
+                out[tf_start+count] = current_out[j][k];
+            }
+        }
+        
+        
+    }
+    
+}
 
 }
 

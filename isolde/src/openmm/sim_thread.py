@@ -24,7 +24,7 @@ SIM_MODE_MIN                = control.SIM_MODE_MIN
 SIM_MODE_EQUIL              = control.SIM_MODE_EQUIL
 SIM_MODE_UNSTABLE           = control.SIM_MODE_UNSTABLE
 
-PAUSE_SLEEP = 2e-3 # Time in seconds to sleep the main loop when the 
+PAUSE_SLEEP = 1e-2 # Time in seconds to sleep the main loop when the 
                    # simulation is paused, to avoid thrashing.
 
 class ChangeTracker:
@@ -339,7 +339,7 @@ class SimThread:
             self.init_rotamers(sim_data['rotamer map'],
                comms['rotamer targets'],
                par['rotamer_restraint_cutoff_angle'] / unit.radians,
-               par['rotamer_spring_constant'] / (unit.kilojoule_per_mole/unit.radians**2),
+               par['rotamer_spring_constant'] / (OPENMM_RADIAL_SPRING_UNIT),
                )
 
             #Distance restraints

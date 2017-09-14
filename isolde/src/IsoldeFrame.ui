@@ -166,7 +166,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>470</width>
-                  <height>1087</height>
+                  <height>1084</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0,0,0,0">
@@ -196,13 +196,13 @@
                    <property name="minimumSize">
                     <size>
                      <width>0</width>
-                     <height>50</height>
+                     <height>75</height>
                     </size>
                    </property>
                    <property name="maximumSize">
                     <size>
                      <width>16777215</width>
-                     <height>80</height>
+                     <height>75</height>
                     </size>
                    </property>
                    <property name="frameShape">
@@ -220,6 +220,24 @@
                     </property>
                     <item row="1" column="0">
                      <widget class="QGroupBox" name="_sim_basic_selection_mode_group_box">
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
+                      </property>
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>60</height>
+                       </size>
+                      </property>
+                      <property name="maximumSize">
+                       <size>
+                        <width>16777215</width>
+                        <height>70</height>
+                       </size>
+                      </property>
                       <property name="title">
                        <string>Simulation selection mode</string>
                       </property>
@@ -281,7 +299,7 @@
                    <property name="minimumSize">
                     <size>
                      <width>0</width>
-                     <height>0</height>
+                     <height>100</height>
                     </size>
                    </property>
                    <property name="maximumSize">
@@ -1269,7 +1287,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>483</width>
-                  <height>502</height>
+                  <height>500</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -2962,6 +2980,12 @@
          </item>
          <item>
           <widget class="QFrame" name="horizontalFrame">
+           <property name="frameShape">
+            <enum>QFrame::Panel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
            <layout class="QHBoxLayout" name="horizontalLayout_2">
             <property name="topMargin">
              <number>1</number>
