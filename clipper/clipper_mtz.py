@@ -144,6 +144,8 @@ class ReflectionData_Calc(ReflectionData):
             self.is_difference_map = is_difference_map
         
     def _guess_if_difference_map(self, name):
+        if name == 'F, PHIF':
+            return False
         if '2' in name:
             return False
         return True
