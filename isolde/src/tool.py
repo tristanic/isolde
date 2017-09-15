@@ -169,7 +169,12 @@ class ISOLDE_ToolUI(ToolInstance):
         
         
     def delete(self):
-        self.isolde._on_close()
+        try:
+            self.isolde._on_close()
+        except:
+            import traceback
+            import sys
+            traceback.print_stack(file=sys.__stderr__)
         super().delete()
 
     def _change_experience_level_or_sim_mode(self):

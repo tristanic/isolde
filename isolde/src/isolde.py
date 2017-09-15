@@ -2123,7 +2123,10 @@ class Isolde():
         ad.append(bd.psi)
         self.rotamers = rotamers.all_rotamers_in_selection(self.session, m.atoms)
         for r in self.rotamers.values():
-            ad.append(r.dihedrals)
+            try:
+                ad.append(r.dihedrals)
+            except:
+                raise Exception('{}: {}'.format(r.residue.name, r.dihedrals))
         # Distance restraints
         self.ca_to_ca_plus_two = br.CA_to_CA_plus_Two(self.session, m)
         self.o_to_n_plus_four = br.O_to_N_plus_Four(self.session, m)
@@ -2553,10 +2556,9 @@ class Isolde():
         if self.params.track_ramachandran_status and self._rama_plot is not None:
             self._rama_go_live()
 
-        if self.params.remask_maps_during_sim:
-            self._isolde_events.add_event_handler('rezone maps during sim',
-                                                  'completed simulation step',
-                                                  self._rezone_maps)
+        self._isolde_events.add_event_handler('rezone maps during sim',
+                                              'completed simulation step',
+                                              self._rezone_maps_if_required)
         #~ self._event_handler.add_event_handler('update dihedral restraint drawings',
                                     #~ 'graphics update',
                                     #~ self._all_annotated_dihedrals.update_graphics)
@@ -2576,6 +2578,10 @@ class Isolde():
             with a wider selection to give the minimiser more room to work.
             '''
             self.revert_to_checkpoint()
+        
+        elif outcome[0] == sim_outcomes.TIMEOUT:
+            raise outcome[1]
+        
         elif outcome[0] == sim_outcomes.FAIL_TO_START:
             '''
             TODO: Pop up a dialog box giving the details of the exception, then
@@ -2973,6 +2979,7 @@ class Isolde():
         self._update_dihedral_restraints_drawing()
 
         self._pep_flip_timeout_counter = 0
+        self._pep_flip_polish_counter = 0
         self._pep_flip_dihedrals = (phi, psi)
         self.iw._rebuild_sel_res_pep_flip_button.setEnabled(False)
         self._isolde_events.add_event_handler('pep flip timeout',
@@ -2995,16 +3002,28 @@ class Isolde():
                 diff = abs(d.value-d.target)
                 if diff > pi:
                     diff -= 2*pi
-                if abs(diff) > pi/12:
+                if abs(diff)*OPENMM_ANGLE_UNIT > self.sim_params.dihedral_restraint_cutoff_angle:
                     done = False
         if not done:
             self._pep_flip_timeout_counter += 1
             return
         else:
+            self._isolde_events.remove_event_handler('pep flip timeout')
+            self._isolde_events.add_event_handler('pep flip polish',
+                                            'completed simulation step',
+                                            self._polish_pep_flip)
+    
+    def _polish_pep_flip(self, *_):
+        if self._pep_flip_polish_counter == 0:
+            self._sim_interface.sim_mode = 'min'
+            self._pep_flip_polish_counter += 1
+        else:
+            dihedrals = self._pep_flip_dihedrals
             self.release_dihedral_restraint(dihedrals[0])
             self.release_dihedral_restraint(dihedrals[1])
-            self._isolde_events.remove_event_handler('pep flip timeout')
+            self._sim_interface.sim_mode = 'equil' 
             self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
+            self._isolde_events.remove_event_handler('pep flip polish')
             
     def apply_dihedral_restraint(self, dihedral):
         '''
@@ -3129,10 +3148,10 @@ class Isolde():
     #############################################
 
 
-    def _rezone_maps(self, *_):
+    def _rezone_maps_if_required(self, *_):
         self._map_rezone_counter += 1
         self._map_rezone_counter %= self.params.rounds_per_map_remask
-        if self._map_rezone_counter == 0:
+        if self._map_rezone_counter == 0 and self.params.remask_maps_during_sim:
             self.rezone_maps()
 
     def rezone_maps(self):

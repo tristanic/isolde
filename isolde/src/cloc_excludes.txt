@@ -1,0 +1,6 @@
+IsoldeFrame.ui
+isolde_main_win.py
+isoldewidget.py
+IsoldeWindow.ui
+resources_rc.py
+

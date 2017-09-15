@@ -150,7 +150,7 @@ class ChimeraXSimInterface:
     bi-directional communication. A new instance is created for each
     simulation, and should be discarded once the simulation is done.
     '''
-    TIMEOUT = 20 # seconds
+    TIMEOUT = 60 # seconds
 
     def __init__(self, session, isolde, time_loops = False):
         self.session = session
@@ -395,7 +395,7 @@ class ChimeraXSimInterface:
             sim_targets[indices] = dihedrals.targets
             sim_ks[indices] = dihedrals.spring_constants
         ct.register_array_changes(name, indices = indices)
-
+    
 
 
     def update_dihedral_restraint(self, dihedral):

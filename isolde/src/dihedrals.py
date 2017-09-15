@@ -264,6 +264,7 @@ class Dihedrals():
    
     def append(self, d):
         from chimerax.core.atomic import concatenate, Residues
+        self._axial_bonds = None
         if isinstance(d, Dihedral):
             if self.atoms is None:
                 self._dihedrals = [d]
