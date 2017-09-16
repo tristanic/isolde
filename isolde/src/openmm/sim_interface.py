@@ -99,9 +99,9 @@ class SimParams(Param_Mgr):
 
             'nonbonded_cutoff_method':              (defaults.OPENMM_NONBONDED_METHOD, None),
             'nonbonded_cutoff_distance':            (defaults.OPENMM_NONBONDED_CUTOFF, OPENMM_LENGTH_UNIT),
-            
+
             'vacuum_dielectric_correction':         (defaults.VACUUM_DIELECTRIC_CORR, OPENMM_DIPOLE_UNIT),
-            
+
             'use_gbsa':                             (defaults.USE_GBSA, None),
             'gbsa_cutoff_method':                   (defaults.GBSA_NONBONDED_METHOD, None),
             'gbsa_solvent_dielectric':              (defaults.GBSA_SOLVENT_DIELECTRIC, OPENMM_DIPOLE_UNIT),
@@ -224,7 +224,7 @@ class ChimeraXSimInterface:
 
     def toggle_pause(self, acknowledge = False, timeout = defaults.COMMS_TIMEOUT):
         '''
-        Toggle between pause and resume, optionally waiting for an 
+        Toggle between pause and resume, optionally waiting for an
         acknowledgement that the simulation is actually paused before
         continuing
         '''
@@ -259,29 +259,29 @@ class ChimeraXSimInterface:
             self.isolde.triggers.activate_trigger('simulation resumed', None)
         else:
             self.isolde.triggers.activate_trigger('simulation paused', None)
-    
+
     @property
     def paused(self):
         return self.comms_object['pause'].value
-    
+
     @paused.setter
     def paused(self, flag):
         comms = self.comms_object
         ct = self.change_tracker
         if flag != comms['pause'].value:
             self.toggle_pause()
-    
+
     def pause_and_acknowledge(self, timeout=defaults.COMMS_TIMEOUT):
         if self.paused:
             return
         self.toggle_pause(acknowledge=True, timeout=timeout)
-    
+
     def resume_and_acknowledge(self, timeout=defaults.COMMS_TIMEOUT):
         if not self.paused:
             return
         self.toggle_pause(acknowledge=True, timeout=timeout)
-        
-    
+
+
     def stop_sim(self, reason, err = None):
         '''
         Try to stop the simulation gracefully, or halt the simulation
@@ -395,7 +395,7 @@ class ChimeraXSimInterface:
             sim_targets[indices] = dihedrals.targets
             sim_ks[indices] = dihedrals.spring_constants
         ct.register_array_changes(name, indices = indices)
-    
+
 
 
     def update_dihedral_restraint(self, dihedral):
@@ -410,15 +410,18 @@ class ChimeraXSimInterface:
         ct.register_array_changes(name, indices = index)
 
     def update_rotamer_target(self, rotamer):
-        key = 'rotamer targets'
+        key = 'rotamers'
         comms = self.comms_object
         ct = self.change_tracker
         r_index = self.mobile_residues.index(rotamer.residue)
-        restrained_mask = ct.get_managed_arrays(key)[0]
-        target_array = comms[key][r_index]
-        with restrained_mask.get_lock(), target_array.get_lock():
+        master_dict = ct.get_managed_arrays(key)[0]
+        restrained_mask = master_dict['restrained mask']
+        target_array = master_dict['targets'][r_index]
+        k_array = master_dict['spring constants'][r_index]
+        with restrained_mask.get_lock(), target_array.get_lock(), k_array.get_lock:
             restrained_mask[r_index] = rotamer.restrained
             target_array[:] = rotamer.target
+            k_array[:] = rotamer.spring_constants
             ct.register_array_changes(key, indices = r_index)
 
     def update_position_restraint(self, position_restraint):
@@ -458,7 +461,7 @@ class ChimeraXSimInterface:
             sim_ks[indices] = ks
             ct.register_array_changes('position restraints', indices = indices)
 
-    
+
     def update_distance_restraints(self, distance_restraints):
         '''
         Update a set of distance restraints in the simulation at once.
@@ -475,7 +478,7 @@ class ChimeraXSimInterface:
             sim_targets[indices] = distance_restraints.targets
             sim_ks[indices] = distance_restraints.spring_constants
         ct.register_array_changes(name, indices = indices)
-    
+
     def update_distance_restraint(self, distance_restraint):
         '''
         Update a distance restraint in the simulation.
@@ -492,8 +495,8 @@ class ChimeraXSimInterface:
 
     def update_coords(self, atoms):
         '''
-        Push new atomic coordinates to the simulation for the given 
-        atoms. Use with care! This will trigger a minimisation to 
+        Push new atomic coordinates to the simulation for the given
+        atoms. Use with care! This will trigger a minimisation to
         deal with the almost-inevitable clashes, but minimisation can't
         work miracles.
         '''
@@ -503,7 +506,7 @@ class ChimeraXSimInterface:
         with sim_coords.get_lock():
             sim_coords[indices] = atoms.coords
         ct.register_array_changes('coords', indices=indices)
-        
+
     def _register_sim_event(self, name, owner, trigger_name, callback):
         if owner == 'isolde':
             registry = self.isolde._isolde_events
@@ -870,11 +873,13 @@ class ChimeraXSimInterface:
         all_atoms = self.all_atoms
         comms = self.comms_object
         input_rotamer_map = {}
-        input_rotamer_targets = comms['rotamer targets'] = {}
+        input_rotamer_master = comms['rotamers'] = {}
+        input_rotamer_targets = input_rotamer_master['targets'] = {}
+        input_rotamer_ks = input_rotamer_master['spring constants'] = {}
         mobile_res = self.mobile_residues
 
         restrained_mask = SharedNumpyArray(TypedMPArray(ctypes.c_bool, len(mobile_res)))
-        comms['restrained rotamers'] = restrained_mask
+        input_rotamer_master['restrained mask'] = restrained_mask
 
         for i, res in enumerate(mobile_res):
             try:
@@ -899,7 +904,7 @@ class ChimeraXSimInterface:
         change_tracker = self.change_tracker
         change_bit = change_tracker.ROTAMER_RESTRAINT
         change_tracker.add_managed_arrays(change_bit,
-            'rotamer targets', (restrained_mask, ), 'rotamer_restraint_cb')
+            'rotamers', (restrained_mask, ), 'rotamer_restraint_cb')
 
 
     def _prepare_distance_restraints(self, distance_restraints):

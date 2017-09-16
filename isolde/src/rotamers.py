@@ -22,7 +22,7 @@ DATA_DIR = os.path.join(package_directory, 'molprobity_data')
 
 '''
 If the abundance of a rotamer (for a given secondary structure) is less
-than RELATIVE_ABUNDANCE_CUTOFF, it will be removed from the list of 
+than RELATIVE_ABUNDANCE_CUTOFF, it will be removed from the list of
 valid rotamers for that secondary structure type.
 '''
 RELATIVE_ABUNDANCE_CUTOFF = 0.0001
@@ -34,16 +34,16 @@ def load_rotamers(file_prefix):
     Tries to load the rotamer data from a pickle file. If that fails, reads
     from text and creates the pickle file for next time.
     Text file format:
-    
+
     Name Overall alpha beta other χ1 χ2 χ3 χ4
-    Arginine ARG 
+    Arginine ARG
     χ1 N CA CB CG CD CG CZ HB1 HB2 HD1 HD2 HE HG1 HG2 HH11 HH12 HH21 HH22 NE NH1 NH2
     χ2 CA CB CG CD CD CZ HD1 HD2 HE HG1 HG2 HH11 HH12 HH21 HH22 NE NH1 NH2
     χ3 CB CG CD NE  CZ HD1 HD2 HE HH11 HH12 HH21 HH22 NE NH1 NH2
     χ4 CG CD NE CZ  CZ HE HH11 HH12 HH21 HH22 NH1 NH2
     ptp85° 0.002 0.00 0.01 0.002 62 180 65 85
     ...
-    Lysine LYS 
+    Lysine LYS
     χ1 N CA CB CG CD CE CG HB1 HB2 HD1 HD2 HE1 HE2 HG1 HG2 HZ1 HZ2 HZ3 NZ
     χ2 CA CB CG CD CD CE HD1 HD2 HE1 HE2 HG1 HG2 HZ1 HZ2 HZ3 NZ
     χ3 CB CG CD CE CE HD1 HD2 HE1 HE2 HZ1 HZ2 HZ3 NZ
@@ -56,18 +56,18 @@ def load_rotamers(file_prefix):
     Special
     Name Overall  χ2 χ3 χ2'
     Disulfide CYS
-    
-    
-    
+
+
+
     Lines beginning with 'Name' are used to set the number of rotamers for
     the following residues. Immediately after the line giving the name of
     each residue, there is a set of lines defining its Chi dihedrals:
         Name atom1 atom2 atom3 atom4 {list of atoms controlled by dihedral}
-    
+
     At the end of a file there is a Special section for rotamers that cannot
-    be handled by standard code (e.g. those that interact with other 
+    be handled by standard code (e.g. those that interact with other
     residues). At the moment the only special case is disulfide-bonded
-    cysteines, but this is likely to grow to include e.g. glycosylated 
+    cysteines, but this is likely to grow to include e.g. glycosylated
     residues.
     '''
     infile = None
@@ -112,7 +112,7 @@ def load_rotamers(file_prefix):
                     atoms = l[1:5]
                     moving_atoms = l[5:]
                     chi_dihedrals.append(Chi_dihedral(name, atoms, moving_atoms))
-                
+
                 rotamers[key] = Residue_rotamers(full_name, chi_dihedrals)
                 i += 1
                 continue
@@ -126,11 +126,11 @@ def load_rotamers(file_prefix):
         out = open(file_prefix+'.pickle', 'w+b')
         pickle.dump(rotamers, out)
         out.close()
-    return rotamers 
+    return rotamers
 
 def all_rotamers_in_selection(session, atoms):
     '''
-    Returns a {Residue: Rotamer} dict covering every rotameric residue 
+    Returns a {Residue: Rotamer} dict covering every rotameric residue
     in the input Atoms object.
     '''
     residues = atoms.unique_residues
@@ -142,7 +142,7 @@ def all_rotamers_in_selection(session, atoms):
             continue
     return ret
 
-            
+
 class Residue_rotamers:
     '''
     Holds all the standard rotamers with their conformation-dependent
@@ -160,13 +160,13 @@ class Residue_rotamers:
         self._by_alpha = None
         self._by_beta = None
         self._by_coil = None
-    
+
     def add_rotamer_info(self, rotamer_info):
         '''
         Add the information describing one rotamer
         '''
         self._rotamers.append(rotamer_info)
-    
+
     def _normalize_probabilities(self):
         best_overall_P = self.by_overall_P[0].overall_P
         best_alpha_P = self.by_alpha_P[0].alpha_P
@@ -177,16 +177,16 @@ class Residue_rotamers:
             r.alpha_P /= best_alpha_P
             r.beta_P /= best_beta_P
             r.coil_P /= best_coil_P
-        
-    
+
+
     @property
     def zeros(self):
-        ''' 
+        '''
         Return a numpy array of zeros, one for each chi dihedral. Used
         to initialise the target array.
         '''
         return numpy.zeros(self.num_torsions, float)
-    
+
     @property
     def rotamers(self):
         return self._rotamers
@@ -194,21 +194,21 @@ class Residue_rotamers:
     @property
     def by_overall_P(self):
         '''
-        Return the list of possible rotamers sorted in order of overall 
+        Return the list of possible rotamers sorted in order of overall
         probability (highest probability first)
         '''
         if self._by_overall is None:
             temp = [r for r in self._rotamers if r.overall_P > RELATIVE_ABUNDANCE_CUTOFF]
             self._by_overall = sorted(
                 temp, key = lambda r: r.overall_P, reverse = True)
-                
+
         return self._by_overall
-    
+
     @property
     def by_alpha_P(self):
         '''
-        Return the list of possible rotamers sorted in order of 
-        probability of appearing in an alpha helix (highest probability 
+        Return the list of possible rotamers sorted in order of
+        probability of appearing in an alpha helix (highest probability
         first)
         '''
         if self._by_alpha is None:
@@ -220,8 +220,8 @@ class Residue_rotamers:
     @property
     def by_beta_P(self):
         '''
-        Return the list of possible rotamers sorted in order of 
-        probability of appearing in a beta strand (highest probability 
+        Return the list of possible rotamers sorted in order of
+        probability of appearing in a beta strand (highest probability
         first)
         '''
         if self._by_beta is None:
@@ -229,12 +229,12 @@ class Residue_rotamers:
             self._by_beta = sorted(
                 temp, key = lambda r: r.beta_P, reverse = True)
         return self._by_beta
-    
+
     @property
     def by_coil_P(self):
         '''
-        Return the list of possible rotamers sorted in order of 
-        probability of appearing in a random coil (highest probability 
+        Return the list of possible rotamers sorted in order of
+        probability of appearing in a random coil (highest probability
         first)
         '''
         if self._by_coil is None:
@@ -242,7 +242,7 @@ class Residue_rotamers:
             self._by_coil = sorted(
                 temp, key = lambda r: r.coil_P, reverse = True)
         return self._by_coil
-    
+
     def by_ss_type(self, ss_type):
         if ss_type == Residue.SS_COIL:
             return self.by_coil_P
@@ -259,12 +259,12 @@ class Chi_dihedral:
         self.name = name
         self.atom_names = dihedral_atom_names
         self.moving_names = moving_atom_names
-    
+
 class Rotamer_info:
     '''
     Holds the information necessary to describe one rotamer.
     '''
-    def __init__(self, name, 
+    def __init__(self, name,
                     overall_P, alpha_P, beta_P, coil_P, chi_angles):
         '''
         Define a rotamer.
@@ -272,7 +272,7 @@ class Rotamer_info:
             name:
                 The standard rotamer name (e.g. ptp85°)
             overall_P:
-                The probability of finding this rotamer regardless of 
+                The probability of finding this rotamer regardless of
                 backbone conformation
             alpha_P:
                 The probability of finding this rotamer in an alpha helix
@@ -289,15 +289,15 @@ class Rotamer_info:
         self.beta_P = beta_P
         self.coil_P = coil_P
         self._angles = numpy.array([radians(a) for a in chi_angles])
-    
+
     @property
     def angles(self):
         return self._angles
-    
+
     @property
     def angles_deg(self):
         return [degrees(a) for a in self._angles]
-    
+
     def relative_abundance(self, residue):
         ss_type = residue.ss_type
         if ss_type == Residue.SS_COIL:
@@ -305,15 +305,15 @@ class Rotamer_info:
         if ss_type == Residue.SS_HELIX:
             return self.alpha_P
         return self.beta_P
-        
-        
+
+
 class Rotamer:
     '''
-    Describes an actual rotamer found in a protein, and provides the 
+    Describes an actual rotamer found in a protein, and provides the
     methods necessary to query/change it.
     '''
-    
-    def __init__(self, session, residue, 
+
+    def __init__(self, session, residue,
                 spring_constant = defaults.ROTAMER_SPRING_CONSTANT ):
         '''
         Just create the rotamer object. No querying yet.
@@ -336,85 +336,85 @@ class Rotamer:
         self._cycle_handler = None
         self._current_rotamer_index = -1
         self._current_rotamer = None
-        
+
         # Is this rotamer currently being restrained?
         self._restrained = False
         # Current target conformation (if self.restrained == True)
         self._target = _rotamer_info[self.resname].zeros
-        
+
         try:
             self._atoms_to_move, self.dihedrals = self.find_atoms_to_move(self.residue)
         except:
             self._atoms_to_move = None
             self.dihedrals = None
-        self._spring_constant = spring_constant
-    
+        self._default_spring_constant = spring_constant
+
     @property
-    def spring_constant(self):
-        return self._spring_constant
-    
-    @spring_constant.setter
-    def spring_constant(self, k):
+    def spring_constants(self):
+        return self.dihedrals.spring_constants
+
+    @spring_constants.setter
+    def spring_constants(self, k):
         if isinstance(k, Quantity):
             k = k.value_in_unit(defaults.OPENMM_RADIAL_SPRING_UNIT)
-        self._spring_constant = k
+        #self._spring_constant = k
         self.dihedrals.spring_constants = k
 
-    
+
     @property
     def restrained(self):
         return self._restrained
-    
+
     @restrained.setter
     def restrained(self, flag):
         curr = self._restrained
         if flag == curr:
             return
         if flag:
-            self.dihedrals.spring_constants = self.spring_constant
+            self.dihedrals.spring_constants = self._default_spring_constant
         else:
             self.dihedrals.spring_constants = 0
             self._current_rotamer = None
         self._restrained = flag
-    
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
         self.cleanup()
-    
+
     def cleanup(self):
         if self._cycle_handler is not None:
             self.session.triggers.remove_handler(self._cycle1_handler)
         self.remove_preview()
         if not self.restrained:
             self._current_rotamer = None
-    
+
     @property
     def current_target_rotamer(self):
         return self._current_rotamer
-    
+
     @property
     def target(self):
         return self._target
-    
+
     @target.setter
     def target(self, target):
         self._target = target
         self.dihedrals.targets = target
-    
+
     @property
     def chi_angles(self):
         return self.dihedrals.values
-    
+
     @property
     def chi_angles_deg(self):
         return numpy.degrees(self.dihedrals.values)
-    
+
     @property
     def available_rotamers(self):
         return _rotamer_info[self.resname].by_ss_type(self.residue.ss_type)
-    
+
     def find_atoms_to_move(self, residue):
         ratoms = residue.atoms
         anames = ratoms.names
@@ -436,29 +436,29 @@ class Rotamer:
                     warnings.warn(warn_string)
                     return
             dihedrals.append(Dihedral(ratoms[numpy.array(indices)], residue))
-            
+
             atoms_to_move.append(ratoms[numpy.in1d(anames, c.moving_names)])
-        
+
         return atoms_to_move, Dihedrals(dihedrals)
-        
+
     def next_rotamer(self, preview = False):
         rot = self._iter_rotamer(1)
         self.change_rotamer(rot, preview = preview)
         return rot
-    
+
     def previous_rotamer(self, preview = False):
         rot = self._iter_rotamer(-1)
         self.change_rotamer(rot, preview = preview)
         return rot
-    
-    
+
+
     def _iter_rotamer(self, incr):
         self._current_rotamer_index += incr
         self._current_rotamer_index %= len(self.available_rotamers)
         rot = self.available_rotamers[self._current_rotamer_index]
         return rot
-        
-    
+
+
     def change_rotamer(self, target, preview = False):
         '''
         Move the atoms in this residue to match the rotamer defined by
@@ -469,7 +469,7 @@ class Rotamer:
         '''
         target_angles = target.angles_deg
         self._current_rotamer = target
-        
+
         if preview:
             if self._preview_model is None or self._preview_model.deleted:
                 from chimerax.core.commands.split import molecule_from_atoms
@@ -480,7 +480,7 @@ class Rotamer:
                 pres = p.residues[0]
                 self._preview_atoms_to_move, self._preview_dihedrals = \
                     self.find_atoms_to_move(pres)
-                
+
             atoms_to_move = self._preview_atoms_to_move
             dihedrals = self._preview_dihedrals
             current_angles = numpy.degrees(dihedrals.values)
@@ -488,16 +488,16 @@ class Rotamer:
             atoms_to_move = self._atoms_to_move
             dihedrals = self.dihedrals
             current_angles = self.chi_angles_deg
-        
+
         difference = target_angles - current_angles
-        
+
         for angle, chi, moveatoms in zip(difference, dihedrals, atoms_to_move):
             axis = chi.coords[2] - chi.coords[1]
             # center = chi.coords[2]
             center = matrix.project_to_axis(chi.coords[3], axis, chi.coords[1])
             tf = rotation(axis, angle, center)
             moveatoms.coords = tf.moved(moveatoms.coords)
-    
+
     def cycle(self, frames_per_rotamer = 50):
         if self._cycle_handler is not None:
             return
@@ -507,7 +507,7 @@ class Rotamer:
         self._current_rotamer = self.available_rotamers[0]
         self.change_rotamer(self._current_rotamer, preview = True)
         self._cycle_handler = self.session.triggers.add_handler('new frame', self._cycle_iter)
-    
+
     def _cycle_iter(self, *_):
         self._counter += 1
         self._counter %= self._frames_per_rotamer
@@ -520,20 +520,19 @@ class Rotamer:
             else:
                 self.session.triggers.remove_handler(self._cycle_handler)
                 self._cycle_handler = None
-    
+
     def remove_preview(self):
         if self._preview_model is not None:
             self.session.models.remove([self._preview_model])
             self._preview_model = None
-    
+
     def commit_current_preview(self):
         if self._preview_model is None:
             raise RuntimeError('No preview exists!')
         self.residue.atoms.coords = self._preview_model.atoms.coords
         self.remove_preview()
-    
+
     def current_dihedral_angles(self):
         return self._current_rotamer.angles
 
 _rotamer_info = load_rotamers(_rot_file_prefix)
-        

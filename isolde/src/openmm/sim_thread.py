@@ -24,7 +24,7 @@ SIM_MODE_MIN                = control.SIM_MODE_MIN
 SIM_MODE_EQUIL              = control.SIM_MODE_EQUIL
 SIM_MODE_UNSTABLE           = control.SIM_MODE_UNSTABLE
 
-PAUSE_SLEEP = 1e-2 # Time in seconds to sleep the main loop when the 
+PAUSE_SLEEP = 1e-2 # Time in seconds to sleep the main loop when the
                    # simulation is paused, to avoid thrashing.
 
 class ChangeTracker:
@@ -139,13 +139,13 @@ class ChangeTracker:
             cl.append(ma)
 
     def get_managed_arrays(self, key):
-        ''' 
+        '''
         Return the shared arrays associated with the given key.
         '''
         l = self._managed_arrays[key]
         return l[3]
-    
-    
+
+
     def register_array_changes(self, key, change_mask = None, indices = None):
         '''
         Let the change tracker know that an array has changed.
@@ -216,7 +216,7 @@ class SimComms:
 
     def __setitem__(self, key, obj):
         self._comms_obj[key] = obj
-    
+
 
     def thread_safe_set_value(self, key, val):
         '''Set the value of a mp.Value object in a thread-safe way.'''
@@ -232,7 +232,7 @@ class SimComms:
                 target[indices_or_mask] = values
             else:
                 target[:] = values
-    
+
 #~ def _init_sim_thread(sim_params, sim_data, sim_comms, change_tracker):
     #~ global sim_thread
     #~ sim_thread = SimThread(sim_params, sim_data, sim_comms, change_tracker)
@@ -302,8 +302,8 @@ class SimThread:
         self.sim_mode = SIM_MODE_MIN
         self.last_max_force = par['max_allowable_force']
         self.pause = False
-        
-        
+
+
         # Counters for potential timeout conditions
         self.unstable_counter = 0
         self.MAX_UNSTABLE_ROUNDS = 20
@@ -337,9 +337,9 @@ class SimThread:
             #Rotamers
             self.rotamer_force_map = force_maps['rotamers']
             self.init_rotamers(sim_data['rotamer map'],
-               comms['rotamer targets'],
+               comms['rotamers']['targets'],
+               comms['rotamers']['spring constants'],
                par['rotamer_restraint_cutoff_angle'] / unit.radians,
-               par['rotamer_spring_constant'] / (OPENMM_RADIAL_SPRING_UNIT),
                )
 
             #Distance restraints
@@ -385,9 +385,9 @@ class SimThread:
 
             system = sh.create_openmm_system(top, system_params)
             self.system = system
-            
+
             if par['use_gbsa']:
-            
+
                 gbsa_params = {
                     'solventDielectric':    par['gbsa_solvent_dielectric'],
                     'soluteDielectric':     par['gbsa_solute_dielectric'],
@@ -398,7 +398,7 @@ class SimThread:
                     }
 
                 sh.initialize_implicit_solvent(gbsa_params)
-            
+
             else:
                 sh.set_vacuum_permittivity(par['vacuum_dielectric_correction'])
 
@@ -454,25 +454,25 @@ class SimThread:
         ct = self.change_tracker
         status_q = comms['status']
         sim_mode = self.sim_mode
-        
+
         # Update parameters for all arrays that have changed
         ct.run_all_necessary_callbacks(self, changes)
         sh.update_restraints_in_context_if_needed()
-        
+
         # Update coordinates from the last round AFTER checking to see
         # if the master thread has changed any.
         if not self.pause:
             comms.thread_safe_set_array_values('coords', self.current_coords.value_in_unit(CHIMERAX_LENGTH_UNIT))
             ct.register_change(ct.COORDS_READY)
 
-        
+
         if changes & ct.PAUSE_TOGGLE:
             p = self.pause = comms['pause'].value
             if p:
                 status_q.put('Paused')
             else:
                 status_q.put('Resumed')
-                
+
         if changes & ct.MODE:
             mode = comms['sim mode']
             sim_mode = self.sim_mode = mode.value
@@ -589,8 +589,10 @@ class SimThread:
     def rotamer_restraint_cb(self, change_mask, key, arrays):
         sh = self.sim_handler
         comms = self.comms
-        rotamer_dict = comms[key]
-        k = self.sim_params['rotamer_spring_constant'].value_in_unit(OPENMM_RADIAL_SPRING_UNIT)
+        master_dict = comms[key]
+        target_dict = master_dict['targets']
+        k_dict = master_dict['spring constants']
+        #k = self.sim_params['rotamer_spring_constant'].value_in_unit(OPENMM_RADIAL_SPRING_UNIT)
         restrained_mask = arrays[0]
         with change_mask.get_lock(), restrained_mask.get_lock():
             indices = numpy.where(change_mask)[0]
@@ -602,9 +604,10 @@ class SimThread:
                 this_k = k
             else:
                 this_k = 0.0
-            targets = rotamer_dict[i]
-            with targets.get_lock():
-                sh.update_dihedral_restraints(force_maps[i], targets, this_k)
+            targets = target_dict[i]
+            ks = k_dict[i]
+            with targets.get_lock(), ks.get_lock():
+                sh.update_dihedral_restraints(force_maps[i], targets, ks)
 
     def distance_restraint_cb(self, change_mask, key, arrays):
         sh = self.sim_handler
@@ -674,23 +677,23 @@ class SimThread:
         sh = self.sim_handler
         force_map = self.rotamer_force_map
         comms = self.comms
-        restrained_rotamers = comms['restrained rotamers']
-        with restrained_rotamers.get_lock():
+        master_dict = comms['rotamers']
+        target_dict = master_dict['targets']
+        k_dict = master_dict['spring constants']
+        restrained_mask = master_dict['restrained mask']
+        with restrained_mask.get_lock():
             for index, dihedrals in in_map.items():
                 if dihedrals is None:
                     continue
                 force_indices = force_map[index] = []
                 for d_indices in dihedrals:
                     force_indices.append(sh.initialize_dihedral_restraint(d_indices, cutoff))
-                d_targets = targets[index]
-                with d_targets.get_lock():
-                    if restrained_rotamers[index]:
-                        this_k = k
-                    else:
-                        this_k = 0.0
+                d_targets = target_dict[index]
+                d_ks = k_dict[index]
+                with d_targets.get_lock(), d_ks.get_lock():
                     if d_targets is not None:
-                        for (fi, di, t) in zip(force_indices, dihedrals, d_targets):
-                            sh.update_dihedral_restraint(fi, target= t, k=this_k)
+                        for (fi, di, t, k) in zip(force_indices, dihedrals, d_targets, d_ks):
+                            sh.update_dihedral_restraint(fi, target= t, k=k)
 
     def init_distance_restraints(self, keys):
         comms = self.comms
