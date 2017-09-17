@@ -139,7 +139,8 @@ def start_pool(sim_params, sim_data, _comms_object, _change_tracker):
         from chimerax import app_bin_dir
     except:
         return
-    thread_pool = mp.Pool(processes=1, initializer=sim_thread._init_sim_thread,
+    from multiprocessing.pool import ThreadPool
+    thread_pool = ThreadPool(processes=1, initializer=sim_thread._init_sim_thread,
         initargs=(sim_params, sim_data, _comms_object, _change_tracker))
     return thread_pool
 
@@ -414,11 +415,11 @@ class ChimeraXSimInterface:
         comms = self.comms_object
         ct = self.change_tracker
         r_index = self.mobile_residues.index(rotamer.residue)
-        master_dict = ct.get_managed_arrays(key)[0]
-        restrained_mask = master_dict['restrained mask']
+        master_dict = comms[key]
+        restrained_mask = ct.get_managed_arrays(key)[0]
         target_array = master_dict['targets'][r_index]
         k_array = master_dict['spring constants'][r_index]
-        with restrained_mask.get_lock(), target_array.get_lock(), k_array.get_lock:
+        with restrained_mask.get_lock(), target_array.get_lock(), k_array.get_lock():
             restrained_mask[r_index] = rotamer.restrained
             target_array[:] = rotamer.target
             k_array[:] = rotamer.spring_constants
@@ -898,6 +899,11 @@ class ChimeraXSimInterface:
             target_shared_arr = SharedNumpyArray(target_mp_arr)
             target_shared_arr[:] = rot_target
             input_rotamer_targets[i] = target_shared_arr
+            rot_ks = rot.spring_constants
+            k_mp_arr = TypedMPArray(FLOAT_TYPE, rot_ks.size)
+            k_shared_arr = SharedNumpyArray(k_mp_arr)
+            k_shared_arr[:] = rot_ks
+            input_rotamer_ks[i] = k_shared_arr
             restrained_mask[i] = rot.restrained
 
         self.sim_data['rotamer map'] = input_rotamer_map

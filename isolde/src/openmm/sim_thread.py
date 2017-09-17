@@ -600,10 +600,6 @@ class SimThread:
             restrained = restrained_mask[indices].copy()
         force_maps = self.rotamer_force_map
         for i, r in zip(indices, restrained):
-            if r:
-                this_k = k
-            else:
-                this_k = 0.0
             targets = target_dict[i]
             ks = k_dict[i]
             with targets.get_lock(), ks.get_lock():
@@ -673,23 +669,23 @@ class SimThread:
                 force_map[i] = sh.initialize_dihedral_restraint(ai, target=target, k=k)
         self.dihedral_force_maps[name] = force_map
 
-    def init_rotamers(self, in_map, targets, cutoff, k):
+
+
+    def init_rotamers(self, in_map, targets, ks, cutoff):
         sh = self.sim_handler
         force_map = self.rotamer_force_map
         comms = self.comms
         master_dict = comms['rotamers']
-        target_dict = master_dict['targets']
-        k_dict = master_dict['spring constants']
         restrained_mask = master_dict['restrained mask']
         with restrained_mask.get_lock():
             for index, dihedrals in in_map.items():
                 if dihedrals is None:
                     continue
                 force_indices = force_map[index] = []
+                d_targets = targets[index]
+                d_ks = ks[index]
                 for d_indices in dihedrals:
                     force_indices.append(sh.initialize_dihedral_restraint(d_indices, cutoff))
-                d_targets = target_dict[index]
-                d_ks = k_dict[index]
                 with d_targets.get_lock(), d_ks.get_lock():
                     if d_targets is not None:
                         for (fi, di, t, k) in zip(force_indices, dihedrals, d_targets, d_ks):

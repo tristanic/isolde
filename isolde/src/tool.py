@@ -128,7 +128,7 @@ class ISOLDE_ToolUI(ToolInstance):
         
         # Any frames/widgets that should be disabled at the start
         self._disabled_at_start = [
-            iw._sim_basic_xtal_map_settings_frame,
+            #iw._sim_basic_xtal_map_settings_frame,
             iw._sim_basic_xtal_settings_map_name,
             iw._rebuild_sel_res_pep_flip_button,
             iw._rebuild_sel_res_cis_trans_flip_button,
