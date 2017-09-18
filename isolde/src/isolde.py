@@ -203,9 +203,9 @@ class Isolde():
         self._isolde_events = EventHandler(self)
         self._logging = False
         self._log = Logger('isolde.log')
-        
+
         self._sim_interface = None
-        
+
         self._can_checkpoint = True
         self.checkpoint_disabled_reasons = {}
         self._last_checkpoint = None
@@ -562,23 +562,23 @@ class Isolde():
 
         self.start_gui(gui)
 
-    
+
     @property
     def can_checkpoint(self):
         '''Is checkpoint save/revert currently allowed?'''
         return self._can_checkpoint
-    
+
     @can_checkpoint.setter
     def can_checkpoint(self, flag):
         self._can_checkpoint = flag
-    
-    
+
+
     @property
     def sim_interface(self):
         if self._sim_interface is None:
             raise TypeError('No simulation is currently running!')
         return self._sim_interface
-    
+
     @property
     def simulation_running(self):
         return self._sim_interface is not None
@@ -616,11 +616,11 @@ class Isolde():
 
         self.gui = gui
         self.iw = gui.iw
-        
+
         # FIXME Remove 'Custom restraints' tab from the gui while I decide
         # whether to keep it
         self.iw._sim_tab_widget.removeTab(1)
-        
+
         self.gui_mode = True
 
          # Register ISOLDE-specific mouse modes
@@ -667,7 +667,7 @@ class Isolde():
 
 
 
-    
+
     def _populate_menus_and_update_params(self):
         iw = self.iw
         # Clear experience mode placeholders from QT Designer and repopulate
@@ -683,7 +683,7 @@ class Isolde():
             text = self._human_readable_sim_modes[mode]
             cb.addItem(text, mode)
 
-        iw._sim_temp_spin_box.setProperty('value', 
+        iw._sim_temp_spin_box.setProperty('value',
             defaults.TEMPERATURE)
 
         # Populate force field combo box with available forcefields
@@ -697,12 +697,12 @@ class Isolde():
         cb.addItems(self._available_ffs.explicit_water_descriptions)
 
         # Populate OpenMM platform combo box with available platforms
-        # The current threaded implementation only works for the CPU 
+        # The current threaded implementation only works for the CPU
         # platform on Mac systems.
         cb = iw._sim_platform_combo_box
         cb.clear()
 
-        if self._platform == 'linux':
+        if True: #self._platform == 'linux':
             platform_names = sim_interface.get_available_platforms()
             cb.addItems(platform_names)
 
@@ -714,12 +714,12 @@ class Isolde():
             elif 'CPU' in platform_names:
                 cb.setCurrentIndex(platform_names.index('CPU'))
 
-       
+
         else:
             cb.addItem('Reference')
             cb.addItem('CPU')
             cb.setCurrentIndex(1)
-            
+
         iw._sim_basic_mobile_b_and_a_spinbox.setProperty('value',
             defaults.SELECTION_SEQUENCE_PADDING)
         iw._sim_basic_mobile_sel_within_spinbox.setProperty('value',
@@ -732,8 +732,8 @@ class Isolde():
         cb.clear()
         cb.addItem('Add map')
         cb.setCurrentText('Add map')
-        
-        
+
+
         # Map display style options
         cb = iw._em_map_style_combo_box
         cb.clear()
@@ -753,14 +753,14 @@ class Isolde():
         cb.addItem('sigma')
         cb.addItem('map units')
         cb.setCurrentIndex(0)
-        
+
         iw._sim_basic_xtal_map_cutoff_spin_box.setProperty('value',
             defaults.STANDARD_MAP_MASK_RADIUS)
         iw._sim_basic_xtal_map_weight_spin_box.setProperty('value',
             defaults.STANDARD_MAP_K)
         iw._em_map_cutoff_spin_box.setProperty('value',
             defaults.STANDARD_MAP_MASK_RADIUS)
-        iw._em_map_coupling_spin_box.setProperty('value', 
+        iw._em_map_coupling_spin_box.setProperty('value',
             defaults.STANDARD_MAP_K)
         ####
         # Rebuild tab
@@ -775,10 +775,10 @@ class Isolde():
         iw._rebuild_2ry_struct_restr_chooser_combo_box.clear()
         for key, pair in phipsi.items():
             iw._rebuild_2ry_struct_restr_chooser_combo_box.addItem(key, pair)
-        
+
         iw._rebuild_pos_restraint_spring_constant.setProperty('value',
             self.sim_params.position_restraint_spring_constant.value_in_unit(CHIMERAX_SPRING_UNIT))
-        
+
         ####
         # Validate tab
         ####
@@ -834,7 +834,7 @@ class Isolde():
         self._change_sim_selection_mode()
 
         iw._demo_load_button.clicked.connect(self.load_demo_data)
-        
+
         ####
         # Simulation global parameters (can only be set before running)
         ####
@@ -1128,7 +1128,7 @@ class Isolde():
                 hh.stopHaptics()
                 self._use_haptics = False
                 return
-                
+
             d = self._haptic_devices = [None] * n
             self._haptic_tug_atom = [None] * n
             self._haptic_tug_index = [-1] * n
@@ -1805,8 +1805,8 @@ class Isolde():
 
     def release_xyz_restraints_on_selected_atoms(self, *_, sel = None):
         '''
-        Release current position restraints on a set of atoms. If a 
-        simulation is currently running, it will be automatically 
+        Release current position restraints on a set of atoms. If a
+        simulation is currently running, it will be automatically
         notified of the change.
         '''
         if sel is None:
@@ -1819,8 +1819,8 @@ class Isolde():
 
     def apply_xyz_restraints_to_selected_atoms(self, *_, sel = None):
         '''
-        After setting targets and/or spring constants for a set of 
-        position restraints, run this to apply them to the currently 
+        After setting targets and/or spring constants for a set of
+        position restraints, run this to apply them to the currently
         running simulation. Note: If no simulation is running this step
         is unnecessary. The restraints will be automatically applied to
         all future simulations.
@@ -1832,7 +1832,7 @@ class Isolde():
             sel = selected_atoms(self.session)
         restraints = self.position_restraints.in_selection(sel)
         self._sim_interface.update_position_restraints(restraints)
-         
+
     def _set_rotamer_buttons_enabled(self, switch):
         self.iw._rebuild_sel_res_last_rotamer_button.setEnabled(switch)
         self.iw._rebuild_sel_res_next_rotamer_button.setEnabled(switch)
@@ -1874,7 +1874,7 @@ class Isolde():
             self._apply_rotamer_target_to_sim(rot)
         self._clear_rotamer()
         self._update_dihedral_restraints_drawing()
-    
+
     def _apply_rotamer_target_to_sim(self, rotamer):
         if not self.simulation_running:
             print('No simulation running!')
@@ -1886,14 +1886,14 @@ class Isolde():
         if self._selected_rotamer is not None:
             self._selected_rotamer.cleanup()
         self._target_rotamer = None
-    
+
     def _release_rotamer(self, *_):
         rot = self._selected_rotamer
         rot.restrained = False
         if self.simulation_running:
             self._apply_rotamer_target_to_sim(rot)
         self._update_dihedral_restraints_drawing()
-    
+
     def release_rotamers(self, residues):
         for r in residues:
             self.release_rotamer(r)
@@ -2162,7 +2162,7 @@ class Isolde():
 
     def _change_b_and_a_padding(self, *_):
         self.params.num_selection_padding_residues = self.iw._sim_basic_mobile_b_and_a_spinbox.value()
-    
+
     def _change_soft_shell_cutoff_from_sel_menu(self, *_):
         iw = self.iw
         val = iw._sim_basic_mobile_sel_within_spinbox.value()
@@ -2193,7 +2193,7 @@ class Isolde():
         if cb2.checkState() != mobile:
             cb2.setChecked(mobile)
 
-    
+
     def _change_sim_platform(self, *_):
         self.sim_platform = self.iw._sim_platform_combo_box.currentText()
 
@@ -2431,7 +2431,7 @@ class Isolde():
             self._surroundings_hidden = True
 
         sel_model.residues.ribbon_displays = False
-        
+
         hsb = hard_shell.intra_bonds
         hsb.radii = 0.1
         hard_shell.radii = 0.1
@@ -2455,8 +2455,8 @@ class Isolde():
 
         from . import dihedrals
         all_bd = self.backbone_dihedrals
-        sim_phi, sim_psi, sim_omega = all_bd.by_residues(total_mobile.unique_residues)        
-        
+        sim_phi, sim_psi, sim_omega = all_bd.by_residues(total_mobile.unique_residues)
+
         bd = self._mobile_backbone_dihedrals \
             = dihedrals.Backbone_Dihedrals(self.session, phi = sim_phi, psi = sim_psi, omega = sim_omega)
 
@@ -2493,7 +2493,7 @@ class Isolde():
         self._event_handler.add_event_handler('sim haptic update',
                                               'new frame',
                                               self._update_haptics)
-    
+
     def _stop_sim_haptics(self, *_):
         self._event_handler.remove_event_handler('sim haptic update')
 
@@ -2519,7 +2519,7 @@ class Isolde():
                         new_a.draw_mode = 1
                         self._haptic_current_nearest_atom_color[i] = new_a.color
                         new_a.color = [0, 255, 255, 255] # bright cyan
-            
+
 
             b = hh.getButtonStates(i)
             # Button 0 controls tugging
@@ -2562,10 +2562,10 @@ class Isolde():
         #~ self._event_handler.add_event_handler('update dihedral restraint drawings',
                                     #~ 'graphics update',
                                     #~ self._all_annotated_dihedrals.update_graphics)
-        
-        
-        
-        
+
+
+
+
     def _sim_end_cb(self, name, outcome):
         pass
         if outcome[0] == sim_outcomes.UNSTABLE:
@@ -2578,10 +2578,10 @@ class Isolde():
             with a wider selection to give the minimiser more room to work.
             '''
             self.revert_to_checkpoint()
-        
+
         elif outcome[0] == sim_outcomes.TIMEOUT:
             raise outcome[1]
-        
+
         elif outcome[0] == sim_outcomes.FAIL_TO_START:
             '''
             TODO: Pop up a dialog box giving the details of the exception, then
@@ -2623,7 +2623,7 @@ class Isolde():
         sc.radii = self._original_atom_radii
         sb.radii = self._original_bond_radii
         self._total_sim_construct = None
- 
+
         self._surroundings = None
         if self.params.track_ramachandran_status:
             # Update one last time
@@ -2634,7 +2634,7 @@ class Isolde():
         self.iw._rebuild_sel_residue_frame.setDisabled(True)
         self.omega_validator.load_structure(self.selected_model, self.backbone_dihedrals.omega)
         self.update_omega_check(force=True)
-        
+
         self._sim_is_unstable = False
         if self.sim_mode == self._sim_modes['xtal']:
             cs = self._selected_model.parent
@@ -2653,14 +2653,14 @@ class Isolde():
         selection by the desired padding up and down the chain (stopping at
         chain breaks and ends).
         '''
-        
+
         mode = self._sim_selection_mode
         modes = self._sim_selection_modes
         sm = self._selected_model
         all_atoms = sm.atoms
         if mode == modes.chain or mode == modes.whole_model:
             # Then everything is easy. The selection is already defined
-            # FIXME: Amend this pipeline to allow better command-line 
+            # FIXME: Amend this pipeline to allow better command-line
             # control
             return self._selected_atoms
         elif mode == modes.from_picked_atoms:
@@ -2695,7 +2695,7 @@ class Isolde():
                     continue
                 sel_frags.append(frag)
                 sel_frag_res_indices.append(all_res.indices(frag))
-            
+
             for frag, frag_indices in zip(sel_frags, sel_frag_res_indices):
                 frag_nres = len(frag_indices)
                 sel_mask = numpy.isin(frag_indices, sel_res_indices, assume_unique=True)
@@ -2766,26 +2766,26 @@ class Isolde():
         #~ self._event_handler.add_event_handler('update dihedral restraint drawings',
                                     #~ 'graphics update',
                                     #~ self._all_annotated_dihedrals.update_graphics)
-        
+
 
 
 
     def _discard_sim(self, *_):
         revert_to = self.iw._sim_discard_revert_combo_box.currentText()
         self.discard_sim(revert_to)
-    
+
     def discard_sim(self, revert_to='checkpoint'):
         '''
-        Stop the simulation and revert to either the starting state or 
+        Stop the simulation and revert to either the starting state or
         the last saved checkpoint.
         Args:
             revert_to (default: 'checkpoint'):
                 Either 'checkpoint' or 'start'
         '''
-        
+
         if not self.simulation_running:
             print('No simulation running!')
-            return        
+            return
         self._release_register_shifter()
         if revert_to == 'start':
             msg = 'All changes since you started this simulation will be '\
@@ -2801,7 +2801,7 @@ class Isolde():
         else:
             raise TypeError('Unrecognised option! Argument should be '\
                 +'either "checkpoint" or "start".')
-        
+
 
     def commit_sim(self):
         print("""This function should stop the simulation and write the
@@ -2825,17 +2825,17 @@ class Isolde():
             self._sim_interface.sim_mode = 'equil'
         self.simulation_type = 'equil'
         self._update_sim_control_button_states()
-    
+
     def tug_atom_to(self, atom, target, spring_constant = None):
         '''
-        Tug an atom towards the given target coordinates in the context 
-        of a running simulation. If no spring constant is given, a 
-        default value will be used. NOTE: the tugging effect will 
-        remain in place until updated with a new call to tug_atom_to() 
+        Tug an atom towards the given target coordinates in the context
+        of a running simulation. If no spring constant is given, a
+        default value will be used. NOTE: the tugging effect will
+        remain in place until updated with a new call to tug_atom_to()
         or removed with stop_tugging(atom).
         Args:
             atom:
-                The atom to be tugged. Must be a heavy atom that is 
+                The atom to be tugged. Must be a heavy atom that is
                 mobile in the current simulation
             target:
                 An (x,y,z) Numpy array (in Angstroms)
@@ -2845,15 +2845,15 @@ class Isolde():
         if not self.simulation_running:
             return
         self._sim_interface.tug_atom_to(atom, target, spring_constant)
-    
+
     def stop_tugging(self, atom):
         if not self.simulation_running:
             return
         self._sim_interface.release_tugged_atom(atom)
-    
+
     def add_checkpoint_block(self, obj, reason):
         '''
-        Some processes are incompatible with checkpointing. We need to 
+        Some processes are incompatible with checkpointing. We need to
         know when these are running and disable checkpointing until
         they're done.
         '''
@@ -2861,7 +2861,7 @@ class Isolde():
         self.checkpoint_disabled_reasons[obj] = reason
         self.iw._sim_save_checkpoint_button.setEnabled(False)
         self.iw._sim_revert_to_checkpoint_button.setEnabled(False)
-    
+
     def remove_checkpoint_block(self, obj):
         '''
         Release a block on checkpointing. When all blocks are removed,
@@ -2873,9 +2873,9 @@ class Isolde():
             self.can_checkpoint = True
             self.iw._sim_save_checkpoint_button.setEnabled(True)
             self.iw._sim_revert_to_checkpoint_button.setEnabled(True)
-            
-        
-    
+
+
+
     def checkpoint(self, *_):
         if self.can_checkpoint:
             self._last_checkpoint = CheckPoint(self)
@@ -2885,7 +2885,7 @@ class Isolde():
                 +'terminate: \n{}'.format(
                     '\n'.join([r for r in self.checkpoint_disabled_reasons.values()]))
             raise TypeError(err_str)
-    
+
     def revert_to_checkpoint(self, *_):
         if self.can_checkpoint:
             if self._last_checkpoint is None:
@@ -2898,7 +2898,7 @@ class Isolde():
                 +'terminate: \n{}'.format(
                     '\n'.join([r for r in self.checkpoint_disabled_reasons.values()]))
             raise TypeError(err_str)
-    
+
 
     ####
     # Restraint controls
@@ -2938,12 +2938,12 @@ class Isolde():
         else:
             dvals = dihedrals.values
             t = (numpy.logical_or(dvals > cr[1], dvals < cr[0])).astype(float) * pi
-        
+
         dihedrals.targets = t
         dihedrals.spring_constants = k
         if self.simulation_running:
             self._sim_interface.update_dihedral_restraints(dihedrals)
-        
+
     def remove_peptide_bond_restraints(self, dihedrals):
         '''
         Remove restraints on a list of peptide bonds (actually, just set
@@ -3012,7 +3012,7 @@ class Isolde():
             self._isolde_events.add_event_handler('pep flip polish',
                                             'completed simulation step',
                                             self._polish_pep_flip)
-    
+
     def _polish_pep_flip(self, *_):
         if self._pep_flip_polish_counter == 0:
             self._sim_interface.sim_mode = 'min'
@@ -3021,13 +3021,13 @@ class Isolde():
             dihedrals = self._pep_flip_dihedrals
             self.release_dihedral_restraint(dihedrals[0])
             self.release_dihedral_restraint(dihedrals[1])
-            self._sim_interface.sim_mode = 'equil' 
+            self._sim_interface.sim_mode = 'equil'
             self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
             self._isolde_events.remove_event_handler('pep flip polish')
-            
+
     def apply_dihedral_restraint(self, dihedral):
         '''
-        Apply the current restraint parameters for a dihedral to the 
+        Apply the current restraint parameters for a dihedral to the
         currently-running simulation.
         '''
         if not self.simulation_running:
@@ -3042,7 +3042,7 @@ class Isolde():
         '''
         if not self.simulation_running:
             print('No simulation running!')
-            return            
+            return
         all_names = dihedrals.names
         unique_names = numpy.unique(all_names)
         if len(unique_names) == 1:
@@ -3063,8 +3063,8 @@ class Isolde():
 
     def clear_secondary_structure_restraints_for_selection(self, *_, atoms = None, residues = None):
         '''
-        Clear all secondary structure restraints in the selection. If 
-        no atoms or residues are provided, restraints will be cleared 
+        Clear all secondary structure restraints in the selection. If
+        no atoms or residues are provided, restraints will be cleared
         for any atoms selected in the main window.
         '''
         from chimerax.core.atomic import selected_atoms
@@ -3100,7 +3100,7 @@ class Isolde():
         '''
         After changing the target distances and/or spring constants of a
         set of distance restraints, call this function to apply them to
-        a currently running simulation. 
+        a currently running simulation.
         '''
         if not self.simulation_running:
             print('No simulation running!')
@@ -3111,7 +3111,7 @@ class Isolde():
         '''
         After changing the target distance and/or spring constant of a
         distance restraint, call this function to apply the changes to
-        a currently running simulation. 
+        a currently running simulation.
         '''
         if not self.simulation_running:
             print('No simulation running!')
@@ -3120,7 +3120,7 @@ class Isolde():
 
     def flip_peptide_omega(self, res):
         '''
-        Flip the peptide bond N-terminal to this residue from cis to 
+        Flip the peptide bond N-terminal to this residue from cis to
         trans or vice versa. Only usable when a simulation is running.
         '''
         if not self.simulation_running:
@@ -3260,7 +3260,7 @@ class Isolde():
     ##############################################
     # Demo
     ##############################################
-    
+
     def load_demo_data(self):
         from chimerax.core.commands import open
         data_dir = os.path.join(self._root_dir, 'demo_data', '2b9r')
@@ -3268,7 +3268,7 @@ class Isolde():
         from chimerax.core.commands import color
         color.color(self.session, before_struct, color='bychain', target='ac')
         color.color(self.session, before_struct, color='byhetero', target='a')
-        before_cs = clipper.CrystalStructure(self.session, before_struct, 
+        before_cs = clipper.CrystalStructure(self.session, before_struct,
             os.path.join(data_dir, 'before_maps.mtz'))
         sharp_map = before_cs.xmaps['2FOFCWT_sharp, PH2FOFCWT_sharp']
         sd = sharp_map.mean_sd_rms()[1]
@@ -3280,8 +3280,8 @@ class Isolde():
         #~ from chimerax.clipper import crystal
         #~ crystal.set_to_default_cartoon(self.session, model=before_struct)
         from . import view
-        view.focus_on_selection(self.session, self.session.main_view, before_struct.atoms) 
-        
+        view.focus_on_selection(self.session, self.session.main_view, before_struct.atoms)
+
 
 def _generic_warning(message):
     msg = QMessageBox()

@@ -196,7 +196,7 @@ class ChimeraXSimInterface:
         isolde = self.isolde
         mt = self._mouse_tugger = mousemodes.TugAtomsMode(
             self.session, self.tuggable_atoms, isolde._annotations)
-        isolde._mouse_modes.register_mode(mt.name, mt, 'right', ('control',))
+        isolde._mouse_modes.register_mode(mt.name, mt, 'right', ('alt',))
         self._register_sim_event('mouse tugging', 'session', 'new frame',
                                  self._update_mouse_tugging)
 
