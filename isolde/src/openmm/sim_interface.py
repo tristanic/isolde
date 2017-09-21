@@ -41,25 +41,6 @@ SIM_MODE_EQUIL              = control.SIM_MODE_EQUIL
 SIM_MODE_UNSTABLE           = control.SIM_MODE_UNSTABLE
 
 
-try:
-    from chimerax import app_bin_dir
-    import os
-    spawn.set_executable(os.path.join(app_bin_dir, 'python3.6'))
-    #~ mp.set_start_method('spawn')
-except:
-    # We're not in ChimeraX any more, Toto!
-    pass
-
-# Workaround since opening the ChimeraX shell breaks the multiprocessing
-# spawn method (even for tools that aren't launched from the console).
-# After opening the shell, sys.modules['__main__'] will return:
-# <IPython.core.interactiveshell.DummyMod>
-# which has no __spec__ attribute.
-main = sys.modules['__main__']
-if not hasattr(main, '__spec__'):
-    main.__spec__ = None
-
-
 def error_cb(e):
     print(e.__traceback__)
     print(e)
@@ -248,7 +229,10 @@ class ChimeraXSimInterface:
                     sleep(1e-2)
                     elapsed_time = time() - start_time
             if elapsed_time < timeout:
-                m = status_q.get()
+                if not status_q.empty():
+                    m = status_q.get()
+                else:
+                    raise Exception('This should not happen')
                 if not ((currently_paused and m == 'Resumed') or \
                         (not currently_paused and m == 'Paused')):
                     raise RuntimeError('Unexpected message: "{}" received '\
@@ -423,7 +407,7 @@ class ChimeraXSimInterface:
             restrained_mask[r_index] = rotamer.restrained
             target_array[:] = rotamer.target
             k_array[:] = rotamer.spring_constants
-            ct.register_array_changes(key, indices = r_index)
+        ct.register_array_changes(key, indices = r_index)
 
     def update_position_restraint(self, position_restraint):
         '''
@@ -442,7 +426,7 @@ class ChimeraXSimInterface:
         with targets.get_lock(), ks.get_lock():
             targets[index] = target
             ks[index] = k
-            ct.register_array_changes('position restraints', indices = index)
+        ct.register_array_changes('position restraints', indices = index)
 
     def update_position_restraints(self, position_restraints):
         '''
@@ -460,7 +444,7 @@ class ChimeraXSimInterface:
         with sim_targets.get_lock(), sim_ks.get_lock():
             sim_targets[indices] = targets
             sim_ks[indices] = ks
-            ct.register_array_changes('position restraints', indices = indices)
+        ct.register_array_changes('position restraints', indices = indices)
 
 
     def update_distance_restraints(self, distance_restraints):

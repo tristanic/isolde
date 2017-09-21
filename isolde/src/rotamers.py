@@ -306,6 +306,95 @@ class Rotamer_info:
             return self.alpha_P
         return self.beta_P
 
+def _update_factory():
+    return False
+
+class Rotamers:
+    '''
+    Holds a set of Rotamer objects, with look-ups to get all rotamers of a
+    specific type, or quickly get all dihedrals for the given rotamers
+    '''
+    def __init__(self, session, residues = None, master_rotamers = None):
+        self.residues = residues
+        self.session = session
+        from collections import defaultdict
+        self._needs_update = defaultdict(_update_factory)
+
+
+        self._rotamers = {}
+
+        # Entry 0: a list of rotamers of this type, in the order they appear
+        # in the structure
+        # Entry 1: the rotameric dihedrals for these residues, as a single
+        # Dihedrals object
+        # Entry 2: the number of rotameric dihedrals for this residue type
+        # Entry 3: Is the terminal dihedral symmetric?
+        self._by_type = {
+            'ARG':          [list(), None, 4, False],
+            'ASN':          [list(), None, 2, False],
+            'ASP':          [list(), None, 2, True],
+            'CYS':          [list(), None, 1, False],
+            'GLN':          [list(), None, 3, False],
+            'GLU':          [list(), None, 3, True],
+            'HIS':          [list(), None, 2, False],
+            'ILE':          [list(), None, 2, False],
+            'LEU':          [list(), None, 2, False],
+            'LYS':          [list(), None, 4, False],
+            'MET':          [list(), None, 3, False],
+            'PHE':          [list(), None, 2, True],
+            'PRO':          [list(), None, 1, False],
+            'SER':          [list(), None, 1, False],
+            'THR':          [list(), None, 1, False],
+            'TRP':          [list(), None, 2, False],
+            'TYR':          [list(), None, 2, True],
+            'VAL':          [list(), None, 1, False]
+        }
+        for residue in residues:
+            try:
+                if master_rotamers is None:
+                    self[residue] = Rotamer(session, residue)
+                else:
+                    self[residue] = master_rotamers[residue]
+            except KeyError:
+                continue
+
+
+    def dihedrals(self, resname):
+        '''
+        Get a Dihedrals object containing all the dihedrals for residues of this
+        type. Dihedrals will be ordered as:
+        [Chi1_1, ... ChiN_1, ... Chi1_M, ChiN_M]
+        where N is the number of chi dihedrals for this rotamer type, and M is
+        the number of residues of this type.
+        '''
+        t = self._by_type[resname]
+        if t[1] is None or self._needs_update[resname]:
+            if len(t[0]):
+                t[1] = Dihedrals(numpy.concatenate([r.dihedrals for r in t[0]]))
+            else:
+                t[1] = Dihedrals()
+            self._needs_update[resname] = False
+        return t[1]
+
+    def num_chi(self, resname):
+        return self._by_type[resname][2]
+
+    def is_symmetric(self, resname):
+        return self._by_type[resname][3]
+
+    def __setitem__(self, residue, rotamer):
+        if type(residue) != Residue:
+            raise TypeError('Key must be a ChimeraX Residue object!')
+        if type(rotamer) != Rotamer:
+            raise TypeError('Value must be a Rotamer object!')
+        self._rotamers[residue] = rotamer
+        resname = residue.name
+        self._by_type[resname][0].append(rotamer)
+        self._needs_update[resname] = True
+
+
+    def __getitem__(self, residue):
+        return self._rotamers[residue]
 
 class Rotamer:
     '''

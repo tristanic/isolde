@@ -232,6 +232,8 @@ class Isolde():
                 self._available_colors.pop(stripped_key, None)
 
         # Model object to hold annotations (arrows, etc.)
+        # TODO: There needs to be a unique annotation drawing for each model
+        # considered by ISOLDE
         from chimerax.core.models import Model
         self._annotations = Model('ISOLDE annotations', self.session)
         self.session.models.add([self._annotations])
@@ -702,23 +704,16 @@ class Isolde():
         cb = iw._sim_platform_combo_box
         cb.clear()
 
-        if True: #self._platform == 'linux':
-            platform_names = sim_interface.get_available_platforms()
-            cb.addItems(platform_names)
+        platform_names = sim_interface.get_available_platforms()
+        cb.addItems(platform_names)
 
-            # Set to the fastest available platform
-            if 'CUDA' in platform_names:
-                cb.setCurrentIndex(platform_names.index('CUDA'))
-            elif 'OpenCL' in platform_names:
-                cb.setCurrentIndex(platform_names.index('OpenCL'))
-            elif 'CPU' in platform_names:
-                cb.setCurrentIndex(platform_names.index('CPU'))
-
-
-        else:
-            cb.addItem('Reference')
-            cb.addItem('CPU')
-            cb.setCurrentIndex(1)
+        # Set to the fastest available platform
+        if 'CUDA' in platform_names:
+            cb.setCurrentIndex(platform_names.index('CUDA'))
+        elif 'OpenCL' in platform_names:
+            cb.setCurrentIndex(platform_names.index('OpenCL'))
+        elif 'CPU' in platform_names:
+            cb.setCurrentIndex(platform_names.index('CPU'))
 
         iw._sim_basic_mobile_b_and_a_spinbox.setProperty('value',
             defaults.SELECTION_SEQUENCE_PADDING)
@@ -732,7 +727,6 @@ class Isolde():
         cb.clear()
         cb.addItem('Add map')
         cb.setCurrentText('Add map')
-
 
         # Map display style options
         cb = iw._em_map_style_combo_box

@@ -2,12 +2,12 @@ import multiprocessing as mp
 import numpy
 import ctypes
 import traceback
-from ..threading import TypedMPArray, SharedNumpyArray
+from ..threading import TypedMPArray, SharedNumpyArray, ThreadComms
+from ..threading import ChangeTracker as ChangeTracker_Base
 from .sim_handler import SimHandler
 from simtk import unit, openmm
 from ..constants import defaults, control
 from time import sleep
-
 FLOAT_TYPE = defaults.FLOAT_TYPE
 
 OPENMM_LENGTH_UNIT          = defaults.OPENMM_LENGTH_UNIT
@@ -27,172 +27,33 @@ SIM_MODE_UNSTABLE           = control.SIM_MODE_UNSTABLE
 PAUSE_SLEEP = 1e-2 # Time in seconds to sleep the main loop when the
                    # simulation is paused, to avoid thrashing.
 
-class ChangeTracker:
-    '''
-    A simple bit-field to handle notifications for I/O between the
-    master session and the simulation thread. The first 16 bits are
-    dedicated to inputs; the last 16 bits to outputs.
-    '''
-    #Control Inputs
-    PAUSE_TOGGLE            = 1
-    STOP                    = 1<<1
-    TEMPERATURE             = 1<<2
-    MODE                    = 1<<3
-    TUG                     = 1<<4
-    DIHEDRAL_RESTRAINT      = 1<<5
-    POSITION_RESTRAINT      = 1<<6
-    DISTANCE_RESTRAINT      = 1<<7
-    ROTAMER_RESTRAINT       = 1<<8
-    MAP_COUPLING            = 1<<9
-    MAP_DATA                = 1<<10
-    EDIT_COORDS             = 1<<11
-
-    #Outputs
-    MIN_COMPLETE = 1<<27
-    INIT_COMPLETE = 1<<28
-    COORDS_READY = 1<<29
-    UNSTABLE = 1<<30
-    ERROR = 1<<31
-
-    ALL_OUTPUTS           = 0xffff0000
-    ALL_INPUTS            = 0x0000ffff
-
+class ChangeTracker(ChangeTracker_Base):
     def __init__(self):
-        self._change_var = mp.Value(ctypes.c_int32, 0)
-        self._managed_arrays = dict()
-        self._possible_modified_arrays = dict()
+        #Control Inputs
+        self.PAUSE_TOGGLE            = 1
+        self.STOP                    = 1<<1
+        self.TEMPERATURE             = 1<<2
+        self.MODE                    = 1<<3
+        self.TUG                     = 1<<4
+        self.DIHEDRAL_RESTRAINT      = 1<<5
+        self.POSITION_RESTRAINT      = 1<<6
+        self.DISTANCE_RESTRAINT      = 1<<7
+        self.ROTAMER_RESTRAINT       = 1<<8
+        self.MAP_COUPLING            = 1<<9
+        self.MAP_DATA                = 1<<10
+        self.EDIT_COORDS             = 1<<11
 
-    def clear_inputs(self):
-        self._change_var.value &= ~self.ALL_INPUTS
+        #Outputs
+        self.MIN_COMPLETE = 1<<27
+        self.INIT_COMPLETE = 1<<28
+        self.COORDS_READY = 1<<29
+        self.UNSTABLE = 1<<30
+        self.ERROR = 1<<31
 
-    def clear_outputs(self):
-        self._change_var.value &= ~self.ALL_OUTPUTS
-
-    def _find_callbacks(self, sim_thread):
-        '''
-        To be run (only) by the SimThread in the worker process after
-        initialisation. Replaces the names of the callback functions
-        with pointers to the functions themselves.
-        '''
-        sh = self.sim_handler
-        for key, arr in self._managed_arrays.items():
-            cb_name = arr[-1]
-            self._callbacks[key] = getattr(sim_thread, cb_name)
-
-    def run_all_necessary_callbacks(self, sim_thread, changes):
-        '''
-        Runs the callbacks to apply the changes for any arrays whose
-        contents have changed since the last iteration. Callbacks should
-        be defined in SimThread, and take as arguments a Boolean array
-        identifying which entries have changed, and a tuple of
-        SharedNumpyArray objects containing the actual information.
-        '''
-        pma = self._possible_modified_arrays
-        for change_bit in pma.keys():
-            if changes & change_bit:
-                for managed_array in pma[change_bit]:
-                    key = managed_array[-2]
-                    callback = getattr(sim_thread, managed_array[-1])
-                    change_mask, arrays = managed_array[2:4]
-                    callback(change_mask, key, arrays)
+        super().__init__()
 
 
-    def add_managed_arrays(self, change_bit_mask, key, arrays, callback_name):
-        '''
-        Registers a combined set of shared arrays with the change
-        tracker, and the name of the callback function that the
-        simulation handler should run when it changes. Once registered,
-        call register_array_changes(key, [change_mask]) to let the
-        manager know that the array has changed, and optionally which
-        elements have changed.
-
-        @param change_bit_mask:
-            The bit (e.g. ChangeTracker.DISTANCE_RESTRAINT) to be flipped
-            to notify the top-level change tracker
-        @param key:
-            The key to the array in the SimComms dict
-        @param arrays:
-            A tuple containing the arrays themselves. All arrays must be
-            the same length in the first dimension.
-        @param callback_name:
-            The name of the callback function in the SimThread to be
-            run when the array changes.
-        '''
-        length = len(arrays[0])
-        if len(arrays) > 1:
-            for arr in arrays[2:]:
-                if len(arr) != length:
-                    raise TypeError(
-                        'All arrays must be the same length in their '
-                       +'first dimension!')
-
-        change_flag = mp.Value(ctypes.c_bool, False)
-        change_mask = SharedNumpyArray(TypedMPArray(ctypes.c_bool, length))
-
-
-        ma = self._managed_arrays[key] =\
-            (change_bit_mask, change_flag, change_mask, arrays, key, callback_name)
-        try:
-            self._possible_modified_arrays[change_bit_mask].append(ma)
-        except KeyError:
-            cl = self._possible_modified_arrays[change_bit_mask] = []
-            cl.append(ma)
-
-    def get_managed_arrays(self, key):
-        '''
-        Return the shared arrays associated with the given key.
-        '''
-        l = self._managed_arrays[key]
-        return l[3]
-
-
-    def register_array_changes(self, key, change_mask = None, indices = None):
-        '''
-        Let the change tracker know that an array has changed.
-        @param key:
-            The key to this array in the SimComms dict
-        @param change_mask:
-            A numpy Boolean array of the same length as the first
-            dimension of the array, True where an element has changed.
-            If not provided, it will be assumed that all elements of
-            the array have changed.
-        @param indices:
-            A numpy int array listing the indices that have changed.
-        '''
-        if change_mask is not None and indices is not None:
-            raise TypeError("Can't provide both change_mask and indices!")
-        _change_bit, _change_flag, _change_mask = self._managed_arrays[key][0:3]
-        with _change_flag.get_lock(), _change_mask.get_lock():
-            _change_flag.value = True
-            if change_mask is not None:
-                numpy.logical_or(change_mask, _change_mask, out=_change_mask)
-            elif indices is not None:
-                _change_mask[indices] = True
-            else:
-                _change_mask[:] = True
-
-        self.register_change(_change_bit)
-
-
-    def clear_array_changes(self, key):
-        _change_flag, _change_mask = self._managed_arrays[key][1:3]
-        with _change_flag.get_lock(), _change_mask.get_lock():
-            _change_flag.value = False
-            _change_mask[:] = False
-
-    @property
-    def changes(self):
-        return self._change_var
-
-    def error(self):
-        self.changes.value |= self.ERROR
-
-    def register_change(self, change):
-        changes = self.changes
-        with changes.get_lock():
-            changes.value |= change
-
-class SimComms:
+class SimComms(ThreadComms):
     '''
     Holds all the shared variables/arrays needed to communicate with the
     simulation. Those that are common to all simulations are defined on
@@ -201,62 +62,34 @@ class SimComms:
     SimComms object is required for each simulation run.
     '''
     def __init__(self):
-        #manager = self.manager = mp.Manager()
-        self._comms_obj = {
+        super().__init__()
+        self.update({
             'changes'                   : ChangeTracker(),
             'error'                     : mp.Queue(),
             'status'                    : mp.Queue(),
             'sim mode'                  : mp.Value(ctypes.c_int, 0),
             'temperature'               : mp.Value(FLOAT_TYPE, 0),
             'pause'                     : mp.Value(ctypes.c_bool, False),
-        }
-
-    def __getitem__(self, key):
-        return self._comms_obj[key]
-
-    def __setitem__(self, key, obj):
-        self._comms_obj[key] = obj
-
-
-    def thread_safe_set_value(self, key, val):
-        '''Set the value of a mp.Value object in a thread-safe way.'''
-        target = self[key]
-        with target.get_lock():
-            target.value = val
-
-    def thread_safe_set_array_values(self, key, values, indices_or_mask = None):
-        '''Change values within a SharedNumpyArray in a thread-safe way.'''
-        target = self[key]
-        with target.get_lock():
-            if indices_or_mask is not None:
-                target[indices_or_mask] = values
-            else:
-                target[:] = values
-
-#~ def _init_sim_thread(sim_params, sim_data, sim_comms, change_tracker):
-    #~ global sim_thread
-    #~ sim_thread = SimThread(sim_params, sim_data, sim_comms, change_tracker)
+        })
 
 def _init_sim_thread(sim_params, sim_data, sim_comms, change_tracker):
     global _sim_thread_obj
     _sim_thread_obj = SimThread(sim_params, sim_data, sim_comms, change_tracker)
 
-
-
 def _sim_thread():
     '''
-    Initialisation function for the simulation thread.
+    Main loop for the simulation thread.
     '''
     global _sim_thread_obj
 
     so = _sim_thread_obj
     comms = so.comms
     ct = so.change_tracker
+    changes = ct.changes
     status_q = comms['status']
     error_q = comms['error']
     # Wait for ISOLDE to give the signal to go ahead:
     status_q.get()
-    changes = ct.changes
     while True:
         with changes.get_lock():
             current_changes = changes.value

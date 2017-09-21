@@ -14,13 +14,12 @@ from .dihedrals import Dihedrals
 package_directory = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(package_directory, 'molprobity_data')
 
-# Load a MolProbity data set and return a SciPy RegularGridInterpolator 
+# Load a MolProbity data set and return a SciPy RegularGridInterpolator
 # object for later fast interpolation of values
 def generate_interpolator(file_prefix, wrap_axes = True):
     from scipy.interpolate import RegularGridInterpolator
     import numpy, pickle
     infile = None
-    
     # First try to load from a pickle file
     try:
         infile = open(file_prefix+'.pickle', 'r+b')
@@ -30,7 +29,7 @@ def generate_interpolator(file_prefix, wrap_axes = True):
     except:
         # If pickle load fails for any reason, fall back to loading from
         # text, then regenerate the pickle file at the end.
-        if infile is not None:    
+        if infile is not None:
             infile.close()
         infile = open(file_prefix+'.data', 'r')
         # Throw away the first line - we don't need it
@@ -42,12 +41,12 @@ def generate_interpolator(file_prefix, wrap_axes = True):
         lower_bound = []
         upper_bound= []
         number_of_bins = []
-        
+
         step_size = []
         first_step = []
         last_step = []
         axis = []
-        
+
         # Read in the header to get the dimensions and step size for each
         # axis, and initialise the axis arrays
         for i in range(ndim):
@@ -58,7 +57,7 @@ def generate_interpolator(file_prefix, wrap_axes = True):
             upper_bound.append(ub)
             nb = int(line[4])
             number_of_bins.append(nb)
-            
+
             ss = (ub - lb)/nb
             step_size.append(ss)
             # Values are at the midpoint of each bin
@@ -67,29 +66,29 @@ def generate_interpolator(file_prefix, wrap_axes = True):
             ls = ub - ss/2
             last_step.append(ls)
             axis.append(numpy.linspace(fs,ls,nb))
-            
+
         infile.close()
-            
+
         full_grid = numpy.zeros(number_of_bins)
-        
+
         # Slurp in the actual numerical data as a numpy array
         data = numpy.loadtxt(file_prefix+'.data')
-        
+
         # Convert each coordinate to an integral number of steps along each
         # axis
         axes = []
         for i in range(ndim):
             axes.append([])
-        
+
         for i in range(ndim):
             ss = step_size[i]
             fs = first_step[i]
             lb = lower_bound[i]
             axis_vals = data[:,i]
             axes[i]=(((axis_vals - ss/2 - lb) / ss).astype(int))
-        
+
         full_grid[axes] = data[:,ndim]
-        
+
         # At this point we should have the full n-dimensional matrix, with
         # all values not present in the text file present as zeros.
         # Now we have to consider periodicity. Since we're just going to
@@ -98,7 +97,7 @@ def generate_interpolator(file_prefix, wrap_axes = True):
         # of the relevant matrix. This can be handily done with numpy.pad
         if wrap_axes:
             full_grid = numpy.pad(full_grid, 1, 'wrap')
-        
+
             # ... and we need to extend each of the axes by one step to match
             for i, a in enumerate(axis):
                 fs = first_step[i]
@@ -108,22 +107,22 @@ def generate_interpolator(file_prefix, wrap_axes = True):
                 a[0] = fs - ss
                 a[-1] = ls + ss
                 axis[i] = a
-        
+
         # Replace all zero or negative values with the minimum positive non-zero
         # value, so that we can use logs
-        full_grid[full_grid<=0] = numpy.min(full_grid[full_grid > 0])         
+        full_grid[full_grid<=0] = numpy.min(full_grid[full_grid > 0])
         # Finally, convert the axes to radians
         from math import pi
         axis = numpy.array(axis)
         axis = axis/180*pi
-        
+
         # Pickle a tuple containing the axes and grid for fast loading in
         # future runs
-        
+
         outfile = open(file_prefix+'.pickle', 'w+b')
         pickle.dump((axis, full_grid), outfile)
         outfile.close()
-    
+
     return RegularGridInterpolator(axis, full_grid, bounds_error = True)
 
 # Master list of Ramachandran case keys. As well as the official ones, we'll
@@ -183,7 +182,7 @@ def sort_into_rama_cases(counts_for_rama, rama_resnames, omega_vals):
         counts_for_rama: 1D boolean array determining which residues
                          are valid for Ramachandran analysis (i.e. have
                          both phi and psi dihedrals).
-        rama_resnames:   2D array containing the names of the first and 
+        rama_resnames:   2D array containing the names of the first and
                          second residue in all psi dihedrals
         omega_values:    Values of the omega dihedrals for sorting into
                          cis and trans proline
@@ -193,13 +192,13 @@ def sort_into_rama_cases(counts_for_rama, rama_resnames, omega_vals):
         we can easily do it here.
     '''
     import numpy
-    
+
     case_arrays = {}
     for case in RAMA_CASES:
         case_arrays[case] = []
-    
+
     rama_case_list = []
-     
+
     for i, [counts, names, oval] in enumerate(zip(counts_for_rama, rama_resnames, omega_vals)):
         name1, name2 = names
         if not counts:
@@ -229,20 +228,20 @@ def sort_into_rama_cases(counts_for_rama, rama_resnames, omega_vals):
         else:
             case_arrays['General'].append(i)
             rama_case_list.append('General')
-    
+
     # Convert lists to numpy integer arrays
     for key, arr in case_arrays.items():
         case_arrays[key] = numpy.array(arr,numpy.int32)
 
     return case_arrays, numpy.array(rama_case_list)
-    
+
 
 CIS_MAX = defaults.CIS_PEPTIDE_BOND_CUTOFF
 CIS_MIN = -CIS_MAX
 TRANS_MIN = pi - defaults.TWISTED_PEPTIDE_BOND_DELTA
 TRANS_MAX = -TRANS_MIN
 
-    
+
 def omega_type(omega):
     if omega is None:
         return None
@@ -264,23 +263,23 @@ class RamaCase:
         self._interpolator = None
         self.color_scale_name = color_scale_name
         self._color_scale = None
-    
+
     @property
     def interpolator(self):
         if self._interpolator is None:
             self._interpolator = generate_interpolator(self._file_prefix)
         return self._interpolator
-    
+
     @property
     def color_scale(self):
         if self._color_scale is None:
             import numpy
             self._log_cutoffs = numpy.log(numpy.array(self._cutoffs, numpy.float32))
-            from . import color            
+            from . import color
             self._color_scale = color.standard_three_color_scale(
                 self.color_scale_name, *self._log_cutoffs)
         return self._color_scale
-    
+
     @color_scale.setter
     def color_scale(self, scale_name):
         from . import color
@@ -294,11 +293,11 @@ class RamaCase:
             errstring = 'Please choose a valid color scale! Available scales are: {}'\
                     .format(color.color_scales.keys())
             warnings.warn(errstring)
-    
+
     @property
     def cutoffs(self):
         return self._cutoffs
-    
+
     @cutoffs.setter
     def cutoffs(self, cutoffs):
         c = cutoffs
@@ -315,21 +314,21 @@ class RamaCase:
             raise TypeError('Only positive non-zero cutoffs are allowed!')
         self._cutoffs = c
         self._log_cutoffs = numpy.log(c)
-        
-    
 
 
-        
+
+
+
 class RamaValidator():
     '''
     Encapsulates the MolProbity Ramachandran data with a set of handy
     functions for quick look-up of scores for all residues in a
     Backbone_Dihedrals object.
     '''
-    
+
     import numpy
     from math import pi
-    
+
     def __init__(self, color_scale = 'PiYG'):
         # Cached phi and psi values for plotting
         self.phipsi = None
@@ -344,7 +343,7 @@ class RamaValidator():
                 self._rama_cases[case] = None
                 continue
             self._rama_cases[case] = RamaCase(prefix, cutoffs, color_scale)
-            
+
     def rama_bins(scores, types):
         score_bins = []
         for score, rt in scores, types:
@@ -373,12 +372,12 @@ class RamaValidator():
         phi = bd.phi_vals
         psi = bd.psi_vals
         phipsi = self.phipsi = numpy.column_stack([phi,psi])
-        case_index_dict = bd.rama_cases        
+        case_index_dict = bd.rama_cases
         scores = bd.rama_scores
         CAs = bd.CAs
         if update_colors:
             colors = bd.rama_colors
-        
+
         for case in RAMA_CASES:
             if self._rama_cases[case] is None:
                 # We're not interested in these residues
@@ -394,14 +393,14 @@ class RamaValidator():
                         cs = rc.color_scale
                         case_colors = cs.get_colors(numpy.log(case_scores))
                         colors[indices] = case_colors
-                        
+
     @property
     def rama_cases(self):
         return self._rama_cases
-    
-                        
+
+
 class RamaPlot():
-    
+
     def __init__(self, session, container, validator):
         import numpy
         self.session = session
@@ -409,17 +408,17 @@ class RamaPlot():
         self.validator = validator
         self.current_case = None
         self._last_bd = None
-        
+
         from matplotlib.figure import Figure
         from matplotlib.backends.backend_qt5agg import (
             FigureCanvasQTAgg as FigureCanvas,
             NavigationToolbar2QT as NavigationToolbar
             )
-        
+
         fig = self.figure = Figure()
-        
+
         axes = self.axes = fig.add_subplot(111)
-        
+
         axes.set_xticks([-120,-60,0,60,120])
         axes.set_yticks([-120,-60,0,60,120])
         #axes.set_xticklabels(axes.get_xticklabels(), rotation=60)
@@ -427,20 +426,20 @@ class RamaPlot():
         axes.set_ylim(-180,180)
         axes.minorticks_on()
         axes.autoscale(enable=False)
-        
+
         # Scatter plot needs to always have at least one point, so we'll
         # define a point off the scale for when there's nothing to plot
         self.default_coords = numpy.array([200,200])
         self.default_logscores = numpy.ones(1)
         self.scatter = None
-        
+
         canvas = self.canvas = FigureCanvas(fig)
         self.resize_cid = self.canvas.mpl_connect('resize_event', self.on_resize)
         container.addWidget(canvas)
-        
+
         self.contours = {}
         self.change_case('General')
-            
+
     def cache_contour_plots(self, key):
         import numpy
         case_data = self.validator.rama_cases[key].interpolator
@@ -456,8 +455,8 @@ class RamaPlot():
            coll.remove()
         pcolor_plot.remove()
         self.contours[key] = (contour_plot, pcolor_plot)
-        
-        
+
+
     def on_resize(self, *_):
         axes = self.axes
         axes.set_xlim(-180,180)
@@ -467,20 +466,20 @@ class RamaPlot():
         axes.autoscale(enable=False)
         if self.scatter.is_figure_set():
             self.scatter.remove()
-        self.figure.set_facecolor('0.5')  
+        self.figure.set_facecolor('0.5')
         self.canvas.draw()
         self.background = self.canvas.copy_from_bbox(self.axes.bbox)
         self.axes.add_artist(self.scatter)
         self.canvas.draw()
         self.update_scatter(self._last_bd)
-    
+
     def on_pick(self, event):
         ind = event.ind[0]
         res_index = self._last_bd.rama_cases[self.current_case][ind]
         picked_residue = self._last_bd.residues[res_index]
         from . import view
         view.focus_on_selection(self.session, self.session.main_view, picked_residue.atoms)
-        
+
     def change_case(self, case_key):
         self.current_case = case_key
         import numpy
@@ -501,7 +500,7 @@ class RamaPlot():
         self.scatter.set_cmap('bwr')
         self.canvas.mpl_connect('pick_event', self.on_pick)
         self.on_resize()
-        
+
     def update_scatter(self, bd = None, force_update = False):
         import numpy
         key = self.current_case
@@ -532,7 +531,7 @@ class RamaPlot():
         self.axes.draw_artist(self.scatter)
         self.canvas.blit(self.axes.bbox)
 
-        
+
 class OmegaValidator():
     def __init__(self, annotation_model):
         from chimerax.core.models import Drawing
@@ -543,7 +542,7 @@ class OmegaValidator():
         self.cis_color = [255, 32, 32, 255]
         self.twisted_color = [255,255,32,255]
         existing_names = [d.name for d in self.m.all_drawings()]
-        if self.name not in existing_names:          
+        if self.name not in existing_names:
             self.master_drawing = Drawing(self.name)
             self.m.add_drawing(self.master_drawing)
         else:
@@ -551,16 +550,16 @@ class OmegaValidator():
             self.master_drawing = self.m.all_drawings()[i]
             self.master_drawing.remove_all_drawings()
         self._initialize_drawings()
-        
+
         from math import radians
-    
+
     def load_structure(self, model, omega_list):
         self.current_model = model
         self.clear()
         self._initialize_drawings()
         self.omega = Dihedrals([o for o in omega_list if o is not None])
         self.find_outliers()
-    
+
     def _initialize_drawings(self):
         from chimerax.core.models import Drawing
         #~ for o in self.omega:
@@ -576,8 +575,8 @@ class OmegaValidator():
             d.triangles = numpy.zeros([0,3], numpy.int32)
         self.master_drawing.add_drawing(self._cis_drawing)
         self.master_drawing.add_drawing(self._twisted_drawing)
-        
-    
+
+
     def find_outliers(self):
         omegas = self.omega
         abs_o_vals = abs(omegas.values)
@@ -590,24 +589,11 @@ class OmegaValidator():
         self._current_cis = cis
         self._current_twisted = twisted
         return cis, twisted
-        
-        
-        #~ for o in self.omega:
-            #~ if abs(o.value)  <= CIS_MAX:
-                #~ cis.append(o)
-            #~ elif abs(o.value) <= TRANS_MIN:
-                #~ twisted.append(o)
-        #~ self._current_cis = cis
-        #~ self._current_twisted = twisted
-        #~ return cis, twisted
-    
+
     def draw_outliers(self, cis, twisted):
-        #self._cis_drawing.set_display(False)
-        #self._twisted_drawing.set_display(False)
         self._update_coords(cis, self._cis_drawing, self.cis_color)
         self._update_coords(twisted, self._twisted_drawing, self.twisted_color)
 
-    
     def _update_coords(self, dihedrals, drawing, color):
         if len(dihedrals):
             d = drawing
@@ -616,20 +602,54 @@ class OmegaValidator():
             d.set_display(True)
         else:
             drawing.set_display(False)
-            
-    
+
+
     def update_coords(self):
         self._update_coords(self._current_cis, self._cis_drawing, self.cis_color)
         self._update_coords(self._current_twisted, self._twisted_drawing, self.twisted_color)
-                
+
     def clear(self):
         self.master_drawing.remove_all_drawings()
-                
-    
-    
-            
-        
-    
-    
-    
-        
+
+class RotaValidator:
+
+    def __init__(self):
+        self._aa_map = {
+            'ARG':          None,
+            'ASN':          None,
+            'ASP':          None,
+            'CYS':          None,
+            'GLN':          None,
+            'HIS':          None,
+            'ILE':          None,
+            'LEU':          None,
+            'LYS':          None,
+            'MET':          None,
+            'PHE':          None,
+            'PRO':          None,
+            'SER':          None,
+            'THR':          None,
+            'TRP':          None,
+            'TYR':          None,
+            'VAL':          None
+            }
+
+        keylist = list(self._aa_map.keys())
+        aa_map = self._aa_map
+        # Phe and Tyr have the same rotamer contours, so treat them separately
+        # first
+        prefix = os.path.join(DATA_DIR, 'rota8000-')
+        phe_tyr_map = generate_interpolator(prefix+'phetyr')
+        aa_map['PHE'] = phe_tyr_map
+        aa_map['TYR'] = phe_tyr_map
+        keylist.pop(keylist.index('PHE'))
+        keylist.pop(keylist.index('TYR'))
+
+        for aa in keylist:
+            aa_map[aa] = generate_interpolator(prefix + aa)
+
+    def __getitem__(self, resname):
+        return self._aa_map[resname]
+
+    def __setitem__(self, *args):
+        raise TypeError('Validator cannot be changed after initialisation!')
