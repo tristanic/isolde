@@ -13,7 +13,7 @@
 # When uploaded to the ChimeraX toolshed, the bundle
 # will be displayed without the ChimeraX- prefix.
 BUNDLE_NAME = ChimeraX-ISOLDE
-BUNDLE_VERSION = 0.9.13
+BUNDLE_VERSION = 0.9.21
 # ChimeraX bundles should only include packages
 # that install as chimerax.package_name.
 # General Python packages should be uploaded to

@@ -37,8 +37,9 @@ class CA_to_CA_plus_Two(Distance_Restraints):
                 missing_structure_treatment = model.PMS_NEVER_CONNECTS)
             restraints = []
             for f in fragments:
-                if numpy.all(numpy.invert(f.polymer_types == Residue.PT_AMINO)):
+                if f[1] != Residue.PT_AMINO:
                     continue
+                f = f[0]
                 ca_atoms = f.atoms.filter(f.atoms.names == 'CA')
                 for c1, c2 in zip(ca_atoms[0:-2], ca_atoms[2:]):
                     restraints.append(Distance_Restraint(Atoms((c1, c2)), name, 0, 0, pseudobond_group = pbg))
@@ -80,8 +81,9 @@ class O_to_N_plus_Four(Distance_Restraints):
                 missing_structure_treatment = model.PMS_NEVER_CONNECTS)
             restraints = []
             for f in fragments:
-                if numpy.all(numpy.invert(f.polymer_types == Residue.PT_AMINO)):
+                if f[1] != Residue.PT_AMINO:
                     continue
+                f = f[0]
                 o_atoms = f.atoms.filter(f.atoms.names == 'O')
                 n_atoms = f.atoms.filter(f.atoms.names == 'N')
                 for o, n in zip(o_atoms[0:-4], n_atoms[4:]):

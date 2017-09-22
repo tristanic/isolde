@@ -1361,7 +1361,7 @@ class Isolde():
             errstring = 'Please select a valid MTZ file!'
             _generic_warning(errstring)
         m = cb.currentData()
-        clipper.CrystalStructure(self.session, m, fname)
+        cs = clipper.CrystalStructure(self.session, m, fname)
         self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
         self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
         self._change_selected_model(force = True)
@@ -1656,6 +1656,7 @@ class Isolde():
         polymers = m.polymers(
             missing_structure_treatment = m.PMS_NEVER_CONNECTS)
         for p in polymers:
+            p = p[0]
             indices = p.indices(residues)
             if indices[0] != -1:
                 break
@@ -2685,6 +2686,7 @@ class Isolde():
             sel_frags = []
             sel_frag_res_indices = []
             for frag in allfrags:
+                frag = frag[0]
                 if not frag.atoms.num_selected:
                     continue
                 sel_frags.append(frag)
