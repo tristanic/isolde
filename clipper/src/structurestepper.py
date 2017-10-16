@@ -24,8 +24,8 @@ class StructureStepper:
     self.step = step
     self.min_gap = min_gap
     self._num_polymers = len(model.polymers()) 
-    self.current_polymer = model.polymers()[0]
-    self.min_element = self.current_polymer.secondary_structure_ids[0]
+    cp = self.current_polymer = model.polymers()[0]
+    self.min_element = cp[0].secondary_structure_ids[0]
       
   def step_forward(self):
     '''
@@ -37,7 +37,8 @@ class StructureStepper:
     '''
     from chimerax.core.atomic import Residue
     min_element = self.min_element
-    cres = self.current_polymer
+    cres, ptype = self.current_polymer
+    ptype = self.current_polymer[1]
     done = False
     chain_finished = False
     all_finished = False
@@ -53,7 +54,7 @@ class StructureStepper:
           #We've passed the end of the chain. Next time we start on the
           # next chain (if it exists)
           chain_finished = True
-          if self.model.polymers().index(cres) == self._num_polymers - 1:
+          if self.model.polymers().index(self.current_polymer) == self._num_polymers - 1:
             all_finished = True
           break
         r = residues[0]
@@ -90,8 +91,8 @@ class StructureStepper:
           self.session.logger.info("Reached the end of the model. Returning to start...")
           self.current_polymer = self.model.polymers()[0]
         else:
-          self.current_polymer = self.model.polymers()[self.model.polymers().index(cres) + 1]
-        self.min_element = self.current_polymer.secondary_structure_ids[0]
+          pol = self.current_polymer = self.model.polymers()[self.model.polymers().index(self.current_polymer) + 1]
+        self.min_element = pol[0].secondary_structure_ids[0]
       return ret
     else:
       # Simply step through in blocks of n residues.
