@@ -1,4 +1,4 @@
-from . import clipper
+import clipper_python as clipper
 import numpy
 
 # Override logging of Clipper messages to send them to the ChimeraX log
@@ -16,15 +16,15 @@ def _log_clipper(func):
       session.logger.info(message_string)
   return func_wrapper
 
-clipper._clipper.log_clipper = _log_clipper  
-  
+clipper._clipper.log_clipper = _log_clipper
+
 def add_crystal(session, name):
   from .crystal import Xtal_Project
   return Xtal_Project(session, name)
 
 
 
-  
+
 
 def apply_b_factors_to_hydrogens(atom_list):
     '''
@@ -43,8 +43,8 @@ def apply_b_factors_to_hydrogens(atom_list):
                 h.bfactor = atom.bfactor
                 h.aniso_u6 = atom.aniso_u6
                 break
-                
- 
+
+
 def atom_list_from_sel(atom_list):
     '''
     Takes a ChimeraX Atoms object, and creates a Clipper Atoms_list object
@@ -56,7 +56,7 @@ def atom_list_from_sel(atom_list):
     occupancies = atom_list.occupancies
     u_iso = atom_list.bfactors
     # Have to be careful here. Atoms.aniso_u6 returns None if any atom in
-    # the array has no aniso_u6 entry. 
+    # the array has no aniso_u6 entry.
     u_aniso = atom_list.aniso_u6
     if u_aniso is None:
         u_aniso = numpy.ones([n,6],numpy.float32)*numpy.nan
@@ -67,7 +67,7 @@ def atom_list_from_sel(atom_list):
                 #u_aniso[i] = a.aniso_u6
     clipper_atom_list = clipper.Atom_list(elements, coords, occupancies, u_iso, u_aniso)
     return clipper_atom_list
-        
+
 def make_unit_cell(model, xmap, draw = True):
     from chimerax.core.geometry import Place, Places
     cell = xmap.cell()
@@ -98,7 +98,7 @@ def test_pack_box(model, xmap, size = 50):
         p.append(Place(matrix=b.rtop_orth(xmap.cell()).matrix()[0:3,:]))
     P = Places(p)
     model.positions = P
-    
+
     from chimerax.core.models import Drawing, Model
     from chimerax.core.surface.shapes import sphere_geometry
     d = Drawing('box corners')
@@ -116,7 +116,7 @@ def test_pack_box(model, xmap, size = 50):
     d.positions = Places(dp)
     m.add_drawing(d)
     session.models.add([m])
-    
+
     return bo
 
 def pack_box(model, xmap, box_origin_xyz, size = 100):
@@ -131,7 +131,7 @@ def pack_box(model, xmap, box_origin_xyz, size = 100):
         p.append(Place(matrix=b.rtop_orth(xmap.cell()).matrix()[0:3,:]))
     P = Places(p)
     model.positions = P
-    
+
     from chimerax.core.models import Drawing, Model
     from chimerax.core.surface.shapes import sphere_geometry
     d = Drawing('box corners')
@@ -170,11 +170,11 @@ def draw_box(min_corner, max_corner, name='box'):
     m.add_drawing(d)
     session.models.add([m])
     return d
-    
-    
 
-        
-def draw_asu(xmap):    
+
+
+
+def draw_asu(xmap):
     from chimerax.core.geometry import Place, Places
     from chimerax.core.models import Drawing, Model
     from chimerax.core.surface.shapes import sphere_geometry
@@ -203,4 +203,3 @@ def box_corners(origin_xyz, size_xyz):
             for k in range(2):
                 ret.append([minmax[i][0],minmax[j][1], minmax[k][2]])
     return ret
-

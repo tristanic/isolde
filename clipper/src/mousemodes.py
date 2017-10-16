@@ -36,10 +36,12 @@ class ZoomMouseMode(mousemodes.ZoomMouseMode):
         return self._far_clip
                 
     
-    def zoom(self, delta_z):
+    def zoom(self, delta_z, stereo_scaling = False):
         v = self.view
         c = v.camera
         cofr = v.center_of_rotation
+        if stereo_scaling and c.name == 'stereo':
+            v.stereo_scaling(delta_z)
         if c.name == 'orthographic':
             import numpy
             c.field_width = max(c.field_width - delta_z, self.pixel_size())

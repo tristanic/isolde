@@ -1,0 +1,26 @@
+Metadata-Version: 1.2
+Name: ChimeraX-Clipper
+Version: 0.1.6
+Summary: Clipper: Efficient handling of volumetric data and symmetry
+Home-page: To be completed
+Author: Tristan Croll
+Author-email: tic20@cam.ac.uk
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Framework :: ChimeraX
+Classifier: Intended Audience :: Science/Research
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Scientific/Engineering :: Visualization
+Classifier: Topic :: Scientific/Engineering :: Chemistry
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: License :: Mozilla Public License version 2.0. Contact tic20@cam.ac.uk for alternative license terms.
+Classifier: Environment :: MacOS X :: Aqua
+Classifier: Environment :: Win32 (MS Windows)
+Classifier: Environment :: X11 Applications
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: Microsoft :: Windows :: Windows 10
+Classifier: Operating System :: POSIX :: Linux
+Classifier: ChimeraX :: Bundle :: General :: 1,1 :: chimerax.clipper :: :: 
+Requires-Python: >= 3.6

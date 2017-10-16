@@ -1,6 +1,5 @@
 import numpy
-from .lib.clipper_python_core import Util as _util
-from .clipper_decorators import *
+from clipper_python import Util as _util
 
 ### Constants ###
 eightpi2 = _util.eightpi2()
@@ -10,7 +9,7 @@ eightpi2 = _util.eightpi2()
 def atanh(x):
     ''' Hyperbolic tan '''
     return _util.atanh(x)
-    
+
 def b2u(b_factor):
     ''' Convert isotropic B-factor to U-value '''
     return _util.b2u(b_factor)
@@ -18,11 +17,11 @@ def b2u(b_factor):
 def u2b(u_value):
     ''' Convert isotropic U-value to B-factor '''
     return _util.u2b(u_value)
-    
+
 def bessel_i0(x):
     ''' Modified Bessel function of the first kind '''
     return _util.bessel_i0(x)
-    
+
 def d2rad(angle):
     ''' Convert degrees to radians '''
     return _util.d2rad(angle)
@@ -61,5 +60,3 @@ def get_minmax_grid(coords, cell, grid_sampling):
         grid_sampling (clipper.Grid_sampling object)
     '''
     return _util.get_minmax_grid(coords, cell, grid_sampling)
-
-
