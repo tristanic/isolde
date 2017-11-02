@@ -418,15 +418,8 @@ class RamaPlot():
         fig = self.figure = Figure()
 
         axes = self.axes = fig.add_subplot(111)
-
-        axes.set_xticks([-120,-60,0,60,120])
-        axes.set_yticks([-120,-60,0,60,120])
-        #axes.set_xticklabels(axes.get_xticklabels(), rotation=60)
-        axes.set_xlim(-180,180)
-        axes.set_ylim(-180,180)
-        axes.minorticks_on()
-        axes.autoscale(enable=False)
-
+        self._format_axes()
+                
         # Scatter plot needs to always have at least one point, so we'll
         # define a point off the scale for when there's nothing to plot
         self.default_coords = numpy.array([200,200])
@@ -439,7 +432,24 @@ class RamaPlot():
 
         self.contours = {}
         self.change_case('General')
-
+    
+    def _format_axes(self):
+        axes = self.axes
+        fig = self.figure
+        axes.set_xticks([-120,-60,0,60,120])
+        axes.set_yticks([-120,-60,0,60,120])
+        #axes.set_xticklabels(axes.get_xticklabels(), rotation=60)
+        axes.set_xticklabels([])
+        axes.set_yticklabels([])
+        axes.set_xlim(-180,180)
+        axes.set_ylim(-180,180)
+        axes.minorticks_on()
+        axes.tick_params(direction='in')
+        axes.autoscale(enable=False)
+        fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+        
+        
+    
     def cache_contour_plots(self, key):
         import numpy
         case_data = self.validator.rama_cases[key].interpolator
@@ -459,18 +469,16 @@ class RamaPlot():
 
     def on_resize(self, *_):
         axes = self.axes
-        axes.set_xlim(-180,180)
-        axes.set_ylim(-180,180)
-        axes.set_xticks([-120,-60,0,60,120])
-        axes.set_yticks([-120,-60,0,60,120])
-        axes.autoscale(enable=False)
+        f = self.figure
+        c = self.canvas
+        self._format_axes()
         if self.scatter.is_figure_set():
             self.scatter.remove()
-        self.figure.set_facecolor('0.5')
-        self.canvas.draw()
-        self.background = self.canvas.copy_from_bbox(self.axes.bbox)
-        self.axes.add_artist(self.scatter)
-        self.canvas.draw()
+        f.set_facecolor('0.5')
+        c.draw()
+        self.background = self.canvas.copy_from_bbox(axes.bbox)
+        axes.add_artist(self.scatter)
+        c.draw()
         self.update_scatter(self._last_bd)
 
     def on_pick(self, event):

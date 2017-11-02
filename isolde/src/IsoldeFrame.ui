@@ -127,7 +127,7 @@
         <x>0</x>
         <y>0</y>
         <width>527</width>
-        <height>695</height>
+        <height>694</height>
        </rect>
       </property>
       <attribute name="label">
@@ -164,9 +164,9 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-235</y>
+                  <y>-458</y>
                   <width>470</width>
-                  <height>1078</height>
+                  <height>1194</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0,0,0,0">
@@ -917,6 +917,89 @@
                       </layout>
                      </widget>
                     </item>
+                    <item>
+                     <widget class="QFrame" name="_sim_basic_xtal_stepper_frame">
+                      <layout class="QVBoxLayout" name="verticalLayout_4">
+                       <property name="spacing">
+                        <number>2</number>
+                       </property>
+                       <property name="leftMargin">
+                        <number>1</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>1</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>1</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>1</number>
+                       </property>
+                       <item>
+                        <widget class="QLabel" name="label_43">
+                         <property name="text">
+                          <string>Step through structure</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <layout class="QHBoxLayout" name="horizontalLayout_37">
+                         <item>
+                          <widget class="QPushButton" name="_sim_basic_xtal_step_forward_button">
+                           <property name="text">
+                            <string>Step forward</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <spacer name="horizontalSpacer_25">
+                           <property name="orientation">
+                            <enum>Qt::Horizontal</enum>
+                           </property>
+                           <property name="sizeHint" stdset="0">
+                            <size>
+                             <width>40</width>
+                             <height>20</height>
+                            </size>
+                           </property>
+                          </spacer>
+                         </item>
+                         <item>
+                          <widget class="QCheckBox" name="_sim_basic_xtal_step_focus_checkbox">
+                           <property name="text">
+                            <string>Focus view on selection</string>
+                           </property>
+                           <property name="checked">
+                            <bool>true</bool>
+                           </property>
+                          </widget>
+                         </item>
+                        </layout>
+                       </item>
+                       <item>
+                        <layout class="QHBoxLayout" name="horizontalLayout_38">
+                         <property name="bottomMargin">
+                          <number>0</number>
+                         </property>
+                         <item>
+                          <widget class="QPushButton" name="_sim_basic_xtal_mask_to_selection_button">
+                           <property name="text">
+                            <string>Mask map(s) to selection</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QPushButton" name="_sim_basic_xtal_live_scrolling_button">
+                           <property name="text">
+                            <string>Back to panning mode</string>
+                           </property>
+                          </widget>
+                         </item>
+                        </layout>
+                       </item>
+                      </layout>
+                     </widget>
+                    </item>
                    </layout>
                   </widget>
                  </item>
@@ -1300,7 +1383,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>483</width>
-                  <height>465</height>
+                  <height>460</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1737,7 +1820,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>470</width>
-                  <height>379</height>
+                  <height>390</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -2603,7 +2686,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>470</width>
-                  <height>781</height>
+                  <height>796</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">

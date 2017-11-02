@@ -954,7 +954,17 @@ class Isolde():
             )
          # We want to start with the EM map chooser hidden
         self._hide_em_map_chooser()
-
+        
+        # Visualisation tools
+        iw._sim_basic_xtal_step_forward_button.clicked.connect(
+            self._xtal_step_forward
+            )
+        iw._sim_basic_xtal_mask_to_selection_button.clicked.connect(
+            self._xtal_mask_to_selection
+            )
+        iw._sim_basic_xtal_live_scrolling_button.clicked.connect(
+            self._xtal_enable_live_scrolling
+            )
         ####
         # Restraints tab
         ####
@@ -1119,6 +1129,7 @@ class Isolde():
             hh.startHaptics()
             n = self._num_haptic_devices = hh.getNumDevices()
             if n == 0:
+                print('No haptic devices found. Stopping haptic driver.')
                 hh.stopHaptics()
                 self._use_haptics = False
                 return
@@ -2095,6 +2106,9 @@ class Isolde():
             self._update_chain_list()
             if isinstance(m.parent, clipper.CrystalStructure):
                 self._initialize_xtal_maps(m.parent)
+                iw._sim_basic_xtal_stepper_frame.setEnabled(True)
+            else:
+                iw._sim_basic_xtal_stepper_frame.setEnabled(False)
             self.triggers.activate_trigger('selected model changed', data=m)
         self._status('')
 
@@ -2292,6 +2306,39 @@ class Isolde():
         self._update_master_map_list_combo_box()
 
     ##############################################################
+    # Visualisation functions
+    ##############################################################
+    
+    def _xtal_step_forward(self, *_):
+        m = self.selected_model
+        cs = m.parent
+        focus = self.iw._sim_basic_xtal_step_focus_checkbox.checkState()
+        m.atoms.selected = False
+        sel = cs.stepper.step_forward()
+        sel.selected = True
+        self._xtal_mask_to_atoms(sel, focus)
+    
+    def _xtal_mask_to_selection(self, *_):
+        atoms = self.selected_model.atoms
+        sel = atoms[atoms.selecteds]
+        self._xtal_mask_to_atoms(sel, False)
+    
+    def _xtal_mask_to_atoms(self, atoms, focus):
+        m = self.selected_model
+        cs = m.parent
+        cutoff = self.params.standard_map_mask_cutoff
+        context = self.params.soft_shell_cutoff_distance
+        cs.isolate_and_cover_selection(
+            atoms, 0, context, cutoff, focus=focus)
+        
+    
+    def _xtal_enable_live_scrolling(self, *_):
+        m = self.selected_model
+        cs = m.parent
+        cs.xmaps.live_scrolling = True
+        cs.live_atomic_symmetry = True    
+    
+    ##############################################################
     # Interactive restraints functions
     ##############################################################
 
@@ -2420,10 +2467,10 @@ class Isolde():
                 mask_radius = 4, extra_padding = 10,
                 hide_surrounds = self.params.hide_surroundings_during_sim, focus = False)
 
-        else:
-            surr.hides |= control.HIDE_ISOLDE
-            surr.displays = False
-            self._surroundings_hidden = True
+        # else:
+        surr.hides |= control.HIDE_ISOLDE
+        surr.displays = False
+        self._surroundings_hidden = True
 
         sel_model.residues.ribbon_displays = False
 

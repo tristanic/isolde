@@ -130,6 +130,7 @@ class ISOLDE_ToolUI(ToolInstance):
         self._disabled_at_start = [
             #iw._sim_basic_xtal_map_settings_frame,
             iw._sim_basic_xtal_settings_map_name,
+            iw._sim_basic_xtal_stepper_frame,
             iw._rebuild_sel_res_pep_flip_button,
             iw._rebuild_sel_res_cis_trans_flip_button,
             iw._rebuild_sel_res_last_rotamer_button,
@@ -171,7 +172,8 @@ class ISOLDE_ToolUI(ToolInstance):
     def delete(self):
         try:
             self.isolde._on_close()
-        except:
+        except Exception as e:
+            print(e)
             import traceback
             import sys
             traceback.print_stack(file=sys.__stderr__)
