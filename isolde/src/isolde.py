@@ -124,7 +124,7 @@ class Isolde():
         }
 
     _human_readable_sim_modes = {
-        _sim_modes.xtal:  "Crystallography mode",
+        _sim_modes.xtal:  "Map Fitting mode",
         _sim_modes.em: "Single-particle EM mode",
         _sim_modes.free: "Free mode (no maps)"
         }
@@ -682,6 +682,9 @@ class Isolde():
         cb = iw._sim_basic_mode_combo_box
         cb.clear()
         for mode in self._sim_modes:
+            if mode == self._sim_modes.em:
+                #FIXME EM Mode is under development. Hide for now.
+                continue
             text = self._human_readable_sim_modes[mode]
             cb.addItem(text, mode)
 
