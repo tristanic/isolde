@@ -108,10 +108,12 @@ class ChangeTracker:
         @param change_mask:
             A numpy Boolean array of the same length as the first
             dimension of the array, True where an element has changed.
-            If not provided, it will be assumed that all elements of
-            the array have changed.
+            If neither change_mask nor indices is provided, it will be 
+            assumed that all elements of the array have changed.
         @param indices:
             A numpy int array listing the indices that have changed.
+            If neither change_mask nor indices is provided, it will be 
+            assumed that all elements of the array have changed.
         '''
         if change_mask is not None and indices is not None:
             raise TypeError("Can't provide both change_mask and indices!")

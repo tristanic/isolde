@@ -8,6 +8,7 @@ import os
 import numpy
 import pickle
 import contextlib
+import itertools
 from math import degrees, radians
 from chimerax.core.geometry import Place, rotation, matrix
 from chimerax.core.atomic import Residue, Atom
@@ -357,8 +358,7 @@ class Rotamers:
                     self[residue] = master_rotamers[residue]
             except KeyError:
                 continue
-
-
+    
     def dihedrals(self, resname):
         '''
         Get a Dihedrals object containing all the dihedrals for residues of this
@@ -369,8 +369,11 @@ class Rotamers:
         '''
         t = self._by_type[resname]
         if t[1] is None or self._needs_update[resname]:
-            if len(t[0]):
-                t[1] = Dihedrals(numpy.concatenate([r.dihedrals for r in t[0]]))
+            rlist = t[0]
+            if len(rlist):
+                t[1] = Dihedrals(list(
+                    itertools.chain.from_iterable(
+                        [r.dihedrals for r in rlist])))
             else:
                 t[1] = Dihedrals()
             self._needs_update[resname] = False

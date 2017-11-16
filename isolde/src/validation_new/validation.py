@@ -12,7 +12,7 @@ from ..constants import defaults
 from ..dihedrals import Dihedrals
 
 package_directory = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(package_directory, '..', 'molprobity_data')
+DATA_DIR = os.path.join(package_directory, 'molprobity_data')
 
 # Load a MolProbity data set and return a SciPy RegularGridInterpolator
 # object for later fast interpolation of values
@@ -378,13 +378,14 @@ class RamaValidator():
                 rc = self._rama_cases[case]
                 v = rc.interpolator
                 indices = case_index_dict[case]
+                if not len(indices):
+                    continue
                 case_scores = v(phipsi[indices])
                 scores[indices] = case_scores
                 if update_colors:
-                    if len(case_scores):
-                        cs = rc.color_scale
-                        case_colors = cs.get_colors(numpy.log(case_scores))
-                        colors[indices] = case_colors
+                    cs = rc.color_scale
+                    case_colors = cs.get_colors(numpy.log(case_scores))
+                    colors[indices] = case_colors
 
     @property
     def rama_cases(self):
@@ -630,8 +631,11 @@ class RotaValidator:
         keylist.pop(keylist.index('TYR'))
 
         for aa in keylist:
-            aa_map[aa] = generate_interpolator(prefix + aa)
-
+            aa_map[aa] = generate_interpolator(prefix + aa.lower())
+    
+    def keys(self):
+        return self._aa_map.keys()
+    
     def __getitem__(self, resname):
         return self._aa_map[resname]
 

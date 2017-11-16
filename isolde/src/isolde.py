@@ -50,6 +50,8 @@ from .checkpoint import CheckPoint
 from .openmm import sim_interface
 from .openmm.sim_interface import SimParams
 
+from .validation_new import validation_interface
+
 from PyQt5.QtWidgets import QMessageBox
 
 OPENMM_LENGTH_UNIT = defaults.OPENMM_LENGTH_UNIT
@@ -205,13 +207,18 @@ class Isolde():
         self._log = Logger('isolde.log')
 
         self._sim_interface = None
-
+        
+        
         self._can_checkpoint = True
         self.checkpoint_disabled_reasons = {}
         self._last_checkpoint = None
 
         self.session = gui.session
-
+        
+        self.live_validation_interface = \
+            validation_interface.ChimeraXValidationInterface(self.session, self)
+        
+        
         self.params = IsoldeParams()
         self.sim_params = SimParams()
 
@@ -2442,7 +2449,7 @@ class Isolde():
         # We need to make sure that the atoms in our important selections are
         # sorted in the same order as in the master model to avoid Bad Things(TM)
         # happening.
-        all_a = sel_model.atoms
+        all_a = sel_model.residues.atoms
         tm_i = all_a.indices(total_mobile)
         sc_i = all_a.indices(sc)
         tm_i.sort()
@@ -2521,15 +2528,21 @@ class Isolde():
 
 
         tuggable_atoms = total_mobile[total_mobile.element_names != 'H']
+        
+        from . import rotamers
+        mobile_residues = total_mobile.unique_residues
+        mobile_rotamers = self._mobile_rotamers = rotamers.Rotamers(
+                        self.session, mobile_residues, self.rotamers)
 
         from .openmm.sim_interface import ChimeraXSimInterface
         sp = self.sim_params
         si = self._sim_interface = ChimeraXSimInterface(self.session, self)
-        si.start_sim_thread(sp, sc, tuggable_atoms, fixed_flags, bd, self.rotamers,
+        si.start_sim_thread(sp, sc, tuggable_atoms, fixed_flags, bd, mobile_rotamers,
                             distance_restraints, position_restraints, self.master_map_list)
         self._last_checkpoint = si.starting_checkpoint
 
-
+        vi = self.live_validation_interface
+        vi.start_validation_threads(mobile_rotamers)
 
 
         self._status('Simulation running')
@@ -2634,8 +2647,8 @@ class Isolde():
             '''
             print('Failed to start')
             pass
-        si = self._sim_interface
         # Otherwise just clean up
+        si = self._sim_interface
         self._simulation_running = False
         self._event_handler.remove_event_handler(
             'do_sim_steps_on_gui_update', error_on_missing = False)
@@ -2643,6 +2656,7 @@ class Isolde():
             'rezone maps during sim', error_on_missing = False)
         #~ self._event_handler.remove_event_handler('update dihedral restraint drawings',
                                                #~ error_on_missing=False)
+        self.live_validation_interface.stop_validation_threads()
         self._update_dihedral_restraints_drawing()
             #~ self.triggers.remove_handler(self._map_rezone_handler)
             #~ self._map_rezone_handler = None

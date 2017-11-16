@@ -42,38 +42,30 @@ class ThreeColorScale():
         midv = self.midval
         maxv = self.maxval
         invals = numpy.array(vals)
-        above_max = numpy.argwhere(invals >= maxv).ravel()
-        below_min = numpy.argwhere(invals < minv).ravel()
-        between_min_and_mid = numpy.argwhere(
-            numpy.logical_and(invals >= minv, invals < midv)).ravel()
-        between_mid_and_max = numpy.argwhere(
-            numpy.logical_and(invals >= midv, invals < maxv)).ravel()
+        above_max = invals >= maxv
+        below_min = invals < minv
+        between_min_and_mid = numpy.logical_and(invals >=minv, invals < midv)
+        between_mid_and_max = numpy.logical_and(invals >=midv, invals < maxv)
         
         
-        outvals = numpy.empty([len(invals),4], numpy.uint8)
-        if len(above_max):
-            outvals[above_max] = maxc
-        if len(below_min):
-            outvals[below_min] = minc
-        if len(between_min_and_mid):
-            lm_vals = invals[between_min_and_mid]
-            lm_colors = numpy.empty([len(lm_vals), 4])
-            multiplier = (lm_vals - minv)/(midv-minv)
-            for i in range(len(lm_vals)):
-                lm_colors[i,:] = multiplier[i]*(midc-minc)+minc
-            outvals[between_min_and_mid] = lm_colors
-        if len(between_mid_and_max):
-            mm_vals = invals[between_mid_and_max]
-            mm_colors = numpy.empty([len(mm_vals), 4])
-            multiplier = (mm_vals-midv)/(maxv-midv)
-            for i in range(len(mm_vals)):
-                mm_colors[i,:] = multiplier[i]*(maxc-midc)+midc
-            outvals[between_mid_and_max] = mm_colors
+        colors = numpy.empty([len(invals),4], numpy.float32)
+        colors[above_max] = maxc
+        colors[below_min] = minc
+        lm_colors = colors[between_min_and_mid]
+        lm_vals = invals[between_min_and_mid]
+        mm_colors = colors[between_mid_and_max]
+        mm_vals = invals[between_mid_and_max]
+        for i in range(4):
+            lm_colors[:,i] = (lm_vals-minv)/(midv-minv)*(midc[i]-minc[i])+minc[i]
+            mm_colors[:,i] = (mm_vals-midv)/(maxv-midv)*(maxc[i]-midc[i])+midc[i]
+        colors[between_min_and_mid] = lm_colors
+        colors[between_mid_and_max] = mm_colors
         
-        return outvals
+        return colors.astype(numpy.uint8)
+        
 
 # Some default colour gradients    
-color_scales = {
+COLOR_SCALES = {
         'RWB': [[255,0,0,255],[255,255,255,255],[0,0,255,255]],
         'BWR': [[0,0,255,255],[255,255,255,255],[255,0,0,255]],
         'RGB': [[255,0,0,255],[0,255,0,255],[0,0,255,255]],
@@ -86,9 +78,19 @@ color_scales = {
         'GYPi': [[0,255,0,255],[255,240,50,255],[255,0,100,255]],      
 }
 
-# Returns an object encapsulating one of the standard three-color scales
-# defined in color_scales.
 def standard_three_color_scale(name, minv, maxv, midv = None):
-    minc, midc, maxc = color_scales[name]
+    '''
+    Returns an object encapsulating one of the standard three-color scales
+    defined in color.COLOR_SCALES.
+    Args:
+        minv:
+            Minimum value - all scores less than this will be coloured the same
+        maxv:
+            Maximum value - all scores above this will be coloured the same
+        midv (optional):
+            Mid-point defining where the middle colour sits. If not provided,
+            it will be calculated as (minv+maxv)/2
+    '''
+    minc, midc, maxc = COLOR_SCALES[name]
     return ThreeColorScale(minv, maxv, midv, 
                 minc, midc, maxc)

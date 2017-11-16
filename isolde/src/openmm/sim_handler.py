@@ -672,13 +672,13 @@ class SimHandler():
 
 
     def get_and_check_positions(self, max_allowed_movement):
-        max_allowed_movement
+        max_allowed_movement = max_allowed_movement.value_in_unit(OPENMM_LENGTH_UNIT)
         c = self.sim.context
         state = c.getState(getPositions = True)
         old_pos = self.old_positions
         pos = state.getPositions(asNumpy = True)
         delta = pos - old_pos
-        distances = numpy.linalg.norm(delta, axis=1)*OPENMM_LENGTH_UNIT
+        distances = numpy.linalg.norm(delta, axis=1)
         max_distance = distances.max()
         if max_distance > max_allowed_movement:
             fast_indices = numpy.where(distances > max_allowed_movement)[0]

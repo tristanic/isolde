@@ -60,69 +60,69 @@ class SimParams(Param_Mgr):
     Container for all the parameters needed to initialise a simulation
     '''
     _default_params = {
-            'restraint_max_force':                  (defaults.MAX_RESTRAINT_FORCE, OPENMM_FORCE_UNIT),
-            'distance_restraint_spring_constant':   (defaults.DISTANCE_RESTRAINT_SPRING_CONSTANT, OPENMM_SPRING_UNIT),
-            'position_restraint_spring_constant':   (defaults.POSITION_RESTRAINT_SPRING_CONSTANT, OPENMM_SPRING_UNIT),
-            'haptic_spring_constant':               (defaults.HAPTIC_SPRING_CONSTANT, OPENMM_SPRING_UNIT),
-            'mouse_tug_spring_constant':            (defaults.MOUSE_TUG_SPRING_CONSTANT, OPENMM_SPRING_UNIT),
-            'tug_max_force':                        (defaults.MAX_TUG_FORCE, OPENMM_FORCE_UNIT),
-            'dihedral_restraint_cutoff_angle':      (defaults.DIHEDRAL_RESTRAINT_CUTOFF, OPENMM_ANGLE_UNIT),
-            'rotamer_restraint_cutoff_angle':       (defaults.ROTAMER_RESTRAINT_CUTOFF, OPENMM_ANGLE_UNIT),
-            'rotamer_spring_constant':              (defaults.ROTAMER_SPRING_CONSTANT, OPENMM_RADIAL_SPRING_UNIT),
-            'peptide_bond_spring_constant':         (defaults.PEPTIDE_SPRING_CONSTANT, OPENMM_RADIAL_SPRING_UNIT),
-            'phi_psi_spring_constant':              (defaults.PHI_PSI_SPRING_CONSTANT, OPENMM_RADIAL_SPRING_UNIT),
-            'cis_peptide_bond_cutoff_angle':        (defaults.CIS_PEPTIDE_BOND_CUTOFF, OPENMM_ANGLE_UNIT),
-            'max_atom_movement_per_step':           (defaults.MAX_ATOM_MOVEMENT_PER_STEP, OPENMM_LENGTH_UNIT),
-            'max_allowable_force':                  (defaults.MAX_ALLOWABLE_FORCE, OPENMM_FORCE_UNIT),
-            'max_stable_force':                     (defaults.MAX_STABLE_FORCE, OPENMM_FORCE_UNIT),
-            'friction_coefficient':                 (defaults.OPENMM_FRICTION, 1/OPENMM_TIME_UNIT),
-            'temperature':                          (defaults.TEMPERATURE, OPENMM_TEMPERATURE_UNIT),
+        'restraint_max_force':                  (defaults.MAX_RESTRAINT_FORCE, OPENMM_FORCE_UNIT),
+        'distance_restraint_spring_constant':   (defaults.DISTANCE_RESTRAINT_SPRING_CONSTANT, OPENMM_SPRING_UNIT),
+        'position_restraint_spring_constant':   (defaults.POSITION_RESTRAINT_SPRING_CONSTANT, OPENMM_SPRING_UNIT),
+        'haptic_spring_constant':               (defaults.HAPTIC_SPRING_CONSTANT, OPENMM_SPRING_UNIT),
+        'mouse_tug_spring_constant':            (defaults.MOUSE_TUG_SPRING_CONSTANT, OPENMM_SPRING_UNIT),
+        'tug_max_force':                        (defaults.MAX_TUG_FORCE, OPENMM_FORCE_UNIT),
+        'dihedral_restraint_cutoff_angle':      (defaults.DIHEDRAL_RESTRAINT_CUTOFF, OPENMM_ANGLE_UNIT),
+        'rotamer_restraint_cutoff_angle':       (defaults.ROTAMER_RESTRAINT_CUTOFF, OPENMM_ANGLE_UNIT),
+        'rotamer_spring_constant':              (defaults.ROTAMER_SPRING_CONSTANT, OPENMM_RADIAL_SPRING_UNIT),
+        'peptide_bond_spring_constant':         (defaults.PEPTIDE_SPRING_CONSTANT, OPENMM_RADIAL_SPRING_UNIT),
+        'phi_psi_spring_constant':              (defaults.PHI_PSI_SPRING_CONSTANT, OPENMM_RADIAL_SPRING_UNIT),
+        'cis_peptide_bond_cutoff_angle':        (defaults.CIS_PEPTIDE_BOND_CUTOFF, OPENMM_ANGLE_UNIT),
+        'max_atom_movement_per_step':           (defaults.MAX_ATOM_MOVEMENT_PER_STEP, OPENMM_LENGTH_UNIT),
+        'max_allowable_force':                  (defaults.MAX_ALLOWABLE_FORCE, OPENMM_FORCE_UNIT),
+        'max_stable_force':                     (defaults.MAX_STABLE_FORCE, OPENMM_FORCE_UNIT),
+        'friction_coefficient':                 (defaults.OPENMM_FRICTION, 1/OPENMM_TIME_UNIT),
+        'temperature':                          (defaults.TEMPERATURE, OPENMM_TEMPERATURE_UNIT),
 
-            'nonbonded_cutoff_method':              (defaults.OPENMM_NONBONDED_METHOD, None),
-            'nonbonded_cutoff_distance':            (defaults.OPENMM_NONBONDED_CUTOFF, OPENMM_LENGTH_UNIT),
+        'nonbonded_cutoff_method':              (defaults.OPENMM_NONBONDED_METHOD, None),
+        'nonbonded_cutoff_distance':            (defaults.OPENMM_NONBONDED_CUTOFF, OPENMM_LENGTH_UNIT),
 
-            'vacuum_dielectric_correction':         (defaults.VACUUM_DIELECTRIC_CORR, OPENMM_DIPOLE_UNIT),
+        'vacuum_dielectric_correction':         (defaults.VACUUM_DIELECTRIC_CORR, OPENMM_DIPOLE_UNIT),
 
-            'use_gbsa':                             (defaults.USE_GBSA, None),
-            'gbsa_cutoff_method':                   (defaults.GBSA_NONBONDED_METHOD, None),
-            'gbsa_solvent_dielectric':              (defaults.GBSA_SOLVENT_DIELECTRIC, OPENMM_DIPOLE_UNIT),
-            'gbsa_solute_dielectric':               (defaults.GBSA_SOLUTE_DIELECTRIC, OPENMM_DIPOLE_UNIT),
-            'gbsa_sa_method':                       (defaults.GBSA_SA_METHOD, None),
-            'gbsa_cutoff':                          (defaults.GBSA_CUTOFF, OPENMM_LENGTH_UNIT),
-            'gbsa_kappa':                           (defaults.GBSA_KAPPA, 1/OPENMM_LENGTH_UNIT),
+        'use_gbsa':                             (defaults.USE_GBSA, None),
+        'gbsa_cutoff_method':                   (defaults.GBSA_NONBONDED_METHOD, None),
+        'gbsa_solvent_dielectric':              (defaults.GBSA_SOLVENT_DIELECTRIC, OPENMM_DIPOLE_UNIT),
+        'gbsa_solute_dielectric':               (defaults.GBSA_SOLUTE_DIELECTRIC, OPENMM_DIPOLE_UNIT),
+        'gbsa_sa_method':                       (defaults.GBSA_SA_METHOD, None),
+        'gbsa_cutoff':                          (defaults.GBSA_CUTOFF, OPENMM_LENGTH_UNIT),
+        'gbsa_kappa':                           (defaults.GBSA_KAPPA, 1/OPENMM_LENGTH_UNIT),
 
-            'rigid_bonds':                          (defaults.RIGID_BONDS, None),
-            'rigid_water':                          (defaults.RIGID_WATER, None),
-            'remove_c_of_m_motion':                 (defaults.REMOVE_C_OF_M_MOTION, None),
+        'rigid_bonds':                          (defaults.RIGID_BONDS, None),
+        'rigid_water':                          (defaults.RIGID_WATER, None),
+        'remove_c_of_m_motion':                 (defaults.REMOVE_C_OF_M_MOTION, None),
 
-            'platform':                             (defaults.OPENMM_PLATFORM, None),
-            'forcefield':                           (amber14, None),
-            'integrator':                           (defaults.OPENMM_INTEGRATOR_TYPE, None),
-            'variable_integrator_tolerance':        (defaults.OPENMM_VAR_INTEGRATOR_TOL, None),
-            'fixed_integrator_timestep':            (defaults.OPENMM_FIXED_INTEGRATOR_TS, None),
-            'constraint_tolerance':                 (defaults.OPENMM_CONSTRAINT_TOL, None),
-            'sim_steps_per_gui_update':             (defaults.SIM_STEPS_PER_GUI_UPDATE, None),
-            'minimization_steps_per_gui_update':    (defaults.MIN_STEPS_PER_GUI_UPDATE, None),
-            'simulation_startup_rounds':            (defaults.SIM_STARTUP_ROUNDS, None),
-            'maximum_unstable_rounds':              (defaults.MAX_UNSTABLE_ROUNDS, None),
-            'minimization_convergence_tol':         (defaults.MIN_CONVERGENCE_FORCE_TOL, OPENMM_FORCE_UNIT),
-            'tug_hydrogens':                        (False, None),
-            'hydrogens_feel_maps':                  (False, None),
+        'platform':                             (defaults.OPENMM_PLATFORM, None),
+        'forcefield':                           (amber14, None),
+        'integrator':                           (defaults.OPENMM_INTEGRATOR_TYPE, None),
+        'variable_integrator_tolerance':        (defaults.OPENMM_VAR_INTEGRATOR_TOL, None),
+        'fixed_integrator_timestep':            (defaults.OPENMM_FIXED_INTEGRATOR_TS, None),
+        'constraint_tolerance':                 (defaults.OPENMM_CONSTRAINT_TOL, None),
+        'sim_steps_per_gui_update':             (defaults.SIM_STEPS_PER_GUI_UPDATE, None),
+        'minimization_steps_per_gui_update':    (defaults.MIN_STEPS_PER_GUI_UPDATE, None),
+        'simulation_startup_rounds':            (defaults.SIM_STARTUP_ROUNDS, None),
+        'maximum_unstable_rounds':              (defaults.MAX_UNSTABLE_ROUNDS, None),
+        'minimization_convergence_tol':         (defaults.MIN_CONVERGENCE_FORCE_TOL, OPENMM_FORCE_UNIT),
+        'tug_hydrogens':                        (False, None),
+        'hydrogens_feel_maps':                  (False, None),
 
-            }
-
-
+        }
 
 
 
-def start_pool(sim_params, sim_data, _comms_object, _change_tracker):
-    try:
-        from chimerax import app_bin_dir
-    except:
-        return
+
+
+def start_pool(sim_params, sim_data, comms_object, change_tracker):
+    #~ try:
+        #~ from chimerax import app_bin_dir
+    #~ except:
+        #~ return
     from multiprocessing.pool import ThreadPool
     thread_pool = ThreadPool(processes=1, initializer=sim_thread._init_sim_thread,
-        initargs=(sim_params, sim_data, _comms_object, _change_tracker))
+        initargs=(sim_params, sim_data, comms_object, change_tracker))
     return thread_pool
 
 class ChimeraXSimInterface:
@@ -132,7 +132,7 @@ class ChimeraXSimInterface:
     bi-directional communication. A new instance is created for each
     simulation, and should be discarded once the simulation is done.
     '''
-    TIMEOUT = 60 # seconds
+    TIMEOUT = defaults.SIM_TIMEOUT # seconds
 
     def __init__(self, session, isolde, time_loops = False):
         self.session = session

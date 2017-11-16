@@ -24,8 +24,7 @@ SIM_MODE_MIN                = control.SIM_MODE_MIN
 SIM_MODE_EQUIL              = control.SIM_MODE_EQUIL
 SIM_MODE_UNSTABLE           = control.SIM_MODE_UNSTABLE
 
-PAUSE_SLEEP = 1e-2 # Time in seconds to sleep the main loop when the
-                   # simulation is paused, to avoid thrashing.
+PAUSE_SLEEP = defaults.THREAD_PAUSE_SLEEP_INTERVAL 
 
 class ChangeTracker(ChangeTracker_Base):
     def __init__(self):

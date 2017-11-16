@@ -21,12 +21,13 @@ class ChangeTracker(ChangeTracker_Base):
         super().__init__()
 
 class RamaComms(ThreadComms):
-    super().__init__()
-    self.update({
-        'changes':          ChangeTracker(),
-        'error':            mp.Queue(),
-        'status':           mp.Queue(),
-    })
+    def __init__(self):
+        super().__init__(self)
+        self.update({
+            'changes':          ChangeTracker(),
+            'error':            mp.Queue(),
+            'status':           mp.Queue(),
+        })
 
 def _init_rama_thread(params, data, comms_obj, change_tracker):
     global _rama_thread_obj

@@ -273,9 +273,14 @@ class Dihedrals():
                 self._residues = concatenate([self.residues, [d.residue]])
                 self._atoms = concatenate([self.atoms, d.atoms])
         elif isinstance(d, Dihedrals):
-            self.dihedrals.extend(d.dihedrals)
-            self._residues = concatenate([self.residues, d.residues])
-            self._atoms = concatenate([self.atoms, d.atoms])
+            if self.atoms is None:
+                self._dihedrals = d.dihedrals
+                self._residues = d.residues
+                self._atoms = d.atoms
+            elif len(d):
+                self._dihedrals.extend(d.dihedrals)
+                self._residues = concatenate([self.residues, d.residues])
+                self._atoms = concatenate([self.atoms, d.atoms])
         else:
             raise TypeError('Can only append a single Dihedral or a Dihedrals object.')    
     

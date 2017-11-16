@@ -66,6 +66,7 @@ class _Defaults:
         'RIGID_WATER':                True,
         'REMOVE_C_OF_M_MOTION':       False,
         'MIN_CONVERGENCE_FORCE_TOL':  50.0, # *unit.kilojoule_per_mole/unit.nanometer
+        'SIM_TIMEOUT':                120.0, # seconds
 
 
         ###
@@ -118,10 +119,13 @@ class _Defaults:
         'HIDE_SURROUNDINGS_DURING_SIM': True,
         'USE_HAPTIC_DEVICE_IF_AVAIL':   True,
 
-        'STANDARD_MAP_MASK_RADIUS':   4.0, # Angstroms
-        'DIFFERENCE_MAP_MASK_RADIUS': 8.0, # Angstroms
+        'STANDARD_MAP_MASK_RADIUS':     4.0, # Angstroms
+        'DIFFERENCE_MAP_MASK_RADIUS':   8.0, # Angstroms
 
-        'COMMS_TIMEOUT':              2.0, # seconds
+        'COMMS_TIMEOUT':                10.0, # seconds
+        # Time for threads to sleep when paused or no input, to avoid 
+        # CPU thrashing
+        'THREAD_PAUSE_SLEEP_INTERVAL':  0.01, # seconds
 
         ###
         # Types for shared variables
@@ -151,8 +155,17 @@ class _Control:
 
     }
 
+@_constant_properties
+class _Validation:
+    _constants = {
+        'ROTA_ALLOWED_CUTOFF':      0.02,
+        'ROTA_OUTLIER_CUTOFF':      0.0005,
+        'RAMA_ALLOWED_CUTOFF':      0.02,
+        'RAMA_OUTLIER_CUTOFF':      0.0005,
+    }
 
 
 defaults = _Defaults()
 sim_outcomes = _Sim_Outcomes()
 control = _Control()
+validation_cutoffs = _Validation()

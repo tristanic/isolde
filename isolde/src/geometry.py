@@ -233,6 +233,31 @@ def cone_geometry(radius = 1, height = 1, nc = 10, caps = True, flipped = False)
         tarray[nc:,2] = arange(nc) + nc2 + 1
 
     return varray, narray, tarray
+
+def exclamation_mark(radius = 0.1, height = 2, nc=8, color = [255,0,0,255]):
+    '''
+    An exclamation mark for annotating rotamer outliers
+    '''
+    from chimerax.core.surface.shapes import cone_geometry, sphere_geometry2
+    from chimerax.core.geometry import translation, scale
+    import numpy
+    stem = cone_geometry(radius=radius, height=height, nc=nc, caps=True)
+    spheres = list(sphere_geometry2(nc*4))
+    spheres[0] = scale(radius*0.7).moved(spheres[0])
+    
+    v, n, t = stem
+    
+        
+    vbottom = translation((0,0, height/2+radius*1.5)).moved(spheres[0])
+    t = numpy.concatenate((t, spheres[2]+len(v)))
+    v = numpy.concatenate((v, vbottom))
+    n = numpy.concatenate((n, spheres[1]))
+    
+    return v, n, t
+    
+    
+
+
     
 def simple_arrow(radius = 0.1, height = 1, nc = 20, color = [255, 0, 0, 255], caps = True, 
                     head_length_fraction = 0.33, head_width_ratio = 1.5, 
