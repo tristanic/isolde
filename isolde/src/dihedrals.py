@@ -11,6 +11,8 @@ from chimerax.core.atomic import Bonds
 from chimerax.core.models import Drawing
 from simtk.unit import Quantity
 from .constants import defaults
+from time import time
+
 
 OPENMM_RADIAL_SPRING_UNIT = defaults.OPENMM_RADIAL_SPRING_UNIT
 
@@ -168,6 +170,7 @@ class Dihedrals():
         reasons = changes.atom_reasons()
         dchanged = 'display changed' in reasons
         cchanged = 'coord changed' in reasons
+        start_time = time()
         if dchanged or cchanged:
             self.update_graphics()
     

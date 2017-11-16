@@ -84,6 +84,7 @@ class RotaValidationThreadInterface:
         self.isolde = isolde
         self.rotamers = rotamers
         self.drawing = drawing
+        self._counter = 0
         comms = self.comms_object = rota_thread.RotaComms()
         ct = self.change_tracker = rota_thread.ChangeTracker()
         if params is None:
@@ -140,6 +141,7 @@ class RotaValidationThreadInterface:
         
         
     def update(self, *_):
+        isolde = self.isolde
         comms = self.comms_object
         ct = self.change_tracker
         data = self.data
@@ -156,9 +158,11 @@ class RotaValidationThreadInterface:
                 self._current_scores[:]=scores
                 self._current_allowed[:]=am
                 self._current_outliers[:]=om
+            self._scores_changed_cb()
+        c = self._counter = (self._counter+1)%isolde.params.rounds_per_rota_update
+        if c == 0 and changes&ct.WAITING:
             comms.thread_safe_set_array_values('coords', dihedrals.coords)
             ct.register_change(ct.COORDS_READY)
-            self._scores_changed_cb()
         
     def _scores_changed_cb(self):
         scores = self._current_scores

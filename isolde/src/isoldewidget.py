@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/IsoldeFrame.ui'
 #
-# Created by: PyQt5 UI code generator 5.9
+# Created by: PyQt5 UI code generator 5.9.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -63,7 +63,6 @@ class Ui_isolde_widget(object):
         self._simulate_page.setGeometry(QtCore.QRect(0, 0, 527, 694))
         self._simulate_page.setObjectName("_simulate_page")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self._simulate_page)
-        self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setSizeConstraint(QtWidgets.QLayout.SetMinAndMaxSize)
@@ -629,7 +628,6 @@ class Ui_isolde_widget(object):
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 483, 460))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout_14 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
-        self.verticalLayout_14.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_14.setObjectName("verticalLayout_14")
         self._restraints_peptide_bond_frame = QtWidgets.QFrame(self.scrollAreaWidgetContents)
         self._restraints_peptide_bond_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -1096,7 +1094,6 @@ class Ui_isolde_widget(object):
         self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 470, 796))
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
         self.verticalLayout_12 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents_2)
-        self.verticalLayout_12.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_12.setObjectName("verticalLayout_12")
         self._validate_rama_stub_frame = QtWidgets.QFrame(self.scrollAreaWidgetContents_2)
         self._validate_rama_stub_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -1145,7 +1142,6 @@ class Ui_isolde_widget(object):
         self._validate_rama_plot_container.setMinimumSize(QtCore.QSize(350, 350))
         self._validate_rama_plot_container.setObjectName("_validate_rama_plot_container")
         self._validate_rama_plot_layout = QtWidgets.QVBoxLayout(self._validate_rama_plot_container)
-        self._validate_rama_plot_layout.setContentsMargins(0, 0, 0, 0)
         self._validate_rama_plot_layout.setObjectName("_validate_rama_plot_layout")
         self.horizontalLayout_24.addWidget(self._validate_rama_plot_container)
         spacerItem21 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)

@@ -114,6 +114,8 @@ class _Defaults:
         'FIX_SOFT_SHELL_BACKBONE':      False,
         'TRACK_RAMACHANDRAN_STATUS':    True,
         'ROUNDS_PER_RAMA_UPDATE':       20,
+        'TRACK_ROTAMER_STATUS':         True,
+        'ROUNDS_PER_ROTA_UPDATE':       10,
         'REMASK_MAPS_DURING_SIM':       True,
         'ROUNDS_PER_MAP_REMASK':        50,
         'HIDE_SURROUNDINGS_DURING_SIM': True,

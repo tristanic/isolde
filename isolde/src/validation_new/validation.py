@@ -605,6 +605,7 @@ class RotaValidator:
             'ASP':          None,
             'CYS':          None,
             'GLN':          None,
+            'GLU':          None,
             'HIS':          None,
             'ILE':          None,
             'LEU':          None,

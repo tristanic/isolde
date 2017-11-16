@@ -14,7 +14,7 @@ from warnings import warn
 from time import time, sleep
 from simtk import unit
 from simtk.unit import Quantity, Unit
-from chimerax.core.atomic import concatenate
+from chimerax.core.atomic import concatenate, Bonds
 
 from ..checkpoint import CheckPoint
 from ..threading.shared_array import TypedMPArray, SharedNumpyArray
@@ -609,15 +609,9 @@ class ChimeraXSimInterface:
                 '''
                 err = RuntimeError(err_str)
                 traceback = ''
-            #~ if thread.is_alive():
-                #~ thread.terminate()
             print(traceback)
             self.stop_sim(sim_outcomes.DISCARD, err)
 
-        #~ if not thread.is_alive():
-            #~ session.triggers.remove_handler(self._update_handler)
-            #~ print(bin(changes))
-            #~ raise RuntimeError('Simulation thread terminated unexpectedly!')
 
         if changes & ct.UNSTABLE:
             warn_str = 'Simulation is unstable! Attempting to minimise excessive force...'
@@ -1062,7 +1056,7 @@ def cys_type(residue):
     atoms = residue.atoms
     names = atoms.names
     sulfur_atom = atoms[names == 'SG'][0]
-    bonds = sulfur_atom.bonds
+    bonds = Bonds(sulfur_atom.bonds)
     if len(bonds) == 1:
         # Deprotonated
         return 'CYM'

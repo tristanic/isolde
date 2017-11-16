@@ -60,15 +60,6 @@ class Atom_Position_Restraints(Position_Restraints):
                 t.atoms.hides |= HIDE_ISOLDE
                 master_model.parent.add([t])
 
-        
-                # Create a Pseudobond for each restrainable atom, connecting it
-                # to its target. This will be automatically displayed if the 
-                # target atom is displayed. 
-                #~ for r, ta in zip(self, t.atoms):
-                    #~ r._target_atom = ta
-                    #~ pb = r._pseudobond = pbg.new_pseudobond(r.atom, ta)
-                    #~ pb.display = False
-            
             for r, ta in zip(self, t.atoms):
                 r.target_indicator = ta
             
@@ -76,11 +67,13 @@ class Atom_Position_Restraints(Position_Restraints):
             self._active_atoms = Atoms()
         
             from chimerax.core.atomic import get_triggers
-            t = get_triggers(self.session)
-            self._master_display_change_handler = t.add_handler(
-                'changes', self._update_target_display)
-            self._master_delete_handler = session.triggers.add_handler(
-                'remove models', self._check_if_master_deleted)
+            t = master_model.triggers
+            if self._master_display_change_handler is None:
+                self._master_display_change_handler = t.add_handler(
+                    'changes', self._update_target_display)
+            if self._master_delete_handler is None:
+                self._master_delete_handler = session.triggers.add_handler(
+                    'remove models', self._check_if_master_deleted)
  
         else:
             ta = self._restraints[0]._target_atom

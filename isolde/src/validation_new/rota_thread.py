@@ -27,6 +27,7 @@ class ChangeTracker(ChangeTracker_Base):
         self.STOP = 1<<15
 
         #Outputs
+        self.WAITING          = 1<<30
         self.VALIDATION_READY = 1<<31
 
         super().__init__()
@@ -131,7 +132,7 @@ class RotaThread:
         if not changes&ct.COORDS_READY:
             #Nothing to do. Check back in a little while
             sleep(PAUSE_SLEEP)  
-            ct.register_change(ct.VALIDATION_READY)
+            ct.register_change(ct.WAITING)
             return
         
         in_coords = comms['coords']
@@ -179,6 +180,7 @@ class RotaThread:
             outliers_out[:] = outliers
         
         ct.register_change(ct.VALIDATION_READY)
+        ct.register_change(ct.WAITING)
         
         
         

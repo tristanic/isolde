@@ -86,6 +86,11 @@ class IsoldeParams(Param_Mgr):
             # Number of simulation updates to pass before updating Ramachandran
             # status
         'rounds_per_rama_update':               (defaults.ROUNDS_PER_RAMA_UPDATE, None),
+            # Provide live visualisation of iffy rotamers
+        'track_rotamer_status':                 (defaults.TRACK_ROTAMER_STATUS, None),
+            # Number of simulation updates to pass before updating rotamer
+            # status
+        'rounds_per_rota_update':               (defaults.ROUNDS_PER_ROTA_UPDATE, None),
             # Limit the drawing to only the atoms involved in the simulation
             # (highly recommended for performance)
         'hide_surroundings_during_sim':         (defaults.HIDE_SURROUNDINGS_DURING_SIM, None),
@@ -2150,8 +2155,10 @@ class Isolde():
         self.ca_to_ca_plus_two = br.CA_to_CA_plus_Two(self.session, m)
         self.o_to_n_plus_four = br.O_to_N_plus_Four(self.session, m)
         # Positional restraints (one per heavy atom)
+        if self.position_restraints is not None:
+            self.position_restraints.cleanup()
         self.position_restraints = pr.Atom_Position_Restraints(
-                self.session, self.selected_model,
+                self.session, m,
                 m.atoms, triggers = self.triggers, create_target=True)
 
 
