@@ -5,18 +5,25 @@ import multiprocessing as mp
 import numpy
 import ctypes
 import traceback
+
 from ..threading import TypedMPArray, SharedNumpyArray, ThreadComms
 from ..threading import ChangeTracker as ChangeTracker_Base
-from .. import validation
+from . import validation
+
+from ..constants import defaults
+PAUSE_SLEEP = defaults.THREAD_PAUSE_SLEEP_INTERVAL 
+
 
 class ChangeTracker(ChangeTracker_Base):
     def __init__(self):
         #Inputs
-        self.STOP                   = 1
-        self.COORDS_READY           = 1<<1
+        self.COORDS_READY = 1
+        
+        self.STOP = 1<<15
 
         #Outputs
-        self.VALIDATION_READY       = 1<<31
+        self.WAITING          = 1<<30
+        self.VALIDATION_READY = 1<<31
 
         super().__init__()
 

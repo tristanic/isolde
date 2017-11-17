@@ -41,9 +41,9 @@ class RotaComms(ThreadComms):
             'status':           mp.Queue(),
         })
 
-def _init_thread(validator, params, data, comms, change_tracker):
+def _init_thread(validator, params, data, comms):
     global _thread_obj
-    _thread_obj = RotaThread(validator, params, data, comms, change_tracker)
+    _thread_obj = RotaThread(validator, params, data, comms)
 
 def _rota_thread():
     ''' Main loop for live rotamer validation. '''
@@ -83,7 +83,7 @@ class RotaThread:
     Designed to be run in a worker thread under the control of the
     multiprocessing module.
     '''
-    def __init__(self, validator, params, data, comms, change_tracker):
+    def __init__(self, validator, params, data, comms):
         '''
         Args:
             validator:
@@ -106,7 +106,7 @@ class RotaThread:
         self.params = params
         self.data = data
         self.comms = comms
-        ct = self.change_tracker = change_tracker
+        ct = self.change_tracker = comms['changes']
         self.changes = ct.changes
         self.error_queue = comms['error']
         
@@ -119,6 +119,7 @@ class RotaThread:
         self.local_scores = numpy.empty(scores.shape, scores.dtype)
                 
         score_map = data['residue ranges']
+        self.color_map = data['color map']
         
         self.resnames = list(score_map.keys())
     
@@ -169,15 +170,20 @@ class RotaThread:
         
         outliers = scores < par['outlier_cutoff']
         allowed = numpy.logical_xor(scores < par['allowed_cutoff'], outliers)
-
+        colors = self.color_map.get_colors(numpy.log(scores))
+        
+        
         scores_out = comms['scores']
         allowed_out = comms['allowed mask']
         outliers_out = comms['outlier mask']
+        colors_out = comms['colors']
         
-        with scores_out.get_lock(), allowed_out.get_lock(), outliers_out.get_lock():
+        with scores_out.get_lock(), allowed_out.get_lock(), \
+            outliers_out.get_lock(), colors_out.get_lock():
             scores_out[:] = scores
             allowed_out[:] = allowed
             outliers_out[:] = outliers
+            colors_out[:] = colors
         
         ct.register_change(ct.VALIDATION_READY)
         ct.register_change(ct.WAITING)

@@ -162,8 +162,6 @@ class _Validation:
     _constants = {
         'ROTA_ALLOWED_CUTOFF':      0.02,
         'ROTA_OUTLIER_CUTOFF':      0.0005,
-        'RAMA_ALLOWED_CUTOFF':      0.02,
-        'RAMA_OUTLIER_CUTOFF':      0.0005,
     }
 
 

@@ -23,17 +23,21 @@ class Rotamer_Annotations(Model):
         # CA-CB bonds for all iffy (allowed or outlier) residues
         self._bonds = Bonds()
         self._scores = None
-        self._new_colors = None
+        self._current_colors = None
         
         from chimerax.core.atomic import get_triggers
         t = get_triggers(session)
         self._structure_change_handler = t.add_handler('changes', self.update_graphics)
         
-        self._color_scale = standard_three_color_scale('PiYG', log(outlier_cutoff), 0, log(allowed_cutoff))
+        self._color_map = standard_three_color_scale('PiYG', log(outlier_cutoff), 0, log(allowed_cutoff))
         
         d = self._drawing = self._cb_annotation()
         self.add_drawing(d)
         self._update_needed = False
+    
+    @property
+    def color_map(self):
+        return self._color_map
     
     def delete(self):
         h = self._structure_change_handler
@@ -43,14 +47,18 @@ class Rotamer_Annotations(Model):
             self._structure_change_handler = None
         Model.delete(self)
     
-    def update_scores(self, iffy_bonds, iffy_scores):
+    def update_scores(self, iffy_bonds, iffy_scores, colors = None):
         if not len(iffy_bonds):
             self.display = False
             return
         self.display = True
         self._bonds = iffy_bonds
         self._scores = iffy_scores
-        self._update_needed = True
+        if colors is None:
+            # Update the colors on the next redraw
+            self._update_needed = True
+        else:
+            self._current_colors = colors
     
     def update_graphics(self, *_):
         if self._scores is None or not len(self._scores):
@@ -59,9 +67,9 @@ class Rotamer_Annotations(Model):
         if not self.visible:
             return
         if self._update_needed:
-            colors = self._new_colors = self._color_scale.get_colors(numpy.log(self._scores))
+            colors = self._current_colors = self._color_map.get_colors(numpy.log(self._scores))
         else:
-            colors = self._new_colors
+            colors = self._current_colors
         bonds = self._bonds
         d = self._drawing
         d.positions = bond_cylinder_placements(bonds)

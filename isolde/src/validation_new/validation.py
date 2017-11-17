@@ -386,7 +386,10 @@ class RamaValidator():
                     cs = rc.color_scale
                     case_colors = cs.get_colors(numpy.log(case_scores))
                     colors[indices] = case_colors
-
+    
+    def _get_scores(self, phipsi, case_index_dict):
+        pass
+    
     @property
     def rama_cases(self):
         return self._rama_cases

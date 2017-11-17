@@ -463,16 +463,16 @@ class Backbone_Dihedrals():
             self.omega = omega
             
             self.residues = phi.residues.merge(psi.residues).merge(omega.residues)
-            self.residues = self.residues[numpy.lexsort((self.residues.numbers, self.residues.chains.chain_ids))]
-            self.resnames = self.residues.names
+            residues = self.residues = self.residues[numpy.lexsort((self.residues.numbers, self.residues.chains.chain_ids))]
+            self.resnames = residues.names
             atoms = self.residues.atoms
             self.CAs = atoms.filter(atoms.names == 'CA')
             phi_indices = []
             psi_indices = []
             omega_indices = []
-            phi_indices = self.residues.indices(phi.residues)
-            psi_indices = self.residues.indices(psi.residues)
-            omega_indices = self.residues.indices(omega.residues)
+            phi_indices = residues.indices(phi.residues)
+            psi_indices = residues.indices(psi.residues)
+            omega_indices = residues.indices(omega.residues)
             
             self._phi_indices = numpy.array(phi_indices[phi_indices != -1],numpy.int32)
             self._psi_indices = numpy.array(psi_indices[psi_indices != -1],numpy.int32)
@@ -588,10 +588,6 @@ class Backbone_Dihedrals():
                 for d in self.by_residue(r):
                     if d is not None:
                         d.rama_case = 'TransPro'
-            
-                
-                    
-            
             
          
     def find_dihedrals_old(self):

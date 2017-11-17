@@ -30,7 +30,7 @@ def error_cb(e):
     print(e.__traceback__)
     print(e)
 
-def _start_thread(thread_type, validator, params, data, comms, change_tracker):
+def _start_thread(thread_type, validator, params, data, comms):
     '''
     Start a thread for one type of validation.
     Args:
@@ -52,13 +52,14 @@ def _start_thread(thread_type, validator, params, data, comms, change_tracker):
             and runs callbacks in the thread as necessary.
     '''
     thread = Pool(processes=1, initializer=thread_type._init_thread, 
-                  initargs=(deepcopy(validator), params, data, comms, change_tracker))
+                  initargs=(deepcopy(validator), params, data, comms))
     return thread
 
 
-    
-    
-    
+######################################
+# ROTAMERS
+######################################
+
 @param_properties
 @autodoc
 class RotaParams(Param_Mgr):
@@ -86,7 +87,7 @@ class RotaValidationThreadInterface:
         self.drawing = drawing
         self._counter = 0
         comms = self.comms_object = rota_thread.RotaComms()
-        ct = self.change_tracker = rota_thread.ChangeTracker()
+        ct = self.change_tracker = comms['changes']
         if params is None:
             params = self.params = RotaParams()
         
@@ -96,6 +97,7 @@ class RotaValidationThreadInterface:
         num_chi = data['num chi'] = dict()
         res_count = data['residue count'] = dict()
         symm = data['symmetric terminal chi'] = dict()
+        data['color map'] = deepcopy(drawing.color_map)
                 
         start = 0
         r_count = 0
@@ -131,12 +133,15 @@ class RotaValidationThreadInterface:
             ctypes.c_bool, r_count))
         comms['outlier mask'] = SharedNumpyArray(TypedMPArray(
             ctypes.c_bool, r_count))
+        comms['colors'] = SharedNumpyArray(TypedMPArray(
+            ctypes.c_uint8, r_count*4)).reshape((r_count,4))
         
         self._current_scores = numpy.zeros(r_count, dtype=FLOAT_TYPE)
         self._current_allowed = numpy.zeros(r_count, dtype=numpy.bool)
         self._current_outliers = numpy.zeros(r_count, dtype=numpy.bool)
+        self._current_colors = numpy.zeros((r_count,4), dtype=numpy.uint8)
         
-        thread = self.thread = _start_thread(rota_thread, validator, params, data, comms, ct)
+        thread = self.thread = _start_thread(rota_thread, validator, params, data, comms)
         self.thread_result = thread.apply_async(rota_thread._rota_thread, args=(), error_callback=error_cb)
         
         
@@ -154,10 +159,12 @@ class RotaValidationThreadInterface:
             scores = comms['scores']
             am = comms['allowed mask']
             om = comms['outlier mask']
-            with scores.get_lock(), am.get_lock(), om.get_lock():
+            colors = comms['colors']
+            with scores.get_lock(), am.get_lock(), om.get_lock(), colors.get_lock():
                 self._current_scores[:]=scores
                 self._current_allowed[:]=am
                 self._current_outliers[:]=om
+                self._current_colors[:]=colors
             self._scores_changed_cb()
         c = self._counter = (self._counter+1)%isolde.params.rounds_per_rota_update
         if c == 0 and changes&ct.WAITING:
@@ -168,11 +175,13 @@ class RotaValidationThreadInterface:
         scores = self._current_scores
         a_m = self._current_allowed
         o_m = self._current_outliers
+        colors = self._current_colors
         iffy_m = numpy.logical_or(a_m,o_m)
         bonds = self._ca_cb_bond_list
         iffy_b = bonds[iffy_m]
         iffy_scores = scores[iffy_m]
-        self.drawing.update_scores(iffy_b, iffy_scores)
+        iffy_colors = colors[iffy_m]
+        self.drawing.update_scores(iffy_b, iffy_scores, colors = iffy_colors)
         
     def stop_thread(self):
         ct = self.change_tracker
@@ -181,14 +190,74 @@ class RotaValidationThreadInterface:
         
         
         
-    
+########################################
+# RAMACHANDRAN
+########################################
+
+@param_properties
+@autodoc
+class RamaParams(Param_Mgr):
+    '''
+    Default parameters for Ramachandran validation
+    '''
+    _default_params = {
+    }
+
+class RamaValidationThreadInterface:
+    def __init__(self, session, isolde, backbone_dihedrals, validator, params = None):
+        '''
+        Threaded implementation of backbone dihedral validation, 
+        handling both Ramachandran and omega (peptide bond cis/trans) 
+        geometries and scoring.
+        '''
+        self.session = session
+        self.isolde = isolde
+        bd = self.backbone_dihedrals = backbone_dihedrals
+        self.validator = validator
+        self._counter = 0
+        comms = self.comms_object = rota_thread.RamaComms()
+        ct = self.change_tracker comms['changes']
+        if params is None:
+            params = self.params = RamaParams()
         
             
-    
-    
-    
+        irc = bd.rama_cases
         
+        rama_cases = data['rama cases'] = dict()
+        # Proline residues need to be re-sorted every time in case they
+        # flip from cis to trans or vice versa.
+        for key, indices in irc.items():
+            if key not in ('CisPro', 'TransPro'):
+                rama_cases[key] = indices.copy()
+        all_pro = rama_cases['AllPro'] = \
+            numpy.concatenate((irc['CisPro'], irc['TransPro']))
+        cispro_mask = comms['cis-pro mask'] = \
+            SharedNumpyArray(TypedMPArray(ctypes.c_bool, len(all_pro)))
+        cispro_mask[:] = False
+        cispro_mask[0:len(irc['CisPro'])] = True
+        
+        # While the Backbone_Dihedrals class has methods to quickly get
+        # Phi, Psi and Omega dihedral values, we want to push as much of
+        # the work as possible into the thread. So, it's better to send
+        # through the raw coordinates and calculate the dihedral values
+        # there.
+        
+        phi_coords = bd.phi.coords
+        psi_coords = bd.psi.coords
+        omega_coords = bd.omega.coords
+        
+        comms['phi coords'] = SharedNumpyArray(TypedMPArray(
+            phi_coords.size, FLOAT_TYPE)).reshape(phi_coords.shape)
+        comms['psi coords'] = SharedNumpyArray(TypedMPArray(
+            psi_coords.size, FLOAT_TYPE)).reshape(psi_coords.shape)
+        comms['omega coords'] = SharedNumpyArray(TypedMPArray(
+            omega_coords.size, FLOAT_TYPE)).reshape(omega_coords.shape)
     
+        comms['scores'] = SharedNumpyArray(TypedMPArray(
+            bd.rama_scores.size, FLOAT_TYPE))
+        comms['colors'] = SharedNumpyArray(TypedMPArray(
+            bd.rama_colors.size, ctypes.c_uint8)).reshape(bd.rama_colors.shape)
+        
 
     
 class ChimeraXValidationInterface:
@@ -208,6 +277,12 @@ class ChimeraXValidationInterface:
         ####
         self.rota_validator = validation.RotaValidator()
         self.rota_params = RotaParams()
+
+        ####
+        # Ramachandran
+        ####
+        self.rama_validator = validation.RamaValidator()
+        self.rama_params = RamaParams()
     
     @property
     def current_model(self):
