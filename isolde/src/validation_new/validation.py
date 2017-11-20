@@ -526,21 +526,21 @@ class RamaPlot():
 
 class OmegaValidator():
     def __init__(self, annotation_model):
-        from chimerax.core.models import Drawing
+        from chimerax.core.models import Drawing, Model
         self.current_model = None
         self.omega = None
-        self.m = annotation_model
+        m = self.m = annotation_model
         self.name = 'omega planes'
         self.cis_color = [255, 32, 32, 255]
         self.twisted_color = [255,255,32,255]
-        existing_names = [d.name for d in self.m.all_drawings()]
+        existing_names = [m.name for d in m.child_models()]
         if self.name not in existing_names:
-            self.master_drawing = Drawing(self.name)
-            self.m.add_drawing(self.master_drawing)
+            d = self.master_drawing = Model(self.name, m.session)
+            self.m.add([d])
         else:
             i = existing_names.index(self.name)
-            self.master_drawing = self.m.all_drawings()[i]
-            self.master_drawing.remove_all_drawings()
+            d = self.master_drawing = self.m.child_models()[i]
+            d.remove_all_drawings()
         self._initialize_drawings()
 
 

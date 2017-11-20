@@ -170,24 +170,30 @@ class Dihedrals():
         reasons = changes.atom_reasons()
         dchanged = 'display changed' in reasons
         cchanged = 'coord changed' in reasons
-        start_time = time()
         if dchanged or cchanged:
             self.update_graphics()
     
     def update_graphics(self, *_, update_needed = None):
         if update_needed is None:
             update_needed = self.update_needed
-        if self._drawing is None:
+        d = self._drawing
+        if d is None:
             return
         r = self._ring_drawing
         p = self._post_drawing
         if update_needed:
             self._update_restrained_bonds()
         r_d = self._restrained_dihedrals
-        if len(r_d) == 0:
-            r.positions = Places([])
-            p.positions = Places([])
+        if r_d is None or len(r_d) == 0:
+            if r.display or p.display:
+                r.display = False
+                p.display = False
+            #~ r.positions = Places([])
+            #~ p.positions = Places([])
             return
+        r.display = True
+        p.display = True
+        print('Displaying dihedral annotations')
         rb = self._restrained_bonds
         showns = rb.showns
         shown_indices = numpy.where(showns)[0]

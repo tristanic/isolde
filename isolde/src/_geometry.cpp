@@ -100,8 +100,8 @@ void normalize_vector_3d(double vector[3])
     }
 }
 
-void rotations(double axis[3], double* angles, int n, double* out)
 // Fill out with a nx3x4 matrix of rotation matrices (translation = 0)
+void rotations(double axis[3], double* angles, int n, double* out)
 {
     normalize_vector_3d(axis);
     double angle, sa, ca, k, ax, ay, az;
@@ -127,6 +127,23 @@ void rotations(double axis[3], double* angles, int n, double* out)
         out[start+11] = 0;
     }
 }
+
+// Scale the input transforms by the values in scales, leaving the 
+// translation components untouched.
+void scale_transforms(double* scales, int n, double* transforms)
+{
+    for (int i = 0, count = 0; i < n; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
+            for (int k = 0; k < 4; ++k, ++count)
+            {
+                if (k<3) transforms[count] *= scales[i];
+            }
+        }
+    }
+}
+
 
 void multiply_transforms(double tf1[3][4], double tf2[3][4], double out[3][4])
 {

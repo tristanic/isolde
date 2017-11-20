@@ -215,8 +215,8 @@ class RamaValidationThreadInterface:
         bd = self.backbone_dihedrals = backbone_dihedrals
         self.validator = validator
         self._counter = 0
-        comms = self.comms_object = rota_thread.RamaComms()
-        ct = self.change_tracker comms['changes']
+        comms = self.comms_object = rama_thread.RamaComms()
+        ct = self.change_tracker = comms['changes']
         if params is None:
             params = self.params = RamaParams()
         

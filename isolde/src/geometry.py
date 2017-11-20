@@ -72,6 +72,19 @@ def rotations(axis, angles):
     _rotations(axis.ctypes.data_as(COORTYPE), angles.ctypes.data_as(ANGLE_TYPE), 
                n, ret.ctypes.data_as(RTYPE))
     return ret
+
+_scale_transforms = _geometry.scale_transforms
+def scale_transforms(scales, transforms):
+    ''' Get a set of transformations scaling coordinates by the values in scales.'''
+    n = len(scales)
+    tf = convert_and_sanitize_numpy_array(transforms, numpy.double)
+    SCALE_TYPE = ctypes.POINTER(ctypes.c_double*n)
+    RTYPE = ctypes.POINTER(ctypes.c_double)
+    _scale_transforms.argtypes = [SCALE_TYPE, ctypes.c_int, RTYPE]
+    _scale_transforms(scales.ctypes.data_as(SCALE_TYPE), n, tf.ctypes.data_as(RTYPE))
+    return tf
+
+
     
 _multiply_transforms = _geometry.multiply_transforms
 def multiply_transforms(tf1, tf2):
@@ -88,10 +101,10 @@ def convert_and_sanitize_numpy_array(array, dtype):
     Convert a numpy array to the specified data type, and ensure its
     contents are C-contiguous in memory.
     '''
-    if array.flags.c_contiguous:
-        if array.dtype == dtype:
-            return array
-        return array.as_type(dtype)
+    #~ if array.flags.c_contiguous:
+        #~ if array.dtype == dtype:
+            #~ return array
+        #~ return array.as_type(dtype)
     ret = numpy.empty(array.shape, dtype)
     ret[:] = array
     return ret
@@ -256,6 +269,20 @@ def exclamation_mark(radius = 0.1, height = 2, nc=8, color = [255,0,0,255]):
     return v, n, t
     
     
+def spiral(major_radius=0.25, minor_radius=0.1, height=1, turns=1.0, 
+           turn_segments=10, circle_segments=5):
+    '''
+    Draw a 3D spiral.
+    '''
+    from math import pi
+    from chimerax.core.surface import tube
+    spline_points = numpy.array(range(turn_segments), float)/(turn_segments-1)
+    spline_xyz = numpy.empty((turn_segments, 3), float)
+    spline_xyz[:,0] = numpy.cos(spline_points * turns * 2*pi)*major_radius
+    spline_xyz[:,1] = numpy.sin(spline_points * turns * 2*pi)*major_radius
+    spline_xyz[:,2] = spline_points * height
+    return tube.tube_spline(spline_xyz, minor_radius, segment_subdivisions = 2, circle_subdivisions = circle_segments)
+
 
 
     
