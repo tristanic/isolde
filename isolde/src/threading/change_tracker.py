@@ -22,17 +22,6 @@ class ChangeTracker:
     def clear_outputs(self):
         self._change_var.value &= ~self.ALL_OUTPUTS
 
-    # def _find_callbacks(self, sim_thread):
-    #     '''
-    #     To be run (only) by the SimThread in the worker process after
-    #     initialisation. Replaces the names of the callback functions
-    #     with pointers to the functions themselves.
-    #     '''
-    #     sh = self.sim_handler
-    #     for key, arr in self._managed_arrays.items():
-    #         cb_name = arr[-1]
-    #         self._callbacks[key] = getattr(sim_thread, cb_name)
-
     def run_all_necessary_callbacks(self, thread, changes):
         '''
         Runs the callbacks to apply the changes for any arrays whose

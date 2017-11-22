@@ -665,7 +665,7 @@ class SimHandler():
         corresponding to atoms for which the safety check failed.
         '''
         sim = self.sim
-        sim.step(steps)
+        sim.integrator.step(steps)
         coords, fast_indices = self.get_and_check_positions(steps*max_movement)
         self.old_positions = coords
         return coords, fast_indices

@@ -102,6 +102,8 @@ class IsoldeParams(Param_Mgr):
         'standard_map_mask_cutoff':             (defaults.STANDARD_MAP_MASK_RADIUS, None),
             # Mask cutoff for a difference map (e.g. mFo-DFc)
         'difference_map_mask_cutoff':           (defaults.DIFFERENCE_MAP_MASK_RADIUS, None),
+            # Use multiprocessing instead of threads (only available on Linux)
+        'use_multiprocessing':                  (defaults.USE_FORK_INSTEAD_OF_THREADS, None),
 
     }
 
@@ -2547,9 +2549,10 @@ class Isolde():
         si.start_sim_thread(sp, sc, tuggable_atoms, fixed_flags, bd, mobile_rotamers,
                             distance_restraints, position_restraints, self.master_map_list)
         self._last_checkpoint = si.starting_checkpoint
-
-        vi = self.live_validation_interface
-        vi.start_validation_threads(mobile_rotamers)
+        
+        if self.params.track_rotamer_status:
+            vi = self.live_validation_interface
+            vi.start_validation_threads(mobile_rotamers)
 
 
         self._status('Simulation running')
@@ -2624,9 +2627,6 @@ class Isolde():
         self._isolde_events.add_event_handler('rezone maps during sim',
                                               'completed simulation step',
                                               self._rezone_maps_if_required)
-        #~ self._event_handler.add_event_handler('update dihedral restraint drawings',
-                                    #~ 'graphics update',
-                                    #~ self._all_annotated_dihedrals.update_graphics)
 
 
 
@@ -2661,19 +2661,14 @@ class Isolde():
             'do_sim_steps_on_gui_update', error_on_missing = False)
         self._isolde_events.remove_event_handler(
             'rezone maps during sim', error_on_missing = False)
-        #~ self._event_handler.remove_event_handler('update dihedral restraint drawings',
-                                               #~ error_on_missing=False)
-        self.live_validation_interface.stop_validation_threads()
+        
+        if self.params.track_rotamer_status:
+            self.live_validation_interface.stop_validation_threads()
         self._update_dihedral_restraints_drawing()
-            #~ self.triggers.remove_handler(self._map_rezone_handler)
-            #~ self._map_rezone_handler = None
 
         self._disable_rebuild_residue_frame()
 
         self._update_menu_after_sim()
-        #mouse_mode_names = self._mouse_modes.get_names()
-        #for n in mouse_mode_names:
-            #self._mouse_modes.remove_mode(n)
         self._mouse_tugger = None
         for d in self._haptic_devices:
             d.cleanup()
@@ -3211,7 +3206,7 @@ class Isolde():
 
 
     #############################################
-    # Main simulation functions to be run once per GUI update
+    # Main simulation functions to be run once per coordinate update
     #############################################
 
 

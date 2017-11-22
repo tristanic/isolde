@@ -5,7 +5,6 @@ validation thread(s) is defined here.
 '''
 import numpy
 import multiprocessing as mp
-from multiprocessing.pool import ThreadPool as Pool
 import ctypes
 from math import pi, radians, degrees
 from warnings import warn
@@ -51,6 +50,7 @@ def _start_thread(thread_type, validator, params, data, comms):
             Manages flags to notify master and slave threads of changes,
             and runs callbacks in the thread as necessary.
     '''
+    from multiprocessing.pool import Pool
     thread = Pool(processes=1, initializer=thread_type._init_thread, 
                   initargs=(deepcopy(validator), params, data, comms))
     return thread
@@ -141,7 +141,8 @@ class RotaValidationThreadInterface:
         self._current_outliers = numpy.zeros(r_count, dtype=numpy.bool)
         self._current_colors = numpy.zeros((r_count,4), dtype=numpy.uint8)
         
-        thread = self.thread = _start_thread(rota_thread, validator, params, data, comms)
+        thread = self.thread = _start_thread(rota_thread, validator, 
+                    params, data, comms)
         self.thread_result = thread.apply_async(rota_thread._rota_thread, args=(), error_callback=error_cb)
         
         
@@ -296,7 +297,7 @@ class ChimeraXValidationInterface:
                 if isinstance(cm, Rotamer_Annotations):
                     return cm
             rp = self.rota_params
-            rm = Rotamer_Annotations(self.session, rp.allowed_cutoff, 
+            rm = Rotamer_Annotations(self.session, m, rp.allowed_cutoff, 
                                                      rp.outlier_cutoff)
             m.add([rm])
             return rm

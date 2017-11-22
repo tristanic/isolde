@@ -3,11 +3,11 @@ Drawing code for live annotation of rotamers
 '''
 import numpy
 from math import log
+from time import time
 
 from chimerax.core.models import Drawing, Model
 from chimerax.core.atomic import Bonds
 from chimerax.core.geometry import translation, rotation, Places
-
 
 from ..color import standard_three_color_scale
 from ..geometry import exclamation_mark, spiral, bond_cylinder_placements
@@ -18,7 +18,7 @@ class Rotamer_Annotations(Model):
     
     pickable = False
     
-    def __init__(self, session, allowed_cutoff, outlier_cutoff):
+    def __init__(self, session, atomic_model, allowed_cutoff, outlier_cutoff):
         Model.__init__(self, 'Rotamer Annotations', session)
         
         # CA-CB bonds for all iffy (allowed or outlier) residues
@@ -31,8 +31,8 @@ class Rotamer_Annotations(Model):
         self._max_scale = 2
         
         from chimerax.core.atomic import get_triggers
-        t = get_triggers(session)
-        self._structure_change_handler = t.add_handler('changes', self.update_graphics)
+        t = atomic_model.triggers
+        self._structure_change_handler = t.add_handler('changes', self._update_graphics_if_needed)
         
         self._color_map = standard_three_color_scale('PiYG', log(outlier_cutoff), 0, log(allowed_cutoff))
         
@@ -66,6 +66,11 @@ class Rotamer_Annotations(Model):
             self._update_needed = True
         else:
             self._current_colors = colors
+    
+    def _update_graphics_if_needed(self, trigger_name, changes):
+        changes = changes[1]
+        if 'coord changed' in changes.atom_reasons():
+            self.update_graphics()
     
     def update_graphics(self, *_, scale_by_scores = True):
         if self._scores is None or not len(self._scores):

@@ -2,12 +2,13 @@ import multiprocessing as mp
 import numpy
 import ctypes
 import traceback
+
 from ..threading import TypedMPArray, SharedNumpyArray, ThreadComms
 from ..threading import ChangeTracker as ChangeTracker_Base
 from .sim_handler import SimHandler
 from simtk import unit, openmm
 from ..constants import defaults, control
-from time import sleep
+from time import time, sleep
 FLOAT_TYPE = defaults.FLOAT_TYPE
 
 OPENMM_LENGTH_UNIT          = defaults.OPENMM_LENGTH_UNIT
@@ -25,6 +26,7 @@ SIM_MODE_EQUIL              = control.SIM_MODE_EQUIL
 SIM_MODE_UNSTABLE           = control.SIM_MODE_UNSTABLE
 
 PAUSE_SLEEP = defaults.THREAD_PAUSE_SLEEP_INTERVAL 
+
 
 class ChangeTracker(ChangeTracker_Base):
     def __init__(self):
@@ -83,13 +85,16 @@ def _sim_thread():
 
     so = _sim_thread_obj
     comms = so.comms
+    par = so.sim_params
     ct = so.change_tracker
     changes = ct.changes
     status_q = comms['status']
     error_q = comms['error']
+    loop_period = par.target_loop_period
     # Wait for ISOLDE to give the signal to go ahead:
     status_q.get()
     while True:
+        start_time = time()
         with changes.get_lock():
             current_changes = changes.value
             ct.clear_inputs()
@@ -99,6 +104,9 @@ def _sim_thread():
 
         try:
             so.main_loop(current_changes)
+            elapsed_time = time()-start_time
+            if elapsed_time < loop_period:
+                sleep(loop_period-elapsed_time)
         except Exception as e:
             tb = traceback.format_exc()
             main_str = e.args[0]

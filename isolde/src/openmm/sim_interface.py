@@ -108,6 +108,7 @@ class SimParams(Param_Mgr):
         'minimization_convergence_tol':         (defaults.MIN_CONVERGENCE_FORCE_TOL, OPENMM_FORCE_UNIT),
         'tug_hydrogens':                        (False, None),
         'hydrogens_feel_maps':                  (False, None),
+        'target_loop_period':                   (defaults.TARGET_LOOP_PERIOD, None),
 
         }
 
@@ -115,13 +116,16 @@ class SimParams(Param_Mgr):
 
 
 
-def start_pool(sim_params, sim_data, comms_object, change_tracker):
+def start_pool(sim_params, sim_data, comms_object, change_tracker, use_mp = False):
     #~ try:
         #~ from chimerax import app_bin_dir
     #~ except:
         #~ return
-    from multiprocessing.pool import ThreadPool
-    thread_pool = ThreadPool(processes=1, initializer=sim_thread._init_sim_thread,
+    if use_mp:
+        from multiprocessing.pool import Pool
+    else:
+        from multiprocessing.pool import ThreadPool as Pool
+    thread_pool = Pool(processes=1, initializer=sim_thread._init_sim_thread,
         initargs=(sim_params, sim_data, comms_object, change_tracker))
     return thread_pool
 
@@ -163,12 +167,14 @@ class ChimeraXSimInterface:
 
     def _sim_start_cb(self, *_):
         self._initialize_mouse_tugging()
-        self._register_sim_event('ramachandran update', 'isolde',
-                                 'completed simulation step',
-                                  self.isolde.update_ramachandran)
-        self._register_sim_event('omega update', 'isolde',
-                                 'completed simulation step',
-                                 self.isolde.update_omega_check)
+        if self.isolde.params.track_ramachandran_status:
+            self._register_sim_event('ramachandran update', 'isolde',
+                                     'completed simulation step',
+                                      self.isolde.update_ramachandran)
+        if self.isolde.params.track_rotamer_status:
+            self._register_sim_event('omega update', 'isolde',
+                                     'completed simulation step',
+                                     self.isolde.update_omega_check)
 
 
 
@@ -537,7 +543,7 @@ class ChimeraXSimInterface:
         isolde = self.isolde
         err_q = comms['error']
         status_q = comms['status']
-        while status_q.full():
+        while not status_q.empty():
             print(status_q.get())
 
         with ct.changes.get_lock():
@@ -591,7 +597,7 @@ class ChimeraXSimInterface:
         if self.step_counter == 10:
             self.sim_mode = 'equil'
 
-        if self.step_counter < 10 and (changes & ct.MIN_COMPLETE):
+        elif self.step_counter < 10 and (changes & ct.MIN_COMPLETE):
             self.sim_mode = 'equil'
 
         if changes & ct.ERROR:
@@ -600,7 +606,7 @@ class ChimeraXSimInterface:
                 return
 
             err_q = comms['error']
-            if err_q.full():
+            if not err_q.empty():
                 err, traceback = err_q.get()
             else:
                 err_str = '''
@@ -663,11 +669,12 @@ class ChimeraXSimInterface:
             raise RuntimeError('You already have a simulation running!')
 
         #~ manager = self.manager = mp.Manager()
-        ct = self.change_tracker = ChangeTracker()
+        #ct = self.change_tracker = ChangeTracker()
 
         # Container for all data that can be changed by ISOLDE, the simulation
         # thread, or both
         comms = self.comms_object = SimComms()
+        ct = self.change_tracker = comms['changes']
         self.distance_restraints_dict = distance_restraints
         self.sim_params = sim_params
         self.temperature = sim_params['temperature'].value_in_unit(OPENMM_TEMPERATURE_UNIT)
@@ -769,7 +776,8 @@ class ChimeraXSimInterface:
         if density_maps is not None:
             self._prepare_density_maps(density_maps)
 
-        self._pool = start_pool(sim_params, sim_data, comms, ct)
+        self._pool = start_pool(sim_params, sim_data, comms, ct, 
+                        use_mp = self.isolde.params.use_multiprocessing)
 
         self._init_start_time = time()
         self.step_counter = 0

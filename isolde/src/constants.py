@@ -49,7 +49,7 @@ class _Defaults:
         'OPENMM_VAR_INTEGRATOR_TOL':  1e-4,
         'OPENMM_CONSTRAINT_TOL':      1e-4,
         'OPENMM_FIXED_INTEGRATOR_TS': 0.001, #* unit.picoseconds,
-        'SIM_STEPS_PER_GUI_UPDATE':   20,
+        'SIM_STEPS_PER_GUI_UPDATE':   50,
         'MIN_STEPS_PER_GUI_UPDATE':   50,
         'SIM_STARTUP_ROUNDS':         10,
         'MAX_UNSTABLE_ROUNDS':        20,
@@ -67,6 +67,7 @@ class _Defaults:
         'REMOVE_C_OF_M_MOTION':       False,
         'MIN_CONVERGENCE_FORCE_TOL':  50.0, # *unit.kilojoule_per_mole/unit.nanometer
         'SIM_TIMEOUT':                120.0, # seconds
+        'TARGET_LOOP_PERIOD':         0.1, # seconds
 
 
         ###
@@ -120,6 +121,7 @@ class _Defaults:
         'ROUNDS_PER_MAP_REMASK':        50,
         'HIDE_SURROUNDINGS_DURING_SIM': True,
         'USE_HAPTIC_DEVICE_IF_AVAIL':   True,
+        'USE_FORK_INSTEAD_OF_THREADS':  False,
 
         'STANDARD_MAP_MASK_RADIUS':     4.0, # Angstroms
         'DIFFERENCE_MAP_MASK_RADIUS':   8.0, # Angstroms

@@ -123,6 +123,7 @@ class Atom_Position_Restraints(Position_Restraints):
         return self._target_model.atoms[self.spring_constants == 0]
     
     def _update_target_display(self, trigger_name, changes):
+        changes = changes[1]
         if 'display changed' in changes.atom_reasons():
             self._active_targets.displays = self._active_atoms.visibles
     

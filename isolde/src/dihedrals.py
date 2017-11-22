@@ -193,7 +193,6 @@ class Dihedrals():
             return
         r.display = True
         p.display = True
-        print('Displaying dihedral annotations')
         rb = self._restrained_bonds
         showns = rb.showns
         shown_indices = numpy.where(showns)[0]
