@@ -40,6 +40,8 @@ SIM_MODE_MIN                = control.SIM_MODE_MIN
 SIM_MODE_EQUIL              = control.SIM_MODE_EQUIL
 SIM_MODE_UNSTABLE           = control.SIM_MODE_UNSTABLE
 
+CARBON_MASS = defaults.CARBON_MASS
+CARBON_ATOMIC_NUMBER = defaults.CARBON_ATOMIC_NUMBER
 
 def error_cb(e):
     print(e.__traceback__)
@@ -107,7 +109,7 @@ class SimParams(Param_Mgr):
         'maximum_unstable_rounds':              (defaults.MAX_UNSTABLE_ROUNDS, None),
         'minimization_convergence_tol':         (defaults.MIN_CONVERGENCE_FORCE_TOL, OPENMM_FORCE_UNIT),
         'tug_hydrogens':                        (False, None),
-        'hydrogens_feel_maps':                  (False, None),
+        'hydrogens_feel_maps':                  (defaults.HYDROGENS_FEEL_MAPS, None),
         'target_loop_period':                   (defaults.TARGET_LOOP_PERIOD, None),
 
         }
@@ -960,7 +962,17 @@ class ChimeraXSimInterface:
         be able to specify precisely which atoms are coupled to which
         maps.
         '''
-        atoms = self.mobile_heavy_atoms
+        if self.sim_params.hydrogens_feel_maps:
+            atoms = self.mobile_atoms
+        else:
+            atoms = self.mobile_heavy_atoms
+        
+        # Forces scaled by atomic number. Should really be by number of
+        # electrons (to account for ions), but that's not available in
+        # ChimeraX. Will have to add a look-up table in ISOLDE.
+        default_ks = atoms.element_numbers / CARBON_ATOMIC_NUMBER
+        
+        #default_ks = atoms.elements.masses / CARBON_MASS
         atom_indices = self.all_atoms.indices(atoms)
         density_map_names = []
         comms = self.comms_object
@@ -989,7 +1001,7 @@ class ChimeraXSimInterface:
                             TypedMPArray(FLOAT_TYPE, vd.size)).reshape(vd.shape)
                 map_data[:] = vd
                 global_k = comms[global_k_key] = mp.Value(FLOAT_TYPE, imap.coupling_constant)
-                default_ks = numpy.ones(len(self.mobile_heavy_atoms))
+                #default_ks = numpy.ones(len(self.mobile_heavy_atoms))
                 atom_ks = comms[atom_k_key] = SharedNumpyArray(TypedMPArray(FLOAT_TYPE, default_ks))
                 change_tracker.add_managed_arrays(
                     coupling_change_bit, name, (atom_ks,), 'density_map_coupling_cb')

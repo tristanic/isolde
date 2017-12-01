@@ -600,6 +600,20 @@ class OmegaValidator():
         self._current_twisted = twisted
         return cis, twisted
 
+    def find_outliers_new(self):
+        omegas = self.omega
+        abs_o_vals = abs(omegas.values)
+        all_outlier_mask = abs_o_vals <= TRANS_MIN
+        # Limit to just the outliers
+        all_outliers = omegas[numpy.where(all_outlier_mask)[0]]
+        abs_o_vals = abs_o_vals[all_outlier_mask]
+        cis_mask = abs_o_vals <= CIS_MAX
+        cis_pro_mask = numpy.logical_and(cis_mask, all_outliers.residues.names == 'PRO')
+        twisted_mask = numpy.invert(cis_mask)
+        twisted_indices = numpy.where(twisted_mask)[0]
+        cis_pro_indices = numpy.where(cis_pro_mask)[0]
+        return all_outliers, twisted_mask, cis_pro_mask
+
     def draw_outliers(self, cis, twisted):
         self._update_coords(cis, self._cis_drawing, self.cis_color)
         self._update_coords(twisted, self._twisted_drawing, self.twisted_color)

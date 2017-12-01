@@ -68,6 +68,7 @@ class _Defaults:
         'MIN_CONVERGENCE_FORCE_TOL':  50.0, # *unit.kilojoule_per_mole/unit.nanometer
         'SIM_TIMEOUT':                120.0, # seconds
         'TARGET_LOOP_PERIOD':         0.1, # seconds
+        'HYDROGENS_FEEL_MAPS':        True,
 
 
         ###
@@ -135,6 +136,12 @@ class _Defaults:
         # Types for shared variables
         ###
         'FLOAT_TYPE' :                  ctypes.c_double,
+        
+        ###
+        # General constants
+        ###
+        'CARBON_MASS':                  14.006699562072754,
+        'CARBON_ATOMIC_NUMBER':         6,
     }
 
 @_constant_properties

@@ -164,7 +164,6 @@ def dihedral_fill_plane(p0, p1, p2, p3):
     
 
 def dihedral_fill_planes(dihedrals, target_drawing):
-    import numpy
     dw = target_drawing
     varray = numpy.empty([5*len(dihedrals), 3], numpy.float32)
     narray = numpy.empty([5*len(dihedrals), 3], numpy.float32)
@@ -179,6 +178,64 @@ def dihedral_fill_planes(dihedrals, target_drawing):
         tarray[ntri:ntri+3] = thist
         ntri += 3
     dw.vertices, dw.normals, dw.triangles = varray, narray, tarray
+
+_dihedral_fill_planes=_geometry.dihedral_fill_planes
+def dihedral_fill_planes(dihedrals, target_drawing):
+    dw = target_drawing
+    coords = dihedrals.coords
+    n = len(dihedrals)
+    varray = numpy.empty([5*n, 3], numpy.float32)
+    narray = numpy.empty([5*n, 3], numpy.float32)
+    tarray = numpy.empty([3*n, 3], numpy.int32)
+    COORTYPE = ctypes.POINTER(ctypes.c_double*coords.size)
+    V_TYPE = ctypes.POINTER(ctypes.c_float*varray.size)
+    N_TYPE = ctypes.POINTER(ctypes.c_float*narray.size)
+    T_TYPE = ctypes.POINTER(ctypes.c_int32*tarray.size)
+    _dihedral_fill_planes.argtypes = [ctypes.c_int, COORTYPE, V_TYPE, N_TYPE, T_TYPE]
+    _dihedral_fill_planes(n, coords.ctypes.data_as(COORTYPE),
+                             varray.ctypes.data_as(V_TYPE),
+                             narray.ctypes.data_as(N_TYPE),
+                             tarray.ctypes.data_as(T_TYPE))
+    dw.vertices, dw.normals, dw.triangles = varray, narray, tarray
+
+_dihedral_fill_and_color_planes = _geometry.dihedral_fill_and_color_planes
+def dihedral_fill_and_color_planes(dihedrals, target_drawing, 
+            twisted_mask, cis_pro_mask, cis_nonpro_color, twisted_color,
+            cis_pro_color):
+    dw = target_drawing
+    coords = dihedrals.coords
+    n = len(dihedrals)
+    varray = numpy.empty([5*n, 3], numpy.float32)
+    narray = numpy.empty([5*n, 3], numpy.float32)
+    tarray = numpy.empty([3*n, 3], numpy.int32)
+    carray = numpy.empty([5*n, 4], numpy.uint8)
+    COORTYPE = ctypes.POINTER(ctypes.c_double*coords.size)
+    V_TYPE = ctypes.POINTER(ctypes.c_float*varray.size)
+    N_TYPE = ctypes.POINTER(ctypes.c_float*narray.size)
+    T_TYPE = ctypes.POINTER(ctypes.c_int32*tarray.size)
+    C_TYPE = ctypes.POINTER(ctypes.c_uint8*carray.size)
+    COLOR_TYPE = ctypes.POINTER(ctypes.c_uint8*4)
+    MASK_TYPE = ctypes.POINTER(ctypes.c_bool*n)
+    _dihedral_fill_planes.argtypes = [ctypes.c_int, COORTYPE, MASK_TYPE,
+        MASK_TYPE, COLOR_TYPE, COLOR_TYPE, COLOR_TYPE, 
+        V_TYPE, N_TYPE, T_TYPE, C_TYPE]
+    _dihedral_fill_and_color_planes(n, coords.ctypes.data_as(COORTYPE),
+                             twisted_mask.ctypes.data_as(MASK_TYPE),
+                             cis_pro_mask.ctypes.data_as(MASK_TYPE),
+                             cis_nonpro_color.ctypes.data_as(COLOR_TYPE),
+                             twisted_color.ctypes.data_as(COLOR_TYPE),
+                             cis_pro_color.ctypes.data_as(COLOR_TYPE),
+                             varray.ctypes.data_as(V_TYPE),
+                             narray.ctypes.data_as(N_TYPE),
+                             tarray.ctypes.data_as(T_TYPE),
+                             carray.ctypes.data_as(C_TYPE))
+    dw.vertices, dw.normals, dw.triangles, dw.vertex_colors = varray, narray, tarray, carray
+
+
+
+
+
+
 
 def cone_geometry(radius = 1, height = 1, nc = 10, caps = True, flipped = False):
     '''
