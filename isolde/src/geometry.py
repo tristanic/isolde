@@ -5,6 +5,11 @@
 
 
 import numpy
+import sys, os, glob
+import ctypes
+
+NPY_BOOL = ctypes.c_uint8
+
 
 # Fully pythonic version.    
 def get_dihedral(p0, p1, p2, p3):
@@ -27,8 +32,6 @@ def get_dihedral(p0, p1, p2, p3):
     return numpy.arctan2(y, x)
 
 # C version. Saves about 16 microseconds per dihedral. 
-import sys, os, glob
-import ctypes
 
 dpath = os.path.dirname(os.path.abspath(__file__))
 libfile = glob.glob(os.path.join(dpath, '_geometry.cpython*'))[0]
@@ -127,7 +130,7 @@ def flip_rotate_and_shift(flip_mask, flip_tf, rotations, shifts):
     #~ rot[:] = rotations
     #~ sh = numpy.empty(shape, numpy.double)
     #~ sh[:] = shifts
-    FLAG_TYPE = ctypes.POINTER(ctypes.c_bool*n)
+    FLAG_TYPE = ctypes.POINTER(NPY_BOOL*n)
     TF_TYPE = ctypes.POINTER(ctypes.c_double*12)
     TF_ARRAY_TYPE = ctypes.POINTER(ctypes.c_double*12*n)
     ret = numpy.empty(rotations.shape, numpy.double)
@@ -215,7 +218,7 @@ def dihedral_fill_and_color_planes(dihedrals, target_drawing,
     T_TYPE = ctypes.POINTER(ctypes.c_int32*tarray.size)
     C_TYPE = ctypes.POINTER(ctypes.c_uint8*carray.size)
     COLOR_TYPE = ctypes.POINTER(ctypes.c_uint8*4)
-    MASK_TYPE = ctypes.POINTER(ctypes.c_bool*n)
+    MASK_TYPE = ctypes.POINTER(NPY_BOOL*n)
     _dihedral_fill_planes.argtypes = [ctypes.c_int, COORTYPE, MASK_TYPE,
         MASK_TYPE, COLOR_TYPE, COLOR_TYPE, COLOR_TYPE, 
         V_TYPE, N_TYPE, T_TYPE, C_TYPE]

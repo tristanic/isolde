@@ -28,7 +28,9 @@ with the surroundings.
        Source files are listed in one or more SourceFile elements -->
   <CModule name="_geometry">
     <SourceFile>src/_geometry.cpp</SourceFile>
+    <SourceFile>src/atomic_cpp/dihedral.cpp</SourceFile>
     <Library>OpenMM</Library>
+    <Library>atomstruct</Library>
   </CModule>
 
   <!-- Dependencies on other ChimeraX/Python packages -->
