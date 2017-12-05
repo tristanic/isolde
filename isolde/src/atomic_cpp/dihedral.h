@@ -4,15 +4,19 @@
 
 #include <vector>
 
+#include <atomstruct/destruct.h>
 #include <atomstruct/AtomicStructure.h>
 #include <atomstruct/Atom.h>
 #include <atomstruct/Bond.h>
 #include <atomstruct/Coord.h>
 #include <atomstruct/Residue.h>
+#include <atomstruct/PythonInstance.h>
 
 #include "../geometry/geometry.h"
 
 using namespace atomstruct;
+
+namespace isolde {
 
 //! Define a dihedral by four atoms.
 /*!  
@@ -20,14 +24,19 @@ using namespace atomstruct;
  * the dihedral axis. For the generic base class, the atoms needn't be
  * bonded to each other, but the same atom must not appear more than
  * once.
+ * 
+ * MUST BE ALLOCATED ON THE HEAP (i.e. via Dihedral* d = new Dihedral(...))
+ * to work with ChimeraX's automatic clean-up system. 
  */ 
-class Dihedral {
+class Dihedral: public DestructionObserver, public PythonInstance {
 
 public:
     typedef Atom* Atoms[4];
+    typedef Coord Coords[4];
     
 private:
     Atoms _atoms;
+    Coords _coords;
     const char* err_msg_dup_atom() const
         {return "All atoms must be unique";}
     const char* err_msg_multi_struct() const
@@ -49,6 +58,12 @@ public:
     void set_name(const std::string& name) { _name = name; }
     Residue* residue() const;
     void set_residue(Residue* residue) { _residue = residue; }
+    virtual void destructors_done(const std::set<void*>& destroyed) {
+        check_destroyed_atoms(destroyed);
+    }
+    virtual void check_destroyed_atoms(const std::set<void*>& destroyed);
+    const Coords& coords() const;
+    
     
 
 }; // class Dihedral
@@ -59,7 +74,8 @@ public:
  * Atoms must be provided in order and must all be bonded in strict 
  * order atom1--atom2--atom3--atom4. 
  */ 
-class Proper_Dihedral: public Dihedral {
+class Proper_Dihedral: public Dihedral 
+{
 
 public:
     typedef Bond* Bonds[3];
@@ -74,6 +90,6 @@ private:
 
 }; // class Proper_Dihedral
 
-
+} // namespace isolde
 
 #endif // isolde_Dihedral

@@ -30,6 +30,10 @@
 #include <arrays/pythonarray.h>           // Use python_voidp_array()
 #include <pysupport/convert.h>     // Use cset_of_chars_to_pyset
 
+#include "atomic_cpp/dihedral.h"
+#include "geometry/geometry.h"
+
+
 #include <functional>
 #include <map>
 #include <set>
@@ -192,6 +196,75 @@ error_wrap_array_set(T** instances, size_t n, void (T::*pm)(Elem), Elem2* args)
     }
 }
 
+using namespace atomstruct;
+using namespace isolde;
+
+// --------------------------------------------------------------------
+// dihedral functions
+//
+
+//~ extern "C" EXPORT void dihedral_from_atoms(void *atoms, size_t n, /*char *name,*/ pyobject_t *dihedrals)
+//~ {
+    //~ // n must be divisible by 4
+    //~ try {
+        //~ if ((n % 4) != 0) {
+            //~ throw std::invalid_argument("Number of atoms must be a multiple of 4");
+        //~ }
+        //~ Atom **a = static_cast<Atom **>(atoms);
+        //~ for (size_t i=0, j=0; i<n; i+=4, j++) {
+            //~ Dihedral* d = new Dihedral(a[i], a[i+1], a[i+2], a[i+3]);
+            //~ //d->set_name(std::string(name));
+            //~ dihedrals[j] = d;
+        //~ }
+    //~ } catch (...) {
+        //~ molc_error();
+    //~ }
+//~ }
+
+extern "C" EXPORT void dihedral_from_atoms(void *atoms, size_t n, pyobject_t *name, pyobject_t *dihedrals)
+{
+    // n must be divisible by 4
+    try {
+        if ((n % 4) != 0) {
+            throw std::invalid_argument("Number of atoms must be a multiple of 4");
+        }
+        Atom **a = static_cast<Atom **>(atoms);
+        for (size_t i=0, j=0; i<n; i+=4, j++) {
+            Dihedral* d = new Dihedral(a[i], a[i+1], a[i+2], a[i+3]);
+            d->set_name(std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(name[j]))));
+            dihedrals[j] = d;
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
 
 
 
+extern "C" EXPORT void dihedral_angle(void *dihedrals, size_t n, float32_t *angles)
+{
+    Dihedral **d = static_cast<Dihedral **>(dihedrals);
+    error_wrap_array_get(d, n, &Dihedral::angle, angles);
+}
+
+extern "C" EXPORT void dihedral_name(void *dihedrals, size_t n, pyobject_t *names)
+{
+    Dihedral **d = static_cast<Dihedral **>(dihedrals);
+    try {
+        for (size_t i = 0; i<n; ++i)
+            names[i] = unicode_from_string(d[i]->name());
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void set_dihedral_name(void *dihedrals, size_t n, pyobject_t *names)
+{
+    Dihedral **d = static_cast<Dihedral **>(dihedrals);
+    try {
+        for (size_t i=0; i<n; ++i)
+            d[i]->set_name(std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(names[i]))));
+    } catch (...) {
+        molc_error();
+    }
+}

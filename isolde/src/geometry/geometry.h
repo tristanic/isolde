@@ -43,6 +43,7 @@ template <typename T> void normalize_vector_3d(T vector[3])
     }
 }
 
+// For direct use with coordinates
 template <typename T> T dihedral_angle(T p0[3], T p1[3], T p2[3], T p3[3])
 {
     T b0[3];
@@ -79,6 +80,7 @@ template <typename T> T dihedral_angle(T p0[3], T p1[3], T p2[3], T p3[3])
 
     return atan2(y, x);
 }
+
 
 // For use with ChimeraX Point objects
 template <typename T, typename R> const R dihedral_angle(const T& p0, const T& p1, const T& p2, const T& p3)

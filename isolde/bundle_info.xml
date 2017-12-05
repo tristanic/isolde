@@ -28,7 +28,10 @@ with the surroundings.
        Source files are listed in one or more SourceFile elements -->
   <CModule name="_geometry">
     <SourceFile>src/_geometry.cpp</SourceFile>
+  </CModule>
+  <CModule name="molc">
     <SourceFile>src/atomic_cpp/dihedral.cpp</SourceFile>
+    <SourceFile>src/molc.cpp</SourceFile>
     <Library>OpenMM</Library>
     <Library>atomstruct</Library>
   </CModule>
