@@ -148,7 +148,7 @@
             </sizepolicy>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>3</number>
            </property>
            <widget class="QWidget" name="_sim_basic_tab">
             <attribute name="title">
@@ -164,7 +164,7 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-458</y>
+                  <y>0</y>
                   <width>470</width>
                   <height>1194</height>
                  </rect>
@@ -2684,9 +2684,9 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>0</y>
+                  <y>-7</y>
                   <width>470</width>
-                  <height>796</height>
+                  <height>646</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -2805,12 +2805,34 @@
                     </item>
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_24">
+                      <property name="leftMargin">
+                       <number>0</number>
+                      </property>
                       <item>
+                       <spacer name="horizontalSpacer_26">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                      <item alignment="Qt::AlignHCenter">
                        <widget class="QWidget" name="_validate_rama_plot_container" native="true">
+                        <property name="sizePolicy">
+                         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+                          <horstretch>0</horstretch>
+                          <verstretch>0</verstretch>
+                         </sizepolicy>
+                        </property>
                         <property name="minimumSize">
                          <size>
-                          <width>350</width>
-                          <height>350</height>
+                          <width>200</width>
+                          <height>200</height>
                          </size>
                         </property>
                         <layout class="QVBoxLayout" name="_validate_rama_plot_layout"/>

@@ -420,7 +420,8 @@ class RamaPlot():
         fig = self.figure = Figure()
 
         axes = self.axes = fig.add_subplot(111)
-        self._format_axes()
+        
+        #self._format_axes()
                 
         # Scatter plot needs to always have at least one point, so we'll
         # define a point off the scale for when there's nothing to plot
@@ -434,10 +435,16 @@ class RamaPlot():
 
         self.contours = {}
         self.change_case('General')
+        self.on_resize()
     
     def _format_axes(self):
+        container = self.container
         axes = self.axes
         fig = self.figure
+        from PyQt5.QtCore import QRect
+        a, b, x, y = container.geometry().getRect()
+        x = y = min(x,y)
+        container.setGeometry(QRect(a,b,x,y))
         axes.set_xticks([-120,-60,0,60,120])
         axes.set_yticks([-120,-60,0,60,120])
         #axes.set_xticklabels(axes.get_xticklabels(), rotation=60)
