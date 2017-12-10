@@ -3339,8 +3339,9 @@ class Isolde():
         volumecommand.volume(self.session, [sharp_map], **styleargs)
         sharp_map.set_parameters(surface_levels = (2.5*sd,))
 
-        #~ from chimerax.clipper import crystal
-        #~ crystal.set_to_default_cartoon(self.session, model=before_struct)
+        from chimerax.clipper import crystal
+        crystal.set_to_default_cartoon(self.session, model=before_struct)
+        self._change_selected_model(force=True)
         from . import view
         view.focus_on_selection(self.session, self.session.main_view, before_struct.atoms)
 

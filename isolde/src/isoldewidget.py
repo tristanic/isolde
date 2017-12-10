@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'src/IsoldeFrame.ui'
 #
-# Created by: PyQt5 UI code generator 5.9.2
+# Created by: PyQt5 UI code generator 5.6
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -63,6 +63,7 @@ class Ui_isolde_widget(object):
         self._simulate_page.setGeometry(QtCore.QRect(0, 0, 527, 694))
         self._simulate_page.setObjectName("_simulate_page")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self._simulate_page)
+        self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setSizeConstraint(QtWidgets.QLayout.SetMinAndMaxSize)
@@ -77,6 +78,7 @@ class Ui_isolde_widget(object):
         self._sim_basic_tab = QtWidgets.QWidget()
         self._sim_basic_tab.setObjectName("_sim_basic_tab")
         self.verticalLayout_5 = QtWidgets.QVBoxLayout(self._sim_basic_tab)
+        self.verticalLayout_5.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self._sim_basic_tab_scroll_area = QtWidgets.QScrollArea(self._sim_basic_tab)
         self._sim_basic_tab_scroll_area.setWidgetResizable(True)
@@ -620,6 +622,7 @@ class Ui_isolde_widget(object):
         self._sim_restrain_tab = QtWidgets.QWidget()
         self._sim_restrain_tab.setObjectName("_sim_restrain_tab")
         self.verticalLayout_7 = QtWidgets.QVBoxLayout(self._sim_restrain_tab)
+        self.verticalLayout_7.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_7.setObjectName("verticalLayout_7")
         self._restraints_scroll_area = QtWidgets.QScrollArea(self._sim_restrain_tab)
         self._restraints_scroll_area.setWidgetResizable(True)
@@ -628,6 +631,7 @@ class Ui_isolde_widget(object):
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 483, 460))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout_14 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
+        self.verticalLayout_14.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_14.setObjectName("verticalLayout_14")
         self._restraints_peptide_bond_frame = QtWidgets.QFrame(self.scrollAreaWidgetContents)
         self._restraints_peptide_bond_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -684,6 +688,7 @@ class Ui_isolde_widget(object):
         self._sim_remodel_tab = QtWidgets.QWidget()
         self._sim_remodel_tab.setObjectName("_sim_remodel_tab")
         self.verticalLayout_6 = QtWidgets.QVBoxLayout(self._sim_remodel_tab)
+        self.verticalLayout_6.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_6.setObjectName("verticalLayout_6")
         self._rebuild_sel_residue_frame = QtWidgets.QFrame(self._sim_remodel_tab)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
@@ -1086,6 +1091,7 @@ class Ui_isolde_widget(object):
         self._sim_validate_tab = QtWidgets.QWidget()
         self._sim_validate_tab.setObjectName("_sim_validate_tab")
         self.horizontalLayout_20 = QtWidgets.QHBoxLayout(self._sim_validate_tab)
+        self.horizontalLayout_20.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_20.setObjectName("horizontalLayout_20")
         self._validate_scroll_area = QtWidgets.QScrollArea(self._sim_validate_tab)
         self._validate_scroll_area.setWidgetResizable(True)
@@ -1094,6 +1100,7 @@ class Ui_isolde_widget(object):
         self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, -7, 470, 646))
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
         self.verticalLayout_12 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents_2)
+        self.verticalLayout_12.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_12.setObjectName("verticalLayout_12")
         self._validate_rama_stub_frame = QtWidgets.QFrame(self.scrollAreaWidgetContents_2)
         self._validate_rama_stub_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -1150,6 +1157,7 @@ class Ui_isolde_widget(object):
         self._validate_rama_plot_container.setMinimumSize(QtCore.QSize(200, 200))
         self._validate_rama_plot_container.setObjectName("_validate_rama_plot_container")
         self._validate_rama_plot_layout = QtWidgets.QVBoxLayout(self._validate_rama_plot_container)
+        self._validate_rama_plot_layout.setContentsMargins(0, 0, 0, 0)
         self._validate_rama_plot_layout.setObjectName("_validate_rama_plot_layout")
         self.horizontalLayout_24.addWidget(self._validate_rama_plot_container, 0, QtCore.Qt.AlignHCenter)
         spacerItem22 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)

@@ -419,7 +419,7 @@ class RamaPlot():
 
         fig = self.figure = Figure()
 
-        axes = self.axes = fig.add_subplot(111)
+        axes = self.axes = fig.add_subplot(111, aspect='equal')
         
         #self._format_axes()
                 
@@ -431,6 +431,7 @@ class RamaPlot():
 
         canvas = self.canvas = FigureCanvas(fig)
         self.resize_cid = self.canvas.mpl_connect('resize_event', self.on_resize)
+        self.on_pick_cid = self.canvas.mpl_connect('pick_event', self.on_pick)
         container.addWidget(canvas)
 
         self.contours = {}
@@ -438,13 +439,8 @@ class RamaPlot():
         self.on_resize()
     
     def _format_axes(self):
-        container = self.container
         axes = self.axes
         fig = self.figure
-        from PyQt5.QtCore import QRect
-        a, b, x, y = container.geometry().getRect()
-        x = y = min(x,y)
-        container.setGeometry(QRect(a,b,x,y))
         axes.set_xticks([-120,-60,0,60,120])
         axes.set_yticks([-120,-60,0,60,120])
         #axes.set_xticklabels(axes.get_xticklabels(), rotation=60)
@@ -483,9 +479,10 @@ class RamaPlot():
         self._format_axes()
         if self.scatter.is_figure_set():
             self.scatter.remove()
-        f.set_facecolor('0.5')
+        f.patch.set_facecolor('0.5')
         c.draw()
-        self.background = self.canvas.copy_from_bbox(axes.bbox)
+        #self.session.ui.processEvents()
+        self.background = c.copy_from_bbox(axes.bbox)
         axes.add_artist(self.scatter)
         c.draw()
         self.update_scatter(self._last_bd)
@@ -515,7 +512,6 @@ class RamaPlot():
         P = self.P_limits = [0, -log(contours[0])]
         self.scatter = self.axes.scatter((200),(200), picker = 2.0)
         self.scatter.set_cmap('bwr')
-        self.canvas.mpl_connect('pick_event', self.on_pick)
         self.on_resize()
 
     def update_scatter(self, bd = None, force_update = False):
