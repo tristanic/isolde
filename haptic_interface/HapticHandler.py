@@ -71,9 +71,10 @@ def cone_geometry(radius = 1, height = 1, nc = 10, caps = True, flipped = False)
 
 import ctypes
 import numpy
+import os
 from PyQt5.QtCore import QObject, pyqtSignal
 class HapticHandler(QObject):
-    _HapticHandler = ctypes.CDLL('/home/tic20/chimerax_start/haptic_interface/_HapticHandler.so')
+    _HapticHandler = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)),'_HapticHandler.so'))
 
     # One signal per button, so that we can handle pressing of
     # multiple buttons at once. The signal will send the index of
@@ -212,6 +213,8 @@ class HapticHandler(QObject):
             self._event_handler = self.session.triggers.add_handler('new frame', self.on_refresh)
         self._running = True
         self.getNumDevices()
+        
+        
     
     
     # Stop the haptic device handling process
@@ -234,9 +237,8 @@ class HapticHandler(QObject):
     
     # Get the number of detected haptic devices
     def getNumDevices(self):
-        if self._running:
-            n = self.numHapticDevices = self._getNumDevices()
-            return n
+        n = self.numHapticDevices = self._getNumDevices()
+        return n
     
     
     # Set the spring constant for device i. Length units in Angstroms.
