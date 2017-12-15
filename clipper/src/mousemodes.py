@@ -175,13 +175,6 @@ class ContourSelectedVolume(mousemodes.MouseMode):
                 lstr = ', '.join(format(l, '.3f') for l in levels)
                 sstr = ', '.join(format(s, '.3f') for s in lsig)
                 self.session.logger.status('Volume {} contour level(s): {} ({} sigma)'.format(v.name, lstr, sstr))
-            v.update_surface()
-            if hasattr(v, '_surface_zone'):
-                coords = v._surface_zone.all_coords
-                distance = v._surface_zone.distance
-                if coords is not None:
-                    from chimerax.core.surface.zone import surface_zone
-                    surface_zone(v, coords, distance)
                                 
     
 def adjust_threshold_level(m, step, sym):

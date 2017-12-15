@@ -814,6 +814,7 @@ def set_to_default_cartoon(session, model = None):
             atoms = arg.parse('#' + model.id_string(), session)[0]
         cartoon.cartoon(session, atoms = atoms, suppress_backbone_display=False)
         cartoon.cartoon_style(session, atoms = atoms, width=0.4, thickness=0.1, arrows_helix=True, arrow_scale = 2)
+        cartoon.cartoon_tether(session, structures=atoms, opacity=0)
     except:
         return
 
@@ -1208,7 +1209,7 @@ class XmapSet(Model):
                                   'show_outline_box': False,
                                   'surface_colors': color,
                                   'square_mesh': True})
-        new_handler.update_surface()
+        # new_handler.update_surface()
         new_handler.show()
 
     def update_box(self, *_, force_update = False):
@@ -1413,7 +1414,7 @@ class XmapHandler(Volume):
         self.data.set_origin(params[0])
         self._fill_volume_data(self.data.array, params[1])
         self.data.values_changed()
-        self.update_surface()
+        # self.update_surface()
 
     def delete(self):
         if self._box_shape_changed_cb_handler is not None:
@@ -1459,3 +1460,13 @@ class XmapHandler(Volume):
         #self.data.set_origin(origin_xyz)
         xmap = self.xmap
         xmap.export_section_numpy(start_grid_coor, target = target,  order = 'C', rot = 'zyx')
+    
+    def _update_drawings(self):
+        super()._update_drawings()
+        if hasattr(self, '_surface_zone'):
+            sz = self._surface_zone
+            coords = sz.all_coords
+            distance = sz.distance
+            if coords is not None:
+                from chimerax.core.surface.zone import surface_zone
+                surface_zone(self, coords, distance)
