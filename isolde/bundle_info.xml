@@ -29,6 +29,9 @@ with the surroundings.
   <CModule name="_geometry">
     <SourceFile>src/_geometry.cpp</SourceFile>
   </CModule>
+  <CModule name="_nd_interp">
+    <SourceFile>src/interpolation/nd_interp.cpp</SourceFile>
+  </CModule>
   <CModule name="molc">
     <SourceFile>src/atomic_cpp/dihedral.cpp</SourceFile>
     <SourceFile>src/molc.cpp</SourceFile>

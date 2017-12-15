@@ -148,7 +148,7 @@
             </sizepolicy>
            </property>
            <property name="currentIndex">
-            <number>3</number>
+            <number>0</number>
            </property>
            <widget class="QWidget" name="_sim_basic_tab">
             <attribute name="title">
@@ -1382,8 +1382,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>483</width>
-                  <height>460</height>
+                  <width>423</width>
+                  <height>222</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1819,7 +1819,7 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>470</width>
+                  <width>456</width>
                   <height>390</height>
                  </rect>
                 </property>
@@ -2684,9 +2684,9 @@
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-7</y>
+                  <y>0</y>
                   <width>470</width>
-                  <height>646</height>
+                  <height>746</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -2831,8 +2831,8 @@
                         </property>
                         <property name="minimumSize">
                          <size>
-                          <width>200</width>
-                          <height>200</height>
+                          <width>300</width>
+                          <height>300</height>
                          </size>
                         </property>
                         <layout class="QVBoxLayout" name="_validate_rama_plot_layout"/>
