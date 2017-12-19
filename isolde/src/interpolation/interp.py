@@ -21,6 +21,13 @@ c_double_p = ctypes.POINTER(ctypes.c_double)
 c_size_t_p = ctypes.POINTER(ctypes.c_size_t)
 
 class RegularGridInterpolator:
+    '''
+    A C++ implementation of n-dimensional regular grid interpolation,
+    interfaced to Python using ctypes. About 5 times faster than 
+    the SciPy RegularGridInterpolator for 3D data, and more compatible with 
+    threading. In particular, 
+    '''
+    
     _new_interp = c_function('rg_interp_new', 
         args=(ctypes.c_size_t, c_size_t_p, c_double_p, c_double_p, c_double_p), ret = ctypes.c_void_p)
     _interpolate = c_function('rg_interpolate',
@@ -31,12 +38,9 @@ class RegularGridInterpolator:
     _max = c_function('rg_interp_max', args=(ctypes.c_void_p, c_double_p))
     _values = c_function('rg_interp_values', args=(ctypes.c_void_p, c_double_p))
     _axis_lengths = c_function('rg_interp_lengths', args=(ctypes.c_void_p, c_size_t_p))
+    _copy = c_function('rg_interp_copy', args=(ctypes.c_void_p, ))
     def __init__(self, dim, axis_lengths, min_vals, max_vals, grid_data):
         '''
-        A C++ implementation of n-dimensional regular grid interpolation,
-        interfaced to Python using ctypes. About 2-3 times faster than 
-        the SciPy RegularGridInterpolator, and more compatible with 
-        threading.
         Args:
             dim:
                 An integer specifying the number of dimensions
@@ -105,10 +109,8 @@ class RegularGridInterpolator:
     
     def interpolate(self, data):
         if data.shape[1] != self.dim:
-            raise TypeError('Wrong number of dimensions! This is a {}-'\
-                           +'dimensional interpolator.'.format(self.dim))
-        #~ if len(data) == 0:
-            #~ return
+            raise TypeError('Wrong number of dimensions! This is a '\
+                           +'{}-dimensional interpolator.'.format(self.dim))
         if data.dtype != numpy.double or not data.flags.c_contiguous:
             in_data = numpy.empty(data.shape, numpy.double)
             in_data[:] = data
@@ -128,16 +130,27 @@ class RegularGridInterpolator:
         self._delete(self._c_pointer)
 
 
-def test_interpolator():
+    def __deepcopy__(self, memo):
+        from copy import deepcopy
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+        setattr(result, '_c_pointer', self._copy(self._c_pointer))
+        return result
+
+
+def test_interpolator(n):
     import numpy
-    dim=3
-    axis_lengths=numpy.array([74,74,74], numpy.uintp)
-    mins = numpy.zeros(3)
-    maxs = numpy.ones(3)
-    data = numpy.random.rand(74,74,74)
+    dim=n
+    axis_lengths=numpy.array([36]*n, numpy.uintp)
+    mins = numpy.zeros(n)
+    maxs = numpy.ones(n)
+    data = numpy.random.rand(*[36]*n)
     from scipy.interpolate import RegularGridInterpolator as ScipyInterp
-    axis = numpy.array(range(74))/73
-    scrg = ScipyInterp((axis,axis,axis), data)
+    axis = numpy.array(range(36))/35
+    scrg = ScipyInterp([axis]*n, data)
     
     rg = RegularGridInterpolator(dim, axis_lengths, mins, maxs, data)
     #test_data = numpy.random.rand(n,3)

@@ -161,6 +161,13 @@ rg_interp_new(size_t dim, size_t* n, double* min, double* max, double* data)
     } return nullptr;
 }
 
+EXPORT void*
+rg_interp_copy(void *ptr)
+{
+    RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+    return new RegularGridInterpolator(*rg);
+}
+
 EXPORT void
 rg_interp_delete(void *ptr)
 {
