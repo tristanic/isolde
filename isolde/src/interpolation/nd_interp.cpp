@@ -1,7 +1,7 @@
 
 #include "nd_interp.h"
 #include <time.h>
-#include <Python.h>
+
 
 #ifdef _WIN32
 # define EXPORT __declspec(dllexport)
@@ -13,7 +13,8 @@ RegularGridInterpolator::RegularGridInterpolator(const size_t& dim,
         size_t* n, double* min, double* max, double* data)
 {
     _dim = dim;
-    size_t this_n, this_min, this_max, d_count=1;
+    size_t this_n, d_count=1;
+    double this_min, this_max;
     double step, dval;
     for (size_t i=0; i<dim; ++i) {
         this_n = n[i];
@@ -147,149 +148,10 @@ void RegularGridInterpolator::interpolate (double* axis_vals, const size_t &n, d
 //--------------------------------------------------------
 // RegularGridInterpolator
 
-// Argument delcaration types:
-//
-// numpy array arguments are sized, so use uint8_t for numpy's uint8,
-// float32_t for numpys float32_t, etc.  The integer _t types are from
-// <stdint.h>.  Special case is for numpy/C/C++ booleans which are
-// processed in all cases as bytes:
-//      1 == numpy.bool_().nbytes in Python
-//      1 == sizeof (bool) in C++ and in C from <stdbool.h>
-//      25 == sizeof (bool [25]) in C++ and C
-//
-// Other arguments are their normal C types and are specified with the
-// appropriate ctypes annotations on the Python side.
-//
-// There should be very few 'int' specifications.  Any int-array should
-// have a specific size, eg., int32_t, for its elements.
-//
-typedef uint8_t npy_bool;
-typedef float float32_t;
-typedef double float64_t;
-typedef void *pyobject_t;
-
-inline PyObject* unicode_from_string(const char *data, size_t size)
+extern "C"
 {
-    return PyUnicode_DecodeUTF8(data, size, "replace");
-}
 
-inline PyObject* unicode_from_string(const std::string& str)
-{
-    return PyUnicode_DecodeUTF8(str.data(), str.size(), "replace");
-}
-
-//~ template <int len, char... description_chars>
-//~ inline PyObject* unicode_from_string(const chutil::CString<len, description_chars...>& cstr)
-//~ {
-    //~ return PyUnicode_DecodeUTF8(static_cast<const char*>(cstr), cstr.size(),
-                            //~ "replace");
-//~ }
-
-//~ inline PyObject* unicode_from_character(char c)
-//~ {
-    //~ char buffer[2];
-    //~ buffer[0] = c;
-    //~ buffer[1] = '\0';
-    //~ return unicode_from_string(buffer, 1);
-//~ }
-
-static void
-molc_error()
-{
-    // generic exception handler
-    if (PyErr_Occurred())
-        return;   // nothing to do, already set
-    try {
-        throw;    // rethrow exception to look at it
-    } catch (std::bad_alloc&) {
-        PyErr_SetString(PyExc_MemoryError, "not enough memory");
-    } catch (std::invalid_argument& e) {
-        PyErr_SetString(PyExc_TypeError, e.what());
-    } catch (std::length_error& e) {
-        PyErr_SetString(PyExc_MemoryError, e.what());
-    } catch (std::out_of_range& e) {
-        PyErr_SetString(PyExc_IndexError, e.what());
-    } catch (std::overflow_error& e) {
-        PyErr_SetString(PyExc_OverflowError, e.what());
-    } catch (std::range_error& e) {
-        PyErr_SetString(PyExc_IndexError, e.what());
-    } catch (std::underflow_error& e) {
-        PyErr_SetString(PyExc_RuntimeError, e.what());
-    } catch (std::logic_error& e) {
-        PyErr_SetString(PyExc_ValueError, e.what());
-    } catch (std::ios_base::failure& e) {
-        PyErr_SetString(PyExc_IOError, e.what());
-    } catch (std::runtime_error& e) {
-        PyErr_SetString(PyExc_RuntimeError, e.what());
-    } catch (std::exception& e) {
-        PyErr_SetString(PyExc_RuntimeError, e.what());
-    } catch (...) {
-        PyErr_SetString(PyExc_RuntimeError, "unknown C++ exception");
-    }
-}
-
-// wrap an arbitrary function
-template <typename F, typename... Args> auto
-error_wrap(const F& func, Args... args) -> decltype(func(args...))
-{
-    try {
-        return func(args...);
-    } catch (...) {
-        molc_error();
-        return decltype(func(args...))();
-    }
-}
-
-// wrap a member function
-template <typename R, typename T, typename... Args> R
-error_wrap(T* inst, R (T::*pm)(Args...), Args... args)
-{
-    try {
-        return (inst->*pm)(args...);
-    } catch (...) {
-        molc_error();
-        return R();
-    }
-}
-
-// wrap a constant member function
-template <typename R, typename T, typename... Args> R
-error_wrap(T* inst, R (T::*pm)(Args...) const, Args... args)
-{
-    try {
-        return (inst->*pm)(args...);
-    } catch (...) {
-        molc_error();
-        return R();
-    }
-}
-
-// wrap getting array elements via const member function
-template <typename T, typename Elem, typename Elem2 = Elem> void
-error_wrap_array_get(T** instances, size_t n, Elem (T::*pm)() const, Elem2* args)
-{
-    try {
-        for (size_t i = 0; i < n; ++i)
-            args[i] = (instances[i]->*pm)();
-    } catch (...) {
-        molc_error();
-    }
-}
-
-// wrap setting array elements via member function
-template <typename T, typename Elem, typename Elem2 = Elem> void
-error_wrap_array_set(T** instances, size_t n, void (T::*pm)(Elem), Elem2* args)
-{
-    try {
-        for (size_t i = 0; i < n; ++i)
-            (instances[i]->*pm)(args[i]);
-    } catch (...) {
-        molc_error();
-    }
-}
-
-
-extern "C" EXPORT void*
+EXPORT void*
 rg_interp_new(size_t dim, size_t* n, double* min, double* max, double* data)
 {
     try {
@@ -299,21 +161,104 @@ rg_interp_new(size_t dim, size_t* n, double* min, double* max, double* data)
     } return nullptr;
 }
 
-extern "C" EXPORT void
+EXPORT void
 rg_interp_delete(void *ptr)
 {
-    RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);    
-    delete rg;
+    try {
+        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        delete rg;
+    } catch (...) {
+        molc_error();
+        return;
+    }   
 }
 
-extern "C" EXPORT void
+EXPORT void
 rg_interpolate(void* ptr, double* axis_vals, size_t n, double* values) 
 {
-    RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
-    rg->interpolate(axis_vals, n, values);
+    try {
+        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        rg->interpolate(axis_vals, n, values);
+    } catch (...) {
+        molc_error();
+        return;
+    }
+}
+
+EXPORT void
+rg_interp_min(void* ptr, double* ret)
+{
+    try {
+        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        for (auto m: rg->min()) {
+            *ret++ = m;
+        }
+    } catch (...) {
+        molc_error();
+        return;
+    }
+}
+
+EXPORT void
+rg_interp_max(void* ptr, double* ret)
+{
+    try {
+        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        for (auto m: rg->max()) {
+            *ret++ = m;
+        }
+    } catch (...) {
+        molc_error();
+        return;
+    }
+}
+
+EXPORT void
+rg_interp_lengths(void* ptr, size_t* ret)
+{
+    try {
+        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        for (auto l: rg->length()) {
+            *ret++ = l;
+        }
+    } catch (...) {
+        molc_error();
+        return;
+    }
 }
 
 
+
+EXPORT size_t
+rg_interp_dim(void* ptr)
+{
+    try {
+        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        return rg->dim();
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+EXPORT void
+rg_interp_values(void* ptr, double* ret)
+{
+    try {
+        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        for (auto d: rg->data()) {
+            *ret++ = d;
+        }
+    } catch (...) {
+        molc_error();
+        return;
+    }
+}
+
+
+
+
+} // extern "C"
 
 
 //~ int 

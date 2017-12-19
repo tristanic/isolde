@@ -26,6 +26,11 @@ class RegularGridInterpolator:
     _interpolate = c_function('rg_interpolate',
         args=(ctypes.c_void_p, c_double_p, ctypes.c_size_t, c_double_p))
     _delete = c_function('rg_interp_delete', args=(ctypes.c_void_p,))
+    _dim = c_function('rg_interp_dim', args=(ctypes.c_void_p, ), ret=ctypes.c_size_t)
+    _min = c_function('rg_interp_min', args=(ctypes.c_void_p, c_double_p))
+    _max = c_function('rg_interp_max', args=(ctypes.c_void_p, c_double_p))
+    _values = c_function('rg_interp_values', args=(ctypes.c_void_p, c_double_p))
+    _axis_lengths = c_function('rg_interp_lengths', args=(ctypes.c_void_p, c_size_t_p))
     def __init__(self, dim, axis_lengths, min_vals, max_vals, grid_data):
         '''
         A C++ implementation of n-dimensional regular grid interpolation,
@@ -48,26 +53,77 @@ class RegularGridInterpolator:
                 A n-dimensional numpy float array of the given dimensions,
                 containing all the gridded data.
         '''
+        
         self._c_pointer = self._new_interp(dim, axis_lengths.ctypes.data_as(c_size_t_p), 
             min_vals.ctypes.data_as(c_double_p), max_vals.ctypes.data_as(c_double_p), 
             grid_data.ctypes.data_as(c_double_p))
         
-        self._dim = dim
+        #~ self._dim = dim
         self._min_vals = min_vals
         self._max_vals = max_vals
         
+    @property
+    def dim(self):
+        return self._dim(self._c_pointer)
+    
+    @property
+    def min(self):
+        ret = numpy.empty(self.dim)
+        self._min(self._c_pointer, ret.ctypes.data_as(c_double_p))
+        return ret
+        
+    @property
+    def max(self):
+        ret = numpy.empty(self.dim)
+        self._max(self._c_pointer, ret.ctypes.data_as(c_double_p))
+        return ret
+    
+    @property
+    def axis_lengths(self):
+        ret = numpy.empty(self.dim, numpy.int)
+        self._axis_lengths(self._c_pointer, ret.ctypes.data_as(c_size_t_p))
+        return ret
+    
+    @property
+    def values(self):
+        dim = self.dim
+        lengths = self.axis_lengths
+        ret = numpy.empty(lengths, numpy.double)
+        self._values(self._c_pointer, ret.ctypes.data_as(c_double_p))
+        return ret
+            
+    @property
+    def grid(self):
+        grid = []
+        lengths = self.axis_lengths
+        min_vals = self.min
+        max_vals = self.max
+        for length, minv, maxv in zip(lengths, min_vals, max_vals):
+            grid.append(numpy.linspace(minv, maxv, length))
+        return tuple(grid)
         
     
     def interpolate(self, data):
-        if data.shape[1] != self._dim:
+        if data.shape[1] != self.dim:
             raise TypeError('Wrong number of dimensions! This is a {}-'\
-                           +'dimensional interpolator.'.format(self._dim))
-        n = data.shape[0]
+                           +'dimensional interpolator.'.format(self.dim))
+        #~ if len(data) == 0:
+            #~ return
+        if data.dtype != numpy.double or not data.flags.c_contiguous:
+            in_data = numpy.empty(data.shape, numpy.double)
+            in_data[:] = data
+        else:
+            in_data = data
+        
+        n = in_data.shape[0]
         ret = numpy.empty(n, dtype=numpy.double)
-        self._interpolate(self._c_pointer, data.ctypes.data_as(c_double_p),
+        self._interpolate(self._c_pointer, in_data.ctypes.data_as(c_double_p),
                           n, ret.ctypes.data_as(c_double_p))
         return ret
-        
+    
+    def __call__(self, data):
+        return self.interpolate(data)
+    
     def __del__(self):
         self._delete(self._c_pointer)
 

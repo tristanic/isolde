@@ -18,7 +18,7 @@ DATA_DIR = os.path.join(package_directory, 'molprobity_data')
 
 # Load a MolProbity data set and return a SciPy RegularGridInterpolator
 # object for later fast interpolation of values
-def generate_interpolator(file_prefix, wrap_axes = True):
+def generate_interpolator_old(file_prefix, wrap_axes = True):
     from scipy.interpolate import RegularGridInterpolator
     import numpy, pickle
     infile = None
@@ -126,6 +126,128 @@ def generate_interpolator(file_prefix, wrap_axes = True):
         outfile.close()
 
     return RegularGridInterpolator(axis, full_grid, bounds_error = True)
+
+
+# Load a MolProbity data set and return a SciPy RegularGridInterpolator
+# object for later fast interpolation of values
+def generate_interpolator(file_prefix, wrap_axes = True):
+    from .interpolation.interp import RegularGridInterpolator
+    import numpy, pickle
+    infile = None
+    # First try to load from a pickle file
+    try:
+        infile = open(file_prefix+'.pickle', 'r+b')
+        ndim, axis_lengths, min_vals, max_vals, grid_data = pickle.load(infile)
+        infile.close()
+        infile = None
+    except:
+        # If pickle load fails for any reason, fall back to loading from
+        # text, then regenerate the pickle file at the end.
+        if infile is not None:
+            infile.close()
+        infile = open(file_prefix+'.data', 'r')
+        # Throw away the first line - we don't need it
+        infile.readline()
+        # Get number of dimensions
+        ndim = int(infile.readline().split()[-1])
+        # Throw away the next line - it's just headers
+        infile.readline()
+        lower_bounds = []
+        upper_bounds= []
+        axis_lengths = []
+
+        step_sizes = []
+        min_vals = []
+        max_vals = []
+        #~ axes = []
+
+        # Read in the header to get the dimensions and step size for each
+        # axis, and initialise the axis arrays
+        for i in range(ndim):
+            line = infile.readline().split()
+            lb = float(line[2])
+            lower_bounds.append(lb)
+            ub = float(line[3])
+            upper_bounds.append(ub)
+            nb = int(line[4])
+            axis_lengths.append(nb)
+
+            ss = (ub - lb)/nb
+            step_sizes.append(ss)
+            # Values are at the midpoint of each bin
+            fs = lb + ss/2
+            min_vals.append(fs)
+            ls = ub - ss/2
+            max_vals.append(ls)
+            #~ axis.append(numpy.linspace(fs,ls,nb))
+
+        infile.close()
+
+        grid_data = numpy.zeros(axis_lengths)
+
+        # Slurp in the actual numerical data as a numpy array
+        data = numpy.loadtxt(file_prefix+'.data')
+
+        # Convert each coordinate to an integral number of steps along each
+        # axis
+        axes = []
+        for i in range(ndim):
+            axes.append([])
+
+        for i in range(ndim):
+            ss = step_sizes[i]
+            fs = min_vals[i]
+            lb = lower_bounds[i]
+            axis_vals = data[:,i]
+            axes[i]=(((axis_vals - ss/2 - lb) / ss).astype(int))
+
+        grid_data[axes] = data[:,ndim]
+
+        # At this point we should have the full n-dimensional matrix, with
+        # all values not present in the text file present as zeros.
+        # Now we have to consider periodicity. Since we're just going to
+        # be doing linear interpretation, the easiest approach is to simply
+        # pad the array on all sides with the values from the opposite extreme
+        # of the relevant matrix. This can be handily done with numpy.pad
+        if wrap_axes:
+            grid_data = numpy.pad(grid_data, 1, 'wrap')
+
+            # ... and we need to extend each of the axes by one step to match
+            for i, a in enumerate(axes):
+                min_v = min_vals[i]
+                max_v = max_vals[i]
+                ss = step_sizes[i]
+                min_vals[i] = min_v - ss
+                max_vals[i] = max_v + ss
+                axis_lengths[i] += 2
+                #~ a = numpy.pad(a, 1, mode='constant')
+                #~ a[0] = fs - ss
+                #~ a[-1] = ls + ss
+                #~ axis[i] = a
+
+        # Replace all zero or negative values with the minimum positive non-zero
+        # value, so that we can use logs
+        grid_data[grid_data<=0] = numpy.min(grid_data[grid_data > 0])
+        # Finally, convert the axes to radians
+        from math import pi
+        #~ axis = numpy.array(axis)
+        #~ axis = axis/180*pi
+
+        # Pickle a tuple containing the axes and grid for fast loading in
+        # future runs
+
+        outfile = open(file_prefix+'.pickle', 'w+b')
+        axis_lengths = numpy.array(axis_lengths, numpy.int)
+        min_vals = numpy.radians(numpy.array(min_vals, numpy.double))
+        max_vals = numpy.radians(numpy.array(max_vals, numpy.double))
+        
+        
+        pickle.dump((ndim, axis_lengths, min_vals, max_vals, grid_data), outfile)
+        #~ pickle.dump((axis, full_grid), outfile)
+        outfile.close()
+
+    return RegularGridInterpolator(ndim, axis_lengths, min_vals, max_vals, grid_data)
+
 
 # Master list of Ramachandran case keys. As well as the official ones, we'll
 # list N- and C-terminal residues here for convenience.

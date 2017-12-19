@@ -8,6 +8,7 @@
 #include <math.h>
 #include <stdexcept>
 #include <iostream>
+#include "../molc.h"
 
 class RegularGridInterpolator
 {
@@ -26,6 +27,12 @@ public:
      */
     RegularGridInterpolator(const size_t& dim, size_t* n, double* min, double* max, double* data);
     void interpolate(double* axis_vals, const size_t &n, double* values);
+    const std::vector<double> &min() const {return _min;}
+    const std::vector<double> &max() const {return _max;}
+    const size_t &dim() const {return _dim;}
+    const std::vector<double> &data() const {return _data;}
+    const std::vector<size_t> &length() const {return _n;} 
+    
     
 private:
     void corner_values(const size_t &lb_indices, std::vector<double> &corners);
