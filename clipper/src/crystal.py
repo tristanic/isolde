@@ -1461,8 +1461,8 @@ class XmapHandler(Volume):
         xmap = self.xmap
         xmap.export_section_numpy(start_grid_coor, target = target,  order = 'C', rot = 'zyx')
     
-    def _update_drawings(self):
-        super()._update_drawings()
+    def update_drawings(self):
+        super().update_drawings()
         if hasattr(self, '_surface_zone'):
             sz = self._surface_zone
             coords = sz.all_coords

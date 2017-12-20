@@ -175,6 +175,8 @@ class ContourSelectedVolume(mousemodes.MouseMode):
                 lstr = ', '.join(format(l, '.3f') for l in levels)
                 sstr = ', '.join(format(s, '.3f') for s in lsig)
                 self.session.logger.status('Volume {} contour level(s): {} ({} sigma)'.format(v.name, lstr, sstr))
+
+
                                 
     
 def adjust_threshold_level(m, step, sym):
