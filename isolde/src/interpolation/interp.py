@@ -17,8 +17,13 @@ cvec_property = _c_functions.cvec_property
 c_function = _c_functions.c_function
 c_array_function = _c_functions.c_array_function
 
-c_double_p = ctypes.POINTER(ctypes.c_double)
-c_size_t_p = ctypes.POINTER(ctypes.c_size_t)
+NPY_FLOAT = numpy.float32
+FLOAT_TYPE = ctypes.c_float
+SIZE_TYPE = ctypes.c_size_t
+
+#c_double_p = ctypes.POINTER(ctypes.c_double)
+C_FLOAT_P = ctypes.POINTER(FLOAT_TYPE)
+SIZE_P = ctypes.POINTER(SIZE_TYPE)
 
 class RegularGridInterpolator:
     '''
@@ -29,15 +34,15 @@ class RegularGridInterpolator:
     '''
     
     _new_interp = c_function('rg_interp_new', 
-        args=(ctypes.c_size_t, c_size_t_p, c_double_p, c_double_p, c_double_p), ret = ctypes.c_void_p)
+        args=(SIZE_TYPE, SIZE_P, C_FLOAT_P, C_FLOAT_P, C_FLOAT_P), ret = ctypes.c_void_p)
     _interpolate = c_function('rg_interpolate',
-        args=(ctypes.c_void_p, c_double_p, ctypes.c_size_t, c_double_p))
+        args=(ctypes.c_void_p, C_FLOAT_P, SIZE_TYPE, C_FLOAT_P))
     _delete = c_function('rg_interp_delete', args=(ctypes.c_void_p,))
-    _dim = c_function('rg_interp_dim', args=(ctypes.c_void_p, ), ret=ctypes.c_size_t)
-    _min = c_function('rg_interp_min', args=(ctypes.c_void_p, c_double_p))
-    _max = c_function('rg_interp_max', args=(ctypes.c_void_p, c_double_p))
-    _values = c_function('rg_interp_values', args=(ctypes.c_void_p, c_double_p))
-    _axis_lengths = c_function('rg_interp_lengths', args=(ctypes.c_void_p, c_size_t_p))
+    _dim = c_function('rg_interp_dim', args=(ctypes.c_void_p, ), ret=SIZE_TYPE)
+    _min = c_function('rg_interp_min', args=(ctypes.c_void_p, C_FLOAT_P))
+    _max = c_function('rg_interp_max', args=(ctypes.c_void_p, C_FLOAT_P))
+    _values = c_function('rg_interp_values', args=(ctypes.c_void_p, C_FLOAT_P))
+    _axis_lengths = c_function('rg_interp_lengths', args=(ctypes.c_void_p, SIZE_P))
     _copy = c_function('rg_interp_copy', args=(ctypes.c_void_p, ))
     def __init__(self, dim, axis_lengths, min_vals, max_vals, grid_data):
         '''
@@ -57,10 +62,13 @@ class RegularGridInterpolator:
                 A n-dimensional numpy float array of the given dimensions,
                 containing all the gridded data.
         '''
+        min_vals = convert_and_sanitize_numpy_array(min_vals, NPY_FLOAT)
+        max_vals = convert_and_sanitize_numpy_array(max_vals, NPY_FLOAT)
+        grid_data = convert_and_sanitize_numpy_array(grid_data, NPY_FLOAT)
         
-        self._c_pointer = self._new_interp(dim, axis_lengths.ctypes.data_as(c_size_t_p), 
-            min_vals.ctypes.data_as(c_double_p), max_vals.ctypes.data_as(c_double_p), 
-            grid_data.ctypes.data_as(c_double_p))
+        self._c_pointer = self._new_interp(dim, axis_lengths.ctypes.data_as(SIZE_P), 
+            min_vals.ctypes.data_as(C_FLOAT_P), max_vals.ctypes.data_as(C_FLOAT_P), 
+            grid_data.ctypes.data_as(C_FLOAT_P))
         
         #~ self._dim = dim
         self._min_vals = min_vals
@@ -72,28 +80,28 @@ class RegularGridInterpolator:
     
     @property
     def min(self):
-        ret = numpy.empty(self.dim)
-        self._min(self._c_pointer, ret.ctypes.data_as(c_double_p))
+        ret = numpy.empty(self.dim, NPY_FLOAT)
+        self._min(self._c_pointer, ret.ctypes.data_as(C_FLOAT_P))
         return ret
         
     @property
     def max(self):
-        ret = numpy.empty(self.dim)
-        self._max(self._c_pointer, ret.ctypes.data_as(c_double_p))
+        ret = numpy.empty(self.dim, NPY_FLOAT)
+        self._max(self._c_pointer, ret.ctypes.data_as(C_FLOAT_P))
         return ret
     
     @property
     def axis_lengths(self):
         ret = numpy.empty(self.dim, numpy.int)
-        self._axis_lengths(self._c_pointer, ret.ctypes.data_as(c_size_t_p))
+        self._axis_lengths(self._c_pointer, ret.ctypes.data_as(SIZE_P))
         return ret
     
     @property
     def values(self):
         dim = self.dim
         lengths = self.axis_lengths
-        ret = numpy.empty(lengths, numpy.double)
-        self._values(self._c_pointer, ret.ctypes.data_as(c_double_p))
+        ret = numpy.empty(lengths, NPY_FLOAT)
+        self._values(self._c_pointer, ret.ctypes.data_as(C_FLOAT_P))
         return ret
             
     @property
@@ -111,16 +119,16 @@ class RegularGridInterpolator:
         if data.shape[1] != self.dim:
             raise TypeError('Wrong number of dimensions! This is a '\
                            +'{}-dimensional interpolator.'.format(self.dim))
-        if data.dtype != numpy.double or not data.flags.c_contiguous:
-            in_data = numpy.empty(data.shape, numpy.double)
+        if data.dtype != NPY_FLOAT or not data.flags.c_contiguous:
+            in_data = numpy.empty(data.shape, NPY_FLOAT)
             in_data[:] = data
         else:
             in_data = data
         
         n = in_data.shape[0]
-        ret = numpy.empty(n, dtype=numpy.double)
-        self._interpolate(self._c_pointer, in_data.ctypes.data_as(c_double_p),
-                          n, ret.ctypes.data_as(c_double_p))
+        ret = numpy.empty(n, dtype=NPY_FLOAT)
+        self._interpolate(self._c_pointer, in_data.ctypes.data_as(C_FLOAT_P),
+                          n, ret.ctypes.data_as(C_FLOAT_P))
         return ret
     
     def __call__(self, data):
@@ -156,3 +164,15 @@ def test_interpolator(n):
     #test_data = numpy.random.rand(n,3)
     return (scrg, rg)
     
+def convert_and_sanitize_numpy_array(array, dtype):
+    '''
+    Convert a numpy array to the specified data type, and ensure its
+    contents are C-contiguous in memory.
+    '''
+    #~ if array.flags.c_contiguous:
+        #~ if array.dtype == dtype:
+            #~ return array
+        #~ return array.as_type(dtype)
+    ret = numpy.empty(array.shape, dtype)
+    ret[:] = array
+    return ret

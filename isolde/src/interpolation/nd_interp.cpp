@@ -9,13 +9,14 @@
 # define EXPORT __attribute__((__visibility__("default")))
 #endif
 
-RegularGridInterpolator::RegularGridInterpolator(const size_t& dim, 
-        size_t* n, double* min, double* max, double* data)
+template <typename T>
+RegularGridInterpolator<T>::RegularGridInterpolator(const size_t& dim, 
+        size_t* n, T* min, T* max, T* data)
 {
     _dim = dim;
     size_t this_n, d_count=1;
-    double this_min, this_max;
-    double step, dval;
+    T this_min, this_max;
+    T step, dval;
     for (size_t i=0; i<dim; ++i) {
         this_n = n[i];
         this_min = min[i];
@@ -23,11 +24,11 @@ RegularGridInterpolator::RegularGridInterpolator(const size_t& dim,
         _n.push_back(this_n);
         _min.push_back(this_min);
         _max.push_back(this_max);
-        step = (this_max-this_min)/(double)(this_n-1);
+        step = (this_max-this_min)/(T)(this_n-1);
         _step.push_back(step);
         _jump.push_back((size_t)pow(2,i));
         dval = this_min;
-        std::vector<double> axis;
+        std::vector<T> axis;
         
         for (;dval<=this_max;) {
             axis.push_back(dval);
@@ -40,31 +41,31 @@ RegularGridInterpolator::RegularGridInterpolator(const size_t& dim,
     for (size_t i=0; i<d_count; ++i) {
         _data.push_back(data[i]);
     }
-    _n_corners = (size_t)pow(2.0, (double)dim);
+    _n_corners = (size_t)pow(2.0, (T)dim);
     corner_offsets();
 } //RegularGridInterpolator
 
-
+template<typename T>
 void
-RegularGridInterpolator::lb_index_and_offsets(double *axis_vals, size_t &lb_index, 
-    std::vector<std::pair<double, double> > &offsets)
+RegularGridInterpolator<T>::lb_index_and_offsets(T *axis_vals, size_t &lb_index, 
+    std::vector<std::pair<T, T> > &offsets)
 {
 //    for (size_t axis=0; axis<_dim; ++axis) {
     size_t axis_prod = 1;
     for (int axis=_dim-1; axis>=0; --axis) {
-        const double &max = _max[axis];
-        const double &min = _min[axis];
-        const double &value = axis_vals[axis];
+        const T &max = _max[axis];
+        const T &min = _min[axis];
+        const T &value = axis_vals[axis];
         if (value <= min || value >= max) {
             throw std::range_error("Value outside of interpolation range!");
         }
         size_t li = (size_t)((value-min)/_step[axis]);
         lb_index +=axis_prod*li;
         axis_prod*=_n[axis];
-        const double &low = _axes[axis][li++];
-        const double &high = _axes[axis][li];
-        double offset = (value-low)/(high-low);
-        offsets[axis]=(std::pair<double, double> (offset, 1-offset));
+        const T &low = _axes[axis][li++];
+        const T &high = _axes[axis][li];
+        T offset = (value-low)/(high-low);
+        offsets[axis]=(std::pair<T, T> (offset, 1-offset));
     }
 }
 
@@ -78,9 +79,9 @@ RegularGridInterpolator::lb_index_and_offsets(double *axis_vals, size_t &lb_inde
  * ... which is 0 to 7 in binary. The logic below simply extends this 
  * to n dimensions.
  */
-
+template<typename T>
 void 
-RegularGridInterpolator::corner_offsets()
+RegularGridInterpolator<T>::corner_offsets()
 {
     for (size_t i=0; i < _n_corners; ++i) {
         size_t corner = 0;
@@ -94,9 +95,9 @@ RegularGridInterpolator::corner_offsets()
         
 }
 
-
+template<typename T>
 void
-RegularGridInterpolator::corner_values(const size_t &lb_index, std::vector<double> &corners)
+RegularGridInterpolator<T>::corner_values(const size_t &lb_index, std::vector<T> &corners)
 {
     for (size_t i=0; i<_corner_offsets.size(); i++) {
         corners[i]=(_data[lb_index + _corner_offsets[i]]);
@@ -104,12 +105,13 @@ RegularGridInterpolator::corner_values(const size_t &lb_index, std::vector<doubl
 }
 
 // Reduces the vector of corners in-place for efficiency
+template<typename T>
 void
-RegularGridInterpolator::_interpolate(const size_t &dim, std::vector<double> &corners, size_t size,
-    const std::vector<std::pair<double, double> > &offsets, double* value)
+RegularGridInterpolator<T>::_interpolate(const size_t &dim, std::vector<T> &corners, size_t size,
+    const std::vector<std::pair<T, T> > &offsets, T* value)
 {
     for (size_t i=0; i<dim; ++i) {
-        const std::pair<double, double> &this_offset=offsets[dim-i-1];
+        const std::pair<T, T> &this_offset=offsets[dim-i-1];
         for (size_t ind=0, j=0; j<size; ind++, j+=2) {
             _interpolate1d(this_offset, corners[j], corners[j+1], &corners[ind]);
         }
@@ -118,17 +120,19 @@ RegularGridInterpolator::_interpolate(const size_t &dim, std::vector<double> &co
     *value=corners[0];
 }
 
-
+template<typename T>
 void
-RegularGridInterpolator::_interpolate1d(const std::pair<double, double> &offset, const double &lower, const double &upper, double *val)
+RegularGridInterpolator<T>::_interpolate1d(const std::pair<T, T> &offset, const T &lower, const T &upper, T *val)
 {
     *val= offset.first*upper + offset.second*lower;
 }
 
-void RegularGridInterpolator::interpolate (double* axis_vals, const size_t &n, double* values)
+template<typename T>
+void 
+RegularGridInterpolator<T>::interpolate (T* axis_vals, const size_t &n, T* values)
 {
-    std::vector<std::pair<double, double>> offsets(_dim);
-    std::vector<double> corners(_n_corners);
+    std::vector<std::pair<T, T>> offsets(_dim);
+    std::vector<T> corners(_n_corners);
     for (size_t i=0; i<n; ++i) {
         size_t lb_index = 0;
         // find the minimum corner of the hypercube, and the offsets 
@@ -148,14 +152,16 @@ void RegularGridInterpolator::interpolate (double* axis_vals, const size_t &n, d
 //--------------------------------------------------------
 // RegularGridInterpolator
 
+typedef float fp_type;
+
 extern "C"
 {
 
 EXPORT void*
-rg_interp_new(size_t dim, size_t* n, double* min, double* max, double* data)
+rg_interp_new(size_t dim, size_t* n, fp_type* min, fp_type* max, fp_type* data)
 {
     try {
-        return new RegularGridInterpolator(dim, n, min, max, data);
+        return new RegularGridInterpolator<fp_type>(dim, n, min, max, data);
     } catch (...) {
         molc_error();
     } return nullptr;
@@ -164,15 +170,15 @@ rg_interp_new(size_t dim, size_t* n, double* min, double* max, double* data)
 EXPORT void*
 rg_interp_copy(void *ptr)
 {
-    RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
-    return new RegularGridInterpolator(*rg);
+    RegularGridInterpolator<fp_type> *rg = static_cast<RegularGridInterpolator<fp_type> *>(ptr);
+    return new RegularGridInterpolator<fp_type>(*rg);
 }
 
 EXPORT void
 rg_interp_delete(void *ptr)
 {
     try {
-        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        RegularGridInterpolator<fp_type> *rg = static_cast<RegularGridInterpolator<fp_type> *>(ptr);
         delete rg;
     } catch (...) {
         molc_error();
@@ -181,10 +187,10 @@ rg_interp_delete(void *ptr)
 }
 
 EXPORT void
-rg_interpolate(void* ptr, double* axis_vals, size_t n, double* values) 
+rg_interpolate(void* ptr, fp_type* axis_vals, size_t n, fp_type* values) 
 {
     try {
-        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        RegularGridInterpolator<fp_type> *rg = static_cast<RegularGridInterpolator<fp_type> *>(ptr);
         rg->interpolate(axis_vals, n, values);
     } catch (...) {
         molc_error();
@@ -193,10 +199,10 @@ rg_interpolate(void* ptr, double* axis_vals, size_t n, double* values)
 }
 
 EXPORT void
-rg_interp_min(void* ptr, double* ret)
+rg_interp_min(void* ptr, fp_type* ret)
 {
     try {
-        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        RegularGridInterpolator<fp_type> *rg = static_cast<RegularGridInterpolator<fp_type> *>(ptr);
         for (auto m: rg->min()) {
             *ret++ = m;
         }
@@ -207,10 +213,10 @@ rg_interp_min(void* ptr, double* ret)
 }
 
 EXPORT void
-rg_interp_max(void* ptr, double* ret)
+rg_interp_max(void* ptr, fp_type* ret)
 {
     try {
-        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        RegularGridInterpolator<fp_type> *rg = static_cast<RegularGridInterpolator<fp_type> *>(ptr);
         for (auto m: rg->max()) {
             *ret++ = m;
         }
@@ -224,7 +230,7 @@ EXPORT void
 rg_interp_lengths(void* ptr, size_t* ret)
 {
     try {
-        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        RegularGridInterpolator<fp_type> *rg = static_cast<RegularGridInterpolator<fp_type> *>(ptr);
         for (auto l: rg->length()) {
             *ret++ = l;
         }
@@ -240,7 +246,7 @@ EXPORT size_t
 rg_interp_dim(void* ptr)
 {
     try {
-        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        RegularGridInterpolator<fp_type> *rg = static_cast<RegularGridInterpolator<fp_type> *>(ptr);
         return rg->dim();
     } catch (...) {
         molc_error();
@@ -249,10 +255,10 @@ rg_interp_dim(void* ptr)
 }
 
 EXPORT void
-rg_interp_values(void* ptr, double* ret)
+rg_interp_values(void* ptr, fp_type* ret)
 {
     try {
-        RegularGridInterpolator *rg = static_cast<RegularGridInterpolator *>(ptr);
+        RegularGridInterpolator<fp_type> *rg = static_cast<RegularGridInterpolator<fp_type> *>(ptr);
         for (auto d: rg->data()) {
             *ret++ = d;
         }
@@ -272,23 +278,23 @@ rg_interp_values(void* ptr, double* ret)
 //~ main() {
     //~ size_t dim = 3;
     //~ size_t n[3] {2,2,2};
-    //~ double min[3] {0,0,0};
-    //~ double max[3] {1,1,1};
-    //~ double data[8] {0,0,0,0,0,0,1};
+    //~ T min[3] {0,0,0};
+    //~ T max[3] {1,1,1};
+    //~ T data[8] {0,0,0,0,0,0,1};
     //~ RegularGridInterpolator interp(dim, n, min, max, data);
-    //~ double* results = new double[100000];
-    //~ //double axis_vals[9] {0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.8, 0.8, 0.8};
-    //~ double* axis_vals = new double[300000];
+    //~ T* results = new T[100000];
+    //~ //T axis_vals[9] {0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.8, 0.8, 0.8};
+    //~ T* axis_vals = new T[300000];
     //~ for (size_t i=0; i<300000; ++i)
-        //~ axis_vals[i]=(double)rand()/RAND_MAX*0.95+0.01;
+        //~ axis_vals[i]=(T)rand()/RAND_MAX*0.95+0.01;
     
-    //~ double start = (double)clock();
+    //~ T start = (T)clock();
     
     //~ //for (size_t i=0; i<100000; ++i) {
         //~ interp.interpolate(axis_vals, 100000, results);
     //~ //}
     
-    //~ std::cout << "100,000 3D interpolations took " << ((double)clock()-start)/CLOCKS_PER_SEC << " seconds." << std::endl;
+    //~ std::cout << "100,000 3D interpolations took " << ((T)clock()-start)/CLOCKS_PER_SEC << " seconds." << std::endl;
     //~ for (size_t i=0; i<5; ++i) {
         //~ std::cout << results[i] << std::endl;
     //~ }
