@@ -52,6 +52,37 @@ using namespace isolde;
 // dihedral functions
 //
 
+extern "C" EXPORT void set_dihedral_pyclass(PyObject* py_class)
+{
+    try {
+        Dihedral::set_py_class(py_class);
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT PyObject* dihedral_py_inst(void* ptr)
+{
+    Dihedral *d = static_cast<Dihedral*>(ptr);
+    try {
+        return d->py_instance(true);
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+}
+
+extern "C" EXPORT PyObject* dihedral_existing_py_inst(void* ptr)
+{
+    Dihedral *d = static_cast<Dihedral*>(ptr);
+    try {
+        return d->py_instance(false);
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+}
+
 
 extern "C" EXPORT void 
 dihedral_from_atoms(void *atoms, size_t n, pyobject_t *name, pyobject_t *dihedrals)

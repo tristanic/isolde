@@ -37,6 +37,7 @@ with the surroundings.
     <SourceFile>src/molc.cpp</SourceFile>
     <Library>OpenMM</Library>
     <Library>atomstruct</Library>
+    <Library>pyinstance</Library>
   </CModule>
 
   <!-- Dependencies on other ChimeraX/Python packages -->
