@@ -24,7 +24,7 @@ def generate_interpolator_old(file_prefix, wrap_axes = True):
     infile = None
     # First try to load from a pickle file
     try:
-        infile = open(file_prefix+'.pickle', 'r+b')
+        infile = open(file_prefix+'.pickle', 'rb')
         axis, full_grid = pickle.load(infile)
         infile.close()
         infile = None
@@ -33,7 +33,7 @@ def generate_interpolator_old(file_prefix, wrap_axes = True):
         # text, then regenerate the pickle file at the end.
         if infile is not None:
             infile.close()
-        infile = open(file_prefix+'.data', 'r')
+        infile = open(file_prefix+'.data', 'rt', encoding='utf-8')
         # Throw away the first line - we don't need it
         infile.readline()
         # Get number of dimensions
