@@ -1,4 +1,4 @@
-<BundleInfo name="ChimeraX-ISOLDE" version="0.9.21" package="chimerax.isolde"
+<BundleInfo name="ChimeraX-ISOLDE" version="0.9.23" package="chimerax.isolde"
   	    minSessionVersion="1" maxSessionVersion="1">
 
   <!-- Additional information about bundle source -->
@@ -32,7 +32,7 @@ with the surroundings.
   <CModule name="_nd_interp">
     <SourceFile>src/interpolation/nd_interp.cpp</SourceFile>
   </CModule>
-  <CModule name="molc">
+  <CModule name="molc" usesNumpy="true">
     <SourceFile>src/atomic_cpp/dihedral.cpp</SourceFile>
     <SourceFile>src/molc.cpp</SourceFile>
     <Library>OpenMM</Library>
@@ -42,7 +42,7 @@ with the surroundings.
 
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>
-    <Dependency name="ChimeraX-Core" version=">=0.1"/>
+    <Dependency name="ChimeraX-Core" version=">=0.5"/>
     <Dependency name="ChimeraX-Clipper" version=">=0.1"/>
   </Dependencies>
 
