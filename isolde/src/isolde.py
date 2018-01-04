@@ -1098,10 +1098,7 @@ class Isolde():
             self._update_sim_temperature
             )
         iw._sim_go_button.clicked.connect(
-            self.start_sim
-            )
-        iw._sim_pause_button.clicked.connect(
-            self.pause_sim_toggle
+            self._start_sim_or_toggle_pause
             )
         iw._sim_save_checkpoint_button.clicked.connect(
             self.checkpoint)
@@ -1283,11 +1280,10 @@ class Isolde():
         # based on whether a simulation is currently running
         flag = self._simulation_running
         iw = self.iw
-        iw._sim_go_button.setDisabled(flag)
+        #iw._sim_go_button.setDisabled(flag)
         if self._sim_paused and not flag:
             self._sim_paused = False
-            iw._sim_pause_button.setText('Pause')
-        iw._sim_pause_button.setEnabled(flag)
+            self.iw._sim_go_button.setChecked(False)
         iw._sim_commit_button.setEnabled(flag)
         iw._sim_discard_button.setEnabled(flag)
         # Change colour of minimisation and equilibration buttons according
@@ -2407,7 +2403,12 @@ class Isolde():
         from .openmm.sim_interface import SimParams
         self.sim_params = SimParams()
 
-
+    def _start_sim_or_toggle_pause(self, *_):
+        if not self._simulation_running:
+            self.start_sim()
+        else:
+            self.pause_sim_toggle()
+    
     def start_sim(self):
         self.sim_params.platform = self.iw._sim_platform_combo_box.currentText()
         try:
@@ -2704,7 +2705,7 @@ class Isolde():
         self._status('')
         self._sim_interface = None
         self.equilibrate()
-
+        self.iw._sim_go_button.setChecked(False)
 
     def _get_main_sim_selection(self):
         '''
@@ -2818,19 +2819,12 @@ class Isolde():
     def _sim_pause_cb(self, *_):
         self._sim_paused = True
         self._status('Simulation paused')
-        self.iw._sim_pause_button.setText('Resume')
-        #~ self._event_handler.remove_event_handler('update dihedral restraint drawings')
+        self.iw._sim_go_button.setChecked(False)
 
     def _sim_resume_cb(self, *_):
         self._sim_paused = False
         self._status('Simulation running')
-        self.iw._sim_pause_button.setText('Pause')
-        #~ self._event_handler.add_event_handler('update dihedral restraint drawings',
-                                    #~ 'graphics update',
-                                    #~ self._all_annotated_dihedrals.update_graphics)
-
-
-
+        self.iw._sim_go_button.setChecked(True)
 
     def _discard_sim(self, *_):
         revert_to = self.iw._sim_discard_revert_combo_box.currentText()
