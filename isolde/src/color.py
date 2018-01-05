@@ -35,6 +35,7 @@ class ThreeColorScale():
     # Return an array of colors corresponding to an array of input values    
     def get_colors(self, vals):
         import numpy
+        numpy.seterr(all='raise')
         minc = self.mincolor
         midc = self.midcolor
         maxc = self.maxcolor
@@ -42,10 +43,14 @@ class ThreeColorScale():
         midv = self.midval
         maxv = self.maxval
         invals = numpy.array(vals)
-        above_max = invals >= maxv
-        below_min = invals < minv
-        between_min_and_mid = numpy.logical_and(invals >=minv, invals < midv)
-        between_mid_and_max = numpy.logical_and(invals >=midv, invals < maxv)
+        try:
+            above_max = invals >= maxv
+            below_min = invals < minv
+            between_min_and_mid = numpy.logical_and(invals >=minv, invals < midv)
+            between_mid_and_max = numpy.logical_and(invals >=midv, invals < maxv)
+        except:
+            print(invals)
+            raise
         
         
         colors = numpy.empty([len(invals),4], numpy.float32)

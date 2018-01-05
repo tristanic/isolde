@@ -135,7 +135,7 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0">
+        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
          <property name="sizeConstraint">
           <enum>QLayout::SetMinAndMaxSize</enum>
          </property>
@@ -1383,7 +1383,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>483</width>
-                  <height>449</height>
+                  <height>509</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -3052,6 +3052,9 @@
          <item>
           <widget class="QFrame" name="frame">
            <layout class="QHBoxLayout" name="horizontalLayout">
+            <property name="spacing">
+             <number>3</number>
+            </property>
             <item>
              <widget class="QPushButton" name="_sim_go_button">
               <property name="minimumSize">
@@ -3059,6 +3062,9 @@
                 <width>0</width>
                 <height>0</height>
                </size>
+              </property>
+              <property name="toolTip">
+               <string>Start simulation</string>
               </property>
               <property name="text">
                <string/>
@@ -3080,6 +3086,151 @@
              </widget>
             </item>
             <item>
+             <widget class="QFrame" name="frame_5">
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_6">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <property name="horizontalSpacing">
+                <number>3</number>
+               </property>
+               <property name="verticalSpacing">
+                <number>0</number>
+               </property>
+               <item row="0" column="0">
+                <widget class="QPushButton" name="_sim_min_button">
+                 <property name="maximumSize">
+                  <size>
+                   <width>24</width>
+                   <height>16</height>
+                  </size>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
+background-color: rgb(175, 175, 175);
+}
+QPushButton:checked {
+background-color: rgb(5, 200, 0);
+}</string>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="autoExclusive">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QPushButton" name="_sim_equil_button">
+                 <property name="maximumSize">
+                  <size>
+                   <width>24</width>
+                   <height>16</height>
+                  </size>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
+background-color: rgb(175, 175, 175);
+}
+QPushButton:checked {
+background-color: rgb(5, 200, 0);
+}</string>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                 <property name="autoExclusive">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QLabel" name="label_44">
+                 <property name="text">
+                  <string>Min</string>
+                 </property>
+                 <property name="margin">
+                  <number>0</number>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QLabel" name="label_46">
+                 <property name="text">
+                  <string>Equil</string>
+                 </property>
+                 <property name="margin">
+                  <number>0</number>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="_sim_temp_label">
+              <property name="maximumSize">
+               <size>
+                <width>36</width>
+                <height>36</height>
+               </size>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="pixmap">
+               <pixmap resource="resources/resources.qrc">:/newPrefix/thermometer.png</pixmap>
+              </property>
+              <property name="scaledContents">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QDoubleSpinBox" name="_sim_temp_spin_box">
+              <property name="toolTip">
+               <string>Temperature in Kelvin</string>
+              </property>
+              <property name="decimals">
+               <number>0</number>
+              </property>
+              <property name="maximum">
+               <double>500.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>10.000000000000000</double>
+              </property>
+              <property name="value">
+               <double>100.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item>
              <spacer name="horizontalSpacer_7">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
@@ -3093,7 +3244,7 @@
              </spacer>
             </item>
             <item>
-             <widget class="QPushButton" name="_sim_save_checkpoint_button">
+             <widget class="QToolButton" name="_sim_save_checkpoint_button">
               <property name="palette">
                <palette>
                 <active>
@@ -3531,7 +3682,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="_sim_revert_to_checkpoint_button">
+             <widget class="QToolButton" name="_sim_revert_to_checkpoint_button">
               <property name="toolTip">
                <string>Return to last saved checkpoint</string>
               </property>
@@ -3550,144 +3701,76 @@
               </property>
              </widget>
             </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QFrame" name="horizontalFrame">
-           <property name="frameShape">
-            <enum>QFrame::Panel</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Raised</enum>
-           </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
-            <property name="topMargin">
-             <number>1</number>
-            </property>
             <item>
-             <widget class="QLabel" name="label_42">
-              <property name="text">
-               <string>Stop sim and ...</string>
+             <spacer name="horizontalSpacer_27">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
               </property>
-             </widget>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
             </item>
             <item>
              <widget class="QToolButton" name="_sim_commit_button">
+              <property name="toolTip">
+               <string>Stop the simulation and keep results</string>
+              </property>
               <property name="text">
-               <string>Keep changes</string>
+               <string>...</string>
               </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_24">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+              <property name="icon">
+               <iconset resource="resources/resources.qrc">
+                <normaloff>:/newPrefix/stop_sign_green.png</normaloff>:/newPrefix/stop_sign_green.png</iconset>
               </property>
-              <property name="sizeHint" stdset="0">
+              <property name="iconSize">
                <size>
-                <width>40</width>
-                <height>20</height>
+                <width>36</width>
+                <height>36</height>
                </size>
               </property>
-             </spacer>
+             </widget>
             </item>
             <item>
-             <widget class="QToolButton" name="_sim_discard_button">
-              <property name="text">
-               <string>Revert to...</string>
+             <widget class="QToolButton" name="_sim_stop_and_revert_to_checkpoint_button">
+              <property name="toolTip">
+               <string>Stop and revert to the last saved checkpoint</string>
               </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QComboBox" name="_sim_discard_revert_combo_box">
-              <item>
-               <property name="text">
-                <string>checkpoint</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>start</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QFrame" name="frame">
-           <layout class="QHBoxLayout" name="horizontalLayout_7">
-            <item>
-             <widget class="QPushButton" name="_sim_min_button">
-              <property name="maximumSize">
+              <property name="text">
+               <string>...</string>
+              </property>
+              <property name="icon">
+               <iconset resource="resources/resources.qrc">
+                <normaloff>:/newPrefix/checkpoint_stop_red.png</normaloff>:/newPrefix/checkpoint_stop_red.png</iconset>
+              </property>
+              <property name="iconSize">
                <size>
-                <width>50</width>
-                <height>16777215</height>
+                <width>36</width>
+                <height>36</height>
                </size>
               </property>
-              <property name="text">
-               <string>Min</string>
-              </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="_sim_equil_button">
-              <property name="maximumSize">
+             <widget class="QToolButton" name="_sim_stop_and_discard_button">
+              <property name="toolTip">
+               <string>Stop and discard all changes</string>
+              </property>
+              <property name="text">
+               <string>...</string>
+              </property>
+              <property name="icon">
+               <iconset resource="resources/resources.qrc">
+                <normaloff>:/newPrefix/stop_sign_red.png</normaloff>:/newPrefix/stop_sign_red.png</iconset>
+              </property>
+              <property name="iconSize">
                <size>
-                <width>50</width>
-                <height>16777215</height>
+                <width>36</width>
+                <height>36</height>
                </size>
-              </property>
-              <property name="text">
-               <string>Equil</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="_sim_hide_surroundings_toggle">
-              <property name="text">
-               <string>Hide surroundings</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
-             <widget class="QLabel" name="_sim_temp_label">
-              <property name="text">
-               <string>Temperature (K)</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QDoubleSpinBox" name="_sim_temp_spin_box">
-              <property name="decimals">
-               <number>1</number>
-              </property>
-              <property name="maximum">
-               <double>500.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>10.000000000000000</double>
-              </property>
-              <property name="value">
-               <double>100.000000000000000</double>
               </property>
              </widget>
             </item>

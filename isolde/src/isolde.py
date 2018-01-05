@@ -1107,17 +1107,18 @@ class Isolde():
         iw._sim_commit_button.clicked.connect(
             self.commit_sim
             )
-        iw._sim_discard_button.clicked.connect(
+        iw._sim_stop_and_revert_to_checkpoint_button.clicked.connect(
+            self._stop_sim_and_revert_to_checkpoint
+            )
+        iw._sim_stop_and_discard_button.clicked.connect(
             self._discard_sim
             )
+        
         iw._sim_min_button.clicked.connect(
             self.minimize
             )
         iw._sim_equil_button.clicked.connect(
             self.equilibrate
-        )
-        iw._sim_hide_surroundings_toggle.stateChanged.connect(
-            self._set_hide_surroundings
         )
 
     def _disable_chimerax_mouse_mode_panel(self, *_):
@@ -1280,20 +1281,34 @@ class Isolde():
         # based on whether a simulation is currently running
         flag = self._simulation_running
         iw = self.iw
+        paused = self._sim_paused
         #iw._sim_go_button.setDisabled(flag)
-        if self._sim_paused and not flag:
+        go_button = iw._sim_go_button
+        if paused and not flag:
             self._sim_paused = False
-            self.iw._sim_go_button.setChecked(False)
+            go_button.setChecked(False)
+        elif paused:
+            go_button.setToolTip('Resume')
+        elif flag:
+            go_button.setToolTip('Pause')
+        if not flag:
+            iw._sim_go_button.setToolTip('Start a simulation')
+        
+        iw._sim_save_checkpoint_button.setEnabled(flag)
+        iw._sim_revert_to_checkpoint_button.setEnabled(flag)
         iw._sim_commit_button.setEnabled(flag)
-        iw._sim_discard_button.setEnabled(flag)
+        iw._sim_stop_and_revert_to_checkpoint_button.setEnabled(flag)
+        iw._sim_stop_and_discard_button.setEnabled(flag)
         # Change colour of minimisation and equilibration buttons according
         # to current choice
         if self.simulation_type == 'equil':
-            iw._sim_equil_button.setStyleSheet('background-color: green')
-            iw._sim_min_button.setStyleSheet('background-color: red')
+            iw._sim_equil_button.setChecked(True)
+            #~ iw._sim_equil_button.setStyleSheet('background-color: green')
+            #~ iw._sim_min_button.setStyleSheet('background-color: red')
         else:
-            iw._sim_equil_button.setStyleSheet('background-color: red')
-            iw._sim_min_button.setStyleSheet('background-color: green')
+            iw._sim_min_button.setChecked(True)
+            #~ iw._sim_equil_button.setStyleSheet('background-color: red')
+            #~ iw._sim_min_button.setStyleSheet('background-color: green')
 
 
         # Update the status of the Go button
@@ -2288,10 +2303,6 @@ class Isolde():
             contour_val = contour_val * map_sigma
         sb.setValue(contour_val)
 
-    def _set_hide_surroundings(self,*_):
-        self.params.hide_surroundings_during_sim = self.iw._sim_hide_surroundings_toggle.checkState()
-
-
 
     def add_map(self, name, vol, cutoff, coupling_constant,
         is_difference_map = False, style = None, color = None,
@@ -2819,16 +2830,24 @@ class Isolde():
     def _sim_pause_cb(self, *_):
         self._sim_paused = True
         self._status('Simulation paused')
-        self.iw._sim_go_button.setChecked(False)
+        go_button = self.iw._sim_go_button
+        go_button.setChecked(False)
+        go_button.setToolTip('Resume')
 
     def _sim_resume_cb(self, *_):
         self._sim_paused = False
         self._status('Simulation running')
-        self.iw._sim_go_button.setChecked(True)
+        go_button = self.iw._sim_go_button
+        go_button.setChecked(True)
+        go_button.setToolTip('Pause')
+
+    def _stop_sim_and_revert_to_checkpoint(self, *_):
+        self.discard_sim('checkpoint')
 
     def _discard_sim(self, *_):
-        revert_to = self.iw._sim_discard_revert_combo_box.currentText()
-        self.discard_sim(revert_to)
+        self.discard_sim('start')
+
+
 
     def discard_sim(self, revert_to='checkpoint'):
         '''
