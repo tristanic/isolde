@@ -28,7 +28,7 @@ class ISOLDE_ToolUI(ToolInstance):
         self.tool_window.manage(placement=None)
         parent = self.tool_window.ui_area
         pp = parent.parent().parent()
-        pp.resize(400,850) 
+        pp.resize(420,850) 
 
         from PyQt5 import QtWidgets, QtGui
         from . import isoldewidget
@@ -44,6 +44,7 @@ class ISOLDE_ToolUI(ToolInstance):
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.mainwin)
         layout.setStretchFactor(self.mainwin, 1)
+        layout.setContentsMargins(1,1,1,3)
         parent.setLayout(layout)
         self.tool_window.manage(placement=None)
         # Should load saved state here

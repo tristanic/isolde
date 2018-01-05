@@ -51,6 +51,7 @@ class ThreeColorScale():
         except:
             print(invals)
             raise
+        numpy.seterr()
         
         
         colors = numpy.empty([len(invals),4], numpy.float32)
