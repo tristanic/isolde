@@ -3345,6 +3345,8 @@ class Isolde():
         color.color(self.session, before_struct, color='byhetero', target='a')
         before_cs = clipper.CrystalStructure(self.session, before_struct,
             os.path.join(data_dir, 'before_maps.mtz'))
+        #~ from chimerax.core.commands import lighting
+        #~ lighting.lighting(self.session, depth_cue=True)
         sharp_map = before_cs.xmaps['2FOFCWT_sharp, PH2FOFCWT_sharp']
         sd = sharp_map.mean_sd_rms()[1]
         styleargs= self._map_style_settings[self._map_styles.solid_t40]

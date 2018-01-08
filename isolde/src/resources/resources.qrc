@@ -1,5 +1,14 @@
 <RCC>
-  <qresource prefix="newPrefix">
+  <qresource prefix="icons">
+    <file>sel-base-icon.png</file>
+    <file>secondary-structure-icon.png</file>
+    <file>rotamer-preview-icon.png</file>
+    <file>rotamer-release-icon.png</file>
+    <file>rotamer-set-target-icon.png</file>
+    <file>rotamer-clear-icon.png</file>
+    <file>rotamer-commit-icon.png</file>
+    <file>pep-flip-icon.png</file>
+    <file>cis-trans-icon.png</file>
     <file>thermometer.png</file>
     <file>checkpoint_stop_red.png</file>
     <file>stop_sign_green.png</file>
