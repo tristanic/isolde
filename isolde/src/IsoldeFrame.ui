@@ -20,6 +20,21 @@
    <enum>QFrame::Raised</enum>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
+   <property name="spacing">
+    <number>3</number>
+   </property>
+   <property name="leftMargin">
+    <number>3</number>
+   </property>
+   <property name="topMargin">
+    <number>3</number>
+   </property>
+   <property name="rightMargin">
+    <number>3</number>
+   </property>
+   <property name="bottomMargin">
+    <number>3</number>
+   </property>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_17">
      <property name="sizeConstraint">
@@ -62,6 +77,21 @@
         <enum>QFrame::Raised</enum>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout_29">
+        <property name="spacing">
+         <number>3</number>
+        </property>
+        <property name="leftMargin">
+         <number>3</number>
+        </property>
+        <property name="topMargin">
+         <number>3</number>
+        </property>
+        <property name="rightMargin">
+         <number>3</number>
+        </property>
+        <property name="bottomMargin">
+         <number>3</number>
+        </property>
         <item>
          <widget class="QLabel" name="label_32">
           <property name="text">
@@ -118,24 +148,48 @@
        <height>450</height>
       </size>
      </property>
+     <property name="styleSheet">
+      <string notr="true"/>
+     </property>
      <property name="currentIndex">
       <number>0</number>
+     </property>
+     <property name="tabSpacing">
+      <number>3</number>
      </property>
      <widget class="QWidget" name="_simulate_page">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>527</width>
-        <height>694</height>
+        <width>539</width>
+        <height>740</height>
        </rect>
       </property>
       <attribute name="label">
        <string>Simulate</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="spacing">
+        <number>3</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0">
+        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
+         <property name="spacing">
+          <number>3</number>
+         </property>
          <property name="sizeConstraint">
           <enum>QLayout::SetMinAndMaxSize</enum>
          </property>
@@ -147,14 +201,48 @@
              <verstretch>1</verstretch>
             </sizepolicy>
            </property>
+           <property name="styleSheet">
+            <string notr="true">
+QTabWidget::pane {
+margin: 2px, 2px, 2px, 2px;
+border: 1px;
+}</string>
+           </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>3</number>
+           </property>
+           <property name="elideMode">
+            <enum>Qt::ElideNone</enum>
+           </property>
+           <property name="documentMode">
+            <bool>false</bool>
+           </property>
+           <property name="tabBarAutoHide">
+            <bool>true</bool>
            </property>
            <widget class="QWidget" name="_sim_basic_tab">
+            <property name="styleSheet">
+             <string notr="true"/>
+            </property>
             <attribute name="title">
              <string>Sim settings</string>
             </attribute>
             <layout class="QVBoxLayout" name="verticalLayout_5">
+             <property name="spacing">
+              <number>3</number>
+             </property>
+             <property name="leftMargin">
+              <number>1</number>
+             </property>
+             <property name="topMargin">
+              <number>1</number>
+             </property>
+             <property name="rightMargin">
+              <number>1</number>
+             </property>
+             <property name="bottomMargin">
+              <number>1</number>
+             </property>
              <item>
               <widget class="QScrollArea" name="_sim_basic_tab_scroll_area">
                <property name="widgetResizable">
@@ -165,8 +253,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>470</width>
-                  <height>1194</height>
+                  <width>520</width>
+                  <height>1159</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0,0,0,0">
@@ -1372,6 +1460,21 @@
              <string>Custom restraints</string>
             </attribute>
             <layout class="QVBoxLayout" name="verticalLayout_7">
+             <property name="spacing">
+              <number>3</number>
+             </property>
+             <property name="leftMargin">
+              <number>1</number>
+             </property>
+             <property name="topMargin">
+              <number>1</number>
+             </property>
+             <property name="rightMargin">
+              <number>1</number>
+             </property>
+             <property name="bottomMargin">
+              <number>1</number>
+             </property>
              <item>
               <widget class="QScrollArea" name="_restraints_scroll_area">
                <property name="widgetResizable">
@@ -1382,11 +1485,26 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>423</width>
-                  <height>222</height>
+                  <width>533</width>
+                  <height>648</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
+                 <property name="spacing">
+                  <number>3</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>1</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>1</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>1</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>1</number>
+                 </property>
                  <item>
                   <widget class="QFrame" name="_restraints_peptide_bond_frame">
                    <property name="frameShape">
@@ -1536,6 +1654,21 @@
              <string>Rebuild</string>
             </attribute>
             <layout class="QVBoxLayout" name="verticalLayout_6">
+             <property name="spacing">
+              <number>3</number>
+             </property>
+             <property name="leftMargin">
+              <number>1</number>
+             </property>
+             <property name="topMargin">
+              <number>1</number>
+             </property>
+             <property name="rightMargin">
+              <number>1</number>
+             </property>
+             <property name="bottomMargin">
+              <number>1</number>
+             </property>
              <item>
               <widget class="QFrame" name="_rebuild_sel_residue_frame">
                <property name="sizePolicy">
@@ -1819,8 +1952,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>456</width>
-                  <height>390</height>
+                  <width>533</width>
+                  <height>486</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -2675,6 +2808,21 @@
              <string>Validate</string>
             </attribute>
             <layout class="QHBoxLayout" name="horizontalLayout_20">
+             <property name="spacing">
+              <number>3</number>
+             </property>
+             <property name="leftMargin">
+              <number>1</number>
+             </property>
+             <property name="topMargin">
+              <number>1</number>
+             </property>
+             <property name="rightMargin">
+              <number>1</number>
+             </property>
+             <property name="bottomMargin">
+              <number>1</number>
+             </property>
              <item>
               <widget class="QScrollArea" name="_validate_scroll_area">
                <property name="widgetResizable">
@@ -2685,11 +2833,26 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>470</width>
-                  <height>746</height>
+                  <width>533</width>
+                  <height>648</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
+                 <property name="spacing">
+                  <number>3</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>1</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>1</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>1</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>1</number>
+                 </property>
                  <item>
                   <widget class="QFrame" name="_validate_rama_stub_frame">
                    <property name="frameShape">
@@ -2699,6 +2862,21 @@
                     <enum>QFrame::Raised</enum>
                    </property>
                    <layout class="QHBoxLayout" name="horizontalLayout_21">
+                    <property name="spacing">
+                     <number>3</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>3</number>
+                    </property>
                     <item>
                      <widget class="QLabel" name="label_22">
                       <property name="text">
@@ -2738,6 +2916,21 @@
                     <enum>QFrame::Raised</enum>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_13">
+                    <property name="spacing">
+                     <number>3</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>2</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>2</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>2</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>2</number>
+                    </property>
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_23">
                       <item>
@@ -2835,7 +3028,23 @@
                           <height>300</height>
                          </size>
                         </property>
-                        <layout class="QVBoxLayout" name="_validate_rama_plot_layout"/>
+                        <layout class="QVBoxLayout" name="_validate_rama_plot_layout">
+                         <property name="spacing">
+                          <number>3</number>
+                         </property>
+                         <property name="leftMargin">
+                          <number>0</number>
+                         </property>
+                         <property name="topMargin">
+                          <number>0</number>
+                         </property>
+                         <property name="rightMargin">
+                          <number>0</number>
+                         </property>
+                         <property name="bottomMargin">
+                          <number>0</number>
+                         </property>
+                        </layout>
                        </widget>
                       </item>
                       <item>
@@ -2855,6 +3064,9 @@
                     </item>
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_22">
+                      <property name="spacing">
+                       <number>3</number>
+                      </property>
                       <item>
                        <widget class="QComboBox" name="_validate_rama_sel_combo_box">
                         <item>
@@ -2903,6 +3115,21 @@
                     <enum>QFrame::Raised</enum>
                    </property>
                    <layout class="QHBoxLayout" name="horizontalLayout_25">
+                    <property name="spacing">
+                     <number>3</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>3</number>
+                    </property>
                     <item>
                      <widget class="QLabel" name="label_26">
                       <property name="text">
@@ -2942,6 +3169,21 @@
                     <enum>QFrame::Raised</enum>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_16">
+                    <property name="spacing">
+                     <number>3</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>3</number>
+                    </property>
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_27">
                       <item>
@@ -3052,17 +3294,193 @@
          <item>
           <widget class="QFrame" name="frame">
            <layout class="QHBoxLayout" name="horizontalLayout">
+            <property name="spacing">
+             <number>3</number>
+            </property>
+            <property name="leftMargin">
+             <number>2</number>
+            </property>
+            <property name="topMargin">
+             <number>2</number>
+            </property>
+            <property name="rightMargin">
+             <number>2</number>
+            </property>
+            <property name="bottomMargin">
+             <number>2</number>
+            </property>
             <item>
-             <widget class="QToolButton" name="_sim_go_button">
+             <widget class="QPushButton" name="_sim_go_button">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Start simulation</string>
+              </property>
               <property name="text">
-               <string>Go</string>
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="resources/resources.qrc">
+                <normaloff>:/newPrefix/play_icon.png</normaloff>
+                <normalon>:/newPrefix/pause_icon.png</normalon>:/newPrefix/play_icon.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>32</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QToolButton" name="_sim_pause_button">
+             <widget class="QFrame" name="frame_5">
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_6">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <property name="horizontalSpacing">
+                <number>3</number>
+               </property>
+               <property name="verticalSpacing">
+                <number>0</number>
+               </property>
+               <item row="0" column="0">
+                <widget class="QPushButton" name="_sim_min_button">
+                 <property name="maximumSize">
+                  <size>
+                   <width>24</width>
+                   <height>16</height>
+                  </size>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
+background-color: rgb(175, 175, 175);
+}
+QPushButton:checked {
+background-color: rgb(5, 200, 0);
+}</string>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="autoExclusive">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QPushButton" name="_sim_equil_button">
+                 <property name="maximumSize">
+                  <size>
+                   <width>24</width>
+                   <height>16</height>
+                  </size>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
+background-color: rgb(175, 175, 175);
+}
+QPushButton:checked {
+background-color: rgb(5, 200, 0);
+}</string>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                 <property name="autoExclusive">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QLabel" name="label_44">
+                 <property name="text">
+                  <string>Min</string>
+                 </property>
+                 <property name="margin">
+                  <number>0</number>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QLabel" name="label_46">
+                 <property name="text">
+                  <string>Equil</string>
+                 </property>
+                 <property name="margin">
+                  <number>0</number>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="_sim_temp_label">
+              <property name="maximumSize">
+               <size>
+                <width>36</width>
+                <height>36</height>
+               </size>
+              </property>
               <property name="text">
-               <string>Pause</string>
+               <string/>
+              </property>
+              <property name="pixmap">
+               <pixmap resource="resources/resources.qrc">:/newPrefix/thermometer.png</pixmap>
+              </property>
+              <property name="scaledContents">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QDoubleSpinBox" name="_sim_temp_spin_box">
+              <property name="toolTip">
+               <string>Temperature in Kelvin</string>
+              </property>
+              <property name="decimals">
+               <number>0</number>
+              </property>
+              <property name="maximum">
+               <double>500.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>10.000000000000000</double>
+              </property>
+              <property name="value">
+               <double>100.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -3080,157 +3498,118 @@
              </spacer>
             </item>
             <item>
-             <widget class="QPushButton" name="_sim_save_checkpoint_button">
+             <widget class="QToolButton" name="_sim_save_checkpoint_button">
+              <property name="toolTip">
+               <string>Save a checkpoint</string>
+              </property>
+              <property name="toolTipDuration">
+               <number>-1</number>
+              </property>
               <property name="text">
-               <string>Save checkpoint</string>
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="resources/resources.qrc">
+                <normaloff>:/newPrefix/checkpoint_green.png</normaloff>:/newPrefix/checkpoint_green.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>36</width>
+                <height>36</height>
+               </size>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="_sim_revert_to_checkpoint_button">
+             <widget class="QToolButton" name="_sim_revert_to_checkpoint_button">
+              <property name="toolTip">
+               <string>Return to last saved checkpoint</string>
+              </property>
               <property name="text">
-               <string>Return to checkpoint</string>
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="resources/resources.qrc">
+                <normaloff>:/newPrefix/checkpoint_red.png</normaloff>:/newPrefix/checkpoint_red.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>36</width>
+                <height>36</height>
+               </size>
               </property>
              </widget>
             </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QFrame" name="horizontalFrame">
-           <property name="frameShape">
-            <enum>QFrame::Panel</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Raised</enum>
-           </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
-            <property name="topMargin">
-             <number>1</number>
-            </property>
             <item>
-             <widget class="QLabel" name="label_42">
-              <property name="text">
-               <string>Stop sim and ...</string>
+             <spacer name="horizontalSpacer_27">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
               </property>
-             </widget>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
             </item>
             <item>
              <widget class="QToolButton" name="_sim_commit_button">
+              <property name="toolTip">
+               <string>Stop the simulation and keep results</string>
+              </property>
               <property name="text">
-               <string>Keep changes</string>
+               <string>...</string>
               </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_24">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+              <property name="icon">
+               <iconset resource="resources/resources.qrc">
+                <normaloff>:/newPrefix/stop_sign_green.png</normaloff>:/newPrefix/stop_sign_green.png</iconset>
               </property>
-              <property name="sizeHint" stdset="0">
+              <property name="iconSize">
                <size>
-                <width>40</width>
-                <height>20</height>
+                <width>36</width>
+                <height>36</height>
                </size>
               </property>
-             </spacer>
+             </widget>
             </item>
             <item>
-             <widget class="QToolButton" name="_sim_discard_button">
-              <property name="text">
-               <string>Revert to...</string>
+             <widget class="QToolButton" name="_sim_stop_and_revert_to_checkpoint_button">
+              <property name="toolTip">
+               <string>Stop and revert to the last saved checkpoint</string>
               </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QComboBox" name="_sim_discard_revert_combo_box">
-              <item>
-               <property name="text">
-                <string>checkpoint</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>start</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QFrame" name="frame">
-           <layout class="QHBoxLayout" name="horizontalLayout_7">
-            <item>
-             <widget class="QPushButton" name="_sim_min_button">
-              <property name="maximumSize">
+              <property name="text">
+               <string>...</string>
+              </property>
+              <property name="icon">
+               <iconset resource="resources/resources.qrc">
+                <normaloff>:/newPrefix/checkpoint_stop_red.png</normaloff>:/newPrefix/checkpoint_stop_red.png</iconset>
+              </property>
+              <property name="iconSize">
                <size>
-                <width>50</width>
-                <height>16777215</height>
+                <width>36</width>
+                <height>36</height>
                </size>
               </property>
-              <property name="text">
-               <string>Min</string>
-              </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="_sim_equil_button">
-              <property name="maximumSize">
+             <widget class="QToolButton" name="_sim_stop_and_discard_button">
+              <property name="toolTip">
+               <string>Stop and discard all changes</string>
+              </property>
+              <property name="text">
+               <string>...</string>
+              </property>
+              <property name="icon">
+               <iconset resource="resources/resources.qrc">
+                <normaloff>:/newPrefix/stop_sign_red.png</normaloff>:/newPrefix/stop_sign_red.png</iconset>
+              </property>
+              <property name="iconSize">
                <size>
-                <width>50</width>
-                <height>16777215</height>
+                <width>36</width>
+                <height>36</height>
                </size>
-              </property>
-              <property name="text">
-               <string>Equil</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="_sim_hide_surroundings_toggle">
-              <property name="text">
-               <string>Hide surroundings</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
-             <widget class="QLabel" name="_sim_temp_label">
-              <property name="text">
-               <string>Temperature (K)</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QDoubleSpinBox" name="_sim_temp_spin_box">
-              <property name="decimals">
-               <number>1</number>
-              </property>
-              <property name="maximum">
-               <double>500.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>10.000000000000000</double>
-              </property>
-              <property name="value">
-               <double>100.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -3252,6 +3631,21 @@
       <enum>QFrame::Raised</enum>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,0">
+      <property name="spacing">
+       <number>3</number>
+      </property>
+      <property name="leftMargin">
+       <number>3</number>
+      </property>
+      <property name="topMargin">
+       <number>3</number>
+      </property>
+      <property name="rightMargin">
+       <number>3</number>
+      </property>
+      <property name="bottomMargin">
+       <number>3</number>
+      </property>
       <item>
        <widget class="QLabel" name="_experience_level_label">
         <property name="text">

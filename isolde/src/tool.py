@@ -27,8 +27,8 @@ class ISOLDE_ToolUI(ToolInstance):
         self.tool_window = MainToolWindow(self)
         self.tool_window.manage(placement=None)
         parent = self.tool_window.ui_area
-        pp = parent.parent()
-        pp.resize(480,850) 
+        pp = parent.parent().parent()
+        pp.resize(420,850) 
 
         from PyQt5 import QtWidgets, QtGui
         from . import isoldewidget
@@ -44,6 +44,7 @@ class ISOLDE_ToolUI(ToolInstance):
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.mainwin)
         layout.setStretchFactor(self.mainwin, 1)
+        layout.setContentsMargins(1,1,1,3)
         parent.setLayout(layout)
         self.tool_window.manage(placement=None)
         # Should load saved state here
@@ -159,10 +160,6 @@ class ISOLDE_ToolUI(ToolInstance):
         for f in self._expert_frames:
             f.setPalette(self._pe.palette)
             f.setAutoFillBackground(True)
-
-        iw._sim_commit_button.setStyleSheet('background-color: green')
-        iw._sim_discard_button.setStyleSheet('background-color: red')
-        iw._sim_discard_revert_combo_box.setStyleSheet('background-color: red')
         
         from . import isolde
         self.isolde = isolde.Isolde(self)

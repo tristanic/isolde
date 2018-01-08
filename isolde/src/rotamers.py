@@ -73,14 +73,14 @@ def load_rotamers(file_prefix):
     '''
     infile = None
     try:
-        infile = open(file_prefix+'.pickle', 'r+b')
+        infile = open(file_prefix+'.pickle', 'rb')
         rotamers = pickle.load(infile)
         infile.close()
         infile = None
     except:
         if infile is not None:
             infile.close()
-        infile = open(file_prefix+'.data', 'r')
+        infile = open(file_prefix+'.data', 'rt', encoding='utf-8')
         lines = [line.rstrip('\n ').split(' ') for line in infile]
         infile.close()
         rotamers = {}

@@ -4,7 +4,7 @@ from chimerax.core.atomic.molc import string, cptr, pyobject, set_cvec_pointer, 
 from chimerax.core.atomic.molarray import Collection
 from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
-from .molobject import object_map
+#from .molobject import object_map
 from .molobject import Dihedral
 import ctypes
 
@@ -19,7 +19,7 @@ from chimerax.core.atomic.molarray import _atoms, _atoms_or_nones, \
 def _dihedrals(p):
     return Dihedrals(p)
 def _dihedrals_or_nones(p):
-    return [object_map(ptr, Dihedral) if ptr else None for ptr in p]
+    return [Dihedral.c_ptr_to_py_inst(ptr) if ptr else None for ptr in p]
 def _non_null_dihedrals(p):
     return Dihedrals(p[p!=0])
 

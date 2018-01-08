@@ -1,5 +1,11 @@
 <RCC>
   <qresource prefix="newPrefix">
+    <file>thermometer.png</file>
+    <file>checkpoint_stop_red.png</file>
+    <file>stop_sign_green.png</file>
+    <file>stop_sign_red.png</file>
+    <file>checkpoint_green.png</file>
+    <file>checkpoint_red.png</file>
     <file>play_icon_red.png</file>
     <file>reverse_icon_red.png</file>
     <file>pause_icon.png</file>

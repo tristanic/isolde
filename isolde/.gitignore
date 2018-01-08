@@ -11,6 +11,7 @@ __pycache__/
 **/isolde_main_win.py
 **/isoldewidget.py
 **/resources_rc.py
+resources_rc.py
 
 # Distribution / packaging
 bin/

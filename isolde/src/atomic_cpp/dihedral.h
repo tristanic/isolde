@@ -3,14 +3,13 @@
 #define isolde_Dihedral
 
 #include <vector>
-
 #include <atomstruct/destruct.h>
 #include <atomstruct/AtomicStructure.h>
 #include <atomstruct/Atom.h>
 #include <atomstruct/Bond.h>
 #include <atomstruct/Coord.h>
 #include <atomstruct/Residue.h>
-#include <atomstruct/PythonInstance.h>
+#include <pyinstance/PythonInstance.declare.h>
 
 #include "../geometry/geometry.h"
 
@@ -28,7 +27,7 @@ namespace isolde {
  * MUST BE ALLOCATED ON THE HEAP (i.e. via Dihedral* d = new Dihedral(...))
  * to work with ChimeraX's automatic clean-up system. 
  */ 
-class Dihedral: public DestructionObserver, public PythonInstance {
+class Dihedral: public DestructionObserver, public pyinstance::PythonInstance<Dihedral> {
 
 public:
     typedef Atom* Atoms[4];

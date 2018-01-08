@@ -1,5 +1,10 @@
 
+#define PYINSTANCE_EXPORT
 #include "dihedral.h"
+#include <pyinstance/PythonInstance.instantiate.h>
+
+
+template class pyinstance::PythonInstance<isolde::Dihedral>;
 
 namespace isolde {
 

@@ -1098,10 +1098,7 @@ class Isolde():
             self._update_sim_temperature
             )
         iw._sim_go_button.clicked.connect(
-            self.start_sim
-            )
-        iw._sim_pause_button.clicked.connect(
-            self.pause_sim_toggle
+            self._start_sim_or_toggle_pause
             )
         iw._sim_save_checkpoint_button.clicked.connect(
             self.checkpoint)
@@ -1110,17 +1107,18 @@ class Isolde():
         iw._sim_commit_button.clicked.connect(
             self.commit_sim
             )
-        iw._sim_discard_button.clicked.connect(
+        iw._sim_stop_and_revert_to_checkpoint_button.clicked.connect(
+            self._stop_sim_and_revert_to_checkpoint
+            )
+        iw._sim_stop_and_discard_button.clicked.connect(
             self._discard_sim
             )
+        
         iw._sim_min_button.clicked.connect(
             self.minimize
             )
         iw._sim_equil_button.clicked.connect(
             self.equilibrate
-        )
-        iw._sim_hide_surroundings_toggle.stateChanged.connect(
-            self._set_hide_surroundings
         )
 
     def _disable_chimerax_mouse_mode_panel(self, *_):
@@ -1283,21 +1281,34 @@ class Isolde():
         # based on whether a simulation is currently running
         flag = self._simulation_running
         iw = self.iw
-        iw._sim_go_button.setDisabled(flag)
-        if self._sim_paused and not flag:
+        paused = self._sim_paused
+        #iw._sim_go_button.setDisabled(flag)
+        go_button = iw._sim_go_button
+        if paused and not flag:
             self._sim_paused = False
-            iw._sim_pause_button.setText('Pause')
-        iw._sim_pause_button.setEnabled(flag)
+            go_button.setChecked(False)
+        elif paused:
+            go_button.setToolTip('Resume')
+        elif flag:
+            go_button.setToolTip('Pause')
+        if not flag:
+            iw._sim_go_button.setToolTip('Start a simulation')
+        
+        iw._sim_save_checkpoint_button.setEnabled(flag)
+        iw._sim_revert_to_checkpoint_button.setEnabled(flag)
         iw._sim_commit_button.setEnabled(flag)
-        iw._sim_discard_button.setEnabled(flag)
+        iw._sim_stop_and_revert_to_checkpoint_button.setEnabled(flag)
+        iw._sim_stop_and_discard_button.setEnabled(flag)
         # Change colour of minimisation and equilibration buttons according
         # to current choice
         if self.simulation_type == 'equil':
-            iw._sim_equil_button.setStyleSheet('background-color: green')
-            iw._sim_min_button.setStyleSheet('background-color: red')
+            iw._sim_equil_button.setChecked(True)
+            #~ iw._sim_equil_button.setStyleSheet('background-color: green')
+            #~ iw._sim_min_button.setStyleSheet('background-color: red')
         else:
-            iw._sim_equil_button.setStyleSheet('background-color: red')
-            iw._sim_min_button.setStyleSheet('background-color: green')
+            iw._sim_min_button.setChecked(True)
+            #~ iw._sim_equil_button.setStyleSheet('background-color: red')
+            #~ iw._sim_min_button.setStyleSheet('background-color: green')
 
 
         # Update the status of the Go button
@@ -2292,10 +2303,6 @@ class Isolde():
             contour_val = contour_val * map_sigma
         sb.setValue(contour_val)
 
-    def _set_hide_surroundings(self,*_):
-        self.params.hide_surroundings_during_sim = self.iw._sim_hide_surroundings_toggle.checkState()
-
-
 
     def add_map(self, name, vol, cutoff, coupling_constant,
         is_difference_map = False, style = None, color = None,
@@ -2407,7 +2414,12 @@ class Isolde():
         from .openmm.sim_interface import SimParams
         self.sim_params = SimParams()
 
-
+    def _start_sim_or_toggle_pause(self, *_):
+        if not self._simulation_running:
+            self.start_sim()
+        else:
+            self.pause_sim_toggle()
+    
     def start_sim(self):
         self.sim_params.platform = self.iw._sim_platform_combo_box.currentText()
         try:
@@ -2704,7 +2716,7 @@ class Isolde():
         self._status('')
         self._sim_interface = None
         self.equilibrate()
-
+        self.iw._sim_go_button.setChecked(False)
 
     def _get_main_sim_selection(self):
         '''
@@ -2818,23 +2830,24 @@ class Isolde():
     def _sim_pause_cb(self, *_):
         self._sim_paused = True
         self._status('Simulation paused')
-        self.iw._sim_pause_button.setText('Resume')
-        #~ self._event_handler.remove_event_handler('update dihedral restraint drawings')
+        go_button = self.iw._sim_go_button
+        go_button.setChecked(False)
+        go_button.setToolTip('Resume')
 
     def _sim_resume_cb(self, *_):
         self._sim_paused = False
         self._status('Simulation running')
-        self.iw._sim_pause_button.setText('Pause')
-        #~ self._event_handler.add_event_handler('update dihedral restraint drawings',
-                                    #~ 'graphics update',
-                                    #~ self._all_annotated_dihedrals.update_graphics)
+        go_button = self.iw._sim_go_button
+        go_button.setChecked(True)
+        go_button.setToolTip('Pause')
 
-
-
+    def _stop_sim_and_revert_to_checkpoint(self, *_):
+        self.discard_sim('checkpoint')
 
     def _discard_sim(self, *_):
-        revert_to = self.iw._sim_discard_revert_combo_box.currentText()
-        self.discard_sim(revert_to)
+        self.discard_sim('start')
+
+
 
     def discard_sim(self, revert_to='checkpoint'):
         '''
