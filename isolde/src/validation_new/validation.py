@@ -69,10 +69,10 @@ def generate_interpolator(file_prefix, wrap_axes = True):
 
         infile.close()
 
-        full_grid = numpy.zeros(number_of_bins)
+        full_grid = numpy.zeros(number_of_bins, dtype=numpy.float32)
 
         # Slurp in the actual numerical data as a numpy array
-        data = numpy.loadtxt(file_prefix+'.data')
+        data = numpy.loadtxt(file_prefix+'.data', dtype=numpy.float32)
 
         # Convert each coordinate to an integral number of steps along each
         # axis
