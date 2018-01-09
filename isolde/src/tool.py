@@ -28,7 +28,7 @@ class ISOLDE_ToolUI(ToolInstance):
         self.tool_window.manage(placement=None)
         parent = self.tool_window.ui_area
         pp = parent.parent().parent()
-        pp.resize(500,850) 
+        pp.resize(540,850) 
 
         from PyQt5 import QtWidgets, QtGui
         from . import isoldewidget
@@ -79,26 +79,22 @@ class ISOLDE_ToolUI(ToolInstance):
         
         # Grow selection at N-terminus
         self._sel_grow_n_terminal_buttons = (
-            iw._rebuild_2ry_struct_restr_extend_N_button,
-            iw._rebuild_register_shift_extend_N_button,
+            iw._sel_extend_N_button,
             )
         
         # Shrink selection at N-terminus
         self._sel_shrink_n_terminal_buttons = (
-            iw._rebuild_2ry_struct_restr_shrink_N_button,
-            iw._rebuild_register_shift_shrink_N_button,
+            iw._sel_shrink_N_button,
             )
         
         # Shrink selection at C-terminus
         self._sel_shrink_c_terminal_buttons = (
-            iw._rebuild_2ry_struct_restr_shrink_C_button,
-            iw._rebuild_register_shift_shrink_C_button,
+            iw._sel_shrink_C_button,
             )
         
         # Grow selection at C-terminus
         self._sel_grow_c_terminal_buttons = (
-            iw._rebuild_2ry_struct_restr_extend_C_button,
-            iw._rebuild_register_shift_extend_C_button,
+            iw._sel_extend_C_button,
             )
 
         
@@ -119,9 +115,6 @@ class ISOLDE_ToolUI(ToolInstance):
             iw._validate_pep_main_frame,
             iw._sim_basic_xtal_init_main_frame,
             iw._sim_basic_xtal_map_settings_frame,
-            iw._rebuild_2ry_struct_restr_container,
-            iw._rebuild_register_shift_container,
-            iw._rebuild_pos_restraint_one_atom_frame,
             ]
         
         for f in self._hidden_at_start:
@@ -134,14 +127,19 @@ class ISOLDE_ToolUI(ToolInstance):
             iw._sim_basic_xtal_stepper_frame,
             iw._rebuild_sel_res_pep_flip_button,
             iw._rebuild_sel_res_cis_trans_flip_button,
-            iw._rebuild_sel_res_last_rotamer_button,
-            iw._rebuild_sel_res_next_rotamer_button,
+            iw._rebuild_cycle_rotamer_frame,
+            #iw._rebuild_sel_res_last_rotamer_button,
+            #iw._rebuild_sel_res_next_rotamer_button,
             iw._rebuild_sel_res_rot_commit_button,
             iw._rebuild_sel_res_rot_target_button,
             iw._rebuild_sel_res_rot_discard_button,
-            iw._rebuild_pos_restraint_one_atom_frame,
+            iw._rebuild_sel_res_rot_release_button,
+            #~ iw._rebuild_pos_restraint_one_atom_frame,
+            iw._rebuild_pin_atom_container,
             iw._rebuild_pos_restraint_clear_button,
+            iw._rebuild_2ry_struct_restr_container,
             iw._rebuild_register_shift_container,
+            iw._rebuild_grow_shrink_sel_frame,
             ]
         for f in self._disabled_at_start:
             f.setEnabled(False)

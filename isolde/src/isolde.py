@@ -1018,9 +1018,6 @@ class Isolde():
             self._release_rotamer
             )
 
-        iw._rebuild_2ry_struct_restr_show_button.clicked.connect(
-            self._toggle_secondary_structure_dialog
-            )
         iw._rebuild_2ry_struct_restr_chooser_go_button.clicked.connect(
             self._apply_selected_secondary_structure_restraints
             )
@@ -1028,9 +1025,6 @@ class Isolde():
             self.clear_secondary_structure_restraints_for_selection
             )
 
-        iw._rebuild_register_shift_dialog_toggle_button.clicked.connect(
-            self._toggle_register_shift_dialog
-            )
         iw._rebuild_register_shift_reduce_button.clicked.connect(
             self._decrement_register_shift
             )
@@ -1045,12 +1039,15 @@ class Isolde():
             )
 
 
-        iw._rebuild_pos_restraint_dialog_toggle_button.clicked.connect(
-            self._toggle_position_restraints_dialog
+        iw._rebuild_pin_atom_to_current_pos_button.clicked.connect(
+            self._restrain_selected_atom_to_current_xyz
             )
-        iw._rebuild_pos_restraint_go_button.clicked.connect(
-            self._restrain_selected_atom_to_xyz
+        
+        iw._rebuild_pin_atom_to_pivot_button.clicked.connect(
+            self._restrain_selected_atom_to_pivot_xyz
             )
+
+        
         iw._rebuild_pos_restraint_clear_button.clicked.connect(
             self.release_xyz_restraints_on_selected_atoms
             )
@@ -1264,9 +1261,11 @@ class Isolde():
             if is_continuous_protein_chain(sel):
                 self._enable_secondary_structure_restraints_frame()
                 self._enable_register_shift_frame()
+                self._enable_selection_extend_frame()
             else:
                 self._disable_secondary_structure_restraints_frame()
                 self._disable_register_shift_frame()
+                self._disable_selection_extend_frame()
 
             # A running simulation takes precedence for memory control
             return
@@ -1599,10 +1598,10 @@ class Isolde():
                     'shape changed', self._update_selected_residue_info_live)
 
     def _enable_atom_position_restraints_frame(self):
-        self.iw._rebuild_pos_restraint_one_atom_frame.setEnabled(True)
+        self.iw._rebuild_pin_atom_container.setEnabled(True)
 
     def _disable_atom_position_restraints_frame(self):
-        self.iw._rebuild_pos_restraint_one_atom_frame.setEnabled(False)
+        self.iw._rebuild_pin_atom_container.setEnabled(False)
 
     def _enable_position_restraints_clear_button(self):
         self.iw._rebuild_pos_restraint_clear_button.setEnabled(True)
@@ -1610,61 +1609,23 @@ class Isolde():
     def _disable_position_restraints_clear_button(self):
         self.iw._rebuild_pos_restraint_clear_button.setEnabled(False)
 
-
     def _enable_secondary_structure_restraints_frame(self, *_):
         self.iw._rebuild_2ry_struct_restr_container.setEnabled(True)
-        self.iw._rebuild_2ry_struct_restr_top_label.setText('')
-        self.iw._rebuild_2ry_struct_restr_sel_text.setText('')
 
     def _enable_register_shift_frame(self, *_):
         self.iw._rebuild_register_shift_container.setEnabled(True)
+        
+    def _enable_selection_extend_frame(self, *_):
+        self.iw._rebuild_grow_shrink_sel_frame.setEnabled(True)
 
     def _disable_secondary_structure_restraints_frame(self, *_):
         self.iw._rebuild_2ry_struct_restr_container.setEnabled(False)
-        t = 'Select a protein atom or residue to begin'
-        self.iw._rebuild_2ry_struct_restr_top_label.setText(t)
-        t = 'Invalid selection'
-        self.iw._rebuild_2ry_struct_restr_sel_text.setText(t)
 
     def _disable_register_shift_frame(self, *_):
         self.iw._rebuild_register_shift_container.setEnabled(False)
 
-
-    def _toggle_secondary_structure_dialog(self, *_):
-        button = self.iw._rebuild_2ry_struct_restr_show_button
-        frame = self.iw._rebuild_2ry_struct_restr_container
-        show_text = 'Show secondary structure dialogue'
-        hide_text = 'Hide secondary structure dialogue'
-        if button.text() == show_text:
-            frame.show()
-            button.setText(hide_text)
-        else:
-            frame.hide()
-            button.setText(show_text)
-
-    def _toggle_register_shift_dialog(self, *_):
-        button = self.iw._rebuild_register_shift_dialog_toggle_button
-        frame = self.iw._rebuild_register_shift_container
-        show_text = 'Show register shift dialogue'
-        hide_text = 'Hide register shift dialogue'
-        if button.text() == show_text:
-            frame.show()
-            button.setText(hide_text)
-        else:
-            frame.hide()
-            button.setText(show_text)
-
-    def _toggle_position_restraints_dialog(self, *_):
-        button = self.iw._rebuild_pos_restraint_dialog_toggle_button
-        frame = self.iw._rebuild_pos_restraint_one_atom_frame
-        show_text = 'Show position restraints dialogue'
-        hide_text = 'Hide position restraints dialogue'
-        if button.text() == show_text:
-            frame.show()
-            button.setText(hide_text)
-        else:
-            frame.hide()
-            button.setText(show_text)
+    def _disable_selection_extend_frame(self, *_):
+        self.iw._rebuild_grow_shrink_sel_frame.setEnabled(False)
 
     def _extend_selection_by_one_res_N(self, *_):
         self._extend_selection_by_one_res(-1)
@@ -1821,15 +1782,20 @@ class Isolde():
         self.iw._rebuild_register_shift_go_button.setEnabled(True)
         self.iw._rebuild_register_shift_release_button.setEnabled(False)
 
-    def _restrain_selected_atom_to_xyz(self, *_):
+    def _restrain_selected_atom_to_current_xyz(self, *_):
         from chimerax.core.atomic import selected_atoms
         atom = selected_atoms(self.session)[0]
-        choice = self.iw._rebuild_pos_restraint_combo_box.currentIndex()
-        if choice == 0:
-            target = atom.coord
-        else:
-            target = self.session.view.center_of_rotation
-        spring_constant = self.iw._rebuild_pos_restraint_spring_constant.value()
+        k = self.iw._rebuild_pos_restraint_spring_constant.value()
+        self.restrain_atom_to_xyz(atom, atom.coord, k)
+    
+    def _restrain_selected_atom_to_pivot_xyz(self, *_):
+        from chimerax.core.atomic import selected_atoms
+        atom = selected_atoms(self.session)[0]
+        k = self.iw._rebuild_pos_restraint_spring_constant.value()
+        self.restrain_atom_to_xyz(atom, self.session.view.center_of_rotation, k)
+        
+    
+    def restrain_atom_to_xyz(self, atom, target, spring_constant):
         pr = self.position_restraints[atom]
         pr.target = target
         pr.spring_constant = spring_constant
@@ -1868,12 +1834,15 @@ class Isolde():
         self._sim_interface.update_position_restraints(restraints)
 
     def _set_rotamer_buttons_enabled(self, switch):
-        self.iw._rebuild_sel_res_last_rotamer_button.setEnabled(switch)
-        self.iw._rebuild_sel_res_next_rotamer_button.setEnabled(switch)
-        self.iw._rebuild_sel_res_last_rotamer_button.setEnabled(switch)
-        self.iw._rebuild_sel_res_rot_commit_button.setEnabled(switch)
-        self.iw._rebuild_sel_res_rot_target_button.setEnabled(switch)
-        self.iw._rebuild_sel_res_rot_discard_button.setEnabled(switch)
+        iw = self.iw
+        #iw._rebuild_sel_res_last_rotamer_button.setEnabled(switch)
+        #iw._rebuild_sel_res_next_rotamer_button.setEnabled(switch)
+        iw._rebuild_cycle_rotamer_frame.setEnabled(switch)
+        iw._rebuild_sel_res_last_rotamer_button.setEnabled(switch)
+        iw._rebuild_sel_res_rot_commit_button.setEnabled(switch)
+        iw._rebuild_sel_res_rot_target_button.setEnabled(switch)
+        iw._rebuild_sel_res_rot_discard_button.setEnabled(switch)
+        iw._rebuild_sel_res_rot_release_button.setEnabled(switch)
 
     def _next_rotamer(self, *_):
         r = self._selected_rotamer
@@ -1924,6 +1893,7 @@ class Isolde():
     def _release_rotamer(self, *_):
         rot = self._selected_rotamer
         rot.restrained = False
+        rot.cleanup()
         if self.simulation_running:
             self._apply_rotamer_target_to_sim(rot)
         self._update_dihedral_restraints_drawing()
@@ -3349,7 +3319,7 @@ class Isolde():
         #~ lighting.lighting(self.session, depth_cue=True)
         sharp_map = before_cs.xmaps['2FOFCWT_sharp, PH2FOFCWT_sharp']
         sd = sharp_map.mean_sd_rms()[1]
-        styleargs= self._map_style_settings[self._map_styles.solid_t40]
+        styleargs= self._map_style_settings[self._map_styles.solid_t60]
         from chimerax.core.map import volumecommand
         volumecommand.volume(self.session, [sharp_map], **styleargs)
         sharp_map.set_parameters(surface_levels = (2.5*sd,))

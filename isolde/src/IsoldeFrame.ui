@@ -1923,7 +1923,7 @@ border: 1px;
                     </spacer>
                    </item>
                    <item>
-                    <widget class="QFrame" name="frame_6">
+                    <widget class="QFrame" name="_rebuild_cycle_rotamer_frame">
                      <property name="frameShape">
                       <enum>QFrame::StyledPanel</enum>
                      </property>
@@ -1967,7 +1967,7 @@ border: 1px;
                        </widget>
                       </item>
                       <item>
-                       <widget class="QLabel" name="label_42">
+                       <widget class="QLabel" name="_rebuild_cycle_rotamer_icon">
                         <property name="maximumSize">
                          <size>
                           <width>45</width>
@@ -2230,7 +2230,7 @@ border: 1px;
                             </property>
                             <property name="maximumSize">
                              <size>
-                              <width>90</width>
+                              <width>110</width>
                               <height>20</height>
                              </size>
                             </property>
@@ -2246,7 +2246,7 @@ border: 1px;
                            </widget>
                           </item>
                           <item row="0" column="0">
-                           <widget class="QPushButton" name="_rebuild_2ry_struct_restr_shrink_N_button">
+                           <widget class="QPushButton" name="_sel_shrink_N_button">
                             <property name="minimumSize">
                              <size>
                               <width>0</width>
@@ -2272,7 +2272,7 @@ border: 1px;
                            </widget>
                           </item>
                           <item row="0" column="1">
-                           <widget class="QPushButton" name="_rebuild_2ry_struct_restr_shrink_C_button">
+                           <widget class="QPushButton" name="_sel_shrink_C_button">
                             <property name="toolTip">
                              <string>Reduce C-terminal end of selection by 1</string>
                             </property>
@@ -2292,7 +2292,7 @@ border: 1px;
                            </widget>
                           </item>
                           <item row="2" column="0">
-                           <widget class="QPushButton" name="_rebuild_2ry_struct_restr_extend_N_button">
+                           <widget class="QPushButton" name="_sel_extend_N_button">
                             <property name="minimumSize">
                              <size>
                               <width>0</width>
@@ -2318,7 +2318,7 @@ border: 1px;
                            </widget>
                           </item>
                           <item row="2" column="1">
-                           <widget class="QPushButton" name="_rebuild_2ry_struct_restr_extend_C_button">
+                           <widget class="QPushButton" name="_sel_extend_C_button">
                             <property name="toolTip">
                              <string>Extend C-terminal end of selection by 1</string>
                             </property>
@@ -2341,7 +2341,7 @@ border: 1px;
                         </widget>
                        </item>
                        <item>
-                        <widget class="QFrame" name="">
+                        <widget class="QFrame" name="_rebuild_2ry_struct_restr_container">
                          <property name="frameShape">
                           <enum>QFrame::StyledPanel</enum>
                          </property>
@@ -2383,7 +2383,7 @@ border: 1px;
                         </widget>
                        </item>
                        <item>
-                        <widget class="QFrame" name="frame_8">
+                        <widget class="QFrame" name="_rebuild_register_shift_container">
                          <property name="minimumSize">
                           <size>
                            <width>0</width>
@@ -2472,7 +2472,7 @@ border: 1px;
                                   <property name="maximumSize">
                                    <size>
                                     <width>16777215</width>
-                                    <height>20</height>
+                                    <height>16777215</height>
                                    </size>
                                   </property>
                                   <property name="text">
@@ -2484,8 +2484,8 @@ border: 1px;
                                   </property>
                                   <property name="iconSize">
                                    <size>
-                                    <width>18</width>
-                                    <height>18</height>
+                                    <width>20</width>
+                                    <height>20</height>
                                    </size>
                                   </property>
                                  </widget>
@@ -2520,7 +2520,7 @@ border: 1px;
                                   <property name="maximumSize">
                                    <size>
                                     <width>16777215</width>
-                                    <height>20</height>
+                                    <height>16777215</height>
                                    </size>
                                   </property>
                                   <property name="text">
@@ -2532,8 +2532,8 @@ border: 1px;
                                   </property>
                                   <property name="iconSize">
                                    <size>
-                                    <width>18</width>
-                                    <height>18</height>
+                                    <width>20</width>
+                                    <height>20</height>
                                    </size>
                                   </property>
                                  </widget>
@@ -2598,23 +2598,9 @@ border: 1px;
                            </widget>
                           </item>
                          </layout>
-                         <zorder>_rebuild_register_shift_go_button</zorder>
                          <zorder>frame_10</zorder>
                          <zorder>frame_11</zorder>
                         </widget>
-                       </item>
-                       <item>
-                        <spacer name="horizontalSpacer_28">
-                         <property name="orientation">
-                          <enum>Qt::Horizontal</enum>
-                         </property>
-                         <property name="sizeHint" stdset="0">
-                          <size>
-                           <width>40</width>
-                           <height>20</height>
-                          </size>
-                         </property>
-                        </spacer>
                        </item>
                       </layout>
                      </widget>
@@ -2638,42 +2624,89 @@ border: 1px;
                       </property>
                      </widget>
                     </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QFrame" name="_rebuild_pin_atom_container">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QHBoxLayout" name="horizontalLayout_33">
+                    <property name="spacing">
+                     <number>3</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>1</number>
+                    </property>
                     <item>
-                     <widget class="QPushButton" name="_rebuild_2ry_struct_restr_show_button">
-                      <property name="maximumSize">
-                       <size>
-                        <width>16777215</width>
-                        <height>30</height>
-                       </size>
+                     <widget class="QToolButton" name="_rebuild_pin_atom_to_current_pos_button">
+                      <property name="toolTip">
+                       <string>Restrain the selected atom to its current position</string>
                       </property>
                       <property name="text">
-                       <string>Show secondary structure dialogue</string>
+                       <string>...</string>
                       </property>
                       <property name="icon">
                        <iconset resource="resources/resources.qrc">
-                        <normaloff>:/icons/secondary-structure-icon.png</normaloff>:/icons/secondary-structure-icon.png</iconset>
+                        <normaloff>:/icons/pin-to-current-icon.png</normaloff>:/icons/pin-to-current-icon.png</iconset>
                       </property>
                       <property name="iconSize">
                        <size>
-                        <width>124</width>
-                        <height>25</height>
+                        <width>36</width>
+                        <height>36</height>
                        </size>
                       </property>
                      </widget>
                     </item>
                     <item>
-                     <widget class="QFrame" name="_rebuild_2ry_struct_restr_container">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
+                     <widget class="QToolButton" name="_rebuild_pin_atom_to_pivot_button">
+                      <property name="toolTip">
+                       <string>Restrain the selected atom to the current position of the pivot indicator</string>
                       </property>
-                      <property name="maximumSize">
+                      <property name="text">
+                       <string>...</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="resources/resources.qrc">
+                        <normaloff>:/icons/pin-to-pivot-icon.png</normaloff>:/icons/pin-to-pivot-icon.png</iconset>
+                      </property>
+                      <property name="iconSize">
                        <size>
-                        <width>16777215</width>
-                        <height>100</height>
+                        <width>36</width>
+                        <height>36</height>
                        </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QFrame" name="frame_8">
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>0</height>
+                       </size>
+                      </property>
+                      <property name="toolTip">
+                       <string>Spring constant for the next position restraint</string>
                       </property>
                       <property name="frameShape">
                        <enum>QFrame::StyledPanel</enum>
@@ -2686,469 +2719,82 @@ border: 1px;
                         <number>1</number>
                        </property>
                        <property name="leftMargin">
-                        <number>9</number>
+                        <number>1</number>
                        </property>
                        <property name="topMargin">
                         <number>1</number>
                        </property>
                        <property name="rightMargin">
-                        <number>9</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>1</number>
-                       </property>
-                       <item>
-                        <widget class="QLabel" name="_rebuild_2ry_struct_restr_top_label">
-                         <property name="text">
-                          <string>Select a protein atom or residue to begin</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="QLabel" name="_rebuild_2ry_struct_restr_sel_text">
-                         <property name="text">
-                          <string>Invalid selection</string>
-                         </property>
-                        </widget>
-                       </item>
-                      </layout>
-                     </widget>
-                    </item>
-                   </layout>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QFrame" name="_rebuild_register_shift_main_frame">
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                   <layout class="QVBoxLayout" name="verticalLayout_22">
-                    <property name="spacing">
-                     <number>2</number>
-                    </property>
-                    <property name="leftMargin">
-                     <number>1</number>
-                    </property>
-                    <property name="topMargin">
-                     <number>1</number>
-                    </property>
-                    <property name="rightMargin">
-                     <number>1</number>
-                    </property>
-                    <property name="bottomMargin">
-                     <number>1</number>
-                    </property>
-                    <item>
-                     <widget class="QPushButton" name="_rebuild_register_shift_dialog_toggle_button">
-                      <property name="maximumSize">
-                       <size>
-                        <width>16777215</width>
-                        <height>30</height>
-                       </size>
-                      </property>
-                      <property name="text">
-                       <string>Show register shift dialogue</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QFrame" name="_rebuild_register_shift_container">
-                      <property name="minimumSize">
-                       <size>
-                        <width>0</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>16777215</width>
-                        <height>50</height>
-                       </size>
-                      </property>
-                      <property name="frameShape">
-                       <enum>QFrame::StyledPanel</enum>
-                      </property>
-                      <property name="frameShadow">
-                       <enum>QFrame::Raised</enum>
-                      </property>
-                      <layout class="QVBoxLayout" name="verticalLayout_23">
-                       <property name="spacing">
-                        <number>1</number>
-                       </property>
-                       <property name="topMargin">
                         <number>1</number>
                        </property>
                        <property name="bottomMargin">
                         <number>1</number>
                        </property>
                        <item>
-                        <layout class="QHBoxLayout" name="_rebuild_register_shift_extend_container">
-                         <item>
-                          <widget class="QLabel" name="label_36">
-                           <property name="text">
-                            <string>Extend/shrink selection:</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <spacer name="horizontalSpacer_20">
-                           <property name="orientation">
-                            <enum>Qt::Horizontal</enum>
-                           </property>
-                           <property name="sizeHint" stdset="0">
-                            <size>
-                             <width>40</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                          </spacer>
-                         </item>
-                         <item>
-                          <widget class="QPushButton" name="_rebuild_register_shift_extend_N_button">
-                           <property name="minimumSize">
-                            <size>
-                             <width>0</width>
-                             <height>0</height>
-                            </size>
-                           </property>
-                           <property name="maximumSize">
-                            <size>
-                             <width>16777215</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                           <property name="toolTip">
-                            <string>Extend N-terminal end of selection by 1</string>
-                           </property>
-                           <property name="text">
-                            <string/>
-                           </property>
-                           <property name="icon">
-                            <iconset resource="resources/resources.qrc">
-                             <normaloff>:/icons/reverse_icon.png</normaloff>:/icons/reverse_icon.png</iconset>
-                           </property>
-                           <property name="iconSize">
-                            <size>
-                             <width>18</width>
-                             <height>18</height>
-                            </size>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QPushButton" name="_rebuild_register_shift_shrink_N_button">
-                           <property name="minimumSize">
-                            <size>
-                             <width>0</width>
-                             <height>0</height>
-                            </size>
-                           </property>
-                           <property name="maximumSize">
-                            <size>
-                             <width>16777215</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                           <property name="toolTip">
-                            <string>Reduce N-terminal end of selection by 1</string>
-                           </property>
-                           <property name="text">
-                            <string/>
-                           </property>
-                           <property name="icon">
-                            <iconset resource="resources/resources.qrc">
-                             <normaloff>:/icons/play_icon.png</normaloff>:/icons/play_icon.png</iconset>
-                           </property>
-                           <property name="iconSize">
-                            <size>
-                             <width>18</width>
-                             <height>18</height>
-                            </size>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QPushButton" name="_rebuild_register_shift_shrink_C_button">
-                           <property name="maximumSize">
-                            <size>
-                             <width>16777215</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                           <property name="toolTip">
-                            <string>Reduce C-terminal end of selection by 1</string>
-                           </property>
-                           <property name="text">
-                            <string/>
-                           </property>
-                           <property name="icon">
-                            <iconset resource="resources/resources.qrc">
-                             <normaloff>:/icons/reverse_icon_red.png</normaloff>:/icons/reverse_icon_red.png</iconset>
-                           </property>
-                           <property name="iconSize">
-                            <size>
-                             <width>18</width>
-                             <height>18</height>
-                            </size>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QPushButton" name="_rebuild_register_shift_extend_C_button">
-                           <property name="maximumSize">
-                            <size>
-                             <width>16777215</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                           <property name="toolTip">
-                            <string>Extend C-terminal end of selection by 1</string>
-                           </property>
-                           <property name="text">
-                            <string/>
-                           </property>
-                           <property name="icon">
-                            <iconset resource="resources/resources.qrc">
-                             <normaloff>:/icons/play_icon_red.png</normaloff>:/icons/play_icon_red.png</iconset>
-                           </property>
-                           <property name="iconSize">
-                            <size>
-                             <width>18</width>
-                             <height>18</height>
-                            </size>
-                           </property>
-                          </widget>
-                         </item>
-                        </layout>
-                       </item>
-                       <item>
-                        <layout class="QHBoxLayout" name="horizontalLayout_33">
-                         <property name="topMargin">
+                        <widget class="QDoubleSpinBox" name="_rebuild_pos_restraint_spring_constant">
+                         <property name="maximumSize">
+                          <size>
+                           <width>16777215</width>
+                           <height>20</height>
+                          </size>
+                         </property>
+                         <property name="toolTip">
+                          <string>Spring constant for the next position restraint</string>
+                         </property>
+                         <property name="decimals">
                           <number>0</number>
                          </property>
-                         <item>
-                          <spacer name="horizontalSpacer_21">
-                           <property name="orientation">
-                            <enum>Qt::Horizontal</enum>
-                           </property>
-                           <property name="sizeHint" stdset="0">
-                            <size>
-                             <width>40</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                          </spacer>
-                         </item>
-                        </layout>
+                         <property name="maximum">
+                          <double>10000.000000000000000</double>
+                         </property>
+                         <property name="singleStep">
+                          <double>10.000000000000000</double>
+                         </property>
+                         <property name="value">
+                          <double>500.000000000000000</double>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QLabel" name="label_35">
+                         <property name="toolTip">
+                          <string>Spring constant for the next position restraint</string>
+                         </property>
+                         <property name="text">
+                          <string>kJ/mol/Å²</string>
+                         </property>
+                        </widget>
                        </item>
                       </layout>
                      </widget>
+                    </item>
+                    <item>
+                     <spacer name="horizontalSpacer_17">
+                      <property name="orientation">
+                       <enum>Qt::Horizontal</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>40</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                     </spacer>
                     </item>
                    </layout>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QFrame" name="frame_3">
-                   <property name="minimumSize">
+                  <widget class="QPushButton" name="_rebuild_pos_restraint_clear_button">
+                   <property name="maximumSize">
                     <size>
-                     <width>0</width>
-                     <height>0</height>
+                     <width>16777215</width>
+                     <height>30</height>
                     </size>
                    </property>
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
+                   <property name="text">
+                    <string>Release all xyz restraints on selection</string>
                    </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                   <layout class="QVBoxLayout" name="verticalLayout_20">
-                    <property name="spacing">
-                     <number>2</number>
-                    </property>
-                    <property name="leftMargin">
-                     <number>1</number>
-                    </property>
-                    <property name="topMargin">
-                     <number>1</number>
-                    </property>
-                    <property name="rightMargin">
-                     <number>1</number>
-                    </property>
-                    <property name="bottomMargin">
-                     <number>1</number>
-                    </property>
-                    <item>
-                     <widget class="QPushButton" name="_rebuild_pos_restraint_dialog_toggle_button">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>16777215</width>
-                        <height>30</height>
-                       </size>
-                      </property>
-                      <property name="text">
-                       <string>Show position restraints dialogue</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QFrame" name="_rebuild_pos_restraint_one_atom_frame">
-                      <property name="minimumSize">
-                       <size>
-                        <width>0</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>16777215</width>
-                        <height>50</height>
-                       </size>
-                      </property>
-                      <property name="frameShape">
-                       <enum>QFrame::StyledPanel</enum>
-                      </property>
-                      <property name="frameShadow">
-                       <enum>QFrame::Raised</enum>
-                      </property>
-                      <layout class="QVBoxLayout" name="verticalLayout_21">
-                       <property name="spacing">
-                        <number>1</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>1</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>1</number>
-                       </property>
-                       <item>
-                        <layout class="QHBoxLayout" name="horizontalLayout_31">
-                         <item>
-                          <widget class="QLabel" name="label_23">
-                           <property name="text">
-                            <string>Restrain selected atom to </string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QComboBox" name="_rebuild_pos_restraint_combo_box">
-                           <property name="maximumSize">
-                            <size>
-                             <width>16777215</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                           <item>
-                            <property name="text">
-                             <string>Current position</string>
-                            </property>
-                           </item>
-                           <item>
-                            <property name="text">
-                             <string>Pivot position</string>
-                            </property>
-                           </item>
-                          </widget>
-                         </item>
-                         <item>
-                          <spacer name="horizontalSpacer_19">
-                           <property name="orientation">
-                            <enum>Qt::Horizontal</enum>
-                           </property>
-                           <property name="sizeHint" stdset="0">
-                            <size>
-                             <width>40</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                          </spacer>
-                         </item>
-                        </layout>
-                       </item>
-                       <item>
-                        <layout class="QHBoxLayout" name="horizontalLayout_32">
-                         <item>
-                          <widget class="QLabel" name="label_34">
-                           <property name="text">
-                            <string>with a spring constant of</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QDoubleSpinBox" name="_rebuild_pos_restraint_spring_constant">
-                           <property name="maximumSize">
-                            <size>
-                             <width>16777215</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                           <property name="decimals">
-                            <number>1</number>
-                           </property>
-                           <property name="maximum">
-                            <double>10000.000000000000000</double>
-                           </property>
-                           <property name="singleStep">
-                            <double>10.000000000000000</double>
-                           </property>
-                           <property name="value">
-                            <double>500.000000000000000</double>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QLabel" name="label_35">
-                           <property name="text">
-                            <string>kJ/mol/Å²</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QPushButton" name="_rebuild_pos_restraint_go_button">
-                           <property name="maximumSize">
-                            <size>
-                             <width>16777215</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                           <property name="text">
-                            <string>Make it so</string>
-                           </property>
-                          </widget>
-                         </item>
-                        </layout>
-                       </item>
-                      </layout>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="_rebuild_pos_restraint_clear_button">
-                      <property name="maximumSize">
-                       <size>
-                        <width>16777215</width>
-                        <height>30</height>
-                       </size>
-                      </property>
-                      <property name="text">
-                       <string>Release all xyz restraints on selection</string>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
                   </widget>
                  </item>
                  <item>
@@ -3825,7 +3471,7 @@ background-color: rgb(5, 200, 0);
                <string/>
               </property>
               <property name="pixmap">
-               <pixmap>:/newPrefix/thermometer.png</pixmap>
+               <pixmap resource="resources/resources.qrc">:/icons/thermometer.png</pixmap>
               </property>
               <property name="scaledContents">
                <bool>true</bool>

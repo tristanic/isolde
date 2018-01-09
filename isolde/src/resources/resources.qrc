@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="icons">
+    <file>pin-to-current-icon.png</file>
+    <file>pin-to-pivot-icon.png</file>
     <file>sel-base-icon.png</file>
     <file>secondary-structure-icon.png</file>
     <file>rotamer-preview-icon.png</file>
