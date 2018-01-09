@@ -2793,7 +2793,6 @@ class Isolde():
 
 
     def pause_sim_toggle(self):
-        print('This function should toggle pause/resume of the sim')
         if self.simulation_running:
             self._sim_interface.toggle_pause()
 
@@ -2849,8 +2848,6 @@ class Isolde():
 
 
     def commit_sim(self):
-        print("""This function should stop the simulation and write the
-                 coordinates to the target molecule""")
         if not self.simulation_running:
             print('No simulation running!')
             return
