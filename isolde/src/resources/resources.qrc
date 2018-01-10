@@ -1,5 +1,11 @@
 <RCC>
   <qresource prefix="icons">
+    <file>registershift-icon.png</file>
+    <file>parallel-beta-icon.png</file>
+    <file>antiparallel-beta-icon.png</file>
+    <file>cis-trans-icon.png</file>
+    <file>helix-icon.png</file>
+    <file>red-x-icon.png</file>
     <file>pin-to-current-icon.png</file>
     <file>pin-to-pivot-icon.png</file>
     <file>sel-base-icon.png</file>

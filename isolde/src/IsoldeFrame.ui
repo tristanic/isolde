@@ -2185,7 +2185,7 @@ border: 1px;
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_30">
                        <property name="spacing">
-                        <number>6</number>
+                        <number>2</number>
                        </property>
                        <property name="leftMargin">
                         <number>1</number>
@@ -2344,43 +2344,135 @@ border: 1px;
                         </widget>
                        </item>
                        <item>
-                        <widget class="QFrame" name="_rebuild_2ry_struct_restr_container">
+                        <widget class="QFrame" name="_rebuild_2ry_struct_restr_master_container">
                          <property name="frameShape">
                           <enum>QFrame::StyledPanel</enum>
                          </property>
                          <property name="frameShadow">
                           <enum>QFrame::Raised</enum>
                          </property>
-                         <layout class="QVBoxLayout" name="verticalLayout_25">
+                         <layout class="QHBoxLayout" name="horizontalLayout_31">
+                          <property name="spacing">
+                           <number>1</number>
+                          </property>
+                          <property name="leftMargin">
+                           <number>1</number>
+                          </property>
+                          <property name="topMargin">
+                           <number>1</number>
+                          </property>
                           <property name="rightMargin">
                            <number>1</number>
                           </property>
+                          <property name="bottomMargin">
+                           <number>1</number>
+                          </property>
                           <item>
-                           <widget class="QLabel" name="label_33">
-                            <property name="text">
-                             <string>Restrain secondary structure</string>
+                           <widget class="QFrame" name="_rebuild_2ry_struct_restr_container">
+                            <property name="frameShape">
+                             <enum>QFrame::NoFrame</enum>
                             </property>
+                            <property name="frameShadow">
+                             <enum>QFrame::Plain</enum>
+                            </property>
+                            <layout class="QHBoxLayout" name="horizontalLayout_32">
+                             <property name="spacing">
+                              <number>1</number>
+                             </property>
+                             <property name="leftMargin">
+                              <number>0</number>
+                             </property>
+                             <property name="topMargin">
+                              <number>0</number>
+                             </property>
+                             <property name="rightMargin">
+                              <number>0</number>
+                             </property>
+                             <property name="bottomMargin">
+                              <number>0</number>
+                             </property>
+                             <item>
+                              <widget class="QToolButton" name="_rebuild_restrain_helix_button">
+                               <property name="toolTip">
+                                <string>Restrain selection to alpha helix</string>
+                               </property>
+                               <property name="text">
+                                <string>...</string>
+                               </property>
+                               <property name="icon">
+                                <iconset resource="resources/resources.qrc">
+                                 <normaloff>:/icons/helix-icon.png</normaloff>:/icons/helix-icon.png</iconset>
+                               </property>
+                               <property name="iconSize">
+                                <size>
+                                 <width>36</width>
+                                 <height>36</height>
+                                </size>
+                               </property>
+                              </widget>
+                             </item>
+                             <item>
+                              <widget class="QToolButton" name="_rebuild_restrain_anti_beta_button">
+                               <property name="toolTip">
+                                <string>Restrain selection to antiparallel beta</string>
+                               </property>
+                               <property name="text">
+                                <string>...</string>
+                               </property>
+                               <property name="icon">
+                                <iconset resource="resources/resources.qrc">
+                                 <normaloff>:/icons/antiparallel-beta-icon.png</normaloff>:/icons/antiparallel-beta-icon.png</iconset>
+                               </property>
+                               <property name="iconSize">
+                                <size>
+                                 <width>36</width>
+                                 <height>36</height>
+                                </size>
+                               </property>
+                              </widget>
+                             </item>
+                             <item>
+                              <widget class="QToolButton" name="_rebuild_restrain_par_beta_button">
+                               <property name="toolTip">
+                                <string>Restrain selection to parallel beta</string>
+                               </property>
+                               <property name="text">
+                                <string>...</string>
+                               </property>
+                               <property name="icon">
+                                <iconset resource="resources/resources.qrc">
+                                 <normaloff>:/icons/parallel-beta-icon.png</normaloff>:/icons/parallel-beta-icon.png</iconset>
+                               </property>
+                               <property name="iconSize">
+                                <size>
+                                 <width>36</width>
+                                 <height>36</height>
+                                </size>
+                               </property>
+                              </widget>
+                             </item>
+                            </layout>
                            </widget>
                           </item>
                           <item>
-                           <layout class="QHBoxLayout" name="horizontalLayout_40">
-                            <property name="leftMargin">
-                             <number>0</number>
+                           <widget class="QToolButton" name="_rebuild_2ry_struct_restr_clear_button">
+                            <property name="toolTip">
+                             <string>Clear all secondary structure restraints for selection</string>
                             </property>
-                            <property name="rightMargin">
-                             <number>0</number>
+                            <property name="text">
+                             <string>...</string>
                             </property>
-                            <item>
-                             <widget class="QComboBox" name="_rebuild_2ry_struct_restr_chooser_combo_box"/>
-                            </item>
-                            <item>
-                             <widget class="QPushButton" name="_rebuild_2ry_struct_restr_chooser_go_button">
-                              <property name="text">
-                               <string>Make it so</string>
-                              </property>
-                             </widget>
-                            </item>
-                           </layout>
+                            <property name="icon">
+                             <iconset resource="resources/resources.qrc">
+                              <normaloff>:/icons/red-x-icon.png</normaloff>:/icons/red-x-icon.png</iconset>
+                            </property>
+                            <property name="iconSize">
+                             <size>
+                              <width>36</width>
+                              <height>36</height>
+                             </size>
+                            </property>
+                           </widget>
                           </item>
                          </layout>
                         </widget>
@@ -2416,138 +2508,6 @@ border: 1px;
                            <number>1</number>
                           </property>
                           <item>
-                           <widget class="QFrame" name="frame_11">
-                            <property name="frameShape">
-                             <enum>QFrame::NoFrame</enum>
-                            </property>
-                            <property name="frameShadow">
-                             <enum>QFrame::Plain</enum>
-                            </property>
-                            <layout class="QHBoxLayout" name="horizontalLayout_43">
-                             <property name="spacing">
-                              <number>1</number>
-                             </property>
-                             <property name="leftMargin">
-                              <number>1</number>
-                             </property>
-                             <property name="topMargin">
-                              <number>1</number>
-                             </property>
-                             <property name="rightMargin">
-                              <number>1</number>
-                             </property>
-                             <property name="bottomMargin">
-                              <number>1</number>
-                             </property>
-                             <item>
-                              <widget class="QLabel" name="label_37">
-                               <property name="text">
-                                <string>Shift in register</string>
-                               </property>
-                              </widget>
-                             </item>
-                             <item>
-                              <widget class="QFrame" name="frame_9">
-                               <property name="frameShape">
-                                <enum>QFrame::NoFrame</enum>
-                               </property>
-                               <property name="frameShadow">
-                                <enum>QFrame::Plain</enum>
-                               </property>
-                               <layout class="QHBoxLayout" name="horizontalLayout_41">
-                                <property name="spacing">
-                                 <number>1</number>
-                                </property>
-                                <property name="leftMargin">
-                                 <number>1</number>
-                                </property>
-                                <property name="topMargin">
-                                 <number>1</number>
-                                </property>
-                                <property name="rightMargin">
-                                 <number>1</number>
-                                </property>
-                                <property name="bottomMargin">
-                                 <number>1</number>
-                                </property>
-                                <item>
-                                 <widget class="QToolButton" name="_rebuild_register_shift_reduce_button">
-                                  <property name="maximumSize">
-                                   <size>
-                                    <width>16777215</width>
-                                    <height>16777215</height>
-                                   </size>
-                                  </property>
-                                  <property name="text">
-                                   <string/>
-                                  </property>
-                                  <property name="icon">
-                                   <iconset resource="resources/resources.qrc">
-                                    <normaloff>:/icons/reverse_icon.png</normaloff>:/icons/reverse_icon.png</iconset>
-                                  </property>
-                                  <property name="iconSize">
-                                   <size>
-                                    <width>20</width>
-                                    <height>20</height>
-                                   </size>
-                                  </property>
-                                 </widget>
-                                </item>
-                                <item>
-                                 <widget class="QSpinBox" name="_rebuild_register_shift_nres_spinbox">
-                                  <property name="minimumSize">
-                                   <size>
-                                    <width>0</width>
-                                    <height>0</height>
-                                   </size>
-                                  </property>
-                                  <property name="maximumSize">
-                                   <size>
-                                    <width>40</width>
-                                    <height>16777215</height>
-                                   </size>
-                                  </property>
-                                  <property name="buttonSymbols">
-                                   <enum>QAbstractSpinBox::NoButtons</enum>
-                                  </property>
-                                  <property name="minimum">
-                                   <number>-20</number>
-                                  </property>
-                                  <property name="maximum">
-                                   <number>20</number>
-                                  </property>
-                                 </widget>
-                                </item>
-                                <item>
-                                 <widget class="QToolButton" name="_rebuild_register_shift_increase_button">
-                                  <property name="maximumSize">
-                                   <size>
-                                    <width>16777215</width>
-                                    <height>16777215</height>
-                                   </size>
-                                  </property>
-                                  <property name="text">
-                                   <string/>
-                                  </property>
-                                  <property name="icon">
-                                   <iconset resource="resources/resources.qrc">
-                                    <normaloff>:/icons/play_icon_red.png</normaloff>:/icons/play_icon_red.png</iconset>
-                                  </property>
-                                  <property name="iconSize">
-                                   <size>
-                                    <width>20</width>
-                                    <height>20</height>
-                                   </size>
-                                  </property>
-                                 </widget>
-                                </item>
-                               </layout>
-                              </widget>
-                             </item>
-                            </layout>
-                           </widget>
-                          </item>
-                          <item>
                            <widget class="QFrame" name="frame_10">
                             <property name="frameShape">
                              <enum>QFrame::NoFrame</enum>
@@ -2572,28 +2532,218 @@ border: 1px;
                               <number>1</number>
                              </property>
                              <item>
-                              <widget class="QPushButton" name="_rebuild_register_shift_go_button">
-                               <property name="maximumSize">
+                              <widget class="QFrame" name="frame_3">
+                               <property name="minimumSize">
                                 <size>
-                                 <width>16777215</width>
-                                 <height>16777215</height>
+                                 <width>50</width>
+                                 <height>0</height>
                                 </size>
                                </property>
-                               <property name="text">
-                                <string>Make it so</string>
+                               <property name="frameShape">
+                                <enum>QFrame::NoFrame</enum>
                                </property>
+                               <property name="frameShadow">
+                                <enum>QFrame::Plain</enum>
+                               </property>
+                               <layout class="QHBoxLayout" name="horizontalLayout_44">
+                                <property name="spacing">
+                                 <number>0</number>
+                                </property>
+                                <property name="leftMargin">
+                                 <number>0</number>
+                                </property>
+                                <property name="topMargin">
+                                 <number>0</number>
+                                </property>
+                                <property name="rightMargin">
+                                 <number>0</number>
+                                </property>
+                                <property name="bottomMargin">
+                                 <number>0</number>
+                                </property>
+                                <item>
+                                 <widget class="QToolButton" name="_rebuild_register_shift_go_button">
+                                  <property name="toolTip">
+                                   <string>Shift chain in register by the specified number of residues</string>
+                                  </property>
+                                  <property name="text">
+                                   <string>...</string>
+                                  </property>
+                                  <property name="icon">
+                                   <iconset resource="resources/resources.qrc">
+                                    <normaloff>:/icons/registershift-icon.png</normaloff>:/icons/registershift-icon.png</iconset>
+                                  </property>
+                                  <property name="iconSize">
+                                   <size>
+                                    <width>64</width>
+                                    <height>36</height>
+                                   </size>
+                                  </property>
+                                 </widget>
+                                </item>
+                                <item>
+                                 <widget class="QFrame" name="frame_6">
+                                  <property name="frameShape">
+                                   <enum>QFrame::NoFrame</enum>
+                                  </property>
+                                  <property name="frameShadow">
+                                   <enum>QFrame::Plain</enum>
+                                  </property>
+                                  <layout class="QVBoxLayout" name="verticalLayout_20">
+                                   <property name="spacing">
+                                    <number>0</number>
+                                   </property>
+                                   <property name="leftMargin">
+                                    <number>0</number>
+                                   </property>
+                                   <property name="topMargin">
+                                    <number>0</number>
+                                   </property>
+                                   <property name="rightMargin">
+                                    <number>0</number>
+                                   </property>
+                                   <property name="bottomMargin">
+                                    <number>0</number>
+                                   </property>
+                                   <item>
+                                    <spacer name="verticalSpacer_5">
+                                     <property name="orientation">
+                                      <enum>Qt::Vertical</enum>
+                                     </property>
+                                     <property name="sizeHint" stdset="0">
+                                      <size>
+                                       <width>20</width>
+                                       <height>40</height>
+                                      </size>
+                                     </property>
+                                    </spacer>
+                                   </item>
+                                   <item>
+                                    <widget class="QToolButton" name="_rebuild_register_shift_reduce_button">
+                                     <property name="maximumSize">
+                                      <size>
+                                       <width>16777215</width>
+                                       <height>16777215</height>
+                                      </size>
+                                     </property>
+                                     <property name="toolTip">
+                                      <string>Increase shift towards N-terminus</string>
+                                     </property>
+                                     <property name="text">
+                                      <string/>
+                                     </property>
+                                     <property name="icon">
+                                      <iconset resource="resources/resources.qrc">
+                                       <normaloff>:/icons/reverse_icon.png</normaloff>:/icons/reverse_icon.png</iconset>
+                                     </property>
+                                     <property name="iconSize">
+                                      <size>
+                                       <width>20</width>
+                                       <height>10</height>
+                                      </size>
+                                     </property>
+                                    </widget>
+                                   </item>
+                                   <item>
+                                    <widget class="QSpinBox" name="_rebuild_register_shift_nres_spinbox">
+                                     <property name="minimumSize">
+                                      <size>
+                                       <width>0</width>
+                                       <height>20</height>
+                                      </size>
+                                     </property>
+                                     <property name="maximumSize">
+                                      <size>
+                                       <width>25</width>
+                                       <height>20</height>
+                                      </size>
+                                     </property>
+                                     <property name="font">
+                                      <font>
+                                       <pointsize>9</pointsize>
+                                      </font>
+                                     </property>
+                                     <property name="buttonSymbols">
+                                      <enum>QAbstractSpinBox::NoButtons</enum>
+                                     </property>
+                                     <property name="minimum">
+                                      <number>-9</number>
+                                     </property>
+                                     <property name="maximum">
+                                      <number>9</number>
+                                     </property>
+                                     <property name="value">
+                                      <number>0</number>
+                                     </property>
+                                    </widget>
+                                   </item>
+                                   <item>
+                                    <widget class="QToolButton" name="_rebuild_register_shift_increase_button">
+                                     <property name="maximumSize">
+                                      <size>
+                                       <width>16777215</width>
+                                       <height>16777215</height>
+                                      </size>
+                                     </property>
+                                     <property name="toolTip">
+                                      <string>Increase shift towards C-terminus</string>
+                                     </property>
+                                     <property name="text">
+                                      <string/>
+                                     </property>
+                                     <property name="icon">
+                                      <iconset resource="resources/resources.qrc">
+                                       <normaloff>:/icons/play_icon_red.png</normaloff>:/icons/play_icon_red.png</iconset>
+                                     </property>
+                                     <property name="iconSize">
+                                      <size>
+                                       <width>20</width>
+                                       <height>10</height>
+                                      </size>
+                                     </property>
+                                    </widget>
+                                   </item>
+                                   <item>
+                                    <spacer name="verticalSpacer_6">
+                                     <property name="orientation">
+                                      <enum>Qt::Vertical</enum>
+                                     </property>
+                                     <property name="sizeHint" stdset="0">
+                                      <size>
+                                       <width>20</width>
+                                       <height>40</height>
+                                      </size>
+                                     </property>
+                                    </spacer>
+                                   </item>
+                                  </layout>
+                                 </widget>
+                                </item>
+                               </layout>
+                               <zorder>_rebuild_register_shift_go_button</zorder>
+                               <zorder>_rebuild_register_shift_reduce_button</zorder>
+                               <zorder>_rebuild_register_shift_nres_spinbox</zorder>
+                               <zorder>_rebuild_register_shift_increase_button</zorder>
+                               <zorder>frame_6</zorder>
                               </widget>
                              </item>
                              <item>
-                              <widget class="QPushButton" name="_rebuild_register_shift_release_button">
-                               <property name="maximumSize">
-                                <size>
-                                 <width>16777215</width>
-                                 <height>16777215</height>
-                                </size>
+                              <widget class="QToolButton" name="_rebuild_register_shift_release_button">
+                               <property name="toolTip">
+                                <string>Release register shifter</string>
                                </property>
                                <property name="text">
-                                <string>Release</string>
+                                <string>...</string>
+                               </property>
+                               <property name="icon">
+                                <iconset resource="resources/resources.qrc">
+                                 <normaloff>:/icons/red-x-icon.png</normaloff>:/icons/red-x-icon.png</iconset>
+                               </property>
+                               <property name="iconSize">
+                                <size>
+                                 <width>36</width>
+                                 <height>36</height>
+                                </size>
                                </property>
                               </widget>
                              </item>
@@ -2601,30 +2751,22 @@ border: 1px;
                            </widget>
                           </item>
                          </layout>
-                         <zorder>frame_10</zorder>
-                         <zorder>frame_11</zorder>
                         </widget>
                        </item>
+                       <item>
+                        <spacer name="horizontalSpacer_18">
+                         <property name="orientation">
+                          <enum>Qt::Horizontal</enum>
+                         </property>
+                         <property name="sizeHint" stdset="0">
+                          <size>
+                           <width>40</width>
+                           <height>20</height>
+                          </size>
+                         </property>
+                        </spacer>
+                       </item>
                       </layout>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="_rebuild_2ry_struct_restr_clear_button">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>16777215</width>
-                        <height>30</height>
-                       </size>
-                      </property>
-                      <property name="text">
-                       <string>Clear secondary structure restraints for selection</string>
-                      </property>
                      </widget>
                     </item>
                    </layout>
@@ -2772,6 +2914,26 @@ border: 1px;
                      </widget>
                     </item>
                     <item>
+                     <widget class="QToolButton" name="_rebuild_pos_restraint_clear_button">
+                      <property name="toolTip">
+                       <string>Release all position restraints on selection</string>
+                      </property>
+                      <property name="text">
+                       <string>...</string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="resources/resources.qrc">
+                        <normaloff>:/icons/red-x-icon.png</normaloff>:/icons/red-x-icon.png</iconset>
+                      </property>
+                      <property name="iconSize">
+                       <size>
+                        <width>36</width>
+                        <height>36</height>
+                       </size>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
                      <spacer name="horizontalSpacer_17">
                       <property name="orientation">
                        <enum>Qt::Horizontal</enum>
@@ -2785,19 +2947,6 @@ border: 1px;
                      </spacer>
                     </item>
                    </layout>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="_rebuild_pos_restraint_clear_button">
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>30</height>
-                    </size>
-                   </property>
-                   <property name="text">
-                    <string>Release all xyz restraints on selection</string>
-                   </property>
                   </widget>
                  </item>
                  <item>

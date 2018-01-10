@@ -135,9 +135,12 @@ class ISOLDE_ToolUI(ToolInstance):
             iw._rebuild_sel_res_rot_discard_button,
             iw._rebuild_sel_res_rot_release_button,
             #~ iw._rebuild_pos_restraint_one_atom_frame,
-            iw._rebuild_pin_atom_container,
+            #iw._rebuild_pin_atom_container,
+            iw._rebuild_pin_atom_to_current_pos_button,
+            iw._rebuild_pin_atom_to_pivot_button,
             iw._rebuild_pos_restraint_clear_button,
             iw._rebuild_2ry_struct_restr_container,
+            iw._rebuild_2ry_struct_restr_clear_button,
             iw._rebuild_register_shift_container,
             iw._rebuild_grow_shrink_sel_frame,
             ]

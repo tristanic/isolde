@@ -784,11 +784,6 @@ class Isolde():
         iw._rebuild_sel_res_pep_info.setText('')
         iw._rebuild_sel_res_rot_info.setText('')
 
-        phipsi = dihedrals.Backbone_Dihedrals.standard_phi_psi_angles
-        iw._rebuild_2ry_struct_restr_chooser_combo_box.clear()
-        for key, pair in phipsi.items():
-            iw._rebuild_2ry_struct_restr_chooser_combo_box.addItem(key, pair)
-
         iw._rebuild_pos_restraint_spring_constant.setProperty('value',
             self.sim_params.position_restraint_spring_constant.value_in_unit(CHIMERAX_SPRING_UNIT))
 
@@ -1019,10 +1014,17 @@ class Isolde():
         iw._rebuild_sel_res_rot_release_button.clicked.connect(
             self._release_rotamer
             )
-
-        iw._rebuild_2ry_struct_restr_chooser_go_button.clicked.connect(
-            self._apply_selected_secondary_structure_restraints
+        
+        iw._rebuild_restrain_helix_button.clicked.connect(
+            self._restrain_selection_as_alpha_helix
             )
+        iw._rebuild_restrain_anti_beta_button.clicked.connect(
+            self._restrain_selection_as_antiparallel_beta
+            )
+        iw._rebuild_restrain_par_beta_button.clicked.connect(
+            self._restrain_selection_as_parallel_beta
+            )
+        
         iw._rebuild_2ry_struct_restr_clear_button.clicked.connect(
             self.clear_secondary_structure_restraints_for_selection
             )
@@ -1601,10 +1603,15 @@ class Isolde():
                     'shape changed', self._update_selected_residue_info_live)
 
     def _enable_atom_position_restraints_frame(self):
-        self.iw._rebuild_pin_atom_container.setEnabled(True)
+        self.iw._rebuild_pin_atom_to_current_pos_button.setEnabled(True)
+        self.iw._rebuild_pin_atom_to_pivot_button.setEnabled(True)
+
+        #~ self.iw._rebuild_pin_atom_container.setEnabled(True)
 
     def _disable_atom_position_restraints_frame(self):
-        self.iw._rebuild_pin_atom_container.setEnabled(False)
+        self.iw._rebuild_pin_atom_to_current_pos_button.setEnabled(False)
+        self.iw._rebuild_pin_atom_to_pivot_button.setEnabled(False)
+        #self.iw._rebuild_pin_atom_container.setEnabled(False)
 
     def _enable_position_restraints_clear_button(self):
         self.iw._rebuild_pos_restraint_clear_button.setEnabled(True)
@@ -1696,17 +1703,32 @@ class Isolde():
             else:
                 raise TypeError('Direction must be either 1 or -1!')
 
-    def _apply_selected_secondary_structure_restraints(self, *_):
+    def _restrain_selection_as_alpha_helix(self, *_):
         from chimerax.core.atomic import selected_atoms
+        sel = selected_atoms(self.session)
+        self._restrain_secondary_structure(sel, 'helix')
+    
+    def _restrain_selection_as_antiparallel_beta(self, *_):
+        from chimerax.core.atomic import selected_atoms
+        sel = selected_atoms(self.session)
+        self._restrain_secondary_structure(sel, 'antiparallel beta')
+
+    def _restrain_selection_as_parallel_beta(self, *_):
+        from chimerax.core.atomic import selected_atoms
+        sel = selected_atoms(self.session)
+        self._restrain_secondary_structure(sel, 'parallel beta')
+
+    
+    def _restrain_secondary_structure(self, atoms, target):
         sh = self._sim_handler
         sc = self._total_sim_construct
         dihed_k = self.secondary_structure_restraints_k
-        sel = selected_atoms(self.session)
+        sel = atoms
         residues = sel.unique_residues
         sel = residues.atoms
-        cb = self.iw._rebuild_2ry_struct_restr_chooser_combo_box
-        structure_type = cb.currentText()
-        target_phi, target_psi = cb.currentData()
+        structure_type = target
+        from .dihedrals import Backbone_Dihedrals
+        target_phi, target_psi = Backbone_Dihedrals.standard_phi_psi_angles[structure_type]
         phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
         phi.targets = target_phi
         psi.targets = target_psi

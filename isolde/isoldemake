@@ -1,9 +1,9 @@
 #!/bin/bash
 pyrcc5 -o src/resources_rc.py src/resources/resources.qrc
-./pyuic src/IsoldeFrame.ui -o src/isoldewidget.py
-./pyuic src/IsoldeWindow.ui -o src/isolde_main_win.py
-sed -i "s/import resources_rc/from . import resources_rc/" src/isoldewidget.py
-sed -i "s/import resources_rc/from . import resources_rc/" src/isolde_main_win.py
+./pyuic src/IsoldeFrame.ui -o src/isoldewidget.py --from-imports
+./pyuic src/IsoldeWindow.ui -o src/isolde_main_win.py --from-imports
+#~ sed -i "s/import resources_rc/from . import resources_rc/" src/isoldewidget.py
+#~ sed -i "s/import resources_rc/from . import resources_rc/" src/isolde_main_win.py
 
 make clean
 make app-install
