@@ -11,7 +11,7 @@ class ReflectionDataContainer(Model):
     ChimeraX Model class allowing it to be loaded into the model
     hierarchy making it easily visible to the user.
     '''
-    def __init__(self, session, hklfile):
+    def __init__(self, session, hklfile, shannon_rate = 1.5):
         '''
         This class should hold the information that's common to all
         the data contained in its children (e.g. the HKLinfo object,
@@ -22,6 +22,7 @@ class ReflectionDataContainer(Model):
         hklinfo, free, exp, calc = load_hkl_data(hklfile)
         self.hklinfo = hklinfo
         self._grid_sampling = None
+        self.shannon_rate = shannon_rate
 
         self.free_flags = None
         if free[0] is not None:
@@ -64,7 +65,7 @@ class ReflectionDataContainer(Model):
     def grid_sampling(self):
         if self._grid_sampling is None:
             self._grid_sampling = Grid_sampling(
-                self.spacegroup, self.cell, self.resolution)
+                self.spacegroup, self.cell, self.resolution, self.shannon_rate)
         return self._grid_sampling
 
 

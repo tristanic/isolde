@@ -181,6 +181,7 @@ class CrystalStructure(Model):
 
     def __init__(self, session, model,
                  mtzfile = None, calculate_maps = True,
+                 map_oversampling = 1.5,
                  live_map_scrolling = True, map_scrolling_radius = 12,
                  live_atomic_symmetry = True, atomic_symmetry_radius = 15,
                  show_nonpolar_H = False):
@@ -200,6 +201,11 @@ class CrystalStructure(Model):
             calculate_maps (bool, default True):
                 If an MTZ file containing map structure factors is provided,
                 generate an XmapSet containing the real-space maps.
+            map_oversampling (float, default 1.5):
+                The Shannon rate at which the map should be sampled. 
+                A rate of 1 means the grid spacing will be half the true
+                resolution (the minimum required). The default value of
+                1.5 gives a grid spacing of resolution/3.
             live_map_scrolling (bool, default True):
                 If maps are generated, initialise live scrolling of a
                 sphere of density around the centre of rotation.
@@ -227,7 +233,7 @@ class CrystalStructure(Model):
         self.master_model = model
         self.mtzdata = None
         if mtzfile is not None:
-            self.mtzdata = ReflectionDataContainer(self.session, mtzfile)
+            self.mtzdata = ReflectionDataContainer(self.session, mtzfile, shannon_rate = map_oversampling)
             self.add([self.mtzdata])
             self.cell = self.mtzdata.cell
             self.spacegroup = self.mtzdata.spacegroup
