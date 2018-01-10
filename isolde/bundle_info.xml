@@ -65,7 +65,7 @@ with the surroundings.
     <DataFile>validation_new/molprobity_data/*</DataFile>
     <DataFile>resources/*</DataFile>
     <DataFile>demo_data/*</DataFile>
-    <DataFile>demo_data/3io4/*</DataFile>
+    <DataFile>demo_data/3io0/*</DataFile>
   </DataFiles>
   <Classifiers>
     <!-- Development Status should be compatible with bundle version number -->

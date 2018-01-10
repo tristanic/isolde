@@ -104,6 +104,8 @@ class IsoldeParams(Param_Mgr):
         'difference_map_mask_cutoff':           (defaults.DIFFERENCE_MAP_MASK_RADIUS, None),
             # Use multiprocessing instead of threads (only available on Linux)
         'use_multiprocessing':                  (defaults.USE_FORK_INSTEAD_OF_THREADS, None),
+            # The Shannon rate for oversampling maps from FFTs
+        'map_shannon_rate':                     (defaults.MAP_SHANNON_RATE, None),
 
     }
 
@@ -1399,7 +1401,8 @@ class Isolde():
             errstring = 'Please select a valid MTZ file!'
             _generic_warning(errstring)
         m = cb.currentData()
-        cs = clipper.CrystalStructure(self.session, m, fname)
+        cs = clipper.CrystalStructure(self.session, m, mtzfile=fname, 
+                            map_oversampling=self.params.map_shannon_rate)
         self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
         self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
         self._change_selected_model(force = True)
@@ -3305,18 +3308,19 @@ class Isolde():
 
     def load_demo_data(self):
         from chimerax.core.commands import open
-        data_dir = os.path.join(self._root_dir, 'demo_data', '3io4')
+        data_dir = os.path.join(self._root_dir, 'demo_data', '3io0')
         before_struct = open.open(self.session, os.path.join(data_dir, 'before.pdb'))[0]
         from chimerax.core.commands import color
         color.color(self.session, before_struct, color='bychain', target='ac')
         color.color(self.session, before_struct, color='byhetero', target='a')
         before_cs = clipper.CrystalStructure(self.session, before_struct,
-            os.path.join(data_dir, 'before_maps.mtz'))
+            mtzfile=os.path.join(data_dir, 'before_maps.mtz'),
+            map_oversampling = self.params.map_shannon_rate)
         #~ from chimerax.core.commands import lighting
         #~ lighting.lighting(self.session, depth_cue=True)
         sharp_map = before_cs.xmaps['2FOFCWT_sharp, PH2FOFCWT_sharp']
         sd = sharp_map.mean_sd_rms()[1]
-        styleargs= self._map_style_settings[self._map_styles.solid_t60]
+        styleargs= self._map_style_settings[self._map_styles.solid_t40]
         from chimerax.core.map import volumecommand
         volumecommand.volume(self.session, [sharp_map], **styleargs)
         sharp_map.set_parameters(surface_levels = (2.5*sd,))

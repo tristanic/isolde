@@ -110,6 +110,7 @@ class _Defaults:
         'CHIMERAX_FORCE_UNIT':          unit.kilojoule_per_mole/unit.angstrom,
         'CHIMERAX_SPRING_UNIT':         unit.kilojoule_per_mole/unit.angstrom**2,
 
+        'MAP_SHANNON_RATE':            3,      # Shannon rate for map FFTs
         'SELECTION_SEQUENCE_PADDING':   3,      # residues
         'SOFT_SHELL_CUTOFF':            5,      # Angstroms
         'HARD_SHELL_CUTOFF':            8,      # Angstroms
