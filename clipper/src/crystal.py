@@ -919,7 +919,7 @@ class XmapSet(Model):
                 The ChimeraX session
             datasets:
                 An iterable of ReflectionData_Calc objects
-            parent:
+            crystal:
                 The CrystalStructure object this object will be subordinate to.
             live_scrolling:
                 If True, the maps will be initialised in live scrolling
