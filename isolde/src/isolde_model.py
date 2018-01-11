@@ -27,7 +27,6 @@ class IsoldeModel(Model):
         super().__init__('ISOLDE ' + model.name, session)
         self.isolde = isolde
         self.add([model])
-
         # _master_model is defined by the derived class
         mm = self._master_model
         d = self.annotations = Drawing('ISOLDE Annotations')
@@ -59,7 +58,7 @@ class IsoldeCrystalModel(IsoldeModel):
     Prepares a crystal structure for ISOLDE
     '''
     def __init__(self, session, isolde, crystal_structure):
-        if not is_instance(crystal_structure, CrystalStructure):
+        if not isinstance(crystal_structure, CrystalStructure):
             raise TypeError('crystal_structure should be a Clipper CrystalStructure!')
         self._master_model = crystal_structure.master_model
         super().__init__(session, isolde, crystal_structure)
