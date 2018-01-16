@@ -31,6 +31,7 @@
 #include <pysupport/convert.h>     // Use cset_of_chars_to_pyset
 
 #include "atomic_cpp/dihedral.h"
+#include "atomic_cpp/dihedral_mgr.h"
 #include "geometry/geometry.h"
 #include "interpolation/nd_interp.h"
 
@@ -52,7 +53,7 @@ using namespace isolde;
 // dihedral functions
 //
 
-extern "C" EXPORT void set_dihedral_pyclass(PyObject* py_class)
+extern "C" EXPORT void set_proper_dihedral_pyclass(PyObject* py_class)
 {
     try {
         Dihedral::set_py_class(py_class);
@@ -61,7 +62,7 @@ extern "C" EXPORT void set_dihedral_pyclass(PyObject* py_class)
     }
 }
 
-extern "C" EXPORT PyObject* dihedral_py_inst(void* ptr)
+extern "C" EXPORT PyObject* proper_dihedral_py_inst(void* ptr)
 {
     Dihedral *d = static_cast<Dihedral*>(ptr);
     try {
@@ -72,7 +73,7 @@ extern "C" EXPORT PyObject* dihedral_py_inst(void* ptr)
     }
 }
 
-extern "C" EXPORT PyObject* dihedral_existing_py_inst(void* ptr)
+extern "C" EXPORT PyObject* proper_dihedral_existing_py_inst(void* ptr)
 {
     Dihedral *d = static_cast<Dihedral*>(ptr);
     try {
@@ -85,7 +86,7 @@ extern "C" EXPORT PyObject* dihedral_existing_py_inst(void* ptr)
 
 
 extern "C" EXPORT void 
-dihedral_from_atoms(void *atoms, size_t n, pyobject_t *name, pyobject_t *dihedrals)
+proper_dihedral_from_atoms(void *atoms, size_t n, pyobject_t *names, void *residues, pyobject_t *dihedrals)
 {
     // n must be divisible by 4
     try {
@@ -93,9 +94,11 @@ dihedral_from_atoms(void *atoms, size_t n, pyobject_t *name, pyobject_t *dihedra
             throw std::invalid_argument("Number of atoms must be a multiple of 4");
         }
         Atom **a = static_cast<Atom **>(atoms);
+        Residue **r = static_cast<Residue **>(residues);
         for (size_t i=0, j=0; i<n; i+=4, j++) {
-            Dihedral* d = new Dihedral(a[i], a[i+1], a[i+2], a[i+3]);
-            d->set_name(std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(name[j]))));
+            Proper_Dihedral* d = new Proper_Dihedral(a[i], a[i+1], a[i+2], a[i+3], r[j],
+                std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(names[j]))));
+            //d->set_name(std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(names[j]))));
             dihedrals[j] = d;
         }
     } catch (...) {
@@ -106,14 +109,14 @@ dihedral_from_atoms(void *atoms, size_t n, pyobject_t *name, pyobject_t *dihedra
 
 
 extern "C" EXPORT void 
-dihedral_angle(void *dihedrals, size_t n, float32_t *angles)
+proper_dihedral_angle(void *dihedrals, size_t n, float32_t *angles)
 {
     Dihedral **d = static_cast<Dihedral **>(dihedrals);
     error_wrap_array_get(d, n, &Dihedral::angle, angles);
 }
 
 extern "C" EXPORT void 
-dihedral_name(void *dihedrals, size_t n, pyobject_t *names)
+proper_dihedral_name(void *dihedrals, size_t n, pyobject_t *names)
 {
     Dihedral **d = static_cast<Dihedral **>(dihedrals);
     try {
@@ -124,17 +127,129 @@ dihedral_name(void *dihedrals, size_t n, pyobject_t *names)
     }
 }
 
-extern "C" EXPORT void 
-set_dihedral_name(void *dihedrals, size_t n, pyobject_t *names)
+//~ extern "C" EXPORT void 
+//~ set_dihedral_name(void *dihedrals, size_t n, pyobject_t *names)
+//~ {
+    //~ Dihedral **d = static_cast<Dihedral **>(dihedrals);
+    //~ try {
+        //~ for (size_t i=0; i<n; ++i)
+            //~ d[i]->set_name(std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(names[i]))));
+    //~ } catch (...) {
+        //~ molc_error();
+    //~ }
+//~ }
+
+
+typedef Dihedral_Mgr<Proper_Dihedral> Proper_Dihedral_Mgr;
+
+extern "C" EXPORT void set_proper_dihedral_mgr_py_instance(void* mgr, PyObject* py_inst)
 {
-    Dihedral **d = static_cast<Dihedral **>(dihedrals);
+    Proper_Dihedral_Mgr *d = static_cast<Proper_Dihedral_Mgr *>(mgr);
     try {
-        for (size_t i=0; i<n; ++i)
-            d[i]->set_name(std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(names[i]))));
+        d->set_py_instance(py_inst);
     } catch (...) {
         molc_error();
     }
 }
 
 
+extern "C" EXPORT PyObject* proper_dihedral_mgr_py_inst(void* ptr)
+{
+    Proper_Dihedral_Mgr *d = static_cast<Proper_Dihedral_Mgr *>(ptr);
+    try {
+        return d->py_instance(true);
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+}
+
+extern "C" EXPORT PyObject* proper_dihedral_mgr_existing_py_inst(void* ptr)
+{
+    Proper_Dihedral_Mgr *d = static_cast<Proper_Dihedral_Mgr *>(ptr);
+    try {
+        return d->py_instance(false);
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+}
+
+
+
+
+
+
+extern "C" EXPORT void*
+proper_dihedral_mgr_new()
+{
+    try {
+        Proper_Dihedral_Mgr *mgr = new Proper_Dihedral_Mgr();
+        return mgr;
+        
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_mgr_delete(void *mgr)
+{
+    try {
+        Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+        delete m;
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_mgr_add_dihedral(void *mgr, void *dihedrals, size_t n)
+{
+    try {
+        Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+        Proper_Dihedral **d = static_cast<Proper_Dihedral **>(dihedrals);
+        for (size_t i=0; i<n; ++i)
+            m->add_dihedral(d[i]);
+    } catch (...) {
+        molc_error();
+    }
+        
+}
+
+extern "C" EXPORT int
+proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *names, size_t n, pyobject_t *dihedrals)
+{
+    size_t found=0;
+    try {
+        Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+        Residue **r = static_cast<Residue **>(residues);
+        for (size_t i=0, found=0; i<n; ++i) {
+            try {
+                dihedrals[found++] = m->get_dihedral(r[i], std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(names[i]))));
+            } catch (std::out_of_range) {
+                continue;
+            }
+        }
+        return found;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT int
+proper_dihedral_mgr_num_dihedrals(void *mgr)
+{
+    try {
+        Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+        return m->num_dihedrals();
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+        
+        
 

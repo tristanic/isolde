@@ -1,0 +1,137 @@
+{  
+    "aminoacids":   ["gly","ala","val","leu","ile","pro","phe","tyr","trp","ser","thr","cys","met","mse","lys","his","arg","asp","asn","gln","glu"],
+
+    "all_protein": {
+        "omega":    ["CA-1","C-1","N","CA"],
+        "phi":      ["C-1","N","CA","C"],
+        "psi":      ["N","CA","C","N+1"]
+    },
+
+    "gly": {
+        "nchi":     0
+    },
+
+    "ala": {
+        "nchi":     0
+    },
+
+    "val": {
+        "nchi":     1,
+        "chi1":     ["N","CA","CB","CG1"]
+    },
+
+    "ser": {
+        "nchi":     1,
+        "chi1":     ["N","CA","CB","OG"]
+    },
+
+    "thr": {
+        "nchi":     1,
+        "chi1":     ["N","CA","CB","OG1"]
+    },
+
+    "cys": {
+        "nchi":     1,
+        "chi1":     ["N","CA","CB","SG"]
+    },
+
+    "asp": {
+        "nchi":     2,
+        "chi1":     ["N","CA","CB","CG"],
+        "chi2":     ["CA","CB","CG","OD1"]
+    },
+
+    "asn": {
+        "nchi":      2,
+        "chi1":      ["N","CA","CB","CG"],
+        "chi2":      ["CA","CB","CG","OD1"]
+    },
+        
+    "leu": {
+        "nchi":      2,
+        "chi1":     ["N","CA","CB","CG"],
+        "chi2":     ["CA","CB","CG","CD1"]
+    },
+
+    "ile": {
+        "nchi":      2,
+        "chi1":     ["N","CA","CB","CG1"],
+        "chi2":     ["CA","CB","CG1","CD1"]
+    },
+
+    "phe": {
+        "nchi":      2,
+        "chi1":     ["N","CA","CB","CG"],
+        "chi2":     ["CA","CB","CG","CD1"]
+    },
+
+    "tyr": {
+        "nchi":      2,
+        "chi1":     ["N","CA","CB","CG"],
+        "chi2":     ["CA","CB","CG","CD1"]
+    },
+
+    "trp": {
+        "nchi":      2,
+        "chi1":     ["N","CA","CB","CG"],
+        "chi2":     ["CA","CB","CG","CD1"]
+    },
+
+    "his": {
+        "nchi":      2,
+        "chi1":      ["N","CA","CB","CG"],
+        "chi2":      ["CA","CB","CG","ND1"]
+    },
+
+    "gln": {
+        "nchi":      3,
+        "chi1":      ["N","CA","CB","CG"],
+        "chi2":      ["CA","CB","CG","CD"],
+        "chi3":      ["CB","CG","CD","OE1"]
+    },
+
+    "glu": {
+        "nchi":      3,
+        "chi1":      ["N","CA","CB","CG"],
+        "chi2":      ["CA","CB","CG","CD"],
+        "chi3":      ["CB","CG","CD","OE1"]
+    },
+
+    "pro": {
+        "nchi":      3,
+        "chi1":     ["N","CA","CB","CG"],
+        "chi2":     ["CA","CB","CG","CD"],
+        "chi3":     ["CB","CG","CD","N"]
+    },
+
+    "met": {
+        "nchi":      3,
+        "chi1":     ["N","CA","CB","CG"],
+        "chi2":     ["CA","CB","CG","SD"],
+        "chi3":     ["CB","CG","SD","CE"]
+    },
+
+    "mse": {
+        "nchi":      3,
+        "chi1":      ["N","CA","CB","CG"],
+        "chi2":      ["CA","CB","CG","SE"],
+        "chi3":      ["CB","CG","SE","CE"]
+    },
+
+    "lys": {
+        "nchi":      4,
+        "chi1":      ["N","CA","CB","CG"],
+        "chi2":      ["CA","CB","CG","CD"],
+        "chi3":      ["CB","CG","CD","CE"],
+        "chi4":      ["CG","CD","CE","NZ"]
+    },
+
+    "arg": {
+        "nchi":      4,
+        "chi1":      ["N","CA","CB","CG"],
+        "chi2":      ["CA","CB","CG","CD"],
+        "chi3":      ["CB","CG","CD","NE"],
+        "chi4":      ["CG","CD","NE","CZ"]
+    }
+        
+}

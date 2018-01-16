@@ -15,7 +15,8 @@
 
 using namespace atomstruct;
 
-namespace isolde {
+namespace isolde 
+{
 
 //! Define a dihedral by four atoms.
 /*!  
@@ -27,15 +28,18 @@ namespace isolde {
  * MUST BE ALLOCATED ON THE HEAP (i.e. via Dihedral* d = new Dihedral(...))
  * to work with ChimeraX's automatic clean-up system. 
  */ 
-class Dihedral: public DestructionObserver, public pyinstance::PythonInstance<Dihedral> {
+class Dihedral: public DestructionObserver, public pyinstance::PythonInstance<Dihedral> 
+{
 
 public:
     typedef Atom* Atoms[4];
     typedef Coord Coords[4];
+    typedef Bond* Bonds[3];
     
 private:
     Atoms _atoms;
     Coords _coords;
+    Bonds _bonds;
     const char* err_msg_dup_atom() const
         {return "All atoms must be unique";}
     const char* err_msg_multi_struct() const
@@ -48,7 +52,9 @@ private:
     Residue* _residue = nullptr; 
     
 public:
+    Dihedral() {} // null constructor
     Dihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4);
+    Dihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4, Residue* owner, std::string name);
     ~Dihedral() { auto du = DestructionUser(this); }
     const Atoms& atoms() const {return _atoms;}
     Structure* structure() const {return atoms()[0]->structure();}
@@ -57,6 +63,13 @@ public:
     void set_name(const std::string& name) { _name = name; }
     Residue* residue() const;
     void set_residue(Residue* residue) { _residue = residue; }
+    virtual const Bonds& bonds() const { 
+        throw std::invalid_argument("Base class Dihedral does not support bonds!");
+    }
+    virtual Bond* axial_bond() const {
+        throw std::invalid_argument("Axial bond is only defined for a Proper_Dihedral!");
+    }    
+    
     virtual void destructors_done(const std::set<void*>& destroyed) {
         check_destroyed_atoms(destroyed);
     }
@@ -78,7 +91,8 @@ class Proper_Dihedral: public Dihedral
 
 public:
     typedef Bond* Bonds[3];
-    Proper_Dihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4);
+    Proper_Dihedral() {} // null constructor
+    Proper_Dihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4, Residue* owner, std::string name);
     const Bonds& bonds() const { return _bonds; }
     Bond* axial_bond() const { return bonds()[1]; }
 

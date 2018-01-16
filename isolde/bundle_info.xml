@@ -34,6 +34,7 @@ with the surroundings.
   </CModule>
   <CModule name="molc" usesNumpy="true">
     <SourceFile>src/atomic_cpp/dihedral.cpp</SourceFile>
+    <SourceFile>src/atomic_cpp/dihedral_mgr.cpp</SourceFile>
     <SourceFile>src/molc.cpp</SourceFile>
     <Library>OpenMM</Library>
     <Library>atomstruct</Library>

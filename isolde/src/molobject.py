@@ -27,13 +27,65 @@ c_array_function = _c_functions.c_array_function
 
 
 
-def _dihedrals(p):
-    from .molarray import Dihedrals
-    return Dihedrals(p)
-def _dihedral_or_none(p):
-    return Dihedral.c_ptr_to_py_inst(p) if p else None
+def _proper_dihedrals(p):
+    from .molarray import Proper_Dihedrals
+    return Proper_Dihedrals(p)
+def _proper_dihedral_or_none(p):
+    return Proper_Dihedral.c_ptr_to_py_inst(p) if p else None
 
-class Dihedral(State):
+class _Dihedral_Mgr:
+    '''Base class. Do not instantiate directly.'''
+    def __init__(self, model, c_pointer=None):
+        cname = type(self).__name__.lower()
+        if c_pointer is None:
+            new_func = cname + '_new'
+            c_pointer = c_function(new_func, ret=ctypes.c_void_p)()
+        set_c_pointer(self, c_pointer)
+        f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
+        f(self._c_pointer, self)
+        self.atomic_model = model
+        
+
+    @property
+    def cpp_pointer(self):
+        '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
+        return self._c_pointer.value
+
+    @property
+    def deleted(self):
+        '''Has the C++ side been deleted?'''
+        return not hasattr(self, '_c_pointer')
+
+class Proper_Dihedral_Mgr(_Dihedral_Mgr):
+    
+    def __init__(self, model, c_pointer=None):
+        super().__init(model, c_pointer=c_pointer)
+    
+    def add_dihedrals(self, dihedrals):
+        f = c_function('proper_dihedral_mgr_add_dihedral', 
+            args = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
+            )
+        f(self.cpp_pointer, dihedrals._c_pointers, len(dihedrals))
+    
+    def find_dihedrals(self, dihedral_dict):
+        pass
+    
+    def get_dihedrals(self, residues, name):
+        f = c_function('proper_dihedral_mgr_get_dihedrals', args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p), ret=ctypes.c_size_t)
+        n = len(residues)
+        names = numpy.empty(n, string)
+        names[:] = name
+        ptrs  = numpy.empty(n, cptr)
+        num_found = f(self._c_pointer, residues._c_pointers, pointer(names), n, pointer(ptrs))
+        return _proper_dihedrals(ptrs[0:num_found])
+    
+    @property
+    def num_dihedrals(self):
+        f = c_function('proper_dihedral_mgr_num_dihedrals', args=(ctypes.c_void_p,), ret=ctypes.c_size_t)
+        return f(self._c_pointer)
+    
+
+class Proper_Dihedral(State):
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
     
@@ -53,13 +105,13 @@ class Dihedral(State):
     def reset_state(self):
         pass
     
-    name = c_property('dihedral_name', string, doc = 'Name of this dihedral.')
-    angle = c_property('dihedral_angle', float32, read_only=True, doc = 'Angle in radians. Read only.')
+    name = c_property('proper_dihedral_name', string, read_only = True, doc = 'Name of this dihedral. Read only.')
+    angle = c_property('proper_dihedral_angle', float32, read_only=True, doc = 'Angle in radians. Read only.')
 
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance
 # from the pointer (needed by Collections)
-for class_obj in [Dihedral,]:
+for class_obj in [Proper_Dihedral, ]:
     cname = class_obj.__name__.lower()
     func_name = 'set_' + cname + '_pyclass'
     f = c_function(func_name, args = (ctypes.py_object,))
@@ -72,3 +124,7 @@ for class_obj in [Dihedral,]:
     class_obj.c_ptr_to_existing_py_inst = lambda ptr, fname=func_name: c_function(fname,
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
     
+Proper_Dihedral_Mgr.c_ptr_to_py_inst = lambda ptr: c_function('proper_dihedral_mgr_py_inst',
+    args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
+Proper_Dihedral_Mgr.c_ptr_to_existing_py_inst = lambda ptr: c_function("proper_dihedral_mgr_existing_py_inst",
+    args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))

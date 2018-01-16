@@ -29,9 +29,13 @@ class IsoldeModel(Model):
         self.add([model])
         # _master_model is defined by the derived class
         mm = self._master_model
-        d = self.annotations = Drawing('ISOLDE Annotations')
-        self.add_drawing(d)
-        ad = self._all_annotated_dihedrals = Dihedrals(drawing=d, session=session)
+        am = self._annotation_model = Model('ISOLDE Annotations', session)
+        dm = self._dihedral_annotations_model = Model('Dihedral restraints', session)
+        dd = self._dihedral_annotations_drawing = Drawing('Dihedral restraints')
+        dm.add_drawing(dd)
+        am.add([dm])
+        self.add([am])
+        ad = self._all_annotated_dihedrals = Dihedrals(drawing=dd, session=session)
         bd = self.backbone_dihedrals = Backbone_Dihedrals(session, mm)
         ad.append(bd.phi)
         ad.append(bd.psi)

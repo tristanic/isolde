@@ -26,6 +26,13 @@ Dihedral::Dihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4)
     }
 }
 
+Dihedral::Dihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4, Residue* owner, std::string name):
+    Dihedral(a1, a2, a3, a4) 
+{
+    _residue = owner;
+    _name = name;
+}
+
 void copy(const Coord& coord_from, Coord coord_to)
 {
     coord_to[0] = coord_from[0];
@@ -71,8 +78,8 @@ Dihedral::check_destroyed_atoms(const std::set<void*>& destroyed)
 
 
 
-Proper_Dihedral::Proper_Dihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4)
-:   Dihedral(a1, a2, a3, a4)
+Proper_Dihedral::Proper_Dihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4, Residue* owner, std::string name)
+:   Dihedral(a1, a2, a3, a4, owner, name)
 {   
     Atom* ba1 = atoms()[0];
     bool found_bond;

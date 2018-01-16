@@ -2250,10 +2250,22 @@ border: 1px;
                           </item>
                           <item row="0" column="0">
                            <widget class="QPushButton" name="_sel_shrink_N_button">
+                            <property name="sizePolicy">
+                             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                              <horstretch>0</horstretch>
+                              <verstretch>0</verstretch>
+                             </sizepolicy>
+                            </property>
                             <property name="minimumSize">
                              <size>
                               <width>0</width>
                               <height>0</height>
+                             </size>
+                            </property>
+                            <property name="maximumSize">
+                             <size>
+                              <width>16777215</width>
+                              <height>14</height>
                              </size>
                             </property>
                             <property name="toolTip">
@@ -2268,14 +2280,26 @@ border: 1px;
                             </property>
                             <property name="iconSize">
                              <size>
-                              <width>18</width>
-                              <height>18</height>
+                              <width>10</width>
+                              <height>10</height>
                              </size>
                             </property>
                            </widget>
                           </item>
                           <item row="0" column="1">
                            <widget class="QPushButton" name="_sel_shrink_C_button">
+                            <property name="sizePolicy">
+                             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                              <horstretch>0</horstretch>
+                              <verstretch>0</verstretch>
+                             </sizepolicy>
+                            </property>
+                            <property name="maximumSize">
+                             <size>
+                              <width>16777215</width>
+                              <height>14</height>
+                             </size>
+                            </property>
                             <property name="toolTip">
                              <string>Reduce C-terminal end of selection by 1</string>
                             </property>
@@ -2288,18 +2312,30 @@ border: 1px;
                             </property>
                             <property name="iconSize">
                              <size>
-                              <width>18</width>
-                              <height>18</height>
+                              <width>10</width>
+                              <height>10</height>
                              </size>
                             </property>
                            </widget>
                           </item>
                           <item row="2" column="0">
                            <widget class="QPushButton" name="_sel_extend_N_button">
+                            <property name="sizePolicy">
+                             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                              <horstretch>0</horstretch>
+                              <verstretch>0</verstretch>
+                             </sizepolicy>
+                            </property>
                             <property name="minimumSize">
                              <size>
                               <width>0</width>
-                              <height>0</height>
+                              <height>14</height>
+                             </size>
+                            </property>
+                            <property name="maximumSize">
+                             <size>
+                              <width>16777215</width>
+                              <height>14</height>
                              </size>
                             </property>
                             <property name="toolTip">
@@ -2314,14 +2350,26 @@ border: 1px;
                             </property>
                             <property name="iconSize">
                              <size>
-                              <width>18</width>
-                              <height>18</height>
+                              <width>10</width>
+                              <height>10</height>
                              </size>
                             </property>
                            </widget>
                           </item>
                           <item row="2" column="1">
                            <widget class="QPushButton" name="_sel_extend_C_button">
+                            <property name="sizePolicy">
+                             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                              <horstretch>0</horstretch>
+                              <verstretch>0</verstretch>
+                             </sizepolicy>
+                            </property>
+                            <property name="maximumSize">
+                             <size>
+                              <width>16777215</width>
+                              <height>14</height>
+                             </size>
+                            </property>
                             <property name="toolTip">
                              <string>Extend C-terminal end of selection by 1</string>
                             </property>
@@ -2334,8 +2382,8 @@ border: 1px;
                             </property>
                             <property name="iconSize">
                              <size>
-                              <width>18</width>
-                              <height>18</height>
+                              <width>10</width>
+                              <height>10</height>
                              </size>
                             </property>
                            </widget>
@@ -2606,19 +2654,6 @@ border: 1px;
                                     <number>0</number>
                                    </property>
                                    <item>
-                                    <spacer name="verticalSpacer_5">
-                                     <property name="orientation">
-                                      <enum>Qt::Vertical</enum>
-                                     </property>
-                                     <property name="sizeHint" stdset="0">
-                                      <size>
-                                       <width>20</width>
-                                       <height>40</height>
-                                      </size>
-                                     </property>
-                                    </spacer>
-                                   </item>
-                                   <item>
                                     <widget class="QToolButton" name="_rebuild_register_shift_reduce_button">
                                      <property name="maximumSize">
                                       <size>
@@ -2703,28 +2738,10 @@ border: 1px;
                                      </property>
                                     </widget>
                                    </item>
-                                   <item>
-                                    <spacer name="verticalSpacer_6">
-                                     <property name="orientation">
-                                      <enum>Qt::Vertical</enum>
-                                     </property>
-                                     <property name="sizeHint" stdset="0">
-                                      <size>
-                                       <width>20</width>
-                                       <height>40</height>
-                                      </size>
-                                     </property>
-                                    </spacer>
-                                   </item>
                                   </layout>
                                  </widget>
                                 </item>
                                </layout>
-                               <zorder>_rebuild_register_shift_go_button</zorder>
-                               <zorder>_rebuild_register_shift_reduce_button</zorder>
-                               <zorder>_rebuild_register_shift_nres_spinbox</zorder>
-                               <zorder>_rebuild_register_shift_increase_button</zorder>
-                               <zorder>frame_6</zorder>
                               </widget>
                              </item>
                              <item>

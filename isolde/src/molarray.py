@@ -5,7 +5,7 @@ from chimerax.core.atomic.molarray import Collection
 from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
-from .molobject import Dihedral
+from .molobject import Proper_Dihedral
 import ctypes
 
 from chimerax.core.atomic import Atom, Atoms, Residue, Residues
@@ -16,32 +16,32 @@ from chimerax.core.atomic.molarray import _atoms, _atoms_or_nones, \
         _non_null_chains, _atomic_structures, structure_datas, \
         _atoms_pair, _pseudobond_group_map
 
-def _dihedrals(p):
-    return Dihedrals(p)
-def _dihedrals_or_nones(p):
-    return [Dihedral.c_ptr_to_py_inst(ptr) if ptr else None for ptr in p]
-def _non_null_dihedrals(p):
-    return Dihedrals(p[p!=0])
+def _proper_dihedrals(p):
+    return Proper_Dihedrals(p)
+def _proper_dihedrals_or_nones(p):
+    return [Proper_Dihedral.c_ptr_to_py_inst(ptr) if ptr else None for ptr in p]
+def _non_null_proper_dihedrals(p):
+    return Proper_Dihedrals(p[p!=0])
 
 
 
-_dihedrals_from_atoms = c_array_function('dihedral_from_atoms', args=(cptr,),
+_proper_dihedrals_from_atoms = c_array_function('proper_dihedral_from_atoms', args=(cptr, cptr),
                             per_object=False)
 
-def dihedrals_from_atoms(atoms, name):
+def proper_dihedrals_from_atoms(atoms, residues, name):
     n = len(atoms)//4
     pointers = empty(n, cptr)
     names = empty(n, string)
     names[:]=name
-    _dihedrals_from_atoms(atoms._c_pointers, len(atoms), pointer(names), pointer(pointers))
-    d = Dihedrals(pointers)
-    d.names = name
+    _proper_dihedrals_from_atoms(atoms._c_pointers, len(atoms), pointer(names), residues._c_pointers, pointer(pointers))
+    d = Proper_Dihedrals(pointers)
+    #d.names = name
     return d
 
-class Dihedrals(Collection):
+class Proper_Dihedrals(Collection):
     
     def __init__(self, d_pointers = None):
-        Collection.__init__(self, d_pointers, Dihedral, Dihedrals)
+        Collection.__init__(self, d_pointers, Proper_Dihedral, Proper_Dihedrals)
     
-    names = cvec_property('dihedral_name', string)
-    angles = cvec_property('dihedral_angle', float32, read_only=True)
+    names = cvec_property('proper_dihedral_name', string, read_only=True)
+    angles = cvec_property('proper_dihedral_angle', float32, read_only=True)
