@@ -1621,6 +1621,7 @@ class Isolde():
 
     def _enable_secondary_structure_restraints_frame(self, *_):
         self.iw._rebuild_2ry_struct_restr_container.setEnabled(True)
+        self.iw._rebuild_2ry_struct_restr_clear_button.setEnabled(True)
 
     def _enable_register_shift_frame(self, *_):
         self.iw._rebuild_register_shift_container.setEnabled(True)
@@ -1630,6 +1631,7 @@ class Isolde():
 
     def _disable_secondary_structure_restraints_frame(self, *_):
         self.iw._rebuild_2ry_struct_restr_container.setEnabled(False)
+        self.iw._rebuild_2ry_struct_restr_clear_button.setEnabled(False)
 
     def _disable_register_shift_frame(self, *_):
         self.iw._rebuild_register_shift_container.setEnabled(False)

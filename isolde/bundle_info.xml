@@ -67,6 +67,7 @@ with the surroundings.
     <DataFile>resources/*</DataFile>
     <DataFile>demo_data/*</DataFile>
     <DataFile>demo_data/3io0/*</DataFile>
+    <DataFile>dictionaries/*</DataFile>
   </DataFiles>
   <Classifiers>
     <!-- Development Status should be compatible with bundle version number -->

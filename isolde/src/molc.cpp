@@ -218,6 +218,120 @@ proper_dihedral_mgr_add_dihedral(void *mgr, void *dihedrals, size_t n)
         
 }
 
+int default_external_atoms[4] = {0,0,0,0};
+//! Find the atoms corresponding to a named dihedral for each residue
+/*! 
+ * The dihedral can optionally span more than one residue. In that case,
+ * the optional external_atoms argument should be used with a value of 1 
+ * indicating that the corresponding atom should be outside of the 
+ * target residue.
+ */ 
+extern "C" EXPORT void
+proper_dihedral_mgr_new_dihedral(void *mgr, void *residues, size_t n, 
+    pyobject_t *name, pyobject_t *atom_names, 
+    int *external_atoms = default_external_atoms)
+{  
+    Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+    Residue **r = static_cast<Residue **>(residues);
+    size_t first_internal_atom;
+    Atom* found_atoms[4];
+    Atom* this_atom;
+    Residue* this_residue;
+    bool found;
+    try {
+        std::string sname = std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(name[0])));
+        std::cerr << "Dihedral name: " << sname << std::endl; //DELETEME
+        std::string anames[4];
+        std::cerr << "Atom names: "; //DELETEME
+        for (size_t i=0; i<4; ++i) {
+            anames[i] = std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(atom_names[i])));
+            std::cerr << anames[i] << " "; //DELETEME
+        }
+        std::cerr << std::endl; //DELETEME
+        for (first_internal_atom=0;; first_internal_atom++) {
+            if (first_internal_atom >=4)
+                throw std::runtime_error("At least one atom must be inside the target residue!");
+            if (external_atoms[first_internal_atom] == 0)
+                break;
+        }
+        std::cerr << "First internal atom: " << first_internal_atom << std::endl; //DELETEME
+            
+        for (size_t i=0; i<n; ++i) {
+            this_residue = r[i];
+            // Find the starting atom
+            found = false;
+            for (auto a: this_residue->atoms()) {
+                if (a->name() == anames[first_internal_atom]) {
+                    found=true;
+                    found_atoms[first_internal_atom] = a;
+                    //std::cerr << "Found atom " << a->name() << std::endl; //DELETEME
+                    this_atom = a;
+                    break;
+                }
+            }
+            if (!found) {
+                std::cerr << "Didn't find starting atom!" << std::endl; //DELETEME
+                continue;
+            }
+            
+            // Work backwards if necessary
+            for (size_t j=first_internal_atom; j>0; j--) {
+                found=false;
+                for (auto a: this_atom->neighbors()) {
+                    if (a->name() == anames[j-1]) {
+                        found=true;
+                        found_atoms[j-1] = a;
+                        this_atom = a;
+                        break;
+                    }
+                }
+                if (!found) {
+                    std::cerr << "1. Didn't find atom " << j-1 << ": " << anames[j-1] << std::endl; //DELETEME
+                    break;
+                }
+            }
+            if (!found) continue;
+            // ...and now work forwards
+            this_atom = found_atoms[first_internal_atom];
+            for (size_t j=first_internal_atom; j<3; j++) {
+                found=false;
+                size_t k = j+1;
+                for (auto a: this_atom->neighbors()) {
+                    if ((external_atoms[k] == 0 && a->residue() == this_residue) ||
+                        (external_atoms[k] == 1 && a->residue() != this_residue)) {
+                        if (a->name() == anames[k]) {
+                            found=true;
+                            found_atoms[k] = a;
+                            this_atom = a;
+                            break;
+                        }
+                    }
+                }
+                if (!found) {
+                    std::cerr << "2. Didn't find atom " << k << ": " << anames[k] << std::endl; //DELETEME
+                    break; 
+                }
+                
+            }
+            if (!found) continue;
+            Proper_Dihedral *d = new Proper_Dihedral(found_atoms[0], 
+                found_atoms[1], found_atoms[2], found_atoms[3], 
+                r[i], sname);
+            std::cerr << "Dihedral name " << d->name() << " residue: " << d->residue() << " " << d->residue()->name() << std::endl; //DELETEME
+            m->add_dihedral(d);
+            std::cerr << (m->get_dihedral(d->residue(), d->name()))->name() << std::endl; //DELETEME
+                
+                
+            
+            
+        } 
+    } catch (...) {
+        molc_error();
+    }
+    
+}
+
+
 extern "C" EXPORT int
 proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *names, size_t n, pyobject_t *dihedrals)
 {
@@ -225,9 +339,10 @@ proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *names, 
     try {
         Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
         Residue **r = static_cast<Residue **>(residues);
-        for (size_t i=0, found=0; i<n; ++i) {
+        for (size_t i=0; i<n; ++i) {
             try {
-                dihedrals[found++] = m->get_dihedral(r[i], std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(names[i]))));
+                dihedrals[found] = m->get_dihedral(r[i], std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(names[i]))));
+                found++;
             } catch (std::out_of_range) {
                 continue;
             }

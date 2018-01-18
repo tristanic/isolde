@@ -59,7 +59,7 @@ class _Dihedral_Mgr:
 class Proper_Dihedral_Mgr(_Dihedral_Mgr):
     
     def __init__(self, model, c_pointer=None):
-        super().__init(model, c_pointer=c_pointer)
+        super().__init__(model, c_pointer=c_pointer)
     
     def add_dihedrals(self, dihedrals):
         f = c_function('proper_dihedral_mgr_add_dihedral', 
@@ -67,8 +67,23 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
             )
         f(self.cpp_pointer, dihedrals._c_pointers, len(dihedrals))
     
-    def find_dihedrals(self, dihedral_dict):
-        pass
+    def find_dihedrals(self):
+        import json
+        with open(os.path.join(libdir, 'dictionaries', 'named_dihedrals.json'), 'r') as f:
+            dihedral_dict = json.load(f)
+        amino_acid_resnames = [a.upper() for a in dihedral_dict['aminoacids']]
+        r = self.atomic_model.residues
+        aa_residues = r[numpy.in1d(r.names, amino_acid_resnames)]
+        f = c_function('proper_dihedral_mgr_new_dihedral', args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_int)))
+        for key, data in dihedral_dict['all_protein'].items():
+            atom_names = numpy.array(data[0], string);
+            externals = numpy.array(data[1], numpy.int32);
+            k = ctypes.py_object()
+            k.value = key
+            print(aa_residues._c_pointers)
+            f(self._c_pointer, aa_residues._c_pointers, len(aa_residues), ctypes.byref(k), pointer(atom_names), pointer(externals))
+        return aa_residues    
+        
     
     def get_dihedrals(self, residues, name):
         f = c_function('proper_dihedral_mgr_get_dihedrals', args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p), ret=ctypes.c_size_t)
@@ -77,6 +92,7 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         names[:] = name
         ptrs  = numpy.empty(n, cptr)
         num_found = f(self._c_pointer, residues._c_pointers, pointer(names), n, pointer(ptrs))
+        print("Found {} dihedrals".format(num_found))
         return _proper_dihedrals(ptrs[0:num_found])
     
     @property

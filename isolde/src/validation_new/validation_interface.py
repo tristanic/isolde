@@ -187,6 +187,8 @@ class RotaValidationThreadInterface:
     def stop_thread(self):
         ct = self.change_tracker
         ct.register_change(ct.STOP)
+        self.thread.close()
+        self.thread.join()
         self.thread = None    
         
         

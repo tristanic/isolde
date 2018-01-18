@@ -2,9 +2,9 @@
     "aminoacids":   ["gly","ala","val","leu","ile","pro","phe","tyr","trp","ser","thr","cys","met","mse","lys","his","arg","asp","asn","gln","glu"],
 
     "all_protein": {
-        "omega":    ["CA-1","C-1","N","CA"],
-        "phi":      ["C-1","N","CA","C"],
-        "psi":      ["N","CA","C","N+1"]
+        "omega":    [["CA","C","N","CA"],[1,1,0,0]],
+        "phi":      [["C","N","CA","C"],[1,0,0,0]],
+        "psi":      [["N","CA","C","N"],[0,0,0,1]]
     },
 
     "gly": {
