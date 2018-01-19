@@ -1,137 +1,140 @@
 {  
-    "aminoacids":   ["gly","ala","val","leu","ile","pro","phe","tyr","trp","ser","thr","cys","met","mse","lys","his","arg","asp","asn","gln","glu"],
+    "aminoacids":   ["GLY","ALA","VAL","LEU","ILE","PRO","PHE","TYR","TRP","SER","THR","CYS","MET","MSE","LYS","HIS","ARG","ASP","ASN","GLN","GLU"],
 
     "all_protein": {
         "omega":    [["CA","C","N","CA"],[1,1,0,0]],
         "phi":      [["C","N","CA","C"],[1,0,0,0]],
         "psi":      [["N","CA","C","N"],[0,0,0,1]]
     },
+    
+    "residues": {
+    
+        "GLY": {
+            "nchi":     0
+        },
 
-    "gly": {
-        "nchi":     0
-    },
+        "ALA": {
+            "nchi":     0
+        },
 
-    "ala": {
-        "nchi":     0
-    },
+        "VAL": {
+            "nchi":     1,
+            "chi1":     ["N","CA","CB","CG1"]
+        },
 
-    "val": {
-        "nchi":     1,
-        "chi1":     ["N","CA","CB","CG1"]
-    },
+        "SER": {
+            "nchi":     1,
+            "chi1":     ["N","CA","CB","OG"]
+        },
 
-    "ser": {
-        "nchi":     1,
-        "chi1":     ["N","CA","CB","OG"]
-    },
+        "THR": {
+            "nchi":     1,
+            "chi1":     ["N","CA","CB","OG1"]
+        },
 
-    "thr": {
-        "nchi":     1,
-        "chi1":     ["N","CA","CB","OG1"]
-    },
+        "CYS": {
+            "nchi":     1,
+            "chi1":     ["N","CA","CB","SG"]
+        },
 
-    "cys": {
-        "nchi":     1,
-        "chi1":     ["N","CA","CB","SG"]
-    },
+        "ASP": {
+            "nchi":     2,
+            "chi1":     ["N","CA","CB","CG"],
+            "chi2":     ["CA","CB","CG","OD1"]
+        },
 
-    "asp": {
-        "nchi":     2,
-        "chi1":     ["N","CA","CB","CG"],
-        "chi2":     ["CA","CB","CG","OD1"]
-    },
+        "ASN": {
+            "nchi":      2,
+            "chi1":      ["N","CA","CB","CG"],
+            "chi2":      ["CA","CB","CG","OD1"]
+        },
+            
+        "LEU": {
+            "nchi":      2,
+            "chi1":     ["N","CA","CB","CG"],
+            "chi2":     ["CA","CB","CG","CD1"]
+        },
 
-    "asn": {
-        "nchi":      2,
-        "chi1":      ["N","CA","CB","CG"],
-        "chi2":      ["CA","CB","CG","OD1"]
-    },
-        
-    "leu": {
-        "nchi":      2,
-        "chi1":     ["N","CA","CB","CG"],
-        "chi2":     ["CA","CB","CG","CD1"]
-    },
+        "ILE": {
+            "nchi":      2,
+            "chi1":     ["N","CA","CB","CG1"],
+            "chi2":     ["CA","CB","CG1","CD1"]
+        },
 
-    "ile": {
-        "nchi":      2,
-        "chi1":     ["N","CA","CB","CG1"],
-        "chi2":     ["CA","CB","CG1","CD1"]
-    },
+        "PHE": {
+            "nchi":      2,
+            "chi1":     ["N","CA","CB","CG"],
+            "chi2":     ["CA","CB","CG","CD1"]
+        },
 
-    "phe": {
-        "nchi":      2,
-        "chi1":     ["N","CA","CB","CG"],
-        "chi2":     ["CA","CB","CG","CD1"]
-    },
+        "TYR": {
+            "nchi":      2,
+            "chi1":     ["N","CA","CB","CG"],
+            "chi2":     ["CA","CB","CG","CD1"]
+        },
 
-    "tyr": {
-        "nchi":      2,
-        "chi1":     ["N","CA","CB","CG"],
-        "chi2":     ["CA","CB","CG","CD1"]
-    },
+        "TRP": {
+            "nchi":      2,
+            "chi1":     ["N","CA","CB","CG"],
+            "chi2":     ["CA","CB","CG","CD1"]
+        },
 
-    "trp": {
-        "nchi":      2,
-        "chi1":     ["N","CA","CB","CG"],
-        "chi2":     ["CA","CB","CG","CD1"]
-    },
+        "HIS": {
+            "nchi":      2,
+            "chi1":      ["N","CA","CB","CG"],
+            "chi2":      ["CA","CB","CG","ND1"]
+        },
 
-    "his": {
-        "nchi":      2,
-        "chi1":      ["N","CA","CB","CG"],
-        "chi2":      ["CA","CB","CG","ND1"]
-    },
+        "GLN": {
+            "nchi":      3,
+            "chi1":      ["N","CA","CB","CG"],
+            "chi2":      ["CA","CB","CG","CD"],
+            "chi3":      ["CB","CG","CD","OE1"]
+        },
 
-    "gln": {
-        "nchi":      3,
-        "chi1":      ["N","CA","CB","CG"],
-        "chi2":      ["CA","CB","CG","CD"],
-        "chi3":      ["CB","CG","CD","OE1"]
-    },
+        "GLU": {
+            "nchi":      3,
+            "chi1":      ["N","CA","CB","CG"],
+            "chi2":      ["CA","CB","CG","CD"],
+            "chi3":      ["CB","CG","CD","OE1"]
+        },
 
-    "glu": {
-        "nchi":      3,
-        "chi1":      ["N","CA","CB","CG"],
-        "chi2":      ["CA","CB","CG","CD"],
-        "chi3":      ["CB","CG","CD","OE1"]
-    },
+        "PRO": {
+            "nchi":      3,
+            "chi1":     ["N","CA","CB","CG"],
+            "chi2":     ["CA","CB","CG","CD"],
+            "chi3":     ["CB","CG","CD","N"]
+        },
 
-    "pro": {
-        "nchi":      3,
-        "chi1":     ["N","CA","CB","CG"],
-        "chi2":     ["CA","CB","CG","CD"],
-        "chi3":     ["CB","CG","CD","N"]
-    },
+        "MET": {
+            "nchi":      3,
+            "chi1":     ["N","CA","CB","CG"],
+            "chi2":     ["CA","CB","CG","SD"],
+            "chi3":     ["CB","CG","SD","CE"]
+        },
 
-    "met": {
-        "nchi":      3,
-        "chi1":     ["N","CA","CB","CG"],
-        "chi2":     ["CA","CB","CG","SD"],
-        "chi3":     ["CB","CG","SD","CE"]
-    },
+        "MSE": {
+            "nchi":      3,
+            "chi1":      ["N","CA","CB","CG"],
+            "chi2":      ["CA","CB","CG","SE"],
+            "chi3":      ["CB","CG","SE","CE"]
+        },
 
-    "mse": {
-        "nchi":      3,
-        "chi1":      ["N","CA","CB","CG"],
-        "chi2":      ["CA","CB","CG","SE"],
-        "chi3":      ["CB","CG","SE","CE"]
-    },
+        "LYS": {
+            "nchi":      4,
+            "chi1":      ["N","CA","CB","CG"],
+            "chi2":      ["CA","CB","CG","CD"],
+            "chi3":      ["CB","CG","CD","CE"],
+            "chi4":      ["CG","CD","CE","NZ"]
+        },
 
-    "lys": {
-        "nchi":      4,
-        "chi1":      ["N","CA","CB","CG"],
-        "chi2":      ["CA","CB","CG","CD"],
-        "chi3":      ["CB","CG","CD","CE"],
-        "chi4":      ["CG","CD","CE","NZ"]
-    },
-
-    "arg": {
-        "nchi":      4,
-        "chi1":      ["N","CA","CB","CG"],
-        "chi2":      ["CA","CB","CG","CD"],
-        "chi3":      ["CB","CG","CD","NE"],
-        "chi4":      ["CG","CD","NE","CZ"]
+        "ARG": {
+            "nchi":      4,
+            "chi1":      ["N","CA","CB","CG"],
+            "chi2":      ["CA","CB","CG","CD"],
+            "chi3":      ["CB","CG","CD","NE"],
+            "chi4":      ["CG","CD","NE","CZ"]
+        }
     }
         
 }

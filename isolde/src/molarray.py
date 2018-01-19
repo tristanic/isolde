@@ -45,3 +45,5 @@ class Proper_Dihedrals(Collection):
     
     names = cvec_property('proper_dihedral_name', string, read_only=True)
     angles = cvec_property('proper_dihedral_angle', float32, read_only=True)
+    residues = cvec_property('proper_dihedral_residue', cptr, astype=_residues, read_only=True,
+        doc='Returns a :class:`Residues` giving the parent residue of each dihedral. Read only')

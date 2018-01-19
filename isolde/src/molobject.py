@@ -67,38 +67,121 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
             )
         f(self.cpp_pointer, dihedrals._c_pointers, len(dihedrals))
     
-    def find_dihedrals(self):
+    def _load_dict(self):
         import json
         with open(os.path.join(libdir, 'dictionaries', 'named_dihedrals.json'), 'r') as f:
-            dihedral_dict = json.load(f)
-        amino_acid_resnames = [a.upper() for a in dihedral_dict['aminoacids']]
+            dd = self._dihedral_dict = json.load(f)
+        aa_resnames = dd['aminoacids']
+        # Copy the definitions common to all amino acids to each individual
+        # entry for easier lookup later
+        rd = dd['residues']
+        for aa_key in aa_resnames:
+            for bd_key, data in dd['all_protein'].items():
+                rd[aa_key][bd_key] = data
+        f = c_function('proper_dihedral_mgr_add_dihedral_def', 
+                        args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                        ctypes.POINTER(ctypes.c_bool)))
+        
+        for res_key, res_data in rd.items():
+            for d_key, d_data in res_data.items():
+                externals = numpy.zeros(4, numpy.bool) 
+                if type(d_data) == list and type(d_data[1]) == list:
+                    externals = numpy.array(d_data[1]).astype(numpy.bool)
+                    d_data = d_data[0]
+                elif type(d_data) != list:
+                    continue
+                rk = ctypes.py_object()
+                rk.value = res_key
+                dk = ctypes.py_object()
+                dk.value = d_key
+                anames = numpy.array(d_data).astype(string)
+                f(self._c_pointer, ctypes.byref(rk), ctypes.byref(dk), 
+                    pointer(anames), pointer(externals))
+                        
+        
+        
+    
+    def find_dihedrals(self):
+        dihedral_dict = self._dihedral_dict
+        amino_acid_resnames = dihedral_dict['aminoacids']
         r = self.atomic_model.residues
         aa_residues = r[numpy.in1d(r.names, amino_acid_resnames)]
-        f = c_function('proper_dihedral_mgr_new_dihedral', args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_int)))
+        self._find_peptide_backbone_dihedrals(dihedral_dict, aa_residues)
+        self._find_rotameric_dihedrals(dihedral_dict, amino_acid_resnames, aa_residues)
+    
+    def _find_peptide_backbone_dihedrals(self, dihedral_dict, aa_residues):
+        f = c_function('proper_dihedral_mgr_new_multi_residue_dihedral', args=(   
+                        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, 
+                        ctypes.c_void_p, ctypes.c_void_p, 
+                        ctypes.POINTER(ctypes.c_int)))
         for key, data in dihedral_dict['all_protein'].items():
             atom_names = numpy.array(data[0], string);
             externals = numpy.array(data[1], numpy.int32);
             k = ctypes.py_object()
             k.value = key
-            print(aa_residues._c_pointers)
-            f(self._c_pointer, aa_residues._c_pointers, len(aa_residues), ctypes.byref(k), pointer(atom_names), pointer(externals))
-        return aa_residues    
+            
+            f(self._c_pointer, aa_residues._c_pointers, len(aa_residues), 
+                ctypes.byref(k), pointer(atom_names), pointer(externals))
+            
+    def _find_rotameric_dihedrals(self, dihedral_dict, amino_acid_resnames, all_aa_residues):
+        f = c_function('proper_dihedral_mgr_new_single_residue_dihedral', args=(   
+                        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, 
+                        ctypes.c_void_p, ctypes.c_void_p))
+        res_dict = dihedral_dict['residues']
+        for aa in amino_acid_resnames:
+            data = res_dict[aa]
+            nchi = data['nchi']
+            aa_residues = all_aa_residues[all_aa_residues.names == aa]
+            for i in range(nchi):
+                key = 'chi'+str(i+1)
+                atom_names = numpy.array(data[key], string)
+                k = ctypes.py_object()
+                k.value = key
+                f(self._c_pointer, aa_residues._c_pointers, len(aa_residues), 
+                    ctypes.byref(k), pointer(atom_names))
+                
         
     
-    def get_dihedrals(self, residues, name):
-        f = c_function('proper_dihedral_mgr_get_dihedrals', args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p), ret=ctypes.c_size_t)
+    
+    def get_dihedrals(self, residues, name, create = True):
+        '''
+        Returns a :class:`Proper_Dihedrals` providing the named dihedral
+        (where it exists) for every residue in residues. The resulting 
+        array will be in the same order as residues, but may be shorter.
+        Args:
+            residues:
+                A :class:`Residues` object
+            name:
+                Name of the desired dihedral
+            create (default = True):
+                If a dihedral is not found, try to create it.
+        '''
+        f = c_function('proper_dihedral_mgr_get_dihedrals', args=(
+                        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, 
+                        ctypes.c_size_t, ctypes.c_void_p, ctypes.c_bool), 
+                        ret=ctypes.c_size_t)
         n = len(residues)
-        names = numpy.empty(n, string)
-        names[:] = name
+        key = ctypes.py_object()
+        key.value = name
+        #~ names = numpy.empty(n, string)
+        #~ names[:] = name
         ptrs  = numpy.empty(n, cptr)
-        num_found = f(self._c_pointer, residues._c_pointers, pointer(names), n, pointer(ptrs))
-        print("Found {} dihedrals".format(num_found))
+        num_found = f(self._c_pointer, residues._c_pointers, ctypes.byref(key), n, pointer(ptrs), create)
         return _proper_dihedrals(ptrs[0:num_found])
     
     @property
     def num_dihedrals(self):
         f = c_function('proper_dihedral_mgr_num_dihedrals', args=(ctypes.c_void_p,), ret=ctypes.c_size_t)
         return f(self._c_pointer)
+
+    @property
+    def num_mapped_dihedrals(self):
+        f = c_function('proper_dihedral_mgr_num_mapped_dihedrals', args=(ctypes.c_void_p,), ret=ctypes.c_size_t)
+        return f(self._c_pointer)
+
+    
+    def __len__(self):
+        return self.num_dihedrals
     
 
 class Proper_Dihedral(State):
@@ -123,6 +206,7 @@ class Proper_Dihedral(State):
     
     name = c_property('proper_dihedral_name', string, read_only = True, doc = 'Name of this dihedral. Read only.')
     angle = c_property('proper_dihedral_angle', float32, read_only=True, doc = 'Angle in radians. Read only.')
+    residue = c_property('proper_dihedral_residue', cptr, astype=_residue, read_only=True, doc = 'Residue this dihedral belongs to. Read only.')
 
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance
@@ -133,7 +217,7 @@ for class_obj in [Proper_Dihedral, ]:
     f = c_function(func_name, args = (ctypes.py_object,))
     f(class_obj)
     
-    func_name = cname + 'py_inst'
+    func_name = cname + '_py_inst'
     class_obj.c_ptr_to_py_inst = lambda ptr, fname=func_name: c_function(fname, 
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
     func_name = cname + '_existing_py_inst'
