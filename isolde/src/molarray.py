@@ -11,7 +11,7 @@ import ctypes
 from chimerax.core.atomic import Atom, Atoms, Residue, Residues
 
 from chimerax.core.atomic.molarray import _atoms, _atoms_or_nones, \
-        _non_null_atoms, _bonds, _pseudobond_groups, _pseudobonds, \
+        _bonds, _non_null_atoms, _pseudobond_groups, _pseudobonds, \
         _elements, _residues, _non_null_residues, _chains, \
         _non_null_chains, _atomic_structures, structure_datas, \
         _atoms_pair, _pseudobond_group_map
@@ -22,7 +22,6 @@ def _proper_dihedrals_or_nones(p):
     return [Proper_Dihedral.c_ptr_to_py_inst(ptr) if ptr else None for ptr in p]
 def _non_null_proper_dihedrals(p):
     return Proper_Dihedrals(p[p!=0])
-
 
 
 _proper_dihedrals_from_atoms = c_array_function('proper_dihedral_from_atoms', args=(cptr, cptr),
@@ -47,3 +46,9 @@ class Proper_Dihedrals(Collection):
     angles = cvec_property('proper_dihedral_angle', float32, read_only=True)
     residues = cvec_property('proper_dihedral_residue', cptr, astype=_residues, read_only=True,
         doc='Returns a :class:`Residues` giving the parent residue of each dihedral. Read only')
+    targets = cvec_property('proper_dihedral_target', float32,
+        doc='Target angles in radians. Will be automatically wrapped to (-pi,pi)')
+    spring_constants = cvec_property('proper_dihedral_spring_constant', float32,
+        doc='Spring constants for dihedral restraints in kJ/mol/radian**2.')
+    axial_bonds = cvec_property('proper_dihedral_axial_bond', cptr, astype=_bonds, read_only=True,
+        doc='Returns a :class:`Bonds` giving the axial bond for each dihedral. Read-only')

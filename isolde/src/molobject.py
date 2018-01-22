@@ -32,10 +32,12 @@ def _proper_dihedrals(p):
     return Proper_Dihedrals(p)
 def _proper_dihedral_or_none(p):
     return Proper_Dihedral.c_ptr_to_py_inst(p) if p else None
+def _bond_or_none(p):
+    return Bond.c_ptr_to_py_inst(p) if p else None
 
 class _Dihedral_Mgr:
     '''Base class. Do not instantiate directly.'''
-    def __init__(self, model, c_pointer=None):
+    def __init__(self, session, c_pointer=None):
         cname = type(self).__name__.lower()
         if c_pointer is None:
             new_func = cname + '_new'
@@ -43,7 +45,7 @@ class _Dihedral_Mgr:
         set_c_pointer(self, c_pointer)
         f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
-        self.atomic_model = model
+        self.session = session
         
 
     @property
@@ -58,8 +60,9 @@ class _Dihedral_Mgr:
 
 class Proper_Dihedral_Mgr(_Dihedral_Mgr):
     
-    def __init__(self, model, c_pointer=None):
-        super().__init__(model, c_pointer=c_pointer)
+    def __init__(self, session, c_pointer=None):
+        super().__init__(session, c_pointer=c_pointer)
+        self._load_dict()
     
     def add_dihedrals(self, dihedrals):
         f = c_function('proper_dihedral_mgr_add_dihedral', 
@@ -99,12 +102,19 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
                     pointer(anames), pointer(externals))
                         
         
+    def _reserve(self, n):
+        '''
+        Pre-allocate n spaces in the main map.
+        '''
+        f = c_function('proper_dihedral_mgr_reserve_map', args=(ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointer, n)
         
     
-    def find_dihedrals(self):
+    def find_dihedrals(self, model):
         dihedral_dict = self._dihedral_dict
         amino_acid_resnames = dihedral_dict['aminoacids']
-        r = self.atomic_model.residues
+        r = model.residues
+        self._reserve(len(r))
         aa_residues = r[numpy.in1d(r.names, amino_acid_resnames)]
         self._find_peptide_backbone_dihedrals(dihedral_dict, aa_residues)
         self._find_rotameric_dihedrals(dihedral_dict, amino_acid_resnames, aa_residues)
@@ -169,10 +179,10 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         num_found = f(self._c_pointer, residues._c_pointers, ctypes.byref(key), n, pointer(ptrs), create)
         return _proper_dihedrals(ptrs[0:num_found])
     
-    @property
-    def num_dihedrals(self):
-        f = c_function('proper_dihedral_mgr_num_dihedrals', args=(ctypes.c_void_p,), ret=ctypes.c_size_t)
-        return f(self._c_pointer)
+    #~ @property
+    #~ def num_dihedrals(self):
+        #~ f = c_function('proper_dihedral_mgr_num_dihedrals', args=(ctypes.c_void_p,), ret=ctypes.c_size_t)
+        #~ return f(self._c_pointer)
 
     @property
     def num_mapped_dihedrals(self):
@@ -181,7 +191,7 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
 
     
     def __len__(self):
-        return self.num_dihedrals
+        return self.num_mapped_dihedrals
     
 
 class Proper_Dihedral(State):
@@ -207,6 +217,13 @@ class Proper_Dihedral(State):
     name = c_property('proper_dihedral_name', string, read_only = True, doc = 'Name of this dihedral. Read only.')
     angle = c_property('proper_dihedral_angle', float32, read_only=True, doc = 'Angle in radians. Read only.')
     residue = c_property('proper_dihedral_residue', cptr, astype=_residue, read_only=True, doc = 'Residue this dihedral belongs to. Read only.')
+    target = c_property('proper_dihedral_target', float32,
+        doc='Target angle in radians. Will be automatically wrapped to (-pi,pi)')
+    spring_constant = c_property('proper_dihedral_spring_constant', float32,
+        doc='Spring constant for dihedral restraint in kJ/mol/radian**2.')
+    axial_bond = c_property('proper_dihedral_axial_bond', cptr, astype=_bond_or_none, read_only=True,
+        doc='Bond forming the axis of this dihedral. Read-only')
+
 
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance

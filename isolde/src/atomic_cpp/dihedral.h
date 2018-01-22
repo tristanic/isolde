@@ -3,6 +3,8 @@
 #define isolde_Dihedral
 
 #include <vector>
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <atomstruct/destruct.h>
 #include <atomstruct/AtomicStructure.h>
 #include <atomstruct/Atom.h>
@@ -15,6 +17,8 @@
 
 using namespace atomstruct;
 
+
+
 namespace isolde 
 {
 
@@ -26,9 +30,12 @@ namespace isolde
  * once.
  * 
  * MUST BE ALLOCATED ON THE HEAP (i.e. via Dihedral* d = new Dihedral(...))
- * to work with ChimeraX's automatic clean-up system. 
+ * to work with ChimeraX's automatic clean-up system.
+ * If you want the dihedral to be automatically deleted when any of its
+ * atoms are deleted (HIGHLY recommended!) then it should be added to a
+ * suitable Dihedral_Mgr after creation. 
  */ 
-class Dihedral: public DestructionObserver, public pyinstance::PythonInstance<Dihedral> 
+class Dihedral: public pyinstance::PythonInstance<Dihedral>
 {
 
 public:
@@ -37,19 +44,26 @@ public:
     typedef Bond* Bonds[3];
     
 private:
+    
+    
+    const double NAN_NOT_SET = std::nan("Not set");
+    const double TWO_PI = 2.0*M_PI;
+
     Atoms _atoms;
     Coords _coords;
     Bonds _bonds;
     const char* err_msg_dup_atom() const
-        {return "All atoms must be unique";}
+        {return "All atoms must be unique!";}
     const char* err_msg_multi_struct() const
-        {return "All atoms must be in the same structure";}
+        {return "All atoms must be in the same structure!";}
     const char* err_msg_no_residue() const
-        {return "This dihedral has not been attached to a residue";}
+        {return "This dihedral has not been attached to a residue!";}
     std::string _name=""; // Name of the dihedral (e.g. phi, psi, omega, ...)
     // Most dihedrals belong to specific residues by convention, but 
     // we want to leave this optional for this base case.
     Residue* _residue = nullptr; 
+    double _target_angle = NAN_NOT_SET;
+    double _spring_constant = 0;
     
 public:
     Dihedral() {} // null constructor
@@ -70,11 +84,12 @@ public:
         throw std::invalid_argument("Axial bond is only defined for a Proper_Dihedral!");
     }    
     
-    virtual void destructors_done(const std::set<void*>& destroyed) {
-        check_destroyed_atoms(destroyed);
-    }
-    virtual void check_destroyed_atoms(const std::set<void*>& destroyed);
-    const Coords& coords() const;
+    const Coords &coords() const;
+    const double &target() const {return _target_angle;} // getter
+    //! Set the target angle, automatically wrapping to (-pi,pi)
+    void set_target(const double &val) { _target_angle = remainder(val, TWO_PI); } // setter
+    const double &spring_constant() const { return _spring_constant; } // getter
+    void set_spring_constant (const double &val) {_spring_constant = val; } // setter
     
     
 

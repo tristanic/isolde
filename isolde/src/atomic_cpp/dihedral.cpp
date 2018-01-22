@@ -65,18 +65,6 @@ Residue* Dihedral::residue() const
     return _residue;
 }
 
-void
-Dihedral::check_destroyed_atoms(const std::set<void*>& destroyed)
-{
-    for (auto a: atoms()) {
-        if (destroyed.find(static_cast<void*>(a)) != destroyed.end()) {
-            delete this;
-            return;
-        }
-    }
-}
-
-
 
 Proper_Dihedral::Proper_Dihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4, Residue* owner, std::string name)
 :   Dihedral(a1, a2, a3, a4, owner, name)
