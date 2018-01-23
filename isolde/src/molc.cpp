@@ -106,17 +106,21 @@ proper_dihedral_from_atoms(void *atoms, size_t n, pyobject_t *names, void *resid
     }
 }
 
-
+/************************************************
+ *
+ * Generic dihedral functions
+ *
+ ************************************************/
 
 extern "C" EXPORT void 
-proper_dihedral_angle(void *dihedrals, size_t n, float32_t *angles)
+dihedral_angle(void *dihedrals, size_t n, float32_t *angles)
 {
     Dihedral **d = static_cast<Dihedral **>(dihedrals);
     error_wrap_array_get(d, n, &Dihedral::angle, angles);
 }
 
 extern "C" EXPORT void 
-proper_dihedral_name(void *dihedrals, size_t n, pyobject_t *names)
+dihedral_name(void *dihedrals, size_t n, pyobject_t *names)
 {
     Dihedral **d = static_cast<Dihedral **>(dihedrals);
     try {
@@ -126,6 +130,28 @@ proper_dihedral_name(void *dihedrals, size_t n, pyobject_t *names)
         molc_error();
     }
 }
+
+extern "C" EXPORT void
+dihedral_atoms(void *dihedrals, size_t n, pyobject_t *atoms)
+{
+    Dihedral **d = static_cast<Dihedral **>(dihedrals);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            const Dihedral::Atoms &a = d[i]->atoms();
+            for (auto ta: a) {
+                *atoms++ = ta;
+            }
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+ /**************************************************
+  * 
+  * Proper_Dihedral functions
+  * 
+  **************************************************/
 
 extern "C" EXPORT void
 proper_dihedral_axial_bond(void *dihedrals, size_t n, pyobject_t *bonds)
@@ -162,7 +188,6 @@ set_proper_dihedral_spring_constant(void * dihedrals, size_t n, float32_t *vals)
     error_wrap_array_set(d, n, &Dihedral::set_spring_constant, vals);
 }
     
-
 extern "C" EXPORT void proper_dihedral_residue(void *dihedrals, size_t n, pyobject_t *resp)
 {
     Dihedral **d = static_cast<Dihedral **>(dihedrals);
@@ -170,18 +195,12 @@ extern "C" EXPORT void proper_dihedral_residue(void *dihedrals, size_t n, pyobje
 }
 
 
-//~ extern "C" EXPORT void 
-//~ set_dihedral_name(void *dihedrals, size_t n, pyobject_t *names)
-//~ {
-    //~ Dihedral **d = static_cast<Dihedral **>(dihedrals);
-    //~ try {
-        //~ for (size_t i=0; i<n; ++i)
-            //~ d[i]->set_name(std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(names[i]))));
-    //~ } catch (...) {
-        //~ molc_error();
-    //~ }
-//~ }
 
+ /*************************************
+  * 
+  * Proper_Dihedral_Mgr functions
+  * 
+  *************************************/
 
 typedef Dihedral_Mgr<Proper_Dihedral> Proper_Dihedral_Mgr;
 
@@ -194,7 +213,6 @@ extern "C" EXPORT void set_proper_dihedral_mgr_py_instance(void* mgr, PyObject* 
         molc_error();
     }
 }
-
 
 extern "C" EXPORT PyObject* proper_dihedral_mgr_py_inst(void* ptr)
 {
@@ -218,11 +236,6 @@ extern "C" EXPORT PyObject* proper_dihedral_mgr_existing_py_inst(void* ptr)
     }
 }
 
-
-
-
-
-
 extern "C" EXPORT void*
 proper_dihedral_mgr_new()
 {
@@ -239,13 +252,29 @@ proper_dihedral_mgr_new()
 extern "C" EXPORT void
 proper_dihedral_mgr_delete(void *mgr)
 {
+    Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
     try {
-        Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
         delete m;
     } catch (...) {
         molc_error();
     }
 }
+
+extern "C" EXPORT void
+proper_dihedral_mgr_delete_dihedral(void *mgr, size_t n, void *dihedrals)
+{
+    Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+    Dihedral **d = static_cast<Dihedral **>(dihedrals);
+    try {
+        std::vector<Dihedral *> delete_list;
+        for (size_t i=0; i<n; ++i) {
+            delete_list.push_back(d[i]);
+        }
+        m->delete_dihedrals(delete_list);
+    }
+    
+}
+
 
 extern "C" EXPORT void
 proper_dihedral_mgr_add_dihedral_def(void *mgr, pyobject_t *rname, 
@@ -371,11 +400,7 @@ proper_dihedral_mgr_new_multi_residue_dihedral(void *mgr, void *residues, size_t
     int *external_atoms = default_external_atoms)
 {  
     Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
-    
-    //~ // Optimisation to avoid repeated rehashing when adding lots of dihedrals
-    //~ size_t current_size = m->size();
-    //~ m->reserve(current_size+n);
-    
+        
     Residue **r = static_cast<Residue **>(residues);
     size_t first_internal_atom;
     try {
@@ -445,18 +470,6 @@ proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *name, s
         return 0;
     }
 }
-
-//~ extern "C" EXPORT int
-//~ proper_dihedral_mgr_num_dihedrals(void *mgr)
-//~ {
-    //~ try {
-        //~ Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
-        //~ return m->num_dihedrals();
-    //~ } catch (...) {
-        //~ molc_error();
-        //~ return 0;
-    //~ }
-//~ }
         
 extern "C" EXPORT int
 proper_dihedral_mgr_num_mapped_dihedrals(void *mgr)

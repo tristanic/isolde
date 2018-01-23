@@ -22,6 +22,8 @@ def _proper_dihedrals_or_nones(p):
     return [Proper_Dihedral.c_ptr_to_py_inst(ptr) if ptr else None for ptr in p]
 def _non_null_proper_dihedrals(p):
     return Proper_Dihedrals(p[p!=0])
+def _atoms_four_tuple(p):
+    return tuple((Atoms(p[:,i].copy()) for i in range(4)))
 
 
 _proper_dihedrals_from_atoms = c_array_function('proper_dihedral_from_atoms', args=(cptr, cptr),
@@ -37,13 +39,35 @@ def proper_dihedrals_from_atoms(atoms, residues, name):
     #d.names = name
     return d
 
-class Proper_Dihedrals(Collection):
+class _Dihedrals(Collection):
+    '''
+    Base class for Proper_Dihedrals and Improper_Dihedrals. Do not 
+    instantiate directly.
+    '''
     
-    def __init__(self, d_pointers = None):
-        Collection.__init__(self, d_pointers, Proper_Dihedral, Proper_Dihedrals)
+    def __init__(self, c_pointers, single_class, array_class):
+        super().__init__(c_pointers, single_class, array_class)
     
-    names = cvec_property('proper_dihedral_name', string, read_only=True)
-    angles = cvec_property('proper_dihedral_angle', float32, read_only=True)
+    atoms = cvec_property('dihedral_atoms', cptr, 4, astype=_atoms_four_tuple, read_only=True, 
+        doc = '''
+        Returns a four-tuple of :class:`Atoms` objects. For each dihedral,
+        its constituent atoms are in the matching position in the four
+        :class:`Atoms` collections. Read only.
+        ''')
+    angles = cvec_property('dihedral_angle', float32, read_only=True,
+        doc='Returns the angle in radians for each dihedral. Read only.')
+    names = cvec_property('dihedral_name', string, read_only=True)
+    
+
+class Proper_Dihedrals(_Dihedrals):
+    
+    def __init__(self, c_pointers = None):
+        super().__init__(c_pointers, Proper_Dihedral, Proper_Dihedrals)
+        
+    def delete(self):
+        f = c_function('proper_dihedral_mgr_delete_dihedral', 
+                args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
+    
     residues = cvec_property('proper_dihedral_residue', cptr, astype=_residues, read_only=True,
         doc='Returns a :class:`Residues` giving the parent residue of each dihedral. Read only')
     targets = cvec_property('proper_dihedral_target', float32,

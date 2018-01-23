@@ -63,6 +63,18 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
     def __init__(self, session, c_pointer=None):
         super().__init__(session, c_pointer=c_pointer)
         self._load_dict()
+        if hasattr(session, 'proper_dihedral_mgr') or not session.proper_dihedral_mgr.deleted:
+            raise RuntimeError('Session already has a proper dihedral manager!')
+        session.proper_dihedral_mgr = self
+    
+    def __delete__(self):
+        self.delete()
+        super().__delete__()
+    
+    def delete(self):
+        c_function('proper_dihedral_mgr_delete', args=(ctypes.c_void_p,))(self.cpp_pointer)
+        delattr(self.session, 'proper_dihedral_mgr')
+    
     
     def add_dihedrals(self, dihedrals):
         f = c_function('proper_dihedral_mgr_add_dihedral', 
@@ -173,17 +185,10 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         n = len(residues)
         key = ctypes.py_object()
         key.value = name
-        #~ names = numpy.empty(n, string)
-        #~ names[:] = name
         ptrs  = numpy.empty(n, cptr)
         num_found = f(self._c_pointer, residues._c_pointers, ctypes.byref(key), n, pointer(ptrs), create)
         return _proper_dihedrals(ptrs[0:num_found])
     
-    #~ @property
-    #~ def num_dihedrals(self):
-        #~ f = c_function('proper_dihedral_mgr_num_dihedrals', args=(ctypes.c_void_p,), ret=ctypes.c_size_t)
-        #~ return f(self._c_pointer)
-
     @property
     def num_mapped_dihedrals(self):
         f = c_function('proper_dihedral_mgr_num_mapped_dihedrals', args=(ctypes.c_void_p,), ret=ctypes.c_size_t)
@@ -194,10 +199,14 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         return self.num_mapped_dihedrals
     
 
-class Proper_Dihedral(State):
+class _Dihedral(State):
+    '''
+    Base class for Proper_Dihedral and Improper_Dihedral classes. Do not
+    instantiate directly.
+    '''
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
-    
+
     @property
     def cpp_pointer(self):
         '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
@@ -207,15 +216,19 @@ class Proper_Dihedral(State):
     def deleted(self):
         '''Has the C++ side been deleted?'''
         return not hasattr(self, '_c_pointer')
-    
+
     def __str__(self):
         return self.name
     
     def reset_state(self):
         pass
+
+    angle = c_property('dihedral_angle', float32, read_only=True, doc = 'Angle in radians. Read only.')
+    name = c_property('dihedral_name', string, read_only = True, doc = 'Name of this dihedral. Read only.')
     
-    name = c_property('proper_dihedral_name', string, read_only = True, doc = 'Name of this dihedral. Read only.')
-    angle = c_property('proper_dihedral_angle', float32, read_only=True, doc = 'Angle in radians. Read only.')
+
+class Proper_Dihedral(_Dihedral):
+    
     residue = c_property('proper_dihedral_residue', cptr, astype=_residue, read_only=True, doc = 'Residue this dihedral belongs to. Read only.')
     target = c_property('proper_dihedral_target', float32,
         doc='Target angle in radians. Will be automatically wrapped to (-pi,pi)')

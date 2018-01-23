@@ -1,4 +1,3 @@
-
 #include "dihedral_mgr.h"
 #include <pyinstance/PythonInstance.instantiate.h>
 
@@ -14,12 +13,13 @@ template <class DType>
 Dihedral_Mgr<DType>::~Dihedral_Mgr() 
 {
     auto du = DestructionUser(this);
+    auto db = DestructionBatcher(this);
     _atom_to_dihedral_map.clear();
     for (auto &dm: _residue_map) {
-        for (auto r: dm.second)
-            delete r.second;
+        for (auto &d: dm.second)
+            delete d.second;
     }
-}
+} //~Dihedral_Mgr
 
 template <class DType>
 void Dihedral_Mgr<DType>::add_dihedral_def(const std::string &rname, 
@@ -44,7 +44,7 @@ size_t Dihedral_Mgr<DType>::num_mapped_dihedrals() const
         for (auto dm: rm.second)
             count++;
     return count;
-}
+} //num_mapped_dihedrals
 
 
 //! Add an existing dihedral to the manager.
@@ -58,8 +58,9 @@ void Dihedral_Mgr<DType>::add_dihedral(DType* d)
     
     // Atom to dihedral mappings for fast clean-up
     for (auto a: d->atoms()) {
-        auto &dvec = _atom_to_dihedral_map[a];
-        dvec.push_back(d);
+        auto &dset = _atom_to_dihedral_map[a];
+        dset.insert(d);
+        _mapped_atoms.insert(a);
     }
     
     // Add it to the Residue:name map if it has both a Residue and a name
@@ -77,22 +78,35 @@ void Dihedral_Mgr<DType>::add_dihedral(DType* d)
                 
 }//add_dihedral    
 
-
+template <class DType>
+void Dihedral_Mgr<DType>::delete_dihedrals(const std::vector<DType *> &delete_list)
+{
+    auto db = DestructionBatcher(this);
+    for (auto d: delete_list) {
+        for (auto a: d->atoms() {
+            auto &dset = _atom_to_dihedral_map.at(a);
+            dset.erase(d);
+        }
+        _residue_map.at(d->residue()).erase(d->name());
+        delete d;
+    }
+} //delete_dihedrals
 
 // Need to clear entries when Dihedral or Residue objects are deleted
-template <class DType>
+template <class DType> 
 void Dihedral_Mgr<DType>::destructors_done(const std::set<void*>& destroyed) 
 {
+    auto db = DestructionBatcher(this);
     std::set<DType *> to_delete;
-    for (auto it=_atom_to_dihedral_map.begin(); it != _atom_to_dihedral_map.end();) {
-        auto a = it->first;
+    for (auto it=_mapped_atoms.begin(); it != _mapped_atoms.end();) {
+        auto a = *it;
         if (destroyed.find(static_cast<void*>(a)) != destroyed.end()) {
-            auto &dvec = it->second;
+            auto &dvec = _atom_to_dihedral_map.at(a);
             for (auto d: dvec) {
-                _residue_map[d->residue()].erase(d->name());
                 to_delete.insert(d);
             }
-            it = _atom_to_dihedral_map.erase(it);
+            _atom_to_dihedral_map.erase(a);
+            it = _mapped_atoms.erase(it);
         } else {
             ++it;
         }
@@ -104,31 +118,10 @@ void Dihedral_Mgr<DType>::destructors_done(const std::set<void*>& destroyed)
         else
             ++it;
     }
-    for (auto it = to_delete.begin(); it != to_delete.end();) {
-        delete *it;
-        it = to_delete.erase(it);
-    }
-}
-    
-    
-    
-    
-    //~ bool delete_this;
-    //~ for (auto it=_dihedrals.begin(); it != _dihedrals.end();) {
-        //~ delete_this = false;
-        //~ auto d = *it;
-        //~ for (auto a: d->atoms()) {
-            //~ if (destroyed.find(static_cast<void*>(a)) != destroyed.end()) {
-                //~ _residue_map[d->residue()].erase(d->name());
-                //~ it = _dihedrals.erase(it);
-                //~ delete d;
-                //~ delete_this = true;
-                //~ break;
-            //~ }
-        //~ }
-        //~ if (!delete_this) ++it;
-    //~ }
-//~ }
-    
+    for (auto d: to_delete)
+        _residue_map[d->residue()].erase(d->name());
+    for (auto d: to_delete)
+        delete d;
+} //destructors_done
     
 } //namespace isolde

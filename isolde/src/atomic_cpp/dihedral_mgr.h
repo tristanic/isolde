@@ -35,7 +35,7 @@ public:
     typedef std::unordered_map<Residue*, Dmap> Rmap;
     
     // Atom_Map maps individual atoms to a vector of the dihedral(s) they belong to
-    typedef std::unordered_map<Atom*, std::vector<DType *> > Atom_Map;
+    typedef std::unordered_map<Atom*, std::set<DType *> > Atom_Map;
     
     // Nmap maps residue name and dihedral name to the dihedral definition
     typedef std::pair<std::vector<std::string>, std::vector<bool>> d_def;
@@ -52,6 +52,8 @@ public:
     size_t bucket_count() const {return _residue_map.bucket_count();}
     void reserve(const size_t &n) {_residue_map.reserve(n);}
     
+    
+    void delete_dihedrals(const std::vector<DType *> &delete_list);
     void add_dihedral(DType* d);
     // size_t num_dihedrals() const { return _dihedrals.size(); }
     size_t num_mapped_dihedrals() const;
@@ -61,7 +63,7 @@ private:
     Rmap _residue_map;
     Nmap _residue_name_map;
     Atom_Map _atom_to_dihedral_map;
-    //std::vector<DType*> _dihedrals;
+    std::set<Atom *> _mapped_atoms;
     
     
 }; //class Dihedral_Mgr;
