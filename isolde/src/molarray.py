@@ -26,18 +26,18 @@ def _atoms_four_tuple(p):
     return tuple((Atoms(p[:,i].copy()) for i in range(4)))
 
 
-_proper_dihedrals_from_atoms = c_array_function('proper_dihedral_from_atoms', args=(cptr, cptr),
-                            per_object=False)
+#~ _proper_dihedrals_from_atoms = c_array_function('proper_dihedral_from_atoms', args=(cptr, cptr),
+                            #~ per_object=False)
 
-def proper_dihedrals_from_atoms(atoms, residues, name):
-    n = len(atoms)//4
-    pointers = empty(n, cptr)
-    names = empty(n, string)
-    names[:]=name
-    _proper_dihedrals_from_atoms(atoms._c_pointers, len(atoms), pointer(names), residues._c_pointers, pointer(pointers))
-    d = Proper_Dihedrals(pointers)
-    #d.names = name
-    return d
+#~ def proper_dihedrals_from_atoms(atoms, residues, name):
+    #~ n = len(atoms)//4
+    #~ pointers = empty(n, cptr)
+    #~ names = empty(n, string)
+    #~ names[:]=name
+    #~ _proper_dihedrals_from_atoms(atoms._c_pointers, len(atoms), pointer(names), residues._c_pointers, pointer(pointers))
+    #~ d = Proper_Dihedrals(pointers)
+    #~ #d.names = name
+    #~ return d
 
 class _Dihedrals(Collection):
     '''
@@ -65,8 +65,10 @@ class Proper_Dihedrals(_Dihedrals):
         super().__init__(c_pointers, Proper_Dihedral, Proper_Dihedrals)
         
     def delete(self):
-        f = c_function('proper_dihedral_mgr_delete_dihedral', 
-                args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
+        err_string = 'Dihedrals are not in charge of their own creation '\
+            +'and deletion. Instead, use '\
+            +'session.proper_dihedrals_mgr.delete_dihedrals(dihedrals).'
+        raise RuntimeError(err_string)
     
     residues = cvec_property('proper_dihedral_residue', cptr, astype=_residues, read_only=True,
         doc='Returns a :class:`Residues` giving the parent residue of each dihedral. Read only')

@@ -74,16 +74,119 @@ void Dihedral_Mgr<DType>::add_dihedral(DType* d)
     } catch(std::runtime_error) {
         return;
     }
-
-                
-}//add_dihedral    
+} //add_dihedral
 
 template <class DType>
-void Dihedral_Mgr<DType>::delete_dihedrals(const std::vector<DType *> &delete_list)
+Proper_Dihedral* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname)
+{
+    const d_def &ddef = get_dihedral_def(res->name(), dname);
+    Atom* found_atoms[4];
+    Atom* this_atom;
+    bool found=false;
+    auto anames = ddef.first;
+    auto external = ddef.second;
+    size_t first_internal_atom = 0;
+    for (; first_internal_atom < 4; ++first_internal_atom) {
+        if (!external[first_internal_atom]) {
+            found=true;
+            break;
+        }
+    }
+    if (!found)
+        throw std::runtime_error("Unrecognised dihedral name for this residue!");
+    
+    found=false;
+    for (auto a: res->atoms()) {
+        if (a->name() == anames[first_internal_atom]) {
+            found=true;
+            found_atoms[first_internal_atom] = a;
+            this_atom = a;
+            break;
+        }
+    }
+    if (!found) return nullptr;
+    // Work backwards if necessary
+    for (size_t j=first_internal_atom; j>0; j--) {
+        found=false;
+        for (auto a: this_atom->neighbors()) {
+            if (a->name() == anames[j-1] && a->residue() != res) {
+                found=true;
+                found_atoms[j-1] = a;
+                this_atom = a;
+                break;
+            }
+        }
+        if (!found) {
+            break;
+        }
+    }
+    if (!found) return nullptr;
+    
+    // ...and now work forwards
+    this_atom = found_atoms[first_internal_atom];
+    for (size_t j=first_internal_atom; j<3; j++) {
+        found=false;
+        size_t k = j+1;
+        for (auto a: this_atom->neighbors()) {
+            if ((!external[k] && a->residue() == res) ||
+                 (external[k] && a->residue() != res)) {
+                if (a->name() == anames[k]) {
+                    found=true;
+                    found_atoms[k] = a;
+                    this_atom = a;
+                    break;
+                }
+            }
+        }
+        if (!found) {
+            break; 
+        }
+        
+    }
+    if (found) {
+        Proper_Dihedral *d = new Proper_Dihedral(found_atoms[0], 
+            found_atoms[1], found_atoms[2], found_atoms[3], 
+            res, dname);
+        add_dihedral(d);
+        return d;
+    }
+    return nullptr;
+    
+    
+    
+} //new_dihedral
+
+
+            
+template <class DType>
+DType* Dihedral_Mgr<DType>::get_dihedral(Residue *res, const std::string &name, bool create)
+{
+    d_def ddef;
+    try {
+        return _residue_map.at(res).at(name);
+    } catch (std::out_of_range) {
+        if (!create)
+            throw std::out_of_range("Dihedral not found!");
+        try {
+            ddef = get_dihedral_def(res->name(), name);
+        } catch (std::out_of_range) {
+            throw std::out_of_range("Dihedral name is invalid for this residue!");
+        }
+            
+        Proper_Dihedral *d = new_dihedral(res, name);
+        return d;
+    }
+}
+        
+
+
+
+template <class DType>
+void Dihedral_Mgr<DType>::delete_dihedrals(std::vector<DType *> &delete_list)
 {
     auto db = DestructionBatcher(this);
     for (auto d: delete_list) {
-        for (auto a: d->atoms() {
+        for (auto a: d->atoms()) {
             auto &dset = _atom_to_dihedral_map.at(a);
             dset.erase(d);
         }

@@ -18,9 +18,10 @@
 using namespace atomstruct;
 
 
-
 namespace isolde 
 {
+
+template <class DType> class Dihedral_Mgr;
 
 //! Define a dihedral by four atoms.
 /*!  

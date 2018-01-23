@@ -63,7 +63,7 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
     def __init__(self, session, c_pointer=None):
         super().__init__(session, c_pointer=c_pointer)
         self._load_dict()
-        if hasattr(session, 'proper_dihedral_mgr') or not session.proper_dihedral_mgr.deleted:
+        if hasattr(session, 'proper_dihedral_mgr') and not session.proper_dihedral_mgr.deleted:
             raise RuntimeError('Session already has a proper dihedral manager!')
         session.proper_dihedral_mgr = self
     
@@ -75,6 +75,17 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         c_function('proper_dihedral_mgr_delete', args=(ctypes.c_void_p,))(self.cpp_pointer)
         delattr(self.session, 'proper_dihedral_mgr')
     
+    def delete_dihedrals(self, dihedrals):
+        '''
+        Delete all dihedrals in a :class:`Proper_Dihedrals`. Note that
+        this will not affect the constituent atoms in any way, and 
+        should not actually be necessary in most cases. Dihedrals are
+        automatically deleted at the C++ level when their manager or 
+        any of their constituent atoms are deleted.
+        '''
+        f = c_function('proper_dihedral_mgr_delete_dihedral', 
+                args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
+        f(self.cpp_pointer, len(dihedrals), dihedrals._c_pointers)
     
     def add_dihedrals(self, dihedrals):
         f = c_function('proper_dihedral_mgr_add_dihedral', 
@@ -128,27 +139,27 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         r = model.residues
         self._reserve(len(r))
         aa_residues = r[numpy.in1d(r.names, amino_acid_resnames)]
-        self._find_peptide_backbone_dihedrals(dihedral_dict, aa_residues)
-        self._find_rotameric_dihedrals(dihedral_dict, amino_acid_resnames, aa_residues)
+        f = c_function('proper_dihedral_mgr_new_dihedral', 
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
+        self._find_peptide_backbone_dihedrals(dihedral_dict, aa_residues, f)
+        self._find_rotameric_dihedrals(dihedral_dict, amino_acid_resnames, aa_residues, f)
     
-    def _find_peptide_backbone_dihedrals(self, dihedral_dict, aa_residues):
-        f = c_function('proper_dihedral_mgr_new_multi_residue_dihedral', args=(   
-                        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, 
-                        ctypes.c_void_p, ctypes.c_void_p, 
-                        ctypes.POINTER(ctypes.c_int)))
-        for key, data in dihedral_dict['all_protein'].items():
-            atom_names = numpy.array(data[0], string);
-            externals = numpy.array(data[1], numpy.int32);
+    def _find_peptide_backbone_dihedrals(self, dihedral_dict, aa_residues, f):
+        #~ f = c_function('proper_dihedral_mgr_new_multi_residue_dihedral', args=(   
+                        #~ ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, 
+                        #~ ctypes.c_void_p, ctypes.c_void_p, 
+                        #~ ctypes.POINTER(ctypes.c_int)))
+        for key in dihedral_dict['all_protein'].keys():
             k = ctypes.py_object()
             k.value = key
             
             f(self._c_pointer, aa_residues._c_pointers, len(aa_residues), 
-                ctypes.byref(k), pointer(atom_names), pointer(externals))
+                ctypes.byref(k))
             
-    def _find_rotameric_dihedrals(self, dihedral_dict, amino_acid_resnames, all_aa_residues):
-        f = c_function('proper_dihedral_mgr_new_single_residue_dihedral', args=(   
-                        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, 
-                        ctypes.c_void_p, ctypes.c_void_p))
+    def _find_rotameric_dihedrals(self, dihedral_dict, amino_acid_resnames, all_aa_residues, f):
+        #~ f = c_function('proper_dihedral_mgr_new_single_residue_dihedral', args=(   
+                        #~ ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, 
+                        #~ ctypes.c_void_p, ctypes.c_void_p))
         res_dict = dihedral_dict['residues']
         for aa in amino_acid_resnames:
             data = res_dict[aa]
@@ -156,11 +167,10 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
             aa_residues = all_aa_residues[all_aa_residues.names == aa]
             for i in range(nchi):
                 key = 'chi'+str(i+1)
-                atom_names = numpy.array(data[key], string)
                 k = ctypes.py_object()
                 k.value = key
                 f(self._c_pointer, aa_residues._c_pointers, len(aa_residues), 
-                    ctypes.byref(k), pointer(atom_names))
+                    ctypes.byref(k))
                 
         
     
@@ -198,6 +208,44 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
     def __len__(self):
         return self.num_mapped_dihedrals
     
+class Rama_Mgr:
+    '''
+    Manager for Ramachandran scoring of protein residues. Should have only
+    one per session.
+    '''
+    def __init__(self, session, proper_dihedral_mgr):
+        if hasattr(session, 'rama_mgr'):
+            raise RuntimeError('Session already has a Ramachandran manager!')
+        session.rama_mgr = self
+        self.session = session
+        self._dihedral_mgr = proper_dihedral_mgr
+    
+    @property
+    def dihedral_manager(self):
+        return self._dihedral_mgr
+    
+    def valid_rama_residues(self, residues):
+        f = c_function('proper_dihedral_mgr_valid_rama_residues', args=(
+                        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+                        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p), 
+                        ret=ctypes.c_size_t)
+        n = len(residues)
+        r_ptrs = numpy.empty(n, cptr)
+        o_ptrs = numpy.empty(n, cptr)
+        phi_ptrs = numpy.empty(n, cptr)
+        psi_ptrs = numpy.empty(n, cptr)
+        num_found = f(self.dihedral_manager.cpp_pointer, residues._c_pointers, n, 
+            pointer(r_ptrs), pointer(o_ptrs), pointer(phi_ptrs), pointer(psi_pointers))
+        r = _residues(r_ptrs[0:num_found])
+        omega = _proper_dihedrals(o_ptrs[0:num_found])
+        phi = _proper_dihedrals(phi_ptrs[0:num_found])
+        psi = _proper_dihedrals(psi_ptrs[0:num_found])
+        return (r, omega, phi, psi)
+
+
+        
+    
+
 
 class _Dihedral(State):
     '''

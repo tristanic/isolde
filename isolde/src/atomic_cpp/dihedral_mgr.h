@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <string>
 #include <algorithm>
+#include <atomstruct/string_types.h>
 #include <atomstruct/destruct.h>
 #include <atomstruct/AtomicStructure.h>
 #include <atomstruct/Atom.h>
@@ -46,18 +47,29 @@ public:
     void add_dihedral_def(const std::string &rname, const std::string &dname, 
         const std::vector<std::string> &anames, const std::vector<bool> &externals);
     const d_def& get_dihedral_def(const std::string &rname, const std::string &dname) {
-        return _residue_name_map.at(rname).at(dname);
+        try {
+            return _residue_name_map.at(rname).at(dname);
+        } catch (std::out_of_range) {
+            throw std::out_of_range("Unrecognised dihedral def!");
+        }
     }
+    
+    const d_def& get_dihedral_def(const ResName &rname, const std::string &dname) {
+        return get_dihedral_def(std::string(rname), dname);
+    }
+    
+    //! Create and map a new dihedral from residue and definition
+    Proper_Dihedral* new_dihedral(Residue *res, const std::string &dname);
     size_t size() const {return _residue_map.size();}
     size_t bucket_count() const {return _residue_map.bucket_count();}
     void reserve(const size_t &n) {_residue_map.reserve(n);}
     
     
-    void delete_dihedrals(const std::vector<DType *> &delete_list);
+    void delete_dihedrals(std::vector<DType *> &delete_list);
     void add_dihedral(DType* d);
     // size_t num_dihedrals() const { return _dihedrals.size(); }
     size_t num_mapped_dihedrals() const;
-    DType* get_dihedral(Residue *res, const std::string &name) {return _residue_map.at(res).at(name);}
+    DType* get_dihedral(Residue *res, const std::string &name, bool create=false); 
     virtual void destructors_done(const std::set<void*>& destroyed);
 private:
     Rmap _residue_map;
