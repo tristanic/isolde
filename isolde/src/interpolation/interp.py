@@ -17,24 +17,26 @@ cvec_property = _c_functions.cvec_property
 c_function = _c_functions.c_function
 c_array_function = _c_functions.c_array_function
 
-NPY_FLOAT = numpy.float32
-FLOAT_TYPE = ctypes.c_float
+NPY_FLOAT = numpy.double
+FLOAT_TYPE = ctypes.c_double
 SIZE_TYPE = ctypes.c_size_t
+
+UINT32_TYPE = ctypes.c_uint32
 
 #c_double_p = ctypes.POINTER(ctypes.c_double)
 C_FLOAT_P = ctypes.POINTER(FLOAT_TYPE)
-SIZE_P = ctypes.POINTER(SIZE_TYPE)
+C_UINT32_P = ctypes.POINTER(UINT32_TYPE)
 
 class RegularGridInterpolator:
     '''
     A C++ implementation of n-dimensional regular grid interpolation,
     interfaced to Python using ctypes. About 5 times faster than 
     the SciPy RegularGridInterpolator for 3D data, and more compatible with 
-    threading. In particular, 
+    threading.
     '''
     
     _new_interp = c_function('rg_interp_new', 
-        args=(SIZE_TYPE, SIZE_P, C_FLOAT_P, C_FLOAT_P, C_FLOAT_P), ret = ctypes.c_void_p)
+        args=(SIZE_TYPE, C_UINT32_P, C_FLOAT_P, C_FLOAT_P, C_FLOAT_P), ret = ctypes.c_void_p)
     _interpolate = c_function('rg_interpolate',
         args=(ctypes.c_void_p, C_FLOAT_P, SIZE_TYPE, C_FLOAT_P))
     _delete = c_function('rg_interp_delete', args=(ctypes.c_void_p,))
@@ -42,7 +44,7 @@ class RegularGridInterpolator:
     _min = c_function('rg_interp_min', args=(ctypes.c_void_p, C_FLOAT_P))
     _max = c_function('rg_interp_max', args=(ctypes.c_void_p, C_FLOAT_P))
     _values = c_function('rg_interp_values', args=(ctypes.c_void_p, C_FLOAT_P))
-    _axis_lengths = c_function('rg_interp_lengths', args=(ctypes.c_void_p, SIZE_P))
+    _axis_lengths = c_function('rg_interp_lengths', args=(ctypes.c_void_p, C_UINT32_P))
     _copy = c_function('rg_interp_copy', args=(ctypes.c_void_p, ))
     def __init__(self, dim, axis_lengths, min_vals, max_vals, grid_data):
         '''
@@ -62,11 +64,12 @@ class RegularGridInterpolator:
                 A n-dimensional numpy float array of the given dimensions,
                 containing all the gridded data.
         '''
+        axis_lengths = convert_and_sanitize_numpy_array(axis_lengths, numpy.uint32)
         min_vals = convert_and_sanitize_numpy_array(min_vals, NPY_FLOAT)
         max_vals = convert_and_sanitize_numpy_array(max_vals, NPY_FLOAT)
         grid_data = convert_and_sanitize_numpy_array(grid_data, NPY_FLOAT)
         
-        self._c_pointer = self._new_interp(dim, axis_lengths.ctypes.data_as(SIZE_P), 
+        self._c_pointer = self._new_interp(dim, axis_lengths.ctypes.data_as(C_UINT32_P), 
             min_vals.ctypes.data_as(C_FLOAT_P), max_vals.ctypes.data_as(C_FLOAT_P), 
             grid_data.ctypes.data_as(C_FLOAT_P))
         
@@ -92,8 +95,8 @@ class RegularGridInterpolator:
     
     @property
     def axis_lengths(self):
-        ret = numpy.empty(self.dim, numpy.int)
-        self._axis_lengths(self._c_pointer, ret.ctypes.data_as(SIZE_P))
+        ret = numpy.empty(self.dim, numpy.uint32)
+        self._axis_lengths(self._c_pointer, ret.ctypes.data_as(C_UINT32_P))
         return ret
     
     @property

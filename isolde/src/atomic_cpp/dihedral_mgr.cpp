@@ -76,24 +76,19 @@ void Dihedral_Mgr<DType>::add_dihedral(DType* d)
     }
 } //add_dihedral
 
+//! Attempt to create a new dihedral for the given residue and parameters
+/*! If successful, adds the dihedral to the Dihedral_Mgr internal mapping,
+ *  and returns a pointer to the dihedral. If any dihedral atoms can't be
+ *  found, returns nullptr.
+ */
 template <class DType>
-Proper_Dihedral* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname)
+DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname, 
+    const std::vector<std::string> &anames, const std::vector<bool> &external,
+    const size_t &first_internal_atom)
 {
-    const d_def &ddef = get_dihedral_def(res->name(), dname);
     Atom* found_atoms[4];
     Atom* this_atom;
     bool found=false;
-    auto anames = ddef.first;
-    auto external = ddef.second;
-    size_t first_internal_atom = 0;
-    for (; first_internal_atom < 4; ++first_internal_atom) {
-        if (!external[first_internal_atom]) {
-            found=true;
-            break;
-        }
-    }
-    if (!found)
-        throw std::runtime_error("Unrecognised dihedral name for this residue!");
     
     found=false;
     for (auto a: res->atoms()) {
@@ -105,6 +100,7 @@ Proper_Dihedral* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::stri
         }
     }
     if (!found) return nullptr;
+    
     // Work backwards if necessary
     for (size_t j=first_internal_atom; j>0; j--) {
         found=false;
@@ -140,20 +136,45 @@ Proper_Dihedral* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::stri
         }
         if (!found) {
             break; 
-        }
-        
+        }        
     }
     if (found) {
-        Proper_Dihedral *d = new Proper_Dihedral(found_atoms[0], 
+        DType *d = new DType(found_atoms[0], 
             found_atoms[1], found_atoms[2], found_atoms[3], 
             res, dname);
         add_dihedral(d);
         return d;
     }
     return nullptr;
+} //new_dihedral
+
+//! Attempt to create a new dihedral for the given residue and name
+/*! The <residue name, dihedral name> pair must already exist in the 
+ *  manager's dihedral definition dict, otherwise an error will be 
+ *  returned. 
+ *  If successful, adds the dihedral to the Dihedral_Mgr internal mapping,
+ *  and returns a pointer to the dihedral. If any dihedral atoms can't be
+ *  found, returns nullptr.
+ */
+template <class DType>
+DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname)
+{
+    const d_def &ddef = get_dihedral_def(res->name(), dname);
+    bool found=false;
+    const auto &anames = ddef.first;
+    const auto &external = ddef.second;
+    size_t first_internal_atom = 0;
+    for (; first_internal_atom < 4; ++first_internal_atom) {
+        if (!external[first_internal_atom]) {
+            found=true;
+            break;
+        }
+    }
+    if (!found)
+        throw std::out_of_range("Unrecognised dihedral name for this residue!");
     
-    
-    
+    return new_dihedral(res, dname, anames, external, first_internal_atom);
+
 } //new_dihedral
 
 
@@ -173,7 +194,7 @@ DType* Dihedral_Mgr<DType>::get_dihedral(Residue *res, const std::string &name, 
             throw std::out_of_range("Dihedral name is invalid for this residue!");
         }
             
-        Proper_Dihedral *d = new_dihedral(res, name);
+        DType *d = new_dihedral(res, name);
         return d;
     }
 }

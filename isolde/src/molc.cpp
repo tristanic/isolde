@@ -34,6 +34,7 @@
 #include "atomic_cpp/dihedral_mgr.h"
 #include "geometry/geometry.h"
 #include "interpolation/nd_interp.h"
+#include "validation_new/rama.h"
 
 #include <functional>
 #include <map>
@@ -83,28 +84,6 @@ extern "C" EXPORT PyObject* proper_dihedral_existing_py_inst(void* ptr)
         return nullptr;
     }
 }
-
-
-//~ extern "C" EXPORT void 
-//~ proper_dihedral_from_atoms(void *atoms, size_t n, pyobject_t *names, void *residues, pyobject_t *dihedrals)
-//~ {
-    //~ // n must be divisible by 4
-    //~ try {
-        //~ if ((n % 4) != 0) {
-            //~ throw std::invalid_argument("Number of atoms must be a multiple of 4");
-        //~ }
-        //~ Atom **a = static_cast<Atom **>(atoms);
-        //~ Residue **r = static_cast<Residue **>(residues);
-        //~ for (size_t i=0, j=0; i<n; i+=4, j++) {
-            //~ Proper_Dihedral* d = new Proper_Dihedral(a[i], a[i+1], a[i+2], a[i+3], r[j],
-                //~ std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(names[j]))));
-            //~ //d->set_name(std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(names[j]))));
-            //~ dihedrals[j] = d;
-        //~ }
-    //~ } catch (...) {
-        //~ molc_error();
-    //~ }
-//~ }
 
 /************************************************
  *
@@ -202,7 +181,7 @@ extern "C" EXPORT void proper_dihedral_residue(void *dihedrals, size_t n, pyobje
   * 
   *************************************/
 
-typedef Dihedral_Mgr<Proper_Dihedral> Proper_Dihedral_Mgr;
+//typedef Dihedral_Mgr<Proper_Dihedral> Proper_Dihedral_Mgr;
 
 extern "C" EXPORT void set_proper_dihedral_mgr_py_instance(void* mgr, PyObject* py_inst)
 {
@@ -323,13 +302,6 @@ proper_dihedral_mgr_reserve_map(void *mgr, size_t n)
     }
 }
 
-//! Find the atoms corresponding to a named dihedral for each residue
-/*! 
- * The dihedral can optionally span more than one residue. In that case,
- * the optional external_atoms argument should be used with a value of 1 
- * indicating that the corresponding atom should be outside of the 
- * target residue.
- */ 
 extern "C" EXPORT void
 proper_dihedral_mgr_new_dihedral(void *mgr, void*residues, size_t n, pyobject_t *name) 
 {
@@ -391,19 +363,20 @@ proper_dihedral_mgr_valid_rama_residues(void *mgr, void *in_residues, size_t n,
     Residue **r = static_cast<Residue **>(in_residues);
     try {
         for (size_t i=0; i<n; ++i) {
+            found_all=true;
             for(size_t j=0; j<3; ++j) {
                 Proper_Dihedral *d = m->get_dihedral(r[i], RAMA_DIHEDRAL_NAMES[j], true);
                 if (d == nullptr) {
                     found_all = false;
                     break;
                 }
-                found_dihedrals[i] = d;
+                found_dihedrals[j] = d;
             }
             if (found_all) {
-                out_residues[i] = r[i];
-                omega[i] = found_dihedrals[0];
-                phi[i] = found_dihedrals[1];
-                psi[i] = found_dihedrals[2];
+                out_residues[found] = r[i];
+                omega[found] = found_dihedrals[0];
+                phi[found] = found_dihedrals[1];
+                psi[found] = found_dihedrals[2];
                 found++;
             }
         }
@@ -414,5 +387,111 @@ proper_dihedral_mgr_valid_rama_residues(void *mgr, void *in_residues, size_t n,
     }
 } //proper_dihedral_mgr_valid_rama_residues
                     
-            
+
+/**********************************************************************
+ * 
+ * Rama_Mgr
+ * 
+ **********************************************************************/
+
+extern "C" EXPORT void set_rama_mgr_py_instance(void* mgr, PyObject* py_inst)
+{
+    Rama_Mgr *d = static_cast<Rama_Mgr *>(mgr);
+    try {
+        d->set_py_instance(py_inst);
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT PyObject* rama_mgr_py_inst(void* ptr)
+{
+    Rama_Mgr *d = static_cast<Rama_Mgr *>(ptr);
+    try {
+        return d->py_instance(true);
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+}
+
+extern "C" EXPORT PyObject* rama_mgr_existing_py_inst(void* ptr)
+{
+    Rama_Mgr *d = static_cast<Rama_Mgr *>(ptr);
+    try {
+        return d->py_instance(false);
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+}
+
+
+extern "C" EXPORT void*
+rama_mgr_new()
+{
+    Rama_Mgr *mgr = new Rama_Mgr();
+    try {
+        return mgr;
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+}
+
+extern "C" EXPORT void
+rama_mgr_delete(void *mgr)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    try {
+        delete m;
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+rama_mgr_add_interpolator(void *mgr, size_t r_case, size_t dim, 
+    uint32_t *n, double *min, double *max, double *data)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    try {
+        m->add_interpolator(r_case, dim, n, min, max, data);
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+rama_mgr_rama_cases(void *mgr, void *omega, void *psi,
+    size_t n, uint8_t *cases)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    Dihedral **o = static_cast<Dihedral **>(omega);
+    Dihedral **q = static_cast<Dihedral **>(psi);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *cases++ = m->rama_case(*o++, *q++);
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+rama_mgr_validate(void *mgr, void *residue, void *omega, void *phi,
+    void *psi, uint8_t *r_case, size_t n, double *scores)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    Residue **r = static_cast<Residue **>(residue);
+    Dihedral **o = static_cast<Dihedral **>(omega);
+    Dihedral **p = static_cast<Dihedral **>(phi);
+    Dihedral **q = static_cast<Dihedral **>(psi);
+    try {
+        m->validate(r, o, p, q, r_case, n, scores);
+    } catch (...) {
+        molc_error();
+    }
+}
+    
 

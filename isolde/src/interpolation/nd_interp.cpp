@@ -9,9 +9,12 @@
 # define EXPORT __attribute__((__visibility__("default")))
 #endif
 
+namespace isolde
+{
+
 template <typename T>
 RegularGridInterpolator<T>::RegularGridInterpolator(const size_t& dim, 
-        size_t* n, T* min, T* max, T* data)
+        uint32_t* n, T* min, T* max, T* data)
 {
     _dim = dim;
     size_t this_n, d_count=1;
@@ -128,6 +131,16 @@ RegularGridInterpolator<T>::_interpolate1d(const std::pair<T, T> &offset, const 
 }
 
 template<typename T>
+T
+RegularGridInterpolator<T>::interpolate(T *axis_vals)
+{
+    T value[1];
+    interpolate(axis_vals, 1, value);
+    return value[0];
+}
+
+
+template<typename T>
 void 
 RegularGridInterpolator<T>::interpolate (T* axis_vals, const size_t &n, T* values)
 {
@@ -152,13 +165,17 @@ RegularGridInterpolator<T>::interpolate (T* axis_vals, const size_t &n, T* value
 //--------------------------------------------------------
 // RegularGridInterpolator
 
-typedef float fp_type;
+} //namespace isolde
+
+using namespace isolde;
+
+typedef double fp_type;
 
 extern "C"
 {
 
 EXPORT void*
-rg_interp_new(size_t dim, size_t* n, fp_type* min, fp_type* max, fp_type* data)
+rg_interp_new(size_t dim, uint32_t* n, fp_type* min, fp_type* max, fp_type* data)
 {
     try {
         return new RegularGridInterpolator<fp_type>(dim, n, min, max, data);
@@ -227,7 +244,7 @@ rg_interp_max(void* ptr, fp_type* ret)
 }
 
 EXPORT void
-rg_interp_lengths(void* ptr, size_t* ret)
+rg_interp_lengths(void* ptr, uint32_t* ret)
 {
     try {
         RegularGridInterpolator<fp_type> *rg = static_cast<RegularGridInterpolator<fp_type> *>(ptr);

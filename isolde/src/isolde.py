@@ -180,11 +180,11 @@ class Isolde():
     _map_style_settings = {
         _map_styles.mesh_square: {'style': 'mesh', 'square_mesh': True, 'transparency':0},
         _map_styles.mesh_triangle: {'style': 'mesh', 'square_mesh': False, 'transparency':0},
-        _map_styles.solid_t20: {'style': 'surface', 'transparency': 0.8},
-        _map_styles.solid_t40: {'style': 'surface', 'transparency': 0.6},
-        _map_styles.solid_t60: {'style': 'surface', 'transparency': 0.4},
-        _map_styles.solid_t80: {'style': 'surface', 'transparency': 0.2},
-        _map_styles.solid_opaque: {'style': 'surface', 'transparency': 0.0}
+        _map_styles.solid_t20: {'style': 'surface', 'transparency': 0.2},
+        _map_styles.solid_t40: {'style': 'surface', 'transparency': 0.4},
+        _map_styles.solid_t60: {'style': 'surface', 'transparency': 0.6},
+        _map_styles.solid_t80: {'style': 'surface', 'transparency': 0.8},
+        _map_styles.solid_opaque: {'style': 'surface', 'transparency': 1.0}
         }
 
 
@@ -3344,7 +3344,7 @@ class Isolde():
         #~ lighting.lighting(self.session, depth_cue=True)
         sharp_map = before_cs.xmaps['2FOFCWT_sharp, PH2FOFCWT_sharp']
         sd = sharp_map.mean_sd_rms()[1]
-        styleargs= self._map_style_settings[self._map_styles.solid_t40]
+        styleargs= self._map_style_settings[self._map_styles.solid_t20]
         from chimerax.core.map import volumecommand
         volumecommand.volume(self.session, [sharp_map], **styleargs)
         sharp_map.set_parameters(surface_levels = (2.5*sd,))

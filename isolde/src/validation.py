@@ -16,9 +16,23 @@ from time import time
 package_directory = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(package_directory, 'molprobity_data')
 
-# Load a MolProbity data set and return a SciPy RegularGridInterpolator
-# object for later fast interpolation of values
-def generate_interpolator_old(file_prefix, wrap_axes = True):
+# ----------------------------------------------------------------------
+# These values match the Rama_Mgr C++ Enum. Do not change unless you know
+# exactly what you are doing!
+CISPRO=0
+TRANSPRO = 1
+GLYCINE=2
+PREPRO=3
+ILEVAL=4
+GENERAL=5
+# ----------------------------------------------------------------------
+
+def generate_scipy_interpolator(file_prefix, wrap_axes = True):
+    '''
+    (Deprecated - use generate_interpolator() instead)
+    Load a MolProbity data set and return a SciPy RegularGridInterpolator
+    object.
+    '''
     from scipy.interpolate import RegularGridInterpolator
     import numpy, pickle
     infile = None
@@ -128,9 +142,15 @@ def generate_interpolator_old(file_prefix, wrap_axes = True):
     return RegularGridInterpolator(axis, full_grid, bounds_error = True)
 
 
-# Load a MolProbity data set and return a SciPy RegularGridInterpolator
-# object for later fast interpolation of values
 def generate_interpolator(file_prefix, wrap_axes = True):
+    ndim, axis_lengths, min_vals, max_vals, grid_data = generate_interpolator_data(file_prefix, wrap_axes)
+    return RegularGridInterpolator(ndim, axis_lengths, min_vals, max_vals, grid_data)
+
+def generate_interpolator_data(file_prefix, wrap_axes = True):
+    '''
+    Load a MolProbity data set and return a RegularGridInterpolator
+    object for later fast interpolation of values.
+    '''
     from .interpolation.interp import RegularGridInterpolator
     import numpy, pickle
     infile = None
@@ -203,12 +223,14 @@ def generate_interpolator(file_prefix, wrap_axes = True):
 
         grid_data[axes] = data[:,ndim]
 
-        # At this point we should have the full n-dimensional matrix, with
-        # all values not present in the text file present as zeros.
-        # Now we have to consider periodicity. Since we're just going to
-        # be doing linear interpretation, the easiest approach is to simply
-        # pad the array on all sides with the values from the opposite extreme
-        # of the relevant matrix. This can be handily done with numpy.pad
+        '''
+        At this point we should have the full n-dimensional matrix, with
+        all values not present in the text file present as zeros.
+        Now we have to consider periodicity. Since we're just going to
+        be doing linear interpretation, the easiest approach is to simply
+        pad the array on all sides with the values from the opposite extreme
+        of the relevant matrix. This can be handily done with numpy.pad
+        '''
         if wrap_axes:
             grid_data = numpy.pad(grid_data, 1, 'wrap')
 
@@ -220,33 +242,25 @@ def generate_interpolator(file_prefix, wrap_axes = True):
                 min_vals[i] = min_v - ss
                 max_vals[i] = max_v + ss
                 axis_lengths[i] += 2
-                #~ a = numpy.pad(a, 1, mode='constant')
-                #~ a[0] = fs - ss
-                #~ a[-1] = ls + ss
-                #~ axis[i] = a
-
         # Replace all zero or negative values with the minimum positive non-zero
         # value, so that we can use logs
         grid_data[grid_data<=0] = numpy.min(grid_data[grid_data > 0])
         # Finally, convert the axes to radians
-        from math import pi
-        #~ axis = numpy.array(axis)
-        #~ axis = axis/180*pi
+        min_vals = numpy.radians(numpy.array(min_vals, numpy.double))
+        max_vals = numpy.radians(numpy.array(max_vals, numpy.double))
 
         # Pickle a tuple containing the axes and grid for fast loading in
         # future runs
 
         outfile = open(file_prefix+'.pickle', 'w+b')
         axis_lengths = numpy.array(axis_lengths, numpy.int)
-        min_vals = numpy.radians(numpy.array(min_vals, numpy.double))
-        max_vals = numpy.radians(numpy.array(max_vals, numpy.double))
         
         
         pickle.dump((ndim, axis_lengths, min_vals, max_vals, grid_data), outfile)
         #~ pickle.dump((axis, full_grid), outfile)
         outfile.close()
-
-    return RegularGridInterpolator(ndim, axis_lengths, min_vals, max_vals, grid_data)
+    return (ndim, axis_lengths, min_vals, max_vals, grid_data)
+        
 
 
 # Master list of Ramachandran case keys. As well as the official ones, we'll

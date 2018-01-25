@@ -10,41 +10,31 @@
 #include <iostream>
 #include "../molc.h"
 
+namespace isolde
+{
+
 template <typename T>
 class RegularGridInterpolator
 {
 
 public:
-    RegularGridInterpolator(); // null constructor
+    RegularGridInterpolator() {} // null constructor
     ~RegularGridInterpolator() {} // destructor
     //! Construct a RegularGridInterpolator object for the given data
     /*!
      * This implementation requires one data value for every grid point
      * dim: the number of dimensions
-     * n:   the number of posize_ts in each dimension
+     * n:   the number of points in each dimension
      * min: the minimum axis value for each dimension
      * max: the maximum axis value for each dimension
      * data: the actual data to be interpolated (must match the dimensions
      *       defined by the previous arguments)
      */
-    RegularGridInterpolator(const size_t &dim, size_t* n, T* min, T* max, T* data);
+    RegularGridInterpolator(const size_t &dim, uint32_t* n, T* min, T* max, T* data);
     
-    
-    //! Construct a RegularGridInterpolator object for the given data
-    /*!
-     * This implementation creates a sparse n-dimensional matrix 
-     * to reduce memory usage for large arrays with lots of zero values.
-     * dim: the number of dimensions
-     * n:   the number of posize_ts in each dimension
-     * min: the minimum axis value for each dimension
-     * max: the maximum axis value for each dimension
-     * data_coords: the (x1,x2,x3,...,xn) coordinates for each point in data
-     * data: the actual data to be interpolated (must match the number
-     *       of coordinates in data_coords)
-     */
-    RegularGridInterpolator(const size_t &dim, size_t* n, T* min, T* max, T* data_coords, T* data);
-    
-    
+    //! Interpolate a single point
+    T interpolate(T *axis_vals);
+    //! Interpolate n points
     void interpolate(T* axis_vals, const size_t &n, T* values);
     const std::vector<T> &min() const {return _min;}
     const std::vector<T> &max() const {return _max;}
@@ -78,5 +68,8 @@ private:
     
 }; //RegularGridInterpolator
 
+template class RegularGridInterpolator<double>;
+
+} //namespace isolde
 
 #endif // ND_GRID_INTERP

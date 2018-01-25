@@ -59,7 +59,10 @@ public:
     }
     
     //! Create and map a new dihedral from residue and definition
-    Proper_Dihedral* new_dihedral(Residue *res, const std::string &dname);
+    DType* new_dihedral(Residue *res, const std::string &dname);
+    DType* new_dihedral(Residue *res, const std::string &dname, 
+        const std::vector<std::string> &anames, const std::vector<bool> &external,
+        const size_t &first_internal_atom); 
     size_t size() const {return _residue_map.size();}
     size_t bucket_count() const {return _residue_map.bucket_count();}
     void reserve(const size_t &n) {_residue_map.reserve(n);}
@@ -79,6 +82,8 @@ private:
     
     
 }; //class Dihedral_Mgr;
+
+typedef Dihedral_Mgr<Proper_Dihedral> Proper_Dihedral_Mgr;
     
 } //namespace isolde
 
