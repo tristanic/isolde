@@ -83,7 +83,7 @@ template <typename T> T dihedral_angle(T p0[3], T p1[3], T p2[3], T p3[3])
 
 
 // For use with ChimeraX Point objects
-template <typename T, typename R> const R dihedral_angle(const T& p0, const T& p1, const T& p2, const T& p3)
+template <typename T, typename R> R dihedral_angle(const T& p0, const T& p1, const T& p2, const T& p3)
 {
     R b0[3];
     R b1[3];

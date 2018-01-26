@@ -37,6 +37,7 @@ public:
     void validate(Residue **residue, Dihedral **omega, Dihedral **phi, 
                   Dihedral **psi, uint8_t *r_case, const size_t &n, double *scores);
     
+    //! Score a single residue
     double validate(Residue *residue, Proper_Dihedral_Mgr *dmgr);
     
 private:

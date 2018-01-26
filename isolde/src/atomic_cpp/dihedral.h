@@ -21,8 +21,6 @@ using namespace atomstruct;
 namespace isolde 
 {
 
-template <class DType> class Dihedral_Mgr;
-
 //! Define a dihedral by four atoms.
 /*!  
  * Atoms must be provided in order, such that the central pair defines

@@ -139,6 +139,13 @@ RegularGridInterpolator<T>::interpolate(T *axis_vals)
     return value[0];
 }
 
+template<typename T>
+T
+RegularGridInterpolator<T>::interpolate(std::vector<T> axis_vals)
+{
+    return interpolate(axis_vals.data());
+}
+
 
 template<typename T>
 void 
@@ -161,6 +168,9 @@ RegularGridInterpolator<T>::interpolate (T* axis_vals, const size_t &n, T* value
     
     
 }
+
+
+template class RegularGridInterpolator<double>;
 
 //--------------------------------------------------------
 // RegularGridInterpolator

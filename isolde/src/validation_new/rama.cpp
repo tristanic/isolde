@@ -1,3 +1,5 @@
+#define PYINSTANCE_EXPORT
+
 #include "rama.h"
 #include <pyinstance/PythonInstance.instantiate.h>
 
@@ -13,7 +15,8 @@ const double Rama_Mgr::NONE_VAL = -1.0;
 
 
 void Rama_Mgr::add_interpolator(size_t r_case, 
-    const size_t &dim, uint32_t *n, double *min, double *max, double *data){
+    const size_t &dim, uint32_t *n, double *min, double *max, double *data)
+{
     _interpolators[r_case] = RegularGridInterpolator<double>(dim, n, min, max, data);
 }
 
@@ -98,10 +101,10 @@ void Rama_Mgr::validate(Residue **residue, Dihedral **omega, Dihedral **phi,
         size_t len = v.size();
         std::vector<double> case_scores(len);
         std::vector<double> angles(len*2);
-        for (size_t j=0; j<len;) {
+        for (size_t j=0, k=0; j<len;++j) {
             size_t &ind = v[j];
-            angles[j++] = phi[ind]->angle();
-            angles[j++] = psi[ind]->angle();
+            angles[k++] = phi[ind]->angle();
+            angles[k++] = psi[ind]->angle();
         }
         interpolator.interpolate(angles.data(), len, case_scores.data());
         for (size_t j=0; j<len; ++j) {

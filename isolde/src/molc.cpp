@@ -35,6 +35,7 @@
 #include "geometry/geometry.h"
 #include "interpolation/nd_interp.h"
 #include "validation_new/rama.h"
+#include "validation_new/rota.h"
 
 #include <functional>
 #include <map>
@@ -54,36 +55,8 @@ using namespace isolde;
 // dihedral functions
 //
 
-extern "C" EXPORT void set_proper_dihedral_pyclass(PyObject* py_class)
-{
-    try {
-        Dihedral::set_py_class(py_class);
-    } catch (...) {
-        molc_error();
-    }
-}
-
-extern "C" EXPORT PyObject* proper_dihedral_py_inst(void* ptr)
-{
-    Dihedral *d = static_cast<Dihedral*>(ptr);
-    try {
-        return d->py_instance(true);
-    } catch (...) {
-        molc_error();
-        return nullptr;
-    }
-}
-
-extern "C" EXPORT PyObject* proper_dihedral_existing_py_inst(void* ptr)
-{
-    Dihedral *d = static_cast<Dihedral*>(ptr);
-    try {
-        return d->py_instance(false);
-    } catch (...) {
-        molc_error();
-        return nullptr;
-    }
-}
+SET_PYTHON_CLASS(proper_dihedral, Proper_Dihedral)
+GET_PYTHON_INSTANCES(proper_dihedral, Proper_Dihedral)
 
 /************************************************
  *
@@ -181,39 +154,8 @@ extern "C" EXPORT void proper_dihedral_residue(void *dihedrals, size_t n, pyobje
   * 
   *************************************/
 
-//typedef Dihedral_Mgr<Proper_Dihedral> Proper_Dihedral_Mgr;
-
-extern "C" EXPORT void set_proper_dihedral_mgr_py_instance(void* mgr, PyObject* py_inst)
-{
-    Proper_Dihedral_Mgr *d = static_cast<Proper_Dihedral_Mgr *>(mgr);
-    try {
-        d->set_py_instance(py_inst);
-    } catch (...) {
-        molc_error();
-    }
-}
-
-extern "C" EXPORT PyObject* proper_dihedral_mgr_py_inst(void* ptr)
-{
-    Proper_Dihedral_Mgr *d = static_cast<Proper_Dihedral_Mgr *>(ptr);
-    try {
-        return d->py_instance(true);
-    } catch (...) {
-        molc_error();
-        return nullptr;
-    }
-}
-
-extern "C" EXPORT PyObject* proper_dihedral_mgr_existing_py_inst(void* ptr)
-{
-    Proper_Dihedral_Mgr *d = static_cast<Proper_Dihedral_Mgr *>(ptr);
-    try {
-        return d->py_instance(false);
-    } catch (...) {
-        molc_error();
-        return nullptr;
-    }
-}
+SET_PYTHON_INSTANCE(proper_dihedral_mgr, Proper_Dihedral_Mgr)
+GET_PYTHON_INSTANCES(proper_dihedral_mgr, Proper_Dihedral_Mgr)
 
 extern "C" EXPORT void*
 proper_dihedral_mgr_new()
@@ -393,39 +335,8 @@ proper_dihedral_mgr_valid_rama_residues(void *mgr, void *in_residues, size_t n,
  * Rama_Mgr
  * 
  **********************************************************************/
-
-extern "C" EXPORT void set_rama_mgr_py_instance(void* mgr, PyObject* py_inst)
-{
-    Rama_Mgr *d = static_cast<Rama_Mgr *>(mgr);
-    try {
-        d->set_py_instance(py_inst);
-    } catch (...) {
-        molc_error();
-    }
-}
-
-extern "C" EXPORT PyObject* rama_mgr_py_inst(void* ptr)
-{
-    Rama_Mgr *d = static_cast<Rama_Mgr *>(ptr);
-    try {
-        return d->py_instance(true);
-    } catch (...) {
-        molc_error();
-        return nullptr;
-    }
-}
-
-extern "C" EXPORT PyObject* rama_mgr_existing_py_inst(void* ptr)
-{
-    Rama_Mgr *d = static_cast<Rama_Mgr *>(ptr);
-    try {
-        return d->py_instance(false);
-    } catch (...) {
-        molc_error();
-        return nullptr;
-    }
-}
-
+SET_PYTHON_INSTANCE(rama_mgr, Rama_Mgr)
+GET_PYTHON_INSTANCES(rama_mgr, Rama_Mgr)
 
 extern "C" EXPORT void*
 rama_mgr_new()
@@ -494,4 +405,32 @@ rama_mgr_validate(void *mgr, void *residue, void *omega, void *phi,
     }
 }
     
+/**************************************************************
+ * 
+ * Rota_Mgr functions
+ * 
+ **************************************************************/
+SET_PYTHON_INSTANCE(rota_mgr, Rota_Mgr)
+GET_PYTHON_INSTANCES(rota_mgr, Rota_Mgr)
 
+extern "C" EXPORT void*
+rota_mgr_new()
+{
+    Rota_Mgr *mgr = new Rota_Mgr();
+    try {
+        return mgr;
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+}
+ 
+ 
+ /*************************************************************
+  * 
+  * Rotamer functions
+  * 
+  *************************************************************/
+
+SET_PYTHON_CLASS(rotamer, Rotamer)
+GET_PYTHON_INSTANCES(rotamer, Rotamer)

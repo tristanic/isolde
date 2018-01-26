@@ -34,6 +34,8 @@ public:
     
     //! Interpolate a single point
     T interpolate(T *axis_vals);
+    //! Interpolate a single point    
+    T interpolate(std::vector<T> axis_vals);
     //! Interpolate n points
     void interpolate(T* axis_vals, const size_t &n, T* values);
     const std::vector<T> &min() const {return _min;}
@@ -68,7 +70,6 @@ private:
     
 }; //RegularGridInterpolator
 
-template class RegularGridInterpolator<double>;
 
 } //namespace isolde
 

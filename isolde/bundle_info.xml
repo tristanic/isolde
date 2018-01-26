@@ -38,6 +38,7 @@ with the surroundings.
     <SourceFile>src/atomic_cpp/dihedral_mgr.cpp</SourceFile>
     <SourceFile>src/interpolation/nd_interp.cpp</SourceFile>
     <SourceFile>src/validation_new/rama.cpp</SourceFile>
+    <SourceFile>src/validation_new/rota.cpp</SourceFile>
     <SourceFile>src/molc.cpp</SourceFile>
     <Library>OpenMM</Library>
     <Library>atomstruct</Library>

@@ -1,7 +1,8 @@
+#define PYINSTANCE_EXPORT
+
 #include "dihedral_mgr.h"
 #include <pyinstance/PythonInstance.instantiate.h>
 
-template class isolde::Dihedral_Mgr<isolde::Proper_Dihedral>;
 
 
 template class pyinstance::PythonInstance<isolde::Dihedral_Mgr<isolde::Proper_Dihedral>>;
@@ -27,13 +28,18 @@ void Dihedral_Mgr<DType>::add_dihedral_def(const std::string &rname,
     const std::vector<bool> &externals)
 {
     Amap &am = _residue_name_map[rname];
-    try {
-        d_def &dd = am.at(dname);
+    if (am.find(rname) == am.end()) {
+        am[dname] = d_def(anames, externals);
+    } else {
         throw std::runtime_error("Dihedral definition already exists!");
-    } catch (std::out_of_range) {
-        d_def dd(anames, externals);
-        am[dname] = dd;
     }
+    //~ try {
+        //~ d_def &dd = am.at(dname);
+        //~ throw std::runtime_error("Dihedral definition already exists!");
+    //~ } catch (std::out_of_range) {
+        //~ d_def dd(anames, externals);
+        //~ am[dname] = dd;
+    //~ }
 } //add_dihedral_def
 
 template <class DType>
@@ -247,5 +253,8 @@ void Dihedral_Mgr<DType>::destructors_done(const std::set<void*>& destroyed)
     for (auto d: to_delete)
         delete d;
 } //destructors_done
+
+template class Dihedral_Mgr<Proper_Dihedral>;
+
     
 } //namespace isolde

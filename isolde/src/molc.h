@@ -148,4 +148,52 @@ error_wrap_array_set(T** instances, size_t n, void (T::*pm)(Elem), Elem2* args)
     }
 }
 
+#define GET_PYTHON_INSTANCES(FNAME, CLASSNAME) \
+extern "C" EXPORT \
+PyObject* FNAME##_py_inst(void* ptr) \
+{ \
+    CLASSNAME *p = static_cast<CLASSNAME *>(ptr); \
+    try { \
+        return p->py_instance(true); \
+    } catch (...) { \
+        molc_error(); \
+        return nullptr; \
+    } \
+} \
+\
+extern "C" EXPORT \
+PyObject* FNAME##_existing_py_inst(void* ptr) \
+{ \
+    CLASSNAME *p = static_cast<CLASSNAME *>(ptr); \
+    try { \
+        return p->py_instance(false); \
+    } catch (...) { \
+        molc_error(); \
+        return nullptr; \
+    } \
+}
+
+#define SET_PYTHON_INSTANCE(FNAME, CLASSNAME) \
+extern "C" EXPORT \
+void set_##FNAME##_py_instance(void* FNAME, PyObject* py_inst) \
+{ \
+    CLASSNAME *p = static_cast<CLASSNAME *>(FNAME); \
+    try { \
+        p->set_py_instance(py_inst); \
+    } catch (...) { \
+        molc_error(); \
+    } \
+} \
+
+#define SET_PYTHON_CLASS(FNAME, CLASSNAME) \
+extern "C" EXPORT void set_##FNAME##_pyclass(PyObject* py_class) \
+{ \
+    try { \
+        CLASSNAME::set_py_class(py_class); \
+    } catch (...) { \
+        molc_error(); \
+    } \
+} \
+
+
 #endif // molc_py_interface
