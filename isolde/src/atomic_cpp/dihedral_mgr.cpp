@@ -7,11 +7,11 @@
 
 template class pyinstance::PythonInstance<isolde::Dihedral_Mgr<isolde::Proper_Dihedral>>;
 
-namespace isolde 
+namespace isolde
 {
 
 template <class DType>
-Dihedral_Mgr<DType>::~Dihedral_Mgr() 
+Dihedral_Mgr<DType>::~Dihedral_Mgr()
 {
     auto du = DestructionUser(this);
     auto db = DestructionBatcher(this);
@@ -23,8 +23,8 @@ Dihedral_Mgr<DType>::~Dihedral_Mgr()
 } //~Dihedral_Mgr
 
 template <class DType>
-void Dihedral_Mgr<DType>::add_dihedral_def(const std::string &rname, 
-    const std::string &dname, const std::vector<std::string> &anames, 
+void Dihedral_Mgr<DType>::add_dihedral_def(const std::string &rname,
+    const std::string &dname, const std::vector<std::string> &anames,
     const std::vector<bool> &externals)
 {
     Amap &am = _residue_name_map[rname];
@@ -43,12 +43,13 @@ void Dihedral_Mgr<DType>::add_dihedral_def(const std::string &rname,
 } //add_dihedral_def
 
 template <class DType>
-size_t Dihedral_Mgr<DType>::num_mapped_dihedrals() const 
+size_t Dihedral_Mgr<DType>::num_mapped_dihedrals() const
 {
     size_t count = 0;
     for (auto rm: _residue_map)
-        for (auto dm: rm.second)
-            count++;
+        count += rm.second.size();
+        // for (auto dm: rm.second)
+        //     count++;
     return count;
 } //num_mapped_dihedrals
 
@@ -61,14 +62,14 @@ template <class DType>
 void Dihedral_Mgr<DType>::add_dihedral(DType* d)
 {
     //~ _dihedrals.push_back(d);
-    
+
     // Atom to dihedral mappings for fast clean-up
     for (auto a: d->atoms()) {
         auto &dset = _atom_to_dihedral_map[a];
         dset.insert(d);
         _mapped_atoms.insert(a);
     }
-    
+
     // Add it to the Residue:name map if it has both a Residue and a name
     try {
         Residue* r = d->residue(); // returns an error if no residue assigned
@@ -88,14 +89,14 @@ void Dihedral_Mgr<DType>::add_dihedral(DType* d)
  *  found, returns nullptr.
  */
 template <class DType>
-DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname, 
+DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname,
     const std::vector<std::string> &anames, const std::vector<bool> &external,
     const size_t &first_internal_atom)
 {
     Atom* found_atoms[4];
     Atom* this_atom;
     bool found=false;
-    
+
     found=false;
     for (auto a: res->atoms()) {
         if (a->name() == anames[first_internal_atom]) {
@@ -106,7 +107,7 @@ DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname,
         }
     }
     if (!found) return nullptr;
-    
+
     // Work backwards if necessary
     for (size_t j=first_internal_atom; j>0; j--) {
         found=false;
@@ -123,7 +124,7 @@ DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname,
         }
     }
     if (!found) return nullptr;
-    
+
     // ...and now work forwards
     this_atom = found_atoms[first_internal_atom];
     for (size_t j=first_internal_atom; j<3; j++) {
@@ -141,12 +142,12 @@ DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname,
             }
         }
         if (!found) {
-            break; 
-        }        
+            break;
+        }
     }
     if (found) {
-        DType *d = new DType(found_atoms[0], 
-            found_atoms[1], found_atoms[2], found_atoms[3], 
+        DType *d = new DType(found_atoms[0],
+            found_atoms[1], found_atoms[2], found_atoms[3],
             res, dname);
         add_dihedral(d);
         return d;
@@ -155,9 +156,9 @@ DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname,
 } //new_dihedral
 
 //! Attempt to create a new dihedral for the given residue and name
-/*! The <residue name, dihedral name> pair must already exist in the 
- *  manager's dihedral definition dict, otherwise an error will be 
- *  returned. 
+/*! The <residue name, dihedral name> pair must already exist in the
+ *  manager's dihedral definition dict, otherwise an error will be
+ *  returned.
  *  If successful, adds the dihedral to the Dihedral_Mgr internal mapping,
  *  and returns a pointer to the dihedral. If any dihedral atoms can't be
  *  found, returns nullptr.
@@ -178,13 +179,13 @@ DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname)
     }
     if (!found)
         throw std::out_of_range("Unrecognised dihedral name for this residue!");
-    
+
     return new_dihedral(res, dname, anames, external, first_internal_atom);
 
 } //new_dihedral
 
 
-            
+
 template <class DType>
 DType* Dihedral_Mgr<DType>::get_dihedral(Residue *res, const std::string &name, bool create)
 {
@@ -199,12 +200,12 @@ DType* Dihedral_Mgr<DType>::get_dihedral(Residue *res, const std::string &name, 
         } catch (std::out_of_range) {
             throw std::out_of_range("Dihedral name is invalid for this residue!");
         }
-            
+
         DType *d = new_dihedral(res, name);
         return d;
     }
 }
-        
+
 
 
 
@@ -223,8 +224,8 @@ void Dihedral_Mgr<DType>::delete_dihedrals(std::vector<DType *> &delete_list)
 } //delete_dihedrals
 
 // Need to clear entries when Dihedral or Residue objects are deleted
-template <class DType> 
-void Dihedral_Mgr<DType>::destructors_done(const std::set<void*>& destroyed) 
+template <class DType>
+void Dihedral_Mgr<DType>::destructors_done(const std::set<void*>& destroyed)
 {
     auto db = DestructionBatcher(this);
     std::set<DType *> to_delete;
@@ -256,5 +257,5 @@ void Dihedral_Mgr<DType>::destructors_done(const std::set<void*>& destroyed)
 
 template class Dihedral_Mgr<Proper_Dihedral>;
 
-    
+
 } //namespace isolde

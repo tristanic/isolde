@@ -53,7 +53,7 @@ inline PyObject* unicode_from_character(char c)
     return unicode_from_string(buffer, 1);
 }
 
-static void
+static inline void
 molc_error()
 {
     // generic exception handler

@@ -10,19 +10,20 @@ namespace isolde
 {
 
 /**********************************************************
- * 
+ *
  * Rotamer
- * 
+ *
  **********************************************************/
-    
+
 Rotamer::Rotamer(Residue *res, Rota_Mgr *mgr): _residue(res), _mgr(mgr)
 {
     auto rname = res->name();
-    auto chi_names = mgr->get_rotamer_def(rname);
-    _n_chi = chi_names.size();
+    _def = mgr->get_rotamer_def(rname);
+    auto n_chi = _def->n_chi;
     auto dmgr = mgr->dihedral_mgr();
-    for (auto cname: chi_names) {
-        auto d = dmgr->get_dihedral(res, cname, true);
+    std::string basename("chi");
+    for (size_t i=1; i<=n_chi; ++i) {
+        auto d = dmgr->get_dihedral(res, basename + std::to_string(i), true);
         if (d==nullptr) {
             throw std::out_of_range("Rotamer is missing a dihedral!");
         }
@@ -32,21 +33,21 @@ Rotamer::Rotamer(Residue *res, Rota_Mgr *mgr): _residue(res), _mgr(mgr)
 
 void Rotamer::angles(std::vector<double> &angles)
 {
-    for (size_t i=0; i<_n_chi; ++i) {
+    for (size_t i=0; i<_def->n_chi; ++i) {
         angles[i] = _chi_dihedrals[i]->angle();
     }
 }
 
 std::vector<double> Rotamer::angles()
 {
-    std::vector<double> _angles(_n_chi);
+    std::vector<double> _angles(_def->n_chi);
     angles(_angles);
     return _angles;
 }
 
 void Rotamer::angles(double *angles)
 {
-    for (size_t i=0; i<_n_chi; ++i) {
+    for (size_t i=0; i<_def->n_chi; ++i) {
         *angles++ = _chi_dihedrals[i]->angle();
     }
 }
@@ -54,15 +55,15 @@ void Rotamer::angles(double *angles)
 double Rotamer::score()
 {
     auto interpolator = _mgr->get_interpolator(_residue->name());
-    std::vector<double> cur_angles(_n_chi);
+    std::vector<double> cur_angles(_def->n_chi);
     angles(cur_angles);
     return interpolator.interpolate(cur_angles.data());
 }
 
 /************************************************************
- * 
+ *
  * Rota_Mgr
- * 
+ *
  ************************************************************/
 
 Rota_Mgr::~Rota_Mgr()
@@ -72,26 +73,27 @@ Rota_Mgr::~Rota_Mgr()
         delete it.second;
 }
 
-void Rota_Mgr::add_rotamer_def(const std::string &resname, const std::vector<std::string> &chi_names)
+void Rota_Mgr::add_rotamer_def(const std::string &resname, size_t n_chi, bool symmetric)
 {
     if (_resname_to_rota_def.find(resname) == _resname_to_rota_def.end()) {
-        _resname_to_rota_def[resname] = chi_names;
+        Rota_Def rdef(n_chi, symmetric);
+        _resname_to_rota_def[resname] = rdef;
     } else {
         throw std::runtime_error("Rotamer definition alread exists!");
     }
 }
 
-const std::vector<std::string>& Rota_Mgr::get_rotamer_def(const std::string &resname)
+Rota_Def* Rota_Mgr::get_rotamer_def(const std::string &resname)
 {
-    return _resname_to_rota_def.at(resname);
+    return &(_resname_to_rota_def.at(resname));
 }
 
-const std::vector<std::string>& Rota_Mgr::get_rotamer_def(const ResName &resname)
+Rota_Def* Rota_Mgr::get_rotamer_def(const ResName &resname)
 {
-    return _resname_to_rota_def.at(std::string(resname));
+    return &(_resname_to_rota_def.at(std::string(resname)));
 }
 
-void Rota_Mgr::add_interpolator(const std::string &resname, const size_t &dim, 
+void Rota_Mgr::add_interpolator(const std::string &resname, const size_t &dim,
     uint32_t *n, double *min, double *max, double *data)
 {
     _interpolators[resname] = RegularGridInterpolator<double>(dim, n, min, max, data);
@@ -109,8 +111,8 @@ Rotamer* Rota_Mgr::new_rotamer(Residue* residue)
 }
 
 //! Fetch the rotamer for the current residue
-/*! 
- * If the desired rotamer is not found, an attempt will be made to 
+/*!
+ * If the desired rotamer is not found, an attempt will be made to
  * create it. NOTE: if the attempt fails, nullptr will be returned.
  */
 Rotamer* Rota_Mgr::get_rotamer(Residue* residue)
@@ -132,7 +134,7 @@ void Rota_Mgr::validate(Rotamer** rotamers, size_t n, double* scores)
     for (auto &it: case_indices) {
         std::string name = std::string(it.first);
         auto &indices = it.second;
-        size_t n_chi = get_rotamer_def(name).size();
+        size_t n_chi = get_rotamer_def(name)->n_chi;
         size_t n_rot = indices.size();
         size_t n_angles = n_rot*n_chi;
         std::vector<double> chi_angles(n_angles);
@@ -174,7 +176,7 @@ void Rota_Mgr::destructors_done(const std::set<void*>& destroyed)
         auto rot = it->second;
         del = false;
         // If a residue is deleted then any associated dihedrals will be
-        // deleted by the Dihedral_Mgr, so we only need to worry about 
+        // deleted by the Dihedral_Mgr, so we only need to worry about
         // checking for deleted dihedrals and rotamers.
         if (destroyed.find(static_cast<void *>(rot)) != destroyed.end()) {
             del=true;
@@ -191,12 +193,12 @@ void Rota_Mgr::destructors_done(const std::set<void*>& destroyed)
             it = _residue_to_rotamer.erase(it);
         } else {
             ++it;
-        }        
+        }
     }
     for (auto r: to_delete)
-        delete r;    
+        delete r;
 }
 
 
-    
+
 } //namespace isolde
