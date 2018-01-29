@@ -1,6 +1,7 @@
 
 #include "nd_interp.h"
 #include <time.h>
+#include <sstream>
 
 
 #ifdef _WIN32
@@ -60,9 +61,10 @@ RegularGridInterpolator<T>::lb_index_and_offsets(T *axis_vals, size_t &lb_index,
         const T &min = _min[axis];
         const T &value = axis_vals[axis];
         if (value <= min || value >= max) {
+            std::cerr << "Value " << value << " is outside of the range " << min << ".." << max << std::endl;
             throw std::range_error("Value outside of interpolation range!");
         }
-        size_t li = (size_t)((value-min)/_step[axis]);
+        size_t li = (size_t)floor((value-min)/_step[axis]);
         lb_index +=axis_prod*li;
         axis_prod*=_n[axis];
         const T &low = _axes[axis][li++];
@@ -91,7 +93,7 @@ RegularGridInterpolator<T>::corner_offsets()
         size_t dim_prod = 1;
         for (size_t j=0; j<_dim; ++j) {
             corner += dim_prod * ((i & (1<<j))>>j);
-            dim_prod *= _n[j];
+            dim_prod *= _n[_dim-j-1];
         }
         _corner_offsets.push_back(corner);
     }
@@ -102,6 +104,7 @@ template<typename T>
 void
 RegularGridInterpolator<T>::corner_values(const size_t &lb_index, std::vector<T> &corners)
 {
+    
     for (size_t i=0; i<_corner_offsets.size(); i++) {
         corners[i]=(_data[lb_index + _corner_offsets[i]]);
     }
@@ -160,7 +163,7 @@ RegularGridInterpolator<T>::interpolate (T* axis_vals, const size_t &n, T* value
         lb_index_and_offsets(axis_vals+i*_dim, lb_index, offsets);
         // ... and get values at all the corners surrounding the target
         // position.
-        corner_values(lb_index, corners);
+        corner_values(lb_index, corners);        
         _interpolate(_dim, corners, corners.size(), offsets, values++);
 
     }

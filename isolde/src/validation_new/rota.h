@@ -1,6 +1,7 @@
 #ifndef ISOLDE_ROTA
 #define ISOLDE_ROTA
 
+#include <string>
 #include "../atomic_cpp/dihedral.h"
 #include "../atomic_cpp/dihedral_mgr.h"
 #include "../interpolation/nd_interp.h"
@@ -36,13 +37,13 @@ public:
 
     const std::vector<Dihedral *> &dihedrals() {return _chi_dihedrals; }
     const size_t& n_chi() const { return _def->n_chi; }
-    void angles(std::vector<double> &angles);
-    void angles(double *angles);
-    std::vector<double> angles();
-    double score();
-    Residue* residue() {return _residue;}
-    Bond* ca_cb_bond() { return _chi_dihedrals[0]->axial_bond(); }
-    bool is_symmetric() {return _def->symmetric;}
+    void angles(std::vector<double> &angles) const;
+    void angles(double *angles) const;
+    std::vector<double> angles() const;
+    float32_t score() const;
+    Residue* residue() const {return _residue;}
+    Bond* ca_cb_bond() const { return _chi_dihedrals[0]->axial_bond(); }
+    bool is_symmetric() const {return _def->symmetric;}
 
 private:
     Residue* _residue;
@@ -70,10 +71,14 @@ public:
 
     void add_interpolator(const std::string &resname, const size_t &dim,
         uint32_t *n, double *min, double *max, double *data);
-    const RegularGridInterpolator<double>& get_interpolator(const std::string &resname)
-        { return _interpolators.at(resname); }
-    const RegularGridInterpolator<double>& get_interpolator(const ResName &resname)
-        {return _interpolators.at(std::string(resname)); }
+    RegularGridInterpolator<double>* get_interpolator(const std::string &resname)
+    { 
+        return &(_interpolators.at(resname)); 
+    }
+    RegularGridInterpolator<double>* get_interpolator(const ResName &resname)
+    {
+        return &(_interpolators.at(std::string(resname))); 
+    }
     Proper_Dihedral_Mgr* dihedral_mgr() { return _dmgr; }
     void validate(Rotamer** rotamers, size_t n, double* scores);
     void validate(Residue** residues, size_t n, double* scores);

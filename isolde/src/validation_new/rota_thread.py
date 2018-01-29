@@ -143,7 +143,7 @@ class RotaThread:
         
         dihedrals = geometry.get_dihedrals(coords, self.num_dihedrals)
         # Dihedral values are (-pi..pi), MolProbity tables are (0..2*pi)
-        dihedrals[dihedrals<0] += TWO_PI
+        #~ dihedrals[dihedrals<0] += TWO_PI
         
         scores = self.local_scores
         res_counts = data['residue count']

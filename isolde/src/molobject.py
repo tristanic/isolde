@@ -19,6 +19,7 @@ from numpy import uint8, int32, uint32, float64, float32, byte, bool as npy_bool
 libdir = os.path.dirname(os.path.abspath(__file__))
 libfile = glob.glob(os.path.join(libdir, 'molc.cpython*'))[0]
 DATA_DIR = os.path.join(libdir, 'molprobity_data')
+DICT_DIR = os.path.join(libdir, 'dictionaries')
 
 _c_functions = CFunctions(os.path.splitext(libfile)[0])
 c_property = _c_functions.c_property
@@ -32,8 +33,13 @@ def _asptr(arr, dtype):
 def _proper_dihedrals(p):
     from .molarray import Proper_Dihedrals
     return Proper_Dihedrals(p)
+def _rotamers(p):
+    from .molarray import Rotamers
+    return Rotamers(p)
 def _proper_dihedral_or_none(p):
     return Proper_Dihedral.c_ptr_to_py_inst(p) if p else None
+def _rotamer_or_none(p):
+    return Rotamer.c_ptr_to_py_inst(p) if p else None
 def _bond_or_none(p):
     return Bond.c_ptr_to_py_inst(p) if p else None
 
@@ -102,7 +108,7 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
 
     def _load_dict(self):
         import json
-        with open(os.path.join(libdir, 'dictionaries', 'named_dihedrals.json'), 'r') as f:
+        with open(os.path.join(DICT_DIR, 'named_dihedrals.json'), 'r') as f:
             dd = self._dihedral_dict = json.load(f)
         aa_resnames = dd['aminoacids']
         # Copy the definitions common to all amino acids to each individual
@@ -266,7 +272,7 @@ class Rama_Mgr:
             file_prefix = details['file_prefix']
             if file_prefix is not None:
                 i_data = generate_interpolator_data(file_prefix, True)
-                self.add_interpolator(case, *i_data)
+                self._add_interpolator(case, *i_data)
 
     def __init__(self, session, c_pointer=None):
         if hasattr(session, 'rama_mgr'):
@@ -303,7 +309,7 @@ class Rama_Mgr:
     def dihedral_manager(self):
         return self._dihedral_mgr
 
-    def add_interpolator(self, rama_case, ndim, axis_lengths, min_vals, max_vals, data):
+    def _add_interpolator(self, rama_case, ndim, axis_lengths, min_vals, max_vals, data):
         '''
         Create a RegularGridInterpolator for the given Ramachandran
         contours, and add it to the manager.
@@ -387,16 +393,44 @@ class Rota_Mgr:
         if not hasattr(session, 'proper_dihedral_mgr'):
             raise RuntimeError('Proper_Dihedral_Mgr must be initialised first!')
         cname = type(self).__name__.lower()
+        self._dihedral_mgr = session.proper_dihedral_mgr
         if c_pointer is None:
             new_func = cname + '_new'
-            c_pointer = c_function(new_func, ret=ctypes.c_void_p)()
+            c_pointer = c_function(new_func, args=(ctypes.c_void_p,), ret=ctypes.c_void_p)(self._dihedral_mgr._c_pointer)
         set_c_pointer(self, c_pointer)
         f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
         self.session = session
-        self._dihedral_mgr = session.proper_dihedral_mgr
         self._prepare_all_validators()
+        self._load_rotamer_defs()
         session.rota_mgr = self
+
+    @property
+    def defined_rotamers(self):
+        if not hasattr(self, '_defined_rotamer_dict') or self._defined_rotamer_dict is None:
+            self._load_rotamer_defs()
+        return self._defined_rotamer_dict
+            
+    def _load_defined_rotamers(self):
+        with open(os.path.join(DICT_DIR, 'rota_data.json'), 'r') as f:
+            self._defined_rotamer_dict = json.load(f)
+        
+    def _load_rotamer_defs(self):
+        f = c_function('rota_mgr_add_rotamer_def', 
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_bool))
+        dd = self._dihedral_mgr.dihedral_dict
+        pd = dd['residues']['protein']
+        aa_names = dd['aminoacids']
+        for aa in aa_names:
+            nchi = pd[aa]['nchi']
+            if nchi > 0:
+                symm = pd[aa]['symm']
+                key = ctypes.py_object()
+                key.value = aa
+                f(self._c_pointer, ctypes.byref(key), nchi, symm)
+                
+            
+
 
     def _prepare_all_validators(self):
         from .validation import generate_interpolator_data
@@ -404,7 +438,51 @@ class Rota_Mgr:
         prefix = os.path.join(DATA_DIR, 'rota8000-')
         for aa in dmgr.dihedral_dict['aminoacids']:
             fname = prefix + aa.lower()
+            if not os.path.isfile(fname+'.data') and not os.path.isfile(fname+'.pickle'):
+                # Not a rotameric residue
+                continue
             idata = generate_interpolator_data(fname, True)
+            self._add_interpolator(aa, *idata)
+    
+    def _add_interpolator(self, resname, ndim, axis_lengths, min_vals, max_vals, data):
+        f = c_function('rota_mgr_add_interpolator', 
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+            ctypes.POINTER(ctypes.c_uint32), ctypes.POINTER(ctypes.c_double),
+            ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double)))
+        key = ctypes.py_object()
+        key.value = resname
+        axis_lengths = axis_lengths.astype(uint32)
+        f(self._c_pointer, ctypes.byref(key), ndim, pointer(axis_lengths),
+            pointer(min_vals), pointer(max_vals), pointer(data))
+    
+    def get_rotamers(self, residues):
+        f = c_function('rota_mgr_get_rotamer',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p), 
+            ret=ctypes.c_size_t)
+        
+        n = len(residues)
+        r_ptrs = numpy.empty(n, cptr)
+        found = f(self._c_pointer, residues._c_pointers, n, pointer(r_ptrs))
+        return _rotamers(r_ptrs[0:found])
+        
+    def validate_rotamers(self, rotamers):
+        f = c_function('rota_mgr_validate_rotamer',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
+        n = len(rotamers)
+        ret = numpy.empty(n, numpy.double)
+        f(self._c_pointer, rotamers._c_pointers, n, pointer(ret))
+        return ret
+    
+    def validate_residues(self, residues):
+        f = c_function('rota_mgr_validate_residue',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
+        n = len(residues)
+        ret = numpy.empty(n, numpy.double)
+        f(self._c_pointer, residues._c_pointers, n, pointer(ret))
+        return ret
+        
+
+            
 
 class _Dihedral(State):
     '''
@@ -443,10 +521,45 @@ class Proper_Dihedral(_Dihedral):
     axial_bond = c_property('proper_dihedral_axial_bond', cptr, astype=_bond_or_none, read_only=True,
         doc='Bond forming the axis of this dihedral. Read-only')
 
+class Rotamer(State):
+    def __init__(self, c_pointer):
+        set_c_pointer(self, c_pointer)
+
+    @property
+    def cpp_pointer(self):
+        '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
+        return self._c_pointer.value
+
+    @property
+    def deleted(self):
+        '''Has the C++ side been deleted?'''
+        return not hasattr(self, '_c_pointer')
+
+    def __str__(self):
+        return "Not implemented"
+
+    def reset_state(self):
+        pass
+    
+    def angles(self):
+        f = c_function('rotamer_angles', args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double)))
+        ret = numpy.empty(self.num_chi_dihedrals, numpy.double)
+        f(self._c_pointer, pointer(ret))
+        return ret
+
+    residue = c_property('rotamer_residue', cptr, astype=_residue_or_none, read_only=True, 
+                doc='Residue this rotamer belongs to. Read only.')
+    score = c_property('rotamer_score', float32, read_only=True,
+                doc='P-value for the current conformation of this rotamer. Read only.')
+    ca_cb_bond = c_property('rotamer_ca_cb_bond', cptr, astype=_bond_or_none, read_only=True,
+                doc='The "stem" bond of this rotamer. Read only.')
+    num_chi_dihedrals = c_property('rotamer_num_chi', uint8, read_only=True,
+                doc='Number of dihedrals defining this rotamer')
+
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance
 # from the pointer (needed by Collections)
-for class_obj in [Proper_Dihedral, ]:
+for class_obj in [Proper_Dihedral, Rotamer,]:
     cname = class_obj.__name__.lower()
     func_name = 'set_' + cname + '_pyclass'
     f = c_function(func_name, args = (ctypes.py_object,))

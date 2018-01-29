@@ -75,7 +75,7 @@ double Rama_Mgr::validate(Residue *residue, Proper_Dihedral_Mgr *dmgr)
 void Rama_Mgr::validate(Residue **residue, Dihedral **omega, Dihedral **phi, 
               Dihedral **psi, uint8_t *r_case, const size_t &n, double *scores)
 {
-    std::map<uint8_t, std::vector<size_t>> case_indices;
+    std::unordered_map<uint8_t, std::vector<size_t>> case_indices;
     uint8_t this_case;
     for (size_t i=0; i<n; ++i) {
         this_case = r_case[i];
@@ -111,9 +111,6 @@ void Rama_Mgr::validate(Residue **residue, Dihedral **omega, Dihedral **phi,
             scores[v[j]] = case_scores[j];
         }
     }
-        
-         
-        
 }
 
 

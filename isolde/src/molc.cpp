@@ -414,9 +414,10 @@ SET_PYTHON_INSTANCE(rota_mgr, Rota_Mgr)
 GET_PYTHON_INSTANCES(rota_mgr, Rota_Mgr)
 
 extern "C" EXPORT void*
-rota_mgr_new()
+rota_mgr_new(void *dihedral_mgr)
 {
-    Rota_Mgr *mgr = new Rota_Mgr();
+    Proper_Dihedral_Mgr *dmgr = static_cast<Proper_Dihedral_Mgr *>(dihedral_mgr);
+    Rota_Mgr *mgr = new Rota_Mgr(dmgr);
     try {
         return mgr;
     } catch (...) {
@@ -501,26 +502,45 @@ rota_mgr_validate_residue(void *mgr, void *residue, size_t n, double *scores)
 
 SET_PYTHON_CLASS(rotamer, Rotamer)
 GET_PYTHON_INSTANCES(rotamer, Rotamer)
-extern "C" EXPORT void rota_score(void *rotamer, size_t n, double *scores)
+extern "C" EXPORT void 
+rotamer_score(void *rotamer, size_t n, float32_t *score)
 {
     Rotamer **r = static_cast<Rotamer **>(rotamer);
-    try {
-        for (size_t i=0; i<n; ++i) {
-            *scores++ = (*r++)->score();
-        }
-    } catch (...) {
-        molc_error();
-    }
+    error_wrap_array_get(r, n, &Rotamer::score, score);
 }
 
-extern "C" EXPORT void rota_ca_cb_bond(void *rotamer, size_t n, pyobject_t *bond)
+
+extern "C" EXPORT void
+rotamer_residue(void *rotamer, size_t n, pyobject_t *residue)
 {
     Rotamer **r = static_cast<Rotamer **>(rotamer);
+    error_wrap_array_get(r, n, &Rotamer::residue, residue);
+}
+
+extern "C" EXPORT void 
+rotamer_ca_cb_bond(void *rotamer, size_t n, pyobject_t *bond)
+{
+    Rotamer **r = static_cast<Rotamer **>(rotamer);
+    error_wrap_array_get(r, n, &Rotamer::ca_cb_bond, bond);
+}
+
+extern "C" EXPORT void
+rotamer_num_chi(void *rotamer, size_t n, uint8_t *nchi)
+{
+    Rotamer **r = static_cast<Rotamer **>(rotamer);
+    error_wrap_array_get(r, n, &Rotamer::n_chi, nchi);
+}
+
+extern "C" EXPORT void
+rotamer_angles(void *rotamer, double *a) 
+{
+    Rotamer *r = static_cast<Rotamer *>(rotamer);
     try {
-        for (size_t i=0; i<n; ++i) {
-            *bond++ = (*r++)->ca_cb_bond();
-        }
+        r->angles(a);
     } catch (...) {
         molc_error();
     }
 }
+    
+    
+

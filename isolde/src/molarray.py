@@ -5,7 +5,7 @@ from chimerax.core.atomic.molarray import Collection
 from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
-from .molobject import Proper_Dihedral
+from .molobject import Proper_Dihedral, Rotamer
 import ctypes
 
 from chimerax.core.atomic import Atom, Atoms, Residue, Residues
@@ -18,6 +18,8 @@ from chimerax.core.atomic.molarray import _atoms, _atoms_or_nones, \
 
 def _proper_dihedrals(p):
     return Proper_Dihedrals(p)
+def _rotamers(p):
+    return Rotamers(p)
 def _proper_dihedrals_or_nones(p):
     return [Proper_Dihedral.c_ptr_to_py_inst(ptr) if ptr else None for ptr in p]
 def _non_null_proper_dihedrals(p):
@@ -78,3 +80,15 @@ class Proper_Dihedrals(_Dihedrals):
         doc='Spring constants for dihedral restraints in kJ/mol/radian**2.')
     axial_bonds = cvec_property('proper_dihedral_axial_bond', cptr, astype=_bonds, read_only=True,
         doc='Returns a :class:`Bonds` giving the axial bond for each dihedral. Read-only')
+
+class Rotamers(Collection):
+    def __init__(self, c_pointers=None):
+        super().__init__(c_pointers, Rotamer, Rotamers)
+    
+    residues = cvec_property('rotamer_residue', cptr, astype=_residues, read_only=True, 
+                doc='Residue this rotamer belongs to. Read only.')
+    scores = cvec_property('rotamer_score', float32, read_only=True,
+                doc='P-value for the current conformation of this rotamer. Read only.')
+    ca_cb_bonds = cvec_property('rotamer_ca_cb_bond', cptr, astype=_bonds, read_only=True,
+                doc='The "stem" bond of this rotamer. Read only.')
+    

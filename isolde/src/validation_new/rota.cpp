@@ -21,43 +21,51 @@ Rotamer::Rotamer(Residue *res, Rota_Mgr *mgr): _residue(res), _mgr(mgr)
     _def = mgr->get_rotamer_def(rname);
     auto n_chi = _def->n_chi;
     auto dmgr = mgr->dihedral_mgr();
-    std::string basename("chi");
+    static const std::string basename("chi");
     for (size_t i=1; i<=n_chi; ++i) {
-        auto d = dmgr->get_dihedral(res, basename + std::to_string(i), true);
+        //~ std::string chi_name = basename+std::to_string(i);
+        auto d = dmgr->get_dihedral(res, basename+std::to_string(i), true);
         if (d==nullptr) {
+            std::cerr << "Missing dihedral " << basename + std::to_string(i) << + " for residue " << res->name() <<std::endl; //DELETEME
             throw std::out_of_range("Rotamer is missing a dihedral!");
         }
         _chi_dihedrals.push_back(d);
     }
 }
 
-void Rotamer::angles(std::vector<double> &angles)
+void Rotamer::angles(std::vector<double> &a) const
 {
-    for (size_t i=0; i<_def->n_chi; ++i) {
-        angles[i] = _chi_dihedrals[i]->angle();
-    }
+    angles(a.data());
 }
 
-std::vector<double> Rotamer::angles()
+std::vector<double> Rotamer::angles() const
 {
     std::vector<double> _angles(_def->n_chi);
     angles(_angles);
     return _angles;
 }
 
-void Rotamer::angles(double *angles)
+void Rotamer::angles(double *a) const
 {
-    for (size_t i=0; i<_def->n_chi; ++i) {
-        *angles++ = _chi_dihedrals[i]->angle();
+    for (size_t i=0; i<n_chi(); ++i) {
+        auto aa = _chi_dihedrals[i]->angle();
+        *a++ = aa;
     }
+    if (is_symmetric()) {
+        a--;
+        if (*a < 0) {
+            *a += M_PI;
+        }
+    }
+
 }
 
-double Rotamer::score()
+float32_t Rotamer::score() const
 {
     auto interpolator = _mgr->get_interpolator(_residue->name());
     std::vector<double> cur_angles(_def->n_chi);
     angles(cur_angles);
-    return interpolator.interpolate(cur_angles.data());
+    return interpolator->interpolate(cur_angles.data());
 }
 
 /************************************************************
@@ -118,7 +126,7 @@ Rotamer* Rota_Mgr::new_rotamer(Residue* residue)
 Rotamer* Rota_Mgr::get_rotamer(Residue* residue)
 {
     try {
-        return _residue_to_rotamer[residue];
+        return _residue_to_rotamer.at(residue);
     } catch (std::out_of_range) {
         return new_rotamer(residue);
     }

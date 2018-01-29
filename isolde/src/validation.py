@@ -143,18 +143,29 @@ def generate_scipy_interpolator(file_prefix, wrap_axes = True):
 
 
 def generate_interpolator(file_prefix, wrap_axes = True):
+    from .interpolation.interp import RegularGridInterpolator
     ndim, axis_lengths, min_vals, max_vals, grid_data = generate_interpolator_data(file_prefix, wrap_axes)
     return RegularGridInterpolator(ndim, axis_lengths, min_vals, max_vals, grid_data)
 
-def generate_interpolator_data(file_prefix, wrap_axes = True):
+def generate_interpolator_data(file_prefix, wrap_axes = True, regenerate = None):
     '''
     Load a MolProbity data set and return a RegularGridInterpolator
     object for later fast interpolation of values.
     '''
-    from .interpolation.interp import RegularGridInterpolator
     import numpy, pickle
     infile = None
-    # First try to load from a pickle file
+    if regenerate is None:
+        with open(os.path.join(DATA_DIR, 'regenerate'), 'rt') as f:
+            regenerate = int(f.readline()[0])
+
+    if regenerate:
+        print('Regenerating contour pickle files')
+        import glob
+        [os.remove(f) for f in glob.glob(os.path.join(DATA_DIR, '*.pickle'))]
+        with open(os.path.join(DATA_DIR, 'regenerate'), 'wt') as f:
+            f.write('0')
+
+    # First try to load from a pickle file    
     try:
         infile = open(file_prefix+'.pickle', 'r+b')
         ndim, axis_lengths, min_vals, max_vals, grid_data = pickle.load(infile)
