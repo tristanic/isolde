@@ -227,6 +227,8 @@ class Rama_Mgr:
         PREPRO=4
         ILEVAL=5
         GENERAL=6
+    
+    from .constants import validation_cutoffs as val_defaults
 
     RAMA_CASE_DETAILS = {
         Rama_Case.NONE: {
@@ -237,32 +239,32 @@ class Rama_Mgr:
         Rama_Case.CISPRO: {
             'name': 'Cis-proline residues',
             'file_prefix': os.path.join(DATA_DIR, 'rama8000-cispro'),
-            'cutoffs': [0.002, 1.0, 0.02]
+            'cutoffs': [val_defaults.CISPRO_ALLOWED, val_defaults.CISPRO_OUTLIER]
         },
         Rama_Case.TRANSPRO: {
             'name': 'Trans-proline residues',
             'file_prefix': os.path.join(DATA_DIR, 'rama8000-transpro'),
-            'cutoffs': [0.001, 1.0, 0.02]
+            'cutoffs': [val_defaults.TRANSPRO_ALLOWED, val_defaults.TRANSPRO_OUTLIER]
         },
         Rama_Case.GLYCINE: {
             'name': 'Glycine residues',
             'file_prefix': os.path.join(DATA_DIR, 'rama8000-gly-sym'),
-            'cutoffs': [0.001, 1.0, 0.02]
+            'cutoffs': [val_defaults.GLYCINE_ALLOWED, val_defaults.GLYCINE_OUTLIER]
         },
         Rama_Case.PREPRO: {
             'name': 'Residues preceding proline',
             'file_prefix': os.path.join(DATA_DIR, 'rama8000-prepro-noGP'),
-            'cutoffs': [0.001, 1.0, 0.02]
+            'cutoffs': [val_defaults.PREPRO_ALLOWED, val_defaults.PREPRO_OUTLIER]
         },
         Rama_Case.ILEVAL: {
             'name': 'Isoleucine or valine residues',
             'file_prefix': os.path.join(DATA_DIR, 'rama8000-ileval-nopreP'),
-            'cutoffs': [0.001, 1.0, 0.02]
+            'cutoffs': [val_defaults.ILEVAL_ALLOWED, val_defaults.ILEVAL_OUTLIER]
         },
         Rama_Case.GENERAL: {
             'name': 'General amino acid residues',
             'file_prefix': os.path.join(DATA_DIR, 'rama8000-general-noGPIVpreP'),
-            'cutoffs': [0.0005, 1.0, 0.02]
+            'cutoffs': [val_defaults.GENERAL_ALLOWED, val_defaults.GENERAL_OUTLIER]
         }
     }
 
@@ -289,6 +291,8 @@ class Rama_Mgr:
         self.session = session
         self._dihedral_mgr = session.proper_dihedral_mgr
         self._prepare_all_validators()
+        self.set_default_cutoffs()
+        self.set_default_colors()
         session.rama_mgr = self
 
     def delete(self):
@@ -305,6 +309,52 @@ class Rama_Mgr:
         '''Has the C++ side been deleted?'''
         return not hasattr(self, '_c_pointer')
 
+    def set_default_cutoffs(self):
+        '''
+        Reset the Ramachandran cutoffs to default values
+        '''
+        dd = self.RAMA_CASE_DETAILS
+        for case, cd in dd.items():
+            cutoffs = cd['cutoffs']
+            if cutoffs is not None:
+                self._set_cutoffs(case, *cutoffs)
+    
+    def _set_cutoffs(self, case, allowed, outlier):
+        f = c_function('rama_mgr_set_cutoffs', 
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double))
+        f(self._c_pointer, case, allowed, outlier)
+    
+    @property
+    def cutoffs(self):
+        f = c_function('rama_mgr_get_cutoffs',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
+        cdict = {}
+        for case in self.Rama_Case:
+            if case != Rama_Case.NONE:
+                cutoffs = numpy.empty(2, numpy.double)
+                f(self._c_pointer, case, pointer(cutoffs))
+                cdict[case] = cutoffs
+        return cdict
+    
+    def set_default_colors(self):
+        from .constants import validation_cutoffs as val_defaults
+        self.set_color_scale(val_defaults.MAX_FAVORED_COLOR, val_defaults.ALLOWED_COLOR,
+            val_defaults.OUTLIER_COLOR, val_defaults.NA_COLOR)
+    
+    def set_color_scale(self, max_c, mid_c, min_c, na_c):
+        f = c_function('rama_mgr_set_color_scale', 
+            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
+                  ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8),
+                  ctypes.POINTER(ctypes.c_uint8)))
+        maxc = numpy.array(max_c, uint8)
+        midc = numpy.array(mid_c, uint8)
+        minc = numpy.array(min_c, uint8)
+        nac = numpy.array(na_c, uint8)
+        for arr in (maxc, midc, minc, nac):
+            if len(arr) != 4:
+                raise TypeError('Each color should be an array of 4 values in the range (0,255)')
+        f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc), pointer(nac))
+    
     @property
     def dihedral_manager(self):
         return self._dihedral_mgr
@@ -385,6 +435,30 @@ class Rama_Mgr:
         f(self._c_pointer, residues._c_pointers, omegas._c_pointers,
             phis._c_pointers, psis._c_pointers, pointer(cases), n, pointer(ret))
         return ret
+    
+    def rama_colors(self, residues, omegas, phis, psis, cases = None):
+        '''
+        Returns a nx4 uint8 :class:`Numpy` array giving a color for each
+        residue corresponding to the current colormap. 
+        '''
+        if cases is None:
+            cases = self.rama_cases(omegas, psis)
+        n = len(residues)
+        for arr in (omegas, phis, psis):
+            if len(arr) != n:
+                raise TypeError('Array lengths must be equal!')
+        return self._rama_colors(residues, omegas, phis, psis, cases, n)
+    
+    def _rama_colors(self, residues, omegas, phis, psis, cases, n):
+        f = c_function('rama_mgr_validate_and_color', 
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                  ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
+                  ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint8)))
+        ret = numpy.empty((n,4), uint8)
+        f(self._c_pointer, residues._c_pointers, omegas._c_pointers,
+            phis._c_pointers, psis._c_pointers, pointer(cases), n, pointer(ret))
+        return ret;
+        
 
 class Rota_Mgr:
     def __init__(self, session, c_pointer=None):
@@ -541,6 +615,7 @@ class Rotamer(State):
     def reset_state(self):
         pass
     
+    @property
     def angles(self):
         f = c_function('rotamer_angles', args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double)))
         ret = numpy.empty(self.num_chi_dihedrals, numpy.double)

@@ -69,9 +69,8 @@ class RegularGridInterpolator:
         max_vals = convert_and_sanitize_numpy_array(max_vals, NPY_FLOAT)
         grid_data = convert_and_sanitize_numpy_array(grid_data, NPY_FLOAT)
         
-        self._c_pointer = self._new_interp(dim, axis_lengths.ctypes.data_as(C_UINT32_P), 
-            min_vals.ctypes.data_as(C_FLOAT_P), max_vals.ctypes.data_as(C_FLOAT_P), 
-            grid_data.ctypes.data_as(C_FLOAT_P))
+        self._c_pointer = self._new_interp(dim, pointer(axis_lengths), 
+            pointer(min_vals), pointer(max_vals), pointer(grid_data))
         
         #~ self._dim = dim
         self._min_vals = min_vals
@@ -84,19 +83,19 @@ class RegularGridInterpolator:
     @property
     def min(self):
         ret = numpy.empty(self.dim, NPY_FLOAT)
-        self._min(self._c_pointer, ret.ctypes.data_as(C_FLOAT_P))
+        self._min(self._c_pointer, pointer(ret))
         return ret
         
     @property
     def max(self):
         ret = numpy.empty(self.dim, NPY_FLOAT)
-        self._max(self._c_pointer, ret.ctypes.data_as(C_FLOAT_P))
+        self._max(self._c_pointer, pointer(ret))
         return ret
     
     @property
     def axis_lengths(self):
         ret = numpy.empty(self.dim, numpy.uint32)
-        self._axis_lengths(self._c_pointer, ret.ctypes.data_as(C_UINT32_P))
+        self._axis_lengths(self._c_pointer, pointer(ret))
         return ret
     
     @property
@@ -104,7 +103,7 @@ class RegularGridInterpolator:
         dim = self.dim
         lengths = self.axis_lengths
         ret = numpy.empty(lengths, NPY_FLOAT)
-        self._values(self._c_pointer, ret.ctypes.data_as(C_FLOAT_P))
+        self._values(self._c_pointer, pointer(ret))
         return ret
             
     @property
@@ -130,8 +129,7 @@ class RegularGridInterpolator:
         
         n = in_data.shape[0]
         ret = numpy.empty(n, dtype=NPY_FLOAT)
-        self._interpolate(self._c_pointer, in_data.ctypes.data_as(C_FLOAT_P),
-                          n, ret.ctypes.data_as(C_FLOAT_P))
+        self._interpolate(self._c_pointer, pointer(in_data), n, pointer(ret))
         return ret
     
     def __call__(self, data):
@@ -155,13 +153,14 @@ class RegularGridInterpolator:
 def test_interpolator(n):
     import numpy
     dim=n
-    axis_lengths=numpy.array([36]*n, numpy.uintp)
+    axis_lengths=numpy.random.randint(10, 50, size=n, dtype=numpy.uintp)
     mins = numpy.zeros(n)
     maxs = numpy.ones(n)
-    data = numpy.random.rand(*[36]*n)
+    data = numpy.random.rand(*axis_lengths)
     from scipy.interpolate import RegularGridInterpolator as ScipyInterp
-    axis = numpy.array(range(36))/35
-    scrg = ScipyInterp([axis]*n, data)
+    axes = [numpy.array(range(l))/(l-1) for l in axis_lengths]
+    #~ axis = numpy.array(range(36))/35
+    scrg = ScipyInterp(axes, data)
     
     rg = RegularGridInterpolator(dim, axis_lengths, mins, maxs, data)
     #test_data = numpy.random.rand(n,3)
@@ -172,10 +171,6 @@ def convert_and_sanitize_numpy_array(array, dtype):
     Convert a numpy array to the specified data type, and ensure its
     contents are C-contiguous in memory.
     '''
-    #~ if array.flags.c_contiguous:
-        #~ if array.dtype == dtype:
-            #~ return array
-        #~ return array.as_type(dtype)
     ret = numpy.empty(array.shape, dtype)
     ret[:] = array
     return ret

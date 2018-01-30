@@ -18,6 +18,34 @@ class Rama_Mgr: public pyinstance::PythonInstance<Rama_Mgr>
 public:
     Rama_Mgr() {}
     ~Rama_Mgr() {}
+    struct cutoffs 
+    {
+        double allowed;
+        double log_allowed; 
+        double outlier;
+        double log_outlier;
+        cutoffs() {}
+        cutoffs(double a, double o): allowed(a), log_allowed(log(a)), outlier(o), log_outlier(log(o)) {}
+    };
+    //! RGBA colours in range 0..1
+    typedef double color[4];
+    struct colormap
+    {
+        color max; // most favoured
+        color mid; // allowed cutoff
+        color min; // least favoured
+        color na; // Not scorable
+    };
+    
+    
+    void set_cutoffs(size_t r_case, const double &allowed, const double &outlier) {
+        _cutoffs[r_case] = cutoffs(allowed, outlier);
+    }
+    cutoffs* get_cutoffs(size_t r_case) {return &(_cutoffs.at(r_case));}
+    
+    void set_colors(uint8_t *max, uint8_t *mid, uint8_t *min, uint8_t *na);
+    colormap *get_colors();
+    
     void add_interpolator(size_t r_case, const size_t &dim, 
         uint32_t *n, double *min, double *max, double *data);
 
@@ -40,14 +68,20 @@ public:
     //! Score a single residue
     double validate(Residue *residue, Proper_Dihedral_Mgr *dmgr);
     
+    void color_by_scores(double *scores, uint8_t *r_case, const size_t &n, uint8_t *colors);
+    
 private:
     std::unordered_map<size_t, RegularGridInterpolator<double>> _interpolators;
+    std::unordered_map<size_t, cutoffs> _cutoffs;
     enum Rama_Case{NONE=0, CISPRO=1, TRANSPRO=2, GLYCINE=3, PREPRO=4, ILEVAL=5, GENERAL=6, NUM_RAMA_CASES=7};
     double _cis_cutoff = M_PI/6.0; 
     static const std::string OMEGA_STR;
     static const std::string PHI_STR;
     static const std::string PSI_STR;
     static const double NONE_VAL;
+    colormap _colors;
+    void _interpolate_colors(const color& min_color, const color& max_color, 
+        const double &min_val, const double &max_val, const double &score, color &out);
     
         
 }; //class Rama_Mgr    

@@ -33,13 +33,6 @@ void Dihedral_Mgr<DType>::add_dihedral_def(const std::string &rname,
     } else {
         throw std::runtime_error("Dihedral definition already exists!");
     }
-    //~ try {
-        //~ d_def &dd = am.at(dname);
-        //~ throw std::runtime_error("Dihedral definition already exists!");
-    //~ } catch (std::out_of_range) {
-        //~ d_def dd(anames, externals);
-        //~ am[dname] = dd;
-    //~ }
 } //add_dihedral_def
 
 template <class DType>
@@ -54,10 +47,6 @@ size_t Dihedral_Mgr<DType>::num_mapped_dihedrals() const
 } //num_mapped_dihedrals
 
 
-//! Add an existing dihedral to the manager.
-/*! NOTE: It's up to you to ensure the same dihedral isn't added twice,
- *  and that you are not over-writing an existing map entry!
- */
 template <class DType>
 void Dihedral_Mgr<DType>::add_dihedral(DType* d)
 {
@@ -83,11 +72,6 @@ void Dihedral_Mgr<DType>::add_dihedral(DType* d)
     }
 } //add_dihedral
 
-//! Attempt to create a new dihedral for the given residue and parameters
-/*! If successful, adds the dihedral to the Dihedral_Mgr internal mapping,
- *  and returns a pointer to the dihedral. If any dihedral atoms can't be
- *  found, returns nullptr.
- */
 template <class DType>
 DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname,
     const std::vector<std::string> &anames, const std::vector<bool> &external,
@@ -155,14 +139,6 @@ DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname,
     return nullptr;
 } //new_dihedral
 
-//! Attempt to create a new dihedral for the given residue and name
-/*! The <residue name, dihedral name> pair must already exist in the
- *  manager's dihedral definition dict, otherwise an error will be
- *  returned.
- *  If successful, adds the dihedral to the Dihedral_Mgr internal mapping,
- *  and returns a pointer to the dihedral. If any dihedral atoms can't be
- *  found, returns nullptr.
- */
 template <class DType>
 DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname)
 {
@@ -185,29 +161,25 @@ DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname)
 } //new_dihedral
 
 
-
 template <class DType>
 DType* Dihedral_Mgr<DType>::get_dihedral(Residue *res, const std::string &name, bool create)
 {
     d_def ddef;
-    try {
-        return _residue_map.at(res).at(name);
-    } catch (std::out_of_range) {
-        if (!create)
-            throw std::out_of_range("Dihedral not found!");
-        try {
-            ddef = get_dihedral_def(res->name(), name);
-        } catch (std::out_of_range) {
-            throw std::out_of_range("Dihedral name is invalid for this residue!");
+    auto iter1 = _residue_map.find(res);
+    if (iter1 != _residue_map.end()) {
+        auto &dmap = iter1->second;
+        auto iter2 = dmap.find(name);
+        if (iter2 != dmap.end()) {
+            return iter2->second;
         }
-
-        DType *d = new_dihedral(res, name);
-        return d;
-    }
+    } 
+    if (!create)
+        throw std::out_of_range("Dihedral not found!");
+    ddef = get_dihedral_def(res->name(), name);
+    return new_dihedral(res, name);
 }
-
-
-
+            
+    
 
 template <class DType>
 void Dihedral_Mgr<DType>::delete_dihedrals(std::vector<DType *> &delete_list)

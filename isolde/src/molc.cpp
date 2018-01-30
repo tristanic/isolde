@@ -266,7 +266,7 @@ proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *name, s
     Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
     size_t found=0;
     try {
-        Proper_Dihedral_Mgr::d_def ddef;
+        //~ Proper_Dihedral_Mgr::d_def ddef;
         Residue **r = static_cast<Residue **>(residues);
         std::string dname(PyUnicode_AsUTF8(static_cast<PyObject *>(name[0])));
         for (size_t i=0; i<n; ++i) {
@@ -362,6 +362,41 @@ rama_mgr_delete(void *mgr)
 }
 
 extern "C" EXPORT void
+rama_mgr_set_cutoffs(void *mgr, size_t r_case, double allowed, double outlier)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    try {
+        m->set_cutoffs(r_case, allowed, outlier);
+    } catch (...) {
+        molc_error();
+    }
+}
+    
+extern "C" EXPORT void
+rama_mgr_get_cutoffs(void *mgr, size_t r_case, double* cutoffs)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    try {
+        auto c = m->get_cutoffs(r_case);
+        cutoffs[0] = c->allowed;
+        cutoffs[1] = c->outlier;
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+rama_mgr_set_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min, uint8_t *na)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    try {
+        m->set_colors(max, mid, min, na);
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
 rama_mgr_add_interpolator(void *mgr, size_t r_case, size_t dim,
     uint32_t *n, double *min, double *max, double *data)
 {
@@ -404,6 +439,21 @@ rama_mgr_validate(void *mgr, void *residue, void *omega, void *phi,
         molc_error();
     }
 }
+
+extern "C" EXPORT void
+rama_mgr_validate_and_color(void *mgr, void *residue, void *omega, 
+    void *phi, void *psi, uint8_t *r_case, size_t n, uint8_t *colors)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    std::vector<double> scores(n);
+    rama_mgr_validate(mgr, residue, omega, phi, psi, r_case, n, scores.data());
+    try {
+        m->color_by_scores(scores.data(), r_case, n, colors);
+    } catch (...) {
+        molc_error();
+    }
+}
+
 
 /**************************************************************
  *

@@ -272,6 +272,33 @@ def generate_interpolator_data(file_prefix, wrap_axes = True, regenerate = None)
         outfile.close()
     return (ndim, axis_lengths, min_vals, max_vals, grid_data)
         
+class Validation_Mgr:
+    def __init__(self, session):
+        from . import session_extensions as ext
+        self._proper_dihedral_mgr = ext.get_proper_dihedral_manager(session)
+        self._rama_mgr = ext.get_ramachandran_manager(session)
+        self._rota_mgr = ext.get_rotamer_manager(session)
+    
+    @property
+    def proper_dihedral_mgr(self):
+        return self._proper_dihedral_mgr
+    
+    @property
+    def rama_mgr(self):
+        return self._rama_mgr
+    
+    @property
+    def rota_mgr(self):
+        return self._rota_mgr
+        
+    
+
+
+
+
+
+
+
 
 
 # Master list of Ramachandran case keys. As well as the official ones, we'll

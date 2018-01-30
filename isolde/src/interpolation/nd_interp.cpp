@@ -34,7 +34,7 @@ RegularGridInterpolator<T>::RegularGridInterpolator(const size_t& dim,
         dval = this_min;
         std::vector<T> axis;
         
-        for (;dval<=this_max;) {
+        for (;dval<this_max+0.5*step;) {
             axis.push_back(dval);
             dval+=step;
         }
@@ -67,13 +67,13 @@ RegularGridInterpolator<T>::lb_index_and_offsets(T *axis_vals, size_t &lb_index,
         size_t li = (size_t)floor((value-min)/_step[axis]);
         lb_index +=axis_prod*li;
         axis_prod*=_n[axis];
-        const T &low = _axes[axis][li++];
-        const T &high = _axes[axis][li];
+        auto &this_axis = _axes[axis];
+        const T &low = this_axis[li++];
+        const T &high = this_axis[li];
         T offset = (value-low)/(high-low);
         offsets[axis]=(std::pair<T, T> (offset, 1-offset));
     }
 }
-
 
 /*
  * This comes out looking a little like black magic, so requires a bit
@@ -97,7 +97,6 @@ RegularGridInterpolator<T>::corner_offsets()
         }
         _corner_offsets.push_back(corner);
     }
-        
 }
 
 template<typename T>
@@ -165,11 +164,7 @@ RegularGridInterpolator<T>::interpolate (T* axis_vals, const size_t &n, T* value
         // position.
         corner_values(lb_index, corners);        
         _interpolate(_dim, corners, corners.size(), offsets, values++);
-
     }
-    
-    
-    
 }
 
 
@@ -270,8 +265,6 @@ rg_interp_lengths(void* ptr, uint32_t* ret)
     }
 }
 
-
-
 EXPORT size_t
 rg_interp_dim(void* ptr)
 {
@@ -298,38 +291,4 @@ rg_interp_values(void* ptr, fp_type* ret)
     }
 }
 
-
-
-
 } // extern "C"
-
-
-//~ int 
-//~ main() {
-    //~ size_t dim = 3;
-    //~ size_t n[3] {2,2,2};
-    //~ T min[3] {0,0,0};
-    //~ T max[3] {1,1,1};
-    //~ T data[8] {0,0,0,0,0,0,1};
-    //~ RegularGridInterpolator interp(dim, n, min, max, data);
-    //~ T* results = new T[100000];
-    //~ //T axis_vals[9] {0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.8, 0.8, 0.8};
-    //~ T* axis_vals = new T[300000];
-    //~ for (size_t i=0; i<300000; ++i)
-        //~ axis_vals[i]=(T)rand()/RAND_MAX*0.95+0.01;
-    
-    //~ T start = (T)clock();
-    
-    //~ //for (size_t i=0; i<100000; ++i) {
-        //~ interp.interpolate(axis_vals, 100000, results);
-    //~ //}
-    
-    //~ std::cout << "100,000 3D interpolations took " << ((T)clock()-start)/CLOCKS_PER_SEC << " seconds." << std::endl;
-    //~ for (size_t i=0; i<5; ++i) {
-        //~ std::cout << results[i] << std::endl;
-    //~ }
-    //~ delete results;
-    //~ delete axis_vals;
-    
-    //~ return 0;
-//~ }

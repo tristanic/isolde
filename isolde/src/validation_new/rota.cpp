@@ -125,11 +125,19 @@ Rotamer* Rota_Mgr::new_rotamer(Residue* residue)
  */
 Rotamer* Rota_Mgr::get_rotamer(Residue* residue)
 {
-    try {
-        return _residue_to_rotamer.at(residue);
-    } catch (std::out_of_range) {
+    auto iter = _residue_to_rotamer.find(residue);
+    if (iter != _residue_to_rotamer.end()) {
+        return iter->second;
+    } else {
         return new_rotamer(residue);
     }
+    
+    
+    //~ try {
+        //~ return _residue_to_rotamer.at(residue);
+    //~ } catch (std::out_of_range) {
+        //~ return new_rotamer(residue);
+    //~ }
 }
 
 //! Fast validation of pre-defined rotamers

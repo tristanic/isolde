@@ -50,7 +50,7 @@ public:
         try {
             return _residue_name_map.at(rname).at(dname);
         } catch (std::out_of_range) {
-            throw std::out_of_range("Unrecognised dihedral def!");
+            throw std::out_of_range("No dihedral with that name is registered for this residue type!");
         }
     }
     
@@ -58,8 +58,21 @@ public:
         return get_dihedral_def(std::string(rname), dname);
     }
     
-    //! Create and map a new dihedral from residue and definition
+    //! Attempt to create a new dihedral for the given residue and name
+    /*! The <residue name, dihedral name> pair must already exist in the
+     *  manager's dihedral definition dict, otherwise an error will be
+     *  returned.
+     *  If successful, adds the dihedral to the Dihedral_Mgr internal mapping,
+     *  and returns a pointer to the dihedral. If any dihedral atoms can't be
+     *  found, returns nullptr.
+     */
     DType* new_dihedral(Residue *res, const std::string &dname);
+
+    //! Attempt to create a new dihedral for the given residue and parameters
+    /*! If successful, adds the dihedral to the Dihedral_Mgr internal mapping,
+     *  and returns a pointer to the dihedral. If any dihedral atoms can't be
+     *  found, returns nullptr.
+     */
     DType* new_dihedral(Residue *res, const std::string &dname, 
         const std::vector<std::string> &anames, const std::vector<bool> &external,
         const size_t &first_internal_atom); 
@@ -69,9 +82,22 @@ public:
     
     
     void delete_dihedrals(std::vector<DType *> &delete_list);
+
+    //! Add an existing dihedral to the manager.
+    /*! NOTE: It's up to you to ensure the same dihedral isn't added twice,
+     *  and that you are not over-writing an existing map entry!
+     */
     void add_dihedral(DType* d);
-    // size_t num_dihedrals() const { return _dihedrals.size(); }
     size_t num_mapped_dihedrals() const;
+    
+    //! Retrieve a dihedral by residue and name
+    /*! If the dihedral is not found and create is false, throws 
+     *  std::out_of_range. If not found and create is true, attempts to 
+     *  find the dihedral definition by residue name and dihedral name. 
+     *  If no definition exists for the desired dihedral, throws
+     *  std::out_of_range. If the definition exists but one or more atoms
+     *  are missing, returns nullptr.
+     */
     DType* get_dihedral(Residue *res, const std::string &name, bool create=false); 
     virtual void destructors_done(const std::set<void*>& destroyed);
 private:

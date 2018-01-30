@@ -50,7 +50,9 @@ from .checkpoint import CheckPoint
 from .openmm import sim_interface
 from .openmm.sim_interface import SimParams
 
-from .validation_new import validation_interface
+from .validation import Validation_Mgr
+
+from .validation_new import validation_interface #TODO: Remove
 
 from PyQt5.QtWidgets import QMessageBox
 
@@ -204,9 +206,14 @@ class Isolde():
         'position restraint added',
         'position restraint removed',
         )
-
-
+    
     def __init__(self, gui):
+        self.session = session = gui.session
+        
+        # Find or create the validation managers
+        from . import session_extensions
+        self._validation_mgr = Validation_Manager(session)
+        
         self.triggers = triggerset.TriggerSet()
         for t in self.trigger_names:
             self.triggers.add_trigger(t)
@@ -222,10 +229,9 @@ class Isolde():
         self.checkpoint_disabled_reasons = {}
         self._last_checkpoint = None
 
-        self.session = gui.session
         
         self.live_validation_interface = \
-            validation_interface.ChimeraXValidationInterface(self.session, self)
+            validation_interface.ChimeraXValidationInterface(self.session, self) #TODO: Remove
         
         
         self.params = IsoldeParams()

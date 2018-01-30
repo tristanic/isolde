@@ -168,14 +168,30 @@ class _Control:
     }
 
 @_constant_properties
-class _Validation:
+class _Validation_Cutoffs:
     _constants = {
         'ROTA_ALLOWED_CUTOFF':      0.02,
         'ROTA_OUTLIER_CUTOFF':      0.0005,
+        'CISPRO_OUTLIER':    0.002,
+        'TRANSPRO_OUTLIER':  0.001,
+        'GLYCINE_OUTLIER':   0.001,
+        'PREPRO_OUTLIER':    0.001,
+        'ILEVAL_OUTLIER':    0.001,
+        'GENERAL_OUTLIER':   0.0005,
+        'CISPRO_ALLOWED':    0.02,
+        'TRANSPRO_ALLOWED':  0.02,
+        'GLYCINE_ALLOWED':   0.02,
+        'PREPRO_ALLOWED':    0.02,
+        'ILEVAL_ALLOWED':    0.02,
+        'GENERAL_ALLOWED':   0.02,
+        'MAX_FAVORED_COLOR': [0,255,0,255], # Bright green
+        'ALLOWED_COLOR':     [255,240,50,255], # Yellow
+        'OUTLIER_COLOR':     [255,0,100,255], # Hot pink 
+        'NA_COLOR':          [100,100,100,255], # Grey
     }
 
 
 defaults = _Defaults()
 sim_outcomes = _Sim_Outcomes()
 control = _Control()
-validation_cutoffs = _Validation()
+validation_cutoffs = _Validation_Cutoffs()

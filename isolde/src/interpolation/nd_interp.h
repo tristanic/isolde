@@ -44,7 +44,6 @@ public:
     const std::vector<T> &data() const {return _data;}
     const std::vector<size_t> &length() const {return _n;} 
     
-    
 private:
     void corner_values(const size_t &lb_indices, std::vector<T> &corners);
     void lb_index_and_offsets(T *axis_vals, size_t &lb_index, 
