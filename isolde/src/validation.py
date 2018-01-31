@@ -290,7 +290,6 @@ class Validation_Mgr:
     @property
     def rota_mgr(self):
         return self._rota_mgr
-        
     
 
 

@@ -425,6 +425,23 @@ rama_mgr_rama_cases(void *mgr, void *omega, void *psi,
 }
 
 extern "C" EXPORT void
+rama_mgr_validate_by_residue(void *mgr, void *dmgr, void *residue, size_t n, double *score,
+    uint8_t *r_case)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    Proper_Dihedral_Mgr *d = static_cast<Proper_Dihedral_Mgr *>(dmgr);
+    Residue **r = static_cast<Residue **>(residue);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *score++ = m->validate(*r, d);
+            *r_case++ = m->rama_case(*r++, d);
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
 rama_mgr_validate(void *mgr, void *residue, void *omega, void *phi,
     void *psi, uint8_t *r_case, size_t n, double *scores)
 {
@@ -454,6 +471,20 @@ rama_mgr_validate_and_color(void *mgr, void *residue, void *omega,
     }
 }
 
+extern "C" EXPORT void
+rama_mgr_bin_scores(void *mgr, double *score, uint8_t *r_case, size_t n, int32_t *bin)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    try
+    {
+        for(size_t i=0; i<n; ++i) {
+            *bin++ = m->bin_score(*score++, *r_case++);
+        }
+    } catch (...) {
+        molc_error();
+    }
+
+}
 
 /**************************************************************
  *

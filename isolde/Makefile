@@ -54,6 +54,7 @@ BUNDLE_BASE_NAME = $(subst ChimeraX-,,$(BUNDLE_NAME))
 SOURCE = src
 SRCS = $(SOURCE)/*.py $(SOURCE)/*.cpp
 
+:DEFAULT_GOAL := wheel
 
 #
 # Actual make dependencies!

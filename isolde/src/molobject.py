@@ -14,7 +14,7 @@ from chimerax.core.atomic.molobject import _atoms, \
                 _chains, _atomic_structure, _pseudobond_group, \
                 _pseudobond_group_map
 
-from numpy import uint8, int32, uint32, float64, float32, byte, bool as npy_bool
+from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
 
 libdir = os.path.dirname(os.path.abspath(__file__))
 libfile = glob.glob(os.path.join(libdir, 'molc.cpython*'))[0]
@@ -228,6 +228,12 @@ class Rama_Mgr:
         ILEVAL=5
         GENERAL=6
     
+    class Rama_Bin(IntEnum):
+        FAVORED=0
+        ALLOWED=1
+        OUTLIER=2
+        NA=-1
+    
     from .constants import validation_cutoffs as val_defaults
 
     RAMA_CASE_DETAILS = {
@@ -414,9 +420,52 @@ class Rama_Mgr:
             psis._c_pointers, n, pointer(ret))
         return ret
 
+ 
+    def validate_by_residue(self, residues):
+        '''
+        Returns a tuple of (double, uint8) Numpy arrays giving the scores
+        and Ramachandran cases for each residue. Non-Ramachandran 
+        (N- and C-terminal peptide and non-protein) residues will 
+        receive scores of -1. Case definitions are found in
+        :class:`Rama_Mgr`.Rama_Case.
+        '''
+        f = c_function('rama_mgr_validate_by_residue', 
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                    ctypes.c_size_t, ctypes.POINTER(ctypes.c_double),
+                    ctypes.POINTER(ctypes.c_uint8)))
+        n = len(residues)
+        scores = numpy.empty(n, numpy.double)
+        cases = numpy.empty(n, uint8)
+        f(self._c_pointer, self._dihedral_mgr._c_pointer, residues._c_pointers,
+            n, pointer(scores), pointer(cases))
+        return (scores, cases)
+
+    def bin_scores(scores, cases):
+        n = len(scores)
+        if len(cases) != len(scores):
+            raise TypeError('Both arrays must be the same length!')
+        f = c_function('rama_mgr_bin_scores', 
+            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double),
+                ctypes.POINTER(ctypes.c_uint8), ctypes.c_size_t, 
+                ctypes.POINTER(ctypes.c_int8)))
+        ret = numpy.empty(n, int8)
+        f(self._c_pointer, pointer(scores), pointer(cases), n, ret)
+        return ret
+        
+    
+    def outliers(self, residues):
+        scores, cases = self.validate_by_residue(residues)
+        bins = self.bin_scores(scores, cases)
+        return residues[bins==self.Rama_Bin.OUTLIER]
+    
+        
     def validate(self, residues, omegas, phis, psis, cases = None):
         '''
-        Returns Ramachandran scores for all
+        Returns Ramachandran scores for a set of pre-defined valid 
+        Ramachandran cases. The input to this function is typically 
+        the output of :class:`Rama_Mgr`.rama_cases(). For a slower
+        but more robust method which can handle invalid (non-protein
+        and/or terminal) residues, use validate_by_residue().
         '''
         if cases is None:
             cases = self.rama_cases(omegas, psis)
@@ -425,7 +474,7 @@ class Rama_Mgr:
             if len(arr) != n:
                 raise TypeError('Array lengths must be equal!')
         return self._validate(residues, omegas, phis, psis, cases, n)
-
+    
     def _validate(self, residues, omegas, phis, psis, cases, n):
         f = c_function('rama_mgr_validate',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
@@ -458,6 +507,20 @@ class Rama_Mgr:
         f(self._c_pointer, residues._c_pointers, omegas._c_pointers,
             phis._c_pointers, psis._c_pointers, pointer(cases), n, pointer(ret))
         return ret;
+    
+    def bin_scores(self, scores, cases):
+        f = c_function('rama_mgr_bin_scores',
+            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double), 
+                ctypes.POINTER(ctypes.c_uint8), ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_int32)))
+        n = len(scores)
+        if len(cases) != n:
+            raise TypeError('Scores and cases arrays must be the same length!')
+        bins = numpy.empty(n, int32)
+        f(self._c_pointer, pointer(scores), pointer(cases), n, bins.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)))
+        return bins
+    
+        
         
 
 class Rota_Mgr:
@@ -502,9 +565,6 @@ class Rota_Mgr:
                 key = ctypes.py_object()
                 key.value = aa
                 f(self._c_pointer, ctypes.byref(key), nchi, symm)
-                
-            
-
 
     def _prepare_all_validators(self):
         from .validation import generate_interpolator_data

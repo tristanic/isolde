@@ -22,12 +22,22 @@ void Rama_Mgr::add_interpolator(size_t r_case,
 
 void Rama_Mgr::set_colors(uint8_t *max, uint8_t *mid, uint8_t *min, uint8_t *na)
 {
+    colors::color thecolors[3];
+    
     for (size_t i=0; i<4; ++i)
     {
-        _colors.max[i] = ((double) *max++) / 255.0;
-        _colors.mid[i] = ((double) *mid++) / 255.0;
-        _colors.min[i] = ((double) *min++) / 255.0;
-        _colors.na[i] = ((double) *na++) / 255.0;
+        thecolors[0][i] = ((double) *min++) / 255.0;
+        thecolors[1][i] = ((double) *mid++) / 255.0;
+        thecolors[2][i] = ((double) *max++) / 255.0;
+        _null_color[i] = ((double) *na++) / 255.0;
+    }
+    for (size_t i=1; i<NUM_RAMA_CASES; ++i) {
+        auto cuts = get_cutoffs(i);
+        double these_cutoffs[3];
+        these_cutoffs[0] = cuts->log_outlier;
+        these_cutoffs[1] = cuts->log_allowed;
+        these_cutoffs[2] = 0;
+        _colors[i] = colors::colormap(these_cutoffs, thecolors, 3);
     }
 }
 
@@ -61,17 +71,17 @@ uint8_t Rama_Mgr::rama_case(Residue *res, Proper_Dihedral_Mgr *dmgr)
         omega = dmgr->get_dihedral(res, OMEGA_STR, true);
         psi = dmgr->get_dihedral(res, PSI_STR, true);
     } catch (std::out_of_range) {
-        return NONE;
+        return CASE_NONE;
     }
     if (omega==nullptr || psi==nullptr)
-        return NONE;
+        return CASE_NONE;
     return rama_case(omega, psi);
 }
     
 double Rama_Mgr::validate(Residue *residue, Proper_Dihedral_Mgr *dmgr)
 {
     auto rcase = rama_case(residue, dmgr);
-    if (rcase==NONE) 
+    if (rcase==CASE_NONE) 
         return NONE_VAL;
         
     Dihedral *phi, *psi;
@@ -125,48 +135,41 @@ void Rama_Mgr::validate(Residue **residue, Dihedral **omega, Dihedral **phi,
     }
 }
 
-void Rama_Mgr::_interpolate_colors(const color& min_color, const color& max_color, 
-    const double &min_val, const double &max_val, const double &score, color &out)
+void Rama_Mgr::color_by_scores(double *scores, uint8_t *r_case, const size_t &n, uint8_t *out)
 {
-    double offset = (score-min_val)/(max_val-min_val);
-    for (size_t i=0; i<4; ++i) {
-        out[i] = min_color[i] + (max_color[i]-min_color[i])*offset;
-    }
-}
-
-
-void Rama_Mgr::color_by_scores(double *scores, uint8_t *r_case, const size_t &n, uint8_t *colors)
-{
-    color this_color;
-    for (size_t i=0; i<n; ++i)
-    {
-        auto s = scores[i];
-        if (s < 0) {
-            for(size_t j=0; j<4; ++j) {
-                this_color[j] = _colors.na[j];
-            }
-        } else {
-            auto log_s = log(s);
-            auto &c = _cutoffs[r_case[i]];
-            if (log_s < c.log_outlier) {
-                for(size_t j=0; j<4; ++j) {
-                    this_color[j] = _colors.min[j];
-                }
-            } else if (log_s < c.log_allowed) {
-                _interpolate_colors(_colors.min, _colors.mid, 
-                    c.log_outlier, c.log_allowed, log_s, this_color);
-            } else {
-                _interpolate_colors(_colors.mid, _colors.max, 
-                    c.log_allowed, 0, log_s, this_color);
-            }
+    colors::intcolor default_color;
+    colors::color_as_intcolor(_null_color, default_color);
+    colors::color this_color;
+    for (size_t i=0; i<n; ++i) {
+        if (*scores < 0)
+        {
+            for(size_t j=0; j<4; ++j)
+                *out++=default_color[i];
+            scores++;
+            continue;
         }
+        
+        auto cmap = get_colors(*r_case++);
+        cmap->interpolate(log(*scores++), this_color);
         for (size_t j=0; j<4; ++j) {
-            *colors++ = (uint8_t)(this_color[j]*255);
+            *out++ = (uint8_t)(this_color[j]*255);
         }
     }
+} //color_by_scores
 
-}
-
+int32_t Rama_Mgr::bin_score(const double &score, uint8_t r_case)
+{
+    if (r_case == CASE_NONE)
+        return BIN_NA;
+    auto c = get_cutoffs(r_case);
+    if (score >= c->allowed)
+        return FAVORED;
+    if (score < c->outlier)
+        if (score > 0)
+            return OUTLIER;
+        return BIN_NA;
+    return ALLOWED;
+} //bin_score
 
 
 } //namespace isolde

@@ -344,9 +344,18 @@ def spiral(major_radius=0.25, minor_radius=0.1, height=1, turns=1.0,
     return tube.tube_spline(spline_xyz, minor_radius, segment_subdivisions = 2, circle_subdivisions = circle_segments)
 
 
-
-    
 def simple_arrow(radius = 0.1, height = 1, nc = 20, color = [255, 0, 0, 255], caps = True, 
+                    head_length_fraction = 0.33, head_width_ratio = 1.5, 
+                    points_out = True):
+    from chimerax.core.models import Drawing
+    d = Drawing(name='Arrow')
+    d.color = color
+    d.vertices, d.normals, d.triangles = simple_arrow_geometry(
+        radius, height, nc, caps, head_length_fraction, 
+        head_width_ratio, points_out)
+    return d
+    
+def simple_arrow_geometry(radius = 0.1, height = 1, nc = 20, caps = True, 
                     head_length_fraction = 0.33, head_width_ratio = 1.5, 
                     points_out = True):
     '''
@@ -354,13 +363,6 @@ def simple_arrow(radius = 0.1, height = 1, nc = 20, color = [255, 0, 0, 255], ca
     If points_out is true the point of the longer, narrower cone will
     be at the origin.
     '''
-    from chimerax.core.models import Drawing
-    d = Drawing(name='Arrow')
-    #~ head = Drawing(name = 'arrow_head')
-    #~ shaft = Drawing(name = 'arrow_shaft')
-    d.color = color
-    #~ head.color = color
-    #~ shaft.color = color
     head_base_width = radius
     shaft_base_width = radius / head_width_ratio
     head_length = height * head_length_fraction
@@ -397,11 +399,11 @@ def simple_arrow(radius = 0.1, height = 1, nc = 20, color = [255, 0, 0, 255], ca
     #~ shaft.triangles = st
     #~ d.add_drawing(head)
     #~ d.add_drawing(shaft)
-    d.vertices = numpy.concatenate((hver, sver))
-    d.normals = numpy.concatenate((hn, sn))
-    d.triangles = numpy.concatenate((ht, st+len(hver)))
+    v = numpy.concatenate((hver, sver))
+    n = numpy.concatenate((hn, sn))
+    t = numpy.concatenate((ht, st+len(hver)))
     
-    return d
+    return v,n,t
     
 def arrow_between_points(arrow, xyz0, xyz1):
     '''

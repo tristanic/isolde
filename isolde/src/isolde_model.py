@@ -35,14 +35,14 @@ class IsoldeModel(Model):
         dm.add_drawing(dd)
         am.add([dm])
         self.add([am])
-        ad = self._all_annotated_dihedrals = Dihedrals(drawing=dd, session=session)
-        bd = self.backbone_dihedrals = Backbone_Dihedrals(session, mm)
-        ad.append(bd.phi)
-        ad.append(bd.psi)
-        rots = self.rotamers = rotamers.all_rotamers_in_selection(session,
-                                                    mm.atoms)
-        for r in rots.values():
-            ad.append(r.dihedrals)
+        #~ ad = self._all_annotated_dihedrals = Dihedrals(drawing=dd, session=session)
+        #~ bd = self.backbone_dihedrals = Backbone_Dihedrals(session, mm)
+        #~ ad.append(bd.phi)
+        #~ ad.append(bd.psi)
+        #~ rots = self.rotamers = rotamers.all_rotamers_in_selection(session,
+                                                    #~ mm.atoms)
+        #~ for r in rots.values():
+            #~ ad.append(r.dihedrals)
         self.distance_restraints = {
             'ca_to_ca_plus_two':    backbone_restraints.CA_to_CA_plus_Two(session, mm),
             'o_to_n_plus_four':     backbone_restraints.O_to_N_plus_Four(session, mm),
@@ -56,6 +56,12 @@ class IsoldeModel(Model):
     @property
     def master_model(self):
         return self._master_model
+
+
+def _isolde_crystal_model_from_atomic_structure_and_mtz(session, 
+    isolde, model, mtzfile, map_oversampling=3):
+    cs = CrystalStructure(session, model, mtzfile=mtzfile, map_oversampling = map_oversampling)
+    return IsoldeCrystalModel(session, isolde, cs)
 
 class IsoldeCrystalModel(IsoldeModel):
     '''

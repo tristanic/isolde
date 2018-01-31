@@ -264,9 +264,9 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>0</y>
+                  <y>-522</y>
                   <width>520</width>
-                  <height>1159</height>
+                  <height>1143</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0,0,0,0">
@@ -1357,17 +1357,17 @@ border: 1px;
                     <enum>QFrame::Raised</enum>
                    </property>
                    <layout class="QGridLayout" name="gridLayout">
-                    <item row="2" column="0">
+                    <item row="1" column="0">
                      <widget class="QLabel" name="_sim_force_field_selection_label">
                       <property name="text">
                        <string>MD Forcefield:</string>
                       </property>
                      </widget>
                     </item>
-                    <item row="2" column="2">
+                    <item row="1" column="2">
                      <widget class="QComboBox" name="_sim_force_field_combo_box"/>
                     </item>
-                    <item row="2" column="1">
+                    <item row="1" column="1">
                      <spacer name="horizontalSpacer_2">
                       <property name="orientation">
                        <enum>Qt::Horizontal</enum>
@@ -1380,14 +1380,14 @@ border: 1px;
                       </property>
                      </spacer>
                     </item>
-                    <item row="3" column="0">
+                    <item row="2" column="0">
                      <widget class="QLabel" name="_sim_water_model_selection_label">
                       <property name="text">
                        <string>Water model</string>
                       </property>
                      </widget>
                     </item>
-                    <item row="3" column="1">
+                    <item row="2" column="1">
                      <spacer name="horizontalSpacer_3">
                       <property name="orientation">
                        <enum>Qt::Horizontal</enum>
@@ -1400,18 +1400,8 @@ border: 1px;
                       </property>
                      </spacer>
                     </item>
-                    <item row="3" column="2">
+                    <item row="2" column="2">
                      <widget class="QComboBox" name="_sim_water_model_combo_box"/>
-                    </item>
-                    <item row="0" column="0">
-                     <widget class="QFrame" name="frame_4">
-                      <property name="frameShape">
-                       <enum>QFrame::StyledPanel</enum>
-                      </property>
-                      <property name="frameShadow">
-                       <enum>QFrame::Raised</enum>
-                      </property>
-                     </widget>
                     </item>
                    </layout>
                   </widget>

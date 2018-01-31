@@ -39,9 +39,11 @@ import chimerax
 from chimerax import clipper
 
 from chimerax.core import triggerset
-from chimerax.core.models import Drawing
+from chimerax.core.models import Drawing, Model
+from chimerax.core.map import Volume
+from chimerax.core.atomic import AtomicStructure
 
-
+from .isolde_model import IsoldeCrystalModel, IsoldeEMModel, IsoldeFreeModel
 from . import rotamers, dihedrals
 from .eventhandler import EventHandler
 from .constants import defaults, sim_outcomes, control
@@ -212,7 +214,7 @@ class Isolde():
         
         # Find or create the validation managers
         from . import session_extensions
-        self._validation_mgr = Validation_Manager(session)
+        self._validation_mgr = Validation_Mgr(session)
         
         self.triggers = triggerset.TriggerSet()
         for t in self.trigger_names:
@@ -224,24 +226,19 @@ class Isolde():
 
         self._sim_interface = None
         
-        
         self._can_checkpoint = True
         self.checkpoint_disabled_reasons = {}
         self._last_checkpoint = None
-
         
-        self.live_validation_interface = \
-            validation_interface.ChimeraXValidationInterface(self.session, self) #TODO: Remove
-        
-        
+        #~ self.live_validation_interface = \
+            #~ validation_interface.ChimeraXValidationInterface(self.session, self) #TODO: Remove
+                
         self.params = IsoldeParams()
         self.sim_params = SimParams()
 
         self._status = self.session.logger.status
 
-        #~ from .eventhandler import EventHandler
         self._event_handler = EventHandler(self.session)
-
 
         # Available pre-defined colors
         from chimerax.core import colors
@@ -256,9 +253,9 @@ class Isolde():
         # Model object to hold annotations (arrows, etc.)
         # TODO: There needs to be a unique annotation drawing for each model
         # considered by ISOLDE
-        from chimerax.core.models import Model
-        self._annotations = Model('ISOLDE annotations', self.session)
-        self.session.models.add([self._annotations])
+        #~ from chimerax.core.models import Model
+        #~ self._annotations = Model('ISOLDE annotations', self.session)
+        #~ self.session.models.add([self._annotations])
 
         ####
         # Settings for handling of atomic coordinates
@@ -313,7 +310,7 @@ class Isolde():
         self.rama_validator = validation.RamaValidator()
         self._status('')
         # object that handles checking and annotation of peptide bond geometry
-        self.omega_validator = validation.OmegaValidator(self._annotations)
+        #~ self.omega_validator = validation.OmegaValidator(self._annotations)
         # Generic widget object holding the Ramachandran plot
         self._rama_plot_window = None
         # Object holding Ramachandran plot information and controls
@@ -328,7 +325,7 @@ class Isolde():
         self._mobile_backbone_dihedrals = None
         # A single Dihedrals array containing all proper dihedrals that
         # we want to be able to draw annotations for.
-        self._all_annotated_dihedrals = dihedrals.Dihedrals(drawing=self._annotations, session=self.session)
+        #~ self._all_annotated_dihedrals = dihedrals.Dihedrals(drawing=self._annotations, session=self.session)
 
 
         # Internal counter for Ramachandran update
@@ -581,7 +578,7 @@ class Isolde():
         for i in range(5):
             self.session.ui.processEvents()
         self._splash_destroy_countdown = 100
-        self._splash_handler = self.session.triggers.add_handler('new frame',
+        self._splash_handler = self.session.triggers.add_handler('graphics update',
             self._splash_destroy_cb)
 
         self.start_gui(gui)
@@ -1163,9 +1160,9 @@ class Isolde():
             self._haptic_current_nearest_atom = [None] * n
             self._haptic_current_nearest_atom_color = [None] * n
             self._haptic_current_nearest_atom_draw_mode = [None] * n
-            from . import haptics
+            from . import tugging
             for i in range(n):
-                d[i] = haptics.HapticTugger(self.session, i, self._annotations)
+                d[i] = tugging.HapticTugger(self.session, i)
             self._use_haptics = True
             self._status('')
             self._isolde_events.add_event_handler('Enable haptics during simulation',
@@ -1186,8 +1183,75 @@ class Isolde():
     ##############################################################
     # Menu control functions to run on key events
     ##############################################################
-
     def _update_model_list(self, *_):
+        sim_mode = self.sim_mode
+        modes = self._sim_modes
+        mmcb = self.iw._master_model_combo_box
+        mmcb.clear()
+        emcb = self.iw._em_map_model_combo_box
+        emcb.clear()
+        xmcb = self.iw._sim_basic_xtal_init_model_combo_box
+        xmcb.clear()
+        potential_model_combo_box = {
+            modes.xtal:    xmcb,
+            modes.em:      None,
+            modes.free:    None,
+        }
+        
+        _models = self.session.models.list()
+        #Consider top-level models only
+        models = []
+        for m in _models:
+            if len(m.id) == 1:
+                models.append(m)
+        models = sorted(models, key = lambda m: m.id)
+        mtd = {
+            AtomicStructure: [],
+            clipper.CrystalStructure: [],
+            IsoldeCrystalModel: [],
+            IsoldeEMModel: [],
+            IsoldeFreeModel: [],
+            Volume: []
+        }
+                
+        for m in models:
+            for mtype in mtd.keys():
+                if isinstance(m, mtype):
+                    mtd[mtype].append(m)
+        
+        if sim_mode == modes.xtal:
+            valid_models = mtd[clipper.CrystalStructure] + mtd[IsoldeCrystalModel]
+            potential_models = mtd[AtomicStructure] + mtd[IsoldeFreeModel]
+        elif sim_mode == modes.free:
+            valid_models = mtd[AtomicStructure] + mtd[IsoldeFreeModel]
+            potential_models = []
+        elif sim_mode == modes.em:
+            valid_models = mtd[IsoldeEMModel]
+            potential_models = mtd[AtomicStructure] + mtd[IsoldeFreeModel]
+
+        valid_models = sorted(valid_models, key=lambda m: m.id)
+        potential_models = sorted(potential_models, key=lambda m: m.id)    
+
+        for m in valid_models:
+            id_str = '{}. {}'.format(m.id_string(), m.name)
+            mmcb.addItem(id_str, _get_atomic_model(m))
+            self._available_models[id_str] = _get_atomic_model(m)
+        
+        for m in potential_models:
+            xmcb.addItem('{}. {}'.format(m.id_string(), m.name), _get_atomic_model(m))
+        
+        pmcb = potential_model_combo_box[self.sim_mode]
+        if pmcb is not None:
+            for m in potential_models:
+                pmcb.addItem('{}. {}'.format(m.id_string(), m.name), _get_atomic_model(m))
+        
+        if sim_mode == modes.em:
+            for m in mtd[Volume]:
+                emcb.addItem('{}. {}'.format(m.id_string(), m.name), m)
+                    
+        
+        
+    def _update_model_list_old(self, *_):
         self.iw._master_model_combo_box.clear()
         self.iw._em_map_model_combo_box.clear()
         self.iw._sim_basic_xtal_init_model_combo_box.clear()
@@ -1291,7 +1355,6 @@ class Isolde():
         flag = self._simulation_running
         iw = self.iw
         paused = self._sim_paused
-        #iw._sim_go_button.setDisabled(flag)
         go_button = iw._sim_go_button
         if paused and not flag:
             self._sim_paused = False
@@ -1308,17 +1371,10 @@ class Isolde():
         iw._sim_commit_button.setEnabled(flag)
         iw._sim_stop_and_revert_to_checkpoint_button.setEnabled(flag)
         iw._sim_stop_and_discard_button.setEnabled(flag)
-        # Change colour of minimisation and equilibration buttons according
-        # to current choice
         if self.simulation_type == 'equil':
             iw._sim_equil_button.setChecked(True)
-            #~ iw._sim_equil_button.setStyleSheet('background-color: green')
-            #~ iw._sim_min_button.setStyleSheet('background-color: red')
         else:
             iw._sim_min_button.setChecked(True)
-            #~ iw._sim_equil_button.setStyleSheet('background-color: red')
-            #~ iw._sim_min_button.setStyleSheet('background-color: green')
-
 
         # Update the status of the Go button
         self._selection_changed()
@@ -2133,7 +2189,7 @@ class Isolde():
             self._selected_model = m
             self.session.selection.clear()
             self._selected_model.selected = True
-            self._prepare_all_interactive_restraints(m)
+            #self._prepare_all_interactive_restraints(m)
             self._update_chain_list()
             if isinstance(m.parent, clipper.CrystalStructure):
                 self._initialize_xtal_maps(m.parent)
@@ -2565,9 +2621,9 @@ class Isolde():
                             distance_restraints, position_restraints, self.master_map_list)
         self._last_checkpoint = si.starting_checkpoint
         
-        if self.params.track_rotamer_status:
-            vi = self.live_validation_interface
-            vi.start_validation_threads(mobile_rotamers)
+        #~ if self.params.track_rotamer_status:
+            #~ vi = self.live_validation_interface
+            #~ vi.start_validation_threads(mobile_rotamers)
 
 
         self._status('Simulation running')
@@ -2677,8 +2733,8 @@ class Isolde():
         self._isolde_events.remove_event_handler(
             'rezone maps during sim', error_on_missing = False)
         
-        if self.params.track_rotamer_status:
-            self.live_validation_interface.stop_validation_threads()
+        #~ if self.params.track_rotamer_status:
+            #~ self.live_validation_interface.stop_validation_threads()
         self._update_dihedral_restraints_drawing()
 
         self._disable_rebuild_residue_frame()
@@ -3350,7 +3406,7 @@ class Isolde():
         #~ lighting.lighting(self.session, depth_cue=True)
         sharp_map = before_cs.xmaps['2FOFCWT_sharp, PH2FOFCWT_sharp']
         sd = sharp_map.mean_sd_rms()[1]
-        styleargs= self._map_style_settings[self._map_styles.solid_t20]
+        styleargs= self._map_style_settings[self._map_styles.solid_t60]
         from chimerax.core.map import volumecommand
         volumecommand.volume(self.session, [sharp_map], **styleargs)
         sharp_map.set_parameters(surface_levels = (2.5*sd,))
@@ -3382,6 +3438,13 @@ def _choice_warning(message):
     if reply == QMessageBox.Ok:
         return True
     return False
+
+def _get_atomic_model(m):
+    if hasattr(m, 'master_model'):
+        am = m.master_model
+    else:
+        am = m
+    return am
 
 
 
