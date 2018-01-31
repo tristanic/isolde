@@ -371,7 +371,7 @@ rama_mgr_set_cutoffs(void *mgr, size_t r_case, double allowed, double outlier)
         molc_error();
     }
 }
-    
+
 extern "C" EXPORT void
 rama_mgr_get_cutoffs(void *mgr, size_t r_case, double* cutoffs)
 {
@@ -458,7 +458,7 @@ rama_mgr_validate(void *mgr, void *residue, void *omega, void *phi,
 }
 
 extern "C" EXPORT void
-rama_mgr_validate_and_color(void *mgr, void *residue, void *omega, 
+rama_mgr_validate_and_color(void *mgr, void *residue, void *omega,
     void *phi, void *psi, uint8_t *r_case, size_t n, uint8_t *colors)
 {
     Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
@@ -532,6 +532,42 @@ rota_mgr_add_interpolator(void *mgr, pyobject_t *resname, size_t dim,
     }
 }
 
+extern "C" EXPORT void
+rota_mgr_set_cutoffs(void *mgr, double allowed, double outlier)
+{
+    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    try {
+        m->set_cutoffs(allowed, outlier);
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+rota_mgr_get_cutoffs(void *mgr, double* cutoffs)
+{
+    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    try {
+        auto c = m->get_cutoffs();
+        cutoffs[0] = c->allowed;
+        cutoffs[1] = c->outlier;
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+rota_mgr_set_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min)
+{
+    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    try {
+        m->set_colors(max, mid, min);
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
 extern "C" EXPORT size_t
 rota_mgr_get_rotamer(void *mgr, void *residue, size_t n, pyobject_t *rotamers)
 {
@@ -574,7 +610,47 @@ rota_mgr_validate_residue(void *mgr, void *residue, size_t n, double *scores)
     } catch (...) {
         molc_error();
     }
-} //rotamer_mgr_validate_residue
+} //rota_mgr_validate_residue
+
+extern "C" EXPORT void
+rota_mgr_color_by_score(void *mgr, double *score, size_t n, uint8_t *color)
+{
+    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    try {
+        m->color_by_score(score, n, color);
+    } catch (...) {
+        molc_error();
+    }
+} //rota_mgr_color_by_score
+
+extern "C" EXPORT size_t
+rota_mgr_non_favored(void *mgr, void *rotamer, size_t n, pyobject_t *bad, double *scores)
+{
+    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    Rotamer **r = static_cast<Rotamer **>(rotamer);
+    size_t found=0;
+    std::vector<double> vscores(n);
+    int32_t bin;
+    int32_t ALLOWED=m->ALLOWED;
+    int32_t OUTLIER=m->OUTLIER;
+    try {
+        m->validate(r, n, vscores.data());
+        for(size_t i=0; i<n; ++i) {
+            bin = m->bin_score(vscores[i]);
+            if (bin==ALLOWED || bin==OUTLIER)
+            {
+                bad[found] = r[i];
+                scores[found++] = vscores[i];
+            }
+        }
+        return found;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+
  /*************************************************************
   *
   * Rotamer functions
@@ -583,7 +659,7 @@ rota_mgr_validate_residue(void *mgr, void *residue, size_t n, double *scores)
 
 SET_PYTHON_CLASS(rotamer, Rotamer)
 GET_PYTHON_INSTANCES(rotamer, Rotamer)
-extern "C" EXPORT void 
+extern "C" EXPORT void
 rotamer_score(void *rotamer, size_t n, float32_t *score)
 {
     Rotamer **r = static_cast<Rotamer **>(rotamer);
@@ -598,7 +674,7 @@ rotamer_residue(void *rotamer, size_t n, pyobject_t *residue)
     error_wrap_array_get(r, n, &Rotamer::residue, residue);
 }
 
-extern "C" EXPORT void 
+extern "C" EXPORT void
 rotamer_ca_cb_bond(void *rotamer, size_t n, pyobject_t *bond)
 {
     Rotamer **r = static_cast<Rotamer **>(rotamer);
@@ -613,7 +689,7 @@ rotamer_num_chi(void *rotamer, size_t n, uint8_t *nchi)
 }
 
 extern "C" EXPORT void
-rotamer_angles(void *rotamer, double *a) 
+rotamer_angles(void *rotamer, double *a)
 {
     Rotamer *r = static_cast<Rotamer *>(rotamer);
     try {
@@ -622,6 +698,3 @@ rotamer_angles(void *rotamer, double *a)
         molc_error();
     }
 }
-    
-    
-

@@ -227,13 +227,13 @@ class Rama_Mgr:
         PREPRO=4
         ILEVAL=5
         GENERAL=6
-    
+
     class Rama_Bin(IntEnum):
         FAVORED=0
         ALLOWED=1
         OUTLIER=2
         NA=-1
-    
+
     from .constants import validation_cutoffs as val_defaults
 
     RAMA_CASE_DETAILS = {
@@ -324,12 +324,12 @@ class Rama_Mgr:
             cutoffs = cd['cutoffs']
             if cutoffs is not None:
                 self._set_cutoffs(case, *cutoffs)
-    
+
     def _set_cutoffs(self, case, allowed, outlier):
-        f = c_function('rama_mgr_set_cutoffs', 
+        f = c_function('rama_mgr_set_cutoffs',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double))
         f(self._c_pointer, case, allowed, outlier)
-    
+
     @property
     def cutoffs(self):
         f = c_function('rama_mgr_get_cutoffs',
@@ -341,14 +341,14 @@ class Rama_Mgr:
                 f(self._c_pointer, case, pointer(cutoffs))
                 cdict[case] = cutoffs
         return cdict
-    
+
     def set_default_colors(self):
         from .constants import validation_cutoffs as val_defaults
         self.set_color_scale(val_defaults.MAX_FAVORED_COLOR, val_defaults.ALLOWED_COLOR,
             val_defaults.OUTLIER_COLOR, val_defaults.NA_COLOR)
-    
+
     def set_color_scale(self, max_c, mid_c, min_c, na_c):
-        f = c_function('rama_mgr_set_color_scale', 
+        f = c_function('rama_mgr_set_color_scale',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
                   ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8),
                   ctypes.POINTER(ctypes.c_uint8)))
@@ -360,7 +360,7 @@ class Rama_Mgr:
             if len(arr) != 4:
                 raise TypeError('Each color should be an array of 4 values in the range (0,255)')
         f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc), pointer(nac))
-    
+
     @property
     def dihedral_manager(self):
         return self._dihedral_mgr
@@ -420,16 +420,16 @@ class Rama_Mgr:
             psis._c_pointers, n, pointer(ret))
         return ret
 
- 
+
     def validate_by_residue(self, residues):
         '''
         Returns a tuple of (double, uint8) Numpy arrays giving the scores
-        and Ramachandran cases for each residue. Non-Ramachandran 
-        (N- and C-terminal peptide and non-protein) residues will 
+        and Ramachandran cases for each residue. Non-Ramachandran
+        (N- and C-terminal peptide and non-protein) residues will
         receive scores of -1. Case definitions are found in
         :class:`Rama_Mgr`.Rama_Case.
         '''
-        f = c_function('rama_mgr_validate_by_residue', 
+        f = c_function('rama_mgr_validate_by_residue',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                     ctypes.c_size_t, ctypes.POINTER(ctypes.c_double),
                     ctypes.POINTER(ctypes.c_uint8)))
@@ -444,25 +444,25 @@ class Rama_Mgr:
         n = len(scores)
         if len(cases) != len(scores):
             raise TypeError('Both arrays must be the same length!')
-        f = c_function('rama_mgr_bin_scores', 
+        f = c_function('rama_mgr_bin_scores',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double),
-                ctypes.POINTER(ctypes.c_uint8), ctypes.c_size_t, 
+                ctypes.POINTER(ctypes.c_uint8), ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_int8)))
         ret = numpy.empty(n, int8)
         f(self._c_pointer, pointer(scores), pointer(cases), n, ret)
         return ret
-        
-    
+
+
     def outliers(self, residues):
         scores, cases = self.validate_by_residue(residues)
         bins = self.bin_scores(scores, cases)
         return residues[bins==self.Rama_Bin.OUTLIER]
-    
-        
+
+
     def validate(self, residues, omegas, phis, psis, cases = None):
         '''
-        Returns Ramachandran scores for a set of pre-defined valid 
-        Ramachandran cases. The input to this function is typically 
+        Returns Ramachandran scores for a set of pre-defined valid
+        Ramachandran cases. The input to this function is typically
         the output of :class:`Rama_Mgr`.rama_cases(). For a slower
         but more robust method which can handle invalid (non-protein
         and/or terminal) residues, use validate_by_residue().
@@ -474,7 +474,7 @@ class Rama_Mgr:
             if len(arr) != n:
                 raise TypeError('Array lengths must be equal!')
         return self._validate(residues, omegas, phis, psis, cases, n)
-    
+
     def _validate(self, residues, omegas, phis, psis, cases, n):
         f = c_function('rama_mgr_validate',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
@@ -484,11 +484,11 @@ class Rama_Mgr:
         f(self._c_pointer, residues._c_pointers, omegas._c_pointers,
             phis._c_pointers, psis._c_pointers, pointer(cases), n, pointer(ret))
         return ret
-    
+
     def rama_colors(self, residues, omegas, phis, psis, cases = None):
         '''
         Returns a nx4 uint8 :class:`Numpy` array giving a color for each
-        residue corresponding to the current colormap. 
+        residue corresponding to the current colormap.
         '''
         if cases is None:
             cases = self.rama_cases(omegas, psis)
@@ -497,9 +497,9 @@ class Rama_Mgr:
             if len(arr) != n:
                 raise TypeError('Array lengths must be equal!')
         return self._rama_colors(residues, omegas, phis, psis, cases, n)
-    
+
     def _rama_colors(self, residues, omegas, phis, psis, cases, n):
-        f = c_function('rama_mgr_validate_and_color', 
+        f = c_function('rama_mgr_validate_and_color',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                   ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
                   ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint8)))
@@ -507,10 +507,10 @@ class Rama_Mgr:
         f(self._c_pointer, residues._c_pointers, omegas._c_pointers,
             phis._c_pointers, psis._c_pointers, pointer(cases), n, pointer(ret))
         return ret;
-    
+
     def bin_scores(self, scores, cases):
         f = c_function('rama_mgr_bin_scores',
-            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double), 
+            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double),
                 ctypes.POINTER(ctypes.c_uint8), ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_int32)))
         n = len(scores)
@@ -519,11 +519,18 @@ class Rama_Mgr:
         bins = numpy.empty(n, int32)
         f(self._c_pointer, pointer(scores), pointer(cases), n, bins.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)))
         return bins
-    
-        
-        
+
+
+
 
 class Rota_Mgr:
+    from enum import IntEnum
+    class Rota_Bin(IntEnum):
+        FAVORED=0
+        ALLOWED=1
+        OUTLIER=2
+        NA=-1
+
     def __init__(self, session, c_pointer=None):
         if hasattr(session, 'rota_mgr'):
             raise RuntimeError('Session already has a Rotamer manager!')
@@ -540,20 +547,59 @@ class Rota_Mgr:
         self.session = session
         self._prepare_all_validators()
         self._load_rotamer_defs()
+        self.set_default_cutoffs()
+        self.set_default_colors()
         session.rota_mgr = self
+
+    def set_default_colors(self):
+        from .constants import validation_cutoffs as val_defaults
+        self.set_color_scale(val_defaults.MAX_FAVORED_COLOR, val_defaults.ALLOWED_COLOR,
+            val_defaults.OUTLIER_COLOR)
+
+    def set_color_scale(self, max_c, mid_c, min_c):
+        f = c_function('rota_mgr_set_color_scale',
+            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
+                  ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)))
+        maxc = numpy.array(max_c, uint8)
+        midc = numpy.array(mid_c, uint8)
+        minc = numpy.array(min_c, uint8)
+        for arr in (maxc, midc, minc):
+            if len(arr) != 4:
+                raise TypeError('Each color should be an array of 4 values in the range (0,255)')
+        f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc))
+
+    def set_default_cutoffs(self):
+        '''
+        Reset the rotamer cutoffs to default values
+        '''
+        from .constants import validation_cutoffs as vc
+        self._set_cutoffs(vc.ROTA_ALLOWED_CUTOFF, vc.ROTA_OUTLIER_CUTOFF)
+
+    def _set_cutoffs(self, allowed, outlier):
+        f = c_function('rota_mgr_set_cutoffs',
+            args=(ctypes.c_void_p, ctypes.c_double, ctypes.c_double))
+        f(self._c_pointer, allowed, outlier)
+
+    @property
+    def cutoffs(self):
+        f = c_function('rota_mgr_get_cutoffs',
+            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double)))
+        cutoffs = numpy.empty(2, numpy.double)
+        f(self._c_pointer, pointer(cutoffs))
+        return cutoffs
 
     @property
     def defined_rotamers(self):
         if not hasattr(self, '_defined_rotamer_dict') or self._defined_rotamer_dict is None:
             self._load_rotamer_defs()
         return self._defined_rotamer_dict
-            
+
     def _load_defined_rotamers(self):
         with open(os.path.join(DICT_DIR, 'rota_data.json'), 'r') as f:
             self._defined_rotamer_dict = json.load(f)
-        
+
     def _load_rotamer_defs(self):
-        f = c_function('rota_mgr_add_rotamer_def', 
+        f = c_function('rota_mgr_add_rotamer_def',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_bool))
         dd = self._dihedral_mgr.dihedral_dict
         pd = dd['residues']['protein']
@@ -577,9 +623,9 @@ class Rota_Mgr:
                 continue
             idata = generate_interpolator_data(fname, True)
             self._add_interpolator(aa, *idata)
-    
+
     def _add_interpolator(self, resname, ndim, axis_lengths, min_vals, max_vals, data):
-        f = c_function('rota_mgr_add_interpolator', 
+        f = c_function('rota_mgr_add_interpolator',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
             ctypes.POINTER(ctypes.c_uint32), ctypes.POINTER(ctypes.c_double),
             ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double)))
@@ -588,17 +634,17 @@ class Rota_Mgr:
         axis_lengths = axis_lengths.astype(uint32)
         f(self._c_pointer, ctypes.byref(key), ndim, pointer(axis_lengths),
             pointer(min_vals), pointer(max_vals), pointer(data))
-    
+
     def get_rotamers(self, residues):
         f = c_function('rota_mgr_get_rotamer',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p), 
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
             ret=ctypes.c_size_t)
-        
+
         n = len(residues)
         r_ptrs = numpy.empty(n, cptr)
         found = f(self._c_pointer, residues._c_pointers, n, pointer(r_ptrs))
         return _rotamers(r_ptrs[0:found])
-        
+
     def validate_rotamers(self, rotamers):
         f = c_function('rota_mgr_validate_rotamer',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
@@ -606,7 +652,7 @@ class Rota_Mgr:
         ret = numpy.empty(n, numpy.double)
         f(self._c_pointer, rotamers._c_pointers, n, pointer(ret))
         return ret
-    
+
     def validate_residues(self, residues):
         f = c_function('rota_mgr_validate_residue',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
@@ -614,9 +660,32 @@ class Rota_Mgr:
         ret = numpy.empty(n, numpy.double)
         f(self._c_pointer, residues._c_pointers, n, pointer(ret))
         return ret
-        
 
-            
+    def non_favored_rotamers(self, rotamers):
+        f = c_function('rota_mgr_non_favored',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.POINTER(ctypes.c_double)),
+            ret=ctypes.c_size_t)
+        n = len(rotamers)
+        ptrs = numpy.empty(n, cptr)
+        scores = numpy.empty(n, float64)
+        found = f(self._c_pointer, rotamers._c_pointers, n, pointer(ptrs), pointer(scores))
+        print ("Found {} bad rotamers".format(found)) #DELETEME
+        return (_rotamers(ptrs[0:found]), scores[0:found])
+
+    def validate_and_color_rotamers(self, rotamers, non_favored_only = True):
+        if non_favored_only:
+            rotamers, scores = self.non_favored_rotamers(rotamers)
+        else:
+            scores = self.validate_rotamers(rotamers)
+        n = len(rotamers)
+        colors = numpy.empty((n, 4), uint8)
+        f = c_function('rota_mgr_color_by_score',
+            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double),
+                ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint8)))
+        f(self._c_pointer, pointer(scores), n, pointer(colors))
+        return (rotamers, colors)
+
+
 
 class _Dihedral(State):
     '''
@@ -674,7 +743,7 @@ class Rotamer(State):
 
     def reset_state(self):
         pass
-    
+
     @property
     def angles(self):
         f = c_function('rotamer_angles', args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double)))
@@ -682,7 +751,7 @@ class Rotamer(State):
         f(self._c_pointer, pointer(ret))
         return ret
 
-    residue = c_property('rotamer_residue', cptr, astype=_residue_or_none, read_only=True, 
+    residue = c_property('rotamer_residue', cptr, astype=_residue_or_none, read_only=True,
                 doc='Residue this rotamer belongs to. Read only.')
     score = c_property('rotamer_score', float32, read_only=True,
                 doc='P-value for the current conformation of this rotamer. Read only.')

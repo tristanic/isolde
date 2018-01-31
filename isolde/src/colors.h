@@ -44,20 +44,43 @@ inline void interpolate_colors(const color &min_color, const color &max_color,
     double offset = (score-min_val)/(max_val-min_val);
     for (size_t i=0; i<4; ++i) {
         out[i] = min_color[i] + (max_color[i]-min_color[i])*offset;
-    }    
+    }
 }
 
 
 class colormap
 {
 private:
-    std::unordered_map<double, color> _cmap;
-    std::vector<double> _mapped_vals;
+    // std::unordered_map<double, color> _cmap;
+    // std::vector<double> _mapped_vals;
+    struct mapped_color
+    {
+        double val;
+        color thecolor;
+        bool operator< (const mapped_color &rhs) const {return val < rhs.val;}
+        bool operator< (const double &v) const {return val < v;}
+        bool operator> (const double &v) const {return val > v;}
+        bool operator<= (const double &v) const {return val <= v;}
+        bool operator>= (const double &v) const {return val >= v;}
+        bool operator== (const double &v) const {return val == v;}
+        bool operator!= (const double &v) const {return val != v;}
+
+
+
+        mapped_color() {}
+        mapped_color(const double &v, const color &c): val(v)
+        {
+            for (size_t i=0; i<4; ++i) {
+                thecolor[i] = c[i];
+            }
+        }
+    };
+    std::vector<mapped_color> _mapped_colors;
     color _above_max;
     color _below_min;
     bool _color_above = false;
     bool _color_below = false;
-public:    
+public:
     colormap() {}
     ~colormap() {}
     colormap(double* mapped_vals, color* mapped_colors, size_t n)
@@ -65,12 +88,9 @@ public:
     {
         for (size_t i=0; i<n; ++i)
         {
-            auto &mcolor = _cmap[mapped_vals[i]];
-            for (size_t j=0; j<4; ++j)
-                mcolor[j] = mapped_colors[i][j];
-            _mapped_vals.push_back(mapped_vals[i]);
+            _mapped_colors.push_back(mapped_color(*mapped_vals++, *mapped_colors++));
         }
-        std::sort(_mapped_vals.begin(), _mapped_vals.end());
+        std::sort(_mapped_colors.begin(), _mapped_colors.end());
     }
     colormap(double* mapped_vals, color* mapped_colors, size_t n,
         const color &above_max, const color &below_min)
@@ -84,10 +104,10 @@ public:
             _color_below = true;
         }
     }
-    
+
     void interpolate(double value, color &rgba)
     {
-        interpolate(&value, 0, &rgba);
+        interpolate(&value, 1, &rgba);
     }
 
     void interpolate(double *values, size_t n, color *rgba)
@@ -96,23 +116,23 @@ public:
         for (size_t i=0; i<n; ++i)
         {
             double v = values[i];
-            if (v<_mapped_vals[0]) {
+            if (_mapped_colors[0]>v) {
                 if (_color_below) {
                     copy_color(_below_min, this_color);
                 } else {
-                    copy_color((_cmap[_mapped_vals[0]]), this_color);
+                    copy_color((_mapped_colors[0].thecolor), this_color);
                 }
-            } else if (v>_mapped_vals.back()) {
+            } else if (_mapped_colors.back()<v) {
                 if (_color_above) {
                     copy_color(_above_max, this_color);
                 } else {
-                    copy_color(_cmap[_mapped_vals.back()], this_color);
+                    copy_color(_mapped_colors.back().thecolor, this_color);
                 }
             } else {
                 // first value greater than or equal to v
-                auto gt = std::lower_bound(_mapped_vals.begin(), _mapped_vals.end(), v);
+                auto gt = std::lower_bound(_mapped_colors.begin(), _mapped_colors.end(), v);
                 auto lt = gt-1;
-                interpolate_colors(_cmap[*lt], _cmap[*gt], *lt, *gt, v, this_color);
+                interpolate_colors((*lt).thecolor, (*gt).thecolor, (*lt).val, (*gt).val, v, this_color);
             }
             copy_color(this_color, rgba[i]);
         }

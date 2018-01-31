@@ -5,6 +5,7 @@
 #include "../atomic_cpp/dihedral.h"
 #include "../atomic_cpp/dihedral_mgr.h"
 #include "../interpolation/nd_interp.h"
+#include "../colors.h"
 #include <atomstruct/destruct.h>
 #include <atomstruct/string_types.h>
 #include <pyinstance/PythonInstance.declare.h>
@@ -61,8 +62,25 @@ class Rota_Mgr: public DestructionObserver, public pyinstance::PythonInstance<Ro
 
 public:
     Rota_Mgr() {} // null constructor
-    ~Rota_Mgr();
     Rota_Mgr(Proper_Dihedral_Mgr *dmgr): _dmgr(dmgr) {};
+    ~Rota_Mgr();
+    struct cutoffs
+    {
+        double allowed;
+        double log_allowed;
+        double outlier;
+        double log_outlier;
+        cutoffs() {}
+        cutoffs(double a, double o): allowed(a), log_allowed(log(a)), outlier(o), log_outlier(log(o)) {}
+    };
+    enum Rota_Bins{FAVORED=0, ALLOWED=1, OUTLIER=2, BIN_NA=-1};
+
+    void set_cutoffs(const double &allowed, const double &outlier) {_cutoffs = cutoffs(allowed, outlier);}
+    cutoffs* get_cutoffs() {return &_cutoffs;}
+
+    void set_colors(uint8_t *max, uint8_t *mid, uint8_t *min);
+    colors::colormap *get_colors() {return &_colors;}
+
     void add_rotamer_def(const std::string &resname, size_t n_chi, bool symmetric);
     Rota_Def* get_rotamer_def(const std::string &resname);
     Rota_Def* get_rotamer_def(const ResName &resname);
@@ -72,17 +90,19 @@ public:
     void add_interpolator(const std::string &resname, const size_t &dim,
         uint32_t *n, double *min, double *max, double *data);
     RegularGridInterpolator<double>* get_interpolator(const std::string &resname)
-    { 
-        return &(_interpolators.at(resname)); 
+    {
+        return &(_interpolators.at(resname));
     }
     RegularGridInterpolator<double>* get_interpolator(const ResName &resname)
     {
-        return &(_interpolators.at(std::string(resname))); 
+        return &(_interpolators.at(std::string(resname)));
     }
     Proper_Dihedral_Mgr* dihedral_mgr() { return _dmgr; }
     void validate(Rotamer** rotamers, size_t n, double* scores);
     void validate(Residue** residues, size_t n, double* scores);
 
+    int32_t bin_score(const double &score);
+    void color_by_score(double *score, size_t n, uint8_t *out);
     virtual void destructors_done(const std::set<void*>& destroyed);
 
 private:
@@ -90,6 +110,8 @@ private:
     std::unordered_map<Residue*, Rotamer*> _residue_to_rotamer;
     std::unordered_map<std::string, Rota_Def> _resname_to_rota_def;
     std::unordered_map<std::string, RegularGridInterpolator<double>> _interpolators;
+    colors::colormap _colors;
+    cutoffs _cutoffs;
 
 }; // class Rota_Mgr
 } //namespace isolde

@@ -1,6 +1,7 @@
 #define PYINSTANCE_EXPORT
 
 #include "rota.h"
+#include <sstream> //DELETEME
 #include <pyinstance/PythonInstance.instantiate.h>
 
 template class pyinstance::PythonInstance<isolde::Rotamer>;
@@ -91,6 +92,23 @@ void Rota_Mgr::add_rotamer_def(const std::string &resname, size_t n_chi, bool sy
     }
 }
 
+void Rota_Mgr::set_colors(uint8_t *max, uint8_t *mid, uint8_t *min)
+{
+    colors::color thecolors[3];
+    for (size_t i=0; i<4; ++i)
+    {
+        thecolors[0][i] = ((double) *min++) / 255.0;
+        thecolors[1][i] = ((double) *mid++) / 255.0;
+        thecolors[2][i] = ((double) *max++) / 255.0;
+    }
+    auto cuts = get_cutoffs();
+    double these_cutoffs[3];
+    these_cutoffs[0] = cuts->log_outlier;
+    these_cutoffs[1] = cuts->log_allowed;
+    these_cutoffs[2] = 0;
+    _colors = colors::colormap(these_cutoffs, thecolors, 3);
+}
+
 Rota_Def* Rota_Mgr::get_rotamer_def(const std::string &resname)
 {
     return &(_resname_to_rota_def.at(resname));
@@ -131,8 +149,8 @@ Rotamer* Rota_Mgr::get_rotamer(Residue* residue)
     } else {
         return new_rotamer(residue);
     }
-    
-    
+
+
     //~ try {
         //~ return _residue_to_rotamer.at(residue);
     //~ } catch (std::out_of_range) {
@@ -182,6 +200,31 @@ void Rota_Mgr::validate(Residue** residues, size_t n, double* scores)
         scores[i] = interpolator.interpolate((rot->angles()));
     }
 }
+
+void Rota_Mgr::color_by_score(double *score, size_t n, uint8_t *out)
+{
+    colors::color this_color;
+    auto cmap = get_colors();
+    for (size_t i=0; i<n; ++i) {
+        cmap->interpolate(log(*score++), this_color);
+        for(size_t j=0; j<4; ++j) {
+            *out++ = (uint8_t)(this_color[j]*255.0);
+        }
+    }
+}
+
+int32_t Rota_Mgr::bin_score(const double &score)
+{
+    if (score >= _cutoffs.allowed)
+        return FAVORED;
+    if (score < _cutoffs.outlier) {
+        if (score>0)
+            return OUTLIER;
+        return BIN_NA;
+    }
+    return ALLOWED;
+} //bin_score
+
 
 void Rota_Mgr::destructors_done(const std::set<void*>& destroyed)
 {
