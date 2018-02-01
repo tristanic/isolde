@@ -408,6 +408,60 @@ rama_mgr_add_interpolator(void *mgr, size_t r_case, size_t dim,
     }
 }
 
+extern "C" EXPORT size_t
+rama_mgr_interpolator_dim(void *mgr, size_t r_case)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    try {
+        auto it = m->get_interpolator(r_case);
+        return it->dim();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+rama_mgr_interpolator_axis_lengths(void *mgr, size_t r_case, uint32_t *ret)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    try {
+        auto it = m->get_interpolator(r_case);
+        for (auto l: it->length())
+            *ret++ = l;
+    } catch (...) {
+        molc_error();
+    }
+}
+    
+extern "C" EXPORT void
+rama_mgr_interpolator_minmax(void *mgr, size_t r_case, double *minvals, double *maxvals)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    try {
+        auto it = m->get_interpolator(r_case);
+        for (auto m: it->min())
+            *minvals++ = m;
+        for (auto m: it->max())
+            *maxvals++ = m;
+    } catch (...) {
+        molc_error();
+    }
+}        
+
+extern "C" EXPORT void
+rama_mgr_interpolator_values(void *mgr, size_t r_case, double *vals)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    try {
+        auto it = m->get_interpolator(r_case);
+        for (auto d: it->data())
+            *vals++ = d;
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
 extern "C" EXPORT void
 rama_mgr_rama_cases(void *mgr, void *omega, void *psi,
     size_t n, uint8_t *cases)

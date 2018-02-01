@@ -571,16 +571,14 @@ class Isolde():
             self._root_dir,'resources/isolde_splash_screen.jpg'))
         splash = self._splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
         splash.setMask(splash_pix.mask())
-        splash.showMessage('\n\n\n\nAnalysing your structure. Please be patient...',
-                alignment = Qt.AlignRight | Qt.AlignVCenter)
         splash.show()
         # Make sure the splash screen is actually shown
         for i in range(5):
             self.session.ui.processEvents()
-        self._splash_destroy_countdown = 100
-        self._splash_handler = self.session.triggers.add_handler('graphics update',
-            self._splash_destroy_cb)
-
+        from PyQt5 import QtCore
+        # Close the splash after 2 seconds
+        QtCore.QTimer.singleShot(2000, splash.close)
+        
         self.start_gui(gui)
 
 
@@ -607,7 +605,7 @@ class Isolde():
     @property
     def selected_model(self):
         return self._selected_model
-
+    
     @selected_model.setter
     def selected_model(self, model):
         if not isinstance(model, chimerax.core.atomic.AtomicStructure):
@@ -670,16 +668,13 @@ class Isolde():
         # initialise to current conditions
         ####
 
-
-        self._event_handler.add_event_handler('update_menu_on_selection',
-                                              'selection changed',
-                                              self._selection_changed)
-        self._event_handler.add_event_handler('update_menu_on_model_add',
-                                              'add models',
-                                              self._update_model_list)
-        self._event_handler.add_event_handler('update_menu_on_model_remove',
-                                              'remove models',
-                                              self._update_model_list)
+        eh = self._event_handler
+        eh.add_event_handler('update_menu_on_selection',
+                             'selection changed', self._selection_changed)
+        eh.add_event_handler('update_menu_on_model_add',
+                            'add models', self._update_model_list)
+        eh.add_event_handler('update_menu_on_model_remove',
+                             'remove models', self._update_model_list)
         self._selection_changed()
         self._update_model_list()
 
@@ -798,17 +793,18 @@ class Isolde():
         # cases
         cb = iw._validate_rama_case_combo_box
         cb.clear()
-        from . import validation
-        # First two keys are N- and C-terminal residues, which we don't plot
-        keys = validation.RAMA_CASES[2:]
+        rm = self._validation_mgr.rama_mgr
+        #~ from . import validation
+        # First key is the null (N/A) case, which doesn't get plotted
+        keys = rm.RAMA_CASES[1:]
         for key in reversed(keys):
-            cb.addItem(validation.RAMA_CASE_DETAILS[key]['name'], key)
+            cb.addItem(rm.RAMA_CASE_DETAILS[key]['name'], key)
 
 
     def _prepare_ramachandran_plot(self):
         '''
         Prepare an empty MatPlotLib figure to put the Ramachandran plots in.
-        '''
+        '''        
         from . import validation
         iw = self.iw
         container = self._rama_plot_window = iw._validate_rama_plot_layout
@@ -3379,13 +3375,6 @@ class Isolde():
     ##############################################
     # General housekeeping
     ##############################################
-
-    def _splash_destroy_cb(self, *_):
-        self._splash_destroy_countdown -= 1
-        if self._splash_destroy_countdown <= 0:
-            self.session.triggers.remove_handler(self._splash_handler)
-            self._splash_handler = None
-            self._splash.close()
 
 
     ##############################################

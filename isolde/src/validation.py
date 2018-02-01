@@ -574,15 +574,15 @@ class RamaValidator():
         return self._rama_cases
 
 
-class RamaPlot():
+class RamaPlot:
 
-    def __init__(self, session, container, validator):
+    def __init__(self, session, rama_mgr, container):
         import numpy
         self.session = session
+        mgr = self._rama_mgr = rama_mgr
+        self._case_enum = rama_mgr.Rama_Case
         self.container = container
-        self.validator = validator
         self.current_case = None
-        self._last_bd = None
 
         from matplotlib.figure import Figure
         from matplotlib.backends.backend_qt5agg import (
@@ -590,12 +590,16 @@ class RamaPlot():
             NavigationToolbar2QT as NavigationToolbar
             )
 
+        self._all_current_residues = None
+        self._all_current_dihedrals = None
+        
+        self._case_residues = None
+        self._case_dihedrals = None
+        
         fig = self.figure = Figure()
 
         axes = self.axes = fig.add_subplot(111, aspect='equal')
-        
-        #self._format_axes()
-                
+                        
         # Scatter plot needs to always have at least one point, so we'll
         # define a point off the scale for when there's nothing to plot
         self.default_coords = numpy.array([200,200])
@@ -630,13 +634,17 @@ class RamaPlot():
     
     def cache_contour_plots(self, key):
         import numpy
-        case_data = self.validator.rama_cases[key].interpolator
-        grid = numpy.degrees(case_data.grid)
-        from operator import itemgetter
-        contours = itemgetter(0,2)(RAMA_CASE_DETAILS[key]['cutoffs'])
-        grid = numpy.degrees(case_data.grid)
-        values = numpy.rot90(numpy.fliplr(case_data.values)).astype(float)
-        logvalues = self.logvalues = numpy.log(values)
+        mgr = self._rama_mgr
+        grid = numpy.degrees(mgr.interpolator_axes(key))
+        values = numpy.rot90(numpy.fliplr(mrg.interpolator_values(key))).astype(float)
+        #~ import numpy
+        #~ case_data = self.validator.rama_cases[key].interpolator
+        #~ grid = numpy.degrees(case_data.grid)
+        #~ from operator import itemgetter
+        #~ contours = itemgetter(0,2)(RAMA_CASE_DETAILS[key]['cutoffs'])
+        #~ grid = numpy.degrees(case_data.grid)
+        #~ values = numpy.rot90(numpy.fliplr(case_data.values)).astype(float)
+        #~ logvalues = self.logvalues = numpy.log(values)
         contour_plot = self.axes.contour(*grid, values, contours)
         pcolor_plot = self.axes.pcolor(*grid, logvalues, cmap = 'BuGn')
         for coll in contour_plot.collections:
@@ -662,14 +670,16 @@ class RamaPlot():
 
     def on_pick(self, event):
         ind = event.ind[0]
-        res_index = self._last_bd.rama_cases[self.current_case][ind]
-        picked_residue = self._last_bd.residues[res_index]
+        picked_residue = self._current_residues[ind]
+        #~ res_index = self._last_bd.rama_cases[self.current_case][ind]
+        #~ picked_residue = self._last_bd.residues[res_index]
         from . import view
         view.focus_on_selection(self.session, self.session.main_view, picked_residue.atoms)
 
     def change_case(self, case_key):
-        self.current_case = case_key
         import numpy
+        mgr = self._rama_mgr
+        self.current_case = case_key
         self.axes.clear()
         try:
             contourplots = self.contours[case_key]
@@ -679,44 +689,73 @@ class RamaPlot():
         for coll in contourplots[0].collections:
             self.axes.add_artist(coll)
         self.axes.add_artist(contourplots[1])
-        from math import log
         from operator import itemgetter
-        contours = itemgetter(0,2)(RAMA_CASE_DETAILS[case_key]['cutoffs'])
-        P = self.P_limits = [0, -log(contours[0])]
-        self.scatter = self.axes.scatter((200),(200), picker = 2.0)
-        self.scatter.set_cmap('bwr')
+        from math import log
+        contours = itemgetter(0,2)(mgr.RAMA_CASE_DETAILS[case_key]['cutoffs'])
+        self.P_limits = [0, -log(contours[0])]
+        scatter = self.scatter = self.axes.scatter((200),(200), picker = 2.0)
+        scatter.set_cmap('bwr')
         self.on_resize()
 
-    def update_scatter(self, bd = None, force_update = False):
+    def set_target_residues(self, residues):
+        case = self.current_case
+        #~ rv = self.validator
+        mgr = self._rama_mgr
+        cenum = self._case_enum
+        if residues is not None:
+            r, omega, phi, psi = mgr.valid_rama_residues(residues)
+            cases = rama_cases(omega, psi)
+            self._all_current_residues = r
+            self._all_current_dihedrals = (omega, phi, psi, cases)
+            
+            if case in (cenum.CISPRO, cenum.TRANSPRO):
+                # Special case - have to check omega every time. Grab all prolines.
+                mask = r.names=='PRO'
+            else:
+                mask = cases[cases==case]
+                
+            r, omega, phi, psi, cases = [arr[mask] for arr in r, omega, phi, psi, cases]
+            self._case_residues = r
+            self._case_dihedrals = (omega, phi, psi, cases)
+        else:
+            self._all_current_residues = None
+            self._all_current_dihedrals = None
+            self._case_residues = None
+            self._case_dihedrals = None
+        
+
+    def update_scatter(self, force_update = False):
         import numpy
-        key = self.current_case
-        rv = self.validator
-        if bd is not None:
-            self._last_bd = bd
-            indices = bd.rama_cases[key]
-            if len(indices):
-                if force_update:
-                    rv.get_scores(bd)
-                phipsi = numpy.degrees(rv.phipsi[indices].astype(float))
-                logscores = numpy.log(bd.rama_scores[indices])
+        case = self.current_case
+        #~ rv = self.validator
+        mgr = self._rama_mgr
+        cenum = self._case_enum
+        r = self._case_residues
+        if r is not None:
+            dihedrals = self._case_dihedrals
+            omega, phi, psi, cases = dihedrals
+            if case in (cenum.CISPRO, cenum.TRANSPRO):
+                if case == cenum.CISPRO:
+                    mask = numpy.abs(omega.angles) <= CIS_MAX
+                else:
+                    mask = numpy.abs(omega.angles) > CIS_MAX
+                r, omega, phi, psi, cases = [arr[mask] for arr in (r, omega, phi, psi, cases)]
+                dihedrals = (omega, phi, psi, cases)
+            if len(r):
+                phipsi = numpy.degrees(numpy.column_stack(phi.angles, psi.angles))
+                logscores = numpy.log(rm.validate(r, *dihedrals))
             else:
                 phipsi = self.default_coords
                 logscores = self.default_logscores
+        
         else:
-            self._last_bd = None
             phipsi = self.default_coords
             logscores = self.default_logscores
-        if phipsi is not None and len(phipsi):
-            self.canvas.restore_region(self.background)
-            self.scatter.set_offsets(phipsi)
-            self.scatter.set_clim(self.P_limits)
-            self.scatter.set_array(-logscores)
-        else:
-            #Just in case of the unexpected
-            self.scatter.set_offsets(self.default_coords)
-        self.axes.draw_artist(self.scatter)
-        self.canvas.blit(self.axes.bbox)
-
+            
+        self.canvas.restore_region(self.background)
+        self.scatter.set_offsets(phipsi)
+        self.scatter.set_clim(self.P_limits)
+        self.scatter.set_array(-logscores)
 
 class OmegaValidator():
     def __init__(self, annotation_model):

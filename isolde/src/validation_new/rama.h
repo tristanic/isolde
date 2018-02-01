@@ -41,6 +41,8 @@ public:
     
     void add_interpolator(size_t r_case, const size_t &dim, 
         uint32_t *n, double *min, double *max, double *data);
+    RegularGridInterpolator<double> *get_interpolator(size_t r_case)
+        { return &(_interpolators.at(r_case)); }
 
     uint8_t rama_case(Dihedral *omega, Dihedral *psi);
     uint8_t rama_case(Residue *res, Proper_Dihedral_Mgr *mgr);

@@ -519,7 +519,52 @@ class Rama_Mgr:
         bins = numpy.empty(n, int32)
         f(self._c_pointer, pointer(scores), pointer(cases), n, bins.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)))
         return bins
-
+    
+    #######
+    # Access to the underlying interpolator data
+    #######
+    def interpolator_dim(self, rama_case):
+        f = c_function('rama_mgr_interpolator_dim', 
+            args=(ctypes.c_void_p, ctypes.c_size_t),
+            ret=ctypes.c_size_t)
+        return f(self._c_pointer, rama_case)
+    
+    def interpolator_axis_lengths(self, rama_case):
+        dim = self.interpolator_dim(rama_case)
+        f = c_function('rama_mgr_interpolator_axis_lengths',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint32)))
+        ret = numpy.empty(dim, uint32)
+        f(self._c_pointer, rama_case, pointer(ret))
+        return ret
+    
+    def interpolator_limits(self, rama_case):
+        dim = self.interpolator_dim(rama_case)
+        f = c_function('rama_mgr_interpolator_minmax',
+            args=(ctypes.c_void_p, ctypes.c_size_t, 
+                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double)))
+        minvals = numpy.empty(dim, float64)
+        maxvals = numpy.empty(dim, float64)
+        f(self._c_pointer, rama_case, pointer(minvals), pointer(maxvals))
+        return (minvals, maxvals)
+    
+    def interpolator_values(self, rama_case):
+        shape = self.interpolator_axis_lengths(rama_case)
+        f = c_function('rama_mgr_interpolator_values', 
+            args=(ctypes.c_void_p, ctypes.c_size_t, 
+                ctypes.POINTER(ctypes.c_double)))
+        data = numpy.empty(shape, float64)
+        f(self._c_pointer, rama_case, pointer(data))
+        return data
+    
+    def interpolator_axes(self, rama_case):
+        lengths = self.interpolator_axis_lengths(rama_case)
+        minmax = self.interpolator_limits(rama_case)
+        axes = [numpy.linspace(minmax[0][i], minmax[1][i], lengths[i]) for i in range(len(lengths))]
+        return tuple(axes)
+        
+    
+        
+    
 
 
 
