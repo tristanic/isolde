@@ -84,17 +84,6 @@ class IsoldeParams(Param_Mgr):
             # If true, residues in the soft shell will have their backbone atoms
             # fixed in space
         'fix_soft_shell_backbone':              (defaults.FIX_SOFT_SHELL_BACKBONE, None),
-            # Provide live updates of the Ramachandran status of residues,
-            # mapped to the colour of the C-alpha atoms?
-        'track_ramachandran_status':            (defaults.TRACK_RAMACHANDRAN_STATUS, None),
-            # Number of simulation updates to pass before updating Ramachandran
-            # status
-        'rounds_per_rama_update':               (defaults.ROUNDS_PER_RAMA_UPDATE, None),
-            # Provide live visualisation of iffy rotamers
-        'track_rotamer_status':                 (defaults.TRACK_ROTAMER_STATUS, None),
-            # Number of simulation updates to pass before updating rotamer
-            # status
-        'rounds_per_rota_update':               (defaults.ROUNDS_PER_ROTA_UPDATE, None),
             # Limit the drawing to only the atoms involved in the simulation
             # (highly recommended for performance)
         'hide_surroundings_during_sim':         (defaults.HIDE_SURROUNDINGS_DURING_SIM, None),
@@ -208,14 +197,14 @@ class Isolde():
         'position restraint added',
         'position restraint removed',
         )
-    
+
     def __init__(self, gui):
         self.session = session = gui.session
-        
+
         # Find or create the validation managers
         from . import session_extensions
         self._validation_mgr = Validation_Mgr(session)
-        
+
         self.triggers = triggerset.TriggerSet()
         for t in self.trigger_names:
             self.triggers.add_trigger(t)
@@ -225,14 +214,11 @@ class Isolde():
         self._log = Logger('isolde.log')
 
         self._sim_interface = None
-        
+
         self._can_checkpoint = True
         self.checkpoint_disabled_reasons = {}
         self._last_checkpoint = None
-        
-        #~ self.live_validation_interface = \
-            #~ validation_interface.ChimeraXValidationInterface(self.session, self) #TODO: Remove
-                
+
         self.params = IsoldeParams()
         self.sim_params = SimParams()
 
@@ -578,7 +564,7 @@ class Isolde():
         from PyQt5 import QtCore
         # Close the splash after 2 seconds
         QtCore.QTimer.singleShot(2000, splash.close)
-        
+
         self.start_gui(gui)
 
 
@@ -605,7 +591,7 @@ class Isolde():
     @property
     def selected_model(self):
         return self._selected_model
-    
+
     @selected_model.setter
     def selected_model(self, model):
         if not isinstance(model, chimerax.core.atomic.AtomicStructure):
@@ -804,7 +790,7 @@ class Isolde():
     def _prepare_ramachandran_plot(self):
         '''
         Prepare an empty MatPlotLib figure to put the Ramachandran plots in.
-        '''        
+        '''
         from . import validation
         iw = self.iw
         container = self._rama_plot_window = iw._validate_rama_plot_layout
@@ -967,7 +953,7 @@ class Isolde():
             )
          # We want to start with the EM map chooser hidden
         self._hide_em_map_chooser()
-        
+
         # Visualisation tools
         iw._sim_basic_xtal_step_forward_button.clicked.connect(
             self._xtal_step_forward
@@ -1013,7 +999,7 @@ class Isolde():
         iw._rebuild_sel_res_rot_release_button.clicked.connect(
             self._release_rotamer
             )
-        
+
         iw._rebuild_restrain_helix_button.clicked.connect(
             self._restrain_selection_as_alpha_helix
             )
@@ -1023,7 +1009,7 @@ class Isolde():
         iw._rebuild_restrain_par_beta_button.clicked.connect(
             self._restrain_selection_as_parallel_beta
             )
-        
+
         iw._rebuild_2ry_struct_restr_clear_button.clicked.connect(
             self.clear_secondary_structure_restraints_for_selection
             )
@@ -1045,12 +1031,12 @@ class Isolde():
         iw._rebuild_pin_atom_to_current_pos_button.clicked.connect(
             self._restrain_selected_atom_to_current_xyz
             )
-        
+
         iw._rebuild_pin_atom_to_pivot_button.clicked.connect(
             self._restrain_selected_atom_to_pivot_xyz
             )
 
-        
+
         iw._rebuild_pos_restraint_clear_button.clicked.connect(
             self.release_xyz_restraints_on_selected_atoms
             )
@@ -1113,7 +1099,7 @@ class Isolde():
         iw._sim_stop_and_discard_button.clicked.connect(
             self._discard_sim
             )
-        
+
         iw._sim_min_button.clicked.connect(
             self.minimize
             )
@@ -1193,7 +1179,7 @@ class Isolde():
             modes.em:      None,
             modes.free:    None,
         }
-        
+
         _models = self.session.models.list()
         #Consider top-level models only
         models = []
@@ -1209,12 +1195,12 @@ class Isolde():
             IsoldeFreeModel: [],
             Volume: []
         }
-                
+
         for m in models:
             for mtype in mtd.keys():
                 if isinstance(m, mtype):
                     mtd[mtype].append(m)
-        
+
         if sim_mode == modes.xtal:
             valid_models = mtd[clipper.CrystalStructure] + mtd[IsoldeCrystalModel]
             potential_models = mtd[AtomicStructure] + mtd[IsoldeFreeModel]
@@ -1226,27 +1212,27 @@ class Isolde():
             potential_models = mtd[AtomicStructure] + mtd[IsoldeFreeModel]
 
         valid_models = sorted(valid_models, key=lambda m: m.id)
-        potential_models = sorted(potential_models, key=lambda m: m.id)    
+        potential_models = sorted(potential_models, key=lambda m: m.id)
 
         for m in valid_models:
             id_str = '{}. {}'.format(m.id_string(), m.name)
             mmcb.addItem(id_str, _get_atomic_model(m))
             self._available_models[id_str] = _get_atomic_model(m)
-        
+
         for m in potential_models:
             xmcb.addItem('{}. {}'.format(m.id_string(), m.name), _get_atomic_model(m))
-        
+
         pmcb = potential_model_combo_box[self.sim_mode]
         if pmcb is not None:
             for m in potential_models:
                 pmcb.addItem('{}. {}'.format(m.id_string(), m.name), _get_atomic_model(m))
-        
+
         if sim_mode == modes.em:
             for m in mtd[Volume]:
                 emcb.addItem('{}. {}'.format(m.id_string(), m.name), m)
-                    
-        
-        
+
+
+
     def _update_model_list_old(self, *_):
         self.iw._master_model_combo_box.clear()
         self.iw._em_map_model_combo_box.clear()
@@ -1361,7 +1347,7 @@ class Isolde():
             go_button.setToolTip('Pause')
         if not flag:
             iw._sim_go_button.setToolTip('Start a simulation')
-        
+
         iw._sim_save_checkpoint_button.setEnabled(flag)
         iw._sim_revert_to_checkpoint_button.setEnabled(flag)
         iw._sim_commit_button.setEnabled(flag)
@@ -1461,7 +1447,7 @@ class Isolde():
             errstring = 'Please select a valid MTZ file!'
             _generic_warning(errstring)
         m = cb.currentData()
-        cs = clipper.CrystalStructure(self.session, m, mtzfile=fname, 
+        cs = clipper.CrystalStructure(self.session, m, mtzfile=fname,
                             map_oversampling=self.params.map_shannon_rate)
         self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
         self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
@@ -1683,7 +1669,7 @@ class Isolde():
 
     def _enable_register_shift_frame(self, *_):
         self.iw._rebuild_register_shift_container.setEnabled(True)
-        
+
     def _enable_selection_extend_frame(self, *_):
         self.iw._rebuild_grow_shrink_sel_frame.setEnabled(True)
 
@@ -1767,7 +1753,7 @@ class Isolde():
         from chimerax.core.atomic import selected_atoms
         sel = selected_atoms(self.session)
         self._restrain_secondary_structure(sel, 'helix')
-    
+
     def _restrain_selection_as_antiparallel_beta(self, *_):
         from chimerax.core.atomic import selected_atoms
         sel = selected_atoms(self.session)
@@ -1778,7 +1764,7 @@ class Isolde():
         sel = selected_atoms(self.session)
         self._restrain_secondary_structure(sel, 'parallel beta')
 
-    
+
     def _restrain_secondary_structure(self, atoms, target):
         sh = self._sim_handler
         sc = self._total_sim_construct
@@ -1872,14 +1858,14 @@ class Isolde():
         atom = selected_atoms(self.session)[0]
         k = self.iw._rebuild_pos_restraint_spring_constant.value()
         self.restrain_atom_to_xyz(atom, atom.coord, k)
-    
+
     def _restrain_selected_atom_to_pivot_xyz(self, *_):
         from chimerax.core.atomic import selected_atoms
         atom = selected_atoms(self.session)[0]
         k = self.iw._rebuild_pos_restraint_spring_constant.value()
         self.restrain_atom_to_xyz(atom, self.session.view.center_of_rotation, k)
-        
-    
+
+
     def restrain_atom_to_xyz(self, atom, target, spring_constant):
         pr = self.position_restraints[atom]
         pr.target = target
@@ -2064,6 +2050,8 @@ class Isolde():
         self._rama_plot.change_case(case_key)
 
     def _rama_go_live(self, *_):
+        res = self._total_mobile.unique_residues
+        self._rama_plot.set_target_residues(res)
         self._update_rama_plot = True
         self.iw._validate_rama_sel_combo_box.setDisabled(True)
         self.iw._validate_rama_go_button.setDisabled(True)
@@ -2075,22 +2063,30 @@ class Isolde():
 
     def _rama_static_plot(self, *_):
         model = self._selected_model
+        rplot = self._rama_plot
         whole_model = bool(self.iw._validate_rama_sel_combo_box.currentIndex())
         if whole_model:
-            sel = model.atoms
-            bd = self.backbone_dihedrals
-            self._rama_plot.update_scatter(bd, force_update = True)
+            res = model.residues
+            rplot.update_scatter(residues = res)
+            # sel = model.atoms
+            # bd = self.backbone_dihedrals
+            # self._rama_plot.update_scatter(bd, force_update = True)
 
         else:
             sel = model.atoms.filter(model.atoms.selected)
             residues = sel.unique_residues
-            if len(residues):
-                phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
-                from . import dihedrals
-                bd = dihedrals.Backbone_Dihedrals(self.session, phi=phi, psi=psi, omega=omega)
-                self._rama_plot.update_scatter(bd, force_update = True)
-            else:
-                self._rama_plot.update_scatter(force_update = True)
+            rplot.set_target_residues(residues)
+            rplot.update_scatter()
+            # if not len(residues):
+            #
+            #     rplot.update_scatter(res)
+            # else:
+            #     phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
+            #     from . import dihedrals
+            #     bd = dihedrals.Backbone_Dihedrals(self.session, phi=phi, psi=psi, omega=omega)
+            #     self._rama_plot.update_scatter(bd, force_update = True)
+            # else:
+            #     self._rama_plot.update_scatter(force_update = True)
 
     def _show_peptide_validation_frame(self, *_):
         self.iw._validate_pep_stub_frame.hide()
@@ -2389,7 +2385,7 @@ class Isolde():
     ##############################################################
     # Visualisation functions
     ##############################################################
-    
+
     def _xtal_step_forward(self, *_):
         m = self.selected_model
         cs = m.parent
@@ -2398,12 +2394,12 @@ class Isolde():
         sel = cs.stepper.step_forward()
         sel.selected = True
         self._xtal_mask_to_atoms(sel, focus)
-    
+
     def _xtal_mask_to_selection(self, *_):
         atoms = self.selected_model.atoms
         sel = atoms[atoms.selecteds]
         self._xtal_mask_to_atoms(sel, False)
-    
+
     def _xtal_mask_to_atoms(self, atoms, focus):
         m = self.selected_model
         cs = m.parent
@@ -2411,14 +2407,14 @@ class Isolde():
         context = self.params.soft_shell_cutoff_distance
         cs.isolate_and_cover_selection(
             atoms, 0, context, cutoff, focus=focus)
-        
-    
+
+
     def _xtal_enable_live_scrolling(self, *_):
         m = self.selected_model
         cs = m.parent
         cs.xmaps.live_scrolling = True
-        cs.live_atomic_symmetry = True    
-    
+        cs.live_atomic_symmetry = True
+
     ##############################################################
     # Interactive restraints functions
     ##############################################################
@@ -2474,7 +2470,7 @@ class Isolde():
             self.start_sim()
         else:
             self.pause_sim_toggle()
-    
+
     def start_sim(self):
         self.sim_params.platform = self.iw._sim_platform_combo_box.currentText()
         try:
@@ -2604,7 +2600,7 @@ class Isolde():
 
 
         tuggable_atoms = total_mobile[total_mobile.element_names != 'H']
-        
+
         from . import rotamers
         mobile_residues = total_mobile.unique_residues
         mobile_rotamers = self._mobile_rotamers = rotamers.Rotamers(
@@ -2616,7 +2612,7 @@ class Isolde():
         si.start_sim_thread(sp, sc, tuggable_atoms, fixed_flags, bd, mobile_rotamers,
                             distance_restraints, position_restraints, self.master_map_list)
         self._last_checkpoint = si.starting_checkpoint
-        
+
         #~ if self.params.track_rotamer_status:
             #~ vi = self.live_validation_interface
             #~ vi.start_validation_threads(mobile_rotamers)
@@ -2687,9 +2683,22 @@ class Isolde():
         self._simulation_running = True
         self._update_sim_control_button_states()
 
+        vm = self._validation_mgr
+        r = self._total_mobile.unique_residues
+        vm.start_tracking(r)
+        self._isolde_events.add_event_handler('live validation during sim',
+                                              'completed simulation step',
+                                              vm.update)
 
-        if self.params.track_ramachandran_status and self._rama_plot is not None:
-            self._rama_go_live()
+        # if self.params.track_ramachandran_status:
+        #     rm = self._validation_mgr.rama_mgr
+        #     tm = self._total_mobile
+        #     r = self._mobile_res = tm.unique_residues
+        #     rcas = self._mobile_CA_atoms = r.atoms[r.atoms.names=='CA']
+        #     default_color = rm.color_scale[-1]
+        #     rcas.colors = default_color
+        #     if self._rama_plot is not None:
+        #         self._rama_go_live()
 
         self._isolde_events.add_event_handler('rezone maps during sim',
                                               'completed simulation step',
@@ -2723,12 +2732,15 @@ class Isolde():
             pass
         # Otherwise just clean up
         si = self._sim_interface
+        xeh = self._event_handler
+        ieh = self._isolde_events
         self._simulation_running = False
-        self._event_handler.remove_event_handler(
-            'do_sim_steps_on_gui_update', error_on_missing = False)
-        self._isolde_events.remove_event_handler(
+        ieh.remove_event_handler(
             'rezone maps during sim', error_on_missing = False)
-        
+        ieh.remove_event_handler(
+            'live validation during sim', error_on_missing = False)
+
+
         #~ if self.params.track_rotamer_status:
             #~ self.live_validation_interface.stop_validation_threads()
         self._update_dihedral_restraints_drawing()
@@ -3293,9 +3305,10 @@ class Isolde():
     def update_ramachandran(self, *_):
         self._rama_counter = (self._rama_counter + 1) % self.params.rounds_per_rama_update
         if self._rama_counter == 0:
-            rv = self.rama_validator
-            bd = self._mobile_backbone_dihedrals
-            rv.get_scores(bd, update_colors = True)
+            mgr = self._validation_mgr.rama_mgr
+            #rv = self.rama_validator
+            #bd = self._mobile_backbone_dihedrals
+            #rv.get_scores(bd, update_colors = True)
             bd.CAs.colors = bd.rama_colors
             if self._update_rama_plot:
                 self._rama_plot.update_scatter(bd)

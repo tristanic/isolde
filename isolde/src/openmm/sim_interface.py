@@ -778,7 +778,7 @@ class ChimeraXSimInterface:
         if density_maps is not None:
             self._prepare_density_maps(density_maps)
 
-        self._pool = start_pool(sim_params, sim_data, comms, ct, 
+        self._pool = start_pool(sim_params, sim_data, comms, ct,
                         use_mp = self.isolde.params.use_multiprocessing)
 
         self._init_start_time = time()
@@ -966,12 +966,12 @@ class ChimeraXSimInterface:
             atoms = self.mobile_atoms
         else:
             atoms = self.mobile_heavy_atoms
-        
+
         # Forces scaled by atomic number. Should really be by number of
         # electrons (to account for ions), but that's not available in
         # ChimeraX. Will have to add a look-up table in ISOLDE.
         default_ks = atoms.element_numbers / CARBON_ATOMIC_NUMBER
-        
+
         #default_ks = atoms.elements.masses / CARBON_MASS
         atom_indices = self.all_atoms.indices(atoms)
         density_map_names = []

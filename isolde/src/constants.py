@@ -115,10 +115,6 @@ class _Defaults:
         'SOFT_SHELL_CUTOFF':            5,      # Angstroms
         'HARD_SHELL_CUTOFF':            8,      # Angstroms
         'FIX_SOFT_SHELL_BACKBONE':      False,
-        'TRACK_RAMACHANDRAN_STATUS':    True,
-        'ROUNDS_PER_RAMA_UPDATE':       20,
-        'TRACK_ROTAMER_STATUS':         True,
-        'ROUNDS_PER_ROTA_UPDATE':       10,
         'REMASK_MAPS_DURING_SIM':       True,
         'ROUNDS_PER_MAP_REMASK':        50,
         'HIDE_SURROUNDINGS_DURING_SIM': True,
@@ -129,7 +125,7 @@ class _Defaults:
         'DIFFERENCE_MAP_MASK_RADIUS':   8.0, # Angstroms
 
         'COMMS_TIMEOUT':                10.0, # seconds
-        # Time for threads to sleep when paused or no input, to avoid 
+        # Time for threads to sleep when paused or no input, to avoid
         # CPU thrashing
         'THREAD_PAUSE_SLEEP_INTERVAL':  0.01, # seconds
 
@@ -137,7 +133,7 @@ class _Defaults:
         # Types for shared variables
         ###
         'FLOAT_TYPE' :                  ctypes.c_double,
-        
+
         ###
         # General constants
         ###
@@ -168,7 +164,7 @@ class _Control:
     }
 
 @_constant_properties
-class _Validation_Cutoffs:
+class _Validation_Defaults:
     _constants = {
         'ROTA_ALLOWED_CUTOFF':      0.02,
         'ROTA_OUTLIER_CUTOFF':      0.0005,
@@ -186,12 +182,16 @@ class _Validation_Cutoffs:
         'GENERAL_ALLOWED':   0.02,
         'MAX_FAVORED_COLOR': [0,255,0,255], # Bright green
         'ALLOWED_COLOR':     [255,240,50,255], # Yellow
-        'OUTLIER_COLOR':     [255,0,100,255], # Hot pink 
+        'OUTLIER_COLOR':     [255,0,100,255], # Hot pink
         'NA_COLOR':          [100,100,100,255], # Grey
+        'TRACK_RAMACHANDRAN_STATUS':    True,
+        'ROUNDS_PER_RAMA_UPDATE':       10,
+        'TRACK_ROTAMER_STATUS':         True,
+        'ROUNDS_PER_ROTA_UPDATE':       10,
     }
 
 
 defaults = _Defaults()
 sim_outcomes = _Sim_Outcomes()
 control = _Control()
-validation_cutoffs = _Validation_Cutoffs()
+validation_defaults = _Validation_Defaults()

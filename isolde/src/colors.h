@@ -105,6 +105,10 @@ public:
         }
     }
 
+    const std::vector<mapped_color> &mapped_colors() {return _mapped_colors;}
+    const color &below_min_color() {return _below_min;}
+    const color &above_max_color() {return _above_max;}
+
     void interpolate(double value, color &rgba)
     {
         interpolate(&value, 1, &rgba);

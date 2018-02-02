@@ -234,7 +234,7 @@ class Rama_Mgr:
         OUTLIER=2
         NA=-1
 
-    from .constants import validation_cutoffs as val_defaults
+    from .constants import validation_defaults as val_defaults
 
     RAMA_CASE_DETAILS = {
         Rama_Case.NONE: {
@@ -343,7 +343,7 @@ class Rama_Mgr:
         return cdict
 
     def set_default_colors(self):
-        from .constants import validation_cutoffs as val_defaults
+        from .constants import validation_defaults as val_defaults
         self.set_color_scale(val_defaults.MAX_FAVORED_COLOR, val_defaults.ALLOWED_COLOR,
             val_defaults.OUTLIER_COLOR, val_defaults.NA_COLOR)
 
@@ -360,6 +360,21 @@ class Rama_Mgr:
             if len(arr) != 4:
                 raise TypeError('Each color should be an array of 4 values in the range (0,255)')
         f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc), pointer(nac))
+
+    @property
+    def color_scale(self):
+        f = c_function('rama_mgr_get_color_scale',
+            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
+                ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8),
+                ctypes.POINTER(ctypes.c_uint8)))
+        maxc = numpy.empty(4, uint8)
+        midc = numpy.empty(4, uint8)
+        minc = numpy.empty(4, uint8)
+        nac = numpy.empty(4, uint8)
+        f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc), pointer(nac))
+        return (maxc, midc, minc, nac)
+
+
 
     @property
     def dihedral_manager(self):
@@ -519,16 +534,16 @@ class Rama_Mgr:
         bins = numpy.empty(n, int32)
         f(self._c_pointer, pointer(scores), pointer(cases), n, bins.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)))
         return bins
-    
+
     #######
     # Access to the underlying interpolator data
     #######
     def interpolator_dim(self, rama_case):
-        f = c_function('rama_mgr_interpolator_dim', 
+        f = c_function('rama_mgr_interpolator_dim',
             args=(ctypes.c_void_p, ctypes.c_size_t),
             ret=ctypes.c_size_t)
         return f(self._c_pointer, rama_case)
-    
+
     def interpolator_axis_lengths(self, rama_case):
         dim = self.interpolator_dim(rama_case)
         f = c_function('rama_mgr_interpolator_axis_lengths',
@@ -536,35 +551,35 @@ class Rama_Mgr:
         ret = numpy.empty(dim, uint32)
         f(self._c_pointer, rama_case, pointer(ret))
         return ret
-    
+
     def interpolator_limits(self, rama_case):
         dim = self.interpolator_dim(rama_case)
         f = c_function('rama_mgr_interpolator_minmax',
-            args=(ctypes.c_void_p, ctypes.c_size_t, 
+            args=(ctypes.c_void_p, ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double)))
         minvals = numpy.empty(dim, float64)
         maxvals = numpy.empty(dim, float64)
         f(self._c_pointer, rama_case, pointer(minvals), pointer(maxvals))
         return (minvals, maxvals)
-    
+
     def interpolator_values(self, rama_case):
         shape = self.interpolator_axis_lengths(rama_case)
-        f = c_function('rama_mgr_interpolator_values', 
-            args=(ctypes.c_void_p, ctypes.c_size_t, 
+        f = c_function('rama_mgr_interpolator_values',
+            args=(ctypes.c_void_p, ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_double)))
         data = numpy.empty(shape, float64)
         f(self._c_pointer, rama_case, pointer(data))
         return data
-    
+
     def interpolator_axes(self, rama_case):
         lengths = self.interpolator_axis_lengths(rama_case)
         minmax = self.interpolator_limits(rama_case)
         axes = [numpy.linspace(minmax[0][i], minmax[1][i], lengths[i]) for i in range(len(lengths))]
         return tuple(axes)
-        
-    
-        
-    
+
+
+
+
 
 
 
@@ -597,7 +612,7 @@ class Rota_Mgr:
         session.rota_mgr = self
 
     def set_default_colors(self):
-        from .constants import validation_cutoffs as val_defaults
+        from .constants import validation_defaults as val_defaults
         self.set_color_scale(val_defaults.MAX_FAVORED_COLOR, val_defaults.ALLOWED_COLOR,
             val_defaults.OUTLIER_COLOR)
 
@@ -617,7 +632,7 @@ class Rota_Mgr:
         '''
         Reset the rotamer cutoffs to default values
         '''
-        from .constants import validation_cutoffs as vc
+        from .constants import validation_defaults as vc
         self._set_cutoffs(vc.ROTA_ALLOWED_CUTOFF, vc.ROTA_OUTLIER_CUTOFF)
 
     def _set_cutoffs(self, allowed, outlier):

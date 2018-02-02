@@ -397,6 +397,27 @@ rama_mgr_set_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min, ui
 }
 
 extern "C" EXPORT void
+rama_mgr_get_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min, uint8_t *na)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    try {
+        auto cmap = m->get_colors(1);
+        auto &mapped_colors = cmap->mapped_colors();
+        auto &na_color = m->default_color();
+        for (size_t i=0; i<4; ++i) {
+            *min++ = mapped_colors[0][i];
+            *mid++ = mapped_colors[1][i];
+            *max++ = mapped_colors[2][i];
+            *na++ = na_color[i];
+        }
+    } catch (...) {
+        molc_error();
+    }
+
+}
+
+
+extern "C" EXPORT void
 rama_mgr_add_interpolator(void *mgr, size_t r_case, size_t dim,
     uint32_t *n, double *min, double *max, double *data)
 {
@@ -432,7 +453,7 @@ rama_mgr_interpolator_axis_lengths(void *mgr, size_t r_case, uint32_t *ret)
         molc_error();
     }
 }
-    
+
 extern "C" EXPORT void
 rama_mgr_interpolator_minmax(void *mgr, size_t r_case, double *minvals, double *maxvals)
 {
@@ -446,7 +467,7 @@ rama_mgr_interpolator_minmax(void *mgr, size_t r_case, double *minvals, double *
     } catch (...) {
         molc_error();
     }
-}        
+}
 
 extern "C" EXPORT void
 rama_mgr_interpolator_values(void *mgr, size_t r_case, double *vals)
@@ -620,6 +641,7 @@ rota_mgr_set_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min)
         molc_error();
     }
 }
+
 
 
 extern "C" EXPORT size_t

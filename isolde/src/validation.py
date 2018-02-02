@@ -165,7 +165,7 @@ def generate_interpolator_data(file_prefix, wrap_axes = True, regenerate = None)
         with open(os.path.join(DATA_DIR, 'regenerate'), 'wt') as f:
             f.write('0')
 
-    # First try to load from a pickle file    
+    # First try to load from a pickle file
     try:
         infile = open(file_prefix+'.pickle', 'r+b')
         ndim, axis_lengths, min_vals, max_vals, grid_data = pickle.load(infile)
@@ -265,32 +265,77 @@ def generate_interpolator_data(file_prefix, wrap_axes = True, regenerate = None)
 
         outfile = open(file_prefix+'.pickle', 'w+b')
         axis_lengths = numpy.array(axis_lengths, numpy.int)
-        
-        
+
+
         pickle.dump((ndim, axis_lengths, min_vals, max_vals, grid_data), outfile)
         #~ pickle.dump((axis, full_grid), outfile)
         outfile.close()
     return (ndim, axis_lengths, min_vals, max_vals, grid_data)
-        
+
+from .param_mgr import Param_Mgr, autodoc, param_properties
+from .constants import validation_defaults as _val_defaults
+@param_properties
+@autodoc
+class Validation_Params(Param_Mgr):
+    _default_params = {
+        'track_ramachandran_status':    (_val_defaults.TRACK_RAMACHANDRAN_STATUS, None),
+        'rounds_per_rama_update':       (_val_defaults.ROUNDS_PER_RAMA_UPDATE, None),
+        'track_rotamer_status':         (_val_defaults.TRACK_ROTAMER_STATUS, None),
+        'rounds_per_rota_update':       (_val_defaults.ROUNDS_PER_ROTA_UPDATE, None),
+    }
+
 class Validation_Mgr:
     def __init__(self, session):
         from . import session_extensions as ext
         self._proper_dihedral_mgr = ext.get_proper_dihedral_manager(session)
         self._rama_mgr = ext.get_ramachandran_manager(session)
         self._rota_mgr = ext.get_rotamer_manager(session)
-    
+
+        self.params = Validation_Params()
+        self.rama_set = None
+        self.rama_cas = None
+        self._update_counter = 0
+        self._counter_offset = 2
+
     @property
     def proper_dihedral_mgr(self):
         return self._proper_dihedral_mgr
-    
+
     @property
     def rama_mgr(self):
         return self._rama_mgr
-    
+
     @property
     def rota_mgr(self):
         return self._rota_mgr
-    
+
+    def start_tracking(self, residues):
+        rm = self.rama_mgr
+        r = residues
+        rcas = r.atoms[r.atoms.names=='CA']
+        default_color = rm.color_scale[-1]
+        rcas.colors=default_color
+        rs, omegas, phis, psis = rm.valid_rama_residues(r)
+        cases = rm.rama_cases(omegas, psis)
+        self.rama_set = (rs, omegas, phis, psis, cases)
+        self.rama_cas = rs.atoms[rs.atoms.names=='CA']
+
+    def update(self, *_):
+        self._update_counter +=1
+        uc = self._update_counter
+        params = self.params
+        if params.track_ramachandran_status:
+            if uc % params.rounds_per_rama_update == 0:
+                self.update_rama_colors()
+        if params.track_rotamer_status:
+            if (uc + self._counter_offset) % params.rounds_per_rota_update == 0:
+                self.update_rotamers()
+
+    def update_rama_colors(self):
+        self.rama_cas.colors = self._rama_mgr.rama_colors(*self.rama_set)
+
+    def update_rotamers(self):
+        pass
 
 
 
@@ -592,14 +637,14 @@ class RamaPlot:
 
         self._all_current_residues = None
         self._all_current_dihedrals = None
-        
+
         self._case_residues = None
         self._case_dihedrals = None
-        
+
         fig = self.figure = Figure()
 
         axes = self.axes = fig.add_subplot(111, aspect='equal')
-                        
+
         # Scatter plot needs to always have at least one point, so we'll
         # define a point off the scale for when there's nothing to plot
         self.default_coords = numpy.array([200,200])
@@ -614,7 +659,7 @@ class RamaPlot:
         self.contours = {}
         self.change_case('General')
         self.on_resize()
-    
+
     def _format_axes(self):
         axes = self.axes
         fig = self.figure
@@ -629,9 +674,9 @@ class RamaPlot:
         axes.tick_params(direction='in')
         axes.autoscale(enable=False)
         fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
-        
-        
-    
+
+
+
     def cache_contour_plots(self, key):
         import numpy
         mgr = self._rama_mgr
@@ -695,6 +740,7 @@ class RamaPlot:
         self.P_limits = [0, -log(contours[0])]
         scatter = self.scatter = self.axes.scatter((200),(200), picker = 2.0)
         scatter.set_cmap('bwr')
+        self.set_target_residues(self._current_residues)
         self.on_resize()
 
     def set_target_residues(self, residues):
@@ -707,13 +753,13 @@ class RamaPlot:
             cases = rama_cases(omega, psi)
             self._all_current_residues = r
             self._all_current_dihedrals = (omega, phi, psi, cases)
-            
+
             if case in (cenum.CISPRO, cenum.TRANSPRO):
                 # Special case - have to check omega every time. Grab all prolines.
                 mask = r.names=='PRO'
             else:
-                mask = cases[cases==case]
-                
+                mask = cases==case
+
             r, omega, phi, psi, cases = [arr[mask] for arr in r, omega, phi, psi, cases]
             self._case_residues = r
             self._case_dihedrals = (omega, phi, psi, cases)
@@ -722,16 +768,21 @@ class RamaPlot:
             self._all_current_dihedrals = None
             self._case_residues = None
             self._case_dihedrals = None
-        
 
-    def update_scatter(self, force_update = False):
+
+    def update_scatter(self, residues=None):
+        if residues is not None:
+            self.set_target_residues(residues)
         import numpy
         case = self.current_case
         #~ rv = self.validator
         mgr = self._rama_mgr
         cenum = self._case_enum
         r = self._case_residues
-        if r is not None:
+        if r is None:
+            phipsi = self.default_coords
+            logscores = self.default_logscores
+        else:
             dihedrals = self._case_dihedrals
             omega, phi, psi, cases = dihedrals
             if case in (cenum.CISPRO, cenum.TRANSPRO):
@@ -747,11 +798,8 @@ class RamaPlot:
             else:
                 phipsi = self.default_coords
                 logscores = self.default_logscores
-        
-        else:
-            phipsi = self.default_coords
-            logscores = self.default_logscores
-            
+
+
         self.canvas.restore_region(self.background)
         self.scatter.set_offsets(phipsi)
         self.scatter.set_clim(self.P_limits)
