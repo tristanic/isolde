@@ -61,9 +61,11 @@ class Rota_Mgr: public DestructionObserver, public pyinstance::PythonInstance<Ro
 {
 
 public:
+    enum Rota_Bins {FAVORED=0, ALLOWED=1, OUTLIER=2, BIN_NA=-1};
     Rota_Mgr() {} // null constructor
     Rota_Mgr(Proper_Dihedral_Mgr *dmgr): _dmgr(dmgr) {};
     ~Rota_Mgr();
+
     struct cutoffs
     {
         double allowed;
@@ -73,7 +75,6 @@ public:
         cutoffs() {}
         cutoffs(double a, double o): allowed(a), log_allowed(log(a)), outlier(o), log_outlier(log(o)) {}
     };
-    enum Rota_Bins{FAVORED=0, ALLOWED=1, OUTLIER=2, BIN_NA=-1};
 
     void set_cutoffs(const double &allowed, const double &outlier) {_cutoffs = cutoffs(allowed, outlier);}
     cutoffs* get_cutoffs() {return &_cutoffs;}

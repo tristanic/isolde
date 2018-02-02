@@ -675,8 +675,6 @@ class RamaPlot:
         axes.autoscale(enable=False)
         fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
 
-
-
     def cache_contour_plots(self, key):
         import numpy
         mgr = self._rama_mgr
@@ -760,7 +758,7 @@ class RamaPlot:
             else:
                 mask = cases==case
 
-            r, omega, phi, psi, cases = [arr[mask] for arr in r, omega, phi, psi, cases]
+            r, omega, phi, psi, cases = [arr[mask] for arr in (r, omega, phi, psi, cases)]
             self._case_residues = r
             self._case_dihedrals = (omega, phi, psi, cases)
         else:

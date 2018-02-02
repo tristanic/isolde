@@ -16,6 +16,8 @@ from chimerax.core.atomic.molobject import _atoms, \
 
 from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
 
+import json
+
 libdir = os.path.dirname(os.path.abspath(__file__))
 libfile = glob.glob(os.path.join(libdir, 'molc.cpython*'))[0]
 DATA_DIR = os.path.join(libdir, 'molprobity_data')
@@ -174,6 +176,14 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
                 k.value = key
                 f(self._c_pointer, aa_residues._c_pointers, len(aa_residues),
                     ctypes.byref(k))
+
+    def get_dihedral(self, residue, name, create=True):
+        from chimerax.core.atomic import Residues
+        r = Residues([residue])
+        d = self.get_dihedrals(r, name, create)
+        if len(d):
+            return d[0]
+        return None
 
     def get_dihedrals(self, residues, name, create = True):
         '''
@@ -607,9 +617,72 @@ class Rota_Mgr:
         self.session = session
         self._prepare_all_validators()
         self._load_rotamer_defs()
+        self._load_target_defs()
         self.set_default_cutoffs()
         self.set_default_colors()
         session.rota_mgr = self
+
+    def _load_target_defs(self):
+        '''
+        Load rotamer targets from their JSON file and store them in order of
+        decreasing prevalence for each residue.
+        '''
+        with open(os.path.join(DICT_DIR, 'rota_data.json'), 'rt') as f:
+            rd = json.load(f)
+        from collections import OrderedDict
+        ordered_rd = self._rota_targets = dict()
+        for aa, data in rd.items():
+            rdata = [(name, d) for (name, d) in data.items()]
+            rdata = sorted(rdata, key=lambda d: d[1]['freq'], reverse=True)
+            r_dict = OrderedDict()
+            for r, angles in rdata:
+                for k in ('angles', 'esds'):
+                    angles[k] = numpy.array(angles[k])
+                r_dict[r]=angles
+            ordered_rd[aa] = r_dict
+
+    def get_rota_targets(self, resname):
+        '''
+        Returns an OrderedDict giving rotamer name, angles, esds and frequencies
+        sorted in order of decreasing frequency.
+        '''
+        from copy import copy
+        rd = self._rota_targets
+        if resname in rd.keys():
+            return copy(rd[resname])
+        return None
+
+    def nearest_valid_rotamer(self, residue_or_rotamer):
+        '''
+        Returns the name of the nearest valid rotamer given this residue's
+        current conformation, its percentage frequency in the Top8000 dataset,
+        and the z_score for the dihedral with the biggest deviation from ideal.
+        '''
+        from chimerax.core.atomic import Residue
+        if type(residue_or_rotamer) == Residue:
+            r = self.get_rotamer(residue)
+        else:
+            r = residue_or_rotamer
+        if r is None:
+            return None
+        angles = numpy.degrees(r.angles)
+        targets = self.get_rota_targets(residue.name)
+        target_angles = numpy.array([t['angles'] for t in targets.values()])
+        differences = angles-target_angles
+        differences[differences<-180] += 360
+        differences[differences>=180] -= 360
+        differences = numpy.abs(differences)
+        sums = differences.sum(axis=1)
+        min_index = numpy.argmin(sums)
+        min_differences = differences[min_index]
+        key = list(targets.keys())[min_index]
+        rot = targets[key]
+        esds = rot['esds']
+        z_score = numpy.max(min_differences/esds)
+        freq = rot['freq']
+        return (key, freq, z_score)
+
+
 
     def set_default_colors(self):
         from .constants import validation_defaults as val_defaults
@@ -695,11 +768,17 @@ class Rota_Mgr:
         f(self._c_pointer, ctypes.byref(key), ndim, pointer(axis_lengths),
             pointer(min_vals), pointer(max_vals), pointer(data))
 
+    def get_rotamer(self, residue):
+        from chimerax.core.atomic import Residues
+        rots = self.get_rotamers(Residues([residue]))
+        if len(rots):
+            return rots[0]
+        return None
+
     def get_rotamers(self, residues):
         f = c_function('rota_mgr_get_rotamer',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
             ret=ctypes.c_size_t)
-
         n = len(residues)
         r_ptrs = numpy.empty(n, cptr)
         found = f(self._c_pointer, residues._c_pointers, n, pointer(r_ptrs))

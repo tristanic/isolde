@@ -37,8 +37,8 @@ public:
     cutoffs* get_cutoffs(size_t r_case) {return &(_cutoffs.at(r_case));}
 
     void set_colors(uint8_t *max, uint8_t *mid, uint8_t *min, uint8_t *na);
-    colors::colormap *get_colors(size_t r_case) const { return &(_colors.at(r_case)); }
-    const color& default_color() const {return _null_color;}
+    colors::colormap *get_colors(size_t r_case) { return &(_colors.at(r_case)); }
+    const colors::color& default_color() const {return _null_color;}
 
     void add_interpolator(size_t r_case, const size_t &dim,
         uint32_t *n, double *min, double *max, double *data);

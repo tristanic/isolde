@@ -187,9 +187,9 @@ proper_dihedral_mgr_delete_dihedral(void *mgr, size_t n, void *dihedrals)
     Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
     Proper_Dihedral **d = static_cast<Proper_Dihedral **>(dihedrals);
     try {
-        std::vector<Proper_Dihedral *> delete_list;
+        std::set<Proper_Dihedral *> delete_list;
         for (size_t i=0; i<n; ++i) {
-            delete_list.push_back(d[i]);
+            delete_list.insert(d[i]);
         }
         m->delete_dihedrals(delete_list);
     } catch (...) {
@@ -405,9 +405,9 @@ rama_mgr_get_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min, ui
         auto &mapped_colors = cmap->mapped_colors();
         auto &na_color = m->default_color();
         for (size_t i=0; i<4; ++i) {
-            *min++ = mapped_colors[0][i];
-            *mid++ = mapped_colors[1][i];
-            *max++ = mapped_colors[2][i];
+            *min++ = mapped_colors[0].thecolor[i];
+            *mid++ = mapped_colors[1].thecolor[i];
+            *max++ = mapped_colors[2].thecolor[i];
             *na++ = na_color[i];
         }
     } catch (...) {
@@ -438,6 +438,7 @@ rama_mgr_interpolator_dim(void *mgr, size_t r_case)
         return it->dim();
     } catch (...) {
         molc_error();
+        return 0;
     }
 }
 

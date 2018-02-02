@@ -305,17 +305,17 @@ class Isolde():
         self._update_rama_plot = False
         # Object holding the protein phi, psi and omega dihedrals for the
         # currently selected model.
-        self.backbone_dihedrals = None
+        # self.backbone_dihedrals = None
         # Object holding only the backbone dihedrals that are mobile in
         # the current simulation
-        self._mobile_backbone_dihedrals = None
+        # self._mobile_backbone_dihedrals = None
         # A single Dihedrals array containing all proper dihedrals that
         # we want to be able to draw annotations for.
         #~ self._all_annotated_dihedrals = dihedrals.Dihedrals(drawing=self._annotations, session=self.session)
 
 
         # Internal counter for Ramachandran update
-        self._rama_counter = 0
+        # self._rama_counter = 0
 
         ####
         # Settings for handling of map visualisation
@@ -794,10 +794,7 @@ class Isolde():
         from . import validation
         iw = self.iw
         container = self._rama_plot_window = iw._validate_rama_plot_layout
-        self._rama_plot = validation.RamaPlot(self.session, container, self.rama_validator)
-
-
-
+        self._rama_plot = validation.RamaPlot(self.session, self._validation_mgr.rama_mgr, container)
 
     def _connect_functions(self):
         '''
@@ -1599,42 +1596,35 @@ class Isolde():
             self._disable_rebuild_residue_frame()
             return
 
+        pdmgr = self._validation_mgr.proper_dihedral_mgr
         # Peptide cis/trans flips
-        self._get_rotamer_list_for_selected_residue(res)
-        bd = self._mobile_backbone_dihedrals
         self._rebuild_residue = res
-        omega = bd.omega.by_residue(res)
+        omega = self._rebuild_res_omega = pdmgr.get_dihedral(res, 'omega')
         if omega is None:
             # This is a terminal residue without an omega dihedral
             self.iw._rebuild_sel_res_pep_info.setText('N/A')
             self.iw._rebuild_sel_res_cis_trans_flip_button.setDisabled(True)
             self.iw._rebuild_sel_res_pep_flip_button.setDisabled(True)
-            self._rebuild_res_update_omega = False
-            return
-        self._rebuild_res_update_omega = True
-        self._rebuild_res_omega = omega
-        self.iw._rebuild_sel_res_cis_trans_flip_button.setEnabled(True)
-        self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
-        rot_text = self.iw._rebuild_sel_res_rot_info
+            # return
+        else:
+            self.iw._rebuild_sel_res_cis_trans_flip_button.setEnabled(True)
+            self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
 
-        try:
-            rot = self.rotamers[res]
-            if rot != self._selected_rotamer:
-                self._clear_rotamer()
-            self._selected_rotamer = rot
-            t = rot.current_target_rotamer
-            if t is None:
-                rot_text.setText('')
-            else:
-                rot_text.setText('{} ({:.3f})'\
-                    .format(t.name, t.relative_abundance(res)))
-            self._selected_rotamer = rot
-            self._set_rotamer_buttons_enabled(True)
-        except KeyError:
+        # Rotamer manipulations
+        rot_text = self.iw._rebuild_sel_res_rot_info
+        # self._get_rotamer_list_for_selected_residue(res)
+        rot_m = self._validation_mgr.rota_mgr
+        rota = rot_m.get_rotamer(res)
+        if rota != self._selected_rotamer:
+            self._clear_rotamer()
+            self._selected_rotamer = rota
+        if rota is None:
             # This residue has no rotamers
             rot_text.setText('')
             self._selected_rotamer = None
             self._set_rotamer_buttons_enabled(False)
+        else:
+            self._set_rotamer_buttons_enabled(True)
 
         self.iw._rebuild_sel_residue_frame.setEnabled(True)
         chain_id, resnum, resname = (res.chain_id, res.number, res.name)
@@ -1642,6 +1632,7 @@ class Isolde():
 
         self._steps_per_sel_res_update = 10
         self._sel_res_update_counter = 0
+        self._update_selected_residue_info_live()
         if 'update_selected_residue_info' not in self._event_handler.list_event_handlers():
             self._event_handler.add_event_handler('update_selected_residue_info',
                     'shape changed', self._update_selected_residue_info_live)
@@ -2003,8 +1994,8 @@ class Isolde():
         c = (c + 1) % s
         if c == 0:
             # Get the residue's omega value
-            if self._rebuild_res_update_omega:
-                omega = self._rebuild_res_omega
+            omega = self._rebuild_res_omega
+            if omega is not None:
                 oval = degrees(omega.value)
                 if oval <= -150 or oval >= 150:
                     pep_type = 'trans'
@@ -2013,6 +2004,23 @@ class Isolde():
                 else:
                     pep_type = 'twisted'
                 self.iw._rebuild_sel_res_pep_info.setText(pep_type)
+            rot = self._selected_rotamer
+            rot_text = self.iw._rebuild_sel_res_rot_info
+            rot_m = self._validation_mgr.rota_mgr
+
+            if rot is not None:
+                rname, freq, zscore = rot_m.nearest_valid_rotamer(rot)
+                r_desc = "{} ({})".format(rname, freq)
+                if zscore<=1:
+                    desc_color = 'green'
+                elif zscore <=2:
+                    desc_color = 'orange'
+                else:
+                    desc_color = 'red'
+                rot_text.setText("<font color='{}'>{}</font>".format(desc_color, desc))
+
+
+
         self._sel_res_update_counter = c
 
     def _flip_peptide_bond(self, *_):
@@ -2051,13 +2059,18 @@ class Isolde():
 
     def _rama_go_live(self, *_):
         res = self._total_mobile.unique_residues
-        self._rama_plot.set_target_residues(res)
-        self._update_rama_plot = True
+        rp = self._rama_plot
+        rp.set_target_residues(res)
+        self._isolde_events.add_event_handler('live rama plot',
+                                              'completed simulation step',
+                                              rp.update_scatter)
+        # self._update_rama_plot = True
         self.iw._validate_rama_sel_combo_box.setDisabled(True)
         self.iw._validate_rama_go_button.setDisabled(True)
 
     def _rama_go_static(self, *_):
-        self._update_rama_plot = False
+        # self._update_rama_plot = False
+        self._isolde_events.remove_event_handler('live rama plot')
         self.iw._validate_rama_sel_combo_box.setEnabled(True)
         self.iw._validate_rama_go_button.setEnabled(True)
 
@@ -2075,6 +2088,9 @@ class Isolde():
         else:
             sel = model.atoms.filter(model.atoms.selected)
             residues = sel.unique_residues
+            if not len(residues):
+                rplot.set_target_residues(None)
+                residues = None
             rplot.set_target_residues(residues)
             rplot.update_scatter()
             # if not len(residues):
@@ -2527,6 +2543,7 @@ class Isolde():
         tm_i.sort()
         sc_i.sort()
         total_mobile = self._total_mobile = all_a[tm_i]
+        mobile_residues = self._mobile_residues = total_mobile.unique_residues
         sc = self._total_sim_construct = all_a[sc_i]
 
         self._total_mobile_indices = sc.indices(total_mobile)

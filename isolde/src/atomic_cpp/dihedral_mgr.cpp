@@ -172,17 +172,17 @@ DType* Dihedral_Mgr<DType>::get_dihedral(Residue *res, const std::string &name, 
         if (iter2 != dmap.end()) {
             return iter2->second;
         }
-    } 
+    }
     if (!create)
         throw std::out_of_range("Dihedral not found!");
     ddef = get_dihedral_def(res->name(), name);
     return new_dihedral(res, name);
 }
-            
-    
+
+
 
 template <class DType>
-void Dihedral_Mgr<DType>::delete_dihedrals(std::vector<DType *> &delete_list)
+void Dihedral_Mgr<DType>::delete_dihedrals(const std::set<DType *> &delete_list)
 {
     auto db = DestructionBatcher(this);
     for (auto d: delete_list) {
@@ -190,7 +190,10 @@ void Dihedral_Mgr<DType>::delete_dihedrals(std::vector<DType *> &delete_list)
             auto &dset = _atom_to_dihedral_map.at(a);
             dset.erase(d);
         }
-        _residue_map.at(d->residue()).erase(d->name());
+        auto rit = _residue_map.find(d->residue();
+        if (rit != _residue_map.end()) {
+            _residue_map.erase(rit);
+        }
         delete d;
     }
 } //delete_dihedrals
@@ -201,17 +204,12 @@ void Dihedral_Mgr<DType>::destructors_done(const std::set<void*>& destroyed)
 {
     auto db = DestructionBatcher(this);
     std::set<DType *> to_delete;
-    for (auto it=_mapped_atoms.begin(); it != _mapped_atoms.end();) {
-        auto a = *it;
+    for (auto a: _mapped_atoms) {
         if (destroyed.find(static_cast<void*>(a)) != destroyed.end()) {
             auto &dvec = _atom_to_dihedral_map.at(a);
             for (auto d: dvec) {
                 to_delete.insert(d);
             }
-            _atom_to_dihedral_map.erase(a);
-            it = _mapped_atoms.erase(it);
-        } else {
-            ++it;
         }
     }
     for (auto it = _residue_map.begin(); it != _residue_map.end(); ) {
@@ -221,10 +219,8 @@ void Dihedral_Mgr<DType>::destructors_done(const std::set<void*>& destroyed)
         else
             ++it;
     }
-    for (auto d: to_delete)
-        _residue_map[d->residue()].erase(d->name());
-    for (auto d: to_delete)
-        delete d;
+
+    delete_dihedrals(d);
 } //destructors_done
 
 template class Dihedral_Mgr<Proper_Dihedral>;
