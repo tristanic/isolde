@@ -83,11 +83,6 @@ public:
 
     void delete_dihedrals(const std::set<DType *> &delete_list);
 
-    //! Add an existing dihedral to the manager.
-    /*! NOTE: It's up to you to ensure the same dihedral isn't added twice,
-     *  and that you are not over-writing an existing map entry!
-     */
-    void add_dihedral(DType* d);
     size_t num_mapped_dihedrals() const;
 
     //! Retrieve a dihedral by residue and name
@@ -98,9 +93,14 @@ public:
      *  std::out_of_range. If the definition exists but one or more atoms
      *  are missing, returns nullptr.
      */
-    DType* get_dihedral(Residue *res, const std::string &name, bool create=false);
+    DType* get_dihedral(Residue *res, const std::string &name, bool create=true);
     virtual void destructors_done(const std::set<void*>& destroyed);
 private:
+    //! Add an existing dihedral to the manager.
+    /*! NOTE: It's up to you to ensure the same dihedral isn't added twice,
+     *  and that you are not over-writing an existing map entry!
+     */
+    void add_dihedral(DType* d);
     Rmap _residue_map;
     Nmap _residue_name_map;
     Atom_Map _atom_to_dihedral_map;

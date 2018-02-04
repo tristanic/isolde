@@ -44,6 +44,12 @@ def _rotamer_or_none(p):
     return Rotamer.c_ptr_to_py_inst(p) if p else None
 def _bond_or_none(p):
     return Bond.c_ptr_to_py_inst(p) if p else None
+def _distance_restraint_or_none(p):
+    return Distance_Restraint.c_ptr_to_py_inst(p) if p else None
+def _distance_restraints(p):
+    from .molarray import Distance_Restraints
+    return Distance_Restraints(p)
+
 
 class _Dihedral_Mgr:
     '''Base class. Do not instantiate directly.'''
@@ -96,11 +102,11 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
                 args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
         f(self.cpp_pointer, len(dihedrals), dihedrals._c_pointers)
 
-    def add_dihedrals(self, dihedrals):
-        f = c_function('proper_dihedral_mgr_add_dihedral',
-            args = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
-            )
-        f(self.cpp_pointer, dihedrals._c_pointers, len(dihedrals))
+    # def add_dihedrals(self, dihedrals):
+    #     f = c_function('proper_dihedral_mgr_add_dihedral',
+    #         args = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
+    #         )
+    #     f(self.cpp_pointer, dihedrals._c_pointers, len(dihedrals))
 
     @property
     def dihedral_dict(self):
@@ -200,14 +206,12 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         '''
         f = c_function('proper_dihedral_mgr_get_dihedrals', args=(
                         ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
-                        ctypes.c_size_t, ctypes.c_void_p, ctypes.c_bool),
-                        ret=ctypes.c_size_t)
+                        ctypes.c_size_t, ctypes.c_bool),
+                        ret=ctypes.py_object)
         n = len(residues)
         key = ctypes.py_object()
         key.value = name
-        ptrs  = numpy.empty(n, cptr)
-        num_found = f(self._c_pointer, residues._c_pointers, ctypes.byref(key), n, pointer(ptrs), create)
-        return _proper_dihedrals(ptrs[0:num_found])
+        return _proper_dihedrals(f(self._c_pointer, residues._c_pointers, ctypes.byref(key), n, create))
 
     @property
     def num_mapped_dihedrals(self):
@@ -384,8 +388,6 @@ class Rama_Mgr:
         f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc), pointer(nac))
         return (maxc, midc, minc, nac)
 
-
-
     @property
     def dihedral_manager(self):
         return self._dihedral_mgr
@@ -445,7 +447,6 @@ class Rama_Mgr:
             psis._c_pointers, n, pointer(ret))
         return ret
 
-
     def validate_by_residue(self, residues):
         '''
         Returns a tuple of (double, uint8) Numpy arrays giving the scores
@@ -477,12 +478,10 @@ class Rama_Mgr:
         f(self._c_pointer, pointer(scores), pointer(cases), n, ret)
         return ret
 
-
     def outliers(self, residues):
         scores, cases = self.validate_by_residue(residues)
         bins = self.bin_scores(scores, cases)
         return residues[bins==self.Rama_Bin.OUTLIER]
-
 
     def validate(self, residues, omegas, phis, psis, cases = None):
         '''
@@ -587,12 +586,6 @@ class Rama_Mgr:
         axes = [numpy.linspace(minmax[0][i], minmax[1][i], lengths[i]) for i in range(len(lengths))]
         return tuple(axes)
 
-
-
-
-
-
-
 class Rota_Mgr:
     from enum import IntEnum
     class Rota_Bin(IntEnum):
@@ -681,8 +674,6 @@ class Rota_Mgr:
         z_score = numpy.max(min_differences/esds)
         freq = rot['freq']
         return (key, freq, z_score)
-
-
 
     def set_default_colors(self):
         from .constants import validation_defaults as val_defaults
@@ -777,12 +768,10 @@ class Rota_Mgr:
 
     def get_rotamers(self, residues):
         f = c_function('rota_mgr_get_rotamer',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
-            ret=ctypes.c_size_t)
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
+            ret=ctypes.py_object)
         n = len(residues)
-        r_ptrs = numpy.empty(n, cptr)
-        found = f(self._c_pointer, residues._c_pointers, n, pointer(r_ptrs))
-        return _rotamers(r_ptrs[0:found])
+        return _rotamers(f(self._c_pointer, residues._c_pointers, n))
 
     def validate_rotamers(self, rotamers):
         f = c_function('rota_mgr_validate_rotamer',
@@ -824,6 +813,57 @@ class Rota_Mgr:
         f(self._c_pointer, pointer(scores), n, pointer(colors))
         return (rotamers, colors)
 
+class _Restraint_Mgr:
+    '''Base class. Do not instantiate directly.'''
+    def __init__(self, session, c_pointer=None):
+        cname = type(self).__name__.lower()
+        if c_pointer is None:
+            new_func = cname + '_new'
+            c_pointer = c_function(new_func, ret=ctypes.c_void_p)()
+        set_c_pointer(self, c_pointer)
+        f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
+        f(self._c_pointer, self)
+        self.session = session
+
+    @property
+    def cpp_pointer(self):
+        '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
+        return self._c_pointer.value
+
+    @property
+    def deleted(self):
+        '''Has the C++ side been deleted?'''
+        return not hasattr(self, '_c_pointer')
+
+class Distance_Restraint_Mgr(_Restraint_Mgr):
+    '''
+    Manages distance restraints (Atom pairs with distances and spring constants)
+    and their visualisations.
+    '''
+    def __init__(self, session, c_pointer=None):
+        pbg = self._pbgroup = session.pb_manager.get_group('ISOLDE distance restraints')
+        if c_pointer is None:
+            f = c_function('distance_restraint_mgr_new', args=(ctypes.c_void_p,),
+                ret=ctypes.c_void_p)
+            c_pointer =(f(pbg._c_pointer))
+        super().__init__(session, c_pointer)
+
+    def add_restraint(self, atom1, atom2):
+        f = c_function('distance_restraint_mgr_get_restraint',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool),
+            ret = ctypes.c_void_p)
+        from chimerax.core.atomic import Atoms
+        atoms = Atoms([atom1, atom2])
+        return _distance_restraint_or_none(f(self._c_pointer, atoms._c_pointers, True))
+
+    def intra_restraints(self, atoms):
+        n = len(atoms)
+        f = c_function('distance_restraint_mgr_intra_restraints',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
+            ret = ctypes.py_object)
+        return _distance_restraints(f(self._c_pointer, atoms._c_pointers, n))
+
+
 
 
 class _Dihedral(State):
@@ -854,12 +894,15 @@ class _Dihedral(State):
     name = c_property('dihedral_name', string, read_only = True, doc = 'Name of this dihedral. Read only.')
 
 class Proper_Dihedral(_Dihedral):
-
+    '''
+    A Proper_Dihedral is defined as a dihedral in which the four atoms are
+    strictly bonded a1-a2-a3-a4.
+    '''
     residue = c_property('proper_dihedral_residue', cptr, astype=_residue, read_only=True, doc = 'Residue this dihedral belongs to. Read only.')
-    target = c_property('proper_dihedral_target', float32,
-        doc='Target angle in radians. Will be automatically wrapped to (-pi,pi)')
-    spring_constant = c_property('proper_dihedral_spring_constant', float32,
-        doc='Spring constant for dihedral restraint in kJ/mol/radian**2.')
+    # target = c_property('proper_dihedral_target', float32,
+    #     doc='Target angle in radians. Will be automatically wrapped to (-pi,pi)')
+    # spring_constant = c_property('proper_dihedral_spring_constant', float32,
+    #     doc='Spring constant for dihedral restraint in kJ/mol/radian**2.')
     axial_bond = c_property('proper_dihedral_axial_bond', cptr, astype=_bond_or_none, read_only=True,
         doc='Bond forming the axis of this dihedral. Read-only')
 
@@ -899,10 +942,35 @@ class Rotamer(State):
     num_chi_dihedrals = c_property('rotamer_num_chi', uint8, read_only=True,
                 doc='Number of dihedrals defining this rotamer')
 
+class Distance_Restraint(State):
+    def __init__(self, c_pointer):
+        set_c_pointer(self, c_pointer)
+
+    @property
+    def cpp_pointer(self):
+        '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
+        return self._c_pointer.value
+
+    @property
+    def deleted(self):
+        '''Has the C++ side been deleted?'''
+        return not hasattr(self, '_c_pointer')
+
+    def __str__(self):
+        return "Not implemented"
+
+    def reset_state(self):
+        pass
+
+    target = c_property('distance_restraint_target', float64,
+            doc = 'Target distance in Angstroms')
+    spring_constant = c_property('distance_restraint_k', float64,
+            doc = 'Restraint spring constant in kJ mol-1 Angstrom-2')
+
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance
 # from the pointer (needed by Collections)
-for class_obj in [Proper_Dihedral, Rotamer,]:
+for class_obj in [Proper_Dihedral, Rotamer, Distance_Restraint]:
     cname = class_obj.__name__.lower()
     func_name = 'set_' + cname + '_pyclass'
     f = c_function(func_name, args = (ctypes.py_object,))
@@ -915,17 +983,10 @@ for class_obj in [Proper_Dihedral, Rotamer,]:
     class_obj.c_ptr_to_existing_py_inst = lambda ptr, fname=func_name: c_function(fname,
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
 
-Proper_Dihedral_Mgr.c_ptr_to_py_inst = lambda ptr: c_function('proper_dihedral_mgr_py_inst',
-    args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
-Proper_Dihedral_Mgr.c_ptr_to_existing_py_inst = lambda ptr: c_function("proper_dihedral_mgr_existing_py_inst",
-    args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
-
-Rama_Mgr.c_ptr_to_py_inst = lambda ptr: c_function('rama_mgr_py_inst',
-    args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
-Rama_Mgr.c_ptr_to_existing_py_inst = lambda ptr: c_function("rama_mgr_existing_py_inst",
-    args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
-
-Rota_Mgr.c_ptr_to_py_inst = lambda ptr: c_function('rota_mgr_py_inst',
-    args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
-Rota_Mgr.c_ptr_to_existing_py_inst = lambda ptr: c_function("rota_mgr_existing_py_inst",
-    args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
+for class_obj in [Proper_Dihedral_Mgr, Rama_Mgr, Rota_Mgr, Distance_Restraint_Mgr,]:
+    func_name = cname + '_py_inst'
+    class_obj.c_ptr_to_py_inst = lambda ptr, fname=func_name: c_function(fname,
+        args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
+    func_name = cname + '_existing_py_inst'
+    class_obj.c_ptr_to_existing_py_inst = lambda ptr, fname=func_name: c_function(fname,
+        args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))

@@ -8,7 +8,7 @@ typedef float float32_t;
 typedef double float64_t;
 
 
-using namespace geometry;
+using namespace isolde::geometry;
 
 extern "C"
 
@@ -16,8 +16,8 @@ extern "C"
 
 double get_dihedral(double p0[3], double p1[3], double p2[3], double p3[3])
 {
-    return geometry::dihedral_angle<double>(p0, p1, p2, p3);
-}
+    return dihedral_angle<double>(p0, p1, p2, p3);
+} // get_dihedral
 
 void get_dihedrals(double *coords, int n, double * out)
 {
@@ -25,7 +25,7 @@ void get_dihedrals(double *coords, int n, double * out)
         int j = i*12;
         *out++ = dihedral_angle<double>(coords+j, coords+j+3, coords+j+6, coords+j+9);
     }
-}
+} // get_dihedrals
 
 // Fill out with a nx3x4 matrix of rotation matrices (translation = 0)
 void rotations(double axis[3], double* angles, int n, double* out)
@@ -38,7 +38,7 @@ void rotations(double axis[3], double* angles, int n, double* out)
         sa = sin(angle);
         ca = cos(angle);
         k = 1 - ca;
-        
+
         *out++ = 1 + k*( ax*ax -1);
         *out++ = -az*sa + k*ax*ay;
         *out++ = ay*sa + k*ax*ax;
@@ -53,9 +53,9 @@ void rotations(double axis[3], double* angles, int n, double* out)
         *out++ = 0;
 
     }
-}
+} // rotations
 
-// Scale the input transforms by the values in scales, leaving the 
+// Scale the input transforms by the values in scales, leaving the
 // translation components untouched.
 void scale_transforms(double* scales, int n, double* transforms)
 {
@@ -69,7 +69,7 @@ void scale_transforms(double* scales, int n, double* transforms)
             }
         }
     }
-}
+} // scale_transforms
 
 
 void multiply_transforms(double tf1[3][4], double tf2[3][4], double out[3][4])
@@ -77,12 +77,11 @@ void multiply_transforms(double tf1[3][4], double tf2[3][4], double out[3][4])
     const double ll[4] = {0, 0, 0, 1};
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 4; ++j) {
-            out[i][j] = tf1[i][0]*tf2[0][j] + tf1[i][1]*tf2[1][j] 
+            out[i][j] = tf1[i][0]*tf2[0][j] + tf1[i][1]*tf2[1][j]
                       + tf1[i][2]*tf2[2][j] + tf1[i][3]*ll[j];
         }
     }
-    
-}
+} // multiply_transforms
 
 void flip_rotate_and_shift(int n, npy_bool* flip, double flip_op[3][4], double* rot, double* shift, double* out)
 {
@@ -99,7 +98,7 @@ void flip_rotate_and_shift(int n, npy_bool* flip, double flip_op[3][4], double* 
                 current_shift[j][k] = shift[tf_start + count];
             }
         }
-        
+
         if (flip[i]) {
             multiply_transforms(current_rot, flip_op, intermediate_result);
             multiply_transforms(current_shift, intermediate_result, current_out);
@@ -111,11 +110,8 @@ void flip_rotate_and_shift(int n, npy_bool* flip, double flip_op[3][4], double* 
                 out[tf_start+count] = current_out[j][k];
             }
         }
-        
-        
     }
-    
-}
+} // flip_rotate_and_shift
 
 const int32_t T_INDICES[9] = {0,1,4,1,2,4,2,3,4};
 const int D_LENGTH = 12;
@@ -124,7 +120,7 @@ const int N_LENGTH = 15;
 const int T_LENGTH = 9;
 
 // Generate vertices, normals and triangles to fill in a single dihedral
-// with a pseudo-trapezoid. 
+// with a pseudo-trapezoid.
 void dihedral_fill_plane(double* coords, float* vertices, float* normals, int32_t* triangles, int start=0)
 {
     int count = 0;
@@ -136,43 +132,43 @@ void dihedral_fill_plane(double* coords, float* vertices, float* normals, int32_
     for (int i = 0; i<3; ++i) {
         vertices[count+i] = (coords[i] + coords[9+i])/2;
     }
-    
+
     // Pretend the surface is planar, and assign a single normal.
     float v1[3], v2[3];
     for (int i=0; i<3; ++i) {
         v1[i] = vertices[3+i]-vertices[i];
         v2[i] = vertices[9+i]-vertices[i];
     }
-    
+
     cross_product_3D<float>(v1, v2, normals);
-    
+
     // Copy the first normal over to the rest
     for (int i=3; i<N_LENGTH; ++i) {
         normals[i] = normals[i%3];
     }
-    
+
     for (int i=0; i<9; ++i) {
         triangles[i] = start+T_INDICES[i];
     }
-}
+} // dihedral_fill_plane
 
-    
-void dihedral_fill_planes(int n, double* coords, float* vertices, 
+
+void dihedral_fill_planes(int n, double* coords, float* vertices,
                             float* normals, int32_t* triangles)
 {
     for (int i=0; i<n; ++i) {
-        dihedral_fill_plane(coords+i*D_LENGTH, 
-                            vertices+i*V_LENGTH, 
-                            normals+i*N_LENGTH, 
-                            triangles+i*T_LENGTH, 
+        dihedral_fill_plane(coords+i*D_LENGTH,
+                            vertices+i*V_LENGTH,
+                            normals+i*N_LENGTH,
+                            triangles+i*T_LENGTH,
                             i*V_LENGTH/3);
     }
-}    
+} // dihedral_fill_planes
 
 void dihedral_fill_and_color_planes(int n, double* coords, npy_bool* twisted_mask,
                                     npy_bool* cispro_mask, uint8_t* default_color,
                                     uint8_t* twisted_color, uint8_t* cispro_color,
-                                    float* vertices, float* normals, int32_t* triangles, 
+                                    float* vertices, float* normals, int32_t* triangles,
                                     uint8_t* colors)
 {
     dihedral_fill_planes(n, coords, vertices, normals, triangles);
@@ -187,11 +183,7 @@ void dihedral_fill_and_color_planes(int n, double* coords, npy_bool* twisted_mas
             }
         }
     }
-    
-    
-}
+} // dihedral_fill_and_color_planes
 
 
-
-}
-
+} // extern "C"

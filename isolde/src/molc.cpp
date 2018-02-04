@@ -36,6 +36,8 @@
 #include "interpolation/nd_interp.h"
 #include "validation_new/rama.h"
 #include "validation_new/rota.h"
+#include "restraints/distance_restraints.h"
+#include "restraints/dihedral_restraints.h"
 
 #include <functional>
 #include <map>
@@ -112,41 +114,11 @@ proper_dihedral_axial_bond(void *dihedrals, size_t n, pyobject_t *bonds)
     error_wrap_array_get(d, n, &Dihedral::axial_bond, bonds);
 }
 
-extern "C" EXPORT void
-proper_dihedral_target(void *dihedrals, size_t n, float32_t *vals)
-{
-    Dihedral **d = static_cast<Dihedral **>(dihedrals);
-    error_wrap_array_get(d, n, &Dihedral::target, vals);
-}
-
-extern "C" EXPORT void
-set_proper_dihedral_target(void * dihedrals, size_t n, float32_t *vals)
-{
-    Dihedral **d = static_cast<Dihedral **>(dihedrals);
-    error_wrap_array_set(d, n, &Dihedral::set_target, vals);
-}
-
-extern "C" EXPORT void
-proper_dihedral_spring_constant(void *dihedrals, size_t n, float32_t *vals)
-{
-    Dihedral **d = static_cast<Dihedral **>(dihedrals);
-    error_wrap_array_get(d, n, &Dihedral::spring_constant, vals);
-}
-
-extern "C" EXPORT void
-set_proper_dihedral_spring_constant(void * dihedrals, size_t n, float32_t *vals)
-{
-    Dihedral **d = static_cast<Dihedral **>(dihedrals);
-    error_wrap_array_set(d, n, &Dihedral::set_spring_constant, vals);
-}
-
 extern "C" EXPORT void proper_dihedral_residue(void *dihedrals, size_t n, pyobject_t *resp)
 {
     Dihedral **d = static_cast<Dihedral **>(dihedrals);
     error_wrap_array_get(d, n, &Dihedral::residue, resp);
 }
-
-
 
  /*************************************
   *
@@ -198,7 +170,6 @@ proper_dihedral_mgr_delete_dihedral(void *mgr, size_t n, void *dihedrals)
 
 }
 
-
 extern "C" EXPORT void
 proper_dihedral_mgr_add_dihedral_def(void *mgr, pyobject_t *rname,
     pyobject_t *dname, pyobject_t *anames, npy_bool *externals)
@@ -217,20 +188,6 @@ proper_dihedral_mgr_add_dihedral_def(void *mgr, pyobject_t *rname,
     } catch (...) {
         molc_error();
     }
-}
-
-extern "C" EXPORT void
-proper_dihedral_mgr_add_dihedral(void *mgr, void *dihedrals, size_t n)
-{
-    Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
-    Proper_Dihedral **d = static_cast<Proper_Dihedral **>(dihedrals);
-    try {
-        for (size_t i=0; i<n; ++i)
-            m->add_dihedral(d[i]);
-    } catch (...) {
-        molc_error();
-    }
-
 }
 
 extern "C" EXPORT void
@@ -260,11 +217,12 @@ proper_dihedral_mgr_new_dihedral(void *mgr, void*residues, size_t n, pyobject_t 
 }
 
 
-extern "C" EXPORT int
-proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *name, size_t n, pyobject_t *dihedrals, npy_bool create)
+extern "C" EXPORT PyObject*
+proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *name, size_t n, npy_bool create)
 {
     Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
-    size_t found=0;
+    std::vector<Dihedral *> dvec;
+    //size_t found=0;
     try {
         //~ Proper_Dihedral_Mgr::d_def ddef;
         Residue **r = static_cast<Residue **>(residues);
@@ -272,9 +230,16 @@ proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *name, s
         for (size_t i=0; i<n; ++i) {
             Proper_Dihedral *d = m->get_dihedral(r[i], dname, (bool)create);
             if (d != nullptr)
-                dihedrals[found++] = d;
+                dvec.push_back(d);
+                //dihedrals[found++] = d;
         }
-        return found;
+        void **dptr;
+        PyObject *da = python_voidp_array(dvec.size(), &dptr);
+        size_t i=0;
+        for (auto d: dvec) {
+            dptr[i++] = d;
+        }
+        return da;
     } catch (...) {
         molc_error();
         return 0;
@@ -415,7 +380,6 @@ rama_mgr_get_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min, ui
     }
 
 }
-
 
 extern "C" EXPORT void
 rama_mgr_add_interpolator(void *mgr, size_t r_case, size_t dim,
@@ -643,22 +607,25 @@ rota_mgr_set_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min)
     }
 }
 
-
-
-extern "C" EXPORT size_t
-rota_mgr_get_rotamer(void *mgr, void *residue, size_t n, pyobject_t *rotamers)
+extern "C" EXPORT PyObject*
+rota_mgr_get_rotamer(void *mgr, void *residue, size_t n)
 {
     Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
     Residue **r = static_cast<Residue **>(residue);
-    size_t found =0;
+    std::vector<Rotamer *> found;
     try {
         for (size_t i=0; i<n; ++i) {
-            Rotamer* rot = m->get_rotamer(r[i]);
+            Rotamer* rot = m->get_rotamer(*r++);
             if (rot != nullptr) {
-                rotamers[found++] = rot;
+                found.push_back(rot);
             }
         }
-        return found;
+        void ** rptr;
+        PyObject *ra = python_voidp_array(found.size(), &rptr);
+        size_t i=0;
+        for (auto rot: found)
+            rptr[i++] = rot;
+        return ra;
     } catch (...) {
         molc_error();
         return 0;
@@ -774,4 +741,123 @@ rotamer_angles(void *rotamer, double *a)
     } catch (...) {
         molc_error();
     }
+}
+
+/*******************************************************
+ *
+ * Distance_Restraint_Mgr functions
+ *
+ *******************************************************/
+
+SET_PYTHON_INSTANCE(distance_restraint_mgr, Distance_Restraint_Mgr)
+GET_PYTHON_INSTANCES(distance_restraint_mgr, Distance_Restraint_Mgr)
+
+extern "C" EXPORT void*
+distance_restraint_mgr_new(Proxy_PBGroup *pbgroup)
+{
+    Proxy_PBGroup *pbgr = static_cast<Proxy_PBGroup *>(pbgroup);
+    try {
+        Distance_Restraint_Mgr *mgr = new Distance_Restraint_Mgr(pbgroup);
+        return mgr;
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+} //rota_mgr_new
+
+extern "C" EXPORT void
+distance_restraint_mgr_delete(void *mgr)
+{
+    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    try {
+        delete d;
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void*
+distance_restraint_mgr_get_restraint(void *mgr, void *atoms, bool create)
+{
+    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    Atom **a = static_cast<Atom **>(atoms);
+    bool c = (bool)create;
+    try {
+        return d->get_restraint(*a, *(a+1), c);
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT PyObject*
+distance_restraint_mgr_intra_restraints(void *mgr, void *atoms, size_t n)
+{
+    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    Atom **a = static_cast<Atom **>(atoms);
+    try {
+        std::set<Atom *> aset;
+        std::set<Distance_Restraint *> dset;
+        for (size_t i=0; i<n; ++i)
+            aset.insert(*a++);
+        for (auto ta: aset)
+        {
+            auto &drs = d->get_restraints(ta);
+            for (auto dr: drs) {
+                auto &datoms = dr->atoms();
+                for (auto datom: datoms) {
+                    if (datom != ta) {
+                        if (aset.find(datom) != aset.end())
+                            dset.insert(dr);
+                    }
+                }
+            }
+        }
+        void **dptr;
+        PyObject *da = python_voidp_array(dset.size(), &dptr);
+        size_t i=0;
+        for (auto dr: dset)
+            dptr[i++] = dr;
+        return da;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+
+/***************************************************************
+ *
+ * Distance_Restraint functions
+ *
+ ***************************************************************/
+SET_PYTHON_CLASS(distance_restraint, Distance_Restraint)
+GET_PYTHON_INSTANCES(distance_restraint, Distance_Restraint)
+
+extern "C" EXPORT void
+set_distance_restraint_target(void *restraint, size_t n, double *target)
+{
+    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    error_wrap_array_set<Distance_Restraint, double, double>(d, n, &Distance_Restraint::set_target, target);
+}
+
+extern "C" EXPORT void
+distance_restraint_target(void *restraint, size_t n, double *target)
+{
+    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    error_wrap_array_get<Distance_Restraint, double, double>(d, n, &Distance_Restraint::get_target, target);
+}
+
+extern "C" EXPORT void
+set_distance_restraint_k(void *restraint, size_t n, double *k)
+{
+    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    error_wrap_array_set<Distance_Restraint, double, double>(d, n, &Distance_Restraint::set_k, k);
+}
+
+extern "C" EXPORT void
+distance_restraint_k(void *restraint, size_t n, double *k)
+{
+    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    error_wrap_array_get<Distance_Restraint, double, double>(d, n, &Distance_Restraint::get_k, k);
 }

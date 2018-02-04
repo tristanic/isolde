@@ -11,7 +11,7 @@
   <Synopsis>ISOLDE: Interactive Structure Optimisation by Local Direct Exploration</Synopsis>
   <Description>
 ISOLDE is a next-generation environment for interactive building and
-real-space refinement of atomic models into electron density maps. 
+real-space refinement of atomic models into electron density maps.
 It applies interactive molecular dynamics to allow real-time, intuitive
 performance of structural rearrangements from the small to the quite
 drastic, while constantly maintaining physically reasonable interactions
@@ -39,6 +39,8 @@ with the surroundings.
     <SourceFile>src/interpolation/nd_interp.cpp</SourceFile>
     <SourceFile>src/validation_new/rama.cpp</SourceFile>
     <SourceFile>src/validation_new/rota.cpp</SourceFile>
+    <SourceFile>src/restraints/distance_restraints.cpp</SourceFile>
+    <SourceFile>src/restraints/dihedral_restraints.cpp</SourceFile>
     <SourceFile>src/molc.cpp</SourceFile>
     <Library>OpenMM</Library>
     <Library>atomstruct</Library>

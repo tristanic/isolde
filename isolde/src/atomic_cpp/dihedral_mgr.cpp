@@ -190,7 +190,7 @@ void Dihedral_Mgr<DType>::delete_dihedrals(const std::set<DType *> &delete_list)
             auto &dset = _atom_to_dihedral_map.at(a);
             dset.erase(d);
         }
-        auto rit = _residue_map.find(d->residue();
+        auto rit = _residue_map.find(d->residue());
         if (rit != _residue_map.end()) {
             _residue_map.erase(rit);
         }
@@ -220,7 +220,7 @@ void Dihedral_Mgr<DType>::destructors_done(const std::set<void*>& destroyed)
             ++it;
     }
 
-    delete_dihedrals(d);
+    delete_dihedrals(to_delete);
 } //destructors_done
 
 template class Dihedral_Mgr<Proper_Dihedral>;

@@ -5,6 +5,8 @@
 #include <math.h>
 #include <cstdint>
 
+namespace isolde
+{
 namespace geometry
 {
 
@@ -121,5 +123,5 @@ template <typename T, typename R> R dihedral_angle(const T& p0, const T& p1, con
 }
 
 } // namespace geometry
-
+} // namespace isolde
 #endif //isolde_geometry
