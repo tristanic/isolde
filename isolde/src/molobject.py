@@ -14,6 +14,8 @@ from chimerax.core.atomic.molobject import _atoms, \
                 _chains, _atomic_structure, _pseudobond_group, \
                 _pseudobond_group_map
 
+from chimerax.core.models import Model
+
 from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
 
 import json
@@ -35,9 +37,16 @@ def _asptr(arr, dtype):
 def _proper_dihedrals(p):
     from .molarray import Proper_Dihedrals
     return Proper_Dihedrals(p)
+def _ramas(p):
+    from .molarray import Ramas
+    return Ramas(p)
+def _rama_or_none(p):
+    return Rama.c_ptr_to_py_inst(p) if p else None
 def _rotamers(p):
     from .molarray import Rotamers
     return Rotamers(p)
+def _rotamer_or_none(p):
+    return Rotamer.c_ptr_to_py_inst(p) if p else None
 def _proper_dihedral_or_none(p):
     return Proper_Dihedral.c_ptr_to_py_inst(p) if p else None
 def _rotamer_or_none(p):
@@ -49,7 +58,9 @@ def _distance_restraint_or_none(p):
 def _distance_restraints(p):
     from .molarray import Distance_Restraints
     return Distance_Restraints(p)
-
+def _pseudobond_or_none(p):
+    from chimerax.core.atomic import Pseudobond
+    return Pseudobond.c_ptr_to_py_inst(p) if p else None
 
 class _Dihedral_Mgr:
     '''Base class. Do not instantiate directly.'''
@@ -301,15 +312,15 @@ class Rama_Mgr:
             raise RuntimeError('Session already has a Ramachandran manager!')
         if not hasattr(session, 'proper_dihedral_mgr'):
             raise RuntimeError('Proper_Dihedral_Mgr must be initialised first!')
+        self.session = session
+        dmgr = self._dihedral_mgr = session.proper_dihedral_mgr
         cname = type(self).__name__.lower()
         if c_pointer is None:
             new_func = cname + '_new'
-            c_pointer = c_function(new_func, ret=ctypes.c_void_p)()
+            c_pointer = c_function(new_func, args=(ctypes.c_void_p,), ret=ctypes.c_void_p)(dmgr._c_pointer)
         set_c_pointer(self, c_pointer)
         f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
-        self.session = session
-        self._dihedral_mgr = session.proper_dihedral_mgr
         self._prepare_all_validators()
         self.set_default_cutoffs()
         self.set_default_colors()
@@ -417,54 +428,32 @@ class Rama_Mgr:
         f(self._c_pointer, rama_case, ndim, pointer(axis_lengths),
             pointer(min_vals), pointer(max_vals), pointer(data))
 
-    def valid_rama_residues(self, residues):
-        f = c_function('proper_dihedral_mgr_valid_rama_residues', args=(
-                        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
-                        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p),
-                        ret=ctypes.c_size_t)
-        n = len(residues)
-        r_ptrs = numpy.empty(n, cptr)
-        o_ptrs = numpy.empty(n, cptr)
-        phi_ptrs = numpy.empty(n, cptr)
-        psi_ptrs = numpy.empty(n, cptr)
-        num_found = f(self.dihedral_manager.cpp_pointer, residues._c_pointers, n,
-            pointer(r_ptrs), pointer(o_ptrs), pointer(phi_ptrs), pointer(psi_ptrs))
-        r = _residues(r_ptrs[0:num_found])
-        omega = _proper_dihedrals(o_ptrs[0:num_found])
-        phi = _proper_dihedrals(phi_ptrs[0:num_found])
-        psi = _proper_dihedrals(psi_ptrs[0:num_found])
-        return (r, omega, phi, psi)
+    # def valid_rama_residues(self, residues):
+    #     f = c_function('proper_dihedral_mgr_valid_rama_residues', args=(
+    #                     ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+    #                     ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p),
+    #                     ret=ctypes.c_size_t)
+    #     n = len(residues)
+    #     r_ptrs = numpy.empty(n, cptr)
+    #     o_ptrs = numpy.empty(n, cptr)
+    #     phi_ptrs = numpy.empty(n, cptr)
+    #     psi_ptrs = numpy.empty(n, cptr)
+    #     num_found = f(self.dihedral_manager.cpp_pointer, residues._c_pointers, n,
+    #         pointer(r_ptrs), pointer(o_ptrs), pointer(phi_ptrs), pointer(psi_ptrs))
+    #     r = _residues(r_ptrs[0:num_found])
+    #     omega = _proper_dihedrals(o_ptrs[0:num_found])
+    #     phi = _proper_dihedrals(phi_ptrs[0:num_found])
+    #     psi = _proper_dihedrals(psi_ptrs[0:num_found])
+    #     return (r, omega, phi, psi)
 
-    def rama_cases(self, omegas, psis):
-        f = c_function('rama_mgr_rama_cases',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
-                ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint8)))
-        n = len(omegas)
-        if len(psis) != n:
-            raise TypeError('Array lengths must be equal!')
+    def rama_cases(self, residues):
+        f = c_function('rama_mgr_rama_case',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+            ctypes.POINTER(ctypes.c_uint8)))
+        n = len(residues)
         ret = numpy.empty(n, uint8);
-        f(self._c_pointer, omegas._c_pointers,
-            psis._c_pointers, n, pointer(ret))
+        f(self._c_pointer, residues._c_pointers, n, pointer(ret))
         return ret
-
-    def validate_by_residue(self, residues):
-        '''
-        Returns a tuple of (double, uint8) Numpy arrays giving the scores
-        and Ramachandran cases for each residue. Non-Ramachandran
-        (N- and C-terminal peptide and non-protein) residues will
-        receive scores of -1. Case definitions are found in
-        :class:`Rama_Mgr`.Rama_Case.
-        '''
-        f = c_function('rama_mgr_validate_by_residue',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
-                    ctypes.c_size_t, ctypes.POINTER(ctypes.c_double),
-                    ctypes.POINTER(ctypes.c_uint8)))
-        n = len(residues)
-        scores = numpy.empty(n, numpy.double)
-        cases = numpy.empty(n, uint8)
-        f(self._c_pointer, self._dihedral_mgr._c_pointer, residues._c_pointers,
-            n, pointer(scores), pointer(cases))
-        return (scores, cases)
 
     def bin_scores(scores, cases):
         n = len(scores)
@@ -483,7 +472,7 @@ class Rama_Mgr:
         bins = self.bin_scores(scores, cases)
         return residues[bins==self.Rama_Bin.OUTLIER]
 
-    def validate(self, residues, omegas, phis, psis, cases = None):
+    def validate(self, residues_or_ramas):
         '''
         Returns Ramachandran scores for a set of pre-defined valid
         Ramachandran cases. The input to this function is typically
@@ -491,46 +480,68 @@ class Rama_Mgr:
         but more robust method which can handle invalid (non-protein
         and/or terminal) residues, use validate_by_residue().
         '''
-        if cases is None:
-            cases = self.rama_cases(omegas, psis)
+        from .molarray import Ramas
+        from chimerax.core.atomic import Residues
+        if isinstance(residues_or_ramas, Ramas):
+            return self._validate(residues_or_ramas)
+        elif isinstance(residues_or_ramas, Residues):
+            return self._validate_by_residue(residues_or_ramas)
+        raise TypeError('input must be either a Ramas or a Residues object!')
+
+    def _validate_by_residue(self, residues):
+        '''
+        Returns a tuple of (double, uint8) Numpy arrays giving the scores
+        and Ramachandran cases for each residue. Non-Ramachandran
+        (N- and C-terminal peptide and non-protein) residues will
+        receive scores of -1. Case definitions are found in
+        :class:`Rama_Mgr`.Rama_Case.
+        '''
+        f = c_function('rama_mgr_validate_by_residue',
+            args=(ctypes.c_void_p, ctypes.c_void_p,ctypes.c_size_t,
+            ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_uint8)))
         n = len(residues)
-        for arr in (omegas, phis, psis):
-            if len(arr) != n:
-                raise TypeError('Array lengths must be equal!')
-        return self._validate(residues, omegas, phis, psis, cases, n)
+        scores = numpy.empty(n, numpy.double)
+        cases = numpy.empty(n, uint8)
+        f(self._c_pointer, residues._c_pointers, n, pointer(scores), pointer(cases))
+        return (scores, cases)
 
-    def _validate(self, residues, omegas, phis, psis, cases, n):
+    def _validate(self, ramas):
         f = c_function('rama_mgr_validate',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
-                  ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
-                  ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
-        ret = numpy.empty(n, float64)
-        f(self._c_pointer, residues._c_pointers, omegas._c_pointers,
-            phis._c_pointers, psis._c_pointers, pointer(cases), n, pointer(ret))
-        return ret
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+            ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_uint8)))
+        n = len(ramas)
+        scores = numpy.empty(n, float64)
+        cases = numpy.empty(n, uint8)
+        f(self._c_pointer, ramas._c_pointers,  n, pointer(scores), pointer(cases))
+        return (scores, cases)
 
-    def rama_colors(self, residues, omegas, phis, psis, cases = None):
+    def get_ramas(self, residues):
+        '''
+        Returns a :class:`Ramas` with one Rama for each protein residue in the
+        list. Non-protein residues will be skipped so the length of the result
+        may be different from the input array, but the returned Ramas will be
+        in the same order as the protein residues in the input.
+        '''
+        f = c_function('rama_mgr_get_rama',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
+            ret=ctypes.c_size_t)
+        n = len(residues)
+        ramas = numpy.empty(n, cptr)
+        found = f(self._c_pointer, residues._c_pointers, n, pointer(ramas))
+        return _ramas(ramas[0:found])
+
+    def rama_colors(self, ramas):
         '''
         Returns a nx4 uint8 :class:`Numpy` array giving a color for each
         residue corresponding to the current colormap.
         '''
-        if cases is None:
-            cases = self.rama_cases(omegas, psis)
-        n = len(residues)
-        for arr in (omegas, phis, psis):
-            if len(arr) != n:
-                raise TypeError('Array lengths must be equal!')
-        return self._rama_colors(residues, omegas, phis, psis, cases, n)
-
-    def _rama_colors(self, residues, omegas, phis, psis, cases, n):
         f = c_function('rama_mgr_validate_and_color',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
-                  ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
-                  ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint8)))
-        ret = numpy.empty((n,4), uint8)
-        f(self._c_pointer, residues._c_pointers, omegas._c_pointers,
-            phis._c_pointers, psis._c_pointers, pointer(cases), n, pointer(ret))
-        return ret;
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+                  ctypes.POINTER(ctypes.c_uint8)))
+        n = len(ramas)
+        colors = numpy.empty((n,4), uint8)
+        f(self._c_pointer, ramas._c_pointers, n, pointer(colors))
+        return colors
 
     def bin_scores(self, scores, cases):
         f = c_function('rama_mgr_bin_scores',
@@ -813,9 +824,9 @@ class Rota_Mgr:
         f(self._c_pointer, pointer(scores), n, pointer(colors))
         return (rotamers, colors)
 
-class _Restraint_Mgr:
+class _Restraint_Mgr(Model):
     '''Base class. Do not instantiate directly.'''
-    def __init__(self, session, c_pointer=None):
+    def __init__(self, name, model, c_pointer=None):
         cname = type(self).__name__.lower()
         if c_pointer is None:
             new_func = cname + '_new'
@@ -823,7 +834,15 @@ class _Restraint_Mgr:
         set_c_pointer(self, c_pointer)
         f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
-        self.session = session
+        super().__init__(name+' Manager', model.session)
+        self.model = model
+        model.add([self])
+
+    def delete(self):
+        cname = type(self).__name__.lower()
+        del_func = cname+'_delete'
+        c_function(del_func, args=(ctypes.c_void_p,))(self._c_pointer)
+
 
     @property
     def cpp_pointer(self):
@@ -840,13 +859,14 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
     Manages distance restraints (Atom pairs with distances and spring constants)
     and their visualisations.
     '''
-    def __init__(self, session, c_pointer=None):
-        pbg = self._pbgroup = session.pb_manager.get_group('ISOLDE distance restraints')
+    def __init__(self, model, c_pointer=None):
+        pbg = self._pbgroup = model.pseudobond_group('ISOLDE distance restraints')
         if c_pointer is None:
-            f = c_function('distance_restraint_mgr_new', args=(ctypes.c_void_p,),
+            f = c_function('distance_restraint_mgr_new', args=(ctypes.c_void_p, ctypes.c_void_p,),
                 ret=ctypes.c_void_p)
-            c_pointer =(f(pbg._c_pointer))
-        super().__init__(session, c_pointer)
+            c_pointer =(f(model._c_pointer, pbg._c_pointer))
+        super().__init__('Distance Restraints', model, c_pointer)
+        self.add([pbg])
 
     def add_restraint(self, atom1, atom2):
         f = c_function('distance_restraint_mgr_get_restraint',
@@ -863,6 +883,10 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
             ret = ctypes.py_object)
         return _distance_restraints(f(self._c_pointer, atoms._c_pointers, n))
 
+    # def delete(self):
+    #     self.session.models.remove([self._pbgroup])
+    #     self._pbgroup.delete()
+    #     super().delete(self)
 
 
 
@@ -905,6 +929,38 @@ class Proper_Dihedral(_Dihedral):
     #     doc='Spring constant for dihedral restraint in kJ/mol/radian**2.')
     axial_bond = c_property('proper_dihedral_axial_bond', cptr, astype=_bond_or_none, read_only=True,
         doc='Bond forming the axis of this dihedral. Read-only')
+
+class Rama(State):
+    def __init__(self, c_pointer):
+        set_c_pointer(self, c_pointer)
+
+    @property
+    def cpp_pointer(self):
+        '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
+        return self._c_pointer.value
+
+    @property
+    def deleted(self):
+        '''Has the C++ side been deleted?'''
+        return not hasattr(self, '_c_pointer')
+
+    def __str__(self):
+        return "Not implemented"
+
+    def reset_state(self):
+        pass
+
+    ca_atom = c_property('rama_ca_atom', cptr, astype=_atom_or_none, read_only = True,
+            doc = 'The alpha carbon of the amino acid residue. Read only.')
+    valid = c_property('rama_is_valid', npy_bool, read_only = True,
+            doc = 'True if this residue has all three of omega, phi and psi. Read only.')
+    score = c_property('rama_score', float64, read_only = True,
+            doc = 'The score of this residue on the MolProbity Ramachandran contours. Read only.')
+    phipsi = c_property('rama_phipsi', float64, 2, read_only = True,
+            doc = 'The phi and psi angles for this residue in radians. Read only.')
+    angles = c_property('rama_omegaphipsi', float64, 3, read_only = True,
+            doc = 'The omega, phi and psi angles for this residue in radians. Read only.')
+
 
 class Rotamer(State):
     def __init__(self, c_pointer):
@@ -962,15 +1018,23 @@ class Distance_Restraint(State):
     def reset_state(self):
         pass
 
+    enabled =c_property('distance_restraint_enabled', npy_bool,
+            doc = 'Enable/disable this restraint or get its current state.')
+    atoms = c_property('distance_restraint_atoms', cptr, 2, astype=_atom_pair, read_only=True,
+            doc = 'Returns the pair of restrained atoms. Read only.' )
     target = c_property('distance_restraint_target', float64,
             doc = 'Target distance in Angstroms')
     spring_constant = c_property('distance_restraint_k', float64,
             doc = 'Restraint spring constant in kJ mol-1 Angstrom-2')
+    distance = c_property('distance_restraint_distance', float64, read_only=True,
+            doc = 'Current distance between restrained atoms in Angstroms. Read only.')
+    pseudobond = c_property('distance_restraint_pbond', cptr, astype=_pseudobond_or_none, read_only=True,
+            doc = 'Pseudobond visualisation of the restraint. Read only.')
 
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance
 # from the pointer (needed by Collections)
-for class_obj in [Proper_Dihedral, Rotamer, Distance_Restraint]:
+for class_obj in [Proper_Dihedral, Rama, Rotamer, Distance_Restraint]:
     cname = class_obj.__name__.lower()
     func_name = 'set_' + cname + '_pyclass'
     f = c_function(func_name, args = (ctypes.py_object,))

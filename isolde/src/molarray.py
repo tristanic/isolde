@@ -67,6 +67,22 @@ class Proper_Dihedrals(_Dihedrals):
     axial_bonds = cvec_property('proper_dihedral_axial_bond', cptr, astype=_bonds, read_only=True,
         doc='Returns a :class:`Bonds` giving the axial bond for each dihedral. Read-only')
 
+class Ramas(Collection):
+    def __init__(self, c_pointers=None):
+        super().__init__(c_pointers, Rotamer, Rotamers)
+
+    ca_atoms = cvec_property('rama_ca_atom', cptr, astype=_atoms, read_only = True,
+            doc = 'The alpha carbon of each amino acid residue. Read only.')
+    valids = cvec_property('rama_is_valid', npy_bool, read_only = True,
+            doc = 'True for each residue that has all three of omega, phi and psi. Read only.')
+    scores = cvec_property('rama_score', float64, read_only = True,
+            doc = 'The score of each residue on the MolProbity Ramachandran contours. Read only.')
+    phipsis = cvec_property('rama_phipsi', float64, 2, read_only = True,
+            doc = 'The phi and psi angles for each residue in radians. Read only.')
+    angles = cvec_property('rama_omegaphipsi', float64, 3, read_only = True,
+            doc = 'The omega, phi and psi angles for each residue in radians. Read only.')
+
+
 class Rotamers(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, Rotamer, Rotamers)
@@ -82,7 +98,15 @@ class Distance_Restraints(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, Distance_Restraint, Distance_Restraints)
 
+    enabled =cvec_property('distance_restraint_enabled', npy_bool,
+            doc = 'Enable/disable these restraints or get their current states.')
+    atoms = cvec_property('distance_restraint_atoms', cptr, 2, astype=_atoms_pair, read_only=True,
+            doc = 'Returns a 2-tuple of :class:`Atoms` containing the restrained atoms. Read only.' )
     targets = cvec_property('distance_restraint_target', float64,
             doc = 'Target distances in Angstroms')
     spring_constants = cvec_property('distance_restraint_k', float64,
             doc = 'Restraint spring constants in kJ mol-1 Angstrom-2')
+    distances = cvec_property('distance_restraint_distance', float64, read_only=True,
+            doc = 'Current distances between restrained atoms in Angstroms. Read only.')
+    pseudobonds = cvec_property('distance_restraint_pbond', cptr, astype=_pseudobonds, read_only=True,
+            doc = 'Pseudobond visualisations of the restraints. Read only.')

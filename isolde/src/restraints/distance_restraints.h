@@ -3,6 +3,7 @@
 
 #include <string>
 #include "../colors.h"
+#include "../constants.h"
 #include <atomstruct/destruct.h>
 #include <atomstruct/string_types.h>
 #include <atomstruct/Atom.h>
@@ -31,14 +32,25 @@ public:
     void set_target(double target) { _target=target; }
     double get_k() const { return _k; }
     void set_k(double k) { _k = k; }
+    bool enabled() const { return _enabled; }
+    void set_enabled(bool flag) {
+        _enabled = flag;
+        if(flag)
+            _pbond->clear_hide_bits(HIDE_ISOLDE);
+        else
+            _pbond->set_hide_bits(HIDE_ISOLDE);
+        }
     const Atoms &atoms() const {return _atoms;}
-    Pseudobond *get_pbond() const {return _pbond;}
+    Pseudobond *pbond() const {return _pbond;}
+    double distance() const {return _atoms[0]->coord().distance(_atoms[1]->coord());}
+    Structure* structure() const {return _atoms[0]->structure();}
 
 private:
     Atoms _atoms;
     Pseudobond *_pbond;
     double _target = 0;
     double _k = 0;
+    bool _enabled=false;
     const char* err_msg_bonded()
     { return "Can't create a distance restraint between bonded atoms!";}
 
@@ -52,7 +64,8 @@ class Distance_Restraint_Mgr:
 public:
     Distance_Restraint_Mgr() {}
     ~Distance_Restraint_Mgr();
-    Distance_Restraint_Mgr(Proxy_PBGroup *pbgroup): _pbgroup(pbgroup) {}
+    Distance_Restraint_Mgr(Structure *structure, Proxy_PBGroup *pbgroup)
+        : _pbgroup(pbgroup), _structure(structure) {}
 
     Distance_Restraint* new_restraint(Atom *a1, Atom *a2);
     Distance_Restraint* get_restraint(Atom *a1, Atom *a2, bool create);
@@ -63,8 +76,7 @@ public:
 
     // Atom_Map maps individual atoms to a set of the Distance_Restrants they belong to
     typedef std::unordered_map<Atom*, std::set<Distance_Restraint *> > Atom_Map;
-
-
+    Structure* structure() const { return _structure; }
 
     virtual void destructors_done(const std::set<void*>& destroyed);
 private:
@@ -74,12 +86,16 @@ private:
     Atom_Map _atom_to_restraints;
     // std::set<Atom *> _mapped_atoms;
     Proxy_PBGroup* _pbgroup;
+    Structure* _structure;
 
     const char* error_duplicate() const {
         return "This atom pair already has a distance restraint defined!";
     }
     const char* error_no_restraint() const {
         return "No restraint exists between this pair of atoms!";
+    }
+    const char* error_different_mol() const {
+        return "All distance restraints must be in the same model!";
     }
 }; // class Distance_Restraint_Mgr
 

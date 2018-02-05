@@ -258,41 +258,41 @@ proper_dihedral_mgr_num_mapped_dihedrals(void *mgr)
     }
 }
 
-const std::vector<std::string> RAMA_DIHEDRAL_NAMES({"omega", "phi", "psi"});
-extern "C" EXPORT size_t
-proper_dihedral_mgr_valid_rama_residues(void *mgr, void *in_residues, size_t n,
-    pyobject_t *out_residues, pyobject_t *omega, pyobject_t *phi, pyobject_t *psi)
-{
-    size_t found = 0;
-    bool found_all = true;
-    Proper_Dihedral* found_dihedrals[3];
-    Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
-    Residue **r = static_cast<Residue **>(in_residues);
-    try {
-        for (size_t i=0; i<n; ++i) {
-            found_all=true;
-            for(size_t j=0; j<3; ++j) {
-                Proper_Dihedral *d = m->get_dihedral(r[i], RAMA_DIHEDRAL_NAMES[j], true);
-                if (d == nullptr) {
-                    found_all = false;
-                    break;
-                }
-                found_dihedrals[j] = d;
-            }
-            if (found_all) {
-                out_residues[found] = r[i];
-                omega[found] = found_dihedrals[0];
-                phi[found] = found_dihedrals[1];
-                psi[found] = found_dihedrals[2];
-                found++;
-            }
-        }
-        return found;
-    } catch (...) {
-        molc_error();
-        return 0;
-    }
-} //proper_dihedral_mgr_valid_rama_residues
+// const std::vector<std::string> RAMA_DIHEDRAL_NAMES({"omega", "phi", "psi"});
+// extern "C" EXPORT size_t
+// proper_dihedral_mgr_valid_rama_residues(void *mgr, void *in_residues, size_t n,
+//     pyobject_t *out_residues, pyobject_t *omega, pyobject_t *phi, pyobject_t *psi)
+// {
+//     size_t found = 0;
+//     bool found_all = true;
+//     Proper_Dihedral* found_dihedrals[3];
+//     Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+//     Residue **r = static_cast<Residue **>(in_residues);
+//     try {
+//         for (size_t i=0; i<n; ++i) {
+//             found_all=true;
+//             for(size_t j=0; j<3; ++j) {
+//                 Proper_Dihedral *d = m->get_dihedral(r[i], RAMA_DIHEDRAL_NAMES[j], true);
+//                 if (d == nullptr) {
+//                     found_all = false;
+//                     break;
+//                 }
+//                 found_dihedrals[j] = d;
+//             }
+//             if (found_all) {
+//                 out_residues[found] = r[i];
+//                 omega[found] = found_dihedrals[0];
+//                 phi[found] = found_dihedrals[1];
+//                 psi[found] = found_dihedrals[2];
+//                 found++;
+//             }
+//         }
+//         return found;
+//     } catch (...) {
+//         molc_error();
+//         return 0;
+//     }
+// } //proper_dihedral_mgr_valid_rama_residues
 
 
 /**********************************************************************
@@ -304,9 +304,10 @@ SET_PYTHON_INSTANCE(rama_mgr, Rama_Mgr)
 GET_PYTHON_INSTANCES(rama_mgr, Rama_Mgr)
 
 extern "C" EXPORT void*
-rama_mgr_new()
+rama_mgr_new(void *dmgr)
 {
-    Rama_Mgr *mgr = new Rama_Mgr();
+    Proper_Dihedral_Mgr *d = static_cast<Proper_Dihedral_Mgr *>(dmgr);
+    Rama_Mgr *mgr = new Rama_Mgr(d);
     try {
         return mgr;
     } catch (...) {
@@ -447,17 +448,40 @@ rama_mgr_interpolator_values(void *mgr, size_t r_case, double *vals)
     }
 }
 
-
-extern "C" EXPORT void
-rama_mgr_rama_cases(void *mgr, void *omega, void *psi,
-    size_t n, uint8_t *cases)
+extern "C" EXPORT size_t
+rama_mgr_get_rama(void *mgr, void *residue, size_t n, pyobject_t *ramas)
 {
     Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
-    Dihedral **o = static_cast<Dihedral **>(omega);
-    Dihedral **q = static_cast<Dihedral **>(psi);
+    Residue **r = static_cast<Residue **>(residue);
+    size_t found=0;
     try {
         for (size_t i=0; i<n; ++i) {
-            *cases++ = m->rama_case(*o++, *q++);
+            Residue *thisr = *r++;
+            if (thisr->polymer_type() != PT_AMINO)
+                continue;
+            try {
+                Rama *ram = m->get_rama(thisr);
+                ramas[found++] = ram;
+            } catch (std::logic_error) {
+                continue;
+            }
+        }
+        return found;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+
+}
+
+extern "C" EXPORT void
+rama_mgr_rama_case(void *mgr, void *residue, size_t n, uint8_t *rcase)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    Residue **r = static_cast<Residue **>(residue);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *rcase++ = m->rama_case(*r++);
         }
     } catch (...) {
         molc_error();
@@ -465,16 +489,14 @@ rama_mgr_rama_cases(void *mgr, void *omega, void *psi,
 }
 
 extern "C" EXPORT void
-rama_mgr_validate_by_residue(void *mgr, void *dmgr, void *residue, size_t n, double *score,
-    uint8_t *r_case)
+rama_mgr_validate_by_residue(void *mgr, void *residue, size_t n, double *score, uint8_t *rcase)
 {
     Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
-    Proper_Dihedral_Mgr *d = static_cast<Proper_Dihedral_Mgr *>(dmgr);
     Residue **r = static_cast<Residue **>(residue);
     try {
         for (size_t i=0; i<n; ++i) {
-            *score++ = m->validate(*r, d);
-            *r_case++ = m->rama_case(*r++, d);
+            *score++ = m->validate(*r);
+            *rcase++ = m->rama_case(*r++);
         }
     } catch (...) {
         molc_error();
@@ -482,30 +504,27 @@ rama_mgr_validate_by_residue(void *mgr, void *dmgr, void *residue, size_t n, dou
 }
 
 extern "C" EXPORT void
-rama_mgr_validate(void *mgr, void *residue, void *omega, void *phi,
-    void *psi, uint8_t *r_case, size_t n, double *scores)
+rama_mgr_validate(void *mgr, void *rama, size_t n, double *score, uint8_t *rcase)
 {
     Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
-    Residue **r = static_cast<Residue **>(residue);
-    Dihedral **o = static_cast<Dihedral **>(omega);
-    Dihedral **p = static_cast<Dihedral **>(phi);
-    Dihedral **q = static_cast<Dihedral **>(psi);
+    Rama **r = static_cast<Rama **>(rama);
     try {
-        m->validate(r, o, p, q, r_case, n, scores);
+        m->validate(r, n, score, rcase);
     } catch (...) {
         molc_error();
     }
 }
 
 extern "C" EXPORT void
-rama_mgr_validate_and_color(void *mgr, void *residue, void *omega,
-    void *phi, void *psi, uint8_t *r_case, size_t n, uint8_t *colors)
+rama_mgr_validate_and_color(void *mgr, void *rama, size_t n, uint8_t *colors)
 {
     Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    Rama **r = static_cast<Rama **>(rama);
     std::vector<double> scores(n);
-    rama_mgr_validate(mgr, residue, omega, phi, psi, r_case, n, scores.data());
+    std::vector<uint8_t> rcases(n);
     try {
-        m->color_by_scores(scores.data(), r_case, n, colors);
+        m->validate(r, n, scores.data(), rcases.data());
+        m->color_by_scores(scores.data(), rcases.data(), n, colors);
     } catch (...) {
         molc_error();
     }
@@ -525,6 +544,83 @@ rama_mgr_bin_scores(void *mgr, double *score, uint8_t *r_case, size_t n, int32_t
     }
 
 }
+
+/**************************************************************
+ *
+ * Rama functions
+ *
+ **************************************************************/
+
+SET_PYTHON_CLASS(rama, Rama)
+GET_PYTHON_INSTANCES(rama, Rama)
+
+extern "C" EXPORT void
+rama_ca_atom(void *rama, size_t n, pyobject_t *atom)
+{
+    Rama **r = static_cast<Rama **>(rama);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *atom++ = (*r++)->CA_atom();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+rama_is_valid(void *rama, size_t n, npy_bool *valid)
+{
+    Rama **r = static_cast<Rama **>(rama);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *valid++ = (*r++)->is_valid_rama();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+rama_score(void *rama, size_t n, double *score)
+{
+    Rama **r = static_cast<Rama **>(rama);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *score++ = (*r++)->score();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+rama_phipsi(void *rama, size_t n, double *angle)
+{
+    Rama **r = static_cast<Rama **>(rama);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->phipsi(angle);
+            angle +=2;
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+rama_omegaphipsi(void *rama, size_t n, double *angles)
+{
+    Rama **r = static_cast<Rama **>(rama);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->angles(angles);
+            angles +=3;
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
 
 /**************************************************************
  *
@@ -753,11 +849,12 @@ SET_PYTHON_INSTANCE(distance_restraint_mgr, Distance_Restraint_Mgr)
 GET_PYTHON_INSTANCES(distance_restraint_mgr, Distance_Restraint_Mgr)
 
 extern "C" EXPORT void*
-distance_restraint_mgr_new(Proxy_PBGroup *pbgroup)
+distance_restraint_mgr_new(void *structure, void *pbgroup)
 {
+    Structure *s = static_cast<Structure *>(structure);
     Proxy_PBGroup *pbgr = static_cast<Proxy_PBGroup *>(pbgroup);
     try {
-        Distance_Restraint_Mgr *mgr = new Distance_Restraint_Mgr(pbgroup);
+        Distance_Restraint_Mgr *mgr = new Distance_Restraint_Mgr(s, pbgr);
         return mgr;
     } catch (...) {
         molc_error();
@@ -860,4 +957,48 @@ distance_restraint_k(void *restraint, size_t n, double *k)
 {
     Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
     error_wrap_array_get<Distance_Restraint, double, double>(d, n, &Distance_Restraint::get_k, k);
+}
+
+extern "C" EXPORT void
+distance_restraint_atoms(void *restraint, size_t n, pyobject_t *atoms)
+{
+    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+        {
+            auto &a = (*d++)->atoms();
+            *atoms++=a[0];
+            *atoms++=a[1];
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+distance_restraint_distance(void *restraint, size_t n, double *distance)
+{
+    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    error_wrap_array_get<Distance_Restraint, double, double>(d, n, &Distance_Restraint::distance, distance);
+}
+
+extern "C" EXPORT void
+distance_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
+{
+    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    error_wrap_array_get<Distance_Restraint, bool, npy_bool>(d, n, &Distance_Restraint::enabled, flag);
+}
+
+extern "C" EXPORT void
+set_distance_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
+{
+    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    error_wrap_array_set<Distance_Restraint, bool, npy_bool>(d, n, &Distance_Restraint::set_enabled, flag);
+}
+
+extern "C" EXPORT void
+distance_restraint_pbond(void *restraint, size_t n, pyobject_t *pbondp)
+{
+    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    error_wrap_array_get(d, n, &Distance_Restraint::pbond, pbondp);
 }

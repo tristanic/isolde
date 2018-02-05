@@ -3,16 +3,118 @@
 #include "rama.h"
 #include <pyinstance/PythonInstance.instantiate.h>
 
+template class pyinstance::PythonInstance<isolde::Rama>;
 template class pyinstance::PythonInstance<isolde::Rama_Mgr>;
 
 namespace isolde
 {
 
-const std::string Rama_Mgr::OMEGA_STR  = "omega";
-const std::string Rama_Mgr::PHI_STR  = "phi";
-const std::string Rama_Mgr::PSI_STR  = "psi";
-const double Rama_Mgr::NONE_VAL = -1.0;
+const std::string Rama::OMEGA_STR  = "omega";
+const std::string Rama::PHI_STR  = "phi";
+const std::string Rama::PSI_STR  = "psi";
+const AtomName Rama::CA_NAME = "CA";
 
+Rama::Rama(Residue* residue, Proper_Dihedral_Mgr *dmgr, Rama_Mgr *rmgr)
+    : _residue(residue), _dmgr(dmgr), _rmgr(rmgr)
+{
+    if (residue->polymer_type() != PT_AMINO)
+        throw std::logic_error(err_msg_not_protein());
+    if (no_valid_dihedrals())
+        throw std::logic_error(err_msg_no_dihedrals());
+    _CA_atom = _residue->find_atom(CA_NAME);
+}
+
+Dihedral* Rama::omega()
+{
+    _omega = (_omega != nullptr) ? _omega : _dmgr->get_dihedral(_residue, OMEGA_STR);
+    return _omega;
+}
+Dihedral* Rama::phi()
+{
+    _phi = (_phi != nullptr) ? _phi : _dmgr->get_dihedral(_residue, PHI_STR);
+    return _phi;
+}
+Dihedral* Rama::psi()
+{
+    _psi = (_psi != nullptr) ? _psi : _dmgr->get_dihedral(_residue, PSI_STR);
+    return _psi;
+}
+double Rama::omega_angle()
+{
+    return (omega()!=nullptr) ? _omega->angle() : NONE_VAL;
+}
+double Rama::phi_angle()
+{
+    return (phi()!=nullptr) ? _phi->angle() : NONE_VAL;
+}
+double Rama::psi_angle()
+{
+    return (psi()!=nullptr) ? _psi->angle() : NONE_VAL;
+}
+void Rama::angles(double *angles)
+{
+    *angles++ = omega_angle();
+    *angles++ = phi_angle();
+    *angles   = psi_angle();
+}
+void Rama::phipsi(double *angles)
+{
+    *angles++ = phi_angle();
+    *angles   = psi_angle();
+}
+bool Rama::is_valid_rama()
+{
+    return !(omega()==nullptr || phi()==nullptr || psi()==nullptr);
+}
+bool Rama::no_valid_dihedrals()
+{
+    return (omega()==nullptr && phi()==nullptr && psi()==nullptr);
+}
+
+
+double Rama::score()
+{
+    // if (!is_valid_rama())
+    //     return NONE_VAL;
+    return _rmgr->validate(this);
+}
+
+uint8_t Rama::rama_case()
+{
+    if (!is_valid_rama())
+        return _rmgr->CASE_NONE;
+    const ResName &name = _residue->name();
+    if (name == "PRO") {
+        if (std::abs(_omega->angle()) <= CIS_CUTOFF)
+            return _rmgr->CISPRO;
+        return _rmgr->TRANSPRO;
+    }
+    if (name == "GLY")
+        return _rmgr->GLYCINE;
+    if ((_psi->atoms())[3]->residue()->name() == "PRO")
+        return _rmgr->PREPRO;
+    if (name == "ILE"||name=="VAL")
+        return _rmgr->ILEVAL;
+    return _rmgr->GENERAL;
+}
+
+Rama_Mgr::~Rama_Mgr()
+{
+    auto du = DestructionUser(this);
+    for (auto &it: _residue_to_rama) {
+        delete it.second;
+    }
+}
+
+Rama* Rama_Mgr::get_rama(Residue *res)
+{
+    auto it = _residue_to_rama.find(res);
+    if (it!=_residue_to_rama.end())
+        return it->second;
+    Rama *r = new Rama(res, _mgr, this);
+    _residue_to_rama[res] = r;
+    return r;
+}
 
 void Rama_Mgr::add_interpolator(size_t r_case,
     const size_t &dim, uint32_t *n, double *min, double *max, double *data)
@@ -41,97 +143,70 @@ void Rama_Mgr::set_colors(uint8_t *max, uint8_t *mid, uint8_t *min, uint8_t *na)
     }
 }
 
-
-uint8_t Rama_Mgr::rama_case(Dihedral *omega, Dihedral *psi)
+uint8_t Rama_Mgr::rama_case(Residue *res)
 {
-    uint8_t thecase;
-    const ResName &name = omega->atoms()[3]->residue()->name();
-    if (name == "PRO") {
-        double o_val = omega->angle();
-        if (std::abs(o_val) <= _cis_cutoff)
-            thecase = CISPRO;
-        else
-            thecase = TRANSPRO;
-    } else if (name == "GLY") {
-        thecase = GLYCINE;
-    } else if (psi->atoms()[3]->residue()->name() == "PRO") {
-        thecase = PREPRO;
-    } else if (name == "ILE" || name == "VAL") {
-        thecase = ILEVAL;
-    } else {
-        thecase = GENERAL;
-    }
-    return thecase;
+    return get_rama(res)->rama_case();
 }
 
-uint8_t Rama_Mgr::rama_case(Residue *res, Proper_Dihedral_Mgr *dmgr)
+double Rama_Mgr::validate(Rama *r)
 {
-    Dihedral *omega, *psi;
-    try {
-        omega = dmgr->get_dihedral(res, OMEGA_STR, true);
-        psi = dmgr->get_dihedral(res, PSI_STR, true);
-    } catch (std::out_of_range) {
-        return CASE_NONE;
-    }
-    if (omega==nullptr || psi==nullptr)
-        return CASE_NONE;
-    return rama_case(omega, psi);
-}
-
-double Rama_Mgr::validate(Residue *residue, Proper_Dihedral_Mgr *dmgr)
-{
-    auto rcase = rama_case(residue, dmgr);
+    auto rcase = r->rama_case();
     if (rcase==CASE_NONE)
-        return NONE_VAL;
-
-    Dihedral *phi, *psi;
-    phi = dmgr->get_dihedral(residue, PHI_STR, true);
-    psi = dmgr->get_dihedral(residue, PSI_STR, true);
-    double angles[2];
-    angles[0] = phi->angle();
-    angles[1] = psi->angle();
+        return NO_RAMA_SCORE;
     auto &interpolator = _interpolators.at(rcase);
-    return interpolator.interpolate(angles);
+    double phipsi[2];
+    r->phipsi(phipsi);
+    return interpolator.interpolate(phipsi);
 }
 
-void Rama_Mgr::validate(Residue **residue, Dihedral **omega, Dihedral **phi,
-              Dihedral **psi, uint8_t *r_case, const size_t &n, double *scores)
+double Rama_Mgr::validate(Residue *r)
 {
-    std::unordered_map<uint8_t, std::vector<size_t>> case_indices;
+    Rama *rama = get_rama(r);
+    return validate(rama);
+}
+
+void Rama_Mgr::validate(Rama **rama, size_t n, double *scores, uint8_t *r_cases)
+{
+    std::unordered_map<uint8_t, std::pair<std::vector<size_t>, std::vector<double> > > case_map;
     uint8_t this_case;
-    for (size_t i=0; i<n; ++i) {
-        this_case = r_case[i];
-        if (this_case==CISPRO || this_case==TRANSPRO) {
-            // Prolines need to be checked each time
-            if (std::abs(omega[i]->angle()) <= _cis_cutoff) {
-                case_indices[CISPRO].push_back(i);
-            } else {
-                case_indices[TRANSPRO].push_back(i);
-            }
-        } else {
-            case_indices[this_case].push_back(i);
+    double this_phipsi[2];
+    for (size_t i=0; i<n; ++i)
+    {
+        this_case = (*rama)->rama_case();
+        *r_cases++ = this_case;
+        switch (this_case)
+        {
+            case CASE_NONE:
+                scores[i] = NO_RAMA_SCORE;
+                break;
+            default:
+                (*rama)->phipsi(this_phipsi);
+                auto &case_pair = case_map[this_case];
+                case_pair.first.push_back(i);
+                auto &avec = case_pair.second;
+                avec.push_back(this_phipsi[0]);
+                avec.push_back(this_phipsi[1]);
         }
+        rama++;
     }
-
-    std::vector<size_t> &v = case_indices[0];
-    for (auto j: v)
-        scores[v[j]] = NONE_VAL;
-
-    for (size_t i=1; i<NUM_RAMA_CASES; ++i) {
-        auto &interpolator = _interpolators.at(i);
-        std::vector<size_t> &v = case_indices[i];
-        size_t len = v.size();
-        std::vector<double> case_scores(len);
-        std::vector<double> angles(len*2);
-        for (size_t j=0, k=0; j<len;++j) {
-            size_t &ind = v[j];
-            angles[k++] = phi[ind]->angle();
-            angles[k++] = psi[ind]->angle();
+    for (auto &cit: case_map) {
+        auto &interpolator = _interpolators.at(cit.first);
+        auto &cpair = cit.second;
+        auto &case_indices = cpair.first;
+        auto &case_angles = cpair.second;
+        size_t case_n = case_indices.size();
+        std::vector<double> case_scores(case_n);
+        double *adata = case_angles.data();
+        try { //DELETEME
+            interpolator.interpolate(adata, case_n, case_scores.data());
+        } catch (std::out_of_range) {
+            std::cerr << "Bad data on case " << cit.first << ":"; //DELETEME
+            for (size_t i=0; i<case_n; i+=2) { //DELETEME
+                std::cerr << " " << adata[i] << ", " << adata[i+1] << "; "; //DELETEME
+            } std::cerr << std::endl; //DELETEME
         }
-        interpolator.interpolate(angles.data(), len, case_scores.data());
-        for (size_t j=0; j<len; ++j) {
-            scores[v[j]] = case_scores[j];
-        }
+        for (size_t i=0; i<case_n; ++i)
+            scores[case_indices[i]] = case_scores[i];
     }
 }
 
@@ -170,6 +245,40 @@ int32_t Rama_Mgr::bin_score(const double &score, uint8_t r_case)
         return BIN_NA;
     return ALLOWED;
 } //bin_score
+
+void Rama_Mgr::delete_ramas(const std::set<Rama *> to_delete)
+{
+    auto db = DestructionBatcher(this);
+    for (auto r: to_delete) {
+        _residue_to_rama.erase(r->residue());
+        delete r;
+    }
+}
+
+void Rama_Mgr::destructors_done(const std::set<void *>& destroyed)
+{
+    auto db = DestructionBatcher(this);
+    if (destroyed.find(static_cast<void *>(_mgr)) != destroyed.end()) {
+        //The dihedral manager is gone. Delete everything.
+        delete this;
+        return;
+    }
+
+    std::set<Rama *> to_delete;
+    // We want to delete a Ramachandran case if its CA is gone or if all three
+    // of its dihedrals are gone. Otherwise we keep it on as a partial.
+    for (auto &it: _residue_to_rama) {
+        auto r = it.second;
+        if (destroyed.find(static_cast<void *>(r->CA_atom())) != destroyed.end()) {
+            to_delete.insert(r);
+            continue;
+        }
+        if (r->no_valid_dihedrals()) {
+            to_delete.insert(r);
+        }
+    }
+    delete_ramas(to_delete);
+}
 
 
 } //namespace isolde
