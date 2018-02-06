@@ -98,6 +98,30 @@ uint8_t Rama::rama_case()
     return _rmgr->GENERAL;
 }
 
+//! Checks a set of pointers to see if omega, phi and/or psi have been destroyed
+/*! Removes any destroyed pointers, and returns true if all three have been
+ *  destroyed.
+ */
+bool Rama::check_for_deleted_dihedrals( const std::set<void *> destroyed)
+{
+    if (_omega != nullptr) {
+        if (destroyed.find(static_cast<void *>(_omega)) != destroyed.end()) {
+            _omega = nullptr;
+        }
+    }
+    if (_phi != nullptr) {
+        if (destroyed.find(static_cast<void *>(_phi)) != destroyed.end()) {
+            _phi = nullptr;
+        }
+    }
+    if (_psi != nullptr) {
+        if (destroyed.find(static_cast<void *>(_psi)) != destroyed.end()) {
+            _psi = nullptr;
+        }
+    }
+    return (_omega==nullptr && _phi==nullptr && _psi==nullptr);
+}
+
 Rama_Mgr::~Rama_Mgr()
 {
     auto du = DestructionUser(this);
@@ -210,27 +234,30 @@ void Rama_Mgr::validate(Rama **rama, size_t n, double *scores, uint8_t *r_cases)
     }
 }
 
-void Rama_Mgr::color_by_scores(double *scores, uint8_t *r_case, const size_t &n, uint8_t *out)
+void Rama_Mgr::color_by_scores(double *score, uint8_t *r_case, size_t n, uint8_t *out)
 {
     colors::intcolor default_color;
     colors::color_as_intcolor(_null_color, default_color);
     colors::color this_color;
     for (size_t i=0; i<n; ++i) {
-        if (*scores < 0)
-        {
-            for(size_t j=0; j<4; ++j)
-                *out++=default_color[i];
-            scores++;
-            continue;
-        }
-
-        auto cmap = get_colors(*r_case++);
-        cmap->interpolate(log(*scores++), this_color);
+        _color_by_score(*score++, *r_case++, this_color);
         for (size_t j=0; j<4; ++j) {
             *out++ = (uint8_t)(this_color[j]*255.0);
         }
     }
 } //color_by_scores
+
+void Rama_Mgr::_color_by_score(const double &score, const uint8_t &r_case, colors::color &color)
+{
+    if (score < 0 || r_case == CASE_NONE)
+    {
+        for(size_t i=0; i<4; ++i)
+            color[i]=_null_color[i];
+        return;
+    }
+    auto cmap = get_colors(r_case);
+    cmap->interpolate(log(score), color);
+}
 
 int32_t Rama_Mgr::bin_score(const double &score, uint8_t r_case)
 {
@@ -273,7 +300,7 @@ void Rama_Mgr::destructors_done(const std::set<void *>& destroyed)
             to_delete.insert(r);
             continue;
         }
-        if (r->no_valid_dihedrals()) {
+        if (r->check_for_deleted_dihedrals(destroyed)) {
             to_delete.insert(r);
         }
     }

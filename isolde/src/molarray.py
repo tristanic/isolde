@@ -71,6 +71,8 @@ class Ramas(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, Rotamer, Rotamers)
 
+    residues = cvec_property('rama_residue', cptr, astype=_residues_or_nones, read_only = True,
+            doc = 'The residue to which each Rama belongs. Read only.')
     ca_atoms = cvec_property('rama_ca_atom', cptr, astype=_atoms, read_only = True,
             doc = 'The alpha carbon of each amino acid residue. Read only.')
     valids = cvec_property('rama_is_valid', npy_bool, read_only = True,

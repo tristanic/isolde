@@ -44,6 +44,7 @@ public:
     uint8_t rama_case();
     bool no_valid_dihedrals();
     Residue *residue() const {return _residue;}
+    bool check_for_deleted_dihedrals( const std::set<void *> destroyed);
 
 private:
     Dihedral* _omega = nullptr;
@@ -129,8 +130,7 @@ public:
      * determined.
      */
 
-    void color_by_scores(double *scores, uint8_t *r_case, const size_t &n, uint8_t *out);
-
+    void color_by_scores(double *scores, uint8_t *r_case, size_t n, uint8_t *out);
     int32_t bin_score(const double &score, uint8_t r_case);
 
     void delete_ramas(const std::set<Rama *> to_delete);
@@ -143,7 +143,7 @@ private:
     std::unordered_map<size_t, cutoffs> _cutoffs;
     std::unordered_map<size_t, colors::colormap> _colors;
     colors::color _null_color;
-
+    void _color_by_score(const double &score, const uint8_t &r_case, colors::color &color);
 
 }; //class Rama_Mgr
 }//namespace isolde

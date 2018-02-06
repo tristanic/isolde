@@ -543,6 +543,12 @@ class Rama_Mgr:
         f(self._c_pointer, ramas._c_pointers, n, pointer(colors))
         return colors
 
+    def color_cas_by_rama_score(self, ramas):
+        f = c_function('rama_mgr_validate_and_color_cas',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,))
+        n = len(ramas)
+        f(self._c_pointer, ramas._c_pointers, n)
+
     def bin_scores(self, scores, cases):
         f = c_function('rama_mgr_bin_scores',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double),
@@ -950,6 +956,8 @@ class Rama(State):
     def reset_state(self):
         pass
 
+    residue = c_property('rama_residue', cptr, astype=_residue_or_none, read_only = True,
+            doc = 'The residue to which this Rama belongs. Read only.')
     ca_atom = c_property('rama_ca_atom', cptr, astype=_atom_or_none, read_only = True,
             doc = 'The alpha carbon of the amino acid residue. Read only.')
     valid = c_property('rama_is_valid', npy_bool, read_only = True,

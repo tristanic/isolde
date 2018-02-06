@@ -515,6 +515,7 @@ rama_mgr_validate(void *mgr, void *rama, size_t n, double *score, uint8_t *rcase
     }
 }
 
+//! Provide an array of colors corresponding to Ramachandran scores
 extern "C" EXPORT void
 rama_mgr_validate_and_color(void *mgr, void *rama, size_t n, uint8_t *colors)
 {
@@ -529,6 +530,29 @@ rama_mgr_validate_and_color(void *mgr, void *rama, size_t n, uint8_t *colors)
         molc_error();
     }
 }
+
+//! Directly apply colors according to Ramachandran scores to CA atoms.
+extern "C" EXPORT void
+rama_mgr_validate_and_color_cas(void *mgr, void *rama, size_t n)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    Rama **r = static_cast<Rama **>(rama);
+    std::vector<double> scores(n);
+    std::vector<uint8_t> rcases(n);
+    std::vector<uint8_t> colors(n*4);
+    try {
+        m->validate(r, n, scores.data(), rcases.data());
+        m->color_by_scores(scores.data(), rcases.data(), n, colors.data());
+        auto cdata = colors.data();
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->CA_atom()->set_color(*cdata, *(cdata+1), *(cdata+2), *(cdata+3));
+            cdata+=4;
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
 
 extern "C" EXPORT void
 rama_mgr_bin_scores(void *mgr, double *score, uint8_t *r_case, size_t n, int32_t *bin)
@@ -566,6 +590,14 @@ rama_ca_atom(void *rama, size_t n, pyobject_t *atom)
         molc_error();
     }
 }
+
+extern "C" EXPORT void
+rama_residue(void *rama, size_t n, pyobject_t *residuep)
+{
+    Rama **r = static_cast<Rama **>(rama);
+    error_wrap_array_get(r, n, &Rama::residue, residuep)
+}
+
 
 extern "C" EXPORT void
 rama_is_valid(void *rama, size_t n, npy_bool *valid)
