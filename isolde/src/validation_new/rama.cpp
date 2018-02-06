@@ -102,7 +102,7 @@ uint8_t Rama::rama_case()
 /*! Removes any destroyed pointers, and returns true if all three have been
  *  destroyed.
  */
-bool Rama::check_for_deleted_dihedrals( const std::set<void *> destroyed)
+bool Rama::check_for_deleted_dihedrals( const std::set<void *> &destroyed)
 {
     if (_omega != nullptr) {
         if (destroyed.find(static_cast<void *>(_omega)) != destroyed.end()) {
@@ -276,6 +276,10 @@ int32_t Rama_Mgr::bin_score(const double &score, uint8_t r_case)
 void Rama_Mgr::delete_ramas(const std::set<Rama *> to_delete)
 {
     auto db = DestructionBatcher(this);
+    _delete_ramas(to_delete);
+}
+void Rama_Mgr::_delete_ramas(const std::set<Rama *> to_delete)
+{
     for (auto r: to_delete) {
         _residue_to_rama.erase(r->residue());
         delete r;
@@ -304,7 +308,7 @@ void Rama_Mgr::destructors_done(const std::set<void *>& destroyed)
             to_delete.insert(r);
         }
     }
-    delete_ramas(to_delete);
+    _delete_ramas(to_delete);
 }
 
 

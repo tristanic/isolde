@@ -15,97 +15,107 @@ from ..geometry import scale_transforms
 
 class Rotamer_Annotations(Model):
     ''' Model holding annotations for current allowed or outlier rotamers. '''
-    
+
     pickable = False
-    
-    def __init__(self, session, atomic_model, allowed_cutoff, outlier_cutoff):
+
+    def __init__(self, session, atomic_structure):
         Model.__init__(self, 'Rotamer Annotations', session)
-        
-        # CA-CB bonds for all iffy (allowed or outlier) residues
-        self._bonds = Bonds()
-        self._scores = None
-        self._current_colors = None
-        self._log_allowed_cutoff = log(allowed_cutoff)
-        self._log_outlier_cutoff = log(outlier_cutoff)
-        
-        self._max_scale = 2
-        
-        from chimerax.core.atomic import get_triggers
-        t = atomic_model.triggers
+
+        from .. import session_extensions
+        mgr = self._mgr = session_extensions.get_rotamer_manager(session)
+        structure = self._atomic_structure = atomic_structure
+        self._selected_residues = structure.residues
+        self._selected_rotamers = mgr.get_rotamers(structure.residues)
+        self._MAX_SCALE = 2 # maximum scale factor for annotation drawings
+        self._show_favored = False
+        self._track_whole_model = True
+        t = structure.triggers
         self._structure_change_handler = t.add_handler('changes', self._update_graphics_if_needed)
-        
-        self._color_map = standard_three_color_scale('PiYG', log(outlier_cutoff), 0, log(allowed_cutoff))
-        
-        #d = self._drawing = self._cb_annotation()
+
         d = self._drawing = self._rota_indicator()
         self.add_drawing(d)
+        structure.add([self])
+        self.update_graphics()
         self._update_needed = False
-    
+
+    @property
+    def track_whole_model(self):
+        return self._track_whole_model
+
+    @track_whole_model.setter
+    def track_whole_model(self, flag):
+        self._track_whole_model = flag
+
+    def restrict_to_selected_residues(self, residues):
+        ''' Restrict validation to a defined set of residues. '''
+        us = residues.unique_structures
+        if not len(us):
+            raise TypeError('No residues selected!')
+        if len(us) !=1 or us[0] != self._atomic_structure:
+            raise TypeError('All residues must be from the parent model!')
+        self._selected_residues = residues
+        self._selected_rotamers = self._mgr.get_rotamers(residues)
+        self.update_graphics()
+
+    def track_all_residues(self):
+        self.restrict_to_selected_residues(self._atomic_structure.residues)
+
     @property
     def color_map(self):
-        return self._color_map
-    
+        return self._mgr.get_color_scale()
+
+    @property
+    def show_favored(self):
+        ''' Show annotations for favoured rotamers, or just non-favoured/outliers?'''
+        return self._show_favored
+
+    @show_favored.setter
+    def show_favored(self, flag):
+        if flag != self._show_favored:
+            self._update_needed = True
+        self._show_favored = flag
+
     def delete(self):
         h = self._structure_change_handler
         if h is not None:
-            from chimerax.core.atomic import get_triggers
-            get_triggers(self.session).remove_handler(h)
-            self._structure_change_handler = None
+            self._atomic_structure.triggers.remove_handler(h)
         Model.delete(self)
-    
-    def update_scores(self, iffy_bonds, iffy_scores, colors = None):
-        if not len(iffy_bonds):
-            self.display = False
-            return
-        self.display = True
-        self._bonds = iffy_bonds
-        self._scores = iffy_scores
-        self._log_scores = numpy.log(iffy_scores)
-        if colors is None:
-            # Update the colors on the next redraw
-            self._update_needed = True
-        else:
-            self._current_colors = colors
-    
+
+
     def _update_graphics_if_needed(self, trigger_name, changes):
         changes = changes[1]
+        update_needed = False
+        if (self._track_whole_model):
+            '''
+            Need to update the set of rotamers if atoms are added. Deletions will
+            take care of themselves.
+            '''
+            if len(changes.created_atoms()):
+                r = self._selected_residues = self._atomic_structure.residues
+                self._selected_rotamers = self._mgr.get_rotamers(r)
+                update_needed = True
         if 'coord changed' in changes.atom_reasons():
+            update_needed = True
+        if (update_needed):
             self.update_graphics()
-    
+
     def update_graphics(self, *_, scale_by_scores = True):
-        if self._scores is None or not len(self._scores):
-            self.display = False
-            return
         if not self.visible:
             return
-        if self._update_needed:
-            colors = self._current_colors = self._color_map.get_colors(self._log_scores)
-        else:
-            colors = self._current_colors
-        bonds = self._bonds
+        rots, scales, colors = self._mgr.validate_scale_and_color_rotamers(
+            self._selected_rotamers, max_scale=self._MAX_SCALE,
+            non_favored_only = not(self._show_favored))
+        if not len(rots):
+            self.display = False
+            return
+        bonds = rots.ca_cb_bonds
         d = self._drawing
+        transforms = bond_cylinder_placements(bonds)
         if scale_by_scores:
-            d.positions = self._scale_by_scores(bond_cylinder_placements(bonds).array())
-        else:
-            d.positions = bond_cylinder_placements(bonds)
+            transforms = Places(place_array=scale_transforms(scales, transforms.array()))
+        d.positions = transforms
         d.colors = colors
-        self._update_needed = False
-        
-    def _scale_by_scores(self, transforms):
-        log_scores = self._log_scores
-        lac = self._log_allowed_cutoff
-        loc = self._log_outlier_cutoff
-        ms = self._max_scale
-        scales = (log_scores-lac)/(loc-lac)*(ms-1)+1
-        scales[scales > 2] = 2
-        tf = scale_transforms(scales, transforms)
-        return Places(place_array = tf)
-        
-        
-        
-        
-    
-    
+
     def _rota_indicator(self):
         v1, n1, t1 = exclamation_mark(radius=0.1, height=0.5, nc = 8)
         v2, n2, t2 = spiral(major_radius=0.3, minor_radius = 0.05, height=0.4,
@@ -121,8 +131,8 @@ class Rotamer_Annotations(Model):
         d = Drawing('rotamer indicator')
         d.vertices, d.normals, d.triangles = v, n, t
         return d
-        
-    
+
+
     def _exclamation_mark(self):
         v, n, t = exclamation_mark(radius=0.1, height=0.5, nc = 8)
         rotation((1,0,0),180).move(v)
@@ -131,17 +141,9 @@ class Rotamer_Annotations(Model):
         d.vertices, d.normals, d.triangles = v, n, t
         return d
 
-
-    
     def _cb_annotation(self):
         from chimerax.core.surface.shapes import cylinder_geometry
         v, n, t = cylinder_geometry(radius=0.1, height=2, nc=8, caps=True)
         d = Drawing('rotamer cb indicator')
         d.vertices, d.normals, d.triangles = v, n, t
         return d
-    
-        
-        
-        
-        
-    

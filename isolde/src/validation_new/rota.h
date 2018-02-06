@@ -6,6 +6,7 @@
 #include "../atomic_cpp/dihedral_mgr.h"
 #include "../interpolation/nd_interp.h"
 #include "../colors.h"
+#include "../geometry/geometry.h"
 #include <atomstruct/destruct.h>
 #include <atomstruct/string_types.h>
 #include <pyinstance/PythonInstance.declare.h>

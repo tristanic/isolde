@@ -105,7 +105,7 @@ private:
     Nmap _residue_name_map;
     Atom_Map _atom_to_dihedral_map;
     std::set<Atom *> _mapped_atoms;
-
+    void _delete_dihedrals(const std::set<DType *> &delete_list);
 
 }; //class Dihedral_Mgr;
 

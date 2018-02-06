@@ -595,7 +595,7 @@ extern "C" EXPORT void
 rama_residue(void *rama, size_t n, pyobject_t *residuep)
 {
     Rama **r = static_cast<Rama **>(rama);
-    error_wrap_array_get(r, n, &Rama::residue, residuep)
+    error_wrap_array_get(r, n, &Rama::residue, residuep);
 }
 
 
@@ -725,11 +725,28 @@ rota_mgr_get_cutoffs(void *mgr, double* cutoffs)
 }
 
 extern "C" EXPORT void
-rota_mgr_set_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min)
+set_rota_mgr_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min)
 {
     Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
     try {
         m->set_colors(max, mid, min);
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+rota_mgr_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min)
+{
+    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    try {
+        auto cmap = m->get_colors();
+        auto &mapped_colors = cmap->mapped_colors();
+        for (size_t i=0; i<4; ++i) {
+            *min++ = mapped_colors[0].thecolor[i];
+            *mid++ = mapped_colors[1].thecolor[i];
+            *max++ = mapped_colors[2].thecolor[i];
+        }
     } catch (...) {
         molc_error();
     }
@@ -783,6 +800,42 @@ rota_mgr_validate_residue(void *mgr, void *residue, size_t n, double *scores)
         molc_error();
     }
 } //rota_mgr_validate_residue
+
+extern "C" EXPORT size_t
+rota_mgr_validate_scale_and_color_rotamers(void *mgr, void *rotamer, size_t n,
+    double max_scale, npy_bool non_favored_only,
+    pyobject_t *rot_out, double* scale, uint8_t *color_out)
+{
+    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    Rotamer **r = static_cast<Rotamer **>(rotamer);
+    size_t ret =0;
+    try {
+        std::vector<double> scores(n);
+        auto cutoffs = m->get_cutoffs();
+        const auto &log_allowed = cutoffs->log_allowed;
+        const auto &allowed = cutoffs->allowed;
+        auto log_range = cutoffs->log_outlier-log_allowed;
+        m->validate(r,n,scores.data());
+        for (auto s: scores) {
+            if (non_favored_only)
+                if (s>allowed) {
+                    r++;
+                    continue;
+                }
+            *rot_out++ = *r++;
+            m->color_by_score(&s, 1, color_out);
+            color_out +=4;
+            auto log_s = log(s);
+            auto this_scale = (log_s-log_allowed)/log_range + 1;
+            *scale++ = this_scale>max_scale ? max_scale : this_scale;
+            ret++;
+        }
+        return ret;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
 
 extern "C" EXPORT void
 rota_mgr_color_by_score(void *mgr, double *score, size_t n, uint8_t *color)

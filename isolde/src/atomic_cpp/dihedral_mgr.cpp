@@ -179,12 +179,15 @@ DType* Dihedral_Mgr<DType>::get_dihedral(Residue *res, const std::string &name, 
     return new_dihedral(res, name);
 }
 
-
-
 template <class DType>
 void Dihedral_Mgr<DType>::delete_dihedrals(const std::set<DType *> &delete_list)
 {
     auto db = DestructionBatcher(this);
+    _delete_dihedrals(delete_list);
+}
+template <class DType>
+void Dihedral_Mgr<DType>::_delete_dihedrals(const std::set<DType *> &delete_list)
+{
     for (auto d: delete_list) {
         for (auto a: d->atoms()) {
             auto &dset = _atom_to_dihedral_map.at(a);
@@ -220,7 +223,7 @@ void Dihedral_Mgr<DType>::destructors_done(const std::set<void*>& destroyed)
             ++it;
     }
 
-    delete_dihedrals(to_delete);
+    _delete_dihedrals(to_delete);
 } //destructors_done
 
 template class Dihedral_Mgr<Proper_Dihedral>;

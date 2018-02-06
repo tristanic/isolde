@@ -10,14 +10,16 @@ namespace isolde
 namespace geometry
 {
 
-template <typename T> void cross_product_3D(T *a, T *b, T* result)
+template <typename T>
+inline void cross_product_3D(T *a, T *b, T* result)
 {
     result[0] = a[1]*b[2] - a[2]*b[1];
     result[1] = a[2]*b[0] - a[0]*b[2];
     result[2] = a[0]*b[1] - a[1]*b[0];
 }
 
-template <typename T> T dot_product_3D(T a[3], T b[3])
+template <typename T>
+inline T dot_product_3D(T a[3], T b[3])
 {
     T accum = 0;
     for (int i=0; i < 3; ++i) {
@@ -26,7 +28,8 @@ template <typename T> T dot_product_3D(T a[3], T b[3])
     return accum;
 }
 
-template <typename T> T l2_norm_3d(T a[3])
+template <typename T>
+inline T l2_norm_3d(T a[3])
 {
     T accum = 0;
     for (int i = 0; i < 3; i++) {
@@ -37,7 +40,8 @@ template <typename T> T l2_norm_3d(T a[3])
 
 }
 
-template <typename T> void normalize_vector_3d(T vector[3])
+template <typename T>
+inline void normalize_vector_3d(T vector[3])
 {
     T norm = l2_norm_3d<T>(vector);
     for (int i = 0; i < 3; ++i) {
@@ -46,7 +50,8 @@ template <typename T> void normalize_vector_3d(T vector[3])
 }
 
 // For direct use with coordinates
-template <typename T> T dihedral_angle(T p0[3], T p1[3], T p2[3], T p3[3])
+template <typename T>
+inline T dihedral_angle(T p0[3], T p1[3], T p2[3], T p3[3])
 {
     T b0[3];
     T b1[3];
@@ -85,7 +90,8 @@ template <typename T> T dihedral_angle(T p0[3], T p1[3], T p2[3], T p3[3])
 
 
 // For use with ChimeraX Point objects
-template <typename T, typename R> R dihedral_angle(const T& p0, const T& p1, const T& p2, const T& p3)
+template <typename T, typename R>
+inline R dihedral_angle(const T& p0, const T& p1, const T& p2, const T& p3)
 {
     R b0[3];
     R b1[3];
@@ -121,6 +127,7 @@ template <typename T, typename R> R dihedral_angle(const T& p0, const T& p1, con
 
     return atan2(y, x);
 }
+
 
 } // namespace geometry
 } // namespace isolde

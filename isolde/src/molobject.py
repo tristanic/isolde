@@ -611,6 +611,11 @@ class Rota_Mgr:
         OUTLIER=2
         NA=-1
 
+    @property
+    def deleted(self):
+        '''Has the C++ side been deleted?'''
+        return not hasattr(self, '_c_pointer')
+
     def __init__(self, session, c_pointer=None):
         if hasattr(session, 'rota_mgr'):
             raise RuntimeError('Session already has a Rotamer manager!')
@@ -698,7 +703,7 @@ class Rota_Mgr:
             val_defaults.OUTLIER_COLOR)
 
     def set_color_scale(self, max_c, mid_c, min_c):
-        f = c_function('rota_mgr_set_color_scale',
+        f = c_function('set_rota_mgr_color_scale',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
                   ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)))
         maxc = numpy.array(max_c, uint8)
@@ -708,6 +713,17 @@ class Rota_Mgr:
             if len(arr) != 4:
                 raise TypeError('Each color should be an array of 4 values in the range (0,255)')
         f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc))
+
+    def get_color_scale(self):
+        f = c_function('rota_mgr_color_scale',
+            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
+                ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)))
+        maxc = numpy.empty(4, uint8)
+        midc = numpy.empty(4, uint8)
+        minc = numpy.empty(4, uint8)
+        f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc))
+        return (maxc, midc, minc)
+
 
     def set_default_cutoffs(self):
         '''
@@ -817,18 +833,19 @@ class Rota_Mgr:
         print ("Found {} bad rotamers".format(found)) #DELETEME
         return (_rotamers(ptrs[0:found]), scores[0:found])
 
-    def validate_and_color_rotamers(self, rotamers, non_favored_only = True):
-        if non_favored_only:
-            rotamers, scores = self.non_favored_rotamers(rotamers)
-        else:
-            scores = self.validate_rotamers(rotamers)
+    def validate_scale_and_color_rotamers(self, rotamers, max_scale = 2.0, non_favored_only = True):
+        f = c_function('rota_mgr_validate_scale_and_color_rotamers',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+                ctypes.c_double, ctypes.c_bool, ctypes.c_void_p,
+                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_uint8)),
+                ret=ctypes.c_size_t)
         n = len(rotamers)
-        colors = numpy.empty((n, 4), uint8)
-        f = c_function('rota_mgr_color_by_score',
-            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double),
-                ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint8)))
-        f(self._c_pointer, pointer(scores), n, pointer(colors))
-        return (rotamers, colors)
+        rot_out = numpy.empty(n, cptr)
+        scale_out = numpy.empty(n, float64)
+        color_out = numpy.empty((n,4), uint8)
+        count = f(self._c_pointer, rotamers._c_pointers, n, max_scale,
+            non_favored_only, pointer(rot_out), pointer(scale_out), pointer(color_out))
+        return (_rotamers(rot_out[0:count]), scale_out[0:count], color_out[0:count])
 
 class _Restraint_Mgr(Model):
     '''Base class. Do not instantiate directly.'''

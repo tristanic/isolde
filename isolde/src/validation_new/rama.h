@@ -44,7 +44,7 @@ public:
     uint8_t rama_case();
     bool no_valid_dihedrals();
     Residue *residue() const {return _residue;}
-    bool check_for_deleted_dihedrals( const std::set<void *> destroyed);
+    bool check_for_deleted_dihedrals( const std::set<void *> &destroyed);
 
 private:
     Dihedral* _omega = nullptr;
@@ -144,7 +144,7 @@ private:
     std::unordered_map<size_t, colors::colormap> _colors;
     colors::color _null_color;
     void _color_by_score(const double &score, const uint8_t &r_case, colors::color &color);
-
+    void _delete_ramas(const std::set<Rama *> to_delete);
 }; //class Rama_Mgr
 }//namespace isolde
 
