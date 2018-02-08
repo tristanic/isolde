@@ -5,7 +5,7 @@ from chimerax.core.atomic.molarray import Collection
 from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
-from .molobject import Proper_Dihedral, Rotamer, Distance_Restraint
+from .molobject import Proper_Dihedral, Rotamer, Position_Restraint, Distance_Restraint
 import ctypes
 
 from chimerax.core.atomic import Atom, Atoms, Residue, Residues
@@ -95,6 +95,14 @@ class Rotamers(Collection):
                 doc='P-value for the current conformation of this rotamer. Read only.')
     ca_cb_bonds = cvec_property('rotamer_ca_cb_bond', cptr, astype=_bonds, read_only=True,
                 doc='The "stem" bond of this rotamer. Read only.')
+
+class Position_Restraints(Collection):
+    def __init__(self, c_pointers=None):
+        super().__init__(c_pointers, Position_Restraint, Position_Restraints)
+
+    targets = cvec_property('position_restraint_target', float64, 3,
+        doc = 'Target (x,y,z) positions in Angstroms. Can be written.')
+
 
 class Distance_Restraints(Collection):
     def __init__(self, c_pointers=None):

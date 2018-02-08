@@ -230,7 +230,7 @@ class CrystalStructure(Model):
         initialize_mouse_modes(session)
         volumecommand.volume(session, pickable=False)
 
-        self.master_model = model
+        self._master_model = model
         self.mtzdata = None
         if mtzfile is not None:
             self.mtzdata = ReflectionDataContainer(self.session, mtzfile, shannon_rate = map_oversampling)
@@ -330,8 +330,11 @@ class CrystalStructure(Model):
         self.add([model])
         #move_model(self.session, model, self)
         self.session.models.add([self])
-
-
+    
+    @property
+    def master_model(self):
+        return self._master_model
+        
     def delete(self):
         if self._sym_handler is not None:
             self.session.triggers.remove_handler(self._sym_handler)

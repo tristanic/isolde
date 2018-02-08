@@ -1,6 +1,8 @@
 #ifndef ISOLDE_ROTA
 #define ISOLDE_ROTA
 
+#include <thread> //testing
+
 #include <string>
 #include "../atomic_cpp/dihedral.h"
 #include "../atomic_cpp/dihedral_mgr.h"
@@ -12,7 +14,6 @@
 #include <pyinstance/PythonInstance.declare.h>
 #include <atomstruct/Residue.h>
 #include <atomstruct/Bond.h>
-
 using namespace atomstruct;
 
 namespace isolde
@@ -54,7 +55,6 @@ private:
     Rota_Def *_def;
     // size_t _n_chi;
     // bool _symmetric = false;
-
 
 }; // class Rotamer
 
@@ -103,6 +103,14 @@ public:
     void validate(Rotamer** rotamers, size_t n, double* scores);
     void validate(Residue** residues, size_t n, double* scores);
 
+    /**********TESTING***********/
+    void validate_threaded(Rotamer **rotamers, size_t n, double* scores);
+    bool thread_running() const { return _thread_running; }
+    bool thread_done() const { return _thread_done; }
+    void finalize_thread() { _validation_thread.join(); _thread_running=false; }
+    /******END TESTING***********/
+
+
     int32_t bin_score(const double &score);
     void color_by_score(double *score, size_t n, uint8_t *out);
     virtual void destructors_done(const std::set<void*>& destroyed);
@@ -114,6 +122,15 @@ private:
     std::unordered_map<std::string, RegularGridInterpolator<double>> _interpolators;
     colors::colormap _colors;
     cutoffs _cutoffs;
+
+    /*************TESTING********/
+    void _validate_from_thread(Rotamer **rotamers, size_t n, double* scores);
+    std::thread _validation_thread;
+    bool _thread_done = false;
+    bool _thread_running = false;
+
+    /*********END TESTING********/
+
 
 }; // class Rota_Mgr
 } //namespace isolde

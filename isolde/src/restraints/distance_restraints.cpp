@@ -1,3 +1,5 @@
+#define PYINSTANCE_EXPORT
+
 #include "distance_restraints.h"
 #include <pyinstance/PythonInstance.instantiate.h>
 template class pyinstance::PythonInstance<isolde::Distance_Restraint>;

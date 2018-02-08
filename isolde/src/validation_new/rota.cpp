@@ -201,6 +201,21 @@ void Rota_Mgr::validate(Residue** residues, size_t n, double* scores)
     }
 }
 
+/**********TESTING***********/
+void Rota_Mgr::_validate_from_thread(Rotamer **rotamers, size_t n, double* scores)
+{
+    _thread_running = true;
+    _thread_done = false;
+    validate(rotamers, n, scores);
+    _thread_done = true;
+}
+void Rota_Mgr::validate_threaded(Rotamer **rotamers, size_t n, double* scores)
+{
+    _validation_thread = std::thread(&Rota_Mgr::_validate_from_thread, this, rotamers, n, scores);
+}
+/******END TESTING***********/
+
+
 void Rota_Mgr::color_by_score(double *score, size_t n, uint8_t *out)
 {
     colors::color this_color;

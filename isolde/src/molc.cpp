@@ -36,6 +36,7 @@
 #include "interpolation/nd_interp.h"
 #include "validation_new/rama.h"
 #include "validation_new/rota.h"
+#include "restraints/position_restraints.h"
 #include "restraints/distance_restraints.h"
 #include "restraints/dihedral_restraints.h"
 
@@ -789,6 +790,55 @@ rota_mgr_validate_rotamer(void *mgr, void *rotamer, size_t n, double *scores)
     }
 } //rota_mgr_validate_rotamer
 
+/*******TESTING***********/
+extern "C" EXPORT void
+rota_mgr_validate_rotamer_threaded(void *mgr, void *rotamer, size_t n, double *scores)
+{
+    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    Rotamer **r = static_cast<Rotamer **>(rotamer);
+    try {
+        m->validate_threaded(r, n, scores);
+    } catch (...) {
+        molc_error();
+    }
+} //rota_mgr_validate_rotamer
+
+extern "C" EXPORT npy_bool
+rota_mgr_thread_running(void *mgr) {
+    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    try {
+        return m->thread_running();
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT npy_bool
+rota_mgr_thread_done(void *mgr) {
+    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    try {
+        return m->thread_done();
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT void
+rota_mgr_finalize_thread(void *mgr) {
+    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    try {
+        m->finalize_thread();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
+/******END TESTING***********/
+
+
 extern "C" EXPORT void
 rota_mgr_validate_residue(void *mgr, void *residue, size_t n, double *scores)
 {
@@ -926,6 +976,95 @@ rotamer_angles(void *rotamer, double *a)
 
 /*******************************************************
  *
+ * Position_Restraint_Mgr functions
+ *
+ *******************************************************/
+SET_PYTHON_INSTANCE(position_restraint_mgr, Position_Restraint_Mgr)
+GET_PYTHON_INSTANCES(position_restraint_mgr, Position_Restraint_Mgr)
+
+extern "C" EXPORT void*
+position_restraint_mgr_new(void *structure)
+{
+    Structure *s = static_cast<Structure *>(structure);
+    try {
+        Position_Restraint_Mgr *mgr = new Position_Restraint_Mgr(s);
+        return mgr;
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+} //position_restraint_mgr_new
+
+extern "C" EXPORT void
+position_restraint_mgr_delete(void *mgr)
+{
+    Position_Restraint_Mgr *m = static_cast<Position_Restraint_Mgr *>(mgr);
+    try {
+        delete m;
+    } catch (...) {
+        molc_error();
+    }
+} //position_restraint_mgr_delete
+
+extern "C" EXPORT size_t
+position_restraint_mgr_get_restraint(void *mgr, void *atom, npy_bool create, size_t n, pyobject_t *restraint)
+{
+    Position_Restraint_Mgr *m = static_cast<Position_Restraint_Mgr *>(mgr);
+    Atom **a = static_cast<Atom **>(atom);
+    size_t count = 0;
+    try {
+        for (size_t i=0; i<n; ++i) {
+            Position_Restraint *r = m->get_restraint(*a++, create);
+            if (r != nullptr) {
+                *restraint++ = r;
+                count++;
+            }
+        }
+        return count;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+/***************************************************************
+ *
+ * Position_Restraint functions
+ *
+ ***************************************************************/
+SET_PYTHON_CLASS(position_restraint, Position_Restraint)
+GET_PYTHON_INSTANCES(position_restraint, Position_Restraint)
+
+extern "C" EXPORT void
+position_restraint_target(void *restraint, size_t n, double *target)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->get_target(target);
+            target+=3;
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_position_restraint_target(void *restraint, size_t n, double *target)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->set_target(target);
+            target+=3;
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+/*******************************************************
+ *
  * Distance_Restraint_Mgr functions
  *
  *******************************************************/
@@ -945,14 +1084,14 @@ distance_restraint_mgr_new(void *structure, void *pbgroup)
         molc_error();
         return nullptr;
     }
-} //rota_mgr_new
+} //distance_restraint_mgr_new
 
 extern "C" EXPORT void
 distance_restraint_mgr_delete(void *mgr)
 {
-    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    Distance_Restraint_Mgr *m = static_cast<Distance_Restraint_Mgr *>(mgr);
     try {
-        delete d;
+        delete m;
     } catch (...) {
         molc_error();
     }
