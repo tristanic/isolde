@@ -954,7 +954,7 @@ class Position_Restraint_Mgr_Base(_Restraint_Mgr):
         return _position_restraints(f(self._c_pointer))
 
 
-class Distance_Restraint_Mgr(_Restraint_Mgr):
+class Distance_Restraint_Mgr_Base(_Restraint_Mgr):
     '''
     Manages distance restraints (Atom pairs with distances and spring constants)
     and their visualisations for a single atomic structure.
@@ -1194,7 +1194,7 @@ for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint, Distance_R
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
 
 for class_obj in (Proper_Dihedral_Mgr, Rama_Mgr, Rota_Mgr, Position_Restraint_Mgr_Base,
-            Distance_Restraint_Mgr,):
+            Distance_Restraint_Mgr_Base,):
     func_name = cname + '_py_inst'
     class_obj.c_ptr_to_py_inst = lambda ptr, fname=func_name: c_function(fname,
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
