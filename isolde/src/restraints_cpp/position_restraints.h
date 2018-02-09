@@ -1,6 +1,8 @@
 #ifndef ISOLDE_POSITION_RESTRAINTS
 #define ISOLDE_POSITION_RESTRAINTS
 
+#include "../constants.h"
+#include "../geometry/geometry.h"
 #include <atomstruct/destruct.h>
 #include <atomstruct/string_types.h>
 #include <atomstruct/Atom.h>
@@ -40,13 +42,16 @@ public:
         for (size_t i=0; i<3; ++i)
             *target++ = _target[i];
     }
-    void set_spring_constant(const double &k) { _spring_constant = k; }
-    double spring_constant() const { return _spring_constant; }
+    void set_k(double k);
+    double get_k() const { return _spring_constant; }
     void set_enabled(bool flag) { _enabled = flag; }
     bool enabled() const { return _enabled; }
     bool visible() const { return _atom->visible() && _enabled; }
     void target_vector(double *vector) const;
     Atom *atom() const { return _atom; }
+    double radius() const;
+    //! Provide a 4x4 OpenGL array transforming a primitive unit bond onto this restraint
+    void bond_cylinder_transform(float *rot44) const;
 
 private:
     Atom* _atom;
@@ -69,6 +74,7 @@ public:
     Structure* structure() const { return _atomic_model; }
     Position_Restraint* get_restraint(Atom *atom, bool create);
     size_t num_restraints() const { return _atom_to_restraint.size(); }
+    std::vector<Position_Restraint *> visible_restraints() const;
 
     void delete_restraints(const std::set<Position_Restraint *>& to_delete);
     virtual void destructors_done(const std::set<void *>& destroyed);

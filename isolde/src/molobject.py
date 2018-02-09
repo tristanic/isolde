@@ -910,10 +910,9 @@ class _Restraint_Mgr(Model):
         '''Has the C++ side been deleted?'''
         return not hasattr(self, '_c_pointer')
 
-class Position_Restraint_Mgr(_Restraint_Mgr):
+class Position_Restraint_Mgr_Base(_Restraint_Mgr):
     '''
-    Manages position restraints and their visualisations for a single atomic
-    structure.
+    Manages position restraints for a single atomic structure.
     '''
     def __init__(self, model, c_pointer=None):
         super().__init__('Position Restraints', model, c_pointer)
@@ -940,6 +939,19 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
     def add_restraints(self, atoms):
         return self._get_restraints(atoms, create=True)
 
+    @property
+    def num_restraints(self):
+        return c_function('position_restraint_mgr_num_restraints',
+            args=(ctypes.c_void_p,), ret=ctypes.c_size_t)(self._c_pointer)
+
+    def __len__(self):
+        return self.num_restraints
+
+    @property
+    def visible_restraints(self):
+        f = c_function('position_restraint_mgr_visible_restraints',
+            args=(ctypes.c_void_p,), ret=ctypes.py_object)
+        return _position_restraints(f(self._c_pointer))
 
 
 class Distance_Restraint_Mgr(_Restraint_Mgr):
@@ -1108,9 +1120,29 @@ class Position_Restraint(State):
     def reset_state(self):
         pass
 
+    @property
+    def _bond_cylinder_transform(self):
+        '''Transform mapping a unit cylinder onto the restraint bond. Read only.'''
+        f = c_function('position_restraint_bond_transform',
+            args = (ctypes.c_void_p, ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_float)))
+        n = 1
+        transform = empty((n,4,4), float32)
+        f(self._c_pointer, n, pointer(transform))
+        return transform
+
+    atom = c_property('position_restraint_atom', cptr, astype=_atom_or_none, read_only=True,
+        doc = 'Returns the restrained atom. Read-only.')
     target = c_property('position_restraint_target', float64, 3,
         doc = 'Target (x,y,z) position in Angstroms. Can be written.')
-
+    target_vector = c_property('position_restraint_target_vector', float64, 3, read_only=True,
+        doc = 'Returns the vector ("bond") connecting the atom to its target. Read only.')
+    spring_constant = c_property('position_restraint_k', float64,
+        doc = 'Restraint spring constant in kJ mol-1 Angstrom-2. Can be written')
+    enabled = c_property('position_restraint_enabled', bool,
+        doc = 'Enable/disable this position restraint.')
+    visible = c_property('position_restraint_visible', bool, read_only=True,
+        doc = 'Check whether this restraint is currently visible. Read only.')
 
 
 class Distance_Restraint(State):
@@ -1145,7 +1177,6 @@ class Distance_Restraint(State):
             doc = 'Current distance between restrained atoms in Angstroms. Read only.')
     pseudobond = c_property('distance_restraint_pbond', cptr, astype=_pseudobond_or_none, read_only=True,
             doc = 'Pseudobond visualisation of the restraint. Read only.')
-
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance
 # from the pointer (needed by Collections)
@@ -1162,7 +1193,7 @@ for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint, Distance_R
     class_obj.c_ptr_to_existing_py_inst = lambda ptr, fname=func_name: c_function(fname,
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
 
-for class_obj in (Proper_Dihedral_Mgr, Rama_Mgr, Rota_Mgr, Position_Restraint_Mgr,
+for class_obj in (Proper_Dihedral_Mgr, Rama_Mgr, Rota_Mgr, Position_Restraint_Mgr_Base,
             Distance_Restraint_Mgr,):
     func_name = cname + '_py_inst'
     class_obj.c_ptr_to_py_inst = lambda ptr, fname=func_name: c_function(fname,

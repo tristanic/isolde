@@ -100,8 +100,29 @@ class Position_Restraints(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, Position_Restraint, Position_Restraints)
 
+    @property
+    def _bond_cylinder_transforms(self):
+        '''Transforms mapping a unit cylinder onto the restraint bonds. Read only.'''
+        f = c_function('position_restraint_bond_transform',
+            args = (ctypes.c_void_p, ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_float)))
+        n = len(self)
+        transforms = empty((n,4,4), float32)
+        f(self._c_pointers, n, pointer(transforms))
+        return transforms
+
+    atoms = cvec_property('position_restraint_atom', cptr, astype=_atoms, read_only=True,
+        doc = 'Returns the restrained atoms. Read-only.')
     targets = cvec_property('position_restraint_target', float64, 3,
         doc = 'Target (x,y,z) positions in Angstroms. Can be written.')
+    target_vectors = cvec_property('position_restraint_target_vector', float64, 3, read_only=True,
+        doc = 'Returns the vectors ("bonds") connecting each atom to its target. Read only.')
+    spring_constants = cvec_property('position_restraint_k', float64,
+        doc = 'Restraint spring constants in kJ mol-1 Angstrom-2. Can be written')
+    enableds = cvec_property('position_restraint_enabled', bool,
+        doc = 'Enable/disable position restraints with a Numpy boolean array.')
+    visibles = cvec_property('position_restraint_visible', bool, read_only=True,
+        doc = 'Returns a boolean mask giving the currently visible restraints. Read only.')
 
 
 class Distance_Restraints(Collection):

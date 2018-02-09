@@ -11,7 +11,7 @@ import ctypes
 NPY_BOOL = ctypes.c_uint8
 
 
-# Fully pythonic version.    
+# Fully pythonic version.
 def get_dihedral(p0, p1, p2, p3):
     '''
      Get the dihedral angle between the vectors p0-p1 and p2-p3 about the
@@ -21,29 +21,29 @@ def get_dihedral(p0, p1, p2, p3):
     b0 = p0 - p1
     b1 = p2 - p1
     b2 = p3 - p2
-    
+
     b1 /= numpy.linalg.norm(b1)
-    
+
     v = b0 - numpy.dot(b0, b1)*b1
     w = b2 - numpy.dot(b2, b1)*b1
-    
+
     x = numpy.dot(v, w)
     y = numpy.dot(numpy.cross(b1, v), w)
     return numpy.arctan2(y, x)
 
-# C version. Saves about 16 microseconds per dihedral. 
+# C version. Saves about 16 microseconds per dihedral.
 
 dpath = os.path.dirname(os.path.abspath(__file__))
 libfile = glob.glob(os.path.join(dpath, '_geometry.cpython*'))[0]
 _geometry = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)), libfile))
 COORTYPE = ctypes.POINTER(ctypes.c_double * 3)
-  
+
 _get_dihedral = _geometry.get_dihedral
 _get_dihedral.argtypes = [COORTYPE, COORTYPE, COORTYPE, COORTYPE]
 _get_dihedral.restype = ctypes.c_double
-   
+
 def get_dihedral(p0, p1, p2, p3):
-    return _get_dihedral(p0.ctypes.data_as(COORTYPE), 
+    return _get_dihedral(p0.ctypes.data_as(COORTYPE),
                     p1.ctypes.data_as(COORTYPE),
                     p2.ctypes.data_as(COORTYPE),
                     p3.ctypes.data_as(COORTYPE))
@@ -60,8 +60,8 @@ def get_dihedrals(coords, n):
     _get_dihedrals.argtypes = [INTYPE, ctypes.c_int, RTYPE]
     _get_dihedrals(numpy.reshape(coords, -1).ctypes.data_as(INTYPE), n, ret.ctypes.data_as(RTYPE))
     return ret
-    
-    
+
+
 _rotations = _geometry.rotations
 def rotations(axis, angles):
     '''
@@ -72,7 +72,7 @@ def rotations(axis, angles):
     ret = numpy.empty((n,3,4), numpy.double)
     RTYPE=ctypes.POINTER(ctypes.c_double)
     _rotations.argtypes = [COORTYPE, ANGLE_TYPE, ctypes.c_int, RTYPE]
-    _rotations(axis.ctypes.data_as(COORTYPE), angles.ctypes.data_as(ANGLE_TYPE), 
+    _rotations(axis.ctypes.data_as(COORTYPE), angles.ctypes.data_as(ANGLE_TYPE),
                n, ret.ctypes.data_as(RTYPE))
     return ret
 
@@ -88,14 +88,14 @@ def scale_transforms(scales, transforms):
     return tf
 
 
-    
+
 _multiply_transforms = _geometry.multiply_transforms
 def multiply_transforms(tf1, tf2):
     TF_TYPE = ctypes.POINTER(ctypes.c_double*12)
     ret = numpy.empty((3,4), numpy.double)
     _multiply_transforms.argtypes = [TF_TYPE, TF_TYPE, TF_TYPE]
-    _multiply_transforms(tf1.ctypes.data_as(TF_TYPE), 
-                         tf2.ctypes.data_as(TF_TYPE), 
+    _multiply_transforms(tf1.ctypes.data_as(TF_TYPE),
+                         tf2.ctypes.data_as(TF_TYPE),
                          ret.ctypes.data_as(TF_TYPE))
     return ret
 
@@ -134,7 +134,7 @@ def flip_rotate_and_shift(flip_mask, flip_tf, rotations, shifts):
     TF_TYPE = ctypes.POINTER(ctypes.c_double*12)
     TF_ARRAY_TYPE = ctypes.POINTER(ctypes.c_double*12*n)
     ret = numpy.empty(rotations.shape, numpy.double)
-    _flip_rotate_shift.argtypes = [ctypes.c_int, FLAG_TYPE, TF_TYPE, 
+    _flip_rotate_shift.argtypes = [ctypes.c_int, FLAG_TYPE, TF_TYPE,
                                    TF_ARRAY_TYPE, TF_ARRAY_TYPE, TF_ARRAY_TYPE]
     _flip_rotate_shift(n, flip_mask.ctypes.data_as(FLAG_TYPE),
                           ftf.ctypes.data_as(TF_TYPE),
@@ -150,21 +150,21 @@ def dihedral_fill_plane(p0, p1, p2, p3):
     from numpy import empty, float32, int32, array, cross
     varray = empty((5,3), float32)
     narray = empty((5,3), float32)
-    
+
     for i, p in enumerate((p0,p1,p2,p3)):
         varray[i] = p
-    
+
     varray[4] = (varray[0]+varray[3])/2
-    
+
     # This surface should always be almost planar, so we'll assign it a
     # single normal
-    
+
     n = cross(varray[1]-varray[0], varray[3]-varray[0])
-    
+
     narray[:] = n
     tarray = array([[0,1,4],[1,2,4],[2,3,4]],int32)
     return varray, narray, tarray
-    
+
 
 def dihedral_fill_planes(dihedrals, target_drawing):
     dw = target_drawing
@@ -202,7 +202,7 @@ def dihedral_fill_planes(dihedrals, target_drawing):
     dw.vertices, dw.normals, dw.triangles = varray, narray, tarray
 
 _dihedral_fill_and_color_planes = _geometry.dihedral_fill_and_color_planes
-def dihedral_fill_and_color_planes(dihedrals, target_drawing, 
+def dihedral_fill_and_color_planes(dihedrals, target_drawing,
             twisted_mask, cis_pro_mask, cis_nonpro_color, twisted_color,
             cis_pro_color):
     dw = target_drawing
@@ -220,7 +220,7 @@ def dihedral_fill_and_color_planes(dihedrals, target_drawing,
     COLOR_TYPE = ctypes.POINTER(ctypes.c_uint8*4)
     MASK_TYPE = ctypes.POINTER(NPY_BOOL*n)
     _dihedral_fill_planes.argtypes = [ctypes.c_int, COORTYPE, MASK_TYPE,
-        MASK_TYPE, COLOR_TYPE, COLOR_TYPE, COLOR_TYPE, 
+        MASK_TYPE, COLOR_TYPE, COLOR_TYPE, COLOR_TYPE,
         V_TYPE, N_TYPE, T_TYPE, C_TYPE]
     _dihedral_fill_and_color_planes(n, coords.ctypes.data_as(COORTYPE),
                              twisted_mask.ctypes.data_as(MASK_TYPE),
@@ -233,12 +233,6 @@ def dihedral_fill_and_color_planes(dihedrals, target_drawing,
                              tarray.ctypes.data_as(T_TYPE),
                              carray.ctypes.data_as(C_TYPE))
     dw.vertices, dw.normals, dw.triangles, dw.vertex_colors = varray, narray, tarray, carray
-
-
-
-
-
-
 
 def cone_geometry(radius = 1, height = 1, nc = 10, caps = True, flipped = False):
     '''
@@ -274,7 +268,7 @@ def cone_geometry(radius = 1, height = 1, nc = 10, caps = True, flipped = False)
     if not flipped:
         narray[:nc,2] = 0
     else:
-        narray[:nc,2] = height            
+        narray[:nc,2] = height
     varray[nc:nc2,:2] = circle      # base of cone
     if not flipped:
         varray[nc:nc2,2] = height
@@ -317,19 +311,19 @@ def exclamation_mark(radius = 0.1, height = 2, nc=8, color = [255,0,0,255]):
     stem = cone_geometry(radius=radius, height=height, nc=nc, caps=True)
     spheres = list(sphere_geometry2(nc*4))
     spheres[0] = scale(radius*0.7).moved(spheres[0])
-    
+
     v, n, t = stem
-    
-        
+
+
     vbottom = translation((0,0, height/2+radius*1.5)).moved(spheres[0])
     t = numpy.concatenate((t, spheres[2]+len(v)))
     v = numpy.concatenate((v, vbottom))
     n = numpy.concatenate((n, spheres[1]))
-    
+
     return v, n, t
-    
-    
-def spiral(major_radius=0.25, minor_radius=0.1, height=1, turns=1.0, 
+
+
+def spiral(major_radius=0.25, minor_radius=0.1, height=1, turns=1.0,
            turn_segments=10, circle_segments=5):
     '''
     Draw a 3D spiral.
@@ -344,19 +338,19 @@ def spiral(major_radius=0.25, minor_radius=0.1, height=1, turns=1.0,
     return tube.tube_spline(spline_xyz, minor_radius, segment_subdivisions = 2, circle_subdivisions = circle_segments)
 
 
-def simple_arrow(radius = 0.1, height = 1, nc = 20, color = [255, 0, 0, 255], caps = True, 
-                    head_length_fraction = 0.33, head_width_ratio = 1.5, 
+def simple_arrow(radius = 0.1, height = 1, nc = 20, color = [255, 0, 0, 255], caps = True,
+                    head_length_fraction = 0.33, head_width_ratio = 1.5,
                     points_out = True):
     from chimerax.core.models import Drawing
     d = Drawing(name='Arrow')
     d.color = color
     d.vertices, d.normals, d.triangles = simple_arrow_geometry(
-        radius, height, nc, caps, head_length_fraction, 
+        radius, height, nc, caps, head_length_fraction,
         head_width_ratio, points_out)
     return d
-    
-def simple_arrow_geometry(radius = 0.1, height = 1, nc = 20, caps = True, 
-                    head_length_fraction = 0.33, head_width_ratio = 1.5, 
+
+def simple_arrow_geometry(radius = 0.1, height = 1, nc = 20, caps = True,
+                    head_length_fraction = 0.33, head_width_ratio = 1.5,
                     points_out = True):
     '''
     Define a simple 3D arrow made from two cones joined base-to-base.
@@ -367,7 +361,7 @@ def simple_arrow_geometry(radius = 0.1, height = 1, nc = 20, caps = True,
     shaft_base_width = radius / head_width_ratio
     head_length = height * head_length_fraction
     shaft_length = height * (1 - head_length_fraction)
-    
+
     nc2 = nc * 2
     if points_out:
         hver, hn, ht = cone_geometry(head_base_width, head_length, nc, flipped = True)
@@ -389,7 +383,7 @@ def simple_arrow_geometry(radius = 0.1, height = 1, nc = 20, caps = True,
         sn[nc:nc2,2] = head_length
         sver[nc2] = (0, 0, head_length)
         sver[nc2+1:,2] = head_length
-        
+
     import numpy
     #~ head.vertices = hver
     #~ head.normals = hn
@@ -402,9 +396,9 @@ def simple_arrow_geometry(radius = 0.1, height = 1, nc = 20, caps = True,
     v = numpy.concatenate((hver, sver))
     n = numpy.concatenate((hn, sn))
     t = numpy.concatenate((ht, st+len(hver)))
-    
+
     return v,n,t
-    
+
 def arrow_between_points(arrow, xyz0, xyz1):
     '''
     Takes an arrow drawn by simple_arrow and rotates, translates and scales
@@ -414,7 +408,7 @@ def arrow_between_points(arrow, xyz0, xyz1):
     '''
     from chimerax.core.geometry.place import translation, vector_rotation, scale, Place, product
     import numpy
-    
+
     # Original arrow points along the z axis
     u = numpy.array((0,0,1),dtype='float32')
     # Get vector from xyz0 to xyz1
@@ -425,7 +419,7 @@ def arrow_between_points(arrow, xyz0, xyz1):
     trans = translation(xyz0)
     sc = scale(l)
     arrow.position = product((trans,rot,sc))
-    
+
 def arrow_along_force_vector(arrow, xyz0, force, scale = 1.0):
     '''
     Takes an arrow drawn by simple_arrow and rotates, translates and scales
@@ -434,7 +428,7 @@ def arrow_along_force_vector(arrow, xyz0, force, scale = 1.0):
     '''
     from chimerax.core.geometry.place import translation, vector_rotation, scale, Place, product
     import numpy
-    
+
     # Original arrow points along the z axis
     u = numpy.array((0,0,1),dtype='float32')
     # Get vector length
@@ -443,8 +437,8 @@ def arrow_along_force_vector(arrow, xyz0, force, scale = 1.0):
     trans = translation(xyz0)
     sc = scale(l)
     arrow.position = product((trans,rot,sc))
-    
-def pin_drawing(handle_radius, pin_radius, total_height):
+
+def pin_geometry(handle_radius, pin_radius, total_height):
     '''
     Simple 3D representation of a drawing pin.
     Args:
@@ -461,13 +455,13 @@ def pin_drawing(handle_radius, pin_radius, total_height):
     pin_height = total_height*5/12
     handle_height = total_height*7/12
     tb_height = total_height/4
-    
+
     pin = list(cone_geometry(radius = pin_radius, height = pin_height, points_up = False))
     handle_bottom = list(cone_geometry(radius = handle_radius, height = tb_height, nc = 8))
     handle_middle = list(cylinder_geometry(radius = handle_radius/2, height = handle_height, nc = 8, caps = False))
     handle_top = list(cone_geometry(radius = handle_radius, height = tb_height, nc = 8, points_up = False))
-    
-    
+
+
     pint = translation((0,0,pin_height/2))
     pin[0] = pint.moved(pin[0])
     hbt = translation((0,0, pin_height + tb_height/2.05))
@@ -476,18 +470,18 @@ def pin_drawing(handle_radius, pin_radius, total_height):
     handle_middle[0] = hmt.moved(handle_middle[0])
     htt = translation((0,0,total_height - tb_height/2.05))
     handle_top[0] = htt.moved(handle_top[0])
-    
+
     vertices = numpy.concatenate((pin[0], handle_bottom[0], handle_middle[0], handle_top[0]))
     normals = numpy.concatenate((pin[1], handle_bottom[1], handle_middle[1], handle_top[1]))
-    
+
     ntri = len(pin[0])
     triangles = pin[2]
     for d in (handle_bottom, handle_middle, handle_top):
         triangles = numpy.concatenate((triangles, d[2]+ntri))
         ntri += len(d[0])
-    
+
     return vertices, normals, triangles
-    
+
 
 
 def arc_points(n, radius, starting_angle, final_angle):
@@ -501,11 +495,11 @@ def arc_points(n, radius, starting_angle, final_angle):
     c[:,2] = 0
     return c
 
-        
+
 def split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segments, starting_angle, final_angle):
     '''
-    Define a torus (doughnut), where major_radius is the distance from 
-    the centre of the ring to the axis of the solid portion, and 
+    Define a torus (doughnut), where major_radius is the distance from
+    the centre of the ring to the axis of the solid portion, and
     minor_radius defines the thickness of the solid_portion.
     '''
     from math import pi
@@ -513,7 +507,7 @@ def split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segme
     from chimerax.core.geometry import rotation
     path = arc_points(ring_segments, major_radius, starting_angle, final_angle)
     return tube.tube_spline(path, minor_radius, segment_subdivisions = 2, circle_subdivisions = circle_segments)
-    
+
 def ring_arrow(major_radius, minor_radius, circle_segments, ring_segments, head_length, head_radius):
     import numpy
     #Find the starting angle from the length of the arrow head
@@ -532,18 +526,18 @@ def ring_arrow(major_radius, minor_radius, circle_segments, ring_segments, head_
     r2.move(move_dir)
     # ... and move it into position
     vh += move_dir
-    
+
     from numpy import concatenate
     v = concatenate((vr, vh))
     n = concatenate((nr, nh))
     t = concatenate((tr, th+len(vr)))
-    
+
     return v, n, t
 
-def ring_arrow_with_post(major_radius, minor_radius, circle_segments, 
+def ring_arrow_with_post(major_radius, minor_radius, circle_segments,
                          ring_segments, head_length, head_radius,
                          post_radius, post_height):
-    v, n, t = ring_arrow(major_radius, minor_radius, circle_segments, 
+    v, n, t = ring_arrow(major_radius, minor_radius, circle_segments,
                          ring_segments, head_length, head_radius)
     pv, pn, pt = post_geometry(post_radius, post_height)
     from numpy import concatenate
@@ -574,7 +568,7 @@ def post_geometry(radius, height, caps=False):
     r.move(v)
     r.apply_without_translation(n)
     return v,n,t
-    
+
 def bond_cylinder_placements(bonds):
     '''From chimerax.core.structure._bond_cylinder_placements.'''
 

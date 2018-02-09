@@ -185,5 +185,4 @@ void dihedral_fill_and_color_planes(int n, double* coords, npy_bool* twisted_mas
     }
 } // dihedral_fill_and_color_planes
 
-
 } // extern "C"

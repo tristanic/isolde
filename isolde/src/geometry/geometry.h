@@ -3,6 +3,7 @@
 #define isolde_geometry
 
 #include <math.h>
+#include <cstdlib>
 #include <cstdint>
 
 namespace isolde
@@ -127,7 +128,6 @@ inline R dihedral_angle(const T& p0, const T& p1, const T& p2, const T& p3)
 
     return atan2(y, x);
 }
-
 
 } // namespace geometry
 } // namespace isolde

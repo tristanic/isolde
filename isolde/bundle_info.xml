@@ -39,9 +39,9 @@ with the surroundings.
     <SourceFile>src/interpolation/nd_interp.cpp</SourceFile>
     <SourceFile>src/validation_new/rama.cpp</SourceFile>
     <SourceFile>src/validation_new/rota.cpp</SourceFile>
-    <SourceFile>src/restraints/distance_restraints.cpp</SourceFile>
-    <SourceFile>src/restraints/dihedral_restraints.cpp</SourceFile>
-    <SourceFile>src/restraints/position_restraints.cpp</SourceFile>
+    <SourceFile>src/restraints_cpp/distance_restraints.cpp</SourceFile>
+    <SourceFile>src/restraints_cpp/dihedral_restraints.cpp</SourceFile>
+    <SourceFile>src/restraints_cpp/position_restraints.cpp</SourceFile>
     <SourceFile>src/molc.cpp</SourceFile>
     <Library>OpenMM</Library>
     <Library>atomstruct</Library>

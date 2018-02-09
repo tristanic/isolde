@@ -36,9 +36,9 @@
 #include "interpolation/nd_interp.h"
 #include "validation_new/rama.h"
 #include "validation_new/rota.h"
-#include "restraints/position_restraints.h"
-#include "restraints/distance_restraints.h"
-#include "restraints/dihedral_restraints.h"
+#include "restraints_cpp/position_restraints.h"
+#include "restraints_cpp/distance_restraints.h"
+#include "restraints_cpp/dihedral_restraints.h"
 
 #include <functional>
 #include <map>
@@ -1027,6 +1027,36 @@ position_restraint_mgr_get_restraint(void *mgr, void *atom, npy_bool create, siz
     }
 }
 
+extern "C" EXPORT size_t
+position_restraint_mgr_num_restraints(void *mgr)
+{
+    Position_Restraint_Mgr *m = static_cast<Position_Restraint_Mgr *>(mgr);
+    try {
+        return m->num_restraints();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT PyObject*
+position_restraint_mgr_visible_restraints(void *mgr)
+{
+    Position_Restraint_Mgr *m = static_cast<Position_Restraint_Mgr *>(mgr);
+    try {
+        std::vector<Position_Restraint *> visibles = m->visible_restraints();
+        void **vptr;
+        PyObject *va = python_voidp_array(visibles.size(), &vptr);
+        for (auto v: visibles)
+            *vptr++ = v;
+        return va;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+
+
 /***************************************************************
  *
  * Position_Restraint functions
@@ -1034,6 +1064,13 @@ position_restraint_mgr_get_restraint(void *mgr, void *atom, npy_bool create, siz
  ***************************************************************/
 SET_PYTHON_CLASS(position_restraint, Position_Restraint)
 GET_PYTHON_INSTANCES(position_restraint, Position_Restraint)
+
+extern "C" EXPORT void
+position_restraint_atom(void *restraint, size_t n, pyobject_t *atom)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    error_wrap_array_get(r, n, &Position_Restraint::atom, atom);
+}
 
 extern "C" EXPORT void
 position_restraint_target(void *restraint, size_t n, double *target)
@@ -1062,6 +1099,70 @@ set_position_restraint_target(void *restraint, size_t n, double *target)
         molc_error();
     }
 }
+
+extern "C" EXPORT void
+set_position_restraint_k(void *restraint, size_t n, double *k)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    error_wrap_array_set<Position_Restraint, double, double>(r, n, &Position_Restraint::set_k, k);
+}
+
+extern "C" EXPORT void
+position_restraint_k(void *restraint, size_t n, double *k)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    error_wrap_array_get<Position_Restraint, double, double>(r, n, &Position_Restraint::get_k, k);
+}
+
+extern "C" EXPORT void
+position_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    error_wrap_array_get<Position_Restraint, bool, npy_bool>(r, n, &Position_Restraint::enabled, flag);
+}
+
+extern "C" EXPORT void
+set_position_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    error_wrap_array_set<Position_Restraint, bool, npy_bool>(r, n, &Position_Restraint::set_enabled, flag);
+}
+
+extern "C" EXPORT void
+position_restraint_visible(void *restraint, size_t n, npy_bool *flag)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    error_wrap_array_get<Position_Restraint, bool, npy_bool>(r, n, &Position_Restraint::visible, flag);
+}
+
+extern "C" EXPORT void
+position_restraint_target_vector(void *restraint, size_t n, double *vec)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->target_vector(vec);
+            vec +=3;
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void position_restraint_bond_transform(void *restraint, size_t n, float32_t *transform)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->bond_cylinder_transform(transform);
+            transform += 16;
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
 
 /*******************************************************
  *
@@ -1136,9 +1237,8 @@ distance_restraint_mgr_intra_restraints(void *mgr, void *atoms, size_t n)
         }
         void **dptr;
         PyObject *da = python_voidp_array(dset.size(), &dptr);
-        size_t i=0;
         for (auto dr: dset)
-            dptr[i++] = dr;
+            *dptr++ = dr;
         return da;
     } catch (...) {
         molc_error();
