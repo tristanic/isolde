@@ -3,6 +3,7 @@
 
 #include "../constants.h"
 #include "../geometry/geometry.h"
+#include "changetracker.h"
 #include <atomstruct/destruct.h>
 #include <atomstruct/string_types.h>
 #include <atomstruct/Atom.h>
@@ -68,19 +69,25 @@ class Position_Restraint_Mgr
 public:
     Position_Restraint_Mgr() {}
     ~Position_Restraint_Mgr();
-    Position_Restraint_Mgr(Structure *atomic_model)
-        : _atomic_model(atomic_model) {}
+    Position_Restraint_Mgr(Structure *atomic_model, Change_Tracker *change_tracker)
+        : _atomic_model(atomic_model), _change_tracker(change_tracker)
+    {
+        change_tracker->register_mgr(std::type_index(typeid(this)), _py_name, _managed_class_py_name);
+    }
 
     Structure* structure() const { return _atomic_model; }
     Position_Restraint* get_restraint(Atom *atom, bool create);
     size_t num_restraints() const { return _atom_to_restraint.size(); }
     std::vector<Position_Restraint *> visible_restraints() const;
+    Change_Tracker* change_tracker() const { return _change_tracker; }
+
 
     void delete_restraints(const std::set<Position_Restraint *>& to_delete);
     virtual void destructors_done(const std::set<void *>& destroyed);
 
 private:
     Structure* _atomic_model;
+    Change_Tracker* _change_tracker;
     std::unordered_map<Atom*, Position_Restraint*> _atom_to_restraint;
     Position_Restraint* _new_restraint(Atom *atom);
     Position_Restraint* _new_restraint(Atom *atom, const Coord& target);
@@ -91,6 +98,8 @@ private:
         return "Restraints on hydrogen atoms are not allowed!";
     }
     void _delete_restraints(const std::set<Position_Restraint *>& to_delete);
+    const std::string _py_name = "Position_Restraint_Mgr";
+    const std::string _managed_class_py_name = "Position_Restraints";
 
 }; //class Position_Restraint_Mgr
 

@@ -36,6 +36,7 @@
 #include "interpolation/nd_interp.h"
 #include "validation_new/rama.h"
 #include "validation_new/rota.h"
+#include "restraints_cpp/changetracker.h"
 #include "restraints_cpp/position_restraints.h"
 #include "restraints_cpp/distance_restraints.h"
 #include "restraints_cpp/dihedral_restraints.h"
@@ -976,6 +977,39 @@ rotamer_angles(void *rotamer, double *a)
 
 /*******************************************************
  *
+ * Change_Tracker functions
+ *
+ *******************************************************/
+SET_PYTHON_INSTANCE(change_tracker, Change_Tracker)
+GET_PYTHON_INSTANCES(change_tracker, Change_Tracker)
+
+extern "C" EXPORT void*
+change_tracker_new()
+{
+    try {
+        Change_Tracker *t = new Change_Tracker();
+        return t;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT void*
+change_tracker_delete(void *tracker)
+{
+    Change_Tracker *t = static_cast<Change_Tracker *>(tracker);
+    try {
+        delete t;
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
+
+/*******************************************************
+ *
  * Position_Restraint_Mgr functions
  *
  *******************************************************/
@@ -983,11 +1017,12 @@ SET_PYTHON_INSTANCE(position_restraint_mgr, Position_Restraint_Mgr)
 GET_PYTHON_INSTANCES(position_restraint_mgr, Position_Restraint_Mgr)
 
 extern "C" EXPORT void*
-position_restraint_mgr_new(void *structure)
+position_restraint_mgr_new(void *structure, void *change_tracker)
 {
     Structure *s = static_cast<Structure *>(structure);
+    isolde::Change_Tracker *ct = static_cast<isolde::Change_Tracker *>(change_tracker);
     try {
-        Position_Restraint_Mgr *mgr = new Position_Restraint_Mgr(s);
+        Position_Restraint_Mgr *mgr = new Position_Restraint_Mgr(s, ct);
         return mgr;
     } catch (...) {
         molc_error();
@@ -1174,12 +1209,13 @@ SET_PYTHON_INSTANCE(distance_restraint_mgr, Distance_Restraint_Mgr)
 GET_PYTHON_INSTANCES(distance_restraint_mgr, Distance_Restraint_Mgr)
 
 extern "C" EXPORT void*
-distance_restraint_mgr_new(void *structure, void *pbgroup)
+distance_restraint_mgr_new(void *structure, void *change_tracker,  void *pbgroup)
 {
     Structure *s = static_cast<Structure *>(structure);
+    isolde::Change_Tracker *ct = static_cast<isolde::Change_Tracker *>(change_tracker);
     Proxy_PBGroup *pbgr = static_cast<Proxy_PBGroup *>(pbgroup);
     try {
-        Distance_Restraint_Mgr *mgr = new Distance_Restraint_Mgr(s, pbgr);
+        Distance_Restraint_Mgr *mgr = new Distance_Restraint_Mgr(s, ct, pbgr);
         return mgr;
     } catch (...) {
         molc_error();

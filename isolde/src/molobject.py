@@ -880,17 +880,48 @@ class Rota_Mgr:
             non_favored_only, pointer(rot_out), pointer(scale_out), pointer(color_out))
         return (_rotamers(rot_out[0:count]), scale_out[0:count], color_out[0:count])
 
-class _Restraint_Mgr(Model):
-    '''Base class. Do not instantiate directly.'''
-    def __init__(self, name, model, c_pointer=None):
+
+class Restraint_Change_Tracker:
+    '''
+    A per-session singleton tracking changes in ISOLDE restraints, and firing
+    triggers as necessary.
+    '''
+    def __init__(self, session, c_pointer=None):
         cname = type(self).__name__.lower()
         if c_pointer is None:
-            new_func = cname + '_new'
-            c_pointer = c_function(new_func, args=(ctypes.c_void_p,), ret=ctypes.c_void_p)(model._c_pointer)
+            if hasattr(session, 'isolde_changes'):
+                if not session.isolde_changes.deleted():
+                    c_pointer = session.isolde_changes._c_pointer
+            if c_pointer is None:
+                new_func = cname + '_new'
+                c_pointer = c_function(new_func, ret=ctypes.c_void_p)()
         set_c_pointer(self, c_pointer)
         f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
-        super().__init__(name+' Manager', model.session)
+        self.session = session
+        session.isolde_changes = self
+
+
+class _Restraint_Mgr(Model):
+    '''Base class. Do not instantiate directly.'''
+    def __init__(self, name, model, c_pointer=None):
+        session = model.session
+        if not hasattr(self, _change_tracker):
+            if not hasattr(session, 'isolde_changes') or session.isolde_changes.deleted:
+                ct = self._change_tracker = Restraint_Change_Tracker(session)
+            else:
+                ct = self._change_tracker = session.isolde_changes
+
+        cname = type(self).__name__.lower()
+        if c_pointer is None:
+            new_func = cname + '_new'
+            c_pointer = c_function(
+                new_func, args=(ctypes.c_void_p, ctypes.c_void_p),
+                          ret=ctypes.c_void_p)(model._c_pointer, ct._c_pointer)
+        set_c_pointer(self, c_pointer)
+        f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
+        f(self._c_pointer, self)
+        super().__init__(name+' Manager', session)
         self.model = model
         model.add([self])
 
@@ -960,11 +991,24 @@ class Distance_Restraint_Mgr_Base(_Restraint_Mgr):
     and their visualisations for a single atomic structure.
     '''
     def __init__(self, model, c_pointer=None):
+        '''
+        Prepare a distance restraint manager for a given atomic model.
+        '''
+
+        # TODO: Defer pseudobondgroup creation to after initialisation to avoid
+        # duplicating code in _Restrain_Mgr
+        session = model.session
+        if not hasattr(session, 'isolde_changes') or session.isolde_changes.deleted:
+            ct = self._change_tracker = Restraint_Change_Tracker(session)
+        else:
+            ct = self._change_tracker = session.isolde_changes
+
         pbg = self._pbgroup = model.pseudobond_group('ISOLDE distance restraints')
         if c_pointer is None:
-            f = c_function('distance_restraint_mgr_new', args=(ctypes.c_void_p, ctypes.c_void_p,),
+            f = c_function('distance_restraint_mgr_new',
+                args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,),
                 ret=ctypes.c_void_p)
-            c_pointer =(f(model._c_pointer, pbg._c_pointer))
+            c_pointer =(f(model._c_pointer, ct._c_pointer, pbg._c_pointer))
         super().__init__('Distance Restraints', model, c_pointer)
         self.add([pbg])
 

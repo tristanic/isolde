@@ -8,8 +8,37 @@ template class pyinstance::PythonInstance<isolde::Proper_Dihedral_Restraint>;
 namespace isolde
 {
 
+template <class DType, class RType>
+RType* Dihedral_Restraint_Mgr_Base::new_restraint(DType *d)
+{
+    auto it = _dihedral_to_restraint.find(d);
+    if (it != _dihedral_to_restraint.end())
+    {
+        throw std::logic_error(error_duplicate());
+        return nullptr;
+    }
+    return _new_restraint(d);
+}
 
+template <class DType, class RType>
+RType* Dihedral_Restraint_Mgr_Base::_new_restraint(DType *d)
+{
+    RType *r = new Dihedral_Restraint_Base(d);
+    _dihedral_to_restraint[d] = r;
+    return r;
+}
 
+template <class DType, class RType>
+RType* Dihedral_Restraint_Mgr_Base::get_restraint(DType *d, bool create)
+{
+    auto it = _dihedral_to_restraint.find(d);
+    if (it != _dihedral_to_restraint.end())
+        return it->second;
+    if (create)
+        return _new_restraint(d);
+    throw std::logic_error(error_no_restraint());
+    return nullptr;
+}
 
 
 } // namespace isolde

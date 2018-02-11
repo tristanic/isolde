@@ -19,22 +19,25 @@ using namespace atomstruct;
 namespace isolde
 {
 
+template <class DType, class RType>
 class Dihedral_Restraint_Mgr;
 
+template <class DType>
 class Dihedral_Restraint_Base
 {
 public:
-    Dihedral_Restraint_Base() {}
-    ~Dihedral_Restraint_Base() {auto du = DestructionUser(this);}
-    Dihedral_Restraint_Base(Dihedral *dihedral)
+    Dihedral_Restraint() {}
+    ~Dihedral_Restraint() {auto du = DestructionUser(this);}
+    Dihedral_Restraint(DType *dihedral)
         : _dihedral(dihedral) {}
-    Dihedral* get_dihedral() const {return _dihedral;}
+    DType* get_dihedral() const {return _dihedral;}
     void set_target(const double &target) {_target=util::wrapped_angle(target);}
     void set_target_deg(const double &target) {set_target(util::radians(target));}
     const double& get_target() const {return _target;}
     void enable() { _enabled=true; }
     void disable() { _enabled=false; }
-    bool is_enabled() { return _enabled; }
+    void set_enabled(bool flag) { _enabled = flag; }
+    bool is_enabled() const { return _enabled; }
     //! Set the restraint spring constant in kJ mol-1 rad-1
     void set_spring_constant(const double &k)
     {
@@ -59,8 +62,7 @@ public:
     }
 
 private:
-    //! Wrap an angle to (-pi,pi)
-    Dihedral *_dihedral;
+    DType *_dihedral;
     double _target = 0.0;
     double _spring_constant = 0.0;
     bool _enabled = false;
@@ -72,26 +74,62 @@ private:
 }; // Dihedral_Restraint_Base
 
 class Proper_Dihedral_Restraint:
-    public Dihedral_Restraint_Base,
+    public Dihedral_Restraint_Base<Proper_Dihedral>,
     public pyinstance::PythonInstance<Proper_Dihedral_Restraint>
 {
 
 }; // Proper_Dihedral_Restraint
 
-class Dihedral_Restraint_Mgr
+
+
+template <class DType, class RType>
+class Dihedral_Restraint_Mgr_Base
     : public DestructionObserver,
-      public pyinstance::PythonInstance<Dihedral_Restraint_Mgr>
+      public pyinstance::PythonInstance<Dihedral_Restraint_Mgr<Dtype, RType>>
 {
 public:
     Dihedral_Restraint_Mgr() {}
     ~Dihedral_Restraint_Mgr();
+    Dihedral_Restraint_Mgr(Structure *atomic_model, Change_Tracker *change_tracker)
+        : _atomic_model(atomic_model), _change_tracker(change_tracker),
+    {
+        change_tracker->register_mgr(std::type_index(typeid(this)), _py_name, _managed_class_py_name);
+    }
+    Structure* structure() const { return _atomic_model; }
+    RType* get_restraint(DType *dihedral, bool create);
+    size_t num_restraints() const { return _dihedral_to_restraint.size(); }
+    std::vector<RType *> visible_restraints() const;
+    Change_Tracker* change_tracker() const { return _change_tracker; }
+
+protected:
+    RType* new_restraint(DType *d);
 
 
 private:
-    std::unordered_map<Proper_Dihedral*, Proper_Dihedral_Restraint*> _proper_dihedral_restraints;
+    std::unordered_map<DType*, RType*> _dihedral_to_restraint;
+    Structure* _atomic_model;
+    Change_Tracker* _change_tracker;
+    const std::string _py_name;
+    const std::string _managed_class_py_name;
+    const char* error_duplicate() const {
+        return "A restraint already exists for this dihedral!";
+    }
+    const char* error_no_restraint() const {
+        return "No restraint exists for this dihedral!";
+    }
+    RType* _new_restraint(DType *d);
 
 };
 
+class Proper_Dihedral_Restraint_Mgr:
+    public Dihedral_Restraint_Mgr_Base<Proper_Dihedral, Proper_Dihedral_Restraint>,
+    public pyinstance::PythonInstance<Proper_Dihedral_Restraint_Mgr>
+{
+
+private:
+    const std::string _py_name = "Proper_Dihedral_Restraint_Mgr";
+    const std::string _managed_class_py_name = "Proper_Dihedral_Restraint"
+}; //Proper_Dihedral_Restraint_Mgr
 
 }
 #endif //ISOLDE_DIHEDRAL_RESTRAINT

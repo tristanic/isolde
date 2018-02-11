@@ -56,6 +56,11 @@ Distance_Restraint* Distance_Restraint_Mgr::_new_restraint(Atom *a1, Atom *a2)
         throw std::logic_error(error_different_mol());
         return nullptr;
     }
+    if (a1 == a2)
+    {
+        throw std::logic_error(error_same_atom());
+        return nullptr;
+    }
     Pseudobond* pbond = _pbgroup->new_pseudobond(a1, a2);
     Distance_Restraint *d = new Distance_Restraint(a1, a2, pbond);
     _restraints.insert(d);

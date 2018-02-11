@@ -64,8 +64,12 @@ class Distance_Restraint_Mgr:
 public:
     Distance_Restraint_Mgr() {}
     ~Distance_Restraint_Mgr();
-    Distance_Restraint_Mgr(Structure *structure, Proxy_PBGroup *pbgroup)
-        : _pbgroup(pbgroup), _structure(structure) {}
+    Distance_Restraint_Mgr(Structure *structure, Change_Tracker *change_tracker,
+            Proxy_PBGroup *pbgroup)
+        : _pbgroup(pbgroup), _change_tracker(change_tracker), _structure(structure)
+    {
+        change_tracker->register_mgr(std::type_index(typeid(this)), _py_name, _managed_class_py_name);
+    }
 
     Distance_Restraint* new_restraint(Atom *a1, Atom *a2);
     Distance_Restraint* get_restraint(Atom *a1, Atom *a2, bool create);
@@ -77,6 +81,7 @@ public:
     // Atom_Map maps individual atoms to a set of the Distance_Restrants they belong to
     typedef std::unordered_map<Atom*, std::set<Distance_Restraint *> > Atom_Map;
     Structure* structure() const { return _structure; }
+    Change_Tracker* change_tracker() const { return _change_tracker; }
 
     virtual void destructors_done(const std::set<void*>& destroyed);
 private:
@@ -87,7 +92,14 @@ private:
     // std::set<Atom *> _mapped_atoms;
     Proxy_PBGroup* _pbgroup;
     Structure* _structure;
+    Change_Tracker* _change_tracker;
+    const std::string _py_name = "Distance_Restraint_Mgr";
+    const std::string _managed_class_py_name = "Distance_Restraints";
 
+
+    const char* error_same_atom() const {
+        return "Cannot bond an atom to itself!";
+    }
     const char* error_duplicate() const {
         return "This atom pair already has a distance restraint defined!";
     }
