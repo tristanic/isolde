@@ -53,6 +53,9 @@ public:
         _spring_constant = k<0 ? 0.0 : ( k > MAX_SPRING_CONSTANT ? MAX_SPRING_CONSTANT : k);
     }
     double get_spring_constant() const {return _spring_constant;}
+    // Optional cutoff angle below which no force will be applied
+    void set_cutoff(double cutoff) { _cutoff = cutoff; }
+    double get_cutoff() const { return _cutoff; }
     //! Returns (current angle) - (target angle) in radians
     double offset() const {return util::wrapped_angle(_dihedral->angle()-_target);}
     //! Returns (current angle) - (target angle) in degrees
@@ -62,11 +65,7 @@ public:
     {
         throw std::logic_error(err_msg_not_implemented());
     }
-    //! Get the colour for the annotation
-    virtual void get_annotation_color(double *color)
-    {
-        throw std::logic_error(err_msg_not_implemented());
-    }
+
     isolde::Change_Tracker* change_tracker() const { return _change_tracker; }
 
 private:
@@ -74,6 +73,7 @@ private:
     Change_Tracker *_change_tracker;
     double _target = 0.0;
     double _spring_constant = 0.0;
+    double _cutoff = 0.0;
     bool _enabled = false;
     bool _display = true;
     const char* err_msg_not_implemented() const
@@ -113,6 +113,24 @@ public:
     void delete_restraints(const std::set<RType *>& to_delete);
     virtual void destructors_done(const std::set<void *>& deleted);
 
+    void set_colors(uint8_t *maxc, uint8_t *midc, uint8_t *minc);
+
+    virtual void get_annotation_colors(RType **restraints, size_t n, uint8_t *colors)
+    {
+        double cutoffs[3] {0, 1, M_PI}; // First and last cutoffs fixed, middle changes
+        colors::color thecolor;
+        for (size_t i=0; i<n; ++i)
+        {
+            auto r = *restraints++;
+            cutoffs[1] = r->get_cutoff();
+            _colormap.interpolate(std::abs(r->offset()), cutoffs, thecolor);
+            for (size_t j=0; j<4; ++j) {
+                *(colors++) = (uint8_t)(thecolor[j]*255.0);
+            }
+        }
+    }
+
+
 protected:
     RType* new_restraint(DType *d);
 
@@ -121,6 +139,7 @@ private:
     std::unordered_map<DType*, RType*> _dihedral_to_restraint;
     Structure* _atomic_model;
     Change_Tracker* _change_tracker;
+    colors::variable_colormap _colormap;
     const std::string _py_name;
     const std::string _managed_class_py_name;
     const char* error_duplicate() const {

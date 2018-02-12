@@ -67,6 +67,20 @@ RType* Dihedral_Restraint_Mgr_Base<DType, RType>::_new_restraint(DType *d)
 }
 
 template <class DType, class RType>
+void Dihedral_Restraint_Mgr_Base<DType, RType>::set_colors(uint8_t *maxc, uint8_t *midc, uint8_t *minc)
+{
+    colors::color thecolors[3];
+    for (size_t i=0; i<4; ++i)
+    {
+        thecolors[0][i] = ((double) *(minc++)) / 255.0;
+        thecolors[1][i] = ((double) *(midc++)) / 255.0;
+        thecolors[2][i] = ((double) *(maxc++)) / 255.0;
+    }
+    _colormap = colors::variable_colormap(thecolors, 3);
+
+}
+
+template <class DType, class RType>
 RType* Dihedral_Restraint_Mgr_Base<DType, RType>::get_restraint(DType *d, bool create)
 {
     auto it = _dihedral_to_restraint.find(d);

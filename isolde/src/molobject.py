@@ -1041,6 +1041,7 @@ class Distance_Restraint_Mgr_Base(_Restraint_Mgr):
 class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
     def __init__(self, model, c_pointer = None):
         super().__init__('Proper Dihedral Restraints', model, c_pointer)
+        self.set_default_colors()
 
     def _get_restraints(self, dihedrals, create=False):
         n = len(dihedrals)
@@ -1054,6 +1055,33 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
 
     def add_restraints(self, dihedrals):
         return self._get_restraints(dihedrals, create=True)
+
+    def set_default_colors(self):
+        from .constants import validation_defaults as val_defaults
+        self.set_color_scale(val_defaults.OUTLIER_COLOR, val_defaults.ALLOWED_COLOR,
+             val_defaults.MAX_FAVORED_COLOR)
+
+    def set_color_scale(self, max_c, mid_c, min_c):
+        f = c_function('proper_dihedral_restraint_mgr_set_colors',
+            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
+                  ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)))
+        maxc = numpy.array(max_c, uint8)
+        midc = numpy.array(mid_c, uint8)
+        minc = numpy.array(min_c, uint8)
+        for arr in (maxc, midc, minc):
+            if len(arr) != 4:
+                raise TypeError('Each color should be an array of 4 values in the range (0,255)')
+        f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc))
+
+    def get_annotation_colors(self, restraints):
+        f = c_function('proper_dihedral_mgr_get_annotation_colors',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_uint8)))
+        n = len(restraints)
+        colors = numpy.empty((n,4), uint8)
+        f(self._c_pointer, restraints._c_pointers, n, pointer(colors))
+        return colors
+
 
 class _Dihedral(State):
     '''
@@ -1267,6 +1295,8 @@ class Proper_Dihedral_Restraint(State):
 
     target = c_property('proper_dihedral_restraint_target', float64,
         doc = 'Target angle for this restraint in radians. Can be written.')
+    cutoff = c_property('proper_dihedral_restraint_cutoff', float64,
+        doc = 'Cutoff angle below which no restraint will be applied. Can be set.')
     enabled = c_property('proper_dihedral_restraint_enabled', npy_bool,
         doc = 'Enable/disable this restraint or get its current state.')
     display = c_property('proper_dihedral_restraint_display', npy_bool,

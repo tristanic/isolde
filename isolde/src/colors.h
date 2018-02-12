@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <algorithm>
 #include <vector>
+#include <array>
+#include <iostream>
 
 namespace isolde
 {
@@ -32,14 +34,16 @@ inline void color_as_intcolor(color &in, intcolor &out)
 
 static const color grey = {0.5, 0.5, 0.5, 1.0};
 
-inline void copy_color(color &from, color &to)
+template <typename T>
+inline void copy_color(T &from, color &to)
 {
     for (size_t i=0; i<4; ++i) {
         to[i] = from[i];
     }
 }
 
-inline void interpolate_colors(const color &min_color, const color &max_color,
+template <typename T>
+inline void interpolate_colors(const T &min_color, const T &max_color,
     const double &min_val, const double &max_val, const double &score, color &out)
 {
     double offset = (score-min_val)/(max_val-min_val);
@@ -47,6 +51,51 @@ inline void interpolate_colors(const color &min_color, const color &max_color,
         out[i] = min_color[i] + (max_color[i]-min_color[i])*offset;
     }
 }
+
+/*! Unlike colormap, variable_colormap requires the cutoff values to be provided
+ *  with each call, and does not provide outside-of-range colouring.
+ */
+class variable_colormap
+{
+public:
+    variable_colormap() {}
+    ~variable_colormap() {}
+    variable_colormap(color* mapped_colors, size_t n)
+    {
+        for (size_t i=0; i<n; ++i) {
+            std::array<double, 4> thiscolor;
+            std::copy(mapped_colors[i], mapped_colors[i]+4, thiscolor.begin());
+            _colors.push_back(thiscolor);
+        }
+        _num_colors = n;
+    }
+    const std::vector<std::array<double, 4>>& mapped_colors() const { return _colors; }
+
+    void interpolate(double value, double *cutoffs, color &rgba)
+    {
+        if (value <= cutoffs[0])
+            copy_color(_colors[0], rgba);
+        else if (value >= cutoffs[_num_colors-1])
+            copy_color(_colors.back(), rgba);
+        else {
+            size_t i=0;
+            for (; i<_num_colors; ++i) {
+                if (cutoffs[i] == cutoffs[i+1])
+                    // avoid divide-by-zero
+                    continue;
+                if (value >= cutoffs[i])
+                    break;
+            }
+            interpolate_colors(_colors[i], _colors[i+1], cutoffs[i], cutoffs[i+1], value, rgba);
+        }
+
+    }
+
+
+private:
+    std::vector<std::array<double, 4>> _colors;
+    size_t _num_colors;
+};
 
 
 class colormap
@@ -89,7 +138,7 @@ public:
     {
         for (size_t i=0; i<n; ++i)
         {
-            _mapped_colors.push_back(mapped_color(*mapped_vals++, *mapped_colors++));
+            _mapped_colors.emplace_back(*mapped_vals++, *mapped_colors++);
         }
         std::sort(_mapped_colors.begin(), _mapped_colors.end());
     }
