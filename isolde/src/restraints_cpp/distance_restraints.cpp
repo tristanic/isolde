@@ -7,8 +7,9 @@ template class pyinstance::PythonInstance<isolde::Distance_Restraint_Mgr>;
 
 
 namespace isolde {
-Distance_Restraint::Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pb):
-    _pbond(pb)
+
+Distance_Restraint::Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pb, Distance_Restraint_Mgr *mgr):
+    _pbond(pb), _mgr(mgr)
 {
     for (auto b: a1->bonds())
         for (auto a: b->atoms())
@@ -18,14 +19,16 @@ Distance_Restraint::Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pb):
     _atoms[1] = a2;
 }
 
-Distance_Restraint::Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pb,
+Distance_Restraint::Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pb, Distance_Restraint_Mgr *mgr,
     const double &target, const double &k)
-    : Distance_Restraint(a1, a2, pb)
+    : Distance_Restraint(a1, a2, pb, mgr)
 {
     _target = target;
     _k = k;
     set_enabled(false);
 }
+
+Change_Tracker* Distance_Restraint::change_tracker() const { return _mgr->change_tracker(); }
 
 Distance_Restraint* Distance_Restraint_Mgr::new_restraint(Atom *a1, Atom *a2)
 {
@@ -62,7 +65,7 @@ Distance_Restraint* Distance_Restraint_Mgr::_new_restraint(Atom *a1, Atom *a2)
         return nullptr;
     }
     Pseudobond* pbond = _pbgroup->new_pseudobond(a1, a2);
-    Distance_Restraint *d = new Distance_Restraint(a1, a2, pbond);
+    Distance_Restraint *d = new Distance_Restraint(a1, a2, pbond, this);
     _restraints.insert(d);
     _atom_to_restraints[a1].insert(d);
     _atom_to_restraints[a2].insert(d);

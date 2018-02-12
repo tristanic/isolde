@@ -4,6 +4,7 @@
 #include <string>
 #include "../colors.h"
 #include "../constants.h"
+#include "changetracker.h"
 #include <atomstruct/destruct.h>
 #include <atomstruct/string_types.h>
 #include <atomstruct/Atom.h>
@@ -25,8 +26,8 @@ public:
     typedef Atom* Atoms[2];
     Distance_Restraint() {}
     ~Distance_Restraint() { auto du=DestructionUser(this); }
-    Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pbond);
-    Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pbond,
+    Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pbond, Distance_Restraint_Mgr *mgr);
+    Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pbond, Distance_Restraint_Mgr *mgr,
             const double &target, const double &k);
     double get_target() const { return _target; }
     void set_target(double target) { _target=target; }
@@ -44,10 +45,12 @@ public:
     Pseudobond *pbond() const {return _pbond;}
     double distance() const {return _atoms[0]->coord().distance(_atoms[1]->coord());}
     Structure* structure() const {return _atoms[0]->structure();}
+    Change_Tracker *change_tracker() const;
 
 private:
     Atoms _atoms;
     Pseudobond *_pbond;
+    Distance_Restraint_Mgr *_mgr;
     double _target = 0;
     double _k = 0;
     bool _enabled=false;
@@ -66,7 +69,7 @@ public:
     ~Distance_Restraint_Mgr();
     Distance_Restraint_Mgr(Structure *structure, Change_Tracker *change_tracker,
             Proxy_PBGroup *pbgroup)
-        : _pbgroup(pbgroup), _change_tracker(change_tracker), _structure(structure)
+        : _structure(structure), _change_tracker(change_tracker), _pbgroup(pbgroup)
     {
         change_tracker->register_mgr(std::type_index(typeid(this)), _py_name, _managed_class_py_name);
     }
@@ -90,9 +93,9 @@ private:
     std::set<Distance_Restraint *> _null_set;
     Atom_Map _atom_to_restraints;
     // std::set<Atom *> _mapped_atoms;
-    Proxy_PBGroup* _pbgroup;
     Structure* _structure;
     Change_Tracker* _change_tracker;
+    Proxy_PBGroup* _pbgroup;
     const std::string _py_name = "Distance_Restraint_Mgr";
     const std::string _managed_class_py_name = "Distance_Restraints";
 

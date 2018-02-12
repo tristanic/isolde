@@ -23,8 +23,8 @@ class Position_Restraint: public pyinstance::PythonInstance<Position_Restraint>
 public:
     Position_Restraint() {}
     ~Position_Restraint() { auto du=DestructionUser(this); }
-    Position_Restraint(Atom* atom, const Coord& target)
-        : _atom(atom)
+    Position_Restraint(Atom* atom, const Coord& target, Position_Restraint_Mgr *mgr)
+        : _atom(atom), _mgr(mgr)
     {
         set_target(target[0], target[1], target[2]);
     }
@@ -53,10 +53,12 @@ public:
     double radius() const;
     //! Provide a 4x4 OpenGL array transforming a primitive unit bond onto this restraint
     void bond_cylinder_transform(float *rot44) const;
+    Change_Tracker* change_tracker() const;
 
 private:
     Atom* _atom;
     Coord _target;
+    Position_Restraint_Mgr* _mgr;
     double _spring_constant = 0.0;
     bool _enabled = false;
 

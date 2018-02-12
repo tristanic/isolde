@@ -10,6 +10,11 @@ template class pyinstance::PythonInstance<isolde::Position_Restraint_Mgr>;
 namespace isolde
 {
 
+Change_Tracker* Position_Restraint::change_tracker() const
+{
+    return _mgr->change_tracker();
+}
+
 void Position_Restraint::target_vector(double *vector) const
 {
     for (size_t i=0; i<3; ++i)
@@ -78,7 +83,7 @@ Position_Restraint* Position_Restraint_Mgr::_new_restraint(Atom *atom, const Coo
     if (atom->element().number() == 1) {
         throw std::logic_error(error_hydrogen());
     }
-    Position_Restraint* restraint = new Position_Restraint(atom, target);
+    Position_Restraint* restraint = new Position_Restraint(atom, target, this);
     _atom_to_restraint[atom] = restraint;
     return restraint;
 }

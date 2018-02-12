@@ -2,14 +2,20 @@
 #include "dihedral_restraints.h"
 #include <pyinstance/PythonInstance.instantiate.h>
 
-template class pyinstance::PythonInstance<isolde::Dihedral_Restraint_Mgr>;
+template class pyinstance::PythonInstance<isolde::Proper_Dihedral_Restraint_Mgr>;
 template class pyinstance::PythonInstance<isolde::Proper_Dihedral_Restraint>;
 
 namespace isolde
 {
 
 template <class DType, class RType>
-RType* Dihedral_Restraint_Mgr_Base::new_restraint(DType *d)
+isolde::Change_Tracker* Dihedral_Restraint_Base<DType, RType>::change_tracker() const
+{
+    return _mgr->change_tracker();
+}
+
+template <class DType, class RType>
+RType* Dihedral_Restraint_Mgr_Base<DType, RType>::new_restraint(DType *d)
 {
     auto it = _dihedral_to_restraint.find(d);
     if (it != _dihedral_to_restraint.end())
@@ -21,15 +27,15 @@ RType* Dihedral_Restraint_Mgr_Base::new_restraint(DType *d)
 }
 
 template <class DType, class RType>
-RType* Dihedral_Restraint_Mgr_Base::_new_restraint(DType *d)
+RType* Dihedral_Restraint_Mgr_Base<DType, RType>::_new_restraint(DType *d)
 {
-    RType *r = new Dihedral_Restraint_Base(d);
+    RType *r = new RType(d, this);
     _dihedral_to_restraint[d] = r;
     return r;
 }
 
 template <class DType, class RType>
-RType* Dihedral_Restraint_Mgr_Base::get_restraint(DType *d, bool create)
+RType* Dihedral_Restraint_Mgr_Base<DType, RType>::get_restraint(DType *d, bool create)
 {
     auto it = _dihedral_to_restraint.find(d);
     if (it != _dihedral_to_restraint.end())

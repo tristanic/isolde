@@ -7,6 +7,7 @@
 #include "../util.h"
 #include "../atomic_cpp/dihedral.h"
 #include "../colors.h"
+#include "changetracker.h"
 #include <atomstruct/destruct.h>
 #include <atomstruct/AtomicStructure.h>
 #include <atomstruct/Atom.h>
@@ -20,16 +21,16 @@ namespace isolde
 {
 
 template <class DType, class RType>
-class Dihedral_Restraint_Mgr;
+class Dihedral_Restraint_Mgr_Base;
 
-template <class DType>
+template <class DType, class RType>
 class Dihedral_Restraint_Base
 {
 public:
-    Dihedral_Restraint() {}
-    ~Dihedral_Restraint() {auto du = DestructionUser(this);}
-    Dihedral_Restraint(DType *dihedral)
-        : _dihedral(dihedral) {}
+    Dihedral_Restraint_Base() {}
+    ~Dihedral_Restraint_Base() {auto du = DestructionUser(this);}
+    Dihedral_Restraint_Base(DType *dihedral, Dihedral_Restraint_Mgr_Base<DType, RType> *mgr)
+        : _dihedral(dihedral), _mgr(mgr) {}
     DType* get_dihedral() const {return _dihedral;}
     void set_target(const double &target) {_target=util::wrapped_angle(target);}
     void set_target_deg(const double &target) {set_target(util::radians(target));}
@@ -60,9 +61,11 @@ public:
     {
         throw std::logic_error(err_msg_not_implemented());
     }
+    isolde::Change_Tracker* change_tracker() const;
 
 private:
     DType *_dihedral;
+    Dihedral_Restraint_Mgr_Base<DType, RType> *_mgr;
     double _target = 0.0;
     double _spring_constant = 0.0;
     bool _enabled = false;
@@ -74,24 +77,21 @@ private:
 }; // Dihedral_Restraint_Base
 
 class Proper_Dihedral_Restraint:
-    public Dihedral_Restraint_Base<Proper_Dihedral>,
+    public Dihedral_Restraint_Base<Proper_Dihedral, Proper_Dihedral_Restraint>,
     public pyinstance::PythonInstance<Proper_Dihedral_Restraint>
-{
-
-}; // Proper_Dihedral_Restraint
+{}; // Proper_Dihedral_Restraint
 
 
 
 template <class DType, class RType>
 class Dihedral_Restraint_Mgr_Base
-    : public DestructionObserver,
-      public pyinstance::PythonInstance<Dihedral_Restraint_Mgr<Dtype, RType>>
+    : public DestructionObserver
 {
 public:
-    Dihedral_Restraint_Mgr() {}
-    ~Dihedral_Restraint_Mgr();
-    Dihedral_Restraint_Mgr(Structure *atomic_model, Change_Tracker *change_tracker)
-        : _atomic_model(atomic_model), _change_tracker(change_tracker),
+    Dihedral_Restraint_Mgr_Base() {}
+    ~Dihedral_Restraint_Mgr_Base();
+    Dihedral_Restraint_Mgr_Base(Structure *atomic_model, Change_Tracker *change_tracker)
+        : _atomic_model(atomic_model), _change_tracker(change_tracker)
     {
         change_tracker->register_mgr(std::type_index(typeid(this)), _py_name, _managed_class_py_name);
     }
@@ -128,7 +128,7 @@ class Proper_Dihedral_Restraint_Mgr:
 
 private:
     const std::string _py_name = "Proper_Dihedral_Restraint_Mgr";
-    const std::string _managed_class_py_name = "Proper_Dihedral_Restraint"
+    const std::string _managed_class_py_name = "Proper_Dihedral_Restraint";
 }; //Proper_Dihedral_Restraint_Mgr
 
 }
