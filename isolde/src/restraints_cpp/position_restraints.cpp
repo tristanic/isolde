@@ -34,44 +34,15 @@ double Position_Restraint::radius() const
 
 void Position_Restraint::bond_cylinder_transform(float *rot44) const
 {
-    const Coord &xyz0 = atom()->coord();
-    const Coord &xyz1 = get_target();
-    double bvec[3];
-    target_vector(bvec);
-    auto &ac = atom()->coord();
-    double d = geometry::l2_norm_3d(bvec);
-    if (d == 0) {
-        bvec[0]=0; bvec[1]=0; bvec[2]=0;
-    } else {
-        for (auto &b: bvec)
-            b/=d;
+    const Coord &c0 = atom()->coord();
+    const Coord &c1 = get_target();
+    float xyz0[3], xyz1[3];
+    for (size_t i=0; i<3; ++i)
+    {
+        xyz0[i] = c0[i];
+        xyz1[i] = c1[i];
     }
-    double c = bvec[2], c1;
-    if (c <= -1) c1 = 0;
-    else c1 = 1.0/(1.0+c);
-    double wx = -bvec[1], wy = bvec[0];
-    double cx = c1*wx, cy = c1*wy;
-    double r = radius();
-    double h = d*2;
-    *rot44++ = r*(cx*wx + c);
-    *rot44++ = r*cy*wx;
-    *rot44++ = -r*wy;
-    *rot44++ = 0;
-
-    *rot44++ = r*cx*wy;
-    *rot44++ = r*(cy*wy + c);
-    *rot44++ = r*wx;
-    *rot44++ = 0;
-
-    *rot44++ = h*wy;
-    *rot44++ = -h*wx;
-    *rot44++ = h*c;
-    *rot44++ = 0;
-
-    *rot44++ = (xyz0[0]+xyz1[0])/2;
-    *rot44++ = (xyz0[1]+xyz1[1])/2;
-    *rot44++ = (xyz0[2]+xyz1[2])/2;
-    *rot44++ = 1;
+    geometry::bond_cylinder_transform_gl<float>(xyz0, xyz1, radius(), rot44);
 
 }
 

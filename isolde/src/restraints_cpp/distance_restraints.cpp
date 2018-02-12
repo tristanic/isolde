@@ -23,8 +23,8 @@ Distance_Restraint::Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pb, Dista
     const double &target, const double &k)
     : Distance_Restraint(a1, a2, pb, mgr)
 {
-    _target = target;
-    _k = k;
+    set_target(target);
+    set_k(k);
     set_enabled(false);
 }
 
@@ -113,6 +113,11 @@ Distance_Restraint_Mgr::~Distance_Restraint_Mgr()
 void Distance_Restraint_Mgr::delete_restraints(const std::set<Distance_Restraint *> &delete_list)
 {
     auto db = DestructionBatcher(this);
+    _delete_restraints(delete_list);
+} //delete_restraints
+
+void Distance_Restraint_Mgr::_delete_restraints(const std::set<Distance_Restraint *> &delete_list )
+{
     for (auto d: delete_list) {
         _restraints.erase(d);
         for (auto &a: d->atoms()) {
@@ -124,7 +129,7 @@ void Distance_Restraint_Mgr::delete_restraints(const std::set<Distance_Restraint
         }
         delete d;
     }
-} //delete_restraints
+}
 
 
 void Distance_Restraint_Mgr::destructors_done(const std::set<void *>& destroyed)
@@ -144,6 +149,6 @@ void Distance_Restraint_Mgr::destructors_done(const std::set<void *>& destroyed)
             it++;
         }
     }
-    delete_restraints(to_delete);
+    _delete_restraints(to_delete);
 } //destructors_done
 } //namespace isolde;

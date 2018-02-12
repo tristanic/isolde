@@ -995,7 +995,7 @@ change_tracker_new()
     }
 }
 
-extern "C" EXPORT void*
+extern "C" EXPORT void
 change_tracker_delete(void *tracker)
 {
     Change_Tracker *t = static_cast<Change_Tracker *>(tracker);
@@ -1070,6 +1070,7 @@ position_restraint_mgr_num_restraints(void *mgr)
         return m->num_restraints();
     } catch (...) {
         molc_error();
+        return 0;
     }
 }
 
@@ -1361,4 +1362,249 @@ distance_restraint_pbond(void *restraint, size_t n, pyobject_t *pbondp)
 {
     Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
     error_wrap_array_get(d, n, &Distance_Restraint::pbond, pbondp);
+}
+
+/***************************************************************
+ *
+ * Proper_Dihedral_Restraint_Mgr functions
+ *
+ ***************************************************************/
+SET_PYTHON_INSTANCE(proper_dihedral_restraint_mgr, Proper_Dihedral_Restraint_Mgr)
+GET_PYTHON_INSTANCES(proper_dihedral_restraint_mgr, Proper_Dihedral_Restraint_Mgr)
+
+extern "C" EXPORT void*
+proper_dihedral_restraint_mgr_new(void *structure, void *change_tracker)
+{
+    Structure *s = static_cast<Structure *>(structure);
+    isolde::Change_Tracker *ct = static_cast<isolde::Change_Tracker *>(change_tracker);
+    try {
+        Proper_Dihedral_Restraint_Mgr *mgr = new Proper_Dihedral_Restraint_Mgr(s, ct);
+        return mgr;
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+} //distance_restraint_mgr_new
+
+extern "C" EXPORT void
+proper_dihedral_restraint_mgr_delete(void *mgr)
+{
+    Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
+    try {
+        delete m;
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT size_t
+proper_dihedral_restraint_mgr_num_restraints(void *mgr)
+{
+    Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
+    try {
+        return m->num_restraints();
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT size_t
+proper_dihedral_restraint_mgr_get_restraint(void *mgr, void *dihedral,
+        npy_bool create, size_t n, pyobject_t *restraint)
+{
+    Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
+    Proper_Dihedral **d = static_cast<Proper_Dihedral **>(dihedral);
+    try {
+        size_t found = 0;
+        for (size_t i=0; i<n; ++i) {
+            auto r = m->get_restraint(*d++, create);
+            if (r!=nullptr) {
+                *restraint++ = r;
+                found++;
+            }
+        }
+        return found;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT PyObject*
+proper_dihedral_mgr_visible_restraints(void *mgr)
+{
+    Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
+    try {
+        auto vis = m->visible_restraints();
+        void **rptr;
+        PyObject *ra = python_voidp_array(vis.size(), &rptr);
+        for (auto r: vis) {
+            *rptr++ = r;
+        }
+        return ra;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_mgr_delete_restraint(void *mgr, void *restraint, size_t n)
+{
+    Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        std::set<Proper_Dihedral_Restraint *> to_delete;
+        for (size_t i=0; i<n; ++i) {
+            to_delete.insert(*r++);
+        }
+        m->delete_restraints(to_delete);
+    } catch (...) {
+        molc_error();
+    }
+}
+/***************************************************************
+ *
+ * Proper_Dihedral_Restraint functions
+ *
+ ***************************************************************/
+
+SET_PYTHON_CLASS(proper_dihedral_restraint, Proper_Dihedral_Restraint)
+GET_PYTHON_INSTANCES(proper_dihedral_restraint, Proper_Dihedral_Restraint)
+
+extern "C" EXPORT void
+proper_dihedral_restraint_target(void *restraint, size_t n, double *target)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(target++) = (*r++)->get_target();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_proper_dihedral_restraint_target(void *restraint, size_t n, double *target)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->set_target(*(target++));
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(flag++) = (*r++)->is_enabled();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_proper_dihedral_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->set_enabled(*(flag++));
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_restraint_display(void *restraint, size_t n, npy_bool *flag)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(flag++) = (*r++)->get_display();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_proper_dihedral_restraint_display(void *restraint, size_t n, npy_bool *flag)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->set_display(*(flag++));
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_restraint_visible(void *restraint, size_t n, npy_bool *flag)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(flag++) = (*r++)->visible();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_restraint_k(void *restraint, size_t n, double *spring_constant)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(spring_constant++) = (*r++)->get_spring_constant();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_proper_dihedral_restraint_k(void *restraint, size_t n, double *spring_constant)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->set_spring_constant(*(spring_constant++));
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_restraint_annotation_transform(void *restraint, size_t n, double *tf1, double *tf2)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        double transforms[32];
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->get_annotation_transform(transforms);
+            double *ttf1 = transforms, *ttf2 = transforms+16;
+            for (size_t j=0; j<16; ++j) {
+                *(tf1++) = *(ttf1++);
+                *(tf2++) = *(ttf2++);
+            }
+        }
+    } catch (...) {
+        molc_error();
+    }
 }

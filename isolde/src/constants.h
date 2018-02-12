@@ -14,6 +14,7 @@ const double CIS_CUTOFF = M_PI/6.0;
 const double RESTRAINT_MAX_RADIUS = 0.4;
 const double RESTRAINT_MIN_RADIUS = 0.025;
 const double MAX_SPRING_CONSTANT = 5000.0;
+const double Z_AXIS[3] = {0.0, 0.0, 1.0};
 
 }
 

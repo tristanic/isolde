@@ -42,9 +42,10 @@ public:
     typedef Coord Coords[4];
     typedef Bond* Bonds[3];
 
-private:
-
+protected:
     Atoms _atoms;
+
+private:
     Coords _coords;
     Bonds _bonds;
     Residue *_residue;
@@ -74,7 +75,15 @@ public:
     virtual Atom* chiral_center() const {
         throw std::invalid_argument("Chiral center is only defined for a Chiral_Dihedral!");
     }
-
+    //! Returns true only if all four atoms are visible.
+    virtual bool visible() const
+    {
+        for (auto a: _atoms) {
+            if (!(a->visible()))
+                return false;
+        }
+        return true;
+    }
     const Coords &coords() const;
 
 }; // class Dihedral
@@ -94,6 +103,11 @@ public:
     Proper_Dihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4, Residue* owner, std::string name);
     const Bonds& bonds() const { return _bonds; }
     Bond* axial_bond() const { return bonds()[1]; }
+    //! Returns true if both axial bond atoms are visible.
+    bool visible() const
+    {
+        return _atoms[1]->visible() && _atoms[2]->visible();
+    }
 
 private:
     Bonds _bonds;

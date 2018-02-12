@@ -31,8 +31,11 @@ public:
             const double &target, const double &k);
     double get_target() const { return _target; }
     void set_target(double target) { _target=target; }
-    double get_k() const { return _k; }
-    void set_k(double k) { _k = k; }
+    double get_k() const { return _spring_constant; }
+    void set_k(double k)
+    {
+        _spring_constant = k<0 ? 0.0 : ( k > MAX_SPRING_CONSTANT ? MAX_SPRING_CONSTANT : k);
+    }
     bool enabled() const { return _enabled; }
     void set_enabled(bool flag) {
         _enabled = flag;
@@ -52,7 +55,7 @@ private:
     Pseudobond *_pbond;
     Distance_Restraint_Mgr *_mgr;
     double _target = 0;
-    double _k = 0;
+    double _spring_constant = 0;
     bool _enabled=false;
     const char* err_msg_bonded()
     { return "Can't create a distance restraint between bonded atoms!";}
@@ -98,7 +101,7 @@ private:
     Proxy_PBGroup* _pbgroup;
     const std::string _py_name = "Distance_Restraint_Mgr";
     const std::string _managed_class_py_name = "Distance_Restraints";
-
+    void _delete_restraints(const std::set<Distance_Restraint *>& delete_list);
 
     const char* error_same_atom() const {
         return "Cannot bond an atom to itself!";

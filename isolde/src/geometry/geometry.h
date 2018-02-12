@@ -129,6 +129,145 @@ inline R dihedral_angle(const T& p0, const T& p1, const T& p2, const T& p3)
     return atan2(y, x);
 }
 
+template<typename T>
+void multiply_transforms(T tf1[3][4], T tf2[3][4], T out[3][4])
+{
+    const T ll[4] = {0, 0, 0, 1};
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            out[i][j] = tf1[i][0]*tf2[0][j] + tf1[i][1]*tf2[1][j]
+                      + tf1[i][2]*tf2[2][j] + tf1[i][3]*ll[j];
+        }
+    }
+} // multiply_transforms
+
+template<typename T>
+void multiply_transforms_gl(T* tf1, T* tf2, T* out)
+{
+    for (size_t i=0; i<4; ++i) {
+        for(size_t j=0; j<4; ++j) {
+            size_t row = 4*i;
+            out[j+row] = tf1[row]*tf2[j] + tf1[row+1]*tf2[4+j]
+                + tf1[row+2]*tf2[8+j] + tf1[row+3]*tf2[12+j];
+        }
+    }
+}
+
+
+// Fill out with a 3x4 matrix of rotation matrices (translation = 0)
+template <typename T>
+void rotation(T normalized_axis[3], const T &angle, T* out)
+{
+    T sa, ca, k, ax, ay, az;
+    ax = normalized_axis[0]; ay = normalized_axis[1]; az = normalized_axis[2];
+    sa = sin(angle);
+    ca = cos(angle);
+    k = 1 - ca;
+
+    *out++ = 1 + k*( ax*ax -1);
+    *out++ = -az*sa + k*ax*ay;
+    *out++ = ay*sa + k*ax*ax;
+    *out++ = 0;
+    *out++ = az*sa + k*ax*ay;
+    *out++ = 1 + k*(ay*ay - 1);
+    *out++ = -ax*sa + k*ay*az;
+    *out++ = 0;
+    *out++ = -ay*sa + k*ax*az;
+    *out++ = ax*sa + k*ay*az;
+    *out++ = 1 + k*(az*az - 1);
+    *out++ = 0;
+
+} // rotations
+
+//! Fill out with a 4x4 OpenGL rotation matrix about the given axis
+/*! NOTE: expects the rotation axis to be already normalised!
+*/
+template <typename T>
+void rotation_gl(const T normalized_axis[3], const T &angle, T* out)
+{
+    const T ca = cos(angle);
+    const T sa = sin(angle);
+    T ax = normalized_axis[0], ay = normalized_axis[1], az = normalized_axis[2];
+    const T k = 1-ca;
+    *out++ = 1 + k*( ax*ax -1);
+    *out++ = az*sa + k*ax*ay;
+    *out++ = -ay*sa + k*ax*az;
+    *out++=0;
+
+    *out++ = -az*sa + k*ax*ay;
+    *out++ = 1 + k*(ay*ay - 1);
+    *out++ = ax*sa + k*ay*az;
+    *out++=0;
+
+    *out++ = ay*sa + k*ax*ax;
+    *out++ = -ax*sa + k*ay*az;
+    *out++ = 1 + k*(az*az - 1);
+    *out++ = 0;
+
+    *out++ = 0;
+    *out++ = 0;
+    *out++ = 0;
+    *out++ = 1;
+}
+
+//! Flip a 4x4 OpenGL transformation matrix on the x axis.
+template <typename T>
+void flip_on_x_gl(T *mat44)
+{
+    mat44[1]*=-1;
+    mat44[2]*=-1;
+    mat44[5]*=-1;
+    mat44[6]*=-1;
+    mat44[9]*=-1;
+    mat44[10]*=-1;
+    mat44[13]*=-1;
+    mat44[14]*=-1;
+}
+
+
+template <typename T>
+void bond_cylinder_transform_gl(T xyz0[3], T xyz1[3], T r, T *rot44)
+{
+    T bvec[3];
+    for (size_t i=0; i<3; i++) {
+        bvec[i] = xyz1[i]-xyz0[i];
+    }
+    T d = l2_norm_3d(bvec);
+    if (d == 0) {
+        bvec[0]=0; bvec[1]=0; bvec[2]=0;
+    } else {
+        for (auto &b: bvec)
+            b/=d;
+    }
+    double c = bvec[2], c1;
+    if (c <= -1) c1 = 0;
+    else c1 = 1.0/(1.0+c);
+    double wx = -bvec[1], wy = bvec[0];
+    double cx = c1*wx, cy = c1*wy;
+    double h = d*2;
+    *rot44++ = r*(cx*wx + c);
+    *rot44++ = r*cy*wx;
+    *rot44++ = -r*wy;
+    *rot44++ = 0;
+
+    *rot44++ = r*cx*wy;
+    *rot44++ = r*(cy*wy + c);
+    *rot44++ = r*wx;
+    *rot44++ = 0;
+
+    *rot44++ = h*wy;
+    *rot44++ = -h*wx;
+    *rot44++ = h*c;
+    *rot44++ = 0;
+
+    *rot44++ = (xyz0[0]+xyz1[0])/2;
+    *rot44++ = (xyz0[1]+xyz1[1])/2;
+    *rot44++ = (xyz0[2]+xyz1[2])/2;
+    *rot44++ = 1;
+
+
+}
+
 } // namespace geometry
 } // namespace isolde
 #endif //isolde_geometry

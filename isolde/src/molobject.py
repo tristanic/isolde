@@ -66,6 +66,11 @@ def _position_restraints(p):
 def _pseudobond_or_none(p):
     from chimerax.core.atomic import Pseudobond
     return Pseudobond.c_ptr_to_py_inst(p) if p else None
+def _proper_dihedral_restraint_or_none(p):
+    return Proper_Dihedral_Restraint.c_ptr_to_py_inst(p) if p else None
+def _proper_dihedral_restraints(p):
+    from .molarray import Proper_Dihedral_Restraints
+    return Proper_Dihedral_Restraints(p)
 
 class _Dihedral_Mgr:
     '''Base class. Do not instantiate directly.'''
@@ -887,7 +892,7 @@ class Restraint_Change_Tracker:
     triggers as necessary.
     '''
     def __init__(self, session, c_pointer=None):
-        cname = type(self).__name__.lower()
+        cname = 'change_tracker'
         if c_pointer is None:
             if hasattr(session, 'isolde_changes'):
                 if not session.isolde_changes.deleted():
@@ -906,7 +911,7 @@ class _Restraint_Mgr(Model):
     '''Base class. Do not instantiate directly.'''
     def __init__(self, name, model, c_pointer=None):
         session = model.session
-        if not hasattr(self, _change_tracker):
+        if not hasattr(self, '_change_tracker'):
             if not hasattr(session, 'isolde_changes') or session.isolde_changes.deleted:
                 ct = self._change_tracker = Restraint_Change_Tracker(session)
             else:
@@ -1033,6 +1038,22 @@ class Distance_Restraint_Mgr_Base(_Restraint_Mgr):
     #     super().delete(self)
 
 
+class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
+    def __init__(self, model, c_pointer = None):
+        super().__init__('Proper Dihedral Restraints', model, c_pointer)
+
+    def _get_restraints(self, dihedrals, create=False):
+        n = len(dihedrals)
+        f = c_function('proper_dihedral_restraint_mgr_get_restraint',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool, ctypes.c_size_t,
+                ctypes.c_void_p),
+            ret = ctypes.c_size_t)
+        ptrs = numpy.empty(n, cptr)
+        found = f(self._c_pointer, dihedrals._c_pointers, create, n, pointer(ptrs))
+        return _proper_dihedral_restraints(ptrs[0:n])
+
+    def add_restraints(self, dihedrals):
+        return self._get_restraints(dihedrals, create=True)
 
 class _Dihedral(State):
     '''
@@ -1221,10 +1242,47 @@ class Distance_Restraint(State):
             doc = 'Current distance between restrained atoms in Angstroms. Read only.')
     pseudobond = c_property('distance_restraint_pbond', cptr, astype=_pseudobond_or_none, read_only=True,
             doc = 'Pseudobond visualisation of the restraint. Read only.')
+
+class Proper_Dihedral_Restraint(State):
+    def __init__(self, c_pointer):
+        set_c_pointer(self, c_pointer)
+
+    @property
+    def cpp_pointer(self):
+        '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
+        return self._c_pointer.value
+
+    @property
+    def deleted(self):
+        '''Has the C++ side been deleted?'''
+        return not hasattr(self, '_c_pointer')
+
+    def __str__(self):
+        return "Not implemented"
+
+    def reset_state(self):
+        pass
+
+
+
+    target = c_property('proper_dihedral_restraint_target', float64,
+        doc = 'Target angle for this restraint in radians. Can be written.')
+    enabled = c_property('proper_dihedral_restraint_enabled', npy_bool,
+        doc = 'Enable/disable this restraint or get its current state.')
+    display = c_property('proper_dihedral_restraint_display', npy_bool,
+        doc = 'Set whether you want this restraint to be displayed when active.')
+    visible = c_property('proper_dihedral_restraint_visible', npy_bool, read_only=True,
+        doc = 'Is this restraint currently visible? Read-only.')
+    spring_constant = c_property('proper_dihedral_restraint_k', float64,
+        doc = 'Get/set the spring constant for this restraint in kJ mol-1 rad-2')
+
+
+
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance
 # from the pointer (needed by Collections)
-for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint, Distance_Restraint):
+for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint,
+                  Distance_Restraint, Proper_Dihedral_Restraint,):
     cname = class_obj.__name__.lower()
     func_name = 'set_' + cname + '_pyclass'
     f = c_function(func_name, args = (ctypes.py_object,))
@@ -1238,7 +1296,7 @@ for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint, Distance_R
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
 
 for class_obj in (Proper_Dihedral_Mgr, Rama_Mgr, Rota_Mgr, Position_Restraint_Mgr_Base,
-            Distance_Restraint_Mgr_Base,):
+            Distance_Restraint_Mgr_Base, Proper_Dihedral_Restraint_Mgr):
     func_name = cname + '_py_inst'
     class_obj.c_ptr_to_py_inst = lambda ptr, fname=func_name: c_function(fname,
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))

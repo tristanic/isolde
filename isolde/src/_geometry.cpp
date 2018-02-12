@@ -31,27 +31,9 @@ void get_dihedrals(double *coords, int n, double * out)
 void rotations(double axis[3], double* angles, int n, double* out)
 {
     normalize_vector_3d<double>(axis);
-    double angle, sa, ca, k, ax, ay, az;
-    ax = axis[0]; ay = axis[1]; az = axis[2];
     for (int i = 0; i < n; ++i) {
-        angle = angles[i];
-        sa = sin(angle);
-        ca = cos(angle);
-        k = 1 - ca;
-
-        *out++ = 1 + k*( ax*ax -1);
-        *out++ = -az*sa + k*ax*ay;
-        *out++ = ay*sa + k*ax*ax;
-        *out++ = 0;
-        *out++ = az*sa + k*ax*ay;
-        *out++ = 1 + k*(ay*ay - 1);
-        *out++ = -ax*sa + k*ay*az;
-        *out++ = 0;
-        *out++ = -ay*sa + k*ax*az;
-        *out++ = ax*sa + k*ay*az;
-        *out++ = 1 + k*(az*az - 1);
-        *out++ = 0;
-
+        rotation<double>(axis, *angles++, out);
+        out += 12;
     }
 } // rotations
 
@@ -71,17 +53,21 @@ void scale_transforms(double* scales, int n, double* transforms)
     }
 } // scale_transforms
 
-
 void multiply_transforms(double tf1[3][4], double tf2[3][4], double out[3][4])
 {
-    const double ll[4] = {0, 0, 0, 1};
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            out[i][j] = tf1[i][0]*tf2[0][j] + tf1[i][1]*tf2[1][j]
-                      + tf1[i][2]*tf2[2][j] + tf1[i][3]*ll[j];
-        }
-    }
-} // multiply_transforms
+    multiply_transforms<double>(tf1, tf2, out);
+}
+
+// void multiply_transforms(double tf1[3][4], double tf2[3][4], double out[3][4])
+// {
+//     const double ll[4] = {0, 0, 0, 1};
+//     for (int i = 0; i < 3; ++i) {
+//         for (int j = 0; j < 4; ++j) {
+//             out[i][j] = tf1[i][0]*tf2[0][j] + tf1[i][1]*tf2[1][j]
+//                       + tf1[i][2]*tf2[2][j] + tf1[i][3]*ll[j];
+//         }
+//     }
+// } // multiply_transforms
 
 void flip_rotate_and_shift(int n, npy_bool* flip, double flip_op[3][4], double* rot, double* shift, double* out)
 {

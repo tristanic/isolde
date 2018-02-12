@@ -1,11 +1,13 @@
 
+import numpy
 from numpy import uint8, int32, uint32, float64, float32, uintp, byte, bool as npy_bool, integer, empty, array
 from chimerax.core.atomic.molc import string, cptr, pyobject, set_cvec_pointer, pointer, size_t
 from chimerax.core.atomic.molarray import Collection
 from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
-from .molobject import Proper_Dihedral, Rotamer, Position_Restraint, Distance_Restraint
+from .molobject import Proper_Dihedral, Rotamer, Position_Restraint, \
+        Distance_Restraint, Proper_Dihedral_Restraint
 import ctypes
 
 from chimerax.core.atomic import Atom, Atoms, Residue, Residues
@@ -28,6 +30,8 @@ def _non_null_proper_dihedrals(p):
     return Proper_Dihedrals(p[p!=0])
 def _atoms_four_tuple(p):
     return tuple((Atoms(p[:,i].copy()) for i in range(4)))
+def _proper_dihedral_restraints(p):
+    return Proper_Dihedral_Restraints(p)
 
 
 
@@ -129,7 +133,7 @@ class Distance_Restraints(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, Distance_Restraint, Distance_Restraints)
 
-    enabled =cvec_property('distance_restraint_enabled', npy_bool,
+    enableds =cvec_property('distance_restraint_enabled', npy_bool,
             doc = 'Enable/disable these restraints or get their current states.')
     atoms = cvec_property('distance_restraint_atoms', cptr, 2, astype=_atoms_pair, read_only=True,
             doc = 'Returns a 2-tuple of :class:`Atoms` containing the restrained atoms. Read only.' )
@@ -141,3 +145,29 @@ class Distance_Restraints(Collection):
             doc = 'Current distances between restrained atoms in Angstroms. Read only.')
     pseudobonds = cvec_property('distance_restraint_pbond', cptr, astype=_pseudobonds, read_only=True,
             doc = 'Pseudobond visualisations of the restraints. Read only.')
+
+class Proper_Dihedral_Restraints(Collection):
+    def __init__(self, c_pointers=None):
+        super().__init__(c_pointers, Proper_Dihedral_Restraint, Proper_Dihedral_Restraints)
+
+    def _annotation_transforms(self):
+        n = len(self)
+        f = c_function('proper_dihedral_restraint_annotation_transform',
+            args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p))
+        tf1 = numpy.empty((n,4,4), float64)
+        tf2 = numpy.empty((n,4,4), float64)
+        f(self._c_pointers, n, pointer(tf1), pointer(tf2))
+        from chimerax.core.geometry import Places
+        return (Places(opengl_array=tf1), Places(opengl_array=tf2))
+
+
+    targets = cvec_property('proper_dihedral_restraint_target', float64,
+        doc = 'Target angles for each restraint in radians. Can be written.')
+    enableds = cvec_property('proper_dihedral_restraint_enabled', npy_bool,
+        doc = 'Enable/disable each restraint or get their current states.')
+    displays = cvec_property('proper_dihedral_restraint_display', npy_bool,
+        doc = 'Set whether you want each restraint to be displayed when active.')
+    visibles = cvec_property('proper_dihedral_restraint_visible', npy_bool, read_only=True,
+        doc = 'Is each restraint currently visible? Read-only.')
+    spring_constants = cvec_property('proper_dihedral_restraint_k', float64,
+        doc = 'Get/set the spring constant for each restraint in kJ mol-1 rad-2')
