@@ -83,15 +83,12 @@ public:
                 if (cutoffs[i] == cutoffs[i+1])
                     // avoid divide-by-zero
                     continue;
-                if (value >= cutoffs[i])
+                if (value < cutoffs[i])
                     break;
             }
-            interpolate_colors(_colors[i], _colors[i+1], cutoffs[i], cutoffs[i+1], value, rgba);
+            interpolate_colors(_colors[i-1], _colors[i], cutoffs[i-1], cutoffs[i], value, rgba);
         }
-
     }
-
-
 private:
     std::vector<std::array<double, 4>> _colors;
     size_t _num_colors;
