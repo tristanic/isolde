@@ -75,16 +75,20 @@ public:
     {
         if (value <= cutoffs[0])
             copy_color(_colors[0], rgba);
-        else if (value >= cutoffs[_num_colors-1])
+        else if (value >= cutoffs[_num_colors-1]) {
             copy_color(_colors.back(), rgba);
+        }
         else {
             size_t i=0;
-            for (; i<_num_colors; ++i) {
-                if (cutoffs[i] == cutoffs[i+1])
+            for (;i<_num_colors;) {
+                if ((i<_num_colors-1) && cutoffs[i] == cutoffs[i+1]) {
                     // avoid divide-by-zero
+                    i++;
                     continue;
+                }
                 if (value < cutoffs[i])
                     break;
+                i++;
             }
             interpolate_colors(_colors[i-1], _colors[i], cutoffs[i-1], cutoffs[i], value, rgba);
         }
