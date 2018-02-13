@@ -15,15 +15,38 @@ Change_Tracker* Position_Restraint::change_tracker() const
     return _mgr->change_tracker();
 }
 
-void Position_Restraint::target_vector(double *vector) const
+void Position_Restraint::set_target(const Real &x, const Real &y, const Real &z)
+{
+    _target[0]=x; _target[1]=y; _target[2]=z;
+    mgr()->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
+}
+
+void Position_Restraint::set_target(Real *target)
 {
     for (size_t i=0; i<3; ++i)
-        *vector++ = _target[i]-_atom->coord()[i];
+        _target[i] = *(target++);
+        mgr()->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
 }
 
 void Position_Restraint::set_k(double k)
 {
     _spring_constant = k<0 ? 0.0 : ( k > MAX_SPRING_CONSTANT ? MAX_SPRING_CONSTANT : k);
+    mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
+}
+
+void Position_Restraint::set_enabled(bool flag)
+{
+    if (_enabled != flag)
+    {
+        _enabled = flag;
+        mgr()->track_change(this, change_tracker()->REASON_ENABLED_CHANGED);
+    }
+}
+
+void Position_Restraint::target_vector(double *vector) const
+{
+    for (size_t i=0; i<3; ++i)
+        *vector++ = _target[i]-_atom->coord()[i];
 }
 
 double Position_Restraint::radius() const
@@ -56,6 +79,7 @@ Position_Restraint* Position_Restraint_Mgr::_new_restraint(Atom *atom, const Coo
     }
     Position_Restraint* restraint = new Position_Restraint(atom, target, this);
     _atom_to_restraint[atom] = restraint;
+    track_created(restraint);
     return restraint;
 }
 
