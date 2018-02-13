@@ -1073,16 +1073,6 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
                 raise TypeError('Each color should be an array of 4 values in the range (0,255)')
         f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc))
 
-    def get_annotation_colors(self, restraints):
-        f = c_function('proper_dihedral_mgr_get_annotation_colors',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
-                ctypes.POINTER(ctypes.c_uint8)))
-        n = len(restraints)
-        colors = numpy.empty((n,4), uint8)
-        f(self._c_pointer, restraints._c_pointers, n, pointer(colors))
-        return colors
-
-
 class _Dihedral(State):
     '''
     Base class for Proper_Dihedral and Improper_Dihedral classes. Do not
@@ -1305,7 +1295,8 @@ class Proper_Dihedral_Restraint(State):
         doc = 'Is this restraint currently visible? Read-only.')
     spring_constant = c_property('proper_dihedral_restraint_k', float64,
         doc = 'Get/set the spring constant for this restraint in kJ mol-1 rad-2')
-
+    annotation_color = c_property('proper_dihedral_restraint_annotation_color', uint8, 4, read_only=True,
+        doc = 'Get the color of the annotation for this restraint according to the current colormap. Read only.')
 
 
 # tell the C++ layer about class objects whose Python objects can be instantiated directly

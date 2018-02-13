@@ -1408,19 +1408,6 @@ proper_dihedral_restraint_mgr_set_colors(void *mgr, uint8_t *maxc, uint8_t *midc
     }
 }
 
-extern "C" EXPORT void
-proper_dihedral_mgr_get_annotation_colors(void *mgr, void *restraint, size_t n, uint8_t *color)
-{
-    Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
-    try {
-        m->get_annotation_colors(r, n, color);
-    } catch (...) {
-        molc_error();
-    }
-}
-
-
 extern "C" EXPORT size_t
 proper_dihedral_restraint_mgr_num_restraints(void *mgr)
 {
@@ -1653,6 +1640,20 @@ proper_dihedral_restraint_annotation_transform(void *restraint, size_t n, double
                 *(tf1++) = *(ttf1++);
                 *(tf2++) = *(ttf2++);
             }
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_restraint_annotation_color(void *restraint, size_t n, uint8_t *color)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->get_annotation_color(color);
+            color +=4;
         }
     } catch (...) {
         molc_error();

@@ -173,3 +173,5 @@ class Proper_Dihedral_Restraints(Collection):
         doc = 'Is each restraint currently visible? Read-only.')
     spring_constants = cvec_property('proper_dihedral_restraint_k', float64,
         doc = 'Get/set the spring constant for each restraint in kJ mol-1 rad-2')
+    annotation_colors = cvec_property('proper_dihedral_restraint_annotation_color', uint8, 4, read_only=True,
+        doc = 'Get the annotation color for each restraint according to the current colormap. Read only.')

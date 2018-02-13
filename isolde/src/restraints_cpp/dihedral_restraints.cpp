@@ -61,24 +61,24 @@ RType* Dihedral_Restraint_Mgr_Base<DType, RType>::new_restraint(DType *d)
 template <class DType, class RType>
 RType* Dihedral_Restraint_Mgr_Base<DType, RType>::_new_restraint(DType *d)
 {
-    RType *r = new RType(d, change_tracker());
+    RType *r = new RType(d, static_cast<Dihedral_Restraint_Change_Mgr *>(this));
     _dihedral_to_restraint[d] = r;
     return r;
 }
 
-template <class DType, class RType>
-void Dihedral_Restraint_Mgr_Base<DType, RType>::set_colors(uint8_t *maxc, uint8_t *midc, uint8_t *minc)
-{
-    colors::color thecolors[3];
-    for (size_t i=0; i<4; ++i)
-    {
-        thecolors[0][i] = ((double) *(minc++)) / 255.0;
-        thecolors[1][i] = ((double) *(midc++)) / 255.0;
-        thecolors[2][i] = ((double) *(maxc++)) / 255.0;
-    }
-    _colormap = colors::variable_colormap(thecolors, 3);
-
-}
+// template <class DType, class RType>
+// void Dihedral_Restraint_Mgr_Base<DType, RType>::set_colors(uint8_t *maxc, uint8_t *midc, uint8_t *minc)
+// {
+//     colors::color thecolors[3];
+//     for (size_t i=0; i<4; ++i)
+//     {
+//         thecolors[0][i] = ((double) *(minc++)) / 255.0;
+//         thecolors[1][i] = ((double) *(midc++)) / 255.0;
+//         thecolors[2][i] = ((double) *(maxc++)) / 255.0;
+//     }
+//     _colormap = colors::variable_colormap(thecolors, 3);
+//
+// }
 
 template <class DType, class RType>
 RType* Dihedral_Restraint_Mgr_Base<DType, RType>::get_restraint(DType *d, bool create)
@@ -112,8 +112,8 @@ std::vector<RType *> Dihedral_Restraint_Mgr_Base<DType, RType>::visible_restrain
  ***************************************************/
 
  Proper_Dihedral_Restraint::Proper_Dihedral_Restraint(
-     Proper_Dihedral *dihedral, Change_Tracker *ct)
-     : Dihedral_Restraint_Base<Proper_Dihedral>(dihedral, ct)
+     Proper_Dihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr)
+     : Dihedral_Restraint_Base<Proper_Dihedral>(dihedral, mgr)
      {}
 
 
@@ -154,8 +154,18 @@ void Proper_Dihedral_Restraint::get_annotation_transform(double *tf)
     for (size_t i = 0; i<16; ++i) {
         tf1[i] = temp[i];
     }
+} //get_annontation_transform
 
-}
+void Proper_Dihedral_Restraint::get_annotation_color(uint8_t *color)
+{
+    colors::color thecolor;
+    colormap()->interpolate(std::abs(offset()), _cutoffs, thecolor);
+    for (size_t j=0; j<4; ++j) {
+        *(color++) = (uint8_t)(thecolor[j]*255.0);
+    }
+} //get_annotation_color
+
+
 
 template class Dihedral_Restraint_Base<Proper_Dihedral>;
 template class Dihedral_Restraint_Mgr_Base<Proper_Dihedral, Proper_Dihedral_Restraint>;
