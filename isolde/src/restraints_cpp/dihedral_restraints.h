@@ -66,10 +66,18 @@ public:
     Dihedral_Restraint_Base(DType *dihedral, Dihedral_Restraint_Change_Mgr *mgr)
         : _dihedral(dihedral), _mgr(mgr) {}
     DType* get_dihedral() const {return _dihedral;}
-    virtual void set_target(double target) {}
     double get_target() const {return _target;}
+    /* Setters need to be implemented in the derived classes to ensure the
+     * correct pointer is handed to the change tracker.
+     */
+    virtual void set_target(double target) {}
     virtual void set_enabled(bool flag) {}
     virtual void set_display(bool flag) {}
+    virtual void set_spring_constant(const double &k) {}
+    virtual void set_cutoff(double cutoff) {}
+
+
+
     bool get_display() const { return _display; }
     bool visible() const
     {
@@ -77,10 +85,7 @@ public:
     }
     bool is_enabled() const { return _enabled; }
     //! Set the restraint spring constant in kJ mol-1 rad-1
-    virtual void set_spring_constant(const double &k) {}
     double get_spring_constant() const {return _spring_constant;}
-    // Optional cutoff angle below which no force will be applied
-    void set_cutoff(double cutoff) { _cutoff = cutoff; _cutoffs[1] = cutoff; }
     double get_cutoff() const { return _cutoff; }
     //! Returns (current angle) - (target angle) in radians
     double offset() const {return util::wrapped_angle(_dihedral->angle()-_target);}
@@ -148,6 +153,13 @@ public:
     {
         _spring_constant = k<0 ? 0.0 : ( k > MAX_SPRING_CONSTANT ? MAX_SPRING_CONSTANT : k);
         mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
+    }
+
+    // Optional cutoff angle below which no force will be applied
+    void set_cutoff(double cutoff)
+    {
+        _cutoff = cutoff; _cutoffs[1] = cutoff;
+        mgr()->track_change(this, change_tracker()->REASON_CUTOFF_CHANGED);
     }
 
 

@@ -28,7 +28,11 @@ Distance_Restraint::Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pb, Dista
     set_enabled(false);
 }
 
-Change_Tracker* Distance_Restraint::change_tracker() const { return _mgr->change_tracker(); }
+Change_Tracker* Distance_Restraint:: change_tracker() const
+{
+    return _mgr->change_tracker();
+}
+
 
 Distance_Restraint* Distance_Restraint_Mgr::new_restraint(Atom *a1, Atom *a2)
 {
@@ -69,6 +73,7 @@ Distance_Restraint* Distance_Restraint_Mgr::_new_restraint(Atom *a1, Atom *a2)
     _restraints.insert(d);
     _atom_to_restraints[a1].insert(d);
     _atom_to_restraints[a2].insert(d);
+    track_created(d);
     return d;
 }
 
@@ -151,4 +156,7 @@ void Distance_Restraint_Mgr::destructors_done(const std::set<void *>& destroyed)
     }
     _delete_restraints(to_delete);
 } //destructors_done
+
+
+
 } //namespace isolde;

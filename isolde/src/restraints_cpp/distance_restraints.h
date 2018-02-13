@@ -74,7 +74,7 @@ public:
             Proxy_PBGroup *pbgroup)
         : _structure(structure), _change_tracker(change_tracker), _pbgroup(pbgroup)
     {
-        change_tracker->register_mgr(std::type_index(typeid(this)), _py_name, _managed_class_py_name);
+        change_tracker->register_mgr(_mgr_type, _py_name, _managed_class_py_name);
     }
 
     Distance_Restraint* new_restraint(Atom *a1, Atom *a2);
@@ -88,9 +88,12 @@ public:
     typedef std::unordered_map<Atom*, std::set<Distance_Restraint *> > Atom_Map;
     Structure* structure() const { return _structure; }
     Change_Tracker* change_tracker() const { return _change_tracker; }
+    void track_created(const void *r) { change_tracker()->add_created(_mgr_type, this, r); }
+    void track_change(const void *r, int reason) {change_tracker()->add_modified(_mgr_type, this, r, reason);}
 
     virtual void destructors_done(const std::set<void*>& destroyed);
 private:
+    std::type_index _mgr_type = std::type_index(typeid(this));
     Distance_Restraint* _new_restraint(Atom *a1, Atom *a2);
     std::set<Distance_Restraint *> _restraints;
     std::set<Distance_Restraint *> _null_set;

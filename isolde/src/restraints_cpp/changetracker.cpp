@@ -14,6 +14,7 @@ Change_Tracker::Change_Tracker() {
     _reason_strings[REASON_SPRING_CONSTANT_CHANGED] = std::string("spring constant changed");
     _reason_strings[REASON_DISPLAY_CHANGED] = std::string("display changed");
     _reason_strings[REASON_ENABLED_CHANGED] = std::string("enabled/disabled");
+    _reason_strings[REASON_CUTOFF_CHANGED] = std::string("cutoff changed");
 }
 
 } //namespace isolde

@@ -1518,7 +1518,7 @@ proper_dihedral_restraint_mgr_get_restraint(void *mgr, void *dihedral,
 }
 
 extern "C" EXPORT PyObject*
-proper_dihedral_mgr_visible_restraints(void *mgr)
+proper_dihedral_restraint_mgr_visible_restraints(void *mgr)
 {
     Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
     try {
@@ -1536,7 +1536,7 @@ proper_dihedral_mgr_visible_restraints(void *mgr)
 }
 
 extern "C" EXPORT void
-proper_dihedral_mgr_delete_restraint(void *mgr, void *restraint, size_t n)
+proper_dihedral_restraint_mgr_delete_restraint(void *mgr, void *restraint, size_t n)
 {
     Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
     Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);

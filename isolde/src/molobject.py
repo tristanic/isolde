@@ -14,7 +14,7 @@ from chimerax.core.atomic.molobject import _atoms, \
                 _chains, _atomic_structure, _pseudobond_group, \
                 _pseudobond_group_map
 
-from chimerax.core.models import Model
+from chimerax.core.models import Model, Drawing
 
 from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
 
@@ -444,24 +444,6 @@ class Rama_Mgr:
         f(self._c_pointer, rama_case, ndim, pointer(axis_lengths),
             pointer(min_vals), pointer(max_vals), pointer(data))
 
-    # def valid_rama_residues(self, residues):
-    #     f = c_function('proper_dihedral_mgr_valid_rama_residues', args=(
-    #                     ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
-    #                     ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p),
-    #                     ret=ctypes.c_size_t)
-    #     n = len(residues)
-    #     r_ptrs = numpy.empty(n, cptr)
-    #     o_ptrs = numpy.empty(n, cptr)
-    #     phi_ptrs = numpy.empty(n, cptr)
-    #     psi_ptrs = numpy.empty(n, cptr)
-    #     num_found = f(self.dihedral_manager.cpp_pointer, residues._c_pointers, n,
-    #         pointer(r_ptrs), pointer(o_ptrs), pointer(phi_ptrs), pointer(psi_ptrs))
-    #     r = _residues(r_ptrs[0:num_found])
-    #     omega = _proper_dihedrals(o_ptrs[0:num_found])
-    #     phi = _proper_dihedrals(phi_ptrs[0:num_found])
-    #     psi = _proper_dihedrals(psi_ptrs[0:num_found])
-    #     return (r, omega, phi, psi)
-
     def rama_cases(self, residues):
         f = c_function('rama_mgr_rama_case',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
@@ -740,7 +722,6 @@ class Rota_Mgr:
         f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc))
         return (maxc, midc, minc)
 
-
     def set_default_cutoffs(self):
         '''
         Reset the rotamer cutoffs to default values
@@ -953,7 +934,7 @@ class Restraint_Change_Tracker:
                 for change_type, changed_ptrs in changeds.items():
                     changed_obj = class_funcs[1](changed_ptrs)
                     processed_changeds[change_type] = changed_obj
-                    mgr.triggers.activate_trigger(change_type, changed_obj)
+                mgr.triggers.activate_trigger('changes', processed_changeds)
         return processed_dict
 
     def _get_and_process_changes(self):
@@ -992,22 +973,18 @@ class _Restraint_Mgr(Model):
         self.model = model
         model.add([self])
 
-
     @property
     def triggers(self):
         if not hasattr(self, '_triggers') or self._triggers is None:
             from chimerax.core.triggerset import TriggerSet
             t = self._triggers = TriggerSet()
-            for name in self._change_tracker.reason_names:
-                t.add_trigger(name)
+            t.add_trigger('changes')
         return self._triggers
-
 
     def delete(self):
         cname = type(self).__name__.lower()
         del_func = cname+'_delete'
         c_function(del_func, args=(ctypes.c_void_p,))(self._c_pointer)
-
 
     @property
     def cpp_pointer(self):
@@ -1115,6 +1092,32 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
     def __init__(self, model, c_pointer = None):
         super().__init__('Proper Dihedral Restraints', model, c_pointer)
         self.set_default_colors()
+        self._update_needed = True
+        self._prepare_drawings()
+        self._restraint_changes_handler = self.triggers.add_handler('changes', self._changes_cb)
+        self._atom_changes_handler = model.triggers.add_handler('changes', self._changes_cb)
+        self.update_graphics()
+
+    def delete(self):
+        ah = self._atom_changes_handler
+        if ah is not None:
+            self.model.triggers.remove_handler(ah)
+
+    def _prepare_drawings(self):
+        from . import geometry
+        if not hasattr(self, '_ring_drawing') or self._ring_drawing is None:
+            ring_d = self._ring_drawing = Drawing('rings')
+        if not hasattr(self, '_post_drawing') or self._post_drawing is None:
+            post_d = self._post_drawing = Drawing('posts')
+        ring_d = self._ring_drawing
+        post_d = self._post_drawing
+        self.add_drawing(ring_d)
+        self.add_drawing(post_d)
+        ring_d.vertices, ring_d.normals, ring_d.triangles = geometry.ring_arrow_with_post(0.5, 0.05, 3, 6, 0.25, 0.1, 0.05, 1)
+        post_d.vertices, post_d.normals, post_d.triangles = geometry.post_geometry(0.05, 1, caps=False)
+        ring_d.display = False
+        post_d.display = False
+
 
     def _get_restraints(self, dihedrals, create=False):
         n = len(dihedrals)
@@ -1128,6 +1131,20 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
 
     def add_restraints(self, dihedrals):
         return self._get_restraints(dihedrals, create=True)
+
+    @property
+    def num_restraints(self):
+        f = c_function('proper_dihedral_restraint_mgr_num_restraints',
+            args=(ctypes.c_void_p,),
+            ret=ctypes.c_size_t)
+        return f(self._c_pointer)
+
+    @property
+    def visible_restraints(self):
+        f = c_function('proper_dihedral_restraint_mgr_visible_restraints',
+            args=(ctypes.c_void_p,),
+            ret = ctypes.py_object)
+        return _proper_dihedral_restraints(f(self._c_pointer))
 
     def set_default_colors(self):
         from .constants import validation_defaults as val_defaults
@@ -1145,6 +1162,32 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
             if len(arr) != 4:
                 raise TypeError('Each color should be an array of 4 values in the range (0,255)')
         f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc))
+
+    def _changes_cb(self, trigger_name, changeds):
+        # For the time being, just update on any trigger
+        self._update_needed = True
+        self._update_graphics_if_needed()
+
+    def _update_graphics_if_needed(self):
+        if self._update_needed:
+            self.update_graphics()
+
+    def update_graphics(self):
+        ring_d = self._ring_drawing
+        post_d = self._post_drawing
+        visibles = self.visible_restraints
+        if not len(visibles):
+            ring_d.display = False
+            post_d.display = False
+            return
+        ring_d.display = True
+        post_d.display = True
+        positions = visibles._annotation_transforms()
+        colors = visibles.annotation_colors
+        ring_d.positions = positions[0]
+        post_d.positions = positions[1]
+        ring_d.colors = post_d.colors = colors
+        self._update_needed = False
 
 class _Dihedral(State):
     '''
