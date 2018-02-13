@@ -163,6 +163,8 @@ class Proper_Dihedral_Restraints(Collection):
 
     targets = cvec_property('proper_dihedral_restraint_target', float64,
         doc = 'Target angles for each restraint in radians. Can be written.')
+    offsets = cvec_property('proper_dihedral_restraint_offset', float64, read_only = True,
+        doc = 'Difference between current and target angles in radians. Read only.')
     cutoffs = cvec_property('proper_dihedral_restraint_cutoff', float64,
         doc = 'Cutoff angles below which no restraint will be applied. Can be set.')
     enableds = cvec_property('proper_dihedral_restraint_enabled', npy_bool,

@@ -7,6 +7,7 @@
 #include <typeinfo>
 #include <unordered_map>
 #include <set>
+#include <iostream>
 
 #include <pyinstance/PythonInstance.declare.h>
 
@@ -23,20 +24,39 @@ class Dihedral_Restraint;
 class Change_Tracker: public pyinstance::PythonInstance<Change_Tracker>
 {
 public:
-    typedef std::unordered_map<const void*, std::set<const void *>> Mgr_To_Managed;
-    typedef std::unordered_map<std::type_index, Mgr_To_Managed> Ptr_Type_To_Set;
+    /* Hierarchy:
+     * <Manager Type>
+     *      |
+     *      ---<Manager ptr>
+     *            |
+     *            --- <Reason>
+     *                   |
+     *                   ----<Changed pointers>
+     *
+     */
+    typedef std::unordered_map<int, std::set<const void*>> Reason_to_Ptrs;
+    typedef std::unordered_map<const void*, Reason_to_Ptrs> Mgr_to_Managed;
+    typedef std::unordered_map<std::type_index, Mgr_to_Managed> Ptr_Type_to_Set;
 
     enum Reasons{
-        REASON_DISTANCE_RESTRAINT_CREATED,
-        REASON_DISTANCE_RESTRAINT_CHANGED,
-        REASON_DIHEDRAL_RESTRAINT_CREATED,
-        REASON_DIHEDRAL_RESTRAINT_CHANGED,
-        REASON_POSITION_RESTRAINT_CREATED,
-        REASON_POSITION_RESTRAINT_CHANGED
+        REASON_RESTRAINT_CREATED,
+        REASON_TARGET_CHANGED,
+        REASON_SPRING_CONSTANT_CHANGED,
+        REASON_DISPLAY_CHANGED,
+        REASON_ENABLED_CHANGED,
     };
 
     Change_Tracker();
     ~Change_Tracker() {}
+
+    template<class Mgr>
+    std::set<const void*>& get_change_set(std::type_index mgr_type, Mgr* mgr, int reason)
+    {
+        if (_python_class_name.find(mgr_type) == _python_class_name.end())
+            throw std::out_of_range("Restraint manager type has not been registered!");
+
+        return _change_map[mgr_type][static_cast<const void *>(mgr)][reason];
+    }
 
     void register_mgr(const std::type_index &mgr_type,
         const std::string &mgr_pyname, const std::string &c_pyname)
@@ -44,50 +64,59 @@ public:
         _python_class_name[mgr_type] = std::make_pair(mgr_pyname, c_pyname);
     }
 
-    template <class Mgr, class C>
-    void add_created(Mgr* mgr, C* ptr)
+    const std::pair<std::string, std::string>& get_python_class_names(const std::type_index &mgr_type) const
     {
-        auto &m_created = _created_map[std::type_index(typeid(mgr))];
-        m_created[mgr].insert(ptr);
+        return _python_class_name.at(mgr_type);
+    }
+
+    const std::string& reason_string(int reason) const
+    {
+        return _reason_strings.at(reason);
+    }
+
+    const std::unordered_map<int, std::string>& all_reason_strings() const
+    {
+        return _reason_strings;
     }
 
     template <class Mgr, class C>
-    void add_created_batch(Mgr* mgr, std::vector<C*> ptrs)
+    void add_created(const std::type_index &mgr_type, Mgr* mgr, C* ptr)
     {
-        auto &m_created = _created_map[std::type_index(typeid(mgr))];
-        auto &created = m_created[mgr];
+        auto& cset = get_change_set(mgr_type, mgr, REASON_RESTRAINT_CREATED);
+        cset.insert(ptr);
+    }
+
+    template <class Mgr, class C>
+    void add_created_batch(const std::type_index &mgr_type, Mgr* mgr, std::vector<C*> ptrs)
+    {
+        auto& cset = get_change_set(mgr_type, mgr, REASON_RESTRAINT_CREATED);
         for (const auto &p: ptrs)
-            created.insert(p);
+            cset.insert(p);
     }
 
     template <class Mgr, class C>
-    void add_modified(Mgr *mgr, C* ptr)
+    void add_modified(const std::type_index &mgr_type, Mgr *mgr, C* ptr, int reason)
     {
-        auto &m_changes = _changed_map[std::type_index(typeid(mgr))];
-        m_changes[mgr].insert(ptr);
+        auto& cset = get_change_set(mgr_type, mgr, reason);
+        cset.insert(ptr);
     }
 
     template <class Mgr, class C>
-    void add_modified_batch(Mgr *mgr, std::vector<C*> ptrs)
+    void add_modified_batch(const std::type_index &mgr_type, Mgr *mgr, std::vector<C*> ptrs, int reason)
     {
-        auto &m_changes = _changed_map[std::type_index(typeid(mgr))];
-        auto &changed = m_changes[mgr];
+        auto& cset = get_change_set(mgr_type, mgr, reason);
         for (const auto &p: ptrs)
-            changed.insert(p);
+            cset.insert(p);
     }
 
     void clear()
     {
-        _created_map.clear();
-        _changed_map.clear();
+        _change_map.clear();
     }
 
-    const Ptr_Type_To_Set& get_created() const {
-        return _created_map;
-    }
 
-    const Ptr_Type_To_Set& get_changed() const {
-        return _changed_map;
+    const Ptr_Type_to_Set& get_changes() const {
+        return _change_map;
     }
 
 
@@ -96,9 +125,8 @@ public:
 private:
     std::unordered_map<std::type_index, std::pair<std::string, std::string>> _python_class_name;
     std::unordered_map<int, std::string> _reason_strings;
-    Ptr_Type_To_Set _created_map;
-    Ptr_Type_To_Set _changed_map;
-    std::set<int> _reasons;
+    Ptr_Type_to_Set _change_map;
+
 }; //class Change_Tracker
 } //namespace isolde
 

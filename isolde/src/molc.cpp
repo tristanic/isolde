@@ -1006,7 +1006,82 @@ change_tracker_delete(void *tracker)
     }
 }
 
+extern "C" EXPORT void
+change_tracker_clear(void *tracker)
+{
+    Change_Tracker *t = static_cast<Change_Tracker *>(tracker);
+    try {
+        t->clear();
+    } catch (...) {
+        molc_error();
+    }
+}
 
+static PyObject* changes_as_py_dict(Change_Tracker *t,
+    const Change_Tracker::Ptr_Type_to_Set &changes)
+{
+    PyObject* changes_data = PyDict_New();
+    for (const auto &it1: changes)
+    {
+        const auto& py_classnames = t->get_python_class_names(it1.first);
+        PyObject *mgr_type_key = unicode_from_string(py_classnames.first);
+        PyObject* mgr_type_dict = PyDict_New();
+        for (const auto &it2: it1.second)
+        {
+            PyObject *mgr_key = PyLong_FromVoidPtr(const_cast<void*>(it2.first));
+            PyObject *change_dict = PyDict_New();
+            for (const auto &it3: it2.second)
+            {
+                PyObject *change_key = unicode_from_string(t->reason_string(it3.first));
+                void **ptrs;
+                PyObject *ptr_array = python_voidp_array(it3.second.size(), &ptrs);
+                for (auto ptr: it3.second)
+                    (*ptrs++) = const_cast<void*>(ptr);
+                PyDict_SetItem(change_dict, change_key, ptr_array);
+                Py_DECREF(change_key);
+                Py_DECREF(ptr_array);
+            }
+            PyDict_SetItem(mgr_type_dict, mgr_key, change_dict);
+            Py_DECREF(mgr_key);
+            Py_DECREF(change_dict);
+        }
+        PyDict_SetItem(changes_data, mgr_type_key, mgr_type_dict);
+        Py_DECREF(mgr_type_key);
+        Py_DECREF(mgr_type_dict);
+    }
+    return changes_data;
+}
+
+extern "C" EXPORT PyObject*
+change_tracker_changes(void *tracker)
+{
+    Change_Tracker *t = static_cast<Change_Tracker *>(tracker);
+    try {
+        return changes_as_py_dict(t, t->get_changes());
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT PyObject*
+change_tracker_reason_names(void *tracker)
+{
+    Change_Tracker *t = static_cast<Change_Tracker *>(tracker);
+    try {
+        const auto &reasons = t->all_reason_strings();
+        size_t size = reasons.size();
+        PyObject* ret = PyTuple_New(size);
+        size_t i=0;
+        for (const auto &r: reasons) {
+            PyTuple_SET_ITEM(ret, i++, unicode_from_string(r.second));
+        }
+        return ret;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
 
 /*******************************************************
  *
@@ -1508,6 +1583,20 @@ set_proper_dihedral_restraint_target(void *restraint, size_t n, double *target)
     } catch (...) {
         molc_error();
     }
+}
+
+extern "C" EXPORT void
+proper_dihedral_restraint_offset(void *restraint, size_t n, double *offset)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*offset++) = (*r++)->offset();
+        }
+    } catch (...) {
+        molc_error();
+    }
+
 }
 
 extern "C" EXPORT void

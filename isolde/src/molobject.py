@@ -71,6 +71,12 @@ def _proper_dihedral_restraint_or_none(p):
 def _proper_dihedral_restraints(p):
     from .molarray import Proper_Dihedral_Restraints
     return Proper_Dihedral_Restraints(p)
+def _proper_dihedral_restraint_mgr(p):
+    return Proper_Dihedral_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+def _distance_restraint_mgr(p):
+    return Distance_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+def _position_restraint_mgr(p):
+    return Position_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
 
 class _Dihedral_Mgr:
     '''Base class. Do not instantiate directly.'''
@@ -891,6 +897,11 @@ class Restraint_Change_Tracker:
     A per-session singleton tracking changes in ISOLDE restraints, and firing
     triggers as necessary.
     '''
+    _mgr_name_to_class_functions = {
+        'Proper_Dihedral_Restraint_Mgr': (_proper_dihedral_restraint_mgr, _proper_dihedral_restraints),
+        'Position_Restraint_Mgr': (_position_restraint_mgr, _position_restraints),
+        'Distance_Restraint_Mgr': (_distance_restraint_mgr, _distance_restraints)
+    }
     def __init__(self, session, c_pointer=None):
         cname = 'change_tracker'
         if c_pointer is None:
@@ -905,7 +916,58 @@ class Restraint_Change_Tracker:
         f(self._c_pointer, self)
         self.session = session
         session.isolde_changes = self
+        self._update_handler = session.triggers.add_handler('new frame', self._get_and_clear_changes)
 
+    def delete(self):
+        self.session.triggers.remove_handler(self._update_handler)
+        c_function('change_tracker_delete', args=(ctypes.c_void_p,))(self._c_pointer)
+
+    @property
+    def cpp_pointer(self):
+        '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
+        return self._c_pointer.value
+        delattr(self.session, 'rama_mgr')
+
+    @property
+    def deleted(self):
+        '''Has the C++ side been deleted?'''
+        return not hasattr(self, '_c_pointer')
+
+    def clear(self):
+        f = c_function('change_tracker_clear',
+            args = (ctypes.c_void_p,))
+        f(self._c_pointer)
+
+    def _get_and_clear_changes(self, *_):
+        self._get_and_process_changes()
+        self.clear()
+
+    def _process_changes(self, changes):
+        processed_dict = {}
+        for mgr_name, type_dict in changes.items():
+            processed_type_dict = processed_dict[mgr_name] = {}
+            class_funcs = self._mgr_name_to_class_functions[mgr_name]
+            for mgr_ptr, changeds in type_dict.items():
+                mgr = class_funcs[0](mgr_ptr)
+                processed_changeds = processed_type_dict[mgr] = {}
+                for change_type, changed_ptrs in changeds.items():
+                    changed_obj = class_funcs[1](changed_ptrs)
+                    processed_changeds[change_type] = changed_obj
+                    mgr.triggers.activate_trigger(change_type, changed_obj)
+        return processed_dict
+
+    def _get_and_process_changes(self):
+        f = c_function('change_tracker_changes',
+            args = (ctypes.c_void_p,),
+            ret = ctypes.py_object)
+        return self._process_changes(f(self._c_pointer))
+
+    @property
+    def reason_names(self):
+        f= c_function('change_tracker_reason_names',
+            args=(ctypes.c_void_p,),
+            ret = ctypes.py_object)
+        return f(self._c_pointer)
 
 class _Restraint_Mgr(Model):
     '''Base class. Do not instantiate directly.'''
@@ -930,6 +992,17 @@ class _Restraint_Mgr(Model):
         self.model = model
         model.add([self])
 
+
+    @property
+    def triggers(self):
+        if not hasattr(self, '_triggers') or self._triggers is None:
+            from chimerax.core.triggerset import TriggerSet
+            t = self._triggers = TriggerSet()
+            for name in self._change_tracker.reason_names:
+                t.add_trigger(name)
+        return self._triggers
+
+
     def delete(self):
         cname = type(self).__name__.lower()
         del_func = cname+'_delete'
@@ -946,7 +1019,7 @@ class _Restraint_Mgr(Model):
         '''Has the C++ side been deleted?'''
         return not hasattr(self, '_c_pointer')
 
-class Position_Restraint_Mgr_Base(_Restraint_Mgr):
+class Position_Restraint_Mgr(_Restraint_Mgr):
     '''
     Manages position restraints for a single atomic structure.
     '''
@@ -990,7 +1063,7 @@ class Position_Restraint_Mgr_Base(_Restraint_Mgr):
         return _position_restraints(f(self._c_pointer))
 
 
-class Distance_Restraint_Mgr_Base(_Restraint_Mgr):
+class Distance_Restraint_Mgr(_Restraint_Mgr):
     '''
     Manages distance restraints (Atom pairs with distances and spring constants)
     and their visualisations for a single atomic structure.
@@ -1285,6 +1358,8 @@ class Proper_Dihedral_Restraint(State):
 
     target = c_property('proper_dihedral_restraint_target', float64,
         doc = 'Target angle for this restraint in radians. Can be written.')
+    offset = c_property('proper_dihedral_restraint_offset', float64, read_only = True,
+        doc = 'Difference between current and target angle in radians. Read only.')
     cutoff = c_property('proper_dihedral_restraint_cutoff', float64,
         doc = 'Cutoff angle below which no restraint will be applied. Can be set.')
     enabled = c_property('proper_dihedral_restraint_enabled', npy_bool,
@@ -1316,8 +1391,9 @@ for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint,
     class_obj.c_ptr_to_existing_py_inst = lambda ptr, fname=func_name: c_function(fname,
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
 
-for class_obj in (Proper_Dihedral_Mgr, Rama_Mgr, Rota_Mgr, Position_Restraint_Mgr_Base,
-            Distance_Restraint_Mgr_Base, Proper_Dihedral_Restraint_Mgr):
+for class_obj in (Proper_Dihedral_Mgr, Rama_Mgr, Rota_Mgr, Position_Restraint_Mgr,
+            Distance_Restraint_Mgr, Proper_Dihedral_Restraint_Mgr):
+    cname = class_obj.__name__.lower()
     func_name = cname + '_py_inst'
     class_obj.c_ptr_to_py_inst = lambda ptr, fname=func_name: c_function(fname,
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))

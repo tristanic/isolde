@@ -9,11 +9,11 @@ import numpy
 from chimerax.core.models import Model, Drawing
 from chimerax.core.geometry import Places
 
-from ..molobject import Position_Restraint_Mgr_Base, Position_Restraint
+from ..molobject import Position_Restraint_Mgr, Position_Restraint
 from ..molarray import Position_Restraints
 
 
-class Position_Restraint_Mgr(Position_Restraint_Mgr_Base):
+class Live_Position_Restraint_Mgr(Position_Restraint_Mgr):
     '''
     Manages position restraints and their visualisations for a single atomic
     structure.

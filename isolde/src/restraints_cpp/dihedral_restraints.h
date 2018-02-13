@@ -43,8 +43,12 @@ public:
     }
     colors::variable_colormap* colormap() { return &_colormap; }
     Change_Tracker* change_tracker() const { return _change_tracker; }
-protected:
+    void track_created(const void *r) { change_tracker()->add_created(_mgr_type, _mgr_pointer, r); }
+    void track_change(const void *r, int reason) {change_tracker()->add_modified(_mgr_type, _mgr_pointer, r, reason);}
 
+protected:
+    std::type_index _mgr_type = std::type_index(typeid(this));
+    void *_mgr_pointer = static_cast<void *>(this);
 private:
     colors::variable_colormap _colormap;
     Change_Tracker *_change_tracker;
@@ -62,14 +66,10 @@ public:
     Dihedral_Restraint_Base(DType *dihedral, Dihedral_Restraint_Change_Mgr *mgr)
         : _dihedral(dihedral), _mgr(mgr) {}
     DType* get_dihedral() const {return _dihedral;}
-    void set_target(double target) {_target=util::wrapped_angle(target);}
-    void set_target_deg(double target) {set_target(util::radians(target));}
+    virtual void set_target(double target) {}
     double get_target() const {return _target;}
-    double get_target_deg() const { return util::degrees(_target); }
-    void enable() { _enabled=true; }
-    void disable() { _enabled=false; }
-    void set_enabled(bool flag) { _enabled = flag; }
-    void set_display(bool flag) { _display = flag; }
+    virtual void set_enabled(bool flag) {}
+    virtual void set_display(bool flag) {}
     bool get_display() const { return _display; }
     bool visible() const
     {
@@ -77,10 +77,7 @@ public:
     }
     bool is_enabled() const { return _enabled; }
     //! Set the restraint spring constant in kJ mol-1 rad-1
-    void set_spring_constant(const double &k)
-    {
-        _spring_constant = k<0 ? 0.0 : ( k > MAX_SPRING_CONSTANT ? MAX_SPRING_CONSTANT : k);
-    }
+    virtual void set_spring_constant(const double &k) {}
     double get_spring_constant() const {return _spring_constant;}
     // Optional cutoff angle below which no force will be applied
     void set_cutoff(double cutoff) { _cutoff = cutoff; _cutoffs[1] = cutoff; }
@@ -98,21 +95,21 @@ public:
     {
         throw std::logic_error(err_msg_not_implemented());
     }
-
+    Dihedral_Restraint_Change_Mgr *mgr() const { return _mgr; }
     isolde::Change_Tracker* change_tracker() const { return _mgr->change_tracker(); }
     colors::variable_colormap* colormap() const { return _mgr->colormap(); }
 
 protected:
     double _cutoffs[3] {0, 1, M_PI}; // First and last cutoffs fixed, middle changes
-
-private:
-    DType *_dihedral;
-    Dihedral_Restraint_Change_Mgr *_mgr;
     double _target = 0.0;
     double _spring_constant = 0.0;
     double _cutoff = 0.0;
     bool _enabled = false;
     bool _display = true;
+
+private:
+    DType *_dihedral;
+    Dihedral_Restraint_Change_Mgr *_mgr;
     const char* err_msg_not_implemented() const
         { return "Not implemented!";}
 
@@ -126,6 +123,34 @@ public:
     Proper_Dihedral_Restraint(Proper_Dihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr);
     void get_annotation_transform(double *tf);
     virtual void get_annotation_color(uint8_t *color);
+    void set_target(double target)
+    {
+        _target=util::wrapped_angle(target);
+        mgr()->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
+    }
+    void set_enabled(bool flag)
+    {
+        if (_enabled != flag)
+        {
+            _enabled = flag;
+            mgr()->track_change(this, change_tracker()->REASON_ENABLED_CHANGED);
+        }
+    }
+    void set_display(bool flag)
+    {
+        if (_display != flag)
+        {
+            _display = flag;
+            mgr()->track_change(this, change_tracker()->REASON_DISPLAY_CHANGED);
+        }
+    }
+    void set_spring_constant(const double &k)
+    {
+        _spring_constant = k<0 ? 0.0 : ( k > MAX_SPRING_CONSTANT ? MAX_SPRING_CONSTANT : k);
+        mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
+    }
+
+
 
 private:
 }; // Proper_Dihedral_Restraint
@@ -144,7 +169,6 @@ public:
         : _atomic_model(atomic_model)
     {
         set_change_tracker(change_tracker);
-        change_tracker->register_mgr(std::type_index(typeid(this)), _py_name, _managed_class_py_name);
     }
     Structure* structure() const { return _atomic_model; }
     RType* get_restraint(DType *dihedral, bool create);
@@ -183,7 +207,11 @@ class Proper_Dihedral_Restraint_Mgr:
 public:
     Proper_Dihedral_Restraint_Mgr(Structure *s, Change_Tracker *ct)
         :Dihedral_Restraint_Mgr_Base<Proper_Dihedral, Proper_Dihedral_Restraint>(s, ct)
-        {}
+    {
+        _mgr_type = std::type_index(typeid(this));
+        _mgr_pointer = static_cast<void *>(this);
+        change_tracker()->register_mgr(_mgr_type, _py_name, _managed_class_py_name);
+    }
 
 private:
     const std::string _py_name = "Proper_Dihedral_Restraint_Mgr";
