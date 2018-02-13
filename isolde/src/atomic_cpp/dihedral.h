@@ -44,10 +44,9 @@ public:
 
 protected:
     Atoms _atoms;
-
+    Bonds _bonds;
 private:
     Coords _coords;
-    Bonds _bonds;
     Residue *_residue;
     const char* err_msg_dup_atom() const
         {return "All atoms must be unique!";}

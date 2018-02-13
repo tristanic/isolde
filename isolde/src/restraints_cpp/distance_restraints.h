@@ -30,20 +30,11 @@ public:
     Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pbond, Distance_Restraint_Mgr *mgr,
             const double &target, const double &k);
     double get_target() const { return _target; }
-    void set_target(double target) { _target=target; }
+    void set_target(double target);
     double get_k() const { return _spring_constant; }
-    void set_k(double k)
-    {
-        _spring_constant = k<0 ? 0.0 : ( k > MAX_SPRING_CONSTANT ? MAX_SPRING_CONSTANT : k);
-    }
+    void set_k(double k);
     bool enabled() const { return _enabled; }
-    void set_enabled(bool flag) {
-        _enabled = flag;
-        if(flag)
-            _pbond->clear_hide_bits(HIDE_ISOLDE);
-        else
-            _pbond->set_hide_bits(HIDE_ISOLDE);
-        }
+    void set_enabled(bool flag);
     const Atoms &atoms() const {return _atoms;}
     Pseudobond *pbond() const {return _pbond;}
     double distance() const {return _atoms[0]->coord().distance(_atoms[1]->coord());}

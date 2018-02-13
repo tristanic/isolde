@@ -28,10 +28,35 @@ Distance_Restraint::Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pb, Dista
     set_enabled(false);
 }
 
-Change_Tracker* Distance_Restraint:: change_tracker() const
+Change_Tracker* Distance_Restraint::change_tracker() const
 {
     return _mgr->change_tracker();
 }
+
+void Distance_Restraint::set_target(double target)
+{
+    _target = target < MIN_DISTANCE_RESTRAINT_TARGET ? MIN_DISTANCE_RESTRAINT_TARGET : target;
+    _mgr->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
+}
+
+void Distance_Restraint::set_k(double k)
+{
+    _spring_constant = k<0 ? 0.0 : ( k > MAX_SPRING_CONSTANT ? MAX_SPRING_CONSTANT : k);
+    _mgr->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
+}
+
+void Distance_Restraint::set_enabled(bool flag)
+{
+    if (_enabled != flag) {
+        _enabled = flag;
+        if(flag)
+            _pbond->clear_hide_bits(HIDE_ISOLDE);
+        else
+            _pbond->set_hide_bits(HIDE_ISOLDE);
+        _mgr->track_change(this, change_tracker()->REASON_ENABLED_CHANGED);
+    }
+}
+
 
 
 Distance_Restraint* Distance_Restraint_Mgr::new_restraint(Atom *a1, Atom *a2)
