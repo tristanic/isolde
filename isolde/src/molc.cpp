@@ -855,12 +855,23 @@ rota_mgr_validate_residue(void *mgr, void *residue, size_t n, double *scores)
 extern "C" EXPORT size_t
 rota_mgr_validate_scale_and_color_rotamers(void *mgr, void *rotamer, size_t n,
     double max_scale, npy_bool non_favored_only,
-    pyobject_t *rot_out, double* scale, uint8_t *color_out)
+    npy_bool visible_only, pyobject_t *rot_out, double* scale, uint8_t *color_out)
 {
     Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
     Rotamer **r = static_cast<Rotamer **>(rotamer);
     size_t ret =0;
     try {
+        std::vector<Rotamer *> visibles;
+        if (visible_only) {
+            auto rr = r;
+            for (size_t i=0; i<n; ++i) {
+                if ((*rr)->visible())
+                    visibles.push_back(*rr++);
+                else rr++;
+            }
+            n = visibles.size();
+            r = visibles.data();
+        }
         std::vector<double> scores(n);
         auto cutoffs = m->get_cutoffs();
         const auto &log_allowed = cutoffs->log_allowed;
@@ -941,6 +952,14 @@ rotamer_score(void *rotamer, size_t n, float32_t *score)
     Rotamer **r = static_cast<Rotamer **>(rotamer);
     error_wrap_array_get(r, n, &Rotamer::score, score);
 }
+
+extern "C" EXPORT void
+rotamer_visible(void *rotamer, size_t n, npy_bool *visible)
+{
+    Rotamer **r = static_cast<Rotamer **>(rotamer);
+    error_wrap_array_get(r, n, &Rotamer::visible, visible);
+}
+
 
 
 extern "C" EXPORT void

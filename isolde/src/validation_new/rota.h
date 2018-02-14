@@ -46,7 +46,8 @@ public:
     double score() const;
     Residue* residue() const {return _residue;}
     Bond* ca_cb_bond() const { return _chi_dihedrals[0]->axial_bond(); }
-    bool is_symmetric() const {return _def->symmetric;}
+    bool is_symmetric() const { return _def->symmetric; }
+    bool visible() const { return ca_cb_bond()->shown(); }
 
 private:
     Residue* _residue;

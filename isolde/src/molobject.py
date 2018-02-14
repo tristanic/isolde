@@ -858,10 +858,10 @@ class Rota_Mgr:
         print ("Found {} bad rotamers".format(found)) #DELETEME
         return (_rotamers(ptrs[0:found]), scores[0:found])
 
-    def validate_scale_and_color_rotamers(self, rotamers, max_scale = 2.0, non_favored_only = True):
+    def validate_scale_and_color_rotamers(self, rotamers, max_scale = 2.0, non_favored_only = True, visible_only = True):
         f = c_function('rota_mgr_validate_scale_and_color_rotamers',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
-                ctypes.c_double, ctypes.c_bool, ctypes.c_void_p,
+                ctypes.c_double, ctypes.c_bool, ctypes.c_bool, ctypes.c_void_p,
                 ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_uint8)),
                 ret=ctypes.c_size_t)
         n = len(rotamers)
@@ -869,7 +869,7 @@ class Rota_Mgr:
         scale_out = numpy.empty(n, float64)
         color_out = numpy.empty((n,4), uint8)
         count = f(self._c_pointer, rotamers._c_pointers, n, max_scale,
-            non_favored_only, pointer(rot_out), pointer(scale_out), pointer(color_out))
+            non_favored_only, visible_only, pointer(rot_out), pointer(scale_out), pointer(color_out))
         return (_rotamers(rot_out[0:count]), scale_out[0:count], color_out[0:count])
 
 
@@ -1226,7 +1226,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         self._prepare_drawings()
         self._restraint_changes_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
         self._atom_changes_handler = model.triggers.add_handler('changes', self._model_changes_cb)
-        self.update_graphics()
+        self._update_graphics()
 
     def delete(self):
         ah = self._atom_changes_handler
@@ -1307,7 +1307,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         # For the time being, just update on any trigger
         self._update_graphics()
 
-    def update_graphics(self):
+    def _update_graphics(self):
         ring_d = self._ring_drawing
         post_d = self._post_drawing
         visibles = self.visible_restraints
@@ -1430,6 +1430,8 @@ class Rotamer(State):
                 doc='The "stem" bond of this rotamer. Read only.')
     num_chi_dihedrals = c_property('rotamer_num_chi', uint8, read_only=True,
                 doc='Number of dihedrals defining this rotamer')
+    visible = c_property('rotamer_visible', npy_bool, read_only=True,
+                doc='True if the CA-CB bond of the rotamer is visible')
 
 class Position_Restraint(State):
     def __init__(self, c_pointer):

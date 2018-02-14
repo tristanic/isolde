@@ -98,6 +98,8 @@ class Rotamers(Collection):
                 doc='P-value for the current conformation of this rotamer. Read only.')
     ca_cb_bonds = cvec_property('rotamer_ca_cb_bond', cptr, astype=_bonds, read_only=True,
                 doc='The "stem" bond of this rotamer. Read only.')
+    visibles = cvec_property('rotamer_visible', npy_bool, read_only=True,
+                doc='True for each rotamer whose CA-CB bond is visible')
 
 class Position_Restraints(Collection):
     def __init__(self, c_pointers=None):

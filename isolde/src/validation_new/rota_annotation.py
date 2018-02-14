@@ -94,7 +94,10 @@ class Rotamer_Annotations(Model):
                 r = self._selected_residues = self._atomic_structure.residues
                 self._selected_rotamers = self._mgr.get_rotamers(r)
                 update_needed = True
-        if 'coord changed' in changes.atom_reasons():
+        reasons = changes.atom_reasons()
+        if 'coord changed' in reasons:
+            update_needed = True
+        if 'display changed' in reasons or 'hide changed' in reasons:
             update_needed = True
         if (update_needed):
             self.update_graphics()
