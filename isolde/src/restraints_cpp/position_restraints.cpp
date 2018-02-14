@@ -30,7 +30,7 @@ void Position_Restraint::set_target(Real *target)
 
 void Position_Restraint::set_k(double k)
 {
-    _spring_constant = k<0 ? 0.0 : ( k > MAX_SPRING_CONSTANT ? MAX_SPRING_CONSTANT : k);
+    _spring_constant = k<0 ? 0.0 : ( k > MAX_LINEAR_SPRING_CONSTANT ? MAX_LINEAR_SPRING_CONSTANT : k);
     mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
 }
 
@@ -51,8 +51,8 @@ void Position_Restraint::target_vector(double *vector) const
 
 double Position_Restraint::radius() const
 {
-    return _spring_constant/MAX_SPRING_CONSTANT
-        * (RESTRAINT_MAX_RADIUS-RESTRAINT_MIN_RADIUS) + RESTRAINT_MIN_RADIUS;
+    return _spring_constant/MAX_LINEAR_SPRING_CONSTANT
+        * (LINEAR_RESTRAINT_MAX_RADIUS-LINEAR_RESTRAINT_MIN_RADIUS) + LINEAR_RESTRAINT_MIN_RADIUS;
 }
 
 void Position_Restraint::bond_cylinder_transform(float *rot44) const
@@ -65,8 +65,7 @@ void Position_Restraint::bond_cylinder_transform(float *rot44) const
         xyz0[i] = c0[i];
         xyz1[i] = c1[i];
     }
-    geometry::bond_cylinder_transform_gl<float>(xyz0, xyz1, radius(), rot44);
-
+    geometry::bond_cylinder_transform_gl<float>(xyz0, xyz1, radius(), 1.0, rot44);
 }
 
 Position_Restraint* Position_Restraint_Mgr::_new_restraint(Atom *atom, const Coord& target)

@@ -118,6 +118,9 @@ void Proper_Dihedral_Restraint::get_annotation_transform(double *tf)
     double *tf1 = tf;
     double *tf2 = tf+16;
     bool flip = offset() < 0;
+    double width = get_spring_constant()/MAX_RADIAL_SPRING_CONSTANT *
+        (DIHEDRAL_RESTRAINT_MAX_WIDTH-DIHEDRAL_RESTRAINT_MIN_WIDTH) + DIHEDRAL_RESTRAINT_MIN_WIDTH;
+
     geometry::rotation_gl<double>(Z_AXIS, offset(), tf1);
     if(flip)
     // Flipping on x axis - negate y and z components
@@ -133,8 +136,9 @@ void Proper_Dihedral_Restraint::get_annotation_transform(double *tf)
         xyz0[i]=c0[i];
         xyz1[i]=c1[i];
     }
+
     // get the transformation mapping to the bond position
-    geometry::bond_cylinder_transform_gl<double>(xyz0, xyz1, 1.0, tf2);
+    geometry::bond_cylinder_transform_gl<double>(xyz0, xyz1, 1.0, width, tf2);
     // apply the bond transformation to the rotational component
     double temp[16];
     geometry::multiply_transforms_gl<double>(tf1, tf2, temp);

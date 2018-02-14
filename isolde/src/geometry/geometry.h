@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <cstdint>
 
+#include "../constants.h"
+
 namespace isolde
 {
 namespace geometry
@@ -226,25 +228,26 @@ void flip_on_x_gl(T *mat44)
 
 
 template <typename T>
-void bond_cylinder_transform_gl(T xyz0[3], T xyz1[3], T r, T *rot44)
+void bond_cylinder_transform_gl(T xyz0[3], T xyz1[3], T r, T length_scale, T *rot44)
 {
     T bvec[3];
     for (size_t i=0; i<3; i++) {
         bvec[i] = xyz1[i]-xyz0[i];
     }
     T d = l2_norm_3d(bvec);
-    if (d == 0) {
-        bvec[0]=0; bvec[1]=0; bvec[2]=0;
+    if (d < ALMOST_ZERO) {
+        bvec[0]=0; bvec[1]=0; bvec[2]=1;
+        d = ALMOST_ZERO;
     } else {
         for (auto &b: bvec)
             b/=d;
     }
-    double c = bvec[2], c1;
+    T &c = bvec[2], c1;
     if (c <= -1) c1 = 0;
     else c1 = 1.0/(1.0+c);
-    double wx = -bvec[1], wy = bvec[0];
-    double cx = c1*wx, cy = c1*wy;
-    double h = d*2;
+    T wx = -bvec[1], wy = bvec[0];
+    T cx = c1*wx, cy = c1*wy;
+    T h = d * length_scale;
     *rot44++ = r*(cx*wx + c);
     *rot44++ = r*cy*wx;
     *rot44++ = -r*wy;
@@ -264,8 +267,6 @@ void bond_cylinder_transform_gl(T xyz0[3], T xyz1[3], T r, T *rot44)
     *rot44++ = (xyz0[1]+xyz1[1])/2;
     *rot44++ = (xyz0[2]+xyz1[2])/2;
     *rot44++ = 1;
-
-
 }
 
 } // namespace geometry

@@ -970,6 +970,7 @@ class _Restraint_Mgr(Model):
         f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
         super().__init__(name+' Manager', session)
+        self.pickable = False
         self.model = model
         model.add([self])
 
@@ -985,6 +986,7 @@ class _Restraint_Mgr(Model):
         cname = type(self).__name__.lower()
         del_func = cname+'_delete'
         c_function(del_func, args=(ctypes.c_void_p,))(self._c_pointer)
+        super().delete()
 
     @property
     def cpp_pointer(self):
@@ -1000,8 +1002,81 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
     '''
     Manages position restraints for a single atomic structure.
     '''
+    _DEFAULT_BOND_COLOR = [200, 250, 120, 255]
+    _DEFAULT_PIN_COLOR = [255,215,0,255]
+
     def __init__(self, model, c_pointer=None):
         super().__init__('Position Restraints', model, c_pointer)
+        self._prepare_drawings()
+        self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
+        self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
+
+    def delete(self):
+        self.model.triggers.remove_handler(self._model_update_handler)
+        super().delete()
+
+    def _prepare_drawings(self):
+        pd = self._pin_drawing = Drawing('Target pins')
+        bd = self._bond_drawing = Drawing('Restraint bonds')
+        self.add_drawing(pd)
+        self.add_drawing(bd)
+        pd.vertices, pd.normals, pd.triangles = self._target_pin_geometry()
+        bd.vertices, bd.normals, bd.triangles = self._pseudobond_geometry()
+        self.set_bond_color(self._DEFAULT_BOND_COLOR)
+        self.set_pin_color(self._DEFAULT_PIN_COLOR)
+        pd.display = False
+        bd.display = False
+
+    def _pseudobond_geometry(self, segments=5):
+        from chimerax.core import surface
+        return surface.dashed_cylinder_geometry(segments, height=1.0)
+
+    def _target_pin_geometry(self, handle_radius=0.4, pin_radius=0.05, total_height=1.0):
+        from .geometry import pin_geometry
+        return pin_geometry(handle_radius, pin_radius, total_height)
+
+    def set_pin_color(self, color):
+        self._pin_drawing.color = color
+
+    def set_bond_color(self, color):
+        self._bond_drawing.color = color
+
+    def _restraint_changes_cb(self, trigger_name, changes):
+        self._update_graphics()
+
+    def _model_changes_cb(self, trigger_name, changes):
+        update_needed = False
+        atom_reasons = changes[1].atom_reasons()
+        if 'display changed' in atom_reasons or 'hide changed' in atom_reasons:
+            update_needed = True
+        if 'coord changed' in atom_reasons:
+            update_needed = True
+        if update_needed:
+            self._update_graphics()
+
+    def _update_graphics(self):
+        pd = self._pin_drawing
+        bd = self._bond_drawing
+        visibles = self.visible_restraints
+        n = len(visibles)
+        if n==0:
+            pd.display = False
+            bd.display = False
+            return
+        pd.display = True
+        bd.display = True
+        self._update_pin_drawing(pd, visibles, n)
+        self._update_bond_drawing(bd, visibles, n)
+
+    def _update_pin_drawing(self, pd, visibles, n):
+        from chimerax.core.geometry import Places
+        xyzr = numpy.ones((n,4), numpy.double)
+        xyzr[:, :3] = visibles.targets
+        pd.positions = Places(shift_and_scale=xyzr)
+
+    def _update_bond_drawing(self, bd, visibles, n):
+        from chimerax.core.geometry import Places
+        bd.positions = Places(opengl_array = visibles._bond_cylinder_transforms)
 
     def _get_restraints(self, atoms, create=False):
         '''
@@ -1045,6 +1120,7 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
     Manages distance restraints (Atom pairs with distances and spring constants)
     and their visualisations for a single atomic structure.
     '''
+    _DEFAULT_BOND_COLOR = [148, 0, 211, 255] # violet
     def __init__(self, model, c_pointer=None):
         '''
         Prepare a distance restraint manager for a given atomic model.
@@ -1058,14 +1134,60 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         else:
             ct = self._change_tracker = session.isolde_changes
 
-        pbg = self._pbgroup = model.pseudobond_group('ISOLDE distance restraints')
         if c_pointer is None:
             f = c_function('distance_restraint_mgr_new',
-                args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,),
+                args=(ctypes.c_void_p, ctypes.c_void_p,),
                 ret=ctypes.c_void_p)
-            c_pointer =(f(model._c_pointer, ct._c_pointer, pbg._c_pointer))
+            c_pointer =(f(model._c_pointer, ct._c_pointer))
         super().__init__('Distance Restraints', model, c_pointer)
-        self.add([pbg])
+        self._prepare_drawing()
+        self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
+        self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
+
+    def delete(self):
+        self.model.triggers.remove_handler(self._model_update_handler)
+        super().delete()
+
+    def _prepare_drawing(self):
+        bd = self._bond_drawing = Drawing('Restraint bonds')
+        self.add_drawing(bd)
+        bd.vertices, bd.normals, bd.triangles = self._pseudobond_geometry()
+        self.set_bond_color(self._DEFAULT_BOND_COLOR)
+        bd.display = False
+
+    def set_bond_color(self, color):
+        self._bond_drawing.color = color
+
+    def _pseudobond_geometry(self, segments=9):
+        from chimerax.core import surface
+        return surface.dashed_cylinder_geometry(segments, height=1.0)
+
+    def _restraint_changes_cb(self, trigger_name, changes):
+        self._update_graphics()
+
+    def _model_changes_cb(self, trigger_name, changes):
+        update_needed = False
+        atom_reasons = changes[1].atom_reasons()
+        if 'display changed' in atom_reasons or 'hide changed' in atom_reasons:
+            update_needed = True
+        if 'coord changed' in atom_reasons:
+            update_needed = True
+        if update_needed:
+            self._update_graphics()
+
+    def _update_graphics(self):
+        bd = self._bond_drawing
+        visibles = self.visible_restraints
+        n = len(visibles)
+        if n==0:
+            bd.display = False
+            return
+        bd.display = True
+        self._update_bond_drawing(bd, visibles, n)
+
+    def _update_bond_drawing(self, bd, visibles, n):
+        from chimerax.core.geometry import Places
+        bd.positions = Places(opengl_array = visibles._bond_cylinder_transforms)
 
     def add_restraint(self, atom1, atom2):
         f = c_function('distance_restraint_mgr_get_restraint',
@@ -1082,11 +1204,19 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
             ret = ctypes.py_object)
         return _distance_restraints(f(self._c_pointer, atoms._c_pointers, n))
 
-    # def delete(self):
-    #     self.session.models.remove([self._pbgroup])
-    #     self._pbgroup.delete()
-    #     super().delete(self)
+    @property
+    def visible_restraints(self):
+        f = c_function('distance_restraint_mgr_visible_restraints',
+            args=(ctypes.c_void_p,),
+            ret = ctypes.py_object)
+        return _distance_restraints(f(self._c_pointer))
 
+    @property
+    def all_restraints(self):
+        f = c_function('distance_restraint_mgr_all_restraints',
+            args=(ctypes.c_void_p,),
+            ret = ctypes.py_object)
+        return _distance_restraints(f(self._c_pointer))
 
 class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
     def __init__(self, model, c_pointer = None):
@@ -1102,19 +1232,20 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         ah = self._atom_changes_handler
         if ah is not None:
             self.model.triggers.remove_handler(ah)
+        super().delete()
 
     def _prepare_drawings(self):
         from . import geometry
         if not hasattr(self, '_ring_drawing') or self._ring_drawing is None:
             ring_d = self._ring_drawing = Drawing('rings')
+            self.add_drawing(ring_d)
         if not hasattr(self, '_post_drawing') or self._post_drawing is None:
             post_d = self._post_drawing = Drawing('posts')
+            self.add_drawing(post_d)
         ring_d = self._ring_drawing
         post_d = self._post_drawing
-        self.add_drawing(ring_d)
-        self.add_drawing(post_d)
-        ring_d.vertices, ring_d.normals, ring_d.triangles = geometry.ring_arrow_with_post(0.5, 0.05, 3, 6, 0.25, 0.1, 0.05, 1)
-        post_d.vertices, post_d.normals, post_d.triangles = geometry.post_geometry(0.05, 1, caps=False)
+        ring_d.vertices, ring_d.normals, ring_d.triangles = geometry.ring_arrow_with_post(0.5, 0.05, 5, 6, 0.25, 0.1, 0.05, 1)
+        post_d.vertices, post_d.normals, post_d.triangles = geometry.post_geometry(0.05, 1, caps=True)
         ring_d.display = False
         post_d.display = False
 
@@ -1366,6 +1497,8 @@ class Distance_Restraint(State):
 
     enabled =c_property('distance_restraint_enabled', npy_bool,
             doc = 'Enable/disable this restraint or get its current state.')
+    visible = c_property('distance_restraint_visible', npy_bool, read_only = True,
+            doc = 'Restraint will be visible if it is enabled and both atoms are visible.')
     atoms = c_property('distance_restraint_atoms', cptr, 2, astype=_atom_pair, read_only=True,
             doc = 'Returns the pair of restrained atoms. Read only.' )
     target = c_property('distance_restraint_target', float64,
@@ -1374,8 +1507,6 @@ class Distance_Restraint(State):
             doc = 'Restraint spring constant in kJ mol-1 Angstrom-2')
     distance = c_property('distance_restraint_distance', float64, read_only=True,
             doc = 'Current distance between restrained atoms in Angstroms. Read only.')
-    pseudobond = c_property('distance_restraint_pbond', cptr, astype=_pseudobond_or_none, read_only=True,
-            doc = 'Pseudobond visualisation of the restraint. Read only.')
 
 class Proper_Dihedral_Restraint(State):
     def __init__(self, c_pointer):
@@ -1401,6 +1532,8 @@ class Proper_Dihedral_Restraint(State):
 
     target = c_property('proper_dihedral_restraint_target', float64,
         doc = 'Target angle for this restraint in radians. Can be written.')
+    dihedral = c_property('proper_dihedral_restraint_dihedral', cptr, astype=_proper_dihedral_or_none, read_only=True,
+        doc = 'The restrained dihedral. Read only.')
     offset = c_property('proper_dihedral_restraint_offset', float64, read_only = True,
         doc = 'Difference between current and target angle in radians. Read only.')
     cutoff = c_property('proper_dihedral_restraint_cutoff', float64,

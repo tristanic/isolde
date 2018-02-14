@@ -1285,13 +1285,12 @@ SET_PYTHON_INSTANCE(distance_restraint_mgr, Distance_Restraint_Mgr)
 GET_PYTHON_INSTANCES(distance_restraint_mgr, Distance_Restraint_Mgr)
 
 extern "C" EXPORT void*
-distance_restraint_mgr_new(void *structure, void *change_tracker,  void *pbgroup)
+distance_restraint_mgr_new(void *structure, void *change_tracker)
 {
     Structure *s = static_cast<Structure *>(structure);
     isolde::Change_Tracker *ct = static_cast<isolde::Change_Tracker *>(change_tracker);
-    Proxy_PBGroup *pbgr = static_cast<Proxy_PBGroup *>(pbgroup);
     try {
-        Distance_Restraint_Mgr *mgr = new Distance_Restraint_Mgr(s, ct, pbgr);
+        Distance_Restraint_Mgr *mgr = new Distance_Restraint_Mgr(s, ct);
         return mgr;
     } catch (...) {
         molc_error();
@@ -1352,6 +1351,45 @@ distance_restraint_mgr_intra_restraints(void *mgr, void *atoms, size_t n)
         for (auto dr: dset)
             *dptr++ = dr;
         return da;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT PyObject*
+distance_restraint_mgr_visible_restraints(void *mgr)
+{
+    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    try {
+        std::vector<Distance_Restraint *> visibles;
+        for (auto r: d->all_restraints()) {
+            if (r->visible())
+                visibles.push_back(r);
+        }
+        void **rptr;
+        PyObject *ra = python_voidp_array(visibles.size(), &rptr);
+        for (auto r: visibles)
+            *rptr++ = r;
+        return ra;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT PyObject*
+distance_restraint_mgr_all_restraints(void *mgr)
+{
+    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    try {
+        const auto &restraints = d->all_restraints();
+        size_t n = restraints.size();
+        void **rptr;
+        PyObject *ra = python_voidp_array(n, &rptr);
+        for (auto r: restraints)
+            *rptr++ = r;
+        return ra;
     } catch (...) {
         molc_error();
         return 0;
@@ -1433,11 +1471,27 @@ set_distance_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
 }
 
 extern "C" EXPORT void
-distance_restraint_pbond(void *restraint, size_t n, pyobject_t *pbondp)
+distance_restraint_visible(void *restraint, size_t n, npy_bool *flag)
 {
     Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
-    error_wrap_array_get(d, n, &Distance_Restraint::pbond, pbondp);
+    error_wrap_array_get<Distance_Restraint, bool, npy_bool>(d, n, &Distance_Restraint::visible, flag);
 }
+
+extern "C" EXPORT void
+distance_restraint_bond_transform(void *restraint, size_t n, double *rot44)
+{
+    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*d++)->bond_cylinder_transform(rot44);
+            rot44+=16;
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
 
 /***************************************************************
  *
@@ -1579,6 +1633,19 @@ set_proper_dihedral_restraint_target(void *restraint, size_t n, double *target)
     try {
         for (size_t i=0; i<n; ++i) {
             (*r++)->set_target(*(target++));
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_restraint_dihedral(void *restraint, size_t n, pyobject_t *dihedral)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *dihedral++ = (*r++)->get_dihedral();
         }
     } catch (...) {
         molc_error();

@@ -539,7 +539,7 @@ def ring_arrow_with_post(major_radius, minor_radius, circle_segments,
                          post_radius, post_height):
     v, n, t = ring_arrow(major_radius, minor_radius, circle_segments,
                          ring_segments, head_length, head_radius)
-    pv, pn, pt = post_geometry(post_radius, post_height)
+    pv, pn, pt = post_geometry(post_radius, post_height, caps=True)
     from numpy import concatenate
     rv = concatenate((v, pv))
     rn = concatenate((n, pn))

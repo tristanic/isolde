@@ -73,7 +73,6 @@ class Live_Position_Restraint_Mgr(Position_Restraint_Mgr):
         pd.positions = Places(shift_and_scale=xyzr)
 
     def _update_bond_drawing(self, bd, visibles, n):
-        radii = numpy.ones(n, numpy.double) * 0.2
         bd.positions = Places(opengl_array = visibles._bond_cylinder_transforms)
 
     def set_pin_color(self, color):

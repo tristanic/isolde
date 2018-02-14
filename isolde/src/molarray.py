@@ -133,8 +133,21 @@ class Distance_Restraints(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, Distance_Restraint, Distance_Restraints)
 
+    @property
+    def _bond_cylinder_transforms(self):
+        '''Transforms mapping a unit cylinder onto the restraint bonds. Read only.'''
+        f = c_function('distance_restraint_bond_transform',
+            args = (ctypes.c_void_p, ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_double)))
+        n = len(self)
+        transforms = empty((n,4,4), float64)
+        f(self._c_pointers, n, pointer(transforms))
+        return transforms
+
     enableds =cvec_property('distance_restraint_enabled', npy_bool,
             doc = 'Enable/disable these restraints or get their current states.')
+    visibles = cvec_property('distance_restraint_visible', npy_bool, read_only = True,
+            doc = 'Each restraint will be visible if it is enabled and both atoms are visible.')
     atoms = cvec_property('distance_restraint_atoms', cptr, 2, astype=_atoms_pair, read_only=True,
             doc = 'Returns a 2-tuple of :class:`Atoms` containing the restrained atoms. Read only.' )
     targets = cvec_property('distance_restraint_target', float64,
@@ -143,8 +156,6 @@ class Distance_Restraints(Collection):
             doc = 'Restraint spring constants in kJ mol-1 Angstrom-2')
     distances = cvec_property('distance_restraint_distance', float64, read_only=True,
             doc = 'Current distances between restrained atoms in Angstroms. Read only.')
-    pseudobonds = cvec_property('distance_restraint_pbond', cptr, astype=_pseudobonds, read_only=True,
-            doc = 'Pseudobond visualisations of the restraints. Read only.')
 
 class Proper_Dihedral_Restraints(Collection):
     def __init__(self, c_pointers=None):
@@ -163,6 +174,8 @@ class Proper_Dihedral_Restraints(Collection):
 
     targets = cvec_property('proper_dihedral_restraint_target', float64,
         doc = 'Target angles for each restraint in radians. Can be written.')
+    dihedrals = cvec_property('proper_dihedral_restraint_dihedral', cptr, astype=_proper_dihedrals, read_only=True,
+        doc = 'The restrained dihedrals. Read only.')
     offsets = cvec_property('proper_dihedral_restraint_offset', float64, read_only = True,
         doc = 'Difference between current and target angles in radians. Read only.')
     cutoffs = cvec_property('proper_dihedral_restraint_cutoff', float64,

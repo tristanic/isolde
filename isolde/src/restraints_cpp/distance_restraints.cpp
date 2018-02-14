@@ -8,8 +8,8 @@ template class pyinstance::PythonInstance<isolde::Distance_Restraint_Mgr>;
 
 namespace isolde {
 
-Distance_Restraint::Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pb, Distance_Restraint_Mgr *mgr):
-    _pbond(pb), _mgr(mgr)
+Distance_Restraint::Distance_Restraint(Atom *a1, Atom *a2, Distance_Restraint_Mgr *mgr)
+    : _mgr(mgr)
 {
     for (auto b: a1->bonds())
         for (auto a: b->atoms())
@@ -19,9 +19,9 @@ Distance_Restraint::Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pb, Dista
     _atoms[1] = a2;
 }
 
-Distance_Restraint::Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pb, Distance_Restraint_Mgr *mgr,
+Distance_Restraint::Distance_Restraint(Atom *a1, Atom *a2, Distance_Restraint_Mgr *mgr,
     const double &target, const double &k)
-    : Distance_Restraint(a1, a2, pb, mgr)
+    : Distance_Restraint(a1, a2, mgr)
 {
     set_target(target);
     set_k(k);
@@ -41,7 +41,7 @@ void Distance_Restraint::set_target(double target)
 
 void Distance_Restraint::set_k(double k)
 {
-    _spring_constant = k<0 ? 0.0 : ( k > MAX_SPRING_CONSTANT ? MAX_SPRING_CONSTANT : k);
+    _spring_constant = k<0 ? 0.0 : ( k > MAX_LINEAR_SPRING_CONSTANT ? MAX_LINEAR_SPRING_CONSTANT : k);
     _mgr->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
 }
 
@@ -49,14 +49,33 @@ void Distance_Restraint::set_enabled(bool flag)
 {
     if (_enabled != flag) {
         _enabled = flag;
-        if(flag)
-            _pbond->clear_hide_bits(HIDE_ISOLDE);
-        else
-            _pbond->set_hide_bits(HIDE_ISOLDE);
         _mgr->track_change(this, change_tracker()->REASON_ENABLED_CHANGED);
     }
 }
 
+bool Distance_Restraint::visible() const
+{
+    return atoms()[0]->visible() && atoms()[1]->visible() && _enabled;
+}
+
+double Distance_Restraint::radius() const
+{
+    return _spring_constant/MAX_LINEAR_SPRING_CONSTANT
+        * (LINEAR_RESTRAINT_MAX_RADIUS-LINEAR_RESTRAINT_MIN_RADIUS) + LINEAR_RESTRAINT_MIN_RADIUS;
+}
+
+void Distance_Restraint::bond_cylinder_transform(double *rot44) const
+{
+    const Coord &c0 = atoms()[0]->coord();
+    const Coord &c1 = atoms()[1]->coord();
+    double xyz0[3], xyz1[3];
+    for (size_t i=0; i<3; ++i)
+    {
+        xyz0[i] = c0[i];
+        xyz1[i] = c1[i];
+    }
+    geometry::bond_cylinder_transform_gl<double>(xyz0, xyz1, radius(), 1.0, rot44);
+}
 
 
 Distance_Restraint* Distance_Restraint_Mgr::new_restraint(Atom *a1, Atom *a2)
@@ -93,8 +112,7 @@ Distance_Restraint* Distance_Restraint_Mgr::_new_restraint(Atom *a1, Atom *a2)
         throw std::logic_error(error_same_atom());
         return nullptr;
     }
-    Pseudobond* pbond = _pbgroup->new_pseudobond(a1, a2);
-    Distance_Restraint *d = new Distance_Restraint(a1, a2, pbond, this);
+    Distance_Restraint *d = new Distance_Restraint(a1, a2, this);
     _restraints.insert(d);
     _atom_to_restraints[a1].insert(d);
     _atom_to_restraints[a2].insert(d);

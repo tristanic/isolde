@@ -151,7 +151,7 @@ public:
     }
     void set_spring_constant(const double &k)
     {
-        _spring_constant = k<0 ? 0.0 : ( k > MAX_SPRING_CONSTANT ? MAX_SPRING_CONSTANT : k);
+        _spring_constant = k<0 ? 0.0 : ( k > MAX_RADIAL_SPRING_CONSTANT ? MAX_RADIAL_SPRING_CONSTANT : k);
         mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
     }
 

@@ -4,12 +4,12 @@
 #include <string>
 #include "../colors.h"
 #include "../constants.h"
+#include "../geometry/geometry.h"
 #include "changetracker.h"
 #include <atomstruct/destruct.h>
 #include <atomstruct/string_types.h>
 #include <atomstruct/Atom.h>
 #include <atomstruct/Bond.h>
-#include <atomstruct/Pseudobond.h>
 #include <atomstruct/PBGroup.h>
 #include <pyinstance/PythonInstance.declare.h>
 
@@ -26,8 +26,8 @@ public:
     typedef Atom* Atoms[2];
     Distance_Restraint() {}
     ~Distance_Restraint() { auto du=DestructionUser(this); }
-    Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pbond, Distance_Restraint_Mgr *mgr);
-    Distance_Restraint(Atom *a1, Atom *a2, Pseudobond *pbond, Distance_Restraint_Mgr *mgr,
+    Distance_Restraint(Atom *a1, Atom *a2, Distance_Restraint_Mgr *mgr);
+    Distance_Restraint(Atom *a1, Atom *a2, Distance_Restraint_Mgr *mgr,
             const double &target, const double &k);
     double get_target() const { return _target; }
     void set_target(double target);
@@ -35,15 +35,16 @@ public:
     void set_k(double k);
     bool enabled() const { return _enabled; }
     void set_enabled(bool flag);
+    double radius() const;
+    void bond_cylinder_transform(double *rot44) const;
+    bool visible() const;
     const Atoms &atoms() const {return _atoms;}
-    Pseudobond *pbond() const {return _pbond;}
     double distance() const {return _atoms[0]->coord().distance(_atoms[1]->coord());}
     Structure* structure() const {return _atoms[0]->structure();}
     Change_Tracker *change_tracker() const;
 
 private:
     Atoms _atoms;
-    Pseudobond *_pbond;
     Distance_Restraint_Mgr *_mgr;
     double _target = 0;
     double _spring_constant = 0;
@@ -61,9 +62,8 @@ class Distance_Restraint_Mgr:
 public:
     Distance_Restraint_Mgr() {}
     ~Distance_Restraint_Mgr();
-    Distance_Restraint_Mgr(Structure *structure, Change_Tracker *change_tracker,
-            Proxy_PBGroup *pbgroup)
-        : _structure(structure), _change_tracker(change_tracker), _pbgroup(pbgroup)
+    Distance_Restraint_Mgr(Structure *structure, Change_Tracker *change_tracker)
+        : _structure(structure), _change_tracker(change_tracker)
     {
         change_tracker->register_mgr(_mgr_type, _py_name, _managed_class_py_name);
     }
@@ -71,6 +71,8 @@ public:
     Distance_Restraint* new_restraint(Atom *a1, Atom *a2);
     Distance_Restraint* get_restraint(Atom *a1, Atom *a2, bool create);
 
+    const std::set<Distance_Restraint *>& all_restraints() { return _restraints; }
+    size_t num_restraints() const { return _restraints.size(); }
     const std::set<Distance_Restraint *>& get_restraints(Atom *a) const;
 
     void delete_restraints(const std::set<Distance_Restraint *> &delete_list);
@@ -92,7 +94,6 @@ private:
     // std::set<Atom *> _mapped_atoms;
     Structure* _structure;
     Change_Tracker* _change_tracker;
-    Proxy_PBGroup* _pbgroup;
     const std::string _py_name = "Distance_Restraint_Mgr";
     const std::string _managed_class_py_name = "Distance_Restraints";
     void _delete_restraints(const std::set<Distance_Restraint *>& delete_list);
