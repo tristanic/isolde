@@ -50,7 +50,7 @@ class _Dihedrals(Collection):
         its constituent atoms are in the matching position in the four
         :class:`Atoms` collections. Read only.
         ''')
-    angles = cvec_property('dihedral_angle', float32, read_only=True,
+    angles = cvec_property('dihedral_angle', float64, read_only=True,
         doc='Returns the angle in radians for each dihedral. Read only.')
     names = cvec_property('dihedral_name', string, read_only=True)
 
@@ -88,14 +88,13 @@ class Ramas(Collection):
     angles = cvec_property('rama_omegaphipsi', float64, 3, read_only = True,
             doc = 'The omega, phi and psi angles for each residue in radians. Read only.')
 
-
 class Rotamers(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, Rotamer, Rotamers)
 
     residues = cvec_property('rotamer_residue', cptr, astype=_residues, read_only=True,
                 doc='Residue this rotamer belongs to. Read only.')
-    scores = cvec_property('rotamer_score', float32, read_only=True,
+    scores = cvec_property('rotamer_score', float64, read_only=True,
                 doc='P-value for the current conformation of this rotamer. Read only.')
     ca_cb_bonds = cvec_property('rotamer_ca_cb_bond', cptr, astype=_bonds, read_only=True,
                 doc='The "stem" bond of this rotamer. Read only.')

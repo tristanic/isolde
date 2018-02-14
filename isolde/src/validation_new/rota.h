@@ -43,7 +43,7 @@ public:
     void angles(std::vector<double> &angles) const;
     void angles(double *angles) const;
     std::vector<double> angles() const;
-    float32_t score() const;
+    double score() const;
     Residue* residue() const {return _residue;}
     Bond* ca_cb_bond() const { return _chi_dihedrals[0]->axial_bond(); }
     bool is_symmetric() const {return _def->symmetric;}

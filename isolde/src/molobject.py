@@ -1348,7 +1348,7 @@ class _Dihedral(State):
     def reset_state(self):
         pass
 
-    angle = c_property('dihedral_angle', float32, read_only=True, doc = 'Angle in radians. Read only.')
+    angle = c_property('dihedral_angle', float64, read_only=True, doc = 'Angle in radians. Read only.')
     name = c_property('dihedral_name', string, read_only = True, doc = 'Name of this dihedral. Read only.')
 
 class Proper_Dihedral(_Dihedral):
@@ -1356,11 +1356,8 @@ class Proper_Dihedral(_Dihedral):
     A Proper_Dihedral is defined as a dihedral in which the four atoms are
     strictly bonded a1-a2-a3-a4.
     '''
-    residue = c_property('proper_dihedral_residue', cptr, astype=_residue, read_only=True, doc = 'Residue this dihedral belongs to. Read only.')
-    # target = c_property('proper_dihedral_target', float32,
-    #     doc='Target angle in radians. Will be automatically wrapped to (-pi,pi)')
-    # spring_constant = c_property('proper_dihedral_spring_constant', float32,
-    #     doc='Spring constant for dihedral restraint in kJ/mol/radian**2.')
+    residue = c_property('proper_dihedral_residue', cptr, astype=_residue, read_only=True,
+        doc = 'Residue this dihedral belongs to. Read only.')
     axial_bond = c_property('proper_dihedral_axial_bond', cptr, astype=_bond_or_none, read_only=True,
         doc='Bond forming the axis of this dihedral. Read-only')
 
@@ -1427,7 +1424,7 @@ class Rotamer(State):
 
     residue = c_property('rotamer_residue', cptr, astype=_residue_or_none, read_only=True,
                 doc='Residue this rotamer belongs to. Read only.')
-    score = c_property('rotamer_score', float32, read_only=True,
+    score = c_property('rotamer_score', float64, read_only=True,
                 doc='P-value for the current conformation of this rotamer. Read only.')
     ca_cb_bond = c_property('rotamer_ca_cb_bond', cptr, astype=_bond_or_none, read_only=True,
                 doc='The "stem" bond of this rotamer. Read only.')
@@ -1454,17 +1451,6 @@ class Position_Restraint(State):
     def reset_state(self):
         pass
 
-    @property
-    def _bond_cylinder_transform(self):
-        '''Transform mapping a unit cylinder onto the restraint bond. Read only.'''
-        f = c_function('position_restraint_bond_transform',
-            args = (ctypes.c_void_p, ctypes.c_size_t,
-                ctypes.POINTER(ctypes.c_float)))
-        n = 1
-        transform = empty((n,4,4), float32)
-        f(self._c_pointer, n, pointer(transform))
-        return transform
-
     atom = c_property('position_restraint_atom', cptr, astype=_atom_or_none, read_only=True,
         doc = 'Returns the restrained atom. Read-only.')
     target = c_property('position_restraint_target', float64, 3,
@@ -1477,7 +1463,6 @@ class Position_Restraint(State):
         doc = 'Enable/disable this position restraint.')
     visible = c_property('position_restraint_visible', bool, read_only=True,
         doc = 'Check whether this restraint is currently visible. Read only.')
-
 
 class Distance_Restraint(State):
     def __init__(self, c_pointer):

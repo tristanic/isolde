@@ -37,7 +37,7 @@ Dihedral::coords() const
     return _coords;
 }
 
-Real
+double
 Dihedral::angle() const
 {
     return geometry::dihedral_angle<Coord, Real>(atoms()[0]->coord(),

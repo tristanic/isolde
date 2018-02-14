@@ -69,7 +69,7 @@ GET_PYTHON_INSTANCES(proper_dihedral, Proper_Dihedral)
  ************************************************/
 
 extern "C" EXPORT void
-dihedral_angle(void *dihedrals, size_t n, float32_t *angles)
+dihedral_angle(void *dihedrals, size_t n, double *angles)
 {
     Dihedral **d = static_cast<Dihedral **>(dihedrals);
     error_wrap_array_get(d, n, &Dihedral::angle, angles);

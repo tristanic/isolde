@@ -61,7 +61,7 @@ void Rotamer::angles(double *a) const
 
 }
 
-float32_t Rotamer::score() const
+double Rotamer::score() const
 {
     auto interpolator = _mgr->get_interpolator(_residue->name());
     std::vector<double> cur_angles(_def->n_chi);
