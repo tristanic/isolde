@@ -55,17 +55,17 @@ double Position_Restraint::radius() const
         * (LINEAR_RESTRAINT_MAX_RADIUS-LINEAR_RESTRAINT_MIN_RADIUS) + LINEAR_RESTRAINT_MIN_RADIUS;
 }
 
-void Position_Restraint::bond_cylinder_transform(float *rot44) const
+void Position_Restraint::bond_cylinder_transform(double *rot44) const
 {
     const Coord &c0 = atom()->coord();
     const Coord &c1 = get_target();
-    float xyz0[3], xyz1[3];
+    double xyz0[3], xyz1[3];
     for (size_t i=0; i<3; ++i)
     {
         xyz0[i] = c0[i];
         xyz1[i] = c1[i];
     }
-    geometry::bond_cylinder_transform_gl<float>(xyz0, xyz1, radius(), 1.0, rot44);
+    geometry::bond_cylinder_transform_gl<double>(xyz0, xyz1, radius(), 1.0, rot44);
 }
 
 Position_Restraint* Position_Restraint_Mgr::_new_restraint(Atom *atom, const Coord& target)

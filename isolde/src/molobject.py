@@ -1224,8 +1224,8 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         self.set_default_colors()
         self._update_needed = True
         self._prepare_drawings()
-        self._restraint_changes_handler = self.triggers.add_handler('changes', self._changes_cb)
-        self._atom_changes_handler = model.triggers.add_handler('changes', self._changes_cb)
+        self._restraint_changes_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
+        self._atom_changes_handler = model.triggers.add_handler('changes', self._model_changes_cb)
         self.update_graphics()
 
     def delete(self):
@@ -1248,7 +1248,6 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         post_d.vertices, post_d.normals, post_d.triangles = geometry.post_geometry(0.05, 1, caps=True)
         ring_d.display = False
         post_d.display = False
-
 
     def _get_restraints(self, dihedrals, create=False):
         n = len(dihedrals)
@@ -1294,14 +1293,19 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
                 raise TypeError('Each color should be an array of 4 values in the range (0,255)')
         f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc))
 
-    def _changes_cb(self, trigger_name, changeds):
-        # For the time being, just update on any trigger
-        self._update_needed = True
-        self._update_graphics_if_needed()
+    def _model_changes_cb(self, trigger_name, changes):
+        update_needed = False
+        atom_reasons = changes[1].atom_reasons()
+        if 'display changed' in atom_reasons or 'hide changed' in atom_reasons:
+            update_needed = True
+        if 'coord changed' in atom_reasons:
+            update_needed = True
+        if update_needed:
+            self._update_graphics()
 
-    def _update_graphics_if_needed(self):
-        if self._update_needed:
-            self.update_graphics()
+    def _restraint_changes_cb(self, trigger_name, changeds):
+        # For the time being, just update on any trigger
+        self._update_graphics()
 
     def update_graphics(self):
         ring_d = self._ring_drawing

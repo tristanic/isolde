@@ -109,9 +109,9 @@ class Position_Restraints(Collection):
         '''Transforms mapping a unit cylinder onto the restraint bonds. Read only.'''
         f = c_function('position_restraint_bond_transform',
             args = (ctypes.c_void_p, ctypes.c_size_t,
-                ctypes.POINTER(ctypes.c_float)))
+                ctypes.POINTER(ctypes.c_double)))
         n = len(self)
-        transforms = empty((n,4,4), float32)
+        transforms = empty((n,4,4), float64)
         f(self._c_pointers, n, pointer(transforms))
         return transforms
 

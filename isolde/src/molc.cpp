@@ -1260,7 +1260,7 @@ position_restraint_target_vector(void *restraint, size_t n, double *vec)
     }
 }
 
-extern "C" EXPORT void position_restraint_bond_transform(void *restraint, size_t n, float32_t *transform)
+extern "C" EXPORT void position_restraint_bond_transform(void *restraint, size_t n, double *transform)
 {
     Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
     try {
