@@ -31,9 +31,9 @@ void Dihedral_Restraint_Mgr_Base<DType, RType>::destructors_done(const std::set<
     auto db = DestructionBatcher(this);
     std::set<RType *> to_delete;
     for (auto &it: _dihedral_to_restraint) {
-        auto r = it.second;
-        if (destroyed.find(r) != destroyed.end())
-            to_delete.insert(r);
+        auto d = it.first;
+        if (destroyed.find(d) != destroyed.end())
+            to_delete.insert(it.second);
     }
     _delete_restraints(to_delete);
 }

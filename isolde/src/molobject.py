@@ -1046,7 +1046,10 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
 
     def _model_changes_cb(self, trigger_name, changes):
         update_needed = False
-        atom_reasons = changes[1].atom_reasons()
+        changes = changes[1]
+        if changes.num_deleted_atoms():
+            update_needed = True
+        atom_reasons = changes.atom_reasons()
         if 'display changed' in atom_reasons or 'hide changed' in atom_reasons:
             update_needed = True
         if 'coord changed' in atom_reasons:
@@ -1167,7 +1170,10 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
 
     def _model_changes_cb(self, trigger_name, changes):
         update_needed = False
-        atom_reasons = changes[1].atom_reasons()
+        changes = changes[1]
+        if changes.num_deleted_atoms():
+            update_needed = True
+        atom_reasons = changes.atom_reasons()
         if 'display changed' in atom_reasons or 'hide changed' in atom_reasons:
             update_needed = True
         if 'coord changed' in atom_reasons:
@@ -1295,7 +1301,10 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
 
     def _model_changes_cb(self, trigger_name, changes):
         update_needed = False
-        atom_reasons = changes[1].atom_reasons()
+        changes = changes[1]
+        if changes.num_deleted_atoms():
+            update_needed = True
+        atom_reasons = changes.atom_reasons()
         if 'display changed' in atom_reasons or 'hide changed' in atom_reasons:
             update_needed = True
         if 'coord changed' in atom_reasons:
