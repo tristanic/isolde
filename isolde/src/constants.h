@@ -5,7 +5,7 @@
 namespace isolde
 {
 
-const double ALMOST_ZERO = 1e-6;
+const double ALMOST_ZERO = 1e-12;
 const double NONE_VAL = std::nan("Not applicable");
 const double NO_RAMA_SCORE = -1.0;
 const double TWO_PI = 2.0*M_PI;
