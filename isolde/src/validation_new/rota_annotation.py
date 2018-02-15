@@ -121,11 +121,11 @@ class Rotamer_Annotations(Model):
         rots, scales, colors = self._mgr.validate_scale_and_color_rotamers(
             self._selected_rotamers, max_scale=self._MAX_SCALE,
             non_favored_only = not(self._show_favored))
+        d = self._drawing
         if not len(rots):
-            self.display = False
+            d.display = False
             return
         bonds = rots.ca_cb_bonds
-        d = self._drawing
         transforms = bond_cylinder_placements(bonds)
         if scale_by_scores:
             transforms = Places(place_array=scale_transforms(scales, transforms.array()))
