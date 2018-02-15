@@ -1137,6 +1137,7 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
     and their visualisations for a single atomic structure.
     '''
     _DEFAULT_BOND_COLOR = [148, 0, 211, 255] # violet
+    _DEFAULT_TARGET_COLOR = [168, 255, 230, 255]
     def __init__(self, model, c_pointer=None):
         '''
         Prepare a distance restraint manager for a given atomic model.
@@ -1169,10 +1170,21 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         self.add_drawing(bd)
         bd.vertices, bd.normals, bd.triangles = self._pseudobond_geometry()
         self.set_bond_color(self._DEFAULT_BOND_COLOR)
+        td = self._target_drawing = Drawing('Target distances')
+        td.vertices, td.normals, td.triangles = self._target_geometry()
+        self.add_drawing(td)
+        self.set_target_color(self._DEFAULT_TARGET_COLOR)
         bd.display = False
 
     def set_bond_color(self, color):
         self._bond_drawing.color = color
+
+    def set_target_color(self, color):
+        self._target_drawing.color = color
+
+    def _target_geometry(self, major_radius=0.3, minor_radius=0.025, thickness=0.02, height=1, nz=2, nc1 = 6, nc2=6):
+        from .geometry import dumbbell_geometry
+        return dumbbell_geometry(major_radius, minor_radius, thickness, height, nz, nc1, nc2)
 
     def _pseudobond_geometry(self, segments=9):
         from chimerax.core import surface
@@ -1193,17 +1205,23 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
 
     def _update_graphics(self):
         bd = self._bond_drawing
+        td = self._target_drawing
         visibles = self.visible_restraints
         n = len(visibles)
         if n==0:
             bd.display = False
+            td.display = False
             return
         bd.display = True
+        td.display = True
         self._update_bond_drawing(bd, visibles, n)
+        self._update_target_drawing(td, visibles, n)
 
     def _update_bond_drawing(self, bd, visibles, n):
-        from chimerax.core.geometry import Places
-        bd.positions = Places(opengl_array = visibles._bond_cylinder_transforms)
+        bd.positions = visibles._bond_cylinder_transforms
+
+    def _update_target_drawing(self, td, visibles, n):
+        td.positions = visibles._target_transforms
 
     def add_restraint(self, atom1, atom2):
         f = c_function('distance_restraint_mgr_get_restraint',

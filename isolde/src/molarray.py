@@ -139,13 +139,24 @@ class Distance_Restraints(Collection):
     @property
     def _bond_cylinder_transforms(self):
         '''Transforms mapping a unit cylinder onto the restraint bonds. Read only.'''
+        from chimerax.core.geometry import Places
         f = c_function('distance_restraint_bond_transform',
             args = (ctypes.c_void_p, ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_double)))
         n = len(self)
         transforms = empty((n,4,4), float64)
         f(self._c_pointers, n, pointer(transforms))
-        return transforms
+        return Places(opengl_array=transforms)
+
+    @property
+    def _target_transforms(self):
+        from chimerax.core.geometry import Places
+        f = c_function('distance_restraint_target_transform',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
+        n = len(self)
+        transforms=empty((n,4,4), float64)
+        f(self._c_pointers, n, pointer(transforms))
+        return Places(opengl_array=transforms)
 
     enableds =cvec_property('distance_restraint_enabled', npy_bool,
             doc = 'Enable/disable these restraints or get their current states.')

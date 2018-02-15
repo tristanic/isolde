@@ -64,7 +64,18 @@ double Distance_Restraint::radius() const
         * (LINEAR_RESTRAINT_MAX_RADIUS-LINEAR_RESTRAINT_MIN_RADIUS) + LINEAR_RESTRAINT_MIN_RADIUS;
 }
 
+void Distance_Restraint::target_transform(double *rot44) const
+{
+    double scale = get_target() / distance();
+    _bond_transform(rot44, 1.0, scale);
+}
+
 void Distance_Restraint::bond_cylinder_transform(double *rot44) const
+{
+    _bond_transform(rot44, radius(), 1.0);
+}
+
+void Distance_Restraint::_bond_transform(double *rot44, double radius, double length_scale) const
 {
     const Coord &c0 = atoms()[0]->coord();
     const Coord &c1 = atoms()[1]->coord();
@@ -74,7 +85,7 @@ void Distance_Restraint::bond_cylinder_transform(double *rot44) const
         xyz0[i] = c0[i];
         xyz1[i] = c1[i];
     }
-    geometry::bond_cylinder_transform_gl<double>(xyz0, xyz1, radius(), 1.0, rot44);
+    geometry::bond_cylinder_transform_gl<double>(xyz0, xyz1, radius, length_scale, rot44);
 }
 
 

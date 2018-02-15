@@ -1480,6 +1480,20 @@ distance_restraint_bond_transform(void *restraint, size_t n, double *rot44)
     }
 }
 
+extern "C" EXPORT void
+distance_restraint_target_transform(void *restraint, size_t n, double *rot44)
+{
+    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*d++)->target_transform(rot44);
+            rot44+=16;
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
 
 
 /***************************************************************
