@@ -260,42 +260,6 @@ proper_dihedral_mgr_num_mapped_dihedrals(void *mgr)
     }
 }
 
-// const std::vector<std::string> RAMA_DIHEDRAL_NAMES({"omega", "phi", "psi"});
-// extern "C" EXPORT size_t
-// proper_dihedral_mgr_valid_rama_residues(void *mgr, void *in_residues, size_t n,
-//     pyobject_t *out_residues, pyobject_t *omega, pyobject_t *phi, pyobject_t *psi)
-// {
-//     size_t found = 0;
-//     bool found_all = true;
-//     Proper_Dihedral* found_dihedrals[3];
-//     Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
-//     Residue **r = static_cast<Residue **>(in_residues);
-//     try {
-//         for (size_t i=0; i<n; ++i) {
-//             found_all=true;
-//             for(size_t j=0; j<3; ++j) {
-//                 Proper_Dihedral *d = m->get_dihedral(r[i], RAMA_DIHEDRAL_NAMES[j], true);
-//                 if (d == nullptr) {
-//                     found_all = false;
-//                     break;
-//                 }
-//                 found_dihedrals[j] = d;
-//             }
-//             if (found_all) {
-//                 out_residues[found] = r[i];
-//                 omega[found] = found_dihedrals[0];
-//                 phi[found] = found_dihedrals[1];
-//                 psi[found] = found_dihedrals[2];
-//                 found++;
-//             }
-//         }
-//         return found;
-//     } catch (...) {
-//         molc_error();
-//         return 0;
-//     }
-// } //proper_dihedral_mgr_valid_rama_residues
-
 
 /**********************************************************************
  *
@@ -555,7 +519,6 @@ rama_mgr_validate_and_color_cas(void *mgr, void *rama, size_t n)
     }
 }
 
-
 extern "C" EXPORT void
 rama_mgr_bin_scores(void *mgr, double *score, uint8_t *r_case, size_t n, int32_t *bin)
 {
@@ -612,6 +575,13 @@ rama_is_valid(void *rama, size_t n, npy_bool *valid)
     } catch (...) {
         molc_error();
     }
+}
+
+extern "C" EXPORT void
+rama_visible(void *rama, size_t n, npy_bool *visible)
+{
+    Rama **r = static_cast<Rama **>(rama);
+    error_wrap_array_get(r, n, &Rama::visible, visible);
 }
 
 extern "C" EXPORT void

@@ -41,6 +41,7 @@ public:
     double psi_angle();
     double score();
     bool is_valid_rama();
+    bool visible() const { return CA_atom()->visible(); }
     uint8_t rama_case();
     bool no_valid_dihedrals();
     Residue *residue() const {return _residue;}

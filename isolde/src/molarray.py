@@ -81,6 +81,8 @@ class Ramas(Collection):
             doc = 'The alpha carbon of each amino acid residue. Read only.')
     valids = cvec_property('rama_is_valid', npy_bool, read_only = True,
             doc = 'True for each residue that has all three of omega, phi and psi. Read only.')
+    visibles = cvec_property('rama_visible', npy_bool, read_only = True,
+            doc = 'True for each residue whose alpha carbon is visible. Read only.')
     scores = cvec_property('rama_score', float64, read_only = True,
             doc = 'The score of each residue on the MolProbity Ramachandran contours. Read only.')
     phipsis = cvec_property('rama_phipsi', float64, 2, read_only = True,

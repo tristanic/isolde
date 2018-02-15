@@ -712,7 +712,8 @@ class Rota_Mgr:
                 raise TypeError('Each color should be an array of 4 values in the range (0,255)')
         f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc))
 
-    def get_color_scale(self):
+    @property
+    def color_scale(self):
         f = c_function('rota_mgr_color_scale',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
                 ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)))
@@ -969,7 +970,7 @@ class _Restraint_Mgr(Model):
         set_c_pointer(self, c_pointer)
         f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
-        super().__init__(name+' Manager', session)
+        super().__init__(name, session)
         self.pickable = False
         self.model = model
         model.add([self])
@@ -997,6 +998,21 @@ class _Restraint_Mgr(Model):
     def deleted(self):
         '''Has the C++ side been deleted?'''
         return not hasattr(self, '_c_pointer')
+
+    @property
+    def display(self):
+        return Model.display.fget(self)
+
+    @display.setter
+    def display(self, flag):
+        cflag = self.display
+        Model.display.fset(self, flag)
+        if flag and not cflag:
+            self.update_graphics()
+
+    def update_graphics(self):
+        ''' Should be overridden in derived classes. '''
+        pass
 
 class Position_Restraint_Mgr(_Restraint_Mgr):
     '''
@@ -1387,6 +1403,8 @@ class Rama(State):
             doc = 'The alpha carbon of the amino acid residue. Read only.')
     valid = c_property('rama_is_valid', npy_bool, read_only = True,
             doc = 'True if this residue has all three of omega, phi and psi. Read only.')
+    visible = c_property('rama_visible', npy_bool, read_only = True,
+            doc = 'True if the alpha carbon of this residue is visible. Read only.')
     score = c_property('rama_score', float64, read_only = True,
             doc = 'The score of this residue on the MolProbity Ramachandran contours. Read only.')
     phipsi = c_property('rama_phipsi', float64, 2, read_only = True,
