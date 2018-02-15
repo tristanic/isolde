@@ -482,7 +482,27 @@ def pin_geometry(handle_radius, pin_radius, total_height):
 
     return vertices, normals, triangles
 
-
+def dumbbell_geometry(major_radius=1, minor_radius=0.1, thickness=0.1, height=1, nz=2, nc1 = 10, nc2=10):
+    from chimerax.core.surface.shapes import cylinder_geometry
+    dva, dna, dta = cylinder_geometry(major_radius, thickness, nz, nc1, True)
+    hva, hna, hta = cylinder_geometry(minor_radius, height, nz, nc2, False)
+    nv = len(dva)
+    vs = []
+    ns = []
+    ts = []
+    offset = numpy.array([0,0,height/2])
+    vs.append(dva-offset)
+    ns.append(dna)
+    ts.append(dta)
+    vs.append(hva)
+    ns.append(hna)
+    ts.append(hta + nv)
+    nv += len(hva)
+    vs.append(dva+offset)
+    ns.append(dna)
+    ts.append(dta+nv)
+    vd, nd, td = numpy.concatenate(vs), numpy.concatenate(ns), numpy.concatenate(ts)
+    return vd, nd, td
 
 def arc_points(n, radius, starting_angle, final_angle):
     final_angle = final_angle*n/(n-1)

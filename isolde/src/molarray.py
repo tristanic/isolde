@@ -81,6 +81,8 @@ class Ramas(Collection):
             doc = 'The alpha carbon of each amino acid residue. Read only.')
     valids = cvec_property('rama_is_valid', npy_bool, read_only = True,
             doc = 'True for each residue that has all three of omega, phi and psi. Read only.')
+    visibles = cvec_property('rama_visible', npy_bool, read_only = True,
+            doc = 'True for each residue whose alpha carbon is visible. Read only.')
     scores = cvec_property('rama_score', float64, read_only = True,
             doc = 'The score of each residue on the MolProbity Ramachandran contours. Read only.')
     phipsis = cvec_property('rama_phipsi', float64, 2, read_only = True,
@@ -137,13 +139,24 @@ class Distance_Restraints(Collection):
     @property
     def _bond_cylinder_transforms(self):
         '''Transforms mapping a unit cylinder onto the restraint bonds. Read only.'''
+        from chimerax.core.geometry import Places
         f = c_function('distance_restraint_bond_transform',
             args = (ctypes.c_void_p, ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_double)))
         n = len(self)
         transforms = empty((n,4,4), float64)
         f(self._c_pointers, n, pointer(transforms))
-        return transforms
+        return Places(opengl_array=transforms)
+
+    @property
+    def _target_transforms(self):
+        from chimerax.core.geometry import Places
+        f = c_function('distance_restraint_target_transform',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
+        n = len(self)
+        transforms=empty((n,4,4), float64)
+        f(self._c_pointers, n, pointer(transforms))
+        return Places(opengl_array=transforms)
 
     enableds =cvec_property('distance_restraint_enabled', npy_bool,
             doc = 'Enable/disable these restraints or get their current states.')

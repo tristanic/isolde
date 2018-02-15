@@ -712,7 +712,8 @@ class Rota_Mgr:
                 raise TypeError('Each color should be an array of 4 values in the range (0,255)')
         f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc))
 
-    def get_color_scale(self):
+    @property
+    def color_scale(self):
         f = c_function('rota_mgr_color_scale',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
                 ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)))
@@ -969,7 +970,7 @@ class _Restraint_Mgr(Model):
         set_c_pointer(self, c_pointer)
         f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
-        super().__init__(name+' Manager', session)
+        super().__init__(name, session)
         self.pickable = False
         self.model = model
         model.add([self])
@@ -997,6 +998,21 @@ class _Restraint_Mgr(Model):
     def deleted(self):
         '''Has the C++ side been deleted?'''
         return not hasattr(self, '_c_pointer')
+
+    @property
+    def display(self):
+        return Model.display.fget(self)
+
+    @display.setter
+    def display(self, flag):
+        cflag = self.display
+        Model.display.fset(self, flag)
+        if flag and not cflag:
+            self.update_graphics()
+
+    def update_graphics(self):
+        ''' Should be overridden in derived classes. '''
+        pass
 
 class Position_Restraint_Mgr(_Restraint_Mgr):
     '''
@@ -1124,6 +1140,7 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
     and their visualisations for a single atomic structure.
     '''
     _DEFAULT_BOND_COLOR = [148, 0, 211, 255] # violet
+    _DEFAULT_TARGET_COLOR = [168, 255, 230, 255]
     def __init__(self, model, c_pointer=None):
         '''
         Prepare a distance restraint manager for a given atomic model.
@@ -1156,10 +1173,21 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         self.add_drawing(bd)
         bd.vertices, bd.normals, bd.triangles = self._pseudobond_geometry()
         self.set_bond_color(self._DEFAULT_BOND_COLOR)
+        td = self._target_drawing = Drawing('Target distances')
+        td.vertices, td.normals, td.triangles = self._target_geometry()
+        self.add_drawing(td)
+        self.set_target_color(self._DEFAULT_TARGET_COLOR)
         bd.display = False
 
     def set_bond_color(self, color):
         self._bond_drawing.color = color
+
+    def set_target_color(self, color):
+        self._target_drawing.color = color
+
+    def _target_geometry(self, major_radius=0.3, minor_radius=0.025, thickness=0.02, height=1, nz=2, nc1 = 6, nc2=6):
+        from .geometry import dumbbell_geometry
+        return dumbbell_geometry(major_radius, minor_radius, thickness, height, nz, nc1, nc2)
 
     def _pseudobond_geometry(self, segments=9):
         from chimerax.core import surface
@@ -1183,17 +1211,23 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
 
     def _update_graphics(self):
         bd = self._bond_drawing
+        td = self._target_drawing
         visibles = self.visible_restraints
         n = len(visibles)
         if n==0:
             bd.display = False
+            td.display = False
             return
         bd.display = True
+        td.display = True
         self._update_bond_drawing(bd, visibles, n)
+        self._update_target_drawing(td, visibles, n)
 
     def _update_bond_drawing(self, bd, visibles, n):
-        from chimerax.core.geometry import Places
-        bd.positions = Places(opengl_array = visibles._bond_cylinder_transforms)
+        bd.positions = visibles._bond_cylinder_transforms
+
+    def _update_target_drawing(self, td, visibles, n):
+        td.positions = visibles._target_transforms
 
     def add_restraint(self, atom1, atom2):
         f = c_function('distance_restraint_mgr_get_restraint',
@@ -1396,6 +1430,8 @@ class Rama(State):
             doc = 'The alpha carbon of the amino acid residue. Read only.')
     valid = c_property('rama_is_valid', npy_bool, read_only = True,
             doc = 'True if this residue has all three of omega, phi and psi. Read only.')
+    visible = c_property('rama_visible', npy_bool, read_only = True,
+            doc = 'True if the alpha carbon of this residue is visible. Read only.')
     score = c_property('rama_score', float64, read_only = True,
             doc = 'The score of this residue on the MolProbity Ramachandran contours. Read only.')
     phipsi = c_property('rama_phipsi', float64, 2, read_only = True,

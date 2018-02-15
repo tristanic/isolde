@@ -19,24 +19,33 @@ class Rotamer_Annotations(Model):
     pickable = False
 
     def __init__(self, session, atomic_structure):
-        Model.__init__(self, 'Rotamer Annotations', session)
+        Model.__init__(self, 'Rotamer Validation', session)
 
         from .. import session_extensions
         mgr = self._mgr = session_extensions.get_rotamer_manager(session)
         structure = self._atomic_structure = atomic_structure
-        self._selected_residues = structure.residues
-        self._selected_rotamers = mgr.get_rotamers(structure.residues)
         self._MAX_SCALE = 2 # maximum scale factor for annotation drawings
         self._show_favored = False
-        self._track_whole_model = True
-        t = structure.triggers
-        self._structure_change_handler = t.add_handler('changes', self._update_graphics_if_needed)
-
         d = self._drawing = self._rota_indicator()
         self.add_drawing(d)
         structure.add([self])
+        self.track_whole_model = True
+        t = structure.triggers
+        self._structure_change_handler = t.add_handler('changes', self._update_graphics_if_needed)
+
         self.update_graphics()
         self._update_needed = False
+
+    @property
+    def display(self):
+        return Model.display.fget(self)
+
+    @display.setter
+    def display(self, flag):
+        cflag = self.display
+        Model.display.fset(self, flag)
+        if flag and not cflag:
+            self.update_graphics()
 
     @property
     def track_whole_model(self):
@@ -45,6 +54,10 @@ class Rotamer_Annotations(Model):
     @track_whole_model.setter
     def track_whole_model(self, flag):
         self._track_whole_model = flag
+        if flag:
+            res = self._selected_residues = self._atomic_structure.residues
+            self._selected_rotamers = self._mgr.get_rotamers(res)
+            self.update_graphics()
 
     def restrict_to_selected_residues(self, residues):
         ''' Restrict validation to a defined set of residues. '''
@@ -55,14 +68,12 @@ class Rotamer_Annotations(Model):
             raise TypeError('All residues must be from the parent model!')
         self._selected_residues = residues
         self._selected_rotamers = self._mgr.get_rotamers(residues)
+        self.track_whole_model = False
         self.update_graphics()
 
-    def track_all_residues(self):
-        self.restrict_to_selected_residues(self._atomic_structure.residues)
-
     @property
-    def color_map(self):
-        return self._mgr.get_color_scale()
+    def color_scale(self):
+        return self._mgr.color_scale
 
     @property
     def show_favored(self):
@@ -83,6 +94,8 @@ class Rotamer_Annotations(Model):
 
 
     def _update_graphics_if_needed(self, trigger_name, changes):
+        if not self.visible:
+            return
         changes = changes[1]
         update_needed = False
         if (self._track_whole_model):
@@ -91,11 +104,17 @@ class Rotamer_Annotations(Model):
             take care of themselves.
             '''
             if len(changes.created_atoms()):
+<<<<<<< HEAD
                 r = self._selected_residues = self._atomic_structure.residues
                 self._selected_rotamers = self._mgr.get_rotamers(r)
                 update_needed = True
         if changes.num_deleted_atoms():
             update_needed = True
+=======
+                #Trigger rebuild of rotamer array and graphics update
+                self.track_whole_model = True
+                return
+>>>>>>> 3ac8f62fd15b4abb95a36bb630d3037feaff16c7
         reasons = changes.atom_reasons()
         if 'coord changed' in reasons:
             update_needed = True
@@ -110,11 +129,11 @@ class Rotamer_Annotations(Model):
         rots, scales, colors = self._mgr.validate_scale_and_color_rotamers(
             self._selected_rotamers, max_scale=self._MAX_SCALE,
             non_favored_only = not(self._show_favored))
+        d = self._drawing
         if not len(rots):
-            self.display = False
+            d.display = False
             return
         bonds = rots.ca_cb_bonds
-        d = self._drawing
         transforms = bond_cylinder_placements(bonds)
         if scale_by_scores:
             transforms = Places(place_array=scale_transforms(scales, transforms.array()))
