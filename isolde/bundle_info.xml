@@ -44,10 +44,17 @@ with the surroundings.
     <SourceFile>src/restraints_cpp/dihedral_restraints.cpp</SourceFile>
     <SourceFile>src/restraints_cpp/position_restraints.cpp</SourceFile>
     <SourceFile>src/molc.cpp</SourceFile>
-    <Library>OpenMM</Library>
     <Library>atomstruct</Library>
     <Library>pyinstance</Library>
   </CModule>
+  <CModule name="openmm" usesNumpy="true">
+      <Library>OpenMM</Library>
+      <Library>atomstruct</Library>
+      <Library>pyinstance</Library>
+      <IncludeDir>/usr/local/openmm/include</IncludeDir>
+      <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
+  </CModule>
+
 
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>

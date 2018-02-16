@@ -13,6 +13,9 @@
 #endif
 
 #include <Python.h>
+#include <string>
+#include <stdexcept>
+#include <ios>
 
 // Argument delcaration types:
 //
