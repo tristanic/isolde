@@ -150,9 +150,9 @@ private:
     std::unordered_map<size_t, cutoffs> _cutoffs;
     std::unordered_map<size_t, colors::colormap> _colors;
     colors::color _null_color;
-    colors::intcolor _cis_pro_color = {32, 255, 32, 255};
-    colors::intcolor _cis_nonpro_color = {255, 32, 32, 255};
-    colors::intcolor _twisted_color = {255, 255, 32, 255};
+    colors::intcolor _cis_pro_color = {64, 255, 64, 255};
+    colors::intcolor _cis_nonpro_color = {255, 64, 64, 255};
+    colors::intcolor _twisted_color = {255, 255, 64, 255};
 
     void _color_by_score(const double &score, const uint8_t &r_case, colors::color &color);
     void _delete_ramas(const std::set<Rama *> to_delete);

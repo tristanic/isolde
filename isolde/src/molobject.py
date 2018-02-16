@@ -547,7 +547,7 @@ class Rama_Mgr:
         n = len(ramas)
         f(self._c_pointer, ramas._c_pointers, n)
 
-    def draw_cis_and_twisted_omegas(self, ramas):
+    def _draw_cis_and_twisted_omegas(self, ramas):
         f = c_function('rama_mgr_draw_cis_and_twisted_omegas',
             args = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
                 ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p),

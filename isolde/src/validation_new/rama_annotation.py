@@ -1,4 +1,4 @@
-from chimerax.core.models import Model
+from chimerax.core.models import Model, Drawing
 
 class Rama_Annotator(Model):
     '''
@@ -15,8 +15,9 @@ class Rama_Annotator(Model):
         structure.add([self])
         from .. import session_extensions
         mgr = self._mgr = session_extensions.get_ramachandran_manager(session)
+        self._prepare_drawings()
         self.track_whole_model = True
-        self._prepare_display()
+        self._prepare_ca_display()
         t = structure.triggers
         self._structure_change_handler = t.add_handler('changes', self._update_graphics_if_needed)
         self.update_graphics()
@@ -43,16 +44,21 @@ class Rama_Annotator(Model):
         cflag = self.display
         Model.display.fset(self, flag)
         if flag and not cflag:
-            self._prepare_display()
+            self._prepare_ca_display()
             self.update_graphics()
         if cflag and not flag:
-            self._revert_display()
+            self._revert_ca_display()
 
-    def _prepare_display(self):
+    def _prepare_drawings(self):
+        if not hasattr(self, 'omega_drawing'):
+            od = self._omega_drawing = Drawing('cis/twisted omegas')
+            self.add_drawing(od)
+
+    def _prepare_ca_display(self):
         from chimerax.core.atomic import Atom
         self._selected_ramas.ca_atoms.draw_modes = Atom.BALL_STYLE
 
-    def _revert_display(self):
+    def _revert_ca_display(self):
         res = self._atomic_structure.residues
         ramas = self._mgr.get_ramas(res)
         cas = ramas.ca_atoms
@@ -79,7 +85,7 @@ class Rama_Annotator(Model):
         return self._mgr.color_scale
 
     def delete(self):
-        self._revert_display()
+        self._revert_ca_display()
         h = self._structure_change_handler
         if h is not None:
             self._atomic_structure.triggers.remove_handler(h)
@@ -98,17 +104,28 @@ class Rama_Annotator(Model):
             if len(changes.created_atoms()):
                 # Trigger rebuild of rama array and graphics update
                 self.track_whole_model = True
-                self._prepare_display()
+                self._prepare_ca_display()
                 return
         reasons = changes.atom_reasons()
         if 'coord changed' in reasons:
             update_needed = True
         if 'display changed' in reasons or 'hide changed' in reasons:
-            self._prepare_display()
+            self._prepare_ca_display()
             self._visible_ramas = self._selected_ramas[self._selected_ramas.visibles]
             update_needed = True
         if update_needed:
             self.update_graphics()
 
     def update_graphics(self, *_):
-        self._mgr.color_cas_by_rama_score(self._visible_ramas)
+        ramas = self._visible_ramas
+        od = self._omega_drawing
+        if not len(ramas):
+            od.display = False
+        mgr = self._mgr
+        mgr.color_cas_by_rama_score(ramas)
+        v, n, t, c = mgr._draw_cis_and_twisted_omegas(ramas)
+        if len(v):
+            od.vertices, od.normals, od.triangles, od.vertex_colors = v, n, t, c
+            od.display = True
+        else:
+            od.display = False

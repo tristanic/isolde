@@ -561,10 +561,10 @@ rama_mgr_draw_cis_and_twisted_omegas(void *mgr, void *rama, size_t n, double *ve
                     v1[j] = vertices[3+j]-vertices[j];
                     v2[j] = vertices[9+j]-vertices[j];
                 }
-                geometry::cross_product_3D(v2, v1, normals);
+                geometry::cross_product_3D(v1, v2, normals);
                 // Copy this normal to the others
                 for (size_t j=3; j<N_LENGTH; ++j) {
-                    normals[j] = normals[j*3];
+                    normals[j] = normals[j%3];
                 }
                 for (size_t j=0; j<T_LENGTH; ++j) {
                     triangles[j] = vertex_count + T_INDICES[j];
