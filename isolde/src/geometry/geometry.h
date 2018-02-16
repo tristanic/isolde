@@ -269,6 +269,8 @@ void bond_cylinder_transform_gl(T xyz0[3], T xyz1[3], T r, T length_scale, T *ro
     *rot44++ = 1;
 }
 
+
+
 } // namespace geometry
 } // namespace isolde
 #endif //isolde_geometry

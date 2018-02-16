@@ -2,6 +2,7 @@
 #define ISOLDE_RAMA
 
 #include <cmath>
+#include <array>
 
 #include "../atomic_cpp/dihedral.h"
 #include "../atomic_cpp/dihedral_mgr.h"
@@ -55,6 +56,7 @@ private:
     Residue* _residue;
     Proper_Dihedral_Mgr* _dmgr;
     Rama_Mgr* _rmgr;
+
     const char* err_msg_not_protein()
     {
         return "Residue must be part of a protein chain!";
@@ -108,6 +110,10 @@ public:
     RegularGridInterpolator<double> *get_interpolator(size_t r_case)
         { return &(_interpolators.at(r_case)); }
 
+    const colors::intcolor& cis_pro_color() const { return _cis_pro_color; }
+    const colors::intcolor& cis_nonpro_color() const { return _cis_nonpro_color; }
+    const colors::intcolor& twisted_color() const { return _twisted_color; }
+
     uint8_t rama_case(Residue *res);
 
     //! Get the Ramachandran P-value for a single residue
@@ -144,6 +150,10 @@ private:
     std::unordered_map<size_t, cutoffs> _cutoffs;
     std::unordered_map<size_t, colors::colormap> _colors;
     colors::color _null_color;
+    colors::intcolor _cis_pro_color = {32, 255, 32, 255};
+    colors::intcolor _cis_nonpro_color = {255, 32, 32, 255};
+    colors::intcolor _twisted_color = {255, 255, 32, 255};
+
     void _color_by_score(const double &score, const uint8_t &r_case, colors::color &color);
     void _delete_ramas(const std::set<Rama *> to_delete);
 }; //class Rama_Mgr

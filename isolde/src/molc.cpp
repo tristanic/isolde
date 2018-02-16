@@ -519,6 +519,86 @@ rama_mgr_validate_and_color_cas(void *mgr, void *rama, size_t n)
     }
 }
 
+const int32_t T_INDICES[9] = {0,1,4,1,2,4,2,3,4};
+const size_t D_LENGTH = 12;
+const size_t V_LENGTH = 15;
+const size_t N_LENGTH = 15;
+const size_t T_LENGTH = 9;
+
+
+extern "C" EXPORT size_t
+rama_mgr_draw_cis_and_twisted_omegas(void *mgr, void *rama, size_t n, double *vertices,
+    double *normals, int32_t *triangles, uint8_t *colors)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    Rama **r = static_cast<Rama **>(rama);
+    try {
+        size_t count=0;
+        size_t vertex_count = 0;
+        double abs_angle;
+        for (size_t i=0; i<n; ++i) {
+            const auto &resname = (*r)->residue()->name();
+            auto omega = (*r++)->omega();
+
+            if (omega == nullptr) continue;
+
+            abs_angle = std::abs(omega->angle());
+            if (abs_angle < TWISTED_CUTOFF) {
+                const auto &atoms = omega->atoms();
+                double *v = vertices;
+                for (auto a: atoms) {
+                    const auto &coord = a->coord();
+                    for (size_t j=0; j<3; ++j) {
+                        *v++ = coord[j];
+                    }
+                }
+                for (size_t j=0; j<3; ++j) {
+                    *v++ = (vertices[j] + vertices[9+j])/2;
+                }
+                // Pretend the surface is planar, and assign a single normal
+                double v1[3], v2[3];
+                for (size_t j=0; j<3; ++j) {
+                    v1[j] = vertices[3+j]-vertices[j];
+                    v2[j] = vertices[9+j]-vertices[j];
+                }
+                geometry::cross_product_3D(v2, v1, normals);
+                // Copy this normal to the others
+                for (size_t j=3; j<N_LENGTH; ++j) {
+                    normals[j] = normals[j*3];
+                }
+                for (size_t j=0; j<T_LENGTH; ++j) {
+                    triangles[j] = vertex_count + T_INDICES[j];
+                }
+                vertex_count += V_LENGTH/3;
+                vertices += V_LENGTH;
+                normals += N_LENGTH;
+                triangles += T_LENGTH;
+                count++;
+                colors::intcolor the_color;
+                if (abs_angle < CIS_CUTOFF) {
+                    if (resname == "PRO") {
+                        colors::copy_color(m->cis_pro_color(), the_color);
+                    } else {
+                        colors::copy_color(m->cis_nonpro_color(), the_color);
+                    }
+                } else {
+                    colors::copy_color(m->twisted_color(), the_color);
+                }
+                for (size_t j=0; j<5; ++j) {
+                    for (size_t k=0; k<4; ++k) {
+                        *(colors++) = the_color[k];
+                    }
+                }
+            }
+        }
+        return count;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+
 extern "C" EXPORT void
 rama_mgr_bin_scores(void *mgr, double *score, uint8_t *r_case, size_t n, int32_t *bin)
 {
@@ -622,6 +702,69 @@ rama_omegaphipsi(void *rama, size_t n, double *angles)
         }
     } catch (...) {
         molc_error();
+    }
+}
+
+extern "C" EXPORT size_t
+rama_omega(void *rama, size_t n, pyobject_t *dihedralp)
+{
+    Rama **r = static_cast<Rama **>(rama);
+    try {
+        size_t found=0;
+        for (size_t i=0; i<n; ++i)
+        {
+            Dihedral* omega = (*r++)->omega();
+            if (omega != nullptr) {
+                (*dihedralp++) = omega;
+                found++;
+            }
+        }
+        return found;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT size_t
+rama_phi(void *rama, size_t n, pyobject_t *dihedralp)
+{
+    Rama **r = static_cast<Rama **>(rama);
+    try {
+        size_t found=0;
+        for (size_t i=0; i<n; ++i)
+        {
+            Dihedral* phi = (*r++)->phi();
+            if (phi != nullptr) {
+                (*dihedralp++) = phi;
+                found++;
+            }
+        }
+        return found;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT size_t
+rama_psi(void *rama, size_t n, pyobject_t *dihedralp)
+{
+    Rama **r = static_cast<Rama **>(rama);
+    try {
+        size_t found=0;
+        for (size_t i=0; i<n; ++i)
+        {
+            Dihedral* psi = (*r++)->psi();
+            if (psi != nullptr) {
+                (*dihedralp++) = psi;
+                found++;
+            }
+        }
+        return found;
+    } catch (...) {
+        molc_error();
+        return 0;
     }
 }
 

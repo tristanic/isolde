@@ -12,6 +12,7 @@ const double TWO_PI = 2.0*M_PI;
 const double NAN_NOT_SET = std::nan("Not set");
 const int HIDE_ISOLDE = 0x02;
 const double CIS_CUTOFF = M_PI/6.0;
+const double TWISTED_CUTOFF = M_PI*5.0/6.0;
 const double LINEAR_RESTRAINT_MAX_RADIUS = 0.25;
 const double LINEAR_RESTRAINT_MIN_RADIUS = 0.025;
 const double MAX_LINEAR_SPRING_CONSTANT = 5000.0;

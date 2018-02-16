@@ -547,6 +547,20 @@ class Rama_Mgr:
         n = len(ramas)
         f(self._c_pointer, ramas._c_pointers, n)
 
+    def draw_cis_and_twisted_omegas(self, ramas):
+        f = c_function('rama_mgr_draw_cis_and_twisted_omegas',
+            args = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+                ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p),
+            ret = ctypes.c_size_t)
+        n = len(ramas)
+        vertices = numpy.empty((n*5,3), float64)
+        normals = numpy.empty((n*5,3), float64)
+        triangles = numpy.empty((n*3,3), int32)
+        colors = numpy.empty((n*5,4), uint8)
+        count = f(self._c_pointer, ramas._c_pointers, n, pointer(vertices),
+            pointer(normals), pointer(triangles), pointer(colors))
+        return vertices[0:count*5], normals[0:count*5], triangles[0:count*3], colors[0:count*5]
+
     def bin_scores(self, scores, cases):
         f = c_function('rama_mgr_bin_scores',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double),
@@ -1424,6 +1438,39 @@ class Rama(State):
     def reset_state(self):
         pass
 
+    @property
+    def omega_dihedral(self):
+        f = c_function('rama_omega',
+            args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
+            ret = ctypes.c_size_t)
+        ret = numpy.empty(1, cptr)
+        found = f(self._c_pointer, 1, pointer(ret))
+        if found:
+            return _proper_dihedral_or_none(ret[0])
+        return None
+
+    @property
+    def phi_dihedral(self):
+        f = c_function('rama_phi',
+            args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
+            ret = ctypes.c_size_t)
+        ret = numpy.empty(1, cptr)
+        found = f(self._c_pointer, 1, pointer(ret))
+        if found:
+            return _proper_dihedral_or_none(ret[0])
+        return None
+
+    @property
+    def psi_dihedral(self):
+        f = c_function('rama_psi',
+            args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
+            ret = ctypes.c_size_t)
+        ret = numpy.empty(1, cptr)
+        found = f(self._c_pointer, 1, pointer(ret))
+        if found:
+            return _proper_dihedral_or_none(ret[0])
+        return None
+
     residue = c_property('rama_residue', cptr, astype=_residue_or_none, read_only = True,
             doc = 'The residue to which this Rama belongs. Read only.')
     ca_atom = c_property('rama_ca_atom', cptr, astype=_atom_or_none, read_only = True,
@@ -1438,7 +1485,6 @@ class Rama(State):
             doc = 'The phi and psi angles for this residue in radians. Read only.')
     angles = c_property('rama_omegaphipsi', float64, 3, read_only = True,
             doc = 'The omega, phi and psi angles for this residue in radians. Read only.')
-
 
 class Rotamer(State):
     def __init__(self, c_pointer):

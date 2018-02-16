@@ -35,7 +35,14 @@ inline void color_as_intcolor(color &in, intcolor &out)
 static const color grey = {0.5, 0.5, 0.5, 1.0};
 
 template <typename T>
-inline void copy_color(T &from, color &to)
+inline void copy_color(const T &from, color &to)
+{
+    for (size_t i=0; i<4; ++i) {
+        to[i] = from[i];
+    }
+}
+
+inline void copy_color(const intcolor &from, intcolor &to)
 {
     for (size_t i=0; i<4; ++i) {
         to[i] = from[i];

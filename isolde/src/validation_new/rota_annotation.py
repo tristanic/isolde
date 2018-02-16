@@ -104,17 +104,11 @@ class Rotamer_Annotations(Model):
             take care of themselves.
             '''
             if len(changes.created_atoms()):
-<<<<<<< HEAD
                 r = self._selected_residues = self._atomic_structure.residues
                 self._selected_rotamers = self._mgr.get_rotamers(r)
                 update_needed = True
         if changes.num_deleted_atoms():
             update_needed = True
-=======
-                #Trigger rebuild of rotamer array and graphics update
-                self.track_whole_model = True
-                return
->>>>>>> 3ac8f62fd15b4abb95a36bb630d3037feaff16c7
         reasons = changes.atom_reasons()
         if 'coord changed' in reasons:
             update_needed = True

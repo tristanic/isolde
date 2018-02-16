@@ -75,6 +75,36 @@ class Ramas(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, Rotamer, Rotamers)
 
+    @property
+    def omega_dihedrals(self):
+        f = c_function('rama_omega',
+            args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
+            ret = ctypes.c_size_t)
+        n = len(self)
+        ret = numpy.empty(n, cptr)
+        found = f(self._c_pointers, n, pointer(ret))
+        return _proper_dihedrals(ret[:found])
+
+    @property
+    def phi_dihedral(self):
+        f = c_function('rama_phi',
+            args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
+            ret = ctypes.c_size_t)
+        n = len(self)
+        ret = numpy.empty(n, cptr)
+        found = f(self._c_pointers, n, pointer(ret))
+        return _proper_dihedrals(ret[:found])
+
+    @property
+    def psi_dihedral(self):
+        f = c_function('rama_psi',
+            args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
+            ret = ctypes.c_size_t)
+        n = len(self)
+        ret = numpy.empty(n, cptr)
+        found = f(self._c_pointers, n, pointer(ret))
+        return _proper_dihedrals(ret[:found])
+
     residues = cvec_property('rama_residue', cptr, astype=_residues, read_only = True,
             doc = 'The residue to which each Rama belongs. Read only.')
     ca_atoms = cvec_property('rama_ca_atom', cptr, astype=_atoms, read_only = True,
