@@ -9,18 +9,18 @@ class Rama_Annotator(Model):
     '''
     pickable = False
 
-    def __init__(self, session, atomic_structure):
+    def __init__(self, session, atomic_structure, hide_favored = False):
         Model.__init__(self, 'Ramachandran Validation', session)
         structure = self._atomic_structure = atomic_structure
         structure.add([self])
         from .. import session_extensions
         mgr = self._mgr = session_extensions.get_ramachandran_manager(session)
         self._prepare_drawings()
+        # self._prepare_ca_display()
+        self._hide_favored = hide_favored
         self.track_whole_model = True
-        self._prepare_ca_display()
         t = structure.triggers
         self._structure_change_handler = t.add_handler('changes', self._update_graphics_if_needed)
-        self.update_graphics()
 
     @property
     def track_whole_model(self):
@@ -36,6 +36,16 @@ class Rama_Annotator(Model):
             self.update_graphics()
 
     @property
+    def hide_favored(self):
+        return self._hide_favored
+
+    @hide_favored.setter
+    def hide_favored(self, flag):
+        if flag != self._hide_favored:
+            self._hide_favored = flag
+            self.update_graphics()
+
+    @property
     def display(self):
         return Model.display.fget(self)
 
@@ -44,7 +54,7 @@ class Rama_Annotator(Model):
         cflag = self.display
         Model.display.fset(self, flag)
         if flag and not cflag:
-            self._prepare_ca_display()
+            # self._prepare_ca_display()
             self.update_graphics()
         if cflag and not flag:
             self._revert_ca_display()
@@ -104,14 +114,16 @@ class Rama_Annotator(Model):
             if len(changes.created_atoms()):
                 # Trigger rebuild of rama array and graphics update
                 self.track_whole_model = True
-                self._prepare_ca_display()
+                # self._prepare_ca_display()
                 return
         reasons = changes.atom_reasons()
         if 'coord changed' in reasons:
             update_needed = True
         if 'display changed' in reasons or 'hide changed' in reasons:
-            self._prepare_ca_display()
+            # self._prepare_ca_display()
             self._visible_ramas = self._selected_ramas[self._selected_ramas.visibles]
+            update_needed = True
+        if 'color changed' in reasons:
             update_needed = True
         if update_needed:
             self.update_graphics()
@@ -122,7 +134,7 @@ class Rama_Annotator(Model):
         if not len(ramas):
             od.display = False
         mgr = self._mgr
-        mgr.color_cas_by_rama_score(ramas)
+        mgr.color_cas_by_rama_score(ramas, self.hide_favored)
         v, n, t, c = mgr._draw_cis_and_twisted_omegas(ramas)
         if len(v):
             od.vertices, od.normals, od.triangles, od.vertex_colors = v, n, t, c

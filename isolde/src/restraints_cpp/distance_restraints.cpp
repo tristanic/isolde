@@ -67,12 +67,12 @@ double Distance_Restraint::radius() const
 void Distance_Restraint::target_transform(double *rot44) const
 {
     double scale = get_target() / distance();
-    _bond_transform(rot44, 1.0, scale);
+    _bond_transform(rot44, radius(), scale);
 }
 
 void Distance_Restraint::bond_cylinder_transform(double *rot44) const
 {
-    _bond_transform(rot44, radius(), 1.0);
+    _bond_transform(rot44, 1.0, 1.0);
 }
 
 void Distance_Restraint::_bond_transform(double *rot44, double radius, double length_scale) const

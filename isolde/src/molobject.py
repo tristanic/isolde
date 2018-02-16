@@ -541,11 +541,11 @@ class Rama_Mgr:
         f(self._c_pointer, ramas._c_pointers, n, pointer(colors))
         return colors
 
-    def color_cas_by_rama_score(self, ramas):
+    def color_cas_by_rama_score(self, ramas, hide_favored = False):
         f = c_function('rama_mgr_validate_and_color_cas',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,))
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_bool))
         n = len(ramas)
-        f(self._c_pointer, ramas._c_pointers, n)
+        f(self._c_pointer, ramas._c_pointers, n, hide_favored)
 
     def _draw_cis_and_twisted_omegas(self, ramas):
         f = c_function('rama_mgr_draw_cis_and_twisted_omegas',
@@ -1153,7 +1153,7 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
     Manages distance restraints (Atom pairs with distances and spring constants)
     and their visualisations for a single atomic structure.
     '''
-    _DEFAULT_BOND_COLOR = [148, 0, 211, 255] # violet
+    _DEFAULT_BOND_COLOR = [168, 255, 230, 255]
     _DEFAULT_TARGET_COLOR = [168, 255, 230, 255]
     def __init__(self, model, c_pointer=None):
         '''
@@ -1199,13 +1199,22 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
     def set_target_color(self, color):
         self._target_drawing.color = color
 
-    def _target_geometry(self, major_radius=0.3, minor_radius=0.025, thickness=0.02, height=1, nz=2, nc1 = 6, nc2=6):
-        from .geometry import dumbbell_geometry
-        return dumbbell_geometry(major_radius, minor_radius, thickness, height, nz, nc1, nc2)
-
-    def _pseudobond_geometry(self, segments=9):
+    def _target_geometry(self):
+        '''
+        Length is scaled to the target distance. Radius scales according to
+        spring constant.
+        '''
         from chimerax.core import surface
-        return surface.dashed_cylinder_geometry(segments, height=1.0)
+        return surface.cylinder_geometry(radius=1.0, height=1.0)
+        # from .geometry import dumbbell_geometry
+        # return dumbbell_geometry(major_radius, minor_radius, thickness, height, nz, nc1, nc2)
+
+    def _pseudobond_geometry(self):
+        '''
+        Connects the two restrained atoms. Radius is fixed.
+        '''
+        from chimerax.core import surface
+        return surface.cylinder_geometry(radius = 0.025, height=1.0, caps=False)
 
     def _restraint_changes_cb(self, trigger_name, changes):
         self._update_graphics()

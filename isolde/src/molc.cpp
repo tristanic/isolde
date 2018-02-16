@@ -499,20 +499,48 @@ rama_mgr_validate_and_color(void *mgr, void *rama, size_t n, uint8_t *colors)
 
 //! Directly apply colors according to Ramachandran scores to CA atoms.
 extern "C" EXPORT void
-rama_mgr_validate_and_color_cas(void *mgr, void *rama, size_t n)
+rama_mgr_validate_and_color_cas(void *mgr, void *rama, size_t n, npy_bool hide_favored)
 {
     Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
     Rama **r = static_cast<Rama **>(rama);
     std::vector<double> scores(n);
     std::vector<uint8_t> rcases(n);
     std::vector<uint8_t> colors(n*4);
+    std::vector<Rama *> non_favored;
+    Atom::DrawMode BALL_STYLE = static_cast<Atom::DrawMode>(1); //Atom::DrawMode::Ball;
     try {
         m->validate(r, n, scores.data(), rcases.data());
-        m->color_by_scores(scores.data(), rcases.data(), n, colors.data());
-        auto cdata = colors.data();
-        for (size_t i=0; i<n; ++i) {
-            (*r++)->CA_atom()->set_color(*cdata, *(cdata+1), *(cdata+2), *(cdata+3));
-            cdata+=4;
+        if (hide_favored) {
+            uint8_t color[4];
+            for (size_t i=0; i<n; ++i) {
+                if (rcases[i] == m->CASE_NONE) {r++; continue;}
+                auto ca = (*r)->CA_atom();
+                if (scores[i] > m->get_cutoffs(rcases[i])->allowed) {
+                    // Revert to the same display style as the attached CA
+                    const auto& neighbors = ca->neighbors();
+                    for (auto a: neighbors) {
+                        if (a->name() == "C") {
+                            ca->set_color(a->color());
+                            ca->set_draw_mode(a->draw_mode());
+                        }
+                    }
+                }
+                else {
+                    ca->set_draw_mode(BALL_STYLE);
+                    m->color_by_scores(&scores[i], &rcases[i], 1, color);
+                    ca->set_color(color[0], color[1], color[2], color[3]);
+                }
+                r++;
+            }
+        } else {
+            m->color_by_scores(scores.data(), rcases.data(), n, colors.data());
+            auto cdata = colors.data();
+            for (size_t i=0; i<n; ++i) {
+                auto ca = (*r++)->CA_atom();
+                ca->set_color(*cdata, *(cdata+1), *(cdata+2), *(cdata+3));
+                ca->set_draw_mode(BALL_STYLE);
+                cdata+=4;
+            }
         }
     } catch (...) {
         molc_error();
