@@ -25,16 +25,36 @@ c_function = _c_functions.c_function
 c_array_function = _c_functions.c_array_function
 
 class OpenMM_Thread_Handler:
-    def __init__(self, integrator, c_pointer=None):
+    '''
+    A lightweight wrapper class for an OpenMM simulation `Context`, which pushes
+    the task of stepping the simulation forward off to a C++ thread so that
+    Python performance is not interrupted. Each call to `step()` or `minimize()`
+    will create a short-lived thread to run the desired number of steps or
+    a round of minimization, respectively. The status of the thread can be
+    checked with thread_finished, while the initial and final coordinates can
+    be retrieved with `last_coords` and `current_coords` respectively. If instability
+    (overly fast-moving atoms) is detected, the thread will terminate early and
+    the `unstable` property will set to True. In such cases it is advisable to
+    run one or more minimization rounds. When minimization converges to with
+    tolerance, `unstable` will be reset to False.
+
+    Use with care! While nothing prevents you from using the standard single-
+    thread OpenMM API alongside this one, it is up to you to ensure that
+    no threads are running before making any calls that affect the simulation.
+    Additionally, the `OpenMM_Thread_Handler` object *must* be destroyed before
+    the Context it is attached to.
+    '''
+    def __init__(self, context, c_pointer=None):
         cname = type(self).__name__.lower()
         if c_pointer is None:
             new_func = cname + '_new'
-            int_ptr = int(integrator.this)
+            int_ptr = int(context.this)
             f = c_function(new_func, args=(ctypes.c_void_p,), ret=ctypes.c_void_p)
             c_pointer = f(int_ptr)
         set_c_pointer(self, c_pointer)
         f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
+        self.context = context
 
     @property
     def cpp_pointer(self):
@@ -55,6 +75,31 @@ class OpenMM_Thread_Handler:
             args=(ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointer, steps)
 
+    def minimize(self):
+        '''
+        Run an energy minimization on the coordinates. If the minimisation
+        converges to within tolerance, unstable will be set to False.
+        Don't forget to run reinitialize_velocities() before continuing
+        equilibration!
+        '''
+        f = c_function('openmm_thread_handler_minimize',
+            args = (ctypes.c_void_p,))
+        f(self._c_pointer)
+
+    def reinitialize_velocities(self):
+        if not self.thread_finished:
+            raise RuntimeError('Wait for the thread to finish before reinitialising velocities!')
+        c = self.context
+        i = c.getIntegrator()
+        c.setVelocitiesToTemperature(i.getTemperature())
+
+    @property
+    def natoms(self):
+        f = c_function('openmm_thread_handler_num_atoms',
+            args=(ctypes.c_void_p,),
+            ret = ctypes.c_size_t)
+        return f(self._c_pointer)
+
     @property
     def thread_finished(self):
         f = c_function('openmm_thread_handler_thread_finished',
@@ -66,3 +111,37 @@ class OpenMM_Thread_Handler:
         f = c_function('openmm_thread_handler_finalize_thread',
             args=(ctypes.c_void_p,))
         f(self._c_pointer)
+
+    @property
+    def unstable(self):
+        f = c_function('openmm_thread_handler_unstable',
+            args=(ctypes.c_void_p,),
+            ret = ctypes.c_bool)
+        return f(self._c_pointer)
+
+    @property
+    def unstable_atoms(self):
+        f = c_function('openmm_thread_handler_unstable_atoms',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
+        n = self.natoms
+        ret = numpy.zeros(n, numpy.bool)
+        f(self._c_pointer, n, pointer(ret))
+        return ret
+
+    @property
+    def last_coords(self):
+        f = c_function('openmm_thread_handler_last_coords',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
+        n = self.natoms
+        coords = numpy.empty((n,3), float64)
+        f(self._c_pointer, n, pointer(coords))
+        return coords
+
+    @property
+    def current_coords(self):
+        f = c_function('openmm_thread_handler_current_coords',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
+        n = self.natoms
+        coords = numpy.empty((n,3), float64)
+        f(self._c_pointer, n, pointer(coords))
+        return coords

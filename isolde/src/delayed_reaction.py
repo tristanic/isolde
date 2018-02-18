@@ -11,8 +11,7 @@ def delayed_reaction(session, initiator_func, initiator_args, ready_test_func,
         initiator_args: A tuple of arguments to be applied to initiator_func
         ready_test_func: Should return True when the threaded task is done,
             false otherwise
-        final_func: Task to run once the thread is done. It should already know
-            how to find the thread result
+        final_func: Task to run once the thread is done. 
         final_func_args: A tuple of arguments to be applied to final_func
             (e.g. to tell it what to do with the result)
     '''
