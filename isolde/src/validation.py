@@ -286,10 +286,10 @@ class Validation_Params(Param_Mgr):
 
 class Validation_Mgr:
     def __init__(self, session):
-        from . import session_extensions as ext
-        self._proper_dihedral_mgr = ext.get_proper_dihedral_manager(session)
-        self._rama_mgr = ext.get_ramachandran_manager(session)
-        self._rota_mgr = ext.get_rotamer_manager(session)
+        from . import molobject
+        self._proper_dihedral_mgr = molobject.get_proper_dihedral_manager(session)
+        self._rama_mgr = molobject.get_ramachandran_manager(session)
+        self._rota_mgr = molobject.get_rotamer_manager(session)
 
         self.params = Validation_Params()
         self.rama_set = None

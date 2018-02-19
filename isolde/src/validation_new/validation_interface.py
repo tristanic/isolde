@@ -21,7 +21,7 @@ from . import validation
 from . import rama_thread
 from . import rota_thread
 
-from .rota_annotation import Rotamer_Annotations
+from .rota_annotation import Rotamer_Annotator
 
 FLOAT_TYPE = defaults.FLOAT_TYPE
 
@@ -296,10 +296,10 @@ class ChimeraXValidationInterface:
         m = self.current_model
         if m is not None:
             for cm in m.child_models():
-                if isinstance(cm, Rotamer_Annotations):
+                if isinstance(cm, Rotamer_Annotator):
                     return cm
             rp = self.rota_params
-            rm = Rotamer_Annotations(self.session, m, rp.allowed_cutoff,
+            rm = Rotamer_Annotator(self.session, m, rp.allowed_cutoff,
                                                      rp.outlier_cutoff)
             m.add([rm])
             return rm

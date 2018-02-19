@@ -2,6 +2,7 @@
 #define ISOLDE_OPENMM
 
 #include <thread>
+#include <chrono>
 #include <cstddef>
 #include <OpenMM.h>
 #include <pyinstance/PythonInstance.declare.h>
@@ -12,6 +13,7 @@ namespace isolde
 class OpenMM_Thread_Handler: public pyinstance::PythonInstance<OpenMM_Thread_Handler>
 {
 public:
+    typedef std::chrono::duration<double, std::ratio<1,1000>> milliseconds;
     OpenMM_Thread_Handler() {}
     ~OpenMM_Thread_Handler() { if (_thread_running) _thread.join(); }
     /*! Rather annoyingly, we have to set the temperature explicitly here
@@ -39,6 +41,18 @@ public:
             throw std::logic_error("The last round had atoms moving dangerously fast. Fix the issues and minimise first.");
         _thread = std::thread(&OpenMM_Thread_Handler::_step_threaded, this, steps);
     }
+
+    void set_minimum_thread_time_in_ms(double time)
+    {
+        _min_time_per_loop = milliseconds(time);
+    }
+
+    double get_minimum_thread_time_in_ms() const
+    {
+        return _min_time_per_loop.count();
+    }
+
+
 
     void minimize_threaded()
     {
@@ -75,6 +89,7 @@ private:
     bool _thread_finished = true;
     bool _unstable = false;
 
+    milliseconds _min_time_per_loop = milliseconds(1.0); // ms: limit on the speed of the simulation
     const double MAX_VELOCITY = 15; //nm ps-1 (15,000 m/s)
     const double MIN_TOLERANCE = 1.0; //kJ mol-1
     const size_t MAX_MIN_ITERATIONS = 500;

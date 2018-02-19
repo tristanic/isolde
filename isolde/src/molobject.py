@@ -78,6 +78,22 @@ def _distance_restraint_mgr(p):
 def _position_restraint_mgr(p):
     return Position_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
 
+def get_proper_dihedral_manager(session):
+    if hasattr(session, 'proper_dihedral_mgr') and not session.proper_dihedral_mgr.deleted:
+        return session.proper_dihedral_mgr
+    return Proper_Dihedral_Mgr(session)
+
+def get_ramachandran_manager(session):
+    if hasattr(session, 'rama_mgr') and not session.rama_mgr.deleted:
+        return session.rama_mgr
+    return Rama_Mgr(session)
+
+def get_rotamer_manager(session):
+    if hasattr(session, 'rota_mgr') and not session.rota_mgr.deleted:
+        return session.rota_mgr
+    return Rota_Mgr(session)
+
+
 class _Dihedral_Mgr:
     '''Base class. Do not instantiate directly.'''
     def __init__(self, session, c_pointer=None):
@@ -326,10 +342,8 @@ class Rama_Mgr:
     def __init__(self, session, c_pointer=None):
         if hasattr(session, 'rama_mgr'):
             raise RuntimeError('Session already has a Ramachandran manager!')
-        if not hasattr(session, 'proper_dihedral_mgr'):
-            raise RuntimeError('Proper_Dihedral_Mgr must be initialised first!')
+        dmgr = self._dihedral_mgr = get_proper_dihedral_manager(session)
         self.session = session
-        dmgr = self._dihedral_mgr = session.proper_dihedral_mgr
         cname = type(self).__name__.lower()
         if c_pointer is None:
             new_func = cname + '_new'
@@ -631,10 +645,8 @@ class Rota_Mgr:
     def __init__(self, session, c_pointer=None):
         if hasattr(session, 'rota_mgr'):
             raise RuntimeError('Session already has a Rotamer manager!')
-        if not hasattr(session, 'proper_dihedral_mgr'):
-            raise RuntimeError('Proper_Dihedral_Mgr must be initialised first!')
+        self._dihedral_mgr = get_proper_dihedral_manager(session)
         cname = type(self).__name__.lower()
-        self._dihedral_mgr = session.proper_dihedral_mgr
         if c_pointer is None:
             new_func = cname + '_new'
             c_pointer = c_function(new_func, args=(ctypes.c_void_p,), ret=ctypes.c_void_p)(self._dihedral_mgr._c_pointer)

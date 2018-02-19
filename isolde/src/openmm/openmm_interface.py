@@ -68,7 +68,6 @@ class OpenMM_Thread_Handler:
 
     def delete(self):
         c_function('openmm_thread_handler_delete', args=(ctypes.c_void_p,))(self._c_pointer)
-        delattr(self, '_c_pointer')
 
     def step(self, steps):
         f = c_function('openmm_thread_handler_step',
@@ -100,7 +99,6 @@ class OpenMM_Thread_Handler:
             ret = ctypes.c_size_t)
         return f(self._c_pointer)
 
-    @property
     def thread_finished(self):
         f = c_function('openmm_thread_handler_thread_finished',
             args=(ctypes.c_void_p,),
@@ -112,7 +110,6 @@ class OpenMM_Thread_Handler:
             args=(ctypes.c_void_p,))
         f(self._c_pointer)
 
-    @property
     def unstable(self):
         f = c_function('openmm_thread_handler_unstable',
             args=(ctypes.c_void_p,),
@@ -145,3 +142,17 @@ class OpenMM_Thread_Handler:
         coords = numpy.empty((n,3), float64)
         f(self._c_pointer, n, pointer(coords))
         return coords
+
+    def _get_min_thread_period(self):
+        '''Throttle the simulation to a minimum time period per loop (in ms)'''
+        f = c_function('openmm_thread_handler_min_thread_period',
+            args=(ctypes.c_void_p,),
+            ret=ctypes.c_double)
+        return f(self._c_pointer)
+
+    def _set_min_thread_period(self, period):
+        f = c_function('set_openmm_thread_handler_min_thread_period',
+            args=(ctypes.c_void_p, ctypes.c_double))
+        f(self._c_pointer, period)
+
+    min_thread_period = property(_get_min_thread_period, _set_min_thread_period)

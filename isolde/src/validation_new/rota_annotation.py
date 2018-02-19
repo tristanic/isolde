@@ -13,7 +13,7 @@ from ..color import standard_three_color_scale
 from ..geometry import exclamation_mark, spiral, bond_cylinder_placements
 from ..geometry import scale_transforms
 
-class Rotamer_Annotations(Model):
+class Rotamer_Annotator(Model):
     ''' Model holding annotations for current allowed or outlier rotamers. '''
 
     pickable = False
@@ -21,8 +21,8 @@ class Rotamer_Annotations(Model):
     def __init__(self, session, atomic_structure):
         Model.__init__(self, 'Rotamer Validation', session)
 
-        from .. import session_extensions
-        mgr = self._mgr = session_extensions.get_rotamer_manager(session)
+        from .. import molobject
+        mgr = self._mgr = molobject.get_rotamer_manager(session)
         structure = self._atomic_structure = atomic_structure
         self._MAX_SCALE = 2 # maximum scale factor for annotation drawings
         self._show_favored = False
@@ -127,6 +127,7 @@ class Rotamer_Annotations(Model):
         if not len(rots):
             d.display = False
             return
+        d.display = True
         bonds = rots.ca_cb_bonds
         transforms = bond_cylinder_placements(bonds)
         if scale_by_scores:

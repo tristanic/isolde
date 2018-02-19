@@ -13,8 +13,8 @@ class Rama_Annotator(Model):
         Model.__init__(self, 'Ramachandran Validation', session)
         structure = self._atomic_structure = atomic_structure
         structure.add([self])
-        from .. import session_extensions
-        mgr = self._mgr = session_extensions.get_ramachandran_manager(session)
+        from .. import molobject
+        mgr = self._mgr = molobject.get_ramachandran_manager(session)
         self._prepare_drawings()
         # self._prepare_ca_display()
         self._hide_favored = hide_favored

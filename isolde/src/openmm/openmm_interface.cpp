@@ -1,4 +1,5 @@
 #define PYINSTANCE_EXPORT
+#include <iostream>
 #include "../molc.h"
 #include "openmm_interface.h"
 #include <pyinstance/PythonInstance.instantiate.h>
@@ -16,6 +17,7 @@ OpenMM_Thread_Handler::OpenMM_Thread_Handler(OpenMM::Context* context)
 
 void OpenMM_Thread_Handler::_step_threaded(size_t steps)
 {
+    auto start = std::chrono::steady_clock::now();
     _thread_running = true;
     _thread_finished = false;
     size_t steps_done = 0;
@@ -38,11 +40,16 @@ void OpenMM_Thread_Handler::_step_threaded(size_t steps)
         }
     }
     _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
+    auto end = std::chrono::steady_clock::now();
+    auto loop_time = end-start;
+    if (loop_time < _min_time_per_loop)
+        std::this_thread::sleep_for(_min_time_per_loop-loop_time);
     _thread_finished = true;
 }
 
 void OpenMM_Thread_Handler::_minimize_threaded()
 {
+    auto start = std::chrono::steady_clock::now();
     _thread_running = true;
     _thread_finished = false;
     _starting_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Energy);
@@ -52,6 +59,10 @@ void OpenMM_Thread_Handler::_minimize_threaded()
         _unstable = true;
     else
         _unstable = false;
+    auto end = std::chrono::steady_clock::now();
+    auto loop_time = end-start;
+    if (loop_time < _min_time_per_loop)
+        std::this_thread::sleep_for(_min_time_per_loop-loop_time);
     _thread_finished = true;
 }
 
@@ -74,10 +85,11 @@ std::vector<OpenMM::Vec3> OpenMM_Thread_Handler::get_coords_in_angstroms(const O
     std::vector<OpenMM::Vec3> coords_ang(_natoms);
     auto from = coords_nm.begin();
     auto to = coords_ang.begin();
-    for (; from != coords_ang.end(); from++, to++)
+    for (; from != coords_nm.end(); from++, to++)
     {
-        for (size_t i=0; i<3; ++i)
+        for (size_t i=0; i<3; ++i) {
             (*to)[i] = (*from)[i]*10.0;
+        }
     }
     return coords_ang;
 }
@@ -243,7 +255,28 @@ openmm_thread_handler_current_coords(void *handler, size_t n, double *coords)
     }
 }
 
+extern "C" EXPORT double
+openmm_thread_handler_min_thread_period(void *handler)
+{
+    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
+    try {
+        return h->get_minimum_thread_time_in_ms();
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
 
+extern "C" EXPORT void
+set_openmm_thread_handler_min_thread_period(void *handler, double time_ms)
+{
+    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
+    try {
+        h->set_minimum_thread_time_in_ms(time_ms);
+    } catch (...) {
+        molc_error();
+    }
+}
 
 // extern "C" EXPORT void
 // openmm_thread_handler_initial_positions(void *handler, size_t n, double *coords)

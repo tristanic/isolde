@@ -83,6 +83,7 @@ with the surroundings.
     <DataFile>demo_data/*</DataFile>
     <DataFile>demo_data/3io0/*</DataFile>
     <DataFile>dictionaries/*</DataFile>
+    <DataFile>tests/1pmx_1.pdb</DataFile>
   </DataFiles>
   <Classifiers>
     <!-- Development Status should be compatible with bundle version number -->

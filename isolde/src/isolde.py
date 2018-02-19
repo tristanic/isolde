@@ -202,7 +202,6 @@ class Isolde():
         self.session = session = gui.session
 
         # Find or create the validation managers
-        from . import session_extensions
         self._validation_mgr = Validation_Mgr(session)
 
         self.triggers = triggerset.TriggerSet()

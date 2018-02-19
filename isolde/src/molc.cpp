@@ -1088,7 +1088,7 @@ rota_mgr_non_favored(void *mgr, void *rotamer, size_t n, pyobject_t *bad, double
 SET_PYTHON_CLASS(rotamer, Rotamer)
 GET_PYTHON_INSTANCES(rotamer, Rotamer)
 extern "C" EXPORT void
-rotamer_score(void *rotamer, size_t n, float32_t *score)
+rotamer_score(void *rotamer, size_t n, double *score)
 {
     Rotamer **r = static_cast<Rotamer **>(rotamer);
     error_wrap_array_get(r, n, &Rotamer::score, score);
