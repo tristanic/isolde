@@ -25,7 +25,7 @@ class Rotamer_Annotator(Model):
         mgr = self._mgr = molobject.get_rotamer_manager(session)
         structure = self._atomic_structure = atomic_structure
         self._MAX_SCALE = 2 # maximum scale factor for annotation drawings
-        self._show_favored = False
+        self._hide_favored = True
         d = self._drawing = self._rota_indicator()
         self.add_drawing(d)
         structure.add([self])
@@ -76,15 +76,16 @@ class Rotamer_Annotator(Model):
         return self._mgr.color_scale
 
     @property
-    def show_favored(self):
+    def hide_favored(self):
         ''' Show annotations for favoured rotamers, or just non-favoured/outliers?'''
-        return self._show_favored
+        return self._hide_favored
 
-    @show_favored.setter
-    def show_favored(self, flag):
-        if flag != self._show_favored:
-            self._update_needed = True
-        self._show_favored = flag
+    @hide_favored.setter
+    def hide_favored(self, flag):
+        cflag = self._hide_favored
+        self._hide_favored = flag
+        if flag != cflag:
+            self.update_graphics()
 
     def delete(self):
         h = self._structure_change_handler
@@ -122,7 +123,7 @@ class Rotamer_Annotator(Model):
             return
         rots, scales, colors = self._mgr.validate_scale_and_color_rotamers(
             self._selected_rotamers, max_scale=self._MAX_SCALE,
-            non_favored_only = not(self._show_favored))
+            non_favored_only = self._hide_favored)
         d = self._drawing
         if not len(rots):
             d.display = False

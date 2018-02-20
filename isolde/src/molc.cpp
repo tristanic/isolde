@@ -1055,12 +1055,9 @@ rota_mgr_validate_scale_and_color_rotamers(void *mgr, void *rotamer, size_t n,
         const auto &allowed = cutoffs->allowed;
         auto log_range = cutoffs->log_outlier-log_allowed;
         m->validate(r,n,scores.data());
-        for (auto s: scores) {
+        for (auto &s: scores) {
             if (non_favored_only)
-                if (s>allowed) {
-                    r++;
-                    continue;
-                }
+                if (s>allowed) { r++; continue; }
             *rot_out++ = *r++;
             m->color_by_score(&s, 1, color_out);
             color_out +=4;
