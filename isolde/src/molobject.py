@@ -555,6 +555,18 @@ class Rama_Mgr:
         f(self._c_pointer, ramas._c_pointers, n, pointer(colors))
         return colors
 
+    def _ca_positions_and_colors(self, ramas, hide_favored = False):
+        f = c_function('rama_mgr_ca_positions_and_colors',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+                ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p),
+                ret = ctypes.c_size_t)
+        n = len(ramas)
+        coords = numpy.empty((n,3), float64)
+        colors = numpy.empty((n, 4), uint8)
+        count = f(self._c_pointer, ramas._c_pointers, n, hide_favored,
+            pointer(coords), pointer(colors))
+        return (coords[0:count], colors[0:count])
+
     def color_cas_by_rama_score(self, ramas, hide_favored = False):
         f = c_function('rama_mgr_validate_and_color_cas',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_bool))

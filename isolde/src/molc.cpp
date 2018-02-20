@@ -497,6 +497,42 @@ rama_mgr_validate_and_color(void *mgr, void *rama, size_t n, uint8_t *colors)
     }
 }
 
+//! Provide positions of CA atoms and colors corresponding to Ramachandran scores
+extern "C" EXPORT size_t
+rama_mgr_ca_positions_and_colors(void *mgr, void *rama, size_t n, npy_bool hide_favored,
+        double *coord, uint8_t *color)
+{
+    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    Rama **r = static_cast<Rama **>(rama);
+    std::vector<double> scores(n);
+    std::vector<uint8_t> rcases(n);
+    std::vector<Rama *> non_favored;
+    try {
+        m->validate(r, n, scores.data(), rcases.data());
+        size_t count = 0;
+        for (size_t i=0; i<n; ++i)
+        {
+            if (rcases[i] == m->CASE_NONE) {r++; continue; }
+            auto& score = scores[i];
+            if (hide_favored)
+                if (score > m->get_cutoffs(rcases[i])->allowed) {
+                    r++; continue;
+                }
+            const auto& this_coord = (*r++)->CA_atom()->coord();
+            for (size_t j=0; j<3; ++j)
+                *coord++ = this_coord[j];
+            m->color_by_scores(&score, &rcases[i], 1, color);
+            color += 4;
+            count ++;
+        }
+        return count;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+
+}
+
 //! Directly apply colors according to Ramachandran scores to CA atoms.
 extern "C" EXPORT void
 rama_mgr_validate_and_color_cas(void *mgr, void *rama, size_t n, npy_bool hide_favored)
