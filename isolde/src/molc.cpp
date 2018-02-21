@@ -1405,6 +1405,42 @@ set_position_restraint_target(void *restraint, size_t n, double *target)
 }
 
 extern "C" EXPORT void
+position_restraint_sim_index(void *restraint, size_t n, int *index)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            *(index++) = (*r++)->get_sim_index();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_position_restraint_sim_index(void *restraint, size_t n, int *index)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            (*r++)->set_sim_index(*(index++));
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+position_restraint_clear_sim_index(void *restraint, size_t n)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            (*r++)->clear_sim_index();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
 set_position_restraint_k(void *restraint, size_t n, double *k)
 {
     Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
@@ -1625,6 +1661,44 @@ distance_restraint_k(void *restraint, size_t n, double *k)
     Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
     error_wrap_array_get<Distance_Restraint, double, double>(d, n, &Distance_Restraint::get_k, k);
 }
+
+extern "C" EXPORT void
+distance_restraint_sim_index(void *restraint, size_t n, int *index)
+{
+    Distance_Restraint **r = static_cast<Distance_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            *(index++) = (*r++)->get_sim_index();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_distance_restraint_sim_index(void *restraint, size_t n, int *index)
+{
+    Distance_Restraint **r = static_cast<Distance_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            (*r++)->set_sim_index(*(index++));
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+distance_restraint_clear_sim_index(void *restraint, size_t n)
+{
+    Distance_Restraint **r = static_cast<Distance_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            (*r++)->clear_sim_index();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
 
 extern "C" EXPORT void
 distance_restraint_atoms(void *restraint, size_t n, pyobject_t *atoms)
@@ -1963,6 +2037,44 @@ set_proper_dihedral_restraint_k(void *restraint, size_t n, double *spring_consta
         molc_error();
     }
 }
+
+extern "C" EXPORT void
+proper_dihedral_restraint_sim_index(void *restraint, size_t n, int *index)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            *(index++) = (*r++)->get_sim_index();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_proper_dihedral_restraint_sim_index(void *restraint, size_t n, int *index)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            (*r++)->set_sim_index(*(index++));
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_restraint_clear_sim_index(void *restraint, size_t n)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            (*r++)->clear_sim_index();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
 
 extern "C" EXPORT void
 proper_dihedral_restraint_cutoff(void *restraint, size_t n, double *cutoff)

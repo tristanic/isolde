@@ -8,6 +8,7 @@
 #include "../atomic_cpp/dihedral.h"
 #include "../colors.h"
 #include "changetracker.h"
+#include "sim_restraint_base.h"
 #include <atomstruct/destruct.h>
 #include <atomstruct/AtomicStructure.h>
 #include <atomstruct/Atom.h>
@@ -58,7 +59,7 @@ private:
 
 
 template <class DType>
-class Dihedral_Restraint_Base
+class Dihedral_Restraint_Base: public Sim_Restraint_Base
 {
 public:
     Dihedral_Restraint_Base() {}

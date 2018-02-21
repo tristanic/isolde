@@ -6,6 +6,7 @@
 #include "../constants.h"
 #include "../geometry/geometry.h"
 #include "changetracker.h"
+#include "sim_restraint_base.h"
 #include <atomstruct/destruct.h>
 #include <atomstruct/string_types.h>
 #include <atomstruct/Atom.h>
@@ -20,7 +21,9 @@ namespace isolde
 
 class Distance_Restraint_Mgr;
 
-class Distance_Restraint: public pyinstance::PythonInstance<Distance_Restraint>
+class Distance_Restraint:
+    public pyinstance::PythonInstance<Distance_Restraint>,
+    public Sim_Restraint_Base
 {
 public:
     typedef Atom* Atoms[2];

@@ -148,6 +148,11 @@ class Position_Restraints(Collection):
         f(self._c_pointers, n, pointer(transforms))
         return transforms
 
+    def clear_sim_indices(self):
+        f = c_function('position_restraint_clear_sim_index',
+            args = (ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointers, len(self))
+
     atoms = cvec_property('position_restraint_atom', cptr, astype=_atoms, read_only=True,
         doc = 'Returns the restrained atoms. Read-only.')
     targets = cvec_property('position_restraint_target', float64, 3,
@@ -160,6 +165,8 @@ class Position_Restraints(Collection):
         doc = 'Enable/disable position restraints with a Numpy boolean array.')
     visibles = cvec_property('position_restraint_visible', bool, read_only=True,
         doc = 'Returns a boolean mask giving the currently visible restraints. Read only.')
+    sim_indices = cvec_property('position_restraint_sim_index', int32,
+        doc = 'Index of each restraint in a running simulation. Can be set')
 
 
 class Distance_Restraints(Collection):
@@ -188,6 +195,11 @@ class Distance_Restraints(Collection):
         f(self._c_pointers, n, pointer(transforms))
         return Places(opengl_array=transforms)
 
+    def clear_sim_indices(self):
+        f = c_function('distance_restraint_clear_sim_index',
+            args = (ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointers, len(self))
+
     enableds =cvec_property('distance_restraint_enabled', npy_bool,
             doc = 'Enable/disable these restraints or get their current states.')
     visibles = cvec_property('distance_restraint_visible', npy_bool, read_only = True,
@@ -200,6 +212,8 @@ class Distance_Restraints(Collection):
             doc = 'Restraint spring constants in kJ mol-1 Angstrom-2')
     distances = cvec_property('distance_restraint_distance', float64, read_only=True,
             doc = 'Current distances between restrained atoms in Angstroms. Read only.')
+    sim_indices = cvec_property('distance_restraint_sim_index', int32,
+        doc = 'Index of each restraint in a running simulation. Can be set')
 
 class Proper_Dihedral_Restraints(Collection):
     def __init__(self, c_pointers=None):
@@ -214,6 +228,11 @@ class Proper_Dihedral_Restraints(Collection):
         f(self._c_pointers, n, pointer(tf1), pointer(tf2))
         from chimerax.core.geometry import Places
         return (Places(opengl_array=tf1), Places(opengl_array=tf2))
+
+    def clear_sim_indices(self):
+        f = c_function('proper_dihedral_restraint_clear_sim_index',
+            args = (ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointers, len(self))
 
 
     targets = cvec_property('proper_dihedral_restraint_target', float64,
@@ -234,3 +253,5 @@ class Proper_Dihedral_Restraints(Collection):
         doc = 'Get/set the spring constant for each restraint in kJ mol-1 rad-2')
     annotation_colors = cvec_property('proper_dihedral_restraint_annotation_color', uint8, 4, read_only=True,
         doc = 'Get the annotation color for each restraint according to the current colormap. Read only.')
+    sim_indices = cvec_property('proper_dihedral_restraint_sim_index', int32,
+        doc = 'Index of each restraint in a running simulation. Can be set')

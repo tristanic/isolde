@@ -4,6 +4,7 @@
 #include "../constants.h"
 #include "../geometry/geometry.h"
 #include "changetracker.h"
+#include "sim_restraint_base.h"
 #include <atomstruct/destruct.h>
 #include <atomstruct/string_types.h>
 #include <atomstruct/Atom.h>
@@ -18,7 +19,9 @@ namespace isolde
 {
 class Position_Restraint_Mgr;
 
-class Position_Restraint: public pyinstance::PythonInstance<Position_Restraint>
+class Position_Restraint:
+    public pyinstance::PythonInstance<Position_Restraint>,
+    public Sim_Restraint_Base
 {
 public:
     Position_Restraint() {}

@@ -1577,6 +1577,11 @@ class Position_Restraint(State):
     def reset_state(self):
         pass
 
+    def clear_sim_index(self):
+        f = c_function('position_restraint_clear_sim_index',
+            args = (ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointer_ref, 1)
+
     atom = c_property('position_restraint_atom', cptr, astype=_atom_or_none, read_only=True,
         doc = 'Returns the restrained atom. Read-only.')
     target = c_property('position_restraint_target', float64, 3,
@@ -1589,6 +1594,8 @@ class Position_Restraint(State):
         doc = 'Enable/disable this position restraint.')
     visible = c_property('position_restraint_visible', bool, read_only=True,
         doc = 'Check whether this restraint is currently visible. Read only.')
+    sim_index = c_property('position_restraint_sim_index', int32,
+        doc = 'Index of this restraint in a running simulation. Can be set')
 
 class Distance_Restraint(State):
     def __init__(self, c_pointer):
@@ -1610,6 +1617,11 @@ class Distance_Restraint(State):
     def reset_state(self):
         pass
 
+    def clear_sim_index(self):
+        f = c_function('distance_restraint_clear_sim_index',
+            args = (ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointer_ref, 1)
+
     enabled =c_property('distance_restraint_enabled', npy_bool,
             doc = 'Enable/disable this restraint or get its current state.')
     visible = c_property('distance_restraint_visible', npy_bool, read_only = True,
@@ -1622,6 +1634,8 @@ class Distance_Restraint(State):
             doc = 'Restraint spring constant in kJ mol-1 Angstrom-2')
     distance = c_property('distance_restraint_distance', float64, read_only=True,
             doc = 'Current distance between restrained atoms in Angstroms. Read only.')
+    sim_index = c_property('distance_restraint_sim_index', int32,
+        doc = 'Index of this restraint in a running simulation. Can be set')
 
 class Proper_Dihedral_Restraint(State):
     def __init__(self, c_pointer):
@@ -1643,6 +1657,10 @@ class Proper_Dihedral_Restraint(State):
     def reset_state(self):
         pass
 
+    def clear_sim_index(self):
+        f = c_function('proper_dihedral_restraint_clear_sim_index',
+            args = (ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointer_ref, 1)
 
 
     target = c_property('proper_dihedral_restraint_target', float64,
@@ -1663,6 +1681,8 @@ class Proper_Dihedral_Restraint(State):
         doc = 'Get/set the spring constant for this restraint in kJ mol-1 rad-2')
     annotation_color = c_property('proper_dihedral_restraint_annotation_color', uint8, 4, read_only=True,
         doc = 'Get the color of the annotation for this restraint according to the current colormap. Read only.')
+    sim_index = c_property('proper_dihedral_restraint_sim_index', int32,
+        doc = 'Index of this restraint in a running simulation. Can be set')
 
 
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
