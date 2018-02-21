@@ -74,9 +74,11 @@ class Rama_Annotator(Model):
     def _prepare_drawings(self):
         if not hasattr(self, '_omega_drawing'):
             od = self._omega_drawing = Drawing('cis/twisted omegas')
+            od.skip_bounds = True
             self.add_drawing(od)
         if not hasattr(self, '_rama_drawing'):
             rd = self._rama_drawing = Drawing('Ramachandran score indicators')
+            rd.skip_bounds = True
             from chimerax.core.surface.shapes import sphere_geometry2
             rd.vertices, rd.normals, rd.triangles = sphere_geometry2(80)
             self.add_drawing(rd)

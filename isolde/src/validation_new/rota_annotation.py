@@ -149,6 +149,7 @@ class Rotamer_Annotator(Model):
         r.move(n)
         translation((0,0.5,0.25)).move(v)
         d = Drawing('rotamer indicator')
+        d.skip_bounds = True
         d.vertices, d.normals, d.triangles = v, n, t
         return d
 

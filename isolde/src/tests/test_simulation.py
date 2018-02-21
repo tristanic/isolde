@@ -1,4 +1,4 @@
-
+from time import time
 class TestSimulation:
     def __init__(self, structure):
         self.structure = structure
@@ -26,6 +26,12 @@ class TestSimulation:
         self._friction = 5.0/unit.picoseconds
         self._platform_name = 'OpenCL'
         self._create_openmm_system()
+        self._loop_start_time = 0;
+        self._last_loop_period = 0;
+
+    @property
+    def sim_rate(self):
+        return 1/self._last_loop_period
 
     def prepare_sim(self):
         integrator = self._integrator_type(self._temperature, self._friction,
@@ -58,6 +64,8 @@ class TestSimulation:
             self._update_coordinates_and_repeat, [True])
 
     def _repeat_step(self):
+        self._last_loop_period = time()-self._loop_start_time
+        self._loop_start_time = time()
         th = self._sim_thread_handler
         from ..delayed_reaction import delayed_reaction
         if th.unstable():

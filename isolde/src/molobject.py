@@ -1072,6 +1072,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
     def _prepare_drawings(self):
         pd = self._pin_drawing = Drawing('Target pins')
         bd = self._bond_drawing = Drawing('Restraint bonds')
+        bd.skip_bounds = True
         self.add_drawing(pd)
         self.add_drawing(bd)
         pd.vertices, pd.normals, pd.triangles = self._target_pin_geometry()
@@ -1081,9 +1082,9 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         pd.display = False
         bd.display = False
 
-    def _pseudobond_geometry(self, segments=5):
+    def _pseudobond_geometry(self, segments=3):
         from chimerax.core import surface
-        return surface.dashed_cylinder_geometry(segments, height=1.0)
+        return surface.dashed_cylinder_geometry(segments, height=1.0, nc = 6)
 
     def _target_pin_geometry(self, handle_radius=0.4, pin_radius=0.05, total_height=1.0):
         from .geometry import pin_geometry
@@ -1096,22 +1097,41 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         self._bond_drawing.color = color
 
     def _restraint_changes_cb(self, trigger_name, changes):
-        self._update_graphics()
+        update_bonds = False
+        update_targets = False
+        if self in changes.keys():
+            changes = changes[self]
+            update_bonds = True
+            change_types = list(changes.keys())
+            if 'target changed' in change_types:
+                update_targets = True
+            if 'enabled/disabled' in change_types:
+                update_targets = True
+            if 'display changed' in change_types:
+                update_targets = True
+        self.update_graphics(update_bonds, update_targets)
 
     def _model_changes_cb(self, trigger_name, changes):
-        update_needed = False
+        update_bonds = False
+        update_targets = False
         changes = changes[1]
-        if changes.num_deleted_atoms():
-            update_needed = True
+        if changes.num_deleted_atoms() > 0:
+            update_bonds = True
+            update_targets = True
         atom_reasons = changes.atom_reasons()
         if 'display changed' in atom_reasons or 'hide changed' in atom_reasons:
-            update_needed = True
+            update_bonds = True
+            update_targets = True
         if 'coord changed' in atom_reasons:
-            update_needed = True
-        if update_needed:
-            self._update_graphics()
+            update_bonds = True
+        self.update_graphics(update_bonds, update_targets)
 
-    def _update_graphics(self):
+    _show_pd = True
+    _show_bd = True
+
+    def update_graphics(self, update_bonds=True, update_targets=True):
+        if not self.visible:
+            return
         pd = self._pin_drawing
         bd = self._bond_drawing
         visibles = self.visible_restraints
@@ -1120,12 +1140,15 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
             pd.display = False
             bd.display = False
             return
-        pd.display = True
-        bd.display = True
-        self._update_pin_drawing(pd, visibles, n)
-        self._update_bond_drawing(bd, visibles, n)
+        pd.display = self._show_pd
+        bd.display = self._show_bd
+        if update_bonds:
+            self._update_bond_drawing(bd, visibles, n)
+        if update_targets:
+            self._update_pin_drawing(pd, visibles, n)
 
     def _update_pin_drawing(self, pd, visibles, n):
+        print('Updating pins!')
         from chimerax.core.geometry import Places
         xyzr = numpy.ones((n,4), numpy.double)
         xyzr[:, :3] = visibles.targets
@@ -1184,8 +1207,6 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         Prepare a distance restraint manager for a given atomic model.
         '''
 
-        # TODO: Defer pseudobondgroup creation to after initialisation to avoid
-        # duplicating code in _Restrain_Mgr
         session = model.session
         if not hasattr(session, 'isolde_changes') or session.isolde_changes.deleted:
             ct = self._change_tracker = Restraint_Change_Tracker(session)
@@ -1208,10 +1229,12 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
 
     def _prepare_drawing(self):
         bd = self._bond_drawing = Drawing('Restraint bonds')
+        bd.skip_bounds = True
         self.add_drawing(bd)
         bd.vertices, bd.normals, bd.triangles = self._pseudobond_geometry()
         self.set_bond_color(self._DEFAULT_BOND_COLOR)
         td = self._target_drawing = Drawing('Target distances')
+        td.skip_bounds = True
         td.vertices, td.normals, td.triangles = self._target_geometry()
         self.add_drawing(td)
         self.set_target_color(self._DEFAULT_TARGET_COLOR)
@@ -1241,7 +1264,7 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         return surface.cylinder_geometry(radius = 0.025, height=1.0, caps=False)
 
     def _restraint_changes_cb(self, trigger_name, changes):
-        self._update_graphics()
+        self.update_graphics()
 
     def _model_changes_cb(self, trigger_name, changes):
         update_needed = False
@@ -1254,9 +1277,14 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         if 'coord changed' in atom_reasons:
             update_needed = True
         if update_needed:
-            self._update_graphics()
+            self.update_graphics()
 
-    def _update_graphics(self):
+    _show_bd = True
+    _show_td = True
+
+    def update_graphics(self):
+        if not self.visible:
+            return
         bd = self._bond_drawing
         td = self._target_drawing
         visibles = self.visible_restraints
@@ -1265,8 +1293,8 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
             bd.display = False
             td.display = False
             return
-        bd.display = True
-        td.display = True
+        bd.display = self._show_bd
+        td.display = self._show_td
         self._update_bond_drawing(bd, visibles, n)
         self._update_target_drawing(td, visibles, n)
 
@@ -1313,7 +1341,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         self._prepare_drawings()
         self._restraint_changes_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
         self._atom_changes_handler = model.triggers.add_handler('changes', self._model_changes_cb)
-        self._update_graphics()
+        self.update_graphics()
 
     def delete(self):
         ah = self._atom_changes_handler
@@ -1325,9 +1353,11 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         from . import geometry
         if not hasattr(self, '_ring_drawing') or self._ring_drawing is None:
             ring_d = self._ring_drawing = Drawing('rings')
+            ring_d.skip_bounds = True
             self.add_drawing(ring_d)
         if not hasattr(self, '_post_drawing') or self._post_drawing is None:
             post_d = self._post_drawing = Drawing('posts')
+            post_d.skip_bounds = True
             self.add_drawing(post_d)
         ring_d = self._ring_drawing
         post_d = self._post_drawing
@@ -1391,13 +1421,15 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         if 'coord changed' in atom_reasons:
             update_needed = True
         if update_needed:
-            self._update_graphics()
+            self.update_graphics()
 
     def _restraint_changes_cb(self, trigger_name, changeds):
         # For the time being, just update on any trigger
-        self._update_graphics()
+        self.update_graphics()
 
-    def _update_graphics(self):
+    def update_graphics(self):
+        if not self.visible:
+            return
         ring_d = self._ring_drawing
         post_d = self._post_drawing
         visibles = self.visible_restraints
@@ -1412,7 +1444,6 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         ring_d.positions = positions[0]
         post_d.positions = positions[1]
         ring_d.colors = post_d.colors = colors
-        self._update_needed = False
 
 class _Dihedral(State):
     '''
