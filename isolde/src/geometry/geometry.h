@@ -26,7 +26,7 @@ inline T dot_product_3D(T a[3], T b[3])
 {
     T accum = 0;
     for (int i=0; i < 3; ++i) {
-        accum += a[i]*b[i];
+        accum += (*a++)*(*b++);
     }
     return accum;
 }
@@ -39,8 +39,6 @@ inline T l2_norm_3d(T a[3])
         accum += a[i]*a[i];
     }
     return sqrt(accum);
-
-
 }
 
 template <typename T>
