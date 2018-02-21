@@ -21,6 +21,10 @@
   <!-- Compiled modules in bundle
        CModule gives the name of the module
        Source files are listed in one or more SourceFile elements -->
+  <CModule name = "_geometry" usesNumpy="true">
+      <SourceFile>src/geometry_cpp/geometry.cpp</SourceFile>
+      <Library>atomstruct</Library>
+  </CModule>
   <!-- <CModule name="_geometry">
     <SourceFile>src/_geometry.cpp</SourceFile>
     <Library>OpenMM</Library>
@@ -31,6 +35,7 @@
     <Dependency name="ChimeraX-Core" version=">=0.1"/>
     <Dependency name="Clipper-Python" version=">=0.1"/>
   </Dependencies>
+
 
   <!-- Python and ChimeraX-specific classifiers
        From https://pypi.python.org/pypi?%3Aaction=list_classifiers

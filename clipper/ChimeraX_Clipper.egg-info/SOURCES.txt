@@ -9,7 +9,9 @@ src/clipper_mtz.py
 src/clipper_util.py
 src/crystal.py
 src/data_tree.py
+src/geometry.py
 src/main.py
 src/mousemodes.py
 src/structurestepper.py
 src/tool.py
+src/geometry_cpp/geometry.cpp
