@@ -4,6 +4,8 @@
 #include <thread>
 #include <chrono>
 #include <cstddef>
+#include <exception>
+#include <stdexcept>
 #include <OpenMM.h>
 #include <pyinstance/PythonInstance.declare.h>
 
@@ -53,7 +55,6 @@ public:
     }
 
 
-
     void minimize_threaded()
     {
         _thread_safety_check();
@@ -64,8 +65,10 @@ public:
 
     std::vector<OpenMM::Vec3> get_coords_in_angstroms(const OpenMM::State& state);
     void set_coords_in_angstroms(const std::vector<OpenMM::Vec3>& coords_ang);
+    void set_coords_in_angstroms(double *coords, size_t n);
     void finalize_thread()
     {
+        _thread_error_check();
         if (_thread_running)
             _thread.join();
         _thread_running = false;
@@ -83,7 +86,9 @@ private:
     OpenMM::Context* _context;
     OpenMM::State _starting_state;
     OpenMM::State _final_state;
+
     std::thread _thread;
+    std::exception_ptr _thread_except;
     size_t _natoms;
     bool _thread_running = false;
     bool _thread_finished = true;
@@ -105,6 +110,14 @@ private:
             throw std::logic_error("This function is not available while a thread is running!");
         }
     }
+
+    void _thread_error_check()
+    {
+        if (_thread_except) {
+            std::rethrow_exception(_thread_except);
+        }
+    }
+
     void _step_threaded(size_t steps);
     void _minimize_threaded();
 };

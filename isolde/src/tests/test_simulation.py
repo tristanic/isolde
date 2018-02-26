@@ -79,7 +79,7 @@ class TestSimulation:
 
     def _update_coordinates_and_repeat(self, reinit_vels = False):
         th = self._sim_thread_handler
-        self.atoms.coords = th.current_coords
+        self.atoms.coords = th.coords
         if reinit_vels:
             th.reinitialize_velocities()
         if self._stop:

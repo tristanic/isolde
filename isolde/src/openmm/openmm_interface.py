@@ -32,7 +32,7 @@ class OpenMM_Thread_Handler:
     will create a short-lived thread to run the desired number of steps or
     a round of minimization, respectively. The status of the thread can be
     checked with thread_finished, while the initial and final coordinates can
-    be retrieved with `last_coords` and `current_coords` respectively. If instability
+    be retrieved with `last_coords` and `coords` respectively. If instability
     (overly fast-moving atoms) is detected, the thread will terminate early and
     the `unstable` property will set to True. In such cases it is advisable to
     run one or more minimization rounds. When minimization converges to with
@@ -135,13 +135,21 @@ class OpenMM_Thread_Handler:
         return coords
 
     @property
-    def current_coords(self):
+    def coords(self):
         f = c_function('openmm_thread_handler_current_coords',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
         n = self.natoms
         coords = numpy.empty((n,3), float64)
         f(self._c_pointer, n, pointer(coords))
         return coords
+
+    @coords.setter
+    def coords(self, coords):
+        f = c_function('set_openmm_thread_handler_current_coords',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
+        n = self.natoms
+        f(self._c_pointer, n, pointer(coords))
+        self.reinitialize_velocities()
 
     def _get_min_thread_period(self):
         '''Throttle the simulation to a minimum time period per loop (in ms)'''

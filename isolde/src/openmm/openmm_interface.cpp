@@ -17,53 +17,69 @@ OpenMM_Thread_Handler::OpenMM_Thread_Handler(OpenMM::Context* context)
 
 void OpenMM_Thread_Handler::_step_threaded(size_t steps)
 {
-    auto start = std::chrono::steady_clock::now();
-    _thread_running = true;
-    _thread_finished = false;
-    size_t steps_done = 0;
-    _starting_state = _final_state;
-    for (; steps_done < steps; )
+    try
     {
-        size_t these_steps, remaining_steps = steps-steps_done;
-        if (remaining_steps > STEPS_PER_VELOCITY_CHECK) {
-            these_steps = STEPS_PER_VELOCITY_CHECK;
-        } else {
-            these_steps = remaining_steps;
-        }
-        integrator().step(these_steps);
-        steps_done += these_steps;
-        auto state = _context->getState(OpenMM::State::Velocities);
-        if (overly_fast_atoms(state.getVelocities()).size() >0)
+        _thread_except = nullptr;
+        auto start = std::chrono::steady_clock::now();
+        _thread_running = true;
+        _thread_finished = false;
+        size_t steps_done = 0;
+        _starting_state = _final_state;
+        for (; steps_done < steps; )
         {
-            _unstable = true;
-            break;
+            size_t these_steps, remaining_steps = steps-steps_done;
+            if (remaining_steps > STEPS_PER_VELOCITY_CHECK) {
+                these_steps = STEPS_PER_VELOCITY_CHECK;
+            } else {
+                these_steps = remaining_steps;
+            }
+            integrator().step(these_steps);
+            steps_done += these_steps;
+            auto state = _context->getState(OpenMM::State::Velocities);
+            if (overly_fast_atoms(state.getVelocities()).size() >0)
+            {
+                _unstable = true;
+                break;
+            }
         }
+        _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
+        auto end = std::chrono::steady_clock::now();
+        auto loop_time = end-start;
+        if (loop_time < _min_time_per_loop)
+            std::this_thread::sleep_for(_min_time_per_loop-loop_time);
+        _thread_finished = true;
+    } catch (...)
+    {
+        _thread_except = std::current_exception();
+        _thread_finished = true;
     }
-    _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
-    auto end = std::chrono::steady_clock::now();
-    auto loop_time = end-start;
-    if (loop_time < _min_time_per_loop)
-        std::this_thread::sleep_for(_min_time_per_loop-loop_time);
-    _thread_finished = true;
 }
 
 void OpenMM_Thread_Handler::_minimize_threaded()
 {
-    auto start = std::chrono::steady_clock::now();
-    _thread_running = true;
-    _thread_finished = false;
-    _starting_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Energy);
-    OpenMM::LocalEnergyMinimizer::minimize(*_context, MIN_TOLERANCE, MAX_MIN_ITERATIONS);
-    _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Energy);
-    if (_starting_state.getPotentialEnergy() - _final_state.getPotentialEnergy() > MIN_TOLERANCE)
-        _unstable = true;
-    else
-        _unstable = false;
-    auto end = std::chrono::steady_clock::now();
-    auto loop_time = end-start;
-    if (loop_time < _min_time_per_loop)
-        std::this_thread::sleep_for(_min_time_per_loop-loop_time);
-    _thread_finished = true;
+    try
+    {
+        _thread_except = nullptr;
+        auto start = std::chrono::steady_clock::now();
+        _thread_running = true;
+        _thread_finished = false;
+        _starting_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Energy);
+        OpenMM::LocalEnergyMinimizer::minimize(*_context, MIN_TOLERANCE, MAX_MIN_ITERATIONS);
+        _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Energy);
+        if (_starting_state.getPotentialEnergy() - _final_state.getPotentialEnergy() > MIN_TOLERANCE)
+            _unstable = true;
+        else
+            _unstable = false;
+        auto end = std::chrono::steady_clock::now();
+        auto loop_time = end-start;
+        if (loop_time < _min_time_per_loop)
+            std::this_thread::sleep_for(_min_time_per_loop-loop_time);
+        _thread_finished = true;
+    } catch (...)
+    {
+        _thread_except = std::current_exception();
+        _thread_finished = true;
+    }
 }
 
 std::vector<size_t> OpenMM_Thread_Handler::overly_fast_atoms(const std::vector<OpenMM::Vec3>& velocities)
@@ -105,6 +121,19 @@ void OpenMM_Thread_Handler::set_coords_in_angstroms(const std::vector<OpenMM::Ve
         for (size_t i=0; i<3; ++i) {
             (*to)[i] = (*from)[i]/10.0;
         }
+    }
+    _context->setPositions(coords_nm);
+}
+
+void OpenMM_Thread_Handler::set_coords_in_angstroms(double *coords, size_t n)
+{
+    finalize_thread();
+    if (n != natoms())
+        throw std::logic_error("Number of input atoms does not match number in simulation!");
+    std::vector <OpenMM::Vec3> coords_nm(n);
+    for (auto &v: coords_nm) {
+        for (size_t i=0; i<3; ++i)
+            v[i] = (*coords++)/10.0;
     }
     _context->setPositions(coords_nm);
 }
@@ -254,6 +283,18 @@ openmm_thread_handler_current_coords(void *handler, size_t n, double *coords)
         molc_error();
     }
 }
+
+extern "C" EXPORT void
+set_openmm_thread_handler_current_coords(void *handler, size_t n, double *coords)
+{
+    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
+    try {
+        h->set_coords_in_angstroms(coords, n);
+    } catch (...) {
+        molc_error();
+    }
+}
+
 
 extern "C" EXPORT double
 openmm_thread_handler_min_thread_period(void *handler)
