@@ -21,8 +21,8 @@
   <!-- Compiled modules in bundle
        CModule gives the name of the module
        Source files are listed in one or more SourceFile elements -->
-  <CModule name = "_geometry" usesNumpy="true">
-      <SourceFile>src/geometry_cpp/geometry.cpp</SourceFile>
+  <CModule name = "_symmetry" usesNumpy="true">
+      <SourceFile>src/symmetry_cpp/symmetry.cpp</SourceFile>
       <Library>atomstruct</Library>
   </CModule>
   <!-- <CModule name="_geometry">
@@ -49,6 +49,11 @@
          Topic :: Scientific/Engineering :: Chemistry
          Topic :: Scientific/Engineering :: Bio-Informatics
        The "ChimeraX :: Bundle" classifier is also supplied automatically.  -->
+       <DataFiles>
+         <DataFile>tests/*.pdb</DataFile>
+         <DataFile>tests/*.mtz</DataFile>
+     </DataFiles>
+
   <!-- <DataFiles>
     <DataFile>dir/file</DataFile>
   </DataFiles> -->

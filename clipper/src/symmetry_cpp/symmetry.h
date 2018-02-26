@@ -1,5 +1,7 @@
-#ifndef CLIPPER_GEOMETRY
-#define CLIPPER_GEOMETRY
+#ifndef CLIPPER_SYMMETRY
+#define CLIPPER_SYMMETRY
+
+#include <iostream>
 
 #include <cstddef>
 #include <vector>
@@ -21,7 +23,7 @@ template <typename T>
 inline void transform_coord (T tf[12], T coord[3], T out[3])
 {
     for (size_t i=0; i<3; ++i) {
-        T* row = tf + i*3;
+        T* row = tf + i*4;
         out[i] = row[0]*coord[0] + row[1]*coord[1] + row[2]*coord[2] + row[3];
     }
 }
@@ -41,7 +43,7 @@ inline bool distance_below_cutoff(T a[3], T b[3], T cutoff)
 {
     T deltas[3];
     for (size_t i=0; i<3; ++i) {
-        deltas[i] = std::abs(*a++-*b++);
+        deltas[i] = std::abs((*a++)-(*b++));
         if (deltas[i] > cutoff)
             return false;
     }
@@ -86,10 +88,12 @@ void find_close_points_sym(double center[3], double cutoff, double *transforms, 
     for (size_t i=0; i<n_sym; ++i)
     {
         double *tf = transforms + i*TF_SIZE;
+        double *pc = point_coords;
         Sym_Close_Points::indices close_indices;
         Sym_Close_Points::coords close_coords;
         for (size_t j=0; j<n_points; ++j) {
-            transform_coord(tf, point_coords, tf_coord);
+            transform_coord(tf, pc, tf_coord);
+
             if (distance_below_cutoff(tf_coord, center, cutoff))
             {
                 Sym_Close_Points::Coord this_coord;
@@ -97,10 +101,10 @@ void find_close_points_sym(double center[3], double cutoff, double *transforms, 
                 close_indices.push_back(j);
                 close_coords.push_back(this_coord);
             }
-            point_coords += 3;
+            pc += 3;
         }
         close.symmap[i] = std::make_pair(close_indices, close_coords);
     }
 }
 
-#endif //CLIPPER_GEOMETRY
+#endif //CLIPPER_SYMMETRY

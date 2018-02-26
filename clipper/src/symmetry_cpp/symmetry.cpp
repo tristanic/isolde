@@ -2,7 +2,7 @@
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 
-#include "geometry.h"
+#include "symmetry.h"
 
 #include <atomstruct/Atom.h>
 #include <atomstruct/Bond.h>
@@ -65,10 +65,8 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
         double *transforms, size_t n_tf, double *center, double cutoff)
 {
     Atom **a = static_cast<Atom **>(atoms);
+    PyObject *ret = PyTuple_New(6);
     try {
-
-
-
         Sym_Close_Points cp = Sym_Close_Points();
         std::vector<double> coords(natoms*3);
         Atom **aa = a;
@@ -87,7 +85,7 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
             }
         }
         natoms = visible_atoms.size();
-
+        coords.resize(natoms*3);
         // Find the coordinates within the cutoff distance for each transform
         find_close_points_sym(center, cutoff, transforms, n_tf, coords.data(), natoms, cp);
 
@@ -133,8 +131,9 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
             for (const auto &it: amap) {
                 ret_atoms.push_back(it.first);
                 const auto &coord = it.second;
-                for (const auto &c: coord)
+                for (const auto &c: coord) {
                     ret_coords.push_back(c);
+                }
                 ret_atom_sym.push_back(i);
             }
             size_t old_bond_tf_size = ret_bond_tfs.size();
@@ -149,7 +148,6 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
                 ret_bond_sym.push_back(i);
             }
         }
-        PyObject *ret = PyTuple_New(6);
 
         // first tuple item: symmetry atoms
         void **aptrs;
@@ -197,6 +195,7 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
 
     } catch(...) {
         molc_error();
+        Py_XDECREF(ret);
         return 0;
     }
 }
