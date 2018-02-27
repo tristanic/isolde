@@ -1,2 +1,0 @@
-ChimeraX-Core>=0.1
-Clipper-Python>=0.1
