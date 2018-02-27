@@ -170,8 +170,6 @@ class AtomicSymmetryModel(Model):
         self._color_dim_factor = dim_colors_to
         super().__init__('Atomic symmetry', session)
         parent.add([self])
-        self._model_changes_handler = atomic_structure.triggers.add_handler(
-                                        'changes', self._model_changed_cb)
         self._box_changed_handler = None
         self._center = session.view.center_of_rotation
         self._radius = radius
@@ -181,7 +179,21 @@ class AtomicSymmetryModel(Model):
         from chimerax.core.atomic.structure import PickedBonds
         bd = self._bonds_drawing = SymBondsDrawing('Symmetry bonds', PickedSymBond, PickedBonds)
         self.add_drawing(bd)
+        rd = self._ribbon_drawing = SymRibbonDrawing('Symmetry ribbons',
+            atomic_structure._ribbon_drawing, dim_colors_to)
+        self.add_drawing(rd)
+        self._model_changes_handler = atomic_structure.triggers.add_handler(
+                                        'changes', self._model_changed_cb)
         self.live = live
+
+    def delete(self):
+        bh = self._box_changed_handler
+        if bh is not None:
+            self.parent.triggers.remove_handler(bh)
+        mh = self._model_changes_handler
+        if mh is not None:
+            self.structure.triggers.remove_handler(mh)
+        super().delete()
 
     @property
     def live(self):
@@ -228,7 +240,7 @@ class AtomicSymmetryModel(Model):
             first_symop = 0
         else:
             first_symop = 1
-        tfs = symops.all_matrices_orth(self.cell, format='3x4')[first_symop:]
+        tfs = self._current_tfs = symops.all_matrices_orth(self.cell, format='3x4')[first_symop:]
         self._current_atoms, self._current_atom_coords, self._current_atom_syms, \
             self._current_bonds, self._current_bond_tfs, self._current_bond_syms = \
                 sym_transforms_in_sphere(self.structure.atoms, tfs, center, radius)
@@ -247,54 +259,71 @@ class AtomicSymmetryModel(Model):
             update_needed = True
         if 'display changed' in reasons or 'hide changed' in reasons:
             update_needed = True
-        if 'color_changed' in reasons:
+        if 'color changed' in reasons:
             update_needed = True
         if (update_needed):
             self._update_box(self._center, self._radius)
             self.update_graphics()
 
     def update_graphics(self):
-        ad = self._atoms_drawing
-        bd = self._bonds_drawing
-
         lod = self._level_of_detail
-        lod.set_atom_sphere_geometry(ad)
-        lod.set_bond_cylinder_geometry(bd)
+        self._update_atom_graphics(lod)
+        self._update_bond_graphics(lod)
+        self._update_ribbon_graphics()
 
-        ca = ad.visible_atoms = self._current_atoms
+    def _update_atom_graphics(self, lod):
+        ad = self._atoms_drawing
+        lod.set_atom_sphere_geometry(ad)
+        visible_mask = self._current_atoms.visibles
+        ca = ad.visible_atoms = self._current_atoms[visible_mask]
+        syms = self._current_atom_syms[visible_mask]
         na = len(ca)
         if na > 0:
             ad.display = True
             xyzr = numpy.empty((na, 4), numpy.float32)
-            xyzr[:,:3] = self._current_atom_coords
+            xyzr[:,:3] = self._current_atom_coords[visible_mask]
             xyzr[:,3] = self.structure._atom_display_radii(ca)
             from chimerax.core.geometry import Places
             ad.positions = Places(shift_and_scale = xyzr)
             colors = ca.colors.astype(numpy.float32)
             if self._include_identity:
-                colors[self._current_atom_syms!=0,:3] *= self._color_dim_factor
+                colors[syms!=0,:3] *= self._color_dim_factor
             else:
                 colors[:,:3] *= self._color_dim_factor
             ad.colors = colors.astype(numpy.uint8)
         else:
             ad.display = False
 
-        bonds = bd.visible_bonds = self._current_bonds
-        nb = len(bonds)
-        if nb > 0:
-            bd.display = True
-            bd.positions = self._current_bond_tfs
-            colors = bonds.half_colors.astype(numpy.float32)
-            if self._include_identity:
-                mask = numpy.concatenate([self._current_bond_syms!=0]*2)
-                colors[mask, :3] *= self._color_dim_factor
+
+    def _update_bond_graphics(self, lod):
+            bd = self._bonds_drawing
+            lod.set_bond_cylinder_geometry(bd)
+            bonds = bd.visible_bonds = self._current_bonds
+            nb = len(bonds)
+            if nb > 0:
+                bd.display = True
+                bd.positions = self._current_bond_tfs
+                colors = bonds.half_colors.astype(numpy.float32)
+                if self._include_identity:
+                    mask = numpy.concatenate([self._current_bond_syms!=0]*2)
+                    colors[mask, :3] *= self._color_dim_factor
+                else:
+                    colors[:,:3] *= self._color_dim_factor
+                bd.colors = colors.astype(numpy.uint8)
             else:
-                colors[:,:3] *= self._color_dim_factor
-            bd.colors = colors.astype(numpy.uint8)
-        else:
-            bd.display = False
+                bd.display = False
 
-
+    def _update_ribbon_graphics(self):
+        rd = self._ribbon_drawing
+        prd = self.structure._ribbon_drawing
+        position_indices = numpy.unique(self._current_atom_syms)
+        tfs = self._current_tfs[position_indices]
+        from chimerax.core.geometry import Places
+        rd.positions = Places(place_array=tfs)
+        rd.display = prd.display
+        if not rd.display:
+            return
+        rd.update(self._color_dim_factor)
 
 from chimerax.core.atomic.structure import AtomsDrawing
 class SymAtomsDrawing(AtomsDrawing):
@@ -377,3 +406,60 @@ class PickedSymBond(Pick):
         self.sym = sym
     def description(self):
         return '({}) {}'.format(self.sym, self.bond)
+
+class SymRibbonDrawing(Drawing):
+    pickable = False
+    def __init__(self, name, master_ribbon, dim_factor):
+        super().__init__(name)
+        m = self._master = master_ribbon
+        _copy_ribbon_drawing(m, self, dim_factor)
+
+    def rebuild(self, dim_factor):
+        self.remove_all_drawings()
+        _copy_ribbon_drawing(self._master, self, dim_factor)
+
+    def update(self, dim_factor):
+        sad, mad = self.all_drawings(), self._master.all_drawings()
+        if len(sad) != len(mad):
+            self.rebuild(dim_factor)
+            return
+        for td, md in zip(sad, mad):
+            td.vertices, td.normals, td.triangles = \
+                md.vertices, md.normals, md.triangles
+            vertex_colors = md.vertex_colors
+            if vertex_colors is not None:
+                vertex_colors = vertex_colors.astype(numpy.float32)
+                vertex_colors[:,:3] *= dim_factor
+                td.vertex_colors = vertex_colors.astype(numpy.uint8)
+            else:
+                colors = md.colors.astype(numpy.float32)
+                colors[:,:3] *= dim_factor
+                td.colors = colors
+
+
+
+
+def _copy_ribbon_drawing(master_drawing, target_drawing, dim_factor):
+    from chimerax.core.graphics import Drawing
+    d = master_drawing
+    t = target_drawing
+    def recursively_add_drawings(fromd, tod, dim_factor):
+        children = fromd.child_drawings()
+        for c in children:
+            nc = Drawing(c.name)
+            v, n, t = c.vertices, c.normals, c.triangles
+            if v is None or len(v) == 0:
+                continue
+            nc.vertices, nc.normals, nc.triangles = v, n, t
+            vc = c.vertex_colors
+            if vc is not None:
+                vc = vc.astype(numpy.float32)
+                vc[:,:3] *= dim_factor
+                nc.vertex_colors = vc.astype(numpy.uint8)
+            else:
+                col = c.colors.astype(numpy.float32)
+                col[:, :3] *= dim_factor
+                nc.colors = col.astype(numpy.uint8)
+            tod.add_drawing(nc)
+            recursively_add_drawings(c, nc, dim_factor)
+    recursively_add_drawings(d, t, dim_factor)

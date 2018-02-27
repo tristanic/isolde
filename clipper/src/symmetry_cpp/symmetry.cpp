@@ -78,7 +78,7 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
         for (size_t i=0; i<natoms; ++i)
         {
             auto this_a = *aa++;
-            if (this_a->display())
+            if (true) //(this_a->visible())
             {
                 const auto& coord = this_a->coord();
                 for (size_t j=0; j<3; ++j)
@@ -118,7 +118,7 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
                 for (auto b = abonds.begin(); b!= abonds.end(); ++b)
                 {
                     Bond *bond = *b;
-                    //if (!bond->shown()) continue;
+                    if (!bond->shown()) continue;
                     const Bond::Atoms &batoms = bond->atoms();
                     auto bi = sym_bond_coords.find(bond);
                     if (bi != sym_bond_coords.end()) continue;
