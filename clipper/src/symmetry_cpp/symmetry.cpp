@@ -2,6 +2,8 @@
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 
+#include <iostream>
+
 #include "symmetry.h"
 
 #include <atomstruct/Atom.h>
@@ -76,7 +78,7 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
         for (size_t i=0; i<natoms; ++i)
         {
             auto this_a = *aa++;
-            if (this_a->visible())
+            if (this_a->display())
             {
                 const auto& coord = this_a->coord();
                 for (size_t j=0; j<3; ++j)
@@ -97,6 +99,7 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
         std::vector<Bond *> ret_bonds;
         std::vector<float32_t> ret_bond_tfs;
         std::vector<uint8_t> ret_bond_sym;
+
         for (size_t i=0; i<n_tf; ++i)
         {
             const auto& indices = symmap[i].first;
@@ -115,7 +118,7 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
                 for (auto b = abonds.begin(); b!= abonds.end(); ++b)
                 {
                     Bond *bond = *b;
-                    if (!bond->shown()) continue;
+                    //if (!bond->shown()) continue;
                     const Bond::Atoms &batoms = bond->atoms();
                     auto bi = sym_bond_coords.find(bond);
                     if (bi != sym_bond_coords.end()) continue;
@@ -177,11 +180,26 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
             *bptrs++ = ptr;
         PyTuple_SET_ITEM(ret, 3, bond_ptr_array);
 
-        // fifth tuple item: bond transforms
+        // fifth tuple item: bond transforms.
+        // This is a bit ugly: the default arrangement for halfbond transforms
+        // is to do the first set of halfbonds followed by the second
+        // (i.e. AAAAAABBBBBB). But up until now it's been much more convenient
+        // to intersperse them (ABABABABAB). So now they need to be remixed into
+        // the final arrangement.
         float *btfs;
-        PyObject *bond_transform_array = python_float_array(ret_bond_tfs.size(), &btfs);
-        for (const auto &tf: ret_bond_tfs)
-            *btfs++ = tf;
+        size_t n = ret_bond_tfs.size();
+        PyObject *bond_transform_array = python_float_array(n, &btfs);
+        float *btfs2 = btfs + n/2;
+        float *tf = ret_bond_tfs.data();
+        for (size_t i=0; i<n/32; ++i)
+        {
+            float *tf2 = tf+16;
+            for (size_t j=0; j<16; ++j) {
+                *btfs++ = *tf++;
+                *btfs2++ = *tf2++;
+            }
+            tf+=16;
+        }
         PyTuple_SET_ITEM(ret, 4, bond_transform_array);
 
         // sixth tuple item: bond symop indices
@@ -198,4 +216,30 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
         Py_XDECREF(ret);
         return 0;
     }
+}
+
+extern "C" EXPORT PyObject *bond_half_colors(void *bonds, size_t n)
+{
+    Bond **b = static_cast<Bond **>(bonds);
+    uint8_t *rgba1;
+    PyObject *colors = python_uint8_array(2*n, 4, &rgba1);
+    uint8_t *rgba2 = rgba1 + 4*n;
+    try {
+        const Rgba *c1, *c2;
+        for (size_t i = 0; i < n; ++i) {
+          Bond *bond = b[i];
+          if (bond->halfbond()) {
+              std::cerr << "Atom names: " << bond->atoms()[0]->name() << ", " << bond->atoms()[1]->name() << std::endl;
+              c1 = &(bond->atoms()[0]->color());
+              c2 = &(bond->atoms()[1]->color());
+          } else {
+              c1 = c2 = &(bond->color());
+          }
+          *rgba1++ = c1->r; *rgba1++ = c1->g; *rgba1++ = c1->b; *rgba1++ = c1->a;
+          *rgba2++ = c2->r; *rgba2++ = c2->g; *rgba2++ = c2->b; *rgba2++ = c2->a;
+        }
+    } catch (...) {
+        molc_error();
+    }
+    return colors;
 }

@@ -50,81 +50,94 @@ def move_model(session, model, new_parent):
     new_parent.add([model])
 
 def symmetry_from_model_metadata(model):
+    if 'CRYST1' in model.metadata.keys():
+        return symmetry_from_model_metadata_pdb(model)
+    elif 'cell' in model.metadata.keys():
+        return symmetry_from_model_metadata_mmcif(model)
+    raise TypeError('Model does not appear to have symmetry information!')
+
+def symmetry_from_model_metadata_mmcif(model):
+    ''' Not yet possible. ChimeraX does not yet store resolution information.'''
+    pass
+
+    metadata = model.metadata
+    cell_headers = metadata['cell']
+    cell_data = metadata['cell data']
+    cell_dict = dict((key, data) for (key, data) in zip(cell_headers, cell_data))
+    abc = [cell_dict['length_a'], cell_dict['length_b'], cell_dict['length_c']]
+    angles = [cell_dict['angle_alpha'], cell_dict['angle_beta'], cell_dict['angle_gamma']]
+
+
+
+def symmetry_from_model_metadata_pdb(model):
     '''
     Generate Cell, Spacegroup and a default Grid_Sampling from the PDB
-    CRYST1 card (or mmCIF equivalent metadata once it's available in
-    ChimeraX).
+    CRYST1 card.
     '''
-    if 'CRYST1' in model.metadata.keys():
-        cryst1 = model.metadata['CRYST1'][0].split()
-        abc = cryst1[1:4]
-        angles = cryst1[4:7]
+    cryst1 = model.metadata['CRYST1'][0].split()
+    abc = cryst1[1:4]
+    angles = cryst1[4:7]
 
-        remarks = model.metadata['REMARK']
-        i = 0
+    remarks = model.metadata['REMARK']
+    i = 0
 
-        '''
-        Get the resolution. We need this to define a Grid_sampling
-        for the unit cell (needed even in the absence of a map since
-        atomic symmetry lookups are done with integerised symops for
-        performance). We want to be as forgiving as possible at this
-        stage - we'll use the official resolution if we find it, and
-        set a default resolution if we don't. This will be overridden
-        by the value from any mtz file that's loaded later.
-        '''
-        try:
-            while 'REMARK   2' not in remarks[i]:
-                i += 1
-            # The first 'REMARK   2' line is blank by convention, and
-            # resolution is on the second line
+    '''
+    Get the resolution. We need this to define a Grid_sampling
+    for the unit cell (needed even in the absence of a map since
+    atomic symmetry lookups are done with integerised symops for
+    performance). We want to be as forgiving as possible at this
+    stage - we'll use the official resolution if we find it, and
+    set a default resolution if we don't. This will be overridden
+    by the value from any mtz file that's loaded later.
+    '''
+    try:
+        while 'REMARK   2' not in remarks[i]:
             i += 1
-            line = remarks[i].split()
-            res = line[3]
-        except:
-            res = 3.0
+        # The first 'REMARK   2' line is blank by convention, and
+        # resolution is on the second line
+        i += 1
+        line = remarks[i].split()
+        res = line[3]
+    except:
+        res = 3.0
 
-        '''
-        The spacegroup identifier tends to be the most unreliable part
-        of the CRYST1 card, so it's considered safer to let Clipper
-        infer it from the list of symmetry operators at remark 290. This
-        typically looks something like the following:
+    '''
+    The spacegroup identifier tends to be the most unreliable part
+    of the CRYST1 card, so it's considered safer to let Clipper
+    infer it from the list of symmetry operators at remark 290. This
+    typically looks something like the following:
 
-        REMARK 290      SYMOP   SYMMETRY
-        REMARK 290     NNNMMM   OPERATOR
-        REMARK 290       1555   X,Y,Z
-        REMARK 290       2555   -X,-Y,Z+1/2
-        REMARK 290       3555   -Y+1/2,X+1/2,Z+1/4
-        REMARK 290       4555   Y+1/2,-X+1/2,Z+3/4
-        REMARK 290       5555   -X+1/2,Y+1/2,-Z+1/4
-        REMARK 290       6555   X+1/2,-Y+1/2,-Z+3/4
-        REMARK 290       7555   Y,X,-Z
-        REMARK 290       8555   -Y,-X,-Z+1/2
+    REMARK 290      SYMOP   SYMMETRY
+    REMARK 290     NNNMMM   OPERATOR
+    REMARK 290       1555   X,Y,Z
+    REMARK 290       2555   -X,-Y,Z+1/2
+    REMARK 290       3555   -Y+1/2,X+1/2,Z+1/4
+    REMARK 290       4555   Y+1/2,-X+1/2,Z+3/4
+    REMARK 290       5555   -X+1/2,Y+1/2,-Z+1/4
+    REMARK 290       6555   X+1/2,-Y+1/2,-Z+3/4
+    REMARK 290       7555   Y,X,-Z
+    REMARK 290       8555   -Y,-X,-Z+1/2
 
-        Clipper is able to initialise a Spacegroup object from a
-        string containing a semicolon-delimited list of the symop
-        descriptors in the SYMMETRY OPERATOR column, so we need to
-        parse those out.
-        '''
-        # Find the start of the REMARK 290 section
-        while remarks[i][0:10] != 'REMARK 290':
-            i += 1
-        while 'NNNMMM' not in remarks[i]:
-            i += 1
+    Clipper is able to initialise a Spacegroup object from a
+    string containing a semicolon-delimited list of the symop
+    descriptors in the SYMMETRY OPERATOR column, so we need to
+    parse those out.
+    '''
+    # Find the start of the REMARK 290 section
+    while remarks[i][0:10] != 'REMARK 290':
+        i += 1
+    while 'NNNMMM' not in remarks[i]:
+        i += 1
+    i+=1
+    symstr = ''
+    thisline = remarks[i]
+    while 'X' in thisline and 'Y' in thisline and 'Z' in thisline:
+        if len(symstr):
+            symstr += ';'
+        splitline = thisline.split()
+        symstr += splitline[3]
         i+=1
-        symstr = ''
         thisline = remarks[i]
-        while 'X' in thisline and 'Y' in thisline and 'Z' in thisline:
-            if len(symstr):
-                symstr += ';'
-            splitline = thisline.split()
-            symstr += splitline[3]
-            i+=1
-            thisline = remarks[i]
-
-
-
-
-    # TODO: add equivalent lookup for mmCIF metadata once available
 
     cell_descr = clipper.Cell_descr(*abc, *angles)
     cell = clipper.Cell(cell_descr)
@@ -202,7 +215,7 @@ class CrystalStructure(Model):
                 If an MTZ file containing map structure factors is provided,
                 generate an XmapSet containing the real-space maps.
             map_oversampling (float, default 1.5):
-                The Shannon rate at which the map should be sampled. 
+                The Shannon rate at which the map should be sampled.
                 A rate of 1 means the grid spacing will be half the true
                 resolution (the minimum required). The default value of
                 1.5 gives a grid spacing of resolution/3.
@@ -330,11 +343,11 @@ class CrystalStructure(Model):
         self.add([model])
         #move_model(self.session, model, self)
         self.session.models.add([self])
-    
+
     @property
     def master_model(self):
         return self._master_model
-        
+
     def delete(self):
         if self._sym_handler is not None:
             self.session.triggers.remove_handler(self._sym_handler)
@@ -1268,6 +1281,9 @@ def calculate_grid_padding(radius, grid, cell):
         grid_lower[i,:] = numpy.floor(cm).astype(int)
     return grid_upper.max(axis=0) - grid_lower.min(axis=0)
 
+def find_box_corner(center, cell, grid, radius=20):
+    return _find_box_corner(center, cell, grid, radius)
+
 def _find_box_corner(center, cell, grid, radius = 20):
     '''
     Find the bottom corner (i.e. the origin) of a rhombohedral box
@@ -1469,7 +1485,7 @@ class XmapHandler(Volume):
         #self.data.set_origin(origin_xyz)
         xmap = self.xmap
         xmap.export_section_numpy(start_grid_coor, target = target,  order = 'C', rot = 'zyx')
-    
+
     def update_drawings(self):
         super().update_drawings()
         if hasattr(self, '_surface_zone'):
