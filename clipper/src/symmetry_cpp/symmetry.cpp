@@ -62,6 +62,39 @@ void halfbond_cylinder_placement(const Coord &xyz0, const Coord &xyz1, double r,
 	*m44b++ = 1;
 }
 
+extern "C" EXPORT PyObject* close_sym_ribbon_transforms(double *tether_coords,
+    size_t n_tethers, double *transforms, size_t n_tf, double *center, double cutoff)
+{
+    try {
+        std::vector<size_t> found_tfs;
+        double tf_coord[3];
+        for (size_t i=0; i<n_tf; ++i)
+        {
+            double *tf = transforms + i*TF_SIZE;
+            double *tc = tether_coords;
+            // Add the transform to the list if any tether falls withn the search sphere
+            for (size_t j=0; j<n_tethers; ++j) {
+                transform_coord(tf, tc, tf_coord);
+                if (distance_below_cutoff(tf_coord, center, cutoff))
+                {
+                    found_tfs.push_back(i);
+                    break;
+                }
+                tc += 3;
+            }
+        }
+        uint8_t *rsym;
+        PyObject *sym_array = python_uint8_array(found_tfs.size(), &rsym);
+        for (const auto &s: found_tfs)
+            *(rsym++) = s;
+        return sym_array;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+
 
 extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t natoms,
         double *transforms, size_t n_tf, double *center, double cutoff)
@@ -78,7 +111,7 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
         for (size_t i=0; i<natoms; ++i)
         {
             auto this_a = *aa++;
-            if (true) //(this_a->visible())
+            if (this_a->visible())
             {
                 const auto& coord = this_a->coord();
                 for (size_t j=0; j<3; ++j)

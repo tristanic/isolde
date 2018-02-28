@@ -34,18 +34,18 @@ c_array_function = _c_functions.c_array_function
 #     ctypes.c_size_t, ctypes.POINTER(ctypes.c_double), ctypes.c_double)
 # _sym_transforms.restype = ctypes.py_object
 
-_sym_transforms = c_function('atom_and_bond_sym_transforms',
-    args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double),
-        ctypes.c_size_t, ctypes.POINTER(ctypes.c_double), ctypes.c_double),
-    ret = ctypes.py_object)
 def sym_transforms_in_sphere(atoms, transforms, center, cutoff):
+    f = c_function('atom_and_bond_sym_transforms',
+        args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double),
+            ctypes.c_size_t, ctypes.POINTER(ctypes.c_double), ctypes.c_double),
+        ret = ctypes.py_object)
     natoms = len(atoms);
     tf = numpy.empty(transforms.shape, numpy.double)
     tf[:] = transforms
     c = numpy.empty(3, numpy.double)
     c[:] = center
     n_tf = len(transforms);
-    result = _sym_transforms(atoms._c_pointers, natoms, transforms.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+    result = f(atoms._c_pointers, natoms, transforms.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         n_tf, c.ctypes.data_as(ctypes.POINTER(ctypes.c_double)), cutoff)
     from chimerax.core.atomic.molarray import _atoms, _bonds
     from chimerax.core.geometry import Places
@@ -54,6 +54,20 @@ def sym_transforms_in_sphere(atoms, transforms, center, cutoff):
     nbonds = len(result[3])
     bond_positions = Places(opengl_array=result[4].reshape((nbonds*2,4,4)))
     return (_atoms(result[0]), atom_coords, result[2], _bonds(result[3]), bond_positions, result[5])
+
+def sym_ribbons_in_sphere(tether_coords, transforms, center, cutoff):
+    f = c_function('close_sym_ribbon_transforms',
+        args=(ctypes.POINTER(ctypes.c_double), ctypes.c_size_t,
+              ctypes.POINTER(ctypes.c_double), ctypes.c_size_t,
+              ctypes.POINTER(ctypes.c_double), ctypes.c_double),
+        ret=ctypes.py_object)
+    tc = numpy.empty(tether_coords.shape, numpy.double)
+    tc[:] = tether_coords
+    tf = numpy.empty(transforms.shape, numpy.double)
+    tf[:] = transforms
+    c = numpy.empty(3, numpy.double)
+    c[:] = center
+    return f(pointer(tc), len(tc), pointer(tf), len(tf), pointer(c), cutoff)
 
 def bond_half_colors(bonds):
     f = c_function('bond_half_colors',
@@ -244,6 +258,10 @@ class AtomicSymmetryModel(Model):
         self._current_atoms, self._current_atom_coords, self._current_atom_syms, \
             self._current_bonds, self._current_bond_tfs, self._current_bond_syms = \
                 sym_transforms_in_sphere(self.structure.atoms, tfs, center, radius)
+        if len(self._current_atoms):
+            self._current_ribbon_syms = numpy.unique(self._current_atom_syms)
+        else:
+            self._current_ribbon_syms = sym_ribbons_in_sphere(self._ribbon_drawing._tether_coords, tfs, center, radius)
 
     def _model_changed_cb(self, trigger_name, changes):
         if not self.visible:
@@ -316,7 +334,7 @@ class AtomicSymmetryModel(Model):
     def _update_ribbon_graphics(self):
         rd = self._ribbon_drawing
         prd = self.structure._ribbon_drawing
-        position_indices = numpy.unique(self._current_atom_syms)
+        position_indices = self._current_ribbon_syms
         tfs = self._current_tfs[position_indices]
         from chimerax.core.geometry import Places
         rd.positions = Places(place_array=tfs)
@@ -412,11 +430,23 @@ class SymRibbonDrawing(Drawing):
     def __init__(self, name, master_ribbon, dim_factor):
         super().__init__(name)
         m = self._master = master_ribbon
+        self._tether_coords = None
         _copy_ribbon_drawing(m, self, dim_factor)
 
     def rebuild(self, dim_factor):
         self.remove_all_drawings()
         _copy_ribbon_drawing(self._master, self, dim_factor)
+        self.find_tether_coords()
+
+    def find_tether_coords(self):
+        tethers = []
+        for d in self.child_drawings():
+            if 'ribbon_tethers' in d.name:
+                tethers.append(d.positions.array()[:,:,3])
+        if len(tethers):
+            self._tether_coords = numpy.concatenate(tethers)
+        else:
+            self._tether_coords = numpy.array([], numpy.double)
 
     def update(self, dim_factor):
         sad, mad = self.all_drawings(), self._master.all_drawings()
@@ -424,8 +454,8 @@ class SymRibbonDrawing(Drawing):
             self.rebuild(dim_factor)
             return
         for td, md in zip(sad, mad):
-            td.vertices, td.normals, td.triangles = \
-                md.vertices, md.normals, md.triangles
+            td.vertices, td.normals, td.triangles, td.display = \
+                md.vertices, md.normals, md.triangles, md.display
             vertex_colors = md.vertex_colors
             if vertex_colors is not None:
                 vertex_colors = vertex_colors.astype(numpy.float32)
@@ -435,7 +465,7 @@ class SymRibbonDrawing(Drawing):
                 colors = md.colors.astype(numpy.float32)
                 colors[:,:3] *= dim_factor
                 td.colors = colors
-
+        self.find_tether_coords()
 
 
 
@@ -447,10 +477,10 @@ def _copy_ribbon_drawing(master_drawing, target_drawing, dim_factor):
         children = fromd.child_drawings()
         for c in children:
             nc = Drawing(c.name)
-            v, n, t = c.vertices, c.normals, c.triangles
+            v, n, t, p, d = c.vertices, c.normals, c.triangles, c.positions, c.display
             if v is None or len(v) == 0:
                 continue
-            nc.vertices, nc.normals, nc.triangles = v, n, t
+            nc.vertices, nc.normals, nc.triangles, nc.positions, nc.display = v, n, t, p, d
             vc = c.vertex_colors
             if vc is not None:
                 vc = vc.astype(numpy.float32)
