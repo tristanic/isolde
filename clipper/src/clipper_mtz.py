@@ -90,6 +90,8 @@ class ReflectionData_Node(Model):
     def __getitem__(self, key):
         return self.datasets[key]
 
+    def __len__(self):
+        return len(self.datasets)
 
 class ReflectionData(Model):
     '''

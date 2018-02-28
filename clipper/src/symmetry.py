@@ -28,6 +28,8 @@ cvec_property = _c_functions.cvec_property
 c_function = _c_functions.c_function
 c_array_function = _c_functions.c_array_function
 
+HIDE_ISOLDE = 0x02
+
 
 # _sym_transforms = _symmetry.atom_and_bond_sym_transforms
 # _sym_transforms.argtypes = (ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double),
@@ -92,7 +94,19 @@ class XtalSymmetryHandler(Model):
         self._box_center_grid = None
         self._atomic_sym_radius = atomic_symmetry_radius
 
+        from chimerax.core.triggerset import TriggerSet
+        trig = self.triggers = TriggerSet()
+
+        trigger_names = (
+            'map box changed',  # Changed shape of box for map viewing
+            'map box moved',    # Changed location of box for map viewing
+            'atom box changed', # Changed shape or centre of box for showing symmetry atoms
+        )
+        for t in trigger_names:
+            trig.add_trigger(t)
+
         self.mtzdata=None
+        self.xmapset = None
 
         if mtzfile is not None:
             from .clipper_mtz import ReflectionDataContainer
@@ -102,6 +116,11 @@ class XtalSymmetryHandler(Model):
             self.spacegroup = mtzdata.spacegroup
             self.grid = mtzdata.grid_sampling
             self.hklinfo = mtzdata.hklinfo
+
+            if len(mtzdata.calculated_data):
+                from .crystal import XmapSet
+                xmapset = self.xmapset = XmapSet(session, mtzdata.calculated_data, self)
+                self.add([xmapset])
         else:
             from .crystal import symmetry_from_model_metadata
             self.cell, self.spacegroup, self.grid = symmetry_from_model_metadata(model)
@@ -119,16 +138,6 @@ class XtalSymmetryHandler(Model):
 
         uc = self._unit_cell = clipper.Unit_Cell(ref, ca, cell, spacegroup, grid)
 
-        from chimerax.core.triggerset import TriggerSet
-        trig = self.triggers = TriggerSet()
-
-        trigger_names = (
-            'map box changed',  # Changed shape of box for map viewing
-            'map box moved',    # Changed location of box for map viewing
-            'atom box changed', # Changed shape or centre of box for showing symmetry atoms
-        )
-        for t in trigger_names:
-            trig.add_trigger(t)
 
         self._atomic_symmetry_model = AtomicSymmetryModel(model, self, uc,
             radius = atomic_symmetry_radius, live = live_atomic_symmetry)
@@ -148,6 +157,17 @@ class XtalSymmetryHandler(Model):
         self.triggers.activate_trigger('atom box changed', (self._box_center, radius))
 
     @property
+    def map_view_radius(self):
+        return self.xmapset.display_radius
+
+    @map_view_radius.setter
+    def map_view_radius(self, radius):
+        self.xmapset.display_radius = radius
+
+
+
+
+    @property
     def unit_cell(self):
         return self._unit_cell
 
@@ -159,7 +179,8 @@ class XtalSymmetryHandler(Model):
             if (cofr_grid == self._box_center_grid):
                 return
         self._box_center_grid = cofr_grid
-        self.triggers.activate_trigger('map box moved', (cofr, cofr_grid))
+        if self.xmapset is not None:
+            self.xmapset.update_box()
         self.triggers.activate_trigger('atom box changed', (cofr, self._atomic_sym_radius))
 
     @property
@@ -171,7 +192,7 @@ class AtomicSymmetryModel(Model):
     Finds and draws local symmetry atoms for an atomic structure
     '''
     def __init__(self, atomic_structure, parent, unit_cell, radius = 15,
-        include_master = False, dim_colors_to = 0.7, live = True):
+        spotlight_mode = True, dim_colors_to = 0.7, live = True):
         self._live = False
         self.structure = atomic_structure
         session = self.session = atomic_structure.session
@@ -180,10 +201,15 @@ class AtomicSymmetryModel(Model):
         self.spacegroup =parent.spacegroup
         self.grid = parent.grid
         self.session = atomic_structure.session
-        self._include_identity = include_master
+        self._include_identity = spotlight_mode
+        self._spotlight_mode = spotlight_mode
         self._color_dim_factor = dim_colors_to
+
         super().__init__('Atomic symmetry', session)
         parent.add([self])
+
+        self._last_hides = atomic_structure.atoms.hides
+
         self._box_changed_handler = None
         self._center = session.view.center_of_rotation
         self._radius = radius
@@ -199,6 +225,8 @@ class AtomicSymmetryModel(Model):
         self._model_changes_handler = atomic_structure.triggers.add_handler(
                                         'changes', self._model_changed_cb)
         self.live = live
+        from .crystal import set_to_default_cartoon
+        set_to_default_cartoon(session)
 
     def delete(self):
         bh = self._box_changed_handler
@@ -223,6 +251,17 @@ class AtomicSymmetryModel(Model):
         elif not flag and self._live:
             self.parent.triggers.remove_handler(self._box_changed_cb)
         self._live = flag
+
+    @property
+    def spotlight_mode(self):
+        return self._spotlight_mode
+
+    @spotlight_mode.setter
+    def spotlight_mode(self, flag):
+        if flag != self._spotlight_mode:
+            self._spotlight_mode = flag
+            if not flag:
+                self.structure.atoms.hides &= ~HIDE_ISOLDE
 
     @property
     def _level_of_detail(self):
@@ -254,13 +293,25 @@ class AtomicSymmetryModel(Model):
             first_symop = 0
         else:
             first_symop = 1
-        tfs = self._current_tfs = symops.all_matrices_orth(self.cell, format='3x4')[first_symop:]
+        tfs = self._current_tfs = symops.all_matrices_orth(self.cell, format='3x4')
+        atoms = self.structure.atoms
+        if self._spotlight_mode:
+            atoms.hides |=HIDE_ISOLDE
         self._current_atoms, self._current_atom_coords, self._current_atom_syms, \
             self._current_bonds, self._current_bond_tfs, self._current_bond_syms = \
-                sym_transforms_in_sphere(self.structure.atoms, tfs, center, radius)
-        if len(self._current_atoms):
-            self._current_ribbon_syms = numpy.unique(self._current_atom_syms)
+                sym_transforms_in_sphere(atoms, tfs[first_symop:], center, radius)
+        self._current_atom_syms += first_symop
+        ca = self._current_atoms
+        csym = self._current_atom_syms
+        if len(ca):
+            crs = self._current_ribbon_syms = numpy.unique(csym)
+            if self._spotlight_mode:
+                ca[csym==0].residues.atoms.hides &= ~HIDE_ISOLDE
+                self._current_ribbon_syms = crs[crs!=0]
         else:
+            if self._spotlight_mode:
+                # Don't want the identity operator in this case
+                tfs = tfs[1:]
             self._current_ribbon_syms = sym_ribbons_in_sphere(self._ribbon_drawing._tether_coords, tfs, center, radius)
 
     def _model_changed_cb(self, trigger_name, changes):
@@ -275,8 +326,14 @@ class AtomicSymmetryModel(Model):
         reasons = changes.atom_reasons()
         if 'coord changed' in reasons:
             update_needed = True
-        if 'display changed' in reasons or 'hide changed' in reasons:
+        if 'display changed' in reasons:
             update_needed = True
+        if  'hide changed' in reasons:
+            hides = self.structure.atoms.hides
+            # Prevent repeated callback with every display update in spotlight mode
+            if numpy.any(numpy.logical_or(hides, HIDE_ISOLDE) != self._last_hides):
+                update_needed = True
+            self._last_hides = hides
         if 'color changed' in reasons:
             update_needed = True
         if (update_needed):
@@ -292,8 +349,13 @@ class AtomicSymmetryModel(Model):
     def _update_atom_graphics(self, lod):
         ad = self._atoms_drawing
         lod.set_atom_sphere_geometry(ad)
-        visible_mask = self._current_atoms.visibles
-        ca = ad.visible_atoms = self._current_atoms[visible_mask]
+        ca = self._current_atoms
+        if self.spotlight_mode:
+            hides = ca.hides&~HIDE_ISOLDE
+            visible_mask = numpy.logical_and(ca.displays, numpy.logical_not(hides))
+        else:
+            visible_mask = ca.visibles
+        ca = ad.visible_atoms = ca[visible_mask]
         syms = self._current_atom_syms[visible_mask]
         na = len(ca)
         if na > 0:
@@ -430,7 +492,7 @@ class SymRibbonDrawing(Drawing):
     def __init__(self, name, master_ribbon, dim_factor):
         super().__init__(name)
         m = self._master = master_ribbon
-        self._tether_coords = None
+        self._tether_coords = numpy.array([], numpy.double)
         _copy_ribbon_drawing(m, self, dim_factor)
 
     def rebuild(self, dim_factor):

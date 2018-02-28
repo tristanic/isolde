@@ -57,16 +57,42 @@ def symmetry_from_model_metadata(model):
     raise TypeError('Model does not appear to have symmetry information!')
 
 def symmetry_from_model_metadata_mmcif(model):
-    ''' Not yet possible. ChimeraX does not yet store resolution information.'''
-    pass
-
     metadata = model.metadata
-    cell_headers = metadata['cell']
-    cell_data = metadata['cell data']
-    cell_dict = dict((key, data) for (key, data) in zip(cell_headers, cell_data))
-    abc = [cell_dict['length_a'], cell_dict['length_b'], cell_dict['length_c']]
-    angles = [cell_dict['angle_alpha'], cell_dict['angle_beta'], cell_dict['angle_gamma']]
+    try:
+        cell_headers = metadata['cell']
+        cell_data = metadata['cell data']
+        cell_dict = dict((key, data) for (key, data) in zip(cell_headers, cell_data))
+        abc = [cell_dict['length_a'], cell_dict['length_b'], cell_dict['length_c']]
+        angles = [cell_dict['angle_alpha'], cell_dict['angle_beta'], cell_dict['angle_gamma']]
+    except:
+        raise TypeError('No cell information available!')
 
+    try:
+        spgr_headers = metadata['symmetry']
+        spgr_data = metadata['symmetry data']
+    except:
+        raise TypeError('No space group headers in metadata!')
+
+    sprg_dict = dict((key, data) for (key, data) in zip(spgr_headers, spgr_data))
+    spgr_str = spgr_dict['int_tables_number']
+    if spgr_str == '?':
+        spgr_str = spgr_dict['space_group_name_h-m']
+    if spgr_str == '?':
+        spgr_str = spgr_dict['space_group_name_hall']
+    if spgr_str == '?':
+        raise TypeError('No space group information available!')
+
+
+    # TODO: ChimeraX does not currently keep refinement metadata (including resolution)
+    res = 3.0
+
+    cell_descr = clipper.Cell_descr(*abc, *angles)
+    cell = clipper.Cell(cell_descr)
+    spgr_descr = clipper.Spgr_descr(spgr_str)
+    spacegroup = clipper.Spacegroup(spgr_descr)
+    resolution = clipper.Resolution(res)
+    grid_sampling = clipper.Grid_sampling(spacegroup, cell, resolution)
+    return cell, spacegroup, grid_sampling
 
 
 def symmetry_from_model_metadata_pdb(model):
@@ -1092,15 +1118,19 @@ class XmapSet(Model):
 
 
     def _start_live_scrolling(self):
-        if self._box_update_handler is None:
-            self._box_update_handler = self.session.triggers.add_handler(
-                'new frame', self.update_box)
+        pass
+
+        # if self._box_update_handler is None:
+        #     self._box_update_handler = self.session.triggers.add_handler(
+        #         'new frame', self.update_box)
 
     def _stop_live_scrolling(self):
-        if self._box_update_handler is not None:
-            self.session.triggers.remove_handler(self._box_update_handler)
-            self._box_update_handler = None
+        pass
 
+        # if self._box_update_handler is not None:
+        #     self.session.triggers.remove_handler(self._box_update_handler)
+        #     self._box_update_handler = None
+        #
 
 
 
