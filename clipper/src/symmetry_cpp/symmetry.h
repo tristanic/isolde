@@ -10,11 +10,23 @@
 #include <utility>
 #include <cmath>
 
+const size_t TF_SIZE = 3*4;
+const size_t GL_TF_SIZE = 4*4;
+
 template <typename T>
 inline void transform_coord (T tf[3][4], T coord[3], T out[3])
 {
     for (size_t i=0; i<3; ++i) {
         T* row = &tf[i];
+        out[i] = row[0]*coord[0] + row[1]*coord[1] + row[2]*coord[2] + row[3];
+    }
+}
+
+template <typename T, class C>
+inline void transform_coord(T tf[12], const C& coord, T out[3])
+{
+    for (size_t i=0; i<3; ++i) {
+        T* row = tf + i*4;
         out[i] = row[0]*coord[0] + row[1]*coord[1] + row[2]*coord[2] + row[3];
     }
 }
@@ -80,7 +92,6 @@ public:
 
 }; // class Sym_Closest_Points
 
-const size_t TF_SIZE = 3*4;
 void find_close_points_sym(double center[3], double cutoff, double *transforms, size_t n_sym,
     double *point_coords, size_t n_points, Sym_Close_Points &close)
 {

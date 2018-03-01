@@ -1,5 +1,5 @@
 import numpy
-def test_clipper_sym(session, radius=25):
+def test_clipper_sym(session, radius=15):
     import os
     from chimerax.core.commands import open
     libdir = os.path.abspath(os.path.dirname(__file__))
