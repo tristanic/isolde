@@ -30,12 +30,6 @@ c_array_function = _c_functions.c_array_function
 
 HIDE_ISOLDE = 0x02
 
-
-# _sym_transforms = _symmetry.atom_and_bond_sym_transforms
-# _sym_transforms.argtypes = (ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double),
-#     ctypes.c_size_t, ctypes.POINTER(ctypes.c_double), ctypes.c_double)
-# _sym_transforms.restype = ctypes.py_object
-
 def sym_transforms_in_sphere(atoms, transforms, center, cutoff):
     f = c_function('atom_and_bond_sym_transforms',
         args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double),
@@ -76,9 +70,6 @@ def whole_residue_sym_sphere(residues, transforms, center, cutoff):
     bond_positions = Places(opengl_array=result[4].reshape((nbonds*2,4,4)))
     return (_atoms(result[0]), atom_coords, result[2], _bonds(result[3]), bond_positions, result[5])
 
-
-
-
 def sym_ribbons_in_sphere(tether_coords, transforms, center, cutoff):
     f = c_function('close_sym_ribbon_transforms',
         args=(ctypes.POINTER(ctypes.c_double), ctypes.c_size_t,
@@ -106,6 +97,7 @@ class XtalSymmetryHandler(Model):
         session = self.session = model.session
         super().__init__(name, session)
 
+        self.structure = model
         self._box_center = session.view.center_of_rotation
         self._box_center_grid = None
         self._atomic_sym_radius = atomic_symmetry_radius
@@ -114,6 +106,8 @@ class XtalSymmetryHandler(Model):
         trig = self.triggers = TriggerSet()
 
         trigger_names = (
+            'box center moved',       # Centre of rotation moved to a new grid point
+
             'map box changed',  # Changed shape of box for map viewing
             'map box moved',    # Changed location of box for map viewing
             'atom box changed', # Changed shape or centre of box for showing symmetry atoms
@@ -164,14 +158,18 @@ class XtalSymmetryHandler(Model):
 
         model.add([self])
 
+
+    @property
+    def atomic_symmetry_model(self):
+        return self._atomic_symmetry_model
+
     @property
     def atomic_sym_radius(self):
-        return self._atomic_sym_radius
+        return self._atomic_symmetry_model.radius
 
     @atomic_sym_radius.setter
     def atomic_sym_radius(self, radius):
-        self._atomic_sym_radius = radius
-        self.triggers.activate_trigger('atom box changed', (self._box_center, radius))
+        self._atomic_symmetry_model.radius = radius
 
     @property
     def map_view_radius(self):
@@ -181,9 +179,6 @@ class XtalSymmetryHandler(Model):
     def map_view_radius(self, radius):
         self.xmapset.display_radius = radius
 
-
-
-
     @property
     def unit_cell(self):
         return self._unit_cell
@@ -192,13 +187,14 @@ class XtalSymmetryHandler(Model):
         v = self.session.view
         cofr = self._box_center = v.center_of_rotation
         cofr_grid = clipper.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
-        if self._box_center_grid is not None:
-            if (cofr_grid == self._box_center_grid):
-                return
-        self._box_center_grid = cofr_grid
-        if self.xmapset is not None:
-            self.xmapset.update_box()
-        self.triggers.activate_trigger('atom box changed', (cofr, self._atomic_sym_radius))
+        update_needed = False
+        if self._box_center_grid is None:
+            update_needed = True
+        elif (cofr_grid != self._box_center_grid):
+            update_needed = True
+        if update_needed:
+            self.triggers.activate_trigger('box center moved', (cofr, cofr_grid))
+            self._box_center_grid = cofr_grid
 
     @property
     def atom_sym(self):
@@ -221,6 +217,8 @@ class AtomicSymmetryModel(Model):
         self._include_identity = spotlight_mode
         self._spotlight_mode = spotlight_mode
         self._color_dim_factor = dim_colors_to
+
+        self.manager = parent
 
         super().__init__('Atomic symmetry', session)
         parent.add([self])
@@ -249,11 +247,15 @@ class AtomicSymmetryModel(Model):
     def delete(self):
         bh = self._box_changed_handler
         if bh is not None:
-            self.parent.triggers.remove_handler(bh)
+            self.manager.triggers.remove_handler(bh)
         mh = self._model_changes_handler
         if mh is not None:
             self.structure.triggers.remove_handler(mh)
+        self.unhide_all_atoms()
         super().delete()
+
+    def unhide_all_atoms(self):
+        self.structure.atoms.hides &= ~HIDE_ISOLDE
 
     @property
     def dim_factor(self):
@@ -271,13 +273,23 @@ class AtomicSymmetryModel(Model):
     @live.setter
     def live(self, flag):
         if flag and not self._live:
-            self._box_changed_handler = self.parent.triggers.add_handler('atom box changed',
-                self._box_changed_cb)
-            self._update_box(self._center, self._radius)
+            self._box_changed_handler = self.parent.triggers.add_handler('box center moved',
+                self._box_moved_cb)
+            self._update_box()
             self.update_graphics()
         elif not flag and self._live:
             self.parent.triggers.remove_handler(self._box_changed_cb)
         self._live = flag
+
+    @property
+    def radius(self):
+        return self._radius
+
+    @radius.setter
+    def radius(self, radius):
+        self._radius = _radius
+        if self.visible:
+            self.update_graphics()
 
     @property
     def spotlight_mode(self):
@@ -288,7 +300,22 @@ class AtomicSymmetryModel(Model):
         if flag != self._spotlight_mode:
             self._spotlight_mode = flag
             if not flag:
-                self.structure.atoms.hides &= ~HIDE_ISOLDE
+                self.unhide_all_atoms()
+
+    @property
+    def display(self):
+        return super().display
+
+    @display.setter
+    def display(self, flag):
+        if not flag:
+            self.unhide_all_atoms()
+        super().set_display(flag)
+        if flag:
+            if self.spotlight_mode:
+                self._center = self.session.view.center_of_rotation
+                self._update_box()
+            self.update_graphics()
 
     @property
     def _level_of_detail(self):
@@ -297,19 +324,17 @@ class AtomicSymmetryModel(Model):
         return gu.level_of_detail
 
 
-    def _box_changed_cb(self, trigger_name, box_params):
+    def _box_moved_cb(self, trigger_name, box_params):
         if not self.visible:
             return
-        center, radius = box_params
-        self._center = center
-        self._radius = radius
-        self._update_box(center, radius)
+        self._center = box_params[0]
+        self._update_box()
         self.update_graphics()
 
-    def _update_box(self, center, radius):
+    def _update_box(self):
         from .crystal import find_box_corner
-        self._center = center
-        self._radius = radius
+        center = self._center
+        radius = self._radius
         box_corner_grid, box_corner_xyz = find_box_corner(center, self.cell, self.grid, radius)
         dim = self._box_dim
         dim[:] = radius*2
@@ -368,7 +393,7 @@ class AtomicSymmetryModel(Model):
         if 'ribbon_display changed' in changes.residue_reasons():
             self._ribbon_drawing.delayed_rebuild(self.session)
         if (update_needed):
-            self._update_box(self._center, self._radius)
+            self._update_box()
             self.update_graphics()
 
     def update_graphics(self):
@@ -381,18 +406,13 @@ class AtomicSymmetryModel(Model):
         ad = self._atoms_drawing
         lod.set_atom_sphere_geometry(ad)
         ca = self._current_atoms
-        # if self.spotlight_mode:
-        #     hides = ca.hides&~HIDE_ISOLDE
-        #     visible_mask = numpy.logical_and(ca.displays, numpy.logical_not(hides))
-        # else:
-        #     visible_mask = ca.visibles
-        ad.visible_atoms = ca # [visible_mask]
-        syms = self._current_atom_syms #[visible_mask]
+        ad.visible_atoms = ca
+        syms = self._current_atom_syms
         na = len(ca)
         if na > 0:
             ad.display = True
             xyzr = numpy.empty((na, 4), numpy.float32)
-            xyzr[:,:3] = self._current_atom_coords #[visible_mask]
+            xyzr[:,:3] = self._current_atom_coords
             xyzr[:,3] = self.structure._atom_display_radii(ca)
             from chimerax.core.geometry import Places
             ad.positions = Places(shift_and_scale = xyzr)
@@ -472,7 +492,6 @@ class SymAtomsDrawing(AtomsDrawing):
         pass
 
 from chimerax.core.graphics import Pick
-#from chimerax.core.atomic.structure import PickedAtom
 
 class PickedSymAtom(Pick):
     def __init__(self, atom, distance, sym):
@@ -509,7 +528,6 @@ class SymBondsDrawing(BondsDrawing):
     def update_selection(self):
         pass
 
-#from chimerax.core.atomic.structure import PickedBond
 class PickedSymBond(Pick):
     def __init__(self, bond, distance, sym):
         super().__init__(distance)

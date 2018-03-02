@@ -985,12 +985,21 @@ class XmapSet(Model):
             ''')
         Model.__init__(self, 'Real-space maps', session)
         self.crystal = crystal
+        from chimerax.core.triggerset import TriggerSet
+        trig = self.triggers = TriggerSet()
+
+        trigger_names = (
+            'map box changed',  # Changed shape of box for map viewing
+            'map box moved',    # Just changed the centre of the box
+        )
+        for t in trigger_names:
+            trig.add_trigger(t)
         #############
         # Variables involved in handling live redrawing of maps in a box
         # centred on the cofr
         #############
 
-        # ChimeraX session.triggers handler for live box update
+        # Handler for live box update
         self._box_update_handler = None
         # Is the box already initialised?
         self._box_initialized = False
@@ -1008,12 +1017,13 @@ class XmapSet(Model):
         self._box_center = None
         # Last grid coordinate of the box centre. We only need to update
         # the map if the new centre maps to a different integer grid point
-        self._last_box_center_grid = None
+        self._box_center_grid = None
         # Minimum corner of the box in (x,y,z) coordinates. This must
         # correspond to the grid coordinate in self._box_corner_grid
         self._box_corner_xyz = None
         # Minimum corner of the box in grid coordinates
         self._box_corner_grid = None
+
 
         self.live_scrolling = live_scrolling
 
@@ -1074,12 +1084,13 @@ class XmapSet(Model):
         '''Set the radius (in Angstroms) of the live map display sphere.'''
         self._display_radius = radius
         v = self.session.view
-        cofr = v.center_of_rotation
+        cofr = self._box_center = v.center_of_rotation
+        self._box_center_grid = clipper.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
         dim = self._box_dimensions = \
             2 * calculate_grid_padding(radius, self.grid, self.cell)
         self._box_corner_grid, self._box_corner_xyz = _find_box_corner(
             cofr, self.cell, self.grid, radius)
-        self.crystal.triggers.activate_trigger('map box changed',
+        self.triggers.activate_trigger('map box changed',
             (self._box_corner_xyz, self._box_corner_grid, dim))
         self._surface_zone.update(radius, coords = numpy.array([cofr]))
         self._reapply_zone()
@@ -1101,7 +1112,6 @@ class XmapSet(Model):
             self._start_live_scrolling()
         else:
             self._stop_live_scrolling()
-        self._live_scrolling = switch
 
     @property
     def display(self):
@@ -1112,34 +1122,32 @@ class XmapSet(Model):
         if switch:
             if self.live_scrolling:
                 self._start_live_scrolling()
-        else:
-            self._stop_live_scrolling()
         Model.display.fset(self, switch)
 
-
     def _start_live_scrolling(self):
-        pass
-
-        # if self._box_update_handler is None:
-        #     self._box_update_handler = self.session.triggers.add_handler(
-        #         'new frame', self.update_box)
+        if self._box_update_handler is None:
+            self._box_update_handler = self.crystal.triggers.add_handler(
+                'box center moved', self.update_box)
+        if self._box_center is not None:
+            self.update_box(None, (self._box_center, self._box_center_grid), force=True)
+        self.positions = Places()
+        self._live_scrolling = True
 
     def _stop_live_scrolling(self):
-        pass
+        if self._box_update_handler is not None:
+            self.crystal.triggers.remove_handler(self._box_update_handler)
+            self._box_update_handler = None
+        self._live_scrolling = False
 
-        # if self._box_update_handler is not None:
-        #     self.session.triggers.remove_handler(self._box_update_handler)
-        #     self._box_update_handler = None
-        #
-
-
-
-    def __getitem__(self, name):
-        '''Get one of the child maps by name.'''
-        for m in self.child_models():
-            if m.name == name:
-                return m
-        raise KeyError('No map with that name!')
+    def __getitem__(self, name_or_index):
+        '''Get one of the child maps by name or index.'''
+        if type(name_or_index) == str:
+            for m in self.child_models():
+                if m.name == name:
+                    return m
+                raise KeyError('No map with that name!')
+        else:
+            return self.child_models()[name_or_index]
 
 
     def set_box_limits(self, minmax):
@@ -1151,7 +1159,7 @@ class XmapSet(Model):
         cmin = clipper.Coord_grid(minmax[0])
         cmin_xyz = cmin.coord_frac(self.grid).coord_orth(self.cell).xyz
         dim = (minmax[1]-minmax[0])
-        self.crystal.triggers.activate_trigger('map box changed',
+        self.triggers.activate_trigger('map box changed',
             (cmin_xyz, cmin, dim))
 
     def cover_unit_cells(self, nuvw = [1,1,1], offset = [0,0,0]):
@@ -1176,6 +1184,7 @@ class XmapSet(Model):
         box_max_grid = (uc.max+clipper.Coord_grid([2,2,2])).uvw
         minmax = [box_min_grid, box_max_grid]
         self.set_box_limits(minmax)
+        self._surface_zone.update(None, None)
         # Tile by the desired number of cells
         places = []
         grid_dim = self.grid.dim
@@ -1233,7 +1242,7 @@ class XmapSet(Model):
             [[r,g,b,a],[r,g,b,a]] in order [positive, negative].
             '''
             raise TypeError(err_string)
-        new_handler = XmapHandler(self.session, self.crystal, dataset.name, new_xmap,
+        new_handler = XmapHandler(self.session, self, dataset.name, new_xmap,
             self._box_corner_xyz, self._box_corner_grid, self._box_dimensions)
         if style is None:
             style = 'mesh'
@@ -1264,21 +1273,19 @@ class XmapSet(Model):
         # new_handler.update_surface()
         new_handler.show()
 
-    def update_box(self, *_, force_update = False):
+    def update_box(self, trigger_name, new_center, force=True):
         '''Update the map box to surround the current centre of rotation.'''
-        v = self.session.view
-        cofr = v.center_of_rotation
-        self._box_center = cofr
-        cofr_grid = clipper.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
-        if not force_update:
-            if self._last_box_center_grid is not None:
-                if cofr_grid == self._last_box_center_grid:
-                    return
-        self._last_box_center_grid = cofr_grid
-        box_corner_grid, box_corner_xyz = _find_box_corner(cofr, self.cell, self.grid, self.display_radius)
-        self.crystal.triggers.activate_trigger('map box moved', (box_corner_xyz, box_corner_grid, self._box_dimensions))
-        self._surface_zone.update(self.display_radius, coords = numpy.array([cofr]))
-        self._reapply_zone()
+        center, center_grid = new_center
+        self._box_center = center
+        self._box_center_grid = center_grid
+        if not self.visible and not force:
+            # Just store the box parameters for when we're re-displayed
+            return
+        if self.live_scrolling:
+            box_corner_grid, box_corner_xyz = _find_box_corner(center, self.cell, self.grid, self.display_radius)
+            self.triggers.activate_trigger('map box moved', (box_corner_xyz, box_corner_grid, self._box_dimensions))
+            self._surface_zone.update(self.display_radius, coords = numpy.array([center]))
+            self._reapply_zone()
 
     def _reapply_zone(self):
         '''
@@ -1349,7 +1356,7 @@ class XmapHandler(Volume):
     a box centred on the centre of rotation) and static display of a
     given region.
     '''
-    def __init__(self, session, crystal, name, xmap, origin, grid_origin, dim):
+    def __init__(self, session, manager, name, xmap, origin, grid_origin, dim):
         '''
         Args:
             sesssion:
@@ -1371,7 +1378,7 @@ class XmapHandler(Volume):
         '''
         self.box_params = (origin, grid_origin, dim)
         self.xmap = xmap
-        self.crystal = crystal
+        self.manager = manager
         darray = self._generate_and_fill_data_array(origin, grid_origin, dim)
         Volume.__init__(self, darray, session)
 
@@ -1383,9 +1390,9 @@ class XmapHandler(Volume):
         # will not be applied until it's shown again.
         self._needs_update = True
         self.show()
-        self._box_shape_changed_cb_handler = self.crystal.triggers.add_handler(
+        self._box_shape_changed_cb_handler = self.manager.triggers.add_handler(
             'map box changed', self._box_changed_cb)
-        self._box_moved_cb_handler = self.crystal.triggers.add_handler(
+        self._box_moved_cb_handler = self.manager.triggers.add_handler(
             'map box moved', self._box_moved_cb)
 
 
@@ -1403,15 +1410,15 @@ class XmapHandler(Volume):
 
     @property
     def hklinfo(self):
-        return self.crystal.hklinfo
+        return self.manager.hklinfo
 
     @property
     def spacegroup(self):
-        return self.crystal.spacegroup
+        return self.manager.spacegroup
 
     @property
     def cell(self):
-        return self.crystal.cell
+        return self.manager.cell
 
     @property
     def res(self):
@@ -1419,7 +1426,7 @@ class XmapHandler(Volume):
 
     @property
     def grid(self):
-        return self.crystal.grid
+        return self.manager.grid
 
     @property
     def voxel_size(self):
@@ -1431,11 +1438,11 @@ class XmapHandler(Volume):
 
     @property
     def unit_cell(self):
-        return self.crystal.unit_cell
+        return self.manager.unit_cell
 
     @property
     def _surface_zone(self):
-        return self.parent._surface_zone
+        return self.manager._surface_zone
 
     def mean_sd_rms(self):
         '''
@@ -1469,14 +1476,13 @@ class XmapHandler(Volume):
         self.data.set_origin(params[0])
         self._fill_volume_data(self.data.array, params[1])
         self.data.values_changed()
-        # self.update_surface()
 
     def delete(self):
         if self._box_shape_changed_cb_handler is not None:
-            self.crystal.triggers.remove_handler(self._box_shape_changed_cb_handler)
+            self.manager.triggers.remove_handler(self._box_shape_changed_cb_handler)
             self._box_shape_changed_cb_handler = None
         if self._box_moved_cb_handler is not None:
-            self.crystal.triggers.remove_handler(self._box_moved_cb_handler)
+            self.manager.triggers.remove_handler(self._box_moved_cb_handler)
             self._box_moved_cb_handler = None
         super(XmapHandler, self).delete()
 
