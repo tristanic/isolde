@@ -153,7 +153,7 @@ class XtalSymmetryHandler(Model):
         self._atomic_symmetry_model = AtomicSymmetryModel(model, self, uc,
             radius = atomic_symmetry_radius, live = live_atomic_symmetry)
 
-        self._update_trigger = session.triggers.add_handler('new frame',
+        self._update_handler = session.triggers.add_handler('new frame',
             self.update)
 
         model.add([self])
@@ -182,6 +182,12 @@ class XtalSymmetryHandler(Model):
     @property
     def unit_cell(self):
         return self._unit_cell
+
+    def delete(self):
+        if self._update_handler is not None:
+            self.session.triggers.remove_handler(self._update_handler)
+            self._update_handler = None
+        super().delete()
 
     def update(self, *_):
         v = self.session.view
