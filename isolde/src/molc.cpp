@@ -1276,6 +1276,7 @@ change_tracker_reason_names(void *tracker)
     }
 }
 
+
 /*******************************************************
  *
  * Position_Restraint_Mgr functions
@@ -1439,6 +1440,53 @@ position_restraint_clear_sim_index(void *restraint, size_t n)
         molc_error();
     }
 }
+
+extern "C" EXPORT void
+position_restraint_sim_update_needed(void *restraint, size_t n, npy_bool *update)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            *(update++) = (*r++)->sim_update_needed();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_position_restraint_sim_update_needed(void *restraint, size_t n, npy_bool *update)
+{
+    Position_Restraint **r = static_cast<Position_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            (*r++)->set_sim_update_needed(*(update++));
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 extern "C" EXPORT void
 set_position_restraint_k(void *restraint, size_t n, double *k)
@@ -1698,7 +1746,29 @@ distance_restraint_clear_sim_index(void *restraint, size_t n)
     }
 }
 
+extern "C" EXPORT void
+distance_restraint_sim_update_needed(void *restraint, size_t n, npy_bool *update)
+{
+    Distance_Restraint **r = static_cast<Distance_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            *(update++) = (*r++)->sim_update_needed();
+    } catch (...) {
+        molc_error();
+    }
+}
 
+extern "C" EXPORT void
+set_distance_restraint_sim_update_needed(void *restraint, size_t n, npy_bool *update)
+{
+    Distance_Restraint **r = static_cast<Distance_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            (*r++)->set_sim_update_needed(*(update++));
+    } catch (...) {
+        molc_error();
+    }
+}
 
 extern "C" EXPORT void
 distance_restraint_atoms(void *restraint, size_t n, pyobject_t *atoms)
@@ -2069,6 +2139,30 @@ proper_dihedral_restraint_clear_sim_index(void *restraint, size_t n)
     try {
         for (size_t i=0; i<n; ++i)
             (*r++)->clear_sim_index();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_restraint_sim_update_needed(void *restraint, size_t n, npy_bool *update)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            *(update++) = (*r++)->sim_update_needed();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_proper_dihedral_restraint_sim_update_needed(void *restraint, size_t n, npy_bool *update)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            (*r++)->set_sim_update_needed(*(update++));
     } catch (...) {
         molc_error();
     }

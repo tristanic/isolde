@@ -52,7 +52,7 @@ from .checkpoint import CheckPoint
 from .openmm import sim_interface
 from .openmm.sim_interface import SimParams
 
-from .validation import Validation_Mgr
+from .validation_new.validation import Validation_Mgr
 
 from .validation_new import validation_interface #TODO: Remove
 
@@ -194,15 +194,12 @@ class Isolde():
         'simulation paused',
         'simulation resumed',
         'selected model changed', # Changed the master model selection
-        'position restraint added',
-        'position restraint removed',
+        'position restraint added', #TODO: Remove
+        'position restraint removed', #TODO: Remove
         )
 
     def __init__(self, gui):
         self.session = session = gui.session
-
-        # Find or create the validation managers
-        self._validation_mgr = Validation_Mgr(session)
 
         self.triggers = triggerset.TriggerSet()
         for t in self.trigger_names:
@@ -235,13 +232,6 @@ class Isolde():
                 stripped_key = key.replace(' ',"")
                 self._available_colors.pop(stripped_key, None)
 
-        # Model object to hold annotations (arrows, etc.)
-        # TODO: There needs to be a unique annotation drawing for each model
-        # considered by ISOLDE
-        #~ from chimerax.core.models import Model
-        #~ self._annotations = Model('ISOLDE annotations', self.session)
-        #~ self.session.models.add([self._annotations])
-
         ####
         # Settings for handling of atomic coordinates
         ####
@@ -255,8 +245,8 @@ class Isolde():
         # Atoms within the model that are the primary focus of the simulation.
         # Should be whole residues
         self._selected_atoms = None
-        self._selected_rotamer = None
-        self._target_rotamer = None
+        self._selected_rotamer = None # TODO: remove
+        self._target_rotamer = None #TODO: remove
         # Extra mobile shell of surrounding atoms to provide a soft buffer to
         # the simulation. Whole residues only.
         self._soft_shell_atoms = None

@@ -20,6 +20,26 @@ from simtk.openmm.app.internal import customgbforces
 from . import amber_cmap
 from ..constants import defaults
 
+
+import os, sys, glob
+import ctypes
+from chimerax.core.atomic import molc
+from chimerax.core.atomic.molc import CFunctions, string, cptr, pyobject, \
+    set_c_pointer, pointer, size_t
+from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
+libdir = os.path.dirname(os.path.abspath(__file__))
+libfile = glob.glob(os.path.join(libdir, '..', 'openmm.cpython*'))[0]
+
+_c_functions = CFunctions(os.path.splitext(libfile)[0])
+c_property = _c_functions.c_property
+cvec_property = _c_functions.cvec_property
+c_function = _c_functions.c_function
+c_array_function = _c_functions.c_array_function
+
+
+
+
+
 NEARLY_ZERO = defaults.NEARLY_ZERO # Spring constants below this value will be treated as zero
 
 OPENMM_LENGTH_UNIT = defaults.OPENMM_LENGTH_UNIT
@@ -92,7 +112,7 @@ class LinearInterpMapForce(CustomCompoundBondForce):
         self._individual_k_index = self.addPerBondParameter(
             name = 'individual_k')
         self.update_needed = False
-    
+
     def _set_energy_function(self, tf, units):
         if type(tf) == Quantity:
             rot_and_scale = tf[:,0:3].value_in_unit(OPENMM_LENGTH_UNIT)
@@ -151,9 +171,9 @@ class LinearInterpMapForce(CustomCompoundBondForce):
 
         func = ';'.join((energy_str, norm_str, val_str, min_str, max_str,
                         i_str, j_str, k_str))
-        
+
         return func
-    
+
     def _discrete3D_from_volume(self, data):
         dim = data.shape[::-1]
         data_1d = numpy.ravel(data, order = 'C')
@@ -173,7 +193,7 @@ class LinearInterpMapForce(CustomCompoundBondForce):
         #~ f = self.getTabulatedFunction(0)
         #~ f.setFunctionParameters(*dim, data_1d)
         #~ self.update_needed = True
-    
+
     def update_spring_constant(self, index, k):
         params = self.getBondParameters(index)
         atom_i = params[0]
@@ -251,6 +271,19 @@ class TopOutBondForce(CustomBondForce):
         self.setBondParameters(int(index), atom1, atom2, (new_k, new_target))
         self.update_needed = True
 
+    def update_targets(self, indices, targets, spring_constants):
+        f = c_function('topoutbondforce_update_bond_parameters',
+            args=(ctypes.c_void_p, ctypes.c_size_t,
+            ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_double),
+                ctypes.POINTER(ctypes.c_double)))
+        n = len(indices)
+        ind = numpy.empty(n, int32)
+        ind[:] = indices
+        t = numpy.empty(n, float64)
+        t[:] = targets
+        k = numpy.empty(n, float64)
+        k[:] = spring_constants
+        f(int(self.this), n, pointer(ind), pointer(t), pointer(k))
 
 
 
@@ -378,14 +411,14 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
 
 class TorsionNCSForce(CustomCompoundBondForce):
     '''
-    Provides torsion-angle non-crystallographic symmetry (NCS) 
-    restraints for a defined number of NCS copies. For a given set of 
-    NCS-equivalent dihedrals, each dihedral will receive a scaling term 
-    (defining how strongly it is restrained towards the weighted vector 
-    mean of all the dihedral angles) and a weighting term (defining how 
-    much it contributes to the weighted mean angle). Setting the 
-    weights for all but one dihedral to zero will yield a 
-    "master-slave" mode where all NCS copies are forced to follow the 
+    Provides torsion-angle non-crystallographic symmetry (NCS)
+    restraints for a defined number of NCS copies. For a given set of
+    NCS-equivalent dihedrals, each dihedral will receive a scaling term
+    (defining how strongly it is restrained towards the weighted vector
+    mean of all the dihedral angles) and a weighting term (defining how
+    much it contributes to the weighted mean angle). Setting the
+    weights for all but one dihedral to zero will yield a
+    "master-slave" mode where all NCS copies are forced to follow the
     one with the non-zero weight.
     '''
     def __init__(self, num_copies):
@@ -413,7 +446,7 @@ class TorsionNCSForce(CustomCompoundBondForce):
             k_params.append(k)
             w = 'w{}'.format(i+1)
             w_params.append(w)
-            
+
             if i != 0:
                 sum_sin_string += '+'
                 sum_cos_string += '+'
@@ -421,31 +454,31 @@ class TorsionNCSForce(CustomCompoundBondForce):
             sum_sin_string += '{}*sin({})'.format(w, d)
             sum_cos_string+='{}*cos({})'.format(w, d)
             energy_string += '{}*(cos({})-target)'.format(k, d)
-        
+
         sum_sin_string += ')'
         sum_cos_string += ')'
         energy_string += ')'
-        
+
         cos_switch_str = 'cos_switch = step(sum_cos)'
         sin_switch_str = 'sin_switch = step(sum_sin)'
         quadrant_select = \
             'offset = select(cos_switch, 0, select(sin_switch, {}, {}))'\
                 .format(str(pi/2), str(-pi/2))
-        
+
         target_string = 'target = cos(atan(sum_sin/sum_cos) + offset)'
-        
+
         string_list = [
-            energy_string, 
+            energy_string,
             target_string,
-            quadrant_select, 
+            quadrant_select,
             cos_switch_str,
             sin_switch_str,
-            sum_sin_string, 
+            sum_sin_string,
             sum_cos_string,
             ]
         string_list.extend(dihedral_def_strings)
-            
-        
+
+
         final_eq = ';'.join(string_list)
         super().__init__(num_copies*4, final_eq)
         self._weight_indices = []
@@ -455,7 +488,7 @@ class TorsionNCSForce(CustomCompoundBondForce):
         for k in k_params:
             self._k_indices.append(self.addPerBondParameter(k))
         self.addGlobalParameter('global_k', 1.0)
-        
+
 
 
 class GBSAForce(customgbforces.GBSAGBn2Force):
@@ -480,6 +513,6 @@ class GBSAForce(customgbforces.GBSAGBn2Force):
                          SA=SA,
                          cutoff=cutoff,
                          kappa=kappa)
-        
+
         self.setNonbondedMethod(nonbonded_method)
         self.update_needed = False

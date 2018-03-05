@@ -10,9 +10,10 @@ class Rama_Annotator(Model):
     '''
     pickable = False
 
-    def __init__(self, session, atomic_structure, hide_favored = False):
-        Model.__init__(self, 'Ramachandran Validation', session)
+    def __init__(self, atomic_structure, hide_favored = False):
         structure = self._atomic_structure = atomic_structure
+        session = structure.session
+        Model.__init__(self, 'Ramachandran Validation', session)
         structure.add([self])
         from .. import molobject
         mgr = self._mgr = molobject.get_ramachandran_manager(session)

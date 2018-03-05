@@ -6,7 +6,7 @@ from chimerax.core.atomic.molarray import Collection
 from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
-from .molobject import Proper_Dihedral, Rotamer, Position_Restraint, \
+from .molobject import Proper_Dihedral, Rotamer, Rama, Position_Restraint, \
         Distance_Restraint, Proper_Dihedral_Restraint
 import ctypes
 
@@ -73,7 +73,7 @@ class Proper_Dihedrals(_Dihedrals):
 
 class Ramas(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, Rotamer, Rotamers)
+        super().__init__(c_pointers, Rama, Ramas)
 
     @property
     def omega_dihedrals(self):
@@ -86,7 +86,7 @@ class Ramas(Collection):
         return _proper_dihedrals(ret[:found])
 
     @property
-    def phi_dihedral(self):
+    def phi_dihedrals(self):
         f = c_function('rama_phi',
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
             ret = ctypes.c_size_t)
@@ -96,7 +96,7 @@ class Ramas(Collection):
         return _proper_dihedrals(ret[:found])
 
     @property
-    def psi_dihedral(self):
+    def psi_dihedrals(self):
         f = c_function('rama_psi',
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
             ret = ctypes.c_size_t)
@@ -161,12 +161,14 @@ class Position_Restraints(Collection):
         doc = 'Returns the vectors ("bonds") connecting each atom to its target. Read only.')
     spring_constants = cvec_property('position_restraint_k', float64,
         doc = 'Restraint spring constants in kJ mol-1 Angstrom-2. Can be written')
-    enableds = cvec_property('position_restraint_enabled', bool,
+    enableds = cvec_property('position_restraint_enabled', npy_bool,
         doc = 'Enable/disable position restraints with a Numpy boolean array.')
-    visibles = cvec_property('position_restraint_visible', bool, read_only=True,
+    visibles = cvec_property('position_restraint_visible', npy_bool, read_only=True,
         doc = 'Returns a boolean mask giving the currently visible restraints. Read only.')
     sim_indices = cvec_property('position_restraint_sim_index', int32,
         doc = 'Index of each restraint in a running simulation. Can be set')
+    sim_update_needed = cvec_property('position_restraint_sim_update_needed', npy_bool,
+        doc = 'True for restraints awaiting update in a simulation')
 
 
 class Distance_Restraints(Collection):
@@ -214,6 +216,8 @@ class Distance_Restraints(Collection):
             doc = 'Current distances between restrained atoms in Angstroms. Read only.')
     sim_indices = cvec_property('distance_restraint_sim_index', int32,
         doc = 'Index of each restraint in a running simulation. Can be set')
+    sim_update_needed = cvec_property('distance_restraint_sim_update_needed', npy_bool,
+        doc = 'True for restraints awaiting update in a simulation')
 
 class Proper_Dihedral_Restraints(Collection):
     def __init__(self, c_pointers=None):
@@ -255,3 +259,5 @@ class Proper_Dihedral_Restraints(Collection):
         doc = 'Get the annotation color for each restraint according to the current colormap. Read only.')
     sim_indices = cvec_property('proper_dihedral_restraint_sim_index', int32,
         doc = 'Index of each restraint in a running simulation. Can be set')
+    sim_update_needed = cvec_property('proper_dihedral_restraint_sim_update_needed', npy_bool,
+        doc = 'True for restraints awaiting update in a simulation')

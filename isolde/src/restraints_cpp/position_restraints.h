@@ -24,7 +24,7 @@ class Position_Restraint:
     public Sim_Restraint_Base
 {
 public:
-    Position_Restraint() {}
+    Position_Restraint() : Sim_Restraint_Base() {}
     ~Position_Restraint() { auto du=DestructionUser(this); }
     Position_Restraint(Atom* atom, const Coord& target, Position_Restraint_Mgr *mgr)
         : _atom(atom), _mgr(mgr)

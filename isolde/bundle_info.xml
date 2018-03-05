@@ -53,6 +53,7 @@ with the surroundings.
       <Library>pyinstance</Library>
       <IncludeDir>/usr/local/openmm/include</IncludeDir>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
+      <SourceFile>src/openmm/custom_forces.cpp</SourceFile>
   </CModule>
 
 

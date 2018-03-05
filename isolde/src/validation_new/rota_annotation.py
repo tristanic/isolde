@@ -18,12 +18,13 @@ class Rotamer_Annotator(Model):
 
     pickable = False
 
-    def __init__(self, session, atomic_structure):
+    def __init__(self, atomic_structure):
+        structure = self._atomic_structure = atomic_structure
+        session = structure.session
         Model.__init__(self, 'Rotamer Validation', session)
 
         from .. import molobject
         mgr = self._mgr = molobject.get_rotamer_manager(session)
-        structure = self._atomic_structure = atomic_structure
         self._MAX_SCALE = 2 # maximum scale factor for annotation drawings
         self._hide_favored = True
         d = self._drawing = self._rota_indicator()

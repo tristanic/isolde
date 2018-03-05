@@ -60,7 +60,7 @@ class TestSimulation:
     def _minimize_and_go(self):
         th = self._sim_thread_handler
         from ..delayed_reaction import delayed_reaction
-        delayed_reaction(self.session, th.minimize, [], th.thread_finished,
+        delayed_reaction(self.session.triggers, 'new frame', th.minimize, [], th.thread_finished,
             self._update_coordinates_and_repeat, [True])
 
     def _repeat_step(self):
@@ -74,7 +74,7 @@ class TestSimulation:
         else:
             f = th.step
             f_args = (self._sim_steps_per_gui_update,)
-        delayed_reaction(self.session, f, f_args,
+        delayed_reaction(self.session.triggers, 'new frame', f, f_args,
             th.thread_finished, self._update_coordinates_and_repeat, [])
 
     def _update_coordinates_and_repeat(self, reinit_vels = False):

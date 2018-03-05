@@ -858,7 +858,7 @@ class Rota_Mgr:
         n = len(rotamers)
         ret = self._thread_result = numpy.empty(n, numpy.double)
         from .delayed_reaction import delayed_reaction
-        delayed_reaction(self.session, init_f,
+        delayed_reaction(self.session.triggers, 'new frame', init_f,
             (self._c_pointer, rotamers._c_pointers, n, pointer(ret),),
             self._thread_done, self._get_thread_result, ())
 
@@ -1507,7 +1507,7 @@ class Rama(State):
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
             ret = ctypes.c_size_t)
         ret = numpy.empty(1, cptr)
-        found = f(self._c_pointer, 1, pointer(ret))
+        found = f(self._c_pointer_ref, 1, pointer(ret))
         if found:
             return _proper_dihedral_or_none(ret[0])
         return None
@@ -1518,7 +1518,7 @@ class Rama(State):
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
             ret = ctypes.c_size_t)
         ret = numpy.empty(1, cptr)
-        found = f(self._c_pointer, 1, pointer(ret))
+        found = f(self._c_pointer_ref, 1, pointer(ret))
         if found:
             return _proper_dihedral_or_none(ret[0])
         return None
@@ -1529,7 +1529,7 @@ class Rama(State):
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
             ret = ctypes.c_size_t)
         ret = numpy.empty(1, cptr)
-        found = f(self._c_pointer, 1, pointer(ret))
+        found = f(self._c_pointer_ref, 1, pointer(ret))
         if found:
             return _proper_dihedral_or_none(ret[0])
         return None
@@ -1620,12 +1620,14 @@ class Position_Restraint(State):
         doc = 'Returns the vector ("bond") connecting the atom to its target. Read only.')
     spring_constant = c_property('position_restraint_k', float64,
         doc = 'Restraint spring constant in kJ mol-1 Angstrom-2. Can be written')
-    enabled = c_property('position_restraint_enabled', bool,
+    enabled = c_property('position_restraint_enabled', npy_bool,
         doc = 'Enable/disable this position restraint.')
-    visible = c_property('position_restraint_visible', bool, read_only=True,
+    visible = c_property('position_restraint_visible', npy_bool, read_only=True,
         doc = 'Check whether this restraint is currently visible. Read only.')
     sim_index = c_property('position_restraint_sim_index', int32,
         doc = 'Index of this restraint in a running simulation. Can be set')
+    sim_update_needed = c_property('position_restraint_sim_update_needed', npy_bool,
+        doc = 'True if this restraint is awaiting update in a simulation')
 
 class Distance_Restraint(State):
     def __init__(self, c_pointer):
@@ -1666,6 +1668,8 @@ class Distance_Restraint(State):
             doc = 'Current distance between restrained atoms in Angstroms. Read only.')
     sim_index = c_property('distance_restraint_sim_index', int32,
         doc = 'Index of this restraint in a running simulation. Can be set')
+    sim_update_needed = c_property('distance_restraint_sim_update_needed', npy_bool,
+        doc = 'True if this restraint is awaiting update in a simulation')
 
 class Proper_Dihedral_Restraint(State):
     def __init__(self, c_pointer):
@@ -1713,6 +1717,8 @@ class Proper_Dihedral_Restraint(State):
         doc = 'Get the color of the annotation for this restraint according to the current colormap. Read only.')
     sim_index = c_property('proper_dihedral_restraint_sim_index', int32,
         doc = 'Index of this restraint in a running simulation. Can be set')
+    sim_update_needed = c_property('proper_dihedral_restraint_sim_update_needed', npy_bool,
+        doc = 'True if this restraint is awaiting update in a simulation')
 
 
 # tell the C++ layer about class objects whose Python objects can be instantiated directly

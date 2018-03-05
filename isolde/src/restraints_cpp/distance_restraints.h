@@ -27,7 +27,7 @@ class Distance_Restraint:
 {
 public:
     typedef Atom* Atoms[2];
-    Distance_Restraint() {}
+    Distance_Restraint() : Sim_Restraint_Base() {}
     ~Distance_Restraint() { auto du=DestructionUser(this); }
     Distance_Restraint(Atom *a1, Atom *a2, Distance_Restraint_Mgr *mgr);
     Distance_Restraint(Atom *a1, Atom *a2, Distance_Restraint_Mgr *mgr,

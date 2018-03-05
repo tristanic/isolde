@@ -62,7 +62,7 @@ template <class DType>
 class Dihedral_Restraint_Base: public Sim_Restraint_Base
 {
 public:
-    Dihedral_Restraint_Base() {}
+    Dihedral_Restraint_Base() : Sim_Restraint_Base() {}
     ~Dihedral_Restraint_Base() {auto du = DestructionUser(this);}
     Dihedral_Restraint_Base(DType *dihedral, Dihedral_Restraint_Change_Mgr *mgr)
         : _dihedral(dihedral), _mgr(mgr) {}

@@ -164,3 +164,226 @@ class OpenMM_Thread_Handler:
         f(self._c_pointer, period)
 
     min_thread_period = property(_get_min_thread_period, _set_min_thread_period)
+
+
+class Sim_Handler:
+    def __init__(self):
+        # Forcefield used in this simulation
+        self._forcefield = None
+        # Overall simulation topology
+        self._topology = None
+        # Atoms in simulation topology
+        self._atoms = None
+
+        self.all_forces = []
+
+        # Dict holding each custom external force object, its global and its
+        # per-particle parameters. Format:
+        # {'name': [object,
+        #           {'global_name': value},
+        #           [per_particle_names],
+        #           [per_particle_default_values],
+        #           {index_in_topology: index_in_force}
+        # }
+        self._custom_external_forces = {}
+
+        # List of IsoldeMap objects registered with this simulation
+        self._maps = []
+        # CustomExternalForce handling mouse and haptic interactions
+        self._tugging_force = None
+
+        self._force_update_pending = False
+
+        trigger_names = (
+            'coord update',
+        )
+        from chimerax.core.triggerset import TriggerSet
+        t = self.triggers = TriggerSet()
+        for name in trigger_names:
+            t.add_trigger(name)
+
+        self._thread_handler = None
+
+    def force_update_needed(self):
+        if not self._force_update_pending:
+            from ..delayed_reaction import delayed_reaction
+            delayed_reaction(self.triggers, 'coord update', [], self._thread_handler.thread_finished,
+                self._update_forces_in_context_if_needed, [])
+
+    def _update_forces_in_context_if_needed(self):
+        context = self.context
+        for f in self.all_forces:
+            if f.update_needed:
+                f.updateParametersInContext(context)
+                f.update_needed = False
+
+
+
+    # AMBER-specific CMAP backbone torsion corrections
+
+    def initialize_amber_cmap_force(self):
+        from .custom_forces import AmberCMAPForce
+        cf = self._amber_cmap_force = AmberCMAPForce()
+        self.all_forces.append(cf)
+
+    def add_amber_cmap_torsions(self, ramas, sim_construct):
+        ''' Add CMAP correction terms for AMBER force field. '''
+        cf = self._amber_cmap_force
+        sc = sim_construct
+        valid_ramas = ramas[ramas.valids]
+        resnames = valid_ramas.residues.names
+        phi_atoms = valid_ramas.phi_dihedrals.atoms
+        psi_atoms = valid_ramas.psi_dihedrals.atoms
+        phi_indices = numpy.column_stack([sc.indices(atoms) for atoms in phi_atoms])
+        psi_indices = numpy.column_stack([sc.indices(atoms) for atoms in psi_atoms])
+        for resname, pi, fi in zip(resnames, phi_indices, psi_indices):
+            cf.addTorsion(resname, pi, fi)
+
+
+    ####
+    # Dihedral restraints
+    ####
+
+        ##
+        # Before simulation starts
+        ##
+
+    def initialize_dihedral_restraint_force(self, default_cutoff):
+        from .custom_forces import FlatBottomTorsionRestraintForce
+        df = self._dihedral_restraint_force = FlatBottomTorsionRestraintForce()
+        self.default_torsion_cutoff = default_cutoff
+        self.all_forces.append(df)
+
+    def initialize_dihedral_restraint(self, indices, target=0, k=0, cutoff=None):
+        c = (cutoff or self.default_torsion_cutoff)
+        if type(c) == Quantity:
+            c = c.value_in_unit(unit.radians)
+        force = self._dihedral_restraint_force
+        index_in_force = force.addTorsion(*indices.tolist(), (target, k, cos(c)))
+        return index_in_force
+
+        ##
+        # During simulation
+        ##
+
+    def update_dihedral_restraints_in_context(self, context):
+        rf = self._dihedral_restraint_force
+        if rf.update_needed:
+            rf.updateParametersInContext(context)
+        rf.update_needed = False
+
+    def update_dihedral_restraints(self, indices, targets, ks):
+        if hasattr(ks, '__len__'):
+            for index, target, k in zip(indices, targets, ks):
+                self.update_dihedral_restraint(index, target, k)
+        else:
+            k = ks
+            for index, target in zip(indices, targets):
+                self.update_dihedral_restraint(index, target, k)
+
+    def update_dihedral_restraint(self, sim_index, target = None,
+                            k = None, cutoff = None, degrees = False):
+        if target is not None and degrees:
+            target = radians(target)
+        self._dihedral_restraint_force.update_target(sim_index, target=target, k=k, cutoff=cutoff)
+
+
+    ####
+    # Distance Restraints
+    ####
+
+        ##
+        # Before simulation starts
+        ##
+
+    def initialize_distance_restraints_force(self, max_force):
+        from .custom_forces import TopOutBondForce
+        tf = self._distance_restraints_force = TopOutBondForce(max_force)
+        self.all_forces.append(tf)
+        return tf
+
+    def add_distance_restraints(self, indices, targets, ks, force_map):
+        for i, (a_indices, t, k) in enumerate(zip(indices, targets, ks)):
+            force_map[i] = self.add_distance_restraint(a_indices, t, k)
+
+    def add_distance_restraint(self, indices, target, k):
+        tf = self._distance_restraints_force
+        return tf.addBond(*indices.tolist(), (k, target))
+
+        ##
+        # During simulation
+        ##
+
+    def update_distance_restraints(self, force_indices, targets, ks):
+        for i, t, k in zip(force_indices, targets, ks):
+            self.update_distance_restraint(i, t, k)
+
+    def update_distance_restraint(self, force_index, target=None, k=None):
+        tf = self._distance_restraints_force
+        tf.update_target(force_index, target=target, k=k)
+
+
+
+
+    ####
+    # Positional Restraints
+    ####
+
+        ##
+        # Before simulation starts
+        ##
+
+    def initialize_position_restraints_force(self, max_force):
+        from .custom_forces import TopOutRestraintForce
+        rf = self._position_restraints_force = TopOutRestraintForce(max_force)
+        self.all_forces.append(rf)
+        return rf
+
+    def add_position_restraints(self, force_index_map, atom_indices, ks, targets):
+        rf = self._position_restraints_force
+        for i, (index, k, target) in enumerate(zip(atom_indices, ks, targets)):
+            force_index_map[i] = rf.addParticle(int(index), (k, *target))
+
+        ##
+        # During simulation
+        ##
+
+    def update_position_restraints(self, force_indices, targets, ks):
+        rf = self._position_restraints_force
+        for i, t, k in zip(force_indices, targets, ks):
+            rf.update_target(i, t, k)
+
+    def update_position_restraint(self, force_index, target=None, k=None):
+        rf = self._position_restraints_force
+        rf.update_target(force_index, k, target)
+
+    ####
+    # Tugging force
+    ####
+
+        ##
+        # Before simulation starts
+        ##
+
+    def initialize_tugging_force(self, max_force):
+        from .custom_forces import TopOutRestraintForce
+        f = self._tugging_force = TopOutRestraintForce(max_force)
+        self.all_forces.append(f)
+
+    def couple_atoms_to_tugging_force(self, indices, force_map):
+        force = self._tugging_force
+        for i, index in enumerate(indices):
+            force_map[i] = force.addParticle(int(index), (0,0,0,0))
+
+        ##
+        # During simulation
+        ##
+
+    def tug_atom(self, force_index, target, k):
+        tf = self._tugging_force
+        tf.update_target(force_index, target, k)
+
+    def tug_atoms(self, force_indices, targets, ks):
+        tf = self._tugging_force
+        for i, t, k in zip(force_indices, targets, ks):
+            tf.update_target(i, t, k)
