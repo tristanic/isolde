@@ -194,10 +194,35 @@ class LinearInterpMapForce(CustomCompoundBondForce):
         #~ f.setFunctionParameters(*dim, data_1d)
         #~ self.update_needed = True
 
+    def add_atoms(self, indices, ks):
+        f = c_function('customcompoundbondforce_add_bonds',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
+                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
+        n = len(indices)
+        ind = numpy.empty(n, int32)
+        ind[:] = indices
+        params = numpy.empty(n, float64)
+        params[:] = ks
+        ret = numpy.empty(n, int32)
+        f(in(self.this), n, pointer(ind), pointer(params), pointer(ret))
+        return ret
+
     def update_spring_constant(self, index, k):
         params = self.getBondParameters(index)
         atom_i = params[0]
         self.setBondParaeters(index, atom_i, (k,))
+
+    def update_spring_constants(self, indices, spring_constants):
+        f = c_function('customcompoundbondforce_update_bond_parameters',
+            args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
+                ctypes.POINTER(ctypes.c_double)))
+        n = len(indices)
+        ind = numpy.empty(n, int32)
+        ind[:] = indices
+        ks = numpy.empty(n, float64)
+        ks[:] = spring_constants
+        f(int(self.this), n, pointer(ind), pointer(ks))
+        self.update_needed = True
 
     def update_context_if_needed(self, context):
         if self.update_needed:
@@ -243,6 +268,30 @@ class TopOutBondForce(CustomBondForce):
         self._max_force = force
         self.update_needed = True
 
+    def add_bonds(self, atom_indices, targets, spring_constants):
+        '''
+        Add a set of bonds
+        @param atom_indices:
+            A 2-tuple of arrays giving the indices of the bonded atoms in the
+            simulation construct
+        @param targets:
+            Target distances in nanometers
+        @param spring_constants:
+            Spring constants in kJ mol-1 nm-2
+        '''
+        f = c_function('custombondforce_add_bonds',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
+                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
+        n = len(targets)
+        ind = numpy.empty((n,2), int32)
+        for i, ai in enumerate(atom_indices):
+            ind[i,:] = ai
+        params = numpy.empty((n,2), float64)
+        params[:,0] = spring_constants
+        params[:,1] = targets
+        ret = numpy.empty(n, int32)
+
+
     def update_target(self, index, target=None, k = None):
         '''
         Update an existing distance restraint with a new target and/or spring
@@ -272,19 +321,27 @@ class TopOutBondForce(CustomBondForce):
         self.update_needed = True
 
     def update_targets(self, indices, targets, spring_constants):
-        f = c_function('topoutbondforce_update_bond_parameters',
+        '''
+        Update a set of targets all at once using fast C++ code. Fastest if
+        the arguments are provided as Numpy arrays, but any iterable will work.
+        @param indices:
+            The indices of the restraints in the OpenMM force object
+        @param targets:
+            The new target distances in nanometres
+        @param k
+            The new spring constants in units of kJ mol-1 nm-2
+        '''
+        f = c_function('custombondforce_update_bond_parameters',
             args=(ctypes.c_void_p, ctypes.c_size_t,
-            ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_double),
-                ctypes.POINTER(ctypes.c_double)))
+            ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_double)))
         n = len(indices)
         ind = numpy.empty(n, int32)
         ind[:] = indices
-        t = numpy.empty(n, float64)
-        t[:] = targets
-        k = numpy.empty(n, float64)
-        k[:] = spring_constants
-        f(int(self.this), n, pointer(ind), pointer(t), pointer(k))
-
+        params = numpy.empty((n,2), float64)
+        params[:,0] = spring_constants
+        params[:,1] = targets
+        f(int(self.this), n, pointer(ind), pointer(params))
+        self.update_needed = True
 
 
 class TopOutRestraintForce(CustomExternalForce):
@@ -327,6 +384,20 @@ class TopOutRestraintForce(CustomExternalForce):
         self._max_force = force
         self.update_needed = True
 
+    def add_particles(self, indices, targets, spring_constants):
+        f = c_function('customexternalforce_add_particles',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
+                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
+        n = len(indices)
+        ind = numpy.empty(n, int32)
+        ind[:] = indices
+        ret = numpy.empty(n, int32)
+        params = numpy.empty((n,4), float64)
+        params[:,0] = spring_constants
+        params[:,1:] = targets
+        f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
+        return ret
+
     def update_target(self, index, target=None, k = None):
         current_params = self.getParticleParameters(int(index))
         atom_index = current_params[0]
@@ -340,6 +411,21 @@ class TopOutRestraintForce(CustomExternalForce):
                 k = k.value_in_unit(OPENMM_SPRING_UNIT)
             new_k = k
         self.setParticleParameters(int(index), atom_index, (new_k, new_x, new_y, new_z))
+        self.update_needed = True
+
+    def update_targets(self, indices, targets, spring_constants):
+        f = c_function('customexternalforce_update_particle_parameters',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
+                ctypes.POINTER(ctypes.c_double)))
+        n = len(indices)
+        if len(targets) !=n or len(spring_constants) !=n:
+            raise TypeError('Parameter array lengths must match number of indices!')
+        ind = numpy.empty(n, int32)
+        ind[:] = indices
+        params = numpy.empty((n,4), float64)
+        params[:,0] = spring_constants
+        params[:,1:] = targets
+        f(int(self.this), n, pointer(ind), pointer(params))
         self.update_needed = True
 
     def release_restraint(self, index):
@@ -366,6 +452,37 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
 
         self.update_needed = False
 
+    def add_torsions(self, atom_indices, targets, spring_constants, cutoffs):
+        '''
+        Add a set of torsion restraints. Returns an array of ints representing
+        the indices of the restraints in the force object.
+        @param atom_indices:
+            A 4-tuple of arrays providing the indices of the dihedral atoms in
+            the simulation construct
+        @param targets:
+            Target angles in radians
+        @param spring_constants:
+            Restraint spring constants in kJ mol-1 rad-2
+        @param cutoffs:
+            Cutoff angle (below which no restraint is applied) for each restraint
+            in radians.
+        '''
+        f = c_function('customtorsionforce_add_torsions',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
+                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
+        n = len(targets)
+        ind = numpy.empty((n,4), numpy.int32)
+        for i, ai in enumerate(atom_indices):
+            ind[:,i] = ai
+        params = numpy.empty((n,3), float64)
+        params[:,0] = spring_constants
+        params[:,1] = targets
+        params[:,2] = numpy.cos(cutoffs)
+        ret = numpy.empty(n, numpy.int32)
+        f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
+        return ret
+
+
     def update_target(self, index, target = None, k = None, cutoff = None):
         '''
         Change the target, spring constant and/or cutoff angle for the given torsion.
@@ -389,6 +506,33 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
             new_cutoff = cos(cutoff)
         self.setTorsionParameters(index, *indices, (new_k, new_theta0, new_cutoff))
         self.update_needed = True
+
+    def update_targets(self, indices, targets, spring_constants, cutoffs):
+        '''
+        Change the target angles, spring constants and cutoff angles for a set
+        of dihedral restraints.
+        @param indices:
+            the indices for each restraint in the force object
+        @param targets:
+            the target angles in radians
+        @param spring_constants:
+            the spring constants for the restraints in kJ mol-1 rad-2
+        @param cutoffs:
+            the cutoff angles (below which no force is applied) in radians
+        '''
+        f = c_function('customtorsionforce_update_torsion_parameters',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
+                ctypes.POINTER(ctypes.c_double)))
+        n = len(indices)
+        ind = numpy.empty(n, int32)
+        ind[:] = indices
+        params = numpy.empty((n,3), float64)
+        params[:,0] = spring_constants
+        params[:,1] = targets
+        params[:,2] = numpy.cos(cutoffs)
+        f(int(self.this), n, pointer(ind), pointer(params))
+        self.update_needed = True
+
 
 
     def set_cutoff_angle(self, i, angle):
