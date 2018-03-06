@@ -63,6 +63,11 @@ def _position_restraint_or_none(p):
 def _position_restraints(p):
     from .molarray import Position_Restraints
     return Position_Restraints(p)
+def _tuggable_atom_or_none(p):
+    return Tuggable_Atom.c_ptr_to_py_inst(p) if p else None
+def _tuggable_atoms(p):
+    from .molarray import Tuggable_Atoms
+    return Tuggable_Atoms(p)
 def _pseudobond_or_none(p):
     from chimerax.core.atomic import Pseudobond
     return Pseudobond.c_ptr_to_py_inst(p) if p else None
@@ -77,6 +82,8 @@ def _distance_restraint_mgr(p):
     return Distance_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
 def _position_restraint_mgr(p):
     return Position_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+def _tuggable_atoms_mgr(p):
+    return Tuggable_Atoms_Mgr.c_ptr_to_existing_py_inst(p) if p else None
 
 def get_proper_dihedral_manager(session):
     if hasattr(session, 'proper_dihedral_mgr') and not session.proper_dihedral_mgr.deleted:
@@ -894,7 +901,6 @@ class Rota_Mgr:
         ptrs = numpy.empty(n, cptr)
         scores = numpy.empty(n, float64)
         found = f(self._c_pointer, rotamers._c_pointers, n, pointer(ptrs), pointer(scores))
-        print ("Found {} bad rotamers".format(found)) #DELETEME
         return (_rotamers(ptrs[0:found]), scores[0:found])
 
     def validate_scale_and_color_rotamers(self, rotamers, max_scale = 2.0, non_favored_only = True, visible_only = True):
@@ -920,7 +926,8 @@ class Restraint_Change_Tracker:
     _mgr_name_to_class_functions = {
         'Proper_Dihedral_Restraint_Mgr': (_proper_dihedral_restraint_mgr, _proper_dihedral_restraints),
         'Position_Restraint_Mgr': (_position_restraint_mgr, _position_restraints),
-        'Distance_Restraint_Mgr': (_distance_restraint_mgr, _distance_restraints)
+        'Distance_Restraint_Mgr': (_distance_restraint_mgr, _distance_restraints),
+        'Tuggable_Atoms_Mgr': (_tuggable_atoms_mgr, _tuggable_atoms),
     }
     def __init__(self, session, c_pointer=None):
         cname = 'change_tracker'
@@ -991,7 +998,7 @@ class Restraint_Change_Tracker:
 
 class _Restraint_Mgr(Model):
     '''Base class. Do not instantiate directly.'''
-    def __init__(self, name, model, c_pointer=None):
+    def __init__(self, name, model, c_pointer=None, c_class_name = None):
         session = model.session
         if not hasattr(self, '_change_tracker'):
             if not hasattr(session, 'isolde_changes') or session.isolde_changes.deleted:
@@ -999,7 +1006,10 @@ class _Restraint_Mgr(Model):
             else:
                 ct = self._change_tracker = session.isolde_changes
 
-        cname = type(self).__name__.lower()
+        if c_class_name is None:
+            cname = type(self).__name__.lower()
+        else:
+            cname = c_class_name
         if c_pointer is None:
             new_func = cname + '_new'
             c_pointer = c_function(
@@ -1060,7 +1070,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
     _DEFAULT_PIN_COLOR = [255,215,0,255]
 
     def __init__(self, model, c_pointer=None):
-        super().__init__('Position Restraints', model, c_pointer)
+        super().__init__('Position Restraints', model, c_pointer=c_pointer)
         self._prepare_drawings()
         self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
         self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
@@ -1097,18 +1107,15 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         self._bond_drawing.color = color
 
     def _restraint_changes_cb(self, trigger_name, changes):
-        update_bonds = False
+        update_bonds = True
         update_targets = False
-        if self in changes.keys():
-            changes = changes[self]
-            update_bonds = True
-            change_types = list(changes.keys())
-            if 'target changed' in change_types:
-                update_targets = True
-            if 'enabled/disabled' in change_types:
-                update_targets = True
-            if 'display changed' in change_types:
-                update_targets = True
+        change_types = list(changes.keys())
+        if 'target changed' in change_types:
+            update_targets = True
+        if 'enabled/disabled' in change_types:
+            update_targets = True
+        if 'display changed' in change_types:
+            update_targets = True
         self.update_graphics(update_bonds, update_targets)
 
     def _model_changes_cb(self, trigger_name, changes):
@@ -1192,6 +1199,105 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         f = c_function('position_restraint_mgr_visible_restraints',
             args=(ctypes.c_void_p,), ret=ctypes.py_object)
         return _position_restraints(f(self._c_pointer))
+
+
+class Tuggable_Atoms_Mgr(_Restraint_Mgr):
+    _DEFAULT_ARROW_COLOR = [100, 255, 100, 255]
+    # _NEAR_ATOMS_COLOR = [0,255,255,255]
+    def __init__(self, model, c_pointer=None):
+        super().__init__('Tuggable atoms', model, c_pointer=c_pointer)
+        self._prepare_drawings()
+        self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
+        self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
+        # self._show_nearest_atoms = False
+        # self._near_atoms_radius = 0.5
+
+    def _prepare_drawings(self):
+        ad = self._arrow_drawing = Drawing('Tugging force vectors')
+        self.add_drawing(ad)
+        ad.vertices, ad.normals, ad.triangles = self._arrow_geometry()
+        self.set_arrow_color(self._DEFAULT_ARROW_COLOR)
+
+        # nd = self._nearest_atoms_drawing = Drawing('Nearest tuggable atoms')
+        # from chimerax.core.surface.shapes import sphere_geometry2
+        # nd.vertices, d.normals, d.triangles = sphere_geometry2(80)
+        # self.set_near_atoms_color(self._NEAR_ATOMS_COLOR)
+
+    def set_arrow_color(self, color):
+        self._arrow_drawing.color = color
+
+    # def set_near_atoms_color(self, color):
+    #     self._nearest_atoms_drawing.color = color
+
+    def _arrow_geometry(self):
+        from .geometry import simple_arrow_geometry
+        return simple_arrow_geometry(radius=3, centered_on_origin=True)
+
+    def _restraint_changes_cb(self, trigger_name, changes):
+        self.update_graphics()
+
+    def _model_changes_cb(self, trigger_name, changes):
+        update_needed = False
+        changes = changes[1]
+        if changes.num_deleted_atoms() > 0:
+            update_needed = True
+        atom_reasons = changes.atom_reasons()
+        if 'display changed' in atom_reasons or 'hide changed' in atom_reasons:
+            update_needed = True
+        if 'coord changed' in atom_reasons:
+            update_needed = True
+        self.update_graphics()
+
+    def update_graphics(self):
+        if not self.visible:
+            return
+        ad = self._arrow_drawing
+        visibles = self.visibles
+        n = len(visibles)
+        if n==0:
+            ad.display = False
+            return
+        ad.display = True
+        self._update_arrow_drawing(ad, visibles, n)
+
+    def _update_arrow_drawing(self, ad, visibles, n):
+        from chimerax.core.geometry import Places
+        ad.positions = Places(opengl_array = visibles._bond_cylinder_transforms)
+
+    def _get_tuggables(self, atoms, create=False):
+        f = c_function('tuggable_atoms_mgr_get_restraint',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool, ctypes.c_size_t,
+                ctypes.c_void_p),
+            ret=ctypes.c_size_t)
+        atoms = atoms[atoms.element_names != 'H']
+        n = len(atoms)
+        ret = numpy.empty(n, cptr)
+        num = f(self._c_pointer, atoms._c_pointers, create, n, pointer(ret))
+        return _tuggable_atoms(ret[0:num])
+
+    def get_tuggables(self, atoms):
+        return self._get_tuggables(atoms)
+
+    def add_tuggables(self, atoms):
+        return self._get_tuggables(atoms, create=True)
+
+    @property
+    def num_tuggables(self):
+        return c_function('tuggable_atoms_mgr_num_restraints',
+            args=(ctypes.c_void_p,), ret=ctypes.c_size_t)(self._c_pointer)
+
+    def __len__(self):
+        return self.num_tuggables
+
+    @property
+    def visibles(self):
+        f = c_function('tuggable_atoms_mgr_visible_restraints',
+            args=(ctypes.c_void_p,), ret=ctypes.py_object)
+        return _tuggable_atoms(f(self._c_pointer))
+
+
+
+
 
 
 class Distance_Restraint_Mgr(_Restraint_Mgr):
@@ -1627,6 +1733,9 @@ class Position_Restraint(State):
     sim_index = c_property('position_restraint_sim_index', int32,
         doc = 'Index of this restraint in a running simulation. Can be set')
 
+class Tuggable_Atom(Position_Restraint):
+    _c_class_name = 'position_restraint'
+
 class Distance_Restraint(State):
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
@@ -1718,9 +1827,12 @@ class Proper_Dihedral_Restraint(State):
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance
 # from the pointer (needed by Collections)
-for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint,
+for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint, Tuggable_Atom,
                   Distance_Restraint, Proper_Dihedral_Restraint,):
-    cname = class_obj.__name__.lower()
+    if hasattr(class_obj, '_c_class_name'):
+        cname = class_obj._c_class_name
+    else:
+        cname = class_obj.__name__.lower()
     func_name = 'set_' + cname + '_pyclass'
     f = c_function(func_name, args = (ctypes.py_object,))
     f(class_obj)
@@ -1733,7 +1845,7 @@ for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint,
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
 
 for class_obj in (Proper_Dihedral_Mgr, Rama_Mgr, Rota_Mgr, Position_Restraint_Mgr,
-            Distance_Restraint_Mgr, Proper_Dihedral_Restraint_Mgr):
+            Tuggable_Atoms_Mgr, Distance_Restraint_Mgr, Proper_Dihedral_Restraint_Mgr):
     cname = class_obj.__name__.lower()
     func_name = cname + '_py_inst'
     class_obj.c_ptr_to_py_inst = lambda ptr, fname=func_name: c_function(fname,

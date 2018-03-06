@@ -7,7 +7,7 @@ from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
 from .molobject import Proper_Dihedral, Rotamer, Rama, Position_Restraint, \
-        Distance_Restraint, Proper_Dihedral_Restraint
+        Tuggable_Atom, Distance_Restraint, Proper_Dihedral_Restraint
 import ctypes
 
 from chimerax.core.atomic import Atom, Atoms, Residue, Residues
@@ -134,8 +134,12 @@ class Rotamers(Collection):
                 doc='True for each rotamer whose CA-CB bond is visible')
 
 class Position_Restraints(Collection):
-    def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, Position_Restraint, Position_Restraints)
+    def __init__(self, c_pointers=None, single_type = None, poly_type = None):
+        if single_type is None:
+            single_type = Position_Restraint
+        if poly_type is None:
+            poly_type = Position_Restraints
+        super().__init__(c_pointers, single_type, poly_type)
 
     @property
     def _bond_cylinder_transforms(self):
@@ -167,6 +171,10 @@ class Position_Restraints(Collection):
         doc = 'Returns a boolean mask giving the currently visible restraints. Read only.')
     sim_indices = cvec_property('position_restraint_sim_index', int32,
         doc = 'Index of each restraint in a running simulation. Can be set')
+
+class Tuggable_Atoms(Position_Restraints):
+    def __init__(self, c_pointers=None):
+        super().__init__(c_pointers, single_type=Tuggable_Atom, poly_type = Tuggable_Atoms)
 
 
 class Distance_Restraints(Collection):

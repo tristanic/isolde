@@ -6,6 +6,7 @@
 
 template class pyinstance::PythonInstance<isolde::Position_Restraint>;
 template class pyinstance::PythonInstance<isolde::Position_Restraint_Mgr>;
+template class pyinstance::PythonInstance<isolde::Tuggable_Atoms_Mgr>;
 
 namespace isolde
 {
@@ -68,7 +69,7 @@ void Position_Restraint::bond_cylinder_transform(double *rot44) const
     geometry::bond_cylinder_transform_gl<double>(xyz0, xyz1, radius(), 1.0, rot44);
 }
 
-Position_Restraint* Position_Restraint_Mgr::_new_restraint(Atom *atom, const Coord& target)
+Position_Restraint* Position_Restraint_Mgr_Base::_new_restraint(Atom *atom, const Coord& target)
 {
     if (atom->structure() != _atomic_model) {
         throw std::logic_error(error_different_mol());
@@ -82,12 +83,12 @@ Position_Restraint* Position_Restraint_Mgr::_new_restraint(Atom *atom, const Coo
     return restraint;
 }
 
-Position_Restraint* Position_Restraint_Mgr::_new_restraint(Atom *atom)
+Position_Restraint* Position_Restraint_Mgr_Base::_new_restraint(Atom *atom)
 {
     return _new_restraint(atom, atom->coord());
 }
 
-Position_Restraint* Position_Restraint_Mgr::get_restraint(Atom *atom, bool create)
+Position_Restraint* Position_Restraint_Mgr_Base::get_restraint(Atom *atom, bool create)
 {
     auto it = _atom_to_restraint.find(atom);
     if (it != _atom_to_restraint.end())
@@ -97,7 +98,7 @@ Position_Restraint* Position_Restraint_Mgr::get_restraint(Atom *atom, bool creat
     return nullptr;
 }
 
-std::vector<Position_Restraint *> Position_Restraint_Mgr::visible_restraints() const
+std::vector<Position_Restraint *> Position_Restraint_Mgr_Base::visible_restraints() const
 {
     std::vector<Position_Restraint *> visibles;
     for (auto &it: _atom_to_restraint)
@@ -110,13 +111,13 @@ std::vector<Position_Restraint *> Position_Restraint_Mgr::visible_restraints() c
 }
 
 
-void Position_Restraint_Mgr::delete_restraints(const std::set<Position_Restraint *>& to_delete)
+void Position_Restraint_Mgr_Base::delete_restraints(const std::set<Position_Restraint *>& to_delete)
 {
     auto db = DestructionBatcher(this);
     _delete_restraints(to_delete);
 }
 
-void Position_Restraint_Mgr::_delete_restraints(const std::set<Position_Restraint *>& to_delete)
+void Position_Restraint_Mgr_Base::_delete_restraints(const std::set<Position_Restraint *>& to_delete)
 {
     for (auto r: to_delete) {
         _atom_to_restraint.erase(r->atom());
@@ -124,7 +125,7 @@ void Position_Restraint_Mgr::_delete_restraints(const std::set<Position_Restrain
     }
 }
 
-void Position_Restraint_Mgr::destructors_done(const std::set<void *>& destroyed)
+void Position_Restraint_Mgr_Base::destructors_done(const std::set<void *>& destroyed)
 {
     auto db = DestructionBatcher(this);
     std::set<Position_Restraint *> to_delete;
@@ -137,7 +138,7 @@ void Position_Restraint_Mgr::destructors_done(const std::set<void *>& destroyed)
     _delete_restraints(to_delete);
 }
 
-Position_Restraint_Mgr::~Position_Restraint_Mgr()
+Position_Restraint_Mgr_Base::~Position_Restraint_Mgr_Base()
 {
     auto du = DestructionUser(this);
     for (auto &it: _atom_to_restraint) {

@@ -204,7 +204,7 @@ class LinearInterpMapForce(CustomCompoundBondForce):
         params = numpy.empty(n, float64)
         params[:] = ks
         ret = numpy.empty(n, int32)
-        f(in(self.this), n, pointer(ind), pointer(params), pointer(ret))
+        f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
         return ret
 
     def update_spring_constant(self, index, k):

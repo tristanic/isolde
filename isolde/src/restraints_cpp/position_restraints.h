@@ -1,6 +1,8 @@
 #ifndef ISOLDE_POSITION_RESTRAINTS
 #define ISOLDE_POSITION_RESTRAINTS
 
+#include <iostream>
+
 #include "../constants.h"
 #include "../geometry/geometry.h"
 #include "changetracker.h"
@@ -17,7 +19,7 @@ using namespace atomstruct;
 
 namespace isolde
 {
-class Position_Restraint_Mgr;
+class Position_Restraint_Mgr_Base;
 
 class Position_Restraint:
     public pyinstance::PythonInstance<Position_Restraint>,
@@ -26,7 +28,7 @@ class Position_Restraint:
 public:
     Position_Restraint() : Sim_Restraint_Base() {}
     ~Position_Restraint() { auto du=DestructionUser(this); }
-    Position_Restraint(Atom* atom, const Coord& target, Position_Restraint_Mgr *mgr)
+    Position_Restraint(Atom* atom, const Coord& target, Position_Restraint_Mgr_Base *mgr)
         : _atom(atom), _mgr(mgr)
     {
         for (size_t i=0; i<3; ++i) _target[i] = target[i];
@@ -50,28 +52,27 @@ public:
     //! Provide a 4x4 OpenGL array transforming a primitive unit bond onto this restraint
     void bond_cylinder_transform(double *rot44) const;
     Change_Tracker* change_tracker() const;
-    Position_Restraint_Mgr* mgr() const { return _mgr; }
+    Position_Restraint_Mgr_Base* mgr() const { return _mgr; }
 
 private:
     Atom* _atom;
     Coord _target;
-    Position_Restraint_Mgr* _mgr;
+    Position_Restraint_Mgr_Base* _mgr;
     double _spring_constant = 0.0;
     bool _enabled = false;
 
 
 }; //class Position_Restraint
 
-class Position_Restraint_Mgr
-    : public DestructionObserver, public pyinstance::PythonInstance<Position_Restraint_Mgr>
+class Position_Restraint_Mgr_Base
+    : public DestructionObserver
 {
 public:
-    Position_Restraint_Mgr() {}
-    ~Position_Restraint_Mgr();
-    Position_Restraint_Mgr(Structure *atomic_model, Change_Tracker *change_tracker)
+    Position_Restraint_Mgr_Base() {}
+    ~Position_Restraint_Mgr_Base();
+    Position_Restraint_Mgr_Base(Structure *atomic_model, Change_Tracker *change_tracker)
         : _atomic_model(atomic_model), _change_tracker(change_tracker)
     {
-        change_tracker->register_mgr(std::type_index(typeid(this)), _py_name, _managed_class_py_name);
     }
 
     Structure* structure() const { return _atomic_model; }
@@ -81,13 +82,15 @@ public:
     Change_Tracker* change_tracker() const { return _change_tracker; }
     void track_created(const void *r) { change_tracker()->add_created(_mgr_type, this, r); }
     void track_change(const void *r, int reason) {change_tracker()->add_modified(_mgr_type, this, r, reason);}
-
-
     void delete_restraints(const std::set<Position_Restraint *>& to_delete);
     virtual void destructors_done(const std::set<void *>& destroyed);
 
-private:
+protected:
+    std::string _py_name = "Position_Restraint_Mgr";
+    std::string _managed_class_py_name = "Position_Restraints";
     std::type_index _mgr_type = std::type_index(typeid(this));
+
+private:
     Structure* _atomic_model;
     Change_Tracker* _change_tracker;
     std::unordered_map<Atom*, Position_Restraint*> _atom_to_restraint;
@@ -100,10 +103,39 @@ private:
         return "Restraints on hydrogen atoms are not allowed!";
     }
     void _delete_restraints(const std::set<Position_Restraint *>& to_delete);
-    const std::string _py_name = "Position_Restraint_Mgr";
-    const std::string _managed_class_py_name = "Position_Restraints";
+
 
 }; //class Position_Restraint_Mgr
+
+class Position_Restraint_Mgr
+    : public Position_Restraint_Mgr_Base,
+      public pyinstance::PythonInstance<Position_Restraint_Mgr>
+{
+public:
+    Position_Restraint_Mgr(Structure *atomic_model, Change_Tracker *change_tracker)
+        : Position_Restraint_Mgr_Base(atomic_model, change_tracker)
+    {
+        _mgr_type = std::type_index(typeid(this));
+        change_tracker->register_mgr(_mgr_type, _py_name, _managed_class_py_name);
+
+    }
+};
+
+class Tuggable_Atoms_Mgr
+    : public Position_Restraint_Mgr_Base,
+      public pyinstance::PythonInstance<Tuggable_Atoms_Mgr>
+{
+public:
+    Tuggable_Atoms_Mgr(Structure *atomic_model, Change_Tracker *change_tracker)
+        : Position_Restraint_Mgr_Base(atomic_model, change_tracker)
+    {
+        _py_name = "Tuggable_Atoms_Mgr";
+        _managed_class_py_name = "Tuggable_Atoms";
+        _mgr_type = std::type_index(typeid(this));
+        change_tracker->register_mgr(_mgr_type, _py_name, _managed_class_py_name);
+
+    }
+};
 
 } //namespace isolde
 #endif //ISOLDE_POSITION_RESTRAINTS

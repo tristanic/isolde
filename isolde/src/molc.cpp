@@ -224,16 +224,15 @@ proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *name, s
 {
     Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
     std::vector<Dihedral *> dvec;
-    //size_t found=0;
     try {
-        //~ Proper_Dihedral_Mgr::d_def ddef;
         Residue **r = static_cast<Residue **>(residues);
         std::string dname(PyUnicode_AsUTF8(static_cast<PyObject *>(name[0])));
         for (size_t i=0; i<n; ++i) {
-            Proper_Dihedral *d = m->get_dihedral(r[i], dname, (bool)create);
-            if (d != nullptr)
-                dvec.push_back(d);
-                //dihedrals[found++] = d;
+            try {
+                Proper_Dihedral *d = m->get_dihedral(r[i], dname, (bool)create);
+                if (d != nullptr)
+                    dvec.push_back(d);
+            } catch (std::out_of_range) {continue;}
         }
         void **dptr;
         PyObject *da = python_voidp_array(dvec.size(), &dptr);
@@ -1359,6 +1358,94 @@ position_restraint_mgr_visible_restraints(void *mgr)
         return 0;
     }
 }
+
+/*******************************************************
+ *
+ * Tuggable_Atoms_Mgr functions
+ *
+ * NOTE: Tuggable_Atoms_Mgr is a simple subclass of
+ *       Position_Restraint_Mgr. The Python Tuggable_Atom(s)
+ *       classes are just re-wrappings of C++ Position_Restraint.
+ *
+ *******************************************************/
+SET_PYTHON_INSTANCE(tuggable_atoms_mgr, Tuggable_Atoms_Mgr)
+GET_PYTHON_INSTANCES(tuggable_atoms_mgr, Tuggable_Atoms_Mgr)
+
+extern "C" EXPORT void*
+tuggable_atoms_mgr_new(void *structure, void *change_tracker)
+{
+    Structure *s = static_cast<Structure *>(structure);
+    isolde::Change_Tracker *ct = static_cast<isolde::Change_Tracker *>(change_tracker);
+    try {
+        Tuggable_Atoms_Mgr *mgr = new Tuggable_Atoms_Mgr(s, ct);
+        return mgr;
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+} //tuggable_atoms_mgr_new
+
+extern "C" EXPORT void
+tuggable_atoms_mgr_delete(void *mgr)
+{
+    Tuggable_Atoms_Mgr *m = static_cast<Tuggable_Atoms_Mgr *>(mgr);
+    try {
+        delete m;
+    } catch (...) {
+        molc_error();
+    }
+} //tuggable_atoms_mgr_delete
+
+extern "C" EXPORT size_t
+tuggable_atoms_mgr_get_restraint(void *mgr, void *atom, npy_bool create, size_t n, pyobject_t *restraint)
+{
+    Tuggable_Atoms_Mgr *m = static_cast<Tuggable_Atoms_Mgr *>(mgr);
+    Atom **a = static_cast<Atom **>(atom);
+    size_t count = 0;
+    try {
+        for (size_t i=0; i<n; ++i) {
+            Position_Restraint *r = m->get_restraint(*a++, create);
+            if (r != nullptr) {
+                *restraint++ = r;
+                count++;
+            }
+        }
+        return count;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT size_t
+tuggable_atoms_mgr_num_restraints(void *mgr)
+{
+    Tuggable_Atoms_Mgr *m = static_cast<Tuggable_Atoms_Mgr *>(mgr);
+    try {
+        return m->num_restraints();
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT PyObject*
+tuggable_atoms_mgr_visible_restraints(void *mgr)
+{
+    Tuggable_Atoms_Mgr *m = static_cast<Tuggable_Atoms_Mgr *>(mgr);
+    try {
+        std::vector<Position_Restraint *> visibles = m->visible_restraints();
+        void **vptr;
+        PyObject *va = python_voidp_array(visibles.size(), &vptr);
+        for (auto v: visibles)
+            *vptr++ = v;
+        return va;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
 
 
 

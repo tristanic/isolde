@@ -351,7 +351,7 @@ def simple_arrow(radius = 0.1, height = 1, nc = 20, color = [255, 0, 0, 255], ca
 
 def simple_arrow_geometry(radius = 0.1, height = 1, nc = 20, caps = True,
                     head_length_fraction = 0.33, head_width_ratio = 1.5,
-                    points_out = True):
+                    points_out = True, centered_on_origin = False):
     '''
     Define a simple 3D arrow made from two cones joined base-to-base.
     If points_out is true the point of the longer, narrower cone will
@@ -394,6 +394,8 @@ def simple_arrow_geometry(radius = 0.1, height = 1, nc = 20, caps = True,
     #~ d.add_drawing(head)
     #~ d.add_drawing(shaft)
     v = numpy.concatenate((hver, sver))
+    if centered_on_origin:
+        v -= [0,0,height/2]
     n = numpy.concatenate((hn, sn))
     t = numpy.concatenate((ht, st+len(hver)))
 
