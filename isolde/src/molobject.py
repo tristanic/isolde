@@ -1626,8 +1626,6 @@ class Position_Restraint(State):
         doc = 'Check whether this restraint is currently visible. Read only.')
     sim_index = c_property('position_restraint_sim_index', int32,
         doc = 'Index of this restraint in a running simulation. Can be set')
-    sim_update_needed = c_property('position_restraint_sim_update_needed', npy_bool,
-        doc = 'True if this restraint is awaiting update in a simulation')
 
 class Distance_Restraint(State):
     def __init__(self, c_pointer):
@@ -1668,8 +1666,6 @@ class Distance_Restraint(State):
             doc = 'Current distance between restrained atoms in Angstroms. Read only.')
     sim_index = c_property('distance_restraint_sim_index', int32,
         doc = 'Index of this restraint in a running simulation. Can be set')
-    sim_update_needed = c_property('distance_restraint_sim_update_needed', npy_bool,
-        doc = 'True if this restraint is awaiting update in a simulation')
 
 class Proper_Dihedral_Restraint(State):
     def __init__(self, c_pointer):
@@ -1717,8 +1713,6 @@ class Proper_Dihedral_Restraint(State):
         doc = 'Get the color of the annotation for this restraint according to the current colormap. Read only.')
     sim_index = c_property('proper_dihedral_restraint_sim_index', int32,
         doc = 'Index of this restraint in a running simulation. Can be set')
-    sim_update_needed = c_property('proper_dihedral_restraint_sim_update_needed', npy_bool,
-        doc = 'True if this restraint is awaiting update in a simulation')
 
 
 # tell the C++ layer about class objects whose Python objects can be instantiated directly

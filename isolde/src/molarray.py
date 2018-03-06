@@ -167,8 +167,6 @@ class Position_Restraints(Collection):
         doc = 'Returns a boolean mask giving the currently visible restraints. Read only.')
     sim_indices = cvec_property('position_restraint_sim_index', int32,
         doc = 'Index of each restraint in a running simulation. Can be set')
-    sim_update_needed = cvec_property('position_restraint_sim_update_needed', npy_bool,
-        doc = 'True for restraints awaiting update in a simulation')
 
 
 class Distance_Restraints(Collection):
@@ -216,8 +214,6 @@ class Distance_Restraints(Collection):
             doc = 'Current distances between restrained atoms in Angstroms. Read only.')
     sim_indices = cvec_property('distance_restraint_sim_index', int32,
         doc = 'Index of each restraint in a running simulation. Can be set')
-    sim_update_needed = cvec_property('distance_restraint_sim_update_needed', npy_bool,
-        doc = 'True for restraints awaiting update in a simulation')
 
 class Proper_Dihedral_Restraints(Collection):
     def __init__(self, c_pointers=None):
@@ -259,5 +255,3 @@ class Proper_Dihedral_Restraints(Collection):
         doc = 'Get the annotation color for each restraint according to the current colormap. Read only.')
     sim_indices = cvec_property('proper_dihedral_restraint_sim_index', int32,
         doc = 'Index of each restraint in a running simulation. Can be set')
-    sim_update_needed = cvec_property('proper_dihedral_restraint_sim_update_needed', npy_bool,
-        doc = 'True for restraints awaiting update in a simulation')
