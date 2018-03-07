@@ -98,7 +98,7 @@ class SimParams(Param_Mgr):
         'remove_c_of_m_motion':                 (defaults.REMOVE_C_OF_M_MOTION, None),
 
         'platform':                             (defaults.OPENMM_PLATFORM, None),
-        'forcefield':                           (amber14, None),
+        'forcefield':                           ('amber14', None),
         'integrator':                           (defaults.OPENMM_INTEGRATOR_TYPE, None),
         'variable_integrator_tolerance':        (defaults.OPENMM_VAR_INTEGRATOR_TOL, None),
         'fixed_integrator_timestep':            (defaults.OPENMM_FIXED_INTEGRATOR_TS, None),

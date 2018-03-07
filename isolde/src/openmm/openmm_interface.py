@@ -179,17 +179,56 @@ class OpenMM_Thread_Handler:
 
     min_thread_period = property(_get_min_thread_period, _set_min_thread_period)
 
+class Sim_Construct:
+    '''
+    Container class defining the ChimeraX atoms (all, mobile and fixed)
+    in a simulation.
+    '''
+    def __init__(self, all_atoms, mobile_atoms, fixed_atoms):
+        self.all_atoms = all_atoms
+        self.mobile_atoms = mobile_atoms
+        self.fixed_atoms = fixed_atoms
 
 class Sim_Handler:
-    def __init__(self):
+    def __init__(self, sim_params, sim_construct, residue_templates,
+        dihedral_restraint_mgr, position_restraint_mgr, distance_restraint_mgr,
+        tuggable_atoms_mgr):
+
+        self._dihedral_restraint_mgr = dihedral_restraint_mgr
+        self._position_restraint_mgr = position_restraint_mgr
+        self._distance_restraint_mgr = distance_restraint_mgr
+        self._tuggable_atoms_mgr = tuggable_atoms_mgr
+
+        self._params = sim_params
+        self._sim_construct = sim_construct
+        self._atoms = sim_construct.all_atoms
         # Forcefield used in this simulation
-        self._forcefield = None
-        # Overall simulation topology
-        self._topology = None
-        # Atoms in simulation topology
-        self._atoms = None
+        from .forcefields import forcefields
+        self._forcefield = self.define_forcefield(forcefields[sim_params.forcefield])
 
         self.all_forces = []
+        self._initialize_all_forces()
+
+
+
+        # Overall simulation topology
+        top, residue_templates = self.create_openmm_topology(atoms, residue_templates)
+        self._topology = top
+
+        system_params = {
+            'nonbondedMethod':      sim_params.nonbonded_cutoff_method,
+            'nonbondedCutoff':      sim_params.nonbonded_cutoff_distance,
+            'constraints':          sim_params.rigid_bonds,
+            'rigidWater':           sim_params.rigid_water,
+            'removeCMMotion':       sim_params.remove_c_of_m_motion,
+            'ignoreExternalBonds':  True,
+            'residueTemplates':     residue_templates,
+        }
+        system = self.create_openmm_system(top, system_params)
+
+
+
+
 
         # List of IsoldeMap objects registered with this simulation
         self._maps = []
@@ -197,6 +236,7 @@ class Sim_Handler:
         self._tugging_force = None
 
         self._force_update_pending = False
+        self._context_reinit_pending = False
 
         trigger_names = (
             'coord update',
@@ -208,12 +248,35 @@ class Sim_Handler:
 
         self._thread_handler = None
 
+        self._paused = False
+        self._sim_running = False
+
+    def _initialize_all_forces(self):
+        '''
+        Just creates the Force objects. Nothing will be added to them yet
+        '''
+        params = self._params
+        if self._params.forcefield == 'amber14':
+            self.initialize_amber_cmap_force()
+        self.initialize_dihedral_restraint_force(params.dihedral_restraint_cutoff_angle)
+        self.initialize_distance_restraints_force(params.restraint_max_force)
+        self.initialize_position_restraints_force(params.restraint_max_force)
+        self.initialize_tugging_force(params.restraint_max_force)
+
+
+    @property
+    def sim_running(self):
+        return self._sim_running
+
     def force_update_needed(self):
-        if not self._force_update_pending:
+        if self._paused:
+            self._update_forces_in_context_if_needed()
+        elif not self._force_update_pending:
             from ..delayed_reaction import delayed_reaction
             delayed_reaction(self.triggers, 'coord update', [], None,
                 self._update_forces_in_context_if_needed, [])
             self._force_update_pending = True
+
 
     def _update_forces_in_context_if_needed(self):
         context = self.context
@@ -223,9 +286,24 @@ class Sim_Handler:
                 f.update_needed = False
         self._force_update_pending = False
 
+    def context_reinit_needed(self):
+        if not self.sim_running:
+            return
+        if self._paused:
+            self._reinitialize_context()
+        elif not self._context_reinit_pending:
+            from ..delayed_reaction import delayed_reaction
+            delayed_reaction(self.triggers, 'coord update', [], None,
+                self._reinitialize_context())
+            self._context_reinit_pending = True
 
+    def _reinitialize_context(self):
+        self._thread_handler.reinitialize_context_and_keep_state()
+        self._context_reinit_pending = False
 
+    ####
     # AMBER-specific CMAP backbone torsion corrections
+    ####
 
     def initialize_amber_cmap_force(self):
         from .custom_forces import AmberCMAPForce
@@ -243,7 +321,6 @@ class Sim_Handler:
         phi_indices = numpy.column_stack([sc.indices(atoms) for atoms in phi_atoms])
         psi_indices = numpy.column_stack([sc.indices(atoms) for atoms in psi_atoms])
         cf.add_torsions(resnames, phi_indices, psi_indices)
-
 
     ####
     # Dihedral restraints
@@ -266,6 +343,7 @@ class Sim_Handler:
         atom_indices = [all_atoms.indices(atoms) for atoms in dihedral_atoms]
         restraints.sim_indices = force.add_torsions(atom_indices,
             restraints.enableds, restraints.spring_constants, restraints.targets, restraints.cutoffs)
+        self.context_reinit_needed()
 
     def add_dihedral_restraint(self, restraint):
         force = self._dihedral_restraint_force
@@ -274,6 +352,7 @@ class Sim_Handler:
         indices = [all_atoms.index(atom) for atom in dihedral_atoms]
         restraint.sim_index = force.add_torsion(*indices,
             (float(restraint.enabled), restraint.spring_constant, restraint.target, cos(restraint.cutoff)))
+        self.context_reinit_needed()
 
         ##
         # During simulation
@@ -310,14 +389,18 @@ class Sim_Handler:
         all_atoms = self._atoms
         dr_atoms = restraints.atoms
         indices = [all_atoms.indices(atoms) for atoms in dr_atoms]
-        restraints.sim_indices = force.add_bonds(indices, restraints.enableds, restraints.spring_constants, restraints.targets/10)
+        restraints.sim_indices = force.add_bonds(indices,
+            restraints.enableds, restraints.spring_constants, restraints.targets/10)
+        self.context_reinit_needed()
 
     def add_dihedral_restraint(self, restraint):
         force = self._distance_restraints_force
         all_atoms = self._atoms
         dr_atoms = restraint.atoms
         indices = [all_atoms.index(atom) for atom in dr_atoms]
-        restraint.sim_index = force.addBond(*indices, (float(restraint.enabled), restraint.spring_constant, restraint.target/10))
+        restraint.sim_index = force.addBond(*indices,
+            (float(restraint.enabled), restraint.spring_constant, restraint.target/10))
+        self.context_reinit_needed()
 
         ##
         # During simulation
@@ -325,12 +408,14 @@ class Sim_Handler:
 
     def update_distance_restraints(self, restraints):
         force = self._distance_restraints_force
-        force.update_targets(restraints.sim_indices, restraints.enableds, restraints.spring_constants, restraints.targets/10)
+        force.update_targets(restraints.sim_indices,
+            restraints.enableds, restraints.spring_constants, restraints.targets/10)
         self.force_update_needed()
 
     def update_distance_restraint(self, restraint):
         force = self._distance_restraints_force
-        force.update_target(restraint.sim_index, restraint.enabled, k=restraint.spring_constant, target=restraint.target/10)
+        force.update_target(restraint.sim_index,
+            restraint.enabled, k=restraint.spring_constant, target=restraint.target/10)
         self.force_update_needed()
 
     ####
@@ -353,6 +438,7 @@ class Sim_Handler:
         indices = all_atoms.indices(restraints.atoms)
         restraints.sim_indices = force.add_particles(indices,
             restraints.enableds, restraints.spring_constants, restraints.targets/10)
+        self.context_reinit_needed()
 
     def add_position_restraint(self, restraint):
         force = self._position_restraints_force
@@ -360,6 +446,7 @@ class Sim_Handler:
         target = (restraint.target/10).tolist()
         restraint.sim_index = force.addParticle(index,
             (restraint.enabled, restraint.spring_constant, *target))
+        self.context_reinit_needed()
 
         ##
         # During simulation
@@ -396,6 +483,7 @@ class Sim_Handler:
         indices = all_atoms.indices(tuggables.atoms)
         tuggables.sim_indices = force.add_particles(indices,
             tuggables.enableds, tuggables.spring_constants, tuggables.targets/10)
+        self.context_reinit_needed()
 
     def add_tuggable(self, tuggable):
         force = self._tugging_force
@@ -403,6 +491,7 @@ class Sim_Handler:
         target = (tuggable.target/10).tolist()
         tuggable.sim_index = force.addParticle(index,
             (float(tuggable.enabled), tuggable.spring_constant, *target))
+        self.context_reinit_needed()
 
         ##
         # During simulation
@@ -419,3 +508,58 @@ class Sim_Handler:
         force.update_targets(tuggables.sim_indices,
             tuggables.enableds, tuggables.spring_constants, tuggables.targets/10)
         self.force_update_needed()
+
+
+    def define_forcefield(self, forcefield_file_list):
+        from simtk.openmm.app import ForceField
+        ff = self.forcefield = ForceField(*[f for f in forcefield_list if f is not None])
+
+    def create_openmm_topology(self, atoms, residue_templates):
+        '''
+        Generate a simulation topology from a set of atoms.
+        @param atoms:
+            A ChimeraX Atoms object. Residues must be complete, and the atoms
+            in each residue should be contiguous in the array.
+        @param residue_templates:
+            A {residue_index: residue_type} dict for residues whose
+            topology is otherwise ambiguous. OpenMM requires a
+            {openmm_residue_object: residue_type} dict, so we need to
+            do the conversion here.
+        '''
+
+        anames   = atoms.names
+        n = len(anames)
+        enames   = atoms.element_names
+        rnames   = atoms.residues.names
+        rnums    = atoms.residues.numbers
+        cids    = atoms.chain_ids
+        bonds = atoms.intra_bonds
+        bond_is = [atoms.indices(alist) for alist in bonds.atoms]
+
+        #template_indices = list(residue_templates.keys())
+        templates_out = {}
+        from simtk.openmm.app import Topology, Element
+        top = self.topology = Topology()
+        cmap = {}
+        rmap = {}
+        atoms = self._atoms = {}
+        rcount = 0
+        for i, (aname, ename, rname, rnum, cid) in enumerate(
+                zip(anames, enames, rnames, rnums, cids)):
+            if not cid in cmap:
+                cmap[cid] = top.addChain()   # OpenMM chains have no name
+            rid = (rname, rnum, cid)
+            if not rid in rmap:
+                res = rmap[rid] = top.addResidue(rname, cmap[cid])
+                if rcount in residue_templates.keys():
+                    templates_out[res] = residue_templates[rcount]
+                rcount += 1
+
+
+            element = Element.getBySymbol(ename)
+            atoms[i] = top.addAtom(aname, element,rmap[rid])
+
+        for i1, i2 in zip(*bond_is):
+            top.addBond(atoms[i1],  atoms[i2])
+
+        return top, templates_out
