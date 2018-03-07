@@ -202,14 +202,16 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         f = c_function('proper_dihedral_mgr_reserve_map', args=(ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointer, n)
 
-    def find_dihedrals(self, model):
+    def create_all_dihedrals(self, residues):
         dihedral_dict = self._dihedral_dict
         amino_acid_resnames = dihedral_dict['aminoacids']
-        r = model.residues
-        self._reserve(len(r))
+        r = residues
+        # self._reserve(len(r))
         aa_residues = r[numpy.in1d(r.names, amino_acid_resnames)]
-        f = c_function('proper_dihedral_mgr_new_dihedral',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
+        f = c_function('proper_dihedral_mgr_get_dihedrals',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                ctypes.c_size_t, ctypes.c_bool),
+            ret=ctypes.py_object)
         self._find_peptide_backbone_dihedrals(dihedral_dict, aa_residues, f)
         self._find_rotameric_dihedrals(dihedral_dict, amino_acid_resnames, aa_residues, f)
 
@@ -217,8 +219,8 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         for key in dihedral_dict['all_protein'].keys():
             k = ctypes.py_object()
             k.value = key
-            f(self._c_pointer, aa_residues._c_pointers, len(aa_residues),
-                ctypes.byref(k))
+            f(self._c_pointer, aa_residues._c_pointers, ctypes.byref(k),
+                len(aa_residues), True)
 
     def _find_rotameric_dihedrals(self, dihedral_dict, amino_acid_resnames, all_aa_residues, f):
         res_dict = dihedral_dict['residues']['protein']
@@ -230,8 +232,8 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
                 key = 'chi'+str(i+1)
                 k = ctypes.py_object()
                 k.value = key
-                f(self._c_pointer, aa_residues._c_pointers, len(aa_residues),
-                    ctypes.byref(k))
+                f(self._c_pointer, aa_residues._c_pointers, ctypes.byref(k),
+                    len(aa_residues), True)
 
     def get_dihedral(self, residue, name, create=True):
         from chimerax.core.atomic import Residues
@@ -262,6 +264,18 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         key = ctypes.py_object()
         key.value = name
         return _proper_dihedrals(f(self._c_pointer, residues._c_pointers, ctypes.byref(key), n, create))
+
+    def get_all_dihedrals(self, residues):
+        '''
+        Returns a :class:`Proper_Dihedrals` containing all dihedrals that have
+        been defined for the given residues. Any standard dihedrals (e.g.
+        phi, psi, omega) will be created.
+        '''
+        self.create_all_dihedrals(residues)
+        f = c_function('proper_dihedral_mgr_get_residue_dihedrals',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
+            ret=ctypes.py_object)
+        return _proper_dihedrals(f(self._c_pointer, residues._c_pointers, len(residues)))
 
     @property
     def num_mapped_dihedrals(self):
@@ -1483,6 +1497,9 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
 
     def add_restraints(self, dihedrals):
         return self._get_restraints(dihedrals, create=True)
+
+    def get_restraints(self, dihedrals):
+        return self._get_restraints(dihedrals)
 
     @property
     def num_restraints(self):

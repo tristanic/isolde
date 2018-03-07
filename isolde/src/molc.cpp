@@ -223,9 +223,9 @@ extern "C" EXPORT PyObject*
 proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *name, size_t n, npy_bool create)
 {
     Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
-    std::vector<Dihedral *> dvec;
+    Residue **r = static_cast<Residue **>(residues);
     try {
-        Residue **r = static_cast<Residue **>(residues);
+        std::vector<Proper_Dihedral *> dvec;
         std::string dname(PyUnicode_AsUTF8(static_cast<PyObject *>(name[0])));
         for (size_t i=0; i<n; ++i) {
             try {
@@ -236,10 +236,32 @@ proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *name, s
         }
         void **dptr;
         PyObject *da = python_voidp_array(dvec.size(), &dptr);
-        size_t i=0;
         for (auto d: dvec) {
-            dptr[i++] = d;
+            *(dptr++) = d;
         }
+        return da;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT PyObject*
+proper_dihedral_mgr_get_residue_dihedrals(void *mgr, void *residues, size_t n)
+{
+    Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+    Residue **r = static_cast<Residue **>(residues);
+    try {
+        std::vector<Proper_Dihedral *> dvec;
+        for (size_t i=0; i<n; ++i) {
+            auto r_dvec = m->get_dihedrals(*r++);
+            for (auto d: r_dvec)
+                dvec.push_back(d);
+        }
+        void **dptr;
+        PyObject *da = python_voidp_array(dvec.size(), &dptr);
+        for (auto d: dvec)
+            *(dptr++) = d;
         return da;
     } catch (...) {
         molc_error();

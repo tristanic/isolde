@@ -180,6 +180,20 @@ DType* Dihedral_Mgr<DType>::get_dihedral(Residue *res, const std::string &name, 
 }
 
 template <class DType>
+std::vector<DType *> Dihedral_Mgr<DType>::get_dihedrals(Residue *res) const
+{
+    std::vector<DType *> dihedrals;
+    auto it1 = _residue_map.find(res);
+    if (it1 != _residue_map.end()) {
+        const auto &dmap = it1->second;
+        for (const auto &it2: dmap) {
+            dihedrals.push_back(it2.second);
+        }
+    }
+    return dihedrals;
+}
+
+template <class DType>
 void Dihedral_Mgr<DType>::delete_dihedrals(const std::set<DType *> &delete_list)
 {
     auto db = DestructionBatcher(this);

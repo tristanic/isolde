@@ -94,6 +94,9 @@ public:
      *  are missing, returns nullptr.
      */
     DType* get_dihedral(Residue *res, const std::string &name, bool create=true);
+
+    //! Get all existing dihedrals belonging to a given residue
+    std::vector<DType *> get_dihedrals(Residue *res) const;
     virtual void destructors_done(const std::set<void*>& destroyed);
 private:
     //! Add an existing dihedral to the manager.
