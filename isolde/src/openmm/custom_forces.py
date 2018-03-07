@@ -67,6 +67,23 @@ class AmberCMAPForce(CMAPTorsionForce):
             self.addMap(m.shape[0], m.flatten())
         self.update_needed = False
 
+    def add_torsions(self, resnames, phi_indices, psi_indices):
+        f = c_function('cmaptorsionforce_add_torsions',
+            args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
+                ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_int32),
+                ctypes.POINTER(ctypes.c_int32)))
+        ml = self._map_loader
+        n = len(resnames)
+        map_indices = numpy.array([ml[name] for name in resnames], int32)
+        phi_i = numpy.empty((n,4), int32)
+        phi_i[:] = phi_indices
+        psi_i = numpy.empty((n,4), int32)
+        psi_i[:] = psi_indices
+        ret = numpy.empty(n, int32)
+        f(int(self.this), n, pointer(map_indices), pointer(phi_i), pointer(psi_i),
+            pointer(ret))
+        return ret
+
     def addTorsion(self, resname, phi_indices, psi_indices):
         map_index = self._map_loader.map_index(resname)
         super().addTorsion(map_index, *phi_indices.tolist(), *psi_indices.tolist())
@@ -233,25 +250,31 @@ class TopOutBondForce(CustomBondForce):
     '''
     Wraps an OpenMM CustomBondForce defined as a standard harmonic potential
     (0.5 * k * (r - r0)^2) with a user-defined fixed maximum cutoff on the
-    applied force. This is meant for steering the simulation into new
-    conformations where the starting distance may be far from the target
+    applied force. The force on any atom can be switched on (off) by setting
+    the 'enabled' parameter to 1 (0). This is meant for steering the simulation
+    into new conformations where the starting distance may be far from the target
     bond length, leading to catastrophically large forces with a standard
     harmonic potential.
+    Effective energy equation:
+
+    E = 0                       | enabled < 0.5
+        max_force *abs(r-r0)    | r - max_force/k > 0
+        0.5 * k * (r - r0)^2    | otherwise
     '''
     def __init__(self, max_force):
         linear_eqn = 'max_force * abs(r-r0)'# - 0.5*max_force^2/k'
         quadratic_eqn = '0.5*k*(r-r0)^2'
         transition_eqn = 'step(r - max_force/k)'
-        zero_k_eqn = 'step(min_k - k)'
+        enabled_eqn = 'step(enabled - 0.5)'
         energy_str = 'select({},0,select({},{},{}))'.format(
-            zero_k_eqn, transition_eqn, linear_eqn, quadratic_eqn)
+            enabled_eqn, transition_eqn, linear_eqn, quadratic_eqn)
         super().__init__(energy_str)
 
+        self.enabled_index = self.addPerBondParameter('enabled')
         self.k_index = self.addPerBondParameter('k')
         self.r0_index = self.addPerBondParameter('r0')
         self.max_force_index = self.addGlobalParameter('max_force', 0)
         self.max_force = max_force
-        self.min_k_index = self.addGlobalParameter('min_k', NEARLY_ZERO)
 
         self.update_needed = False
 
@@ -268,7 +291,7 @@ class TopOutBondForce(CustomBondForce):
         self._max_force = force
         self.update_needed = True
 
-    def add_bonds(self, atom_indices, targets, spring_constants):
+    def add_bonds(self, atom_indices, enableds, spring_constants, targets):
         '''
         Add a set of bonds
         @param atom_indices:
@@ -286,13 +309,14 @@ class TopOutBondForce(CustomBondForce):
         ind = numpy.empty((n,2), int32)
         for i, ai in enumerate(atom_indices):
             ind[i,:] = ai
-        params = numpy.empty((n,2), float64)
-        params[:,0] = spring_constants
-        params[:,1] = targets
+        params = numpy.empty((n,3), float64)
+        params[:,0] = enableds
+        params[:,1] = spring_constants
+        params[:,2] = targets
         ret = numpy.empty(n, int32)
 
 
-    def update_target(self, index, target=None, k = None):
+    def update_target(self, index, enabled=None, k = None, target=None):
         '''
         Update an existing distance restraint with a new target and/or spring
         constant.
@@ -308,7 +332,9 @@ class TopOutBondForce(CustomBondForce):
         '''
         current_params = self.getBondParameters(int(index))
         atom1, atom2 = current_params[0:2]
-        new_k, new_target = current_params[2]
+        new_enabled, new_k, new_target = current_params[2]
+        if enabled is not None:
+            new_enabled = float(enabled)
         if target is not None:
             if type(target) == Quantity:
                 target = target.value_in_unit(OPENMM_LENGTH_UNIT)
@@ -317,10 +343,10 @@ class TopOutBondForce(CustomBondForce):
             if type(k) == Quantity:
                 k = k.value_in_unit(OPENMM_SPRING_UNIT)
             new_k = k
-        self.setBondParameters(int(index), atom1, atom2, (new_k, new_target))
+        self.setBondParameters(int(index), atom1, atom2, (new_enabled, new_k, new_target))
         self.update_needed = True
 
-    def update_targets(self, indices, targets, spring_constants):
+    def update_targets(self, indices, enableds, spring_constants, targets):
         '''
         Update a set of targets all at once using fast C++ code. Fastest if
         the arguments are provided as Numpy arrays, but any iterable will work.
@@ -337,9 +363,10 @@ class TopOutBondForce(CustomBondForce):
         n = len(indices)
         ind = numpy.empty(n, int32)
         ind[:] = indices
-        params = numpy.empty((n,2), float64)
-        params[:,0] = spring_constants
-        params[:,1] = targets
+        params = numpy.empty((n,3), float64)
+        params[:,0] = enableds
+        params[:,1] = spring_constants
+        params[:,2] = targets
         f(int(self.this), n, pointer(ind), pointer(params))
         self.update_needed = True
 
@@ -352,22 +379,27 @@ class TopOutRestraintForce(CustomExternalForce):
     the simulation into new conformations where the starting positions
     may be far from the target positions, leading to catastrophically
     large forces with a standard harmonic potential.
+    Effective energy equation:
+
+    E = 0                      | enabled < 0.5
+        max_force * r          | r - max_force/k > 0
+        0.5 * k * r^2          | otherwise
+
     '''
     def __init__(self, max_force):
         linear_eqn = 'max_force * sqrt((x-x0)^2+(y-y0)^2+(z-z0)^2)'
         quadratic_eqn = '0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2)'
         transition_eqn = 'step(sqrt((x-x0)^2+(y-y0)^2+(z-z0)^2) - max_force/k)'
-        zero_k_eqn = 'step(min_k - k)'
+        enabled_eqn = 'step(enabled - 0.5)'
         energy_str = 'select({},0,select({},{},{}))'.format(
-            zero_k_eqn, transition_eqn, linear_eqn, quadratic_eqn)
+            enabled_eqn, transition_eqn, linear_eqn, quadratic_eqn)
 
         super().__init__(energy_str)
-        per_particle_parameters = ('k','x0','y0','z0')
+        per_particle_parameters = ('enabled','k','x0','y0','z0')
         for p in per_particle_parameters:
             self.addPerParticleParameter(p)
         self.addGlobalParameter('max_force', 0)
         self.max_force = max_force
-        self.addGlobalParameter('min_k', NEARLY_ZERO)
 
         self.update_needed = False
 
@@ -384,7 +416,7 @@ class TopOutRestraintForce(CustomExternalForce):
         self._max_force = force
         self.update_needed = True
 
-    def add_particles(self, indices, targets, spring_constants):
+    def add_particles(self, indices, enableds, spring_constants, targets):
         f = c_function('customexternalforce_add_particles',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
                 ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
@@ -392,16 +424,19 @@ class TopOutRestraintForce(CustomExternalForce):
         ind = numpy.empty(n, int32)
         ind[:] = indices
         ret = numpy.empty(n, int32)
-        params = numpy.empty((n,4), float64)
-        params[:,0] = spring_constants
-        params[:,1:] = targets
+        params = numpy.empty((n,5), float64)
+        params[:,0] = enableds
+        params[:,1] = spring_constants
+        params[:,2:] = targets
         f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
         return ret
 
-    def update_target(self, index, target=None, k = None):
+    def update_target(self, index, enabled=None, k=None, target=None):
         current_params = self.getParticleParameters(int(index))
         atom_index = current_params[0]
-        new_k, new_x, new_y, new_z = current_params[1]
+        new_enabled, new_k, new_x, new_y, new_z = current_params[1]
+        if enabled is not None:
+            new_enabled = float(enabled)
         if target is not None:
             if type(target) == Quantity:
                 target = target.value_in_unit(OPENMM_LENGTH_UNIT)
@@ -410,10 +445,10 @@ class TopOutRestraintForce(CustomExternalForce):
             if type(k) == Quantity:
                 k = k.value_in_unit(OPENMM_SPRING_UNIT)
             new_k = k
-        self.setParticleParameters(int(index), atom_index, (new_k, new_x, new_y, new_z))
+        self.setParticleParameters(int(index), atom_index, (new_enabled, new_k, new_x, new_y, new_z))
         self.update_needed = True
 
-    def update_targets(self, indices, targets, spring_constants):
+    def update_targets(self, indices, enableds, spring_constants, targets):
         f = c_function('customexternalforce_update_particle_parameters',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
                 ctypes.POINTER(ctypes.c_double)))
@@ -422,14 +457,15 @@ class TopOutRestraintForce(CustomExternalForce):
             raise TypeError('Parameter array lengths must match number of indices!')
         ind = numpy.empty(n, int32)
         ind[:] = indices
-        params = numpy.empty((n,4), float64)
-        params[:,0] = spring_constants
-        params[:,1:] = targets
+        params = numpy.empty((n,5), float64)
+        params[:,0] = enableds
+        params[:,1] = spring_constants
+        params[:,2:] = targets
         f(int(self.this), n, pointer(ind), pointer(params))
         self.update_needed = True
 
     def release_restraint(self, index):
-        self.setParticleParameters(index, (0,0,0,0))
+        self.update_target(index, enabled=False)
 
 
 class FlatBottomTorsionRestraintForce(CustomTorsionForce):
@@ -438,31 +474,40 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
     allowing free movement within a range (target +/- cutoff). Within
     the cutoff range the potential is constant, while outside it
     is defined as -k * cos (theta-theta0).
+    Effective energy function:
+
+    E = 0                    | enabled < 0.5
+        -k*cos(cutoff)       | cos(theta-theta0) - cos(cutoff) < 0
+        -k*cos(theta-theta0) | otherwise
     '''
     def __init__(self):
         standard_energy = '-k*cos(theta-theta0)'
         flat_energy = '-k*cos_cutoff'
         switch_function = 'step(cos(theta-theta0)-cos_cutoff)'
-        complete_function = 'select({},{},{})'.format(
-            switch_function, flat_energy, standard_energy)
+        enabled_function = 'step(enabled-0.5)'
+        complete_function = 'select({},0,select({},{},{}))'.format(
+            enabled_function, switch_function, flat_energy, standard_energy)
         super().__init__(complete_function)
-        per_bond_parameters = ('k', 'theta0', 'cos_cutoff')
+        per_bond_parameters = ('enabled', 'k', 'theta0', 'cos_cutoff')
         for p in per_bond_parameters:
             self.addPerTorsionParameter(p)
 
         self.update_needed = False
 
-    def add_torsions(self, atom_indices, targets, spring_constants, cutoffs):
+    def add_torsions(self, atom_indices, enableds, spring_constants, targets, cutoffs):
         '''
         Add a set of torsion restraints. Returns an array of ints representing
         the indices of the restraints in the force object.
         @param atom_indices:
             A 4-tuple of arrays providing the indices of the dihedral atoms in
             the simulation construct
-        @param targets:
-            Target angles in radians
+        @param enableds:
+            A boolean array (or any array castable to float) where values > 0.5
+            represent enabled
         @param spring_constants:
             Restraint spring constants in kJ mol-1 rad-2
+        @param targets:
+            Target angles in radians
         @param cutoffs:
             Cutoff angle (below which no restraint is applied) for each restraint
             in radians.
@@ -474,16 +519,17 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
         ind = numpy.empty((n,4), numpy.int32)
         for i, ai in enumerate(atom_indices):
             ind[:,i] = ai
-        params = numpy.empty((n,3), float64)
-        params[:,0] = spring_constants
-        params[:,1] = targets
-        params[:,2] = numpy.cos(cutoffs)
+        params = numpy.empty((n,4), float64)
+        params[:,0] = enableds
+        params[:,1] = spring_constants
+        params[:,2] = targets
+        params[:,3] = numpy.cos(cutoffs)
         ret = numpy.empty(n, numpy.int32)
         f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
         return ret
 
 
-    def update_target(self, index, target = None, k = None, cutoff = None):
+    def update_target(self, index, enabled=None, k = None, target = None, cutoff = None):
         '''
         Change the target, spring constant and/or cutoff angle for the given torsion.
         '''
@@ -491,7 +537,9 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
         index = int(index)
         current_params = self.getTorsionParameters(index)
         indices = current_params[0:4]
-        new_k, new_theta0, new_cutoff = current_params[4]
+        new_enabled, new_k, new_theta0, new_cutoff = current_params[4]
+        if enabled is not None:
+            new_enabled = float(enabled)
         if target is not None:
             if type(target) == Quantity:
                 target = target.value_in_unit(OPENMM_ANGLE_UNIT)
@@ -504,19 +552,21 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
             if type(cutoff) == Quantity:
                 cutoff = cutoff.value_in_unit(OPENMM_ANGLE_UNIT)
             new_cutoff = cos(cutoff)
-        self.setTorsionParameters(index, *indices, (new_k, new_theta0, new_cutoff))
+        self.setTorsionParameters(index, *indices, (new_enabled, new_k, new_theta0, new_cutoff))
         self.update_needed = True
 
-    def update_targets(self, indices, targets, spring_constants, cutoffs):
+    def update_targets(self, indices, enableds, spring_constants, targets, cutoffs):
         '''
         Change the target angles, spring constants and cutoff angles for a set
         of dihedral restraints.
         @param indices:
             the indices for each restraint in the force object
-        @param targets:
-            the target angles in radians
+        @param enableds:
+            a boolean, int or float array where values >0.5 represent enabled
         @param spring_constants:
             the spring constants for the restraints in kJ mol-1 rad-2
+        @param targets:
+            the target angles in radians
         @param cutoffs:
             the cutoff angles (below which no force is applied) in radians
         '''
@@ -526,32 +576,14 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
         n = len(indices)
         ind = numpy.empty(n, int32)
         ind[:] = indices
-        params = numpy.empty((n,3), float64)
-        params[:,0] = spring_constants
-        params[:,1] = targets
-        params[:,2] = numpy.cos(cutoffs)
+        params = numpy.empty((n,4), float64)
+        params[:,0] = enableds
+        params[:,1] = spring_constants
+        params[:,2] = targets
+        params[:,3] = numpy.cos(cutoffs)
         f(int(self.this), n, pointer(ind), pointer(params))
         self.update_needed = True
 
-
-
-    def set_cutoff_angle(self, i, angle):
-        '''
-        Set the cut-off angle (below which no force will be applied) in
-        radians for one dihedral.
-        '''
-        if type(angle) == Quantity:
-            angle = angle.value_in_unit(OPENMM_ANGLE_UNIT)
-        p1, p2, p3, p4, current_params = self.getTorsionParameters(i)
-        current_params[2] = angle
-        self.setTorsionParameters(i, p1, p2, p3, p4, current_params)
-        self.update_needed = True
-
-    def get_cutoff_angle(self, i):
-        '''
-        Get the cut-off angle in radians for one dihedral.
-        '''
-        return self.getBondParameters(i)[5][2]*OPENMM_ANGLE_UNIT
 
 class TorsionNCSForce(CustomCompoundBondForce):
     '''

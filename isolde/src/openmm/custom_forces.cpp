@@ -13,6 +13,22 @@ extern "C"
 {
 
 EXPORT void
+cmaptorsionforce_add_torsions(void *force, size_t n, int *map_indices, int *d1_indices, int *d2_indices, int *force_indices)
+{
+    OpenMM::CMAPTorsionForce *f = static_cast<OpenMM::CMAPTorsionForce *>(force);
+    try {
+        int *d1 = d1_indices, *d2 = d2_indices;
+        for (size_t i=0; i<n; ++i) {
+            *(force_indices++) = f->addTorsion(*(map_indices++), d1[0], d1[1], d1[2], d1[3], d2[0], d2[1], d2[2], d2[3]);
+            d1 += 4; d2 += 4;
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
+EXPORT void
 customcompoundbondforce_add_bonds(void *force, size_t n, int *p_indices, double *params, int *f_indices)
 {
     OpenMM::CustomCompoundBondForce *f = static_cast<OpenMM::CustomCompoundBondForce *>(force);

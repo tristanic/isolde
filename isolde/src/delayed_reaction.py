@@ -4,7 +4,9 @@ def delayed_reaction(triggerset, trigger_name, initiator_func, initiator_args, r
     '''
     Designed to work together with threaded (Python or C++) objects, to
     start a long-running threaded task and then automatically apply the
-    result (in a later GUI update) when done.
+    result (in a later GUI update) when done. Can also be used to simply
+    conveniently call the desired callback once on the next firing of the
+    trigger, by setting ready_test_func to None.
     Args:
         triggerset: the triggerset providing the trigger (e.g. session.triggers)
         trigger_name: the name of the trigger (e.g. 'new frame')
@@ -12,7 +14,8 @@ def delayed_reaction(triggerset, trigger_name, initiator_func, initiator_args, r
             process. Should not return anything.
         initiator_args: A tuple of arguments to be applied to initiator_func
         ready_test_func: Should return True when the threaded task is done,
-            false otherwise
+            false otherwise. Set it to None to just run on the next firing
+            of the trigger.
         final_func: Task to run once the thread is done.
         final_func_args: A tuple of arguments to be applied to final_func
             (e.g. to tell it what to do with the result)
@@ -25,7 +28,7 @@ def delayed_reaction(triggerset, trigger_name, initiator_func, initiator_args, r
             self.ff_args = final_func_args
             self.handler = triggerset.add_handler(trigger_name, self.callback)
         def callback(self, *_):
-            if self.tf():
+            if self.tf is None or self.tf():
                 self.ff(*self.ff_args)
                 from chimerax.core.triggerset import DEREGISTER
                 return DEREGISTER

@@ -177,16 +177,6 @@ class Sim_Handler:
 
         self.all_forces = []
 
-        # Dict holding each custom external force object, its global and its
-        # per-particle parameters. Format:
-        # {'name': [object,
-        #           {'global_name': value},
-        #           [per_particle_names],
-        #           [per_particle_default_values],
-        #           {index_in_topology: index_in_force}
-        # }
-        self._custom_external_forces = {}
-
         # List of IsoldeMap objects registered with this simulation
         self._maps = []
         # CustomExternalForce handling mouse and haptic interactions
@@ -207,8 +197,9 @@ class Sim_Handler:
     def force_update_needed(self):
         if not self._force_update_pending:
             from ..delayed_reaction import delayed_reaction
-            delayed_reaction(self.triggers, 'coord update', [], self._thread_handler.thread_finished,
+            delayed_reaction(self.triggers, 'coord update', [], None,
                 self._update_forces_in_context_if_needed, [])
+            self._force_update_pending = True
 
     def _update_forces_in_context_if_needed(self):
         context = self.context
@@ -216,6 +207,7 @@ class Sim_Handler:
             if f.update_needed:
                 f.updateParametersInContext(context)
                 f.update_needed = False
+        self._force_update_pending = False
 
 
 
@@ -236,8 +228,7 @@ class Sim_Handler:
         psi_atoms = valid_ramas.psi_dihedrals.atoms
         phi_indices = numpy.column_stack([sc.indices(atoms) for atoms in phi_atoms])
         psi_indices = numpy.column_stack([sc.indices(atoms) for atoms in psi_atoms])
-        for resname, pi, fi in zip(resnames, phi_indices, psi_indices):
-            cf.addTorsion(resname, pi, fi)
+        cf.add_torsions(resnames, phi_indices, psi_indices)
 
 
     ####
@@ -255,15 +246,12 @@ class Sim_Handler:
         self.all_forces.append(df)
 
     def add_dihedral_restraints(self, restraints):
-        '''
-        Add a set of dihedral restraints to the simulation
-        '''
         force = self._dihedral_restraint_force
         all_atoms = self._atoms
         dihedral_atoms = restraints.dihedrals.atoms
         atom_indices = [all_atoms.indices(atoms) for atoms in dihedral_atoms]
         restraints.sim_indices = force.add_torsions(atom_indices,
-            restraints.targets, restraints.spring_constants, restraints.cutoffs)
+            restraints.enableds, restraints.spring_constants, restraints.targets, restraints.cutoffs)
 
     def add_dihedral_restraint(self, restraint):
         force = self._dihedral_restraint_force
@@ -271,28 +259,24 @@ class Sim_Handler:
         dihedral_atoms = restraint.dihedral.atoms
         indices = [all_atoms.index(atom) for atom in dihedral_atoms]
         restraint.sim_index = force.add_torsion(*indices,
-            (restraint.target, restraint.spring_constant, cos(restraint.cutoff)))
+            (float(restraint.enabled), restraint.spring_constant, restraint.target, cos(restraint.cutoff)))
 
         ##
         # During simulation
         ##
 
-    def update_dihedral_restraints_in_context(self, context):
-        rf = self._dihedral_restraint_force
-        if rf.update_needed:
-            rf.updateParametersInContext(context)
-        rf.update_needed = False
-
     def update_dihedral_restraints(self, restraints):
         force = self._dihedral_restraint_force
-        force.update_targets(restraints.sim_indices, restraints.targets,
-            restraints.spring_constants, restraints.cutoffs)
+        force.update_targets(restraints.sim_indices,
+            restraints.enableds, restraints.spring_constants, restraints.targets, restraints.cutoffs)
+        self.force_update_needed()
 
     def update_dihedral_restraint(self, restraint):
         force = self._dihedral_restraint_force
-        force.update_target(restraint.sim_index, target=restraint.target,
-            k=restraint.spring_constant, cutoff=restraint.cutoff)
-
+        force.update_target(restraint.sim_index,
+            enabled=restraint.enabled, k=restraint.spring_constant,
+            target=restraint.target, cutoff=restraint.cutoff)
+        self.force_update_needed()
     ####
     # Distance Restraints
     ####
@@ -308,21 +292,18 @@ class Sim_Handler:
         return tf
 
     def add_distance_restraints(self, restraints):
-        '''
-        Add a set of distance restraints to the simulation
-        '''
         force = self._distance_restraints_force
         all_atoms = self._atoms
         dr_atoms = restraints.atoms
         indices = [all_atoms.indices(atoms) for atoms in dr_atoms]
-        restraints.sim_indices = force.add_bonds(indices, restraints.targets/10, restraints.spring_constants)
+        restraints.sim_indices = force.add_bonds(indices, restraints.enableds, restraints.spring_constants, restraints.targets/10)
 
     def add_dihedral_restraint(self, restraint):
         force = self._distance_restraints_force
         all_atoms = self._atoms
         dr_atoms = restraint.atoms
         indices = [all_atoms.index(atom) for atom in dr_atoms]
-        restraint.sim_index = force.addBond(*indices, (restraint.spring_constant, restraint.target/10))
+        restraint.sim_index = force.addBond(*indices, (float(restraint.enabled), restraint.spring_constant, restraint.target/10))
 
         ##
         # During simulation
@@ -330,11 +311,13 @@ class Sim_Handler:
 
     def update_distance_restraints(self, restraints):
         force = self._distance_restraints_force
-        force.update_targets(restraints.sim_indices, restraints.targets/10, restraints.spring_constants)
+        force.update_targets(restraints.sim_indices, restraints.enableds, restraints.spring_constants, restraints.targets/10)
+        self.force_update_needed()
 
     def update_distance_restraint(self, restraint):
         force = self._distance_restraints_force
-        force.update_target(restraint.sim_index, target=restraint.target/10, k=restraint.spring_constant)
+        force.update_target(restraint.sim_index, restraint.enabled, k=restraint.spring_constant, target=restraint.target/10)
+        self.force_update_needed()
 
     ####
     # Positional Restraints
@@ -354,13 +337,15 @@ class Sim_Handler:
         force = self._position_restraints_force
         all_atoms = self._atoms
         indices = all_atoms.indices(restraints.atoms)
-        restraints.sim_indices = force.add_particles(indices, restraints.targets/10, restraints.spring_constants)
+        restraints.sim_indices = force.add_particles(indices,
+            restraints.enableds, restraints.spring_constants, restraints.targets/10)
 
     def add_position_restraint(self, restraint):
         force = self._position_restraints_force
         index = self._all_atoms.index(restraint.atom)
         target = (restraint.target/10).tolist()
-        restraint.sim_index = force.addParticle(index, (restraint.spring_constant, *target))
+        restraint.sim_index = force.addParticle(index,
+            (restraint.enabled, restraint.spring_constant, *target))
 
         ##
         # During simulation
@@ -368,12 +353,16 @@ class Sim_Handler:
 
     def update_position_restraints(self, restraints):
         force = self._position_restraints_force
-        force.update_targets(restraints.indices, restraints.targets/10, restraints.spring_constants)
+        force.update_targets(restraints.sim_indices,
+            restraints.enableds, restraints.spring_constants, restraints.targets/10)
+        self.force_update_needed()
 
     def update_position_restraint(self, restraint):
         force = self._position_restraint_force
-        force.update_target(restraint.index, restraint.target/10, restraint.spring_constant)
-    
+        force.update_target(restraint.sim_index,
+            restraint.enabled, restraint.spring_constant, restraint.target/10)
+        self.force_update_needed()
+
     ####
     # Tugging force
     ####
@@ -387,20 +376,32 @@ class Sim_Handler:
         f = self._tugging_force = TopOutRestraintForce(max_force)
         self.all_forces.append(f)
 
-    def couple_atoms_to_tugging_force(self, indices, force_map):
+    def add_tuggables(self, tuggables):
         force = self._tugging_force
-        for i, index in enumerate(indices):
-            force_map[i] = force.addParticle(int(index), (0,0,0,0))
+        all_atoms = self._atoms
+        indices = all_atoms.indices(tuggables.atoms)
+        tuggables.sim_indices = force.add_particles(indices,
+            tuggables.enableds, tuggables.spring_constants, tuggables.targets/10)
+
+    def add_tuggable(self, tuggable):
+        force = self._tugging_force
+        index = self._all_atoms.index(tuggable.atom)
+        target = (tuggable.target/10).tolist()
+        tuggable.sim_index = force.addParticle(index,
+            (float(tuggable.enabled), tuggable.spring_constant, *target))
 
         ##
         # During simulation
         ##
 
-    def tug_atom(self, force_index, target, k):
-        tf = self._tugging_force
-        tf.update_target(force_index, target, k)
+    def update_tuggable(self, tuggable):
+        force = self._tugging_force
+        force.update_target(tuggable.sim_index,
+            tuggable.enabled, tuggable.spring_constant, tuggable.target/10)
+        self.force_update_needed()
 
-    def tug_atoms(self, force_indices, targets, ks):
-        tf = self._tugging_force
-        for i, t, k in zip(force_indices, targets, ks):
-            tf.update_target(i, t, k)
+    def update_tuggables(self, tuggables):
+        force = self._tugging_force
+        force.update_targets(tuggables.sim_indices,
+            tuggables.enableds, tuggables.spring_constants, tuggables.targets/10)
+        self.force_update_needed()
