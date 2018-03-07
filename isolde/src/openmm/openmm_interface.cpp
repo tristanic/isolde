@@ -82,6 +82,25 @@ void OpenMM_Thread_Handler::_minimize_threaded()
     }
 }
 
+void OpenMM_Thread_Handler::_reinitialize_context_threaded()
+{
+    try
+    {
+        _thread_except = nullptr;
+        _thread_running = true;
+        _thread_finished = false;
+        OpenMM::State current_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
+        _context->reinitialize();
+        _context->setPositions(current_state.getPositions());
+        _context->setVelocities(current_state.getVelocities());
+        _thread_finished = true;
+    } catch (...)
+    {
+        _thread_except = std::current_exception();
+        _thread_finished = true;
+    }
+}
+
 std::vector<size_t> OpenMM_Thread_Handler::overly_fast_atoms(const std::vector<OpenMM::Vec3>& velocities)
 {
     std::vector<size_t> fast_indices;
@@ -318,6 +337,29 @@ set_openmm_thread_handler_min_thread_period(void *handler, double time_ms)
         molc_error();
     }
 }
+
+extern "C" EXPORT void
+openmm_thread_handler_reinitialize_context_and_keep_state(void *handler)
+{
+    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
+    try {
+        h->reinitialize_context_and_keep_state();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+openmm_thread_handler_reinitialize_context_and_keep_state_threaded(void *handler)
+{
+    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
+    try {
+        h->reinitialize_context_threaded();
+    } catch (...) {
+        molc_error();
+    }
+}
+
 
 // extern "C" EXPORT void
 // openmm_thread_handler_initial_positions(void *handler, size_t n, double *coords)

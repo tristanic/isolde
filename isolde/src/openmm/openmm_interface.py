@@ -92,6 +92,20 @@ class OpenMM_Thread_Handler:
         i = c.getIntegrator()
         c.setVelocitiesToTemperature(i.getTemperature())
 
+    def reinitialize_context_and_keep_state(self, threaded=True):
+        '''
+        Reinitialize the Context, keeping the current positions and velocities.
+        A reinitialization is typically only required when the number of
+        bonds/particles in a Force object changes.
+        '''
+        if threaded:
+            func_name = 'openmm_thread_handler_reinitialize_context_and_keep_state_threaded'
+        else:
+            func_name = 'openmm_thread_handler_reinitialize_context_and_keep_state'
+        f = c_function(func_name,
+            args=(ctypes.c_void_p,))
+        f(self._c_pointer)
+
     @property
     def natoms(self):
         f = c_function('openmm_thread_handler_num_atoms',

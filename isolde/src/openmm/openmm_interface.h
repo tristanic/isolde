@@ -38,7 +38,8 @@ public:
      */
     void step_threaded(size_t steps)
     {
-        _thread_safety_check();
+        //_thread_safety_check();
+        finalize_thread();
         if (_unstable)
             throw std::logic_error("The last round had atoms moving dangerously fast. Fix the issues and minimise first.");
         _thread = std::thread(&OpenMM_Thread_Handler::_step_threaded, this, steps);
@@ -54,10 +55,27 @@ public:
         return _min_time_per_loop.count();
     }
 
+    void reinitialize_context_threaded()
+    {
+        //_thread_safety_check();
+        finalize_thread();
+        _thread = std::thread(&OpenMM_Thread_Handler::_reinitialize_context_threaded, this);
+    }
+
+    void reinitialize_context_and_keep_state()
+    {
+        finalize_thread();
+        OpenMM::State current_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
+        _context->reinitialize();
+        _context->setPositions(current_state.getPositions());
+        _context->setVelocities(current_state.getVelocities());
+    }
+
 
     void minimize_threaded()
     {
-        _thread_safety_check();
+        //_thread_safety_check();
+        finalize_thread();
         _thread = std::thread(&OpenMM_Thread_Handler::_minimize_threaded, this);
     }
 
@@ -120,6 +138,7 @@ private:
 
     void _step_threaded(size_t steps);
     void _minimize_threaded();
+    void _reinitialize_context_threaded();
 };
 
 } //namespace isolde
