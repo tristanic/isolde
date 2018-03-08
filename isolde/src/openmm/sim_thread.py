@@ -25,7 +25,7 @@ SIM_MODE_MIN                = control.SIM_MODE_MIN
 SIM_MODE_EQUIL              = control.SIM_MODE_EQUIL
 SIM_MODE_UNSTABLE           = control.SIM_MODE_UNSTABLE
 
-PAUSE_SLEEP = defaults.THREAD_PAUSE_SLEEP_INTERVAL 
+PAUSE_SLEEP = defaults.THREAD_PAUSE_SLEEP_INTERVAL
 
 
 class ChangeTracker(ChangeTracker_Base):
@@ -302,7 +302,7 @@ class SimThread:
         # Update coordinates from the last round AFTER checking to see
         # if the master thread has changed any.
         if not self.pause:
-            comms.thread_safe_set_array_values('coords', 
+            comms.thread_safe_set_array_values('coords',
                 self.current_coords.value_in_unit(CHIMERAX_LENGTH_UNIT))
             ct.register_change(ct.COORDS_READY)
 

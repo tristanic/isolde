@@ -266,7 +266,7 @@ class TopOutBondForce(CustomBondForce):
         quadratic_eqn = '0.5*k*(r-r0)^2'
         transition_eqn = 'step(r - max_force/k)'
         enabled_eqn = 'step(enabled - 0.5)'
-        energy_str = 'select({},0,select({},{},{}))'.format(
+        energy_str = 'select({},select({},{},{}),0)'.format(
             enabled_eqn, transition_eqn, linear_eqn, quadratic_eqn)
         super().__init__(energy_str)
 
@@ -308,12 +308,14 @@ class TopOutBondForce(CustomBondForce):
         n = len(targets)
         ind = numpy.empty((n,2), int32)
         for i, ai in enumerate(atom_indices):
-            ind[i,:] = ai
+            ind[:,i] = ai
         params = numpy.empty((n,3), float64)
         params[:,0] = enableds
         params[:,1] = spring_constants
         params[:,2] = targets
         ret = numpy.empty(n, int32)
+        f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
+        return ret
 
 
     def update_target(self, index, enabled=None, k = None, target=None):
@@ -391,7 +393,7 @@ class TopOutRestraintForce(CustomExternalForce):
         quadratic_eqn = '0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2)'
         transition_eqn = 'step(sqrt((x-x0)^2+(y-y0)^2+(z-z0)^2) - max_force/k)'
         enabled_eqn = 'step(enabled - 0.5)'
-        energy_str = 'select({},0,select({},{},{}))'.format(
+        energy_str = 'select({},select({},{},{}),0)'.format(
             enabled_eqn, transition_eqn, linear_eqn, quadratic_eqn)
 
         super().__init__(energy_str)
@@ -485,7 +487,7 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
         flat_energy = '-k*cos_cutoff'
         switch_function = 'step(cos(theta-theta0)-cos_cutoff)'
         enabled_function = 'step(enabled-0.5)'
-        complete_function = 'select({},0,select({},{},{}))'.format(
+        complete_function = 'select({},select({},{},{}),0)'.format(
             enabled_function, switch_function, flat_energy, standard_energy)
         super().__init__(complete_function)
         per_bond_parameters = ('enabled', 'k', 'theta0', 'cos_cutoff')
@@ -689,6 +691,8 @@ class GBSAForce(customgbforces.GBSAGBn2Force):
                          SA=SA,
                          cutoff=cutoff,
                          kappa=kappa)
+
+        self.setCutoffDistance(cutoff)
 
         self.setNonbondedMethod(nonbonded_method)
         self.update_needed = False

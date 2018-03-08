@@ -44,7 +44,7 @@ class _Defaults:
         'OPENMM_PLATFORM':            'OpenCL', # 'CPU', 'OpenCL' or 'CUDA'
         'OPENMM_INTEGRATOR_TYPE':     openmm.VariableLangevinIntegrator,
         'OPENMM_NONBONDED_METHOD':    app.CutoffNonPeriodic,
-        'OPENMM_NONBONDED_CUTOFF':    1.0, #* unit.nanometers,
+        'OPENMM_NONBONDED_CUTOFF':    2.0, #* unit.nanometers,
         'OPENMM_FRICTION':            5.0, #/ unit.picoseconds,
         'OPENMM_VAR_INTEGRATOR_TOL':  1e-4,
         'OPENMM_CONSTRAINT_TOL':      1e-4,
@@ -59,7 +59,7 @@ class _Defaults:
         'GBSA_SOLVENT_DIELECTRIC':    78.5, # * unit.debye,
         'GBSA_SOLUTE_DIELECTRIC':     1.0, # * unit.debye,
         'GBSA_SA_METHOD':             'ACE', # alternative is None
-        'GBSA_CUTOFF':                1.0, # *unit.nanometer,
+        'GBSA_CUTOFF':                2.0, # *unit.nanometer, TODO: Remove (must be same as OPENMM_NONBONDED_CUTOFF anyway)
         'GBSA_KAPPA':                 3.0, # /unit.nanometer,
         'VACUUM_DIELECTRIC_CORR':     150, # *unit.debye,
         'RIGID_BONDS':                app.HBonds,

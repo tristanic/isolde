@@ -45,7 +45,7 @@ class TestSimulation:
         c.setPositions(0.1*self.atoms.coords)
         c.setVelocitiesToTemperature(self._temperature)
         from ..openmm import openmm_interface
-        self._sim_thread_handler = openmm_interface.OpenMM_Thread_Handler(s.context)
+        self._sim_thread_handler = openmm_interface.OpenMM_Thread_Handler(c)
 
     def start_sim(self):
         if self._sim_running:
