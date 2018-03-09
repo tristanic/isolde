@@ -82,10 +82,10 @@ Rota_Mgr::~Rota_Mgr()
         delete it.second;
 }
 
-void Rota_Mgr::add_rotamer_def(const std::string &resname, size_t n_chi, bool symmetric)
+void Rota_Mgr::add_rotamer_def(const std::string &resname, size_t n_chi, size_t val_nchi, bool symmetric)
 {
     if (_resname_to_rota_def.find(resname) == _resname_to_rota_def.end()) {
-        Rota_Def rdef(n_chi, symmetric);
+        Rota_Def rdef(n_chi, val_nchi, symmetric);
         _resname_to_rota_def[resname] = rdef;
     } else {
         throw std::runtime_error("Rotamer definition alread exists!");
@@ -168,16 +168,29 @@ void Rota_Mgr::validate(Rotamer** rotamers, size_t n, double* scores)
     for (auto &it: case_indices) {
         std::string name = std::string(it.first);
         auto &indices = it.second;
-        size_t n_chi = get_rotamer_def(name)->n_chi;
+
+        // This is ever-so-slightly dodgy, but it saves code and it works.
+        // The problem is that Proline is a special case: while it has three
+        // chi dihedrals, only the first is actually used for validation
+        // (since the other two are tightly constrained due to the cyclic
+        // sidechain). Rather than introduce a whole lot of extra code for this
+        // one special case, we'll get all the chi angles, but overwrite the
+        // extras.
+        auto rdef = get_rotamer_def(name);
+        size_t n_chi = rdef->n_chi;
+        size_t val_nchi = rdef->val_nchi;
         size_t n_rot = indices.size();
         size_t n_angles = n_rot*n_chi;
+
         std::vector<double> chi_angles(n_angles);
         for (size_t i=0; i<n_rot; i++) {
-            rotamers[indices[i]]->angles(chi_angles.data()+i*n_chi);
+            rotamers[indices[i]]->angles(chi_angles.data()+i*val_nchi);
         }
+
         auto &interpolator = _interpolators.at(name);
         std::vector<double> cur_scores(n_rot);
         interpolator.interpolate(chi_angles.data(), n_rot, cur_scores.data());
+
         for (size_t i=0; i<n_rot; ++i) {
             scores[indices[i]] = cur_scores[i];
         }

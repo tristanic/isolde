@@ -24,9 +24,10 @@ class Rota_Mgr;
 struct Rota_Def
 {
     size_t n_chi;
+    size_t val_nchi;
     bool symmetric;
     Rota_Def() {}
-    Rota_Def(size_t n, bool sym): n_chi(n), symmetric(sym) {}
+    Rota_Def(size_t n, size_t v, bool sym): n_chi(n), val_nchi(v), symmetric(sym) {}
 };
 
 
@@ -84,7 +85,7 @@ public:
     void set_colors(uint8_t *max, uint8_t *mid, uint8_t *min);
     colors::colormap *get_colors() {return &_colors;}
 
-    void add_rotamer_def(const std::string &resname, size_t n_chi, bool symmetric);
+    void add_rotamer_def(const std::string &resname, size_t n_chi, size_t val_nchi, bool symmetric);
     Rota_Def* get_rotamer_def(const std::string &resname);
     Rota_Def* get_rotamer_def(const ResName &resname);
     Rotamer* new_rotamer(Residue* residue);

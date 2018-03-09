@@ -11,130 +11,151 @@
         "protein": {    
             "GLY": {
                 "nchi":     0,
+                "val_nchi": 0,
                 "symm":     0
             },
             "ALA": {
                 "nchi":     0,
+                "val_nchi": 0,
                 "symm":     0
             },
             "VAL": {
                 "nchi":     1,
+                "val_nchi": 1,
                 "symm":     0,
                 "chi1":     ["N","CA","CB","CG1"]
             },
             "SER": {
                 "nchi":     1,
+                "val_nchi": 1,
                 "symm":     0,
                 "chi1":     ["N","CA","CB","OG"]
             },
             "THR": {
                 "nchi":     1,
+                "val_nchi": 1,
                 "symm":     0,
                 "chi1":     ["N","CA","CB","OG1"]
             },
             "CYS": {
                 "nchi":     1,
+                "val_nchi": 1,
                 "symm":     0,
                 "chi1":     ["N","CA","CB","SG"]
             },
             "ASP": {
                 "nchi":     2,
+                "val_nchi": 2,
                 "symm":     1,
                 "chi1":     ["N","CA","CB","CG"],
                 "chi2":     ["CA","CB","CG","OD1"]
             },
             "ASN": {
-                "nchi":      2,
-                "symm":      0,
-                "chi1":      ["N","CA","CB","CG"],
-                "chi2":      ["CA","CB","CG","OD1"]
+                "nchi":     2,
+                "val_nchi": 2,
+                "symm":     0,
+                "chi1":     ["N","CA","CB","CG"],
+                "chi2":     ["CA","CB","CG","OD1"]
             },                
             "LEU": {
-                "nchi":      2,
+                "nchi":     2,
+                "val_nchi": 2,
                 "symm":     0,
                 "chi1":     ["N","CA","CB","CG"],
                 "chi2":     ["CA","CB","CG","CD1"]
             },
             "ILE": {
-                "nchi":      2,
+                "nchi":     2,
+                "val_nchi": 2,
                 "symm":     0,
                 "chi1":     ["N","CA","CB","CG1"],
                 "chi2":     ["CA","CB","CG1","CD1"]
             },
             "PHE": {
-                "nchi":      2,
+                "nchi":     2,
+                "val_nchi": 2,
                 "symm":     1,
                 "chi1":     ["N","CA","CB","CG"],
                 "chi2":     ["CA","CB","CG","CD1"]
             },
             "TYR": {
-                "nchi":      2,
+                "nchi":     2,
+                "val_nchi": 2,
                 "symm":     1,
                 "chi1":     ["N","CA","CB","CG"],
                 "chi2":     ["CA","CB","CG","CD1"]
             },
             "TRP": {
-                "nchi":      2,
+                "nchi":     2,
+                "val_nchi": 2,
                 "symm":     0,
                 "chi1":     ["N","CA","CB","CG"],
                 "chi2":     ["CA","CB","CG","CD1"]
             },
             "HIS": {
-                "nchi":      2,
+                "nchi":     2,
+                "val_nchi": 2,
                 "symm":     0,
-                "chi1":      ["N","CA","CB","CG"],
-                "chi2":      ["CA","CB","CG","ND1"]
+                "chi1":     ["N","CA","CB","CG"],
+                "chi2":     ["CA","CB","CG","ND1"]
             },
             "GLN": {
-                "nchi":      3,
+                "nchi":     3,
+                "val_nchi": 3,
                 "symm":     0,
-                "chi1":      ["N","CA","CB","CG"],
-                "chi2":      ["CA","CB","CG","CD"],
-                "chi3":      ["CB","CG","CD","OE1"]
+                "chi1":     ["N","CA","CB","CG"],
+                "chi2":     ["CA","CB","CG","CD"],
+                "chi3":     ["CB","CG","CD","OE1"]
             },
             "GLU": {
-                "nchi":      3,
+                "nchi":     3,
+                "val_nchi": 3,
                 "symm":     1,
-                "chi1":      ["N","CA","CB","CG"],
-                "chi2":      ["CA","CB","CG","CD"],
-                "chi3":      ["CB","CG","CD","OE1"]
+                "chi1":     ["N","CA","CB","CG"],
+                "chi2":     ["CA","CB","CG","CD"],
+                "chi3":     ["CB","CG","CD","OE1"]
             },
             "PRO": {
-                "nchi":      3,
+                "nchi":     3,
+                "val_nchi": 1,
                 "symm":     0,
                 "chi1":     ["N","CA","CB","CG"],
                 "chi2":     ["CA","CB","CG","CD"],
                 "chi3":     ["CB","CG","CD","N"]
             },
             "MET": {
-                "nchi":      3,
+                "nchi":     3,
+                "val_nchi": 3,
                 "symm":     0,
                 "chi1":     ["N","CA","CB","CG"],
                 "chi2":     ["CA","CB","CG","SD"],
                 "chi3":     ["CB","CG","SD","CE"]
             },
             "MSE": {
-                "nchi":      3,
+                "nchi":     3,
+                "val_nchi": 3,
                 "symm":     0,
-                "chi1":      ["N","CA","CB","CG"],
-                "chi2":      ["CA","CB","CG","SE"],
-                "chi3":      ["CB","CG","SE","CE"]
+                "chi1":     ["N","CA","CB","CG"],
+                "chi2":     ["CA","CB","CG","SE"],
+                "chi3":     ["CB","CG","SE","CE"]
             },
             "LYS": {
-                "nchi":      4,
+                "nchi":     4,
+                "val_nchi": 4,
                 "symm":     0,
-                "chi1":      ["N","CA","CB","CG"],
-                "chi2":      ["CA","CB","CG","CD"],
-                "chi3":      ["CB","CG","CD","CE"],
-                "chi4":      ["CG","CD","CE","NZ"]
+                "chi1":     ["N","CA","CB","CG"],
+                "chi2":     ["CA","CB","CG","CD"],
+                "chi3":     ["CB","CG","CD","CE"],
+                "chi4":     ["CG","CD","CE","NZ"]
             },
             "ARG": {
-                "nchi":      4,
-                "symm":      0,
-                "chi1":      ["N","CA","CB","CG"],
-                "chi2":      ["CA","CB","CG","CD"],
-                "chi3":      ["CB","CG","CD","NE"],
-                "chi4":      ["CG","CD","NE","CZ"]
+                "nchi":     4,
+                "val_nchi": 4,
+                "symm":     0,
+                "chi1":     ["N","CA","CB","CG"],
+                "chi2":     ["CA","CB","CG","CD"],
+                "chi3":     ["CB","CG","CD","NE"],
+                "chi4":     ["CG","CD","NE","CZ"]
             }
         }
     }
