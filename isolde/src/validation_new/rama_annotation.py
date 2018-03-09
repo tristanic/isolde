@@ -146,6 +146,8 @@ class Rama_Annotator(Model):
             # self._prepare_ca_display()
             self._visible_ramas = self._selected_ramas[self._selected_ramas.visibles]
             update_needed = True
+        if 'selected changed' in reasons:
+            update_needed = True
         # if 'color changed' in reasons:
         #     update_needed = True
         if update_needed:
@@ -161,7 +163,7 @@ class Rama_Annotator(Model):
             return
         mgr = self._mgr
         #mgr.color_cas_by_rama_score(ramas, self.hide_favored)
-        coords, colors = mgr._ca_positions_and_colors(ramas, self.hide_favored)
+        coords, colors, selecteds = mgr._ca_positions_colors_and_selecteds(ramas, self.hide_favored)
         n = len(coords)
         if n > 0:
             xyzr = numpy.empty((n, 4), numpy.double)
@@ -170,6 +172,8 @@ class Rama_Annotator(Model):
             from chimerax.core.geometry import Places
             rd.positions = Places(shift_and_scale = xyzr)
             rd.colors = colors
+            rd.selected_positions = selecteds
+
             rd.display = True
 
         v, n, t, c = mgr._draw_cis_and_twisted_omegas(ramas)
