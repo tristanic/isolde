@@ -27,15 +27,18 @@ class SimTester:
         mobile_atoms = all_atoms[mob_i]
         all_sim_atoms = all_atoms[as_i]
 
-        mobile_dihedrals = pd_m.get_all_dihedrals(mobile_atoms.unique_residues)
-        dihedral_restraints = pdr_m.add_restraints(mobile_dihedrals)
+        mobile_res = mobile_atoms.unique_residues
+        rama_a.restrict_to_selected_residues(mobile_res)
+        rota_a.restrict_to_selected_residues(mobile_res)
+
+        dihedral_restraints = pdr_m.add_all_defined_restraints_for_residues(mobile_atoms.unique_residues)
 
         position_restraints = pr_m.add_restraints(mobile_atoms)
         tuggable_atoms = ta_m.add_tuggables(mobile_atoms)
 
         distance_restraints = []
-        nonh = mobile_atoms[mobile_atoms.element_names != 'H']
-        for i in range(10):
+        nonh = all_sim_atoms[all_sim_atoms.element_names != 'H']
+        for i in range(20):
             try:
                 a1 = choice(nonh)
                 a2 = choice(nonh)
@@ -72,13 +75,31 @@ class SimTester:
         uh.append((ta_m, ta_m.triggers.add_handler('changes', self._tug_changed_cb)))
 
     def start_sim(self):
-        self.sim_handler.start_sim()
+        sh = self.sim_handler
+        sh.start_sim()
+        sh.triggers.add_handler('sim terminated', self._pr_sim_end_cb)
+        sh.triggers.add_handler('sim terminated', self._dr_sim_end_cb)
+        sh.triggers.add_handler('sim terminated', self._pdr_sim_end_cb)
+        sh.triggers.add_handler('sim terminated', self._tug_sim_end_cb)
+        sh.triggers.add_handler('sim terminated', self._rama_a_sim_end_cb)
+        sh.triggers.add_handler('sim terminated', self._rota_a_sim_end_cb)
+
 
     def stop_sim(self):
         for mgr, handler in self._update_handlers:
             mgr.triggers.remove_handler(handler)
         self._update_handlers = []
         self.sim_handler.stop()
+
+    def _rama_a_sim_end_cb(self, *_):
+        self.rama_annotator.track_whole_model = True
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+    def _rota_a_sim_end_cb(self, *_):
+        self.rota_annotator.track_whole_model = True
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
 
     def _pr_changed_cb(self, trigger_name, changes):
         change_types = list(changes.keys())
@@ -97,6 +118,12 @@ class SimTester:
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
             self.sim_handler.update_position_restraints(all_changeds)
 
+    def _pr_sim_end_cb(self, *_):
+        restraints = self.position_restraint_mgr.get_restraints(self.sim_construct.all_atoms)
+        restraints.clear_sim_indices()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
     def _dr_changed_cb(self, trigger_name, changes):
         change_types = list(changes.keys())
         from chimerax.core.atomic import concatenate
@@ -111,6 +138,13 @@ class SimTester:
             all_changeds = concatenate(changeds)
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
             self.sim_handler.update_distance_restraints(all_changeds)
+
+    def _dr_sim_end_cb(self, *_):
+        restraints = self.distance_restraints_mgr.intra_restraints(self.sim_construct.all_atoms)
+        restraints.clear_sim_indices()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
 
     def _pdr_changed_cb(self, trigger_name, changes):
         change_types = list(changes.keys())
@@ -127,6 +161,13 @@ class SimTester:
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
             self.sim_handler.update_dihedral_restraints(all_changeds)
 
+    def _pdr_sim_end_cb(self, *_):
+        restraints = self.proper_dihedral_restraint_mgr.get_all_restraints_for_residues(self.sim_construct.all_atoms.unique_residues)
+        restraints.clear_sim_indices()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+
     def _tug_changed_cb(self, trigger_name, changes):
         change_types = list(changes.keys())
         from chimerax.core.atomic import concatenate
@@ -142,6 +183,11 @@ class SimTester:
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
             self.sim_handler.update_tuggables(all_changeds)
 
+    def _tug_sim_end_cb(self, *_):
+        tuggables = self.tuggable_atoms_mgr.get_tuggables(self.sim_construct.all_atoms)
+        tuggables.clear_sim_indices()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
 
 
 

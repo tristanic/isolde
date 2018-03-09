@@ -521,7 +521,7 @@ rama_mgr_validate_and_color(void *mgr, void *rama, size_t n, uint8_t *colors)
 //! Provide positions of CA atoms and colors corresponding to Ramachandran scores
 extern "C" EXPORT size_t
 rama_mgr_ca_positions_and_colors(void *mgr, void *rama, size_t n, npy_bool hide_favored,
-        double *coord, uint8_t *color)
+        double *coord, uint8_t *color, npy_bool *selected)
 {
     Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
     Rama **r = static_cast<Rama **>(rama);
@@ -539,11 +539,14 @@ rama_mgr_ca_positions_and_colors(void *mgr, void *rama, size_t n, npy_bool hide_
                 if (score > m->get_cutoffs(rcases[i])->allowed) {
                     r++; continue;
                 }
-            const auto& this_coord = (*r++)->CA_atom()->coord();
+            auto ca_atom = (*r)->CA_atom();
+            const auto& this_coord = ca_atom->coord();
             for (size_t j=0; j<3; ++j)
                 *coord++ = this_coord[j];
             m->color_by_scores(&score, &rcases[i], 1, color);
             color += 4;
+            *(selected++) = ca_atom->selected();
+            r++;
             count ++;
         }
         return count;
@@ -876,12 +879,12 @@ rota_mgr_new(void *dihedral_mgr)
 } //rota_mgr_new
 
 extern "C" EXPORT void
-rota_mgr_add_rotamer_def(void *mgr, pyobject_t *resname, size_t n_chi, npy_bool symmetric)
+rota_mgr_add_rotamer_def(void *mgr, pyobject_t *resname, size_t n_chi, size_t val_nchi, npy_bool symmetric)
 {
     Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
     try {
         std::string rname(PyUnicode_AsUTF8(static_cast<PyObject *>(resname[0])));
-        m->add_rotamer_def(rname, n_chi, (bool)symmetric);
+        m->add_rotamer_def(rname, n_chi, val_nchi, (bool)symmetric);
     } catch (...) {
         molc_error();
     }
@@ -1660,6 +1663,29 @@ distance_restraint_mgr_get_restraint(void *mgr, void *atoms, bool create)
         molc_error();
         return 0;
     }
+}
+
+extern "C" EXPORT PyObject*
+distance_restraint_mgr_atom_restraints(void *mgr, void *atom, size_t n)
+{
+    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    Atom **a = static_cast<Atom **>(atom);
+    try {
+        std::set<Distance_Restraint *> dset;
+        for (size_t i=0; i<n; ++i) {
+            auto &drs = d->get_restraints(*a++);
+            dset.insert(drs.begin(), drs.end());
+        }
+        void **dptr;
+        PyObject *da = python_voidp_array(dset.size(), &dptr);
+        for (auto dr: dset)
+            *dptr++ = dr;
+        return da;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+
 }
 
 extern "C" EXPORT PyObject*

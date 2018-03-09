@@ -576,17 +576,18 @@ class Rama_Mgr:
         f(self._c_pointer, ramas._c_pointers, n, pointer(colors))
         return colors
 
-    def _ca_positions_and_colors(self, ramas, hide_favored = False):
+    def _ca_positions_colors_and_selecteds(self, ramas, hide_favored = False):
         f = c_function('rama_mgr_ca_positions_and_colors',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
-                ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p),
+                ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p),
                 ret = ctypes.c_size_t)
         n = len(ramas)
         coords = numpy.empty((n,3), float64)
         colors = numpy.empty((n, 4), uint8)
+        selecteds = numpy.empty(n, npy_bool)
         count = f(self._c_pointer, ramas._c_pointers, n, hide_favored,
-            pointer(coords), pointer(colors))
-        return (coords[0:count], colors[0:count])
+            pointer(coords), pointer(colors), pointer(selecteds))
+        return (coords[0:count], colors[0:count], selecteds[0:count])
 
     def color_cas_by_rama_score(self, ramas, hide_favored = False):
         f = c_function('rama_mgr_validate_and_color_cas',
@@ -814,17 +815,19 @@ class Rota_Mgr:
 
     def _load_rotamer_defs(self):
         f = c_function('rota_mgr_add_rotamer_def',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_bool))
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_bool))
         dd = self._dihedral_mgr.dihedral_dict
         pd = dd['residues']['protein']
         aa_names = dd['aminoacids']
         for aa in aa_names:
-            nchi = pd[aa]['nchi']
+            pda = pd[aa]
+            nchi = pda['nchi'] # Number of chi dihedrals
             if nchi > 0:
-                symm = pd[aa]['symm']
+                val_nchi = pda['val_nchi'] # Number of chi dihedrals used for validation
+                symm = pda['symm']
                 key = ctypes.py_object()
                 key.value = aa
-                f(self._c_pointer, ctypes.byref(key), nchi, symm)
+                f(self._c_pointer, ctypes.byref(key), nchi, val_nchi, symm)
 
     def _prepare_all_validators(self):
         from .validation import generate_interpolator_data
@@ -1197,8 +1200,22 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
     def get_restraints(self, atoms):
         return self._get_restraints(atoms)
 
+    def get_restraint(self, atom):
+        from chimerax.core.atomic import Atoms
+        r = self._get_restraints(Atoms([atom]))
+        if len(r):
+            return r[0]
+        return None
+
     def add_restraints(self, atoms):
         return self._get_restraints(atoms, create=True)
+
+    def add_restraint(self, atom):
+        from chimerax.core.atomic import Atoms
+        r = self._get_restraints(Atoms([atom]), create=True)
+        if len(r):
+            return r[0]
+        return None
 
     @property
     def num_restraints(self):
@@ -1423,13 +1440,39 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
     def _update_target_drawing(self, td, visibles, n):
         td.positions = visibles._target_transforms
 
-    def add_restraint(self, atom1, atom2):
+    def _get_restraint(self, atom1, atom2, create=False):
         f = c_function('distance_restraint_mgr_get_restraint',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool),
             ret = ctypes.c_void_p)
         from chimerax.core.atomic import Atoms
         atoms = Atoms([atom1, atom2])
-        return _distance_restraint_or_none(f(self._c_pointer, atoms._c_pointers, True))
+        return _distance_restraint_or_none(f(self._c_pointer, atoms._c_pointers, create))
+
+    def add_restraint(self, atom1, atom2):
+        return self._get_restraint(atom1, atom2, True)
+
+    def get_restraint(self, atom1, atom2):
+        return self._get_restraint(atom1, atom2, False)
+
+    def atom_restraints(self, atom):
+        '''
+        Get all distance restraints involving the given atom
+        '''
+        f = c_function('distance_restraint_mgr_atom_restraints',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
+            ret=ctypes.py_object)
+        return _distance_restraints(f(self._c_pointer, atom._c_pointer_ref, 1))
+
+    def atoms_restraints(self, atoms):
+        '''
+        Get all distance restraints involving at least one of the atoms. If
+        you want only restraints where both atoms are in the set, use
+        intra_restraints() instead.
+        '''
+        f = c_function('distance_restraint_mgr_atom_restraints',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
+            ret=ctypes.py_object)
+        return _distance_restraints(f(self._c_pointer, atoms._c_pointers, len(atoms)))
 
     def intra_restraints(self, atoms):
         n = len(atoms)
@@ -1493,13 +1536,61 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
             ret = ctypes.c_size_t)
         ptrs = numpy.empty(n, cptr)
         found = f(self._c_pointer, dihedrals._c_pointers, create, n, pointer(ptrs))
-        return _proper_dihedral_restraints(ptrs[0:n])
+        return _proper_dihedral_restraints(ptrs[0:found])
 
     def add_restraints(self, dihedrals):
         return self._get_restraints(dihedrals, create=True)
 
+    def add_restraint(self, dihedral):
+        from .molarray import Dihedrals
+        return self._get_restraints(Dihedrals([dihedral]), create=True)[0]
+
     def get_restraints(self, dihedrals):
         return self._get_restraints(dihedrals)
+
+    def get_restraint(self, dihedral):
+        from .molarray import Dihedrals
+        r = self._get_restraints(Dihedrals([dihedral]), create=False)
+        if len(r):
+            return r[0]
+        return None
+
+    def _get_restraints_by_residues_and_name(self, residues, name, create):
+        pdm = get_proper_dihedral_manager(self.session)
+        dihedrals = pdm.get_dihedrals(residues, name, create=create)
+        return self._get_restraints(dihedrals, create=create)
+
+    def get_restraints_by_residues_and_name(self, residues, name):
+        return self._get_restraints_by_residues_and_name(residues, name, False)
+
+    def add_restraints_by_residues_and_name(self, residues, name):
+        return self._get_restraints_by_residues_and_name(residues, name, True)
+
+    def get_restraint_by_residue_and_name(self, residue, name):
+        from chimerax.core.atomic import Residues
+        r = self._get_restraints_by_residues_and_name(Residues([residue]), name, False)
+        if len(r):
+            return r[0]
+        return None
+
+    def add_restraint_by_residue_and_name(self, residue, name):
+        from chimerax.core.atomic import Residues
+        r = self._get_restraints_by_residues_and_name(Residues([residue]), name, True)
+        if len(r):
+            return r[0]
+        return None
+
+    def _get_all_restraints_for_residues(self, residues, create):
+        pdm = get_proper_dihedral_manager(self.session)
+        dihedrals = pdm.get_all_dihedrals(residues)
+        return self._get_restraints(dihedrals, create=create)
+
+    def get_all_restraints_for_residues(self, residues):
+        return self._get_all_restraints_for_residues(residues, False)
+
+    def add_all_defined_restraints_for_residues(self, residues):
+        return self._get_all_restraints_for_residues(residues, True)
+
 
     @property
     def num_restraints(self):

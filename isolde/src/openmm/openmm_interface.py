@@ -239,6 +239,7 @@ class Sim_Handler:
 
         trigger_names = (
             'coord update',
+            'sim terminated',
         )
         from chimerax.core.triggerset import TriggerSet
         t = self.triggers = TriggerSet()
@@ -363,6 +364,7 @@ class Sim_Handler:
             self._thread_handler = None
             self._simulation = None
             self._sim_running = False
+            self.triggers.activate_trigger('sim terminated', None)
             return
         if not self._pause:
             self._repeat_step()
@@ -400,6 +402,7 @@ class Sim_Handler:
             self._thread_handler = None
             self._simulation = None
             self._sim_running = False
+            self.triggers.activate_trigger('sim terminated')
 
     @property
     def sim_running(self):

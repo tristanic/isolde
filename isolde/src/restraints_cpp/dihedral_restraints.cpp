@@ -75,7 +75,7 @@ RType* Dihedral_Restraint_Mgr_Base<DType, RType>::get_restraint(DType *d, bool c
         return it->second;
     if (create)
         return _new_restraint(d);
-    throw std::logic_error(error_no_restraint());
+    // throw std::logic_error(error_no_restraint());
     return nullptr;
 }
 
