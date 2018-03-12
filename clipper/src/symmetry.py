@@ -293,7 +293,7 @@ class AtomicSymmetryModel(Model):
 
     @radius.setter
     def radius(self, radius):
-        self._radius = _radius
+        self._radius = radius
         if self.visible:
             self.update_graphics()
 
