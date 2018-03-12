@@ -30,18 +30,17 @@ class IsoldeModel(Model):
         # _master_model is defined by the derived class
         mm = self._master_model
 
-        # Initialise validation managers
-        from .validation_new import Rama_Annotator, Rotamer_Annotator
-        rama_a = self._rama_annotator = Rama_Annotator(session, mm)
-        rota_a = self._rota_annotator = Rotamer_Annotator(session, mm)
+        self._proper_dihedral_mgr = None
+        self._rama_mgr = None
+        self._rota_mgr = None
 
-        # Initialise restraint managers
-        from .molobject import Position_Restraint_Mgr, Distance_Restraint_Mgr, \
-                            Proper_Dihedral_Restraint_Mgr
-        pr_mgr = self._position_restraint_mgr = Position_Restraint_Mgr(mm)
-        distr_mgr = self._distance_restraint_mgr = Distance_Restraint_Mgr(mm)
-        pdr_mgr = self._proper_dihedral_restraint_mgr = Proper_Dihedral_Restraint_Mgr(mm)
+        self._rama_annotator = None
+        self._rota_annotator = None
 
+        self._proper_dihedral_restraint_mgr = None
+        self._position_restraint_mgr = None
+        self._tuggable_atoms_mgr = None
+        self._distance_restraint_mgr = None
 
         session.models.add([self])
 
@@ -51,25 +50,66 @@ class IsoldeModel(Model):
         return self._master_model
 
     @property
+    def proper_dihedral_mgr(self):
+        if self._proper_dihedral_mgr is None:
+            from . import session_extensions
+            self._proper_dihedral_mgr = session_extensions.get_proper_dihedral_mgr(self.session)
+        return self._proper_dihedral_mgr
+
+    @property
+    def rama_mgr(self):
+        if self._rama_mgr is None:
+            from . import session_extensions
+            self._rama_mgr = session_extensions.get_ramachandran_mgr(self.session)
+        return self._rama_mgr
+
+    @property
+    def rota_mgr(self):
+        if self._rota_mgr is None:
+            from . import session_extensions
+            self._rota_mgr = session_extensions.get_rotamer_mgr(self.session)
+
+    @property
     def rama_annotator(self):
+        if self._rama_annotator is None:
+            from . import session_extensions
+            self._rama_annotator = session_extensions.get_rama_annotator(self.master_model)
         return self._rama_annotator
 
     @property
     def rota_annotator(self):
-        return self_rota_annotator
-
-    @property
-    def position_restraint_mgr(self):
-        return self._position_restraint_mgr
-
-    @property
-    def distance_restraint_mgr(self):
-        return self._distance_restraint_mgr
+        if self._rota_annotator is None:
+            from . import session_extensions
+            self._rota_annotator = session_extensions.get_rota_annotator(self.master_model)
+        return self._rota_annotator
 
     @property
     def proper_dihedral_restraint_mgr(self):
+        if self._proper_dihedral_restraint_mgr is None:
+            from . import session_extensions
+            self._proper_dihedral_restraint_mgr = session_extensions.get_proper_dihedral_restraint_mgr(self.master_model)
         return self._proper_dihedral_restraint_mgr
 
+    @property
+    def position_restraint_mgr(self):
+        if self._position_restraint_mgr is None:
+            from . import session_extensions
+            self._position_restraint_mgr = session_extensions.get_position_restraint_mgr(self.master_model)
+        return self._position_restraint_mgr
+
+    @property
+    def tuggable_atoms_mgr(self):
+        if self._tuggable_atoms_mgr is None:
+            from . import session_extensions
+            self._tuggable_atoms_mgr = session_extensions.get_tuggable_atoms_mgr(self.master_model)
+        return self._tuggable_atoms_mgr
+
+    @property
+    def distance_restraint_mgr(self):
+        if self._distance_restraint_mgr is None:
+            from . import session_extensions
+            self._distance_restraint_mgr = session_extensions.get_distance_restraint_mgr(self.master_model)
+        return self._distance_restraint_mgr
 
 
 def _isolde_crystal_model_from_atomic_structure_and_mtz(model, mtzfile,
@@ -82,11 +122,16 @@ class IsoldeCrystalModel(IsoldeModel):
     '''
     Prepares a crystal structure for ISOLDE
     '''
-    def __init__(self, crystal_structure):
-        if not isinstance(crystal_structure, CrystalStructure):
-            raise TypeError('crystal_structure should be a Clipper CrystalStructure!')
-        self._master_model = crystal_structure.master_model
-        super().__init__(crystal_structure)
+    def __init__(self, atomic_structure, mtz_file, map_oversampling = 3.0):
+        self._master_model = atomic_structure
+        from chimerax.clipper import symmetry
+        self._map_handler = symmetry.XtalSymmetryHandler(atomic_structure, mtz_file,
+            map_oversampling=map_oversampling)
+        super().__init__(atomic_structure)
+
+    @property
+    def map_handler(self):
+        return self._map_handler
 
 class IsoldeEMModel(IsoldeModel):
     '''
