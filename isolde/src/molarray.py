@@ -7,7 +7,7 @@ from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
 from .molobject import Proper_Dihedral, Rotamer, Rama, Position_Restraint, \
-        Tuggable_Atom, Distance_Restraint, Proper_Dihedral_Restraint
+        Tuggable_Atom, MDFF_Atom, Distance_Restraint, Proper_Dihedral_Restraint
 import ctypes
 
 from chimerax.core.atomic import Atom, Atoms, Residue, Residues
@@ -175,6 +175,24 @@ class Position_Restraints(Collection):
 class Tuggable_Atoms(Position_Restraints):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, single_type=Tuggable_Atom, poly_type = Tuggable_Atoms)
+
+class MDFF_Atoms(Collection):
+    def __init__(self, c_pointers=None):
+        super().__init__(c_pointers, MDFF_Atom, MDFF_Atoms)
+
+    def clear_sim_indices(self):
+        f = c_function('mdff_atom_clear_sim_index',
+            args=(ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointers, len(self))
+
+    enableds = cvec_property('mdff_atom_enabled', npy_bool,
+        doc='Enable/disable MDFF tugging on each atom or get the current states.')
+    atoms = cvec_property('mdff_atom_atom', cptr, astype=_atoms, read_only=True,
+        doc='Returns the ChimeraX Atom. Read only.')
+    coupling_constants = cvec_property('mdff_atom_coupling_constant', float64,
+        doc='MDFF coupling constant (units depending on map units).')
+    sim_indices = cvec_property('mdff_atom_sim_index', int32,
+        doc='Index of this atom in the relevant MDFF Force in a running simulation. Can be set.')
 
 
 class Distance_Restraints(Collection):

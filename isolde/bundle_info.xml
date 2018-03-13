@@ -43,6 +43,7 @@ with the surroundings.
     <SourceFile>src/restraints_cpp/distance_restraints.cpp</SourceFile>
     <SourceFile>src/restraints_cpp/dihedral_restraints.cpp</SourceFile>
     <SourceFile>src/restraints_cpp/position_restraints.cpp</SourceFile>
+    <SourceFile>src/restraints_cpp/mdff.cpp</SourceFile>
     <SourceFile>src/molc.cpp</SourceFile>
     <Library>atomstruct</Library>
     <Library>pyinstance</Library>

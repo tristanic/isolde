@@ -72,8 +72,7 @@ public:
     ~Position_Restraint_Mgr_Base();
     Position_Restraint_Mgr_Base(Structure *atomic_model, Change_Tracker *change_tracker)
         : _atomic_model(atomic_model), _change_tracker(change_tracker)
-    {
-    }
+    {}
 
     Structure* structure() const { return _atomic_model; }
     Position_Restraint* get_restraint(Atom *atom, bool create);

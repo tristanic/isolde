@@ -68,6 +68,11 @@ def _tuggable_atom_or_none(p):
 def _tuggable_atoms(p):
     from .molarray import Tuggable_Atoms
     return Tuggable_Atoms(p)
+def _mdff_atom_or_none(p):
+    return MDFF_Atom.c_ptr_to_py_inst(p) if p else None
+def _mdff_atoms(p):
+    from .molarray import MDFF_Atoms
+    return MDFF_Atoms(p)
 def _pseudobond_or_none(p):
     from chimerax.core.atomic import Pseudobond
     return Pseudobond.c_ptr_to_py_inst(p) if p else None
@@ -84,6 +89,9 @@ def _position_restraint_mgr(p):
     return Position_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
 def _tuggable_atoms_mgr(p):
     return Tuggable_Atoms_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+def _mdff_mgr(p):
+    return MDFF_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+
 
 def get_proper_dihedral_manager(session):
     if hasattr(session, 'proper_dihedral_mgr') and not session.proper_dihedral_mgr.deleted:
@@ -99,6 +107,11 @@ def get_rotamer_manager(session):
     if hasattr(session, 'rota_mgr') and not session.rota_mgr.deleted:
         return session.rota_mgr
     return Rota_Mgr(session)
+
+def _get_restraint_change_tracker(session):
+    if hasattr(session, 'isolde_changes') and not session.isolde_changes.deleted:
+        return session.isolde_changes
+    return Restraint_Change_Tracker(session)
 
 
 class _Dihedral_Mgr:
@@ -1017,11 +1030,7 @@ class _Restraint_Mgr(Model):
     '''Base class. Do not instantiate directly.'''
     def __init__(self, name, model, c_pointer=None, c_class_name = None):
         session = model.session
-        if not hasattr(self, '_change_tracker'):
-            if not hasattr(session, 'isolde_changes') or session.isolde_changes.deleted:
-                ct = self._change_tracker = Restraint_Change_Tracker(session)
-            else:
-                ct = self._change_tracker = session.isolde_changes
+        ct = self._change_tracker = _get_isolde_change_tracker(session)
 
         if c_class_name is None:
             cname = type(self).__name__.lower()
@@ -1078,6 +1087,31 @@ class _Restraint_Mgr(Model):
     def update_graphics(self):
         ''' Should be overridden in derived classes. '''
         pass
+
+class MDFF_Mgr(_Restraint_Mgr):
+    '''
+    Appears as a Model to provide a consistent API to all the other restraint
+    manager classes, but doesn't actually draw anything. Responsible for managing
+    the MDFF coupling of the simulation to one map.
+    '''
+    def __init__(self, model, volume, c_pointer=None):
+        name = 'MDFF - ' + volume.name
+        super().__init__(name, model, c_pointer=c_pointer, c_class_name = "mdff_mgr")
+        self._volume = volume
+
+    @property
+    def volume(self):
+        '''
+        The Volume object that provides the MDFF potential for the managed
+        atoms.
+        '''
+        return self._volume
+
+    def __len__(self):
+        f = c_function('mdff_mgr_num_atoms',
+            args=(ctypes.c_void_p,),
+            ret = ctypes.c_size_t)
+        return f(self._c_pointer)
 
 class Position_Restraint_Mgr(_Restraint_Mgr):
     '''
@@ -1844,6 +1878,40 @@ class Position_Restraint(State):
 class Tuggable_Atom(Position_Restraint):
     _c_class_name = 'position_restraint'
 
+class MDFF_Atom(State):
+    def __init__(self, c_pointer):
+        set_c_pointer(self, c_pointer)
+
+    @property
+    def cpp_pointer(self):
+        '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
+        return self._c_pointer.value
+
+    @property
+    def deleted(self):
+        '''Has the C++ side been deleted?'''
+        return not hasattr(self, '_c_pointer')
+
+    def __str__(self):
+        return "Not implemented"
+
+    def reset_state(self):
+        pass
+
+    def clear_sim_index(self):
+        f = c_function('mdff_atom_clear_sim_index',
+            args = (ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointer_ref, 1)
+
+    enabled = c_property('mdff_atom_enabled', npy_bool,
+        doc='Enable/disable MDFF tugging on this atom or get its current state.')
+    atom = c_property('mdff_atom_atom', cptr, astype=_atom_or_none, read_only=True,
+        doc='Returns the ChimeraX Atom. Read only.')
+    coupling_constant = c_property('mdff_atom_coupling_constant', float64,
+        doc='MDFF coupling constant (units depending on map units).')
+    sim_index = c_property('mdff_atom_sim_index', int32,
+        doc='Index of this atom in the relevant MDFF Force in a running simulation. Can be set.')
+
 class Distance_Restraint(State):
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
@@ -1936,7 +2004,7 @@ class Proper_Dihedral_Restraint(State):
 # from C++ with just a pointer, and put functions in those classes for getting the instance
 # from the pointer (needed by Collections)
 for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint, Tuggable_Atom,
-                  Distance_Restraint, Proper_Dihedral_Restraint,):
+                  MDFF_Atom, Distance_Restraint, Proper_Dihedral_Restraint,):
     if hasattr(class_obj, '_c_class_name'):
         cname = class_obj._c_class_name
     else:
@@ -1953,7 +2021,8 @@ for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint, Tuggable_A
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
 
 for class_obj in (Proper_Dihedral_Mgr, Rama_Mgr, Rota_Mgr, Position_Restraint_Mgr,
-            Tuggable_Atoms_Mgr, Distance_Restraint_Mgr, Proper_Dihedral_Restraint_Mgr):
+            Tuggable_Atoms_Mgr, MDFF_Mgr, Distance_Restraint_Mgr,
+            Proper_Dihedral_Restraint_Mgr):
     cname = class_obj.__name__.lower()
     func_name = cname + '_py_inst'
     class_obj.c_ptr_to_py_inst = lambda ptr, fname=func_name: c_function(fname,
