@@ -105,6 +105,69 @@ bool only_hidden_by_clipper(Bond *b) {
     return b->display() && only_hidden_by_clipper(a[0]) && only_hidden_by_clipper(a[1]);
 }
 
+void fill_atom_and_bond_sym_tuple(PyObject *ret, const std::vector<Atom *>& atoms,
+    const std::vector<double>& coords, const std::vector<uint8_t>& atom_sym_indices,
+    const std::vector<Bond *>& bonds, const std::vector<float32_t>& bond_tfs,
+    const std::vector<uint8_t>& bond_sym_indices)
+{
+    // first tuple item: symmetry atoms
+    void **aptrs;
+    PyObject *atom_ptr_array = python_voidp_array(atoms.size(), &aptrs);
+    for (const auto &ptr: atoms)
+        *aptrs++ = ptr;
+    PyTuple_SET_ITEM(ret, 0, atom_ptr_array);
+
+    // second tuple item: symmetry coords;
+    double *acoords;
+    PyObject *atom_coord_array = python_double_array(coords.size(), &acoords);
+    for (const auto &coord: coords)
+        *acoords++ = coord;
+    PyTuple_SET_ITEM(ret, 1, atom_coord_array);
+
+    // third tuple item: atom symop indices
+    uint8_t *asym;
+    PyObject *atom_sym_array = python_uint8_array(atom_sym_indices.size(), &asym);
+    for (const auto &sym: atom_sym_indices)
+        *(asym++) = sym;
+    PyTuple_SET_ITEM(ret, 2, atom_sym_array);
+
+    // fourth tuple item: symmetry bonds
+    void **bptrs;
+    PyObject *bond_ptr_array = python_voidp_array(bonds.size(), &bptrs);
+    for (const auto &ptr: bonds)
+        *bptrs++ = ptr;
+    PyTuple_SET_ITEM(ret, 3, bond_ptr_array);
+
+    // fifth tuple item: bond transforms.
+    // This is a bit ugly: the default arrangement for halfbond transforms
+    // is to do the first set of halfbonds followed by the second
+    // (i.e. AAAAAABBBBBB). But up until now it's been much more convenient
+    // to intersperse them (ABABABABAB). So now they need to be remixed into
+    // the final arrangement.
+    float *btfs;
+    size_t n = bond_tfs.size();
+    PyObject *bond_transform_array = python_float_array(n, &btfs);
+    float *btfs2 = btfs + n/2;
+    const float *tf = bond_tfs.data();
+    for (size_t i=0; i<n/(GL_TF_SIZE*2); ++i)
+    {
+        const float *tf2 = tf+GL_TF_SIZE;
+        for (size_t j=0; j<GL_TF_SIZE; ++j) {
+            *btfs++ = *tf++;
+            *btfs2++ = *tf2++;
+        }
+        tf+=GL_TF_SIZE;
+    }
+    PyTuple_SET_ITEM(ret, 4, bond_transform_array);
+
+    // sixth tuple item: bond symop indices
+    uint8_t *bsym;
+    PyObject *bond_sym_array = python_uint8_array(bond_sym_indices.size(), &bsym);
+    for (const auto &sym: bond_sym_indices)
+        *(bsym++) = sym;
+    PyTuple_SET_ITEM(ret, 5, bond_sym_array);
+}
+
 
 extern "C" EXPORT PyObject* atom_and_bond_sym_transforms_by_residue(void *residues, size_t nres,
     double *transforms, size_t n_tf, double *center, double cutoff)
@@ -183,62 +246,8 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms_by_residue(void *residu
             }
         }
 
-        // first tuple item: symmetry atoms
-        void **aptrs;
-        PyObject *atom_ptr_array = python_voidp_array(sym_atoms.size(), &aptrs);
-        for (const auto &ptr: sym_atoms)
-            *aptrs++ = ptr;
-        PyTuple_SET_ITEM(ret, 0, atom_ptr_array);
-
-        // second tuple item: symmetry coords;
-        double *acoords;
-        PyObject *atom_coord_array = python_double_array(sym_coords.size(), &acoords);
-        for (const auto &coord: sym_coords)
-            *acoords++ = coord;
-        PyTuple_SET_ITEM(ret, 1, atom_coord_array);
-
-        // third tuple item: atom symop indices
-        uint8_t *asym;
-        PyObject *atom_sym_array = python_uint8_array(atom_sym_indices.size(), &asym);
-        for (const auto &sym: atom_sym_indices)
-            *(asym++) = sym;
-        PyTuple_SET_ITEM(ret, 2, atom_sym_array);
-
-        // fourth tuple item: symmetry bonds
-        void **bptrs;
-        PyObject *bond_ptr_array = python_voidp_array(sym_bonds.size(), &bptrs);
-        for (const auto &ptr: sym_bonds)
-            *bptrs++ = ptr;
-        PyTuple_SET_ITEM(ret, 3, bond_ptr_array);
-
-        // fifth tuple item: bond transforms.
-        // This is a bit ugly: the default arrangement for halfbond transforms
-        // is to do the first set of halfbonds followed by the second
-        // (i.e. AAAAAABBBBBB). But up until now it's been much more convenient
-        // to intersperse them (ABABABABAB). So now they need to be remixed into
-        // the final arrangement.
-        float *btfs;
-        size_t n = bond_tfs.size();
-        PyObject *bond_transform_array = python_float_array(n, &btfs);
-        float32_t *btfs2 = btfs + n/2;
-        float32_t *tf = bond_tfs.data();
-        for (size_t i=0; i<n/(GL_TF_SIZE*2); ++i)
-        {
-            float32_t *tf2 = tf+GL_TF_SIZE;
-            for (size_t j=0; j<GL_TF_SIZE; ++j) {
-                *btfs++ = *tf++;
-                *btfs2++ = *tf2++;
-            }
-            tf+=GL_TF_SIZE;
-        }
-        PyTuple_SET_ITEM(ret, 4, bond_transform_array);
-
-        // sixth tuple item: bond symop indices
-        uint8_t *bsym;
-        PyObject *bond_sym_array = python_uint8_array(bond_sym_indices.size(), &bsym);
-        for (const auto &sym: bond_sym_indices)
-            *(bsym++) = sym;
-        PyTuple_SET_ITEM(ret, 5, bond_sym_array);
+        fill_atom_and_bond_sym_tuple(ret, sym_atoms, sym_coords, atom_sym_indices,
+            sym_bonds, bond_tfs, bond_sym_indices);
 
         return ret;
 
@@ -249,11 +258,9 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms_by_residue(void *residu
     }
 }
 
-
-
-
-extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t natoms,
-        double *transforms, size_t n_tf, double *center, double cutoff)
+extern "C" EXPORT PyObject*
+atom_and_bond_sym_transforms(void *atoms, size_t natoms, double *transforms,
+    size_t n_tf, double *center, double cutoff)
 {
     Atom **a = static_cast<Atom **>(atoms);
     PyObject *ret = PyTuple_New(6);
@@ -341,66 +348,106 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms(void *atoms, size_t nat
             }
         }
 
-        // first tuple item: symmetry atoms
-        void **aptrs;
-        PyObject *atom_ptr_array = python_voidp_array(ret_atoms.size(), &aptrs);
-        for (const auto &ptr: ret_atoms)
-            *aptrs++ = ptr;
-        PyTuple_SET_ITEM(ret, 0, atom_ptr_array);
-
-        // second tuple item: symmetry coords;
-        double *acoords;
-        PyObject *atom_coord_array = python_double_array(ret_coords.size(), &acoords);
-        for (const auto &coord: ret_coords)
-            *acoords++ = coord;
-        PyTuple_SET_ITEM(ret, 1, atom_coord_array);
-
-        // third tuple item: atom symop indices
-        uint8_t *asym;
-        PyObject *atom_sym_array = python_uint8_array(ret_atom_sym.size(), &asym);
-        for (const auto &sym: ret_atom_sym)
-            *(asym++) = sym;
-        PyTuple_SET_ITEM(ret, 2, atom_sym_array);
-
-        // fourth tuple item: symmetry bonds
-        void **bptrs;
-        PyObject *bond_ptr_array = python_voidp_array(ret_bonds.size(), &bptrs);
-        for (const auto &ptr: ret_bonds)
-            *bptrs++ = ptr;
-        PyTuple_SET_ITEM(ret, 3, bond_ptr_array);
-
-        // fifth tuple item: bond transforms.
-        // This is a bit ugly: the default arrangement for halfbond transforms
-        // is to do the first set of halfbonds followed by the second
-        // (i.e. AAAAAABBBBBB). But up until now it's been much more convenient
-        // to intersperse them (ABABABABAB). So now they need to be remixed into
-        // the final arrangement.
-        float *btfs;
-        size_t n = ret_bond_tfs.size();
-        PyObject *bond_transform_array = python_float_array(n, &btfs);
-        float *btfs2 = btfs + n/2;
-        float *tf = ret_bond_tfs.data();
-        for (size_t i=0; i<n/32; ++i)
-        {
-            float *tf2 = tf+16;
-            for (size_t j=0; j<16; ++j) {
-                *btfs++ = *tf++;
-                *btfs2++ = *tf2++;
-            }
-            tf+=16;
-        }
-        PyTuple_SET_ITEM(ret, 4, bond_transform_array);
-
-        // sixth tuple item: bond symop indices
-        uint8_t *bsym;
-        PyObject *bond_sym_array = python_uint8_array(ret_bond_sym.size(), &bsym);
-        for (const auto &sym: ret_bond_sym)
-            *(bsym++) = sym;
-        PyTuple_SET_ITEM(ret, 5, bond_sym_array);
+        fill_atom_and_bond_sym_tuple(ret, ret_atoms, ret_coords, ret_atom_sym,
+            ret_bonds, ret_bond_tfs, ret_bond_sym);
 
         return ret;
 
     } catch(...) {
+        molc_error();
+        Py_XDECREF(ret);
+        return 0;
+    }
+}
+
+extern "C" EXPORT PyObject*
+atom_and_bond_sym_transforms_from_sym_atoms(void *atoms, uint8_t *sym_indices,
+    size_t natoms, double *transforms, size_t n_tf)
+{
+    Atom** a = static_cast<Atom **>(atoms);
+    PyObject *ret = PyTuple_New(6);
+    try {
+        std::vector<Atom *> ret_atoms;
+        std::vector<double> ret_coords(natoms*3);
+        std::vector<uint8_t> ret_atom_sym;
+        std::vector<Bond *> ret_bonds;
+        std::vector<float32_t> ret_bond_tfs;
+        std::vector<uint8_t> ret_bond_sym;
+
+        Atom **aa = a;
+        uint8_t *si = sym_indices;
+        double *coords = ret_coords.data();
+        for (size_t i=0; i<natoms; ++i)
+        {
+            if (only_hidden_by_clipper(*aa))
+            {
+                auto atom = *aa++;
+                auto sym_index = *(si++);
+                ret_atoms.push_back(atom);
+                ret_atom_sym.push_back(sym_index);
+                transform_coord(transforms+sym_index*TF_SIZE, atom->coord(), coords);
+                coords += 3;
+            }
+        }
+        natoms = ret_atoms.size();
+        ret_coords.resize(natoms*3);
+        uint8_t current_sym = ret_atom_sym[0];
+        coords = ret_coords.data();
+        aa = ret_atoms.data();
+        uint8_t *asym = ret_atom_sym.data();
+        size_t count = 0;
+        for (size_t i=0; i<n_tf; ++i)
+        {
+            std::unordered_map<Atom*, double*> amap;
+            while (*(asym++) == current_sym && count < natoms) {
+                amap[*aa++] = coords;
+                coords += 3;
+                count++;
+            }
+            std::unordered_map<Bond*, std::pair<double*, double*>> sym_bond_coords;
+            for (auto &amap_it: amap)
+            {
+                auto a = amap_it.first;
+                const Atom::Bonds &abonds = a->bonds();
+                for (auto b = abonds.begin(); b != abonds.end(); ++b)
+                {
+                    Bond *bond = *b;
+                    if (!only_hidden_by_clipper(bond)) continue;
+                    const Bond::Atoms &batoms = bond->atoms();
+                    auto bi = sym_bond_coords.find(bond);
+                    if (bi != sym_bond_coords.end()) continue;
+                    auto a1 = amap.find(batoms[0]);
+                    if (a1 == amap.end()) continue;
+                    auto a2 = amap.find(batoms[1]);
+                    if (a2 == amap.end()) continue;
+
+                    sym_bond_coords.emplace(std::make_pair(bond,
+                        std::make_pair(a1->second, a2->second)));
+
+                }
+            }
+            size_t old_bond_tf_size = ret_bond_tfs.size();
+            ret_bond_tfs.resize(old_bond_tf_size + GL_TF_SIZE*2*sym_bond_coords.size());
+            float32_t *bond_tf = ret_bond_tfs.data() + old_bond_tf_size;
+            for (const auto &it: sym_bond_coords)
+            {
+                auto b = it.first;
+                ret_bonds.push_back(b);
+                const auto &cpair = it.second;
+                halfbond_cylinder_placement(Coord(cpair.first), Coord(cpair.second),
+                    b->radius(), bond_tf);
+                bond_tf += GL_TF_SIZE*2;
+                ret_bond_sym.push_back(current_sym);
+            }
+            current_sym = *asym;
+        }
+
+        fill_atom_and_bond_sym_tuple(ret, ret_atoms, ret_coords, ret_atom_sym,
+            ret_bonds, ret_bond_tfs, ret_bond_sym);
+
+        return ret;
+
+    } catch (...) {
         molc_error();
         Py_XDECREF(ret);
         return 0;
