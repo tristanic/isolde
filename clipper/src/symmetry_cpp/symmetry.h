@@ -51,11 +51,25 @@ inline T l2_norm_3d(T a[3])
 }
 
 template <typename T>
-inline bool distance_below_cutoff(T a[3], T b[3], T cutoff)
+inline bool distance_below_cutoff(T a[3], T b[3], const T& cutoff)
 {
     T deltas[3];
     for (size_t i=0; i<3; ++i) {
         deltas[i] = std::abs((*a++)-(*b++));
+        if (deltas[i] > cutoff)
+            return false;
+    }
+    if (l2_norm_3d(deltas) > cutoff)
+        return false;
+    return true;
+}
+
+template<class C, typename T>
+inline bool distance_below_cutoff(C a, T b[3], const T& cutoff)
+{
+    T deltas[3];
+    for (size_t i=0; i<3; ++i) {
+        deltas[i] = std::abs(a[i] -(*b++));
         if (deltas[i] > cutoff)
             return false;
     }

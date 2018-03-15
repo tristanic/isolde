@@ -30,10 +30,26 @@ c_array_function = _c_functions.c_array_function
 
 HIDE_ISOLDE = 0x02
 
-def sym_transforms_in_sphere(atoms, transforms, center, cutoff):
+def _format_sym_tuple(result):
+    from chimerax.core.atomic.molarray import _atoms, _bonds
+    from chimerax.core.geometry import Places
+    primary_atoms = _atoms(result[0])
+    sym_atoms = _atoms(result[1])
+    n_sym_atoms = len(sym_atoms)
+    sym_coords = result[2].reshape((n_sym_atoms,3))
+    atom_syms = result[3]
+    sym_bonds = _bonds(result[4])
+    nbonds = len(sym_bonds)
+    bond_positions = Places(opengl_array=result[5].reshape((nbonds*2,4,4)))
+    bond_syms = result[6]
+    return (primary_atoms, sym_atoms, sym_coords, atom_syms, sym_bonds, bond_positions, bond_syms)
+
+
+def sym_transforms_in_sphere(atoms, transforms, center, cutoff, visible_only = True):
     f = c_function('atom_and_bond_sym_transforms',
         args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double),
-            ctypes.c_size_t, ctypes.POINTER(ctypes.c_double), ctypes.c_double),
+            ctypes.c_size_t, ctypes.POINTER(ctypes.c_double), ctypes.c_double,
+            ctypes.c_bool),
         ret = ctypes.py_object)
     natoms = len(atoms)
     tf = numpy.empty(transforms.shape, numpy.double)
@@ -41,19 +57,14 @@ def sym_transforms_in_sphere(atoms, transforms, center, cutoff):
     c = numpy.empty(3, numpy.double)
     c[:] = center
     n_tf = len(transforms)
-    result = f(atoms._c_pointers, natoms, pointer(tf), n_tf, pointer(c), cutoff)
-    from chimerax.core.atomic.molarray import _atoms, _bonds
-    from chimerax.core.geometry import Places
-    natoms = len(result[0])
-    atom_coords = result[1].reshape((natoms,3))
-    nbonds = len(result[3])
-    bond_positions = Places(opengl_array=result[4].reshape((nbonds*2,4,4)))
-    return (_atoms(result[0]), atom_coords, result[2], _bonds(result[3]), bond_positions, result[5])
+    result = f(atoms._c_pointers, natoms, pointer(tf), n_tf, pointer(c), cutoff, visible_only)
+    return _format_sym_tuple(result)
 
-def whole_residue_sym_sphere(residues, transforms, center, cutoff):
+def whole_residue_sym_sphere(residues, transforms, center, cutoff, visible_only = True):
     f = c_function('atom_and_bond_sym_transforms_by_residue',
         args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double),
-            ctypes.c_size_t, ctypes.POINTER(ctypes.c_double), ctypes.c_double),
+            ctypes.c_size_t, ctypes.POINTER(ctypes.c_double), ctypes.c_double,
+            ctypes.c_bool),
             ret = ctypes.py_object)
     nres = len(residues)
     tf = numpy.empty(transforms.shape,numpy.double)
@@ -61,20 +72,14 @@ def whole_residue_sym_sphere(residues, transforms, center, cutoff):
     c = numpy.empty(3, numpy.double)
     c[:] = center
     n_tf = len(transforms)
-    result = f(residues._c_pointers, nres, pointer(tf), n_tf, pointer(c), cutoff)
-    from chimerax.core.atomic.molarray import _atoms, _bonds
-    from chimerax.core.geometry import Places
-    natoms = len(result[0])
-    atom_coords = result[1].reshape((natoms,3))
-    nbonds = len(result[3])
-    bond_positions = Places(opengl_array=result[4].reshape((nbonds*2,4,4)))
-    return (_atoms(result[0]), atom_coords, result[2], _bonds(result[3]), bond_positions, result[5])
+    result = f(residues._c_pointers, nres, pointer(tf), n_tf, pointer(c), cutoff, visible_only)
+    return _format_sym_tuple(result)
 
-def atom_and_bond_sym_transforms_from_sym_atoms(atoms, symops, sym_indices):
+def atom_and_bond_sym_transforms_from_sym_atoms(atoms, symops, sym_indices, visible_only = True):
     f = c_function('atom_and_bond_sym_transforms_from_sym_atoms',
         args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
             ctypes.c_size_t, ctypes.POINTER(ctypes.c_double),
-            ctypes.c_size_t),
+            ctypes.c_size_t, ctypes.c_bool),
         ret=ctypes.py_object)
     natoms = len(atoms)
     nsym = len(sym_indices)
@@ -82,14 +87,8 @@ def atom_and_bond_sym_transforms_from_sym_atoms(atoms, symops, sym_indices):
     tf[:] = symops
     si = numpy.empty(len(sym_indices), numpy.uint8)
     si[:] = sym_indices
-    result = f(atoms._c_pointers, pointer(sym_indices), natoms, pointer(tf), nsym)
-    from chimerax.core.atomic.molarray import _atoms, _bonds
-    from chimerax.core.geometry import Places
-    natoms = len(result[0])
-    atom_coords = result[1].reshape((natoms,3))
-    nbonds = len(result[3])
-    bond_positions = Places(opengl_array=result[4].reshape((nbonds*2,4,4)))
-    return (_atoms(result[0]), atom_coords, result[2], _bonds(result[3]), bond_positions, result[5])
+    result = f(atoms._c_pointers, pointer(sym_indices), natoms, pointer(tf), nsym, visible_only)
+    return _format_sym_tuple(result)
 
 
 def sym_ribbons_in_sphere(tether_coords, transforms, center, cutoff):
@@ -105,6 +104,16 @@ def sym_ribbons_in_sphere(tether_coords, transforms, center, cutoff):
     c = numpy.empty(3, numpy.double)
     c[:] = center
     return f(pointer(tc), len(tc), pointer(tf), len(tf), pointer(c), cutoff)
+
+def symmetry_coords(atoms, sym_matrices, sym_indices):
+    unique_indices = numpy.unique(sym_indices)
+    coords = atoms.coords
+    from chimerax.core.geometry import Place
+    for i in unique_indices:
+        mask = sym_indices == i
+        tf = Place(matrix=sym_matrices[i])
+        coords[mask] = tf.moved(coords[mask])
+    return coords
 
 from chimerax.core.models import Model, Drawing
 
@@ -275,7 +284,29 @@ class XtalSymmetryHandler(Model):
         '''
         self.spotlight_mode = False
         original_atoms = atoms
-        atoms = atoms.residues.atoms
+        atoms = original_atoms.unique_residues.atoms
+        asm = self.atomic_symmetry_model
+        maps = self.xmapset
+        from chimerax.core.geometry import find_close_points
+        main_set = asm.sym_select_within(atoms, include_surrounding_residues)
+        main_coords = symmetry_coords(*main_set[0:3])
+        context_set = asm.sym_select_within(main_set[0], show_context,
+            coords=main_coords)
+        asm._current_focal_set = context_set
+        asm.set_sym_display(context_set[3], *atom_and_bond_sym_transforms_from_sym_atoms(*context_set[0:3]))
+
+        cell = self.cell
+        grid = self.grid
+        xmaps = self.xmapset
+        from .crystal import calculate_grid_padding
+        pad = calculate_grid_padding(mask_radius, grid, cell)
+        ep = calculate_grid_padding(extra_padding, grid, cell)
+        box_bounds_grid = clipper.Util.get_minmax_grid(main_coords, cell, grid) \
+            + numpy.array((-pad, pad)) + numpy.array((-ep, ep))
+        xmaps.set_box_limits(box_bounds_grid)
+        xmaps._surface_zone.update(mask_radius, coords = main_coords)
+        xmaps._reapply_zone()
+
 
 
 
@@ -286,7 +317,7 @@ class AtomicSymmetryModel(Model):
     Finds and draws local symmetry atoms for an atomic structure
     '''
     def __init__(self, atomic_structure, parent, unit_cell, radius = 15,
-        spotlight_mode = True, dim_colors_to = 0.6, live = True):
+        dim_colors_to = 0.6, live = True):
         self._live_scrolling = False
         self.structure = atomic_structure
         session = self.session = atomic_structure.session
@@ -295,9 +326,9 @@ class AtomicSymmetryModel(Model):
         self.spacegroup =parent.spacegroup
         self.grid = parent.grid
         self.session = atomic_structure.session
-        self._include_identity = spotlight_mode
-        self._spotlight_mode = spotlight_mode
         self._color_dim_factor = dim_colors_to
+
+        self._current_focal_set = None
 
         self.manager = parent
 
@@ -325,20 +356,26 @@ class AtomicSymmetryModel(Model):
         from .crystal import set_to_default_cartoon
         set_to_default_cartoon(session)
 
-    def sym_select_within(self, atoms, cutoff, whole_residues = True):
+    def sym_select_within(self, atoms, cutoff, coords=None, whole_residues = True):
         '''
-        Given a set of atoms, return a {Symop: Atoms} dict of all atoms
-        (including symmetry copies) within the given cutoff distance from any
-        atom in the primary set.
+        Given a set of atoms, return a (atoms, symops, sym_indices) tuple
+        giving all atoms and their symmetry operators within the given cutoff
+        distance from any atom in the primary set.
         Args:
             atoms:
                 The core set of atoms to be surrounded by the new selection.
             cutoff:
                 Cutoff distance in Angstroms.
-            whole_residues:
+            coords (default None):
+                Optionally, you can provide the coordinates for all atoms
+                (useful for expanding a selection that already includes
+                symmetry atoms).
+            whole_residues (default true):
                 Whether to expand the selections to whole_residues.
         '''
-        coords = atoms.coords.astype(numpy.float32)
+        if coords is None:
+            coords = atoms.coords
+        coords = coords.astype(numpy.float32)
         master_atoms = self.structure.atoms
         master_coords = master_atoms.coords.astype(numpy.float32)
         grid_minmax = clipper.Util.get_minmax_grid(coords, self.cell, self.grid)
@@ -356,32 +393,22 @@ class AtomicSymmetryModel(Model):
             search_list.append((master_coords, s.astype(numpy.float32)))
         from chimerax.core.geometry import find_close_points_sets
         i1, i2 = find_close_points_sets(search_list, target, cutoff)
-        sym_matrices = []
         found_atoms = []
         sym_indices = []
         sym_count = 0
-        for c, s in zip(i1, symmats):
+        for i, (c, s) in enumerate(zip(i1, symmats)):
             if len(c):
-                print('Current symmetry index: {}'.format(sym_count))
-                sym_matrices.append(s)
                 sel = master_atoms[c]
-                print('Number of symmetry atoms found: {}'.format(len(sel)))
                 if whole_residues:
                     sel = sel.unique_residues.atoms
-                    print('Number of symmetry atoms after expansion to whole residues: {}'.format(len(sel)))
                 found_atoms.append(sel)
                 indices = numpy.empty(len(sel), numpy.uint8)
-                indices[:] = sym_count
-                print('Number of indices: {}'.format(len(indices)))
+                indices[:] = i
                 sym_indices.append(indices)
-                sym_count += 1
         from chimerax.atomic import concatenate
-        print('Found atoms array length: {}'.format(len(found_atoms)))
         found_atoms = concatenate(found_atoms)
-        from chimerax.core.geometry import Places
-        symops = Places(place_array=numpy.concatenate(sym_matrices))
         sym_indices = numpy.concatenate(sym_indices)
-        return (found_atoms, symops, sym_indices)
+        return (found_atoms, symmats, sym_indices, symops)
 
 
 
@@ -426,6 +453,14 @@ class AtomicSymmetryModel(Model):
                 self._update_box()
                 self.update_graphics()
         elif not flag and self._live_scrolling:
+            from chimerax.atomic import concatenate
+            res = whole_residue_sym_sphere(self.structure.residues, self._current_tfs, self._center, self._radius, visible_only=False)
+            ma = res[0]
+            sa = res[1]
+            fa = concatenate((ma, sa))
+            fs = numpy.concatenate((numpy.zeros(len(ma), numpy.uint8), res[3]))
+            self._current_focal_set = (fa, self._current_tfs, fs, self._current_symops)
+
             if bh is not None:
                 self.parent.triggers.remove_handler(bh)
                 self._box_changed_handler = None
@@ -442,17 +477,6 @@ class AtomicSymmetryModel(Model):
             self.update_graphics()
 
     @property
-    def spotlight_mode(self):
-        return self._spotlight_mode
-
-    @spotlight_mode.setter
-    def spotlight_mode(self, flag):
-        if flag != self._spotlight_mode:
-            self._spotlight_mode = flag
-            if not flag:
-                self.unhide_all_atoms()
-
-    @property
     def display(self):
         return super().display
 
@@ -462,7 +486,7 @@ class AtomicSymmetryModel(Model):
             self.unhide_all_atoms()
         super().set_display(flag)
         if flag:
-            if self.spotlight_mode:
+            if self.live_scrolling:
                 self._center = self.session.view.center_of_rotation
                 self._update_box()
             self.update_graphics()
@@ -491,46 +515,86 @@ class AtomicSymmetryModel(Model):
         grid_dim = (dim / self.parent._voxel_size).astype(numpy.int32)
         symops = self._current_symops = self.unit_cell.all_symops_in_box(box_corner_xyz, grid_dim, True)
         # Identity symop will always be the first in the list
-        if self._include_identity:
-            first_symop = 0
-        else:
-            first_symop = 1
         tfs = self._current_tfs = symops.all_matrices_orth(self.cell, format='3x4')
         atoms = self.structure.atoms
-        if self._spotlight_mode:
-            atoms.hides |=HIDE_ISOLDE
-        self._current_atoms, self._current_atom_coords, self._current_atom_syms, \
-            self._current_bonds, self._current_bond_tfs, self._current_bond_syms = \
-                whole_residue_sym_sphere(self.structure.residues,tfs[first_symop:], center, radius)
+        atoms.hides |=HIDE_ISOLDE
+        self._current_master_atoms, self._current_sym_atoms, self._current_sym_atom_coords, \
+        self._current_atom_syms, self._current_bonds, self._current_bond_tfs, \
+        self._current_bond_syms = \
+                whole_residue_sym_sphere(self.structure.residues, tfs, center, radius)
                 #sym_transforms_in_sphere(atoms, tfs[first_symop:], center, radius)
-        self._current_atom_syms += first_symop
-        ca = self._current_atoms
-        csym = self._current_atom_syms
-        if len(ca):
-            crs = self._current_ribbon_syms = numpy.unique(csym)
-            if self._spotlight_mode:
-                ca[csym==0].hides &= ~HIDE_ISOLDE
-                self._current_ribbon_syms = crs[crs!=0]
+        cm = self._current_master_atoms
+        if len(cm):
+            crs = self._current_ribbon_syms = numpy.unique(self._current_atom_syms)
+            cm.hides &= ~HIDE_ISOLDE
+            self._current_ribbon_syms = crs[crs!=0]
         else:
-            if self._spotlight_mode:
-                # Don't want the identity operator in this case
-                tfs = self._current_tfs = tfs[1:]
+            # Don't want the identity operator in this case
+            tfs = self._current_tfs = tfs[1:]
             self._current_ribbon_syms = sym_ribbons_in_sphere(self._ribbon_drawing._tether_coords, tfs, center, radius)
 
+
+    def set_sym_display(self, symops, primary_atoms, sym_atoms, sym_coords, atom_sym_indices,
+        sym_bonds, sym_bond_tfs, bond_sym_indices):
+        '''
+        Manually define the set of symmetry atoms to be displayed.
+        Args:
+            primary_atoms:
+                A ChimeraX Atoms object defining the atoms in the master model
+                to be displayed.
+            symops:
+                A Clipper Symops object defining the symmetry transforms
+            sym_atoms:
+                A ChimeraX Atoms object listing the symmetry atoms to be displayed
+            sym_coords:
+                The symmetry coordinates corresponding to sym_atoms
+            atom_sym_indices:
+                A Numpy integer array of length equal to sym_atoms, giving the
+                index of the corresponding symmetry operator in symops
+            sym_bonds:
+                A ChimeraX Bonds object listing the symmetry bonds to be
+                displayed.
+            sym_bond_tfs:
+                A Places object providing the halfbond cylinder transforms to
+                draw the sym_bonds in their correct positions
+            bond_sym_indices:
+                A Numpy integer array of length equal to sym_bonds, giving the
+                index of the corresponding symmetry operator in symops
+        '''
+        self.live_scrolling = False
+        all_atoms = self.structure.atoms
+        all_atoms.hides |= HIDE_ISOLDE
+        primary_atoms.hides &= ~HIDE_ISOLDE
+        self._current_symops = symops
+        self._current_tfs = symops.all_matrices_orth(self.cell, format='3x4')
+        self._current_master_atoms = primary_atoms
+        self._current_sym_atoms = sym_atoms
+        self._current_sym_atom_coords = sym_coords
+        csym = self._current_atom_syms = atom_sym_indices
+        self._current_bonds = sym_bonds
+        self._current_bond_tfs = sym_bond_tfs
+        self._current_bond_syms = bond_sym_indices
+        self._current_ribbon_syms = numpy.unique(csym)
+        self.update_graphics()
 
     def _model_changed_cb(self, trigger_name, changes):
         if not self.visible:
             return
         changes = changes[1]
         update_needed = False
+        ribbon_update_needed = False
         if len(changes.created_atoms()):
             update_needed = True
+            ribbon_update_needed = True
         if changes.num_deleted_atoms() > 0:
             update_needed = True
+            ribbon_update_needed = True
         reasons = changes.atom_reasons()
         if 'coord changed' in reasons:
+            ribbon_update_needed = True
             update_needed = True
         if 'display changed' in reasons:
+            ribbon_update_needed = True
             update_needed = True
         if  'hide changed' in reasons:
             hides = self.structure.atoms.hides
@@ -540,12 +604,30 @@ class AtomicSymmetryModel(Model):
                 update_needed = True
             self._last_hides = current_hides
         if 'color changed' in reasons:
+            ribbon_update_needed = True
             update_needed = True
         if 'ribbon_display changed' in changes.residue_reasons():
+            ribbon_update_needed = True
+        if (ribbon_update_needed):
             self._ribbon_drawing.delayed_rebuild(self.session)
         if (update_needed):
-            self._update_box()
+            if self.live_scrolling:
+                self._update_box()
+                self.update_graphics()
+            else:
+                self._update_sym_coords()
+
+    def _update_sym_coords(self):
+        focal_set = self._current_focal_set
+        try:
+            res = atom_and_bond_sym_transforms_from_sym_atoms(*focal_set[0:3])
+            self.set_sym_display(focal_set[3], *res)
+        except:
+            from chimerax.atomic import Atoms, Bonds
+            self._current_sym_atoms = Atoms()
+            self._current_bonds = Bonds()
             self.update_graphics()
+
 
     def update_graphics(self):
         lod = self._level_of_detail
@@ -555,23 +637,30 @@ class AtomicSymmetryModel(Model):
 
     def _update_atom_graphics(self, lod):
         ad = self._atoms_drawing
-        lod.set_atom_sphere_geometry(ad)
-        ca = self._current_atoms
-        ad.visible_atoms = ca
+        ca = self._current_sym_atoms
+        if not len(ca):
+            ad.display=False
+            return
         syms = self._current_atom_syms
+        coords = self._current_sym_atom_coords
+        # if not self.live_scrolling:
+        #     mask = _atoms_only_hidden_by_clipper(ca)
+        #     ca = ca[mask]
+        #     syms = syms[mask]
+        #     coords = coords[mask]
+        ad.visible_atoms = ca
+        lod.set_atom_sphere_geometry(ad)
+
         na = len(ca)
         if na > 0:
             ad.display = True
             xyzr = numpy.empty((na, 4), numpy.float32)
-            xyzr[:,:3] = self._current_atom_coords
+            xyzr[:,:3] = coords
             xyzr[:,3] = self.structure._atom_display_radii(ca)
             from chimerax.core.geometry import Places
             ad.positions = Places(shift_and_scale = xyzr)
             colors = ca.colors.astype(numpy.float32)
-            if self._include_identity:
-                colors[syms!=0,:3] *= self._color_dim_factor
-            else:
-                colors[:,:3] *= self._color_dim_factor
+            colors[:,:3] *= self._color_dim_factor
             ad.colors = colors.astype(numpy.uint8)
         else:
             ad.display = False
@@ -579,18 +668,27 @@ class AtomicSymmetryModel(Model):
 
     def _update_bond_graphics(self, lod):
             bd = self._bonds_drawing
+            bonds = self._current_bonds
+            if not len(bonds):
+                bd.display = False
+                return
+            bsym = self._current_bond_syms
+            b_tfs = self._current_bond_tfs
+            # if not self.live_scrolling:
+            #     mask = _bonds_only_hidden_by_clipper(bonds)
+            #     bonds = bonds[mask]
+            #     mask = numpy.concatenate((mask, mask))
+            #     bsym = bsym[mask]
+            #     from chimerax.core.geometry import Places
+            #     b_tfs = Places(place_array=b_tfs.array()[mask])
             lod.set_bond_cylinder_geometry(bd)
-            bonds = bd.visible_bonds = self._current_bonds
+            bd.visible_bonds = bonds
             nb = len(bonds)
             if nb > 0:
                 bd.display = True
-                bd.positions = self._current_bond_tfs
+                bd.positions = b_tfs
                 colors = bonds.half_colors.astype(numpy.float32)
-                if self._include_identity:
-                    mask = numpy.concatenate([self._current_bond_syms!=0]*2)
-                    colors[mask, :3] *= self._color_dim_factor
-                else:
-                    colors[:,:3] *= self._color_dim_factor
+                colors[:,:3] *= self._color_dim_factor
                 bd.colors = colors.astype(numpy.uint8)
             else:
                 bd.display = False
@@ -756,6 +854,20 @@ class SymRibbonDrawing(Drawing):
                 colors[:,:3] *= dim_factor
                 td.colors = colors
         self.find_tether_coords()
+
+
+def _atoms_only_hidden_by_clipper(atoms):
+    hides = atoms.hides
+    return numpy.logical_and(atoms.displays,
+        numpy.logical_not(numpy.logical_and(hides&HIDE_ISOLDE, hides&~HIDE_ISOLDE)))
+
+def _bonds_only_hidden_by_clipper(bonds):
+    atoms = bonds.atoms
+    return numpy.logical_and(bonds.displays, numpy.logical_and(
+        _atoms_only_hidden_by_clipper(atoms[0]),
+        _atoms_only_hidden_by_clipper(atoms[1])
+    ))
+
 
 
 

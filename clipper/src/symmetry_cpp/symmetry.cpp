@@ -105,40 +105,47 @@ bool only_hidden_by_clipper(Bond *b) {
     return b->display() && only_hidden_by_clipper(a[0]) && only_hidden_by_clipper(a[1]);
 }
 
-void fill_atom_and_bond_sym_tuple(PyObject *ret, const std::vector<Atom *>& atoms,
+void fill_atom_and_bond_sym_tuple(PyObject *ret,
+    const std::vector<Atom *>& primary_atoms, const std::vector<Atom *>& atoms,
     const std::vector<double>& coords, const std::vector<uint8_t>& atom_sym_indices,
     const std::vector<Bond *>& bonds, const std::vector<float32_t>& bond_tfs,
     const std::vector<uint8_t>& bond_sym_indices)
 {
-    // first tuple item: symmetry atoms
+    // first tuple item: atoms in the primary asu
+    void **paptrs;
+    PyObject *primary_atom_ptr_array = python_voidp_array(primary_atoms.size(), &paptrs);
+    for (const auto &ptr: primary_atoms)
+        *paptrs++ = ptr;
+    PyTuple_SET_ITEM(ret, 0, primary_atom_ptr_array);
+    // second tuple item: symmetry atoms
     void **aptrs;
     PyObject *atom_ptr_array = python_voidp_array(atoms.size(), &aptrs);
     for (const auto &ptr: atoms)
         *aptrs++ = ptr;
-    PyTuple_SET_ITEM(ret, 0, atom_ptr_array);
+    PyTuple_SET_ITEM(ret, 1, atom_ptr_array);
 
-    // second tuple item: symmetry coords;
+    // third tuple item: symmetry coords;
     double *acoords;
     PyObject *atom_coord_array = python_double_array(coords.size(), &acoords);
     for (const auto &coord: coords)
         *acoords++ = coord;
-    PyTuple_SET_ITEM(ret, 1, atom_coord_array);
+    PyTuple_SET_ITEM(ret, 2, atom_coord_array);
 
-    // third tuple item: atom symop indices
+    // fourth tuple item: atom symop indices
     uint8_t *asym;
     PyObject *atom_sym_array = python_uint8_array(atom_sym_indices.size(), &asym);
     for (const auto &sym: atom_sym_indices)
         *(asym++) = sym;
-    PyTuple_SET_ITEM(ret, 2, atom_sym_array);
+    PyTuple_SET_ITEM(ret, 3, atom_sym_array);
 
-    // fourth tuple item: symmetry bonds
+    // fifth tuple item: symmetry bonds
     void **bptrs;
     PyObject *bond_ptr_array = python_voidp_array(bonds.size(), &bptrs);
     for (const auto &ptr: bonds)
         *bptrs++ = ptr;
-    PyTuple_SET_ITEM(ret, 3, bond_ptr_array);
+    PyTuple_SET_ITEM(ret, 4, bond_ptr_array);
 
-    // fifth tuple item: bond transforms.
+    // sixth tuple item: bond transforms.
     // This is a bit ugly: the default arrangement for halfbond transforms
     // is to do the first set of halfbonds followed by the second
     // (i.e. AAAAAABBBBBB). But up until now it's been much more convenient
@@ -158,23 +165,39 @@ void fill_atom_and_bond_sym_tuple(PyObject *ret, const std::vector<Atom *>& atom
         }
         tf+=GL_TF_SIZE;
     }
-    PyTuple_SET_ITEM(ret, 4, bond_transform_array);
+    PyTuple_SET_ITEM(ret, 5, bond_transform_array);
 
-    // sixth tuple item: bond symop indices
+    // seventh tuple item: bond symop indices. One index per halfbond.
     uint8_t *bsym;
-    PyObject *bond_sym_array = python_uint8_array(bond_sym_indices.size(), &bsym);
-    for (const auto &sym: bond_sym_indices)
+    PyObject *bond_sym_array = python_uint8_array(bond_sym_indices.size()*2, &bsym);
+    uint8_t *bsym2 = bsym+bond_sym_indices.size();
+    for (const auto &sym: bond_sym_indices) {
         *(bsym++) = sym;
-    PyTuple_SET_ITEM(ret, 5, bond_sym_array);
+        *(bsym2++) = sym;
+    }
+    PyTuple_SET_ITEM(ret, 6, bond_sym_array);
 }
 
-
+//! Find all whole residues with atoms entering a spherical volume, including symmetry
+ /* The first transform must always be the identity operator.
+  * Returns a 7-tuple containing:
+  *     (1) Atoms from the main model matching the search criteria (these will
+  *         be drawn as normal by ChimeraX)
+  *     (2) Visible atoms from symmetry copies matching the search criteria
+  *     (3) The symmetry coordinates for the atoms in (2)
+  *     (4) Indices mapping each atom in (2) to its symmetry operator
+  *     (5) All visible bonds between atoms in (2)
+  *     (6) The halfbond_cylinder_transforms necessary to draw the bonds in
+  *         (5)
+  *     (7) Indices mapping each bond in (5) to its symmetry operator.
+  */
 extern "C" EXPORT PyObject* atom_and_bond_sym_transforms_by_residue(void *residues, size_t nres,
-    double *transforms, size_t n_tf, double *center, double cutoff)
+    double *transforms, size_t n_tf, double *center, double cutoff, npy_bool visible_only)
 {
     Residue **res = static_cast<Residue **>(residues);
-    PyObject *ret = PyTuple_New(6);
+    PyObject *ret = PyTuple_New(7);
     try {
+        std::vector<Atom *> primary_atoms;
         std::vector<Atom *> sym_atoms;
         std::vector<double> sym_coords;
         std::vector<uint8_t> atom_sym_indices;
@@ -182,9 +205,27 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms_by_residue(void *residu
         std::vector<float32_t> bond_tfs;
         std::vector<uint8_t> bond_sym_indices;
 
+        // Get all the atoms in the search sphere from the primary model first.
+        // We don't have to apply a symmetry operator or draw anything for these
+        // atoms, but we do need to know what they are so we know what to hide/
+        // show.
+        Residue **r = res;
+        for (size_t i=0; i<nres; ++i)
+        {
+            for (auto a: (*r)->atoms()) {
+                if (distance_below_cutoff(a->coord(), center, cutoff))
+                {
+                    for (auto aa: (*r)->atoms()) {
+                        primary_atoms.push_back(aa);
+                    }
+                    break;
+                }
+            }
+            r++;
+        }
         double tf_coord[3];
-        for (size_t i=0; i<n_tf; ++i) {
-            Residue **r = res;
+        for (size_t i=1; i<n_tf; ++i) {
+            r = res;
             double *tf = transforms + i*TF_SIZE;
             std::unordered_map<Atom*, std::array<double, 3>> atom_sym_map;
 
@@ -196,7 +237,7 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms_by_residue(void *residu
                     {
                         // collect all atoms in the residue
                         for (auto aa: (*r)->atoms()) {
-                            if (only_hidden_by_clipper(aa)) {
+                            if (!visible_only || only_hidden_by_clipper(aa)) {
                                 transform_coord<double, Coord>(tf, aa->coord(), atom_sym_map[aa].data());
                             }
                         }
@@ -213,7 +254,7 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms_by_residue(void *residu
                 for (auto bb = bonds.begin(); bb!=bonds.end(); ++bb)
                 {
                     Bond *b = *bb;
-                    if (!only_hidden_by_clipper(b)) continue;
+                    if (visible_only && !only_hidden_by_clipper(b)) continue;
                     if (bond_map.find(b) != bond_map.end()) continue;
                     const Bond::Atoms &batoms = b->atoms();
                     auto a1 = atom_sym_map.find(batoms[0]);
@@ -246,8 +287,8 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms_by_residue(void *residu
             }
         }
 
-        fill_atom_and_bond_sym_tuple(ret, sym_atoms, sym_coords, atom_sym_indices,
-            sym_bonds, bond_tfs, bond_sym_indices);
+        fill_atom_and_bond_sym_tuple(ret, primary_atoms, sym_atoms,
+            sym_coords, atom_sym_indices, sym_bonds, bond_tfs, bond_sym_indices);
 
         return ret;
 
@@ -258,15 +299,30 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms_by_residue(void *residu
     }
 }
 
+//! Find all atoms in a spherical volume, including symmetry
+ /* The first transform must always be the identity operator.
+  * Returns a 7-tuple containing:
+  *     (1) Atoms from the main model matching the search criteria (these will
+  *         be drawn as normal by ChimeraX)
+  *     (2) Visible atoms from symmetry copies matching the search criteria
+  *     (3) The symmetry coordinates for the atoms in (2)
+  *     (4) Indices mapping each atom in (2) to its symmetry operator
+  *     (5) All visible bonds between atoms in (2)
+  *     (6) The halfbond_cylinder_transforms necessary to draw the bonds in
+  *         (5)
+  *     (7) Indices mapping each bond in (5) to its symmetry operator.
+  */
+
 extern "C" EXPORT PyObject*
 atom_and_bond_sym_transforms(void *atoms, size_t natoms, double *transforms,
-    size_t n_tf, double *center, double cutoff)
+    size_t n_tf, double *center, double cutoff, npy_bool visible_only)
 {
     Atom **a = static_cast<Atom **>(atoms);
-    PyObject *ret = PyTuple_New(6);
+    PyObject *ret = PyTuple_New(7);
     try {
         Sym_Close_Points cp = Sym_Close_Points();
         std::vector<double> coords(natoms*3);
+        std::vector<Atom *> primary_atoms;
         Atom **aa = a;
         std::vector<Atom *> visible_atoms;
         // Prune to only visible atoms and get their coordinates
@@ -274,7 +330,9 @@ atom_and_bond_sym_transforms(void *atoms, size_t natoms, double *transforms,
         for (size_t i=0; i<natoms; ++i)
         {
             auto this_a = *aa++;
-            if (only_hidden_by_clipper(this_a)) //(this_a->visible())
+            if (distance_below_cutoff(this_a->coord(), center, cutoff))
+                primary_atoms.push_back(this_a);
+            if (!visible_only || only_hidden_by_clipper(this_a)) //(this_a->visible())
             {
                 const auto& coord = this_a->coord();
                 for (size_t j=0; j<3; ++j)
@@ -296,7 +354,7 @@ atom_and_bond_sym_transforms(void *atoms, size_t natoms, double *transforms,
         std::vector<float32_t> ret_bond_tfs;
         std::vector<uint8_t> ret_bond_sym;
 
-        for (size_t i=0; i<n_tf; ++i)
+        for (size_t i=1; i<n_tf; ++i)
         {
             const auto& indices = symmap[i].first;
             auto& coords = symmap[i].second;
@@ -314,7 +372,7 @@ atom_and_bond_sym_transforms(void *atoms, size_t natoms, double *transforms,
                 for (auto b = abonds.begin(); b!= abonds.end(); ++b)
                 {
                     Bond *bond = *b;
-                    if (!only_hidden_by_clipper(bond)) continue;
+                    if (visible_only && !only_hidden_by_clipper(bond)) continue;
                     const Bond::Atoms &batoms = bond->atoms();
                     auto bi = sym_bond_coords.find(bond);
                     if (bi != sym_bond_coords.end()) continue;
@@ -336,7 +394,7 @@ atom_and_bond_sym_transforms(void *atoms, size_t natoms, double *transforms,
                 ret_atom_sym.push_back(i);
             }
             size_t old_bond_tf_size = ret_bond_tfs.size();
-            ret_bond_tfs.resize(old_bond_tf_size + 32*sym_bond_coords.size());
+            ret_bond_tfs.resize(old_bond_tf_size + GL_TF_SIZE*2*sym_bond_coords.size());
             float32_t *bond_tf = ret_bond_tfs.data() + old_bond_tf_size;
             for (const auto &it: sym_bond_coords) {
                 auto b = it.first;
@@ -348,8 +406,8 @@ atom_and_bond_sym_transforms(void *atoms, size_t natoms, double *transforms,
             }
         }
 
-        fill_atom_and_bond_sym_tuple(ret, ret_atoms, ret_coords, ret_atom_sym,
-            ret_bonds, ret_bond_tfs, ret_bond_sym);
+        fill_atom_and_bond_sym_tuple(ret, primary_atoms, ret_atoms, ret_coords,
+            ret_atom_sym, ret_bonds, ret_bond_tfs, ret_bond_sym);
 
         return ret;
 
@@ -360,13 +418,27 @@ atom_and_bond_sym_transforms(void *atoms, size_t natoms, double *transforms,
     }
 }
 
+//! Provide the information necessary to draw a predefined set of symmetry atoms.
+ /* The first transform must always be the identity operator.
+  * Returns a 7-tuple containing:
+  *     (1) Atoms corresponding to the identity symop (these will be drawn as
+  *         normal by ChimeraX)
+  *     (2) Visible atoms from symmetry copies
+  *     (3) The symmetry coordinates for the atoms in (2)
+  *     (4) Indices mapping each atom in (2) to its symmetry operator
+  *     (5) All visible bonds between atoms in (2)
+  *     (6) The halfbond_cylinder_transforms necessary to draw the bonds in
+  *         (5)
+  *     (7) Indices mapping each bond in (5) to its symmetry operator.
+  */
 extern "C" EXPORT PyObject*
 atom_and_bond_sym_transforms_from_sym_atoms(void *atoms, uint8_t *sym_indices,
-    size_t natoms, double *transforms, size_t n_tf)
+    size_t natoms, double *transforms, size_t n_tf, npy_bool visible_only)
 {
     Atom** a = static_cast<Atom **>(atoms);
-    PyObject *ret = PyTuple_New(6);
+    PyObject *ret = PyTuple_New(7);
     try {
+        std::vector<Atom *> primary_atoms;
         std::vector<Atom *> ret_atoms;
         std::vector<double> ret_coords(natoms*3);
         std::vector<uint8_t> ret_atom_sym;
@@ -379,10 +451,12 @@ atom_and_bond_sym_transforms_from_sym_atoms(void *atoms, uint8_t *sym_indices,
         double *coords = ret_coords.data();
         for (size_t i=0; i<natoms; ++i)
         {
-            if (only_hidden_by_clipper(*aa))
+            auto atom = *aa++;
+            auto sym_index = *(si++);
+            if (sym_index == 0)
+                primary_atoms.push_back(atom);
+            else if (!visible_only || only_hidden_by_clipper(atom))
             {
-                auto atom = *aa++;
-                auto sym_index = *(si++);
                 ret_atoms.push_back(atom);
                 ret_atom_sym.push_back(sym_index);
                 transform_coord(transforms+sym_index*TF_SIZE, atom->coord(), coords);
@@ -390,6 +464,9 @@ atom_and_bond_sym_transforms_from_sym_atoms(void *atoms, uint8_t *sym_indices,
             }
         }
         natoms = ret_atoms.size();
+        if (natoms ==0) {
+            throw std::logic_error("No atoms visible!");
+        }
         ret_coords.resize(natoms*3);
         uint8_t current_sym = ret_atom_sym[0];
         coords = ret_coords.data();
@@ -412,7 +489,7 @@ atom_and_bond_sym_transforms_from_sym_atoms(void *atoms, uint8_t *sym_indices,
                 for (auto b = abonds.begin(); b != abonds.end(); ++b)
                 {
                     Bond *bond = *b;
-                    if (!only_hidden_by_clipper(bond)) continue;
+                    if (visible_only && !only_hidden_by_clipper(bond)) continue;
                     const Bond::Atoms &batoms = bond->atoms();
                     auto bi = sym_bond_coords.find(bond);
                     if (bi != sym_bond_coords.end()) continue;
@@ -442,8 +519,8 @@ atom_and_bond_sym_transforms_from_sym_atoms(void *atoms, uint8_t *sym_indices,
             current_sym = *asym;
         }
 
-        fill_atom_and_bond_sym_tuple(ret, ret_atoms, ret_coords, ret_atom_sym,
-            ret_bonds, ret_bond_tfs, ret_bond_sym);
+        fill_atom_and_bond_sym_tuple(ret, primary_atoms, ret_atoms, ret_coords,
+            ret_atom_sym, ret_bonds, ret_bond_tfs, ret_bond_sym);
 
         return ret;
 

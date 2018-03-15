@@ -866,7 +866,7 @@ def set_to_default_cartoon(session, model = None):
     except:
         return
 
-
+#TODO: update Surface_Zone class to handle symmetry atoms
 class Surface_Zone:
     '''
     Add this as a property to a Volume object to provide it with the
