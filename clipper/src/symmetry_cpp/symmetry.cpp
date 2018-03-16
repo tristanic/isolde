@@ -64,13 +64,16 @@ void halfbond_cylinder_placement(const Coord &xyz0, const Coord &xyz1, double r,
 	*m44b++ = 1;
 }
 
+// Find all symmetry ribbons where at least one tether projects into the
+// sphere defined by center and cutoff. The first transform should always
+// be the identity operator.
 extern "C" EXPORT PyObject* close_sym_ribbon_transforms(double *tether_coords,
     size_t n_tethers, double *transforms, size_t n_tf, double *center, double cutoff)
 {
     try {
         std::vector<size_t> found_tfs;
         double tf_coord[3];
-        for (size_t i=0; i<n_tf; ++i)
+        for (size_t i=1; i<n_tf; ++i)
         {
             double *tf = transforms + i*TF_SIZE;
             double *tc = tether_coords;
@@ -237,7 +240,7 @@ extern "C" EXPORT PyObject* atom_and_bond_sym_transforms_by_residue(void *residu
                     {
                         // collect all atoms in the residue
                         for (auto aa: (*r)->atoms()) {
-                            if (!visible_only || only_hidden_by_clipper(aa)) {
+                            if (!(visible_only && !only_hidden_by_clipper(aa))) {
                                 transform_coord<double, Coord>(tf, aa->coord(), atom_sym_map[aa].data());
                             }
                         }
@@ -332,7 +335,7 @@ atom_and_bond_sym_transforms(void *atoms, size_t natoms, double *transforms,
             auto this_a = *aa++;
             if (distance_below_cutoff(this_a->coord(), center, cutoff))
                 primary_atoms.push_back(this_a);
-            if (!visible_only || only_hidden_by_clipper(this_a)) //(this_a->visible())
+            if (!(visible_only && !only_hidden_by_clipper(this_a))) //(this_a->visible())
             {
                 const auto& coord = this_a->coord();
                 for (size_t j=0; j<3; ++j)
@@ -455,7 +458,7 @@ atom_and_bond_sym_transforms_from_sym_atoms(void *atoms, uint8_t *sym_indices,
             auto sym_index = *(si++);
             if (sym_index == 0)
                 primary_atoms.push_back(atom);
-            else if (!visible_only || only_hidden_by_clipper(atom))
+            else if (!(visible_only && !only_hidden_by_clipper(atom)))
             {
                 ret_atoms.push_back(atom);
                 ret_atom_sym.push_back(sym_index);
@@ -464,61 +467,63 @@ atom_and_bond_sym_transforms_from_sym_atoms(void *atoms, uint8_t *sym_indices,
             }
         }
         natoms = ret_atoms.size();
-        if (natoms ==0) {
-            throw std::logic_error("No atoms visible!");
-        }
         ret_coords.resize(natoms*3);
-        uint8_t current_sym = ret_atom_sym[0];
-        coords = ret_coords.data();
-        aa = ret_atoms.data();
-        uint8_t *asym = ret_atom_sym.data();
-        size_t count = 0;
-        for (size_t i=0; i<n_tf; ++i)
+        // if (natoms ==0) {
+        //     throw std::logic_error("No atoms visible!");
+        // }
+        if (natoms > 0)
         {
-            std::unordered_map<Atom*, double*> amap;
-            while (*(asym++) == current_sym && count < natoms) {
-                amap[*aa++] = coords;
-                coords += 3;
-                count++;
-            }
-            std::unordered_map<Bond*, std::pair<double*, double*>> sym_bond_coords;
-            for (auto &amap_it: amap)
+            uint8_t current_sym = ret_atom_sym[0];
+            coords = ret_coords.data();
+            aa = ret_atoms.data();
+            uint8_t *asym = ret_atom_sym.data();
+            size_t count = 0;
+            for (size_t i=0; i<n_tf; ++i)
             {
-                auto a = amap_it.first;
-                const Atom::Bonds &abonds = a->bonds();
-                for (auto b = abonds.begin(); b != abonds.end(); ++b)
-                {
-                    Bond *bond = *b;
-                    if (visible_only && !only_hidden_by_clipper(bond)) continue;
-                    const Bond::Atoms &batoms = bond->atoms();
-                    auto bi = sym_bond_coords.find(bond);
-                    if (bi != sym_bond_coords.end()) continue;
-                    auto a1 = amap.find(batoms[0]);
-                    if (a1 == amap.end()) continue;
-                    auto a2 = amap.find(batoms[1]);
-                    if (a2 == amap.end()) continue;
-
-                    sym_bond_coords.emplace(std::make_pair(bond,
-                        std::make_pair(a1->second, a2->second)));
-
+                std::unordered_map<Atom*, double*> amap;
+                while (*(asym++) == current_sym && count < natoms) {
+                    amap[*aa++] = coords;
+                    coords += 3;
+                    count++;
                 }
-            }
-            size_t old_bond_tf_size = ret_bond_tfs.size();
-            ret_bond_tfs.resize(old_bond_tf_size + GL_TF_SIZE*2*sym_bond_coords.size());
-            float32_t *bond_tf = ret_bond_tfs.data() + old_bond_tf_size;
-            for (const auto &it: sym_bond_coords)
-            {
-                auto b = it.first;
-                ret_bonds.push_back(b);
-                const auto &cpair = it.second;
-                halfbond_cylinder_placement(Coord(cpair.first), Coord(cpair.second),
-                    b->radius(), bond_tf);
-                bond_tf += GL_TF_SIZE*2;
-                ret_bond_sym.push_back(current_sym);
-            }
-            current_sym = *asym;
-        }
+                std::unordered_map<Bond*, std::pair<double*, double*>> sym_bond_coords;
+                for (auto &amap_it: amap)
+                {
+                    auto a = amap_it.first;
+                    const Atom::Bonds &abonds = a->bonds();
+                    for (auto b = abonds.begin(); b != abonds.end(); ++b)
+                    {
+                        Bond *bond = *b;
+                        if (visible_only && !only_hidden_by_clipper(bond)) continue;
+                        const Bond::Atoms &batoms = bond->atoms();
+                        auto bi = sym_bond_coords.find(bond);
+                        if (bi != sym_bond_coords.end()) continue;
+                        auto a1 = amap.find(batoms[0]);
+                        if (a1 == amap.end()) continue;
+                        auto a2 = amap.find(batoms[1]);
+                        if (a2 == amap.end()) continue;
 
+                        sym_bond_coords.emplace(std::make_pair(bond,
+                            std::make_pair(a1->second, a2->second)));
+
+                    }
+                }
+                size_t old_bond_tf_size = ret_bond_tfs.size();
+                ret_bond_tfs.resize(old_bond_tf_size + GL_TF_SIZE*2*sym_bond_coords.size());
+                float32_t *bond_tf = ret_bond_tfs.data() + old_bond_tf_size;
+                for (const auto &it: sym_bond_coords)
+                {
+                    auto b = it.first;
+                    ret_bonds.push_back(b);
+                    const auto &cpair = it.second;
+                    halfbond_cylinder_placement(Coord(cpair.first), Coord(cpair.second),
+                        b->radius(), bond_tf);
+                    bond_tf += GL_TF_SIZE*2;
+                    ret_bond_sym.push_back(current_sym);
+                }
+                current_sym = *asym;
+            }
+        }
         fill_atom_and_bond_sym_tuple(ret, primary_atoms, ret_atoms, ret_coords,
             ret_atom_sym, ret_bonds, ret_bond_tfs, ret_bond_sym);
 

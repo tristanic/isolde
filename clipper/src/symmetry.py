@@ -103,7 +103,8 @@ def sym_ribbons_in_sphere(tether_coords, transforms, center, cutoff):
     tf[:] = transforms
     c = numpy.empty(3, numpy.double)
     c[:] = center
-    return f(pointer(tc), len(tc), pointer(tf), len(tf), pointer(c), cutoff)
+    result = f(pointer(tc), len(tc), pointer(tf), len(tf), pointer(c), cutoff)
+    return result
 
 def symmetry_coords(atoms, sym_matrices, sym_indices):
     unique_indices = numpy.unique(sym_indices)
@@ -162,7 +163,8 @@ class XtalSymmetryHandler(Model):
 
             if len(mtzdata.calculated_data):
                 from .crystal import XmapSet
-                xmapset = self.xmapset = XmapSet(session, mtzdata.calculated_data, self)
+                xmapset = self.xmapset = XmapSet(session, mtzdata.calculated_data, self,
+                    live_scrolling = live_map_scrolling, display_radius = map_scrolling_radius)
                 xmapset.pickable = False
                 self.add([xmapset])
         else:
@@ -287,7 +289,6 @@ class XtalSymmetryHandler(Model):
         atoms = original_atoms.unique_residues.atoms
         asm = self.atomic_symmetry_model
         maps = self.xmapset
-        from chimerax.core.geometry import find_close_points
         main_set = asm.sym_select_within(atoms, include_surrounding_residues)
         main_coords = symmetry_coords(*main_set[0:3])
         context_set = asm.sym_select_within(main_set[0], show_context,
@@ -410,13 +411,6 @@ class AtomicSymmetryModel(Model):
         sym_indices = numpy.concatenate(sym_indices)
         return (found_atoms, symmats, sym_indices, symops)
 
-
-
-
-
-
-
-
     def delete(self):
         bh = self._box_changed_handler
         if bh is not None:
@@ -523,14 +517,12 @@ class AtomicSymmetryModel(Model):
         self._current_bond_syms = \
                 whole_residue_sym_sphere(self.structure.residues, tfs, center, radius)
                 #sym_transforms_in_sphere(atoms, tfs[first_symop:], center, radius)
-        cm = self._current_master_atoms
-        if len(cm):
+        self._current_master_atoms.hides &= ~HIDE_ISOLDE
+        cs = self._current_sym_atoms
+        if len(cs):
             crs = self._current_ribbon_syms = numpy.unique(self._current_atom_syms)
-            cm.hides &= ~HIDE_ISOLDE
             self._current_ribbon_syms = crs[crs!=0]
         else:
-            # Don't want the identity operator in this case
-            tfs = self._current_tfs = tfs[1:]
             self._current_ribbon_syms = sym_ribbons_in_sphere(self._ribbon_drawing._tether_coords, tfs, center, radius)
 
 
@@ -574,7 +566,7 @@ class AtomicSymmetryModel(Model):
         self._current_bonds = sym_bonds
         self._current_bond_tfs = sym_bond_tfs
         self._current_bond_syms = bond_sym_indices
-        self._current_ribbon_syms = numpy.unique(csym)
+        self._current_ribbon_syms = numpy.unique(csym[csym!=0])
         self.update_graphics()
 
     def _model_changed_cb(self, trigger_name, changes):
@@ -619,14 +611,14 @@ class AtomicSymmetryModel(Model):
 
     def _update_sym_coords(self):
         focal_set = self._current_focal_set
-        try:
-            res = atom_and_bond_sym_transforms_from_sym_atoms(*focal_set[0:3])
-            self.set_sym_display(focal_set[3], *res)
-        except:
-            from chimerax.atomic import Atoms, Bonds
-            self._current_sym_atoms = Atoms()
-            self._current_bonds = Bonds()
-            self.update_graphics()
+        # try:
+        res = atom_and_bond_sym_transforms_from_sym_atoms(*focal_set[0:3])
+        self.set_sym_display(focal_set[3], *res)
+        # except:
+        #     from chimerax.atomic import Atoms, Bonds
+        #     self._current_sym_atoms = Atoms()
+        #     self._current_bonds = Bonds()
+        #     self.update_graphics()
 
 
     def update_graphics(self):

@@ -1037,7 +1037,7 @@ class XmapSet(Model):
 
         for dataset in datasets:
             print('Working on dataset: {}'.format(dataset.name))
-            self.add_map_handler(dataset)
+            self.add_xmap_handler(dataset)
 
         # Apply the surface mask
         # self._reapply_zone()
@@ -1200,10 +1200,13 @@ class XmapSet(Model):
 
 
 
+    def add_nxmap_handler(self, volume):
+        from .real_space_map import NXmapHandler
+        m = NXmapHandler(self.session, self, volume)
+        self.add([m])
 
 
-
-    def add_map_handler(self, dataset, is_difference_map = None,
+    def add_xmap_handler(self, dataset, is_difference_map = None,
                 color = None, style = None, contour = None):
         '''
         Add a new XmapHandler based on the given reflections and phases.
@@ -1478,11 +1481,13 @@ class XmapHandler(Volume):
         self.data.values_changed()
 
     def delete(self):
-        if self._box_shape_changed_cb_handler is not None:
-            self.manager.triggers.remove_handler(self._box_shape_changed_cb_handler)
+        bh = self._box_shape_changed_cb_handler
+        if bh is not None:
+            self.manager.triggers.remove_handler(bh)
             self._box_shape_changed_cb_handler = None
-        if self._box_moved_cb_handler is not None:
-            self.manager.triggers.remove_handler(self._box_moved_cb_handler)
+        bm = self._box_moved_cb_handler
+        if bm is not None:
+            self.manager.triggers.remove_handler(bm)
             self._box_moved_cb_handler = None
         super(XmapHandler, self).delete()
 
