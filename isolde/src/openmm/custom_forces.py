@@ -128,6 +128,8 @@ class LinearInterpMapForce(CustomCompoundBondForce):
             name = 'global_k', defaultValue = 1.0)
         self._individual_k_index = self.addPerBondParameter(
             name = 'individual_k')
+        self._enabled_index = self.addPerBondParameter(
+            name = 'enabled')
         self.update_needed = False
 
     def _set_energy_function(self, tf, units):
@@ -186,10 +188,13 @@ class LinearInterpMapForce(CustomCompoundBondForce):
 
         energy_str = '-global_k * individual_k * {}'.format(interp_str)
 
-        func = ';'.join((energy_str, norm_str, val_str, min_str, max_str,
-                        i_str, j_str, k_str))
+        enabled_eqn = 'step(enabled-0.5)'
 
-        return func
+        funcs = ';'.join(( norm_str, val_str, min_str, max_str,
+                        i_str, j_str, k_str))
+        final_func = 'select({}, {}, 0); {}'.format(enabled_eqn, energy_str, funcs)
+
+        return final_func
 
     def _discrete3D_from_volume(self, data):
         dim = data.shape[::-1]
@@ -211,35 +216,35 @@ class LinearInterpMapForce(CustomCompoundBondForce):
         #~ f.setFunctionParameters(*dim, data_1d)
         #~ self.update_needed = True
 
-    def add_atoms(self, indices, ks):
+    def add_atoms(self, indices, ks, enableds):
         f = c_function('customcompoundbondforce_add_bonds',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
                 ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
         n = len(indices)
         ind = numpy.empty(n, int32)
         ind[:] = indices
-        params = numpy.empty(n, float64)
-        params[:] = ks
+        params = numpy.empty((n,2), float64)
+        params[:,0] = ks
+        params[:,1] = enableds
         ret = numpy.empty(n, int32)
         f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
         return ret
 
-    def update_spring_constant(self, index, k):
-        params = self.getBondParameters(index)
-        atom_i = params[0]
-        self.setBondParaeters(index, atom_i, (k,))
-
-    def update_spring_constants(self, indices, spring_constants):
+    def update_atoms(self, indices, coupling_constants, enableds):
         f = c_function('customcompoundbondforce_update_bond_parameters',
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
                 ctypes.POINTER(ctypes.c_double)))
         n = len(indices)
         ind = numpy.empty(n, int32)
         ind[:] = indices
-        ks = numpy.empty(n, float64)
-        ks[:] = spring_constants
-        f(int(self.this), n, pointer(ind), pointer(ks))
+        params = numpy.empty((n,2), float64)
+        params[:,0] = coupling_constants
+        params[:,1] = enableds
+        f(int(self.this), n, pointer(ind), pointer(params))
         self.update_needed = True
+
+    def update_atom(self, index, coupling_constant, enabled):
+        self.update_atoms([index], [coupling_constant], [enabled])
 
     def update_context_if_needed(self, context):
         if self.update_needed:

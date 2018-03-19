@@ -958,6 +958,7 @@ class Restraint_Change_Tracker:
         'Position_Restraint_Mgr': (_position_restraint_mgr, _position_restraints),
         'Distance_Restraint_Mgr': (_distance_restraint_mgr, _distance_restraints),
         'Tuggable_Atoms_Mgr': (_tuggable_atoms_mgr, _tuggable_atoms),
+        'MDFF_Mgr': (_mdff_mgr, _mdff_atoms),
     }
     def __init__(self, session, c_pointer=None):
         cname = 'change_tracker'
@@ -1010,7 +1011,7 @@ class Restraint_Change_Tracker:
                 for change_type, changed_ptrs in changeds.items():
                     changed_obj = class_funcs[1](changed_ptrs)
                     processed_changeds[change_type] = changed_obj
-                mgr.triggers.activate_trigger('changes', processed_changeds)
+                mgr.triggers.activate_trigger('changes', (mgr, processed_changeds))
         return processed_dict
 
     def _get_and_process_changes(self):
@@ -1030,7 +1031,7 @@ class _Restraint_Mgr(Model):
     '''Base class. Do not instantiate directly.'''
     def __init__(self, name, model, c_pointer=None, c_class_name = None):
         session = model.session
-        ct = self._change_tracker = _get_isolde_change_tracker(session)
+        ct = self._change_tracker = _get_restraint_change_tracker(session)
 
         if c_class_name is None:
             cname = type(self).__name__.lower()
@@ -1098,6 +1099,9 @@ class MDFF_Mgr(_Restraint_Mgr):
         name = 'MDFF - ' + volume.name
         super().__init__(name, model, c_pointer=c_pointer, c_class_name = "mdff_mgr")
         self._volume = volume
+        # Place as sub-model to the Volume object so deleting the Volume automatically
+        # deletes the MDFF manager
+        self.volume.add([self])
 
     @property
     def volume(self):
@@ -1107,11 +1111,47 @@ class MDFF_Mgr(_Restraint_Mgr):
         '''
         return self._volume
 
+    def _get_mdff_atoms(self, atoms, create=False):
+        f = c_function('mdff_mgr_get_mdff_atom',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_bool,
+                ctypes.c_void_p),
+            ret = ctypes.c_size_t)
+        n = len(atoms)
+        ret = numpy.empty(n, cptr)
+        count = f(self._c_pointer, atoms._c_pointers, n, create, pointer(ret))
+        return _mdff_atoms(ret[:count])
+
+    def add_mdff_atoms(self, atoms, hydrogens=False):
+        if not hydrogens:
+            atoms = atoms[atoms.element_names != "H"]
+        return self._get_mdff_atoms(atoms, create=True)
+
+    def get_mdff_atoms(self, atoms):
+        return self._get_mdff_atoms(atoms, create=False)
+
     def __len__(self):
         f = c_function('mdff_mgr_num_atoms',
             args=(ctypes.c_void_p,),
             ret = ctypes.c_size_t)
         return f(self._c_pointer)
+
+    def get_global_k(self):
+        '''
+        Global coupling constant applied to all atoms (scales the individual
+        atom coupling constants)
+        '''
+        f = c_function('mdff_mgr_global_k',
+            args=(ctypes.c_void_p,),
+            ret=ctypes.c_double)
+        return f(self._c_pointer)
+
+    def set_global_k(self, k):
+        f = c_function('set_mdff_mgr_global_k',
+            args=(ctypes.c_void_p, ctypes.c_double))
+        f(self._c_pointer, k)
+
+    global_k = property(get_global_k, set_global_k)
+
 
 class Position_Restraint_Mgr(_Restraint_Mgr):
     '''
@@ -1158,6 +1198,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         self._bond_drawing.color = color
 
     def _restraint_changes_cb(self, trigger_name, changes):
+        mgr, changes = changes
         update_bonds = True
         update_targets = False
         change_types = list(changes.keys())
@@ -1299,6 +1340,7 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
         return simple_arrow_geometry(radius=3, centered_on_origin=True)
 
     def _restraint_changes_cb(self, trigger_name, changes):
+        mgr, changes = changes
         self.update_graphics()
 
     def _model_changes_cb(self, trigger_name, changes):
@@ -1434,6 +1476,7 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         return surface.cylinder_geometry(radius = 0.025, height=1.0, caps=False)
 
     def _restraint_changes_cb(self, trigger_name, changes):
+        mgr, changes = changes
         self.update_graphics()
 
     def _model_changes_cb(self, trigger_name, changes):
@@ -1670,7 +1713,8 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         if update_needed:
             self.update_graphics()
 
-    def _restraint_changes_cb(self, trigger_name, changeds):
+    def _restraint_changes_cb(self, trigger_name, changes):
+        mgr, changes = changes
         # For the time being, just update on any trigger
         self.update_graphics()
 

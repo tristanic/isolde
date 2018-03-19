@@ -16,8 +16,14 @@ class SimTester:
         ta_m = self.tuggable_atoms_mgr = session_extensions.get_tuggable_atoms_mgr(model)
         dr_m = self.distance_restraints_mgr = session_extensions.get_distance_restraint_mgr(model)
 
-        mobile_atoms = selected_atoms.residues.atoms
-        fixed_atoms = get_shell_of_residues(model, mobile_atoms, 8).residues.atoms
+        mdff_mgr_map = self.mdff_mgrs = {}
+        from chimerax.map import Volume
+        for m in model.all_models():
+            if isinstance(m, Volume):
+                mdff_mgr_map[m] = session_extensions.get_mdff_mgr(model, m)
+
+        mobile_atoms = selected_atoms.unique_residues.atoms
+        fixed_atoms = get_shell_of_residues(model, mobile_atoms, 8).unique_residues.atoms
         all_sim_atoms = mobile_atoms.merge(fixed_atoms)
         all_atoms = model.residues.atoms
         mob_i = all_atoms.indices(mobile_atoms)
@@ -52,13 +58,14 @@ class SimTester:
         from ..molarray import Distance_Restraints
         distance_restraints = Distance_Restraints(distance_restraints)
 
+
         from ..openmm import openmm_interface, sim_param_mgr
         sim_construct = self.sim_construct = openmm_interface.Sim_Construct(all_sim_atoms, mobile_atoms, fixed_atoms)
         sim_params = self.params = sim_param_mgr.SimParams()
 
         sim_handler = self.sim_handler = openmm_interface.Sim_Handler(session, sim_params, sim_construct, 100.0)
 
-        sim_handler.initialize_custom_forces()
+        sim_handler.initialize_restraint_forces()
 
         ramas = rama_m.get_ramas(mobile_atoms.unique_residues)
         ramas = ramas[ramas.valids]
@@ -74,6 +81,15 @@ class SimTester:
         uh.append((pr_m, pr_m.triggers.add_handler('changes', self._pr_changed_cb)))
         uh.append((ta_m, ta_m.triggers.add_handler('changes', self._tug_changed_cb)))
 
+        sim_handler.initialize_mdff_forces(list(mdff_mgr_map.keys()))
+        for v, mgr in mdff_mgr_map.items():
+            mdff_atoms = mgr.add_mdff_atoms(mobile_atoms, hydrogens=False)
+            mdff_atoms.coupling_constants = mdff_atoms.atoms.elements.masses.astype(numpy.double)
+            mdff_atoms.enableds = True
+            sim_handler.add_mdff_atoms(mdff_atoms, v)
+            uh.append((mgr, mgr.triggers.add_handler('changes', self._mdff_changed_cb)))
+
+
     def start_sim(self):
         sh = self.sim_handler
         sh.start_sim()
@@ -83,6 +99,7 @@ class SimTester:
         sh.triggers.add_handler('sim terminated', self._tug_sim_end_cb)
         sh.triggers.add_handler('sim terminated', self._rama_a_sim_end_cb)
         sh.triggers.add_handler('sim terminated', self._rota_a_sim_end_cb)
+        sh.triggers.add_handler('sim terminated', self._mdff_sim_end_cb)
 
 
     def stop_sim(self):
@@ -102,6 +119,7 @@ class SimTester:
         return DEREGISTER
 
     def _pr_changed_cb(self, trigger_name, changes):
+        mgr, changes = changes
         change_types = list(changes.keys())
         from chimerax.core.atomic import concatenate
         changeds = []
@@ -112,7 +130,7 @@ class SimTester:
         if 'spring constant changed' in change_types:
             changeds.append(changes['spring constant changed'])
         if len(changeds):
-            all_changeds = concatenate(changeds)
+            all_changeds = concatenate(changeds, remove_duplicates=True)
             # limit to restraints that are actually in the simulation
             # TODO: might be better to just ignore -1 indices in the update_... functions
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
@@ -125,6 +143,7 @@ class SimTester:
         return DEREGISTER
 
     def _dr_changed_cb(self, trigger_name, changes):
+        mgr, changes = changes
         change_types = list(changes.keys())
         from chimerax.core.atomic import concatenate
         changeds = []
@@ -135,7 +154,7 @@ class SimTester:
         if 'spring constant changed' in change_types:
             changeds.append(changes['spring constant changed'])
         if len(changeds):
-            all_changeds = concatenate(changeds)
+            all_changeds = concatenate(changeds, remove_duplicates=True)
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
             self.sim_handler.update_distance_restraints(all_changeds)
 
@@ -147,6 +166,7 @@ class SimTester:
 
 
     def _pdr_changed_cb(self, trigger_name, changes):
+        mgr, changes = changes
         change_types = list(changes.keys())
         from chimerax.core.atomic import concatenate
         changeds = []
@@ -157,7 +177,7 @@ class SimTester:
         if 'spring constant changed' in change_types:
             changeds.append(changes['spring constant changed'])
         if len(changeds):
-            all_changeds = concatenate(changeds)
+            all_changeds = concatenate(changeds, remove_duplicates=True)
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
             self.sim_handler.update_dihedral_restraints(all_changeds)
 
@@ -169,6 +189,7 @@ class SimTester:
 
 
     def _tug_changed_cb(self, trigger_name, changes):
+        mgr, changes = changes
         change_types = list(changes.keys())
         from chimerax.core.atomic import concatenate
         changeds = []
@@ -179,7 +200,7 @@ class SimTester:
         if 'spring constant changed' in change_types:
             changeds.append(changes['spring constant changed'])
         if len(changeds):
-            all_changeds = concatenate(changeds)
+            all_changeds = concatenate(changeds, remove_duplicates=True)
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
             self.sim_handler.update_tuggables(all_changeds)
 
@@ -189,6 +210,26 @@ class SimTester:
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
+    def _mdff_changed_cb(self, trigger_name, changes):
+        mgr, changes = changes
+        change_types = list(changes.keys())
+        from chimerax.atomic import concatenate
+        changeds = []
+        if 'enabled/disabled' in change_types:
+            changeds.append(changes['enabled/disabled'])
+        if 'spring constant changed' in change_types:
+            changeds.append(changes['spring constant changed'])
+        if len(changeds):
+            all_changeds = concatenate(changeds, remove_duplicates=True)
+            all_changeds = all_changeds[all_changeds.sim_indices != -1]
+            self.sim_handler.update_mdff_atoms(all_changeds, mgr.volume)
+
+    def _mdff_sim_end_cb(self, *_):
+        for v, mgr in self.mdff_mgrs.items():
+            mdff_atoms = mgr.get_mdff_atoms(self.sim_construct.all_atoms)
+            mdff_atoms.clear_sim_indices()
+            from chimerax.core.triggerset import DEREGISTER
+            return DEREGISTER
 
 
 

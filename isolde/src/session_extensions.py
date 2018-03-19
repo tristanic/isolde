@@ -45,6 +45,14 @@ def get_tuggable_atoms_mgr(model):
             return m
     return Tuggable_Atoms_Mgr(model)
 
+def get_mdff_mgr(model, volume):
+    from .molobject import MDFF_Mgr
+    for m in model.all_models():
+        if isinstance(m, MDFF_Mgr):
+            if m.volume == volume:
+                return m
+    return MDFF_Mgr(model, volume)
+
 def get_rota_annotator(model):
     from .validation_new.rota_annotation import Rotamer_Annotator
     for m in model.child_models():

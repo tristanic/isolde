@@ -1336,7 +1336,7 @@ mdff_mgr_delete(void *mgr)
 }
 
 extern "C" EXPORT size_t
-mdff_mgr_get_mdff_atom(void *mgr, void *atom, npy_bool create, size_t n, pyobject_t *mdffa)
+mdff_mgr_get_mdff_atom(void *mgr, void *atom, size_t n, npy_bool create, pyobject_t *mdffa)
 {
     MDFF_Mgr *m = static_cast<MDFF_Mgr *>(mgr);
     Atom **a = static_cast<Atom **>(atom);
@@ -1368,6 +1368,29 @@ mdff_mgr_num_atoms(void *mgr)
     }
 }
 
+extern "C" EXPORT double
+mdff_mgr_global_k(void *mgr)
+{
+    MDFF_Mgr *m = static_cast<MDFF_Mgr *>(mgr);
+    try {
+        return m->global_k();
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT void
+set_mdff_mgr_global_k(void *mgr, double k)
+{
+    MDFF_Mgr *m = static_cast<MDFF_Mgr *>(mgr);
+    try {
+        m->set_global_k(k);
+    } catch (...) {
+        molc_error();
+    }
+}
+
 /*******************************************************
  *
  * MDFF_Atom functions
@@ -1376,6 +1399,7 @@ mdff_mgr_num_atoms(void *mgr)
 
 SET_PYTHON_CLASS(mdff_atom, MDFF_Atom)
 GET_PYTHON_INSTANCES(mdff_atom, MDFF_Atom)
+
 
 extern "C" EXPORT void
 mdff_atom_atom(void *mdffa, size_t n, pyobject_t *atom)

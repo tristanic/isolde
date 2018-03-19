@@ -216,7 +216,11 @@ class Sim_Handler:
         from .forcefields import forcefields
         ff = self._forcefield = self.define_forcefield(forcefields[sim_params.forcefield])
 
+        # All custom forces in the simulation
         self.all_forces = []
+
+        # A Volume: LinearInterpMapForce dict covering all MDFF forces
+        self.mdff_forces = {}
 
         # Overall simulation topology
         top, residue_templates = self.create_openmm_topology(atoms, sim_construct.residue_templates)
@@ -229,8 +233,6 @@ class Sim_Handler:
         self.set_fixed_atoms(sim_construct.fixed_atoms)
         self._thread_handler = None
 
-        # List of IsoldeMap objects registered with this simulation
-        self._maps = []
         # CustomExternalForce handling mouse and haptic interactions
         self._tugging_force = None
 
@@ -263,7 +265,7 @@ class Sim_Handler:
         }
         return forcefield.createSystem(top, **system_params)
 
-    def initialize_custom_forces(self, amber_cmap=True, tugging=True, position_restraints=True,
+    def initialize_restraint_forces(self, amber_cmap=True, tugging=True, position_restraints=True,
         distance_restraints=True, dihedral_restraints=True):
         '''
         Create the selected Force objects, and add them to the System. No
@@ -281,6 +283,13 @@ class Sim_Handler:
             self.initialize_distance_restraints_force(params.restraint_max_force)
         if dihedral_restraints:
             self.initialize_dihedral_restraint_force(params.dihedral_restraint_cutoff_angle)
+
+    def initialize_mdff_forces(self, volumes):
+        '''
+        Add a MDFF LinearInterpMapForce for each Volume object (or subclass)
+        '''
+        for v in volumes:
+            self.initialize_mdff_force(v)
 
     def _prepare_sim(self):
         params = self._params
@@ -650,6 +659,78 @@ class Sim_Handler:
             tuggables.enableds, tuggables.spring_constants, tuggables.targets/10)
         self.force_update_needed()
 
+    ####
+    # MDFF forces
+    ####
+
+        ##
+        # Before simulation starts
+        ##
+
+    def initialize_mdff_force(self, volume):
+        '''
+        Prepare an MDFF map from a ChimeraX Volume. The Volume object is
+        expected to have a single region applied that is big enough to cover
+        the expected range of motion of the mdff atoms that will be coupled to
+        it (and for performance/memory reasons, ideally not too much bigger).
+        '''
+        from .custom_forces import LinearInterpMapForce
+        v = volume
+        region = v.region
+        # Ensure that the region ijk step size is [1,1,1]
+        v.new_region(ijk_min=region[0], ijk_max=region[1], ijk_step=[1,1,1])
+        data = v.region_matrix()
+        from chimerax.core.geometry import Place
+        tf = v.data.xyz_to_ijk_transform
+        # Shift the transform to the origin of the region
+        region_tf = Place(axes=tf.axes(), origin = tf.origin() -
+            v.data.xyz_to_ijk(v.region_origin_and_step(v.region)[0]))
+        f = LinearInterpMapForce(data, region_tf.matrix, units='angstroms')
+        self.all_forces.append(f)
+        self._system.addForce(f)
+        self.mdff_forces[v] = f
+
+    def add_mdff_atoms(self, mdff_atoms, volume):
+        f = self.mdff_forces[volume]
+        all_atoms = self._atoms
+        indices = all_atoms.indices(mdff_atoms.atoms)
+        mdff_atoms.sim_indices = f.add_atoms(indices,
+            mdff_atoms.coupling_constants, mdff_atoms.enableds)
+        self.context_reinit_needed()
+
+    def add_mdff_atom(self, mdff_atom, volume):
+        f = self.mdff_forces[volume]
+        all_atoms = self._atoms
+        index = all_atoms.index(mdff_atom.atom)
+        mdff_atom.sim_index = f.addParticle(index,
+            (mdff_atom.coupling_constant, float(mdff_atom.enabled)))
+        self.context_reinit_needed()
+
+        ##
+        # During simulation
+        ##
+
+    def set_mdff_global_k(self, volume, k):
+        f = self.mdff_forces[volume]
+        f.set_global_k(k)
+        self.force_update_needed()
+
+    def update_mdff_atom(self, mdff_atom, volume):
+        f = self.mdff_forces[volume]
+        f.update_atom(mdff_atom.sim_index,
+            mdff_atom.coupling_constant, mdff_atom.enabled)
+
+    def update_mdff_atoms(self, mdff_atoms, volume):
+        f = self.mdff_forces[volume]
+        f.update_atoms(mdff_atoms.sim_indices,
+            mdff_atoms.coupling_constants, mdff_atoms.enableds)
+        self.force_update_needed()
+
+
+
+
+
+
 
     def set_fixed_atoms(self, fixed_atoms):
         '''
@@ -683,9 +764,6 @@ class Sim_Handler:
         for index, mass in zip(indices, masses):
             sys.setParticleMass(index, mass)
         self.context_reinit_needed()
-
-
-
 
     def define_forcefield(self, forcefield_file_list):
         from simtk.openmm.app import ForceField

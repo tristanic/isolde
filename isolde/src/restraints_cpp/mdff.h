@@ -68,6 +68,9 @@ public:
     {
         change_tracker()->add_modified(_mgr_type, this, r, reason);
     }
+    double global_k() const { return _global_coupling_constant; }
+    void set_global_k(double k) { _global_coupling_constant = k; }
+
     void delete_mdff_atoms(const std::set<MDFF_Atom *>& to_delete);
     virtual void destructors_done(const std::set<void *>& destroyed);
 
@@ -75,6 +78,7 @@ private:
     const std::string _py_name = "MDFF_Mgr";
     const std::string _managed_class_py_name = "MDFF_Atoms";
     std::type_index _mgr_type = std::type_index(typeid(this));
+    double _global_coupling_constant = 1.0;
 
     Structure* _atomic_model;
     Change_Tracker* _change_tracker;
