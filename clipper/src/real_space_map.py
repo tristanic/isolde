@@ -14,6 +14,7 @@ class NXmapHandler(Volume):
         self.session = session
         self.manager = manager
         super().__init__(volume.data, session)
+        self.name = volume.name
 
         self.is_difference_map = False
         self.initialize_thresholds()
@@ -35,9 +36,9 @@ class NXmapHandler(Volume):
     def radius(self):
         return self.manager.display_radius
 
-    def show(self):
+    def show(self, *args, **kwargs):
         self.update_mask()
-        super().show()
+        super().show(*args, **kwargs)
 
     def _box_changed_cb(self, name, params):
         self._needs_update = True
@@ -55,7 +56,7 @@ class NXmapHandler(Volume):
         if not self.display:
             return
         corners = _find_box_corners(self.center, self.radius, self.data.xyz_to_ijk_transform)
-        self.new_region(ijk_min=corners[0], ijk_max=corners[1])
+        self.new_region(ijk_min=corners[0], ijk_max=corners[1], ijk_step=[1,1,1])
 
     def delete(self):
         bh = self._box_shape_changed_cb_handler

@@ -1400,7 +1400,7 @@ class XmapHandler(Volume):
 
 
 
-    def show(self):
+    def show(self, *args, **kwargs):
         if self._needs_update:
             self._swap_volume_data(self.box_params, force_update = True)
             self._needs_update = False
@@ -1409,7 +1409,7 @@ class XmapHandler(Volume):
             # the current location
             origin, grid_origin, ignore = self.box_params
             self._fill_volume_data(self.data.array, grid_origin)
-        super(XmapHandler, self).show()
+        super(XmapHandler, self).show(*args, **kwargs)
 
     @property
     def hklinfo(self):
