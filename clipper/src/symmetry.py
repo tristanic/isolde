@@ -118,6 +118,12 @@ def symmetry_coords(atoms, sym_matrices, sym_indices):
 
 from chimerax.core.models import Model, Drawing
 
+def get_symmetry_handler(structure):
+    for m in structure.child_models():
+        if isinstance(m, XtalSymmetryHandler):
+            return m
+    return None
+
 class XtalSymmetryHandler(Model):
     '''
     Handles crystallographic symmetry and maps for an atomic model.
