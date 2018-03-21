@@ -1143,9 +1143,9 @@ class XmapSet(Model):
         '''Get one of the child maps by name or index.'''
         if type(name_or_index) == str:
             for m in self.child_models():
-                if m.name == name:
+                if m.name == name_or_index:
                     return m
-                raise KeyError('No map with that name!')
+            raise KeyError('No map with that name!')
         else:
             return self.child_models()[name_or_index]
 
