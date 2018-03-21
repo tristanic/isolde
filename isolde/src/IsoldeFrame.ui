@@ -198,12 +198,15 @@
         <number>0</number>
        </property>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
+        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0">
          <property name="spacing">
           <number>3</number>
          </property>
          <property name="sizeConstraint">
           <enum>QLayout::SetMinAndMaxSize</enum>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
          </property>
          <item>
           <widget class="QTabWidget" name="_sim_tab_widget">
@@ -221,7 +224,7 @@ border: 1px;
 }</string>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>3</number>
            </property>
            <property name="elideMode">
             <enum>Qt::ElideNone</enum>
@@ -264,12 +267,12 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-127</y>
+                  <y>-192</y>
                   <width>520</width>
-                  <height>1143</height>
+                  <height>760</height>
                  </rect>
                 </property>
-                <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0,0,0,0">
+                <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0,0,0">
                  <property name="spacing">
                   <number>1</number>
                  </property>
@@ -746,7 +749,7 @@ border: 1px;
                        </size>
                       </property>
                       <property name="text">
-                       <string>Initialise model/MTZ combo</string>
+                       <string>Add map(s) from MTZ</string>
                       </property>
                      </widget>
                     </item>
@@ -768,16 +771,6 @@ border: 1px;
                        <item>
                         <layout class="QHBoxLayout" name="horizontalLayout_9">
                          <item>
-                          <widget class="QLabel" name="label_10">
-                           <property name="text">
-                            <string>Atomic model</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QComboBox" name="_sim_basic_xtal_init_model_combo_box"/>
-                         </item>
-                         <item>
                           <widget class="QPushButton" name="_sim_basic_xtal_init_reflections_file_button">
                            <property name="minimumSize">
                             <size>
@@ -791,32 +784,12 @@ border: 1px;
                           </widget>
                          </item>
                          <item>
-                          <spacer name="horizontalSpacer_5">
-                           <property name="orientation">
-                            <enum>Qt::Horizontal</enum>
-                           </property>
-                           <property name="sizeHint" stdset="0">
-                            <size>
-                             <width>40</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                          </spacer>
-                         </item>
-                         <item>
                           <widget class="QLineEdit" name="_sim_basic_xtal_init_reflections_file_name">
                            <property name="text">
                             <string>None</string>
                            </property>
                           </widget>
                          </item>
-                        </layout>
-                       </item>
-                       <item>
-                        <layout class="QHBoxLayout" name="horizontalLayout_26">
-                         <property name="topMargin">
-                          <number>0</number>
-                         </property>
                          <item>
                           <widget class="QPushButton" name="_sim_basic_xtal_init_go_button">
                            <property name="sizePolicy">
@@ -835,19 +808,6 @@ border: 1px;
                             <string>Initialise</string>
                            </property>
                           </widget>
-                         </item>
-                         <item>
-                          <spacer name="horizontalSpacer_16">
-                           <property name="orientation">
-                            <enum>Qt::Horizontal</enum>
-                           </property>
-                           <property name="sizeHint" stdset="0">
-                            <size>
-                             <width>40</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                          </spacer>
                          </item>
                          <item>
                           <widget class="QPushButton" name="_sim_basic_xtal_init_done_button">
@@ -939,26 +899,6 @@ border: 1px;
                        <item>
                         <layout class="QHBoxLayout" name="horizontalLayout_34">
                          <item>
-                          <widget class="QLabel" name="label_38">
-                           <property name="text">
-                            <string>Cutoff (Å): </string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QDoubleSpinBox" name="_sim_basic_xtal_map_cutoff_spin_box">
-                           <property name="minimum">
-                            <double>0.000000000000000</double>
-                           </property>
-                           <property name="singleStep">
-                            <double>0.100000000000000</double>
-                           </property>
-                           <property name="value">
-                            <double>4.000000000000000</double>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
                           <widget class="QLabel" name="label_40">
                            <property name="text">
                             <string>Weight:</string>
@@ -971,29 +911,12 @@ border: 1px;
                             <double>1000.000000000000000</double>
                            </property>
                            <property name="value">
-                            <double>10.000000000000000</double>
-                           </property>
-                          </widget>
-                         </item>
-                        </layout>
-                       </item>
-                       <item>
-                        <layout class="QHBoxLayout" name="horizontalLayout_36">
-                         <property name="topMargin">
-                          <number>0</number>
-                         </property>
-                         <item>
-                          <widget class="QCheckBox" name="_sim_basic_xtal_settings_map_masked_checkbox">
-                           <property name="text">
-                            <string>Mask to selection</string>
-                           </property>
-                           <property name="checked">
-                            <bool>true</bool>
+                            <double>1.000000000000000</double>
                            </property>
                           </widget>
                          </item>
                          <item>
-                          <spacer name="horizontalSpacer_23">
+                          <spacer name="horizontalSpacer_3">
                            <property name="orientation">
                             <enum>Qt::Horizontal</enum>
                            </property>
@@ -1104,251 +1027,6 @@ border: 1px;
                   </widget>
                  </item>
                  <item>
-                  <widget class="QFrame" name="_sim_basic_em_map_frame">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                   <layout class="QGridLayout" name="gridLayout_4">
-                    <item row="1" column="0">
-                     <widget class="QFrame" name="_em_map_chooser_frame">
-                      <property name="frameShape">
-                       <enum>QFrame::StyledPanel</enum>
-                      </property>
-                      <property name="frameShadow">
-                       <enum>QFrame::Raised</enum>
-                      </property>
-                      <layout class="QVBoxLayout" name="verticalLayout_11">
-                       <item>
-                        <layout class="QHBoxLayout" name="horizontalLayout_11">
-                         <item>
-                          <widget class="QLabel" name="label_12">
-                           <property name="text">
-                            <string>Name: </string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QLineEdit" name="_em_map_name_field"/>
-                         </item>
-                         <item>
-                          <widget class="QLabel" name="label_13">
-                           <property name="text">
-                            <string>Model: </string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QComboBox" name="_em_map_model_combo_box"/>
-                         </item>
-                        </layout>
-                       </item>
-                       <item>
-                        <layout class="QHBoxLayout" name="horizontalLayout_10">
-                         <item>
-                          <widget class="QLabel" name="label_14">
-                           <property name="text">
-                            <string>Cutoff (Å): </string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QDoubleSpinBox" name="_em_map_cutoff_spin_box">
-                           <property name="decimals">
-                            <number>1</number>
-                           </property>
-                           <property name="maximum">
-                            <double>50.000000000000000</double>
-                           </property>
-                           <property name="value">
-                            <double>3.000000000000000</double>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QLabel" name="label_15">
-                           <property name="text">
-                            <string>Coupling constant: </string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QDoubleSpinBox" name="_em_map_coupling_spin_box">
-                           <property name="decimals">
-                            <number>1</number>
-                           </property>
-                           <property name="maximum">
-                            <double>1000.000000000000000</double>
-                           </property>
-                           <property name="value">
-                            <double>10.000000000000000</double>
-                           </property>
-                          </widget>
-                         </item>
-                        </layout>
-                       </item>
-                       <item>
-                        <layout class="QGridLayout" name="gridLayout_5">
-                         <item row="0" column="1">
-                          <widget class="QComboBox" name="_em_map_style_combo_box"/>
-                         </item>
-                         <item row="0" column="0">
-                          <widget class="QLabel" name="label_16">
-                           <property name="text">
-                            <string>Style:</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="0" column="2">
-                          <widget class="QLabel" name="label_17">
-                           <property name="text">
-                            <string>Colour:</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="0" column="3">
-                          <widget class="QComboBox" name="_em_map_color_combo_box"/>
-                         </item>
-                         <item row="1" column="3">
-                          <widget class="QCheckBox" name="_em_map_masked_checkbox">
-                           <property name="text">
-                            <string>Mask to selection</string>
-                           </property>
-                           <property name="checked">
-                            <bool>true</bool>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="1" column="1">
-                          <widget class="QDoubleSpinBox" name="_em_map_contour_spin_box">
-                           <property name="minimum">
-                            <double>0.010000000000000</double>
-                           </property>
-                           <property name="maximum">
-                            <double>9999.989999999999782</double>
-                           </property>
-                           <property name="singleStep">
-                            <double>0.100000000000000</double>
-                           </property>
-                           <property name="value">
-                            <double>1.500000000000000</double>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="1" column="0">
-                          <widget class="QLabel" name="label_18">
-                           <property name="text">
-                            <string>Contour:</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item row="1" column="2">
-                          <widget class="QComboBox" name="_em_map_contour_units_combo_box"/>
-                         </item>
-                        </layout>
-                       </item>
-                       <item>
-                        <widget class="QFrame" name="frame_2">
-                         <property name="frameShape">
-                          <enum>QFrame::StyledPanel</enum>
-                         </property>
-                         <property name="frameShadow">
-                          <enum>QFrame::Raised</enum>
-                         </property>
-                         <layout class="QHBoxLayout" name="horizontalLayout_15">
-                          <item>
-                           <widget class="QComboBox" name="_em_map_chooser_combo_box">
-                            <property name="sizePolicy">
-                             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                              <horstretch>0</horstretch>
-                              <verstretch>0</verstretch>
-                             </sizepolicy>
-                            </property>
-                            <property name="minimumSize">
-                             <size>
-                              <width>100</width>
-                              <height>0</height>
-                             </size>
-                            </property>
-                           </widget>
-                          </item>
-                          <item>
-                           <spacer name="horizontalSpacer_6">
-                            <property name="orientation">
-                             <enum>Qt::Horizontal</enum>
-                            </property>
-                            <property name="sizeHint" stdset="0">
-                             <size>
-                              <width>40</width>
-                              <height>20</height>
-                             </size>
-                            </property>
-                           </spacer>
-                          </item>
-                          <item>
-                           <widget class="QPushButton" name="_em_map_set_button">
-                            <property name="sizePolicy">
-                             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                              <horstretch>0</horstretch>
-                              <verstretch>0</verstretch>
-                             </sizepolicy>
-                            </property>
-                            <property name="text">
-                             <string>Set</string>
-                            </property>
-                           </widget>
-                          </item>
-                          <item>
-                           <widget class="QPushButton" name="_em_map_remove_button">
-                            <property name="sizePolicy">
-                             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                              <horstretch>0</horstretch>
-                              <verstretch>0</verstretch>
-                             </sizepolicy>
-                            </property>
-                            <property name="text">
-                             <string>Remove</string>
-                            </property>
-                           </widget>
-                          </item>
-                          <item>
-                           <widget class="QPushButton" name="_em_map_done_button">
-                            <property name="sizePolicy">
-                             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                              <horstretch>0</horstretch>
-                              <verstretch>0</verstretch>
-                             </sizepolicy>
-                            </property>
-                            <property name="text">
-                             <string>Done</string>
-                            </property>
-                           </widget>
-                          </item>
-                         </layout>
-                        </widget>
-                       </item>
-                      </layout>
-                     </widget>
-                    </item>
-                    <item row="0" column="0">
-                     <widget class="QPushButton" name="_sim_basic_em_map_button">
-                      <property name="text">
-                       <string>Choose map(s)</string>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </widget>
-                 </item>
-                 <item>
                   <widget class="QFrame" name="_force_field_selection_frame">
                    <property name="frameShape">
                     <enum>QFrame::StyledPanel</enum>
@@ -1379,29 +1057,6 @@ border: 1px;
                        </size>
                       </property>
                      </spacer>
-                    </item>
-                    <item row="2" column="0">
-                     <widget class="QLabel" name="_sim_water_model_selection_label">
-                      <property name="text">
-                       <string>Water model</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="2" column="1">
-                     <spacer name="horizontalSpacer_3">
-                      <property name="orientation">
-                       <enum>Qt::Horizontal</enum>
-                      </property>
-                      <property name="sizeHint" stdset="0">
-                       <size>
-                        <width>40</width>
-                        <height>20</height>
-                       </size>
-                      </property>
-                     </spacer>
-                    </item>
-                    <item row="2" column="2">
-                     <widget class="QComboBox" name="_sim_water_model_combo_box"/>
                     </item>
                    </layout>
                   </widget>
@@ -1444,7 +1099,6 @@ border: 1px;
                 </layout>
                 <zorder>_sim_basic_mobile_selection_frame</zorder>
                 <zorder>_sim_basic_mode_choice_frame</zorder>
-                <zorder>_sim_basic_em_map_frame</zorder>
                 <zorder>_sim_basic_xtal_map_frame</zorder>
                 <zorder>verticalSpacer</zorder>
                 <zorder>_force_field_selection_frame</zorder>
@@ -1488,7 +1142,7 @@ border: 1px;
                   <x>0</x>
                   <y>0</y>
                   <width>533</width>
-                  <height>621</height>
+                  <height>568</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -2104,7 +1758,7 @@ border: 1px;
                   <x>0</x>
                   <y>0</y>
                   <width>533</width>
-                  <height>535</height>
+                  <height>482</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -3361,7 +3015,7 @@ border: 1px;
                       <item>
                        <widget class="QLabel" name="label_27">
                         <property name="text">
-                         <string>Peptide biond geometry</string>
+                         <string>Peptide bond geometry</string>
                         </property>
                        </widget>
                       </item>
@@ -3784,6 +3438,98 @@ background-color: rgb(5, 200, 0);
                </size>
               </property>
              </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFrame" name="_right_mouse_modes_frame">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>50</height>
+            </size>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_41">
+            <property name="spacing">
+             <number>3</number>
+            </property>
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QToolButton" name="_right_mouse_tug_atom_button">
+              <property name="toolTip">
+               <string>Right mouse: tug atom</string>
+              </property>
+              <property name="text">
+               <string>...</string>
+              </property>
+              <property name="icon">
+               <iconset resource="resources/resources.qrc">
+                <normaloff>:/icons/tug_atom.png</normaloff>:/icons/tug_atom.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>36</width>
+                <height>36</height>
+               </size>
+              </property>
+              <property name="autoExclusive">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QToolButton" name="_right_mouse_tug_residue_button">
+              <property name="toolTip">
+               <string>Right mouse: tug residue</string>
+              </property>
+              <property name="text">
+               <string>...</string>
+              </property>
+              <property name="icon">
+               <iconset resource="resources/resources.qrc">
+                <normaloff>:/icons/tug_residue.png</normaloff>:/icons/tug_residue.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>36</width>
+                <height>36</height>
+               </size>
+              </property>
+              <property name="autoExclusive">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_19">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>448</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
             </item>
            </layout>
           </widget>
