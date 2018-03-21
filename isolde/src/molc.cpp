@@ -857,6 +857,18 @@ rama_psi(void *rama, size_t n, pyobject_t *dihedralp)
     }
 }
 
+extern "C" EXPORT void
+rama_case(void *rama, size_t n, uint8_t *rcase)
+{
+    Rama **r = static_cast<Rama **>(rama);
+    try {
+        for (size_t i=0; i<n; ++i)
+            *(rcase++) = (*r++)->rama_case();
+    } catch (...) {
+        molc_error();
+    }
+}
+
 
 /**************************************************************
  *

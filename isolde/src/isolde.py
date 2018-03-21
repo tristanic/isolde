@@ -41,7 +41,7 @@ from chimerax import clipper
 from chimerax.core import triggerset
 from chimerax.core.models import Drawing, Model
 from chimerax.core.map import Volume
-from chimerax.core.atomic import AtomicStructure
+from chimerax.atomic import AtomicStructure
 
 from .isolde_model import IsoldeCrystalModel, IsoldeEMModel, IsoldeFreeModel
 from . import rotamers, dihedrals
@@ -58,15 +58,15 @@ from .validation_new import validation_interface #TODO: Remove
 
 from PyQt5.QtWidgets import QMessageBox
 
-OPENMM_LENGTH_UNIT = defaults.OPENMM_LENGTH_UNIT
-OPENMM_FORCE_UNIT = defaults.OPENMM_FORCE_UNIT
-OPENMM_SPRING_UNIT = defaults.OPENMM_SPRING_UNIT
+OPENMM_LENGTH_UNIT =        defaults.OPENMM_LENGTH_UNIT
+OPENMM_FORCE_UNIT =         defaults.OPENMM_FORCE_UNIT
+OPENMM_SPRING_UNIT =        defaults.OPENMM_SPRING_UNIT
 OPENMM_RADIAL_SPRING_UNIT = defaults.OPENMM_RADIAL_SPRING_UNIT
-OPENMM_ENERGY_UNIT = defaults.OPENMM_ENERGY_UNIT
-OPENMM_ANGLE_UNIT = defaults.OPENMM_ANGLE_UNIT
-CHIMERAX_LENGTH_UNIT        = defaults.CHIMERAX_LENGTH_UNIT
-CHIMERAX_FORCE_UNIT         = defaults.CHIMERAX_FORCE_UNIT
-CHIMERAX_SPRING_UNIT        = defaults.CHIMERAX_SPRING_UNIT
+OPENMM_ENERGY_UNIT =        defaults.OPENMM_ENERGY_UNIT
+OPENMM_ANGLE_UNIT =         defaults.OPENMM_ANGLE_UNIT
+CHIMERAX_LENGTH_UNIT =      defaults.CHIMERAX_LENGTH_UNIT
+CHIMERAX_FORCE_UNIT =       defaults.CHIMERAX_FORCE_UNIT
+CHIMERAX_SPRING_UNIT =      defaults.CHIMERAX_SPRING_UNIT
 
 @param_properties
 @autodoc
@@ -96,8 +96,6 @@ class IsoldeParams(Param_Mgr):
             # Mask cutoff for a difference map (e.g. mFo-DFc)
         'difference_map_mask_cutoff':           (defaults.DIFFERENCE_MAP_MASK_RADIUS, None),
             # Use multiprocessing instead of threads (only available on Linux)
-        'use_multiprocessing':                  (defaults.USE_FORK_INSTEAD_OF_THREADS, None),
-            # The Shannon rate for oversampling maps from FFTs
         'map_shannon_rate':                     (defaults.MAP_SHANNON_RATE, None),
 
     }
@@ -125,6 +123,7 @@ class Isolde():
     _force_groups = {
         'main':                         0,
         'position restraints':          1,
+        'map forces':                   2,
         }
 
     _human_readable_sim_modes = {
@@ -139,9 +138,6 @@ class Isolde():
         intermediate    = 1
         expert          = 2
 
-    # Different modes for defining the mobile selection. If you want a
-    # menu button associated with a mode, add it to the list in
-    # _selection_mode_buttons
     class _sim_selection_modes(IntEnum):
         from_picked_atoms       = 0
         chain                   = 1
@@ -149,36 +145,6 @@ class Isolde():
         custom                  = 3
         script                  = 99
 
-    class _map_styles(IntEnum):
-        mesh_square             = 0
-        mesh_triangle           = 1
-        solid_t20               = 2
-        solid_t40               = 3
-        solid_t60               = 4
-        solid_t80               = 5
-        solid_opaque            = 6
-
-    _human_readable_map_display_styles = {
-        _map_styles.mesh_square: "Mesh (squares)",
-        _map_styles.mesh_triangle: "Mesh (triangles)",
-        _map_styles.solid_t20: "Solid (20% opacity)",
-        _map_styles.solid_t40: "Solid (40% opacity)",
-        _map_styles.solid_t60: "Solid (60% opacity)",
-        _map_styles.solid_t80: "Solid (80% opacity)",
-        _map_styles.solid_opaque: "Solid (opaque)"
-        }
-
-    # array of settings to apply to the map depending on the chosen
-    # representation. Order is: [style,
-    _map_style_settings = {
-        _map_styles.mesh_square: {'style': 'mesh', 'square_mesh': True, 'transparency':0},
-        _map_styles.mesh_triangle: {'style': 'mesh', 'square_mesh': False, 'transparency':0},
-        _map_styles.solid_t20: {'style': 'surface', 'transparency': 0.2},
-        _map_styles.solid_t40: {'style': 'surface', 'transparency': 0.4},
-        _map_styles.solid_t60: {'style': 'surface', 'transparency': 0.6},
-        _map_styles.solid_t80: {'style': 'surface', 'transparency': 0.8},
-        _map_styles.solid_opaque: {'style': 'surface', 'transparency': 1.0}
-        }
 
 
     '''
@@ -188,14 +154,9 @@ class Isolde():
     PyQt signal/slot system.
     '''
     trigger_names = (
-        'simulation started',    # Successful initiation of a simulation
-        'simulation terminated', # Simulation finished, crashed or failed to start
-        'completed simulation step',
-        'simulation paused',
-        'simulation resumed',
         'selected model changed', # Changed the master model selection
-        'position restraint added', #TODO: Remove
-        'position restraint removed', #TODO: Remove
+        'simulation started',
+        'simulation terminated'
         )
 
     def __init__(self, gui):
@@ -225,6 +186,9 @@ class Isolde():
         # Available pre-defined colors
         from chimerax.core import colors
         import copy
+
+        self._available_models = {}
+
         self._available_colors = copy.copy(colors.BuiltinColors)
         # Remove duplicates
         for key in self._available_colors:
@@ -238,73 +202,18 @@ class Isolde():
 
         # Currently chosen mode for selecting the mobile simulation
         self._sim_selection_mode = None
-        # Dict containing list of all currently loaded atomic models
-        self._available_models = {}
         # Selected model on which we are actually going to run a simulation
         self._selected_model = None
-        # Atoms within the model that are the primary focus of the simulation.
-        # Should be whole residues
-        self._selected_atoms = None
-        self._selected_rotamer = None # TODO: remove
-        self._target_rotamer = None #TODO: remove
-        # Extra mobile shell of surrounding atoms to provide a soft buffer to
-        # the simulation. Whole residues only.
-        self._soft_shell_atoms = None
-        # Shell of fixed atoms surrounding all mobile atoms to maintain
-        # the context of the simulation. Whole residues only.
-        self._hard_shell_atoms = None
-        # Construct containing all mobile atoms in the simulation
-        self._total_mobile = None
-        # Indices of mobile atoms in the total simulation construct
-        self._total_mobile_indices = None
-        # Construct containing all atoms that will actually be simulated
-        self._total_sim_construct = None
-        # List of all bonds in _total_sim_construct
-        self._total_sim_bonds = None
-        # All other atoms in the current model
-        self._surroundings = None
-        # Cache of atom display parameters prior to starting the simulation, so we
-        # can revert once we're done.
-        self._original_atom_colors = None
-        self._original_atom_draw_modes = None
-        self._original_bond_radii = None
-        self._original_atom_radii = None
-        self._original_display_state = None
-        # Are the surroundings currently hidden?
-        self._surroundings_hidden = False
-
 
         ####
         # Settings for live tracking of structural quality
         ####
-        # TODO: Handle Ramachandran plot updating through trigger system
-        # Load in Ramachandran maps
-        from . import validation
-        # object containing all the Ramachandran contours and lookup functions
-        self._status('Preparing Ramachandran contours...')
-        self.rama_validator = validation.RamaValidator()
-        self._status('')
-        # object that handles checking and annotation of peptide bond geometry
-        #~ self.omega_validator = validation.OmegaValidator(self._annotations)
         # Generic widget object holding the Ramachandran plot
         self._rama_plot_window = None
         # Object holding Ramachandran plot information and controls
         self._rama_plot = None
         # Is the Ramachandran plot running live?
         self._update_rama_plot = False
-        # Object holding the protein phi, psi and omega dihedrals for the
-        # currently selected model.
-        # self.backbone_dihedrals = None
-        # Object holding only the backbone dihedrals that are mobile in
-        # the current simulation
-        # self._mobile_backbone_dihedrals = None
-        # A single Dihedrals array containing all proper dihedrals that
-        # we want to be able to draw annotations for.
-        #~ self._all_annotated_dihedrals = dihedrals.Dihedrals(drawing=self._annotations, session=self.session)
-
-
-        # Internal counter for Ramachandran update
-        # self._rama_counter = 0
 
         ####
         # Settings for handling of map visualisation
@@ -316,18 +225,20 @@ class Isolde():
         # Mouse modes
         ####
         from . import mousemodes
+
         # Object to initialise and hold ISOLDE-specific mouse modes,
         # and keep track of standard modes they've replaced. The pre-existing
         # mode will be reinstated when a mode is removed.
+        # TODO: Replace with system that plays more nicely with ChimeraX built-in
+        #       modes
         self._mouse_modes = mousemodes.MouseModeRegistry(self.session, self)
         # Placeholder for mouse tugging object
         self._mouse_tugger = None
-        # Are we currently tugging an atom?
-        self._currently_tugging = False
 
         ####
         # Haptic interfaces
         ####
+        # TODO: Move out into separate class
         # Will be set to true if haptic devices are detected
         self._use_haptics = False
         # Number of connected haptic devices
@@ -345,195 +256,29 @@ class Isolde():
         # Spring constant felt by atoms tugged by the haptic device
         self._haptic_force_constant = defaults.HAPTIC_SPRING_CONSTANT
 
-        ####
-        # Settings for handling of maps
-        ####
-        # List of currently available volumetric data sets
-        self._available_volumes = {}
-        # Master list of maps and their parameters
-        self.master_map_list = {}
-        # Are we adding a new map to the simulation list?
-        self._add_new_map = True
-        # Default coupling constants
-        self.default_standard_map_k = defaults.STANDARD_MAP_K
-        self.default_difference_map_k = defaults.DIFFERENCE_MAP_K
-
-        ####
-        # Restraints settings
-        ####
-        self.restrain_peptide_bonds = True
-        self.peptide_bond_restraints_k = defaults.PEPTIDE_SPRING_CONSTANT
-        self.secondary_structure_restraints_k = defaults.PHI_PSI_SPRING_CONSTANT
-
-        # The difference between the dihedral angle and target beyond which
-        # restraints begin to be applied. Below this angle there is no
-        # extra biasing force. This cutoff can be changed on a per-dihedral
-        # basis.
-        self.default_dihedral_restraint_cutoff_angle = defaults.DIHEDRAL_RESTRAINT_CUTOFF
-
-        ##
-        # Distance retraint objects
-        ##
-        # (CA_n - CA_n+2) atom pairs (mainly for stretching beta strands)
-        self.ca_to_ca_plus_two = None
-        # (O_n - N_n+4) atom pairs (for alpha helix H-bonds)
-        self.o_to_n_plus_four = None
-        self.distance_restraints_k = defaults.DISTANCE_RESTRAINT_SPRING_CONSTANT
-
-        ##
-        # Position restraint objects
-        ##
-
-        # A Position_Restraints object defining all restrainable atoms
-        self.position_restraints = None
-        self.position_restraints_default_k = defaults.POSITION_RESTRAINT_SPRING_CONSTANT
-
-
-        # A {Residue: Rotamer} dict encompassing all mobile rotameric residues
-        self.rotamers = None
-        self.rotamer_restraints_k = defaults.ROTAMER_SPRING_CONSTANT
-        self.rotamer_restraint_cutoff_angle = defaults.ROTAMER_RESTRAINT_CUTOFF
-
-        # Range of dihedral values which will be interpreted as a cis peptide
-        # bond (-30 to 30 degrees). If restrain_peptide_bonds is True, anything
-        # outside of this range at the start of the simulation will be forced
-        # to trans.
-        cis_offset = defaults.CIS_PEPTIDE_BOND_CUTOFF
-        self.cis_peptide_bond_range = (-cis_offset, cis_offset)
-
         # Handler for shifting stretches in register.
         self._register_shifter = None
-
 
         ####
         # Settings for OpenMM
         ####
 
-        # The actual simulation object
-        self.sim = None
-        # Placeholder for the sim_interface.SimHandler object used to perform
+        # Placeholder for the openmm_interface.Sim_Handler object used to perform
         # simulation setup and management
         self._sim_handler = None
-        # List of forcefields available to the MD package
-        self._available_ffs = sim_interface.available_forcefields()
-        # Variables holding current forcefield choices
-        self._sim_main_ff = None
-        self._sim_implicit_solvent_ff = None
-        self._sim_water_ff = None
-
-        from simtk import unit
-        # Simulation topology
-        self._topology = None
-        # OpenMM system containing the simulation
-        self._system = None
-        # Computational platform to run the simulation on
-        self.sim_platform = None
-        # Number of steps to run in before updating coordinates in ChimeraX
-        self.sim_steps_per_update = defaults.SIM_STEPS_PER_GUI_UPDATE
-        # Number of steps per GUI update in minimization mode
-        self.min_steps_per_update = defaults.MIN_STEPS_PER_GUI_UPDATE
-        # If using the VariableLangevinIntegrator, we define a tolerance
-        self._integrator_tolerance = defaults.OPENMM_VAR_INTEGRATOR_TOL
-        # ... otherwise, we simply set the time per step
-        self._sim_time_step = defaults.OPENMM_FIXED_INTEGRATOR_TS
-        # Type of integrator to use. Should give the choice in the expert level
-        # of the menu. Variable is more stable, but simulated time per gui update
-        # is harder to determine
-        self._integrator_type = defaults.OPENMM_INTEGRATOR_TYPE
-        # Constraints (e.g. rigid bonds) need their own tolerance
-        self._constraint_tolerance = defaults.OPENMM_CONSTRAINT_TOL
-        # Friction term for coupling to heat bath. Using a relatively high
-        # value helps keep the simulation under control in response to
-        # very large forces.
-        self._friction = defaults.OPENMM_FRICTION
-        # Limit on the net force on a single atom
-        self._max_allowable_force = defaults.MAX_ALLOWABLE_FORCE # kJ mol-1 nm-1
-        # For dynamics it's more efficient to just check that atoms aren't
-        # moving too quickly.
-        self._max_atom_movement_per_step = defaults.MAX_ATOM_MOVEMENT_PER_STEP * OPENMM_LENGTH_UNIT
-        # We need to store the last measured maximum force to determine
-        # when minimisation has converged.
-        self._last_max_force = inf
-        # Flag for unstable simulation
-        self._sim_is_unstable = False
-        # Counter for the number of simulation rounds that have been unstable
-        self._unstable_min_rounds = 0
-        # Maximum number of rounds to attempt minimisation of an unstable
-        # simulation
-        self.max_unstable_rounds = defaults.MAX_UNSTABLE_ROUNDS
-
-        # Are we currently tugging on an atom?
-        self._currently_tugging = False
-        # Placeholder for tugging forces
-        self._tugging_force = None
-        # Force constant for mouse/haptic tugging. Need to make this user-adjustable
-        self.tug_force_constant = defaults.MOUSE_TUG_SPRING_CONSTANT
-        # Upper limit on the strength of the tugging force
-        self.tug_max_force = defaults.MAX_TUG_FORCE # kJ/mol/nm
-
-
 
         # Holds the current simulation mode, to be chosen from the GUI
         # drop-down menu or loaded from saved settings.
         self.sim_mode = None
-        # Do we have a simulation running right now?
-        self._simulation_running = False
-        # If running, is the simulation in startup mode?
-        self._sim_startup = True
-        # Maximum number of rounds of minimisation to run on startup
-        self._sim_startup_rounds = defaults.SIM_STARTUP_ROUNDS
-        # Counter for how many rounds we've done on startup
-        self._sim_startup_counter = 0
-
-        # Simulation temperature in Kelvin
-        self.simulation_temperature = defaults.TEMPERATURE
-        # Flag to update the temperature of a running simulation
-        self._temperature_changed = False
-
-        # If a simulation is running, is it paused?
-        self._sim_paused = False
-
-        # Are we equilibrating or minimising?
-        self.simulation_type = 'equil'
-
-        # Current positions of all particles in the simulation
-        self._particle_positions = None
-        # Saved particle positions in case we want to discard the simulation
-        self._saved_positions = None
-
-        # To ensure we do only one simulation round per graphics redraw
-        self._last_frame_number = None
 
         self.tug_hydrogens = False
         self.hydrogens_feel_maps = False
-
 
         self.initialize_haptics()
 
         ####
         # Internal trigger handlers
         ####
-
-
-        # During simulations, ISOLDE needs to reserve the right mouse
-        # button for tugging atoms. Therefore, the ChimeraX right mouse
-        # mode selection panel needs to be disabled for the duration of
-        # each simulation.
-        ie = self._isolde_events
-        ie.add_event_handler('disable chimerax mouse mode panel',
-                                              'simulation started',
-                                              self._disable_chimerax_mouse_mode_panel)
-        ie.add_event_handler('enable chimerax mouse mode panel',
-                                              'simulation terminated',
-                                              self._enable_chimerax_mouse_mode_panel)
-        ie.add_event_handler('on sim start',
-                                              'simulation started',
-                                              self._sim_start_cb)
-        ie.add_event_handler('cleanup after sim',
-                                              'simulation terminated',
-                                              self._sim_end_cb)
-        ie.add_event_handler('sim pause', 'simulation paused', self._sim_pause_cb)
-        ie.add_event_handler('sim resume', 'simulation resumed', self._sim_resume_cb)
 
         self.gui_mode = False
 
@@ -555,6 +300,7 @@ class Isolde():
         QtCore.QTimer.singleShot(2000, splash.close)
 
         self.start_gui(gui)
+        session.isolde = self
 
 
     @property
@@ -566,16 +312,24 @@ class Isolde():
     def can_checkpoint(self, flag):
         self._can_checkpoint = flag
 
-
     @property
-    def sim_interface(self):
-        if self._sim_interface is None:
-            raise TypeError('No simulation is currently running!')
-        return self._sim_interface
+    def sim_handler(self):
+        return self._sim_handler
 
     @property
     def simulation_running(self):
-        return self._sim_interface is not None
+        if self._sim_handler is None:
+            return False
+        return self._sim_handler.sim_running
+
+    @property
+    def simulation_mode(self):
+        sh = self._sim_handler
+        if sh is None:
+            return None
+        if not sh.minimize:
+            return 'equil'
+        return 'min'
 
     @property
     def selected_model(self):
@@ -583,20 +337,10 @@ class Isolde():
 
     @selected_model.setter
     def selected_model(self, model):
-        if not isinstance(model, chimerax.core.atomic.AtomicStructure):
+        from chimerax.atomic import AtomicStructure
+        if not isinstance(model, AtomicStructure):
             raise TypeError('Selection must be a single AtomicStructure model!')
         self._change_selected_model(model = model)
-
-    @property
-    def fixed_atoms(self):
-        return self._hard_shell_atoms
-    @property
-    def mobile_atoms(self):
-        return self._total_mobile
-    @property
-    def all_simulated_atoms(self):
-        return self._total_sim_construct
-
 
 
     ###################################################################
@@ -609,11 +353,11 @@ class Isolde():
         ####
 
         self.gui = gui
-        self.iw = gui.iw
+        iw = self.iw = gui.iw
 
         # FIXME Remove 'Custom restraints' tab from the gui while I decide
         # whether to keep it
-        self.iw._sim_tab_widget.removeTab(1)
+        iw._sim_tab_widget.removeTab(1)
 
         self.gui_mode = True
 
@@ -656,11 +400,10 @@ class Isolde():
         # Work out menu state based on current ChimeraX session
         self._update_sim_control_button_states()
 
-
-
-
     def _populate_menus_and_update_params(self):
         iw = self.iw
+        params = self.params
+        sim_params = self.sim_params
         # Clear experience mode placeholders from QT Designer and repopulate
         cb = iw._experience_level_combo_box
         cb.clear()
@@ -678,76 +421,43 @@ class Isolde():
             cb.addItem(text, mode)
 
         iw._sim_temp_spin_box.setProperty('value',
-            defaults.TEMPERATURE)
+            self.sim_params.temperature)
 
         # Populate force field combo box with available forcefields
         cb = iw._sim_force_field_combo_box
         cb.clear()
-        cb.addItems(self._available_ffs.main_file_descriptions)
-
-        # Populate water model combo box with available models
-        cb = iw._sim_water_model_combo_box
-        cb.clear()
-        cb.addItems(self._available_ffs.explicit_water_descriptions)
+        from .openmm.forcefields import forcefields
+        cb.addItems(forcefields.keys())
 
         # Populate OpenMM platform combo box with available platforms
-        # The current threaded implementation only works for the CPU
-        # platform on Mac systems.
         cb = iw._sim_platform_combo_box
         cb.clear()
 
-        platform_names = sim_interface.get_available_platforms()
+        from .openmm.openmm_interface import get_available_platforms
+        platform_names = get_available_platforms()
         cb.addItems(platform_names)
 
-        # Set to the fastest available platform
-        if 'CUDA' in platform_names:
-            cb.setCurrentIndex(platform_names.index('CUDA'))
-        elif 'OpenCL' in platform_names:
-            cb.setCurrentIndex(platform_names.index('OpenCL'))
-        elif 'CPU' in platform_names:
-            cb.setCurrentIndex(platform_names.index('CPU'))
+        # Set to the preferred or, failing that, the fastest available platform
+        if sim_params.platform in platform_names:
+            cb.setCurrentIndex(cb.findText(sim_params.platform))
+        else:
+            for p in sim_params.platforms:
+                if p in platform_names:
+                    cb.setCurrentIndex(cb.findText(p))
+                    sim_params.platform = p
+                    break
 
+
+        # Basic settings for defining the mobile selection
         iw._sim_basic_mobile_b_and_a_spinbox.setProperty('value',
-            defaults.SELECTION_SEQUENCE_PADDING)
+            params.num_selection_padding_residues)
         iw._sim_basic_mobile_sel_within_spinbox.setProperty('value',
-            defaults.SOFT_SHELL_CUTOFF)
+            params.soft_shell_cutoff_distance)
         iw._sim_basic_mobile_chains_within_spinbox.setProperty('value',
-            defaults.SOFT_SHELL_CUTOFF)
+            params.soft_shell_cutoff_distance)
 
-        # The last entry in the EM map chooser combo box should always be "Add map"
-        cb = iw._em_map_chooser_combo_box
-        cb.clear()
-        cb.addItem('Add map')
-        cb.setCurrentText('Add map')
-
-        # Map display style options
-        cb = iw._em_map_style_combo_box
-        cb.clear()
-        for mode in self._map_styles:
-            text = self._human_readable_map_display_styles[mode]
-            cb.addItem(text, mode)
-        cb.setCurrentIndex(-1)
-
-        cb = iw._em_map_color_combo_box
-        cb.clear()
-        for key, cval in self._available_colors.items():
-            cb.addItem(key, cval)
-        cb.setCurrentIndex(-1)
-
-        cb = iw._em_map_contour_units_combo_box
-        cb.clear()
-        cb.addItem('sigma')
-        cb.addItem('map units')
-        cb.setCurrentIndex(0)
-
-        iw._sim_basic_xtal_map_cutoff_spin_box.setProperty('value',
-            defaults.STANDARD_MAP_MASK_RADIUS)
         iw._sim_basic_xtal_map_weight_spin_box.setProperty('value',
-            defaults.STANDARD_MAP_K)
-        iw._em_map_cutoff_spin_box.setProperty('value',
-            defaults.STANDARD_MAP_MASK_RADIUS)
-        iw._em_map_coupling_spin_box.setProperty('value',
-            defaults.STANDARD_MAP_K)
+            params.difference_map_mask_cutoff)
         ####
         # Rebuild tab
         ####
@@ -768,22 +478,11 @@ class Isolde():
         # cases
         cb = iw._validate_rama_case_combo_box
         cb.clear()
-        rm = self._validation_mgr.rama_mgr
-        #~ from . import validation
-        # First key is the null (N/A) case, which doesn't get plotted
-        keys = rm.RAMA_CASES[1:]
+        from . import session_extensions
+        rm = session_extensions.get_ramachandran_mgr(self.session)
+        keys = list(rm.Rama_Case)[1:]
         for key in reversed(keys):
             cb.addItem(rm.RAMA_CASE_DETAILS[key]['name'], key)
-
-
-    def _prepare_ramachandran_plot(self):
-        '''
-        Prepare an empty MatPlotLib figure to put the Ramachandran plots in.
-        '''
-        from . import validation
-        iw = self.iw
-        container = self._rama_plot_window = iw._validate_rama_plot_layout
-        self._rama_plot = validation.RamaPlot(self.session, self._validation_mgr.rama_mgr, container)
 
     def _connect_functions(self):
         '''
@@ -797,15 +496,12 @@ class Isolde():
         iw._experience_level_combo_box.currentIndexChanged.connect(
             self.gui._change_experience_level_or_sim_mode
             )
-        ## Initialise to current level
-        #self._change_experience_level_or_sim_mode()
 
         iw._sim_basic_mode_combo_box.currentIndexChanged.connect(
             self._change_sim_mode
             )
         # Initialise to selected mode.
         self._change_sim_mode()
-        # automatically runs self.gui._change_experience_level_or_sim_mode()
 
         for button in self.gui._selection_mode_buttons:
             button.clicked.connect(self._change_sim_selection_mode)
@@ -819,9 +515,6 @@ class Isolde():
         ####
         iw._sim_force_field_combo_box.currentIndexChanged.connect(
             self._change_force_field
-            )
-        iw._sim_water_model_combo_box.currentIndexChanged.connect(
-            self._change_water_model
             )
         iw._master_model_combo_box.currentIndexChanged.connect(
             self._change_selected_model
@@ -853,7 +546,6 @@ class Isolde():
 
         # Run all connected functions once to initialise
         self._change_force_field()
-        self._change_water_model()
         self._change_selected_model()
         self._change_selected_chains()
         self._change_b_and_a_padding()
@@ -888,9 +580,6 @@ class Isolde():
         iw._sim_basic_xtal_init_done_button.clicked.connect(
             self._hide_xtal_init_frame
             )
-        iw._sim_basic_xtal_init_model_combo_box.currentIndexChanged.connect(
-            self._check_for_valid_xtal_init
-            )
         iw._sim_basic_xtal_init_reflections_file_button.clicked.connect(
             self._choose_mtz_file
             )
@@ -906,39 +595,6 @@ class Isolde():
         iw._sim_basic_xtal_settings_set_button.clicked.connect(
             self._apply_xtal_map_params
             )
-
-        ####
-        # EM map parameters (can only be set before starting simulation)
-        ####
-        iw._sim_basic_em_map_button.clicked.connect(
-            self._show_em_map_chooser
-            )
-        iw._em_map_done_button.clicked.connect(
-            self._hide_em_map_chooser
-            )
-        iw._em_map_set_button.clicked.connect(
-            self._add_or_change_em_map_from_gui
-            )
-        iw._em_map_remove_button.clicked.connect(
-            self._remove_em_map_from_gui
-            )
-        iw._em_map_chooser_combo_box.currentIndexChanged.connect(
-            self._show_em_map_in_menu_or_add_new
-            )
-        iw._em_map_style_combo_box.currentIndexChanged.connect(
-            self._change_display_of_selected_map
-            )
-        iw._em_map_color_combo_box.currentIndexChanged.connect(
-            self._change_display_of_selected_map
-            )
-        iw._em_map_contour_spin_box.valueChanged.connect(
-            self._change_contour_level_of_selected_map
-            )
-        iw._em_map_contour_units_combo_box.currentIndexChanged.connect(
-            self._change_contour_units_of_selected_map
-            )
-         # We want to start with the EM map chooser hidden
-        self._hide_em_map_chooser()
 
         # Visualisation tools
         iw._sim_basic_xtal_step_forward_button.clicked.connect(
@@ -1144,9 +800,9 @@ class Isolde():
 
     def _update_sim_temperature(self):
         t = self.iw._sim_temp_spin_box.value()
+        if self._sim_handler is not None:
+            self._sim_handler.temperature = t
         self.sim_params.temperature = t
-        if self.simulation_running:
-            self._sim_interface.temperature = t
 
     ##############################################################
     # Menu control functions to run on key events
@@ -1156,119 +812,33 @@ class Isolde():
         modes = self._sim_modes
         mmcb = self.iw._master_model_combo_box
         mmcb.clear()
-        emcb = self.iw._em_map_model_combo_box
-        emcb.clear()
-        xmcb = self.iw._sim_basic_xtal_init_model_combo_box
-        xmcb.clear()
-        potential_model_combo_box = {
-            modes.xtal:    xmcb,
-            modes.em:      None,
-            modes.free:    None,
-        }
 
         _models = self.session.models.list()
-        #Consider top-level models only
-        models = []
-        for m in _models:
-            if len(m.id) == 1:
-                models.append(m)
-        models = sorted(models, key = lambda m: m.id)
+        # #Consider top-level models only
+        # models = []
+        # for m in _models:
+        #     if len(m.id) == 1:
+        #         models.append(m)
+        models = sorted(_models, key = lambda m: m.id)
         mtd = {
             AtomicStructure: [],
-            clipper.CrystalStructure: [],
-            IsoldeCrystalModel: [],
-            IsoldeEMModel: [],
-            IsoldeFreeModel: [],
             Volume: []
         }
 
         for m in models:
             for mtype in mtd.keys():
-                if isinstance(m, mtype):
+                if type(m) == mtype:
                     mtd[mtype].append(m)
 
-        if sim_mode == modes.xtal:
-            valid_models = mtd[clipper.CrystalStructure] + mtd[IsoldeCrystalModel]
-            potential_models = mtd[AtomicStructure] + mtd[IsoldeFreeModel]
-        elif sim_mode == modes.free:
-            valid_models = mtd[AtomicStructure] + mtd[IsoldeFreeModel]
-            potential_models = []
-        elif sim_mode == modes.em:
-            valid_models = mtd[IsoldeEMModel]
-            potential_models = mtd[AtomicStructure] + mtd[IsoldeFreeModel]
 
+        valid_models = mtd[AtomicStructure]
         valid_models = sorted(valid_models, key=lambda m: m.id)
-        potential_models = sorted(potential_models, key=lambda m: m.id)
 
         for m in valid_models:
             id_str = '{}. {}'.format(m.id_string(), m.name)
             mmcb.addItem(id_str, _get_atomic_model(m))
             self._available_models[id_str] = _get_atomic_model(m)
 
-        for m in potential_models:
-            xmcb.addItem('{}. {}'.format(m.id_string(), m.name), _get_atomic_model(m))
-
-        pmcb = potential_model_combo_box[self.sim_mode]
-        if pmcb is not None:
-            for m in potential_models:
-                pmcb.addItem('{}. {}'.format(m.id_string(), m.name), _get_atomic_model(m))
-
-        if sim_mode == modes.em:
-            for m in mtd[Volume]:
-                emcb.addItem('{}. {}'.format(m.id_string(), m.name), m)
-
-
-
-    def _update_model_list_old(self, *_):
-        self.iw._master_model_combo_box.clear()
-        self.iw._em_map_model_combo_box.clear()
-        self.iw._sim_basic_xtal_init_model_combo_box.clear()
-        models = self.session.models.list()
-        atomic_model_list = []
-        atomic_model_name_list = []
-        potential_xtal_list = []
-        potential_xtal_name_list = []
-        volume_model_list = []
-        volume_model_name_list = []
-        sorted_models = sorted(models, key=lambda m: m.id)
-        if len(sorted_models) != 0:
-            # Find atomic and volumetric models and sort them into the
-            # appropriate lists
-            for i, m in enumerate(sorted_models):
-                if m.atomspec_has_atoms():
-                    # Ignore all symmetry-equivalent copies
-                    if m.parent.name == 'symmetry equivalents':
-                        continue
-                    id_str = m.id_string() + ' ' + m.name
-                    if type(m.parent) == clipper.CrystalStructure:
-                        if self.sim_mode == self._sim_modes.em:
-                            continue
-                    elif self.sim_mode == self._sim_modes.xtal:
-                        # Add it to the list of potential models to turn into crystal structures
-                        potential_xtal_name_list.append(id_str)
-                        potential_xtal_list.append(m)
-                        continue
-                    self._available_models[id_str] = m
-                    atomic_model_name_list.append(id_str)
-                    atomic_model_list.append(m)
-            for i, m in enumerate(sorted_models):
-                if hasattr(m, 'grid_data'):
-                    # This menu is only for real-space maps. Ignore clipper maps
-                    if type(m) == clipper.crystal.XmapHandler:
-                        continue
-                    id_str = m.id_string() + ' ' + m.name
-                    self._available_volumes[id_str] = m
-                    volume_model_name_list.append(id_str)
-                    volume_model_list.append(m)
-                else:
-                    # This is a model type we don't currently handle. Ignore.
-                    continue
-        for l, m in zip(atomic_model_name_list, atomic_model_list):
-            self.iw._master_model_combo_box.addItem(l, m)
-        for l, m in zip(potential_xtal_name_list, potential_xtal_list):
-            self.iw._sim_basic_xtal_init_model_combo_box.addItem(l, m)
-        for l, m in zip(volume_model_name_list, volume_model_list):
-            self.iw._em_map_model_combo_box.addItem(l, m)
 
     def _update_chain_list(self):
         m = self._selected_model
@@ -1279,11 +849,11 @@ class Isolde():
 
 
     def _selection_changed(self, *_):
-        from chimerax.core.atomic import selected_atoms
+        from chimerax.atomic import selected_atoms
         from .util import is_continuous_protein_chain
         sel = selected_atoms(self.session)
         selres = sel.unique_residues
-        if self._simulation_running:
+        if self.simulation_running:
             natoms = len(sel)
             if natoms == 1:
                 self._enable_atom_position_restraints_frame()
@@ -1320,26 +890,25 @@ class Isolde():
     def _update_sim_control_button_states(self):
         # Set enabled/disabled states of main simulation control panel
         # based on whether a simulation is currently running
-        flag = self._simulation_running
+        running = self.simulation_running
         iw = self.iw
-        paused = self._sim_paused
+        paused = self.sim_paused
         go_button = iw._sim_go_button
-        if paused and not flag:
-            self._sim_paused = False
+        if paused and not running:
             go_button.setChecked(False)
         elif paused:
             go_button.setToolTip('Resume')
-        elif flag:
+        elif running:
             go_button.setToolTip('Pause')
-        if not flag:
-            iw._sim_go_button.setToolTip('Start a simulation')
+        if not running:
+            go_button.setToolTip('Start a simulation')
 
-        iw._sim_save_checkpoint_button.setEnabled(flag)
-        iw._sim_revert_to_checkpoint_button.setEnabled(flag)
-        iw._sim_commit_button.setEnabled(flag)
-        iw._sim_stop_and_revert_to_checkpoint_button.setEnabled(flag)
-        iw._sim_stop_and_discard_button.setEnabled(flag)
-        if self.simulation_type == 'equil':
+        iw._sim_save_checkpoint_button.setEnabled(running)
+        iw._sim_revert_to_checkpoint_button.setEnabled(running)
+        iw._sim_commit_button.setEnabled(running)
+        iw._sim_stop_and_revert_to_checkpoint_button.setEnabled(running)
+        iw._sim_stop_and_discard_button.setEnabled(running)
+        if self.simulation_mode == 'equil':
             iw._sim_equil_button.setChecked(True)
         else:
             iw._sim_min_button.setChecked(True)
@@ -1403,13 +972,24 @@ class Isolde():
         self.iw._sim_basic_xtal_init_open_button.setEnabled(True)
 
     def _check_for_valid_xtal_init(self, *_):
-        cb = self.iw._sim_basic_xtal_init_model_combo_box
-        if cb.currentData() is not None:
-            if os.path.isfile(self.iw._sim_basic_xtal_init_reflections_file_name.text()):
-                self.iw._sim_basic_xtal_init_go_button.setEnabled(True)
-                return
-        self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
-        self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
+        sm = self.selected_model
+        valid = True
+        if sm is not None:
+            if not os.path.isfile(self.iw._sim_basic_xtal_init_reflections_file_name.text()):
+                valid = False
+            if valid:
+                from chimerax.clipper.symmetry import XtalSymmetryHandler
+                for m in sm.all_models:
+                    if isinstance(m, XtalSymmetryHandler):
+                        valid = False
+                        break
+        else:
+            valid = False
+        if valid:
+            self.iw._sim_basic_xtal_init_go_button.setEnabled(True)
+        else:
+            self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
+            self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
 
     def _choose_mtz_file(self, *_):
         options = QFileDialog.Options()
@@ -1420,9 +1000,7 @@ class Isolde():
         self.iw._sim_basic_xtal_init_reflections_file_name.setText(filename)
         self._check_for_valid_xtal_init()
 
-
     def _initialize_xtal_structure(self, *_):
-        cb = self.iw._sim_basic_xtal_init_model_combo_box
         fname = self.iw._sim_basic_xtal_init_reflections_file_name.text()
         if not cb.count:
             errstring = 'No atomic structures are available that are not \
@@ -1432,35 +1010,44 @@ class Isolde():
         if not os.path.isfile(fname):
             errstring = 'Please select a valid MTZ file!'
             _generic_warning(errstring)
-        m = cb.currentData()
-        cs = clipper.CrystalStructure(self.session, m, mtzfile=fname,
-                            map_oversampling=self.params.map_shannon_rate)
+        m = self.selected_model
+        from chimerax.clipper import symmetry
+        sym_handler = symmetry.XtalSymmetryHandler(m, fname,
+            map_oversampling = self.params.map_shannon_rate)
         self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
         self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
-        self._change_selected_model(force = True)
 
-    def _initialize_xtal_maps(self, model):
+    def _initialize_maps(self, model):
         '''
         Set up all crystallographic maps associated with a model, ready
         for simulation.
         '''
-        self.master_map_list.clear()
-        xmaps = model.xmaps.child_models()
-        cb = self.iw._sim_basic_xtal_settings_map_combo_box
-        cb.clear()
+        from chimerax.map import Volume
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sh = get_symmetry_handler(model)
+        if sh is None:
+            # No maps associated with this model.
+            return False
+
+        xmaps = sh.xmapset.child_models()
         for xmap in xmaps:
-            name = xmap.name
+            if not isinstance(xmap, Volume):
+                continue
             is_difference_map = xmap.is_difference_map
-            if is_difference_map:
-                cutoff = self.params.difference_map_mask_cutoff
-                coupling_constant = self.default_difference_map_k
-            else:
-                cutoff = self.params.standard_map_mask_cutoff
-                coupling_constant = self.default_standard_map_k
-            new_map = self.add_map(name, xmap, cutoff, coupling_constant,
-                is_difference_map = is_difference_map, mask = True,
-                crop = False)
-            cb.addItem(name, new_map)
+            from .molobject import MDFF_Mgr
+            mdff_mgr = None
+            for m in xmap.child_models():
+                if isinstance(m, MDFF_Mgr):
+                    mdff_mgr = m
+                    break
+            if mdff_mgr is None:
+                from .session_extensions import get_mdff_mgr
+                mdff_mgr = get_mdff_mgr(model, xmap)
+                if is_difference_map:
+                    mdff_mgr.global_k = defaults.DIFFERENCE_MAP_K
+                else:
+                    mdff_mgr.global_k = defaults.STANDARD_MAP_K
+        return True
 
     def _toggle_xtal_map_dialog(self, *_):
         button = self.iw._sim_basic_xtal_map_settings_show_button
@@ -1499,73 +1086,6 @@ class Isolde():
             self.iw._sim_basic_xtal_settings_map_masked_checkbox.checkState())
 
 
-    ####
-    # EM
-    ####
-
-    def _show_em_map_chooser(self, *_):
-        self.iw._em_map_chooser_frame.show()
-        self.iw._sim_basic_em_map_button.setEnabled(False)
-
-    def _hide_em_map_chooser(self, *_):
-        self.iw._em_map_chooser_frame.hide()
-        self.iw._sim_basic_em_map_button.setEnabled(True)
-
-    def _show_em_map_in_menu_or_add_new(self, *_):
-        if self.sim_mode != self._sim_modes.em:
-            return
-        iw = self.iw
-        seltext = iw._em_map_chooser_combo_box.currentText()
-        if seltext == 'Add map':
-            self._add_new_map = True
-            iw._em_map_name_field.setText('')
-            iw._em_map_model_combo_box.setCurrentIndex(-1)
-            iw._em_map_name_field.setEnabled(True)
-            iw._em_map_style_combo_box.setCurrentIndex(-1)
-            iw._em_map_color_combo_box.setCurrentIndex(-1)
-        elif len(seltext):
-            self._add_new_map = False
-            current_map = self.master_map_list[seltext]
-            name, vol, cutoff, coupling, style, color, contour, contour_units, \
-                mask_vis, is_per_atom, per_atom_k = current_map.get_map_parameters()
-            iw._em_map_name_field.setText(name)
-            id_str = vol.id_string() + ' ' + vol.name
-            iw._em_map_model_combo_box.setCurrentText(id_str)
-            iw._em_map_cutoff_spin_box.setValue(cutoff)
-            iw._em_map_coupling_spin_box.setValue(coupling)
-            if style is not None:
-                iw._em_map_style_combo_box.setCurrentText(style)
-            else:
-                iw._em_map_style_combo_box.setCurrentIndex(-1)
-            if color is not None:
-                iw._em_map_color_combo_box.setCurrentText(color)
-            else:
-                iw._em_map_color_combo_box.setCurrentIndex(-1)
-            if contour is None:
-                contour = vol.surface_levels[0]
-                if iw._em_map_contour_units_combo_box.currentText() == 'sigma':
-                    sigma = vol.mean_sd_rms()[1]
-                    contour = contour/sigma
-                iw._em_map_contour_spin_box.setValue(contour)
-
-            if contour_units is not None:
-                iw._em_map_contour_units_combo_box.setCurrentText(contour_units)
-
-            iw._em_map_masked_checkbox.setCheckState(mask_vis)
-            # Map name is our lookup key, so can't change it after it's been added
-            iw._em_map_name_field.setEnabled(False)
-        else:
-            # Do nothing. List is empty.
-            return
-
-    def _update_master_map_list_combo_box(self):
-        cb = self.iw._em_map_chooser_combo_box
-        cb.clear()
-        keylist = sorted([key for key in self.master_map_list])
-        cb.addItems(keylist)
-        cb.addItem('Add map')
-
-
     # Update button states after a simulation has finished
     def _update_menu_after_sim(self):
         self._update_sim_control_button_states()
@@ -1578,14 +1098,15 @@ class Isolde():
     # Rebuild tab
     ####
     def _enable_rebuild_residue_frame(self, res):
-        if not self._simulation_running:
+        if not self.simulation_running:
             self._disable_rebuild_residue_frame()
             return
         if -1 in self._total_mobile.indices(res.atoms):
             self._disable_rebuild_residue_frame()
             return
 
-        pdmgr = self._validation_mgr.proper_dihedral_mgr
+        from . import session_extensions
+        pdmgr = session_extensions.get_proper_dihedral_mgr(self.session)
         # Peptide cis/trans flips
         self._rebuild_residue = res
         omega = self._rebuild_res_omega = pdmgr.get_dihedral(res, 'omega')
@@ -1602,7 +1123,7 @@ class Isolde():
         # Rotamer manipulations
         rot_text = self.iw._rebuild_sel_res_rot_info
         # self._get_rotamer_list_for_selected_residue(res)
-        rot_m = self._validation_mgr.rota_mgr
+        rot_m = session_extensions.get_rotamer_mgr(self.session)
         rota = rot_m.get_rotamer(res)
         if rota != self._selected_rotamer:
             self._clear_rotamer()
@@ -1610,7 +1131,6 @@ class Isolde():
         if rota is None:
             # This residue has no rotamers
             rot_text.setText('')
-            self._selected_rotamer = None
             self._set_rotamer_buttons_enabled(False)
         else:
             self._set_rotamer_buttons_enabled(True)
@@ -1683,7 +1203,7 @@ class Isolde():
             direction:
                 -1 or 1
         '''
-        from chimerax.core.atomic import selected_atoms
+        from chimerax.atomic import selected_atoms
         sel = selected_atoms(self.session)
         residues = sel.unique_residues
         # expand the selection to cover all atoms in the existing residues
@@ -1718,7 +1238,7 @@ class Isolde():
         otherwise the last will be removed. The selection will never be
         shrunk to less than a single residue.
         '''
-        from chimerax.core.atomic import selected_atoms
+        from chimerax.atomic import selected_atoms
         sel = selected_atoms(self.session)
         residues = sel.unique_residues
         if len(residues) > 1:
@@ -1730,17 +1250,17 @@ class Isolde():
                 raise TypeError('Direction must be either 1 or -1!')
 
     def _restrain_selection_as_alpha_helix(self, *_):
-        from chimerax.core.atomic import selected_atoms
+        from chimerax.atomic import selected_atoms
         sel = selected_atoms(self.session)
         self._restrain_secondary_structure(sel, 'helix')
 
     def _restrain_selection_as_antiparallel_beta(self, *_):
-        from chimerax.core.atomic import selected_atoms
+        from chimerax.atomic import selected_atoms
         sel = selected_atoms(self.session)
         self._restrain_secondary_structure(sel, 'antiparallel beta')
 
     def _restrain_selection_as_parallel_beta(self, *_):
-        from chimerax.core.atomic import selected_atoms
+        from chimerax.atomic import selected_atoms
         sel = selected_atoms(self.session)
         self._restrain_secondary_structure(sel, 'parallel beta')
 
@@ -1805,7 +1325,7 @@ class Isolde():
         self.iw._rebuild_register_shift_nres_spinbox.stepDown()
 
     def _apply_register_shift(self, *_):
-        from chimerax.core.atomic import selected_atoms
+        from chimerax.atomic import selected_atoms
         from .register_shift import ProteinRegisterShifter
         nshift = self.iw._rebuild_register_shift_nres_spinbox.value()
         sel = selected_atoms(self.session)
@@ -1834,13 +1354,13 @@ class Isolde():
         self.iw._rebuild_register_shift_release_button.setEnabled(False)
 
     def _restrain_selected_atom_to_current_xyz(self, *_):
-        from chimerax.core.atomic import selected_atoms
+        from chimerax.atomic import selected_atoms
         atom = selected_atoms(self.session)[0]
         k = self.iw._rebuild_pos_restraint_spring_constant.value()
         self.restrain_atom_to_xyz(atom, atom.coord, k)
 
     def _restrain_selected_atom_to_pivot_xyz(self, *_):
-        from chimerax.core.atomic import selected_atoms
+        from chimerax.atomic import selected_atoms
         atom = selected_atoms(self.session)[0]
         k = self.iw._rebuild_pos_restraint_spring_constant.value()
         self.restrain_atom_to_xyz(atom, self.session.view.center_of_rotation, k)
@@ -1861,7 +1381,7 @@ class Isolde():
         notified of the change.
         '''
         if sel is None:
-            from chimerax.core.atomic import selected_atoms
+            from chimerax.atomic import selected_atoms
             sel = selected_atoms(self.session)
         restraints = self.position_restraints.in_selection(sel)
         restraints.release()
@@ -1879,7 +1399,7 @@ class Isolde():
         if not self.simulation_running:
             return
         if sel is None:
-            from chimerax.core.atomic import selected_atoms
+            from chimerax.atomic import selected_atoms
             sel = selected_atoms(self.session)
         restraints = self.position_restraints.in_selection(sel)
         self._sim_interface.update_position_restraints(restraints)
@@ -1995,7 +1515,8 @@ class Isolde():
                 self.iw._rebuild_sel_res_pep_info.setText(pep_type)
             rot = self._selected_rotamer
             rot_text = self.iw._rebuild_sel_res_rot_info
-            rot_m = self._validation_mgr.rota_mgr
+            from .session_extensions import get_rotamer_mgr
+            rot_m = get_rotamer_mgr(self.session)
 
             if rot is not None:
                 rname, freq, zscore = rot_m.nearest_valid_rotamer(rot)
@@ -2020,18 +1541,27 @@ class Isolde():
         res = self._rebuild_residue
         self.flip_peptide_omega(res)
 
-
-
     ####
     # Validation tab
     ####
+    def _prepare_ramachandran_plot(self):
+        '''
+        Prepare an empty MatPlotLib figure to put the Ramachandran plots in.
+        '''
+        iw = self.iw
+        container = self._rama_plot_window = iw._validate_rama_plot_layout
+        from .validation_new.ramaplot import RamaPlot
+        from . import session_extensions
+        rama_mgr = session_extensions.get_ramachandran_mgr(self._selected_model)
+        self._rama_plot = RamaPlot(self.session, rama_mgr, container)
+
     def _show_rama_plot(self, *_):
         self.iw._validate_rama_stub_frame.hide()
         self.iw._validate_rama_main_frame.show()
         if self._rama_plot is None:
             # Create the basic MatPlotLib canvas for the Ramachandran plot
             self._prepare_ramachandran_plot()
-        if self._simulation_running and self.params.track_ramachandran_status:
+        if self.simulation_running and self.params.track_ramachandran_status:
             self._rama_go_live()
         else:
             self._rama_static_plot()
@@ -2059,7 +1589,8 @@ class Isolde():
 
     def _rama_go_static(self, *_):
         # self._update_rama_plot = False
-        self._isolde_events.remove_event_handler('live rama plot')
+        self._isolde_events.remove_event_handler('live rama plot',
+            error_on_missing = False)
         self.iw._validate_rama_sel_combo_box.setEnabled(True)
         self.iw._validate_rama_go_button.setEnabled(True)
 
@@ -2102,25 +1633,29 @@ class Isolde():
         self.iw._validate_pep_stub_frame.show()
 
     def _update_iffy_peptide_lists(self, *_):
-        ov = self.omega_validator
+        from .session_extensions import get_proper_dihedral_mgr
+        pd_mgr = get_proper_dihedral_mgr(self.session)
         model = self._selected_model
         clist = self.iw._validate_pep_cis_list
         tlist = self.iw._validate_pep_twisted_list
         clist.clear()
         tlist.clear()
-        if model != ov.current_model:
-            sel = model.atoms
-            from . import dihedrals
-            bd = self.backbone_dihedrals
-            ov.load_structure(model, bd.omega)
-        cis, twisted = ov.find_outliers()
-        ov.draw_outliers(cis, twisted)
+        omegas = pd_mgr.get_dihedrals(model.residues, 'omega')
+        abs_angles = numpy.abs(omegas.angles)
+        from math import pi
+        from .constants import defaults
+        cc = defaults.CIS_PEPTIDE_BOND_CUTOFF
+        tc = defaults.TWISTED_PEPTIDE_BOND_DELTA
+        cis = omegas[abs_angles < cc]
+        twisted = omegas[numpy.logical_and(abs_angles >= cc, abs_angles < pi-tc)]
+
         from PyQt5.QtWidgets import QListWidgetItem
         from PyQt5.Qt import QColor, QBrush
         from PyQt5.QtCore import Qt
         badColor = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
         for c in cis:
-            pre, r = c.residues.unique()
+            r = c.residue
+            pre = c.atoms[0].residue
             label = r.chain_id + ' ' \
                     + str(pre.number) + ' - ' + str(r.number) + '\t' \
                     + pre.name + ' - ' + r.name
@@ -2130,7 +1665,8 @@ class Isolde():
                 list_item.setBackground(badColor)
             clist.addItem(list_item)
         for t in twisted:
-            pre, r = t.residues.unique()
+            r = t.residue
+            pre = t.atoms[0].residue
             label = r.chain_id + ' ' \
                     + str(pre.number) + ' - ' + str(r.number) + '\t' \
                     + pre.name + ' - ' + r.name
@@ -2154,22 +1690,18 @@ class Isolde():
         sm = self.iw._sim_basic_mode_combo_box.currentData()
         self.sim_mode = sm
         self.gui._change_experience_level_or_sim_mode()
-        self._update_model_list()
+        #self._update_model_list()
 
     def _change_force_field(self):
-        ffindex = self.iw._sim_force_field_combo_box.currentIndex()
-        ffs = self._available_ffs
-        self._sim_main_ff = ffs.main_files[ffindex]
-        self._sim_implicit_solvent_ff = ffs.implicit_solvent_files[ffindex]
+        ff_key = self.iw._sim_force_field_combo_box.currentText()
+        from .openmm.forcefields import forcefields
 
-    def _change_water_model(self):
-        ffindex = self.iw._sim_water_model_combo_box.currentIndex()
-        self._sim_water_ff = self._available_ffs.explicit_water_files[ffindex]
+        self._sim_main_ff = forcefields[ff_key]
 
     def _change_selected_model(self, *_, model = None, force = False):
         if len(self._available_models) == 0:
             return
-        if self._simulation_running:
+        if self.simulation_running:
             return
         iw = self.iw
         if model is not None:
@@ -2181,18 +1713,20 @@ class Isolde():
         m = iw._master_model_combo_box.currentData()
         if force or (self._selected_model != m and m is not None):
             self._status('Analysing model and preparing restraints. Please be patient.')
-            from . import util
-            util.add_disulfides_from_model_metadata(m)
             self._selected_model = m
             self.session.selection.clear()
             self._selected_model.selected = True
-            #self._prepare_all_interactive_restraints(m)
             self._update_chain_list()
-            if isinstance(m.parent, clipper.CrystalStructure):
-                self._initialize_xtal_maps(m.parent)
+            has_maps = self._initialize_maps(m)
+            if has_maps:
                 iw._sim_basic_xtal_stepper_frame.setEnabled(True)
             else:
                 iw._sim_basic_xtal_stepper_frame.setEnabled(False)
+
+            # Load/create validation managers
+            from . import session_extensions as sx
+            sx.get_rota_annotator(m)
+            sx.get_rama_annotator(m)
             self.triggers.activate_trigger('selected model changed', data=m)
         self._status('')
 
@@ -2240,7 +1774,7 @@ class Isolde():
     def _change_selected_chains(self,*_):
         if len(self._available_models) == 0:
             return
-        if self._simulation_running:
+        if self.simulation_running:
             return
         lb = self.iw._sim_basic_mobile_chains_list_box
         m = self._selected_model
@@ -2252,7 +1786,7 @@ class Isolde():
             chain_text = s.text()
             chain_index = all_chain_ids.index(chain_text)
             all_chains[chain_index].existing_residues.atoms.selected = True
-        from chimerax.core.atomic import selected_atoms
+        from chimerax.atomic import selected_atoms
         self._selected_atoms = selected_atoms(self.session)
 
     def _change_b_and_a_padding(self, *_):
@@ -2293,92 +1827,31 @@ class Isolde():
         self.sim_platform = self.iw._sim_platform_combo_box.currentText()
 
     def _add_or_change_em_map_from_gui(self, *_):
-        iw = self.iw
-        name = iw._em_map_name_field.text()
-        m_id = iw._em_map_model_combo_box.currentText()
-        model = self._available_volumes[m_id]
-        cutoff = iw._em_map_cutoff_spin_box.value()
-        coupling_constant = iw._em_map_coupling_spin_box.value()
-        style = iw._em_map_style_combo_box.currentText()
-        color = iw._em_map_color_combo_box.currentText()
-        contour = iw._em_map_contour_spin_box.value()
-        contour_units = iw._em_map_contour_units_combo_box.currentText()
-        mask = iw._em_map_masked_checkbox.checkState()
-        if self._add_new_map:
-            self.add_map(name, model, cutoff, coupling_constant, style, color, contour, contour_units, mask)
-        else:
-            m = self.master_map_list[name]
-            m.change_map_parameters(model, cutoff, coupling_constant, style, color, contour, contour_units, mask)
+        pass
 
     def _remove_em_map_from_gui(self, *_):
-        name = self.iw._em_map_name_field.text()
-        self.remove_map(name)
-
-    def _change_display_of_selected_map(self, *_):
-        iw = self.iw
-        m_id = iw._em_map_model_combo_box.currentText()
-        if m_id == "":
-            return
-        model = self._available_volumes[m_id]
-        styleargs = {}
-        style = iw._em_map_style_combo_box.currentData()
-        if style is not None:
-            styleargs = self._map_style_settings[style]
-        map_color = iw._em_map_color_combo_box.currentData()
-        if map_color is not None:
-            styleargs['color'] = [map_color]
-        if len(styleargs) != 0:
-            from chimerax.core.map import volumecommand
-            volumecommand.volume(self.session, [model], **styleargs)
-
-    def _change_contour_level_of_selected_map(self, *_):
-        iw = self.iw
-        m_id = iw._em_map_model_combo_box.currentText()
-        model = self._available_volumes[m_id]
-        contour_val = iw._em_map_contour_spin_box.value()
-        contour_units = iw._em_map_contour_units_combo_box.currentText()
-        if contour_units == 'sigma':
-            map_sigma = model.mean_sd_rms()[1]
-            contour_val = contour_val * map_sigma
-        from chimerax.core.map import volumecommand
-        volumecommand.volume(self.session,[model], level=[[contour_val]], cap_faces = False)
-
-
-    def _change_contour_units_of_selected_map(self, *_):
-        iw = self.iw
-        sb = iw._em_map_contour_spin_box
-        cb = iw._em_map_contour_units_combo_box
-        m_id = iw._em_map_model_combo_box.currentText()
-        model = self._available_volumes[m_id]
-        contour_units = cb.currentText()
-        contour_val = sb.value()
-        map_sigma = model.mean_sd_rms()[1]
-        if contour_units == 'sigma':
-            contour_val = contour_val / map_sigma
-        else:
-            contour_val = contour_val * map_sigma
-        sb.setValue(contour_val)
-
+        pass
 
     def add_map(self, name, vol, cutoff, coupling_constant,
         is_difference_map = False, style = None, color = None,
         contour = None, contour_units = None, mask = True, crop = True):
-        if name in self.master_map_list:
-            for key in self.master_map_list:
-                print(key)
-            raise Exception('Each map must have a unique name!')
-        # Check if this model is a unique volumetric map
-        if len(vol.models()) !=1 or not hasattr(vol, 'grid_data'):
-            raise Exception('vol must be a single volumetric map object')
-
-        from .volumetric import IsoldeMap
-        new_map = IsoldeMap(self.session, name, vol, cutoff, coupling_constant,
-        is_difference_map = is_difference_map, style = style,
-        color = color, contour = contour, contour_units = contour_units,
-        mask = mask, crop = crop)
-        self.master_map_list[name] = new_map
-        self._update_master_map_list_combo_box()
-        return new_map
+        pass
+        # if name in self.master_map_list:
+        #     for key in self.master_map_list:
+        #         print(key)
+        #     raise Exception('Each map must have a unique name!')
+        # # Check if this model is a unique volumetric map
+        # if len(vol.models()) !=1 or not hasattr(vol, 'grid_data'):
+        #     raise Exception('vol must be a single volumetric map object')
+        #
+        # from .volumetric import IsoldeMap
+        # new_map = IsoldeMap(self.session, name, vol, cutoff, coupling_constant,
+        # is_difference_map = is_difference_map, style = style,
+        # color = color, contour = contour, contour_units = contour_units,
+        # mask = mask, crop = crop)
+        # self.master_map_list[name] = new_map
+        # self._update_master_map_list_combo_box()
+        # return new_map
 
 
     def remove_map(self, name):
@@ -2435,7 +1908,7 @@ class Isolde():
         bd = self._mobile_backbone_dihedrals
 
         if selected:
-            from chimerax.core.atomic import selected_atoms
+            from chimerax.atomic import selected_atoms
             sel = selected_atoms(self.session)
         else:
             sel = self._total_mobile
@@ -2471,7 +1944,7 @@ class Isolde():
         self.sim_params = SimParams()
 
     def _start_sim_or_toggle_pause(self, *_):
-        if not self._simulation_running:
+        if not self.simulation_running:
             self.start_sim()
         else:
             self.pause_sim_toggle()
@@ -2492,7 +1965,7 @@ class Isolde():
         log = session.logger.info
         sel_model = self.selected_model
 
-        if self._simulation_running:
+        if self.simulation_running:
             print('You already have a simulation running!')
             return
         if self._logging:
@@ -2686,30 +2159,14 @@ class Isolde():
         Register all event handlers etc. that have to be running during the
         simulation.
         '''
-        self._simulation_running = True
+        self.simulation_running = True
         self._update_sim_control_button_states()
-
-        vm = self._validation_mgr
         r = self._total_mobile.unique_residues
-        vm.start_tracking(r)
-        self._isolde_events.add_event_handler('live validation during sim',
-                                              'completed simulation step',
-                                              vm.update)
-
-        # if self.params.track_ramachandran_status:
-        #     rm = self._validation_mgr.rama_mgr
-        #     tm = self._total_mobile
-        #     r = self._mobile_res = tm.unique_residues
-        #     rcas = self._mobile_CA_atoms = r.atoms[r.atoms.names=='CA']
-        #     default_color = rm.color_scale[-1]
-        #     rcas.colors = default_color
-        #     if self._rama_plot is not None:
-        #         self._rama_go_live()
 
         self._isolde_events.add_event_handler('rezone maps during sim',
                                               'completed simulation step',
                                               self._rezone_maps_if_required)
-
+        self.triggers.activate_trigger('simulation started', None)
 
 
 
@@ -2736,20 +2193,13 @@ class Isolde():
             '''
             print('Failed to start')
             pass
+        self.triggers.activate_trigger('simulation terminated', outcome)
         # Otherwise just clean up
         si = self._sim_interface
         xeh = self._event_handler
         ieh = self._isolde_events
-        self._simulation_running = False
         ieh.remove_event_handler(
             'rezone maps during sim', error_on_missing = False)
-        ieh.remove_event_handler(
-            'live validation during sim', error_on_missing = False)
-
-
-        #~ if self.params.track_rotamer_status:
-            #~ self.live_validation_interface.stop_validation_threads()
-        self._update_dihedral_restraints_drawing()
 
         self._disable_rebuild_residue_frame()
 
@@ -2757,39 +2207,7 @@ class Isolde():
         self._mouse_tugger = None
         for d in self._haptic_devices:
             d.cleanup()
-        sel_model = self._selected_model
-        sc = self._total_sim_construct
-        sb = self._total_sim_bonds
-        sel_model.atoms.displays = self._original_display_state
-        sel_model.residues.ribbon_displays = self._original_ribbon_state
-        self._surroundings.hides &= ~control.HIDE_ISOLDE
-        self._surroundings_hidden = False
-        sc.colors = self._original_atom_colors
-        sc.draw_modes = self._original_atom_draw_modes
-        sc.radii = self._original_atom_radii
-        sb.radii = self._original_bond_radii
-        self._total_sim_construct = None
 
-        self._surroundings = None
-        if self.params.track_ramachandran_status:
-            # Update one last time
-            if self._update_rama_plot:
-                self._rama_plot.update_scatter(self._mobile_backbone_dihedrals)
-                self.update_omega_check()
-        self._rama_go_static()
-        self.iw._rebuild_sel_residue_frame.setDisabled(True)
-        self.omega_validator.load_structure(self.selected_model, self.backbone_dihedrals.omega)
-        self.update_omega_check(force=True)
-
-        self._sim_is_unstable = False
-        if self.sim_mode == self._sim_modes['xtal']:
-            cs = self._selected_model.parent
-            cs.xmaps.live_scrolling = True
-            cs.live_atomic_symmetry = True
-        self._status('')
-        self._sim_interface = None
-        self.equilibrate()
-        self.iw._sim_go_button.setChecked(False)
 
     def _get_main_sim_selection(self):
         '''
@@ -2815,7 +2233,7 @@ class Isolde():
             # then work back and forward from each picked atom to expand
             # the selection by the specified number of residues.
             pad = self.params.num_selection_padding_residues
-            from chimerax.core.atomic import selected_atoms
+            from chimerax.atomic import selected_atoms
             selatoms = selected_atoms(self.session)
             us = selatoms.unique_structures
             if len(us) != 1:
@@ -2830,7 +2248,7 @@ class Isolde():
             all_res = sm.residues
             sel_res = selatoms.unique_residues
             sel_res_indices = all_res.indices(sel_res)
-            from chimerax.core.atomic.structure import Structure
+            from chimerax.atomic.structure import Structure
 
             allfrags = sm.polymers(missing_structure_treatment=Structure.PMS_NEVER_CONNECTS)
 
@@ -2870,7 +2288,7 @@ class Isolde():
 
     def get_shell_of_residues(self, existing_sel, dist_cutoff):
         from chimerax.core.geometry import find_close_points
-        from chimerax.core.atomic import selected_atoms, Atoms, concatenate
+        from chimerax.atomic import selected_atoms, Atoms, concatenate
         selatoms = existing_sel
         us = selatoms.unique_structures
         if len(us) !=1:
@@ -2897,17 +2315,21 @@ class Isolde():
 
     def pause_sim_toggle(self):
         if self.simulation_running:
-            self._sim_interface.toggle_pause()
+            self._sim_handler.toggle_pause()
+
+    @property
+    def sim_paused(self):
+        if self.simulation_running:
+            return self.sim_handler.pause
+        return True
 
     def _sim_pause_cb(self, *_):
-        self._sim_paused = True
         self._status('Simulation paused')
         go_button = self.iw._sim_go_button
         go_button.setChecked(False)
         go_button.setToolTip('Resume')
 
     def _sim_resume_cb(self, *_):
-        self._sim_paused = False
         self._status('Simulation running')
         go_button = self.iw._sim_go_button
         go_button.setChecked(True)
@@ -3212,7 +2634,7 @@ class Isolde():
         no atoms or residues are provided, restraints will be cleared
         for any atoms selected in the main window.
         '''
-        from chimerax.core.atomic import selected_atoms
+        from chimerax.atomic import selected_atoms
         sel = None
         if atoms is not None:
             if residues is not None:
@@ -3311,26 +2733,8 @@ class Isolde():
     def update_ramachandran(self, *_):
         self._rama_counter = (self._rama_counter + 1) % self.params.rounds_per_rama_update
         if self._rama_counter == 0:
-            mgr = self._validation_mgr.rama_mgr
-            #rv = self.rama_validator
-            #bd = self._mobile_backbone_dihedrals
-            #rv.get_scores(bd, update_colors = True)
-            bd.CAs.colors = bd.rama_colors
             if self._update_rama_plot:
-                self._rama_plot.update_scatter(bd)
-
-    def update_omega_check(self, *_, force = False):
-        rc = self._rama_counter
-        ov = self.omega_validator
-        # Stagger Ramachandran and omega validation to reduce jerkiness
-        if force or self._rama_counter == self.params.rounds_per_rama_update//2:
-            cis, twisted = ov.find_outliers()
-            ov.draw_outliers(cis, twisted)
-        ov.update_coords()
-
-    def _update_dihedral_restraints_drawing(self):
-        d = self._all_annotated_dihedrals
-        d.update_graphics(update_needed = True)
+                self._rama_plot.update_scatter()
 
 
 
@@ -3383,6 +2787,9 @@ class Isolde():
     def _on_close(self, *_):
         self.session.logger.status('Closing ISOLDE and cleaning up')
 
+        if self.simulation_running:
+            self.sim_handler.stop_sim()
+
         # Remove all registered event handlers
         self._event_handler.remove_all_handlers()
         self._isolde_events.remove_all_handlers()
@@ -3407,21 +2814,24 @@ class Isolde():
         from chimerax.core.commands import color
         color.color(self.session, before_struct, color='bychain', target='ac')
         color.color(self.session, before_struct, color='byhetero', target='a')
-        before_cs = clipper.CrystalStructure(self.session, before_struct,
+        from chimerax.clipper import symmetry
+        sym_handler = symmetry.XtalSymmetryHandler(before_struct,
             mtzfile=os.path.join(data_dir, 'before_maps.mtz'),
             map_oversampling = self.params.map_shannon_rate)
         #~ from chimerax.core.commands import lighting
         #~ lighting.lighting(self.session, depth_cue=True)
-        sharp_map = before_cs.xmaps['2FOFCWT_sharp, PH2FOFCWT_sharp']
+        sharp_map = sym_handler.xmapset['2FOFCWT_sharp, PH2FOFCWT_sharp']
         sd = sharp_map.mean_sd_rms()[1]
-        styleargs= self._map_style_settings[self._map_styles.solid_t60]
+        from . import visualisation as v
+        styleargs= v.map_style_settings[v.map_styles.solid_t40]
         from chimerax.core.map import volumecommand
         volumecommand.volume(self.session, [sharp_map], **styleargs)
         sharp_map.set_parameters(surface_levels = (2.5*sd,))
 
-        from chimerax.clipper import crystal
-        crystal.set_to_default_cartoon(self.session)
-        self._change_selected_model(force=True)
+        # from chimerax.clipper import crystal
+        # crystal.set_to_default_cartoon(self.session)
+        self._change_selected_model(model=before_struct)
+        before_struct.atoms[before_struct.atoms.idatm_types != 'HC'].displays = True
         from . import view
         view.focus_on_selection(self.session, self.session.main_view, before_struct.atoms)
 

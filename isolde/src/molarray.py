@@ -119,6 +119,9 @@ class Ramas(Collection):
             doc = 'The phi and psi angles for each residue in radians. Read only.')
     angles = cvec_property('rama_omegaphipsi', float64, 3, read_only = True,
             doc = 'The omega, phi and psi angles for each residue in radians. Read only.')
+    cases = cvec_property('rama_case', uint8, read_only=True,
+            doc = '''Values representing the Ramachandran case for these residues,
+                matching the case definitions in Rama_Mgr.Rama_Case. Read only.''')
 
 class Rotamers(Collection):
     def __init__(self, c_pointers=None):

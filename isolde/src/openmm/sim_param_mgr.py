@@ -97,8 +97,9 @@ class SimParams(Param_Mgr):
         'rigid_water':                          (defaults.RIGID_WATER, None),
         'remove_c_of_m_motion':                 (defaults.REMOVE_C_OF_M_MOTION, None),
 
-        'platform':                             (defaults.OPENMM_PLATFORM, None),
-        'forcefield':                           ('amber14', None),
+        'platform':                             (defaults.OPENMM_DEFAULT_PLATFORM, None),
+        'platforms':                            (defaults.OPENMM_PLATFORMS, None),
+        'forcefield':                           (defaults.OPENMM_FORCEFIELD, None),
         'integrator':                           (defaults.OPENMM_INTEGRATOR_TYPE, None),
         'variable_integrator_tolerance':        (defaults.OPENMM_VAR_INTEGRATOR_TOL, None),
         'fixed_integrator_timestep':            (defaults.OPENMM_FIXED_INTEGRATOR_TS, None),
@@ -108,8 +109,11 @@ class SimParams(Param_Mgr):
         'simulation_startup_rounds':            (defaults.SIM_STARTUP_ROUNDS, None),
         'maximum_unstable_rounds':              (defaults.MAX_UNSTABLE_ROUNDS, None),
         'minimization_convergence_tol':         (defaults.MIN_CONVERGENCE_FORCE_TOL, OPENMM_FORCE_UNIT),
-        'tug_hydrogens':                        (False, None),
+        'tug_hydrogens':                        (defaults.TUGGABLE_HYDROGENS, None),
         'hydrogens_feel_maps':                  (defaults.HYDROGENS_FEEL_MAPS, None),
         'target_loop_period':                   (defaults.TARGET_LOOP_PERIOD, None),
+
+        'restrain_peptide_omegas':              (defaults.RESTRAIN_PEPTIDE_OMEGA, None),
+        'display_omega_restraints':             (defaults.DISPLAY_OMEGA_RESTRAINTS, None),
 
     }

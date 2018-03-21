@@ -7,7 +7,7 @@
 import numpy
 import sys, os, glob
 import ctypes
-
+from .ctypes import convert_and_sanitize_numpy_array
 NPY_BOOL = ctypes.c_uint8
 
 
@@ -98,20 +98,6 @@ def multiply_transforms(tf1, tf2):
                          tf2.ctypes.data_as(TF_TYPE),
                          ret.ctypes.data_as(TF_TYPE))
     return ret
-
-def convert_and_sanitize_numpy_array(array, dtype):
-    '''
-    Convert a numpy array to the specified data type, and ensure its
-    contents are C-contiguous in memory.
-    '''
-    #~ if array.flags.c_contiguous:
-        #~ if array.dtype == dtype:
-            #~ return array
-        #~ return array.as_type(dtype)
-    ret = numpy.empty(array.shape, dtype)
-    ret[:] = array
-    return ret
-
 
 _flip_rotate_shift = _geometry.flip_rotate_and_shift
 def flip_rotate_and_shift(flip_mask, flip_tf, rotations, shifts):

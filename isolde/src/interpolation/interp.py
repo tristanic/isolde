@@ -6,6 +6,8 @@ from numpy import uint8, int32, uint32, float64, float32, byte, bool as npy_bool
 import ctypes
 import numpy
 
+from ..ctypes import convert_and_sanitize_numpy_array
+
 libdir = os.path.dirname(os.path.abspath(__file__))
 libfile = glob.glob(os.path.join(libdir, '..', '_nd_interp.cpython*'))[0]
 
@@ -30,12 +32,12 @@ C_UINT32_P = ctypes.POINTER(UINT32_TYPE)
 class RegularGridInterpolator:
     '''
     A C++ implementation of n-dimensional regular grid interpolation,
-    interfaced to Python using ctypes. About 5 times faster than 
-    the SciPy RegularGridInterpolator for 3D data, and more compatible with 
+    interfaced to Python using ctypes. About 5 times faster than
+    the SciPy RegularGridInterpolator for 3D data, and more compatible with
     threading.
     '''
-    
-    _new_interp = c_function('rg_interp_new', 
+
+    _new_interp = c_function('rg_interp_new',
         args=(SIZE_TYPE, C_UINT32_P, C_FLOAT_P, C_FLOAT_P, C_FLOAT_P), ret = ctypes.c_void_p)
     _interpolate = c_function('rg_interpolate',
         args=(ctypes.c_void_p, C_FLOAT_P, SIZE_TYPE, C_FLOAT_P))
@@ -68,36 +70,36 @@ class RegularGridInterpolator:
         min_vals = convert_and_sanitize_numpy_array(min_vals, NPY_FLOAT)
         max_vals = convert_and_sanitize_numpy_array(max_vals, NPY_FLOAT)
         grid_data = convert_and_sanitize_numpy_array(grid_data, NPY_FLOAT)
-        
-        self._c_pointer = self._new_interp(dim, pointer(axis_lengths), 
+
+        self._c_pointer = self._new_interp(dim, pointer(axis_lengths),
             pointer(min_vals), pointer(max_vals), pointer(grid_data))
-        
+
         #~ self._dim = dim
         self._min_vals = min_vals
         self._max_vals = max_vals
-        
+
     @property
     def dim(self):
         return self._dim(self._c_pointer)
-    
+
     @property
     def min(self):
         ret = numpy.empty(self.dim, NPY_FLOAT)
         self._min(self._c_pointer, pointer(ret))
         return ret
-        
+
     @property
     def max(self):
         ret = numpy.empty(self.dim, NPY_FLOAT)
         self._max(self._c_pointer, pointer(ret))
         return ret
-    
+
     @property
     def axis_lengths(self):
         ret = numpy.empty(self.dim, numpy.uint32)
         self._axis_lengths(self._c_pointer, pointer(ret))
         return ret
-    
+
     @property
     def values(self):
         dim = self.dim
@@ -105,7 +107,7 @@ class RegularGridInterpolator:
         ret = numpy.empty(lengths, NPY_FLOAT)
         self._values(self._c_pointer, pointer(ret))
         return ret
-            
+
     @property
     def grid(self):
         grid = []
@@ -115,26 +117,21 @@ class RegularGridInterpolator:
         for length, minv, maxv in zip(lengths, min_vals, max_vals):
             grid.append(numpy.linspace(minv, maxv, length))
         return tuple(grid)
-        
-    
+
+
     def interpolate(self, data):
         if data.shape[1] != self.dim:
             raise TypeError('Wrong number of dimensions! This is a '\
                            +'{}-dimensional interpolator.'.format(self.dim))
-        if data.dtype != NPY_FLOAT or not data.flags.c_contiguous:
-            in_data = numpy.empty(data.shape, NPY_FLOAT)
-            in_data[:] = data
-        else:
-            in_data = data
-        
-        n = in_data.shape[0]
+        in_data = convert_and_sanitize_numpy_array(data, NPY_FLOAT)
+        n = len(in_data)
         ret = numpy.empty(n, dtype=NPY_FLOAT)
         self._interpolate(self._c_pointer, pointer(in_data), n, pointer(ret))
         return ret
-    
+
     def __call__(self, data):
         return self.interpolate(data)
-    
+
     def __del__(self):
         self._delete(self._c_pointer)
 
@@ -161,16 +158,7 @@ def test_interpolator(n):
     axes = [numpy.array(range(l))/(l-1) for l in axis_lengths]
     #~ axis = numpy.array(range(36))/35
     scrg = ScipyInterp(axes, data)
-    
+
     rg = RegularGridInterpolator(dim, axis_lengths, mins, maxs, data)
     #test_data = numpy.random.rand(n,3)
     return (scrg, rg)
-    
-def convert_and_sanitize_numpy_array(array, dtype):
-    '''
-    Convert a numpy array to the specified data type, and ensure its
-    contents are C-contiguous in memory.
-    '''
-    ret = numpy.empty(array.shape, dtype)
-    ret[:] = array
-    return ret

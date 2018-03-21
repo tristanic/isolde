@@ -97,7 +97,7 @@ class SimParams(Param_Mgr):
         'rigid_water':                          (defaults.RIGID_WATER, None),
         'remove_c_of_m_motion':                 (defaults.REMOVE_C_OF_M_MOTION, None),
 
-        'platform':                             (defaults.OPENMM_PLATFORM, None),
+        'platform':                             (defaults.OPENMM_DEFAULT_PLATFORM, None),
         'forcefield':                           ('amber14', None),
         'integrator':                           (defaults.OPENMM_INTEGRATOR_TYPE, None),
         'variable_integrator_tolerance':        (defaults.OPENMM_VAR_INTEGRATOR_TOL, None),

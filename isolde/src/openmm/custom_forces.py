@@ -27,6 +27,8 @@ from chimerax.core.atomic import molc
 from chimerax.core.atomic.molc import CFunctions, string, cptr, pyobject, \
     set_c_pointer, pointer, size_t
 from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
+from ..ctypes import convert_and_sanitize_numpy_array
+
 libdir = os.path.dirname(os.path.abspath(__file__))
 libfile = glob.glob(os.path.join(libdir, '..', 'openmm.cpython*'))[0]
 
@@ -75,10 +77,8 @@ class AmberCMAPForce(CMAPTorsionForce):
         ml = self._map_loader
         n = len(resnames)
         map_indices = numpy.array([ml[name] for name in resnames], int32)
-        phi_i = numpy.empty((n,4), int32)
-        phi_i[:] = phi_indices
-        psi_i = numpy.empty((n,4), int32)
-        psi_i[:] = psi_indices
+        phi_i = convert_and_sanitize_numpy_array(phi_indices, int32)
+        psi_i = convert_and_sanitize_numpy_array(psi_indices, int32)
         ret = numpy.empty(n, int32)
         f(int(self.this), n, pointer(map_indices), pointer(phi_i), pointer(psi_i),
             pointer(ret))
@@ -221,8 +221,7 @@ class LinearInterpMapForce(CustomCompoundBondForce):
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
                 ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
         n = len(indices)
-        ind = numpy.empty(n, int32)
-        ind[:] = indices
+        ind = convert_and_sanitize_numpy_array(indices, int32)
         params = numpy.empty((n,2), float64)
         params[:,0] = ks
         params[:,1] = enableds
@@ -235,8 +234,7 @@ class LinearInterpMapForce(CustomCompoundBondForce):
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
                 ctypes.POINTER(ctypes.c_double)))
         n = len(indices)
-        ind = numpy.empty(n, int32)
-        ind[:] = indices
+        ind = convert_and_sanitize_numpy_array(indices, int32)
         params = numpy.empty((n,2), float64)
         params[:,0] = coupling_constants
         params[:,1] = enableds
@@ -368,8 +366,7 @@ class TopOutBondForce(CustomBondForce):
             args=(ctypes.c_void_p, ctypes.c_size_t,
             ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_double)))
         n = len(indices)
-        ind = numpy.empty(n, int32)
-        ind[:] = indices
+        ind = convert_and_sanitize_numpy_array(indices, int32)
         params = numpy.empty((n,3), float64)
         params[:,0] = enableds
         params[:,1] = spring_constants
@@ -428,8 +425,7 @@ class TopOutRestraintForce(CustomExternalForce):
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
                 ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
         n = len(indices)
-        ind = numpy.empty(n, int32)
-        ind[:] = indices
+        ind = convert_and_sanitize_numpy_array(indices, int32)
         ret = numpy.empty(n, int32)
         params = numpy.empty((n,5), float64)
         params[:,0] = enableds
@@ -462,8 +458,7 @@ class TopOutRestraintForce(CustomExternalForce):
         n = len(indices)
         if len(targets) !=n or len(spring_constants) !=n:
             raise TypeError('Parameter array lengths must match number of indices!')
-        ind = numpy.empty(n, int32)
-        ind[:] = indices
+        ind = convert_and_sanitize_numpy_array(indices, int32)
         params = numpy.empty((n,5), float64)
         params[:,0] = enableds
         params[:,1] = spring_constants
@@ -581,8 +576,7 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
                 ctypes.POINTER(ctypes.c_double)))
         n = len(indices)
-        ind = numpy.empty(n, int32)
-        ind[:] = indices
+        ind = convert_and_sanitize_numpy_array(indices, int32)
         params = numpy.empty((n,4), float64)
         params[:,0] = enableds
         params[:,1] = spring_constants

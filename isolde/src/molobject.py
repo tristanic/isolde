@@ -17,7 +17,6 @@ from chimerax.core.atomic.molobject import _atoms, \
 from chimerax.core.models import Model, Drawing
 
 from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
-
 import json
 
 libdir = os.path.dirname(os.path.abspath(__file__))
@@ -336,32 +335,32 @@ class Rama_Mgr:
         Rama_Case.CISPRO: {
             'name': 'Cis-proline residues',
             'file_prefix': os.path.join(DATA_DIR, 'rama8000-cispro'),
-            'cutoffs': [val_defaults.CISPRO_ALLOWED, val_defaults.CISPRO_OUTLIER]
+            'cutoffs': [val_defaults.CISPRO_OUTLIER, val_defaults.CISPRO_ALLOWED]
         },
         Rama_Case.TRANSPRO: {
             'name': 'Trans-proline residues',
             'file_prefix': os.path.join(DATA_DIR, 'rama8000-transpro'),
-            'cutoffs': [val_defaults.TRANSPRO_ALLOWED, val_defaults.TRANSPRO_OUTLIER]
+            'cutoffs': [val_defaults.TRANSPRO_OUTLIER, val_defaults.TRANSPRO_ALLOWED]
         },
         Rama_Case.GLYCINE: {
             'name': 'Glycine residues',
             'file_prefix': os.path.join(DATA_DIR, 'rama8000-gly-sym'),
-            'cutoffs': [val_defaults.GLYCINE_ALLOWED, val_defaults.GLYCINE_OUTLIER]
+            'cutoffs': [val_defaults.GLYCINE_OUTLIER,val_defaults.GLYCINE_ALLOWED]
         },
         Rama_Case.PREPRO: {
             'name': 'Residues preceding proline',
             'file_prefix': os.path.join(DATA_DIR, 'rama8000-prepro-noGP'),
-            'cutoffs': [val_defaults.PREPRO_ALLOWED, val_defaults.PREPRO_OUTLIER]
+            'cutoffs': [val_defaults.PREPRO_OUTLIER, val_defaults.PREPRO_ALLOWED]
         },
         Rama_Case.ILEVAL: {
             'name': 'Isoleucine or valine residues',
             'file_prefix': os.path.join(DATA_DIR, 'rama8000-ileval-nopreP'),
-            'cutoffs': [val_defaults.ILEVAL_ALLOWED, val_defaults.ILEVAL_OUTLIER]
+            'cutoffs': [val_defaults.ILEVAL_OUTLIER, val_defaults.ILEVAL_ALLOWED]
         },
         Rama_Case.GENERAL: {
             'name': 'General amino acid residues',
             'file_prefix': os.path.join(DATA_DIR, 'rama8000-general-noGPIVpreP'),
-            'cutoffs': [val_defaults.GENERAL_ALLOWED, val_defaults.GENERAL_OUTLIER]
+            'cutoffs': [val_defaults.GENERAL_OUTLIER, val_defaults.GENERAL_ALLOWED]
         }
     }
 
@@ -1762,7 +1761,8 @@ class _Dihedral(State):
 
     angle = c_property('dihedral_angle', float64, read_only=True, doc = 'Angle in radians. Read only.')
     name = c_property('dihedral_name', string, read_only = True, doc = 'Name of this dihedral. Read only.')
-
+    atoms = c_property('dihedral_atoms', cptr, 4, astype=_atoms, read_only=True,
+        doc = 'Atoms making up this dihedral. Read only.')
 class Proper_Dihedral(_Dihedral):
     '''
     A Proper_Dihedral is defined as a dihedral in which the four atoms are
@@ -1840,6 +1840,9 @@ class Rama(State):
             doc = 'The phi and psi angles for this residue in radians. Read only.')
     angles = c_property('rama_omegaphipsi', float64, 3, read_only = True,
             doc = 'The omega, phi and psi angles for this residue in radians. Read only.')
+    case = c_property('rama_case', uint8, read_only=True,
+            doc = '''A value representing the Ramachandran case for this residue,
+                matching the case definitions in Rama_Mgr.Rama_Case. Read only.''')
 
 class Rotamer(State):
     def __init__(self, c_pointer):

@@ -28,6 +28,8 @@ cvec_property = _c_functions.cvec_property
 c_function = _c_functions.c_function
 c_array_function = _c_functions.c_array_function
 
+from ..constants import defaults
+
 class OpenMM_Thread_Handler:
     '''
     A lightweight wrapper class for an OpenMM simulation `Context`, which pushes
@@ -188,11 +190,46 @@ class Sim_Construct:
     Container class defining the ChimeraX atoms (all, mobile and fixed)
     in a simulation.
     '''
-    def __init__(self, all_atoms, mobile_atoms, fixed_atoms):
+    def __init__(self, model, all_atoms, mobile_atoms, fixed_atoms):
+        self.model = model
         self.all_atoms = all_atoms
         self.mobile_atoms = mobile_atoms
         self.fixed_atoms = fixed_atoms
+        self.surroundings = model.atoms.subtract(all_atoms)
         self.residue_templates = find_residue_templates(all_atoms.unique_residues)
+        self.store_original_visualisation()
+
+    def store_original_visualisation(self):
+        m = self.model
+        atoms = m.atoms
+        bonds = m.bonds
+        residues = m.residues
+        self._original_atom_states = (
+            atoms.colors,
+            atoms.draw_modes,
+            atoms.displays,
+            atoms.radii
+            )
+        self._original_bond_states = (
+            bonds.displays,
+            bonds.radii,
+        )
+        self._original_residue_states = (
+            residues.ribbon_displays,
+            residues.ribbon_colors
+        )
+
+    def revert_visualisation(self):
+        m = self.model
+        atoms = m.atoms
+        bonds = m.bonds
+        residues = m.residues
+        atoms.colors, atoms.draw_modes, atoms.displays, atoms.radii = \
+            self._original_atom_states
+        bonds.displays, bonds.radii = \
+            self._original_bond_states
+        residues.ribbon_displays, residues.ribbon_colors = \
+            self._original_residue_states
 
 class Sim_Handler:
     def __init__(self, session, sim_params, sim_construct, temperature):
@@ -226,7 +263,7 @@ class Sim_Handler:
         top, residue_templates = self.create_openmm_topology(atoms, sim_construct.residue_templates)
         self._topology = top
 
-        self.temperature = temperature
+        self._temperature = temperature
 
         system = self._system = self._create_openmm_system(ff, top,
             sim_params, residue_templates)
@@ -238,9 +275,14 @@ class Sim_Handler:
 
         self._force_update_pending = False
         self._context_reinit_pending = False
+        self._minimize = False
+        self._current_mode = 'min' # One of "min" or "equil"
 
         trigger_names = (
+            'sim started',
             'coord update',
+            'sim paused',
+            'sim resumed',
             'sim terminated',
         )
         from chimerax.core.triggerset import TriggerSet
@@ -248,6 +290,27 @@ class Sim_Handler:
         for name in trigger_names:
             t.add_trigger(name)
 
+    @property
+    def temperature(self):
+        if not self.sim_running:
+            return self._temperature
+        t = self.sim_handler._simulation.integrator.getTemperature()
+        return t.value_in_unit(defaults.OPENMM_TEMPERATURE_UNIT)
+
+    @temperature.setter
+    def temperature(self, temperature):
+        self._temperature = temperature
+        if self.sim_running:
+            self.sim_handler._simulation.integrator.setTemperature(temperature)
+
+    @property
+    def minimize(self):
+        ''' Force the simulation to continue minimizing. '''
+        return self._minimize
+
+    @minimize.setter
+    def minimize(self, flag):
+        self._minimize=flag
 
     @property
     def atoms(self):
@@ -318,7 +381,7 @@ class Sim_Handler:
             integrator_params = (
                 temperature,
                 params.friction_coefficient,
-                paramsfixed_integrator_timestep,
+                params.fixed_integrator_timestep,
                 )
         elif integrator == openmm.MTSIntegrator:
             raise RuntimeError('Multiple timestepping not yet implemented!')
@@ -352,6 +415,10 @@ class Sim_Handler:
         elif th.unstable():
             f = th.minimize
             f_args = []
+            final_args = [True]
+        elif self.minimize:
+            f = th.minimize
+            f_args=[]
             final_args = [True]
         else:
             f = th.step
@@ -391,6 +458,9 @@ class Sim_Handler:
     def thread_handler(self):
         return self._thread_handler
 
+    def toggle_pause(self):
+        self.pause = not self.pause
+
     @property
     def pause(self):
         return self._pause
@@ -401,7 +471,10 @@ class Sim_Handler:
             raise TypeError('No simulation running!')
         if flag != self._pause:
             self._pause = flag
-            if not flag:
+            if flag:
+                self.triggers.activate_trigger('sim paused', None)
+            else:
+                self.triggers.activate_trigger('sim resumed', None)
                 self._update_coordinates_and_repeat()
 
     def stop(self):
@@ -884,3 +957,12 @@ def cys_type(residue):
             if 'H1' in names:
                 return 'NCYS'
             return 'CYS'
+
+def get_available_platforms():
+        from simtk.openmm import Platform
+        platform_names = []
+        for i in range(Platform.getNumPlatforms()):
+            p = Platform.getPlatform(i)
+            name = p.getName()
+            platform_names.append(name)
+        return platform_names

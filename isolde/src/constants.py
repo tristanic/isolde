@@ -41,7 +41,9 @@ class _Defaults:
         ###
         # Simulation parameters
         ###
-        'OPENMM_PLATFORM':            'OpenCL', # 'CPU', 'OpenCL' or 'CUDA'
+        'OPENMM_DEFAULT_PLATFORM':    'OpenCL',
+        'OPENMM_PLATFORMS':           ('CUDA', 'OpenCL', 'CPU'), # 'CPU', 'OpenCL' or 'CUDA'
+        'OPENMM_FORCEFIELD':          'amber14',
         'OPENMM_INTEGRATOR_TYPE':     openmm.VariableLangevinIntegrator,
         'OPENMM_NONBONDED_METHOD':    app.CutoffNonPeriodic,
         'OPENMM_NONBONDED_CUTOFF':    2.0, #* unit.nanometers,
@@ -69,6 +71,9 @@ class _Defaults:
         'SIM_TIMEOUT':                120.0, # seconds
         'TARGET_LOOP_PERIOD':         0.1, # seconds
         'HYDROGENS_FEEL_MAPS':        True,
+        'TUGGABLE_HYDROGENS':         False,
+        'RESTRAIN_PEPTIDE_OMEGA':     True,
+        'DISPLAY_OMEGA_RESTRAINTS':   False,
 
 
         ###
@@ -83,8 +88,8 @@ class _Defaults:
         'PEPTIDE_SPRING_CONSTANT':                250.0, # * unit.kilojoule_per_mole/unit.radians**2,
         'PHI_PSI_SPRING_CONSTANT':                250.0, # * unit.kilojoule_per_mole/unit.radians**2,
         'ROTAMER_SPRING_CONSTANT':                500.0, # * unit.kilojoule_per_mole/unit.radians**2,
-        'STANDARD_MAP_K':                          50.0, # * unit.kilojoule_per_mole*unit.angstrom**3,
-        'DIFFERENCE_MAP_K':                        10.0, # * unit.kilojoule_per_mole*unit.angstrom**3,
+        'STANDARD_MAP_K':                           5.0, # * unit.kilojoule_per_mole*unit.angstrom**3,
+        'DIFFERENCE_MAP_K':                         1.0, # * unit.kilojoule_per_mole*unit.angstrom**3,
 
         ###
         # Numeric limits
@@ -110,7 +115,7 @@ class _Defaults:
         'CHIMERAX_FORCE_UNIT':          unit.kilojoule_per_mole/unit.angstrom,
         'CHIMERAX_SPRING_UNIT':         unit.kilojoule_per_mole/unit.angstrom**2,
 
-        'MAP_SHANNON_RATE':            3,      # Shannon rate for map FFTs
+        'MAP_SHANNON_RATE':             2,      # Shannon rate for map FFTs
         'SELECTION_SEQUENCE_PADDING':   3,      # residues
         'SOFT_SHELL_CUTOFF':            5,      # Angstroms
         'HARD_SHELL_CUTOFF':            8,      # Angstroms
@@ -119,7 +124,6 @@ class _Defaults:
         'ROUNDS_PER_MAP_REMASK':        50,
         'HIDE_SURROUNDINGS_DURING_SIM': True,
         'USE_HAPTIC_DEVICE_IF_AVAIL':   True,
-        'USE_FORK_INSTEAD_OF_THREADS':  False,
 
         'STANDARD_MAP_MASK_RADIUS':     4.0, # Angstroms
         'DIFFERENCE_MAP_MASK_RADIUS':   8.0, # Angstroms
