@@ -264,10 +264,14 @@ class MouseModeRegistry():
 
     def register_all_isolde_modes(self):
         # Button, modifier(s), name, class, args
+        from chimerax.clipper.mousemodes import ZoomMouseMode
+        session = self.session
+        isolde = self._isolde
         standard_modes = (
-            ('left', ['control',], 'select', AtomPicker, (self.session, self._isolde)),
-            ('left', ['control','shift'], 'select add', AtomPickAdd, (self.session, self._isolde)),
-            ('left', ['control','alt'], 'select subtract', AtomPickSubtract, (self.session, self._isolde)),
+            ('left', ['control',], 'select', AtomPicker, (session, isolde)),
+            ('left', ['control','shift'], 'select add', AtomPickAdd, (session, isolde)),
+            ('left', ['control','alt'], 'select subtract', AtomPickSubtract, (session, isolde)),
+            ('right', ['shift',], 'zoom', ZoomMouseMode, (session,)),
             )
         for m in standard_modes:
             self.register_mode(m[2], m[3](*m[4]), m[0], m[1])

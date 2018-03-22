@@ -84,6 +84,8 @@ class IsoldeParams(Param_Mgr):
             # If true, residues in the soft shell will have their backbone atoms
             # fixed in space
         'fix_soft_shell_backbone':              (defaults.FIX_SOFT_SHELL_BACKBONE, None),
+            # Multiplier to reduce the bond radii for bonds between fixed_atoms
+        'fixed_bond_radius_ratio':              (defaults.FIXED_BOND_RADIUS_RATIO, None),
             # Limit the drawing to only the atoms involved in the simulation
             # (highly recommended for performance)
         'hide_surroundings_during_sim':         (defaults.HIDE_SURROUNDINGS_DURING_SIM, None),
@@ -231,7 +233,8 @@ class Isolde():
         # mode will be reinstated when a mode is removed.
         # TODO: Replace with system that plays more nicely with ChimeraX built-in
         #       modes
-        self._mouse_modes = mousemodes.MouseModeRegistry(self.session, self)
+        mm = self._mouse_modes = mousemodes.MouseModeRegistry(self.session, self)
+
         # Placeholder for mouse tugging object
         self._mouse_tugger = None
 
@@ -303,6 +306,15 @@ class Isolde():
         session.isolde = self
 
 
+    def _prepare_environment(self):
+        session = self.session
+        from chimerax.core.commands import cofr, camera
+        cofr.cofr(session, 'centerOfView', show_pivot=True)
+        camera.camera(session, 'ortho')
+        from chimerax.clipper.mousemodes import ZoomMouseMode
+        self._mouse_modes.register_all_isolde_modes()
+
+
     @property
     def can_checkpoint(self):
         '''Is checkpoint save/revert currently allowed?'''
@@ -361,8 +373,8 @@ class Isolde():
 
         self.gui_mode = True
 
-         # Register ISOLDE-specific mouse modes
-        self._mouse_modes.register_all_isolde_modes()
+        # Prepare display and register ISOLDE-specific mouse modes
+        self._prepare_environment()
 
 
 
@@ -1597,13 +1609,10 @@ class Isolde():
     def _rama_static_plot(self, *_):
         model = self._selected_model
         rplot = self._rama_plot
-        whole_model = bool(self.iw._validate_rama_sel_combo_box.currentIndex())
+        whole_model = not bool(self.iw._validate_rama_sel_combo_box.currentIndex())
         if whole_model:
             res = model.residues
             rplot.update_scatter(residues = res)
-            # sel = model.atoms
-            # bd = self.backbone_dihedrals
-            # self._rama_plot.update_scatter(bd, force_update = True)
 
         else:
             sel = model.atoms.filter(model.atoms.selected)
@@ -1613,16 +1622,6 @@ class Isolde():
                 residues = None
             rplot.set_target_residues(residues)
             rplot.update_scatter()
-            # if not len(residues):
-            #
-            #     rplot.update_scatter(res)
-            # else:
-            #     phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
-            #     from . import dihedrals
-            #     bd = dihedrals.Backbone_Dihedrals(self.session, phi=phi, psi=psi, omega=omega)
-            #     self._rama_plot.update_scatter(bd, force_update = True)
-            # else:
-            #     self._rama_plot.update_scatter(force_update = True)
 
     def _show_peptide_validation_frame(self, *_):
         self.iw._validate_pep_stub_frame.hide()
@@ -2282,24 +2281,7 @@ class Isolde():
             pass
 
 
-    # Get a shell of whole residues within a user-defined cut-off surrounding
-    # an existing set of selected atoms. Expects the existing_sel set to be
-    # whole residues, and all within the same model.
 
-    def get_shell_of_residues(self, existing_sel, dist_cutoff):
-        from chimerax.core.geometry import find_close_points
-        from chimerax.atomic import selected_atoms, Atoms, concatenate
-        selatoms = existing_sel
-        us = selatoms.unique_structures
-        if len(us) !=1:
-            raise Exception('selection should contain atoms from a single molecule!')
-        allatoms = us[0].atoms
-        unselected_atoms = allatoms.subtract(selatoms)
-        selcoords = selatoms.coords
-        unselcoords = unselected_atoms.coords
-        ignore, shell_indices = find_close_points(selcoords, unselcoords, dist_cutoff)
-        shell_atoms = unselected_atoms[shell_indices].unique_residues.atoms
-        return shell_atoms
 
 
 

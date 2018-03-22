@@ -120,6 +120,7 @@ class _Defaults:
         'SOFT_SHELL_CUTOFF':            5,      # Angstroms
         'HARD_SHELL_CUTOFF':            8,      # Angstroms
         'FIX_SOFT_SHELL_BACKBONE':      False,
+        'FIXED_BOND_RADIUS_RATIO':      0.5,
         'REMASK_MAPS_DURING_SIM':       True,
         'ROUNDS_PER_MAP_REMASK':        50,
         'HIDE_SURROUNDINGS_DURING_SIM': True,

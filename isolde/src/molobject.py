@@ -413,14 +413,14 @@ class Rama_Mgr:
             if cutoffs is not None:
                 self._set_cutoffs(case, *cutoffs)
 
-    def _set_cutoffs(self, case, allowed, outlier):
-        f = c_function('rama_mgr_set_cutoffs',
+    def _set_cutoffs(self, case, outlier, allowed):
+        f = c_function('set_rama_mgr_cutoffs',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double))
-        f(self._c_pointer, case, allowed, outlier)
+        f(self._c_pointer, case, outlier, allowed)
 
     @property
     def cutoffs(self):
-        f = c_function('rama_mgr_get_cutoffs',
+        f = c_function('rama_mgr_cutoffs',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
         cdict = {}
         for case in self.Rama_Case:

@@ -190,14 +190,28 @@ class Sim_Construct:
     Container class defining the ChimeraX atoms (all, mobile and fixed)
     in a simulation.
     '''
-    def __init__(self, model, all_atoms, mobile_atoms, fixed_atoms):
+    def __init__(self, model, mobile_atoms, fixed_atoms):
         self.model = model
-        self.all_atoms = all_atoms
-        self.mobile_atoms = mobile_atoms
-        self.fixed_atoms = fixed_atoms
-        self.surroundings = model.atoms.subtract(all_atoms)
+
+        # Sort all the atoms according to their order in the model#
+        model_atoms = model.atoms
+        if len(mobile_atoms.intersect(fixed_atoms)):
+            raise TypeError('Atoms cannot be both fixed and mobile!')
+        from chimerax.atomic import concatenate
+        all_atoms = concatenate((mobile_atoms, fixed_atoms))
+        all_i = model_atoms.indices(all_atoms)
+        if -1 in all_i:
+            raise TypeError('All atoms must be from the targeted model!')
+        all_atoms = self.all_atoms = model_atoms[numpy.sort(all_i)]
+        mob_i = model_atoms.indices(mobile_atoms)
+        self.mobile_atoms = model_atoms[numpy.sort(mob_i)]
+        fixed_i = model_atoms.indices(fixed_atoms)
+        self.fixed_atoms = model_atoms[numpy.sort(fixed_i)]
+
+        self.surroundings = model_atoms.subtract(all_atoms)
         self.residue_templates = find_residue_templates(all_atoms.unique_residues)
         self.store_original_visualisation()
+
 
     def store_original_visualisation(self):
         m = self.model
@@ -231,8 +245,298 @@ class Sim_Construct:
         residues.ribbon_displays, residues.ribbon_colors = \
             self._original_residue_states
 
+
+
+class Sim_Manager:
+    '''
+    Responsible for defining and initialising a simulation based upon an atomic
+    selection.
+    '''
+    def __init__(self, session, model, selected_atoms,
+        isolde_params, sim_params, expansion_mode = 'extend'):
+        self.session = session
+        self.model = model
+        self.isolde_params = isolde_params
+        self.sim_params = sim_params
+        mobile_atoms = self._expand_mobile_selection(selected_atoms, expansion_mode)
+        from ..selection import get_shell_of_residues
+        fixed_atoms = get_shell_of_residues(mobile_atoms.unique_residues,
+            isolde_params.hard_shell_cutoff_distance).atoms
+        self._prepare_validation_managers(mobile_atoms)
+        self._prepare_restraint_managers()
+        self._prepare_mdff_managers()
+        fixed_atoms = self._add_fixed_atoms_from_distance_restraints(mobile_atoms, fixed_atoms)
+        sc = self.sim_construct = Sim_Construct(model, mobile_atoms, fixed_atoms)
+        sh = self.sim_handler = Sim_Handler(session, sim_params, sc)
+        self._update_handlers = []
+        self._initialize_restraints()
+        self._initialize_mdff()
+        self.prepare_sim_visualisation()
+
+    def _prepare_validation_managers(self, mobile_atoms):
+        from .. import session_extensions as sx
+        m = self.model
+        mobile_atoms.unique_residues
+        rama_a = self.rama_annotator = sx.get_rama_annotator(m)
+        rota_a = self.rota_annotator = sx.get_rota_annotator(m)
+        rama_a.restrict_to_selected_residues(mobile_res)
+        rota_a.restrict_to_selected_residues(mobile_res)
+
+    def _prepare_restraint_managers(self):
+        from .. import session_extensions as sx
+        m = self.model
+        self.proper_dihedral_restraint_mgr = sx.get_proper_dihedral_restraint_mgr(m)
+        self.position_restraint_mgr = sx.get_position_restraint_mgr(m)
+        self.tuggable_atoms_mgr = sx.get_tuggable_atoms_mgr(m)
+        self.distance_restraint_mgr = sx.get_distance_restraint_mgr(m)
+
+    def _initialize_restraints(self):
+        sh = self.sim_handler
+        sc = self.sim_construct
+        uh = self._update_handler
+        mobile_res = sc.mobile_atoms.unique_residues
+        sh.initialize_restraint_forces()
+        from .. import session_extensions as sx
+        rama_mgr = sx.get_ramachandran_mgr(self.session)
+        ramas = rama_mgr.get_ramas(mobile_res)
+        ramas = ramas[ramas.valids]
+        sh.add_amber_cmap_torsions(rams)
+
+        pdr_m = self.proper_dihedral_restraint_mgr
+        pdrs = pdr_m.add_all_defined_restraints_for_residues(mobile_res)
+        sh.add_dihedral_restraints(pdrs)
+        uh.append((pdr_m, pdr_m.triggers.add_handler('changes', self._pdr_changed_cb)))
+
+        dr_m = self.distance_restraint_mgr
+        drs = dr_m.atoms_restraints(sc.mobile_atoms)
+        sh.add_distance_restraints(drs)
+        uh.append((dr_m, dr_m.triggers.add_handler('changes', self._dr_changed_cb)))
+
+        pr_m = self.position_restraint_mgr
+        prs = pr_m.add_restraints(sc.mobile_atoms)
+        sh.add_position_restraints(prs)
+        uh.append((pr_m, pr_m.triggers.add_handler('changes', self._pr_changed_cb)))
+
+        ta_m = self.tuggable_atoms_mgr
+        tuggables = ta_m.add_tuggables(sc.mobile_atoms)
+        uh.append((ta_m, ta_m.triggers.add_handler('changes', self._tug_changed_cb)))
+        sh.add_tuggables(tuggables)
+
+
+    def _prepare_mdff_managers(self, mobile_atoms):
+        from .. import session_extensions as sx
+        m = self.model
+        mdff_mgr_map = self.mdff_mgrs = {}
+        from chimerax.map import Volume
+        for v in m.all_models():
+            if isinstance(v, Volume):
+                mdff_mgr_map[v] = sx.get_mdff_mgr(m, v)
+
+    def _initialize_mdff(self):
+        sh = self.sim_handler
+        sc = self.sim_construct
+        sp = self.sim_params
+        uh = self._update_handlers
+        mdff_mgrs = self.mdff_mgrs
+        sh.initialize_mdff_forces(list(mdff_mgrs.keys()))
+        for v, mgr in mdff_mgrs.items():
+            mdff_atoms = mgr.add_mdff_atoms(sc.mobile_atoms,
+                hydrogens = sp.hydrogens_feel_maps)
+            sh.add_mdff_atoms(mdff_atoms, v)
+            uh.append((mgr, mgr.triggers.add_handler('changes', self._mdff_changed_cb)))
+
+
+    def _add_fixed_atoms_from_distance_restraints(self, mobile_atoms, fixed_atoms):
+        '''
+        If we have a distance restraint where only one atom is mobile, we must
+        make sure that the other atom is included in the fixed selection to
+        prevent it drifting unrestrained.
+        '''
+        dr_m = self.distance_restraint_mgr
+        drs = dr_m.atoms_restraints(mobile_atoms)
+        from chimerax.atomic import concatenate
+        dr_atoms = concatenate(drs.atoms, remove_duplicates=True)
+        remainder = dr_atoms.subtract(dr_atoms.intersect(mobile_atoms))
+        remainder = remainder.subtract(remainder.intersect(fixed_atoms))
+        fixed_atoms = concatenate((fixed_atoms, remainder.unique_residues.atoms))
+        return fixed_atoms
+
+
+
+
+
+
+
+
+    def _expand_mobile_selection(self, core_atoms, expansion_mode):
+        from .. import selections
+        iparams = self.isolde_params
+        if expansion_mode == 'extend':
+            sel = selections.expand_selection_along_chains(core_atoms,
+                iparams.num_selection_padding_residues)
+            shell = selections.get_shell_of_residues(sel,
+                iparams.soft_shell_cutoff_distance)
+            from chimerax.atomic import concatenate
+            merged_sel = concatenate((sel, shell), remove_duplicates=True)
+            return merged_sel
+        raise TypeError('Unrecognised expansion mode!')
+
+
+    def prepare_sim_visualisation(self):
+        m = self.model
+        sc = self.sim_construct
+        m.residues.ribbon_displays = False
+        fixed_bonds = sc.fixed_atoms.intra_bonds
+        fixed_bonds.radii *= self.isolde_params.fixed_bond_radius_ratio
+        from ..constants import control
+        sc.all_atoms.hides &= ~control.HIDE_ISOLDE
+
+
+    #######################################
+    # CALLBACKS
+    #######################################
+
+    def _sim_end_cb(self, *_):
+        for mgr, handler in self._update_handlers:
+            mgr.triggers.remove_handler(handler)
+        self._update_handlers = []
+        self._pr_sim_end_cb()
+        self._dr_sim_end_cb()
+        self._pdr_sim_end_cb()
+        self._tug_sim_end_cb()
+        self._rama_a_sim_end_cb()
+        self._rota_a_sim_end_cb()
+        self._mdff_sim_end_cb()
+
+
+    def _rama_a_sim_end_cb(self, *_):
+        self.rama_annotator.track_whole_model = True
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+    def _rota_a_sim_end_cb(self, *_):
+        self.rota_annotator.track_whole_model = True
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+    def _pr_changed_cb(self, trigger_name, changes):
+        mgr, changes = changes
+        change_types = list(changes.keys())
+        from chimerax.core.atomic import concatenate
+        changeds = []
+        if 'target changed' in change_types:
+            changeds.append(changes['target changed'])
+        if 'enabled/disabled' in change_types:
+            changeds.append(changes['enabled/disabled'])
+        if 'spring constant changed' in change_types:
+            changeds.append(changes['spring constant changed'])
+        if len(changeds):
+            all_changeds = concatenate(changeds, remove_duplicates=True)
+            # limit to restraints that are actually in the simulation
+            # TODO: might be better to just ignore -1 indices in the update_... functions
+            all_changeds = all_changeds[all_changeds.sim_indices != -1]
+            self.sim_handler.update_position_restraints(all_changeds)
+
+    def _pr_sim_end_cb(self, *_):
+        restraints = self.position_restraint_mgr.get_restraints(self.sim_construct.all_atoms)
+        restraints.clear_sim_indices()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+    def _dr_changed_cb(self, trigger_name, changes):
+        mgr, changes = changes
+        change_types = list(changes.keys())
+        from chimerax.core.atomic import concatenate
+        changeds = []
+        if 'target changed' in change_types:
+            changeds.append(changes['target changed'])
+        if 'enabled/disabled' in change_types:
+            changeds.append(changes['enabled/disabled'])
+        if 'spring constant changed' in change_types:
+            changeds.append(changes['spring constant changed'])
+        if len(changeds):
+            all_changeds = concatenate(changeds, remove_duplicates=True)
+            all_changeds = all_changeds[all_changeds.sim_indices != -1]
+            self.sim_handler.update_distance_restraints(all_changeds)
+
+    def _dr_sim_end_cb(self, *_):
+        restraints = self.distance_restraints_mgr.intra_restraints(self.sim_construct.all_atoms)
+        restraints.clear_sim_indices()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+
+    def _pdr_changed_cb(self, trigger_name, changes):
+        mgr, changes = changes
+        change_types = list(changes.keys())
+        from chimerax.core.atomic import concatenate
+        changeds = []
+        if 'target changed' in change_types:
+            changeds.append(changes['target changed'])
+        if 'enabled/disabled' in change_types:
+            changeds.append(changes['enabled/disabled'])
+        if 'spring constant changed' in change_types:
+            changeds.append(changes['spring constant changed'])
+        if len(changeds):
+            all_changeds = concatenate(changeds, remove_duplicates=True)
+            all_changeds = all_changeds[all_changeds.sim_indices != -1]
+            self.sim_handler.update_dihedral_restraints(all_changeds)
+
+    def _pdr_sim_end_cb(self, *_):
+        restraints = self.proper_dihedral_restraint_mgr.get_all_restraints_for_residues(self.sim_construct.all_atoms.unique_residues)
+        restraints.clear_sim_indices()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+
+    def _tug_changed_cb(self, trigger_name, changes):
+        mgr, changes = changes
+        change_types = list(changes.keys())
+        from chimerax.core.atomic import concatenate
+        changeds = []
+        if 'target changed' in change_types:
+            changeds.append(changes['target changed'])
+        if 'enabled/disabled' in change_types:
+            changeds.append(changes['enabled/disabled'])
+        if 'spring constant changed' in change_types:
+            changeds.append(changes['spring constant changed'])
+        if len(changeds):
+            all_changeds = concatenate(changeds, remove_duplicates=True)
+            all_changeds = all_changeds[all_changeds.sim_indices != -1]
+            self.sim_handler.update_tuggables(all_changeds)
+
+    def _tug_sim_end_cb(self, *_):
+        tuggables = self.tuggable_atoms_mgr.get_tuggables(self.sim_construct.all_atoms)
+        tuggables.clear_sim_indices()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+    def _mdff_changed_cb(self, trigger_name, changes):
+        mgr, changes = changes
+        change_types = list(changes.keys())
+        from chimerax.atomic import concatenate
+        changeds = []
+        if 'enabled/disabled' in change_types:
+            changeds.append(changes['enabled/disabled'])
+        if 'spring constant changed' in change_types:
+            changeds.append(changes['spring constant changed'])
+        if len(changeds):
+            all_changeds = concatenate(changeds, remove_duplicates=True)
+            all_changeds = all_changeds[all_changeds.sim_indices != -1]
+            self.sim_handler.update_mdff_atoms(all_changeds, mgr.volume)
+
+    def _mdff_sim_end_cb(self, *_):
+        for v, mgr in self.mdff_mgrs.items():
+            mdff_atoms = mgr.get_mdff_atoms(self.sim_construct.all_atoms)
+            mdff_atoms.clear_sim_indices()
+            from chimerax.core.triggerset import DEREGISTER
+            return DEREGISTER
+
+
+
+
 class Sim_Handler:
-    def __init__(self, session, sim_params, sim_construct, temperature):
+    def __init__(self, session, sim_params, sim_construct):
         '''
         Prepares the simulation topology parameters and construct, and initialises
         the necessary Force objects to handle restraints. The restraint forces
@@ -263,7 +567,7 @@ class Sim_Handler:
         top, residue_templates = self.create_openmm_topology(atoms, sim_construct.residue_templates)
         self._topology = top
 
-        self._temperature = temperature
+        self._temperature = sim_params.temperature
 
         system = self._system = self._create_openmm_system(ff, top,
             sim_params, residue_templates)

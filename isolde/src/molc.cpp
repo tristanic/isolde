@@ -42,6 +42,7 @@
 #include "restraints_cpp/dihedral_restraints.h"
 #include "restraints_cpp/mdff.h"
 
+
 #include <functional>
 #include <map>
 #include <set>
@@ -316,24 +317,24 @@ rama_mgr_delete(void *mgr)
 }
 
 extern "C" EXPORT void
-rama_mgr_set_cutoffs(void *mgr, size_t r_case, double allowed, double outlier)
+set_rama_mgr_cutoffs(void *mgr, size_t r_case, double outlier, double allowed)
 {
     Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
     try {
-        m->set_cutoffs(r_case, allowed, outlier);
+        m->set_cutoffs(r_case, outlier, allowed);
     } catch (...) {
         molc_error();
     }
 }
 
 extern "C" EXPORT void
-rama_mgr_get_cutoffs(void *mgr, size_t r_case, double* cutoffs)
+rama_mgr_cutoffs(void *mgr, size_t r_case, double* cutoffs)
 {
     Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
     try {
         auto c = m->get_cutoffs(r_case);
-        cutoffs[0] = c->allowed;
-        cutoffs[1] = c->outlier;
+        cutoffs[0] = c->outlier;
+        cutoffs[1] = c->allowed;
     } catch (...) {
         molc_error();
     }
@@ -359,10 +360,10 @@ rama_mgr_get_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min, ui
         auto &mapped_colors = cmap->mapped_colors();
         auto &na_color = m->default_color();
         for (size_t i=0; i<4; ++i) {
-            *min++ = mapped_colors[0].thecolor[i];
-            *mid++ = mapped_colors[1].thecolor[i];
-            *max++ = mapped_colors[2].thecolor[i];
-            *na++ = na_color[i];
+            *min++ = (uint8_t)(mapped_colors[0].thecolor[i] * 255.0);
+            *mid++ = (uint8_t)(mapped_colors[1].thecolor[i] * 255.0);
+            *max++ = (uint8_t)(mapped_colors[2].thecolor[i] * 255.0);
+            *na++ = (uint8_t)(na_color[i] * 255.0);
         }
     } catch (...) {
         molc_error();
