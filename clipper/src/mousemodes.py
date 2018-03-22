@@ -1,41 +1,41 @@
 import numpy
 from chimerax.core.ui import mousemodes
 
-def initialize_mouse_modes(session):
-    z = ZoomMouseMode(session)
+def initialize_map_contour_mouse_modes(session):
+    #z = ZoomMouseMode(session)
     s = SelectVolumeToContour(session)
     v = ContourSelectedVolume(session, s, True)
-    session.ui.mouse_modes.bind_mouse_mode('right',[],z)
+    #session.ui.mouse_modes.bind_mouse_mode('right',[],z)
     session.ui.mouse_modes.bind_mouse_mode('wheel',['control'], s)
-    session.ui.mouse_modes.bind_mouse_mode('wheel',[], v) 
+    session.ui.mouse_modes.bind_mouse_mode('wheel',[], v)
 
 
 
 class ZoomMouseMode(mousemodes.ZoomMouseMode):
     def __init__(self, session):
         mousemodes.ZoomMouseMode.__init__(self, session)
-        self._far_clip = None
-    
+
     @property
     def far_clip(self):
-        if self._far_clip is None:
-            v = self.session.view
-            cp = v.clip_planes
-            fc = cp.find_plane('far')
-            if fc is not None:
-                self._far_clip = fc
-            else:
-                from chimerax.core.graphics.view import ClipPlane
-                c = v.camera
-                cofr = v.center_of_rotation
-                cpos = c.position.origin()
-                clip_point = cpos + 2* (cofr-cpos)
-                self._far_clip = ClipPlane('far', c.view_direction(), 
-                                    clip_point, camera_normal = (0,0,1))
-                v.clip_planes.add_plane(self._far_clip)
-        return self._far_clip
-                
-    
+        v = self.session.view
+        cp = v.clip_planes
+        fc = cp.find_plane('far')
+        if fc is not None:
+            return fc
+        else:
+            from chimerax.core.graphics.view import ClipPlane
+            c = v.camera
+            cofr = v.center_of_rotation
+            cpos = c.position.origin()
+            clip_point = cpos + 2* (cofr-cpos)
+            fc = ClipPlane('far', c.view_direction(),
+                                clip_point, camera_normal = (0,0,1))
+            v.clip_planes.add_plane(fc)
+            return fc
+
+    def cleanup(self):
+        pass
+
     def zoom(self, delta_z, stereo_scaling = False):
         v = self.view
         c = v.camera
@@ -67,7 +67,7 @@ class ZoomMouseMode(mousemodes.ZoomMouseMode):
 class SelectVolumeToContour(mousemodes.MouseMode):
     '''
     Designed to work together with ContourSelectedVolume.
-    Each step of the mouse wheel increments through the currently 
+    Each step of the mouse wheel increments through the currently
     loaded Volume objects, temporarily selecting the current pick to
     highlight it in the display. Stores a reference to the last selected
     volume, accessible via picked_volume. If the last selected volume
@@ -79,8 +79,8 @@ class SelectVolumeToContour(mousemodes.MouseMode):
         self._last_picked_index = 0
         self._picked_volume = None
         self._deselect_handler = None
-        self._frames_until_deselect = 200
-        self._deselect_counter = 0
+        self._time_until_deselect = 5 # seconds
+        self._deselect_start_time = 0
     def wheel(self, event):
         '''Select the next visible volume.'''
         d = int(event.wheel_value())
@@ -105,7 +105,7 @@ class SelectVolumeToContour(mousemodes.MouseMode):
             if not vlist[i].visible:
                 vlist.pop(i)
         return vlist
-            
+
 
     @property
     def picked_volume(self):
@@ -113,25 +113,27 @@ class SelectVolumeToContour(mousemodes.MouseMode):
             vol_list = self._get_vol_list()
             if not len(vol_list):
                 return None
-            if self._picked_volume is None:
-                self._picked_volume = vol_list[self._last_picked_index]
-            elif self._picked_volume.deleted or not self._picked_volume.visible:
-                self._picked_volume = vol_list[0]
+            pv = self._picked_volume
+            if pv is None:
+                pv = self._picked_volume = vol_list[self._last_picked_index]
+            elif pv.deleted or not pv.visible:
+                pv = self._picked_volume = vol_list[0]
                 self._last_picked_index = 0
         except IndexError:
-            self._picked_volume = vol_list[0]
+            pv = self._picked_volume = vol_list[0]
             self._last_picked_index = 0
         return self._picked_volume
-    
+
     def _start_deselect_timer(self):
-        self._deselect_counter = 0
+        from time import time
+        self._deselect_start_time = time()
         if self._deselect_handler is None:
             self._deselect_handler = self.session.triggers.add_handler(\
-                                'new frame', self._incr_deselect_counter)
-    
-    def _incr_deselect_counter(self, *_):
-        self._deselect_counter += 1
-        if self._deselect_counter >= self._frames_until_deselect:
+                                'new frame', self._deselect_on_timeout)
+
+    def _deselect_on_timeout(self, *_):
+        from time import time
+        if time()- self._deselect_start_time > self._time_until_deselect:
             self.session.triggers.remove_handler(self._deselect_handler)
             self._deselect_handler = None
             self._picked_volume.selected = False
@@ -150,7 +152,7 @@ class ContourSelectedVolume(mousemodes.MouseMode):
                 A SelectVolumeToContour object used to define the current
                 target volume.
             symmetrical:
-                If True, scrolling up will adjust contours away from 
+                If True, scrolling up will adjust contours away from
                 zero (that is, negative contours will get more negative).
                 If False, all contours will be shifted in the same
                 direction.
@@ -161,7 +163,7 @@ class ContourSelectedVolume(mousemodes.MouseMode):
         self.symmetrical = symmetrical
         self.target_volume = None
 
-    
+
     def wheel(self, event):
         d = event.wheel_value()
         v = self.selector.picked_volume
@@ -177,8 +179,8 @@ class ContourSelectedVolume(mousemodes.MouseMode):
                 self.session.logger.status('Volume {} contour level(s): {} ({} sigma)'.format(v.name, lstr, sstr))
 
 
-                                
-    
+
+
 def adjust_threshold_level(m, step, sym):
     if m.representation == 'solid':
         new_levels = [(l+step,b) for l,b in m.solid_levels]
@@ -204,9 +206,3 @@ def adjust_threshold_level(m, step, sym):
             new_levels = tuple(l+step for l in m.surface_levels)
         m.set_parameters(surface_levels = new_levels)
     return(m.representation, new_levels)
-
-        
-        
-
-    
-    

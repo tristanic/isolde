@@ -14,7 +14,7 @@ from chimerax.core.commands import camera, cofr, cartoon, atomspec
 from chimerax.core.map.data import Array_Grid_Data
 from chimerax.core.map import Volume, volumecommand
 
-from .mousemodes import initialize_mouse_modes
+from .mousemodes import initialize_map_contour_mouse_modes
 from .main import atom_list_from_sel
 from . import clipper
 from .data_tree import db_levels, DataTree

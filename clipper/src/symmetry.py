@@ -198,6 +198,8 @@ class XtalSymmetryHandler(Model):
             self.update)
 
         model.add([self])
+        from .mousemodes import initialize_map_contour_mouse_modes
+        initialize_map_contour_mouse_modes(session)
 
 
     @property
