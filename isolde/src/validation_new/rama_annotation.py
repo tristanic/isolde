@@ -2,12 +2,6 @@ from chimerax.core.models import Model, Drawing
 import numpy
 
 class Rama_Annotator(Model):
-    '''
-    Doesn't actually draw anything, just colours the C-alphas of the parent
-    atomic model according to Ramachandran score. But we'll create it as a model
-    for consistency with other restraint/validation schemes (so it can be
-    conveniently turned on/off via the Model panel).
-    '''
     pickable = False
 
     def __init__(self, atomic_structure, hide_favored = False):

@@ -96,7 +96,7 @@ public:
 
     Rama* get_rama(Residue *res);
 
-    void set_cutoffs(size_t r_case, const double &allowed, const double &outlier) {
+    void set_cutoffs(size_t r_case, const double &outlier, const double &allowed) {
         _cutoffs[r_case] = cutoffs(allowed, outlier);
     }
     cutoffs* get_cutoffs(size_t r_case) {return &(_cutoffs.at(r_case));}
