@@ -88,8 +88,8 @@ class _Defaults:
         'PEPTIDE_SPRING_CONSTANT':                250.0, # * unit.kilojoule_per_mole/unit.radians**2,
         'PHI_PSI_SPRING_CONSTANT':                250.0, # * unit.kilojoule_per_mole/unit.radians**2,
         'ROTAMER_SPRING_CONSTANT':                500.0, # * unit.kilojoule_per_mole/unit.radians**2,
-        'STANDARD_MAP_K':                           5.0, # * unit.kilojoule_per_mole*unit.angstrom**3,
-        'DIFFERENCE_MAP_K':                         1.0, # * unit.kilojoule_per_mole*unit.angstrom**3,
+        'STANDARD_MAP_K':                           10.0, # * unit.kilojoule_per_mole*unit.angstrom**3,
+        'DIFFERENCE_MAP_K':                         5.0, # * unit.kilojoule_per_mole*unit.angstrom**3,
 
         ###
         # Numeric limits

@@ -218,6 +218,11 @@ class Sim_Construct:
         atoms = m.atoms
         bonds = m.bonds
         residues = m.residues
+        self.spotlight_mode = None
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sym = self.symmetry_handler = get_symmetry_handler(m)
+        if sym:
+            self.spotlight_mode = sym.spotlight_mode
         self._original_atom_states = (
             atoms.colors,
             atoms.draw_modes,
@@ -233,6 +238,7 @@ class Sim_Construct:
             residues.ribbon_colors
         )
 
+
     def revert_visualisation(self):
         m = self.model
         atoms = m.atoms
@@ -245,6 +251,10 @@ class Sim_Construct:
         residues.ribbon_displays, residues.ribbon_colors = \
             self._original_residue_states
 
+        sym = self.symmetry_handler
+        if sym:
+            sym.spotlight_mode = self.spotlight_mode
+
 
 
 class Sim_Manager:
@@ -252,31 +262,45 @@ class Sim_Manager:
     Responsible for defining and initialising a simulation based upon an atomic
     selection.
     '''
-    def __init__(self, session, model, selected_atoms,
+    def __init__(self, model, selected_atoms,
         isolde_params, sim_params, expansion_mode = 'extend'):
-        self.session = session
         self.model = model
+        session = self.session = model.session
         self.isolde_params = isolde_params
         self.sim_params = sim_params
         mobile_atoms = self._expand_mobile_selection(selected_atoms, expansion_mode)
-        from ..selection import get_shell_of_residues
+        from ..selections import get_shell_of_residues
         fixed_atoms = get_shell_of_residues(mobile_atoms.unique_residues,
             isolde_params.hard_shell_cutoff_distance).atoms
         self._prepare_validation_managers(mobile_atoms)
         self._prepare_restraint_managers()
-        self._prepare_mdff_managers()
         fixed_atoms = self._add_fixed_atoms_from_distance_restraints(mobile_atoms, fixed_atoms)
         sc = self.sim_construct = Sim_Construct(model, mobile_atoms, fixed_atoms)
+
+        self._prepare_mdff_managers()
         sh = self.sim_handler = Sim_Handler(session, sim_params, sc)
-        self._update_handlers = []
-        self._initialize_restraints()
-        self._initialize_mdff()
+        uh = self._update_handlers = []
+        self._initialize_restraints(uh)
+        self._initialize_mdff(uh)
         self.prepare_sim_visualisation()
+
+    def start_sim(self):
+        sh = self.sim_handler
+        sh.start_sim()
+        sh.triggers.add_handler('sim terminated', self._sim_end_cb)
+
+    def stop_sim(self):
+        self.sim_handler.stop()
+
+    def toggle_pause(self):
+        sh = self.sim_handler
+        sh.pause = not sh.pause
+
 
     def _prepare_validation_managers(self, mobile_atoms):
         from .. import session_extensions as sx
         m = self.model
-        mobile_atoms.unique_residues
+        mobile_res = mobile_atoms.unique_residues
         rama_a = self.rama_annotator = sx.get_rama_annotator(m)
         rota_a = self.rota_annotator = sx.get_rota_annotator(m)
         rama_a.restrict_to_selected_residues(mobile_res)
@@ -290,17 +314,17 @@ class Sim_Manager:
         self.tuggable_atoms_mgr = sx.get_tuggable_atoms_mgr(m)
         self.distance_restraint_mgr = sx.get_distance_restraint_mgr(m)
 
-    def _initialize_restraints(self):
+    def _initialize_restraints(self, update_handlers):
         sh = self.sim_handler
         sc = self.sim_construct
-        uh = self._update_handler
+        uh = update_handlers
         mobile_res = sc.mobile_atoms.unique_residues
         sh.initialize_restraint_forces()
         from .. import session_extensions as sx
         rama_mgr = sx.get_ramachandran_mgr(self.session)
         ramas = rama_mgr.get_ramas(mobile_res)
         ramas = ramas[ramas.valids]
-        sh.add_amber_cmap_torsions(rams)
+        sh.add_amber_cmap_torsions(ramas)
 
         pdr_m = self.proper_dihedral_restraint_mgr
         pdrs = pdr_m.add_all_defined_restraints_for_residues(mobile_res)
@@ -322,8 +346,7 @@ class Sim_Manager:
         uh.append((ta_m, ta_m.triggers.add_handler('changes', self._tug_changed_cb)))
         sh.add_tuggables(tuggables)
 
-
-    def _prepare_mdff_managers(self, mobile_atoms):
+    def _prepare_mdff_managers(self):
         from .. import session_extensions as sx
         m = self.model
         mdff_mgr_map = self.mdff_mgrs = {}
@@ -331,12 +354,24 @@ class Sim_Manager:
         for v in m.all_models():
             if isinstance(v, Volume):
                 mdff_mgr_map[v] = sx.get_mdff_mgr(m, v)
+        if len(mdff_mgr_map.keys()):
+            isolde_params = self.isolde_params
+            from chimerax.clipper.symmetry import get_symmetry_handler
+            sym = get_symmetry_handler(m)
+            sym.isolate_and_cover_selection(self.sim_construct.mobile_atoms,
+                show_context = isolde_params.hard_shell_cutoff_distance,
+                mask_radius = isolde_params.standard_map_mask_cutoff,
+                extra_padding = 5,
+                hide_surrounds = isolde_params.hide_surroundings_during_sim,
+                focus = False,
+                include_symmetry = True)
 
-    def _initialize_mdff(self):
+
+    def _initialize_mdff(self, update_handlers):
         sh = self.sim_handler
         sc = self.sim_construct
         sp = self.sim_params
-        uh = self._update_handlers
+        uh = update_handlers
         mdff_mgrs = self.mdff_mgrs
         sh.initialize_mdff_forces(list(mdff_mgrs.keys()))
         for v, mgr in mdff_mgrs.items():
@@ -361,26 +396,18 @@ class Sim_Manager:
         fixed_atoms = concatenate((fixed_atoms, remainder.unique_residues.atoms))
         return fixed_atoms
 
-
-
-
-
-
-
-
     def _expand_mobile_selection(self, core_atoms, expansion_mode):
         from .. import selections
         iparams = self.isolde_params
         if expansion_mode == 'extend':
             sel = selections.expand_selection_along_chains(core_atoms,
                 iparams.num_selection_padding_residues)
-            shell = selections.get_shell_of_residues(sel,
-                iparams.soft_shell_cutoff_distance)
+            shell = selections.get_shell_of_residues(sel.unique_residues,
+                iparams.soft_shell_cutoff_distance).atoms
             from chimerax.atomic import concatenate
             merged_sel = concatenate((sel, shell), remove_duplicates=True)
             return merged_sel
         raise TypeError('Unrecognised expansion mode!')
-
 
     def prepare_sim_visualisation(self):
         m = self.model
@@ -407,7 +434,7 @@ class Sim_Manager:
         self._rama_a_sim_end_cb()
         self._rota_a_sim_end_cb()
         self._mdff_sim_end_cb()
-
+        self.sim_construct.revert_visualisation()
 
     def _rama_a_sim_end_cb(self, *_):
         self.rama_annotator.track_whole_model = True

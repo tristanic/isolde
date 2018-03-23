@@ -124,7 +124,9 @@ class RamaPlot:
             self._all_current_ramas = None
             self._case_ramas = None
 
-    def update_scatter(self, residues=None):
+    def update_scatter(self, *_, residues=None):
+        if not self.container.parent().isVisible():
+            return
         if residues is not None:
             self.set_target_residues(residues)
         import numpy

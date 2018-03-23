@@ -745,11 +745,12 @@ class Rota_Mgr:
         '''
         from chimerax.core.atomic import Residue
         if type(residue_or_rotamer) == Residue:
-            r = self.get_rotamer(residue)
+            r = self.get_rotamer(residue_or_rotamer)
         else:
             r = residue_or_rotamer
         if r is None:
             return None
+        residue = r.residue
         angles = numpy.degrees(r.angles)
         targets = self.get_rota_targets(residue.name)
         target_angles = numpy.array([t['angles'] for t in targets.values()])

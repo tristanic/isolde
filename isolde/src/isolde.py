@@ -239,6 +239,13 @@ class Isolde():
         self._mouse_tugger = None
 
         ####
+        # Variables for live information/control
+        ####
+
+        self._selected_rotamer = None
+
+
+        ####
         # Haptic interfaces
         ####
         # TODO: Move out into separate class
@@ -268,7 +275,7 @@ class Isolde():
 
         # Placeholder for the openmm_interface.Sim_Handler object used to perform
         # simulation setup and management
-        self._sim_handler = None
+        self._sim_manager = None
 
         # Holds the current simulation mode, to be chosen from the GUI
         # drop-down menu or loaded from saved settings.
@@ -278,6 +285,8 @@ class Isolde():
         self.hydrogens_feel_maps = False
 
         self.initialize_haptics()
+
+
 
         ####
         # Internal trigger handlers
@@ -326,17 +335,23 @@ class Isolde():
 
     @property
     def sim_handler(self):
-        return self._sim_handler
+        if self.sim_manager is None:
+            return None
+        return self.sim_manager.sim_handler
 
     @property
     def simulation_running(self):
-        if self._sim_handler is None:
+        if self.sim_handler is None:
             return False
-        return self._sim_handler.sim_running
+        return self.sim_handler.sim_running
+
+    @property
+    def sim_manager(self):
+        return self._sim_manager
 
     @property
     def simulation_mode(self):
-        sh = self._sim_handler
+        sh = self.sim_handler
         if sh is None:
             return None
         if not sh.minimize:
@@ -812,8 +827,8 @@ class Isolde():
 
     def _update_sim_temperature(self):
         t = self.iw._sim_temp_spin_box.value()
-        if self._sim_handler is not None:
-            self._sim_handler.temperature = t
+        if self.sim_handler is not None:
+            self.sim_handler.temperature = t
         self.sim_params.temperature = t
 
     ##############################################################
@@ -1103,9 +1118,6 @@ class Isolde():
         self._update_sim_control_button_states()
 
 
-
-
-
     ####
     # Rebuild tab
     ####
@@ -1113,7 +1125,7 @@ class Isolde():
         if not self.simulation_running:
             self._disable_rebuild_residue_frame()
             return
-        if -1 in self._total_mobile.indices(res.atoms):
+        if -1 in self.sim_manager.sim_construct.mobile_atoms.indices(res.atoms):
             self._disable_rebuild_residue_frame()
             return
 
@@ -1153,10 +1165,14 @@ class Isolde():
 
         self._steps_per_sel_res_update = 10
         self._sel_res_update_counter = 0
-        self._update_selected_residue_info_live()
-        if 'update_selected_residue_info' not in self._event_handler.list_event_handlers():
-            self._event_handler.add_event_handler('update_selected_residue_info',
-                    'shape changed', self._update_selected_residue_info_live)
+        self._update_selected_residue_info_live(None, None)
+        if not hasattr(self, '_res_info_update_handler') or self._res_info_update_handler is None:
+            self._res_info_update_handler = self.selected_model.triggers.add_handler(
+                'changes', self._update_selected_residue_info_live
+            )
+        # if 'update_selected_residue_info' not in self._event_handler.list_event_handlers():
+        #     self._event_handler.add_event_handler('update_selected_residue_info',
+        #             'shape changed', self._update_selected_residue_info_live)
 
     def _enable_atom_position_restraints_frame(self):
         self.iw._rebuild_pin_atom_to_current_pos_button.setEnabled(True)
@@ -1278,7 +1294,7 @@ class Isolde():
 
 
     def _restrain_secondary_structure(self, atoms, target):
-        sh = self._sim_handler
+        sh = self.sim_handler
         sc = self._total_sim_construct
         dihed_k = self.secondary_structure_restraints_k
         sel = atoms
@@ -1469,34 +1485,39 @@ class Isolde():
         self._all_annotated_dihedrals.update_needed = True
 
     def _clear_rotamer(self, *_):
-        if self._selected_rotamer is not None:
-            self._selected_rotamer.cleanup()
+        # if self._selected_rotamer is not None:
+        #     self._selected_rotamer.cleanup()
         self._target_rotamer = None
 
     def _release_rotamer(self, *_):
-        rot = self._selected_rotamer
-        rot.restrained = False
-        rot.cleanup()
-        if self.simulation_running:
-            self._apply_rotamer_target_to_sim(rot)
-        self._update_dihedral_restraints_drawing()
+        pass
+        # rot = self._selected_rotamer
+        # rot.restrained = False
+        # rot.cleanup()
+        # if self.simulation_running:
+        #     self._apply_rotamer_target_to_sim(rot)
+        # self._update_dihedral_restraints_drawing()
 
     def release_rotamers(self, residues):
         for r in residues:
             self.release_rotamer(r)
 
     def release_rotamer(self, residue):
-        try:
-            rot = self.rotamers[residue]
-        except KeyError:
-            return
-        rot.restrained = False
-        if self.simulation_running:
-            self._apply_rotamer_target_to_sim(rot)
+        pass
+        # try:
+        #     rot = self.rotamers[residue]
+        # except KeyError:
+        #     return
+        # rot.restrained = False
+        # if self.simulation_running:
+        #     self._apply_rotamer_target_to_sim(rot)
 
     def _disable_rebuild_residue_frame(self):
-        if 'update_selected_residue_info' in self._event_handler.list_event_handlers():
-            self._event_handler.remove_event_handler('update_selected_residue_info')
+        if hasattr(self, '_res_info_update_handler') and self._res_info_update_handler is not None:
+            self.selected_model.triggers.remove_handler(self._res_info_update_handler)
+            self._res_info_update_handler = None
+        # if 'update_selected_residue_info' in self._event_handler.list_event_handlers():
+        #     self._event_handler.remove_event_handler('update_selected_residue_info')
         self.iw._rebuild_sel_residue_info.setText('(Select a mobile residue)')
         self.iw._rebuild_sel_res_pep_info.setText('')
         self.iw._rebuild_sel_res_rot_info.setText('')
@@ -1507,17 +1528,22 @@ class Isolde():
         #TODO
         pass
 
-    def _update_selected_residue_info_live(self, *_):
+    def _update_selected_residue_info_live(self, trigger_name, changes):
+        if changes is not None:
+            changes = changes[1]
+            if not 'coord changed' in changes.atom_reasons():
+                return
         from math import degrees
         res = self._rebuild_residue
-        c = self._sel_res_update_counter
-        s = self._steps_per_sel_res_update
-        c = (c + 1) % s
-        if c == 0:
+        # c = self._sel_res_update_counter
+        # s = self._steps_per_sel_res_update
+        # c = (c + 1) % s
+        # if c == 0:
+        if True:
             # Get the residue's omega value
             omega = self._rebuild_res_omega
             if omega is not None:
-                oval = degrees(omega.value)
+                oval = degrees(omega.angle)
                 if oval <= -150 or oval >= 150:
                     pep_type = 'trans'
                 elif oval >= -30 and oval <= 30:
@@ -1532,18 +1558,18 @@ class Isolde():
 
             if rot is not None:
                 rname, freq, zscore = rot_m.nearest_valid_rotamer(rot)
-                r_desc = "{} ({})".format(rname, freq)
+                r_desc = "{}, Expected f={}, Z={:0.1f}".format(rname, freq, zscore)
                 if zscore<=1:
                     desc_color = 'green'
                 elif zscore <=2:
                     desc_color = 'orange'
                 else:
                     desc_color = 'red'
-                rot_text.setText("<font color='{}'>{}</font>".format(desc_color, desc))
+                rot_text.setText("<font color='{}'>{}</font>".format(desc_color, r_desc))
 
 
 
-        self._sel_res_update_counter = c
+        # self._sel_res_update_counter = c
 
     def _flip_peptide_bond(self, *_):
         res = self._rebuild_residue
@@ -1573,7 +1599,7 @@ class Isolde():
         if self._rama_plot is None:
             # Create the basic MatPlotLib canvas for the Ramachandran plot
             self._prepare_ramachandran_plot()
-        if self.simulation_running and self.params.track_ramachandran_status:
+        if self.simulation_running:
             self._rama_go_live()
         else:
             self._rama_static_plot()
@@ -1589,20 +1615,24 @@ class Isolde():
         self._rama_plot.change_case(case_key)
 
     def _rama_go_live(self, *_):
-        res = self._total_mobile.unique_residues
+        if not self.simulation_running:
+            print('No simulation running!')
+            return
+        res = self.sim_manager.sim_construct.mobile_atoms.unique_residues
         rp = self._rama_plot
         rp.set_target_residues(res)
-        self._isolde_events.add_event_handler('live rama plot',
-                                              'completed simulation step',
-                                              rp.update_scatter)
-        # self._update_rama_plot = True
+        self._rama_plot_update_handler =\
+            self.selected_model.triggers.add_handler('changes',
+            rp.update_scatter)
         self.iw._validate_rama_sel_combo_box.setDisabled(True)
         self.iw._validate_rama_go_button.setDisabled(True)
 
     def _rama_go_static(self, *_):
         # self._update_rama_plot = False
-        self._isolde_events.remove_event_handler('live rama plot',
-            error_on_missing = False)
+        if hasattr(self, '_rama_plot_update_handler') and \
+                self._rama_plot_update_handler is not None:
+            self.selected_model.triggers.remove_handler(self._rama_plot_update_handler)
+            self._rama_plot_update_handler = None
         self.iw._validate_rama_sel_combo_box.setEnabled(True)
         self.iw._validate_rama_go_button.setEnabled(True)
 
@@ -1711,7 +1741,6 @@ class Isolde():
             return
         m = iw._master_model_combo_box.currentData()
         if force or (self._selected_model != m and m is not None):
-            self._status('Analysing model and preparing restraints. Please be patient.')
             self._selected_model = m
             self.session.selection.clear()
             self._selected_model.selected = True
@@ -1728,40 +1757,6 @@ class Isolde():
             sx.get_rama_annotator(m)
             self.triggers.activate_trigger('selected model changed', data=m)
         self._status('')
-
-    def _prepare_all_interactive_restraints(self, model):
-        '''
-        Any restraints you may want to turn on and off interactively must
-        be defined at the beginning of each simulation. Otherwise, adding
-        a new restraint would require a costly reinitialisation of the
-        simulation context. For the most commonly-used restraints it's
-        therefore best to pre-define the necessary objects for the entire
-        model at the point the model is selected, and pull out the
-        necessary pieces from these each time a simulation is started.
-        '''
-        m = model
-        from . import backbone_restraints as br
-        from . import position_restraints as pr
-        # Torsion restraints
-        bd = self.backbone_dihedrals = dihedrals.Backbone_Dihedrals(self.session, m)
-        ad = self._all_annotated_dihedrals
-        ad.append(bd.phi)
-        ad.append(bd.psi)
-        self.rotamers = rotamers.all_rotamers_in_selection(self.session, m.atoms)
-        for r in self.rotamers.values():
-            try:
-                ad.append(r.dihedrals)
-            except:
-                raise Exception('{}: {}'.format(r.residue.name, r.dihedrals))
-        # Distance restraints
-        self.ca_to_ca_plus_two = br.CA_to_CA_plus_Two(self.session, m)
-        self.o_to_n_plus_four = br.O_to_N_plus_Four(self.session, m)
-        # Positional restraints (one per heavy atom)
-        if self.position_restraints is not None:
-            self.position_restraints.cleanup()
-        self.position_restraints = pr.Atom_Position_Restraints(
-                self.session, m,
-                m.atoms, triggers = self.triggers, create_target=True)
 
 
     def _select_whole_model(self, *_):
@@ -1910,7 +1905,7 @@ class Isolde():
             from chimerax.atomic import selected_atoms
             sel = selected_atoms(self.session)
         else:
-            sel = self._total_mobile
+            sel = self.sim_manager.sim_construct.mobile_atoms
 
         res = sel.unique_residues
 
@@ -1949,154 +1944,14 @@ class Isolde():
             self.pause_sim_toggle()
 
     def start_sim(self):
-        self.sim_params.platform = self.iw._sim_platform_combo_box.currentText()
-        try:
-            #~ self._start_sim()
-            self._start_threaded_sim()
-        except Exception as e:
-            self.triggers.activate_trigger('simulation terminated',
-                                        (sim_outcomes.FAIL_TO_START, e))
-            raise
-
-
-    def _start_threaded_sim(self):
-        session = self.session
-        log = session.logger.info
-        sel_model = self.selected_model
-
         if self.simulation_running:
-            print('You already have a simulation running!')
-            return
-        if self._logging:
-            self._log('Initialising simulation')
-        log('Simulation should start now')
-
-        sm = self._sim_modes
-        if self.sim_mode in [sm.xtal, sm.em]:
-            if not len(self.master_map_list):
-                self._no_maps_warning()
-                return
-
-        self._status('Defining simulation selection...')
-
-        # Define final mobile selection
+            raise TypeError('Simulation already running!')
+        self.sim_params.platform = self.iw._sim_platform_combo_box.currentText()
+        from .openmm.openmm_interface import Sim_Manager
         main_sel = self._get_main_sim_selection()
-
-        # Define "soft shell" of mobile atoms surrounding main selection
-        soft_shell = self._soft_shell_atoms = self.get_shell_of_residues(
-            main_sel, self.params.soft_shell_cutoff_distance)
-
-
-        # Define fixed selection (whole residues with atoms coming within
-        # a cutoff of the mobile selection
-        total_mobile = self._total_mobile = main_sel.merge(soft_shell)
-        hard_shell = self._hard_shell_atoms = self.get_shell_of_residues(
-            total_mobile, self.params.hard_shell_cutoff_distance)
-
-        sc = self._total_sim_construct = total_mobile.merge(hard_shell)
-
-        # We need to make sure that the atoms in our important selections are
-        # sorted in the same order as in the master model to avoid Bad Things(TM)
-        # happening.
-        all_a = sel_model.residues.atoms
-        tm_i = all_a.indices(total_mobile)
-        sc_i = all_a.indices(sc)
-        tm_i.sort()
-        sc_i.sort()
-        total_mobile = self._total_mobile = all_a[tm_i]
-        mobile_residues = self._mobile_residues = total_mobile.unique_residues
-        sc = self._total_sim_construct = all_a[sc_i]
-
-        self._total_mobile_indices = sc.indices(total_mobile)
-
-        sb = self._total_sim_bonds = sc.intra_bonds
-        surr = self._surroundings = all_a.subtract(sc)
-
-        # Cache all the colors so we can revert at the end of the simulation
-        self._original_atom_colors = sc.colors
-        self._original_atom_draw_modes = sc.draw_modes
-        self._original_bond_radii = sb.radii
-        self._original_atom_radii = sc.radii
-        self._original_display_state = sel_model.atoms.displays
-        self._original_ribbon_state = sel_model.residues.ribbon_displays
-
-        if self.sim_mode == sm.xtal:
-            sel_model.parent.isolate_and_cover_selection(
-                total_mobile, include_surrounding_residues = 0,
-                show_context = self.params.hard_shell_cutoff_distance,
-                mask_radius = 4, extra_padding = 10,
-                hide_surrounds = self.params.hide_surroundings_during_sim, focus = False)
-
-        # else:
-        surr.hides |= control.HIDE_ISOLDE
-        surr.displays = False
-        self._surroundings_hidden = True
-
-        sel_model.residues.ribbon_displays = False
-
-        hsb = hard_shell.intra_bonds
-        hsb.radii = 0.1
-        hard_shell.radii = 0.1
-        hard_shell.draw_modes = hard_shell.BALL_STYLE
-
-        fixed_flags = numpy.zeros(len(sc), numpy.bool)
-        fixed_flags[sc.indices(hard_shell)] = True
-
-        if self.params.fix_soft_shell_backbone:
-            indices = sc.indices(soft_shell)
-            names = soft_shell.names
-            for i, n in zip(indices, names):
-                if n in ['N','C','O','H','H1','H2','H3']:
-                    fixed_flags[i] = True
-
-
-        # Collect backbone dihedral atoms and prepare the Ramachandran
-        # validator
-
-        self._status('Organising dihedrals...')
-
-        from . import dihedrals
-        all_bd = self.backbone_dihedrals
-        sim_phi, sim_psi, sim_omega = all_bd.by_residues(total_mobile.unique_residues)
-
-        bd = self._mobile_backbone_dihedrals \
-            = dihedrals.Backbone_Dihedrals(self.session, phi = sim_phi, psi = sim_psi, omega = sim_omega)
-
-        if self.params.track_ramachandran_status:
-            bd.CAs.draw_modes = 1
-
-            self.omega_validator.load_structure(sel_model, bd.omega)
-
-
-        distance_restraints = self._sim_distance_restraint_dict = {
-            'ca_to_ca_plus_two':    self.ca_to_ca_plus_two.in_selection(sc),
-            'o_to_n_plus_four':     self.o_to_n_plus_four.in_selection(sc),
-            }
-
-        position_restraints = self._sim_pos_restr =\
-            self.position_restraints.in_selection(total_mobile)
-
-
-        tuggable_atoms = total_mobile[total_mobile.element_names != 'H']
-
-        from . import rotamers
-        mobile_residues = total_mobile.unique_residues
-        mobile_rotamers = self._mobile_rotamers = rotamers.Rotamers(
-                        self.session, mobile_residues, self.rotamers)
-
-        from .openmm.sim_interface import ChimeraXSimInterface
-        sp = self.sim_params
-        si = self._sim_interface = ChimeraXSimInterface(self.session, self)
-        si.start_sim_thread(sp, sc, tuggable_atoms, fixed_flags, bd, mobile_rotamers,
-                            distance_restraints, position_restraints, self.master_map_list)
-        self._last_checkpoint = si.starting_checkpoint
-
-        #~ if self.params.track_rotamer_status:
-            #~ vi = self.live_validation_interface
-            #~ vi.start_validation_threads(mobile_rotamers)
-
-
-        self._status('Simulation running')
+        sm = self._sim_manager = Sim_Manager(self.selected_model, main_sel,
+            self.params, self.sim_params)
+        sm.start_sim()
 
     def _start_sim_haptics(self, *_):
         self._event_handler.add_event_handler('sim haptic update',
@@ -2116,7 +1971,7 @@ class Isolde():
             if self._haptic_highlight_nearest_atom[i] and not d.tugging:
                 cur_a = self._haptic_current_nearest_atom[i]
                 new_a = self._haptic_current_nearest_atom[i] = picking.pick_closest_to_point(
-                        self.session, pointer_pos, self._total_mobile, 3.0,
+                        self.session, pointer_pos, self.sim_manager.sim_construct.mobile_atoms, 3.0,
                         displayed_only = True, tug_hydrogens = self.tug_hydrogens)
                 if new_a != cur_a:
                     if cur_a is not None and not cur_a.deleted:
@@ -2160,7 +2015,7 @@ class Isolde():
         '''
         self.simulation_running = True
         self._update_sim_control_button_states()
-        r = self._total_mobile.unique_residues
+        r = self.sim_manager.sim_construct.mobile_atoms.unique_residues
 
         self._isolde_events.add_event_handler('rezone maps during sim',
                                               'completed simulation step',
@@ -2297,7 +2152,7 @@ class Isolde():
 
     def pause_sim_toggle(self):
         if self.simulation_running:
-            self._sim_handler.toggle_pause()
+            self.sim_manager.toggle_pause()
 
     @property
     def sim_paused(self):
@@ -2709,7 +2564,7 @@ class Isolde():
             v = m.get_source_map()
             cutoff = m.get_mask_cutoff()
             surface_zone(self.session, v.surface_drawings,
-                near_atoms = self._total_mobile, range = cutoff)
+                near_atoms = self.sim_manager.sim_construct.mobile_atoms, range = cutoff)
 
 
     def update_ramachandran(self, *_):

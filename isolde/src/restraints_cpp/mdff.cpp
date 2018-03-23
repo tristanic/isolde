@@ -9,6 +9,11 @@ template class pyinstance::PythonInstance<isolde::MDFF_Mgr>;
 namespace isolde
 {
 
+MDFF_Atom::MDFF_Atom(Atom* atom, MDFF_Mgr *mgr) : _atom(atom), _mgr(mgr)
+{
+    _coupling_constant = _atom->element().mass();
+}
+
 Change_Tracker* MDFF_Atom::change_tracker() const
 {
     return mgr()->change_tracker();

@@ -18,16 +18,19 @@ namespace isolde
 
 class MDFF_Mgr;
 
+//! Handles the coupling of an Atom to a MDFF map.
+/*! Unlike in the case of restraints, MDFF_Atom objects are enabled by default,
+ *  and are instantiated with their coupling constants pre-set to the mass of
+ *  the atom.
+ */
 class MDFF_Atom:
     public pyinstance::PythonInstance<MDFF_Atom>,
     public Sim_Restraint_Base
 {
 public:
-    MDFF_Atom() : Sim_Restraint_Base () {}
+    MDFF_Atom() {}
     ~MDFF_Atom() { auto du=DestructionUser(this); }
-    MDFF_Atom(Atom* atom, MDFF_Mgr *mgr)
-        : _atom(atom), _mgr(mgr)
-    {}
+    MDFF_Atom(Atom* atom, MDFF_Mgr *mgr);
     void set_coupling_constant(double k);
     double get_coupling_constant () const { return _coupling_constant; }
     void set_enabled(bool flag);
@@ -41,7 +44,7 @@ private:
     Atom* _atom;
     MDFF_Mgr *_mgr;
     double _coupling_constant = 0.0;
-    bool _enabled = false;
+    bool _enabled = true;
 
 }; //class MDFF_Atom
 
