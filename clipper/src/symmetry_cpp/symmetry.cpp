@@ -480,6 +480,7 @@ atom_and_bond_sym_transforms_from_sym_atoms(void *atoms, uint8_t *sym_indices,
             size_t count = 0;
             for (size_t i=0; i<n_tf; ++i)
             {
+                current_sym = *asym;
                 std::unordered_map<Atom*, double*> amap;
                 while (*(asym++) == current_sym && count < natoms) {
                     amap[*aa++] = coords;
@@ -521,7 +522,7 @@ atom_and_bond_sym_transforms_from_sym_atoms(void *atoms, uint8_t *sym_indices,
                     bond_tf += GL_TF_SIZE*2;
                     ret_bond_sym.push_back(current_sym);
                 }
-                current_sym = *asym;
+                //current_sym = *asym;
             }
         }
         fill_atom_and_bond_sym_tuple(ret, primary_atoms, ret_atoms, ret_coords,
