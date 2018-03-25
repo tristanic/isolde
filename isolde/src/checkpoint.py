@@ -10,88 +10,99 @@ class CheckPoint:
     parameters etc.) to revert a running simulation and the master
     molecule in ChimeraX back to a given state.
     '''
-    def __init__(self, isolde):
+    def __init__(self, session, isolde):
         if not isolde.simulation_running:
             raise TypeError('Checkpointing is only available when a '\
                         +'simulation is running!')
+        self.session = session
         self.isolde = isolde
-        self.sim_interface = isolde._sim_interface
-        sc = self.sim_construct = isolde._total_sim_construct
-        tm = self.mobile = isolde._total_mobile
-        bd = self.backbone_dihedrals = isolde._mobile_backbone_dihedrals
+        structure = self.structure = isolde.selected_model
+        sm = self.sim_manager = isolde.sim_manager
+        sc = self.sim_construct = sm.sim_construct
+        atoms = self.mobile_atoms = sc.mobile_atoms
+        from . import session_extensions as sx
 
-        self.residues = tm.unique_residues
-        rot = self.rotamers = {r: isolde.rotamers.get(r, None) for r in self.residues}
-        dd = self.distance_restraints = isolde._sim_distance_restraint_dict
-        pr = self.position_restraints = isolde._sim_pos_restr
+        pr_m = self.position_restraint_mgr = sx.get_position_restraint_mgr(structure)
+        pdr_m = self.proper_dihedral_restraint_mgr = sx.get_proper_dihedral_restraint_mgr(structure)
+        dr_m = self.distance_restraint_mgr = sx.get_distance_restraint_mgr(structure)
+        tug_m = self.tuggable_atoms_mgr = sx.get_tuggable_atoms_mgr(structure)
+        mdff_mgrs = self.mdff_mgrs = {}
+        from chimerax.map import Volume
+        for v in structure.all_models():
+            if isinstance(v, Volume):
+                mdff_mgrs[v] = sx.get_mdff_mgr(structure, v)
 
-        self.saved_positions = sc.coords
+        self.saved_coords = atoms.coords
 
-        sd = self.saved_dihedral_target_states = dict()
-        for d_type in (bd.phi, bd.psi, bd.omega):
-            sd[d_type] = (d_type.targets,
-                          d_type.spring_constants
-                         )
+        prs = self.saved_prs = pr_m.get_restraints(atoms)
+        self.saved_pr_properties = {
+            'targets':              prs.targets,
+            'spring_constants':     prs.spring_constants,
+            'enableds':             prs.enableds
+        }
 
-        sr = self.saved_rotamer_target_states = dict()
-        for res, r in rot.items():
-            if r is not None:
-                sr[r] = (r.restrained, r.target)
+        pdrs = self.saved_pdrs = pdr_m.get_all_restraints_for_residues(atoms.unique_residues)
+        self.saved_pdr_properties = {
+            'targets':              pdrs.targets,
+            'spring_constants':     pdrs.spring_constants,
+            'enableds':             pdrs.enableds,
+            'displays':             pdrs.displays,
+        }
 
-        sdr = self.saved_distance_restraints = dict()
-        for dr_name, dr in dd.items():
-            sdr[dr] = (dr.targets, dr.spring_constants)
+        drs = self.saved_drs = dr_m.atoms_restraints(atoms)
+        self.saved_dr_properties = {
+            'targets':              drs.targets,
+            'spring_constants':     drs.spring_constants,
+            'enableds':             drs.enableds,
+        }
 
-        spr = self.saved_position_restraints = (
-            pr.targets,
-            pr.spring_constants
-            )
+        # Don't save states of tuggables. Just disable any existing tugs on reversion
+
+        # TODO: Decide if it makes sense to also checkpoint MDFF atom properties?
+        # sm = self.saved_mdff_properties = {}
+        # mas = self.saved_mdff_atoms = {}
+        # for v, mdff_mgr in mdff_mgrs.items():
+        #     props = sm[v] = {}
+        #     matoms = mas[v] = mdff_mgr.get_mdff_atoms(atoms)
+        #
+        #     props['coupling_constants'] = matoms.coupling_constants
+        #     props['enableds'] = matoms.enableds
 
     def revert(self):
         '''
         Revert the master construct and simulation (if applicable) to
         the saved checkpoint state.
         '''
-        si = self.isolde.sim_interface
-        if si is not None:
-            if si != self.sim_interface:
-                raise TypeError('A new simulation has been started since '\
-                    +'this checkpoint was saved. This checkpoint is no '\
-                    +'longer valid!')
+        sm = self.isolde.sim_manager
+        if sm is None:
+            raise TypeError('Checkpointing is only available when a simulation is running!')
+        if sm != self.sim_manager:
+            raise TypeError('A new simulation has been started since '\
+                +'this checkpoint was saved. This checkpoint is no '\
+                +'longer valid!')
 
-        currently_paused = si.paused
-        if not currently_paused:
-            # Make sure the simulation is not running while we change things
-            si.pause_and_acknowledge()
+        # Rather than deleting any restraints that have been added since the
+        # checkpoint was saved, it is much more straightforward/less costly to
+        # just disable all restraints, then re-enable only those that were
+        # enabled at the checkpoint.
+        prs = self.saved_prs
+        prs.enableds = False
+        for prop, val in self.saved_pr_properties.items():
+            setattr(prs, prop, val)
 
+        pdrs = self.saved_pdrs
+        pdrs.enableds = False
+        for prop, val in self.saved_pdr_properties.items():
+            setattr(pdrs, prop, val)
 
-        sd = self.saved_dihedral_target_states
-        bd = self.backbone_dihedrals
-        for d_type in (bd.phi, bd.psi, bd.omega):
-            d_type.targets = sd[d_type][0]
-            d_type.spring_constants = sd[d_type][1]
-            si.update_dihedral_restraints(d_type)
+        drs = self.saved_drs
+        drs.enableds = False
+        for prop_val in self.saved_dr_properties.items():
+            setattr(drs, prop, val)
 
-        for rot, saved in self.saved_rotamer_target_states.items():
-            rot.restrained = saved[0]
-            rot.target = saved[1]
-            si.update_rotamer_target(rot)
+        atoms = self.mobile_atoms
+        tugs = self.tuggable_atoms_mgr.get_tuggables(atoms)
+        tugs.enableds = False
 
-        dd = self.distance_restraints
-        for dr_name, dr in dd.items():
-            sdr = self.saved_distance_restraints[dr]
-            dr.targets = sdr[0]
-            dr.spring_constants = sdr[1]
-            si.update_distance_restraints(dr)
-
-        pr = self.position_restraints
-        spr = self.saved_position_restraints
-        pr.targets = spr[0]
-        pr.spring_constants = spr[1]
-        si.update_position_restraints(pr)
-
-        self.sim_construct.coords = self.saved_positions
-        si.update_coords(self.sim_construct)
-        
-        if not currently_paused:
-            si.paused = False
+        atoms.coords = self.saved_coords
+        sm.sim_handler.push_coords_to_sim(self.saved_coords)
