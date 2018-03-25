@@ -401,6 +401,11 @@ class AtomicSymmetryModel(Model):
         for i, s in enumerate(symmats):
             search_list.append((master_coords, s.astype(numpy.float32)))
         from chimerax.core.geometry import find_close_points_sets
+        # We want to respond gracefully if the cutoff is zero, but
+        # find_close_points_sets returns nothing if the cutoff is
+        # *actually* zero. So just set it to a very small non-zero value.
+        if cutoff == 0:
+            cutoff = 1e-6
         i1, i2 = find_close_points_sets(search_list, target, cutoff)
         found_atoms = []
         sym_indices = []
@@ -414,9 +419,13 @@ class AtomicSymmetryModel(Model):
                 indices = numpy.empty(len(sel), numpy.uint8)
                 indices[:] = i
                 sym_indices.append(indices)
-        from chimerax.atomic import concatenate
-        found_atoms = concatenate(found_atoms)
-        sym_indices = numpy.concatenate(sym_indices)
+        if len(found_atoms) > 1:
+            from chimerax.atomic import concatenate
+            found_atoms = concatenate(found_atoms)
+            sym_indices = numpy.concatenate(sym_indices)
+        else:
+            found_atoms = found_atoms[0]
+            sym_indices = sym_indices[0]
         return (found_atoms, symmats, sym_indices, symops)
 
     def delete(self):
