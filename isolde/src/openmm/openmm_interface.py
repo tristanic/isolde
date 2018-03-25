@@ -262,12 +262,14 @@ class Sim_Manager:
     Responsible for defining and initialising a simulation based upon an atomic
     selection.
     '''
-    def __init__(self, model, selected_atoms,
+    def __init__(self, isolde, model, selected_atoms,
         isolde_params, sim_params, expansion_mode = 'extend'):
+        self.isolde = isolde
         self.model = model
         session = self.session = model.session
         self.isolde_params = isolde_params
         self.sim_params = sim_params
+        self._revert_to = None
         mobile_atoms = self._expand_mobile_selection(selected_atoms, expansion_mode)
         from ..selections import get_shell_of_residues
         fixed_atoms = get_shell_of_residues(mobile_atoms.unique_residues,
@@ -287,15 +289,24 @@ class Sim_Manager:
     def start_sim(self):
         sh = self.sim_handler
         sh.start_sim()
+        from ..checkpoint import CheckPoint
+        self._starting_checkpoint = self._current_checkpoint = CheckPoint(self.isolde)
         sh.triggers.add_handler('sim terminated', self._sim_end_cb)
 
-    def stop_sim(self):
+    def stop_sim(self, revert = None):
         self.sim_handler.stop()
+        self._revert_to = revert
 
     def toggle_pause(self):
         sh = self.sim_handler
         sh.pause = not sh.pause
 
+    def checkpoint(self):
+        from ..checkpoint import CheckPoint
+        self._current_checkpoint = CheckPoint(self.isolde)
+
+    def revert_to_checkpoint(self):
+        self._current_checkpoint.revert()
 
     def _prepare_validation_managers(self, mobile_atoms):
         from .. import session_extensions as sx
@@ -375,6 +386,7 @@ class Sim_Manager:
             from chimerax.clipper.symmetry import get_symmetry_handler
             sym = get_symmetry_handler(m)
             sym.isolate_and_cover_selection(self.sim_construct.mobile_atoms,
+                include_surrounding_residues = 0,
                 show_context = isolde_params.hard_shell_cutoff_distance,
                 mask_radius = isolde_params.standard_map_mask_cutoff,
                 extra_padding = 5,
@@ -450,6 +462,11 @@ class Sim_Manager:
         self._rama_a_sim_end_cb()
         self._rota_a_sim_end_cb()
         self._mdff_sim_end_cb()
+        rt = self._revert_to
+        if rt == 'checkpoint':
+            self._current_checkpoint.revert(update_sim=False)
+        elif rt == 'start':
+            self._starting_checkpoint.revert(update_sim=False)
         self.sim_construct.revert_visualisation()
 
     def _rama_a_sim_end_cb(self, *_):
@@ -503,7 +520,7 @@ class Sim_Manager:
             self.sim_handler.update_distance_restraints(all_changeds)
 
     def _dr_sim_end_cb(self, *_):
-        restraints = self.distance_restraints_mgr.intra_restraints(self.sim_construct.all_atoms)
+        restraints = self.distance_restraint_mgr.intra_restraints(self.sim_construct.all_atoms)
         restraints.clear_sim_indices()
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
@@ -646,9 +663,7 @@ class Sim_Handler:
 
     @temperature.setter
     def temperature(self, temperature):
-        self._temperature = temperature
-        if self.sim_running:
-            self.sim_handler._simulation.integrator.setTemperature(temperature)
+        self._simulation.integrator.setTemperature(temperature)
 
     @property
     def minimize(self):
@@ -841,7 +856,7 @@ class Sim_Handler:
             self._thread_handler = None
             self._simulation = None
             self._sim_running = False
-            self.triggers.activate_trigger('sim terminated')
+            self.triggers.activate_trigger('sim terminated', None)
 
     @property
     def sim_running(self):
@@ -1155,12 +1170,6 @@ class Sim_Handler:
         f.update_atoms(mdff_atoms.sim_indices,
             mdff_atoms.coupling_constants, mdff_atoms.enableds)
         self.force_update_needed()
-
-
-
-
-
-
 
     def set_fixed_atoms(self, fixed_atoms):
         '''

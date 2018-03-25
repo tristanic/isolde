@@ -10,11 +10,11 @@ class CheckPoint:
     parameters etc.) to revert a running simulation and the master
     molecule in ChimeraX back to a given state.
     '''
-    def __init__(self, session, isolde):
+    def __init__(self, isolde):
         if not isolde.simulation_running:
             raise TypeError('Checkpointing is only available when a '\
                         +'simulation is running!')
-        self.session = session
+        session = self.session = isolde.session
         self.isolde = isolde
         structure = self.structure = isolde.selected_model
         sm = self.sim_manager = isolde.sim_manager
@@ -32,7 +32,7 @@ class CheckPoint:
             if isinstance(v, Volume):
                 mdff_mgrs[v] = sx.get_mdff_mgr(structure, v)
 
-        self.saved_coords = atoms.coords
+        self.saved_coords = sc.all_atoms.coords
 
         prs = self.saved_prs = pr_m.get_restraints(atoms)
         self.saved_pr_properties = {
@@ -68,15 +68,13 @@ class CheckPoint:
         #     props['coupling_constants'] = matoms.coupling_constants
         #     props['enableds'] = matoms.enableds
 
-    def revert(self):
+    def revert(self, update_sim = True):
         '''
         Revert the master construct and simulation (if applicable) to
         the saved checkpoint state.
         '''
         sm = self.isolde.sim_manager
-        if sm is None:
-            raise TypeError('Checkpointing is only available when a simulation is running!')
-        if sm != self.sim_manager:
+        if sm is not None and sm != self.sim_manager:
             raise TypeError('A new simulation has been started since '\
                 +'this checkpoint was saved. This checkpoint is no '\
                 +'longer valid!')
@@ -104,5 +102,7 @@ class CheckPoint:
         tugs = self.tuggable_atoms_mgr.get_tuggables(atoms)
         tugs.enableds = False
 
-        atoms.coords = self.saved_coords
-        sm.sim_handler.push_coords_to_sim(self.saved_coords)
+
+        self.sim_construct.all_atoms.coords = self.saved_coords
+        if update_sim:
+            sm.sim_handler.push_coords_to_sim(self.saved_coords)

@@ -176,7 +176,6 @@ class Isolde():
 
         self._can_checkpoint = True
         self.checkpoint_disabled_reasons = {}
-        self._last_checkpoint = None
 
         self.params = IsoldeParams()
         self.sim_params = SimParams()
@@ -327,7 +326,7 @@ class Isolde():
     @property
     def can_checkpoint(self):
         '''Is checkpoint save/revert currently allowed?'''
-        return self._can_checkpoint
+        return self.simulation_running and self._can_checkpoint
 
     @can_checkpoint.setter
     def can_checkpoint(self, flag):
@@ -1981,7 +1980,7 @@ class Isolde():
         self.sim_params.platform = self.iw._sim_platform_combo_box.currentText()
         from .openmm.openmm_interface import Sim_Manager
         main_sel = self._get_main_sim_selection()
-        sm = self._sim_manager = Sim_Manager(self.selected_model, main_sel,
+        sm = self._sim_manager = Sim_Manager(self, self.selected_model, main_sel,
             self.params, self.sim_params)
         sm.start_sim()
         self._sim_start_cb()
@@ -2048,6 +2047,7 @@ class Isolde():
         '''
         self._update_sim_control_button_states()
         self._set_right_mouse_mode_tug_atom()
+        self.sim_handler.triggers.add_handler('sim terminated', self._sim_end_cb)
 
         # self._isolde_events.add_event_handler('rezone maps during sim',
         #                                       'completed simulation step',
@@ -2057,42 +2057,11 @@ class Isolde():
 
 
     def _sim_end_cb(self, name, outcome):
-        pass
-        if outcome[0] == sim_outcomes.UNSTABLE:
-            print('''Unable to minimise excessive force. Giving up. Try starting
-                a simulation on a larger selection to give the surroundings
-                more room to settle.''')
-            '''
-            TODO: Pop up a dialog box, giving the user the opportunity to save
-            or discard the existing coordinates, and/or start a simulation
-            with a wider selection to give the minimiser more room to work.
-            '''
-            self.revert_to_checkpoint()
-
-        elif outcome[0] == sim_outcomes.TIMEOUT:
-            raise outcome[1]
-
-        elif outcome[0] == sim_outcomes.FAIL_TO_START:
-            '''
-            TODO: Pop up a dialog box giving the details of the exception, then
-            clean up.
-            '''
-            print('Failed to start')
-            pass
-        self.triggers.activate_trigger('simulation terminated', outcome)
-        # Otherwise just clean up
-        si = self._sim_interface
-        xeh = self._event_handler
-        ieh = self._isolde_events
-        ieh.remove_event_handler(
-            'rezone maps during sim', error_on_missing = False)
-
-        self._disable_rebuild_residue_frame()
-
         self._update_menu_after_sim()
-        self._mouse_tugger = None
         for d in self._haptic_devices:
             d.cleanup()
+        from chimerax.core.ui.mousemodes import TranslateMouseMode
+        self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
 
 
     def _get_main_sim_selection(self):
@@ -2205,10 +2174,10 @@ class Isolde():
         go_button.setToolTip('Pause')
 
     def _stop_sim_and_revert_to_checkpoint(self, *_):
-        self.discard_sim('checkpoint')
+        self.discard_sim(revert_to='checkpoint')
 
     def _discard_sim(self, *_):
-        self.discard_sim('start')
+        self.discard_sim(revert_to='start')
 
 
 
@@ -2220,45 +2189,36 @@ class Isolde():
             revert_to (default: 'checkpoint'):
                 Either 'checkpoint' or 'start'
         '''
-
-        if not self.simulation_running:
-            print('No simulation running!')
-            return
-        self._release_register_shifter()
+        if not revert_to in ('checkpoint', 'start'):
+            raise TypeError('Unrecognised option! Argument should be '\
+                +'either "checkpoint" or "start".')
         if revert_to == 'start':
             msg = 'All changes since you started this simulation will be '\
                 +'lost! Are you sure you want to continue?'
             ok = _choice_warning(msg)
-            if ok:
-                self._sim_interface.stop_sim(sim_outcomes.DISCARD, None)
-            return
-        elif revert_to == 'checkpoint':
-            print('Stopping and reverting to the last saved checkpoint.')
-            self.revert_to_checkpoint()
-            self._sim_interface.stop_sim(sim_outcomes.COMMIT, None)
-        else:
-            raise TypeError('Unrecognised option! Argument should be '\
-                +'either "checkpoint" or "start".')
-
+            if not ok:
+                return
+        self._release_register_shifter()
+        self.sim_manager.stop_sim(revert=revert_to)
 
     def commit_sim(self):
         if not self.simulation_running:
             print('No simulation running!')
             return
         self._release_register_shifter()
-        self._sim_interface.stop_sim(sim_outcomes.COMMIT, None)
+        self.sim_manager.stop_sim()
 
     def minimize(self):
         print('Minimisation mode')
         if self.simulation_running:
-            self._sim_interface.sim_mode = 'min'
+            self.sim_handler.minimize = True
         self.simulation_type = 'min'
         self._update_sim_control_button_states()
 
     def equilibrate(self):
         print('Equilibration mode')
         if self.simulation_running:
-            self._sim_interface.sim_mode = 'equil'
+            self.sim_handler.minimize = False
         self.simulation_type = 'equil'
         self._update_sim_control_button_states()
 
@@ -2310,11 +2270,9 @@ class Isolde():
             self.iw._sim_save_checkpoint_button.setEnabled(True)
             self.iw._sim_revert_to_checkpoint_button.setEnabled(True)
 
-
-
     def checkpoint(self, *_):
         if self.can_checkpoint:
-            self._last_checkpoint = CheckPoint(self)
+            self.sim_manager.checkpoint()
         else:
             err_str = 'Checkpointing is currently disabled by the '\
                 +'following scripts and will be re-enabled when they '\
@@ -2324,10 +2282,7 @@ class Isolde():
 
     def revert_to_checkpoint(self, *_):
         if self.can_checkpoint:
-            if self._last_checkpoint is None:
-                raise TypeError('No saved checkpoint available!')
-            self._last_checkpoint.revert()
-            self._update_dihedral_restraints_drawing()
+            self.sim_manager.revert_to_checkpoint()
         else:
             err_str = 'Checkpointing is currently disabled by the '\
                 +'following scripts and will be re-enabled when they '\
@@ -2661,14 +2616,14 @@ class Isolde():
         self.session.logger.status('Closing ISOLDE and cleaning up')
 
         if self.simulation_running:
-            self.sim_handler.stop_sim()
+            self.sim_manager.stop_sim()
 
         # Remove all registered event handlers
         self._event_handler.remove_all_handlers()
         self._isolde_events.remove_all_handlers()
 
         # Revert mouse modes
-        self._set_chimerax_mouse_mode_panel_enabled(True)
+        # self._set_chimerax_mouse_mode_panel_enabled(True)
         self._mouse_modes.remove_all_modes()
 
     ##############################################
@@ -2696,7 +2651,7 @@ class Isolde():
         sharp_map = sym_handler.xmapset['2FOFCWT_sharp, PH2FOFCWT_sharp']
         sd = sharp_map.mean_sd_rms()[1]
         from . import visualisation as v
-        styleargs= v.map_style_settings[v.map_styles.solid_t40]
+        styleargs= v.map_style_settings[v.map_styles.solid_t20]
         from chimerax.core.map import volumecommand
         volumecommand.volume(self.session, [sharp_map], **styleargs)
         sharp_map.set_parameters(surface_levels = (2.5*sd,))
