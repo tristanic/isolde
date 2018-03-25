@@ -777,13 +777,23 @@ class Sim_Handler:
             self._repeat_step()
 
     def push_coords_to_sim(self, coords=None):
-        if not self._simulation_running:
+        if not self._sim_running:
             raise TypeError('No simulation running!')
-        if not self.pause:
-            raise TypeError('Simulation must be paused first!')
+        # if self.pause:
+        #     self.thread_handler.coords = True
+        # return
+        #
+        # self.pause = True
         if coords is None:
             coords = self._atoms.coords
-        self.thread_handler.coords = coords
+        self._pending_coords = coords
+        self.triggers.add_handler('coord update', self._push_coords_to_sim)
+
+    def _push_coords_to_sim(self, *_):
+        self.thread_handler.coords = self._pending_coords
+        self._pending_coords = None
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
 
     @property
     def thread_handler(self):

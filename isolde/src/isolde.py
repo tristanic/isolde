@@ -538,6 +538,15 @@ class Isolde():
         iw._demo_load_button.clicked.connect(self.load_demo_data)
 
         ####
+        # Right mouse button modes
+        ####
+        iw._right_mouse_tug_atom_button.clicked.connect(
+            self._set_right_mouse_mode_tug_atom
+        )
+        iw._right_mouse_tug_residue_button.clicked.connect(
+            self._set_right_mouse_mode_tug_residue
+        )
+        ####
         # Simulation global parameters (can only be set before running)
         ####
         iw._sim_force_field_combo_box.currentIndexChanged.connect(
@@ -930,6 +939,7 @@ class Isolde():
         if not running:
             go_button.setToolTip('Start a simulation')
 
+        iw._right_mouse_modes_frame.setEnabled(running)
         iw._sim_save_checkpoint_button.setEnabled(running)
         iw._sim_revert_to_checkpoint_button.setEnabled(running)
         iw._sim_commit_button.setEnabled(running)
@@ -1116,6 +1126,28 @@ class Isolde():
     # Update button states after a simulation has finished
     def _update_menu_after_sim(self):
         self._update_sim_control_button_states()
+
+    ####
+    # Right mouse button modes
+    ####
+
+    def _set_right_mouse_tug_mode(self, mode):
+        from .tugging import TugAtomsMode
+        sm = self.sim_manager
+        sc = sm.sim_construct
+        t = TugAtomsMode(self.session, sm.tuggable_atoms_mgr, sc.mobile_atoms,
+                spring_constant = self.sim_params.mouse_tug_spring_constant,
+                mode=mode)
+        mm = self.session.ui.mouse_modes
+        mm.bind_mouse_mode('right', [], t)
+
+    def _set_right_mouse_mode_tug_atom(self, *_):
+        self._set_right_mouse_tug_mode('atom')
+
+    def _set_right_mouse_mode_tug_residue(self, *_):
+        self._set_right_mouse_tug_mode('residue')
+
+
 
 
     ####
@@ -1952,6 +1984,7 @@ class Isolde():
         sm = self._sim_manager = Sim_Manager(self.selected_model, main_sel,
             self.params, self.sim_params)
         sm.start_sim()
+        self._sim_start_cb()
 
     def _start_sim_haptics(self, *_):
         self._event_handler.add_event_handler('sim haptic update',
@@ -2013,14 +2046,13 @@ class Isolde():
         Register all event handlers etc. that have to be running during the
         simulation.
         '''
-        self.simulation_running = True
         self._update_sim_control_button_states()
-        r = self.sim_manager.sim_construct.mobile_atoms.unique_residues
+        self._set_right_mouse_mode_tug_atom()
 
-        self._isolde_events.add_event_handler('rezone maps during sim',
-                                              'completed simulation step',
-                                              self._rezone_maps_if_required)
-        self.triggers.activate_trigger('simulation started', None)
+        # self._isolde_events.add_event_handler('rezone maps during sim',
+        #                                       'completed simulation step',
+        #                                       self._rezone_maps_if_required)
+        #  self.triggers.activate_trigger('simulation started', None)
 
 
 

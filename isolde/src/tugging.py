@@ -55,10 +55,10 @@ class TugAtomsMode(MouseMode):
 
     def __del__(self):
         self.cleanup()
-        super().__del__()
 
     def cleanup(self):
-        pass
+        if self._picked_tuggables is not None:
+            self._picked_tuggables.enableds = False
 
     @property
     def status(self):
@@ -75,11 +75,13 @@ class TugAtomsMode(MouseMode):
         if not flag:
             self._focal_atom = None
             self._picked_atom = None
-            self._picked_tuggables.enableds = False
-            self._picked_tuggables = None
+            if self._picked_tuggables is not None:
+                self._picked_tuggables.enableds = False
+                self._picked_tuggables = None
 
     def mouse_down(self, event):
-        from chimerax.isolde import Atoms
+        import numpy
+        from chimerax.atomic import Atoms
         MouseMode.mouse_down(self, event)
         x,y = event.position()
         self._xy = (x,y)
@@ -92,12 +94,15 @@ class TugAtomsMode(MouseMode):
                 pa = Atoms([a])
             else:
                 pa = a.residue.atoms
-            self._picked_atoms = pa
             tugs = self._picked_tuggables = self._tug_mgr.get_tuggables(pa)
-            atom_xyz, pull_vector = self._pull_direction(x, y)
-            tugs.targets = pa.coords + pull_vector
+            pa = self._picked_atoms = tugs.atoms
+            atom_xyz, pull_vector = self._pull_direction(a, x, y)
+            tugs.targets = tugs.atoms.coords + pull_vector
             # Scale the tugging force by atom masses and number of atoms
-            tugs.spring_constants = (self.spring_constant * pa.elements.masses/_CARBON_MASS) / len(tugs)
+            n = len(tugs)
+            tugs.spring_constants = ((
+                self.spring_constant * pa.elements.masses.astype(numpy.double)
+                /_CARBON_MASS)/ n).reshape((n,1))
             tugs.enableds = True
 
             self.tugging = True
@@ -108,13 +113,14 @@ class TugAtomsMode(MouseMode):
         self._xy = x,y = event.position()
         atom_xyz, pull_vector = self._pull_direction(self._focal_atom, x, y)
         tugs = self._picked_tuggables
-        tugs.targets = tugs.atoms.coords + pull_vector
+        tugs.targets = self._picked_atoms.coords + pull_vector
 
     def mouse_up(self, event):
         MouseMode.mouse_up(self, event)
         self.tugging = False
 
     def _pull_direction(self, atom, x, y):
+        v = self.session.view
         x0,x1 = v.clip_plane_points(x, y)
         axyz = atom.coord
         # Project atom onto view ray to get displacement.
