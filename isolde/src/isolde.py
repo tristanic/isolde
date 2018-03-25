@@ -50,7 +50,7 @@ from .constants import defaults, sim_outcomes, control
 from .param_mgr import Param_Mgr, autodoc, param_properties
 from .checkpoint import CheckPoint
 from .openmm import sim_interface
-from .openmm.sim_interface import SimParams
+from .openmm.sim_param_mgr import SimParams
 
 from .validation_new.validation import Validation_Mgr
 
@@ -2394,6 +2394,14 @@ class Isolde():
         psi for the preceding residue. Ideally, we don't want to leave
         them restrained once the flip is complete.
         '''
+        from . import session_extensions as sx
+        pdr_m = sx.get_proper_dihedral_restraint_mgr(self.selected_model)
+        omega = pdr_m.get_restraint_by_residue_and_name(res, 'omega')
+        if omega is None:
+            raise TypeError('This residue has no N-terminal peptide bond!')
+        if omega.sim_index == -1:
+            raise TypeError('Bond must be mobile in a running simulation!')
+
 
         bd = self._mobile_backbone_dihedrals
         phi = bd.phi.by_residue(res)
@@ -2559,24 +2567,20 @@ class Isolde():
         Flip the peptide bond N-terminal to this residue from cis to
         trans or vice versa. Only usable when a simulation is running.
         '''
-        if not self.simulation_running:
-            print('No simulation running!')
-            return
-        bd = self._mobile_backbone_dihedrals
-        omega = bd.omega.by_residue(res)
+        from . import session_extensions as sx
+        pdr_m = sx.get_proper_dihedral_restraint_mgr(self.selected_model)
+        omega = pdr_m.get_restraint_by_residue_and_name(res, 'omega')
         if omega is None:
-            import warnings
-            warnings.warn('Could not find residue or residue has no omega dihedral.')
-            return
-        oval = omega.value
-        if abs(oval) <= defaults.CIS_PEPTIDE_BOND_CUTOFF:
-            # cis, flip to trans
-            target = pi
+            raise TypeError('This residue has no N-terminal peptide bond!')
+        if omega.sim_index == -1:
+            raise TypeError('Bond must be mobile in a running simulation!')
+        current_angle = omega.dihedral.angle
+        if abs(current_angle) <= defaults.CIS_PEPTIDE_BOND_CUTOFF:
+            from math import pi
+            omega.target = pi
         else:
-            target = 0
-        omega.target = target
-        self.apply_dihedral_restraint(omega)
-
+            omega.target = 0
+        omega.enabled = True
 
 
     #############################################
