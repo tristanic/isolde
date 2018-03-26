@@ -2344,85 +2344,9 @@ class Isolde():
             self._sim_interface.update_dihedral_restraints(dihedrals)
 
     def flip_peptide_bond(self, res):
-        '''
-        A bit tricky. This involves flipping phi for this residue and
-        psi for the preceding residue. Ideally, we don't want to leave
-        them restrained once the flip is complete.
-        '''
-        from . import session_extensions as sx
-        pdr_m = sx.get_proper_dihedral_restraint_mgr(self.selected_model)
-        omega = pdr_m.get_restraint_by_residue_and_name(res, 'omega')
-        if omega is None:
-            raise TypeError('This residue has no N-terminal peptide bond!')
-        if omega.sim_index == -1:
-            raise TypeError('Bond must be mobile in a running simulation!')
+        from .manipulations.peptide_flip import Peptide_Bond_Flipper
+        pf = Peptide_Bond_Flipper(self, res)
 
-
-        bd = self._mobile_backbone_dihedrals
-        phi = bd.phi.by_residue(res)
-        prev_c = phi.atoms.filter(phi.atoms.names == 'C')[0]
-        prev_r = prev_c.residue
-        psi = bd.psi.by_residue(prev_r)
-
-        targets = []
-        for d in (phi, psi):
-            v = d.value
-            if v < 0:
-                d.target = v+pi
-            else:
-                d.target = v-pi
-            d.spring_constant = self.sim_params.phi_psi_spring_constant
-
-        self.apply_dihedral_restraint(phi)
-        self.apply_dihedral_restraint(psi)
-        self._update_dihedral_restraints_drawing()
-
-        self._pep_flip_timeout_counter = 0
-        self._pep_flip_polish_counter = 0
-        self._pep_flip_dihedrals = (phi, psi)
-        self.iw._rebuild_sel_res_pep_flip_button.setEnabled(False)
-        self._isolde_events.add_event_handler('pep flip timeout',
-                                              'completed simulation step',
-                                              self._check_pep_flip)
-
-    def _check_pep_flip(self, *_):
-        if self._pep_flip_timeout_counter * self.sim_params.sim_steps_per_gui_update < 100:
-            self._pep_flip_timeout_counter += 1
-            # Need to give it some time to settle first
-            return
-        done = False
-        if self._pep_flip_timeout_counter * self.sim_params.sim_steps_per_gui_update >= 1000:
-            print('Unable to flip peptide. Giving up.')
-            done = True
-        dihedrals = self._pep_flip_dihedrals
-        if not done:
-            done = True
-            for d in dihedrals:
-                diff = abs(d.value-d.target)
-                if diff > pi:
-                    diff -= 2*pi
-                if abs(diff)*OPENMM_ANGLE_UNIT > self.sim_params.dihedral_restraint_cutoff_angle:
-                    done = False
-        if not done:
-            self._pep_flip_timeout_counter += 1
-            return
-        else:
-            self._isolde_events.remove_event_handler('pep flip timeout')
-            self._isolde_events.add_event_handler('pep flip polish',
-                                            'completed simulation step',
-                                            self._polish_pep_flip)
-
-    def _polish_pep_flip(self, *_):
-        if self._pep_flip_polish_counter == 0:
-            self._sim_interface.sim_mode = 'min'
-            self._pep_flip_polish_counter += 1
-        else:
-            dihedrals = self._pep_flip_dihedrals
-            self.release_dihedral_restraint(dihedrals[0])
-            self.release_dihedral_restraint(dihedrals[1])
-            self._sim_interface.sim_mode = 'equil'
-            self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
-            self._isolde_events.remove_event_handler('pep flip polish')
 
     def apply_dihedral_restraint(self, dihedral):
         '''

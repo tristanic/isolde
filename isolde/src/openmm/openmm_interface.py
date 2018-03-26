@@ -194,7 +194,7 @@ class Sim_Construct:
         self.model = model
 
         # Sort all the atoms according to their order in the model#
-        model_atoms = model.atoms
+        model_atoms = model.residues.atoms
         if len(mobile_atoms.intersect(fixed_atoms)):
             raise TypeError('Atoms cannot be both fixed and mobile!')
         from chimerax.atomic import concatenate
@@ -278,13 +278,13 @@ class Sim_Manager:
         self._prepare_restraint_managers()
         fixed_atoms = self._add_fixed_atoms_from_distance_restraints(mobile_atoms, fixed_atoms)
         sc = self.sim_construct = Sim_Construct(model, mobile_atoms, fixed_atoms)
+        self.prepare_sim_visualisation()
 
         self._prepare_mdff_managers()
         sh = self.sim_handler = Sim_Handler(session, sim_params, sc)
         uh = self._update_handlers = []
         self._initialize_restraints(uh)
         self._initialize_mdff(uh)
-        self.prepare_sim_visualisation()
 
     def start_sim(self):
         sh = self.sim_handler

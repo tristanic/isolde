@@ -116,4 +116,5 @@ class SimParams(Param_Mgr):
         'restrain_peptide_omegas':              (defaults.RESTRAIN_PEPTIDE_OMEGA, None),
         'display_omega_restraints':             (defaults.DISPLAY_OMEGA_RESTRAINTS, None),
 
+        'peptide_flipper_max_rounds':           (defaults.PEPTIDE_FLIPPER_MAX_ROUNDS, None),
     }

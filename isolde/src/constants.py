@@ -108,6 +108,11 @@ class _Defaults:
         'TWISTED_PEPTIDE_BOND_DELTA':  pi/6,  # * unit.radians,
 
         ###
+        # Manipulation constants
+        ###
+        'PEPTIDE_FLIPPER_MAX_ROUNDS':   50,
+        
+        ###
         # Constants specific to ChimeraX - lengths in Angstroms beyond this point!
         ###
 
