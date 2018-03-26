@@ -129,7 +129,7 @@ class XtalSymmetryHandler(Model):
     Handles crystallographic symmetry and maps for an atomic model.
     '''
     def __init__(self, model, mtzfile=None, calculate_maps=True, map_oversampling=1.5,
-        live_map_scrolling=True, map_scrolling_radius=12, live_atomic_symmetry=True,
+        spotlight_mode = True, map_scrolling_radius=12,
         atomic_symmetry_radius=15):
         name = 'Crystal'
         session = self.session = model.session
@@ -140,7 +140,6 @@ class XtalSymmetryHandler(Model):
         self._box_center_grid = None
         self._atomic_sym_radius = atomic_symmetry_radius
 
-        self._spotlight_mode = False
 
         from chimerax.core.triggerset import TriggerSet
         trig = self.triggers = TriggerSet()
@@ -170,7 +169,7 @@ class XtalSymmetryHandler(Model):
             if len(mtzdata.calculated_data):
                 from .crystal import XmapSet
                 xmapset = self.xmapset = XmapSet(session, mtzdata.calculated_data, self,
-                    live_scrolling = live_map_scrolling, display_radius = map_scrolling_radius)
+                    live_scrolling = spotlight_mode, display_radius = map_scrolling_radius)
                 xmapset.pickable = False
                 self.add([xmapset])
         else:
@@ -192,7 +191,7 @@ class XtalSymmetryHandler(Model):
 
 
         self._atomic_symmetry_model = AtomicSymmetryModel(model, self, uc,
-            radius = atomic_symmetry_radius, live = live_atomic_symmetry)
+            radius = atomic_symmetry_radius, live = spotlight_mode)
 
         self._update_handler = session.triggers.add_handler('new frame',
             self.update)
@@ -200,6 +199,8 @@ class XtalSymmetryHandler(Model):
         model.add([self])
         from .mousemodes import initialize_map_contour_mouse_modes
         initialize_map_contour_mouse_modes(session)
+        self.spotlight_mode = spotlight_mode
+
 
 
     @property
@@ -209,7 +210,9 @@ class XtalSymmetryHandler(Model):
     @spotlight_mode.setter
     def spotlight_mode(self, flag):
         self._atomic_symmetry_model.live_scrolling = flag
-        self.xmapset.live_scrolling = flag
+        if self.xmapset is not None:
+            self.xmapset.live_scrolling = flag
+        self._spotlight_mode = flag
 
     @property
     def atomic_symmetry_model(self):
