@@ -29,6 +29,7 @@ class RamaPlot:
         self.default_logscores = numpy.ones(1)
         self.scatter = None
 
+        self.base_scatter_size = 10
         canvas = self.canvas = FigureCanvas(fig)
         self.resize_cid = self.canvas.mpl_connect('resize_event', self.on_resize)
         self.on_pick_cid = self.canvas.mpl_connect('pick_event', self.on_pick)
@@ -61,7 +62,7 @@ class RamaPlot:
         contours = mgr.RAMA_CASE_DETAILS[key]['cutoffs']
         logvalues = numpy.log(values)
         contour_plot = self.axes.contour(*grid, values, contours)
-        pcolor_plot = self.axes.pcolor(*grid, logvalues, cmap = 'BuGn')
+        pcolor_plot = self.axes.pcolor(*grid, logvalues, cmap = 'Greys')
         for coll in contour_plot.collections:
            coll.remove()
         pcolor_plot.remove()
@@ -104,8 +105,10 @@ class RamaPlot:
         from math import log
         contours = mgr.RAMA_CASE_DETAILS[case_key]['cutoffs']
         self.P_limits = [0, -log(contours[0])]
-        scatter = self.scatter = self.axes.scatter((200),(200), picker = 2.0)
-        scatter.set_cmap('bwr')
+        scatter = self.scatter = self.axes.scatter(
+            (200),(200), picker = 2.0, s=self.base_scatter_size,
+            edgecolors='black', linewidths = 0.5)
+        scatter.set_cmap('RdYlGn_r')
         self.set_target_residues(self._current_residues)
         self.on_resize()
 
@@ -148,6 +151,9 @@ class RamaPlot:
         c.restore_region(self.background)
         s.set_offsets(phipsi)
         s.set_clim(self.P_limits)
+
+        scales = (-logscores+1)*self.base_scatter_size
+        s.set_sizes(scales)
         s.set_array(-logscores)
         axes.draw_artist(s)
         c.blit(axes.bbox)
