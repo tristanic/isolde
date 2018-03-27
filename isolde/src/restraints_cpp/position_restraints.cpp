@@ -26,7 +26,7 @@ void Position_Restraint::set_target(Real *target)
 {
     for (size_t i=0; i<3; ++i)
         _target[i] = *(target++);
-        mgr()->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
+    mgr()->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
 }
 
 void Position_Restraint::set_k(double k)

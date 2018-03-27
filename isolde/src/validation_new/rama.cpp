@@ -266,10 +266,11 @@ int32_t Rama_Mgr::bin_score(const double &score, uint8_t r_case)
     auto c = get_cutoffs(r_case);
     if (score >= c->allowed)
         return FAVORED;
-    if (score < c->outlier)
+    if (score < c->outlier) {
         if (score > 0)
             return OUTLIER;
         return BIN_NA;
+    }
     return ALLOWED;
 } //bin_score
 
