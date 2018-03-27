@@ -14,7 +14,7 @@ namespace isolde
 {
 
 template <typename T>
-RegularGridInterpolator<T>::RegularGridInterpolator(const size_t& dim, 
+RegularGridInterpolator<T>::RegularGridInterpolator(const size_t& dim,
         uint32_t* n, T* min, T* max, T* data)
 {
     _dim = dim;
@@ -33,7 +33,7 @@ RegularGridInterpolator<T>::RegularGridInterpolator(const size_t& dim,
         _jump.push_back((size_t)pow(2,i));
         dval = this_min;
         std::vector<T> axis;
-        
+
         for (;dval<this_max+0.5*step;) {
             axis.push_back(dval);
             dval+=step;
@@ -41,7 +41,7 @@ RegularGridInterpolator<T>::RegularGridInterpolator(const size_t& dim,
         _axes.push_back(axis);
         d_count *= this_n;
     }
-    
+
     for (size_t i=0; i<d_count; ++i) {
         _data.push_back(data[i]);
     }
@@ -51,7 +51,7 @@ RegularGridInterpolator<T>::RegularGridInterpolator(const size_t& dim,
 
 template<typename T>
 void
-RegularGridInterpolator<T>::lb_index_and_offsets(T *axis_vals, size_t &lb_index, 
+RegularGridInterpolator<T>::lb_index_and_offsets(T *axis_vals, size_t &lb_index,
     std::vector<std::pair<T, T> > &offsets)
 {
 //    for (size_t axis=0; axis<_dim; ++axis) {
@@ -78,14 +78,14 @@ RegularGridInterpolator<T>::lb_index_and_offsets(T *axis_vals, size_t &lb_index,
 /*
  * This comes out looking a little like black magic, so requires a bit
  * of explanation. We want to get the values at all the corners
- * in a well-defined order. Using the 3D case as an example, if our 
- * lower bound is (0,0,0), we want the corners in the order: 
+ * in a well-defined order. Using the 3D case as an example, if our
+ * lower bound is (0,0,0), we want the corners in the order:
  * ((0,0,0),(0,0,1),(0,1,0),(0,1,1),(1,0,0),(1,0,1),(1,1,0),(1,1,1))
- * ... which is 0 to 7 in binary. The logic below simply extends this 
+ * ... which is 0 to 7 in binary. The logic below simply extends this
  * to n dimensions.
  */
 template<typename T>
-void 
+void
 RegularGridInterpolator<T>::corner_offsets()
 {
     for (size_t i=0; i < _n_corners; ++i) {
@@ -103,7 +103,7 @@ template<typename T>
 void
 RegularGridInterpolator<T>::corner_values(const size_t &lb_index, std::vector<T> &corners)
 {
-    
+
     for (size_t i=0; i<_corner_offsets.size(); i++) {
         corners[i]=(_data[lb_index + _corner_offsets[i]]);
     }
@@ -150,25 +150,26 @@ RegularGridInterpolator<T>::interpolate(std::vector<T> axis_vals)
 
 
 template<typename T>
-void 
+void
 RegularGridInterpolator<T>::interpolate (T* axis_vals, const size_t &n, T* values)
 {
     std::vector<std::pair<T, T>> offsets(_dim);
     std::vector<T> corners(_n_corners);
     for (size_t i=0; i<n; ++i) {
         size_t lb_index = 0;
-        // find the minimum corner of the hypercube, and the offsets 
+        // find the minimum corner of the hypercube, and the offsets
         // along each axis
         lb_index_and_offsets(axis_vals+i*_dim, lb_index, offsets);
         // ... and get values at all the corners surrounding the target
         // position.
-        corner_values(lb_index, corners);        
+        corner_values(lb_index, corners);
         _interpolate(_dim, corners, corners.size(), offsets, values++);
     }
 }
 
+typedef double fp_type;
 
-template class RegularGridInterpolator<double>;
+template class RegularGridInterpolator<fp_type>;
 
 //--------------------------------------------------------
 // RegularGridInterpolator
@@ -176,8 +177,6 @@ template class RegularGridInterpolator<double>;
 } //namespace isolde
 
 using namespace isolde;
-
-typedef double fp_type;
 
 extern "C"
 {
@@ -208,11 +207,11 @@ rg_interp_delete(void *ptr)
     } catch (...) {
         molc_error();
         return;
-    }   
+    }
 }
 
 EXPORT void
-rg_interpolate(void* ptr, fp_type* axis_vals, size_t n, fp_type* values) 
+rg_interpolate(void* ptr, fp_type* axis_vals, size_t n, fp_type* values)
 {
     try {
         RegularGridInterpolator<fp_type> *rg = static_cast<RegularGridInterpolator<fp_type> *>(ptr);
