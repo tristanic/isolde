@@ -39,13 +39,14 @@ public:
     ~Rotamer() { auto du = DestructionUser(this); }
     Rotamer(Residue *res, Rota_Mgr *mgr);
 
-    const std::vector<Dihedral *> &dihedrals() {return _chi_dihedrals; }
+    const std::vector<Proper_Dihedral *> &dihedrals() {return _chi_dihedrals; }
     const size_t& n_chi() const { return _def->n_chi; }
     void angles(std::vector<double> &angles) const;
     void angles(double *angles) const;
     std::vector<double> angles() const;
     double score() const;
-    Residue* residue() const {return _residue;}
+    Residue* residue() const { return _residue; }
+    Structure* structure() const { return residue()->structure(); }
     Bond* ca_cb_bond() const { return _chi_dihedrals[0]->axial_bond(); }
     bool is_symmetric() const { return _def->symmetric; }
     bool visible() const { return ca_cb_bond()->shown(); }
@@ -53,7 +54,7 @@ public:
 private:
     Residue* _residue;
     Rota_Mgr* _mgr;
-    std::vector<Dihedral *> _chi_dihedrals;
+    std::vector<Proper_Dihedral *> _chi_dihedrals;
     Rota_Def *_def;
     // size_t _n_chi;
     // bool _symmetric = false;

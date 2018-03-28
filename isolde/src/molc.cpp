@@ -40,6 +40,7 @@
 #include "restraints_cpp/position_restraints.h"
 #include "restraints_cpp/distance_restraints.h"
 #include "restraints_cpp/dihedral_restraints.h"
+#include "restraints_cpp/rotamer_restraints.h"
 #include "restraints_cpp/mdff.h"
 
 
@@ -2113,7 +2114,7 @@ proper_dihedral_restraint_mgr_new(void *structure, void *change_tracker)
         molc_error();
         return nullptr;
     }
-} //distance_restraint_mgr_new
+} //proper_dihedral_restraint_mgr_new
 
 extern "C" EXPORT void
 proper_dihedral_restraint_mgr_delete(void *mgr)
@@ -2449,5 +2450,54 @@ proper_dihedral_restraint_annotation_color(void *restraint, size_t n, uint8_t *c
         }
     } catch (...) {
         molc_error();
+    }
+}
+
+/***************************************************************
+ *
+ * Rotamer_Restraint_Mgr functions
+ *
+ ***************************************************************/
+SET_PYTHON_INSTANCE(rotamer_restraint_mgr, Rotamer_Restraint_Mgr)
+GET_PYTHON_INSTANCES(rotamer_restraint_mgr, Rotamer_Restraint_Mgr)
+
+extern "C" EXPORT void*
+rotamer_restraint_mgr_new(void *structure, void *change_tracker,
+    void *proper_dihedral_restraint_mgr, void *rota_mgr)
+{
+    Structure *s = static_cast<Structure *>(structure);
+    isolde::Change_Tracker *ct = static_cast<isolde::Change_Tracker *>(change_tracker);
+    Proper_Dihedral_Restraint_Mgr *dmgr
+        = static_cast<Proper_Dihedral_Restraint_Mgr *>(proper_dihedral_restraint_mgr);
+    Rota_Mgr *rmgr = static_cast<Rota_Mgr *>(rota_mgr);
+    try {
+        Rotamer_Restraint_Mgr *mgr = new Rotamer_Restraint_Mgr(s, ct, dmgr, rmgr);
+        return mgr;
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+} //rotamer_restraint_mgr_new
+
+extern "C" EXPORT void
+rotamer_restraint_mgr_delete(void *mgr)
+{
+    Rotamer_Restraint_Mgr *m = static_cast<Rotamer_Restraint_Mgr *>(mgr);
+    try {
+        delete m;
+    } catch (...) {
+        molc_error();
+    }
+} //rotamer_restraint_mgr_delete
+
+extern "C" EXPORT size_t
+rotamer_restraint_mgr_num_restraints(void *mgr)
+{
+    Rotamer_Restraint_Mgr *m = static_cast<Rotamer_Restraint_Mgr *>(mgr);
+    try {
+        return m->num_restraints();
+    } catch (...) {
+        molc_error();
+        return 0;
     }
 }

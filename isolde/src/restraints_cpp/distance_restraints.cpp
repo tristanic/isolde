@@ -184,6 +184,8 @@ void Distance_Restraint_Mgr::_delete_restraints(const std::set<Distance_Restrain
             if (it != _atom_to_restraints.end()) {
                 auto &dset = it->second;
                 dset.erase(d);
+                if (!dset.size())
+                    _atom_to_restraints.erase(it);
             }
         }
         delete d;
