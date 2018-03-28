@@ -85,9 +85,9 @@ class RamaPlot:
 
     def on_pick(self, event):
         ind = event.ind[0]
-        picked_residue = self._current_residues[ind]
-        from . import view
-        view.focus_on_selection(self.session, self.session.main_view, picked_residue.atoms)
+        picked_rama = self._case_ramas[ind]
+        from .. import view
+        view.focus_on_selection(self.session, self.session.main_view, picked_rama.residue.atoms)
 
     def change_case(self, case_key):
         import numpy
