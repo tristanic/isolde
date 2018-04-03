@@ -714,7 +714,7 @@ class Rota_Mgr:
         self.set_default_colors()
         session.rota_mgr = self
 
-    def _load_target_defs(self):
+    def _load_target_defs(self, degrees=True):
         '''
         Load rotamer targets from their JSON file and store them in order of
         decreasing prevalence for each residue.
@@ -737,6 +737,9 @@ class Rota_Mgr:
             esds = numpy.concatenate(
                 numpy.array([d[1]['esds'] for d in rdata], float64)
             )
+            if degrees:
+                angles=numpy.radians(angles)
+                esds=numpy.radians(esds)
             nkey = ctypes.py_object()
             nkey.value = aa
             func(self._c_pointer, ctypes.byref(nkey), n, pointer(names),

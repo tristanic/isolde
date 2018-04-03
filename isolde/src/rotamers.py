@@ -358,7 +358,7 @@ class Rotamers:
                     self[residue] = master_rotamers[residue]
             except KeyError:
                 continue
-    
+
     def dihedrals(self, resname):
         '''
         Get a Dihedrals object containing all the dihedrals for residues of this
