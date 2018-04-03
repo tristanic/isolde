@@ -120,7 +120,7 @@ customexternalforce_add_particles(void *force, size_t n, int *particle_indices, 
     try {
         int n_params = f->getNumPerParticleParameters();
         std::vector<double> param_vec(n_params);
-        for (int i=0; i<n; ++i) {
+        for (size_t i=0; i<n; ++i) {
             for (int j=0; j<n_params; ++j)
                 param_vec[j] = *params++;
             *(force_indices++) = f->addParticle(*(particle_indices++), param_vec);
