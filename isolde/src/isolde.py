@@ -1588,11 +1588,19 @@ class Isolde():
             rot_m = get_rotamer_mgr(self.session)
 
             if rot is not None:
-                rname, freq, zscore = rot_m.nearest_valid_rotamer(rot)
-                r_desc = "{}, Expected f={}, Z={:0.1f}".format(rname, freq, zscore)
-                if zscore<=1:
+                t_info = rot.nearest_target
+                r_desc = "{}, f={}, Z=({})".format(
+                    t_info['Name'],
+                    t_info['Frequency'],
+                    ','.join(['{:0.2f}'.format(z) for z in t_info['Z scores']])
+                    )
+                score = rot.score
+                from . import session_extensions as sx
+                rot_m = sx.get_rotamer_mgr(self.session)
+                cutoffs = rot_m.cutoffs
+                if score > cutoffs[0]:
                     desc_color = 'green'
-                elif zscore <=2:
+                elif score > cutoffs[1]:
                     desc_color = 'orange'
                 else:
                     desc_color = 'red'
