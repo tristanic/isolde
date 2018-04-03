@@ -7,7 +7,8 @@ from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
 from .molobject import Proper_Dihedral, Rotamer, Rama, Position_Restraint, \
-        Tuggable_Atom, MDFF_Atom, Distance_Restraint, Proper_Dihedral_Restraint
+        Tuggable_Atom, MDFF_Atom, Distance_Restraint, Proper_Dihedral_Restraint, \
+        Rotamer_Restraint
 import ctypes
 
 from chimerax.core.atomic import Atom, Atoms, Residue, Residues
@@ -32,6 +33,8 @@ def _atoms_four_tuple(p):
     return tuple((Atoms(p[:,i].copy()) for i in range(4)))
 def _proper_dihedral_restraints(p):
     return Proper_Dihedral_Restraints(p)
+def _rotamer_restraints(p):
+    return Rotamer_Restraints(p)
 
 
 
@@ -284,3 +287,7 @@ class Proper_Dihedral_Restraints(Collection):
         doc = 'Get the annotation color for each restraint according to the current colormap. Read only.')
     sim_indices = cvec_property('proper_dihedral_restraint_sim_index', int32,
         doc = 'Index of each restraint in a running simulation. Can be set')
+
+class Rotamer_Restraints(Collection):
+    def __init__(self, c_pointers=None):
+        super().__init__(c_pointers, Rotamer_Restraint, Rotamer_Restraints)

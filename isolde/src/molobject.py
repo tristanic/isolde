@@ -72,6 +72,11 @@ def _mdff_atom_or_none(p):
 def _mdff_atoms(p):
     from .molarray import MDFF_Atoms
     return MDFF_Atoms(p)
+def _rotamer_restraint_or_none(p):
+    return Rotamer_Restraint.c_ptr_to_py_inst(p) if p else None
+def _rotamer_restraints(p):
+    from .molarray import Rotamer_Restraints
+    return Rotamer_Restraints(p)
 def _pseudobond_or_none(p):
     from chimerax.core.atomic import Pseudobond
     return Pseudobond.c_ptr_to_py_inst(p) if p else None
@@ -90,6 +95,8 @@ def _tuggable_atoms_mgr(p):
     return Tuggable_Atoms_Mgr.c_ptr_to_existing_py_inst(p) if p else None
 def _mdff_mgr(p):
     return MDFF_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+def _rotamer_restraint_mgr(p):
+    return Rotamer_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
 
 
 def get_proper_dihedral_manager(session):
@@ -712,8 +719,33 @@ class Rota_Mgr:
         Load rotamer targets from their JSON file and store them in order of
         decreasing prevalence for each residue.
         '''
+        func=c_function('rota_mgr_add_target_def',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+                ctypes.c_void_p, ctypes.POINTER(ctypes.c_double),
+                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double)))
         with open(os.path.join(DICT_DIR, 'rota_data.json'), 'rt') as f:
             rd = json.load(f)
+        for aa, data in rd.items():
+            rdata = [(name, d) for (name, d) in data.items()]
+            rdata = sorted(rdata, key=lambda d: d[1]['freq'], reverse=True)
+            names = numpy.array([d[0] for d in rdata], numpy.object)
+            n = len(names)
+            frequencies = numpy.array([d[1]['freq'] for d in rdata], float64)
+            angles = numpy.concatenate(
+                numpy.array([d[1]['angles'] for d in rdata], float64)
+            )
+            esds = numpy.concatenate(
+                numpy.array([d[1]['esds'] for d in rdata], float64)
+            )
+            nkey = ctypes.py_object()
+            nkey.value = aa
+            func(self._c_pointer, ctypes.byref(nkey), n, pointer(names),
+                pointer(frequencies), pointer(angles), pointer(esds))
+
+
+
+
+        # TODO: Remove Python implementation below this line
         from collections import OrderedDict
         ordered_rd = self._rota_targets = dict()
         for aa, data in rd.items():
@@ -959,6 +991,7 @@ class Restraint_Change_Tracker:
         'Distance_Restraint_Mgr': (_distance_restraint_mgr, _distance_restraints),
         'Tuggable_Atoms_Mgr': (_tuggable_atoms_mgr, _tuggable_atoms),
         'MDFF_Mgr': (_mdff_mgr, _mdff_atoms),
+        'Rotamer_Restraint_Mgr': (_rotamer_restraint_mgr, _rotamer_restraints),
     }
     def __init__(self, session, c_pointer=None):
         cname = 'change_tracker'
@@ -1402,11 +1435,6 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
             args=(ctypes.c_void_p,), ret=ctypes.py_object)
         return _tuggable_atoms(f(self._c_pointer))
 
-
-
-
-
-
 class Distance_Restraint_Mgr(_Restraint_Mgr):
     '''
     Manages distance restraints (Atom pairs with distances and spring constants)
@@ -1668,7 +1696,6 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
     def add_all_defined_restraints_for_residues(self, residues):
         return self._get_all_restraints_for_residues(residues, True)
 
-
     @property
     def num_restraints(self):
         f = c_function('proper_dihedral_restraint_mgr_num_restraints',
@@ -1735,6 +1762,101 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         ring_d.positions = positions[0]
         post_d.positions = positions[1]
         ring_d.colors = post_d.colors = colors
+
+class Rotamer_Restraint_Mgr(_Restraint_Mgr):
+    def __init__(self, model, c_pointer=None):
+        '''Manages rotamer restraints for a single model'''
+        session=model.session
+        ct = self._change_tracker = _get_restraint_change_tracker(session)
+        from . import session_extensions as sx
+        pdr_m = self._pdr_m = sx.get_proper_dihedral_restraint_mgr(model)
+        rota_m = self._rota_m = sx.get_rotamer_mgr(session)
+        if c_pointer is None:
+            f = c_function('rotamer_restraint_mgr_new',
+                args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p),
+                ret=ctypes.c_void_p)
+            c_pointer = f(model._c_pointer, ct._c_pointer, pdr_m._c_pointer,
+                rota_m.c_pointer)
+        set_c_pointer(self, c_pointer)
+        f = c_function('set_rotamer_restraint_mgr_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
+        f(self._c_pointer, self)
+        Model.__init__(self, 'Rotamer Restraints', session)
+        self.pickable=False
+        self.model = model
+        model.add([self])
+
+    @property
+    def num_restraints(self):
+        f=c_function('rotamer_restraint_mgr_num_restraints',
+            args=(ctypes.c_void_p,),
+            ret=ctypes.c_size_t)
+        return f(self._c_pointer)
+
+    def _get_restraints(self, rotamers, create=False):
+        '''
+        Get restraints for the given rotamers. If create is True, any restraints
+        not found will be created. All rotamers must be in the molecule
+        belonging to this manager!
+        '''
+        f=c_function('rotamer_restraint_mgr_get_restraint',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+                ctypes.c_bool, ctypes.c_void_p),
+            ret=ctypes.c_size_t)
+        n = len(rotamers)
+        ret = numpy.empty(n, cptr)
+        num = f(self._c_pointer, rotamers._c_pointers, n, create, pointer(ret))
+        return _rotamer_restraints(ret[0:num])
+
+    def get_restraints(self, rotamers_or_residues):
+        from chimerax.core.atomic import Residues
+        if isinstance(rotamers_or_residues, Residues):
+            rota_mgr = _get_rotamer_manager(session)
+            rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
+        else:
+            rotamers = rotamers_or_residues
+        return _get_restraints(rotamers, False)
+
+    def add_restraints(self, rotamers_or_residues):
+        from chimerax.core.atomic import Residues
+        if isinstance(rotamers_or_residues, Residues):
+            rota_mgr = _get_rotamer_manager(session)
+            rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
+        else:
+            rotamers = rotamers_or_residues
+        return _get_restraints(rotamers, True)
+
+    def get_restraint(self, rotamer_or_residue):
+        from chimerax.core.atomic import Residue, Residues
+        if isinstance(rotamer_or_residue, Residue):
+            rota_mgr = _get_rotamer_manager(session)
+            r = rota_mgr.get_rotamer(r)
+        else:
+            r = rotamer_or_residue
+        if r is None:
+            return None
+        rr = _get_restraints(_rotamers([r]), False)
+        if not len(rr):
+            return None
+        return rr
+
+    def add_restraint(self, rotamer_or_residue):
+        from chimerax.core.atomic import Residue, Residues
+        if isinstance(rotamer_or_residue, Residue):
+            rota_mgr = _get_rotamer_manager(session)
+            r = rota_mgr.get_rotamer(r)
+        else:
+            r = rotamer_or_residue
+        if r is None:
+            return None
+        rr = _get_restraints(_rotamers([r]), True)
+        if not len(rr):
+            return None
+        return rr
+
+
+
+
+
 
 class _Dihedral(State):
     '''
@@ -1872,6 +1994,13 @@ class Rotamer(State):
         f(self._c_pointer, pointer(ret))
         return ret
 
+
+    def get_target(self, index):
+        f = c_function('rotamer_target_def',
+            args=(ctypes.c_void_p, ctypes.c_size_t),
+            ret=ctypes.py_object)
+        return f(self._c_pointer, index)
+
     residue = c_property('rotamer_residue', cptr, astype=_residue_or_none, read_only=True,
                 doc='Residue this rotamer belongs to. Read only.')
     score = c_property('rotamer_score', float64, read_only=True,
@@ -1879,9 +2008,11 @@ class Rotamer(State):
     ca_cb_bond = c_property('rotamer_ca_cb_bond', cptr, astype=_bond_or_none, read_only=True,
                 doc='The "stem" bond of this rotamer. Read only.')
     num_chi_dihedrals = c_property('rotamer_num_chi', uint8, read_only=True,
-                doc='Number of dihedrals defining this rotamer')
+                doc='Number of dihedrals defining this rotamer. Read only.')
+    num_targets = c_property('rotamer_num_target_defs', uint32, read_only=True,
+                doc='Number of available target conformations. Read only.')
     visible = c_property('rotamer_visible', npy_bool, read_only=True,
-                doc='True if the CA-CB bond of the rotamer is visible')
+                doc='True if the CA-CB bond of the rotamer is visible. Read only.')
 
 class Position_Restraint(State):
     def __init__(self, c_pointer):
@@ -2047,12 +2178,35 @@ class Proper_Dihedral_Restraint(State):
     sim_index = c_property('proper_dihedral_restraint_sim_index', int32,
         doc = 'Index of this restraint in a running simulation. Can be set')
 
+class Rotamer_Restraint(State):
+    def __init__(self, c_pointer):
+        set_c_pointer(self, c_pointer)
+
+    @property
+    def cpp_pointer(self):
+        '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
+        return self._c_pointer.value
+
+    @property
+    def deleted(self):
+        '''Has the C++ side been deleted?'''
+        return not hasattr(self, '_c_pointer')
+
+    def __str__(self):
+        return "Not implemented"
+
+    def reset_state(self):
+        pass
+
+
+
 
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance
 # from the pointer (needed by Collections)
 for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint, Tuggable_Atom,
-                  MDFF_Atom, Distance_Restraint, Proper_Dihedral_Restraint,):
+                  MDFF_Atom, Distance_Restraint, Proper_Dihedral_Restraint,
+                  Rotamer_Restraint):
     if hasattr(class_obj, '_c_class_name'):
         cname = class_obj._c_class_name
     else:
