@@ -200,12 +200,12 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
 
         for res_key, res_data in rd.items():
             for d_key, d_data in res_data.items():
-                externals = numpy.zeros(4, numpy.bool)
-                if type(d_data) == list and type(d_data[1]) == list:
-                    externals = numpy.array(d_data[1]).astype(numpy.bool)
-                    d_data = d_data[0]
-                elif type(d_data) != list:
+                if type(d_data) != list:
                     continue
+                externals = numpy.zeros(4, numpy.bool)
+                if type(d_data[1]) == list and d_data[1][0] in (0,1):
+                    externals = numpy.array(d_data[1]).astype(numpy.bool)
+                d_data = d_data[0]
                 rk = ctypes.py_object()
                 rk.value = res_key
                 dk = ctypes.py_object()
@@ -860,7 +860,9 @@ class Rota_Mgr:
 
     def _load_rotamer_defs(self):
         f = c_function('rota_mgr_add_rotamer_def',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_bool))
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+            ctypes.c_size_t, ctypes.c_bool, ctypes.POINTER(ctypes.c_uint8),
+            ctypes.POINTER(ctypes.py_object)))
         dd = self._dihedral_mgr.dihedral_dict
         pd = dd['residues']['protein']
         aa_names = dd['aminoacids']
@@ -872,7 +874,17 @@ class Rota_Mgr:
                 symm = pda['symm']
                 key = ctypes.py_object()
                 key.value = aa
-                f(self._c_pointer, ctypes.byref(key), nchi, val_nchi, symm)
+                moving_atom_counts = []
+                moving_atom_names = []
+                for i in range(1, nchi+1):
+                    ckey = 'chi'+str(i)
+                    ma = pda[ckey][1]
+                    moving_atom_counts.append(len(ma))
+                    moving_atom_names.extend(ma)
+                    mac = numpy.array(moving_atom_counts, numpy.uint8)
+                    man = numpy.array(moving_atom_names, numpy.object)
+                f(self._c_pointer, ctypes.byref(key), nchi, val_nchi, symm,
+                    pointer(mac), pointer(man))
 
     def _prepare_all_validators(self):
         from .validation import generate_interpolator_data
@@ -2000,6 +2012,24 @@ class Rotamer(State):
             args=(ctypes.c_void_p, ctypes.c_size_t),
             ret=ctypes.py_object)
         return f(self._c_pointer, index)
+
+    def moving_atoms(self, chi_index):
+        '''Returns the set of atoms moved by rotating around the given chi dihedral.'''
+        f = c_function('rotamer_moving_atoms',
+            args=(ctypes.c_void_p, ctypes.c_size_t),
+            ret=ctypes.py_object)
+        return _atoms(f(self._c_pointer, chi_index))
+
+    @property
+    def nearest_target(self):
+        f = c_function('rotamer_nearest_target',
+            args=(ctypes.c_void_p,),
+            ret=ctypes.py_object)
+        target_index, zscores = f(self._c_pointer)
+        tdict = self.get_target(target_index)
+        tdict['Z scores'] = zscores
+        return tdict
+
 
     residue = c_property('rotamer_residue', cptr, astype=_residue_or_none, read_only=True,
                 doc='Residue this rotamer belongs to. Read only.')

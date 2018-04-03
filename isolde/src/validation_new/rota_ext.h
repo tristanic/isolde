@@ -1,9 +1,13 @@
 #ifndef ROTA_EXT
 #define ROTA_EXT
 
+#include <limits>
+#include <Python.h>
+
 #include "../geometry/geometry.h"
 #include "../interpolation/nd_interp.h"
 #include "rota.h"
+#include "../util.h"
 #include "../molc.h"
 
 using namespace atomstruct;
@@ -31,12 +35,23 @@ rota_mgr_new(void *dihedral_mgr)
 } //rota_mgr_new
 
 extern "C" EXPORT void
-rota_mgr_add_rotamer_def(void *mgr, pyobject_t *resname, size_t n_chi, size_t val_nchi, npy_bool symmetric)
+rota_mgr_add_rotamer_def(void *mgr, pyobject_t *resname, size_t n_chi, size_t val_nchi,
+    npy_bool symmetric, uint8_t *moving_counts, pyobject_t *moving_names)
 {
     Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
     try {
         std::string rname(PyUnicode_AsUTF8(static_cast<PyObject *>(resname[0])));
-        m->add_rotamer_def(rname, n_chi, val_nchi, (bool)symmetric);
+        std::vector<std::vector<std::string>> moving_atom_names;
+        for (size_t i=0; i<n_chi; ++i) {
+            std::vector<std::string> cnames;
+            uint8_t count = moving_counts[i];
+            for (uint8_t j=0; j<count; ++j)
+            {
+                cnames.push_back(PyUnicode_AsUTF8(static_cast<PyObject *>(*moving_names++)));
+            }
+            moving_atom_names.push_back(cnames);
+        }
+        m->add_rotamer_def(rname, n_chi, val_nchi, (bool)symmetric, moving_atom_names);
     } catch (...) {
         molc_error();
     }
@@ -401,7 +416,7 @@ rotamer_target_def(void *rotamer, size_t i)
         PyDict_SetItem(target_data, angle_key, aa);
         Py_DECREF(angle_key); Py_DECREF(aa);
 
-        PyObject *esd_key = unicode_from_string(std::string("Esds"));
+        PyObject *esd_key = unicode_from_string(std::string("ESDs"));
         double *eptr;
         const auto& esds = target_def->esds;
         PyObject *ea = python_double_array(esds.size(), &eptr);
@@ -413,6 +428,82 @@ rotamer_target_def(void *rotamer, size_t i)
         return target_data;
     } catch(...) {
         Py_XDECREF(target_data);
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT PyObject*
+rotamer_nearest_target(void *rotamer)
+{
+    Rotamer *r = static_cast<Rotamer *>(rotamer);
+    PyObject* ret = PyTuple_New(2);
+    try {
+        std::vector<double> r_angles = r->angles();
+        size_t ndefs = r->num_target_defs();
+        size_t best_target = 0;
+        size_t nchi=r->n_chi();
+        std::vector<double> best_offsets(nchi);
+        std::vector<double> current_offsets(nchi);
+        double sum=0;
+        double best_sum = std::numeric_limits<double>::infinity();
+        for (size_t i=0; i<ndefs; ++i)
+        {
+            sum=0;
+            Rota_Target *t = r->get_target_def(i);
+            for (size_t j=0; j<nchi; ++j)
+            {
+                double offset = std::abs(util::wrapped_angle(t->angles[j]-r_angles[j]));
+                current_offsets[j] = offset;
+                sum += offset;
+            }
+            if (sum < best_sum) {
+                best_sum = sum;
+                best_target = i;
+                best_offsets = current_offsets;
+            }
+        }
+        const auto& esds = r->get_target_def(best_target)->esds;
+        std::vector<double> zscores;
+        for (size_t i=0; i<nchi; ++i)
+            zscores.push_back(best_offsets[i]/esds[i]);
+        PyTuple_SET_ITEM(ret, 0, PyLong_FromSize_t(best_target));
+        double *zptrs;
+        PyObject *zscore_out = python_double_array(nchi, &zptrs);
+        for (const auto& z: zscores)
+            *zptrs++ = z;
+        PyTuple_SET_ITEM(ret, 1, zscore_out);
+        return ret;
+    } catch(...) {
+        molc_error();
+        Py_XDECREF(ret);
+        return 0;
+    }
+}
+
+extern "C" EXPORT PyObject*
+rotamer_moving_atoms(void *rotamer, size_t chi_index)
+{
+    Rotamer *r = static_cast<Rotamer *>(rotamer);
+    try {
+        auto rdef = r->def();
+        const auto& moving_names = rdef->moving_atom_names(chi_index);
+        auto atoms = r->residue()->atoms();
+        std::vector<Atom *> matoms;
+        for (auto a: atoms) {
+            for (const auto &name: moving_names) {
+                if (a->name() == name) {
+                    matoms.push_back(a);
+                    break;
+                }
+            }
+        }
+        void **aptrs;
+        PyObject* atom_array = python_voidp_array(matoms.size(), &aptrs);
+        for (auto a: matoms)
+            *(aptrs++) = a;
+        return atom_array;
+    } catch(...) {
         molc_error();
         return 0;
     }

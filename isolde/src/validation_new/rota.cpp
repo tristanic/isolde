@@ -88,10 +88,11 @@ Rota_Mgr::~Rota_Mgr()
         delete it.second;
 }
 
-void Rota_Mgr::add_rotamer_def(const std::string &resname, size_t n_chi, size_t val_nchi, bool symmetric)
+void Rota_Mgr::add_rotamer_def(const std::string &resname, size_t n_chi, size_t val_nchi,
+    bool symmetric, const std::vector<std::vector<std::string>>& moving_atom_names)
 {
     if (_resname_to_rota_def.find(resname) == _resname_to_rota_def.end()) {
-        Rota_Def rdef(n_chi, val_nchi, symmetric);
+        Rota_Def rdef(n_chi, val_nchi, symmetric, moving_atom_names);
         _resname_to_rota_def[resname] = rdef;
     } else {
         throw std::runtime_error("Rotamer definition alread exists!");

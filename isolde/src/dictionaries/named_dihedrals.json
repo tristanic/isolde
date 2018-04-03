@@ -1,4 +1,4 @@
-{  
+{
     "aminoacids":   ["GLY","ALA","VAL","LEU","ILE","PRO","PHE","TYR","TRP","SER","THR","CYS","MET","MSE","LYS","HIS","ARG","ASP","ASN","GLN","GLU"],
 
     "all_protein": {
@@ -6,9 +6,9 @@
         "phi":      [["C","N","CA","C"],[1,0,0,0]],
         "psi":      [["N","CA","C","N"],[0,0,0,1]]
     },
-    
+
     "residues": {
-        "protein": {    
+        "protein": {
             "GLY": {
                 "nchi":     0,
                 "val_nchi": 0,
@@ -23,141 +23,141 @@
                 "nchi":     1,
                 "val_nchi": 1,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","CG1"]
+                "chi1":     [["N","CA","CB","CG1"], ["HB", "CG1", "HG11", "HG12", "HG13", "CG2", "HG21", "HG22", "HG23"]]
             },
             "SER": {
                 "nchi":     1,
                 "val_nchi": 1,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","OG"]
+                "chi1":     [["N","CA","CB","OG"], ["HB2", "HB3", "OG", "HG"]]
             },
             "THR": {
                 "nchi":     1,
                 "val_nchi": 1,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","OG1"]
+                "chi1":     [["N","CA","CB","OG1"], ["HB", "OG1", "HG1", "CG2", "HG21", "HG22", "HG23"]]
             },
             "CYS": {
                 "nchi":     1,
                 "val_nchi": 1,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","SG"]
+                "chi1":     [["N","CA","CB","SG"], ["HB2", "HB3", "SG", "HG"]]
             },
             "ASP": {
                 "nchi":     2,
                 "val_nchi": 2,
                 "symm":     1,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","OD1"]
+                "chi1":     [["N","CA","CB","CG"],["HB2", "HB3", "CG", "OD1", "OD2", "HD2"]],
+                "chi2":     [["CA","CB","CG","OD1"], ["OD1", "OD2", "HD2"]]
             },
             "ASN": {
                 "nchi":     2,
                 "val_nchi": 2,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","OD1"]
-            },                
+                "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "CG", "OD1", "ND2", "HD21", "HD22"]],
+                "chi2":     [["CA","CB","CG","OD1"], ["OD1", "ND2", "HD21", "HD22"]]
+            },
             "LEU": {
                 "nchi":     2,
                 "val_nchi": 2,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","CD1"]
+                "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "HG", "CG", "CD1", "HD11", "HD12", "HD13", "CD2", "HD21", "HD22", "HD23"]],
+                "chi2":     [["CA","CB","CG","CD1"], ["HG", "CD1", "HD11", "HD12", "HD13", "CD2", "HD21", "HD22", "HD23"]]
             },
             "ILE": {
                 "nchi":     2,
                 "val_nchi": 2,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","CG1"],
-                "chi2":     ["CA","CB","CG1","CD1"]
+                "chi1":     [["N","CA","CB","CG1"], ["HB", "CG2", "HG21", "HG22", "HG23", "CG1", "HG12", "HG13", "CD1", "HD11", "HD12", "HD13"]],
+                "chi2":     [["CA","CB","CG1","CD1"], ["HG12", "HG13", "CD1", "HD11", "HD12", "HD13"]]
             },
             "PHE": {
                 "nchi":     2,
                 "val_nchi": 2,
                 "symm":     1,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","CD1"]
+                "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "CG", "CD1", "HD1", "CE1", "HE1", "CD2", "HD2", "CE2", "HE2", "CZ", "HZ"]],
+                "chi2":     [["CA","CB","CG","CD1"], ["CD1", "HD1", "CE1", "HE1", "CD2", "HD2", "CE2", "HE2", "CZ", "HZ"]]
             },
             "TYR": {
                 "nchi":     2,
                 "val_nchi": 2,
                 "symm":     1,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","CD1"]
+                "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "CG", "CD1", "HD1", "CE1", "HE1", "CD2", "HD2", "CE2", "HE2", "CZ", "OH", "HH"]],
+                "chi2":     [["CA","CB","CG","CD1"], ["CD1", "HD1", "CE1", "HE1", "CD2", "HD2", "CE2", "HE2", "CZ", "OH", "HH"]]
             },
             "TRP": {
                 "nchi":     2,
                 "val_nchi": 2,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","CD1"]
+                "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "CG", "CD1", "HD1", "NE1", "HE1", "CD2", "CE2", "CZ2", "HZ2", "CH2", "HH2", "CZ3", "HZ3", "CE3", "HE3"]],
+                "chi2":     [["CA","CB","CG","CD1"], ["CD1", "HD1", "NE1", "HE1", "CD2", "CE2", "CZ2", "HZ2", "CH2", "HH2", "CZ3", "HZ3", "CE3", "HE3"]]
             },
             "HIS": {
                 "nchi":     2,
                 "val_nchi": 2,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","ND1"]
+                "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "CG", "CD2", "HD2", "ND1", "HD1", "NE2", "HE2", "CE1", "HE1"]],
+                "chi2":     [["CA","CB","CG","ND1"], ["ND1", "HD1", "CD2", "HD2", "NE2", "HE2", "CE1", "HE1"]]
             },
             "GLN": {
                 "nchi":     3,
                 "val_nchi": 3,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","CD"],
-                "chi3":     ["CB","CG","CD","OE1"]
+                "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "CG", "HG2", "HG3", "CD", "OE1", "NE2", "HE21", "HE22"]],
+                "chi2":     [["CA","CB","CG","CD"], ["HG2", "HG3", "CD", "OE1", "NE2", "HE21", "HE22"]],
+                "chi3":     [["CB","CG","CD","OE1"], ["OE1", "NE2", "HE21", "HE22"]]
             },
             "GLU": {
                 "nchi":     3,
                 "val_nchi": 3,
                 "symm":     1,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","CD"],
-                "chi3":     ["CB","CG","CD","OE1"]
+                "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "CG", "HG2", "HG3", "CD", "OE1", "OE2", "HE2"]],
+                "chi2":     [["CA","CB","CG","CD"], ["CD", "HG2", "HG3", "CD", "OE1", "OE2", "HE2"]],
+                "chi3":     [["CB","CG","CD","OE1"], ["OE1", "OE2", "HE2"]]
             },
             "PRO": {
                 "nchi":     3,
                 "val_nchi": 1,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","CD"],
-                "chi3":     ["CB","CG","CD","N"]
+                "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "CG", "HG2", "HG3", "CD", "HD2", "HD3"]],
+                "chi2":     [["CA","CB","CG","CD"], ["HG2", "HG3", "CD", "HD2", "HD3"]],
+                "chi3":     [["CB","CG","CD","N"], ["HD2", "HD3"]]
             },
             "MET": {
                 "nchi":     3,
                 "val_nchi": 3,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","SD"],
-                "chi3":     ["CB","CG","SD","CE"]
+                "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "CG", "HG2", "HG3", "SD", "CE", "HE1", "HE2", "HE3"]],
+                "chi2":     [["CA","CB","CG","SD"], ["HG2", "HG3", "SD", "CE", "HE1", "HE2", "HE3"]],
+                "chi3":     [["CB","CG","SD","CE"], ["CE", "HE1", "HE2", "HE3"]]
             },
             "MSE": {
                 "nchi":     3,
                 "val_nchi": 3,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","SE"],
-                "chi3":     ["CB","CG","SE","CE"]
+                "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "CG", "HG2", "HG3", "SE", "CE", "HE1", "HE2", "HE3"]],
+                "chi2":     [["CA","CB","CG","SE"], ["HG2", "HG3", "SD", "CE", "HE1", "HE2", "HE3"]],
+                "chi3":     [["CB","CG","SE","CE"], ["CE", "HE1", "HE2", "HE3"]]
             },
             "LYS": {
                 "nchi":     4,
                 "val_nchi": 4,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","CD"],
-                "chi3":     ["CB","CG","CD","CE"],
-                "chi4":     ["CG","CD","CE","NZ"]
+                "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "CG", "HG2", "HG3", "CD", "HD2", "HD3", "CE", "HE2", "HE3", "NZ", "HZ1", "HZ2", "HZ3"]],
+                "chi2":     [["CA","CB","CG","CD"], ["HG2", "HG3", "CD", "HD2", "HD3", "CE", "HE2", "HE3", "NZ", "HZ1", "HZ2", "HZ3"]],
+                "chi3":     [["CB","CG","CD","CE"], ["HD2", "HD3", "CE", "HE2", "HE3", "NZ", "HZ1", "HZ2", "HZ3"]],
+                "chi4":     [["CG","CD","CE","NZ"], ["HE2", "HE3", "NZ", "HZ1", "HZ2", "HZ3"]]
             },
             "ARG": {
                 "nchi":     4,
                 "val_nchi": 4,
                 "symm":     0,
-                "chi1":     ["N","CA","CB","CG"],
-                "chi2":     ["CA","CB","CG","CD"],
-                "chi3":     ["CB","CG","CD","NE"],
-                "chi4":     ["CG","CD","NE","CZ"]
+                "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "CG", "HG2", "HG3", "CD", "HD2", "HD3", "NE", "HE", "CZ", "NH1", "HH12", "HH11", "NH2", "HH21", "HH22"]],
+                "chi2":     [["CA","CB","CG","CD"], ["HG2", "HG3", "CD", "HD2", "HD3", "NE", "HE", "CZ", "NH1", "HH12", "HH11", "NH2", "HH21", "HH22"]],
+                "chi3":     [["CB","CG","CD","NE"], ["HD2", "HD3", "NE", "HE", "CZ", "NH1", "HH12", "HH11", "NH2", "HH21", "HH22"]],
+                "chi4":     [["CG","CD","NE","CZ"], ["HE", "CZ", "NH1", "HH12", "HH11", "NH2", "HH21", "HH22"]]
             }
         }
     }
-        
+
 }

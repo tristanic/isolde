@@ -44,17 +44,25 @@ class Rota_Def
 {
 public:
     Rota_Def() {}
-    Rota_Def(size_t n, size_t v, bool sym): _n_chi(n), _val_nchi(v), _symmetric(sym) {}
+    Rota_Def(size_t n, size_t v, bool sym, const std::vector<std::vector<std::string>>& moving_atom_names)
+        : _n_chi(n), _val_nchi(v), _symmetric(sym), _moving_atom_names(moving_atom_names) {}
     void add_target(const std::string& name, double freq, double* angles, double* esds);
 
     size_t n_chi() const { return _n_chi; }
     size_t val_nchi() const { return _val_nchi; }
     bool symmetric() const { return _symmetric; }
     const std::vector<Rota_Target>& targets() const { return _targets; }
+    const std::vector<std::string>& moving_atom_names(size_t i) const
+    {
+        if (i >= n_chi)
+            throw std::out_of_range("This rotamer does not have that many chi dihedrals!");
+        return _moving_atom_names[i];
+    }
     // Sort targets in descending order of probability
     void sort_targets() { std::sort(_targets.rbegin(), _targets.rend()); }
     size_t num_targets() const { return _targets.size(); }
-    Rota_Target* get_target(size_t i) {
+    Rota_Target* get_target(size_t i)
+    {
         if (i >= num_targets())
             throw std::out_of_range("This rotamer does not have that many targets!");
         return &(_targets[i]);
@@ -65,6 +73,7 @@ private:
     size_t _val_nchi;
     bool _symmetric;
     std::vector<Rota_Target> _targets;
+    std::vector<std::vector<std::string>> _moving_atom_names;
 };
 
 
@@ -89,6 +98,7 @@ public:
     bool is_symmetric() const { return _def->symmetric(); }
     bool visible() const { return ca_cb_bond()->shown(); }
 
+    Rota_Def* def() const { return _def; }
     size_t num_target_defs() const { return _def->num_targets(); }
     Rota_Target* get_target_def(size_t i) const { return _def->get_target(i); }
 
@@ -127,7 +137,8 @@ public:
     void set_colors(uint8_t *max, uint8_t *mid, uint8_t *min);
     colors::colormap *get_colors() {return &_colors;}
 
-    void add_rotamer_def(const std::string &resname, size_t n_chi, size_t val_nchi, bool symmetric);
+    void add_rotamer_def(const std::string &resname, size_t n_chi, size_t val_nchi,
+        bool symmetric, const std::vector<std::vector<std::string>>& moving_atom_names);
     Rota_Def* get_rotamer_def(const std::string &resname);
     Rota_Def* get_rotamer_def(const ResName &resname);
     Rotamer* new_rotamer(Residue* residue);
