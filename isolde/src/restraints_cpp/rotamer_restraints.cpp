@@ -1,6 +1,11 @@
 #define PYINSTANCE_EXPORT
 #include "rotamer_restraints.h"
+#include "../util.h"
 #include <pyinstance/PythonInstance.instantiate.h>
+
+
+template class pyinstance::PythonInstance<isolde::Rotamer_Restraint_Mgr>;
+template class pyinstance::PythonInstance<isolde::Rotamer_Restraint>;
 
 namespace isolde
 {
@@ -19,6 +24,37 @@ Rotamer_Restraint::Rotamer_Restraint( Rotamer *rotamer, Rotamer_Restraint_Mgr *m
 Proper_Dihedral_Restraint_Mgr* Rotamer_Restraint::dihedral_restraint_mgr() const
 {
     return _mgr->dihedral_restraint_mgr();
+}
+
+void Rotamer_Restraint::set_spring_constant(double k) {
+    for (auto r: _chi_restraints)
+        r->set_spring_constant(k);
+}
+
+void Rotamer_Restraint::set_enabled(bool flag) {
+    for (auto r: _chi_restraints)
+        r->set_enabled(flag);
+}
+
+void Rotamer_Restraint::set_target_index(int t_index) {
+    _current_target_def = rotamer()->get_target_def(t_index);
+    _current_target_index = t_index;
+    const auto& angles = _current_target_def->angles;
+    const auto& esds = _current_target_def->esds;
+    for (size_t i=0; i<n_chi(); ++i)
+    {
+        auto r=_chi_restraints[i];
+        r->set_target(util::radians(angles[i]));
+        // Leave free movement within two standard deviations
+        r->set_cutoff(util::radians(esds[i])*2.0);
+    }
+}
+
+bool Rotamer_Restraint::enabled() const {
+    for (auto r: _chi_restraints) {
+        if (!r->is_enabled()) return false;
+    }
+    return true;
 }
 
 

@@ -24,16 +24,26 @@ public:
     {
         return _chi_restraints;
     }
-
     Proper_Dihedral_Restraint_Mgr* dihedral_restraint_mgr() const;
-
     size_t n_chi() const { return rotamer()->n_chi(); }
 
+    // Propagate a spring constant to all chi restraints
+    void set_spring_constant(double k);
+    // Enable/disable restraints on all chi dihedrals
+    void set_enabled(bool flag);
+    // A rotamer restraint will be considered enabled if all chi restraints are enabled
+    bool enabled() const;
+    // Set the target angles and cutoffs according to the target definition at t_index
+    void set_target_index (int t_index);
+    int target_index() const { return _current_target_index; }
 
 private:
     Rotamer* _rotamer;
     Rotamer_Restraint_Mgr* _mgr;
     std::vector<Proper_Dihedral_Restraint *> _chi_restraints;
+    int _current_target_index = -1;
+    Rota_Target* _current_target_def;
+
 
 }; // class Rotamer_Restraint
 
@@ -46,7 +56,7 @@ public:
     Rotamer_Restraint_Mgr(Structure *structure, Change_Tracker *change_tracker,
         Proper_Dihedral_Restraint_Mgr *dmgr, Rota_Mgr *rmgr)
         : _structure(structure), _change_tracker(change_tracker),
-          _dihedral_restraint_mgr(dmgr), _Rota_Mgr(rmgr)
+          _dihedral_restraint_mgr(dmgr), _rota_mgr(rmgr)
     {
         change_tracker->register_mgr(_mgr_type, _py_name, _managed_class_py_name);
     }
@@ -67,6 +77,8 @@ public:
     void track_created(const void *r) { change_tracker()->add_created(_mgr_type, this, r); }
     void track_change(const void *r, int reason) { change_tracker()->add_modified(_mgr_type, this, r, reason); }
 
+    Rota_Mgr* rota_mgr() const { return _rota_mgr; }
+
     virtual void destructors_done(const std::set<void *>& destroyed);
 
 private:
@@ -74,7 +86,7 @@ private:
     Structure *_structure;
     Change_Tracker *_change_tracker;
     Proper_Dihedral_Restraint_Mgr *_dihedral_restraint_mgr;
-    Rota_Mgr *_Rota_Mgr;
+    Rota_Mgr *_rota_mgr;
 
     std::unordered_map<Rotamer*, Rotamer_Restraint*> _restraint_map;
     const std::string _py_name = "Rotamer_Restraint_Mgr";
