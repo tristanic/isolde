@@ -1799,6 +1799,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         self.pickable=False
         self.model = model
         model.add([self])
+        self._preview_model = None
 
     @property
     def num_restraints(self):
@@ -1868,6 +1869,27 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
             return None
         return rr
 
+    def _incr_preview(self, rotamer, incr):
+        rr = self.add_restraint(rotamer)
+        num_targets = rotamer.num_targets
+        current_target = rr.target_index
+        if current_target == -1 and incr == -1:
+            new_target = num_targets-1
+        else:
+            new_target = (current_target + incr) % num_targets
+        target_def = rotamer.get_target(new_target)
+
+        dmgr = get_proper_dihedral_manager(self.session)
+        ddict = dmgr.dihedral_dict
+        rdict = ddict['residues'][rotamer.residue.name]
+
+
+
+    def next_preview(self, rotamer):
+        self._incr_preview(rotamer, 1)
+
+    def prev_preview(self, rotamer):
+        self._incr_preview(rotamer, -1)
 
 
 
@@ -2230,6 +2252,32 @@ class Rotamer_Restraint(State):
 
     def reset_state(self):
         pass
+
+    @property
+    def target(self):
+        if self.target_index == -1:
+            return None
+        return self.rotamer.get_target(self.target_index)
+
+    def set_spring_constant(self, k):
+        '''
+        Sets the spring constants for all chi dihedrals in the rotamer to k.
+        Write-only.
+        '''
+        f = c_function('set_rotamer_restraint_spring_constant',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double))
+        kk = ctypes.c_double()
+        kk.value = k
+        f(self._c_pointer_ref, 1, ctypes.byref(kk))
+
+    rotamer = c_property('rotamer_restraint_rotamer', cptr, astype=_rotamer_or_none, read_only=True,
+        doc = 'Rotamer to be restrained. Read only.')
+    residue = c_property('rotamer_restraint_residue', cptr, astype=_residue_or_none, read_only=True,
+        doc = 'Residue to be restrained. Read only.')
+    enabled = c_property('rotamer_restraint_enabled', npy_bool,
+        doc = 'Enable/disable chi dihedral rstraints. Returns False if any chi restraint is disabled.')
+    target_index = c_property('rotamer_restraint_target_index', int32,
+        doc = 'Get/set the index of the defined rotamer giving target angles and cutoffs')
 
 
 
