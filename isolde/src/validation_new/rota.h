@@ -21,14 +21,52 @@ namespace isolde
 
 class Rota_Mgr;
 
-struct Rota_Def
+struct Rota_Target
 {
-    size_t n_chi;
-    size_t val_nchi;
-    bool symmetric;
-    Rota_Def() {}
-    Rota_Def(size_t n, size_t v, bool sym): n_chi(n), val_nchi(v), symmetric(sym) {}
+    std::string name; // e.g. "mmtt"
+    double frequency; // fractional rate of occurrence in high-resolution structures
+    std::vector<double> angles; // target chi angles in radians
+    std::vector<double> esds; // estimated standard deviations on each chi angle
+    Rota_Target() {}
+    Rota_Target(const std::string& tname, size_t nchi, double freq, double* ang, double* esd)
+        : name(tname), frequency(freq)
+    {
+        for(size_t i=0; i<nchi; ++i)
+        {
+            angles.push_back(*ang++);
+            esds.push_back(*esd++);
+        }
+    }
+    bool operator<(const Rota_Target& other) const { return frequency < other.frequency; }
 };
+
+class Rota_Def
+{
+public:
+    Rota_Def() {}
+    Rota_Def(size_t n, size_t v, bool sym): _n_chi(n), _val_nchi(v), _symmetric(sym) {}
+    void add_target(const std::string& name, double freq, double* angles, double* esds);
+
+    size_t n_chi() const { return _n_chi; }
+    size_t val_nchi() const { return _val_nchi; }
+    bool symmetric() const { return _symmetric; }
+    const std::vector<Rota_Target>& targets() const { return _targets; }
+    // Sort targets in descending order of probability
+    void sort_targets() { std::sort(_targets.rbegin(), _targets.rend()); }
+    size_t num_targets() const { return _targets.size(); }
+    Rota_Target* get_target(size_t i) {
+        if (i >= num_targets())
+            throw std::out_of_range("This rotamer does not have that many targets!");
+        return &(_targets[i]);
+    }
+
+private:
+    size_t _n_chi;
+    size_t _val_nchi;
+    bool _symmetric;
+    std::vector<Rota_Target> _targets;
+};
+
 
 
 class Rotamer:  public pyinstance::PythonInstance<Rotamer>
@@ -40,7 +78,7 @@ public:
     Rotamer(Residue *res, Rota_Mgr *mgr);
 
     const std::vector<Proper_Dihedral *> &dihedrals() {return _chi_dihedrals; }
-    const size_t& n_chi() const { return _def->n_chi; }
+    size_t n_chi() const { return _def->n_chi(); }
     void angles(std::vector<double> &angles) const;
     void angles(double *angles) const;
     std::vector<double> angles() const;
@@ -48,8 +86,11 @@ public:
     Residue* residue() const { return _residue; }
     Structure* structure() const { return residue()->structure(); }
     Bond* ca_cb_bond() const { return _chi_dihedrals[0]->axial_bond(); }
-    bool is_symmetric() const { return _def->symmetric; }
+    bool is_symmetric() const { return _def->symmetric(); }
     bool visible() const { return ca_cb_bond()->shown(); }
+
+    size_t num_target_defs() const { return _def->num_targets(); }
+    Rota_Target* get_target_def(size_t i) const { return _def->get_target(i); }
 
 private:
     Residue* _residue;

@@ -16,11 +16,17 @@ namespace isolde
  *
  **********************************************************/
 
+void Rota_Def::add_target(const std::string& name, double freq, double* angles, double* esds)
+{
+    auto target = Rota_Target(name, n_chi(), freq, angles, esds);
+    _targets.push_back(target);
+}
+
 Rotamer::Rotamer(Residue *res, Rota_Mgr *mgr): _residue(res), _mgr(mgr)
 {
     auto rname = res->name();
     _def = mgr->get_rotamer_def(rname);
-    auto n_chi = _def->n_chi;
+    auto n_chi = _def->n_chi();
     auto dmgr = mgr->dihedral_mgr();
     static const std::string basename("chi");
     for (size_t i=1; i<=n_chi; ++i) {
@@ -41,7 +47,7 @@ void Rotamer::angles(std::vector<double> &a) const
 
 std::vector<double> Rotamer::angles() const
 {
-    std::vector<double> _angles(_def->n_chi);
+    std::vector<double> _angles(_def->n_chi());
     angles(_angles);
     return _angles;
 }
@@ -64,7 +70,7 @@ void Rotamer::angles(double *a) const
 double Rotamer::score() const
 {
     auto interpolator = _mgr->get_interpolator(_residue->name());
-    std::vector<double> cur_angles(_def->n_chi);
+    std::vector<double> cur_angles(_def->n_chi());
     angles(cur_angles);
     return interpolator->interpolate(cur_angles.data());
 }
@@ -177,8 +183,8 @@ void Rota_Mgr::validate(Rotamer** rotamers, size_t n, double* scores)
         // one special case, we'll get all the chi angles, but overwrite the
         // extras.
         auto rdef = get_rotamer_def(name);
-        size_t n_chi = rdef->n_chi;
-        size_t val_nchi = rdef->val_nchi;
+        size_t n_chi = rdef->n_chi();
+        size_t val_nchi = rdef->val_nchi();
         size_t n_rot = indices.size();
         size_t n_angles = n_rot*n_chi;
 
