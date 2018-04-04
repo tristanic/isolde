@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>547</width>
-    <height>863</height>
+    <height>791</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -154,6 +154,12 @@
    </item>
    <item>
     <widget class="QToolBox" name="toolBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>1</horstretch>
+       <verstretch>1</verstretch>
+      </sizepolicy>
+     </property>
      <property name="minimumSize">
       <size>
        <width>250</width>
@@ -175,35 +181,41 @@
         <x>0</x>
         <y>0</y>
         <width>539</width>
-        <height>713</height>
+        <height>641</height>
        </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>1</horstretch>
+        <verstretch>1</verstretch>
+       </sizepolicy>
       </property>
       <attribute name="label">
        <string>Simulate</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0">
        <property name="spacing">
         <number>3</number>
        </property>
        <property name="leftMargin">
-        <number>0</number>
+        <number>1</number>
        </property>
        <property name="topMargin">
-        <number>0</number>
+        <number>1</number>
        </property>
        <property name="rightMargin">
-        <number>0</number>
+        <number>1</number>
        </property>
        <property name="bottomMargin">
-        <number>0</number>
+        <number>1</number>
        </property>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0">
+        <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0,0">
          <property name="spacing">
           <number>3</number>
          </property>
          <property name="sizeConstraint">
-          <enum>QLayout::SetMinAndMaxSize</enum>
+          <enum>QLayout::SetDefaultConstraint</enum>
          </property>
          <property name="bottomMargin">
           <number>0</number>
@@ -224,10 +236,13 @@ border: 1px;
 }</string>
            </property>
            <property name="currentIndex">
-            <number>3</number>
+            <number>2</number>
            </property>
            <property name="elideMode">
             <enum>Qt::ElideNone</enum>
+           </property>
+           <property name="usesScrollButtons">
+            <bool>true</bool>
            </property>
            <property name="documentMode">
             <bool>false</bool>
@@ -267,8 +282,8 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-192</y>
-                  <width>520</width>
+                  <y>0</y>
+                  <width>518</width>
                   <height>760</height>
                  </rect>
                 </property>
@@ -1141,8 +1156,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>533</width>
-                  <height>568</height>
+                  <width>531</width>
+                  <height>342</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1306,12 +1321,21 @@ border: 1px;
             </layout>
            </widget>
            <widget class="QWidget" name="_sim_remodel_tab">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+              <horstretch>1</horstretch>
+              <verstretch>1</verstretch>
+             </sizepolicy>
+            </property>
             <attribute name="title">
              <string>Rebuild</string>
             </attribute>
-            <layout class="QVBoxLayout" name="verticalLayout_6">
+            <layout class="QVBoxLayout" name="verticalLayout_6" stretch="0,1">
              <property name="spacing">
-              <number>6</number>
+              <number>2</number>
+             </property>
+             <property name="sizeConstraint">
+              <enum>QLayout::SetNoConstraint</enum>
              </property>
              <property name="leftMargin">
               <number>1</number>
@@ -1351,9 +1375,9 @@ border: 1px;
                <property name="frameShadow">
                 <enum>QFrame::Raised</enum>
                </property>
-               <layout class="QVBoxLayout" name="verticalLayout_28" stretch="0,0">
+               <layout class="QVBoxLayout" name="verticalLayout_28" stretch="0,0,0">
                 <property name="spacing">
-                 <number>6</number>
+                 <number>1</number>
                 </property>
                 <property name="leftMargin">
                  <number>1</number>
@@ -1491,7 +1515,7 @@ border: 1px;
                   <property name="frameShape">
                    <enum>QFrame::NoFrame</enum>
                   </property>
-                  <layout class="QHBoxLayout" name="horizontalLayout_39" stretch="0,0,0,0,0,0,0,0">
+                  <layout class="QHBoxLayout" name="horizontalLayout_39" stretch="0,0,0">
                    <property name="spacing">
                     <number>1</number>
                    </property>
@@ -1569,6 +1593,39 @@ border: 1px;
                      </property>
                     </spacer>
                    </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QFrame" name="frame_2">
+                  <property name="minimumSize">
+                   <size>
+                    <width>0</width>
+                    <height>50</height>
+                   </size>
+                  </property>
+                  <property name="frameShape">
+                   <enum>QFrame::NoFrame</enum>
+                  </property>
+                  <property name="frameShadow">
+                   <enum>QFrame::Raised</enum>
+                  </property>
+                  <layout class="QHBoxLayout" name="horizontalLayout_10">
+                   <property name="spacing">
+                    <number>3</number>
+                   </property>
+                   <property name="leftMargin">
+                    <number>1</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>1</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>1</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>1</number>
+                   </property>
                    <item>
                     <widget class="QFrame" name="_rebuild_cycle_rotamer_frame">
                      <property name="frameShape">
@@ -1662,6 +1719,28 @@ border: 1px;
                     </widget>
                    </item>
                    <item>
+                    <widget class="QLabel" name="_rebuild_sel_res_rot_preview_info">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="minimumSize">
+                      <size>
+                       <width>40</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string>&lt;html&gt;&lt;body&gt;&lt;p&gt;name&lt;br/&gt;freq&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     </property>
+                     <property name="wordWrap">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
                     <widget class="QToolButton" name="_rebuild_sel_res_rot_discard_button">
                      <property name="toolTip">
                       <string>Clear rotamer preview</string>
@@ -1741,6 +1820,19 @@ border: 1px;
                      </property>
                     </widget>
                    </item>
+                   <item>
+                    <spacer name="horizontalSpacer_5">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>216</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
                   </layout>
                  </widget>
                 </item>
@@ -1749,19 +1841,58 @@ border: 1px;
              </item>
              <item>
               <widget class="QScrollArea" name="_sim_remodel_scroll_area">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Ignored" vsizetype="Ignored">
+                 <horstretch>0</horstretch>
+                 <verstretch>1</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="verticalScrollBarPolicy">
+                <enum>Qt::ScrollBarAsNeeded</enum>
+               </property>
+               <property name="sizeAdjustPolicy">
+                <enum>QAbstractScrollArea::AdjustIgnored</enum>
+               </property>
                <property name="widgetResizable">
                 <bool>true</bool>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
                </property>
                <widget class="QWidget" name="scrollAreaWidgetContents_5">
                 <property name="geometry">
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>533</width>
-                  <height>482</height>
+                  <width>531</width>
+                  <height>372</height>
                  </rect>
                 </property>
-                <layout class="QVBoxLayout" name="verticalLayout_15">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                  <horstretch>0</horstretch>
+                  <verstretch>1</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_15" stretch="0,0,0">
                  <property name="spacing">
                   <number>4</number>
                  </property>
@@ -1780,7 +1911,7 @@ border: 1px;
                  <item>
                   <widget class="QFrame" name="_rebuild_2ry_struct_restr_main_frame">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
@@ -2659,7 +2790,7 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>520</width>
+                  <width>518</width>
                   <height>641</height>
                  </rect>
                 </property>
@@ -2897,12 +3028,12 @@ border: 1px;
                        <widget class="QComboBox" name="_validate_rama_sel_combo_box">
                         <item>
                          <property name="text">
-                          <string>Selected only</string>
+                          <string>All</string>
                          </property>
                         </item>
                         <item>
                          <property name="text">
-                          <string>All</string>
+                          <string>Selected only</string>
                          </property>
                         </item>
                        </widget>
@@ -3525,7 +3656,7 @@ background-color: rgb(5, 200, 0);
               </property>
               <property name="sizeHint" stdset="0">
                <size>
-                <width>448</width>
+                <width>446</width>
                 <height>20</height>
                </size>
               </property>
