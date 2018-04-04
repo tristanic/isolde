@@ -54,7 +54,7 @@ public:
     const std::vector<Rota_Target>& targets() const { return _targets; }
     const std::vector<std::string>& moving_atom_names(size_t i) const
     {
-        if (i >= n_chi)
+        if (i >= _n_chi)
             throw std::out_of_range("This rotamer does not have that many chi dihedrals!");
         return _moving_atom_names[i];
     }

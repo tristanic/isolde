@@ -369,6 +369,19 @@ rotamer_num_chi(void *rotamer, size_t n, uint8_t *nchi)
 }
 
 extern "C" EXPORT void
+rotamer_chi_dihedrals(void *rotamer, pyobject_t *dihedrals)
+{
+    Rotamer *r = static_cast<Rotamer *>(rotamer);
+    try {
+        const auto &chi = r->dihedrals();
+        for (auto c: chi)
+            *dihedrals++ = c;
+    } catch(...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
 rotamer_angles(void *rotamer, double *a)
 {
     Rotamer *r = static_cast<Rotamer *>(rotamer);

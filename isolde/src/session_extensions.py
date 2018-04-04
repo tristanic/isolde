@@ -24,6 +24,13 @@ def get_proper_dihedral_restraint_mgr(model):
             return m
     return Proper_Dihedral_Restraint_Mgr(model)
 
+def get_rotamer_restraint_mgr(model):
+    from .molobject import Rotamer_Restraint_Mgr
+    for m in model.child_models():
+        if isinstance(m, Rotamer_Restraint_Mgr):
+            return m
+    return Rotamer_Restraint_Mgr(model)
+
 def get_position_restraint_mgr(model):
     from .molobject import Position_Restraint_Mgr
     for m in model.child_models():

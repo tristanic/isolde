@@ -1474,74 +1474,69 @@ class Isolde():
         iw._rebuild_sel_res_rot_discard_button.setEnabled(switch)
         iw._rebuild_sel_res_rot_release_button.setEnabled(switch)
 
+    def _update_rotamer_preview_text(self, name, freq):
+        f = self.iw._rebuild_sel_res_rot_preview_info
+        f.setText('<html><body><p>{}<br/>{:.3f}</p></body></html>'.format(
+            name, freq
+        ))
+
+    def _clear_rotamer_preview_text(self):
+        self._update_rotamer_preview_text('name', 0.0)
+
     def _next_rotamer(self, *_):
-        r = self._selected_rotamer
-        thisr = self._target_rotamer = r.next_rotamer(preview = True)
-        self.iw._rebuild_sel_res_rot_info.setText('{} ({:.3f})'\
-            .format(thisr.name, thisr.relative_abundance(self._rebuild_residue)))
+        rot = self._selected_rotamer
+        from . import session_extensions
+        rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
+        target_def = rrm.next_preview(rot)
+        self._update_rotamer_preview_text(target_def['Name'], target_def['Frequency'])
 
     def _prev_rotamer(self, *_):
-        r = self._selected_rotamer
-        thisr = self._target_rotamer = r.previous_rotamer(preview = True)
-        self.iw._rebuild_sel_res_rot_info.setText('{} ({:.3f})'\
-            .format(thisr.name, thisr.relative_abundance(self._rebuild_residue)))
+        rot = self._selected_rotamer
+        from . import session_extensions
+        rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
+        target_def = rrm.prev_preview(rot)
+        self._update_rotamer_preview_text(target_def['Name'], target_def['Frequency'])
 
     def _commit_rotamer(self, *_):
         rot = self._selected_rotamer
-        rot.commit_current_preview()
+        from . import session_extensions
+        rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
+        rrm.commit_preview(rot)
         if self.simulation_running:
-            self._sim_interface.update_coords(rot.residue.atoms)
-        self._clear_rotamer()
+            self.sim_handler.push_coords_to_sim()
 
     def _set_rotamer_target(self, *_):
         rot = self._selected_rotamer
-        tr = self._target_rotamer
-        if tr is None:
-            print('No target set!')
-            return
-        target = rot.target = tr.angles
-        rot.spring_constant = \
-            self.sim_params.rotamer_spring_constant
-        rot.restrained = True
-        if self.simulation_running:
-            self._apply_rotamer_target_to_sim(rot)
-        self._clear_rotamer()
-        self._update_dihedral_restraints_drawing()
-
-    def _apply_rotamer_target_to_sim(self, rotamer):
-        if not self.simulation_running:
-            print('No simulation running!')
-            return
-        self._sim_interface.update_rotamer_target(rotamer)
-        self._all_annotated_dihedrals.update_needed = True
+        from . import session_extensions
+        rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
+        rrm.set_targets(rot)
+        rr = rrm.get_restraint(rot)
+        rr.set_spring_constant(self.sim_params.rotamer_spring_constant.value_in_unit(OPENMM_RADIAL_SPRING_UNIT))
+        rr.enabled = True
 
     def _clear_rotamer(self, *_):
-        # if self._selected_rotamer is not None:
-        #     self._selected_rotamer.cleanup()
+        from . import session_extensions
+        rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
+        rrm._remove_preview()
         self._target_rotamer = None
+        self._clear_rotamer_preview_text()
 
     def _release_rotamer(self, *_):
-        pass
-        # rot = self._selected_rotamer
-        # rot.restrained = False
-        # rot.cleanup()
-        # if self.simulation_running:
-        #     self._apply_rotamer_target_to_sim(rot)
-        # self._update_dihedral_restraints_drawing()
+        rot = self._selected_rotamer
+        if rot is not None:
+            self.release_rotamer(rot)
 
-    def release_rotamers(self, residues):
-        for r in residues:
-            self.release_rotamer(r)
+    def release_rotamers(self, rotamers):
+        from . import session_extensions
+        rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
+        rrs = rrm.get_restraints(rotamers)
+        rrs.enableds = False
 
-    def release_rotamer(self, residue):
-        pass
-        # try:
-        #     rot = self.rotamers[residue]
-        # except KeyError:
-        #     return
-        # rot.restrained = False
-        # if self.simulation_running:
-        #     self._apply_rotamer_target_to_sim(rot)
+    def release_rotamer(self, rotamer):
+        from . import session_extensions
+        rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
+        rr = rrm.get_restraint(rotamer)
+        rr.enabled = False
 
     def _disable_rebuild_residue_frame(self):
         if hasattr(self, '_res_info_update_handler') and self._res_info_update_handler is not None:
@@ -1554,10 +1549,6 @@ class Isolde():
         self.iw._rebuild_sel_res_rot_info.setText('')
         self.iw._rebuild_sel_res_rot_target_button.setText('Set target')
         self.iw._rebuild_sel_residue_frame.setDisabled(True)
-
-    def _get_rotamer_list_for_selected_residue(self, res):
-        #TODO
-        pass
 
     def _update_selected_residue_info_live(self, trigger_name, changes):
         if changes is not None:

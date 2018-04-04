@@ -44,9 +44,9 @@ void Rotamer_Restraint::set_target_index(int t_index) {
     for (size_t i=0; i<n_chi(); ++i)
     {
         auto r=_chi_restraints[i];
-        r->set_target(util::radians(angles[i]));
+        r->set_target(angles[i]);
         // Leave free movement within two standard deviations
-        r->set_cutoff(util::radians(esds[i])*2.0);
+        r->set_cutoff(esds[i]*2.0);
     }
 }
 

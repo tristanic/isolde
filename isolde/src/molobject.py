@@ -1791,7 +1791,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
                 args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p),
                 ret=ctypes.c_void_p)
             c_pointer = f(model._c_pointer, ct._c_pointer, pdr_m._c_pointer,
-                rota_m.c_pointer)
+                rota_m._c_pointer)
         set_c_pointer(self, c_pointer)
         f = c_function('set_rotamer_restraint_mgr_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
@@ -1830,7 +1830,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
             rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
         else:
             rotamers = rotamers_or_residues
-        return _get_restraints(rotamers, False)
+        return self._get_restraints(rotamers, False)
 
     def add_restraints(self, rotamers_or_residues):
         from chimerax.core.atomic import Residues
@@ -1839,7 +1839,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
             rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
         else:
             rotamers = rotamers_or_residues
-        return _get_restraints(rotamers, True)
+        return self._get_restraints(rotamers, True)
 
     def get_restraint(self, rotamer_or_residue):
         from chimerax.core.atomic import Residue, Residues
@@ -1850,10 +1850,10 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
             r = rotamer_or_residue
         if r is None:
             return None
-        rr = _get_restraints(_rotamers([r]), False)
+        rr = self._get_restraints(_rotamers([r]), False)
         if not len(rr):
             return None
-        return rr
+        return rr[0]
 
     def add_restraint(self, rotamer_or_residue):
         from chimerax.core.atomic import Residue, Residues
@@ -1864,34 +1864,92 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
             r = rotamer_or_residue
         if r is None:
             return None
-        rr = _get_restraints(_rotamers([r]), True)
+        rr = self._get_restraints(_rotamers([r]), True)
         if not len(rr):
             return None
-        return rr
+        return rr[0]
 
     def _incr_preview(self, rotamer, incr):
         rr = self.add_restraint(rotamer)
         num_targets = rotamer.num_targets
-        current_target = rr.target_index
+        pm = self._preview_model
+        if pm is not None and pm.rotamer == rotamer:
+            current_target = pm.target_index
+        else:
+            current_target = rr.target_index
         if current_target == -1 and incr == -1:
             new_target = num_targets-1
         else:
             new_target = (current_target + incr) % num_targets
         target_def = rotamer.get_target(new_target)
-
-        dmgr = get_proper_dihedral_manager(self.session)
-        ddict = dmgr.dihedral_dict
-        rdict = ddict['residues'][rotamer.residue.name]
-
-
+        self._create_preview(rotamer, target_def, new_target)
+        return target_def
 
     def next_preview(self, rotamer):
-        self._incr_preview(rotamer, 1)
+        return self._incr_preview(rotamer, 1)
 
     def prev_preview(self, rotamer):
-        self._incr_preview(rotamer, -1)
+        return self._incr_preview(rotamer, -1)
+
+    def commit_preview(self, rotamer):
+        pm = self._preview_model
+        if pm is None or pm.rotamer != rotamer:
+            raise TypeError('Current preview is for a different rotamer!')
+        rotamer.residue.atoms.coords = pm.atoms.coords
+        self._remove_preview()
+
+    def set_targets(self, rotamer, target_index = None):
+        rr = self.add_restraint(rotamer)
+        if target_index is None:
+            pm = self._preview_model
+            if pm is None or pm.rotamer != rotamer:
+                raise TypeError(
+                'No target index has been chosen and there is no suitable preview '
+               +'to choose it from!')
+            else:
+               target_index = pm.target_index
+        rr.target_index = target_index
+        self._remove_preview()
 
 
+
+    #TODO: Implement preview as drawing, to do away with the need for a dummy model
+    def _create_preview(self, rotamer, target_def, target_index):
+        pm = self._preview_model
+        if pm is not None and pm.rotamer != rotamer:
+            self._remove_preview()
+        if self._preview_model is None:
+            from chimerax.core.commands.split import molecule_from_atoms
+            pm = self._preview_model = molecule_from_atoms(self.model, rotamer.residue.atoms)
+            pm.bonds.radii = 0.1
+            from chimerax.atomic import Atom
+            pm.atoms.draw_modes = Atom.STICK_STYLE
+            self.model.add([pm])
+            pm.rotamer = rotamer
+        pm.target_def = target_def
+        pm.target_index = target_index
+        target_angles = target_def['Angles']
+        current_angles = rotamer.angles
+        rot_angles = numpy.degrees(target_angles-current_angles)
+        chis = rotamer.chi_dihedrals
+        from chimerax.core.geometry import Place, rotation, matrix
+        master_atoms = rotamer.residue.atoms
+        pm.atoms.coords = master_atoms.coords
+        for i in range(rotamer.num_chi_dihedrals):
+            ma_indices = master_atoms.indices(rotamer.moving_atoms(i))
+            ma = pm.atoms[ma_indices]
+            master_chi = chis[i]
+            chi = pm.atoms[master_atoms.indices(master_chi.atoms)]
+            coords = chi.coords
+            axis = coords[2] - coords[1]
+            center = matrix.project_to_axis(coords[3], axis, coords[1])
+            tf = rotation(axis, rot_angles[i], center)
+            ma.coords = tf.moved(ma.coords)
+
+    def _remove_preview(self):
+        if self._preview_model is not None and not self._preview_model.deleted:
+            self.session.models.remove([self._preview_model])
+            self._preview_model = None
 
 
 
@@ -2054,6 +2112,14 @@ class Rotamer(State):
         tdict = self.get_target(target_index)
         tdict['Z scores'] = zscores
         return tdict
+
+    @property
+    def chi_dihedrals(self):
+        f = c_function('rotamer_chi_dihedrals',
+            args=(ctypes.c_void_p, ctypes.c_void_p))
+        ret = numpy.empty(self.num_chi_dihedrals, cptr)
+        f(self._c_pointer, pointer(ret))
+        return _proper_dihedrals(ret)
 
 
     residue = c_property('rotamer_residue', cptr, astype=_residue_or_none, read_only=True,
@@ -2265,7 +2331,7 @@ class Rotamer_Restraint(State):
         Write-only.
         '''
         f = c_function('set_rotamer_restraint_spring_constant',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double))
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
         kk = ctypes.c_double()
         kk.value = k
         f(self._c_pointer_ref, 1, ctypes.byref(kk))
@@ -2305,7 +2371,7 @@ for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint, Tuggable_A
 
 for class_obj in (Proper_Dihedral_Mgr, Rama_Mgr, Rota_Mgr, Position_Restraint_Mgr,
             Tuggable_Atoms_Mgr, MDFF_Mgr, Distance_Restraint_Mgr,
-            Proper_Dihedral_Restraint_Mgr):
+            Proper_Dihedral_Restraint_Mgr, Rotamer_Restraint_Mgr):
     cname = class_obj.__name__.lower()
     func_name = cname + '_py_inst'
     class_obj.c_ptr_to_py_inst = lambda ptr, fname=func_name: c_function(fname,
