@@ -1895,6 +1895,9 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         pm = self._preview_model
         if pm is None or pm.rotamer != rotamer:
             raise TypeError('Current preview is for a different rotamer!')
+        # Clear any existing chi restraints
+        rr = self.add_restraint(rotamer)
+        rr.enabled=False
         rotamer.residue.atoms.coords = pm.atoms.coords
         self._remove_preview()
 
