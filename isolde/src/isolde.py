@@ -1415,23 +1415,25 @@ class Isolde():
     def _restrain_selected_atom_to_current_xyz(self, *_):
         from chimerax.atomic import selected_atoms
         atom = selected_atoms(self.session)[0]
-        k = self.iw._rebuild_pos_restraint_spring_constant.value()
+        # Displayed value in kJ mol^-1, A^2, OpenMM in kJ mol^-1 nm^2
+        k = self.iw._rebuild_pos_restraint_spring_constant.value()*100
         self.restrain_atom_to_xyz(atom, atom.coord, k)
 
     def _restrain_selected_atom_to_pivot_xyz(self, *_):
         from chimerax.atomic import selected_atoms
         atom = selected_atoms(self.session)[0]
-        k = self.iw._rebuild_pos_restraint_spring_constant.value()
+        # Displayed value in kJ mol^-1, A^2, OpenMM in kJ mol^-1 nm^2
+        k = self.iw._rebuild_pos_restraint_spring_constant.value()*100
         self.restrain_atom_to_xyz(atom, self.session.view.center_of_rotation, k)
 
 
     def restrain_atom_to_xyz(self, atom, target, spring_constant):
-        pr = self.position_restraints[atom]
+        from . import session_extensions as sx
+        pr_m = sx.get_position_restraint_mgr(self.selected_model)
+        pr = pr_m.add_restraint(atom)
         pr.target = target
         pr.spring_constant = spring_constant
-        if self.simulation_running:
-            self._sim_interface.update_position_restraint(pr)
-
+        pr.enabled = True
 
     def release_xyz_restraints_on_selected_atoms(self, *_, sel = None):
         '''
@@ -1442,10 +1444,10 @@ class Isolde():
         if sel is None:
             from chimerax.atomic import selected_atoms
             sel = selected_atoms(self.session)
-        restraints = self.position_restraints.in_selection(sel)
-        restraints.release()
-        if self.simulation_running:
-            self._sim_interface.update_position_restraints(restraints)
+        from . import session_extensions as sx
+        pr_m = sx.get_position_restraint_mgr(self.selected_model)
+        prs = pr_m.get_restraints(sel)
+        prs.enableds = False
 
     def apply_xyz_restraints_to_selected_atoms(self, *_, sel = None):
         '''
