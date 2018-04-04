@@ -83,8 +83,8 @@ class _Defaults:
         'HAPTIC_SPRING_CONSTANT':                2500.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
         'MOUSE_TUG_SPRING_CONSTANT':            10000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
         'MAX_TUG_FORCE':                        10000.0, # * unit.kilojoule_per_mole/unit.nanometer,
-        'DISTANCE_RESTRAINT_SPRING_CONSTANT':    1000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
-        'POSITION_RESTRAINT_SPRING_CONSTANT':    1000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
+        'DISTANCE_RESTRAINT_SPRING_CONSTANT':    5000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
+        'POSITION_RESTRAINT_SPRING_CONSTANT':    5000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
         'PEPTIDE_SPRING_CONSTANT':                500.0, # * unit.kilojoule_per_mole/unit.radians**2,
         'PHI_PSI_SPRING_CONSTANT':                250.0, # * unit.kilojoule_per_mole/unit.radians**2,
         'ROTAMER_SPRING_CONSTANT':                500.0, # * unit.kilojoule_per_mole/unit.radians**2,
@@ -111,7 +111,7 @@ class _Defaults:
         # Manipulation constants
         ###
         'PEPTIDE_FLIPPER_MAX_ROUNDS':   50,
-        
+
         ###
         # Constants specific to ChimeraX - lengths in Angstroms beyond this point!
         ###
