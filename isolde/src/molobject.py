@@ -1601,6 +1601,34 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
             ret = ctypes.py_object)
         return _distance_restraints(f(self._c_pointer, atoms._c_pointers, n))
 
+    def _get_ss_restraints(self, residues, create=False):
+        '''
+        Returns (optionally creating) distance restraints suitable for restraining
+        secondary structure. Result is a tuple of two Distance_Restraints
+        objects: O(n)-N(n+4) and CA(n)-CA(n+2).
+        '''
+        from chimerax.atomic import Residue
+        # Reduce to only protein residues
+        residues = residues[residues.polymer_types == Residue.PT_AMINO]
+        # ensure residues are sorted and unique
+        m = self.model
+        indices = m.residues.indices(residues)
+        if -1 in indices:
+            raise TypeError('All residues must be from the model attached to this handler!')
+        residues = m.residues[numpy.sort(indices)].unique()
+        n = len(residues)
+        f = c_function('distance_restraint_mgr_get_ss_restraints',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_bool),
+            ret=ctypes.py_object)
+        ptrs = f(self._c_pointer, residues._c_pointers, n, create)
+        return tuple((_distance_restraints(ptrs[0]), _distance_restraints(ptrs[1])))
+
+    def add_ss_restraints(self, residues):
+        return self._get_ss_restraints(residues, create=True)
+
+    def get_ss_restraints(self, residues):
+        return self._get_ss_restraints(residues, create=False)
+
     @property
     def visible_restraints(self):
         f = c_function('distance_restraint_mgr_visible_restraints',

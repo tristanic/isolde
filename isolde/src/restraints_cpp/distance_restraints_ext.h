@@ -151,6 +151,76 @@ distance_restraint_mgr_all_restraints(void *mgr)
     }
 }
 
+//NOTE: Residues are expected to already be sorted in chains
+extern "C" EXPORT PyObject*
+distance_restraint_mgr_get_ss_restraints(void *mgr, void *residues, size_t n, bool create)
+{
+    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    Residue **r = static_cast<Residue **>(residues);
+    PyObject* ret = PyTuple_New(2);
+    try {
+        if (n < 3) {
+            throw std::logic_error("Secondary structure restraints require at least three contiguous residues!");
+        }
+        std::vector<Distance_Restraint *> o_to_n_plus_four;
+        std::vector<Distance_Restraint *> ca_to_ca_plus_two;
+        for (size_t i=0; i<n-2; ++i)
+        {
+            Residue* cr = *r++;
+            if (cr->polymer_type() != PT_AMINO) {
+                continue;
+            }
+            Atom* cca = cr->find_atom("CA");
+            Atom* co = cr->find_atom("O");
+            if (cca==nullptr || co==nullptr) {
+                throw std::logic_error("Missing backbone atoms detected!");
+            }
+            Residue* rp1 = *r;
+            if (!(cr->connects_to(rp1)) || !(rp1->polymer_type()==PT_AMINO)) {
+                continue;
+            }
+            Residue* rp2 = *(r+1);
+            if (!rp1->connects_to(rp2) || !(rp2->polymer_type()==PT_AMINO)) {
+                continue;
+            }
+            Atom* cap2 = rp2->find_atom("CA");
+            if (cap2 != nullptr) {
+                Distance_Restraint* cad = d->get_restraint(cca, cap2, create);
+                if (cad != nullptr)
+                    ca_to_ca_plus_two.push_back(cad);
+            }
+            if (i+4 >= n) continue;
+            Residue* rp3 = *(r+2);
+            if (!rp2->connects_to(rp3) || !(rp3->polymer_type()==PT_AMINO)) continue;
+            Residue* rp4 = *(r+3);
+            if (!rp3->connects_to(rp4) || !(rp4->polymer_type()==PT_AMINO)) continue;
+            Atom* np4 = rp4->find_atom("N");
+            if (np4 != nullptr) {
+                Distance_Restraint* on4 = d->get_restraint(co, np4, create);
+                if (on4 != nullptr)
+                    o_to_n_plus_four.push_back(on4);
+            }
+        }
+        void **onptrs;
+        PyObject* on_restr_array = python_voidp_array(o_to_n_plus_four.size(), &onptrs);
+        for (const auto &ptr: o_to_n_plus_four)
+            *onptrs++ = ptr;
+
+        void **captrs;
+        PyObject* ca_restr_array = python_voidp_array(ca_to_ca_plus_two.size(), &captrs);
+        for (const auto &ptr: ca_to_ca_plus_two)
+            *captrs++ = ptr;
+
+        PyTuple_SET_ITEM(ret, 0, on_restr_array);
+        PyTuple_SET_ITEM(ret, 1, ca_restr_array);
+        return ret;
+    } catch(...) {
+        molc_error();
+        Py_XDECREF(ret);
+        return 0;
+    }
+}
+
 
 /***************************************************************
  *

@@ -1302,80 +1302,61 @@ class Isolde():
         residues = sel.unique_residues
         if len(residues) > 1:
             if direction == 1:
-                residues[0].atoms.selected = False
+                r = residues[0]
             elif direction == -1:
-                residues[-1].atoms.selected = False
+                r = residues[-1]
             else:
                 raise TypeError('Direction must be either 1 or -1!')
+            r.atoms.selected = False
+            r.atoms.intra_bonds.selected = False
 
     def _restrain_selection_as_alpha_helix(self, *_):
         from chimerax.atomic import selected_atoms
         sel = selected_atoms(self.session)
-        self._restrain_secondary_structure(sel, 'helix')
+        self.restrain_secondary_structure(sel, 'Helix')
 
     def _restrain_selection_as_antiparallel_beta(self, *_):
         from chimerax.atomic import selected_atoms
         sel = selected_atoms(self.session)
-        self._restrain_secondary_structure(sel, 'antiparallel beta')
+        self.restrain_secondary_structure(sel, 'Antiparallel Beta')
 
     def _restrain_selection_as_parallel_beta(self, *_):
         from chimerax.atomic import selected_atoms
         sel = selected_atoms(self.session)
-        self._restrain_secondary_structure(sel, 'parallel beta')
+        self.restrain_secondary_structure(sel, 'Parallel Beta')
 
 
-    def _restrain_secondary_structure(self, atoms, target):
+    def restrain_secondary_structure(self, atoms, target):
         sh = self.sim_handler
-        sc = self._total_sim_construct
-        dihed_k = self.secondary_structure_restraints_k
-        sel = atoms
-        residues = sel.unique_residues
-        sel = residues.atoms
-        structure_type = target
-        from .dihedrals import Backbone_Dihedrals
-        target_phi, target_psi = Backbone_Dihedrals.standard_phi_psi_angles[structure_type]
-        phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
-        phi.targets = target_phi
-        psi.targets = target_psi
+        sc = self.sim_manager.sim_construct
+        dihed_k = self.sim_params.phi_psi_spring_constant.value_in_unit(OPENMM_RADIAL_SPRING_UNIT)
+        dist_k = self.sim_params.distance_restraint_spring_constant.value_in_unit(OPENMM_SPRING_UNIT)
+        residues = atoms.unique_residues
+        m = self.selected_model
+        from .constants import ss_restraints
+        restraint_params = ss_restraints[target]
+        from . import session_extensions as sx
+        dr_m = sx.get_distance_restraint_mgr(m)
+        o_to_n_plus_four, ca_to_ca_plus_two = dr_m.add_ss_restraints(residues)
+        o_to_n_plus_four.targets = restraint_params.O_TO_N_PLUS_FOUR_DISTANCE
+        ca_to_ca_plus_two.targets = restraint_params.CA_TO_CA_PLUS_TWO_DISTANCE
+        o_to_n_plus_four.spring_constants = dist_k
+        ca_to_ca_plus_two.spring_constants = dist_k
+        o_to_n_plus_four.enableds = True
+        ca_to_ca_plus_two.enableds = True
+
+        pdr_m = sx.get_proper_dihedral_restraint_mgr(m)
+        phi = pdr_m.get_restraints_by_residues_and_name(residues, 'phi')
+        phi.targets = restraint_params.PHI_ANGLE
         phi.spring_constants = dihed_k
+        phi.cutoffs = restraint_params.CUTOFF_ANGLE
+        phi.enableds = True
+
+        psi = pdr_m.get_restraints_by_residues_and_name(residues, 'psi')
+        psi.targets = restraint_params.PSI_ANGLE
         psi.spring_constants = dihed_k
-        self.apply_dihedral_restraints(phi)
-        self.apply_dihedral_restraints(psi)
-        self._update_dihedral_restraints_drawing()
-
-
-        dist_k = self.sim_params.distance_restraint_spring_constant
-        rca = self._sim_distance_restraint_dict['ca_to_ca_plus_two']
-        ron = self._sim_distance_restraint_dict['o_to_n_plus_four']
-        if structure_type == 'helix':
-            ca_distance = rca.HELIX_DISTANCE
-            on_distance = ron.HELIX_DISTANCE
-        elif structure_type in ('parallel beta', 'antiparallel beta'):
-            ca_distance = rca.STRAND_DISTANCE
-            on_distance = ron.STRAND_DISTANCE
-        else:
-            raise TypeError('Unknown secondary structure type: {}!'.format(structure_type))
-        for r in residues:
-            cad_candidates = rca[r]
-            for cad in cad_candidates:
-                if cad is not None:
-                    if -1 not in sel.indices(cad.atoms):
-                        cad.target_distance = ca_distance
-                        cad.spring_constant = dist_k
-                    else:
-                        cad.spring_constant = 0
-                    self.apply_distance_restraint(cad)
-            ond_candidates = ron[r]
-            for ond in ond_candidates:
-                if ond is not None:
-                    if -1 not in sel.indices(ond.atoms):
-                        ond.target_distance = on_distance
-                        ond.spring_constant = dist_k
-                    else:
-                        ond.spring_constant = 0
-                    self.apply_distance_restraint(ond)
-
-
+        psi.cutoffs = restraint_params.CUTOFF_ANGLE
+        psi.enableds = True
 
     def _increment_register_shift(self, *_):
         self.iw._rebuild_register_shift_nres_spinbox.stepUp()
@@ -2401,46 +2382,22 @@ class Isolde():
             sel = selected_atoms(self.session)
         if sel is not None:
             residues = sel.unique_residues
-        phi, psi, omega = self.backbone_dihedrals.by_residues(residues)
-        for dlist in (phi, psi):
-            if dlist is not None:
-                dlist.targets = 0
-                dlist.spring_constants = 0
-                if self.simulation_running:
-                    self.apply_dihedral_restraints(dlist)
-        self._update_dihedral_restraints_drawing()
 
-        for r in residues:
-            for key, rlist in self._sim_distance_restraint_dict.items():
-                drs = rlist[r]
-                for dr in drs:
-                    if dr is not None:
-                        dr.spring_constant = 0
-                        if self.simulation_running:
-                            self.apply_distance_restraint(dr)
+        atoms = residues.atoms
+        from . import session_extensions as sx
+        m = self.selected_model
+        dr_m = sx.get_distance_restraint_mgr(m)
+        all_ss_restraints = dr_m.get_ss_restraints(m.residues)
+        on_restraints = dr_m.atoms_restraints(atoms[numpy.in1d(atoms.names, ('O', 'N'))])
+        on_restraints[all_ss_restraints[0].indices(on_restraints)!=-1].enableds = False
+        ca_restraints = dr_m.atoms_restraints(atoms[atoms.names == 'CA'])
+        ca_restraints[all_ss_restraints[1].indices(ca_restraints)!=-1].enableds = False
 
-
-    def apply_distance_restraints(self, distance_restraints):
-        '''
-        After changing the target distances and/or spring constants of a
-        set of distance restraints, call this function to apply them to
-        a currently running simulation.
-        '''
-        if not self.simulation_running:
-            print('No simulation running!')
-            return
-        self._sim_interface.update_distance_restraints(distance_restraints)
-
-    def apply_distance_restraint(self, distance_restraint):
-        '''
-        After changing the target distance and/or spring constant of a
-        distance restraint, call this function to apply the changes to
-        a currently running simulation.
-        '''
-        if not self.simulation_running:
-            print('No simulation running!')
-            return
-        self._sim_interface.update_distance_restraint(distance_restraint)
+        pdr_m = sx.get_proper_dihedral_restraint_mgr(m)
+        phi = pdr_m.get_restraints_by_residues_and_name(residues, 'phi')
+        psi = pdr_m.get_restraints_by_residues_and_name(residues, 'psi')
+        phi.enableds = False
+        psi.enableds = False
 
     def flip_peptide_omega(self, res):
         '''

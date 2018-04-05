@@ -359,6 +359,8 @@ class Sim_Manager:
         uh.append((pdr_m, pdr_m.triggers.add_handler('changes', self._pdr_changed_cb)))
 
         dr_m = self.distance_restraint_mgr
+        # Pre-create all restraints necessary for secondary structure manipulation
+        dr_m.add_ss_restraints(sc.all_atoms.unique_residues)
         drs = dr_m.atoms_restraints(sc.mobile_atoms)
         sh.add_distance_restraints(drs)
         uh.append((dr_m, dr_m.triggers.add_handler('changes', self._dr_changed_cb)))
@@ -986,7 +988,7 @@ class Sim_Handler:
             restraints.enableds, restraints.spring_constants, restraints.targets/10)
         self.context_reinit_needed()
 
-    def add_dihedral_restraint(self, restraint):
+    def add_distance_restraint(self, restraint):
         force = self._distance_restraints_force
         all_atoms = self._atoms
         dr_atoms = restraint.atoms
