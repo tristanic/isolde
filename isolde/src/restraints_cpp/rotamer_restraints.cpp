@@ -93,7 +93,7 @@ Rotamer_Restraint* Rotamer_Restraint_Mgr::get_restraint(Rotamer *rot, bool creat
         return it->second;
     if (create)
         return new_restraint(rot);
-    throw std::logic_error(error_no_restraint());
+    //throw std::logic_error(error_no_restraint());
     return nullptr;
 }
 
