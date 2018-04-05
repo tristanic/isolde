@@ -95,7 +95,7 @@ class CheckPoint:
 
         drs = self.saved_drs
         drs.enableds = False
-        for prop_val in self.saved_dr_properties.items():
+        for prop, val in self.saved_dr_properties.items():
             setattr(drs, prop, val)
 
         atoms = self.mobile_atoms
