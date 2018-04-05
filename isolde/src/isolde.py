@@ -1374,20 +1374,26 @@ class Isolde():
         self.iw._rebuild_register_shift_release_button.setEnabled(False)
         self.iw._rebuild_register_shift_go_button.setEnabled(False)
         self.add_checkpoint_block(rs, 'Register shift in progress')
-        self._isolde_events.add_event_handler('register shift finish check',
-                                              'completed simulation step',
-                                              self._check_if_register_shift_finished)
+        rs.triggers.add_handler('register shift finished', self._register_shift_finished)
+        rs.triggers.add_handler('register shift released', self._register_shift_released_cb)
+        # self._isolde_events.add_event_handler('register shift finish check',
+        #                                       'completed simulation step',
+        #                                       self._check_if_register_shift_finished)
 
 
-    def _check_if_register_shift_finished(self, *_):
-        if self._register_shifter.finished:
-            self.iw._rebuild_register_shift_release_button.setEnabled(True)
-            self._isolde_events.remove_event_handler('register shift finish check')
+    def _register_shift_finished(self, *_):
+        self.iw._rebuild_register_shift_release_button.setEnabled(True)
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
 
     def _release_register_shifter(self, *_):
         rs = self._register_shifter
         if rs is not None:
             rs.release_all()
+
+    def _register_shift_released_cb(self, *_):
+        rs = self._register_shifter
+        if rs is not None:
             self.remove_checkpoint_block(rs)
         self._register_shifter = None
         self.iw._rebuild_register_shift_go_button.setEnabled(True)
@@ -1508,6 +1514,13 @@ class Isolde():
         rot = self._selected_rotamer
         if rot is not None:
             self.release_rotamer(rot)
+
+    def release_rotamers_by_residues(self, residues):
+        from . import session_extensions as sx
+        rm = sx.get_rotamer_mgr(self.session)
+        rotamers = rm.get_rotamers(residues)
+        self.release_rotamers(rotamers)
+
 
     def release_rotamers(self, rotamers):
         from . import session_extensions
