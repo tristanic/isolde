@@ -49,7 +49,7 @@ from .eventhandler import EventHandler
 from .constants import defaults, sim_outcomes, control
 from .param_mgr import Param_Mgr, autodoc, param_properties
 from .checkpoint import CheckPoint
-from .openmm import sim_interface
+#from .openmm import sim_interface
 from .openmm.sim_param_mgr import SimParams
 
 from .validation_new.validation import Validation_Mgr
@@ -64,6 +64,7 @@ OPENMM_SPRING_UNIT =        defaults.OPENMM_SPRING_UNIT
 OPENMM_RADIAL_SPRING_UNIT = defaults.OPENMM_RADIAL_SPRING_UNIT
 OPENMM_ENERGY_UNIT =        defaults.OPENMM_ENERGY_UNIT
 OPENMM_ANGLE_UNIT =         defaults.OPENMM_ANGLE_UNIT
+OPENMM_TEMPERATURE_UNIT =   defaults.OPENMM_TEMPERATURE_UNIT
 CHIMERAX_LENGTH_UNIT =      defaults.CHIMERAX_LENGTH_UNIT
 CHIMERAX_FORCE_UNIT =       defaults.CHIMERAX_FORCE_UNIT
 CHIMERAX_SPRING_UNIT =      defaults.CHIMERAX_SPRING_UNIT
@@ -171,9 +172,6 @@ class Isolde():
         self._isolde_events = EventHandler(self)
         self._logging = False
         self._log = Logger('isolde.log')
-
-        self._sim_interface = None
-
         self.checkpoint_disabled_reasons = {}
 
         self.params = IsoldeParams()
@@ -435,8 +433,7 @@ class Isolde():
             text = self._human_readable_sim_modes[mode]
             cb.addItem(text, mode)
 
-        iw._sim_temp_spin_box.setProperty('value',
-            self.sim_params.temperature)
+        iw._sim_temp_spin_box.setValue(self.sim_params.temperature.value_in_unit(OPENMM_TEMPERATURE_UNIT))
 
         # Populate force field combo box with available forcefields
         cb = iw._sim_force_field_combo_box
@@ -464,15 +461,11 @@ class Isolde():
 
 
         # Basic settings for defining the mobile selection
-        iw._sim_basic_mobile_b_and_a_spinbox.setProperty('value',
-            params.num_selection_padding_residues)
-        iw._sim_basic_mobile_sel_within_spinbox.setProperty('value',
-            params.soft_shell_cutoff_distance)
-        iw._sim_basic_mobile_chains_within_spinbox.setProperty('value',
-            params.soft_shell_cutoff_distance)
+        iw._sim_basic_mobile_b_and_a_spinbox.setValue(params.num_selection_padding_residues)
+        iw._sim_basic_mobile_sel_within_spinbox.setValue(params.soft_shell_cutoff_distance)
+        iw._sim_basic_mobile_chains_within_spinbox.setValue(params.soft_shell_cutoff_distance)
 
-        iw._sim_basic_xtal_map_weight_spin_box.setProperty('value',
-            params.difference_map_mask_cutoff)
+        iw._sim_basic_xtal_map_weight_spin_box.setValue(params.difference_map_mask_cutoff)
         ####
         # Rebuild tab
         ####
@@ -482,7 +475,7 @@ class Isolde():
         iw._rebuild_sel_res_pep_info.setText('')
         iw._rebuild_sel_res_rot_info.setText('')
 
-        iw._rebuild_pos_restraint_spring_constant.setProperty('value',
+        iw._rebuild_pos_restraint_spring_constant.setValue(
             self.sim_params.position_restraint_spring_constant.value_in_unit(CHIMERAX_SPRING_UNIT))
 
         ####
@@ -677,11 +670,9 @@ class Isolde():
         iw._rebuild_restrain_par_beta_button.clicked.connect(
             self._restrain_selection_as_parallel_beta
             )
-
         iw._rebuild_2ry_struct_restr_clear_button.clicked.connect(
             self.clear_secondary_structure_restraints_for_selection
             )
-
         iw._rebuild_register_shift_reduce_button.clicked.connect(
             self._decrement_register_shift
             )
@@ -694,22 +685,27 @@ class Isolde():
         iw._rebuild_register_shift_release_button.clicked.connect(
             self._release_register_shifter
             )
-
-
         iw._rebuild_pin_atom_to_current_pos_button.clicked.connect(
             self._restrain_selected_atom_to_current_xyz
             )
-
         iw._rebuild_pin_atom_to_pivot_button.clicked.connect(
             self._restrain_selected_atom_to_pivot_xyz
             )
-
-
         iw._rebuild_pos_restraint_clear_button.clicked.connect(
             self.release_xyz_restraints_on_selected_atoms
             )
-
-
+        iw._rebuild_dist_restraint_apply_button.clicked.connect(
+            self._add_distance_restraint_between_selected_atoms
+        )
+        iw._rebuild_dist_restraint_set_target_to_current_distance_button.clicked.connect(
+            self._set_distance_restraint_target_to_current_distance
+        )
+        iw._rebuild_remove_distance_restraint_button.clicked.connect(
+            self._release_distance_restraint_between_selected_atoms
+        )
+        iw._rebuild_remove_all_distance_restraints_button.clicked.connect(
+            self._release_all_distance_restraints_for_selected_atoms
+        )
 
         ####
         # Validation tab
@@ -736,10 +732,7 @@ class Isolde():
         iw._validate_pep_update_button.clicked.connect(
             self._update_iffy_peptide_lists
             )
-        iw._validate_pep_cis_list.itemClicked.connect(
-            self._show_selected_iffy_peptide
-            )
-        iw._validate_pep_twisted_list.itemClicked.connect(
+        iw._validate_pep_iffy_table.itemClicked.connect(
             self._show_selected_iffy_peptide
             )
 
@@ -1417,7 +1410,6 @@ class Isolde():
         k = self.iw._rebuild_pos_restraint_spring_constant.value()*100
         self.restrain_atom_to_xyz(atom, self.session.view.center_of_rotation, k)
 
-
     def restrain_atom_to_xyz(self, atom, target, spring_constant):
         from . import session_extensions as sx
         pr_m = sx.get_position_restraint_mgr(self.selected_model)
@@ -1440,21 +1432,55 @@ class Isolde():
         prs = pr_m.get_restraints(sel)
         prs.enableds = False
 
-    def apply_xyz_restraints_to_selected_atoms(self, *_, sel = None):
+    def _set_distance_restraint_target_to_current_distance(self, *_):
+        from chimerax.atomic import selected_atoms
+        sel = selected_atoms(self.session)
+        if len(sel) != 2:
+            raise TypeError('A distance restraint must involve exactly two atoms!')
+        coords = sel.coords
+        d = numpy.linalg.norm(coords[1]-coords[0])
+        self.iw._rebuild_dist_restraint_target_distance.setValue(d)
+
+    def _add_distance_restraint_between_selected_atoms(self, *_):
+        from chimerax.atomic import selected_atoms
+        sel = selected_atoms(self.session)
+        if len(sel) != 2:
+            raise TypeError('A distance restraint must involve exactly two atoms!')
+        target = self.iw._rebuild_dist_restraint_target_distance.value()
+        k = self.iw._rebuild_dist_restraint_spring_constant.value()
+        self.add_distance_restraint(*sel, target, k)
+
+    def add_distance_restraint(self, atom1, atom2, target, spring_constant):
         '''
-        After setting targets and/or spring constants for a set of
-        position restraints, run this to apply them to the currently
-        running simulation. Note: If no simulation is running this step
-        is unnecessary. The restraints will be automatically applied to
-        all future simulations.
+        Adds a distance restraint between two atoms with the given target
+        distance and spring constant. If the restraint already exists, just
+        changes the target/spring constant and enables it.
         '''
-        if not self.simulation_running:
-            return
-        if sel is None:
-            from chimerax.atomic import selected_atoms
-            sel = selected_atoms(self.session)
-        restraints = self.position_restraints.in_selection(sel)
-        self._sim_interface.update_position_restraints(restraints)
+        from . import session_extensions as sx
+        dr_m = sx.get_distance_restraint_mgr(self.selected_model)
+        dr = dr_m.add_restraint(atom1, atom2)
+        dr.target = target
+        dr.spring_constant = spring_constant
+        dr.enabled = True
+
+    def _release_distance_restraint_between_selected_atoms(self, *_):
+        from chimerax.atomic import selected_atoms
+        sel = selected_atoms(self.session)
+        from . import session_extensions as sx
+        dr_m = sx.get_distance_restraint_mgr(self.selected_model)
+        drs = dr_m.intra_restraints(sel)
+        if len(drs):
+            drs.enableds=False
+
+    def _release_all_distance_restraints_for_selected_atoms(self, *_):
+        from chimerax.atomic import selected_atoms
+        sel = selected_atoms(self.session)
+        from . import session_extensions as sx
+        dr_m = sx.get_distance_restraint_mgr(self.selected_model)
+        drs = dr_m.atoms_restraints(sel)
+        if len(drs):
+            drs.enableds=False
+
 
     def _set_rotamer_buttons_enabled(self, switch):
         iw = self.iw
@@ -1696,44 +1722,85 @@ class Isolde():
         from .session_extensions import get_proper_dihedral_mgr
         pd_mgr = get_proper_dihedral_mgr(self.session)
         model = self._selected_model
-        clist = self.iw._validate_pep_cis_list
-        tlist = self.iw._validate_pep_twisted_list
-        clist.clear()
-        tlist.clear()
-        omegas = pd_mgr.get_dihedrals(model.residues, 'omega')
+        # clist = self.iw._validate_pep_cis_list
+        # tlist = self.iw._validate_pep_twisted_list
+        # clist.clear()
+        # tlist.clear()
+        table = self.iw._validate_pep_iffy_table
+        if self.simulation_running:
+            residues = self.sim_manager.sim_construct.mobile_residues
+        else:
+            residues = model.residues
+        omegas = pd_mgr.get_dihedrals(residues, 'omega')
         abs_angles = numpy.abs(omegas.angles)
         from math import pi
         from .constants import defaults
         cc = defaults.CIS_PEPTIDE_BOND_CUTOFF
         tc = defaults.TWISTED_PEPTIDE_BOND_DELTA
-        cis = omegas[abs_angles < cc]
-        twisted = omegas[numpy.logical_and(abs_angles >= cc, abs_angles < pi-tc)]
+        cis_mask = abs_angles < cc
+        twisted_mask = numpy.logical_and(abs_angles >= cc, abs_angles < pi-tc)
 
+        iffy_mask = numpy.logical_or(cis_mask, twisted_mask)
+        iffy = omegas[iffy_mask]
+        angles = numpy.degrees(iffy.angles)
+        cis_mask = cis_mask[iffy_mask]
+
+        table.setRowCount(0)
+        table.setRowCount(len(iffy))
         from PyQt5.QtWidgets import QListWidgetItem
         from PyQt5.Qt import QColor, QBrush
         from PyQt5.QtCore import Qt
-        badColor = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
-        for c in cis:
-            r = c.residue
-            pre = c.atoms[0].residue
-            label = r.chain_id + ' ' \
-                    + str(pre.number) + ' - ' + str(r.number) + '\t' \
-                    + pre.name + ' - ' + r.name
-            list_item = QListWidgetItem(label)
-            list_item.data = r
-            if r.name != 'PRO':
-                list_item.setBackground(badColor)
-            clist.addItem(list_item)
-        for t in twisted:
-            r = t.residue
-            pre = t.atoms[0].residue
-            label = r.chain_id + ' ' \
-                    + str(pre.number) + ' - ' + str(r.number) + '\t' \
-                    + pre.name + ' - ' + r.name
-            list_item = QListWidgetItem(label)
-            list_item.data = r
-            list_item.setBackground(badColor)
-            tlist.addItem(list_item)
+        cis_nonpro_color = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
+        cis_pro_color = QBrush(QColor(100,255,100), Qt.SolidPattern)
+        twisted_color = QBrush(QColor(240, 200, 160), Qt.SolidPattern)
+        from PyQt5.QtWidgets import QTableWidgetItem
+        for i, (omega, angle, cis) in enumerate(zip(iffy, angles, cis_mask)):
+            res1, res2 = omega.atoms.unique_residues
+            if cis:
+                conf_text = 'cis'
+            else:
+                conf_text = 'twisted'
+            data = (
+                res1.chain_id,
+                '{}-{}'.format(res1.number, res2.number),
+                '{}-{}'.format(res1.name, res2.name),
+                '{:.0f}° ({})'.format(angle, conf_text)
+            )
+            for j, d in enumerate(data):
+                item = QTableWidgetItem(d)
+                item.data = res2
+                if cis:
+                    if res2.name == 'PRO':
+                        color = cis_pro_color
+                    else:
+                        color = cis_nonpro_color
+                else:
+                    color = twisted_color
+                item.setBackground(color)
+                table.setItem(i, j, item)
+
+
+        # for c in cis:
+        #     r = c.residue
+        #     pre = c.atoms[0].residue
+        #     label = r.chain_id + ' ' \
+        #             + str(pre.number) + ' - ' + str(r.number) + '\t' \
+        #             + pre.name + ' - ' + r.name
+        #     list_item = QListWidgetItem(label)
+        #     list_item.data = r
+        #     if r.name != 'PRO':
+        #         list_item.setBackground(badColor)
+        #     clist.addItem(list_item)
+        # for t in twisted:
+        #     r = t.residue
+        #     pre = t.atoms[0].residue
+        #     label = r.chain_id + ' ' \
+        #             + str(pre.number) + ' - ' + str(r.number) + '\t' \
+        #             + pre.name + ' - ' + r.name
+        #     list_item = QListWidgetItem(label)
+        #     list_item.data = r
+        #     list_item.setBackground(badColor)
+        #     tlist.addItem(list_item)
 
     def _show_selected_iffy_peptide(self, item):
         res = item.data
@@ -1792,14 +1859,6 @@ class Isolde():
         view.focus_on_selection(self.session, self.session.main_view, res.atoms)
         self.session.selection.clear()
         res.atoms.selected = True
-
-
-
-
-
-
-
-
 
     ##############################################################
     # Simulation global settings functions
@@ -1972,9 +2031,9 @@ class Isolde():
 
     def _xtal_enable_live_scrolling(self, *_):
         m = self.selected_model
-        cs = m.parent
-        cs.xmaps.live_scrolling = True
-        cs.live_atomic_symmetry = True
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sh = get_symmetry_handler(m)
+        sh.spotlight_mode = True
 
     ##############################################################
     # Interactive restraints functions
@@ -2023,7 +2082,7 @@ class Isolde():
         '''
         Reset all the simulation parameters back to their defaults.
         '''
-        from .openmm.sim_interface import SimParams
+        from .openmm.sim_param_mgr import SimParams
         self.sim_params = SimParams()
 
     def _start_sim_or_toggle_pause(self, *_):
@@ -2343,95 +2402,10 @@ class Isolde():
     ####
     # Restraint controls
     ####
-    def apply_peptide_bond_restraints(self, dihedrals, target = None, units = 'deg'):
-        '''
-        Apply restraints to a list of omega dihedrals. If target is None,
-        then each dihedral will be automatically restrained to trans or
-        cis according to its starting configuration. Otherwise, the target
-        may be a value (interpreted as degrees if units = 'deg' or radians
-        if units = 'rad'), or either 'trans' or 'cis'.
-        '''
-        from numbers import Number
-        if units not in ('deg','rad'):
-            raise Exception('Units should be either "deg" or "rad"')
-
-        cr = self.cis_peptide_bond_range
-        sc = self._total_sim_construct
-        k = self.sim_params.peptide_bond_spring_constant
-        sim = self.sim
-        context = None
-        if sim is not None and hasattr(sim, 'context'):
-            context = sim.context
-
-        from math import pi, radians
-        if target == 'trans':
-            t = pi
-        elif target == 'cis':
-            t = 0.0
-        elif isinstance(target, Number):
-            if units == 'deg':
-                t = radians(target)
-            else:
-                t = target
-        elif target is not None:
-            raise Exception('Target must be either a number, "trans", "cis", or None')
-        else:
-            dvals = dihedrals.values
-            t = (numpy.logical_or(dvals > cr[1], dvals < cr[0])).astype(float) * pi
-
-        dihedrals.targets = t
-        dihedrals.spring_constants = k
-        if self.simulation_running:
-            self._sim_interface.update_dihedral_restraints(dihedrals)
-
-    def remove_peptide_bond_restraints(self, dihedrals):
-        '''
-        Remove restraints on a list of peptide bonds (actually, just set
-        their spring constants to zero). Simulation must already be running.
-        '''
-        if self.simulation_running:
-            self._sim_interface.update_dihedral_restraints(dihedrals)
 
     def flip_peptide_bond(self, res):
         from .manipulations.peptide_flip import Peptide_Bond_Flipper
         pf = Peptide_Bond_Flipper(self, res)
-
-
-    def apply_dihedral_restraint(self, dihedral):
-        '''
-        Apply the current restraint parameters for a dihedral to the
-        currently-running simulation.
-        '''
-        if not self.simulation_running:
-            print('No simulation running!')
-            return
-        self._sim_interface.update_dihedral_restraint(dihedral)
-        self._all_annotated_dihedrals.update_needed = True
-
-    def apply_dihedral_restraints(self, dihedrals):
-        '''
-        Apply restraints for a set of dihedrals at once.
-        '''
-        if not self.simulation_running:
-            print('No simulation running!')
-            return
-        all_names = dihedrals.names
-        unique_names = numpy.unique(all_names)
-        if len(unique_names) == 1:
-            self._sim_interface.update_dihedral_restraints(dihedrals)
-        else:
-            for name in unique_names:
-                indices = numpy.where(all_names == name)[0]
-                self._sim_interface.update_dihedral_restraints(dihedrals[indices])
-        self._all_annotated_dihedrals.update_needed = True
-
-    def release_dihedral_restraint(self, dihedral):
-        dihedral.target = 0
-        dihedral.spring_constant = 0
-        if self.simulation_running:
-            self.apply_dihedral_restraint(dihedral)
-        else:
-            self._update_dihedral_restraints_drawing()
 
     def clear_secondary_structure_restraints_for_selection(self, *_, atoms = None, residues = None):
         '''

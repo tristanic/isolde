@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="icons">
+    <file>multi-x.png</file>
+    <file>diagonal-arrows.png</file>
+    <file>distance-restraint-icon.png</file>
     <file>tug_atom.png</file>
     <file>tug_residue.png</file>
     <file>registershift-icon.png</file>

@@ -60,7 +60,7 @@ bool Distance_Restraint::visible() const
 
 double Distance_Restraint::radius() const
 {
-    return _spring_constant/MAX_LINEAR_SPRING_CONSTANT
+    return sqrt(_spring_constant/MAX_LINEAR_SPRING_CONSTANT)
         * (LINEAR_RESTRAINT_MAX_RADIUS-LINEAR_RESTRAINT_MIN_RADIUS) + LINEAR_RESTRAINT_MIN_RADIUS;
 }
 

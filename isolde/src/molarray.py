@@ -266,6 +266,9 @@ class Proper_Dihedral_Restraints(Collection):
             args = (ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointers, len(self))
 
+    @property
+    def atoms(self):
+        return self.dihedrals.atoms
 
     targets = cvec_property('proper_dihedral_restraint_target', float64,
         doc = 'Target angles for each restraint in radians. Can be written.')
