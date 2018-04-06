@@ -510,6 +510,15 @@ class Sim_Manager:
         mgr, changes = changes
         change_types = list(changes.keys())
         from chimerax.core.atomic import concatenate
+        if 'created' in change_types:
+            # avoid double counting
+            created = changes['created']
+            created = created[created.sim_indices == -1]
+            # add only restraints with both atoms in the sim
+            all_atoms = self.sim_construct.all_atoms
+            indices = numpy.array([all_atoms.indices(atoms) for atoms in created.atoms])
+            created = created[numpy.all(indices != -1, axis=0)]
+            self.sim_handler.add_distance_restraints(created)
         changeds = []
         if 'target changed' in change_types:
             changeds.append(changes['target changed'])
@@ -521,6 +530,7 @@ class Sim_Manager:
             all_changeds = concatenate(changeds, remove_duplicates=True)
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
             self.sim_handler.update_distance_restraints(all_changeds)
+
 
     def _dr_sim_end_cb(self, *_):
         restraints = self.distance_restraint_mgr.intra_restraints(self.sim_construct.all_atoms)
@@ -534,6 +544,15 @@ class Sim_Manager:
         change_types = list(changes.keys())
         from chimerax.core.atomic import concatenate
         changeds = []
+        if 'created' in change_types:
+            # avoid double counting
+            created = changes['created']
+            created = created[created.sim_indices == -1]
+            # add only restraints with both atoms in the sim
+            all_atoms = self.sim_construct.all_atoms
+            indices = numpy.array([all_atoms.indices(atoms) for atoms in created.atoms])
+            created = created[numpy.all(indices != -1, axis=0)]
+            self.sim_handler.add_dihedral_restraints(created)
         if 'target changed' in change_types:
             changeds.append(changes['target changed'])
         if 'enabled/disabled' in change_types:
@@ -544,6 +563,7 @@ class Sim_Manager:
             all_changeds = concatenate(changeds, remove_duplicates=True)
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
             self.sim_handler.update_dihedral_restraints(all_changeds)
+
 
     def _pdr_sim_end_cb(self, *_):
         restraints = self.proper_dihedral_restraint_mgr.get_all_restraints_for_residues(self.sim_construct.all_atoms.unique_residues)
@@ -875,6 +895,9 @@ class Sim_Handler:
 
 
     def _update_forces_in_context_if_needed(self):
+        if self._context_reinit_pending:
+            # defer until the reinit is done
+            return
         context = self._context
         for f in self.all_forces:
             if f.update_needed:
