@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>547</width>
-    <height>791</height>
+    <height>864</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -181,7 +181,7 @@
         <x>0</x>
         <y>0</y>
         <width>539</width>
-        <height>641</height>
+        <height>714</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -236,7 +236,7 @@ border: 1px;
 }</string>
            </property>
            <property name="currentIndex">
-            <number>2</number>
+            <number>3</number>
            </property>
            <property name="elideMode">
             <enum>Qt::ElideNone</enum>
@@ -1157,7 +1157,7 @@ border: 1px;
                   <x>0</x>
                   <y>0</y>
                   <width>531</width>
-                  <height>342</height>
+                  <height>567</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1877,7 +1877,7 @@ border: 1px;
                   <x>0</x>
                   <y>0</y>
                   <width>531</width>
-                  <height>372</height>
+                  <height>445</height>
                  </rect>
                 </property>
                 <property name="sizePolicy">
@@ -1960,7 +1960,7 @@ border: 1px;
                       </property>
                       <layout class="QHBoxLayout" name="horizontalLayout_30">
                        <property name="spacing">
-                        <number>2</number>
+                        <number>3</number>
                        </property>
                        <property name="leftMargin">
                         <number>1</number>
@@ -2301,6 +2301,19 @@ border: 1px;
                         </widget>
                        </item>
                        <item>
+                        <spacer name="horizontalSpacer_18">
+                         <property name="orientation">
+                          <enum>Qt::Horizontal</enum>
+                         </property>
+                         <property name="sizeHint" stdset="0">
+                          <size>
+                           <width>40</width>
+                           <height>20</height>
+                          </size>
+                         </property>
+                        </spacer>
+                       </item>
+                       <item>
                         <widget class="QFrame" name="_rebuild_register_shift_container">
                          <property name="minimumSize">
                           <size>
@@ -2545,19 +2558,6 @@ border: 1px;
                          </layout>
                         </widget>
                        </item>
-                       <item>
-                        <spacer name="horizontalSpacer_18">
-                         <property name="orientation">
-                          <enum>Qt::Horizontal</enum>
-                         </property>
-                         <property name="sizeHint" stdset="0">
-                          <size>
-                           <width>40</width>
-                           <height>20</height>
-                          </size>
-                         </property>
-                        </spacer>
-                       </item>
                       </layout>
                      </widget>
                     </item>
@@ -2789,9 +2789,9 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>0</y>
+                  <y>-270</y>
                   <width>518</width>
-                  <height>641</height>
+                  <height>841</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -3217,6 +3217,187 @@ border: 1px;
                       </item>
                       <item>
                        <widget class="QPushButton" name="_validate_pep_update_button">
+                        <property name="text">
+                         <string>Update list</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QFrame" name="_validate_rota_stub_frame">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QHBoxLayout" name="horizontalLayout_11">
+                    <property name="spacing">
+                     <number>2</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>1</number>
+                    </property>
+                    <item>
+                     <widget class="QLabel" name="label_10">
+                      <property name="text">
+                       <string>Rotamers</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <spacer name="horizontalSpacer_6">
+                      <property name="orientation">
+                       <enum>Qt::Horizontal</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>358</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                     </spacer>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="_validate_rota_show_button">
+                      <property name="text">
+                       <string>Show</string>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QFrame" name="_validate_rota_main_frame">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QVBoxLayout" name="verticalLayout_11">
+                    <property name="spacing">
+                     <number>2</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>1</number>
+                    </property>
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_15">
+                      <item>
+                       <widget class="QLabel" name="label_12">
+                        <property name="text">
+                         <string>Rotamers</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <spacer name="horizontalSpacer_16">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="_validate_rota_hide_button">
+                        <property name="text">
+                         <string>Hide</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                    <item>
+                     <widget class="QTableWidget" name="_validate_rota_table">
+                      <column>
+                       <property name="text">
+                        <string>Chain</string>
+                       </property>
+                      </column>
+                      <column>
+                       <property name="text">
+                        <string>Residue</string>
+                       </property>
+                      </column>
+                      <column>
+                       <property name="text">
+                        <string>Resname</string>
+                       </property>
+                      </column>
+                      <column>
+                       <property name="text">
+                        <string>P-value (%)</string>
+                       </property>
+                      </column>
+                     </widget>
+                    </item>
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_26">
+                      <property name="bottomMargin">
+                       <number>20</number>
+                      </property>
+                      <item>
+                       <spacer name="horizontalSpacer_20">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="_validate_rota_update_button">
                         <property name="text">
                          <string>Update list</string>
                         </property>

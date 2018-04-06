@@ -112,6 +112,7 @@ class ISOLDE_ToolUI(ToolInstance):
         self._hidden_at_start = [
             iw._validate_rama_main_frame,
             iw._validate_pep_main_frame,
+            iw._validate_rota_main_frame,
             iw._sim_basic_xtal_init_main_frame,
             iw._sim_basic_xtal_map_settings_frame,
             ]

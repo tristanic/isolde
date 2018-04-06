@@ -174,7 +174,6 @@ class Isolde():
 
         self._sim_interface = None
 
-        self._can_checkpoint = True
         self.checkpoint_disabled_reasons = {}
 
         self.params = IsoldeParams()
@@ -321,16 +320,6 @@ class Isolde():
         camera.camera(session, 'ortho')
         from chimerax.clipper.mousemodes import ZoomMouseMode
         self._mouse_modes.register_all_isolde_modes()
-
-
-    @property
-    def can_checkpoint(self):
-        '''Is checkpoint save/revert currently allowed?'''
-        return self.simulation_running and self._can_checkpoint
-
-    @can_checkpoint.setter
-    def can_checkpoint(self, flag):
-        self._can_checkpoint = flag
 
     @property
     def sim_handler(self):
@@ -509,6 +498,8 @@ class Isolde():
         keys = list(rm.Rama_Case)[1:]
         for key in reversed(keys):
             cb.addItem(rm.RAMA_CASE_DETAILS[key]['name'], key)
+
+        self._update_model_list()
 
     def _connect_functions(self):
         '''
@@ -751,6 +742,19 @@ class Isolde():
         iw._validate_pep_twisted_list.itemClicked.connect(
             self._show_selected_iffy_peptide
             )
+
+        iw._validate_rota_show_button.clicked.connect(
+            self._show_rota_validation_frame
+            )
+        iw._validate_rota_hide_button.clicked.connect(
+            self._hide_rota_validation_frame
+            )
+        iw._validate_rota_update_button.clicked.connect(
+            self._update_iffy_rota_list
+            )
+        iw._validate_rota_table.itemClicked.connect(
+            self._show_selected_iffy_rota
+        )
 
 
         ####
@@ -1015,7 +1019,7 @@ class Isolde():
                 valid = False
             if valid:
                 from chimerax.clipper.symmetry import XtalSymmetryHandler
-                for m in sm.all_models:
+                for m in sm.all_models():
                     if isinstance(m, XtalSymmetryHandler):
                         valid = False
                         break
@@ -1038,11 +1042,11 @@ class Isolde():
 
     def _initialize_xtal_structure(self, *_):
         fname = self.iw._sim_basic_xtal_init_reflections_file_name.text()
-        if not cb.count:
-            errstring = 'No atomic structures are available that are not \
-                already part of an existing crystal structure. Please load \
-                one first.'
-            _generic_warning(errstring)
+        # if not cb.count:
+        #     errstring = 'No atomic structures are available that are not \
+        #         already part of an existing crystal structure. Please load \
+        #         one first.'
+        #     _generic_warning(errstring)
         if not os.path.isfile(fname):
             errstring = 'Please select a valid MTZ file!'
             _generic_warning(errstring)
@@ -1682,6 +1686,7 @@ class Isolde():
     def _show_peptide_validation_frame(self, *_):
         self.iw._validate_pep_stub_frame.hide()
         self.iw._validate_pep_main_frame.show()
+        self._update_iffy_peptide_lists()
 
     def _hide_peptide_validation_frame(self, *_):
         self.iw._validate_pep_main_frame.hide()
@@ -1736,6 +1741,64 @@ class Isolde():
         view.focus_on_selection(self.session, self.session.main_view, res.atoms)
         self.session.selection.clear()
         res.atoms.selected = True
+
+    def _show_rota_validation_frame(self, *_):
+        self.iw._validate_rota_stub_frame.hide()
+        self.iw._validate_rota_main_frame.show()
+        self._update_iffy_rota_list()
+
+    def _hide_rota_validation_frame(self, *_):
+        self.iw._validate_rota_stub_frame.show()
+        self.iw._validate_rota_main_frame.hide()
+
+    def _update_iffy_rota_list(self, *_):
+        from .session_extensions import get_rotamer_mgr
+        rota_m = get_rotamer_mgr(self.session)
+        if self.simulation_running:
+            residues = self.sim_manager.sim_construct.mobile_residues
+        else:
+            residues = self._selected_model.residues
+        rotas = rota_m.get_rotamers(residues)
+        iffy, scores = rota_m.non_favored_rotamers(rotas)
+        order = numpy.argsort(scores)
+        table = self.iw._validate_rota_table
+        outlier_cutoff = rota_m.cutoffs[1]
+        from PyQt5.Qt import QColor, QBrush
+        from PyQt5.QtCore import Qt
+        badColor = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
+        table.setRowCount(0)
+        table.setRowCount(len(iffy))
+        from PyQt5.QtWidgets import QTableWidgetItem
+        for i, index in enumerate(order):
+            r = iffy[index]
+            score = scores[index]
+            res = r.residue
+            data = (
+                res.chain_id,
+                str(res.number),
+                res.name,
+                '{:.4f}'.format(score*100)
+            )
+            for j, d in enumerate(data):
+                item = QTableWidgetItem(d)
+                item.data = res
+                if score < outlier_cutoff:
+                    item.setBackground(badColor)
+                table.setItem(i, j, item)
+
+    def _show_selected_iffy_rota(self, item):
+        res = item.data
+        from . import view
+        view.focus_on_selection(self.session, self.session.main_view, res.atoms)
+        self.session.selection.clear()
+        res.atoms.selected = True
+
+
+
+
+
+
+
 
 
     ##############################################################
@@ -2044,20 +2107,12 @@ class Isolde():
         self._set_right_mouse_mode_tug_atom()
         self.sim_handler.triggers.add_handler('sim terminated', self._sim_end_cb)
 
-        # self._isolde_events.add_event_handler('rezone maps during sim',
-        #                                       'completed simulation step',
-        #                                       self._rezone_maps_if_required)
-        #  self.triggers.activate_trigger('simulation started', None)
-
-
-
     def _sim_end_cb(self, name, outcome):
         self._update_menu_after_sim()
         for d in self._haptic_devices:
             d.cleanup()
         from chimerax.core.ui.mousemodes import TranslateMouseMode
         self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
-
 
     def _get_main_sim_selection(self):
         '''
@@ -2067,7 +2122,6 @@ class Isolde():
         selection by the desired padding up and down the chain (stopping at
         chain breaks and ends).
         '''
-
         mode = self._sim_selection_mode
         modes = self._sim_selection_modes
         sm = self._selected_model
@@ -2131,20 +2185,9 @@ class Isolde():
             # text parser. To be completed.
             pass
 
-
-
-
-
-
-
-
-
-
     ##############################################################
     # Simulation on-the-fly control functions
     ##############################################################
-
-
 
     def pause_sim_toggle(self):
         if self.simulation_running:
@@ -2173,8 +2216,6 @@ class Isolde():
 
     def _discard_sim(self, *_):
         self.discard_sim(revert_to='start')
-
-
 
     def discard_sim(self, revert_to='checkpoint'):
         '''
@@ -2235,12 +2276,22 @@ class Isolde():
         '''
         if not self.simulation_running:
             return
-        self._sim_interface.tug_atom_to(atom, target, spring_constant)
+        from . import session_extensions as sx
+        tugm = sx.get_tuggable_atoms_mgr(self.selected_model)
+        t_atom = tugm.get_tuggable(atom)
+        t_atom.target = target
+        if spring_constant is None:
+            spring_constant = self.sim_params.mouse_tug_spring_constant
+        t_atom.spring_constant = spring_constant
+        t_atom.enabled = True
 
     def stop_tugging(self, atom):
         if not self.simulation_running:
             return
-        self._sim_interface.release_tugged_atom(atom)
+        from . import session_extensions as sx
+        tugm = sx.get_tuggable_atoms_mgr(self.selected_model)
+        t_atom = tugm.get_tuggable(atom)
+        t_atom.enabled = False
 
     def add_checkpoint_block(self, obj, reason):
         '''
@@ -2248,7 +2299,6 @@ class Isolde():
         know when these are running and disable checkpointing until
         they're done.
         '''
-        self.can_checkpoint = False
         self.checkpoint_disabled_reasons[obj] = reason
         self.iw._sim_save_checkpoint_button.setEnabled(False)
         self.iw._sim_revert_to_checkpoint_button.setEnabled(False)
@@ -2261,9 +2311,13 @@ class Isolde():
         r = self.checkpoint_disabled_reasons
         r.pop(obj)
         if len(r) ==0:
-            self.can_checkpoint = True
             self.iw._sim_save_checkpoint_button.setEnabled(True)
             self.iw._sim_revert_to_checkpoint_button.setEnabled(True)
+
+    @property
+    def can_checkpoint(self):
+        '''Is checkpoint save/revert currently allowed?'''
+        return self.simulation_running and not len(self.checkpoint_disabled_reasons)
 
     def checkpoint(self, *_):
         if self.can_checkpoint:

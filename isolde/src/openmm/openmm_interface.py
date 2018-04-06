@@ -204,7 +204,8 @@ class Sim_Construct:
             raise TypeError('All atoms must be from the targeted model!')
         all_atoms = self.all_atoms = model_atoms[numpy.sort(all_i)]
         mob_i = model_atoms.indices(mobile_atoms)
-        self.mobile_atoms = model_atoms[numpy.sort(mob_i)]
+        ma = self.mobile_atoms = model_atoms[numpy.sort(mob_i)]
+        mr = self.mobile_residues = ma.unique_residues
         fixed_i = model_atoms.indices(fixed_atoms)
         self.fixed_atoms = model_atoms[numpy.sort(fixed_i)]
 
