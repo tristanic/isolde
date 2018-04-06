@@ -209,10 +209,13 @@ class XtalSymmetryHandler(Model):
 
     @spotlight_mode.setter
     def spotlight_mode(self, flag):
+        from chimerax.core.commands import cofr
+        cofr.cofr(self.session, 'centerOfView', show_pivot=True)
         self._atomic_symmetry_model.live_scrolling = flag
         if self.xmapset is not None:
             self.xmapset.live_scrolling = flag
         self._spotlight_mode = flag
+        self.update(force=True)
 
     @property
     def atomic_symmetry_model(self):
@@ -244,15 +247,18 @@ class XtalSymmetryHandler(Model):
             self._update_handler = None
         super().delete()
 
-    def update(self, *_):
+    def update(self, *_, force=False):
         v = self.session.view
         cofr = self._box_center = v.center_of_rotation
         cofr_grid = clipper.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
-        update_needed = False
-        if self._box_center_grid is None:
-            update_needed = True
-        elif (cofr_grid != self._box_center_grid):
-            update_needed = True
+        if force:
+            update_needed=True
+        else:
+            update_needed = False
+            if self._box_center_grid is None:
+                update_needed = True
+            elif (cofr_grid != self._box_center_grid):
+                update_needed = True
         if update_needed:
             self.triggers.activate_trigger('box center moved', (cofr, cofr_grid))
             self._box_center_grid = cofr_grid
