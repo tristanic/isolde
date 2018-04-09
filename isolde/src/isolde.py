@@ -11,9 +11,10 @@
 # Author:    Tristan Croll
 #            Cambridge Institute for Medical Research
 #            University of Cambridge
-import os
+import os, sys
 import numpy
 from math import inf, degrees, radians, pi
+from enum import IntEnum
 
 import PyQt5
 from PyQt5.QtCore import QObject, pyqtSignal
@@ -72,6 +73,13 @@ CHIMERAX_SPRING_UNIT =      defaults.CHIMERAX_SPRING_UNIT
 @param_properties
 @autodoc
 class IsoldeParams(Param_Mgr):
+    '''
+    Contains the basic settings for defining and displaying the atoms and maps
+    involved in an interactive simulation. Changes to parameter values will
+    affect all future simulations in the ISOLDE session. At present, permanent
+    changes can only be made by editing the corresponding entry in `constants.py`.
+
+    '''
     _default_params = {
             # Number of residues before and after each selected residue to add
             # to the mobile selection
@@ -104,18 +112,20 @@ class IsoldeParams(Param_Mgr):
     }
 
 class Isolde():
-
+    '''
+    The master ISOLDE class, primarily designed to be used by the ISOLDE GUI as
+    the front-end interface for starting, controlling and analysing interactive
+    simulations. Should only be used as a session-level singleton.
+    '''
     ####
     # Environment information
     ####
-    import sys, os
     _root_dir = os.path.dirname(os.path.abspath(__file__))
     _platform = sys.platform
 
     ####
     # Enums for menu options
     ####
-    from enum import IntEnum
 
     # Different simulation modes to set map, symmetry etc. parameters.
     class _sim_modes(IntEnum):
@@ -159,10 +169,20 @@ class Isolde():
     trigger_names = (
         'selected model changed', # Changed the master model selection
         'simulation started',
-        'simulation terminated'
+        'simulation terminated',
         )
 
-    def __init__(self, gui):
+    def __init__(self, gui=None):
+        '''
+        Initialises the ISOLDE object and adds it to the ChimeraX session as
+        session.isolde.
+
+        Args:
+            * gui (default=None):
+                - Used by the Isolde BundleAPI to prepare the ISOLDE GUI
+                  interface (i.e. when running from Tools/General/ISOLDE in the
+                  ChimeraX GUI menu).
+        '''
         self.session = session = gui.session
 
         self.triggers = triggerset.TriggerSet()
@@ -175,7 +195,16 @@ class Isolde():
         self.checkpoint_disabled_reasons = {}
 
         self.params = IsoldeParams()
+        '''
+        A :class:`IsoldeParams` instance containing basic parameters controlling
+        how the interactive simulation selection is defined and displayed.
+        '''
+
         self.sim_params = SimParams()
+        '''
+        Parameters controlling the initialisation and behaviour of the
+        simulation.
+        '''
 
         self._status = self.session.logger.status
 
@@ -280,7 +309,7 @@ class Isolde():
         self.tug_hydrogens = False
         self.hydrogens_feel_maps = False
 
-        self.initialize_haptics()
+        # self.initialize_haptics()
 
 
 
@@ -290,24 +319,27 @@ class Isolde():
 
         self.gui_mode = False
 
-        from PyQt5.QtGui import QPixmap
-        from PyQt5.QtWidgets import QSplashScreen
-        from PyQt5.QtCore import Qt
-        import os
 
-        splash_pix = QPixmap(os.path.join(
-            self._root_dir,'resources/isolde_splash_screen.jpg'))
-        splash = self._splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
-        splash.setMask(splash_pix.mask())
-        splash.show()
-        # Make sure the splash screen is actually shown
-        for i in range(5):
-            self.session.ui.processEvents()
-        from PyQt5 import QtCore
-        # Close the splash after 2 seconds
-        QtCore.QTimer.singleShot(2000, splash.close)
+        if gui is not None:
+            from PyQt5.QtGui import QPixmap
+            from PyQt5.QtWidgets import QSplashScreen
+            from PyQt5.QtCore import Qt
+            import os
 
-        self.start_gui(gui)
+            splash_pix = QPixmap(os.path.join(
+                self._root_dir,'resources/isolde_splash_screen.jpg'))
+            splash = self._splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+            splash.setMask(splash_pix.mask())
+            splash.show()
+            # Make sure the splash screen is actually shown
+            for i in range(5):
+                self.session.ui.processEvents()
+            from PyQt5 import QtCore
+            # Close the splash after 2 seconds
+            QtCore.QTimer.singleShot(2000, splash.close)
+
+            self.start_gui(gui)
+
         session.isolde = self
 
 
@@ -316,27 +348,43 @@ class Isolde():
         from chimerax.core.commands import cofr, camera
         cofr.cofr(session, 'centerOfView', show_pivot=True)
         camera.camera(session, 'ortho')
-        from chimerax.clipper.mousemodes import ZoomMouseMode
         self._mouse_modes.register_all_isolde_modes()
 
     @property
     def sim_handler(self):
+        '''
+        Returns the :class:`isolde.openmm.Sim_Handler` instance controlling
+        the currently running simulation, or None if no simulation is running.
+        Read only.
+        '''
         if self.sim_manager is None:
             return None
         return self.sim_manager.sim_handler
 
     @property
     def simulation_running(self):
+        '''
+        Returns True if a simulation is running, otherwise False. Read only.
+        '''
         if self.sim_handler is None:
             return False
         return self.sim_handler.sim_running
 
     @property
     def sim_manager(self):
+        '''
+        Returns the :class:`isolde.openmm.Sim_Manager` instance providing
+        high-level control over the current simulation. If no simulation is
+        currently defined, returns None. Read only.
+        '''
         return self._sim_manager
 
     @property
     def simulation_mode(self):
+        '''
+        Returns 'equil' or 'min' depending on the state of the simulation,
+        or None if no simulation is defined. Read only.
+        '''
         sh = self.sim_handler
         if sh is None:
             return None
@@ -346,6 +394,10 @@ class Isolde():
 
     @property
     def selected_model(self):
+        '''
+        Returns the atomic model on which ISOLDE is currently operating.
+        Can be set.
+        '''
         return self._selected_model
 
     @selected_model.setter
@@ -353,7 +405,7 @@ class Isolde():
         from chimerax.atomic import AtomicStructure
         if not isinstance(model, AtomicStructure):
             raise TypeError('Selection must be a single AtomicStructure model!')
-        self._change_selected_model(model = model)
+        self.change_selected_model(model)
 
 
     ###################################################################
@@ -988,10 +1040,17 @@ class Isolde():
             self.save_cif_file(self._selected_model, filename)
 
     def save_cif_file(self, model, filename):
+        '''
+        Save a model in mmCIF format.
+
+        Args:
+            * model:
+                - an :class:`AtomicStructure`
+            * filename:
+                - a text string providing a valid filename (must end with .cif).
+        '''
         from chimerax.core.commands import save
         save.save(self.session, filename, [model])
-
-
 
     ####
     # Xtal
@@ -1077,9 +1136,9 @@ class Isolde():
                 from .session_extensions import get_mdff_mgr
                 mdff_mgr = get_mdff_mgr(model, xmap)
                 if is_difference_map:
-                    mdff_mgr.global_k = defaults.DIFFERENCE_MAP_K
+                    mdff_mgr.global_k = self.sim_params.difference_map_coupling_constant
                 else:
-                    mdff_mgr.global_k = defaults.STANDARD_MAP_K
+                    mdff_mgr.global_k = self.sim_params.standard_map_coupling_constant
         return True
 
     def _toggle_xtal_map_dialog(self, *_):
@@ -1324,6 +1383,27 @@ class Isolde():
 
 
     def restrain_secondary_structure(self, atoms, target):
+        '''
+        Restrain all amino acid residues in a selection to a target secondary
+        structure. Secondary structure restraints consist of dihedral restraints
+        on phi and psi, and distance restraints on (CA(n)-CA(n+2)) and
+        (O(n)-O(n+4)).
+
+        Args:
+            * atoms:
+                - a :class:`Atoms` instance defining the selection. Any residue
+                  with at least one atom in the selection will be restrained.
+                  No distance restraints involving residues outside the
+                  selection will be applied.
+            * target:
+                - a string selected from the following:
+                    . 'Helix'
+                    . 'Parallel Beta'
+                    . 'Antiparallel Beta'
+
+        Target distances/angles for each secondary structure definition are
+        stored in `constants.py`.
+        '''
         sh = self.sim_handler
         sc = self.sim_manager.sim_construct
         dihed_k = self.sim_params.phi_psi_spring_constant.value_in_unit(OPENMM_RADIAL_SPRING_UNIT)
@@ -1373,10 +1453,6 @@ class Isolde():
         self.add_checkpoint_block(rs, 'Register shift in progress')
         rs.triggers.add_handler('register shift finished', self._register_shift_finished)
         rs.triggers.add_handler('register shift released', self._register_shift_released_cb)
-        # self._isolde_events.add_event_handler('register shift finish check',
-        #                                       'completed simulation step',
-        #                                       self._check_if_register_shift_finished)
-
 
     def _register_shift_finished(self, *_):
         self.iw._rebuild_register_shift_release_button.setEnabled(True)
@@ -1411,6 +1487,19 @@ class Isolde():
         self.restrain_atom_to_xyz(atom, self.session.view.center_of_rotation, k)
 
     def restrain_atom_to_xyz(self, atom, target, spring_constant):
+        '''
+        Restrain the given atom to a (x,y,z) position.
+
+        Args:
+            * atom:
+                - A `ChimeraX` :class:`Atom` instance pointing to an atom in
+                  the currently selected model. By default hydrogen atoms are
+                  not restrainable.
+            * target:
+                - An iterable giving the target (x,y,z) position in Angstroms
+            * spring_constant:
+                - The desired spring constant in kJ mol-1 nm-2
+        '''
         from . import session_extensions as sx
         pr_m = sx.get_position_restraint_mgr(self.selected_model)
         pr = pr_m.add_restraint(atom)
@@ -1420,9 +1509,13 @@ class Isolde():
 
     def release_xyz_restraints_on_selected_atoms(self, *_, sel = None):
         '''
-        Release current position restraints on a set of atoms. If a
-        simulation is currently running, it will be automatically
-        notified of the change.
+        Release current position restraints on a set of atoms.
+
+        Args:
+            * sel (default: None):
+                - A `ChimeraX` :class:`Atoms` instance giving the atoms to
+                  release, or None. If None, all currently-selected atoms from
+                  the current model will be released.
         '''
         if sel is None:
             from chimerax.atomic import selected_atoms
@@ -1455,6 +1548,15 @@ class Isolde():
         Adds a distance restraint between two atoms with the given target
         distance and spring constant. If the restraint already exists, just
         changes the target/spring constant and enables it.
+
+        Args:
+            * atom1, atom2:
+                - `ChimeraX` :class:`Atom` instances pointing to the pair of
+                  atoms to be restrained.
+            * target:
+                - The target distance in Angstroms
+            * spring_constant:
+                - The restraint spring constant in kJ mol-1 nm-2
         '''
         from . import session_extensions as sx
         dr_m = sx.get_distance_restraint_mgr(self.selected_model)
@@ -1480,7 +1582,6 @@ class Isolde():
         drs = dr_m.atoms_restraints(sel)
         if len(drs):
             drs.enableds=False
-
 
     def _set_rotamer_buttons_enabled(self, switch):
         iw = self.iw
@@ -1546,6 +1647,13 @@ class Isolde():
             self.release_rotamer(rot)
 
     def release_rotamers_by_residues(self, residues):
+        '''
+        Release all chi dihedral restraints on a set of residues.
+
+        Args:
+            * residues:
+                - A `ChimeraX` :class:'Residues' instance
+        '''
         from . import session_extensions as sx
         rm = sx.get_rotamer_mgr(self.session)
         rotamers = rm.get_rotamers(residues)
@@ -1553,12 +1661,26 @@ class Isolde():
 
 
     def release_rotamers(self, rotamers):
+        '''
+        Release all chi dihedral restraints on a set of rotamers.
+
+        Args:
+            * rotamers:
+                - A :class:`Rotamers` instance
+        '''
         from . import session_extensions
         rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
         rrs = rrm.get_restraints(rotamers)
         rrs.enableds = False
 
     def release_rotamer(self, rotamer):
+        '''
+        Release all chi dihedral restraints on a single rotamer.
+
+        Args:
+            * rotamer:
+                - A :class:`Rotamer` instance
+        '''
         from . import session_extensions
         rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
         rr = rrm.get_restraint(rotamer)
@@ -1779,29 +1901,6 @@ class Isolde():
                 item.setBackground(color)
                 table.setItem(i, j, item)
 
-
-        # for c in cis:
-        #     r = c.residue
-        #     pre = c.atoms[0].residue
-        #     label = r.chain_id + ' ' \
-        #             + str(pre.number) + ' - ' + str(r.number) + '\t' \
-        #             + pre.name + ' - ' + r.name
-        #     list_item = QListWidgetItem(label)
-        #     list_item.data = r
-        #     if r.name != 'PRO':
-        #         list_item.setBackground(badColor)
-        #     clist.addItem(list_item)
-        # for t in twisted:
-        #     r = t.residue
-        #     pre = t.atoms[0].residue
-        #     label = r.chain_id + ' ' \
-        #             + str(pre.number) + ' - ' + str(r.number) + '\t' \
-        #             + pre.name + ' - ' + r.name
-        #     list_item = QListWidgetItem(label)
-        #     list_item.data = r
-        #     list_item.setBackground(badColor)
-        #     tlist.addItem(list_item)
-
     def _show_selected_iffy_peptide(self, item):
         res = item.data
         from . import view
@@ -1875,6 +1974,22 @@ class Isolde():
 
         self._sim_main_ff = forcefields[ff_key]
 
+    def change_selected_model(self, model):
+        '''
+        Change the model upon which ISOLDE is focused (that is, upon which
+        simulations will be run). This performs some basic preparations,
+        including preparing any maps associated with the model for simulation.
+        While ISOLDE is running, only atoms from the selected model will be
+        selectable using the mouse.
+        '''
+        if self.gui_mode:
+            self._change_selected_model(self, model=model, force=True)
+        else:
+            self._selected_model = m
+            self.session.selection.clear()
+            self._selected_model.selected = True
+            has_maps = self._initialize_maps(m)
+
     def _change_selected_model(self, *_, model = None, force = False):
         if len(self._available_models) == 0:
             return
@@ -1906,12 +2021,10 @@ class Isolde():
             self.triggers.activate_trigger('selected model changed', data=m)
         self._status('')
 
-
     def _select_whole_model(self, *_):
         if self._selected_model:
             self._selected_model.selected = True
             self._selected_atoms = self._selected_model.atoms
-
 
     def _change_selected_chains(self,*_):
         if len(self._available_models) == 0:
@@ -1963,7 +2076,6 @@ class Isolde():
         cb2 = self.iw._sim_basic_mobile_sel_backbone_checkbox
         if cb2.checkState() != mobile:
             cb2.setChecked(mobile)
-
 
     def _change_sim_platform(self, *_):
         self.sim_platform = self.iw._sim_platform_combo_box.currentText()
@@ -2080,7 +2192,8 @@ class Isolde():
 
     def reset_sim_params(self):
         '''
-        Reset all the simulation parameters back to their defaults.
+        Reset all the simulation parameters back to the defaults found in
+        `constants.py`.
         '''
         from .openmm.sim_param_mgr import SimParams
         self.sim_params = SimParams()
@@ -2092,6 +2205,10 @@ class Isolde():
             self.pause_sim_toggle()
 
     def start_sim(self):
+        '''
+        Start an interactive simulation based around the currently-selected
+        atoms.
+        '''
         if self.simulation_running:
             raise TypeError('Simulation already running!')
         self.sim_params.platform = self.iw._sim_platform_combo_box.currentText()
@@ -2110,6 +2227,7 @@ class Isolde():
     def _stop_sim_haptics(self, *_):
         self._event_handler.remove_event_handler('sim haptic update')
 
+    #TODO: Remove all haptics code from isolde.py
     def _update_haptics(self, *_):
         hh = self.session.HapticHandler
         si = self._sim_interface
@@ -2249,11 +2367,18 @@ class Isolde():
     ##############################################################
 
     def pause_sim_toggle(self):
+        '''
+        Pause/resume the simulation
+        '''
         if self.simulation_running:
             self.sim_manager.toggle_pause()
 
     @property
     def sim_paused(self):
+        '''
+        Returns True if the simulation is paused or no simulation is running,
+        otherwise False.
+        '''
         if self.simulation_running:
             return self.sim_handler.pause
         return True
@@ -2280,9 +2405,10 @@ class Isolde():
         '''
         Stop the simulation and revert to either the starting state or
         the last saved checkpoint.
+
         Args:
-            revert_to (default: 'checkpoint'):
-                Either 'checkpoint' or 'start'
+            * revert_to (default: 'checkpoint'):
+                - Either 'checkpoint' or 'start'
         '''
         if not revert_to in ('checkpoint', 'start'):
             raise TypeError('Unrecognised option! Argument should be '\
@@ -2297,6 +2423,9 @@ class Isolde():
         self.sim_manager.stop_sim(revert=revert_to)
 
     def commit_sim(self):
+        '''
+        Stop the simulation and keep the current coordinates.
+        '''
         if not self.simulation_running:
             print('No simulation running!')
             return
@@ -2304,14 +2433,18 @@ class Isolde():
         self.sim_manager.stop_sim()
 
     def minimize(self):
-        print('Minimisation mode')
+        '''
+        Switch the simulation to energy minimisation mode
+        '''
         if self.simulation_running:
             self.sim_handler.minimize = True
         self.simulation_type = 'min'
         self._update_sim_control_button_states()
 
     def equilibrate(self):
-        print('Equilibration mode')
+        '''
+        Switch the imulation to equilibration mode
+        '''
         if self.simulation_running:
             self.sim_handler.minimize = False
         self.simulation_type = 'equil'
@@ -2324,14 +2457,17 @@ class Isolde():
         default value will be used. NOTE: the tugging effect will
         remain in place until updated with a new call to tug_atom_to()
         or removed with stop_tugging(atom).
+
         Args:
-            atom:
-                The atom to be tugged. Must be a heavy atom that is
-                mobile in the current simulation
-            target:
-                An (x,y,z) Numpy array (in Angstroms)
-            spring constant (default None):
-                An optional spring constant (in kJ mol-1 A-2)
+            * atom:
+                - The atom to be tugged. Must be a heavy atom that is
+                  mobile in the current simulation
+            * target:
+                - An iterable giving the (x,y,z) target in Angstroms
+            * spring constant (default None):
+                - An optional spring constant (in kJ mol-1 A-2). If none is
+                  provided, the default in `sim_params.mouse_tug_spring_constant`
+                  will be used.
         '''
         if not self.simulation_running:
             return
@@ -2344,19 +2480,39 @@ class Isolde():
         t_atom.spring_constant = spring_constant
         t_atom.enabled = True
 
-    def stop_tugging(self, atom):
+    def stop_tugging(self, atom_or_atoms):
+        '''
+        Release one or more atoms from the tugging force.
+
+        Args:
+            * atom_or_atoms:
+                - A `ChimeraX` :class:`Atom` or :class:`Atoms` instance
+        '''
         if not self.simulation_running:
             return
+        from chimerax.atomic import Atom, Atoms
+        if isinstance(atom_or_atoms, Atom):
+            atoms = Atoms([atom])
+        elif isinstance(atom_or_atoms, Atoms):
+            atoms = atom_or_atoms
+        else:
+            raise TypeError('Not an Atom or Atoms instance!')
         from . import session_extensions as sx
         tugm = sx.get_tuggable_atoms_mgr(self.selected_model)
-        t_atom = tugm.get_tuggable(atom)
-        t_atom.enabled = False
+        t_atoms = tugm.get_tuggables(atoms)
+        t_atoms.enableds = False
 
     def add_checkpoint_block(self, obj, reason):
         '''
         Some processes are incompatible with checkpointing. We need to
         know when these are running and disable checkpointing until
         they're done.
+
+        Args:
+            * obj:
+                - The Python object blocking checkpointing
+            * reason:
+                - A text string.
         '''
         self.checkpoint_disabled_reasons[obj] = reason
         self.iw._sim_save_checkpoint_button.setEnabled(False)
@@ -2366,6 +2522,10 @@ class Isolde():
         '''
         Release a block on checkpointing. When all blocks are removed,
         checkpointing will be re-enabled.
+
+        Args:
+            * obj:
+                - the Python object no longer blocking checkpointing
         '''
         r = self.checkpoint_disabled_reasons
         r.pop(obj)
@@ -2379,6 +2539,10 @@ class Isolde():
         return self.simulation_running and not len(self.checkpoint_disabled_reasons)
 
     def checkpoint(self, *_):
+        '''
+        Save the current state of the simulation (coordinates and all
+        restraints).
+        '''
         if self.can_checkpoint:
             self.sim_manager.checkpoint()
         else:
@@ -2389,6 +2553,10 @@ class Isolde():
             raise TypeError(err_str)
 
     def revert_to_checkpoint(self, *_):
+        '''
+        Return the simulation to the last saved checkpoint. Note: a checkpoint
+        is automatically saved at the beginning of each simulation.
+        '''
         if self.can_checkpoint:
             self.sim_manager.revert_to_checkpoint()
         else:
@@ -2404,6 +2572,14 @@ class Isolde():
     ####
 
     def flip_peptide_bond(self, res):
+        '''
+        Flip the peptide bond N-terminal to the given residue by the addition
+        of temporary phi/psi restraints. Requires a simulation to be running.
+
+        Args:
+            * res:
+                - A ChimeraX :class:`residue` instance
+        '''
         from .manipulations.peptide_flip import Peptide_Bond_Flipper
         pf = Peptide_Bond_Flipper(self, res)
 
@@ -2412,6 +2588,16 @@ class Isolde():
         Clear all secondary structure restraints in the selection. If
         no atoms or residues are provided, restraints will be cleared
         for any atoms selected in the main window.
+
+        Args:
+            * atoms (default: None):
+                - A `ChimeraX` :class:`Atoms` instance or None
+            * residues (default: None):
+                - A`ChimeraX :class:`Residues` instance or None
+
+        `atoms` and `residues` arguments should not both be given in the same
+        call. If neither is given, then all currently-selected atoms in the
+        model will be released.
         '''
         from chimerax.atomic import selected_atoms
         sel = None
@@ -2444,6 +2630,11 @@ class Isolde():
         '''
         Flip the peptide bond N-terminal to this residue from cis to
         trans or vice versa. Only usable when a simulation is running.
+
+        Args:
+            * res:
+                - A `ChimeraX` :class:`Residue` instance pointing to a
+                  non-N-terminal amino acid residue.
         '''
         from . import session_extensions as sx
         pdr_m = sx.get_proper_dihedral_restraint_mgr(self.selected_model)
@@ -2559,6 +2750,9 @@ class Isolde():
     ##############################################
 
     def load_demo_data(self):
+        '''
+        Load a small protein model with crystallographic maps to explore.
+        '''
         from chimerax.core.commands import open
         data_dir = os.path.join(self._root_dir, 'demo_data', '3io0')
         before_struct = open.open(self.session, os.path.join(data_dir, 'before.pdb'))[0]

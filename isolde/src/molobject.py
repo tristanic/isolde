@@ -2,6 +2,8 @@
 import os, sys, glob
 import numpy
 import ctypes
+from enum import IntEnum
+
 from chimerax.core.state import State
 from chimerax.core.atomic import molc
 from chimerax.core.atomic.molc import CFunctions, string, cptr, pyobject, \
@@ -143,6 +145,11 @@ class _Dihedral_Mgr:
         return not hasattr(self, '_c_pointer')
 
 class Proper_Dihedral_Mgr(_Dihedral_Mgr):
+    '''
+    A session-level singleton managing all proper dihedrals (phi, psi, chi etc.).
+    Rather than instantiating directly, it is best created/retrieved using
+    :func:`session_extensions.get_proper_dihedral_mgr`.
+    '''
 
     def __init__(self, session, c_pointer=None):
         super().__init__(session, c_pointer=c_pointer)
@@ -165,7 +172,8 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         this will not affect the constituent atoms in any way, and
         should not actually be necessary in most cases. Dihedrals are
         automatically deleted at the C++ level when their manager or
-        any of their constituent atoms are deleted.
+        any of their constituent atoms are deleted. The deleted dihedrals
+        will be automatically re-created if/when needed.
         '''
         f = c_function('proper_dihedral_mgr_delete_dihedral',
                 args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
@@ -222,6 +230,15 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         f(self._c_pointer, n)
 
     def create_all_dihedrals(self, residues):
+        '''
+        Create C++ objects for all known dihedrals in a set of residues. In
+        general it is not necessary to do this, and preferable to allow them to
+        simply be created as needed.
+
+        Args:
+            * residues:
+                - A `ChimeraX` :class:`Residues` instance
+        '''
         dihedral_dict = self._dihedral_dict
         amino_acid_resnames = dihedral_dict['aminoacids']
         r = residues
@@ -255,6 +272,20 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
                     len(aa_residues), True)
 
     def get_dihedral(self, residue, name, create=True):
+        '''
+        Retrieve a :class:`Proper_Dihedral` for the given residue and name,
+        or None if no such dihedral exists.
+
+        Args:
+            * residue:
+                - A `ChimeraX` :class:`Residue` instance
+            * name:
+                - A string giving the lowercase name of the dihedral (e.g.
+                  'phi', 'omega', 'chi1', etc.)
+            * create (default: True):
+                - If True, if the dihedral does not currently exist an attempt
+                  will be made to create it.
+        '''
         from chimerax.core.atomic import Residues
         r = Residues([residue])
         d = self.get_dihedrals(r, name, create)
@@ -267,13 +298,16 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         Returns a :class:`Proper_Dihedrals` providing the named dihedral
         (where it exists) for every residue in residues. The resulting
         array will be in the same order as residues, but may be shorter.
+
         Args:
-            residues:
-                A :class:`Residues` object
-            name:
-                Name of the desired dihedral
-            create (default = True):
-                If a dihedral is not found, try to create it.
+            * residues:
+                - A :class:`Residues` instance
+            * name:
+                - A string giving the lowercase name of the dihedral (e.g.
+                  'phi', 'omega', 'chi1', etc.)
+            * create (default = True):
+                - If True, if any dihedral does not currently exist an attempt
+                  will be made to create it.
         '''
         f = c_function('proper_dihedral_mgr_get_dihedrals', args=(
                         ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
@@ -289,6 +323,10 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         Returns a :class:`Proper_Dihedrals` containing all dihedrals that have
         been defined for the given residues. Any standard dihedrals (e.g.
         phi, psi, omega) will be created.
+
+        Args:
+            * residues:
+                - a `ChimeraX` :class:`Residues` instance
         '''
         self.create_all_dihedrals(residues)
         f = c_function('proper_dihedral_mgr_get_residue_dihedrals',
@@ -298,23 +336,25 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
 
     @property
     def num_mapped_dihedrals(self):
+        '''
+        Number of dihedrals currently being managed.
+        '''
         f = c_function('proper_dihedral_mgr_num_mapped_dihedrals', args=(ctypes.c_void_p,), ret=ctypes.c_size_t)
         return f(self._c_pointer)
-
 
     def __len__(self):
         return self.num_mapped_dihedrals
 
 class Rama_Mgr:
     '''
-    Manager for Ramachandran scoring of protein residues. Should have only
-    one per session.
+    Session-level singleton managing the Ramachandran scoring of protein
+    residues. Rather than instantiating directly, it is best created/retrieved
+    using :func:`session_extensions.get_ramachandran_mgr`.
     '''
-    from enum import IntEnum
     class Rama_Case(IntEnum):
         '''
         Enumerators for the different Ramachandran cases. These match
-        an enumerator in the C++ level, so don't change them unless you
+        an enumerator in the C++ layer, so don't change them unless you
         know *exactly* what you're doing.
         '''
         NONE=0
@@ -326,6 +366,10 @@ class Rama_Mgr:
         GENERAL=6
 
     class Rama_Bin(IntEnum):
+        '''
+        Enumerator for validation bins. Values match an enumerator in the C++
+        layer, so don't change them unless you know *exactly* what you're doing.
+        '''
         FAVORED=0
         ALLOWED=1
         OUTLIER=2
@@ -412,7 +456,7 @@ class Rama_Mgr:
 
     def set_default_cutoffs(self):
         '''
-        Reset the Ramachandran cutoffs to default values
+        Reset the Ramachandran cutoffs to default values.
         '''
         dd = self.RAMA_CASE_DETAILS
         for case, cd in dd.items():
@@ -427,6 +471,10 @@ class Rama_Mgr:
 
     @property
     def cutoffs(self):
+        '''
+        Returns a dict giving the allowed and outlier cutoffs for each
+        Ramachandran case. Read only.
+        '''
         f = c_function('rama_mgr_cutoffs',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
         cdict = {}
@@ -438,11 +486,31 @@ class Rama_Mgr:
         return cdict
 
     def set_default_colors(self):
+        '''
+        Set the colours for visualisation of scores back to their defaults.
+        '''
         from .constants import validation_defaults as val_defaults
         self.set_color_scale(val_defaults.MAX_FAVORED_COLOR, val_defaults.ALLOWED_COLOR,
             val_defaults.OUTLIER_COLOR, val_defaults.NA_COLOR)
 
     def set_color_scale(self, max_c, mid_c, min_c, na_c):
+        '''
+        Define a custom colour scale for visualisation of Ramachandran scores.
+        All arguments are iterables of four integers providing
+        (red, green, blue, alpha) in the range (0..255).
+
+        Args:
+            * max_c:
+                - colour associated with the maximum (most favourable) score
+            * mid_c:
+                - colour at the favoured/allowed cutoff
+            * min_c:
+                - colour at the allowed/outlier cutoff. All scores below the
+                  outlier cutoff will have this colour
+            * na_c:
+                - colour to associate with residues that don't have
+                  Ramachandran scores (e.g. N/C termini)
+        '''
         f = c_function('rama_mgr_set_color_scale',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
                   ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8),
@@ -458,6 +526,9 @@ class Rama_Mgr:
 
     @property
     def color_scale(self):
+        '''
+        Returns the current colour scale as a 4-tuple of (max, mid, min, n/a)
+        '''
         f = c_function('rama_mgr_get_color_scale',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
                 ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8),
@@ -471,6 +542,9 @@ class Rama_Mgr:
 
     @property
     def dihedral_manager(self):
+        '''
+        Returns the session :class:`Proper_Dihedral_Mgr` singleton.
+        '''
         return self._dihedral_mgr
 
     def _add_interpolator(self, rama_case, ndim, axis_lengths, min_vals, max_vals, data):
@@ -478,17 +552,17 @@ class Rama_Mgr:
         Create a RegularGridInterpolator for the given Ramachandran
         contours, and add it to the manager.
         Args:
-        rama_case:
-            An integer corresponding to the Ramachandran case
-            (see Rama_Mgr.Rama_Case for valid values)
-        axis_lengths:
-            A numpy int array giving the number of points along each axis
-        min_vals:
-            A numpy double array giving the minimum value for each axis
-        max_vals:
-            A numpy double array giving the maximum value for each axis
-        data:
-            A 2D numpy array containing the gridded data
+            * rama_case:
+                - An integer corresponding to the Ramachandran case
+                  (see Rama_Mgr.Rama_Case for valid values)
+            * axis_lengths:
+                - A numpy int array giving the number of points along each axis
+            * min_vals:
+                - A numpy double array giving the minimum value for each axis
+            * max_vals:
+                - A numpy double array giving the maximum value for each axis
+            * data:
+                - A 2D numpy array containing the gridded data
         '''
         f = c_function('rama_mgr_add_interpolator',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t,
@@ -499,6 +573,14 @@ class Rama_Mgr:
             pointer(min_vals), pointer(max_vals), pointer(data))
 
     def rama_cases(self, residues):
+        '''
+        Returns an array of integer values corresponding to the Ramachandran
+        case enumerator :class:`Rama_Mgr.Rama_Cases`.
+
+        Args:
+            * residues:
+                - A `ChimeraX` :class:`Residues` instance
+        '''
         f = c_function('rama_mgr_rama_case',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
             ctypes.POINTER(ctypes.c_uint8)))
@@ -507,30 +589,52 @@ class Rama_Mgr:
         f(self._c_pointer, residues._c_pointers, n, pointer(ret))
         return ret
 
-    def bin_scores(scores, cases):
-        n = len(scores)
-        if len(cases) != len(scores):
-            raise TypeError('Both arrays must be the same length!')
+    def bin_scores(self, scores, cases):
+        '''
+        Returns an array of integer values corresponding to the enumerator
+        :class:`Rama_Mgr.Rama_Bin` to bin the given Ramachandran scores into
+        favoured, allowed, outlier and N/A. The input arrays are the product
+        of :func:`validate`.
+
+        Args:
+            * scores:
+                - an array of floating-point scores
+            * cases:
+                - a matching integer array defining the Ramachandran cases
+        '''
         f = c_function('rama_mgr_bin_scores',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double),
                 ctypes.POINTER(ctypes.c_uint8), ctypes.c_size_t,
-                ctypes.POINTER(ctypes.c_int8)))
-        ret = numpy.empty(n, int8)
-        f(self._c_pointer, pointer(scores), pointer(cases), n, ret)
-        return ret
+                ctypes.POINTER(ctypes.c_int32)))
+        n = len(scores)
+        if len(cases) != n:
+            raise TypeError('Scores and cases arrays must be the same length!')
+        bins = numpy.empty(n, int32)
+        f(self._c_pointer, pointer(scores), pointer(cases), n, bins.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)))
+        return bins
 
     def outliers(self, residues):
+        '''
+        Returns a `ChimeraX` :class:`Residues` instance encompassing the
+        subset of input residues that are Ramachandran outliers.
+
+        Args:
+            * residues:
+                - a `ChimeraX` :class:`Residues` instance
+        '''
         scores, cases = self.validate_by_residue(residues)
         bins = self.bin_scores(scores, cases)
         return residues[bins==self.Rama_Bin.OUTLIER]
 
     def validate(self, residues_or_ramas):
         '''
-        Returns Ramachandran scores for a set of pre-defined valid
-        Ramachandran cases. The input to this function is typically
-        the output of :class:`Rama_Mgr`.rama_cases(). For a slower
-        but more robust method which can handle invalid (non-protein
-        and/or terminal) residues, use validate_by_residue().
+        Returns an 2-tuple containing an array of Ramachandran scores and an
+        array of case enum values for a set of residues or ramas. Residues
+        lacking either phi or psi will have a score of -1.
+
+        Args:
+            * residues_or_ramas: either a `ChimeraX` :class:`Residues` or
+              :class:`Ramas` instance
         '''
         from .molarray import Ramas
         from chimerax.core.atomic import Residues
@@ -573,6 +677,10 @@ class Rama_Mgr:
         list. Non-protein residues will be skipped so the length of the result
         may be different from the input array, but the returned Ramas will be
         in the same order as the protein residues in the input.
+
+        Args:
+            * residues:
+                - a `ChimeraX` :class:`Residues` instance
         '''
         f = c_function('rama_mgr_get_rama',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
@@ -584,8 +692,12 @@ class Rama_Mgr:
 
     def rama_colors(self, ramas):
         '''
-        Returns a nx4 uint8 :class:`Numpy` array giving a color for each
-        residue corresponding to the current colormap.
+        Returns a nx4 uint8 array giving a color for each rama corresponding
+        to the current colormap.
+
+        Args:
+            * ramas:
+                - a :class:`Ramas` instance
         '''
         f = c_function('rama_mgr_validate_and_color',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
@@ -596,6 +708,24 @@ class Rama_Mgr:
         return colors
 
     def _ca_positions_colors_and_selecteds(self, ramas, hide_favored = False):
+        '''
+        Provides all the information necessary to draw a live visualisation of
+        Ramachandran status overlaying alpha carbons in a single C++ call.
+
+        Args:
+            * ramas:
+                - a :class: `Ramas` instance
+            * hide_favored:
+                - if True, only the data for non-favoured residues will be
+                  returned.
+
+        Returns:
+            * Coordinates corresponding to CA positions
+            * Colors for each position
+            * A Boolean mask corresponding to selection state of CAs (so
+              the corresponding positions in the rama drawing can be set
+              accordingly)
+        '''
         f = c_function('rama_mgr_ca_positions_and_colors',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
                 ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p),
@@ -609,12 +739,31 @@ class Rama_Mgr:
         return (coords[0:count], colors[0:count], selecteds[0:count])
 
     def color_cas_by_rama_score(self, ramas, hide_favored = False):
+        '''
+        Colours the alpha carbon atoms by Ramachandran score.
+
+        Args:
+            * ramas:
+                - a :class:`Ramas` instance
+            * hide_favored:
+                - if True, only the data for non-favoured residues will be
+                  returned.
+        '''
         f = c_function('rama_mgr_validate_and_color_cas',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_bool))
         n = len(ramas)
         f(self._c_pointer, ramas._c_pointers, n, hide_favored)
 
     def _draw_cis_and_twisted_omegas(self, ramas):
+        '''
+        Provides the geometry and colour information necessary to provide a
+        drawing annotating cis/twisted peptide bonds (by filling in the "cup"
+        formed by C-CA-N-C).
+
+        Args:
+            * ramas:
+                - a :class:`Ramas` instance
+        '''
         f = c_function('rama_mgr_draw_cis_and_twisted_omegas',
             args = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
                 ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p),
@@ -627,18 +776,6 @@ class Rama_Mgr:
         count = f(self._c_pointer, ramas._c_pointers, n, pointer(vertices),
             pointer(normals), pointer(triangles), pointer(colors))
         return vertices[0:count*5], normals[0:count*5], triangles[0:count*3], colors[0:count*5]
-
-    def bin_scores(self, scores, cases):
-        f = c_function('rama_mgr_bin_scores',
-            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double),
-                ctypes.POINTER(ctypes.c_uint8), ctypes.c_size_t,
-                ctypes.POINTER(ctypes.c_int32)))
-        n = len(scores)
-        if len(cases) != n:
-            raise TypeError('Scores and cases arrays must be the same length!')
-        bins = numpy.empty(n, int32)
-        f(self._c_pointer, pointer(scores), pointer(cases), n, bins.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)))
-        return bins
 
     #######
     # Access to the underlying interpolator data
@@ -683,8 +820,16 @@ class Rama_Mgr:
         return tuple(axes)
 
 class Rota_Mgr:
-    from enum import IntEnum
+    '''
+    Session-level singleton managing rotamers and their scoring. Rather than
+    instantiating directly, it is best created/retrieved using
+    :func:`session_extensions.get_rotamer_mgr`.
+    '''
     class Rota_Bin(IntEnum):
+        '''
+        Enumerator for validation bins. Values match an enumerator in the C++
+        layer, so don't change them unless you know *exactly* what you're doing.
+        '''
         FAVORED=0
         ALLOWED=1
         OUTLIER=2
@@ -745,26 +890,14 @@ class Rota_Mgr:
             func(self._c_pointer, ctypes.byref(nkey), n, pointer(names),
                 pointer(frequencies), pointer(angles), pointer(esds))
 
-
-
-
-        # TODO: Remove Python implementation below this line
-        from collections import OrderedDict
-        ordered_rd = self._rota_targets = dict()
-        for aa, data in rd.items():
-            rdata = [(name, d) for (name, d) in data.items()]
-            rdata = sorted(rdata, key=lambda d: d[1]['freq'], reverse=True)
-            r_dict = OrderedDict()
-            for r, angles in rdata:
-                for k in ('angles', 'esds'):
-                    angles[k] = numpy.array(angles[k])
-                r_dict[r]=angles
-            ordered_rd[aa] = r_dict
-
     def get_rota_targets(self, resname):
         '''
         Returns an OrderedDict giving rotamer name, angles, esds and frequencies
         sorted in order of decreasing frequency.
+
+        Args:
+            * resname
+                - three-letter element_name, in capitals
         '''
         from copy import copy
         rd = self._rota_targets
