@@ -74,11 +74,14 @@ class SimParams(Param_Mgr):
         'peptide_bond_spring_constant':         (defaults.PEPTIDE_SPRING_CONSTANT, OPENMM_RADIAL_SPRING_UNIT),
         'phi_psi_spring_constant':              (defaults.PHI_PSI_SPRING_CONSTANT, OPENMM_RADIAL_SPRING_UNIT),
         'cis_peptide_bond_cutoff_angle':        (defaults.CIS_PEPTIDE_BOND_CUTOFF, OPENMM_ANGLE_UNIT),
+        'standard_map_coupling_constant':       (defaults.STANDARD_MAP_K, None),
+        'difference_map_coupling_constant':     (defaults.DIFFERENCE_MAP_K, None),
         'max_atom_movement_per_step':           (defaults.MAX_ATOM_MOVEMENT_PER_STEP, OPENMM_LENGTH_UNIT),
         'max_allowable_force':                  (defaults.MAX_ALLOWABLE_FORCE, OPENMM_FORCE_UNIT),
         'max_stable_force':                     (defaults.MAX_STABLE_FORCE, OPENMM_FORCE_UNIT),
         'friction_coefficient':                 (defaults.OPENMM_FRICTION, 1/OPENMM_TIME_UNIT),
         'temperature':                          (defaults.TEMPERATURE, OPENMM_TEMPERATURE_UNIT),
+
 
         'nonbonded_cutoff_method':              (defaults.OPENMM_NONBONDED_METHOD, None),
         'nonbonded_cutoff_distance':            (defaults.OPENMM_NONBONDED_CUTOFF, OPENMM_LENGTH_UNIT),

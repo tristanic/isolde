@@ -202,8 +202,6 @@ class LinearInterpMapForce(CustomCompoundBondForce):
         return Discrete3DFunction(*dim, data_1d)
 
     def set_global_k(self, k):
-        if type(k) == Quantity:
-            k = k.value_in_unit(OPENMM_SPRING_UNIT)
         self.setGlobalParameterDefaultValue(self._global_k_index, k)
         self.update_needed = True
 
