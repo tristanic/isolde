@@ -121,6 +121,8 @@ def _get_restraint_change_tracker(session):
         return session.isolde_changes
     return Restraint_Change_Tracker(session)
 
+class Dummy:
+    pass
 
 class _Dihedral_Mgr:
     '''Base class. Do not instantiate directly.'''
@@ -134,10 +136,17 @@ class _Dihedral_Mgr:
         f(self._c_pointer, self)
         self.session = session
 
+    def __delete__(self):
+        self.delete()
+        super().__delete__()
+
     @property
     def cpp_pointer(self):
         '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
         return self._c_pointer.value
+
+    def delete(self):
+        pass
 
     @property
     def deleted(self):
@@ -157,10 +166,6 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         if hasattr(session, 'proper_dihedral_mgr') and not session.proper_dihedral_mgr.deleted:
             raise RuntimeError('Session already has a proper dihedral manager!')
         session.proper_dihedral_mgr = self
-
-    def __delete__(self):
-        self.delete()
-        super().__delete__()
 
     def delete(self):
         c_function('proper_dihedral_mgr_delete', args=(ctypes.c_void_p,))(self.cpp_pointer)
@@ -237,7 +242,7 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
 
         Args:
             * residues:
-                - A `ChimeraX` :class:`Residues` instance
+                - A :class:`chimerax.Residues` instance
         '''
         dihedral_dict = self._dihedral_dict
         amino_acid_resnames = dihedral_dict['aminoacids']
@@ -278,7 +283,7 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
 
         Args:
             * residue:
-                - A `ChimeraX` :class:`Residue` instance
+                - A :class:`chimerax.Residue` instance
             * name:
                 - A string giving the lowercase name of the dihedral (e.g.
                   'phi', 'omega', 'chi1', etc.)
@@ -326,7 +331,7 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
 
         Args:
             * residues:
-                - a `ChimeraX` :class:`Residues` instance
+                - a :class:`chimerax.Residues` instance
         '''
         self.create_all_dihedrals(residues)
         f = c_function('proper_dihedral_mgr_get_residue_dihedrals',
@@ -579,7 +584,7 @@ class Rama_Mgr:
 
         Args:
             * residues:
-                - A `ChimeraX` :class:`Residues` instance
+                - A :class:`chimerax.Residues` instance
         '''
         f = c_function('rama_mgr_rama_case',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
@@ -615,12 +620,12 @@ class Rama_Mgr:
 
     def outliers(self, residues):
         '''
-        Returns a `ChimeraX` :class:`Residues` instance encompassing the
+        Returns a :class:`chimerax.Residues` instance encompassing the
         subset of input residues that are Ramachandran outliers.
 
         Args:
             * residues:
-                - a `ChimeraX` :class:`Residues` instance
+                - a :class:`chimerax.Residues` instance
         '''
         scores, cases = self.validate_by_residue(residues)
         bins = self.bin_scores(scores, cases)
@@ -633,7 +638,7 @@ class Rama_Mgr:
         lacking either phi or psi will have a score of -1.
 
         Args:
-            * residues_or_ramas: either a `ChimeraX` :class:`Residues` or
+            * residues_or_ramas: either a :class:`chimerax.Residues` or
               :class:`Ramas` instance
         '''
         from .molarray import Ramas
@@ -680,7 +685,7 @@ class Rama_Mgr:
 
         Args:
             * residues:
-                - a `ChimeraX` :class:`Residues` instance
+                - a :class:`chimerax.Residues` instance
         '''
         f = c_function('rama_mgr_get_rama',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
@@ -781,12 +786,28 @@ class Rama_Mgr:
     # Access to the underlying interpolator data
     #######
     def interpolator_dim(self, rama_case):
+        '''
+        Retrieve the number of dimensions in the :class:`RegularGridInterpolator`
+        object for a given Ramachandran case. Should always return 2.
+
+        Args:
+            * rama_case:
+                - integer value corresponding to the :class:`Rama_Cases` enum
+        '''
         f = c_function('rama_mgr_interpolator_dim',
             args=(ctypes.c_void_p, ctypes.c_size_t),
             ret=ctypes.c_size_t)
         return f(self._c_pointer, rama_case)
 
     def interpolator_axis_lengths(self, rama_case):
+        '''
+        Retrieve the (phi,psi) axis dimensions of the
+        :class:`RegularGridInterpolator` object for a given Ramachandran case.
+
+        Args:
+            * rama_case:
+                - integer value corresponding to the :class:`Rama_Cases` enum
+        '''
         dim = self.interpolator_dim(rama_case)
         f = c_function('rama_mgr_interpolator_axis_lengths',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint32)))
@@ -795,6 +816,15 @@ class Rama_Mgr:
         return ret
 
     def interpolator_limits(self, rama_case):
+        '''
+        Returns a (minimum_values, maximum_values) tuple giving the limiting
+        values for each axis in the :class:`RegularGridInterpolator` object
+        for a given Ramachandran case.
+
+        Args:
+            * rama_case:
+                - integer value corresponding to the :class:`Rama_Cases` enum
+        '''
         dim = self.interpolator_dim(rama_case)
         f = c_function('rama_mgr_interpolator_minmax',
             args=(ctypes.c_void_p, ctypes.c_size_t,
@@ -805,6 +835,14 @@ class Rama_Mgr:
         return (minvals, maxvals)
 
     def interpolator_values(self, rama_case):
+        '''
+        Returns a multidimensional array containing the contour data for a
+        given Ramachandran case.
+
+        Args:
+            * rama_case:
+                - integer value corresponding to the :class:`Rama_Cases` enum
+        '''
         shape = self.interpolator_axis_lengths(rama_case)
         f = c_function('rama_mgr_interpolator_values',
             args=(ctypes.c_void_p, ctypes.c_size_t,
@@ -814,6 +852,15 @@ class Rama_Mgr:
         return data
 
     def interpolator_axes(self, rama_case):
+        '''
+        Convenience function combining :func:`interpolator_axis_lengths` and
+        :func:`interpolator_limits` to provide a tuple of arrays giving the
+        axis values at each grid point.
+
+        Args:
+            * rama_case:
+                - integer value corresponding to the :class:`Rama_Cases` enum
+        '''
         lengths = self.interpolator_axis_lengths(rama_case)
         minmax = self.interpolator_limits(rama_case)
         axes = [numpy.linspace(minmax[0][i], minmax[1][i], lengths[i]) for i in range(len(lengths))]
@@ -840,6 +887,11 @@ class Rota_Mgr:
         '''Has the C++ side been deleted?'''
         return not hasattr(self, '_c_pointer')
 
+    def delete(self):
+        c_function('rota_mgr_delete', args=(ctypes.c_void_p,))(self.cpp_pointer)
+        delattr(self.session, 'proper_dihedral_mgr')
+
+
     def __init__(self, session, c_pointer=None):
         if hasattr(session, 'rota_mgr'):
             raise RuntimeError('Session already has a Rotamer manager!')
@@ -863,6 +915,11 @@ class Rota_Mgr:
         '''
         Load rotamer targets from their JSON file and store them in order of
         decreasing prevalence for each residue.
+
+        Args:
+            * degrees:
+                - tells the function whether the values in the JSON file are in
+                  degrees or radians
         '''
         func=c_function('rota_mgr_add_target_def',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
@@ -905,43 +962,30 @@ class Rota_Mgr:
             return copy(rd[resname])
         return None
 
-    def nearest_valid_rotamer(self, residue_or_rotamer):
-        '''
-        Returns the name of the nearest valid rotamer given this residue's
-        current conformation, its percentage frequency in the Top8000 dataset,
-        and the z_score for the dihedral with the biggest deviation from ideal.
-        '''
-        from chimerax.core.atomic import Residue
-        if type(residue_or_rotamer) == Residue:
-            r = self.get_rotamer(residue_or_rotamer)
-        else:
-            r = residue_or_rotamer
-        if r is None:
-            return None
-        residue = r.residue
-        angles = numpy.degrees(r.angles)
-        targets = self.get_rota_targets(residue.name)
-        target_angles = numpy.array([t['angles'] for t in targets.values()])
-        differences = angles-target_angles
-        differences[differences<-180] += 360
-        differences[differences>=180] -= 360
-        differences = numpy.abs(differences)
-        sums = differences.sum(axis=1)
-        min_index = numpy.argmin(sums)
-        min_differences = differences[min_index]
-        key = list(targets.keys())[min_index]
-        rot = targets[key]
-        esds = rot['esds']
-        z_score = numpy.max(min_differences/esds)
-        freq = rot['freq']
-        return (key, freq, z_score)
-
     def set_default_colors(self):
+        '''
+        Reset the colour map for visualisation of rotamer validation back to
+        the stored default colours.
+        '''
         from .constants import validation_defaults as val_defaults
         self.set_color_scale(val_defaults.MAX_FAVORED_COLOR, val_defaults.ALLOWED_COLOR,
             val_defaults.OUTLIER_COLOR)
 
     def set_color_scale(self, max_c, mid_c, min_c):
+        '''
+        Define a custom colour scale for visualisation of rotamer scores.
+        All arguments are iterables of four integers providing
+        (red, green, blue, alpha) in the range (0..255).
+
+        Args:
+            * max_c:
+                - colour associated with the maximum (most favourable) score
+            * mid_c:
+                - colour at the favoured/allowed cutoff
+            * min_c:
+                - colour at the allowed/outlier cutoff. All scores below the
+                  outlier cutoff will have this colour
+        '''
         f = c_function('set_rota_mgr_color_scale',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
                   ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)))
@@ -955,6 +999,9 @@ class Rota_Mgr:
 
     @property
     def color_scale(self):
+        '''
+        Returns the current colour scale as a 3-tuple of (max, mid, min)
+        '''
         f = c_function('rota_mgr_color_scale',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
                 ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)))
@@ -966,7 +1013,7 @@ class Rota_Mgr:
 
     def set_default_cutoffs(self):
         '''
-        Reset the rotamer cutoffs to default values
+        Reset the rotamer P-value cutoffs to default values
         '''
         from .constants import validation_defaults as vc
         self._set_cutoffs(vc.ROTA_ALLOWED_CUTOFF, vc.ROTA_OUTLIER_CUTOFF)
@@ -978,17 +1025,21 @@ class Rota_Mgr:
 
     @property
     def cutoffs(self):
+        '''
+        Gives the current (allowed, outlier) P-value cutoffs
+        '''
         f = c_function('rota_mgr_get_cutoffs',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double)))
         cutoffs = numpy.empty(2, numpy.double)
         f(self._c_pointer, pointer(cutoffs))
         return cutoffs
 
-    @property
-    def defined_rotamers(self):
-        if not hasattr(self, '_defined_rotamer_dict') or self._defined_rotamer_dict is None:
-            self._load_rotamer_defs()
-        return self._defined_rotamer_dict
+    # TODO: provide a method retrieving these from the C++ layer
+    # @property
+    # def defined_rotamers(self):
+    #     if not hasattr(self, '_defined_rotamer_dict') or self._defined_rotamer_dict is None:
+    #         self._load_rotamer_defs()
+    #     return self._defined_rotamer_dict
 
     def _load_defined_rotamers(self):
         with open(os.path.join(DICT_DIR, 'rota_data.json'), 'r') as f:
@@ -1046,6 +1097,13 @@ class Rota_Mgr:
             pointer(min_vals), pointer(max_vals), pointer(data))
 
     def get_rotamer(self, residue):
+        '''
+        Create/retrieve the :class:`Rotamer` object for a given residue
+
+        Args:
+            * residue:
+                - a :class:`chimerax.Residue` instance
+        '''
         from chimerax.core.atomic import Residues
         rots = self.get_rotamers(Residues([residue]))
         if len(rots):
@@ -1053,6 +1111,14 @@ class Rota_Mgr:
         return None
 
     def get_rotamers(self, residues):
+        '''
+        Return a :class:`Rotamers` instance containing all valid rotamers in the
+        selection.
+
+        Args:
+            * residues:
+                - a :class:`chimerax.Residues` instance
+        '''
         f = c_function('rota_mgr_get_rotamer',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
             ret=ctypes.py_object)
@@ -1060,6 +1126,14 @@ class Rota_Mgr:
         return _rotamers(f(self._c_pointer, residues._c_pointers, n))
 
     def validate_rotamers(self, rotamers):
+        '''
+        Returns an array of P-values for the current conformations of the
+        given rotamers.
+
+        Args:
+            * rotamers:
+                - a :class:`Rotamers` instance
+        '''
         f = c_function('rota_mgr_validate_rotamer',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
         n = len(rotamers)
@@ -1067,35 +1141,16 @@ class Rota_Mgr:
         f(self._c_pointer, rotamers._c_pointers, n, pointer(ret))
         return ret
 
-    def validate_rotamers_threaded(self, rotamers):
-        if self._thread_running():
-            raise RuntimeError('Thread already running!')
-        init_f = c_function('rota_mgr_validate_rotamer_threaded',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
-        n = len(rotamers)
-        ret = self._thread_result = numpy.empty(n, numpy.double)
-        from .delayed_reaction import delayed_reaction
-        delayed_reaction(self.session.triggers, 'new frame', init_f,
-            (self._c_pointer, rotamers._c_pointers, n, pointer(ret),),
-            self._thread_done, self._get_thread_result, ())
-
-    def _thread_running(self):
-        f = c_function('rota_mgr_thread_running',
-            args=(ctypes.c_void_p,), ret=ctypes.c_bool)
-        return f(self._c_pointer)
-
-    def _thread_done(self):
-        f = c_function('rota_mgr_thread_done',
-            args=(ctypes.c_void_p,), ret=ctypes.c_bool)
-        return f(self._c_pointer)
-
-    def _get_thread_result(self):
-        f = c_function('rota_mgr_finalize_thread',
-            args=(ctypes.c_void_p,))
-        f(self._c_pointer)
-        print('thread done!')
-
     def validate_residues(self, residues):
+        '''
+        Returns an array of P-values for the current conformations of all
+        rotameric protein residues in the input. Non-rotameric residues will
+        receive a score of -1.
+
+        Args:
+            * residues:
+                - a :class:`chimerax.Residues` instance
+        '''
         f = c_function('rota_mgr_validate_residue',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
         n = len(residues)
@@ -1104,6 +1159,14 @@ class Rota_Mgr:
         return ret
 
     def non_favored_rotamers(self, rotamers):
+        '''
+        Returns a 2-tuple containing only the rotamers in non-favoured
+        conformations, and their current scores.
+
+        Args:
+            * rotamers:
+                - a :class:`Rotamers` instance
+        '''
         f = c_function('rota_mgr_non_favored',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.POINTER(ctypes.c_double)),
             ret=ctypes.c_size_t)
@@ -1114,6 +1177,26 @@ class Rota_Mgr:
         return (_rotamers(ptrs[0:found]), scores[0:found])
 
     def validate_scale_and_color_rotamers(self, rotamers, max_scale = 2.0, non_favored_only = True, visible_only = True):
+        '''
+        Used by :class:`Rotamer_Annotator` for visualising rotamer validation.
+
+        Args:
+            * rotamers:
+                - a :class:`Rotamers` instance
+            * max_scale:
+                - size limit when scaling indicators by outlier severity
+            * non_favored_only:
+                - if True, the return arrays will be limited to only those
+                  rotamers outside of favoured conformations
+            * visible_only:
+                - if True, non-visible residues will be excluded from analysis
+                  and return
+
+        Returns:
+            * A :class:`Rotamers` instance matching the filtering criteria
+            * An array of scale factors (one per rotamer)
+            * An array of colours (one per rotamer)
+        '''
         f = c_function('rota_mgr_validate_scale_and_color_rotamers',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
                 ctypes.c_double, ctypes.c_bool, ctypes.c_bool, ctypes.c_void_p,
@@ -1131,7 +1214,11 @@ class Rota_Mgr:
 class Restraint_Change_Tracker:
     '''
     A per-session singleton tracking changes in ISOLDE restraints, and firing
-    triggers as necessary.
+    triggers as necessary. It should very rarely be necessary to work with
+    this class directly. Each individual :class:`_Restraint_Mgr` subclass
+    instance has its own :class:`TriggerSet`, and :class:`Restraint_Change_Tracker`
+    will fire the 'changes' trigger in the appropriate instances whenever
+    necessary.
     '''
     _mgr_name_to_class_functions = {
         'Proper_Dihedral_Restraint_Mgr': (_proper_dihedral_restraint_mgr, _proper_dihedral_restraints),
@@ -2145,6 +2232,7 @@ class _Dihedral(State):
     name = c_property('dihedral_name', string, read_only = True, doc = 'Name of this dihedral. Read only.')
     atoms = c_property('dihedral_atoms', cptr, 4, astype=_atoms, read_only=True,
         doc = 'Atoms making up this dihedral. Read only.')
+
 class Proper_Dihedral(_Dihedral):
     '''
     A Proper_Dihedral is defined as a dihedral in which the four atoms are
@@ -2177,6 +2265,11 @@ class Rama(State):
 
     @property
     def omega_dihedral(self):
+        '''
+        Returns a :class:`Proper_Dihedral` instance pointing to the omega
+        (peptide bond) dihedral for this residue, or None if there is no
+        preceding residue.
+        '''
         f = c_function('rama_omega',
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
             ret = ctypes.c_size_t)
@@ -2188,6 +2281,10 @@ class Rama(State):
 
     @property
     def phi_dihedral(self):
+        '''
+        Returns a :class:`Proper_Dihedral` instance pointing to the phi dihedral
+        for this residue, or None if there is no preceding residue.
+        '''
         f = c_function('rama_phi',
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
             ret = ctypes.c_size_t)
@@ -2199,6 +2296,10 @@ class Rama(State):
 
     @property
     def psi_dihedral(self):
+        '''
+        Returns a :class:`Proper_Dihedral` instance pointing to the psi dihedral
+        for this residue, or None if there is no following residue.
+        '''
         f = c_function('rama_psi',
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
             ret = ctypes.c_size_t)
@@ -2209,9 +2310,9 @@ class Rama(State):
         return None
 
     residue = c_property('rama_residue', cptr, astype=_residue_or_none, read_only = True,
-            doc = 'The residue to which this Rama belongs. Read only.')
+            doc = 'The :class:`chimerax.Residue` to which this Rama belongs. Read only.')
     ca_atom = c_property('rama_ca_atom', cptr, astype=_atom_or_none, read_only = True,
-            doc = 'The alpha carbon of the amino acid residue. Read only.')
+            doc = 'The alpha carbon :py:class:`chimerax.Atom` of the amino acid residue. Read only.')
     valid = c_property('rama_is_valid', npy_bool, read_only = True,
             doc = 'True if this residue has all three of omega, phi and psi. Read only.')
     visible = c_property('rama_visible', npy_bool, read_only = True,
@@ -2224,7 +2325,7 @@ class Rama(State):
             doc = 'The omega, phi and psi angles for this residue in radians. Read only.')
     case = c_property('rama_case', uint8, read_only=True,
             doc = '''A value representing the Ramachandran case for this residue,
-                matching the case definitions in Rama_Mgr.Rama_Case. Read only.''')
+                matching the case definitions in :class:`Rama_Mgr.Rama_Case`. Read only.''')
 
 class Rotamer(State):
     def __init__(self, c_pointer):
@@ -2248,6 +2349,10 @@ class Rotamer(State):
 
     @property
     def angles(self):
+        '''
+        Returns an array giving the current chi angles (chi1, chi2, ...) for
+        this rotamer.
+        '''
         f = c_function('rotamer_angles', args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_double)))
         ret = numpy.empty(self.num_chi_dihedrals, numpy.double)
         f(self._c_pointer, pointer(ret))
@@ -2255,6 +2360,16 @@ class Rotamer(State):
 
 
     def get_target(self, index):
+        '''
+        For each rotamer type, :class:`Rota_Mgr` stores a set of ideal rotamer
+        targets, based upon the Ultimate Rotamer Library [Hintze et al]_. These
+        are indexed in decreasing order of expected frequency. The number of
+        available target definitions is available from :py:attr:`num_targets`.
+        The target definition is returned as a dict containing the name,
+        expected frequency, ideal angles and their estimated standard deviations.
+
+        .. [Hintze et al] Proteins. 2016 Sep;84(9):1177-89. doi: 10.1002/prot.25039.
+        '''
         f = c_function('rotamer_target_def',
             args=(ctypes.c_void_p, ctypes.c_size_t),
             ret=ctypes.py_object)
@@ -2269,6 +2384,12 @@ class Rotamer(State):
 
     @property
     def nearest_target(self):
+        '''
+        Returns the definition for the nearest ideal rotamer by minimising the
+        sum of differences between the current and target angles. Adds an extra
+        entry ['Z scores'] to the returned dict giving the Z score for
+        abs(angle-target) for each chi dihedral.
+        '''
         f = c_function('rotamer_nearest_target',
             args=(ctypes.c_void_p,),
             ret=ctypes.py_object)
@@ -2279,6 +2400,10 @@ class Rotamer(State):
 
     @property
     def chi_dihedrals(self):
+        '''
+        Returns a :class:`Proper_Dihedrals` giving the chi dihedrals for this
+        rotamer, in order (chi1, chi2, ...)
+        '''
         f = c_function('rotamer_chi_dihedrals',
             args=(ctypes.c_void_p, ctypes.c_void_p))
         ret = numpy.empty(self.num_chi_dihedrals, cptr)
@@ -2287,11 +2412,11 @@ class Rotamer(State):
 
 
     residue = c_property('rotamer_residue', cptr, astype=_residue_or_none, read_only=True,
-                doc='Residue this rotamer belongs to. Read only.')
+                doc=':py:class:`chimerax.Residue` this rotamer belongs to. Read only.')
     score = c_property('rotamer_score', float64, read_only=True,
                 doc='P-value for the current conformation of this rotamer. Read only.')
     ca_cb_bond = c_property('rotamer_ca_cb_bond', cptr, astype=_bond_or_none, read_only=True,
-                doc='The "stem" bond of this rotamer. Read only.')
+                doc='The "stem"  :py:class:`chimerax.Bond` of this rotamer. Read only.')
     num_chi_dihedrals = c_property('rotamer_num_chi', uint8, read_only=True,
                 doc='Number of dihedrals defining this rotamer. Read only.')
     num_targets = c_property('rotamer_num_target_defs', uint32, read_only=True,

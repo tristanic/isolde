@@ -42,6 +42,8 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.imgmath',
     'sphinx.ext.githubpages',
+    'sphinx.ext.intersphinx',
+    # 'sphinxcontrib.fulltoc',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -98,7 +100,9 @@ html_static_path = ['_static']
 # default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
 # 'searchbox.html']``.
 #
-# html_sidebars = {}
+html_sidebars = {
+    '**': ['globaltoc.html', 'relations.html', 'searchbox.html'],
+    }
 
 
 # -- Options for HTMLHelp output ---------------------------------------------
@@ -159,6 +163,12 @@ texinfo_documents = [
 
 
 # -- Extension configuration -------------------------------------------------
+
+intersphinx_mapping = {
+    'chimerax': ('http://preview.cgl.ucsf.edu/chimerax/docs/devel', None),
+}
+intersphinx_cache_limit = 1
+
 
 def skip(app, what, name, obj, skip, options):
     if name == "__init__":

@@ -27,7 +27,7 @@ class _MyAPI(BundleAPI):
         from .tool import ISOLDE_ToolUI
         from chimerax.core import tools
         return tools.get_singleton(session, ISOLDE_ToolUI, 'ISOLDE', create=True)
-        
+
 
     @staticmethod
     def register_command(command_name, logger):

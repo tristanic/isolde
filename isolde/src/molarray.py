@@ -80,6 +80,12 @@ class Ramas(Collection):
 
     @property
     def omega_dihedrals(self):
+        '''
+        Returns a :class:`Proper_Dihedrals` instance pointing to the omega
+        (peptide bond) dihedral for each residue. Note that some residues
+        will not have omega dihedrals, so the output array may be shorter
+        than the :class:`Ramas` instance.
+        '''
         f = c_function('rama_omega',
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
             ret = ctypes.c_size_t)
@@ -90,6 +96,12 @@ class Ramas(Collection):
 
     @property
     def phi_dihedrals(self):
+        '''
+        Returns a :class:`Proper_Dihedrals` instance pointing to the phi
+        dihedral for each residue. Note that some residues will not have phi
+        dihedrals, so the output array may be shorter  than the :class:`Ramas`
+        instance.
+        '''
         f = c_function('rama_phi',
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
             ret = ctypes.c_size_t)
@@ -100,6 +112,12 @@ class Ramas(Collection):
 
     @property
     def psi_dihedrals(self):
+        '''
+        Returns a :class:`Proper_Dihedrals` instance pointing to the psi
+        dihedral for each residue. Note that some residues will not have psi
+        dihedrals, so the output array may be shorter  than the :class:`Ramas`
+        instance.
+        '''
         f = c_function('rama_psi',
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p),
             ret = ctypes.c_size_t)
@@ -109,9 +127,9 @@ class Ramas(Collection):
         return _proper_dihedrals(ret[:found])
 
     residues = cvec_property('rama_residue', cptr, astype=_residues, read_only = True,
-            doc = 'The residue to which each Rama belongs. Read only.')
+            doc = 'Returns a :class:`chimerax.Residues` instance giving the residue to which each Rama belongs. Read only.')
     ca_atoms = cvec_property('rama_ca_atom', cptr, astype=_atoms, read_only = True,
-            doc = 'The alpha carbon of each amino acid residue. Read only.')
+            doc = 'Returns a :class:`chimerax.Atoms` instance giving the alpha carbon of each amino acid residue. Read only.')
     valids = cvec_property('rama_is_valid', npy_bool, read_only = True,
             doc = 'True for each residue that has all three of omega, phi and psi. Read only.')
     visibles = cvec_property('rama_visible', npy_bool, read_only = True,
@@ -124,18 +142,18 @@ class Ramas(Collection):
             doc = 'The omega, phi and psi angles for each residue in radians. Read only.')
     cases = cvec_property('rama_case', uint8, read_only=True,
             doc = '''Values representing the Ramachandran case for these residues,
-                matching the case definitions in Rama_Mgr.Rama_Case. Read only.''')
+                matching the case definitions in :class:`Rama_Mgr.Rama_Case`. Read only.''')
 
 class Rotamers(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, Rotamer, Rotamers)
 
     residues = cvec_property('rotamer_residue', cptr, astype=_residues, read_only=True,
-                doc='Residue this rotamer belongs to. Read only.')
+                doc=':py:class:`chimerax.Residue` this rotamer belongs to. Read only.')
     scores = cvec_property('rotamer_score', float64, read_only=True,
                 doc='P-value for the current conformation of this rotamer. Read only.')
     ca_cb_bonds = cvec_property('rotamer_ca_cb_bond', cptr, astype=_bonds, read_only=True,
-                doc='The "stem" bond of this rotamer. Read only.')
+                doc='The "stem" :py:class:`chimerax.Bond` of this rotamer. Read only.')
     visibles = cvec_property('rotamer_visible', npy_bool, read_only=True,
                 doc='True for each rotamer whose CA-CB bond is visible')
 

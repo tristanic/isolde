@@ -8,24 +8,13 @@ Welcome to ISOLDE's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
-.. automodule:: chimerax.isolde.isolde
+   Home <self>
+   python_api/index
 
-    .. autoclass:: IsoldeParams
-        :members:
 
-    .. autoclass:: Isolde
-       :members:
 
-.. automodule:: chimerax.isolde.molobject
 
-    .. autoclass:: Proper_Dihedral_Mgr
-       :members:
-
-    .. autoclass:: Rama_Mgr
-       :members:
-       
 Indices and tables
 ==================
 

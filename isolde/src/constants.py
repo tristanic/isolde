@@ -1,5 +1,6 @@
-from simtk import unit, openmm
-from simtk.openmm import app
+from simtk import unit
+from simtk.openmm import VariableLangevinIntegrator, CustomGBForce
+from simtk.openmm.app import CutoffNonPeriodic, HBonds
 from math import pi, radians
 import ctypes
 
@@ -44,8 +45,8 @@ class _Defaults:
         'OPENMM_DEFAULT_PLATFORM':    'OpenCL',
         'OPENMM_PLATFORMS':           ('CUDA', 'OpenCL', 'CPU'), # 'CPU', 'OpenCL' or 'CUDA'
         'OPENMM_FORCEFIELD':          'amber14',
-        'OPENMM_INTEGRATOR_TYPE':     openmm.VariableLangevinIntegrator,
-        'OPENMM_NONBONDED_METHOD':    app.CutoffNonPeriodic,
+        'OPENMM_INTEGRATOR_TYPE':     VariableLangevinIntegrator,
+        'OPENMM_NONBONDED_METHOD':    CutoffNonPeriodic,
         'OPENMM_NONBONDED_CUTOFF':    2.0, #* unit.nanometers,
         'OPENMM_FRICTION':            5.0, #/ unit.picoseconds,
         'OPENMM_VAR_INTEGRATOR_TOL':  1e-4,
@@ -57,14 +58,14 @@ class _Defaults:
         'MAX_UNSTABLE_ROUNDS':        20,
         'TEMPERATURE':                100.0, # * unit.kelvin,
         'USE_GBSA':                   True,
-        'GBSA_NONBONDED_METHOD':      openmm.CustomGBForce.CutoffNonPeriodic,
+        'GBSA_NONBONDED_METHOD':      CustomGBForce.CutoffNonPeriodic,
         'GBSA_SOLVENT_DIELECTRIC':    78.5, # * unit.debye,
         'GBSA_SOLUTE_DIELECTRIC':     1.0, # * unit.debye,
         'GBSA_SA_METHOD':             'ACE', # alternative is None
         'GBSA_CUTOFF':                2.0, # *unit.nanometer, TODO: Remove (must be same as OPENMM_NONBONDED_CUTOFF anyway)
         'GBSA_KAPPA':                 3.0, # /unit.nanometer,
         'VACUUM_DIELECTRIC_CORR':     150, # *unit.debye,
-        'RIGID_BONDS':                app.HBonds,
+        'RIGID_BONDS':                HBonds,
         'RIGID_WATER':                True,
         'REMOVE_C_OF_M_MOTION':       False,
         'MIN_CONVERGENCE_FORCE_TOL':  50.0, # *unit.kilojoule_per_mole/unit.nanometer

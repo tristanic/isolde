@@ -1492,7 +1492,7 @@ class Isolde():
 
         Args:
             * atom:
-                - A `ChimeraX` :class:`Atom` instance pointing to an atom in
+                - A :class:`chimerax.Atom` instance pointing to an atom in
                   the currently selected model. By default hydrogen atoms are
                   not restrainable.
             * target:
@@ -1513,7 +1513,7 @@ class Isolde():
 
         Args:
             * sel (default: None):
-                - A `ChimeraX` :class:`Atoms` instance giving the atoms to
+                - A :class:`chimerax.Atoms` instance giving the atoms to
                   release, or None. If None, all currently-selected atoms from
                   the current model will be released.
         '''
@@ -1551,7 +1551,7 @@ class Isolde():
 
         Args:
             * atom1, atom2:
-                - `ChimeraX` :class:`Atom` instances pointing to the pair of
+                - :class:`chimerax.Atom` instances pointing to the pair of
                   atoms to be restrained.
             * target:
                 - The target distance in Angstroms
@@ -1652,7 +1652,7 @@ class Isolde():
 
         Args:
             * residues:
-                - A `ChimeraX` :class:'Residues' instance
+                - A :class:'chimerax.Residues' instance
         '''
         from . import session_extensions as sx
         rm = sx.get_rotamer_mgr(self.session)
@@ -2486,7 +2486,7 @@ class Isolde():
 
         Args:
             * atom_or_atoms:
-                - A `ChimeraX` :class:`Atom` or :class:`Atoms` instance
+                - A :class:`chimerax.Atom` or :class:`Atoms` instance
         '''
         if not self.simulation_running:
             return
@@ -2591,9 +2591,9 @@ class Isolde():
 
         Args:
             * atoms (default: None):
-                - A `ChimeraX` :class:`Atoms` instance or None
+                - A :class:`chimerax.Atoms` instance or None
             * residues (default: None):
-                - A`ChimeraX :class:`Residues` instance or None
+                - A :class:`chimerax.Residues` instance or None
 
         `atoms` and `residues` arguments should not both be given in the same
         call. If neither is given, then all currently-selected atoms in the
@@ -2633,7 +2633,7 @@ class Isolde():
 
         Args:
             * res:
-                - A `ChimeraX` :class:`Residue` instance pointing to a
+                - A :class:`chimerax.Residue` instance pointing to a
                   non-N-terminal amino acid residue.
         '''
         from . import session_extensions as sx
