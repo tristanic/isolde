@@ -380,7 +380,7 @@ class Rama_Mgr:
         OUTLIER=2
         NA=-1
 
-    from .constants import validation_defaults as val_defaults
+    from .validation_new.constants import validation_defaults as val_defaults
 
     RAMA_CASE_DETAILS = {
         Rama_Case.NONE: {
@@ -494,7 +494,7 @@ class Rama_Mgr:
         '''
         Set the colours for visualisation of scores back to their defaults.
         '''
-        from .constants import validation_defaults as val_defaults
+        from .validation_new.constants import validation_defaults as val_defaults
         self.set_color_scale(val_defaults.MAX_FAVORED_COLOR, val_defaults.ALLOWED_COLOR,
             val_defaults.OUTLIER_COLOR, val_defaults.NA_COLOR)
 
@@ -967,7 +967,7 @@ class Rota_Mgr:
         Reset the colour map for visualisation of rotamer validation back to
         the stored default colours.
         '''
-        from .constants import validation_defaults as val_defaults
+        from .validation_new.constants import validation_defaults as val_defaults
         self.set_color_scale(val_defaults.MAX_FAVORED_COLOR, val_defaults.ALLOWED_COLOR,
             val_defaults.OUTLIER_COLOR)
 
@@ -1015,7 +1015,7 @@ class Rota_Mgr:
         '''
         Reset the rotamer P-value cutoffs to default values
         '''
-        from .constants import validation_defaults as vc
+        from .validation_new.constants import validation_defaults as vc
         self._set_cutoffs(vc.ROTA_ALLOWED_CUTOFF, vc.ROTA_OUTLIER_CUTOFF)
 
     def _set_cutoffs(self, allowed, outlier):
@@ -1974,7 +1974,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         return _proper_dihedral_restraints(f(self._c_pointer))
 
     def set_default_colors(self):
-        from .constants import validation_defaults as val_defaults
+        from .validation_new.constants import validation_defaults as val_defaults
         self.set_color_scale(val_defaults.OUTLIER_COLOR, val_defaults.ALLOWED_COLOR,
              val_defaults.MAX_FAVORED_COLOR)
 
