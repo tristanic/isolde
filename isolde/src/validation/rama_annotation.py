@@ -2,9 +2,49 @@ from chimerax.core.models import Model, Drawing
 import numpy
 
 class Rama_Annotator(Model):
+    '''
+    Handles the task of real-time Ramachandran validation for a single
+    :py:class:`chimerax.AtomicStructure` and visualisation of the results.
+    Results are displayed as coloured spheres overlaying the alpha carbon
+    atoms, shading from (by default) green through yellow to hot pink as
+    the Ramachandran score goes from favoured through allowed to outlier.
+
+    Designed to be mostly "fire-and-forget":
+
+    .. code-block:: python
+
+        ra = Rama_Annotator(atomic_structure)
+
+    adds the :py:class`Rama_Annotator` as a child model to `atomic_structure`
+    and will update its validation drawing every time the coordinates change.
+    Alternatively:
+
+    .. code-block:: python
+
+        from chimerax.isolde import session_extensions as sx
+        ra = sx.get_rama_annotator(atomic_model)
+
+    creates the :py:class:`Rama_Annotator` if it doesn't exist, or returns
+    the existing one if it does.
+
+    Turning off the display of the :py:class:`Rama_Annotator` model (e.g.
+    via the `ChimeraX` Model Panel) temporarily turns off automatic validation,
+    which will restart when display is turned back on.
+    '''
     pickable = False
 
     def __init__(self, atomic_structure, hide_favored = False):
+        '''
+        Create the validator object, and add it as a child model to the target
+        structure.
+
+        Args:
+            * atomic_structure:
+                - a :py:class:`ChimeraX.AtomicStructure` instance
+            * hide_favored:
+                - if True, indicators will only appear for non-favored residues.
+                  (this can be changed at any time later)
+        '''
         structure = self._atomic_structure = atomic_structure
         session = structure.session
         Model.__init__(self, 'Ramachandran Validation', session)
@@ -21,6 +61,9 @@ class Rama_Annotator(Model):
 
     @property
     def ca_radius(self):
+        '''
+        Sets the radius (in Angstroms) of the sphere overlaying each CA atom.
+        '''
         return self._ca_radius
 
     @ca_radius.setter
@@ -31,6 +74,10 @@ class Rama_Annotator(Model):
 
     @property
     def track_whole_model(self):
+        '''
+        Tell the validator to track/annotate all protein residues in the
+        model (the default starting state).
+        '''
         return self._track_whole_model
 
     @track_whole_model.setter
@@ -44,6 +91,7 @@ class Rama_Annotator(Model):
 
     @property
     def hide_favored(self):
+        ''' Show annotations for favoured rotamers, or just non-favoured/outliers?'''
         return self._hide_favored
 
     @hide_favored.setter
@@ -54,6 +102,10 @@ class Rama_Annotator(Model):
 
     @property
     def display(self):
+        '''
+        Show/hide the validation markup (automatic validation will pause while
+        hidden).
+        '''
         return Model.display.fget(self)
 
     @display.setter
@@ -78,24 +130,15 @@ class Rama_Annotator(Model):
             rd.vertices, rd.normals, rd.triangles = sphere_geometry2(80)
             self.add_drawing(rd)
 
-
-
-
-    # def _prepare_ca_display(self):
-    #     from chimerax.core.atomic import Atom
-    #     self._selected_ramas.ca_atoms.draw_modes = Atom.BALL_STYLE
-    #
-    # def _revert_ca_display(self):
-    #     res = self._atomic_structure.residues
-    #     ramas = self._mgr.get_ramas(res)
-    #     cas = ramas.ca_atoms
-    #     cs = cas.residues.atoms[cas.residues.atoms.names == 'C']
-    #     cas.colors = cs.colors
-    #     cas.draw_modes = cs.draw_modes
-
-
     def restrict_to_selected_residues(self, residues):
-        ''' Restrict validation to a defined set of residues. '''
+        '''
+        Restrict validation to a defined set of residues. Use
+        :py:attr:`track_whole_model` = True to once again cover all residues.
+
+        Args:
+            * residues:
+                - A :py:class:`chimerax.Residues` instance
+        '''
         us = residues.unique_structures
         if not len(us):
             raise TypeError('No residues selected!')
@@ -109,10 +152,10 @@ class Rama_Annotator(Model):
 
     @property
     def color_scale(self):
+        ''' Returns a 3-tuple of (r,g,b,a) arrays defining the current colour scale.'''
         return self._mgr.color_scale
 
     def delete(self):
-        # self._revert_ca_display()
         h = self._structure_change_handler
         if h is not None:
             self._atomic_structure.triggers.remove_handler(h)

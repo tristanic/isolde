@@ -4,9 +4,9 @@ Core Dihedral Classes
 .. contents::
     :local:
 
-    General Principles
-    ------------------
-    
+General Principles
+------------------
+
 Dihedrals are the key fundamental units defining many aspects of a molecule's
 structure: backbone "twist" or secondary structure, peptide bond conformation,
 rotamer (sidechain) conformation, planarity, chirality, etc. Fast methods for

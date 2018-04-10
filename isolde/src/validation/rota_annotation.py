@@ -1,6 +1,4 @@
-'''
-Drawing code for live annotation of rotamers
-'''
+
 import numpy
 from math import log
 from time import time
@@ -9,16 +7,51 @@ from chimerax.core.models import Drawing, Model
 from chimerax.core.atomic import Bonds
 from chimerax.core.geometry import translation, rotation, Places
 
-from ..color import standard_three_color_scale
 from ..geometry import exclamation_mark, spiral, bond_cylinder_placements
 from ..geometry import scale_transforms
 
 class Rotamer_Annotator(Model):
-    ''' Model holding annotations for current allowed or outlier rotamers. '''
+    '''
+    Handles the task of real-time validation of rotamers for a single
+    :py:class:`chimerax.AtomicStructure` and drawing of 3D indicators of their
+    current scores. Designed to be mostly "fire-and-forget":
+
+    .. code-block:: python
+
+        ra = Rotamer_Annotator(atomic_structure)
+
+    adds the :py:class`Rotamer_Annotator` as a child model to `atomic_structure`
+    and will update its validation drawing every time the coordinates change.
+    Alternatively:
+
+    .. code-block:: python
+
+        from chimerax.isolde import session_extensions as sx
+        ra = sx.get_rota_annotator(atomic_model)
+
+    creates the :py:class:`Rotamer_Annotator` if it doesn't exist, or returns
+    the existing one if it does.
+
+    Each rotamer score visualised as a 3D exclamation mark surrounded by a
+    spiral, which changes colour and grows with outlier severity. By default
+    only non-favoured rotamers are flagged.
+
+    Turning off the display of the :py:class:`Rotamer_Annotator` model (e.g.
+    via the `ChimeraX` Model Panel) temporarily turns off automatic validation,
+    which will restart when display is turned back on.
+    '''
 
     pickable = False
 
     def __init__(self, atomic_structure):
+        '''
+        Create the validator object, and add it as a child model to the target
+        structure.
+
+        Args:
+            * atomic_structure:
+                - a :py:class:`ChimeraX.AtomicStructure` instance
+        '''
         structure = self._atomic_structure = atomic_structure
         session = structure.session
         Model.__init__(self, 'Rotamer Validation', session)
@@ -39,6 +72,10 @@ class Rotamer_Annotator(Model):
 
     @property
     def display(self):
+        '''
+        Show/hide the validation markup (automatic validation will pause while
+        hidden).
+        '''
         return Model.display.fget(self)
 
     @display.setter
@@ -50,6 +87,10 @@ class Rotamer_Annotator(Model):
 
     @property
     def track_whole_model(self):
+        '''
+        Tell the validator to track/annotate all rotameric residues in the
+        model (the default starting state).
+        '''
         return self._track_whole_model
 
     @track_whole_model.setter
@@ -61,7 +102,14 @@ class Rotamer_Annotator(Model):
             self.update_graphics()
 
     def restrict_to_selected_residues(self, residues):
-        ''' Restrict validation to a defined set of residues. '''
+        '''
+        Restrict validation to a defined set of residues. Use
+        :py:attr:`track_whole_model` = True to once again cover all residues.
+
+        Args:
+            * residues:
+                - A :py:class:`chimerax.Residues` instance
+        '''
         us = residues.unique_structures
         if not len(us):
             raise TypeError('No residues selected!')
@@ -74,6 +122,7 @@ class Rotamer_Annotator(Model):
 
     @property
     def color_scale(self):
+        ''' Returns a 3-tuple of (r,g,b,a) arrays defining the current colour scale.'''
         return self._mgr.color_scale
 
     @property
