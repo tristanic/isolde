@@ -34,8 +34,8 @@
 //#include "atomic_cpp/dihedral_mgr.h"
 //#include "geometry/geometry.h"
 //#include "interpolation/nd_interp.h"
-//#include "validation_new/rama.h"
-//#include "validation_new/rota.h"
+//#include "validation/rama.h"
+//#include "validation/rota.h"
 //#include "restraints_cpp/changetracker.h"
 //#include "restraints_cpp/position_restraints.h"
 //#include "restraints_cpp/distance_restraints.h"
@@ -59,8 +59,8 @@
 #include "atomic_cpp/dihedral_ext.h"
 #include "atomic_cpp/dihedral_mgr_ext.h"
 
-#include "validation_new/rama_ext.h"
-#include "validation_new/rota_ext.h"
+#include "validation/rama_ext.h"
+#include "validation/rota_ext.h"
 
 #include "restraints_cpp/changetracker_ext.h"
 #include "restraints_cpp/mdff_ext.h"

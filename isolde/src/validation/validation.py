@@ -7,23 +7,17 @@
 import os
 import numpy
 from math import degrees, radians, pi
-from . import geometry
+from .. import geometry
+from ..constants import defaults
+#from .dihedrals import Dihedrals
 
 from time import time
 
 package_directory = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(package_directory, 'molprobity_data')
 
-# ----------------------------------------------------------------------
-# These values match the Rama_Mgr C++ Enum. Do not change unless you know
-# exactly what you are doing!
-CISPRO=0
-TRANSPRO = 1
-GLYCINE=2
-PREPRO=3
-ILEVAL=4
-GENERAL=5
-# ----------------------------------------------------------------------
+def get_molprobity_data_dir():
+    return DATA_DIR
 
 def generate_scipy_interpolator(file_prefix, wrap_axes = True):
     '''
@@ -147,8 +141,8 @@ def generate_interpolator(file_prefix, wrap_axes = True):
 
 def generate_interpolator_data(file_prefix, wrap_axes = True, regenerate = None):
     '''
-    Load a MolProbity data set and return a RegularGridInterpolator
-    object for later fast interpolation of values.
+    Load a MolProbity data set and format it into a form ready for generation of
+    a RegularGridInterpolator object for later fast interpolation of values.
     '''
     import numpy, pickle
     infile = None
@@ -270,8 +264,8 @@ def generate_interpolator_data(file_prefix, wrap_axes = True, regenerate = None)
         outfile.close()
     return (ndim, axis_lengths, min_vals, max_vals, grid_data)
 
-from .param_mgr import Param_Mgr, autodoc, param_properties
-from .validation_new.constants import validation_defaults as _val_defaults
+from ..param_mgr import Param_Mgr, autodoc, param_properties
+from .constants import validation_defaults as _val_defaults
 @param_properties
 @autodoc
 class Validation_Params(Param_Mgr):

@@ -23,7 +23,6 @@ import json
 
 libdir = os.path.dirname(os.path.abspath(__file__))
 libfile = glob.glob(os.path.join(libdir, 'molc.cpython*'))[0]
-DATA_DIR = os.path.join(libdir, 'molprobity_data')
 DICT_DIR = os.path.join(libdir, 'dictionaries')
 
 _c_functions = CFunctions(os.path.splitext(libfile)[0])
@@ -380,7 +379,7 @@ class Rama_Mgr:
         OUTLIER=2
         NA=-1
 
-    from .validation_new.constants import validation_defaults as val_defaults
+    from .validation.constants import validation_defaults as val_defaults
 
     RAMA_CASE_DETAILS = {
         Rama_Case.NONE: {
@@ -390,42 +389,44 @@ class Rama_Mgr:
         },
         Rama_Case.CISPRO: {
             'name': 'Cis-proline residues',
-            'file_prefix': os.path.join(DATA_DIR, 'rama8000-cispro'),
+            'file_prefix': 'rama8000-cispro',
             'cutoffs': [val_defaults.CISPRO_OUTLIER, val_defaults.CISPRO_ALLOWED]
         },
         Rama_Case.TRANSPRO: {
             'name': 'Trans-proline residues',
-            'file_prefix': os.path.join(DATA_DIR, 'rama8000-transpro'),
+            'file_prefix': 'rama8000-transpro',
             'cutoffs': [val_defaults.TRANSPRO_OUTLIER, val_defaults.TRANSPRO_ALLOWED]
         },
         Rama_Case.GLYCINE: {
             'name': 'Glycine residues',
-            'file_prefix': os.path.join(DATA_DIR, 'rama8000-gly-sym'),
+            'file_prefix': 'rama8000-gly-sym',
             'cutoffs': [val_defaults.GLYCINE_OUTLIER,val_defaults.GLYCINE_ALLOWED]
         },
         Rama_Case.PREPRO: {
             'name': 'Residues preceding proline',
-            'file_prefix': os.path.join(DATA_DIR, 'rama8000-prepro-noGP'),
+            'file_prefix': 'rama8000-prepro-noGP',
             'cutoffs': [val_defaults.PREPRO_OUTLIER, val_defaults.PREPRO_ALLOWED]
         },
         Rama_Case.ILEVAL: {
             'name': 'Isoleucine or valine residues',
-            'file_prefix': os.path.join(DATA_DIR, 'rama8000-ileval-nopreP'),
+            'file_prefix': 'rama8000-ileval-nopreP',
             'cutoffs': [val_defaults.ILEVAL_OUTLIER, val_defaults.ILEVAL_ALLOWED]
         },
         Rama_Case.GENERAL: {
             'name': 'General amino acid residues',
-            'file_prefix': os.path.join(DATA_DIR, 'rama8000-general-noGPIVpreP'),
+            'file_prefix': 'rama8000-general-noGPIVpreP',
             'cutoffs': [val_defaults.GENERAL_OUTLIER, val_defaults.GENERAL_ALLOWED]
         }
     }
 
     def _prepare_all_validators(self):
-        from .validation import generate_interpolator_data
+        from .validation import validation
+        data_dir = validation.get_molprobity_data_dir()
         for case, details in self.RAMA_CASE_DETAILS.items():
             file_prefix = details['file_prefix']
             if file_prefix is not None:
-                i_data = generate_interpolator_data(file_prefix, True)
+                file_prefix = os.path.join(data_dir, file_prefix)
+                i_data = validation.generate_interpolator_data(file_prefix, True)
                 self._add_interpolator(case, *i_data)
 
     def __init__(self, session, c_pointer=None):
@@ -494,7 +495,7 @@ class Rama_Mgr:
         '''
         Set the colours for visualisation of scores back to their defaults.
         '''
-        from .validation_new.constants import validation_defaults as val_defaults
+        from .validation.constants import validation_defaults as val_defaults
         self.set_color_scale(val_defaults.MAX_FAVORED_COLOR, val_defaults.ALLOWED_COLOR,
             val_defaults.OUTLIER_COLOR, val_defaults.NA_COLOR)
 
@@ -967,7 +968,7 @@ class Rota_Mgr:
         Reset the colour map for visualisation of rotamer validation back to
         the stored default colours.
         '''
-        from .validation_new.constants import validation_defaults as val_defaults
+        from .validation.constants import validation_defaults as val_defaults
         self.set_color_scale(val_defaults.MAX_FAVORED_COLOR, val_defaults.ALLOWED_COLOR,
             val_defaults.OUTLIER_COLOR)
 
@@ -1015,7 +1016,7 @@ class Rota_Mgr:
         '''
         Reset the rotamer P-value cutoffs to default values
         '''
-        from .validation_new.constants import validation_defaults as vc
+        from .validation.constants import validation_defaults as vc
         self._set_cutoffs(vc.ROTA_ALLOWED_CUTOFF, vc.ROTA_OUTLIER_CUTOFF)
 
     def _set_cutoffs(self, allowed, outlier):
@@ -1074,15 +1075,16 @@ class Rota_Mgr:
                     pointer(mac), pointer(man))
 
     def _prepare_all_validators(self):
-        from .validation import generate_interpolator_data
+        from .validation import validation
         dmgr = self._dihedral_mgr
-        prefix = os.path.join(DATA_DIR, 'rota8000-')
+        data_dir = validation.get_molprobity_data_dir()
+        prefix = os.path.join(data_dir, 'rota8000-')
         for aa in dmgr.dihedral_dict['aminoacids']:
             fname = prefix + aa.lower()
             if not os.path.isfile(fname+'.data') and not os.path.isfile(fname+'.pickle'):
                 # Not a rotameric residue
                 continue
-            idata = generate_interpolator_data(fname, True)
+            idata = validation.generate_interpolator_data(fname, True)
             self._add_interpolator(aa, *idata)
 
     def _add_interpolator(self, resname, ndim, axis_lengths, min_vals, max_vals, data):
@@ -1974,7 +1976,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         return _proper_dihedral_restraints(f(self._c_pointer))
 
     def set_default_colors(self):
-        from .validation_new.constants import validation_defaults as val_defaults
+        from .validation.constants import validation_defaults as val_defaults
         self.set_color_scale(val_defaults.OUTLIER_COLOR, val_defaults.ALLOWED_COLOR,
              val_defaults.MAX_FAVORED_COLOR)
 

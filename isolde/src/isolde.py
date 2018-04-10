@@ -1404,7 +1404,7 @@ class Isolde():
         dist_k = self.sim_params.distance_restraint_spring_constant.value_in_unit(OPENMM_SPRING_UNIT)
         residues = atoms.unique_residues
         m = self.selected_model
-        from .validation_new.constants import ss_restraints
+        from .validation.constants import ss_restraints
         restraint_params = ss_restraints[target]
         from . import session_extensions as sx
         dr_m = sx.get_distance_restraint_mgr(m)
@@ -1760,7 +1760,7 @@ class Isolde():
         '''
         iw = self.iw
         container = self._rama_plot_window = iw._validate_rama_plot_layout
-        from .validation_new.ramaplot import RamaPlot
+        from .validation.ramaplot import RamaPlot
         from . import session_extensions
         rama_mgr = session_extensions.get_ramachandran_mgr(self._selected_model)
         self._rama_plot = RamaPlot(self.session, rama_mgr, container)

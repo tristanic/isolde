@@ -61,14 +61,14 @@ def get_mdff_mgr(model, volume):
     return MDFF_Mgr(model, volume)
 
 def get_rota_annotator(model):
-    from .validation_new.rota_annotation import Rotamer_Annotator
+    from .validation.rota_annotation import Rotamer_Annotator
     for m in model.child_models():
         if isinstance(m, Rotamer_Annotator):
             return m
     return Rotamer_Annotator(model)
 
 def get_rama_annotator(model):
-    from .validation_new.rama_annotation import Rama_Annotator
+    from .validation.rama_annotation import Rama_Annotator
     for m in model.child_models():
         if isinstance(m, Rama_Annotator):
             return m

@@ -2,7 +2,7 @@
 #define ISOLDE_ROTAMER_RESTRAINT
 
 #include "dihedral_restraints.h"
-#include "../validation_new/rota.h"
+#include "../validation/rota.h"
 
 using namespace atomstruct;
 namespace isolde
