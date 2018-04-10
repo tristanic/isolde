@@ -44,18 +44,12 @@ from chimerax.core.models import Drawing, Model
 from chimerax.core.map import Volume
 from chimerax.atomic import AtomicStructure
 
-from .isolde_model import IsoldeCrystalModel, IsoldeEMModel, IsoldeFreeModel
-from . import rotamers, dihedrals
 from .eventhandler import EventHandler
 from .constants import defaults, sim_outcomes, control
 from .param_mgr import Param_Mgr, autodoc, param_properties
 from .checkpoint import CheckPoint
 #from .openmm import sim_interface
 from .openmm.sim_param_mgr import SimParams
-
-from .validation_new.validation import Validation_Mgr
-
-from .validation_new import validation_interface #TODO: Remove
 
 from PyQt5.QtWidgets import QMessageBox
 

@@ -262,7 +262,7 @@ def generate_interpolator_data(file_prefix, wrap_axes = True, regenerate = None)
     return (ndim, axis_lengths, min_vals, max_vals, grid_data)
 
 from ..param_mgr import Param_Mgr, autodoc, param_properties
-from ..constants import validation_defaults as _val_defaults
+from .constants import validation_defaults as _val_defaults
 @param_properties
 @autodoc
 class Validation_Params(Param_Mgr):
@@ -272,60 +272,3 @@ class Validation_Params(Param_Mgr):
         'track_rotamer_status':         (_val_defaults.TRACK_ROTAMER_STATUS, None),
         'rounds_per_rota_update':       (_val_defaults.ROUNDS_PER_ROTA_UPDATE, None),
     }
-
-class Validation_Mgr:
-    def __init__(self, structure):
-        self.structure = structure
-        session = self.session = structure.session
-        from . import molobject
-        self._proper_dihedral_mgr = molobject.get_proper_dihedral_manager(session)
-        self._rama_mgr = molobject.get_ramachandran_manager(session)
-        self._rota_mgr = molobject.get_rotamer_manager(session)
-
-        self.params = Validation_Params()
-        self.rama_set = None
-        self.rama_cas = None
-        self._update_counter = 0
-        self._counter_offset = 2
-
-        from .rota_annotation import Rotamer_Annotator
-        from .rama_annotation import Rama_Annotator
-
-        self._rota_annotator = None
-        self._rama_annotator = None
-
-    @property
-    def proper_dihedral_mgr(self):
-        return self._proper_dihedral_mgr
-
-    @property
-    def rama_mgr(self):
-        return self._rama_mgr
-
-    @property
-    def rota_mgr(self):
-        return self._rota_mgr
-
-    @property
-    def rotamer_annotator(self):
-        ra = self._rota_annotator
-        if ra is None or ra.deleted:
-            from .rota_annotation import Rotamer_Annotator
-            for m in self.structure.child_models():
-                if isinstance(m, Rotamer_Annotator):
-                    ra = self._rota_annotator = m
-                    return ra
-            ra = self._rota_annotator = Rotamer_Annotator(self.structure)
-        return ra
-
-    @property
-    def rama_annotator(self):
-        ra = self._rama_annotator
-        if ra is None or ra.deleted:
-            from .rama_annotation import Rama_Annotator
-            for m in self.structure.child_models():
-                if isinstance(m, Rama_Annotator):
-                    ra = self._rama_annotator = m
-                    return ra
-            ra = self._rama_annotator = Rama_Annotator(self.structure)
-        return ra
