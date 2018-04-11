@@ -7,6 +7,7 @@ ISOLDE Python API
    gui_control
    core_objects
    live_validation
+   restraints
 
 
 Indices and tables

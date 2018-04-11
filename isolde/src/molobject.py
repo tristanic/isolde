@@ -1322,6 +1322,29 @@ class _Restraint_Mgr(Model):
 
     @property
     def triggers(self):
+        '''
+        A :py:class:`chimerax.TriggerSet` instance. Contains a single trigger,
+        'changes' that is fired every time a restraint is created, deleted,
+        or changes in any way. To automatically run a method when the restraints
+        in a given restraint manager class change, use the following idiom:
+
+        .. code:: python
+
+            def changes_cb(trigger_name, data):
+                mgr = data[0]
+                changes_dict = data[1]
+                reasons = list(changes_dict.keys())
+                if 'target changed' in reasons:
+                    changed_restraints = changes_dict['target changed']
+                    do_something_with(changed_restraints)
+
+            handler = mgr.triggers.add_handler('changes', changes_cb)
+            # changes_cb() will be run every time something changes.
+
+            # To stop:
+            mgr.trigger.remove_handler(handler)
+
+        '''
         if not hasattr(self, '_triggers') or self._triggers is None:
             from chimerax.core.triggerset import TriggerSet
             t = self._triggers = TriggerSet()
@@ -1361,9 +1384,19 @@ class _Restraint_Mgr(Model):
 
 class MDFF_Mgr(_Restraint_Mgr):
     '''
-    Appears as a Model to provide a consistent API to all the other restraint
-    manager classes, but doesn't actually draw anything. Responsible for managing
-    the MDFF coupling of the simulation to one map.
+    Manages the molecular dynamics flexible fitting (MDFF) steering forces for
+    one map. Appears as a Model to provide a consistent API to all the other
+    restraint manager classes, but doesn't actually draw anything. Unlike other
+    restraint manager classes, it lives as a child to the
+    :py:class:`chimerax.Volume` holding the map it manages.
+
+    The preferred way to create/retrieve the MDFF manager for a given
+    :py:class:`AtomicStructure` instance m and :py:class:`Volume` instance is:
+
+    .. code:: python
+
+        from chimerax.isolde import session_extensions as sx
+        mdff_mgr = sx.get_mdff_mgr(m, v)
     '''
     def __init__(self, model, volume, c_pointer=None):
         name = 'MDFF - ' + volume.name
@@ -1376,8 +1409,7 @@ class MDFF_Mgr(_Restraint_Mgr):
     @property
     def volume(self):
         '''
-        The Volume object that provides the MDFF potential for the managed
-        atoms.
+        The Volume object providing the MDFF potential for the managed atoms.
         '''
         return self._volume
 
@@ -1392,11 +1424,36 @@ class MDFF_Mgr(_Restraint_Mgr):
         return _mdff_atoms(ret[:count])
 
     def add_mdff_atoms(self, atoms, hydrogens=False):
+        '''
+        Returns a :py:class:`MDFF_Atoms` instance covering the atoms in the
+        input. Only one :cpp:class:`MDFF_Atom` will ever be created for a given
+        atom, so it is safe to use this repeatedly on the same set of atoms.
+        Use this method when you want to ensure that all atoms in the input will
+        be properly coupled to the map in simulations.
+
+        Args:
+            * atoms:
+                - a :py:class:`chimerax.Atoms` instance
+            * hydrogens:
+                - should hydrogens be coupled to the map? Setting this to True
+                  will substantially increase the amount of computation required
+                  and empirically seems to make little difference to the result.
+        '''
         if not hydrogens:
             atoms = atoms[atoms.element_names != "H"]
         return self._get_mdff_atoms(atoms, create=True)
 
     def get_mdff_atoms(self, atoms):
+        '''
+        Returns a :py:class:`MDFF_Atoms` instance covering the atoms in the
+        input. Unlike :func:`add_mdff_atoms`, no new :cpp:class:`MDFF_Atom` will
+        be created. Use this method when you've already coupled all the atoms
+        you want to this map, and don't want to accidentally add more.
+
+        Args:
+            * atoms:
+                - a :py:class:`chimerax.Atoms` instance
+        '''
         return self._get_mdff_atoms(atoms, create=False)
 
     def __len__(self):
@@ -1405,27 +1462,41 @@ class MDFF_Mgr(_Restraint_Mgr):
             ret = ctypes.c_size_t)
         return f(self._c_pointer)
 
-    def get_global_k(self):
+    def _get_global_k(self):
         '''
         Global coupling constant applied to all atoms (scales the individual
-        atom coupling constants)
+        atom coupling constants). Effective units are
+
+            .. math::
+
+                kJ mol^{-1} (\\text{map density unit})^{-1} nm^3
         '''
         f = c_function('mdff_mgr_global_k',
             args=(ctypes.c_void_p,),
             ret=ctypes.c_double)
         return f(self._c_pointer)
 
-    def set_global_k(self, k):
+    def _set_global_k(self, k):
         f = c_function('set_mdff_mgr_global_k',
             args=(ctypes.c_void_p, ctypes.c_double))
         f(self._c_pointer, k)
 
-    global_k = property(get_global_k, set_global_k)
+    global_k = property(_get_global_k, _set_global_k)
 
 
 class Position_Restraint_Mgr(_Restraint_Mgr):
     '''
-    Manages position restraints for a single atomic structure.
+    Manages creation, deletion, mapping and drawing of position restraints for
+    a single atomic structure. Appears as a child :py:class:`chimeraX.Model`
+    under the :py:class:`chimerax.AtomicStructure` it manages.
+
+    The preferred way to create/retrieve the position restraint manager for a
+    given :py:class:`AtomicStructure` instance m is:
+
+    .. code:: python
+
+        from chimerax.isolde import session_extensions as sx
+        pr_mgr = sx.get_position_restraint_mgr(m)
     '''
     _DEFAULT_BOND_COLOR = [200, 250, 120, 255]
     _DEFAULT_PIN_COLOR = [255,215,0,255]
@@ -1462,9 +1533,26 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         return pin_geometry(handle_radius, pin_radius, total_height)
 
     def set_pin_color(self, color):
+        '''
+        Set the colour of the pins used to represent position restraints.
+
+        Args:
+            * color:
+                - an iterable of four integers (0..255) representing the
+                  (r,g,b,a) colour values
+        '''
         self._pin_drawing.color = color
 
     def set_bond_color(self, color):
+        '''
+        Set the colour of the dashed bond connecting each restrained atom to
+        its target pin.
+
+        Args:
+            * color:
+                - an iterable of four integers (0..255) representing the
+                  (r,g,b,a) colour values
+        '''
         self._bond_drawing.color = color
 
     def _restraint_changes_cb(self, trigger_name, changes):
@@ -1499,6 +1587,11 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
     _show_bd = True
 
     def update_graphics(self, update_bonds=True, update_targets=True):
+        '''
+        Update the restraints drawing. Happens automatically every time
+        restraints or coordinates change. It should rarely/never be necessary to
+        call this manually.
+        '''
         if not self.visible:
             return
         pd = self._pin_drawing
@@ -1542,28 +1635,72 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         num = f(self._c_pointer, atoms._c_pointers, create, n, pointer(ret))
         return _position_restraints(ret[0:num])
 
-    def get_restraints(self, atoms):
-        return self._get_restraints(atoms)
-
-    def get_restraint(self, atom):
-        from chimerax.core.atomic import Atoms
-        r = self._get_restraints(Atoms([atom]))
-        if len(r):
-            return r[0]
-        return None
-
     def add_restraints(self, atoms):
+        '''
+        Returns a :py:class:`Position_Restraints` instance covering the
+        non-hydrogen atoms in the input. Hydrogen atoms are unrestrainable by
+        design, since their low mass can easily cause instability with strong
+        restraints. Only one :cpp:class:`Position_Restraint` will ever be
+        created for a given atom, so it is safe to use this repeatedly on the
+        same set of atoms. Use this method when you want to ensure that all
+        atoms in the input will be restrainable in simulations.
+
+        Args:
+            * atoms:
+                - a :py:class:`chimerax.Atoms` instance
+        '''
         return self._get_restraints(atoms, create=True)
 
     def add_restraint(self, atom):
+        '''
+        Singular form of :func:`add_restraints`, returning a
+        :py:class:`Position_Restraint` instance (or None if the atom is not
+        restrainable).
+
+        Args:
+            * atom:
+                - a :py:class:`chimerax.Atom` instance
+        '''
         from chimerax.core.atomic import Atoms
         r = self._get_restraints(Atoms([atom]), create=True)
         if len(r):
             return r[0]
         return None
 
+    def get_restraints(self, atoms):
+        '''
+        Returns a :py:class:`Position_Restraints` instance covering the atoms in
+        the input. Unlike :func:`add_restraints`, no new
+        :cpp:class:`Position_Restraint` will be created. Use this method when
+        you've already defined all the restraints you need, and don't want to
+        accidentally add more.
+
+        Args:
+            * atoms:
+                - a :py:class:`chimerax.Atoms` instance
+        '''
+        return self._get_restraints(atoms)
+
+    def get_restraint(self, atom):
+        '''
+        Singular form of :func:`get_restraints`, returning a
+        :py:class:`Position_Restraint` instance (or None if no restraint exists
+        for this atom).
+
+        Args:
+            * atom:
+                - a :py:class:`chimerax.Atom` instance
+        '''
+        from chimerax.core.atomic import Atoms
+        r = self._get_restraints(Atoms([atom]))
+        if len(r):
+            return r[0]
+        return None
+
+
     @property
     def num_restraints(self):
+        '''Number of restraints currently managed by this manager.'''
         return c_function('position_restraint_mgr_num_restraints',
             args=(ctypes.c_void_p,), ret=ctypes.c_size_t)(self._c_pointer)
 
@@ -1572,12 +1709,35 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
 
     @property
     def visible_restraints(self):
+        '''
+        Returns a :py:class:`Position_Restraints` instance containing only the
+        currently visible restraints. A restraint will be visible if it is
+        enabled and its atom is visible. Note that it is not possible to hide an
+        enabled restraint independent of its atom, other than by hiding the
+        entire restraint manager. This is by design: hiding of individual
+        restraints will lead to trouble if the user subsequently forgets they
+        are there.
+        '''
         f = c_function('position_restraint_mgr_visible_restraints',
             args=(ctypes.c_void_p,), ret=ctypes.py_object)
         return _position_restraints(f(self._c_pointer))
 
 
 class Tuggable_Atoms_Mgr(_Restraint_Mgr):
+    '''
+    Manages creation, deletion and mapping of :cpp:class:`Position_Restraint`
+    objects to act as interactive tugging forces, and drawing of the applied
+    force vectors. Appears as a child :py:class:`chimeraX.Model` under the
+    :py:class:`chimerax.AtomicStructure` it manages.
+
+    The preferred way to create/retrieve the tuggable atoms manager for a
+    given :py:class:`AtomicStructure` instance m is:
+
+    .. code:: python
+
+        from chimerax.isolde import session_extensions as sx
+        ta_mgr = sx.get_tuggable_atoms_mgr(m)
+    '''
     _DEFAULT_ARROW_COLOR = [100, 255, 100, 255]
     # _NEAR_ATOMS_COLOR = [0,255,255,255]
     def __init__(self, model, c_pointer=None):
@@ -1600,6 +1760,14 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
         # self.set_near_atoms_color(self._NEAR_ATOMS_COLOR)
 
     def set_arrow_color(self, color):
+        '''
+        Set the colour applied to the arrows used to represent the tugging force
+        vector(s).
+
+        Args:
+            * color:
+                - an (r,g,b,a) iterable of 4 integers in the range (0..255)
+        '''
         self._arrow_drawing.color = color
 
     # def set_near_atoms_color(self, color):
@@ -1626,6 +1794,11 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
         self.update_graphics()
 
     def update_graphics(self):
+        '''
+        Update the force vector drawing. Happens automatically every time
+        restraints or coordinates change. It should rarely/never be necessary to
+        call this manually.
+        '''
         if not self.visible:
             return
         ad = self._arrow_drawing
@@ -1652,14 +1825,72 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
         num = f(self._c_pointer, atoms._c_pointers, create, n, pointer(ret))
         return _tuggable_atoms(ret[0:num])
 
+    def add_tuggables(self, atoms):
+        '''
+        Returns a :py:class:`Tuggable_Atoms` instance covering the non-hydrogen
+        atoms in the input. Hydrogen atoms cannot be tugged by design, since
+        their low mass can easily cause instability with strong forces. Only one
+        :cpp:class:`Position_Restraint` will ever be created for a given atom,
+        so it is safe to use this repeatedly on the same set of atoms. Use this
+        method when you want to ensure that all atoms in the input will be
+        tuggable in simulations.
+
+        Args:
+            * atoms:
+                - a :py:class:`chimerax.Atoms` instance
+        '''
+        return self._get_tuggables(atoms, create=True)
+
+    def add_tuggable(self, atom):
+        '''
+        Singular form of :func:`add_tuggable`, returning a
+        :py:class:`Tuggable_Atom` instance (or None if the atom is not
+        tuggable).
+
+        Args:
+            * atom:
+                - a :py:class:`chimerax.Atom` instance
+        '''
+        from chimerax.core.atomic import Atoms
+        t = self._get_tuggables(Atoms([atom]), create=True)
+        if len(t):
+            return t[0]
+        return None
+
     def get_tuggables(self, atoms):
+        '''
+        Returns a :py:class:`Tuggable_Atoms` instance covering the atoms in the
+        input. Unlike :func:`add_tuggables`, no new
+        :cpp:class:`Position_Restraint` will be created.
+
+        Args:
+            * atoms:
+                - a :py:class:`chimerax.Atoms` instance
+        '''
         return self._get_tuggables(atoms)
 
-    def add_tuggables(self, atoms):
-        return self._get_tuggables(atoms, create=True)
+    def add_tuggable(self, atom):
+        '''
+        Singular form of :func:`get_tuggable`, returning a
+        :py:class:`Tuggable_Atom` instance (or None if the atom is not
+        tuggable).
+
+        Args:
+            * atom:
+                - a :py:class:`chimerax.Atom` instance
+        '''
+        from chimerax.core.atomic import Atoms
+        t = self._get_tuggables(Atoms([atom]), create=False)
+        if len(t):
+            return t[0]
+        return None
+
 
     @property
     def num_tuggables(self):
+        '''
+        Number of tuggable atoms currently managed by this manager.
+        '''
         return c_function('tuggable_atoms_mgr_num_restraints',
             args=(ctypes.c_void_p,), ret=ctypes.c_size_t)(self._c_pointer)
 
@@ -1668,6 +1899,12 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
 
     @property
     def visibles(self):
+        '''
+        Returns a :py:class:`Tuggable_Atoms` instance containing only those
+        tuggables with currently-visible force vectors. A vector will be visible
+        if and only if the  its associated atom is both visible and currently
+        being tugged.
+        '''
         f = c_function('tuggable_atoms_mgr_visible_restraints',
             args=(ctypes.c_void_p,), ret=ctypes.py_object)
         return _tuggable_atoms(f(self._c_pointer))
@@ -1675,10 +1912,21 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
 class Distance_Restraint_Mgr(_Restraint_Mgr):
     '''
     Manages distance restraints (Atom pairs with distances and spring constants)
-    and their visualisations for a single atomic structure.
+    and their visualisations for a single atomic structure. Appears as a child
+    :py:class:`chimerax.Model` under the :py:class:`chimerax.AtomicStructure`
+    it manages.
+
+    The preferred way to create/retrieve the distance restraint manager for a
+    given :py:class:`AtomicStructure` instance m is:
+
+    .. code:: python
+
+        from chimerax.isolde import session_extensions as sx
+        dr_mgr = sx.get_distance_restraint_mgr(m)
+
     '''
     _DEFAULT_BOND_COLOR = [168, 255, 230, 255]
-    _DEFAULT_TARGET_COLOR = [168, 255, 230, 255]
+    _DEFAULT_TARGET_COLOR = [128, 215, 190, 255]
     def __init__(self, model, c_pointer=None):
         '''
         Prepare a distance restraint manager for a given atomic model.
@@ -1718,9 +1966,25 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         bd.display = False
 
     def set_bond_color(self, color):
+        '''
+        Set the colour of the cylinder representing the distance restraint.
+
+        Args:
+            * color:
+                - an iterable of four integers (0..255) representing the
+                  (r,g,b,a) colour values
+        '''
         self._bond_drawing.color = color
 
     def set_target_color(self, color):
+        '''
+        Set the colour of the cylinder representing the target distance.
+
+        Args:
+            * color:
+                - an iterable of four integers (0..255) representing the
+                  (r,g,b,a) colour values
+        '''
         self._target_drawing.color = color
 
     def _target_geometry(self):
@@ -1730,8 +1994,6 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         '''
         from chimerax.core import surface
         return surface.cylinder_geometry(radius=1.0, height=1.0)
-        # from .geometry import dumbbell_geometry
-        # return dumbbell_geometry(major_radius, minor_radius, thickness, height, nz, nc1, nc2)
 
     def _pseudobond_geometry(self):
         '''
@@ -1761,6 +2023,11 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
     _show_td = True
 
     def update_graphics(self):
+        '''
+        Update the restraints drawing. Happens automatically every time
+        restraints or coordinates change. It should rarely/never be necessary to
+        call this manually.
+        '''
         if not self.visible:
             return
         bd = self._bond_drawing
@@ -1791,14 +2058,45 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         return _distance_restraint_or_none(f(self._c_pointer, atoms._c_pointers, create))
 
     def add_restraint(self, atom1, atom2):
+        '''
+        Creates and returns a :py:class:`Distance_Restraint` between the given
+        atoms if possible, or returns the existing one if it already exists.
+        Note that distance restraints can be added to a running simulation, but
+        will trigger an expensive (a few seconds) reinitialisation of the
+        simulation context.
+
+        Args:
+            * atom1, atom2:
+                - :py:class:`chimerax.Atom` instances. Both atoms must be in the
+                  :py:class:`chimerax.AtomicStructure` belonging to this
+                  manager, must not be the same atom or directly bonded to each
+                  other, and should not be hydrogens.
+        '''
         return self._get_restraint(atom1, atom2, True)
 
     def get_restraint(self, atom1, atom2):
+        '''
+        Returns the :py:class:`Distance_Restraint` between the given atoms if it
+        exists, otherwise None.
+
+        Args:
+            * atom1, atom2:
+                - :py:class:`chimerax.Atom` instances. Both atoms must be in the
+                  :py:class:`chimerax.AtomicStructure` belonging to this
+                  manager.
+        '''
         return self._get_restraint(atom1, atom2, False)
 
     def atom_restraints(self, atom):
         '''
-        Get all distance restraints involving the given atom
+        Returns a :py:class:`Distance_Restraints` instance encompassing all
+        distance restraints involving the given atom.
+
+        Args:
+            * atom:
+                - a :py:class:`chimerax.Atom` instance from the
+                  :py:class:`chimerax.AtomicStructure` belonging to this
+                  manager.
         '''
         f = c_function('distance_restraint_mgr_atom_restraints',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
@@ -1807,9 +2105,16 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
 
     def atoms_restraints(self, atoms):
         '''
-        Get all distance restraints involving at least one of the atoms. If
-        you want only restraints where both atoms are in the set, use
-        intra_restraints() instead.
+        Returns a :py:class:`Distance_Restraints` instance encompassing all
+        distance restraints involving at least one of the atoms. If you want
+        only restraints where both atoms are in the set, use
+        :func:`intra_restraints` instead.
+
+        Args:
+            * atoms:
+                - a :py:class:`chimerax.Atoms` instance. All atoms must be part
+                  of the :py:class:`chimerax.AtomicStructure` belonging to this
+                  manager.
         '''
         f = c_function('distance_restraint_mgr_atom_restraints',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
@@ -1817,6 +2122,16 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         return _distance_restraints(f(self._c_pointer, atoms._c_pointers, len(atoms)))
 
     def intra_restraints(self, atoms):
+        '''
+        Returns a :py:class:`Distance_Restraints` instance encompassing all
+        distance restraints for which both atoms are in the input set.
+
+        Args:
+            * atoms:
+                - a :py:class:`chimerax.Atoms` instance. All atoms must be part
+                  of the :py:class:`chimerax.AtomicStructure` belonging to this
+                  manager.
+        '''
         n = len(atoms)
         f = c_function('distance_restraint_mgr_intra_restraints',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
@@ -1846,13 +2161,36 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         return tuple((_distance_restraints(ptrs[0]), _distance_restraints(ptrs[1])))
 
     def add_ss_restraints(self, residues):
+        '''
+        Creates and returns a tuple of two :py:class:`Distance_Restraints`
+        instances containing restraints suitable for restraining secondary
+        structure. The first, O(n) - N(n+4) defines the classic alpha
+        helical H-bonds. The second, CA(n) - CA^(n+2) is useful for
+        "stretching out" beta strands as well as cross-bracing helices. Useful
+        target differences for restraining specific secondary structures can
+        be retrieved from `restraints.constants.ss_restraints`.
+
+        Args:
+            * residues:
+                - a :py:class:`chimerax.Residues` instance. All residues must
+                  be in the model belonging to this manager.
+        '''
         return self._get_ss_restraints(residues, create=True)
 
     def get_ss_restraints(self, residues):
+        '''
+        Identical to :func:`add_ss_restraints`, but does not add any new
+        restraints.
+        '''
         return self._get_ss_restraints(residues, create=False)
 
     @property
     def visible_restraints(self):
+        '''
+        Returns a :py:class:`Distance_Restraints` instance encompassing all
+        currently visible restraints owned by this manager. A restraint will be
+        visible if it is enabled and both its atoms are visible.
+        '''
         f = c_function('distance_restraint_mgr_visible_restraints',
             args=(ctypes.c_void_p,),
             ret = ctypes.py_object)
@@ -1860,12 +2198,30 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
 
     @property
     def all_restraints(self):
+        '''
+        Returns a :py:class:`Distance_Restraints` instance encompassing all
+        restraints owned by this manager.
+        '''
         f = c_function('distance_restraint_mgr_all_restraints',
             args=(ctypes.c_void_p,),
             ret = ctypes.py_object)
         return _distance_restraints(f(self._c_pointer))
 
 class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
+    '''
+    Manages creation, deletion, mapping and drawing of proper dihedral
+    restraints for a single atomic structure. Appears as a child
+    :py:class:`chimeraX.Model` under the :py:class:`chimerax.AtomicStructure` it
+    manages.
+
+    The preferred way to create/retrieve the proper dihedral restraint manager
+    for a given :py:class:`AtomicStructure` instance m is:
+
+    .. code:: python
+
+        from chimerax.isolde import session_extensions as sx
+        pdr_mgr = sx.get_proper_dihedral_restraint_mgr(m)
+    '''
     def __init__(self, model, c_pointer = None):
         super().__init__('Proper Dihedral Restraints', model, c_pointer)
         self.set_default_colors()
@@ -1909,16 +2265,57 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         return _proper_dihedral_restraints(ptrs[0:found])
 
     def add_restraints(self, dihedrals):
+        '''
+        Returns a :py:class:`Proper_Dihedral_Restraints` instance covering the
+        dihedrals in the input. Only one :cpp:class:`Proper_Dihedral_Restraint`
+        will ever be created for a given dihedral, so it is safe to use this
+        repeatedly on the same set of dihedrals. Use this method when you want
+        to ensure that all dihedrals in the input will be restrainable in
+        simulations.
+
+        Args:
+            * dihedrals:
+                - a :py:class:`Proper_Dihedrals` instance.
+        '''
         return self._get_restraints(dihedrals, create=True)
 
     def add_restraint(self, dihedral):
+        '''
+        Singular form of :func:`add_restraints`, returning a
+        :py:class:`Proper_Dihedral_Restraint` instance (or None if things go
+        wrong).
+
+        Args:
+            * dihedral:
+                - a :py:class:`Proper_Dihedral` instance
+        '''
         from .molarray import Dihedrals
         return self._get_restraints(Dihedrals([dihedral]), create=True)[0]
 
     def get_restraints(self, dihedrals):
+        '''
+        Returns a :py:class:`Proper_Dihedral_Restraints` instance covering the
+        dihedrals in the input. Unlike :func:`add_restraints`, no new
+        :cpp:class:`Proper_Dihedral_Restraint` will be created. Use this method
+        when you've already defined all the restraints you need, and don't want
+        to accidentally add more.
+
+        Args:
+            * dihedrals:
+                - a :py:class:`Proper_Dihedrals` instance.
+        '''
         return self._get_restraints(dihedrals)
 
     def get_restraint(self, dihedral):
+        '''
+        Singular form of :func:`get_restraints`, returning a
+        :py:class:`Proper_Dihedral_Restraint` instance (or None if no restraint
+        exists for this dihedral).
+
+        Args:
+            * dihedral:
+                - a :py:class:`Proper_Dihedral` instance
+        '''
         from .molarray import Dihedrals
         r = self._get_restraints(Dihedrals([dihedral]), create=False)
         if len(r):
@@ -1931,12 +2328,45 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         return self._get_restraints(dihedrals, create=create)
 
     def get_restraints_by_residues_and_name(self, residues, name):
+        '''
+        Convenience function wrapping :func:`get_restraints`. Returns a
+        :py:class:`Proper_Dihedral_Restraints` instance containing all existing
+        restraints for the dihedrals with the given name in residues.
+
+        Args:
+            * residues:
+                - A :py:class:`chimerax.Residues` instance
+            * name:
+                - Lowercase name of a known dihedral definition (e.g. 'phi')
+        '''
         return self._get_restraints_by_residues_and_name(residues, name, False)
 
     def add_restraints_by_residues_and_name(self, residues, name):
+        '''
+        Convenience function wrapping :func:`add_restraints`. Returns a
+        :py:class:`Proper_Dihedral_Restraints` instance covering all dihedrals
+        with the given name in residues.
+
+        Args:
+            * residues:
+                - A :py:class:`chimerax.Residues` instance
+            * name:
+                - Lowercase name of a known dihedral definition (e.g. 'phi')
+        '''
         return self._get_restraints_by_residues_and_name(residues, name, True)
 
     def get_restraint_by_residue_and_name(self, residue, name):
+        '''
+        Singular form of :func:`get_restraints_by_residues_and_name`. Returns a
+        :py:class:`Proper_Dihedral_Restraint` instance for the dihedral with
+        the given name in the given residue if it exists, else None.
+
+        Args:
+            * residue:
+                - A :py:class:`chimerax.Residue` instance
+            * name:
+                - Lowercase name of a known dihedral definition (e.g. 'phi')
+        '''
         from chimerax.core.atomic import Residues
         r = self._get_restraints_by_residues_and_name(Residues([residue]), name, False)
         if len(r):
@@ -1944,6 +2374,18 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         return None
 
     def add_restraint_by_residue_and_name(self, residue, name):
+        '''
+        Singular form of :func:`add_restraints_by_residues_and_name`. Returns a
+        :py:class:`Proper_Dihedral_Restraint` instance for the dihedral with
+        the given name in the given residue if it exists or can be created,
+        else None.
+
+        Args:
+            * residue:
+                - A :py:class:`chimerax.Residue` instance
+            * name:
+                - Lowercase name of a known dihedral definition (e.g. 'phi')
+        '''
         from chimerax.core.atomic import Residues
         r = self._get_restraints_by_residues_and_name(Residues([residue]), name, True)
         if len(r):
@@ -1956,13 +2398,31 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         return self._get_restraints(dihedrals, create=create)
 
     def get_all_restraints_for_residues(self, residues):
+        '''
+        Returns a :py:class:`Proper_Dihedral_Restraints` containing all existing
+        dihedral restraints belonging to the given residues.
+
+        Args:
+            * residues:
+                - a :py:class:`chimerax.Residues` instance
+        '''
         return self._get_all_restraints_for_residues(residues, False)
 
     def add_all_defined_restraints_for_residues(self, residues):
+        '''
+        Creates and returns all possible dihedral restraints for all named
+        proper dihedrals in the given residues as a
+        :py:class:`Proper_Dihedral_Restraints` instance.
+
+        Args:
+            * residues:
+                - a :py:class:`chimerax.Residues` instance
+        '''
         return self._get_all_restraints_for_residues(residues, True)
 
     @property
     def num_restraints(self):
+        '''Number of dihedral restrains currently owned by this manager.'''
         f = c_function('proper_dihedral_restraint_mgr_num_restraints',
             args=(ctypes.c_void_p,),
             ret=ctypes.c_size_t)
@@ -1970,17 +2430,44 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
 
     @property
     def visible_restraints(self):
+        '''
+        Returns a :py:class:`Proper_Dihedral_Restraints` instance containing
+        all currently visible restraints. A restraint is visible if it is
+        enabled, at least the axial bond of its :class:`Proper_Dihedral` is
+        visible, and its :attr:`display` propery is True. Unlike other restraint
+        classes the visibility of active restraints *is* controllable, primarily
+        because certain restraints (particularly the peptide omega dihedral) are
+        best left always on and would become distracting if visible.
+        '''
         f = c_function('proper_dihedral_restraint_mgr_visible_restraints',
             args=(ctypes.c_void_p,),
             ret = ctypes.py_object)
         return _proper_dihedral_restraints(f(self._c_pointer))
 
     def set_default_colors(self):
+        '''
+        Set the colour scale for validation indicators back to their defaults.
+        '''
         from .validation.constants import validation_defaults as val_defaults
         self.set_color_scale(val_defaults.OUTLIER_COLOR, val_defaults.ALLOWED_COLOR,
              val_defaults.MAX_FAVORED_COLOR)
 
     def set_color_scale(self, max_c, mid_c, min_c):
+        '''
+        Set a custom colour scale for the validation indicators.
+
+        Args:
+            * max_c:
+                - The colour applied to the most-favoured rotamers, as an
+                  integer (r,g,b,a) array in the range (0..255)
+            * mid_c:
+                - The colour applied to rotamers at the border between favoured
+                  and allowed, as an integer (r,g,b,a) array in the range
+                  (0..255)
+            * min_c:
+                - The colour applied to outlier rotamers, as an integer
+                  (r,g,b,a) array in the range (0..255)
+        '''
         f = c_function('proper_dihedral_restraint_mgr_set_colors',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
                   ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)))
@@ -2011,6 +2498,11 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         self.update_graphics()
 
     def update_graphics(self):
+        '''
+        Update the restraints drawing. Happens automatically every time
+        restraints or coordinates change. It should rarely/never be necessary to
+        call this manually.
+        '''
         if not self.visible:
             return
         ring_d = self._ring_drawing
@@ -2029,6 +2521,13 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         ring_d.colors = post_d.colors = colors
 
 class Rotamer_Restraint_Mgr(_Restraint_Mgr):
+    '''
+    Rotamer restraints are a little special in that they primarily exist as
+    convenience wrappers around sets of dihedral restraints. As such,
+    :py:class:`Rotamer_Restraint_Mgr` does not handle drawing of restraints,
+    but it *does* handle drawing of previews when scrolling through alternate
+    target rotamer conformations for a given sidechain.
+    '''
     def __init__(self, model, c_pointer=None):
         '''Manages rotamer restraints for a single model'''
         session=model.session
@@ -2053,6 +2552,10 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
 
     @property
     def num_restraints(self):
+        '''
+        Number of :cpp:class:`Rotamer_Restraint` objects maintained by this
+        manager.
+        '''
         f=c_function('rotamer_restraint_mgr_num_restraints',
             args=(ctypes.c_void_p,),
             ret=ctypes.c_size_t)
@@ -2073,16 +2576,16 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         num = f(self._c_pointer, rotamers._c_pointers, n, create, pointer(ret))
         return _rotamer_restraints(ret[0:num])
 
-    def get_restraints(self, rotamers_or_residues):
-        from chimerax.core.atomic import Residues
-        if isinstance(rotamers_or_residues, Residues):
-            rota_mgr = _get_rotamer_manager(session)
-            rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
-        else:
-            rotamers = rotamers_or_residues
-        return self._get_restraints(rotamers, False)
-
     def add_restraints(self, rotamers_or_residues):
+        '''
+        Returns a :py:class:`Rotamer_Restraints` instance covering all rotamers
+        in the input, creating those that don't yet exist.
+
+        Args:
+            * rotamers_or_residues:
+                - a :py:class:`Rotamers` or :py:class:`chimerax.Residues` with
+                  all elements belonging to the same molecule as this manager
+        '''
         from chimerax.core.atomic import Residues
         if isinstance(rotamers_or_residues, Residues):
             rota_mgr = _get_rotamer_manager(session)
@@ -2091,21 +2594,36 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
             rotamers = rotamers_or_residues
         return self._get_restraints(rotamers, True)
 
-    def get_restraint(self, rotamer_or_residue):
-        from chimerax.core.atomic import Residue, Residues
-        if isinstance(rotamer_or_residue, Residue):
+    def get_restraints(self, rotamers_or_residues):
+        '''
+        Returns a :py:class:`Rotamer_Restraints` instance containing all
+        previously-created restraints in the input.
+
+        Args:
+            * rotamers_or_residues:
+                - a :py:class:`Rotamers` or :py:class:`chimerax.Residues` with
+                  all elements belonging to the same molecule as this manager
+        '''
+        from chimerax.core.atomic import Residues
+        if isinstance(rotamers_or_residues, Residues):
             rota_mgr = _get_rotamer_manager(session)
-            r = rota_mgr.get_rotamer(r)
+            rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
         else:
-            r = rotamer_or_residue
-        if r is None:
-            return None
-        rr = self._get_restraints(_rotamers([r]), False)
-        if not len(rr):
-            return None
-        return rr[0]
+            rotamers = rotamers_or_residues
+        return self._get_restraints(rotamers, False)
 
     def add_restraint(self, rotamer_or_residue):
+        '''
+        Returns a :py:class:`Rotamer_Restraint` instance for the given rotamer
+        or residue, attempting to create it if it doesn't already exist. If
+        creation is impossible (e.g. the residue is non-rotameric or
+        incomplete), returns None.
+
+        Args:
+            * rotamer_or_residue:
+                - a :py:class:`Rotamer` or :py:class:`chimerax.Residue`
+                  belonging to the same molecule as this manager
+        '''
         from chimerax.core.atomic import Residue, Residues
         if isinstance(rotamer_or_residue, Residue):
             rota_mgr = _get_rotamer_manager(session)
@@ -2115,6 +2633,30 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         if r is None:
             return None
         rr = self._get_restraints(_rotamers([r]), True)
+        if not len(rr):
+            return None
+        return rr[0]
+
+    def get_restraint(self, rotamer_or_residue):
+        '''
+        Returns a :py:class:`Rotamer_Restraint` instance for the given rotamer
+        or residue if the restraint has previously been created, otherwise
+        None.
+
+        Args:
+            * rotamer_or_residue:
+                - a :py:class:`Rotamer` or :py:class:`chimerax.Residue`
+                  belonging to the same molecule as this manager
+        '''
+        from chimerax.core.atomic import Residue, Residues
+        if isinstance(rotamer_or_residue, Residue):
+            rota_mgr = _get_rotamer_manager(session)
+            r = rota_mgr.get_rotamer(r)
+        else:
+            r = rotamer_or_residue
+        if r is None:
+            return None
+        rr = self._get_restraints(_rotamers([r]), False)
         if not len(rr):
             return None
         return rr[0]
@@ -2136,12 +2678,46 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         return target_def
 
     def next_preview(self, rotamer):
+        '''
+        Returns the target definition (a dict providing name, expected
+        frequency, chi angles and estimated standard deviations) for the
+        conformation next in order of decreasing favourability for this rotamer,
+        and draws a preview overlaying the residue. If the current preview is
+        the least favoured conformation, wraps back to the most favoured. Only
+        one preview may be displayed at a time.
+
+        Args:
+            * rotamer:
+                - a :py:class:`Rotamer` instance
+        '''
         return self._incr_preview(rotamer, 1)
 
     def prev_preview(self, rotamer):
+        '''
+        Returns the target definition (a dict providing name, expected
+        frequency, chi angles and estimated standard deviations) for the
+        conformation next in order of increasing favourability for this rotamer,
+        and draws a preview overlaying the residue. If the current preview is
+        the most favoured conformation, wraps back to the least favoured. Only
+        one preview may be displayed at a time.
+
+        Args:
+            * rotamer:
+                - a :py:class:`Rotamer` instance
+        '''
         return self._incr_preview(rotamer, -1)
 
     def commit_preview(self, rotamer):
+        '''
+        Directly set the coordinates of the associated residue to match the
+        current preview. NOTE: if a simulation is running this change will be
+        ignored unless you immediately run
+        :func:`Sim_Handler.push_coords_to_sim`!
+
+        Args:
+            * rotamer:
+                - a :py:class:`Rotamer` instance
+        '''
         pm = self._preview_model
         if pm is None or pm.rotamer != rotamer:
             raise TypeError('Current preview is for a different rotamer!')
@@ -2152,6 +2728,21 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         self._remove_preview()
 
     def set_targets(self, rotamer, target_index = None):
+        '''
+        Set chi dihedral restraints on the rotamer to match the target
+        definition. If no preview is currently active, then the index of the
+        target definition must be provided. As well as setting the target
+        chi angles, the cutoff angle on each restraint will be set to twice the
+        estimated standard deviation.
+
+        Args:
+            * rotamer:
+                - a :py:class:`Rotamer` instance
+            * target_index:
+                - Mandatory if no preview is current. The index of the target
+                  in the list of available target conformations (see
+                  :attr:`Rotamer.num_targets` and :func:`Rotamer.get_target`)
+        '''
         rr = self.add_restraint(rotamer)
         if target_index is None:
             pm = self._preview_model
