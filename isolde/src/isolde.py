@@ -1404,7 +1404,7 @@ class Isolde():
         dist_k = self.sim_params.distance_restraint_spring_constant.value_in_unit(OPENMM_SPRING_UNIT)
         residues = atoms.unique_residues
         m = self.selected_model
-        from .validation.constants import ss_restraints
+        from .restraints.constants import ss_restraints
         restraint_params = ss_restraints[target]
         from . import session_extensions as sx
         dr_m = sx.get_distance_restraint_mgr(m)

@@ -1,5 +1,4 @@
 from math import pi, radians
-import ctypes
 
 '''
 Constants are a slightly difficult problem here, in that ChimeraX works
@@ -47,41 +46,7 @@ class _Validation_Defaults:
         'ROUNDS_PER_ROTA_UPDATE':       10,
     }
 
-@_constant_properties
-class _SS_Helix:
-    _constants = {
-        'CA_TO_CA_PLUS_TWO_DISTANCE':        5.43,
-        'O_TO_N_PLUS_FOUR_DISTANCE':         3.05,
-        'PHI_ANGLE':                         radians(-64.0),
-        'PSI_ANGLE':                         radians(-41.0),
-        'CUTOFF_ANGLE':                      radians(10.0),
-    }
-
-@_constant_properties
-class _SS_Beta_Parallel:
-    _constants = {
-        'CA_TO_CA_PLUS_TWO_DISTANCE':        6.81,
-        'O_TO_N_PLUS_FOUR_DISTANCE':         11.4,
-        'PHI_ANGLE':                         radians(-119.0),
-        'PSI_ANGLE':                         radians(113.0),
-        'CUTOFF_ANGLE':                      radians(10.0),
-    }
-
-@_constant_properties
-class _SS_Beta_Antiparallel:
-    _constants = {
-        'CA_TO_CA_PLUS_TWO_DISTANCE':        6.81,
-        'O_TO_N_PLUS_FOUR_DISTANCE':         11.4,
-        'PHI_ANGLE':                         radians(-139.0),
-        'PSI_ANGLE':                         radians(135.0),
-        'CUTOFF_ANGLE':                      radians(10.0),
-    }
 
 
 
 validation_defaults = _Validation_Defaults()
-ss_restraints = {
-    'Helix':                _SS_Helix(),
-    'Parallel Beta':        _SS_Beta_Parallel(),
-    'Antiparallel Beta':    _SS_Beta_Antiparallel(),
-}
