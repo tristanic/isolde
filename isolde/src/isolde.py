@@ -523,7 +523,8 @@ class Isolde():
 
         iw._rebuild_pos_restraint_spring_constant.setValue(
             self.sim_params.position_restraint_spring_constant.value_in_unit(CHIMERAX_SPRING_UNIT))
-
+        iw._rebuild_dist_restraint_spring_constant.setValue(
+            self.sim_params.distance_restraint_spring_constant.value_in_unit(CHIMERAX_SPRING_UNIT))
         ####
         # Validate tab
         ####
@@ -939,8 +940,17 @@ class Isolde():
                 self._disable_atom_position_restraints_frame()
             if natoms:
                 self._enable_position_restraints_clear_button()
+                self._enable_distance_restraints_frame()
             else:
                 self._disable_position_restraints_clear_button()
+                self._disable_distance_restraints_frame()
+
+            if natoms == 2:
+                self._enable_distance_restraint_apply_button()
+                self._enable_distance_restraint_remove_single_button()
+            else:
+                self._disable_distance_restraint_apply_button()
+                self._disable_distance_restraint_remove_single_button()
 
             if len(selres) == 1:
                 r = selres[0]
@@ -1304,6 +1314,25 @@ class Isolde():
     def _shrink_selection_by_one_res_C(self, *_):
         self._shrink_selection_by_one_res(-1)
 
+    def _enable_distance_restraints_frame(self, *_):
+        self.iw._rebuild_dist_restraint_container.setEnabled(True)
+
+    def _disable_distance_restraints_frame(self, *_):
+        self.iw._rebuild_dist_restraint_container.setEnabled(False)
+
+    def _enable_distance_restraint_apply_button(self, *_):
+        self.iw._rebuild_dist_restraint_apply_button.setEnabled(True)
+
+    def _disable_distance_restraint_apply_button(self, *_):
+        self.iw._rebuild_dist_restraint_apply_button.setEnabled(False)
+
+    def _enable_distance_restraint_remove_single_button(self, *_):
+        self.iw._rebuild_remove_distance_restraint_button.setEnabled(True)
+
+    def _disable_distance_restraint_remove_single_button(self, *_):
+        self.iw._rebuild_remove_distance_restraint_button.setEnabled(False)
+
+
     def _extend_selection_by_one_res(self, direction):
         '''
         Extends a selection by one residue in the given direction, stopping
@@ -1437,10 +1466,10 @@ class Isolde():
 
     def _apply_register_shift(self, *_):
         from chimerax.atomic import selected_atoms
-        from .register_shift import ProteinRegisterShifter
+        from .manipulations import Protein_Register_Shifter
         nshift = self.iw._rebuild_register_shift_nres_spinbox.value()
         sel = selected_atoms(self.session)
-        rs = self._register_shifter = ProteinRegisterShifter(self.session, self, sel)
+        rs = self._register_shifter = Protein_Register_Shifter(self.session, self, sel)
         rs.shift_register(nshift)
         self.iw._rebuild_register_shift_release_button.setEnabled(False)
         self.iw._rebuild_register_shift_go_button.setEnabled(False)
@@ -1535,7 +1564,7 @@ class Isolde():
             raise TypeError('A distance restraint must involve exactly two atoms!')
         target = self.iw._rebuild_dist_restraint_target_distance.value()
         k = self.iw._rebuild_dist_restraint_spring_constant.value()
-        self.add_distance_restraint(*sel, target, k)
+        self.add_distance_restraint(*sel, target, k * 100)
 
     def add_distance_restraint(self, atom1, atom2, target, spring_constant):
         '''

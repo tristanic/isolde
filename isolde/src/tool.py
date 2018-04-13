@@ -142,6 +142,8 @@ class ISOLDE_ToolUI(ToolInstance):
             iw._rebuild_2ry_struct_restr_container,
             iw._rebuild_2ry_struct_restr_clear_button,
             iw._rebuild_register_shift_container,
+            iw._rebuild_dist_restraint_container,
+            iw._rebuild_dist_restraint_apply_button,
             iw._rebuild_grow_shrink_sel_frame,
             iw._right_mouse_modes_frame,
             ]
