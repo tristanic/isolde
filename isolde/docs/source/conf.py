@@ -24,7 +24,7 @@ copyright = '2018, Tristan Croll'
 author = 'Tristan Croll'
 
 # The short X.Y version
-version = ''
+version = '1.0'
 # The full version, including alpha/beta/rc tags
 release = '1.0b1'
 
