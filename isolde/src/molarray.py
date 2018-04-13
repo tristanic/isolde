@@ -177,24 +177,31 @@ class Position_Restraints(Collection):
         return transforms
 
     def clear_sim_indices(self):
+        '''
+        Run at the end of a simulation to reset :attr:`sim_indices` to -1.
+        '''
         f = c_function('position_restraint_clear_sim_index',
             args = (ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointers, len(self))
 
     atoms = cvec_property('position_restraint_atom', cptr, astype=_atoms, read_only=True,
-        doc = 'Returns the restrained atoms. Read-only.')
+        doc = 'Returns the restrained :py:class:`chimerax.Atoms`. Read-only.')
     targets = cvec_property('position_restraint_target', float64, 3,
         doc = 'Target (x,y,z) positions in Angstroms. Can be written.')
     target_vectors = cvec_property('position_restraint_target_vector', float64, 3, read_only=True,
         doc = 'Returns the vectors ("bonds") connecting each atom to its target. Read only.')
     spring_constants = cvec_property('position_restraint_k', float64,
-        doc = 'Restraint spring constants in kJ mol-1 Angstrom-2. Can be written')
+        doc = 'Restraint spring constants in :math:`kJ mol^{-1} nm^{-2}`. Can be written')
     enableds = cvec_property('position_restraint_enabled', npy_bool,
         doc = 'Enable/disable position restraints with a Numpy boolean array.')
     visibles = cvec_property('position_restraint_visible', npy_bool, read_only=True,
         doc = 'Returns a boolean mask giving the currently visible restraints. Read only.')
     sim_indices = cvec_property('position_restraint_sim_index', int32,
-        doc = 'Index of each restraint in a running simulation. Can be set')
+        doc = '''
+        Index of each restraint in the associated force object in a running
+        simulation. Restraints tha are not part of a simulation have indices of
+        -1. Can be set, but only if you know what you are doing.
+        ''')
 
 class Tuggable_Atoms(Position_Restraints):
     def __init__(self, c_pointers=None):
@@ -205,6 +212,9 @@ class MDFF_Atoms(Collection):
         super().__init__(c_pointers, MDFF_Atom, MDFF_Atoms)
 
     def clear_sim_indices(self):
+        '''
+        Run at the end of a simulation to reset :attr:`sim_indices` to -1.
+        '''
         f = c_function('mdff_atom_clear_sim_index',
             args=(ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointers, len(self))
@@ -212,11 +222,19 @@ class MDFF_Atoms(Collection):
     enableds = cvec_property('mdff_atom_enabled', npy_bool,
         doc='Enable/disable MDFF tugging on each atom or get the current states.')
     atoms = cvec_property('mdff_atom_atom', cptr, astype=_atoms, read_only=True,
-        doc='Returns the ChimeraX Atom. Read only.')
+        doc='Returns the :py:class:`chimerax.Atom`. Read only.')
     coupling_constants = cvec_property('mdff_atom_coupling_constant', float64,
-        doc='MDFF coupling constant (units depending on map units).')
+        doc='''
+        Per-atom MDFF coupling constants. These are multiplied by the global
+        coupling constant for the map when calculating the MDFF potentials.
+        Can be set.
+        ''')
     sim_indices = cvec_property('mdff_atom_sim_index', int32,
-        doc='Index of this atom in the relevant MDFF Force in a running simulation. Can be set.')
+        doc='''
+        Index of each atom in the relevant MDFF Force in a running simulation.
+        Atoms which are not currently in a simulation have indices equal to -1.
+         Can be set, but only if you know what you are doing.
+         ''')
 
 
 class Distance_Restraints(Collection):
@@ -246,6 +264,9 @@ class Distance_Restraints(Collection):
         return Places(opengl_array=transforms)
 
     def clear_sim_indices(self):
+        '''
+        Run at the end of a simulation to reset sim indices to -1
+        '''
         f = c_function('distance_restraint_clear_sim_index',
             args = (ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointers, len(self))
@@ -259,11 +280,16 @@ class Distance_Restraints(Collection):
     targets = cvec_property('distance_restraint_target', float64,
             doc = 'Target distances in Angstroms')
     spring_constants = cvec_property('distance_restraint_k', float64,
-            doc = 'Restraint spring constants in kJ mol-1 Angstrom-2')
+            doc = 'Restraint spring constants in :math:`kJ mol^{-1} nm^{-2}`')
     distances = cvec_property('distance_restraint_distance', float64, read_only=True,
             doc = 'Current distances between restrained atoms in Angstroms. Read only.')
     sim_indices = cvec_property('distance_restraint_sim_index', int32,
-        doc = 'Index of each restraint in a running simulation. Can be set')
+        doc='''
+        Index of each restraint in the relevant MDFF Force in a running
+        simulation. Restraints which are not currently in a simulation have
+        indices equal to -1. Can be set, but only if you know what you are
+        doing.
+         ''')
 
 class Proper_Dihedral_Restraints(Collection):
     def __init__(self, c_pointers=None):
@@ -291,11 +317,11 @@ class Proper_Dihedral_Restraints(Collection):
     targets = cvec_property('proper_dihedral_restraint_target', float64,
         doc = 'Target angles for each restraint in radians. Can be written.')
     dihedrals = cvec_property('proper_dihedral_restraint_dihedral', cptr, astype=_proper_dihedrals, read_only=True,
-        doc = 'The restrained dihedrals. Read only.')
+        doc = 'The restrained :py:class:`Proper_Dihedrals`. Read only.')
     offsets = cvec_property('proper_dihedral_restraint_offset', float64, read_only = True,
         doc = 'Difference between current and target angles in radians. Read only.')
     cutoffs = cvec_property('proper_dihedral_restraint_cutoff', float64,
-        doc = 'Cutoff angles below which no restraint will be applied. Can be set.')
+        doc = 'Cutoff angle offsets below which no restraint will be applied. Can be set.')
     enableds = cvec_property('proper_dihedral_restraint_enabled', npy_bool,
         doc = 'Enable/disable each restraint or get their current states.')
     displays = cvec_property('proper_dihedral_restraint_display', npy_bool,
@@ -303,12 +329,46 @@ class Proper_Dihedral_Restraints(Collection):
     visibles = cvec_property('proper_dihedral_restraint_visible', npy_bool, read_only=True,
         doc = 'Is each restraint currently visible? Read-only.')
     spring_constants = cvec_property('proper_dihedral_restraint_k', float64,
-        doc = 'Get/set the spring constant for each restraint in kJ mol-1 rad-2')
+        doc = 'Get/set the spring constant for each restraint in :math:`kJ mol^{-1} rad^{-2}`')
     annotation_colors = cvec_property('proper_dihedral_restraint_annotation_color', uint8, 4, read_only=True,
         doc = 'Get the annotation color for each restraint according to the current colormap. Read only.')
     sim_indices = cvec_property('proper_dihedral_restraint_sim_index', int32,
-        doc = 'Index of each restraint in a running simulation. Can be set')
+        doc='''
+        Index of each restraint in the relevant MDFF Force in a running
+        simulation. Restraints which are not currently in a simulation have
+        indices equal to -1. Can be set, but only if you know what you are
+        doing.
+         ''')
 
 class Rotamer_Restraints(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, Rotamer_Restraint, Rotamer_Restraints)
+
+    def set_spring_constant(self, k):
+        '''
+        Sets the spring constants for all chi dihedrals in all rotamers to k.
+        Write-only. To retrieve the current spring constants, use
+        :attr:`Rotamer.chi_restraints.spring_constants` (note: this is only
+        possible for one rotamer at a time).
+        '''
+        f = c_function('set_rotamer_restraint_spring_constant',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double))
+        f(self._c_pointers, len(self), k)
+
+
+    rotamers = cvec_property('rotamer_restraint_rotamer', cptr, astype=_rotamers, read_only=True,
+        doc = ':py:class:`Rotamers` to be restrained. Read only.')
+    residues = cvec_property('rotamer_restraint_residue', cptr, astype=_residues, read_only=True,
+        doc = ':py:class:`chimerax.Residues` to be restrained. Read only.')
+    enableds = cvec_property('rotamer_restraint_enabled', npy_bool,
+        doc = '''
+        Enable/disable chi dihedral restraints. Returns False for any rotamer
+        where at least one chi restraint is disabled.
+        ''')
+    target_index = cvec_property('rotamer_restraint_target_index', int32,
+        doc = '''
+        Get/set the index of the rotamer target definition giving target angles
+        and cutoffs. If no restraint is currently applied, returns the last
+        restraint that was applied to this rotamer. If no restraint has ever
+        been applied, returns -1.
+        ''')

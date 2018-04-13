@@ -17,9 +17,6 @@ from simtk.unit import Quantity, Unit
 from chimerax.core.atomic import concatenate, Bonds
 
 from ..checkpoint import CheckPoint
-from ..threading.shared_array import TypedMPArray, SharedNumpyArray
-from . import sim_thread
-from .sim_thread import SimComms, SimThread, ChangeTracker
 from ..constants import defaults, sim_outcomes, control
 from ..param_mgr import Param_Mgr, autodoc, param_properties
 
@@ -59,7 +56,28 @@ amber14 = [os.path.join(cwd,'amberff',f) for f in _amber14]
 @autodoc
 class SimParams(Param_Mgr):
     '''
-    Container for all the parameters needed to initialise a simulation
+    Container for all the parameters needed to initialise a simulation.
+    All parameters in the :attr:`_default_params` dict become properties
+    when the class is instantiated. Parameters with units are stored as
+    :class:`simtk.Quantity` instances, and can be retrieved or changed in the
+    following ways:
+
+    .. code:: python
+
+        params.restraint_max_force
+            Quantity(value=25000.0, unit=kilojoule/(nanometer*mole))
+
+        # Assumes the new value is in the stored unit system
+        params.restraint_max_force = 20000
+
+        # Automatically converts the value into the stored unit system
+        from simtk.unit import kilojoule_per_mole, angstrom
+        params.restraint_max_force = 2000 * kilojoule_per_mole/angstrom
+
+        # Raises an error if you attempt to set a value with incompatible units
+        params.restraint_max_force = 2000 * kilojoule_per_mole
+            TypeError: Unit "kilojoule/mole" is not compatible with Unit
+            "kilojoule/(nanometer*mole)".
     '''
     _default_params = {
         'restraint_max_force':                  (defaults.MAX_RESTRAINT_FORCE, OPENMM_FORCE_UNIT),

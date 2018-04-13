@@ -8,6 +8,7 @@ ISOLDE Python API
    core_objects
    live_validation
    restraints
+   sim_management
 
 
 Indices and tables

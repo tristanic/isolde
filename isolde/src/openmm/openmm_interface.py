@@ -32,25 +32,36 @@ from ..constants import defaults
 
 class OpenMM_Thread_Handler:
     '''
-    A lightweight wrapper class for an OpenMM simulation `Context`, which pushes
-    the task of stepping the simulation forward off to a C++ thread so that
-    Python performance is not interrupted. Each call to `step()` or `minimize()`
-    will create a short-lived thread to run the desired number of steps or
-    a round of minimization, respectively. The status of the thread can be
-    checked with thread_finished, while the initial and final coordinates can
-    be retrieved with `last_coords` and `coords` respectively. If instability
-    (overly fast-moving atoms) is detected, the thread will terminate early and
-    the `unstable` property will set to True. In such cases it is advisable to
-    run one or more minimization rounds. When minimization converges to with
-    tolerance, `unstable` will be reset to False.
+    A lightweight wrapper class for a :class:`openmm.Context`, which
+    pushes time-consuming tasks off to a C++ thread so that Python performance
+    is not interrupted. Each call to :func:`step` or :func:`minimize` will
+    create a short-lived thread to run the desired number of steps or a round of
+    minimization, respectively. Where necessary (e.g. where new  restraints are
+    added to the simulation), the context may be reinitialised  with
+    :func:`reinitialize_context_and_keep_state`. The status of the thread can be
+    checked with :attr:`thread_finished`, while the initial and final
+    coordinates can be retrieved with :attr:`last_coords` and :attr:`coords`
+    respectively. Within the thread, the simulation is checked for excessive
+    velocities every 10 steps. If instability (overly fast-moving atoms) is
+    detected, the thread will terminate early and :attr:`unstable` will be set
+    to True. In such cases it is advisable to run one or more minimization
+    rounds. When minimization converges to within tolerance, `unstable` will be
+    reset to False.
 
     Use with care! While nothing prevents you from using the standard single-
-    thread OpenMM API alongside this one, it is up to you to ensure that
-    no threads are running before making any calls that affect the simulation.
-    Additionally, the `OpenMM_Thread_Handler` object *must* be destroyed before
-    the Context it is attached to.
+    thread OpenMM API alongside this one, it is up to you to ensure that no
+    threads are running before making any calls that affect the simulation.
+    Additionally, the :class:`OpenMM_Thread_Handler` object *must* be destroyed
+    before the :class:`openmm.Context` it is attached to.
     '''
     def __init__(self, context, c_pointer=None):
+        '''
+        Initialise the thread handler.
+
+        Args:
+            * context:
+                - a :py:class:`openmm.Context` instance
+        '''
         cname = type(self).__name__.lower()
         if c_pointer is None:
             new_func = cname + '_new'
@@ -64,7 +75,9 @@ class OpenMM_Thread_Handler:
 
     @property
     def cpp_pointer(self):
-        '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
+        '''
+        Value that can be passed to C++ layer to be used as pointer (Python int)
+        '''
         return self._c_pointer.value
 
     @property
@@ -76,6 +89,13 @@ class OpenMM_Thread_Handler:
         c_function('openmm_thread_handler_delete', args=(ctypes.c_void_p,))(self._c_pointer)
 
     def step(self, steps):
+        '''
+        Advance the simulation integrator by the desired number of steps.
+
+        Args:
+            * steps:
+                - an integer value
+        '''
         f = c_function('openmm_thread_handler_step',
             args=(ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointer, steps)
@@ -84,7 +104,7 @@ class OpenMM_Thread_Handler:
         '''
         Run an energy minimization on the coordinates. If the minimisation
         converges to within tolerance, unstable will be set to False.
-        Don't forget to run reinitialize_velocities() before continuing
+        Don't forget to run :func:`reinitialize_velocities` before continuing
         equilibration!
         '''
         f = c_function('openmm_thread_handler_minimize',
@@ -92,45 +112,52 @@ class OpenMM_Thread_Handler:
         f(self._c_pointer)
 
     def reinitialize_velocities(self):
-        if not self.thread_finished:
-            raise RuntimeError('Wait for the thread to finish before reinitialising velocities!')
+        '''
+        Set the atomic velocities to random values consistent with the current
+        temperature. Recommended after any energy minimisation.
+        '''
+        self.finalize_thread()
         c = self.context
         i = c.getIntegrator()
         c.setVelocitiesToTemperature(i.getTemperature())
 
-    def reinitialize_context_and_keep_state(self, threaded=True):
+    def reinitialize_context_and_keep_state(self):
         '''
         Reinitialize the Context, keeping the current positions and velocities.
         A reinitialization is typically only required when the number of
         bonds/particles in a Force object changes.
         '''
-        if threaded:
-            func_name = 'openmm_thread_handler_reinitialize_context_and_keep_state_threaded'
-        else:
-            func_name = 'openmm_thread_handler_reinitialize_context_and_keep_state'
-        f = c_function(func_name,
+        f = c_function(
+            'openmm_thread_handler_reinitialize_context_and_keep_state_threaded',
             args=(ctypes.c_void_p,))
         f(self._c_pointer)
 
     @property
     def natoms(self):
+        '''Number of atoms in the simulation.'''
         f = c_function('openmm_thread_handler_num_atoms',
             args=(ctypes.c_void_p,),
             ret = ctypes.c_size_t)
         return f(self._c_pointer)
 
     def thread_finished(self):
+        '''Has the current thread finished its task?'''
         f = c_function('openmm_thread_handler_thread_finished',
             args=(ctypes.c_void_p,),
             ret=npy_bool)
         return f(self._c_pointer)
 
     def finalize_thread(self):
+        '''
+        Wrap up and join the existing thread. Note that if the thread has not
+        finished, Python and GUI will hang until it has.
+        '''
         f = c_function('openmm_thread_handler_finalize_thread',
             args=(ctypes.c_void_p,))
         f(self._c_pointer)
 
     def unstable(self):
+        '''Returns true if any atoms in the simulation are moving too fast.'''
         f = c_function('openmm_thread_handler_unstable',
             args=(ctypes.c_void_p,),
             ret = ctypes.c_bool)
@@ -138,15 +165,24 @@ class OpenMM_Thread_Handler:
 
     @property
     def unstable_atoms(self):
+        '''
+        Returns a Boolean mask indicating which atoms are currently moving too
+        fast.
+        '''
         f = c_function('openmm_thread_handler_unstable_atoms',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
         n = self.natoms
-        ret = numpy.zeros(n, numpy.bool)
+        ret = numpy.empty(n, numpy.bool)
         f(self._c_pointer, n, pointer(ret))
         return ret
 
     @property
     def last_coords(self):
+        '''
+        Returns the coordinates of the atoms as they were at the start of the
+        most recent thread. Switching between these and the final coords can
+        be useful for diagnosing instability.
+        '''
         f = c_function('openmm_thread_handler_last_coords',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
         n = self.natoms
@@ -156,6 +192,11 @@ class OpenMM_Thread_Handler:
 
     @property
     def coords(self):
+        '''
+        Returns the coordinates of the atoms after the most recent thread
+        completes. Can also be set, to push edited coordinates back to the
+        simulation.
+        '''
         f = c_function('openmm_thread_handler_current_coords',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
         n = self.natoms
@@ -172,7 +213,12 @@ class OpenMM_Thread_Handler:
         self.reinitialize_velocities()
 
     def _get_min_thread_period(self):
-        '''Throttle the simulation to a minimum time period per loop (in ms)'''
+        '''
+        Throttle the simulation to a minimum time period per loop (in ms).
+        Useful when graphics performance needs to be prioritised over simulation
+        performance. The default value is 1.0, which in almost all situations
+        means the simulation will not be throttled.
+        '''
         f = c_function('openmm_thread_handler_min_thread_period',
             args=(ctypes.c_void_p,),
             ret=ctypes.c_double)
@@ -188,9 +234,32 @@ class OpenMM_Thread_Handler:
 class Sim_Construct:
     '''
     Container class defining the ChimeraX atoms (all, mobile and fixed)
-    in a simulation.
+    in a simulation. Also responsible for storing the visualisation state of
+    these atoms prior to simulation startup, and reverting it when done.
     '''
     def __init__(self, model, mobile_atoms, fixed_atoms):
+        '''
+        Prepare the construct. The atoms in each array will be sorted in the
+        same order as :attr:`model.residues.atoms`, primarily because OpenMM
+        requires atoms to be grouped by residue.
+
+        Args:
+            * model:
+                - The :py:class:`chimerax.AtomicStructure` containing the atoms
+                  in this simulation
+            * mobile_atoms:
+                - A :py:class:`chimerax.Atoms` instance defining the atoms that
+                  are to be mobile
+            * fixed_atoms:
+                - A :py:class:`chimerax.Atoms` instance defining the atoms that
+                  are to be fixed
+
+        NOTE: the simulation will fail if mobile_atoms and fixed_atoms do not
+        combine to form a set containing only complete residues. Also note that
+        OpenMM does not allow a fixed atom to be rigidly bonded to a mobile
+        one (in practice this means any fixed heavy atom must have its hydrogens
+        also fixed).
+        '''
         self.model = model
 
         # Sort all the atoms according to their order in the model#
@@ -202,19 +271,53 @@ class Sim_Construct:
         all_i = model_atoms.indices(all_atoms)
         if -1 in all_i:
             raise TypeError('All atoms must be from the targeted model!')
-        all_atoms = self.all_atoms = model_atoms[numpy.sort(all_i)]
+        all_atoms = self._all_atoms = model_atoms[numpy.sort(all_i)]
         mob_i = model_atoms.indices(mobile_atoms)
-        ma = self.mobile_atoms = model_atoms[numpy.sort(mob_i)]
-        mr = self.mobile_residues = ma.unique_residues
+        ma = self._mobile_atoms = model_atoms[numpy.sort(mob_i)]
+        mr = self._mobile_residues = ma.unique_residues
         fixed_i = model_atoms.indices(fixed_atoms)
-        self.fixed_atoms = model_atoms[numpy.sort(fixed_i)]
+        self._fixed_atoms = model_atoms[numpy.sort(fixed_i)]
 
         self.surroundings = model_atoms.subtract(all_atoms)
         self.residue_templates = find_residue_templates(all_atoms.unique_residues)
         self.store_original_visualisation()
 
+    @property
+    def mobile_atoms(self):
+        '''
+        A :py:class:`chimerax.Atoms` instance containing the mobile selection,
+        sorted in the same order as :attr:`model.residues.atoms`.
+        '''
+        return self._mobile_atoms
+
+    @property
+    def mobile_residues(self):
+        '''
+        A :py:class:`chimerax.Residues` instance containing the mobile residues.
+        '''
+        return self._mobile_residues
+
+    @property
+    def fixed_atoms(self):
+        '''
+        A :py:class:`chimerax.Atoms` instance containing the fixed selection,
+        sorted in the same order as :attr:`model.residues.atoms`.
+        '''
+        return self._fixed_atoms
+
+    @property
+    def all_atoms(self):
+        '''
+        A :py:class:`chimerax.Atoms` instance containing all atoms in the
+        simulation, sorted in the same order as :attr:`model.residues.atoms`.
+        '''
+        return self._all_atoms
 
     def store_original_visualisation(self):
+        '''
+        Store the current visualisation state of the model, so it can be
+        reverted once the simulation is done.
+        '''
         m = self.model
         atoms = m.atoms
         bonds = m.bonds
@@ -241,6 +344,10 @@ class Sim_Construct:
 
 
     def revert_visualisation(self):
+        '''
+        Return the model visualisation to the way it was before the simulation
+        began.
+        '''
         m = self.model
         atoms = m.atoms
         bonds = m.bonds
@@ -260,18 +367,61 @@ class Sim_Construct:
 
 class Sim_Manager:
     '''
-    Responsible for defining and initialising a simulation based upon an atomic
-    selection.
+    Responsible for creating the :py:class:`Sim_Handler` and managing the
+    high-level control of the simulation. Handles all the necessary callbacks
+    for automatically updating restraints in the simulation whenever their
+    parameters change.
     '''
     def __init__(self, isolde, model, selected_atoms,
         isolde_params, sim_params, expansion_mode = 'extend'):
+        '''
+        Prepares a simulation according to the following workflow:
+            * Expands an initial selection of atoms to complete residues
+              according to the rules defined by expansion_mode
+            * Finds a shell of residues around this selection to act as the
+              fixed context
+            * Restricts the live validation managers to focus only on the
+              mobile selection (creating the managers as necessary)
+            * Finds/creates all restraint managers for the model
+            * Expands the fixed atom selection to include any non-mobile
+              residues containing atoms participating in distance restraints
+              with mobile atoms
+            * Creates the :py:class:`Sim_Construct` object
+            * Prepares the molecule visualisation for simulation (masking maps
+              to the mobile selection, hiding atoms not in the simulation, etc.)
+            * Prepares the MDFF managers (NOTE: this *must* be done after the
+              preceding step, which ensures that each :py:class:`chimerax.Volume`
+              has a region covering the mobile selection with sufficient padding)
+            * Prepares all necessary callbacks to update the simulation when
+              the parameters of restraints, mdff atom proxies etc. change.
+            * Creates the :py:class:`Sim_Handler`
+            * Adds all existing restraints and MDFF atom proxies to the
+              simulation.
+
+        Args:
+            * isolde:
+                - the current isolde session
+            * model:
+                - the :py:class:`chimerax.AtomicStructure` from which the
+                  simulation atoms are drawn
+            * selected_atoms:
+                - a :py:class:`chimerax.Atoms` instance defining the initial
+                    selection around which the simulation will be built.
+            * isolde_params:
+                - a :py:class:`IsoldeParams` instance
+            * sim_params:
+                - a :py:class:`SimParams` instance
+            * expansion_mode:
+                - string defining how the initial selection will be expanded.
+                  For allowable options, see :func:`expand_mobile_selection`
+        '''
         self.isolde = isolde
         self.model = model
         session = self.session = model.session
         self.isolde_params = isolde_params
         self.sim_params = sim_params
         self._revert_to = None
-        mobile_atoms = self._expand_mobile_selection(selected_atoms, expansion_mode)
+        mobile_atoms = self.expand_mobile_selection(selected_atoms, expansion_mode)
         from ..selections import get_shell_of_residues
         fixed_atoms = get_shell_of_residues(mobile_atoms.unique_residues,
             isolde_params.hard_shell_cutoff_distance).atoms
@@ -288,6 +438,9 @@ class Sim_Manager:
         self._initialize_mdff(uh)
 
     def start_sim(self):
+        '''
+        Start the simulation running. Should only be run once.
+        '''
         sh = self.sim_handler
         sh.start_sim()
         from ..checkpoint import CheckPoint
@@ -295,18 +448,47 @@ class Sim_Manager:
         sh.triggers.add_handler('sim terminated', self._sim_end_cb)
 
     def stop_sim(self, revert = None):
+        '''
+        Stop the simulation and optionally revert to a previous state.
+
+        Args:
+            * revert:
+                - None: keep the current coordinates
+                - 'checkpoint': revert to the last saved checkpoint
+                - 'start': revert to the state the model was in prior to
+                  starting the simulation
+        '''
         self.sim_handler.stop()
         self._revert_to = revert
 
     def toggle_pause(self):
-        sh = self.sim_handler
-        sh.pause = not sh.pause
+        '''
+        Pause/resume the simulation.
+        '''
+        self.sim_handler.toggle_pause()
 
     def checkpoint(self):
+        '''
+        A :py:class:`CheckPoint` is a snapshot of the current simulation state
+        (including the state of all restraints) that can be returned to at any
+        time, discarding any changes since the checkpoint was saved.
+
+        :py:class:`Sim_Manager` automatically saves a checkpoint when the
+        simulation is started. This method allows the saving of an intermediate
+        state - particularly useful before experimenting on an ambiguous
+        region of your map. Each call to :func:`checkpoint` overwrites the
+        previously-saved one. When ending a simulation you may choose to keep
+        the final coordinates or revert to either of the last saved checkpoint
+        or the start-of-simulation checkpoint.
+        '''
         from ..checkpoint import CheckPoint
         self._current_checkpoint = CheckPoint(self.isolde)
 
     def revert_to_checkpoint(self):
+        '''
+        Reverts to the last saved checkpoint. If no checkpoint has been manually
+        saved, reverts to the start of the simulation.
+        '''
         self._current_checkpoint.revert()
 
     def _prepare_validation_managers(self, mobile_atoms):
@@ -427,20 +609,42 @@ class Sim_Manager:
         fixed_atoms = concatenate((fixed_atoms, remainder.unique_residues.atoms))
         return fixed_atoms
 
-    def _expand_mobile_selection(self, core_atoms, expansion_mode):
+    def expand_mobile_selection(self, core_atoms, expansion_mode):
+        '''
+        Expand the set of atoms defined by core_atoms according to a set of
+        rules. After the initial rule-based expansion, the selection will be
+        further expanded to encompass all residues coming within
+        :attr:`IsoldeParams.soft_shell_cutoff_distance` Angstroms of the
+        expanded selection. The selection returned will always consist of whole
+        residues.
+
+        Args:
+            * core_atoms:
+                - a :py:class:`chimerax.Atoms` instance
+            * expansion_mode:
+                - 'extend': each contiguous set of residues is extended
+                  backwards and forwards along the chain by the number of
+                  residues set by
+                  :attr:`IsoldeParams.num_selection_padding_residues`
+                - other modes will be added later
+        '''
         from .. import selections
         iparams = self.isolde_params
         if expansion_mode == 'extend':
             sel = selections.expand_selection_along_chains(core_atoms,
                 iparams.num_selection_padding_residues)
-            shell = selections.get_shell_of_residues(sel.unique_residues,
-                iparams.soft_shell_cutoff_distance).atoms
-            from chimerax.atomic import concatenate
-            merged_sel = concatenate((sel, shell), remove_duplicates=True)
-            return merged_sel
-        raise TypeError('Unrecognised expansion mode!')
+        else:
+            raise TypeError('Unrecognised expansion mode!')
+        shell = selections.get_shell_of_residues(sel.unique_residues,
+            iparams.soft_shell_cutoff_distance).atoms
+        from chimerax.atomic import concatenate
+        merged_sel = concatenate((sel, shell), remove_duplicates=True)
+        return merged_sel
 
     def prepare_sim_visualisation(self):
+        '''
+        Set up a simulation-friendly visualisation of the construct.
+        '''
         m = self.model
         sc = self.sim_construct
         m.residues.ribbon_displays = False
@@ -619,12 +823,34 @@ class Sim_Manager:
 
 
 class Sim_Handler:
+    '''
+    Responsible for creating a :py:class:`openmm.Simulation`, instantiating and
+    populating the custom force objects, managing the creation and calling of
+    :py:class:`OpenMM_Thread_Handler`, and generally handling all the OpenMM
+    side of simulation management.
+    '''
     def __init__(self, session, sim_params, sim_construct):
         '''
-        Prepares the simulation topology parameters and construct, and initialises
-        the necessary Force objects to handle restraints. The restraint forces
-        must be populated using e.g. add_dihedral_restraints() before initialising
-        the context and beginning the simulation.
+        Prepares the simulation topology parameters and construct, and
+        initialises the necessary Force objects to handle restraints. Most
+        restraint forces must be populated using e.g. add_dihedral_restraints()
+        before initialising the context and beginning the simulation. While it
+        is possible to add new restraints *after* the simulation has started,
+        in general this is only advisable in situations where it is impossible
+        or impractical to define all possible restraints in advance (since each
+        addition requires a costly reinitialisation of the simulation context).
+        For example, the performance penalty to having all possible position
+        restraints pre-defined (and mostly disabled) is minimal, but it is
+        not practical to pre-define distance restraints between all possible
+        atom pairs.
+
+        Args:
+            * session:
+                - the ChimeraX session object
+            * sim_params:
+                - a :py:class:`SimParams` instance
+            * sim_construct:
+                - a :py:class:`Sim_Construct` instance
         '''
         self.session = session
         self._params = sim_params
@@ -673,12 +899,22 @@ class Sim_Handler:
             'sim terminated',
         )
         from chimerax.core.triggerset import TriggerSet
-        t = self.triggers = TriggerSet()
+        t = self._triggers = TriggerSet()
         for name in trigger_names:
             t.add_trigger(name)
 
     @property
+    def triggers(self):
+        '''
+        A :py:class:`chimerax.TriggerSet` allowing callbacks to be fired on
+        key events. See :func:`triggers.trigger_names` for a list of available
+        triggers.
+        '''
+        return self._triggers
+
+    @property
     def temperature(self):
+        ''' Get/set the simulation temperature in Kelvin. '''
         if not self.sim_running:
             return self._temperature
         t = self.sim_handler._simulation.integrator.getTemperature()
@@ -690,7 +926,7 @@ class Sim_Handler:
 
     @property
     def minimize(self):
-        ''' Force the simulation to continue minimizing. '''
+        ''' Force the simulation to continue minimizing indefinitely. '''
         return self._minimize
 
     @minimize.setter
@@ -719,6 +955,25 @@ class Sim_Handler:
         Create the selected Force objects, and add them to the System. No
         restraints are added at this stage - these should be added using
         (e.g.) add_dihedral_restraints().
+
+        Args:
+            * amber_cmap:
+                - use CMAP corrections to the AMBER forcefield as per
+                  http://pubs.acs.org/doi/pdf/10.1021/acs.jctc.5b00662.
+                  Should only be used with the combination of AMBER and
+                  implicit solvent.
+            * tugging:
+                - Add interactive tugging force (implemented as a
+                  :py:class:`TopOutRestraintForce`)
+            * position_restraints:
+                - Add position restraints force (implemented as a
+                  :py:class:`TopOutRestraintForce`)
+            * distance_restraints:
+                - Add distance restraints force (implemented as a
+                  :py:class:`TopOutBondForce`)
+            * dihedral_restraints:
+                - Add dihedral restraints force (implemented as a
+                  :py:class:FlatBottomTorsionRestraintForce)
         '''
         params = self._params
         if amber_cmap:
@@ -730,11 +985,16 @@ class Sim_Handler:
         if distance_restraints:
             self.initialize_distance_restraints_force(params.restraint_max_force)
         if dihedral_restraints:
-            self.initialize_dihedral_restraint_force(params.dihedral_restraint_cutoff_angle)
+            self.initialize_dihedral_restraint_force()
 
     def initialize_mdff_forces(self, volumes):
         '''
-        Add a MDFF LinearInterpMapForce for each Volume object (or subclass)
+        Add a :py:class:`LinearInterpMapForce` for each :py:class:`Volume`
+        instance.
+
+        Args:
+            * volumes:
+                - an iterable of :py:class:`Volume` instances
         '''
         for v in volumes:
             self.initialize_mdff_force(v)
@@ -777,6 +1037,10 @@ class Sim_Handler:
         return _integrator
 
     def start_sim(self):
+        '''
+        Start the main simulation loop. Automatically runs a minimisation, then
+        switches to equilibration once minimisation is converged.
+        '''
         if self._sim_running:
             raise RuntimeError('Simulation is already running!')
         self._prepare_sim()
@@ -831,13 +1095,17 @@ class Sim_Handler:
             self._repeat_step()
 
     def push_coords_to_sim(self, coords=None):
+        '''
+        Change the atomic coordinates within the simulation.
+
+        Args:
+            * coords:
+                - an array of coordinates in Angstroms, or None. If None, the
+                  current coordinates of the simulation construct in ChimeraX
+                  will be used.
+        '''
         if not self._sim_running:
             raise TypeError('No simulation running!')
-        # if self.pause:
-        #     self.thread_handler.coords = True
-        # return
-        #
-        # self.pause = True
         if coords is None:
             coords = self._atoms.coords
         self._pending_coords = coords
@@ -851,13 +1119,18 @@ class Sim_Handler:
 
     @property
     def thread_handler(self):
+        '''
+        Returns the :py:class:`OpenMM_Thread_Handler` object.
+        '''
         return self._thread_handler
 
     def toggle_pause(self):
+        '''Pause the simulation if currently running, or resume if paused'''
         self.pause = not self.pause
 
     @property
     def pause(self):
+        '''Get/set the current pause state.'''
         return self._pause
 
     @pause.setter
@@ -873,6 +1146,11 @@ class Sim_Handler:
                 self._update_coordinates_and_repeat()
 
     def stop(self):
+        '''
+        Stop the simulation. This will destroy the
+        :cpp:class:`OpenMM_Thread_Handler` object, rendering the Python class
+        unusable.
+        '''
         self._stop = True
         if self.pause:
             self._thread_handler.delete()
@@ -883,9 +1161,16 @@ class Sim_Handler:
 
     @property
     def sim_running(self):
+        ''' Is the simulation curently running (i.e. started and not destroyed)? '''
         return self._sim_running
 
     def force_update_needed(self):
+        '''
+        This must be called after any changes to force objects to ensure
+        the changes are pushed to the simulation context. This happens
+        automatically when changes are made through the :py:class:`Sim_Manager`
+        API.
+        '''
         if not self.sim_running:
             return
         if self._paused:
@@ -906,10 +1191,19 @@ class Sim_Handler:
         self._force_update_pending = False
 
     def context_reinit_needed(self):
+        '''
+        If the number of particles, bonds etc. in any force object changes, the
+        context must be reinitialised. Be aware that while reinitialisation
+        happens in the thread (so GUI performance is not affected), it will
+        pause the simulation for (typically) a few seconds, so should be saved
+        for situations where there is no other option. If the simulation has
+        not yet started this call will be ignored; otherwise the context will
+        be reinitialised on the next iteration of the main loop.
+        '''
         if not self.sim_running:
             return
-        if self._paused:
-            self._reinitialize_context()
+        # if self._paused:
+        #     self._reinitialize_context()
         else:
             self._context_reinit_pending = True
 
@@ -929,7 +1223,13 @@ class Sim_Handler:
         self.all_forces.append(cf)
 
     def add_amber_cmap_torsions(self, ramas):
-        ''' Add CMAP correction terms for AMBER force field. '''
+        '''
+        Add CMAP correction terms for AMBER force field.
+
+        Args:
+            * ramas:
+                - a :py:class:`Ramas` instance covering all mobile residues
+        '''
         cf = self._amber_cmap_force
         sc = self._atoms
         valid_ramas = ramas[ramas.valids]
@@ -948,13 +1248,30 @@ class Sim_Handler:
         # Before simulation starts
         ##
 
-    def initialize_dihedral_restraint_force(self, default_cutoff):
+    def initialize_dihedral_restraint_force(self):
+        '''
+        Just initialise the restraint force. Must be called before the
+        simulation starts, and before any restraints are added.
+        '''
         from .custom_forces import FlatBottomTorsionRestraintForce
         df = self._dihedral_restraint_force = FlatBottomTorsionRestraintForce()
         self._system.addForce(df)
         self.all_forces.append(df)
 
     def add_dihedral_restraints(self, restraints):
+        '''
+        Add a set of dihedral restraints to the simulation. This sets the
+        :attr:`sim_index` for each restraint so it knows its own place in the
+        simulation for later updating purposes. Automatically calls
+        :func:`context_reinit_needed()`.
+
+        Args:
+            * restraints:
+                - Any python restraints :py:class:`chimerax.Collection` instance
+                  based on :cpp:class:`Dihedral_Restraint`. At present this is
+                  limited to :py:class:`Proper_Dihedral_Restraints`, but
+                  expect others (e.g. chirals) to be added with time.
+        '''
         force = self._dihedral_restraint_force
         all_atoms = self._atoms
         dihedral_atoms = restraints.dihedrals.atoms
@@ -964,6 +1281,14 @@ class Sim_Handler:
         self.context_reinit_needed()
 
     def add_dihedral_restraint(self, restraint):
+        '''
+        Singular form of :func:`add_dihedral_restraints`.
+
+        Args:
+            * restraint:
+                - A :py:class:`Proper_Dihedral_Restraint` instance, or any other
+                  Python restraint class based on :cpp:class:`Dihedral_Restraint`
+        '''
         force = self._dihedral_restraint_force
         all_atoms = self._atoms
         dihedral_atoms = restraint.dihedral.atoms
@@ -977,12 +1302,32 @@ class Sim_Handler:
         ##
 
     def update_dihedral_restraints(self, restraints):
+        '''
+        Update the simulation to match the parameters (target angles,
+        cutoffs, spring constants and enabled states) of the given restraints.
+
+        Args:
+            * restraints:
+                - A :py:class:`Proper_Dihedral_Restraints` instance. Any
+                  restraints that are not part of the current simulation will
+                  be ignored.
+        '''
         force = self._dihedral_restraint_force
         force.update_targets(restraints.sim_indices,
             restraints.enableds, restraints.spring_constants, restraints.targets, restraints.cutoffs)
         self.force_update_needed()
 
     def update_dihedral_restraint(self, restraint):
+        '''
+        Update the simulation to match the parameters (target angles,
+        cutoffs, spring constants and enabled states) of the given restraint.
+
+        Args:
+            * restraint:
+                - A :py:class:`Proper_Dihedral_Restraint` instance. If the
+                  restraint is not part of the current simulation it will be
+                  ignored.
+        '''
         force = self._dihedral_restraint_force
         force.update_target(restraint.sim_index,
             enabled=restraint.enabled, k=restraint.spring_constant,
@@ -997,6 +1342,14 @@ class Sim_Handler:
         ##
 
     def initialize_distance_restraints_force(self, max_force):
+        '''
+        Just initialise the force, and set its limiting magnitude. Must be called
+        before the simulation starts, and before any restraints are added.
+
+        Args:
+            * max_force:
+                - the maximum allowable force, in :math:`kJ mol^{-1} nm^{-1}`
+        '''
         from .custom_forces import TopOutBondForce
         tf = self._distance_restraints_force = TopOutBondForce(max_force)
         self._system.addForce(tf)
@@ -1004,6 +1357,15 @@ class Sim_Handler:
         return tf
 
     def add_distance_restraints(self, restraints):
+        '''
+        Add a set of distance restraints to the simulation. Sets
+        :attr:`sim_index` for each restraint so it knows its place in the
+        simulation. Automatically calls :func:`context_reinit_needed`
+
+        Args:
+            * restraints:
+                - a :py:class:`Distance_Restraints` instance
+        '''
         force = self._distance_restraints_force
         all_atoms = self._atoms
         dr_atoms = restraints.atoms
@@ -1013,6 +1375,15 @@ class Sim_Handler:
         self.context_reinit_needed()
 
     def add_distance_restraint(self, restraint):
+        '''
+        Add a single distance restraint to the simulation. Sets
+        :attr:`sim_index` for the restraint so it knows its place in the
+        simulation. Automatically calls :func:`context_reinit_needed`
+
+        Args:
+            * restraint:
+                - a :py:class:`Distance_Restraint` instance
+        '''
         force = self._distance_restraints_force
         all_atoms = self._atoms
         dr_atoms = restraint.atoms
@@ -1026,12 +1397,30 @@ class Sim_Handler:
         ##
 
     def update_distance_restraints(self, restraints):
+        '''
+        Update the simulation to reflect the current parameters (target
+        distances, spring constants, enabled/disabled states) of the given
+        restraints.
+
+        Args:
+            * restraints:
+                - a :py:class:`Distance_Restraints` instance
+        '''
         force = self._distance_restraints_force
         force.update_targets(restraints.sim_indices,
             restraints.enableds, restraints.spring_constants, restraints.targets/10)
         self.force_update_needed()
 
     def update_distance_restraint(self, restraint):
+        '''
+        Update the simulation to reflect the current parameters (target
+        distance, spring constant, enabled/disabled state) of the given
+        restraint.
+
+        Args:
+            * restraint:
+                - a :py:class:`Distance_Restraint` instance
+        '''
         force = self._distance_restraints_force
         force.update_target(restraint.sim_index,
             restraint.enabled, k=restraint.spring_constant, target=restraint.target/10)
@@ -1046,6 +1435,14 @@ class Sim_Handler:
         ##
 
     def initialize_position_restraints_force(self, max_force):
+        '''
+        Just initialise the force, and set its limiting magnitude. Must be called
+        before the simulation starts, and before any restraints are added.
+
+        Args:
+            * max_force:
+                - the maximum allowable force, in :math:`kJ mol^{-1} nm^{-1}`
+        '''
         from .custom_forces import TopOutRestraintForce
         rf = self._position_restraints_force = TopOutRestraintForce(max_force)
         self._system.addForce(rf)
@@ -1053,6 +1450,15 @@ class Sim_Handler:
         return rf
 
     def add_position_restraints(self, restraints):
+        '''
+        Add a set of position restraints to the simulation. Sets
+        :attr:`sim_index` for each restraint so it knows its place in the
+        simulation. Automatically calls :func:`context_reinit_needed`
+
+        Args:
+            * restraints:
+                - a :py:class:`Position_Restraints` instance
+        '''
         force = self._position_restraints_force
         all_atoms = self._atoms
         indices = all_atoms.indices(restraints.atoms)
@@ -1061,6 +1467,15 @@ class Sim_Handler:
         self.context_reinit_needed()
 
     def add_position_restraint(self, restraint):
+        '''
+        Add a single position restraint to the simulation. Sets
+        :attr:`sim_index` for the restraint so it knows its place in the
+        simulation. Automatically calls :func:`context_reinit_needed`
+
+        Args:
+            * restraint:
+                - a :py:class:`Position_Restraint` instance
+        '''
         force = self._position_restraints_force
         index = self._all_atoms.index(restraint.atom)
         target = (restraint.target/10).tolist()
@@ -1073,12 +1488,30 @@ class Sim_Handler:
         ##
 
     def update_position_restraints(self, restraints):
+        '''
+        Update the simulation to reflect the current parameters (target
+        positions, spring constants, enabled/disabled states) of the given
+        restraints.
+
+        Args:
+            * restraints:
+                - a :py:class:`Position_Restraints` instance
+        '''
         force = self._position_restraints_force
         force.update_targets(restraints.sim_indices,
             restraints.enableds, restraints.spring_constants, restraints.targets/10)
         self.force_update_needed()
 
     def update_position_restraint(self, restraint):
+        '''
+        Update the simulation to reflect the current parameters (target
+        position, spring constant, enabled/disabled state) of the given
+        restraint.
+
+        Args:
+            * restraint:
+                - a :py:class:`Position_Restraint` instance
+        '''
         force = self._position_restraints_force
         force.update_target(restraint.sim_index,
             restraint.enabled, restraint.spring_constant, restraint.target/10)
@@ -1093,12 +1526,29 @@ class Sim_Handler:
         ##
 
     def initialize_tugging_force(self, max_force):
+        '''
+        Just initialise the force, and set its limiting magnitude. Must be called
+        before the simulation starts, and before any restraints are added.
+
+        Args:
+            * max_force:
+                - the maximum allowable force, in :math:`kJ mol^{-1} nm^{-1}`
+        '''
         from .custom_forces import TopOutRestraintForce
         f = self._tugging_force = TopOutRestraintForce(max_force)
         self._system.addForce(f)
         self.all_forces.append(f)
 
     def add_tuggables(self, tuggables):
+        '''
+        Add a set of tuggable atom proxies to the simulation. Sets
+        :attr:`sim_index` for each tuggable so it knows its place in the
+        simulation. Automatically calls :func:`context_reinit_needed`
+
+        Args:
+            * tuggables:
+                - a :py:class:`Tuggable_Atoms` instance
+        '''
         force = self._tugging_force
         all_atoms = self._atoms
         indices = all_atoms.indices(tuggables.atoms)
@@ -1107,6 +1557,15 @@ class Sim_Handler:
         self.context_reinit_needed()
 
     def add_tuggable(self, tuggable):
+        '''
+        Add a single tuggable atom proxy to the simulation. Sets
+        :attr:`sim_index` so the tuggable knows its place in the simulation.
+        Automatically calls :func:`context_reinit_needed`
+
+        Args:
+            * tuggable:
+                - a :py:class:`Tuggable_Atom` instance
+        '''
         force = self._tugging_force
         index = self._all_atoms.index(tuggable.atom)
         target = (tuggable.target/10).tolist()
@@ -1118,16 +1577,34 @@ class Sim_Handler:
         # During simulation
         ##
 
-    def update_tuggable(self, tuggable):
-        force = self._tugging_force
-        force.update_target(tuggable.sim_index,
-            tuggable.enabled, tuggable.spring_constant, tuggable.target/10)
-        self.force_update_needed()
-
     def update_tuggables(self, tuggables):
+        '''
+        Update the simulation to reflect the current parameters (target
+        positions, spring constants, enabled/disabled states) of the given
+        tuggables.
+
+        Args:
+            * tuggables:
+                - a :py:class:`Tuggable_Atoms` instance
+        '''
         force = self._tugging_force
         force.update_targets(tuggables.sim_indices,
             tuggables.enableds, tuggables.spring_constants, tuggables.targets/10)
+        self.force_update_needed()
+
+    def update_tuggable(self, tuggable):
+        '''
+        Update the simulation to reflect the current parameters (target
+        positions, spring constants, enabled/disabled states) of the given
+        tuggable.
+
+        Args:
+            * tuggable:
+                - a :py:class:`Tuggable_Atom` instance
+        '''
+        force = self._tugging_force
+        force.update_target(tuggable.sim_index,
+            tuggable.enabled, tuggable.spring_constant, tuggable.target/10)
         self.force_update_needed()
 
     ####
@@ -1140,10 +1617,16 @@ class Sim_Handler:
 
     def initialize_mdff_force(self, volume):
         '''
-        Prepare an MDFF map from a ChimeraX Volume. The Volume object is
-        expected to have a single region applied that is big enough to cover
-        the expected range of motion of the mdff atoms that will be coupled to
-        it (and for performance/memory reasons, ideally not too much bigger).
+        Prepare an MDFF map from a :py:class:`chimerax.Volume` instance.  The
+        Volume instance is expected to have a single :attr:`region` applied that
+        is big enough to cover the expected range of motion of the MDFF atoms
+        that will be coupled to it (and for performance/memory reasons, ideally
+        not too much bigger). Must be called before the simulation is started,
+        and before any MDFF atoms are added.
+
+        Args:
+            * volume:
+                - a :py:class:`chimerax.Volume` instance
         '''
         from .custom_forces import LinearInterpMapForce
         v = volume
@@ -1162,6 +1645,17 @@ class Sim_Handler:
         self.mdff_forces[v] = f
 
     def add_mdff_atoms(self, mdff_atoms, volume):
+        '''
+        Add a set of MDFF atom proxies to the force associated with the given
+        volume. Automatically calls :func:`context_reinit_needed`
+
+        Args:
+            * mdff_atoms:
+                - a :py:class:`MDFF_Atoms` instance
+            * volume:
+                - the :py:class:`chimerax.Volume` instance that was used to
+                  create the target force.
+        '''
         f = self.mdff_forces[volume]
         all_atoms = self._atoms
         indices = all_atoms.indices(mdff_atoms.atoms)
@@ -1170,6 +1664,17 @@ class Sim_Handler:
         self.context_reinit_needed()
 
     def add_mdff_atom(self, mdff_atom, volume):
+        '''
+        Add a singl MDFF atom proxy to the force associated with the given
+        volume. Automatically calls :func:`context_reinit_needed`
+
+        Args:
+            * mdff_atom:
+                - a :py:class:`MDFF_Atom` instance
+            * volume:
+                - the :py:class:`chimerax.Volume` instance that was used to
+                  create the target force.
+        '''
         f = self.mdff_forces[volume]
         all_atoms = self._atoms
         index = all_atoms.index(mdff_atom.atom)
@@ -1182,30 +1687,72 @@ class Sim_Handler:
         ##
 
     def set_mdff_global_k(self, volume, k):
+        '''
+        Set the global coupling constant for the MDFF force associated with
+        the given volume. Automatically calls :func:`force_update_needed`.
+
+        Args:
+            * volume:
+                - the :py:class:`chimerax.Volume` instance that was used to
+                  create the target force
+            * k:
+                - the new coupling constant, in
+                  :math:`kJ mol^{-1} (\\text{map density unit})^{-1} nm^3`
+        '''
         f = self.mdff_forces[volume]
         f.set_global_k(k)
         self.force_update_needed()
 
-    def update_mdff_atom(self, mdff_atom, volume):
-        f = self.mdff_forces[volume]
-        f.update_atom(mdff_atom.sim_index,
-            mdff_atom.coupling_constant, mdff_atom.enabled)
-
     def update_mdff_atoms(self, mdff_atoms, volume):
+        '''
+        Update the simulation to reflect the new parameters (individual
+        coupling constants, enabled/disabled states) for the given MDFF atom
+        proxies.
+
+        Args:
+            * mdff_atoms:
+                - a :py:class:`MDFF_Atoms` instance
+            * volume:
+                - the :py:class:`chimerax.Volume` instance that was used to
+                  create the target force.
+        '''
         f = self.mdff_forces[volume]
         f.update_atoms(mdff_atoms.sim_indices,
             mdff_atoms.coupling_constants, mdff_atoms.enableds)
         self.force_update_needed()
 
-    def set_fixed_atoms(self, fixed_atoms):
+    def update_mdff_atom(self, mdff_atom, volume):
         '''
-        Fix the desired atoms rigidly in space. NOTE: a fixed atom can not be
-        bonded to a mobile atom via a rigid bond. In most cases this means that
-        you cannot fix a hydrogen without fixing the heavy atom that it's bonded
-        to, and any fixed heavy atom must have all its hydrogens fixed.
-        While atoms may be fixed and un-fixed during a simulation, this requires
-        a costly re-initialisation of the simulation context. In most cases it's
-        best to simply use strong position restraints instead.
+        Update the simulation to reflect the new parameters (individual
+        coupling constants, enabled/disabled states) for the given MDFF atom
+        proxy.
+
+        Args:
+            * mdff_atom:
+                - a :py:class:`MDFF_Atom` instance
+            * volume:
+                - the :py:class:`chimerax.Volume` instance that was used to
+                  create the target force.
+        '''
+        f = self.mdff_forces[volume]
+        f.update_atom(mdff_atom.sim_index,
+            mdff_atom.coupling_constant, mdff_atom.enabled)
+
+
+    def set_fixed_atoms(self, fixed_atoms):
+        ''' Fix the desired atoms rigidly in space. NOTE: a fixed atom can not
+        be bonded to a mobile atom via a rigid bond. In most cases this means
+        that you cannot fix a hydrogen without fixing the heavy atom that it's
+        bonded to, and any fixed heavy atom must have all its hydrogens fixed.
+        While atoms may in theory be fixed and un-fixed during a simulation,
+        ISOLDE wasn't built with this in mind and it requires a costly
+        re-initialisation of the simulation context. In most cases it's best to
+        simply use strong position restraints wherever you want to
+        interactively "fix" atoms.
+
+        Args:
+            * fixed_atoms:
+                - a :py:class:`chimerax.Atoms` instance
         '''
         fixed_indices = self._atoms.indices(fixed_atoms).tolist()
         sys = self._system
@@ -1219,9 +1766,15 @@ class Sim_Handler:
         bonded to a mobile atom via a rigid bond. In most cases this means that
         you cannot fix a hydrogen without fixing the heavy atom that it's bonded
         to, and any fixed heavy atom must have all its hydrogens fixed.
-        While atoms may be fixed and un-fixed during a simulation, this requires
-        a costly re-initialisation of the simulation context. In most cases it's
-        best to simply use strong position restraints instead.
+        While atoms may in theory be fixed and un-fixed during a simulation,
+        ISOLDE wasn't built with this in mind and it requires a costly
+        re-initialisation of the simulation context. In most cases it's best to
+        simply use strong position restraints wherever you want to
+        interactively "fix" atoms.
+
+        Args:
+            * atoms:
+                - a :py:class:`chimerax.Atoms` instance
         '''
         indices = self._atoms.indices(fixed_atoms).tolist()
         masses = atoms.elements.masses
@@ -1231,6 +1784,14 @@ class Sim_Handler:
         self.context_reinit_needed()
 
     def define_forcefield(self, forcefield_file_list):
+        '''
+        Create a :py:class:`openmm.ForceField` object from a set of OpenMM
+        ffXML files.
+
+        Args:
+            * forcefield_file_list:
+                - An iterable of file names.
+        '''
         from simtk.openmm.app import ForceField
         ff = ForceField(*[f for f in forcefield_file_list if f is not None])
         return ff
@@ -1238,14 +1799,18 @@ class Sim_Handler:
     def create_openmm_topology(self, atoms, residue_templates):
         '''
         Generate a simulation topology from a set of atoms.
-        @param atoms:
-            A ChimeraX Atoms object. Residues must be complete, and the atoms
-            in each residue should be contiguous in the array.
-        @param residue_templates:
-            A {residue_index: residue_type} dict for residues whose
-            topology is otherwise ambiguous. OpenMM requires a
-            {openmm_residue_object: residue_type} dict, so we need to
-            do the conversion here.
+
+        Args:
+            * atoms:
+                - a :py:class:`chimerax.Atoms` instance. Residues must be
+                  complete, and the atoms in each residue must be contiguous
+                  in the array.
+            * residue_templates:
+                - A {residue_index: residue_type} dict for residues whose
+                  topology is otherwise ambiguous, where residue_type is the
+                  name of the residue in the forcefield definition. OpenMM
+                  requires a {:py:class:`openmm.Residue`: residue_type} dict, so
+                  we need to do the conversion here.
         '''
 
         anames   = atoms.names
@@ -1286,7 +1851,13 @@ class Sim_Handler:
         return top, templates_out
 
     def initialize_implicit_solvent(self, params):
-        '''Add a Generalised Born Implicit Solvent (GBIS) formulation.'''
+        '''
+        Add a Generalised Born Implicit Solvent (GBIS) formulation.
+
+        Args:
+            * params:
+                - a :py:class:`SimParams` instance
+        '''
         # Somewhat annoyingly, OpenMM doesn't store atomic charges in a
         # nice accessible format. So, we have to pull it back out of the
         # NonbondedForce term.

@@ -1466,10 +1466,7 @@ class MDFF_Mgr(_Restraint_Mgr):
         '''
         Global coupling constant applied to all atoms (scales the individual
         atom coupling constants). Effective units are
-
-            .. math::
-
-                kJ mol^{-1} (\\text{map density unit})^{-1} nm^3
+        :math:`kJ mol^{-1} (\\text{map density unit})^{-1} nm^3`
         '''
         f = c_function('mdff_mgr_global_k',
             args=(ctypes.c_void_p,),
@@ -3018,6 +3015,10 @@ class Rotamer(State):
                 doc='True if the CA-CB bond of the rotamer is visible. Read only.')
 
 class Position_Restraint(State):
+    '''
+    Defines a user-adjustable and -switchable harmonic spring connecting an
+    atom to a fixed point in space.
+    '''
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -3043,24 +3044,33 @@ class Position_Restraint(State):
         f(self._c_pointer_ref, 1)
 
     atom = c_property('position_restraint_atom', cptr, astype=_atom_or_none, read_only=True,
-        doc = 'Returns the restrained atom. Read-only.')
+        doc = 'Returns the restrained :py:class:`chimerax.Atom`. Read-only.')
     target = c_property('position_restraint_target', float64, 3,
         doc = 'Target (x,y,z) position in Angstroms. Can be written.')
     target_vector = c_property('position_restraint_target_vector', float64, 3, read_only=True,
         doc = 'Returns the vector ("bond") connecting the atom to its target. Read only.')
     spring_constant = c_property('position_restraint_k', float64,
-        doc = 'Restraint spring constant in kJ mol-1 Angstrom-2. Can be written')
+        doc = 'Restraint spring constant in :math:`kJ mol^{-1} nm^{-2}`. Can be written')
     enabled = c_property('position_restraint_enabled', npy_bool,
         doc = 'Enable/disable this position restraint.')
     visible = c_property('position_restraint_visible', npy_bool, read_only=True,
         doc = 'Check whether this restraint is currently visible. Read only.')
     sim_index = c_property('position_restraint_sim_index', int32,
-        doc = 'Index of this restraint in a running simulation. Can be set')
+        doc = '''
+        Index of this restraint in the associated force object in a running
+        simulation. Returns -1 if the restraint is not part of any simulation.
+        Can be set, but only if you know what you are doing.
+        ''')
 
 class Tuggable_Atom(Position_Restraint):
     _c_class_name = 'position_restraint'
 
 class MDFF_Atom(State):
+    '''
+    A thin wrapper around a :class:`chimerax.Atom` to handle its coupling
+    to a molecular dynamics flexible fitting potential derived from a volumetric
+    map.
+    '''
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -3090,11 +3100,22 @@ class MDFF_Atom(State):
     atom = c_property('mdff_atom_atom', cptr, astype=_atom_or_none, read_only=True,
         doc='Returns the ChimeraX Atom. Read only.')
     coupling_constant = c_property('mdff_atom_coupling_constant', float64,
-        doc='MDFF coupling constant (units depending on map units).')
+        doc='''
+        Per-atom MDFF coupling constant. This is multiplied by the global
+        coupling constant for the map when calculating the MDFF potential.
+        Can be set.
+        ''')
     sim_index = c_property('mdff_atom_sim_index', int32,
-        doc='Index of this atom in the relevant MDFF Force in a running simulation. Can be set.')
+        doc='''
+        Index of this atom in the relevant MDFF Force in a running simulation.
+        Returns -1 if the atom is not currently in a simulation. Can be set, but
+        only if you know what you are doing.
+        ''')
 
 class Distance_Restraint(State):
+    '''
+    Defines a harmonic spring restraining the distance between a pair of atoms.
+    '''
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -3124,15 +3145,19 @@ class Distance_Restraint(State):
     visible = c_property('distance_restraint_visible', npy_bool, read_only = True,
             doc = 'Restraint will be visible if it is enabled and both atoms are visible.')
     atoms = c_property('distance_restraint_atoms', cptr, 2, astype=_atom_pair, read_only=True,
-            doc = 'Returns the pair of restrained atoms. Read only.' )
+            doc = 'Returns a tuple of :py:class:`chimerax.Atoms` pointing to the pair of restrained atoms. Read only.' )
     target = c_property('distance_restraint_target', float64,
             doc = 'Target distance in Angstroms')
     spring_constant = c_property('distance_restraint_k', float64,
-            doc = 'Restraint spring constant in kJ mol-1 Angstrom-2')
+            doc = 'Restraint spring constant in :math:`kJ mol^{-1} nm^{-2}`')
     distance = c_property('distance_restraint_distance', float64, read_only=True,
             doc = 'Current distance between restrained atoms in Angstroms. Read only.')
     sim_index = c_property('distance_restraint_sim_index', int32,
-        doc = 'Index of this restraint in a running simulation. Can be set')
+        doc='''
+        Index of this restraint in the relevant MDFF Force in a running
+        simulation. Returns -1 if the restraint is not currently in a
+        simulation. Can be set, but only if you know what you are doing.
+        ''')
 
 class Proper_Dihedral_Restraint(State):
     def __init__(self, c_pointer):
@@ -3166,11 +3191,11 @@ class Proper_Dihedral_Restraint(State):
     target = c_property('proper_dihedral_restraint_target', float64,
         doc = 'Target angle for this restraint in radians. Can be written.')
     dihedral = c_property('proper_dihedral_restraint_dihedral', cptr, astype=_proper_dihedral_or_none, read_only=True,
-        doc = 'The restrained dihedral. Read only.')
+        doc = 'The restrained :py:class:`Proper_Dihedral`. Read only.')
     offset = c_property('proper_dihedral_restraint_offset', float64, read_only = True,
         doc = 'Difference between current and target angle in radians. Read only.')
     cutoff = c_property('proper_dihedral_restraint_cutoff', float64,
-        doc = 'Cutoff angle below which no restraint will be applied. Can be set.')
+        doc = 'Cutoff angle offset below which no restraint will be applied. Can be set.')
     enabled = c_property('proper_dihedral_restraint_enabled', npy_bool,
         doc = 'Enable/disable this restraint or get its current state.')
     display = c_property('proper_dihedral_restraint_display', npy_bool,
@@ -3178,13 +3203,24 @@ class Proper_Dihedral_Restraint(State):
     visible = c_property('proper_dihedral_restraint_visible', npy_bool, read_only=True,
         doc = 'Is this restraint currently visible? Read-only.')
     spring_constant = c_property('proper_dihedral_restraint_k', float64,
-        doc = 'Get/set the spring constant for this restraint in kJ mol-1 rad-2')
+        doc = 'Get/set the spring constant for this restraint in :math:`kJ mol^{-1} rad^{-2}`')
     annotation_color = c_property('proper_dihedral_restraint_annotation_color', uint8, 4, read_only=True,
         doc = 'Get the color of the annotation for this restraint according to the current colormap. Read only.')
     sim_index = c_property('proper_dihedral_restraint_sim_index', int32,
-        doc = 'Index of this restraint in a running simulation. Can be set')
+        doc='''
+        Index of this restraint in the relevant MDFF Force in a running
+        simulation. Returns -1 if the restraint is not currently in a
+        simulation. Can be set, but only if you know what you are doing.
+        ''')
 
 class Rotamer_Restraint(State):
+    '''
+    Rotamer restraints are special in that they only exist as wrappers around
+    combinations of :cpp:class:`Proper_Dihedral_Restraint` objects. As such,
+    they have no independent presence in simulations. The chi dihedral
+    restraints may still be addressed and controlled independently if
+    necessary.
+    '''
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -3213,22 +3249,38 @@ class Rotamer_Restraint(State):
     def set_spring_constant(self, k):
         '''
         Sets the spring constants for all chi dihedrals in the rotamer to k.
-        Write-only.
+        Write-only. To retrieve the current spring constants, use
+        :attr:`chi_restraints.spring_constants`
         '''
         f = c_function('set_rotamer_restraint_spring_constant',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
-        kk = ctypes.c_double()
-        kk.value = k
-        f(self._c_pointer_ref, 1, ctypes.byref(kk))
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double))
+        f(self._c_pointer_ref, 1, k)
+
+    @property
+    def chi_restraints(self):
+        '''
+        Returns a :py:class:`Proper_Dihedral_Restraints` covering the chi
+        dihedrals in this rotamer.
+        '''
+        f = c_function('rotamer_restraint_chi_restraints',
+            args=(ctypes.c_void_p, ctypes.POINTER(cptr)))
+        ret = numpy.empty(self.rotamer.num_chi_dihedrals, cptr)
+        f(self._c_pointer, pointer(ret))
+        return _proper_dihedral_restraints(ret)
 
     rotamer = c_property('rotamer_restraint_rotamer', cptr, astype=_rotamer_or_none, read_only=True,
-        doc = 'Rotamer to be restrained. Read only.')
+        doc = ':py:class:`Rotamer` to be restrained. Read only.')
     residue = c_property('rotamer_restraint_residue', cptr, astype=_residue_or_none, read_only=True,
-        doc = 'Residue to be restrained. Read only.')
+        doc = ':py:class:`chimerax.Residue` to be restrained. Read only.')
     enabled = c_property('rotamer_restraint_enabled', npy_bool,
-        doc = 'Enable/disable chi dihedral rstraints. Returns False if any chi restraint is disabled.')
+        doc = 'Enable/disable chi dihedral restraints. Returns False if any chi restraint is disabled.')
     target_index = c_property('rotamer_restraint_target_index', int32,
-        doc = 'Get/set the index of the defined rotamer giving target angles and cutoffs')
+        doc = '''
+        Get/set the index of the rotamer target definition giving target angles
+        and cutoffs. If no restraint is currently applied, returns the last
+        restraint that was applied to this rotamer. If no restraint has ever
+        been applied, returns -1.
+        ''')
 
 
 

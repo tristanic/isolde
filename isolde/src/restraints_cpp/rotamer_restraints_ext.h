@@ -114,10 +114,30 @@ rotamer_restraint_residue(void *restraint, size_t n, pyobject_t *residue)
 }
 
 extern "C" EXPORT void
-set_rotamer_restraint_spring_constant(void *restraint, size_t n, double *k)
+rotamer_restraint_chi_restraints(void *restraint, pyobject_t *chi)
+{
+    Rotamer_Restraint* rr = static_cast<Rotamer_Restraint *>(restraint);
+    try {
+        const auto& chis = rr->chi_restraints();
+        for (auto c: chis) {
+            *chi++ = c;
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_rotamer_restraint_spring_constant(void *restraint, size_t n, double k)
 {
     Rotamer_Restraint** rr = static_cast<Rotamer_Restraint **>(restraint);
-    error_wrap_array_set(rr, n, &Rotamer_Restraint::set_spring_constant, k);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*rr++)->set_spring_constant(k);
+        }
+    } catch(...) {
+        molc_error();
+    }
 }
 
 extern "C" EXPORT void

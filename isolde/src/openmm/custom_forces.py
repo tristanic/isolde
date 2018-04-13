@@ -70,6 +70,19 @@ class AmberCMAPForce(CMAPTorsionForce):
         self.update_needed = False
 
     def add_torsions(self, resnames, phi_indices, psi_indices):
+        '''
+        Add a set of peptide backbone (phi, psi) pairs to the force.
+
+        Args:
+            * resnames:
+                - an iterable of upper-case three-letter residue names
+            * phi_indices:
+                - a (nx4) NumPy integer array giving the indices of the atoms
+                  from each phi dihedral in the simulation
+            * psi_indices:
+                - a (nx4) NumPy integer array giving the indices of the atoms
+                  from each psi dihedral in the simulation
+        '''
         f = c_function('cmaptorsionforce_add_torsions',
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
                 ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_int32),
@@ -85,6 +98,19 @@ class AmberCMAPForce(CMAPTorsionForce):
         return ret
 
     def addTorsion(self, resname, phi_indices, psi_indices):
+        '''
+        Add a single phi/psi pair to the force.
+
+        Args:
+            * resname:
+                - the upper-case three-character name of the amino acid residue
+            * phi_indices:
+                - a NumPy array of four ints giving the indices of the phi
+                  dihedral atoms in the simulation
+            * psi_indices:
+                - a NumPy array of four ints giving the indices of the psi
+                  dihedral atoms in the simulation
+        '''
         map_index = self._map_loader.map_index(resname)
         super().addTorsion(map_index, *phi_indices.tolist(), *psi_indices.tolist())
 
@@ -92,31 +118,30 @@ class AmberCMAPForce(CMAPTorsionForce):
 class LinearInterpMapForce(CustomCompoundBondForce):
     '''
     Converts a map of (i,j,k) data and a (x,y,z)->(i,j,k) transformation
-    matrix to a potential field, with trilinear interpolation of values.
+    matrix to a potential energy field, with trilinear interpolation of values.
     '''
     def __init__(self, data, xyz_to_ijk_transform, units = 'angstroms'):
         '''
         For a given atom at (x,y,z), the map potential will be defined
         as:
-            overall_k * individual_k * pot_xyz
 
-        where pot_xyz is calculated by linear interpolation from the
-        (i,j,k) map grid after applying xyz_to_ijk_transform.
+        .. math::
+            global_k * individual_k * pot_xyz
+
+        where `pot_xyz` is calculated by linear interpolation from the
+        (i,j,k) map grid after applying `xyz_to_ijk_transform`.
 
         Args:
-            data:
-                The map data as a 3D array with row order (k,j,i)
-            xyz_to_ijk_transform:
-                A 3x4 transformation matrix mapping (x,y,z) coordinates
-                to (i,j,k)
-            units:
-                The units in which the transformation matrix is defined.
-                Either 'angstroms' or 'nanometers'
+            * data:
+                - The map data as a 3D (i,j,k) NumPy array in C-style order
+            * xyz_to_ijk_transform:
+                - A NumPy 3x4 float array defining the transformation matrix
+                  mapping (x,y,z) coordinates to (i,j,k)
+            * units:
+                - The units in which the transformation matrix is defined.
+                  Either 'angstroms' or 'nanometers'
         '''
         tf = self._transform = xyz_to_ijk_transform
-        # Only the 3x3 rotation/scale portion of the transformation
-        # matrix changes with length units. The translation is applied
-        # after scaling to the map coordinate system.
         map_func = self._discrete3D_from_volume(data)
 
         energy_func = self._set_energy_function(tf, units)
@@ -141,6 +166,9 @@ class LinearInterpMapForce(CustomCompoundBondForce):
         # TODO: Legacy code. Remove when possible.
         elif units == 'angstroms':
             # OpenMM calcs will be in nm
+            # Only the 3x3 rotation/scale portion of the transformation
+            # matrix changes with length units. The translation is applied
+            # after scaling to the map coordinate system.
             tf[:,0:3] *= 10
         elif units != 'nanometers':
             raise TypeError('Units must be either "angstroms" or "nanometers"!')
@@ -202,6 +230,10 @@ class LinearInterpMapForce(CustomCompoundBondForce):
         return Discrete3DFunction(*dim, data_1d)
 
     def set_global_k(self, k):
+        '''
+        Set the global coupling constant, in units of
+        :math:`kJ mol^{-1} (\\text{map density unit})^{-1} nm^3`
+        '''
         self.setGlobalParameterDefaultValue(self._global_k_index, k)
         self.update_needed = True
 
@@ -215,6 +247,21 @@ class LinearInterpMapForce(CustomCompoundBondForce):
         #~ self.update_needed = True
 
     def add_atoms(self, indices, ks, enableds):
+        '''
+        Add a set of atoms to the force, using a fast C++ function. Fastest if
+        the inputs are NumPy arrays.
+
+        Args:
+            * indices:
+                - An int array giving the indices of the atoms in the
+                  simulation
+            * ks:
+                - A float array giving the per-atom scaling constants used
+                  to determine the final potential for each atom (dimensionless)
+            * enableds:
+                - A Boolean array defining which atoms are to be enabled
+                  in the force.
+        '''
         f = c_function('customcompoundbondforce_add_bonds',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
                 ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
@@ -227,22 +274,58 @@ class LinearInterpMapForce(CustomCompoundBondForce):
         f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
         return ret
 
-    def update_atoms(self, indices, coupling_constants, enableds):
+    def update_atoms(self, indices, ks, enableds):
+        '''
+        Update the parameters for a set of atoms at once, using a fast C++
+        function. Fastest if the inputs are NumPy arrays.
+
+        Args:
+            * indices:
+                - An int array giving the indices of the atoms in the
+                  simulation
+            * ks:
+                - A float array giving the per-atom scaling constants used
+                  to determine the final potential for each atom (dimensionless)
+            * enableds:
+                - A Boolean array defining which atoms are to be enabled
+                  in the force.
+        '''
         f = c_function('customcompoundbondforce_update_bond_parameters',
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
                 ctypes.POINTER(ctypes.c_double)))
         n = len(indices)
         ind = convert_and_sanitize_numpy_array(indices, int32)
         params = numpy.empty((n,2), float64)
-        params[:,0] = coupling_constants
+        params[:,0] = ks
         params[:,1] = enableds
         f(int(self.this), n, pointer(ind), pointer(params))
         self.update_needed = True
 
-    def update_atom(self, index, coupling_constant, enabled):
-        self.update_atoms([index], [coupling_constant], [enabled])
+    def update_atom(self, index, k, enabled):
+        '''
+        Update the parameters for a single atom in the force.
+
+        Args:
+            * index:
+                - the integer index of the atom in the force object
+            * k:
+                - the per-atom scaling constant used to determine the final
+                  potential for this atom
+            * enabled:
+                - a Boolean flag defining whether this atom can feel the MDFF
+                  force
+        '''
+        self.update_atoms([index], [k], [enabled])
 
     def update_context_if_needed(self, context):
+        '''
+        If any parameters have changed since the last time this function was
+        called, push them to the simulation context. Otherwise, do nothing.
+
+        Args:
+            * context:
+                - the :class:`openmm.Context` to update.
+        '''
         if self.update_needed:
             self.updateParametersInContext(context)
             self.update_needed = False
@@ -250,19 +333,31 @@ class LinearInterpMapForce(CustomCompoundBondForce):
 class TopOutBondForce(CustomBondForce):
     '''
     Wraps an OpenMM CustomBondForce defined as a standard harmonic potential
-    (0.5 * k * (r - r0)^2) with a user-defined fixed maximum cutoff on the
-    applied force. The force on any atom can be switched on (off) by setting
-    the 'enabled' parameter to 1 (0). This is meant for steering the simulation
-    into new conformations where the starting distance may be far from the target
-    bond length, leading to catastrophically large forces with a standard
-    harmonic potential.
+    with a user-defined fixed maximum cutoff on the applied force. Any restraint
+    can be switched on (off) by setting the 'enabled' parameter to 1 (0). This
+    is designed for steering the simulation into new conformations where the
+    starting distance may be far from the target bond length, leading to
+    catastrophically large forces with a standard harmonic potential.
     Effective energy equation:
 
-    E = 0                       | enabled < 0.5
-        max_force *abs(r-r0)    | r - max_force/k > 0
-        0.5 * k * (r - r0)^2    | otherwise
+    .. math::
+
+        E =
+          \\begin{cases}
+            0, & \\text{if}\\ enabled < 0.5 \\\\
+            \\text{max_force} * abs(r-r_0), & \\text{if}\\ r - \\text{max_force}/k > 0 \\\\
+            0.5 * k * (r - r_0)^2, & \\text{otherwise}
+          \\end{cases}
+
     '''
     def __init__(self, max_force):
+        '''
+        Initialise the object and set the maximum force magnitude.
+
+        Args:
+            * max_force:
+                - maximum allowable force in :math:`kJ mol^{-1} nm{-1}`
+        '''
         linear_eqn = 'max_force * abs(r-r0)'# - 0.5*max_force^2/k'
         quadratic_eqn = '0.5*k*(r-r0)^2'
         transition_eqn = 'step(r - max_force/k)'
@@ -281,7 +376,10 @@ class TopOutBondForce(CustomBondForce):
 
     @property
     def max_force(self):
-        '''Maximum force applied to any given atom, in kJ/mol/nm.'''
+        '''
+        Get/set the maximum force to be applied to any given atom, in
+        :math:`kJ mol^{-1} nm{-1}`
+        '''
         return self._max_force
 
     @max_force.setter
@@ -294,14 +392,19 @@ class TopOutBondForce(CustomBondForce):
 
     def add_bonds(self, atom_indices, enableds, spring_constants, targets):
         '''
-        Add a set of bonds
-        @param atom_indices:
-            A 2-tuple of arrays giving the indices of the bonded atoms in the
-            simulation construct
-        @param targets:
-            Target distances in nanometers
-        @param spring_constants:
-            Spring constants in kJ mol-1 nm-2
+        Add a set of bonds to the simulation, using a fast C++ function. Fastest
+        if all parameters are supplied as NumPy arrays.
+
+        Args:
+            * atom_indices:
+                - a 2-tuple of integer arrays giving the indices of the bonded
+                  atoms in the simulation construct
+            * enableds:
+                - a Boolean array defining which restraints are to be active
+            * spring_constants:
+                - a float array of spring constants in :math:`kJ mol^{-1} nm^{-2}`
+            * targets:
+                - a float array of target distances in nanometers
         '''
         f = c_function('custombondforce_add_bonds',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
@@ -321,17 +424,22 @@ class TopOutBondForce(CustomBondForce):
 
     def update_target(self, index, enabled=None, k = None, target=None):
         '''
-        Update an existing distance restraint with a new target and/or spring
-        constant.
-        @param index:
-            The index of this restraint in the OpenMM force object
-        @param target (default None):
-            The new target distance (as a simtk Quantity or in nanometres).
-            Leave as None to preserve the existing target distance
-        @param k (default None):
-            The new spring constant (as a simtk Quantity or in units of
-            kJ mol-1 nm-2). Leave as None to preserve the existing spring
-            constant.
+        Update the parameters for an existing restraint in the simulation.
+        Mostly superseded by :func:`update_targets`.
+
+        Args:
+            * index:
+                - the index of this restraint in the OpenMM force object
+            * enabled:
+                - Boolean flag defining whether the restraint is to be enabled.
+                  None = keep current value.
+            * k:
+                - The new spring constant (as a :class:`simtk.Quantity or in
+                  units of :math:`kJ mol^{-1} nm^{-2}`). None = keep current
+                  value.
+            * target:
+                - the new target distance (as a :class:`simtk.Quantity` or in
+                  nanometres). None = keep current value.
         '''
         current_params = self.getBondParameters(int(index))
         atom1, atom2 = current_params[0:2]
@@ -353,12 +461,16 @@ class TopOutBondForce(CustomBondForce):
         '''
         Update a set of targets all at once using fast C++ code. Fastest if
         the arguments are provided as Numpy arrays, but any iterable will work.
-        @param indices:
-            The indices of the restraints in the OpenMM force object
-        @param targets:
-            The new target distances in nanometres
-        @param k
-            The new spring constants in units of kJ mol-1 nm-2
+
+        Args:
+            * indices:
+                - the indices of the restraints in the OpenMM force object
+            * enableds:
+                - a Boolean array defining which restraints are to be enabled
+            * spring_constants:
+                - The new spring constants in units of :math:`kJ mol^{-1} nm^{-2}``
+            * targets:
+                - the new target distances in nanometres
         '''
         f = c_function('custombondforce_update_bond_parameters',
             args=(ctypes.c_void_p, ctypes.c_size_t,
