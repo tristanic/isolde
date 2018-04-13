@@ -3,18 +3,19 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-ISOLDE
-======
+.. image:: images/isolde_splash_screen.jpg
+    :alt: ISOLDE
+
 Interactive Structure Optimisation by Local Direct Exploration
 --------------------------------------------------------------
+
 .. toctree::
    :maxdepth: 2
 
    Home <self>
    intro
    python_api/index
-
-
+   citing
 
 Indices and tables
 ==================

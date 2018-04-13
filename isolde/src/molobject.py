@@ -3263,7 +3263,7 @@ class Rotamer_Restraint(State):
         dihedrals in this rotamer.
         '''
         f = c_function('rotamer_restraint_chi_restraints',
-            args=(ctypes.c_void_p, ctypes.POINTER(cptr)))
+            args=(ctypes.c_void_p, ctypes.c_void_p))
         ret = numpy.empty(self.rotamer.num_chi_dihedrals, cptr)
         f(self._c_pointer, pointer(ret))
         return _proper_dihedral_restraints(ret)
@@ -3279,7 +3279,10 @@ class Rotamer_Restraint(State):
         Get/set the index of the rotamer target definition giving target angles
         and cutoffs. If no restraint is currently applied, returns the last
         restraint that was applied to this rotamer. If no restraint has ever
-        been applied, returns -1.
+        been applied, returns -1. Setting the index automatically apples the
+        target and cutoff angles for each chi dihedral restraint, according to
+        the chosen target. Cutoffs angles are set to twice the estimated
+        standard deviations for the target.
         ''')
 
 

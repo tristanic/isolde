@@ -331,36 +331,36 @@ class LinearInterpMapForce(CustomCompoundBondForce):
             self.update_needed = False
 
 class TopOutBondForce(CustomBondForce):
-    '''
-    Wraps an OpenMM CustomBondForce defined as a standard harmonic potential
-    with a user-defined fixed maximum cutoff on the applied force. Any restraint
-    can be switched on (off) by setting the 'enabled' parameter to 1 (0). This
-    is designed for steering the simulation into new conformations where the
-    starting distance may be far from the target bond length, leading to
-    catastrophically large forces with a standard harmonic potential.
-    Effective energy equation:
+    r'''
+    A :py:class:`openmm.CustomBondForce` subclass defined as a standard harmonic
+    potential with a user-defined fixed maximum cutoff on the applied force. Any
+    restraint can be switched on (off) by setting the 'enabled' parameter to 1
+    (0). This is designed for steering the simulation into new conformations
+    where the starting distance may be far from the target bond length, leading
+    to catastrophically large forces with a standard harmonic potential. The
+    effective energy equation is:
 
     .. math::
 
         E =
-          \\begin{cases}
-            0, & \\text{if}\\ enabled < 0.5 \\\\
-            \\text{max_force} * abs(r-r_0), & \\text{if}\\ r - \\text{max_force}/k > 0 \\\\
-            0.5 * k * (r - r_0)^2, & \\text{otherwise}
-          \\end{cases}
+        \begin{cases}
+            0, & \text{if}\ enabled < 0.5 \\
+            \text{max\_force} * abs(r-r_0), & \text{if}\ (r-r_0) - \text{max\_force}/k > 0 \\
+            0.5 * k * (r - r_0)^2, & \text{otherwise}
+        \end{cases}
 
     '''
     def __init__(self, max_force):
         '''
-        Initialise the object and set the maximum force magnitude.
+        Initialise the force object and set the maximum force magnitude.
 
         Args:
             * max_force:
-                - maximum allowable force in :math:`kJ mol^{-1} nm{-1}`
+                - maximum allowable force in :math:`kJ mol^{-1} nm^{-1}`
         '''
         linear_eqn = 'max_force * abs(r-r0)'# - 0.5*max_force^2/k'
         quadratic_eqn = '0.5*k*(r-r0)^2'
-        transition_eqn = 'step(r - max_force/k)'
+        transition_eqn = 'step(r - r0 - max_force/k)'
         enabled_eqn = 'step(enabled - 0.5)'
         energy_str = 'select({},select({},{},{}),0)'.format(
             enabled_eqn, transition_eqn, linear_eqn, quadratic_eqn)
@@ -378,7 +378,7 @@ class TopOutBondForce(CustomBondForce):
     def max_force(self):
         '''
         Get/set the maximum force to be applied to any given atom, in
-        :math:`kJ mol^{-1} nm{-1}`
+        :math:`kJ mol^{-1} nm^{-1}`
         '''
         return self._max_force
 
@@ -434,7 +434,7 @@ class TopOutBondForce(CustomBondForce):
                 - Boolean flag defining whether the restraint is to be enabled.
                   None = keep current value.
             * k:
-                - The new spring constant (as a :class:`simtk.Quantity or in
+                - The new spring constant (as a :class:`simtk.Quantity` or in
                   units of :math:`kJ mol^{-1} nm^{-2}`). None = keep current
                   value.
             * target:
@@ -468,7 +468,7 @@ class TopOutBondForce(CustomBondForce):
             * enableds:
                 - a Boolean array defining which restraints are to be enabled
             * spring_constants:
-                - The new spring constants in units of :math:`kJ mol^{-1} nm^{-2}``
+                - The new spring constants in units of :math:`kJ mol^{-1} nm^{-2}`
             * targets:
                 - the new target distances in nanometres
         '''
@@ -486,21 +486,33 @@ class TopOutBondForce(CustomBondForce):
 
 
 class TopOutRestraintForce(CustomExternalForce):
-    '''
-    Wraps an OpenMM CustomExternalForce to restrain atoms to defined positions
-    via a standard harmonic potential (0.5 * k * r^2) with a user-defined
-    fixed maximum cutoff on the appli5ed force. This is meant for steering
-    the simulation into new conformations where the starting positions
-    may be far from the target positions, leading to catastrophically
-    large forces with a standard harmonic potential.
-    Effective energy equation:
+    r'''
+    A :py:class:`openmm.CustomExternalForce` subclass designed to restrain atoms
+    to defined positions via a standard harmonic potential with a user-defined
+    fixed maximum cutoff on the applied force. Used for position restraints as
+    well as for imposing interactive tugging forces, this is designed for
+    steering the simulation into new conformations where the starting positions
+    may be far from the target positions, leading to catastrophically large
+    forces with a standard harmonic potential. The effective energy equation is:
 
-    E = 0                      | enabled < 0.5
-        max_force * r          | r - max_force/k > 0
-        0.5 * k * r^2          | otherwise
+    .. math::
+
+        E =
+        \begin{cases}
+            0, & \text{if}\ enabled < 0.5 \\
+            \text{max\_force} * r, & \text{if}\ r - \text{max\_force}/k > 0 \\
+            0.5 * k * r^2, & \text{otherwise}
+        \end{cases}
 
     '''
     def __init__(self, max_force):
+        '''
+        Initialise the force object and set the maximum force magnitude.
+
+        Args:
+            * max_force:
+                - maximum allowable force in :math:`kJ mol^{-1} nm^{-1}`
+        '''
         linear_eqn = 'max_force * sqrt((x-x0)^2+(y-y0)^2+(z-z0)^2)'
         quadratic_eqn = '0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2)'
         transition_eqn = 'step(sqrt((x-x0)^2+(y-y0)^2+(z-z0)^2) - max_force/k)'
@@ -519,7 +531,10 @@ class TopOutRestraintForce(CustomExternalForce):
 
     @property
     def max_force(self):
-        '''Maximum force applied to any given atom, in kJ/mol/nm.'''
+        '''
+        Get/set the maximum force applied to any given atom, in
+        :math:`kJ mol^{-1} nm^{-1}`.
+        '''
         return self._max_force
 
     @max_force.setter
@@ -531,6 +546,21 @@ class TopOutRestraintForce(CustomExternalForce):
         self.update_needed = True
 
     def add_particles(self, indices, enableds, spring_constants, targets):
+        '''
+        Add a set of restraints to the simulation, using a fast C++ function.
+        Fastest if all parameters are supplied as NumPy arrays.
+
+        Args:
+            * atom_indices:
+                - integer array giving the indices of the restrained atoms in
+                  the simulation construct
+            * enableds:
+                - a Boolean array defining which restraints are to be active
+            * spring_constants:
+                - a float array of spring constants in :math:`kJ mol^{-1} nm^{-2}`
+            * targets:
+                - a (nx3) float array of (x,y,z) target positions in nanometres
+        '''
         f = c_function('customexternalforce_add_particles',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
                 ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
@@ -545,6 +575,22 @@ class TopOutRestraintForce(CustomExternalForce):
         return ret
 
     def update_target(self, index, enabled=None, k=None, target=None):
+        '''
+        Update a single restraint. This function is mostly superseded by
+        :func:`update_targets`.
+
+        Args:
+            * index:
+                - integer index of the restraint in the force object
+            * enabled:
+                - enable/disable the restraint. None keeps the current value.
+            * k:
+                - set the spring constant in :math:`kJ mol^{-1} nm^{-2}`.
+                  None keeps the current value.
+            * target:
+                - set the target (x,y,z) position in nanometres. None keeps
+                  the current value.
+        '''
         current_params = self.getParticleParameters(int(index))
         atom_index = current_params[0]
         new_enabled, new_k, new_x, new_y, new_z = current_params[1]
@@ -562,6 +608,21 @@ class TopOutRestraintForce(CustomExternalForce):
         self.update_needed = True
 
     def update_targets(self, indices, enableds, spring_constants, targets):
+        '''
+        Update a set of targets all at once using fast C++ code. Fastest if
+        the arguments are provided as Numpy arrays, but any iterable should work.
+
+        Args:
+            * indices:
+                - the indices of the restraints in the OpenMM force object
+            * enableds:
+                - a Boolean array defining which restraints are to be enabled
+            * spring_constants:
+                - The new spring constants in units of :math:`kJ mol^{-1} nm^{-2}`
+            * targets:
+                - A (nx3) float array providing the new target (x,y,z) positions
+                  in nanometres.
+        '''
         f = c_function('customexternalforce_update_particle_parameters',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
                 ctypes.POINTER(ctypes.c_double)))
@@ -577,20 +638,32 @@ class TopOutRestraintForce(CustomExternalForce):
         self.update_needed = True
 
     def release_restraint(self, index):
+        '''
+        Disable a single restraint.
+
+        Args:
+            * index:
+                - the index of the restraint to be disabled.
+        '''
         self.update_target(index, enabled=False)
 
 
 class FlatBottomTorsionRestraintForce(CustomTorsionForce):
-    '''
-    Wraps an OpenMM CustomTorsionForce to restrain torsion angles while
-    allowing free movement within a range (target +/- cutoff). Within
-    the cutoff range the potential is constant, while outside it
-    is defined as -k * cos (theta-theta0).
-    Effective energy function:
+    r'''
+    A :py:class:`openmm.CustomTorsionForce` subclass designed to restrain
+    torsion angles while allowing free movement within a range (target +/-
+    cutoff). Within the cutoff range the potential is constant (that is, zero
+    force is applied).
+    The effective energy function is:
 
-    E = 0                    | enabled < 0.5
-        -k*cos(cutoff)       | cos(theta-theta0) - cos(cutoff) < 0
-        -k*cos(theta-theta0) | otherwise
+    .. math::
+
+        E =
+        \begin{cases}
+            0, & \text{if}\ enabled < 0.5 \\
+            -k*cos(\theta_\text{cutoff}), & \text{if}\ cos(\theta-\theta_0) - cos(\theta_\text{cutoff}) < 0 \\
+            -k*cos(\theta-\theta_0), & \text{otherwise}
+        \end{cases}
     '''
     def __init__(self):
         standard_energy = '-k*cos(theta-theta0)'
@@ -608,21 +681,25 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
 
     def add_torsions(self, atom_indices, enableds, spring_constants, targets, cutoffs):
         '''
-        Add a set of torsion restraints. Returns an array of ints representing
-        the indices of the restraints in the force object.
-        @param atom_indices:
-            A 4-tuple of arrays providing the indices of the dihedral atoms in
-            the simulation construct
-        @param enableds:
-            A boolean array (or any array castable to float) where values > 0.5
-            represent enabled
-        @param spring_constants:
-            Restraint spring constants in kJ mol-1 rad-2
-        @param targets:
-            Target angles in radians
-        @param cutoffs:
-            Cutoff angle (below which no restraint is applied) for each restraint
-            in radians.
+        Add a set of torsion restraints using a fast C++ function. Returns a
+        NumPy integer array giving the indices of the restraints in the force
+        object. Fastest if the inputs are NumPy arrays, but most iterables
+        should work.
+
+        Args:
+            * atom_indices:
+                - A 4-tuple of arrays providing the indices of the dihedral
+                  atoms in the simulation construct
+            * enableds:
+                - A Boolean array (or any array castable to float) where values
+                  > 0.5 represent enabled restraints
+            * spring_constants:
+                - Restraint spring constants in :math:`kJ mol^{-1} rad^{-2}`
+            * targets:
+                - Target angles in radians
+            * cutoffs:
+                - Cutoff angle (below which no force is applied) for each
+                  restraint in radians.
         '''
         f = c_function('customtorsionforce_add_torsions',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
@@ -640,10 +717,23 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
         f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
         return ret
 
-
     def update_target(self, index, enabled=None, k = None, target = None, cutoff = None):
         '''
-        Change the target, spring constant and/or cutoff angle for the given torsion.
+        Update a single restraint. This function is mostly superseded by
+        :func:`update_targets`.
+
+        Args:
+            * index:
+                - integer index of the restraint in the force object
+            * enabled:
+                - enable/disable the restraint. None keeps the current value.
+            * k:
+                - set the spring constant in :math:`kJ mol^{-1} rad^{-2}`.
+                  None keeps the current value.
+            * target:
+                - set the target angle in radians. None keeps the current value.
+            * cutoff:
+                - set the cutoff angle in radians. None keeps the current value.
         '''
         # For compatibility with int32
         index = int(index)
@@ -669,18 +759,20 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
 
     def update_targets(self, indices, enableds, spring_constants, targets, cutoffs):
         '''
-        Change the target angles, spring constants and cutoff angles for a set
-        of dihedral restraints.
-        @param indices:
-            the indices for each restraint in the force object
-        @param enableds:
-            a boolean, int or float array where values >0.5 represent enabled
-        @param spring_constants:
-            the spring constants for the restraints in kJ mol-1 rad-2
-        @param targets:
-            the target angles in radians
-        @param cutoffs:
-            the cutoff angles (below which no force is applied) in radians
+        Update a set of targets all at once using fast C++ code. Fastest if
+        the arguments are provided as NumPy arrays, but any iterable should work.
+
+        Args:
+            * indices:
+                - the indices of the restraints in the OpenMM force object
+            * enableds:
+                - a Boolean array defining which restraints are to be enabled
+            * spring_constants:
+                - the new spring constants in units of :math:`kJ mol^{-1} rad^{-2}`
+            * targets:
+                - the new target angles in radians
+            * cutoffs:
+                - the new cutoff angles in radians
         '''
         f = c_function('customtorsionforce_update_torsion_parameters',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
@@ -698,6 +790,7 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
 
 class TorsionNCSForce(CustomCompoundBondForce):
     '''
+    (WORK IN PROGRESS)
     Provides torsion-angle non-crystallographic symmetry (NCS)
     restraints for a defined number of NCS copies. For a given set of
     NCS-equivalent dihedrals, each dihedral will receive a scaling term
@@ -779,11 +872,35 @@ class TorsionNCSForce(CustomCompoundBondForce):
 
 
 class GBSAForce(customgbforces.GBSAGBn2Force):
+    '''
+    Wrapper around :py:class:`openmm.GBSAGBn2Force` which implements the
+    generalised Born GB-Neck2 implicit solvent implementation.
+    '''
     def __init__(self, solventDielectric=78.5, soluteDielectric=1,
                 SA='ACE', cutoff=1.0, kappa=3.0,
                 nonbonded_method = openmm.CustomGBForce.CutoffNonPeriodic):
         '''
-        kappa = 3.0/nm --> approx. 0.5M ion concentration at 100K
+        Initialise the force object. Defaults are chosen to represent a salt
+        concentration of approximately 0.5M at 100K, broadly representative of
+        the conditions within typical protein crystals.
+
+        Args:
+            * solventDielectric:
+                - dielectric constant of solvent regions
+            * soluteDielectric:
+                - dielectric constant "inside" the macromolecule
+            * SA:
+                - string choosing the method for determining solvent-accessible
+                  surface
+            * cutoff:
+                - cutoff distance in nanometres (must match the cutoff distance
+                  for the other nonbonded forces in the simulation!)
+            * kappa:
+                - Determines the rate of falloff of the potential with distance.
+                  Effectively a proxy for salt concentration, where higher kappa
+                  corresponds to higher salt.
+            * nonbonded_method:
+                - should be left as default in almost all cases.
         '''
         if type(solventDielectric) == Quantity:
             solventDielectric = solventDielectric.value_in_unit(OPENMM_DIPOLE_UNIT)

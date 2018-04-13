@@ -131,13 +131,3 @@ Some general key points:
     .. autoclass:: Rotamers
         :members:
         :inherited-members:
-
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

@@ -8,12 +8,5 @@ ISOLDE Python API
    core_objects
    live_validation
    restraints
+   scripted_manipulations
    sim_management
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

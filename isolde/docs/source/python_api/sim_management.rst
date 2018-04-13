@@ -27,28 +27,28 @@ Simulation Management Classes
 -----------------------------
 .. automodule:: chimerax.isolde.openmm
 
-    SimParams
-    ~~~~~~~~~
+SimParams
+~~~~~~~~~
     .. autoclass:: SimParams
         :members:
 
-    Sim_Construct
-    ~~~~~~~~~~~~~
+Sim_Construct
+~~~~~~~~~~~~~
     .. autoclass:: Sim_Construct
         :members:
 
-    Sim_Manager
-    ~~~~~~~~~~~
+Sim_Manager
+~~~~~~~~~~~
     .. autoclass:: Sim_Manager
         :members:
 
-    Sim_Handler
-    ~~~~~~~~~~~
+Sim_Handler
+~~~~~~~~~~~
     .. autoclass:: Sim_Handler
         :members:
 
-    OpenMM_Thread_Handler
-    ~~~~~~~~~~~~~~~~~~~~~
+OpenMM_Thread_Handler
+~~~~~~~~~~~~~~~~~~~~~
     .. autoclass:: OpenMM_Thread_Handler
         :members:
 
@@ -59,17 +59,32 @@ interactive restraints are listed below.
 
 .. automodule:: chimerax.isolde.openmm.custom_forces
 
-    CMAP Correction terms
-    ~~~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: AmberCMAPForce
-        :members:
-
-    MDFF Potentials
-    ~~~~~~~~~~~~~~~
+MDFF Potentials
+~~~~~~~~~~~~~~~
     .. autoclass:: LinearInterpMapForce
         :members:
 
-    Distance Restraints
-    ~~~~~~~~~~~~~~~~~~~
+Distance Restraints
+~~~~~~~~~~~~~~~~~~~
     .. autoclass:: TopOutBondForce
+        :members:
+
+Position Restraints
+~~~~~~~~~~~~~~~~~~~
+    .. autoclass:: TopOutRestraintForce
+        :members:
+
+Dihedral Restraints
+~~~~~~~~~~~~~~~~~~~
+    .. autoclass:: FlatBottomTorsionRestraintForce
+        :members:
+
+CMAP Correction terms
+~~~~~~~~~~~~~~~~~~~~~
+    .. autoclass:: AmberCMAPForce
+        :members:
+
+Implicit Solvent
+~~~~~~~~~~~~~~~~
+    .. autoclass:: GBSAForce
         :members:
