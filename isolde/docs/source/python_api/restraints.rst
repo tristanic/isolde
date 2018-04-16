@@ -43,6 +43,7 @@ MDFF_Atom
 
 MDFF_Atoms
 ~~~~~~~~~~
+    .. autoclass:: MDFF_Atoms
         :members:
 
 

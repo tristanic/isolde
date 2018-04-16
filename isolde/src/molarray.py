@@ -233,7 +233,7 @@ class MDFF_Atoms(Collection):
         doc='''
         Index of each atom in the relevant MDFF Force in a running simulation.
         Atoms which are not currently in a simulation have indices equal to -1.
-         Can be set, but only if you know what you are doing.
+        Can be set, but only if you know what you are doing.
          ''')
 
 
