@@ -6,6 +6,7 @@ ISOLDE Python API
 
    gui_control
    core_objects
+   interpolation
    live_validation
    restraints
    scripted_manipulations
