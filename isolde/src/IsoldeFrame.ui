@@ -236,7 +236,7 @@ border: 1px;
 }</string>
            </property>
            <property name="currentIndex">
-            <number>2</number>
+            <number>0</number>
            </property>
            <property name="elideMode">
             <enum>Qt::ElideNone</enum>
@@ -283,11 +283,11 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>518</width>
-                  <height>760</height>
+                  <width>531</width>
+                  <height>567</height>
                  </rect>
                 </property>
-                <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0,0,0">
+                <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0">
                  <property name="spacing">
                   <number>1</number>
                  </property>
@@ -303,109 +303,6 @@ border: 1px;
                  <property name="bottomMargin">
                   <number>1</number>
                  </property>
-                 <item>
-                  <widget class="QFrame" name="_sim_basic_selection_mode_frame">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>75</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>75</height>
-                    </size>
-                   </property>
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                   <layout class="QGridLayout" name="gridLayout_2">
-                    <property name="topMargin">
-                     <number>1</number>
-                    </property>
-                    <property name="bottomMargin">
-                     <number>1</number>
-                    </property>
-                    <item row="1" column="0">
-                     <widget class="QGroupBox" name="_sim_basic_selection_mode_group_box">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <property name="minimumSize">
-                       <size>
-                        <width>0</width>
-                        <height>60</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>16777215</width>
-                        <height>70</height>
-                       </size>
-                      </property>
-                      <property name="title">
-                       <string>Simulation selection mode</string>
-                      </property>
-                      <layout class="QGridLayout" name="gridLayout_3">
-                       <property name="topMargin">
-                        <number>1</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>1</number>
-                       </property>
-                       <property name="spacing">
-                        <number>2</number>
-                       </property>
-                       <item row="0" column="0">
-                        <widget class="QRadioButton" name="_sim_basic_by_selected_atoms_button">
-                         <property name="text">
-                          <string>By selected atom(s)</string>
-                         </property>
-                         <property name="checked">
-                          <bool>true</bool>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="1">
-                        <widget class="QRadioButton" name="_sim_basic_by_chain_button">
-                         <property name="text">
-                          <string>By chain(s)</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="0">
-                        <widget class="QRadioButton" name="_sim_basic_whole_structure_button">
-                         <property name="text">
-                          <string>Entire structure</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="1">
-                        <widget class="QRadioButton" name="_sim_basic_custom_selection_button">
-                         <property name="text">
-                          <string>Custom selection</string>
-                         </property>
-                        </widget>
-                       </item>
-                      </layout>
-                     </widget>
-                    </item>
-                   </layout>
-                  </widget>
-                 </item>
                  <item>
                   <widget class="QFrame" name="_sim_basic_mobile_selection_frame">
                    <property name="sizePolicy">
@@ -508,173 +405,6 @@ border: 1px;
                        <bool>true</bool>
                       </property>
                      </widget>
-                    </item>
-                   </layout>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QFrame" name="_sim_basic_mobile_by_chain_frame">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>16777215</height>
-                    </size>
-                   </property>
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                   <layout class="QHBoxLayout" name="horizontalLayout_14">
-                    <property name="spacing">
-                     <number>1</number>
-                    </property>
-                    <property name="topMargin">
-                     <number>1</number>
-                    </property>
-                    <property name="bottomMargin">
-                     <number>1</number>
-                    </property>
-                    <item>
-                     <layout class="QFormLayout" name="formLayout_2">
-                      <item row="0" column="0">
-                       <widget class="QLabel" name="label_8">
-                        <property name="text">
-                         <string>Chains: </string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="0" column="1">
-                       <widget class="QListWidget" name="_sim_basic_mobile_chains_list_box">
-                        <property name="minimumSize">
-                         <size>
-                          <width>80</width>
-                          <height>80</height>
-                         </size>
-                        </property>
-                        <property name="maximumSize">
-                         <size>
-                          <width>60</width>
-                          <height>50</height>
-                         </size>
-                        </property>
-                        <property name="selectionMode">
-                         <enum>QAbstractItemView::ExtendedSelection</enum>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </item>
-                    <item>
-                     <spacer name="horizontalSpacer_4">
-                      <property name="orientation">
-                       <enum>Qt::Horizontal</enum>
-                      </property>
-                      <property name="sizeHint" stdset="0">
-                       <size>
-                        <width>40</width>
-                        <height>20</height>
-                       </size>
-                      </property>
-                     </spacer>
-                    </item>
-                    <item>
-                     <layout class="QVBoxLayout" name="verticalLayout_10">
-                      <item>
-                       <layout class="QVBoxLayout" name="verticalLayout_9">
-                        <item>
-                         <widget class="QLabel" name="_sim_basic_mobile_chains_surrounds_label1">
-                          <property name="text">
-                           <string>Plus residues coming within</string>
-                          </property>
-                          <property name="wordWrap">
-                           <bool>true</bool>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <layout class="QHBoxLayout" name="horizontalLayout_6">
-                          <item>
-                           <widget class="QSpinBox" name="_sim_basic_mobile_chains_within_spinbox">
-                            <property name="value">
-                             <number>5</number>
-                            </property>
-                           </widget>
-                          </item>
-                          <item>
-                           <widget class="QLabel" name="label_9">
-                            <property name="text">
-                             <string>Angstroms</string>
-                            </property>
-                           </widget>
-                          </item>
-                         </layout>
-                        </item>
-                       </layout>
-                      </item>
-                      <item>
-                       <layout class="QHBoxLayout" name="horizontalLayout_13">
-                        <item>
-                         <widget class="QCheckBox" name="_sim_basic_mobile_chain_backbone_checkbox">
-                          <property name="text">
-                           <string/>
-                          </property>
-                          <property name="checked">
-                           <bool>true</bool>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="label_11">
-                          <property name="text">
-                           <string>Include backbone atoms of surrounding residues</string>
-                          </property>
-                          <property name="wordWrap">
-                           <bool>true</bool>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
-                      </item>
-                     </layout>
-                    </item>
-                   </layout>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QFrame" name="_sim_basic_mobile_custom_frame">
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                   <layout class="QHBoxLayout" name="horizontalLayout_16">
-                    <property name="spacing">
-                     <number>1</number>
-                    </property>
-                    <property name="topMargin">
-                     <number>1</number>
-                    </property>
-                    <property name="bottomMargin">
-                     <number>1</number>
-                    </property>
-                    <item>
-                     <widget class="QLabel" name="label_7">
-                      <property name="text">
-                       <string>Mobile selection:  </string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QLineEdit" name="_sim_basic_mobile_custom_entry"/>
                     </item>
                    </layout>
                   </widget>
@@ -1118,9 +848,6 @@ border: 1px;
                 <zorder>verticalSpacer</zorder>
                 <zorder>_force_field_selection_frame</zorder>
                 <zorder>_sim_platform_frame</zorder>
-                <zorder>_sim_basic_selection_mode_frame</zorder>
-                <zorder>_sim_basic_mobile_custom_frame</zorder>
-                <zorder>_sim_basic_mobile_by_chain_frame</zorder>
                </widget>
               </widget>
              </item>

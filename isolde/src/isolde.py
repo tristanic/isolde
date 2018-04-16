@@ -509,7 +509,6 @@ class Isolde():
         # Basic settings for defining the mobile selection
         iw._sim_basic_mobile_b_and_a_spinbox.setValue(params.num_selection_padding_residues)
         iw._sim_basic_mobile_sel_within_spinbox.setValue(params.soft_shell_cutoff_distance)
-        iw._sim_basic_mobile_chains_within_spinbox.setValue(params.soft_shell_cutoff_distance)
 
         iw._sim_basic_xtal_map_weight_spin_box.setValue(params.difference_map_mask_cutoff)
         ####
@@ -560,11 +559,6 @@ class Isolde():
         # Initialise to selected mode.
         self._change_sim_mode()
 
-        for button in self.gui._selection_mode_buttons:
-            button.clicked.connect(self._change_sim_selection_mode)
-
-        self._change_sim_selection_mode()
-
         iw._demo_load_button.clicked.connect(self.load_demo_data)
 
         ####
@@ -585,35 +579,19 @@ class Isolde():
         iw._master_model_combo_box.currentIndexChanged.connect(
             self._change_selected_model
             )
-        iw._sim_basic_mobile_chains_list_box.itemSelectionChanged.connect(
-            self._change_selected_chains
-            )
         iw._sim_basic_mobile_sel_within_spinbox.valueChanged.connect(
             self._change_soft_shell_cutoff_from_sel_menu
             )
         iw._sim_basic_mobile_b_and_a_spinbox.valueChanged.connect(
             self._change_b_and_a_padding
             )
-        iw._sim_basic_mobile_sel_backbone_checkbox.stateChanged.connect(
-            self._change_soft_shell_fix_backbone_from_sel_menu
-            )
-        iw._sim_basic_mobile_chains_within_spinbox.valueChanged.connect(
-            self._change_soft_shell_cutoff_from_chains_menu
-            )
-        iw._sim_basic_mobile_chain_backbone_checkbox.stateChanged.connect(
-            self._change_soft_shell_fix_backbone_from_chains_menu
-            )
         iw._sim_platform_combo_box.currentIndexChanged.connect(
             self._change_sim_platform
-            )
-        iw._sim_basic_whole_structure_button.clicked.connect(
-            self._select_whole_model
             )
 
         # Run all connected functions once to initialise
         self._change_force_field()
         self._change_selected_model()
-        self._change_selected_chains()
         self._change_b_and_a_padding()
         self._change_sim_platform()
 
@@ -918,15 +896,6 @@ class Isolde():
             mmcb.addItem(id_str, _get_atomic_model(m))
             self._available_models[id_str] = _get_atomic_model(m)
 
-
-    def _update_chain_list(self):
-        m = self._selected_model
-        chains = m.chains.chain_ids
-        lb = iw = self.iw._sim_basic_mobile_chains_list_box
-        lb.clear()
-        lb.addItems(chains)
-
-
     def _selection_changed(self, *_):
         from chimerax.atomic import selected_atoms
         from .util import is_continuous_protein_chain
@@ -971,7 +940,6 @@ class Isolde():
             return
         flag = not(self.session.selection.empty())
         iw = self.iw
-        iw._sim_basic_mobile_selection_frame.setEnabled(flag)
         iw._sim_go_button.setEnabled(flag)
 
 
@@ -1005,30 +973,6 @@ class Isolde():
         # Update the status of the Go button
         self._selection_changed()
 
-    def _change_sim_selection_mode(self):
-        iw = self.iw
-        iw._sim_basic_mobile_selection_frame.hide()
-        iw._sim_basic_mobile_by_chain_frame.hide()
-        iw._sim_basic_mobile_custom_frame.hide()
-
-        for i, b in enumerate(self.gui._selection_mode_buttons):
-            if b.isChecked():
-                break
-
-        if i == 0:
-            self._sim_selection_mode = self._sim_selection_modes.from_picked_atoms
-            iw._sim_basic_mobile_selection_frame.show()
-        elif i == 1:
-            self._sim_selection_mode = self._sim_selection_modes.chain
-            iw._sim_basic_mobile_by_chain_frame.show()
-            self._change_selected_chains()
-        elif i == 2:
-            self._sim_selection_mode = self._sim_selection_modes.whole_model
-        elif i == 3:
-            self._sim_selection_mode = self._sim_selection_modes.custom
-            iw._sim_basic_mobile_custom_frame.show()
-        else:
-            raise Exception('No or unrecognised mode selected!')
 
     ####
     # General
@@ -2030,7 +1974,6 @@ class Isolde():
             self._selected_model = m
             self.session.selection.clear()
             self._selected_model.selected = True
-            self._update_chain_list()
             has_maps = self._initialize_maps(m)
             if has_maps:
                 iw._sim_basic_xtal_stepper_frame.setEnabled(True)
@@ -2044,29 +1987,6 @@ class Isolde():
             self.triggers.activate_trigger('selected model changed', data=m)
         self._status('')
 
-    def _select_whole_model(self, *_):
-        if self._selected_model:
-            self._selected_model.selected = True
-            self._selected_atoms = self._selected_model.atoms
-
-    def _change_selected_chains(self,*_):
-        if len(self._available_models) == 0:
-            return
-        if self.simulation_running:
-            return
-        lb = self.iw._sim_basic_mobile_chains_list_box
-        m = self._selected_model
-        all_chains = m.chains
-        all_chain_ids = list(all_chains.chain_ids)
-        lb_sels = lb.selectedItems()
-        self.session.selection.clear()
-        for s in lb_sels:
-            chain_text = s.text()
-            chain_index = all_chain_ids.index(chain_text)
-            all_chains[chain_index].existing_residues.atoms.selected = True
-        from chimerax.atomic import selected_atoms
-        self._selected_atoms = selected_atoms(self.session)
-
     def _change_b_and_a_padding(self, *_):
         self.params.num_selection_padding_residues = self.iw._sim_basic_mobile_b_and_a_spinbox.value()
 
@@ -2077,28 +1997,6 @@ class Isolde():
         if sb2.value() != val:
             sb2.setValue(val)
         self.params.soft_shell_cutoff_distance = val
-
-    def _change_soft_shell_cutoff_from_chains_menu(self, *_):
-        iw = self.iw
-        val = iw._sim_basic_mobile_chains_within_spinbox.value()
-        sb2 = iw._sim_basic_mobile_sel_within_spinbox
-        if sb2.value() != val:
-            sb2.setValue(val)
-        self.params.soft_shell_cutoff_distance = val
-
-    def _change_soft_shell_fix_backbone_from_sel_menu(self, *_):
-        mobile = self.iw._sim_basic_mobile_sel_backbone_checkbox.checkState()
-        self.params.fix_soft_shell_backbone = not mobile
-        cb2 = self.iw._sim_basic_mobile_chain_backbone_checkbox
-        if cb2.checkState() != mobile:
-            cb2.setChecked(mobile)
-
-    def _change_soft_shell_fix_backbone_from_chains_menu(self, *_):
-        mobile = self.iw._sim_basic_mobile_chain_backbone_checkbox.checkState()
-        self.params.fix_soft_shell_backbone = not mobile
-        cb2 = self.iw._sim_basic_mobile_sel_backbone_checkbox
-        if cb2.checkState() != mobile:
-            cb2.setChecked(mobile)
 
     def _change_sim_platform(self, *_):
         self.sim_platform = self.iw._sim_platform_combo_box.currentText()
@@ -2203,11 +2101,6 @@ class Isolde():
             self.apply_peptide_bond_restraints(omegas)
         else:
             self.remove_peptide_bond_restraints(omegas)
-
-
-
-
-
 
     ##############################################################
     # Simulation prep
@@ -2322,68 +2215,51 @@ class Isolde():
         selection by the desired padding up and down the chain (stopping at
         chain breaks and ends).
         '''
-        mode = self._sim_selection_mode
-        modes = self._sim_selection_modes
         sm = self._selected_model
         all_atoms = sm.atoms
-        if mode == modes.chain or mode == modes.whole_model:
-            # Then everything is easy. The selection is already defined
-            # FIXME: Amend this pipeline to allow better command-line
-            # control
-            return self._selected_atoms
-        elif mode == modes.from_picked_atoms:
-            # A bit more complex. Have to work through the model to find
-            # the picked atoms (making sure only one model is selected!),
-            # then work back and forward from each picked atom to expand
-            # the selection by the specified number of residues.
-            pad = self.params.num_selection_padding_residues
-            from chimerax.atomic import selected_atoms
-            selatoms = selected_atoms(self.session)
-            us = selatoms.unique_structures
-            if len(us) != 1:
-                print(len(us))
-                for m in us:
-                    print(m.category)
-                raise Exception('Selected atoms must all be in the same model!')
-            if sm != us[0]:
-                raise Exception('Selection must be in the model currently chosen for ISOLDE!')
-            # selatoms_by_chain = selatoms.by_chain
-            # selchains = [row[1] for row in selatoms_by_chain]
-            all_res = sm.residues
-            sel_res = selatoms.unique_residues
-            sel_res_indices = all_res.indices(sel_res)
-            from chimerax.atomic.structure import Structure
+        pad = self.params.num_selection_padding_residues
+        from chimerax.atomic import selected_atoms
+        selatoms = selected_atoms(self.session)
+        us = selatoms.unique_structures
+        if len(us) != 1:
+            print(len(us))
+            for m in us:
+                print(m.category)
+            raise Exception('Selected atoms must all be in the same model!')
+        if sm != us[0]:
+            raise Exception('Selection must be in the model currently chosen for ISOLDE!')
+        # selatoms_by_chain = selatoms.by_chain
+        # selchains = [row[1] for row in selatoms_by_chain]
+        all_res = sm.residues
+        sel_res = selatoms.unique_residues
+        sel_res_indices = all_res.indices(sel_res)
+        from chimerax.atomic.structure import Structure
 
-            allfrags = sm.polymers(missing_structure_treatment=Structure.PMS_NEVER_CONNECTS)
+        allfrags = sm.polymers(missing_structure_treatment=Structure.PMS_NEVER_CONNECTS)
 
-            sel_frags = []
-            sel_frag_res_indices = []
-            for frag in allfrags:
-                frag = frag[0]
-                if not frag.atoms.num_selected:
-                    continue
-                sel_frags.append(frag)
-                sel_frag_res_indices.append(all_res.indices(frag))
+        sel_frags = []
+        sel_frag_res_indices = []
+        for frag in allfrags:
+            frag = frag[0]
+            if not frag.atoms.num_selected:
+                continue
+            sel_frags.append(frag)
+            sel_frag_res_indices.append(all_res.indices(frag))
 
-            for frag, frag_indices in zip(sel_frags, sel_frag_res_indices):
-                frag_nres = len(frag_indices)
-                sel_mask = numpy.isin(frag_indices, sel_res_indices, assume_unique=True)
-                sel_pol_indices = numpy.where(sel_mask)[0]
-                for i in sel_pol_indices:
-                    lb = i-pad
-                    ub = i+pad+1
-                    if lb<0:
-                        lb = 0
-                    if ub > frag_nres:
-                        ub = frag_nres
-                    sel_mask[lb:ub] = True
-                frag[sel_mask].atoms.selected = True
-            return selected_atoms(self.session)
-
-        elif mode == modes.custom:
-            # relatively simple. Just need to apply the in-built selection
-            # text parser. To be completed.
-            pass
+        for frag, frag_indices in zip(sel_frags, sel_frag_res_indices):
+            frag_nres = len(frag_indices)
+            sel_mask = numpy.isin(frag_indices, sel_res_indices, assume_unique=True)
+            sel_pol_indices = numpy.where(sel_mask)[0]
+            for i in sel_pol_indices:
+                lb = i-pad
+                ub = i+pad+1
+                if lb<0:
+                    lb = 0
+                if ub > frag_nres:
+                    ub = frag_nres
+                sel_mask[lb:ub] = True
+            frag[sel_mask].atoms.selected = True
+        return selected_atoms(self.session)
 
     ##############################################################
     # Simulation on-the-fly control functions

@@ -64,14 +64,6 @@ class ISOLDE_ToolUI(ToolInstance):
             self._free_frames,
             ]
 
-        # Radio buttons to choose different selection modes
-        self._selection_mode_buttons = (
-            iw._sim_basic_by_selected_atoms_button,
-            iw._sim_basic_by_chain_button,
-            iw._sim_basic_whole_structure_button,
-            iw._sim_basic_custom_selection_button,
-            )
-
         ###
         # Selection manipulation buttons
         ###
@@ -104,7 +96,6 @@ class ISOLDE_ToolUI(ToolInstance):
             ]
         self._expert_frames = [
             iw._force_field_selection_frame,
-            iw._sim_basic_custom_selection_button,
             iw._restraints_stub_frame,
             ]
 
