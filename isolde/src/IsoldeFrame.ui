@@ -685,89 +685,6 @@ border: 1px;
                       </layout>
                      </widget>
                     </item>
-                    <item>
-                     <widget class="QFrame" name="_sim_basic_xtal_stepper_frame">
-                      <layout class="QVBoxLayout" name="verticalLayout_4">
-                       <property name="spacing">
-                        <number>2</number>
-                       </property>
-                       <property name="leftMargin">
-                        <number>1</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>1</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>1</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>1</number>
-                       </property>
-                       <item>
-                        <widget class="QLabel" name="label_43">
-                         <property name="text">
-                          <string>Step through structure</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item>
-                        <layout class="QHBoxLayout" name="horizontalLayout_37">
-                         <item>
-                          <widget class="QPushButton" name="_sim_basic_xtal_step_forward_button">
-                           <property name="text">
-                            <string>Step forward</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <spacer name="horizontalSpacer_25">
-                           <property name="orientation">
-                            <enum>Qt::Horizontal</enum>
-                           </property>
-                           <property name="sizeHint" stdset="0">
-                            <size>
-                             <width>40</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                          </spacer>
-                         </item>
-                         <item>
-                          <widget class="QCheckBox" name="_sim_basic_xtal_step_focus_checkbox">
-                           <property name="text">
-                            <string>Focus view on selection</string>
-                           </property>
-                           <property name="checked">
-                            <bool>true</bool>
-                           </property>
-                          </widget>
-                         </item>
-                        </layout>
-                       </item>
-                       <item>
-                        <layout class="QHBoxLayout" name="horizontalLayout_38">
-                         <property name="bottomMargin">
-                          <number>0</number>
-                         </property>
-                         <item>
-                          <widget class="QPushButton" name="_sim_basic_xtal_mask_to_selection_button">
-                           <property name="text">
-                            <string>Mask map(s) to selection</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QPushButton" name="_sim_basic_xtal_live_scrolling_button">
-                           <property name="text">
-                            <string>Back to panning mode</string>
-                           </property>
-                          </widget>
-                         </item>
-                        </layout>
-                       </item>
-                      </layout>
-                     </widget>
-                    </item>
                    </layout>
                   </widget>
                  </item>
@@ -3779,7 +3696,7 @@ background-color: rgb(5, 200, 0);
           </widget>
          </item>
          <item>
-          <widget class="QFrame" name="_right_mouse_modes_frame">
+          <widget class="QFrame" name="_main_bottom_frame">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -3809,49 +3726,76 @@ background-color: rgb(5, 200, 0);
              <number>0</number>
             </property>
             <item>
-             <widget class="QToolButton" name="_right_mouse_tug_atom_button">
-              <property name="toolTip">
-               <string>Right mouse: tug atom</string>
+             <widget class="QFrame" name="_right_mouse_modes_frame">
+              <property name="frameShape">
+               <enum>QFrame::NoFrame</enum>
               </property>
-              <property name="text">
-               <string>...</string>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
               </property>
-              <property name="icon">
-               <iconset resource="resources/resources.qrc">
-                <normaloff>:/icons/tug_atom.png</normaloff>:/icons/tug_atom.png</iconset>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>36</width>
-                <height>36</height>
-               </size>
-              </property>
-              <property name="autoExclusive">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QToolButton" name="_right_mouse_tug_residue_button">
-              <property name="toolTip">
-               <string>Right mouse: tug residue</string>
-              </property>
-              <property name="text">
-               <string>...</string>
-              </property>
-              <property name="icon">
-               <iconset resource="resources/resources.qrc">
-                <normaloff>:/icons/tug_residue.png</normaloff>:/icons/tug_residue.png</iconset>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>36</width>
-                <height>36</height>
-               </size>
-              </property>
-              <property name="autoExclusive">
-               <bool>true</bool>
-              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_6">
+               <property name="spacing">
+                <number>3</number>
+               </property>
+               <property name="leftMargin">
+                <number>1</number>
+               </property>
+               <property name="topMargin">
+                <number>1</number>
+               </property>
+               <property name="rightMargin">
+                <number>1</number>
+               </property>
+               <property name="bottomMargin">
+                <number>1</number>
+               </property>
+               <item>
+                <widget class="QToolButton" name="_right_mouse_tug_atom_button">
+                 <property name="toolTip">
+                  <string>Right mouse: tug atom</string>
+                 </property>
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="resources/resources.qrc">
+                   <normaloff>:/icons/tug_atom.png</normaloff>:/icons/tug_atom.png</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>36</width>
+                   <height>36</height>
+                  </size>
+                 </property>
+                 <property name="autoExclusive">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="_right_mouse_tug_residue_button">
+                 <property name="toolTip">
+                  <string>Right mouse: tug residue</string>
+                 </property>
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="resources/resources.qrc">
+                   <normaloff>:/icons/tug_residue.png</normaloff>:/icons/tug_residue.png</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>36</width>
+                   <height>36</height>
+                  </size>
+                 </property>
+                 <property name="autoExclusive">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </widget>
             </item>
             <item>
@@ -3866,6 +3810,136 @@ background-color: rgb(5, 200, 0);
                </size>
               </property>
              </spacer>
+            </item>
+            <item>
+             <widget class="QFrame" name="_map_masking_frame">
+              <property name="frameShape">
+               <enum>QFrame::NoFrame</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_13">
+               <property name="spacing">
+                <number>2</number>
+               </property>
+               <property name="leftMargin">
+                <number>1</number>
+               </property>
+               <property name="topMargin">
+                <number>1</number>
+               </property>
+               <property name="rightMargin">
+                <number>1</number>
+               </property>
+               <property name="bottomMargin">
+                <number>1</number>
+               </property>
+               <item>
+                <widget class="QCheckBox" name="_vis_focus_on_sel_checkbox">
+                 <property name="toolTip">
+                  <string>Re-focus the view on the selection when masking</string>
+                 </property>
+                 <property name="layoutDirection">
+                  <enum>Qt::LeftToRight</enum>
+                 </property>
+                 <property name="text">
+                  <string>Focus</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="_vis_step_mask_backward_button">
+                 <property name="toolTip">
+                  <string>Step backwards through the structure in overlapping steps</string>
+                 </property>
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="resources/resources.qrc">
+                   <normaloff>:/icons/reverse_icon.png</normaloff>:/icons/reverse_icon.png</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_7">
+                 <property name="maximumSize">
+                  <size>
+                   <width>72</width>
+                   <height>36</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="pixmap">
+                  <pixmap resource="resources/resources.qrc">:/icons/stepper.png</pixmap>
+                 </property>
+                 <property name="scaledContents">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="_vis_step_mask_forward_button">
+                 <property name="toolTip">
+                  <string>Step forwards through the structure in overlapping steps</string>
+                 </property>
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="resources/resources.qrc">
+                   <normaloff>:/icons/play_icon.png</normaloff>:/icons/play_icon.png</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="_vis_mask_to_sel_button">
+                 <property name="toolTip">
+                  <string>Mask the map(s) to the currently selected atoms</string>
+                 </property>
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="resources/resources.qrc">
+                   <normaloff>:/icons/mask_to_sel.png</normaloff>:/icons/mask_to_sel.png</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>36</width>
+                   <height>36</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="_vis_spotlight_mode_button">
+                 <property name="toolTip">
+                  <string>Return to spotlight (map scrolling) mode</string>
+                 </property>
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="resources/resources.qrc">
+                   <normaloff>:/icons/spotlight.png</normaloff>:/icons/spotlight.png</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>36</width>
+                   <height>36</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
             </item>
            </layout>
           </widget>

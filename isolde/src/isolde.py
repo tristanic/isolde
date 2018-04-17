@@ -225,6 +225,7 @@ class Isolde():
         self._sim_selection_mode = None
         # Selected model on which we are actually going to run a simulation
         self._selected_model = None
+        self._selected_model_has_maps = False
 
         ####
         # Settings for live tracking of structural quality
@@ -641,13 +642,16 @@ class Isolde():
             )
 
         # Visualisation tools
-        iw._sim_basic_xtal_step_forward_button.clicked.connect(
+        iw._vis_step_mask_forward_button.clicked.connect(
             self._xtal_step_forward
             )
-        iw._sim_basic_xtal_mask_to_selection_button.clicked.connect(
+        iw._vis_step_mask_backward_button.clicked.connect(
+            self._xtal_step_backward
+            )
+        iw._vis_mask_to_sel_button.clicked.connect(
             self._xtal_mask_to_selection
             )
-        iw._sim_basic_xtal_live_scrolling_button.clicked.connect(
+        iw._vis_spotlight_mode_button.clicked.connect(
             self._xtal_enable_live_scrolling
             )
         ####
@@ -959,6 +963,7 @@ class Isolde():
         if not running:
             go_button.setToolTip('Start a simulation')
 
+        iw._map_masking_frame.setDisabled(running or not self._selected_model_has_maps)
         iw._right_mouse_modes_frame.setEnabled(running)
         iw._sim_save_checkpoint_button.setEnabled(running)
         iw._sim_revert_to_checkpoint_button.setEnabled(running)
@@ -1974,11 +1979,11 @@ class Isolde():
             self._selected_model = m
             self.session.selection.clear()
             self._selected_model.selected = True
-            has_maps = self._initialize_maps(m)
+            has_maps = self._selected_model_has_maps = self._initialize_maps(m)
             if has_maps:
-                iw._sim_basic_xtal_stepper_frame.setEnabled(True)
+                iw._map_masking_frame.setEnabled(True)
             else:
-                iw._sim_basic_xtal_stepper_frame.setEnabled(False)
+                iw._map_masking_frame.setEnabled(False)
 
             # Load/create validation managers
             from . import session_extensions as sx
@@ -2041,26 +2046,38 @@ class Isolde():
 
     def _xtal_step_forward(self, *_):
         m = self.selected_model
-        cs = m.parent
-        focus = self.iw._sim_basic_xtal_step_focus_checkbox.checkState()
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sh = get_symmetry_handler(m)
+        focus = self.iw._vis_focus_on_sel_checkbox.checkState()
         m.atoms.selected = False
-        sel = cs.stepper.step_forward()
+        sel = sh.stepper.step_forward()
+        sel.selected = True
+        self._xtal_mask_to_atoms(sel, focus)
+
+    def _xtal_step_backward(self, *_):
+        m = self.selected_model
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sh = get_symmetry_handler(m)
+        focus = self.iw._vis_focus_on_sel_checkbox.checkState()
+        m.atoms.selected = False
+        sel = sh.stepper.step_backward()
         sel.selected = True
         self._xtal_mask_to_atoms(sel, focus)
 
     def _xtal_mask_to_selection(self, *_):
         atoms = self.selected_model.atoms
         sel = atoms[atoms.selecteds]
-        self._xtal_mask_to_atoms(sel, False)
+        focus = self.iw._vis_focus_on_sel_checkbox.checkState()
+        self._xtal_mask_to_atoms(sel, focus)
 
     def _xtal_mask_to_atoms(self, atoms, focus):
         m = self.selected_model
-        cs = m.parent
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sh = get_symmetry_handler(m)
         cutoff = self.params.standard_map_mask_cutoff
         context = self.params.soft_shell_cutoff_distance
-        cs.isolate_and_cover_selection(
+        sh.isolate_and_cover_selection(
             atoms, 0, context, cutoff, focus=focus)
-
 
     def _xtal_enable_live_scrolling(self, *_):
         m = self.selected_model

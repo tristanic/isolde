@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="icons">
+    <file>mask_to_sel.png</file>
+    <file>stepper.png</file>
+    <file>spotlight.png</file>
     <file>multi-x.png</file>
     <file>diagonal-arrows.png</file>
     <file>distance-restraint-icon.png</file>
