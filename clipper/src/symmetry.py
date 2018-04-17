@@ -139,7 +139,7 @@ class XtalSymmetryHandler(Model):
         self._box_center = session.view.center_of_rotation
         self._box_center_grid = None
         self._atomic_sym_radius = atomic_symmetry_radius
-
+        self._stepper = None
 
         from chimerax.core.triggerset import TriggerSet
         trig = self.triggers = TriggerSet()
@@ -201,6 +201,19 @@ class XtalSymmetryHandler(Model):
         initialize_map_contour_mouse_modes(session)
         self.spotlight_mode = spotlight_mode
 
+    @property
+    def stepper(self):
+        '''
+        Provides methods for "stepping" back and forth through the
+        model according to secondary structure. For example, each call
+        to stepper.step_forward() (with default arguments) will return
+        an atom selection corresponding to the next pair of defined
+        secondary structure elements plus their flanking loops.
+        '''
+        if self._stepper is None:
+            from .structurestepper import StructureStepper
+            self._stepper = StructureStepper(self.session, self.structure)
+        return self._stepper
 
 
     @property
@@ -296,7 +309,8 @@ class XtalSymmetryHandler(Model):
           hide_surrounds (bool):
             If true, all residues outside the selection region will be hidden
           focus (bool):
-            If true, the camera will be moved to focus on the selection
+            If true, the camera will be moved to focus on the selection (only
+            the atoms in the master model will be considered)
           include_symmetry (bool):
             If true, symmetry atoms will be considered for the purposes of
             show_context.
@@ -324,6 +338,8 @@ class XtalSymmetryHandler(Model):
         xmaps.set_box_limits(box_bounds_grid)
         xmaps._surface_zone.update(mask_radius, coords = main_coords)
         xmaps._reapply_zone()
+        if focus:
+            focus_on_selection(self.session, self.session.view, atoms)
 
 
 
@@ -887,6 +903,25 @@ def _bonds_only_hidden_by_clipper(bonds):
     ))
 
 
+def focus_on_selection(session, view, atoms, clip = True):
+    v = view
+    pad = 5.0
+    bounds = atoms.scene_bounds
+    bounds.xyz_min = bounds.xyz_min - pad
+    bounds.xyz_max = bounds.xyz_max + pad
+    radius = bounds.radius() + pad
+    cofr_method = v.center_of_rotation_method
+    v.view_all(bounds)
+    v.center_of_rotation = center = bounds.center()
+    v.center_of_rotation_method = cofr_method
+    cam = v.camera
+    vd = cam.view_direction()
+    if clip:
+        cp = v.clip_planes
+        cp.set_clip_position('near', center - radius*vd, cam)
+        cp.set_clip_position('far', center + radius*vd, cam)
+    session.selection.clear()
+    atoms.selected=True
 
 
 def _copy_ribbon_drawing(master_drawing, target_drawing, dim_factor):
