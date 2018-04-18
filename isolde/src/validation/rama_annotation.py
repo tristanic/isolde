@@ -43,7 +43,8 @@ class Rama_Annotator(Model):
     '''
     pickable = False
 
-    def __init__(self, atomic_structure, hide_favored = False):
+    def __init__(self, atomic_structure, hide_favored = False,
+        ignore_ribbon_hides = True):
         '''
         Create the validator object, and add it as a child model to the target
         structure.
@@ -54,17 +55,24 @@ class Rama_Annotator(Model):
             * hide_favored:
                 - if True, indicators will only appear for non-favored residues.
                   (this can be changed at any time later)
+            * ignore_ribbon_hides:
+                - if True, the :attr:`chimerax.HIDE_RIBBON` bit will be ignored
+                  when deciding when to display a particular annotation. This is
+                  needed because the default ChimeraX ribbon representation
+                  hides the CA for any residue whose sidechain is un-displayed
+                  or missing (meaning that the glycine CA is always hidden).
         '''
         structure = self._atomic_structure = atomic_structure
         session = structure.session
         Model.__init__(self, 'Ramachandran Validation', session)
         structure.add([self])
+        self._ignore_ribbon_hides = ignore_ribbon_hides
+        self._hide_favored = hide_favored
         from .. import molobject
         mgr = self._mgr = molobject.get_ramachandran_manager(session)
         self._ca_radius = 0.5
         self._prepare_drawings()
         # self._prepare_ca_display()
-        self._hide_favored = hide_favored
         self.track_whole_model = True
         t = structure.triggers
         self._structure_change_handler = t.add_handler('changes', self._update_graphics_if_needed)
@@ -96,7 +104,7 @@ class Rama_Annotator(Model):
         if flag:
             res = self._selected_residues = self._atomic_structure.residues
             ramas = self._selected_ramas = self._mgr.get_ramas(res)
-            self._visible_ramas = ramas[ramas.visibles]
+            self._update_visible_ramas()
             self.update_graphics()
 
     @property
@@ -128,6 +136,14 @@ class Rama_Annotator(Model):
         # if cflag and not flag:
         #     self._revert_ca_display()
 
+    def _update_visible_ramas(self):
+        ramas = self._selected_ramas
+        if self._ignore_ribbon_hides:
+            self._visible_ramas = ramas[ramas.visibles_ignoring_ribbon]
+        else:
+            self._visible_ramas = ramas[ramas.visibles]
+
+
     def _prepare_drawings(self):
         if not hasattr(self, '_omega_drawing'):
             od = self._omega_drawing = Drawing('cis/twisted omegas')
@@ -156,7 +172,7 @@ class Rama_Annotator(Model):
             raise TypeError('All residues must be from the parent model!')
         res = self._selected_residues = residues
         ramas = self._selected_ramas = self._mgr.get_ramas(residues)
-        self._visible_ramas = ramas[ramas.visibles]
+        self._update_visible_ramas()
         self.track_whole_model = False
         self.update_graphics()
 
@@ -191,7 +207,7 @@ class Rama_Annotator(Model):
             update_needed = True
         if 'display changed' in reasons or 'hide changed' in reasons:
             # self._prepare_ca_display()
-            self._visible_ramas = self._selected_ramas[self._selected_ramas.visibles]
+            self._update_visible_ramas()
             update_needed = True
         if 'selected changed' in reasons:
             update_needed = True

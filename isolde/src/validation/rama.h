@@ -55,6 +55,7 @@ public:
     double score();
     bool is_valid_rama();
     bool visible() const { return CA_atom()->visible(); }
+    bool only_hidden_by_ribbon() const;
     uint8_t rama_case();
     bool no_valid_dihedrals();
     Residue *residue() const {return _residue;}

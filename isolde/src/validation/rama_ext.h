@@ -492,6 +492,14 @@ rama_visible(void *rama, size_t n, npy_bool *visible)
 }
 
 extern "C" EXPORT void
+rama_only_hidden_by_ribbon(void *rama, size_t n, npy_bool *visible)
+{
+    Rama **r = static_cast<Rama **>(rama);
+    error_wrap_array_get(r, n, &Rama::only_hidden_by_ribbon, visible);
+}
+
+
+extern "C" EXPORT void
 rama_score(void *rama, size_t n, double *score)
 {
     Rama **r = static_cast<Rama **>(rama);

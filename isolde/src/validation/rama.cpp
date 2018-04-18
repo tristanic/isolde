@@ -78,6 +78,13 @@ bool Rama::is_valid_rama()
 {
     return !(omega()==nullptr || phi()==nullptr || psi()==nullptr);
 }
+
+bool Rama::only_hidden_by_ribbon() const
+{
+    auto a = CA_atom();
+    return a->display() && !(a->hide() & ~Atom::HIDE_RIBBON);
+}
+
 bool Rama::no_valid_dihedrals()
 {
     return (omega()==nullptr && phi()==nullptr && psi()==nullptr);

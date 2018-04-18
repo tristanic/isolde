@@ -2919,6 +2919,8 @@ class Rama(State):
             doc = 'True if this residue has all three of omega, phi and psi. Read only.')
     visible = c_property('rama_visible', npy_bool, read_only = True,
             doc = 'True if the alpha carbon of this residue is visible. Read only.')
+    visible_ignoring_ribbon = c_property('rama_only_hidden_by_ribbon', npy_bool, read_only=True,
+            doc = 'True if the only thing hiding the alpha carbon is the ribbon display. Read only.')
     score = c_property('rama_score', float64, read_only = True,
             doc = 'The score of this residue on the MolProbity Ramachandran contours. Read only.')
     phipsi = c_property('rama_phipsi', float64, 2, read_only = True,
