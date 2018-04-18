@@ -30,8 +30,8 @@ Python call.
 
 .. automodule:: chimerax.isolde.interpolation
 
-N-dimensional Linear Interpolation
-----------------------------------
+*n*-dimensional Linear Interpolation
+------------------------------------
 
 RegularGridInterpolator
 ~~~~~~~~~~~~~~~~~~~~~~~

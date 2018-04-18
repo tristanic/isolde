@@ -14,6 +14,7 @@ Interactive Structure Optimisation by Local Direct Exploration
 
    Home <self>
    intro
+   gui/index
    python_api/index
    license
    citing
