@@ -1405,6 +1405,8 @@ class MDFF_Mgr(_Restraint_Mgr):
         # Place as sub-model to the Volume object so deleting the Volume automatically
         # deletes the MDFF manager
         self.volume.add([self])
+        if 'global k changed' not in self.triggers.trigger_names():
+            self.triggers.add_trigger('global k changed')
 
     @property
     def volume(self):
@@ -1477,6 +1479,7 @@ class MDFF_Mgr(_Restraint_Mgr):
         f = c_function('set_mdff_mgr_global_k',
             args=(ctypes.c_void_p, ctypes.c_double))
         f(self._c_pointer, k)
+        self.triggers.activate_trigger('global k changed', (self, k))
 
     global_k = property(_get_global_k, _set_global_k)
 

@@ -590,8 +590,10 @@ class Sim_Manager:
         for v, mgr in mdff_mgrs.items():
             mdff_atoms = mgr.add_mdff_atoms(sc.mobile_atoms,
                 hydrogens = sp.hydrogens_feel_maps)
+            sh.set_mdff_global_k(v, mgr.global_k)
             sh.add_mdff_atoms(mdff_atoms, v)
             uh.append((mgr, mgr.triggers.add_handler('changes', self._mdff_changed_cb)))
+            uh.append((mgr, mgr.triggers.add_handler('global k changed', self._mdff_global_k_change_cb)))
 
 
     def _add_fixed_atoms_from_distance_restraints(self, mobile_atoms, fixed_atoms):
@@ -811,6 +813,11 @@ class Sim_Manager:
             all_changeds = concatenate(changeds, remove_duplicates=True)
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
             self.sim_handler.update_mdff_atoms(all_changeds, mgr.volume)
+
+    def _mdff_global_k_change_cb(self, trigger_name, data):
+        mgr, k = data
+        self.sim_handler.set_mdff_global_k(mgr.volume, k)
+        print('Changed map coupling constant to {}'.format(k))
 
     def _mdff_sim_end_cb(self, *_):
         for v, mgr in self.mdff_mgrs.items():
@@ -1689,7 +1696,8 @@ class Sim_Handler:
     def set_mdff_global_k(self, volume, k):
         '''
         Set the global coupling constant for the MDFF force associated with
-        the given volume. Automatically calls :func:`force_update_needed`.
+        the given volume. NOTE: this will trigger a reinitialisation of the
+        simulation context, so use sparingly!
 
         Args:
             * volume:
@@ -1701,7 +1709,7 @@ class Sim_Handler:
         '''
         f = self.mdff_forces[volume]
         f.set_global_k(k)
-        self.force_update_needed()
+        self.context_reinit_needed()
 
     def update_mdff_atoms(self, mdff_atoms, volume):
         '''
