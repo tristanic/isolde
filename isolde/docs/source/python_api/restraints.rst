@@ -94,9 +94,13 @@ Distance_Restraint_Mgr
     .. autoclass:: Distance_Restraint_Mgr
         :members:
 
+Distance_Restraint
+~~~~~~~~~~~~~~~~~~
     .. autoclass:: Distance_Restraint
         :members:
 
+Distance_Restraints
+~~~~~~~~~~~~~~~~~~~
     .. autoclass:: Distance_Restraints
 
 Proper Dihedral Restraints
@@ -107,9 +111,13 @@ Proper_Dihedral_Restraint_Mgr
     .. autoclass:: Proper_Dihedral_Restraint_Mgr
         :members:
 
+Proper_Dihedral_Restraint
+~~~~~~~~~~~~~~~~~~~~~~~~~
     .. autoclass:: Proper_Dihedral_Restraint
         :members:
 
+Proper_Dihedral_Restraints
+~~~~~~~~~~~~~~~~~~~~~~~~~~
     .. autoclass:: Proper_Dihedral_Restraints
         :members:
 
@@ -121,8 +129,12 @@ Rotamer_Restraint_Mgr
     .. autoclass:: Rotamer_Restraint_Mgr
         :members:
 
+Rotamer_Restraint
+~~~~~~~~~~~~~~~~~
     .. autoclass:: Rotamer_Restraint
         :members:
 
+Rotamer_Restraints
+~~~~~~~~~~~~~~~~~~
     .. autoclass:: Rotamer_Restraints
         :members:

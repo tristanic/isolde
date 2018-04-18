@@ -1,3 +1,13 @@
+# @Author: Tristan Croll
+# @Date:   22-Mar-2018
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   Tristan Croll
+# @Last modified time: 18-Apr-2018
+# @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
+# @Copyright: Copyright 2017-2018 Tristan Croll
+
+
+
 def get_shell_of_residues(residues, dist_cutoff):
     '''
     Get a shell of whole residues from the same model as the atoms in residues,

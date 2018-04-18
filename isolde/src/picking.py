@@ -1,15 +1,21 @@
-# Copyright 2017 Tristan Croll
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# @Author: Tristan Croll
+# @Date:   20-Mar-2018
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   Tristan Croll
+# @Last modified time: 18-Apr-2018
+# @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
+# @Copyright: Copyright 2017-2018 Tristan Croll
 
 
-# Pick the atom coming closest to the ray projected from the mouse pointer
-# away from the camera. Only atoms found between the near and far clipping
-# planes and within cutoff of the line will be considered. Optionally the
-# selection can be further limited to include only displayed atoms and/or
-# exclude hydrogens.
-def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, tug_hydrogens = False):
+
+def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, hydrogens = False):
+    '''
+    Pick the atom coming closest to the ray projected from the mouse pointer
+    away from the camera. Only atoms found between the near and far clipping
+    planes and within cutoff of the line will be considered. Optionally the
+    selection can be further limited to include only displayed atoms and/or
+    exclude hydrogens.
+    '''
     closest = None
     if atoms is None:
         return None
@@ -27,7 +33,7 @@ def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, 
     xyzlist = numpy.array(xyzlist)
     if displayed_only:
         atoms = atoms.filter(atoms.visibles)
-    if not tug_hydrogens:
+    if not hydrogens:
         atoms = atoms.filter(atoms.element_names != 'H')
     atomic_coords = atoms.coords
     from chimerax.core.geometry import find_close_points
@@ -44,10 +50,12 @@ def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, 
                 min_dist = d
     return closest
 
-# Pick the atom closest to an (x,y,z) point in space. Optionally the
-# selection can be limited to include only displayed atoms and/or
-# exclude hydrogens.
 def pick_closest_to_point(session, xyz, atoms, cutoff, displayed_only = True, tug_hydrogens = False):
+    '''
+    Pick the atom closest to an (x,y,z) point in space. Optionally the
+    selection can be limited to include only displayed atoms and/or
+    exclude hydrogens.
+    '''
     closest = None
     import numpy
     if displayed_only:

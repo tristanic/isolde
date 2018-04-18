@@ -15,6 +15,7 @@ Interactive Structure Optimisation by Local Direct Exploration
    Home <self>
    intro
    python_api/index
+   license
    citing
 
 Indices and tables

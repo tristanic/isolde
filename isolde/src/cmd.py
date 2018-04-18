@@ -1,10 +1,12 @@
-# Copyright 2017 Tristan Croll
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# @Author: Tristan Croll
+# @Date:   21-Jul-2017
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   Tristan Croll
+# @Last modified time: 18-Apr-2018
+# @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
+# @Copyright: Copyright 2017-2018 Tristan Croll
 
 
-# vim: set expandtab shiftwidth=4 softtabstop=4:
 
 def get_singleton(session, create=True):
     if not session.ui.is_gui:
@@ -12,11 +14,11 @@ def get_singleton(session, create=True):
     from chimerax.core import tools
     from .tool import ISOLDE_ToolUI
     return tools.get_singleton(session, ISOLDE_ToolUI, 'ISOLDE', create=create)
-    
-def isolde(session, sim = False, atoms = None, map = None, mask_radius = 3.0, range = 5, softbuffer = 5.0, 
+
+def isolde(session, sim = False, atoms = None, map = None, mask_radius = 3.0, range = 5, softbuffer = 5.0,
             hardbuffer = 8.0, T = 100.0, k = 1.0):
     ''' Run an interactive MD simulation
-    
+
     Parameters
     ----------
     sim : Bool
@@ -52,9 +54,9 @@ def isolde(session, sim = False, atoms = None, map = None, mask_radius = 3.0, ra
         Arbitrary scaling constant defining how strongly the map pulls on
         atoms. It is recommended to experiment with this to find a value that
         guides the structure into place without introducing severe distortions.
-        
-    '''            
-                
+
+    '''
+
     log = session.logger
     if not session.ui.is_gui:
         log.warning("Sorry, ISOLDE currently requires ChimeraX to be in GUI mode")
@@ -63,19 +65,19 @@ def isolde(session, sim = False, atoms = None, map = None, mask_radius = 3.0, ra
         if atoms is None:
             log.warning("You need to define an atom selection in order to start a simulation!")
             return
-    
+
     ISOLDE = get_singleton(session)
     iobj = ISOLDE.isolde
-    
+
     # Reset ISOLDE to defaults.
     #iobj.__init__(ISOLDE)
-    
+
     iobj.b_and_a_padding = range
     iobj.soft_shell_cutoff = softbuffer
     iobj.hard_shell_cutoff = hardbuffer
     iobj.simulation_temperature = T
-    
-    
+
+
     if sim:
         if iobj._simulation_running:
             log.warning("You already have a simulation running!")
@@ -88,22 +90,22 @@ def isolde(session, sim = False, atoms = None, map = None, mask_radius = 3.0, ra
         sel_model = us[0]
         sel_model.selected = False
         atoms.selected = True
-        
+
         if map is not None:
             iobj.set_sim_mode('em')
             iobj.master_map_list = {}
             iobj.add_map('map0', map, mask_radius, k, mask=True)
         else:
             iobj.set_sim_mode('free')
-        
+
         iobj.start_sim()
-        
-        
-            
-    
-                 
-    
-    
+
+
+
+
+
+
+
 def register_isolde():
     from chimerax.core.commands import register, CmdDesc, AtomsArg, FloatArg, ModelArg, IntArg, BoolArg, NoArg
     desc = CmdDesc(

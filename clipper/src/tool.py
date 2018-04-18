@@ -1,3 +1,13 @@
+# @Author: Tristan Croll
+# @Date:   16-Oct-2017
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   Tristan Croll
+# @Last modified time: 18-Apr-2018
+# @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
+# @Copyright: Copyright 2017-2018 Tristan Croll
+
+
+
 # vim: set expandtab shiftwidth=4 softtabstop=4:
 
 # ToolUI should inherit from ToolInstance if they will be
@@ -17,12 +27,10 @@ class Clipper_ToolInstance(ToolInstance):
     def __init__(self, session, tool_name):
         ToolInstance.__init__(self, session, tool_name)
         self.display_name = "Clipper"
-        
+
         from . import main
         from .crystal import read_mtz
         self.main = main
         self.main.read_mtz = read_mtz
         session.clipper = self.main
-        session.clipper.session = session
-        
-    
+        self.main.session = session

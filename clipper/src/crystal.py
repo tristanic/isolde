@@ -1,3 +1,13 @@
+# @Author: Tristan Croll
+# @Date:   18-Apr-2018
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   Tristan Croll
+# @Last modified time: 18-Apr-2018
+# @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
+# @Copyright: Copyright 2017-2018 Tristan Croll
+
+
+
 import numpy
 import copy
 from collections import defaultdict
@@ -17,7 +27,6 @@ from chimerax.core.map import Volume, volumecommand
 from .mousemodes import initialize_map_contour_mouse_modes
 from .main import atom_list_from_sel
 from . import clipper
-from .data_tree import db_levels, DataTree
 from .clipper_mtz import ReflectionDataContainer
 
 DEFAULT_BOND_RADIUS = 0.2

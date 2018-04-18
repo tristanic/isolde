@@ -1,3 +1,15 @@
+/**
+ * @Author: Tristan Croll
+ * @Date:   15-Jan-2018
+ * @Email:  tic20@cam.ac.uk
+ * @Last modified by:   Tristan Croll
+ * @Last modified time: 18-Apr-2018
+ * @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
+ * @Copyright: Copyright 2017-2018 Tristan Croll
+ */
+
+
+
 #ifndef ISOLDE_BACKBONE_DIHEDRALS
 #define ISOLDE_BACKBONE_DIHEDRALS
 
@@ -14,7 +26,7 @@
 
 using namespace atomstruct;
 
-namespace isolde 
+namespace isolde
 {
 //! Encapsulates phi, psi and omega dihedrals for an amino acid residue
 /*! Each amino acid residue inside a polypeptide chain has the following
@@ -22,12 +34,12 @@ namespace isolde
  * omega: Ca(-1)-C(-1)-N-Ca
  * phi: C(-1)-N-Ca-C
  * psi: N-Ca-C-N(+1)
- * The omega torsion defines the conformation (cis or trans) of the 
+ * The omega torsion defines the conformation (cis or trans) of the
  * peptide bond connecting this residue to the previous one. Phi and psi
  * together define the "twist" of the backbone, and are commonly plotted
  * against each other on the Ramachandran plot. N-terminal residues have
  * no omega or phi dihedrals, while C-terminal residues lack psi.
- */ 
+ */
 class Peptide_Backbone_Dihedrals: public DestructionObserver, public pyinstance::PythonInstance<Peptide_Backbone_Dihedrals>
 {
 public:

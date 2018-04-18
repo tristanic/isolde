@@ -1,10 +1,12 @@
-# Copyright 2017 Tristan Croll
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# @Author: Tristan Croll
+# @Date:   18-Apr-2018
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   Tristan Croll
+# @Last modified time: 18-Apr-2018
+# @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
+# @Copyright: Copyright 2017-2018 Tristan Croll
 
 
-# vim: set expandtab shiftwidth=4 softtabstop=4:
 
 # ToolUI should inherit from ToolInstance if they will be
 # registered with the tool state manager.

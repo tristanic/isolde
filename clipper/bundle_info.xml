@@ -1,4 +1,16 @@
-<BundleInfo name="ChimeraX-Clipper" version="0.1.9" package="chimerax.clipper"
+<!--
+@Author: Tristan Croll
+@Date:   26-Feb-2018
+@Email:  tic20@cam.ac.uk
+@Last modified by:   Tristan Croll
+@Last modified time: 18-Apr-2018
+@License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
+@Copyright: Copyright 2017-2018 Tristan Croll
+-->
+
+
+
+<BundleInfo name="ChimeraX-Clipper" version="0.2.0" package="chimerax.clipper"
   	    minSessionVersion="1" maxSessionVersion="1">
 
   <!-- Additional information about bundle source -->
@@ -25,14 +37,10 @@
       <SourceFile>src/symmetry_cpp/symmetry.cpp</SourceFile>
       <Library>atomstruct</Library>
   </CModule>
-  <!-- <CModule name="_geometry">
-    <SourceFile>src/_geometry.cpp</SourceFile>
-    <Library>OpenMM</Library>
-  </CModule> -->
 
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>
-    <Dependency name="ChimeraX-Core" version=">=0.1"/>
+    <Dependency name="ChimeraX-Core" version=">=0.6"/>
     <Dependency name="Clipper-Python" version=">=0.1"/>
   </Dependencies>
 
@@ -60,7 +68,7 @@
   <Classifiers>
     <!-- Development Status should be compatible with bundle version number -->
     <PythonClassifier>Development Status :: 2 - Pre-Alpha</PythonClassifier>
-    <PythonClassifier>License :: Mozilla Public License version 2.0. Contact tic20@cam.ac.uk for alternative license terms.</PythonClassifier>
+    <PythonClassifier>License :: Free for non-commercial use.</PythonClassifier>
 ]
 ]
   </Classifiers>

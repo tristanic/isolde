@@ -1,4 +1,13 @@
-from .data_tree import DataTree
+# @Author: Tristan Croll
+# @Date:   28-Feb-2018
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   Tristan Croll
+# @Last modified time: 18-Apr-2018
+# @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
+# @Copyright: Copyright 2017-2018 Tristan Croll
+
+
+
 #from . import clipper
 from clipper_python import Grid_sampling, HKL_data_Flag, CCP4MTZfile, HKL_info, \
                     HKL_data_I_sigI, HKL_data_F_sigF, HKL_data_F_phi

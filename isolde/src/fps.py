@@ -1,10 +1,12 @@
-# Copyright 2017 Tristan Croll
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# @Author: Tristan Croll
+# @Date:   21-Jul-2017
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   Tristan Croll
+# @Last modified time: 18-Apr-2018
+# @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
+# @Copyright: Copyright 2017-2018 Tristan Croll
 
 
-# vim: set expandtab shiftwidth=4 softtabstop=4:
 
 def fps_start(session):
     singleton(session).start_showing()
@@ -38,7 +40,7 @@ class Track_FPS():
     def start_showing(self):
         if self.showing:
             return True
-        self.handler = self.sess_triggers.add_handler('new frame', 
+        self.handler = self.sess_triggers.add_handler('new frame',
             self.update_fps)
         from time import time
         self.last_time = time()
@@ -59,7 +61,7 @@ class Track_FPS():
         if time_between_frames != 0:
             fps = 1 / time_between_frames * self.num_frames_to_average
         else:
-            fps = 0        
+            fps = 0
         fps_str = '{:0.1f}'.format(fps)
         self.last_time = current_time
         display_text = 'Framerate ' + fps_str + ' frames/sec'

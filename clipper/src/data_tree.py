@@ -1,3 +1,13 @@
+# @Author: Tristan Croll
+# @Date:   18-Apr-2018
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   Tristan Croll
+# @Last modified time: 18-Apr-2018
+# @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
+# @Copyright: Copyright 2017-2018 Tristan Croll
+
+
+
 '''
 Main organisational tree of crystal data. A typical MTZ file
 is ordered like:
@@ -14,9 +24,9 @@ is ordered like:
 
 ... where the final digit defines the data type, and the leading
 path allows the file to hold data from multiple experiments/crystals.
-The HKL coordinate arrays (type 'H') are first split off into a 
-HKL_info object, and the remaining data is ordered first by the two 
-levels of the path, followed by type and finally by name. 
+The HKL coordinate arrays (type 'H') are first split off into a
+HKL_info object, and the remaining data is ordered first by the two
+levels of the path, followed by type and finally by name.
 '''
 
 import collections
@@ -36,18 +46,18 @@ class DataTree(collections.defaultdict):
   Metadata for a given node should apply to that node and all its
   children. When metadata is requested from a node, it searches for
   the key first in its own _metadata dict, and if not found passes the
-  request to its parent, and so on. 
-  
-  In addition, keys at each level above DATASET automatically become 
+  request to its parent, and so on.
+
+  In addition, keys at each level above DATASET automatically become
   properties, allowing easier navigation from the console. For example,
   in the below tree the user could access the dataset via:
   Project.Experiment.Crystal.Dataset
-  
+
   rather than:
   Project['Experiment']['Crystal']['Dataset']
-  
+
   A typical data tree (and the metadata at each level) might be:
-  
+
   [Project] (name, Lab head, Experimenter, Detailed description, ...)
      |
      -- [Experiment] (Name, protein(s), ligand(s), ...)
@@ -67,8 +77,8 @@ class DataTree(collections.defaultdict):
                       -- Xmap
                       |
                       -- etc.
-  ''' 
-     
+  '''
+
   def __init__(self, *args, parent = None, project = 'Project', experiment = 'Experiment'):
     # self._prohibited_keys = DataTree.__dict__.keys()
     collections.defaultdict.__init__(self, *args)
@@ -83,11 +93,11 @@ class DataTree(collections.defaultdict):
     else:
         self._level = self.parent.level + 1
     self._metadata = {}
-  
+
   @property
   def level(self):
       return self._level
-      
+
   def find_ancestor(self, level = db_levels.PROJECT):
     '''
     Return the node at the given level within the tree.
@@ -95,11 +105,11 @@ class DataTree(collections.defaultdict):
     if self.level == level:
       return self
     return self.parent.find_ancestor(level)
-  
+
   def set_metadata(self, *key_data_pairs):
     for key, arg in key_data_pairs:
       self._metadata[key] = arg
-  
+
   def get_metadata(self, key):
     try:
       return self._metadata[key]
@@ -108,20 +118,20 @@ class DataTree(collections.defaultdict):
         return self.parent.get_metadata(key)
       else:
         raise
-  
+
   def __missing__(self, key):
     # Add it to the dict for programmatic lookup
     ret = self[key] = DataTree(parent = self)
     ret.set_metadata(('Name', key))
     return ret
-  
+
   def pop(self, key, d = None):
     if key in self.keys():
       if self._level < db_levels.DATASET:
         delattr(self, key)
     super(DataTree, self).pop(key, d)
-  
-  
+
+
   '''
   The below (which would allow database entry db['a']['b']['c'] to be
   accessed as db.a.b.c) seemed like a good idea, but in practice is too
