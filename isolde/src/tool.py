@@ -106,6 +106,8 @@ class ISOLDE_ToolUI(ToolInstance):
             iw._validate_rota_main_frame,
             iw._sim_basic_xtal_init_main_frame,
             iw._sim_basic_xtal_map_settings_frame,
+            iw._real_space_map_from_volume_frame,
+            iw._real_space_map_from_volume_show_button, # Not yet working correctly
             ]
 
         for f in self._hidden_at_start:
@@ -114,7 +116,6 @@ class ISOLDE_ToolUI(ToolInstance):
         # Any frames/widgets that should be disabled at the start
         self._disabled_at_start = [
             #iw._sim_basic_xtal_map_settings_frame,
-            iw._sim_basic_xtal_settings_map_name,
             iw._map_masking_frame,
             iw._rebuild_sel_res_pep_flip_button,
             iw._rebuild_sel_res_cis_trans_flip_button,

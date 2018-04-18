@@ -437,12 +437,7 @@ border: 1px;
                      <widget class="QComboBox" name="_sim_basic_mode_combo_box">
                       <item>
                        <property name="text">
-                        <string>Crystallography mode</string>
-                       </property>
-                      </item>
-                      <item>
-                       <property name="text">
-                        <string>EM mode</string>
+                        <string>Map fitting mode</string>
                        </property>
                       </item>
                       <item>
@@ -480,11 +475,92 @@ border: 1px;
                      <number>1</number>
                     </property>
                     <property name="topMargin">
-                     <number>1</number>
+                     <number>20</number>
                     </property>
                     <property name="bottomMargin">
                      <number>1</number>
                     </property>
+                    <item>
+                     <widget class="QPushButton" name="_real_space_map_from_volume_show_button">
+                      <property name="text">
+                       <string>Associate real-space map with current model</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QFrame" name="_real_space_map_from_volume_frame">
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>0</height>
+                       </size>
+                      </property>
+                      <property name="frameShape">
+                       <enum>QFrame::NoFrame</enum>
+                      </property>
+                      <property name="frameShadow">
+                       <enum>QFrame::Raised</enum>
+                      </property>
+                      <layout class="QVBoxLayout" name="verticalLayout_4">
+                       <property name="leftMargin">
+                        <number>0</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>0</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>0</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>0</number>
+                       </property>
+                       <item>
+                        <layout class="QHBoxLayout" name="horizontalLayout_37">
+                         <item>
+                          <widget class="QLabel" name="label_8">
+                           <property name="text">
+                            <string>From existing Volume: </string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QComboBox" name="_real_space_map_volume_combo_box"/>
+                         </item>
+                         <item>
+                          <widget class="QPushButton" name="_real_space_map_from_volume_button">
+                           <property name="toolTip">
+                            <string>Create a copy of the chosen volume data as a scrollable, MDFF-ready map. The original volume may safely be closed.</string>
+                           </property>
+                           <property name="text">
+                            <string>Go</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <spacer name="horizontalSpacer_23">
+                           <property name="orientation">
+                            <enum>Qt::Horizontal</enum>
+                           </property>
+                           <property name="sizeHint" stdset="0">
+                            <size>
+                             <width>40</width>
+                             <height>20</height>
+                            </size>
+                           </property>
+                          </spacer>
+                         </item>
+                         <item>
+                          <widget class="QPushButton" name="_real_space_map_from_volume_done_button">
+                           <property name="text">
+                            <string>Done</string>
+                           </property>
+                          </widget>
+                         </item>
+                        </layout>
+                       </item>
+                      </layout>
+                     </widget>
+                    </item>
                     <item>
                      <widget class="QPushButton" name="_sim_basic_xtal_init_open_button">
                       <property name="minimumSize">
@@ -603,18 +679,14 @@ border: 1px;
                        <item>
                         <layout class="QHBoxLayout" name="horizontalLayout_35">
                          <item>
-                          <widget class="QLabel" name="label_41">
+                          <widget class="QLabel" name="label_39">
                            <property name="text">
-                            <string>Name:</string>
+                            <string>Map:</string>
                            </property>
                           </widget>
                          </item>
                          <item>
-                          <widget class="QLineEdit" name="_sim_basic_xtal_settings_map_name">
-                           <property name="text">
-                            <string>No maps loaded!</string>
-                           </property>
-                          </widget>
+                          <widget class="QComboBox" name="_sim_basic_xtal_settings_map_combo_box"/>
                          </item>
                          <item>
                           <spacer name="horizontalSpacer_22">
@@ -629,16 +701,6 @@ border: 1px;
                            </property>
                           </spacer>
                          </item>
-                         <item>
-                          <widget class="QLabel" name="label_39">
-                           <property name="text">
-                            <string>Map:</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QComboBox" name="_sim_basic_xtal_settings_map_combo_box"/>
-                         </item>
                         </layout>
                        </item>
                        <item>
@@ -652,11 +714,24 @@ border: 1px;
                          </item>
                          <item>
                           <widget class="QDoubleSpinBox" name="_sim_basic_xtal_map_weight_spin_box">
+                           <property name="decimals">
+                            <number>2</number>
+                           </property>
                            <property name="maximum">
-                            <double>1000.000000000000000</double>
+                            <double>100.000000000000000</double>
                            </property>
                            <property name="value">
                             <double>1.000000000000000</double>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QLabel" name="label_9">
+                           <property name="text">
+                            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;x 1000 kJ mol&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt; (map density units)&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt; Å&lt;span style=&quot; vertical-align:super;&quot;&gt;3&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                           </property>
+                           <property name="textFormat">
+                            <enum>Qt::RichText</enum>
                            </property>
                           </widget>
                          </item>

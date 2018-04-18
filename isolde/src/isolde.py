@@ -617,6 +617,20 @@ class Isolde():
             b.clicked.connect(self._extend_selection_by_one_res_C)
 
         ####
+        # Real space map parameters (can only be set before starting simulation)
+        ####
+
+        iw._real_space_map_from_volume_show_button.clicked.connect(
+            self._show_real_space_map_dialog
+        )
+        iw._real_space_map_from_volume_done_button.clicked.connect(
+            self._hide_real_space_map_dialog
+        )
+        iw._real_space_map_from_volume_button.clicked.connect(
+            self._add_real_space_map_from_gui
+        )
+
+        ####
         # Xtal map parameters (can only be set before starting simulation)
         ####
         iw._sim_basic_xtal_init_open_button.clicked.connect(
@@ -869,8 +883,6 @@ class Isolde():
     # Menu control functions to run on key events
     ##############################################################
     def _update_model_list(self, *_):
-        sim_mode = self.sim_mode
-        modes = self._sim_modes
         mmcb = self.iw._master_model_combo_box
         mmcb.clear()
 
@@ -899,6 +911,8 @@ class Isolde():
             id_str = '{}. {}'.format(m.id_string(), m.name)
             mmcb.addItem(id_str, _get_atomic_model(m))
             self._available_models[id_str] = _get_atomic_model(m)
+
+        self._populate_available_volumes_combo_box()
 
     def _selection_changed(self, *_):
         from chimerax.atomic import selected_atoms
@@ -1094,41 +1108,84 @@ class Isolde():
                     mdff_mgr.global_k = self.sim_params.standard_map_coupling_constant
         return True
 
+    def _populate_available_volumes_combo_box(self, *_):
+        '''
+        Only true Volume instances (not subclasses) will be considered
+        '''
+        from chimerax.map import Volume
+        shortlist = self.session.models.list(type = Volume)
+        cb = self.iw._real_space_map_volume_combo_box
+        cb.clear()
+        for v in shortlist:
+            if type(v) == Volume:
+                label = '{}  {}'.format(v.id_string(), v.name)
+                cb.addItem(label, v)
+
+    def _show_real_space_map_dialog(self, *_):
+        self._populate_available_volumes_combo_box()
+        self.iw._real_space_map_from_volume_frame.show()
+
+    def _hide_real_space_map_dialog(self, *_):
+        self._populate_available_volumes_combo_box()
+        self.iw._real_space_map_from_volume_frame.hide()
+
+    def _add_real_space_map_from_gui(self, *_):
+        cb = self.iw._real_space_map_volume_combo_box
+        i = cb.currentIndex()
+        if i == -1:
+            return
+        v = cb.itemData(i)
+        self.add_real_space_map_to_current_model(v)
+
+    def add_real_space_map_to_current_model(self, volume):
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sh = get_symmetry_handler(self.selected_model, create=True)
+        sh.xmapset.add_nxmap_handler(volume)
+        volume.display = False
+
+
     def _toggle_xtal_map_dialog(self, *_):
         button = self.iw._sim_basic_xtal_map_settings_show_button
         frame = self.iw._sim_basic_xtal_map_settings_frame
         show_text = 'Show map settings dialogue'
         hide_text = 'Hide map settings dialogue'
         if button.text() == show_text:
+            self._populate_xtal_map_combo_box()
             frame.show()
             button.setText(hide_text)
         else:
             frame.hide()
             button.setText(show_text)
 
+    def _populate_xtal_map_combo_box(self, *_):
+        cb = self.iw._sim_basic_xtal_settings_map_combo_box
+        cb.clear()
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sh = get_symmetry_handler(self.selected_model)
+        from chimerax.map import Volume
+        for v in sh.xmapset.child_models():
+            if isinstance(v, Volume):
+                cb.addItem(v.name, v)
+
     def _populate_xtal_map_params(self, *_):
         cb = self.iw._sim_basic_xtal_settings_map_combo_box
-        tb = self.iw._sim_basic_xtal_settings_map_name
+        gb = self.iw._sim_basic_xtal_settings_set_button
         this_map = cb.currentData()
         if cb.currentIndex() == -1 or this_map is None:
-            tb.setText('No maps loaded!')
+            gb.setEnabled(False)
             return
-        self.iw._sim_basic_xtal_map_cutoff_spin_box.setValue(
-            this_map.get_mask_cutoff())
+        gb.setEnabled(True)
+        from .session_extensions import get_mdff_mgr
+        mgr = get_mdff_mgr(self.selected_model, this_map)
         self.iw._sim_basic_xtal_map_weight_spin_box.setValue(
-            this_map.get_coupling_constant())
-        self.iw._sim_basic_xtal_settings_map_masked_checkbox.setCheckState(
-            this_map.get_mask_vis())
+            mgr.global_k)
 
     def _apply_xtal_map_params(self, *_):
         cb = self.iw._sim_basic_xtal_settings_map_combo_box
         this_map = cb.currentData()
-        this_map.set_mask_cutoff(
-            self.iw._sim_basic_xtal_map_cutoff_spin_box.value())
-        this_map.set_coupling_constant(
-            self.iw._sim_basic_xtal_map_weight_spin_box.value())
-        this_map.set_mask_vis(
-            self.iw._sim_basic_xtal_settings_map_masked_checkbox.checkState())
+        from .session_extensions import get_mdff_mgr
+        mgr = get_mdff_mgr(self.selected_model, this_map)
+        mgr.global_k = self.iw._sim_basic_xtal_map_weight_spin_box.value()
 
 
     # Update button states after a simulation has finished
