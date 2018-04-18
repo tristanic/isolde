@@ -1,1 +1,0 @@
-gcc nd_interp.cpp -o nd_interp -std=c++11 -lstdc++ -lm
