@@ -50,7 +50,7 @@ def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, 
                 min_dist = d
     return closest
 
-def pick_closest_to_point(session, xyz, atoms, cutoff, displayed_only = True, tug_hydrogens = False):
+def pick_closest_to_point(session, xyz, atoms, cutoff, displayed_only = True, hydrogens = False):
     '''
     Pick the atom closest to an (x,y,z) point in space. Optionally the
     selection can be limited to include only displayed atoms and/or
@@ -60,7 +60,7 @@ def pick_closest_to_point(session, xyz, atoms, cutoff, displayed_only = True, tu
     import numpy
     if displayed_only:
         atoms = atoms.filter(atoms.displays)
-    if not tug_hydrogens:
+    if not hydrogens:
         atoms = atoms.filter(atoms.element_names != 'H')
     atomic_coords = atoms.coords
 
