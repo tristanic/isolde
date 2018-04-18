@@ -118,10 +118,12 @@ def symmetry_coords(atoms, sym_matrices, sym_indices):
 
 from chimerax.core.models import Model, Drawing
 
-def get_symmetry_handler(structure):
+def get_symmetry_handler(structure, create=False):
     for m in structure.child_models():
         if isinstance(m, XtalSymmetryHandler):
             return m
+    if create:
+        return XtalSymmetryHandler(structure)
     return None
 
 class XtalSymmetryHandler(Model):
@@ -157,6 +159,8 @@ class XtalSymmetryHandler(Model):
         self.mtzdata=None
         self.xmapset = None
 
+        map_data = None
+
         if mtzfile is not None:
             from .clipper_mtz import ReflectionDataContainer
             mtzdata = self.mtzdata = ReflectionDataContainer(self.session, mtzfile, shannon_rate = map_oversampling)
@@ -167,14 +171,18 @@ class XtalSymmetryHandler(Model):
             self.hklinfo = mtzdata.hklinfo
 
             if len(mtzdata.calculated_data):
-                from .crystal import XmapSet
-                xmapset = self.xmapset = XmapSet(session, mtzdata.calculated_data, self,
-                    live_scrolling = spotlight_mode, display_radius = map_scrolling_radius)
-                xmapset.pickable = False
-                self.add([xmapset])
+                datasets = mtzdata.calculated_data
         else:
             from .crystal import symmetry_from_model_metadata
             self.cell, self.spacegroup, self.grid = symmetry_from_model_metadata(model)
+
+        from .crystal import XmapSet
+        xmapset = self.xmapset = XmapSet(session, self,
+            datasets = mtzdata.calculated_data,
+            live_scrolling = spotlight_mode,
+            display_radius = map_scrolling_radius)
+        xmapset.pickable = False
+        self.add([xmapset])
 
         cell = self.cell
         spacegroup = self.spacegroup

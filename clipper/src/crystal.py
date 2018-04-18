@@ -150,7 +150,7 @@ def symmetry_from_model_metadata_pdb(model):
     parse those out.
     '''
     # Find the start of the REMARK 290 section
-    while remarks[i][0:10] != 'REMARK 290':
+    while 'REMARK 290' not in remarks[i]:
         i += 1
     while 'NNNMMM' not in remarks[i]:
         i += 1
@@ -164,6 +164,7 @@ def symmetry_from_model_metadata_pdb(model):
         symstr += splitline[3]
         i+=1
         thisline = remarks[i]
+
 
     cell_descr = clipper.Cell_descr(*abc, *angles)
     cell = clipper.Cell(cell_descr)
@@ -952,7 +953,7 @@ class XmapSet(Model):
     DEFAULT_DIFF_MAP_COLORS = [[1.0,0,0,1.0],[0,1.0,0,1.0]] #Solid red and green
 
 
-    def __init__(self, session, datasets, crystal,
+    def __init__(self, session, crystal, datasets = None,
                  live_scrolling = True, display_radius = 12,
                  atom_selection = None, padding = 3):
         '''
@@ -1035,9 +1036,10 @@ class XmapSet(Model):
 
         self._box_initialized = True
 
-        for dataset in datasets:
-            print('Working on dataset: {}'.format(dataset.name))
-            self.add_xmap_handler(dataset)
+        if datasets is not None:
+            for dataset in datasets:
+                print('Working on dataset: {}'.format(dataset.name))
+                self.add_xmap_handler(dataset)
 
         # Apply the surface mask
         # self._reapply_zone()
