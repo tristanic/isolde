@@ -560,6 +560,14 @@ class Isolde():
         iw._demo_load_button.clicked.connect(self.load_demo_data)
 
         ####
+        # Help
+        ####
+
+        iw._main_help_button.clicked.connect(
+            self.show_master_help_in_browser
+        )
+
+        ####
         # Right mouse button modes
         ####
         iw._right_mouse_tug_atom_button.clicked.connect(
@@ -974,7 +982,10 @@ class Isolde():
         if not running:
             go_button.setToolTip('Start a simulation')
 
-        iw._map_masking_frame.setDisabled(running or not self._selected_model_has_maps)
+        iw._map_masking_frame.setDisabled(
+            running
+                or not self._selected_model_has_maps
+                or self.selected_model is None)
         iw._right_mouse_modes_frame.setEnabled(running)
         iw._sim_save_checkpoint_button.setEnabled(running)
         iw._sim_revert_to_checkpoint_button.setEnabled(running)
@@ -2714,6 +2725,16 @@ class Isolde():
     # General housekeeping
     ##############################################
 
+
+    ##############################################
+    # Help
+    ##############################################
+
+    def show_master_help_in_browser(self, *_):
+        import os
+        import webbrowser
+        fname = os.path.join(self._root_dir, 'doc', 'index.html')
+        webbrowser.open(fname)
 
     ##############################################
     # Demo
