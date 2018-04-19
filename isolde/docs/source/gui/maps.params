@@ -1,0 +1,99 @@
+ maps {
+   input {
+     pdb_file_name = None
+     reflection_data {
+       file_name = None
+       labels = None
+       high_resolution = None
+       low_resolution = None
+       outliers_rejection = True
+       french_wilson_scale = True
+       french_wilson {
+         max_bins = 60
+         min_bin_size = 40
+       }
+       sigma_fobs_rejection_criterion = None
+       sigma_iobs_rejection_criterion = None
+       r_free_flags {
+         file_name = None
+         label = None
+         test_flag_value = None
+         ignore_r_free_flags = False
+       }
+     }
+   }
+   output {
+     directory = None
+     prefix = None
+     job_title = None
+     fmodel_data_file_format = mtz
+     include_r_free_flags = False
+   }
+   scattering_table = wk1995 it1992 *n_gaussian neutron electron
+   wavelength = None
+   bulk_solvent_correction = True
+   anisotropic_scaling = True
+   skip_twin_detection = False
+   omit {
+     method = *simple
+     selection = None
+   }
+   map_coefficients {
+     map_type = 2mFo-DFc
+     format = *mtz phs
+     mtz_label_amplitudes = 2FOFCWT
+     mtz_label_phases = PH2FOFCWT
+     fill_missing_f_obs = False
+     sharpening = False
+     sharpening_b_factor = None
+     exclude_free_r_reflections = False
+     isotropize = True
+   }
+   map_coefficients {
+     map_type = 2mFo-DFc
+     format = *mtz phs
+     mtz_label_amplitudes = 2FOFCWT_fill
+     mtz_label_phases = PH2FOFCWT_fill
+     fill_missing_f_obs = True
+     sharpening = False
+     sharpening_b_factor = None
+     exclude_free_r_reflections = False
+     isotropize = True
+   }
+   map_coefficients {
+     map_type = mFo-DFc
+     format = *mtz phs
+     mtz_label_amplitudes = FOFCWT
+     mtz_label_phases = PHFOFCWT
+     fill_missing_f_obs = False
+     sharpening = False
+     sharpening_b_factor = None
+     exclude_free_r_reflections = False
+     isotropize = True
+   }
+   map_coefficients {
+     map_type = anomalous
+     format = *mtz phs
+     mtz_label_amplitudes = ANOM
+     mtz_label_phases = PHANOM
+     fill_missing_f_obs = False
+     sharpening = False
+     sharpening_b_factor = None
+     exclude_free_r_reflections = False
+     isotropize = True
+   }
+   map {
+     map_type = 2mFo-DFc
+     format = xplor *ccp4
+     file_name = None
+     fill_missing_f_obs = False
+     grid_resolution_factor = 1/4.
+     region = *selection cell
+     atom_selection = None
+     atom_selection_buffer = 3
+     sharpening = False
+     sharpening_b_factor = None
+     exclude_free_r_reflections = False
+     isotropize = True
+   }
+ }
