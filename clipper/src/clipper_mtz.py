@@ -1,8 +1,8 @@
 # @Author: Tristan Croll
 # @Date:   28-Feb-2018
 # @Email:  tic20@cam.ac.uk
-# @Last modified by:   Tristan Croll
-# @Last modified time: 18-Apr-2018
+# @Last modified by:   tic20
+# @Last modified time: 19-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -158,7 +158,7 @@ class ReflectionData_Calc(ReflectionData):
             self.is_difference_map = is_difference_map
 
     def _guess_if_difference_map(self, name):
-        if name == 'F, PHIF':
+        if name in ['F, PHIF', 'FWT, PHIFWT']:
             return False
         if '2' in name:
             return False
