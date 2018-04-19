@@ -1,8 +1,8 @@
 # @Author: Tristan Croll
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
-# @Last modified by:   Tristan Croll
-# @Last modified time: 18-Apr-2018
+# @Last modified by:   tic20
+# @Last modified time: 19-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -912,12 +912,19 @@ class Isolde():
         valid_models = mtd[AtomicStructure]
         valid_models = sorted(valid_models, key=lambda m: m.id)
 
+        update_selected_model = False
+        if not len(self._available_models):
+            update_selected_model = True
+        self._available_models = {}
+
         for m in valid_models:
             id_str = '{}. {}'.format(m.id_string(), m.name)
             mmcb.addItem(id_str, _get_atomic_model(m))
             self._available_models[id_str] = _get_atomic_model(m)
 
         self._populate_available_volumes_combo_box()
+        if update_selected_model:
+            self._change_selected_model()
 
     def _selection_changed(self, *_):
         from chimerax.atomic import selected_atoms
@@ -2025,7 +2032,7 @@ class Isolde():
             self._selected_model = m
             self.session.selection.clear()
             self._selected_model.selected = True
-            has_maps = self._initialize_maps(m)
+            has_maps = self._selected_model_has_maps = self._initialize_maps(m)
 
     def _change_selected_model(self, *_, model = None, force = False):
         if len(self._available_models) == 0:
@@ -2033,7 +2040,7 @@ class Isolde():
         if self.simulation_running:
             return
         iw = self.iw
-        if model is not None:
+        if model is not None and not force:
             # Find and select the model in the master combo box, which
             # will automatically call this function again with model = None
             index = iw._master_model_combo_box.findData(model)
@@ -2766,7 +2773,7 @@ class Isolde():
 
         # from chimerax.clipper import crystal
         # crystal.set_to_default_cartoon(self.session)
-        self._change_selected_model(model=before_struct)
+        self._change_selected_model(model=before_struct, force=True)
         before_struct.atoms[before_struct.atoms.idatm_types != 'HC'].displays = True
         from . import view
         view.focus_on_selection(self.session, self.session.main_view, before_struct.atoms)
