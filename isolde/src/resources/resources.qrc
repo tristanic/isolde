@@ -1,5 +1,9 @@
 <RCC>
   <qresource prefix="icons">
+    <file>rainbow.png</file>
+    <file>icecube.png</file>
+    <file>mapsurf.png</file>
+    <file>mesh.png</file>
     <file>mask_to_sel.png</file>
     <file>stepper.png</file>
     <file>spotlight.png</file>

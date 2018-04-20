@@ -477,16 +477,6 @@ border: 1px;
                       </item>
                      </layout>
                     </item>
-                    <item row="3" column="0">
-                     <widget class="QCheckBox" name="_sim_basic_mobile_sel_backbone_checkbox">
-                      <property name="text">
-                       <string>Include backbone atoms of surrounding residues</string>
-                      </property>
-                      <property name="checked">
-                       <bool>true</bool>
-                      </property>
-                     </widget>
-                    </item>
                    </layout>
                   </widget>
                  </item>
@@ -835,6 +825,109 @@ border: 1px;
                             <string>Set</string>
                            </property>
                           </widget>
+                         </item>
+                        </layout>
+                       </item>
+                       <item>
+                        <layout class="QHBoxLayout" name="horizontalLayout_14">
+                         <property name="spacing">
+                          <number>3</number>
+                         </property>
+                         <property name="bottomMargin">
+                          <number>0</number>
+                         </property>
+                         <item>
+                          <widget class="QToolButton" name="_map_settings_solid_surface_button">
+                           <property name="toolTip">
+                            <string>Set this map to opaque surface representation</string>
+                           </property>
+                           <property name="text">
+                            <string>...</string>
+                           </property>
+                           <property name="icon">
+                            <iconset resource="resources/resources.qrc">
+                             <normaloff>:/icons/mapsurf.png</normaloff>:/icons/mapsurf.png</iconset>
+                           </property>
+                           <property name="iconSize">
+                            <size>
+                             <width>36</width>
+                             <height>36</height>
+                            </size>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QToolButton" name="_map_settings_transparent_surface_button">
+                           <property name="toolTip">
+                            <string>Set this map to transparent surface representation</string>
+                           </property>
+                           <property name="text">
+                            <string>...</string>
+                           </property>
+                           <property name="icon">
+                            <iconset resource="resources/resources.qrc">
+                             <normaloff>:/icons/icecube.png</normaloff>:/icons/icecube.png</iconset>
+                           </property>
+                           <property name="iconSize">
+                            <size>
+                             <width>36</width>
+                             <height>36</height>
+                            </size>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QToolButton" name="_map_settings_mesh_button">
+                           <property name="toolTip">
+                            <string>Set this map to mesh representation</string>
+                           </property>
+                           <property name="text">
+                            <string>...</string>
+                           </property>
+                           <property name="icon">
+                            <iconset resource="resources/resources.qrc">
+                             <normaloff>:/icons/mesh.png</normaloff>:/icons/mesh.png</iconset>
+                           </property>
+                           <property name="iconSize">
+                            <size>
+                             <width>36</width>
+                             <height>36</height>
+                            </size>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QToolButton" name="_map_settings_color_button">
+                           <property name="toolTip">
+                            <string>Change the colour of this map</string>
+                           </property>
+                           <property name="text">
+                            <string>...</string>
+                           </property>
+                           <property name="icon">
+                            <iconset resource="resources/resources.qrc">
+                             <normaloff>:/icons/rainbow.png</normaloff>:/icons/rainbow.png</iconset>
+                           </property>
+                           <property name="iconSize">
+                            <size>
+                             <width>36</width>
+                             <height>36</height>
+                            </size>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <spacer name="horizontalSpacer_25">
+                           <property name="orientation">
+                            <enum>Qt::Horizontal</enum>
+                           </property>
+                           <property name="sizeHint" stdset="0">
+                            <size>
+                             <width>40</width>
+                             <height>20</height>
+                            </size>
+                           </property>
+                          </spacer>
                          </item>
                         </layout>
                        </item>
@@ -2890,7 +2983,7 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-246</y>
+                  <y>0</y>
                   <width>518</width>
                   <height>813</height>
                  </rect>

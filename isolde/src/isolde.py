@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 19-Apr-2018
+# @Last modified time: 20-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -661,6 +661,19 @@ class Isolde():
             )
 
         # Visualisation tools
+        iw._map_settings_solid_surface_button.clicked.connect(
+            self._set_map_to_solid_surface
+        )
+        iw._map_settings_transparent_surface_button.clicked.connect(
+            self._set_map_to_transparent_surface
+        )
+        iw._map_settings_mesh_button.clicked.connect(
+            self._set_map_to_mesh
+        )
+        iw._map_settings_color_button.clicked.connect(
+            self._choose_map_color
+        )
+
         iw._vis_step_mask_forward_button.clicked.connect(
             self._xtal_step_forward
             )
@@ -2156,6 +2169,58 @@ class Isolde():
         from chimerax.clipper.symmetry import get_symmetry_handler
         sh = get_symmetry_handler(m)
         sh.spotlight_mode = True
+
+    def _set_map_to_solid_surface(self, *_):
+        v = self.iw._sim_basic_xtal_settings_map_combo_box.currentData()
+        if v is None:
+            return
+        from .visualisation import map_styles, map_style_settings
+        from chimerax.map import volumecommand
+        volumecommand.volume(self.session, [v], **map_style_settings[map_styles.solid_opaque])
+
+    def _set_map_to_transparent_surface(self, *_):
+        v = self.iw._sim_basic_xtal_settings_map_combo_box.currentData()
+        if v is None:
+            return
+        from .visualisation import map_styles, map_style_settings
+        from chimerax.map import volumecommand
+        if v.is_difference_map:
+            style = map_styles.solid_t40
+        else:
+            style = map_styles.solid_t20
+        volumecommand.volume(self.session, [v], **map_style_settings[style])
+
+    def _set_map_to_mesh(self, *_):
+        v = self.iw._sim_basic_xtal_settings_map_combo_box.currentData()
+        if v is None:
+            return
+        from .visualisation import map_styles, map_style_settings
+        from chimerax.map import volumecommand
+        volumecommand.volume(self.session, [v], **map_style_settings[map_styles.mesh_square])
+
+    def _choose_map_color(self, *_):
+        v = self.iw._sim_basic_xtal_settings_map_combo_box.currentData()
+        from PyQt5.QtWidgets import QColorDialog
+        cd = QColorDialog(self.iw._map_settings_color_button)
+        sa = cd.ShowAlphaChannel
+        colors = []
+        if v.is_difference_map:
+            colors.append(cd.getColor(title="Colour for negative contour", options=sa))
+            colors.append(cd.getColor(title="Colour for positive contour", options=sa))
+        else:
+            colors.append(cd.getColor(options=sa))
+
+        import numpy
+        carg = [
+            numpy.array([c.red(), c.green(), c.blue(), c.alpha()], dtype=numpy.double)/255
+                for c in colors
+        ]
+        v.set_parameters(surface_colors=carg)
+
+
+
+
+
 
     ##############################################################
     # Interactive restraints functions
