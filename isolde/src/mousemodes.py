@@ -1,8 +1,8 @@
 # @Author: Tristan Croll
 # @Date:   22-Mar-2018
 # @Email:  tic20@cam.ac.uk
-# @Last modified by:   Tristan Croll
-# @Last modified time: 18-Apr-2018
+# @Last modified by:   tic20
+# @Last modified time: 20-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -209,7 +209,8 @@ class AtomPicker(MouseMode):
         x, y = event.position()
         # Allow atoms within 0.5 Angstroms of the cursor to be picked
         cutoff = 0.5
-        picked_atom = picking.pick_closest_to_line(session, x, y, self._atoms, cutoff)
+        picked_atom = picking.pick_closest_to_line(session, x, y, self._atoms,
+            cutoff, hydrogens = True)
         # If shift is down, add to an existing selection, otherwise clear the
         # old selection
         add_toggle = event.shift_down()
