@@ -2,8 +2,8 @@
  * @Author: Tristan Croll
  * @Date:   06-Apr-2018
  * @Email:  tic20@cam.ac.uk
- * @Last modified by:   Tristan Croll
- * @Last modified time: 18-Apr-2018
+ * @Last modified by:   tic20
+ * @Last modified time: 23-Apr-2018
  * @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
  * @Copyright: Copyright 2017-2018 Tristan Croll
  */
@@ -161,7 +161,7 @@ Distance_Restraint* Distance_Restraint_Mgr::get_restraint(Atom *a1, Atom *a2, bo
     }
     if (create)
         return _new_restraint(a1, a2);
-    throw std::logic_error(error_no_restraint());
+    //throw std::logic_error(error_no_restraint());
     return nullptr;
 }
 
