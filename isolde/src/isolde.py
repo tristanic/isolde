@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 20-Apr-2018
+# @Last modified time: 23-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -222,7 +222,6 @@ class Isolde():
         self._sim_selection_mode = None
         # Selected model on which we are actually going to run a simulation
         self._selected_model = None
-        self._selected_model_has_maps = False
 
         ####
         # Settings for live tracking of structural quality
@@ -1004,7 +1003,7 @@ class Isolde():
 
         iw._map_masking_frame.setDisabled(
             running
-                or not self._selected_model_has_maps
+                or not self.selected_model_has_maps
                 or self.selected_model is None)
         iw._right_mouse_modes_frame.setEnabled(running)
         iw._sim_save_checkpoint_button.setEnabled(running)
@@ -1103,6 +1102,21 @@ class Isolde():
             map_oversampling = self.params.map_shannon_rate)
         self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
         self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
+        self._update_sim_control_button_states()
+
+    @property
+    def selected_model_has_maps(self):
+        m = self.selected_model
+        if m is None:
+            return False
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sh = get_symmetry_handler(m)
+        if sh is None:
+            # No maps associated with this model.
+            return False
+        if not hasattr(sh, "xmapset") or not len(sh.xmapset.child_models()):
+            return False
+        return True
 
     def _initialize_maps(self, model):
         '''
@@ -2045,7 +2059,7 @@ class Isolde():
             self._selected_model = m
             self.session.selection.clear()
             self._selected_model.selected = True
-            has_maps = self._selected_model_has_maps = self._initialize_maps(m)
+            self._initialize_maps(m)
 
     def _change_selected_model(self, *_, model = None, force = False):
         if len(self._available_models) == 0:
@@ -2064,7 +2078,7 @@ class Isolde():
             self._selected_model = m
             self.session.selection.clear()
             self._selected_model.selected = True
-            has_maps = self._selected_model_has_maps = self._initialize_maps(m)
+            has_maps = self._initialize_maps(m)
             if has_maps:
                 iw._map_masking_frame.setEnabled(True)
             else:
