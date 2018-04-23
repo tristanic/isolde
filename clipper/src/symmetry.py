@@ -1,8 +1,8 @@
 # @Author: Tristan Croll
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
-# @Last modified by:   Tristan Croll
-# @Last modified time: 18-Apr-2018
+# @Last modified by:   tic20
+# @Last modified time: 23-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -142,7 +142,7 @@ class XtalSymmetryHandler(Model):
     '''
     def __init__(self, model, mtzfile=None, calculate_maps=True, map_oversampling=1.5,
         spotlight_mode = True, map_scrolling_radius=12,
-        atomic_symmetry_radius=15):
+        atomic_symmetry_radius=15, hydrogens='polar'):
         name = 'Crystal'
         session = self.session = model.session
         super().__init__(name, session)
@@ -215,6 +215,17 @@ class XtalSymmetryHandler(Model):
             self.update)
 
         model.add([self])
+
+        display_atoms = model.atoms
+        display_atoms.draw_modes = display_atoms.STICK_STYLE
+        display_atoms.displays = False
+        if hydrogens == 'polar':
+            display_atoms = display_atoms[display_atoms.idatm_types != 'HC']
+        elif hydrogens == 'none':
+            display_atoms = display_atoms[display_atoms.element_names != 'H']
+        display_atoms.displays = True
+
+
         from .mousemodes import initialize_map_contour_mouse_modes
         initialize_map_contour_mouse_modes(session)
         self.spotlight_mode = spotlight_mode
