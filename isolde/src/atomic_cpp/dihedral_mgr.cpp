@@ -2,8 +2,8 @@
  * @Author: Tristan Croll
  * @Date:   07-Mar-2018
  * @Email:  tic20@cam.ac.uk
- * @Last modified by:   Tristan Croll
- * @Last modified time: 18-Apr-2018
+ * @Last modified by:   tic20
+ * @Last modified time: 24-Apr-2018
  * @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
  * @Copyright: Copyright 2017-2018 Tristan Croll
  */
@@ -26,7 +26,6 @@ template <class DType>
 Dihedral_Mgr<DType>::~Dihedral_Mgr()
 {
     auto du = DestructionUser(this);
-    auto db = DestructionBatcher(this);
     _atom_to_dihedral_map.clear();
     for (auto &dm: _residue_map) {
         for (auto &d: dm.second)
@@ -176,7 +175,6 @@ DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname)
 template <class DType>
 DType* Dihedral_Mgr<DType>::get_dihedral(Residue *res, const std::string &name, bool create)
 {
-    d_def ddef;
     auto iter1 = _residue_map.find(res);
     if (iter1 != _residue_map.end()) {
         auto &dmap = iter1->second;
@@ -187,7 +185,6 @@ DType* Dihedral_Mgr<DType>::get_dihedral(Residue *res, const std::string &name, 
     }
     if (!create)
         throw std::out_of_range("Dihedral not found!");
-    ddef = get_dihedral_def(res->name(), name);
     return new_dihedral(res, name);
 }
 
@@ -253,6 +250,7 @@ void Dihedral_Mgr<DType>::destructors_done(const std::set<void*>& destroyed)
 } //destructors_done
 
 template class Dihedral_Mgr<Proper_Dihedral>;
+//template class Dihedral_Mgr<Chiral_Center>;
 
 
 } //namespace isolde

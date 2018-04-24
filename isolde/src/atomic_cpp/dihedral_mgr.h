@@ -2,8 +2,8 @@
  * @Author: Tristan Croll
  * @Date:   07-Mar-2018
  * @Email:  tic20@cam.ac.uk
- * @Last modified by:   Tristan Croll
- * @Last modified time: 18-Apr-2018
+ * @Last modified by:   tic20
+ * @Last modified time: 23-Apr-2018
  * @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
  * @Copyright: Copyright 2017-2018 Tristan Croll
  */
@@ -36,7 +36,7 @@ namespace isolde
 
 //! Top-level manager for handling all dihedrals of a given type for a model.
 /*!
- * Implemented for Proper_Dihedral and Improper_Dihedral classes.
+ * Implemented for Proper_Dihedral class.
  */
 template<class DType>
 class Dihedral_Mgr: public DestructionObserver, public pyinstance::PythonInstance<Dihedral_Mgr<DType>>
@@ -97,12 +97,11 @@ public:
     size_t num_mapped_dihedrals() const;
 
     //! Retrieve a dihedral by residue and name
-    /*! If the dihedral is not found and create is false, throws
-     *  std::out_of_range. If not found and create is true, attempts to
-     *  find the dihedral definition by residue name and dihedral name.
-     *  If no definition exists for the desired dihedral, throws
-     *  std::out_of_range. If the definition exists but one or more atoms
-     *  are missing, returns nullptr.
+    /*! If the dihedral is not found and create is false, returns nullptr.
+     *  If not found and create is true, attempts to find the dihedral
+     *  definition by residue name and dihedral name. If no definition exists
+     *  for the desired dihedral, throws std::out_of_range. If the definition
+     *  exists but one or more atoms are missing, returns nullptr.
      */
     DType* get_dihedral(Residue *res, const std::string &name, bool create=true);
 
