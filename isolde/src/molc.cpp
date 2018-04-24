@@ -2,8 +2,8 @@
  * @Author: Tristan Croll
  * @Date:   10-Apr-2018
  * @Email:  tic20@cam.ac.uk
- * @Last modified by:   Tristan Croll
- * @Last modified time: 18-Apr-2018
+ * @Last modified by:   tic20
+ * @Last modified time: 24-Apr-2018
  * @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
  * @Copyright: Copyright 2017-2018 Tristan Croll
  */
@@ -70,6 +70,8 @@
 
 #include "atomic_cpp/dihedral_ext.h"
 #include "atomic_cpp/dihedral_mgr_ext.h"
+#include "atomic_cpp/chiral_ext.h"
+#include "atomic_cpp/chiral_mgr_ext.h"
 
 #include "validation/rama_ext.h"
 #include "validation/rota_ext.h"
