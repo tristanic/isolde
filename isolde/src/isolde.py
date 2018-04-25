@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 23-Apr-2018
+# @Last modified time: 25-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -943,7 +943,7 @@ class Isolde():
         from .util import is_continuous_protein_chain
         sel = selected_atoms(self.session)
         selres = sel.unique_residues
-        if self.simulation_running:
+        if self.selected_model is not None: # self.simulation_running:
             natoms = len(sel)
             if natoms == 1:
                 self._enable_atom_position_restraints_frame()
@@ -958,9 +958,11 @@ class Isolde():
 
             if natoms == 2:
                 self._enable_distance_restraint_apply_button()
+                self._enable_distance_restraint_set_distance_to_current_button()
                 self._enable_distance_restraint_remove_single_button()
             else:
                 self._disable_distance_restraint_apply_button()
+                self._disable_distance_restraint_set_distance_to_current_button()
                 self._disable_distance_restraint_remove_single_button()
 
             if len(selres) == 1:
@@ -979,10 +981,15 @@ class Isolde():
                 self._disable_selection_extend_frame()
 
             # A running simulation takes precedence for memory control
-            return
-        flag = not(self.session.selection.empty())
-        iw = self.iw
-        iw._sim_go_button.setEnabled(flag)
+            #return
+        if not self.simulation_running:
+            self._disable_register_shift_frame()
+            self._disable_peptide_bond_manipulation_frame()
+            flag = not(self.session.selection.empty())
+            iw = self.iw
+            iw._sim_go_button.setEnabled(flag)
+        else:
+            self._enable_peptide_bond_manipulation_frame()
 
 
     def _update_sim_control_button_states(self):
@@ -1261,12 +1268,12 @@ class Isolde():
     # Rebuild tab
     ####
     def _enable_rebuild_residue_frame(self, res):
-        if not self.simulation_running:
-            self._disable_rebuild_residue_frame()
-            return
-        if -1 in self.sim_manager.sim_construct.mobile_atoms.indices(res.atoms):
-            self._disable_rebuild_residue_frame()
-            return
+        # if not self.simulation_running:
+        #     self._disable_rebuild_residue_frame()
+        #     return
+        # if -1 in self.sim_manager.sim_construct.mobile_atoms.indices(res.atoms):
+        #     self._disable_rebuild_residue_frame()
+        #     return
 
         from . import session_extensions
         pdmgr = session_extensions.get_proper_dihedral_mgr(self.session)
@@ -1312,6 +1319,24 @@ class Isolde():
         # if 'update_selected_residue_info' not in self._event_handler.list_event_handlers():
         #     self._event_handler.add_event_handler('update_selected_residue_info',
         #             'shape changed', self._update_selected_residue_info_live)
+
+    def _disable_rebuild_residue_frame(self):
+        if hasattr(self, '_res_info_update_handler') and self._res_info_update_handler is not None:
+            self.selected_model.triggers.remove_handler(self._res_info_update_handler)
+            self._res_info_update_handler = None
+        # if 'update_selected_residue_info' in self._event_handler.list_event_handlers():
+        #     self._event_handler.remove_event_handler('update_selected_residue_info')
+        self.iw._rebuild_sel_residue_info.setText('(Select a mobile residue)')
+        self.iw._rebuild_sel_res_pep_info.setText('')
+        self.iw._rebuild_sel_res_rot_info.setText('')
+        self.iw._rebuild_sel_res_rot_target_button.setText('Set target')
+        self.iw._rebuild_sel_residue_frame.setDisabled(True)
+
+    def _enable_peptide_bond_manipulation_frame(self):
+        self.iw._rebuild_sel_res_pep_frame.setEnabled(True)
+
+    def _disable_peptide_bond_manipulation_frame(self):
+        self.iw._rebuild_sel_res_pep_frame.setEnabled(False)
 
     def _enable_atom_position_restraints_frame(self):
         self.iw._rebuild_pin_atom_to_current_pos_button.setEnabled(True)
@@ -1373,6 +1398,12 @@ class Isolde():
 
     def _disable_distance_restraint_apply_button(self, *_):
         self.iw._rebuild_dist_restraint_apply_button.setEnabled(False)
+
+    def _enable_distance_restraint_set_distance_to_current_button(self, *_):
+        self.iw._rebuild_dist_restraint_set_target_to_current_distance_button.setEnabled(True)
+
+    def _disable_distance_restraint_set_distance_to_current_button(self, *_):
+        self.iw._rebuild_dist_restraint_set_target_to_current_distance_button.setEnabled(False)
 
     def _enable_distance_restraint_remove_single_button(self, *_):
         self.iw._rebuild_remove_distance_restraint_button.setEnabled(True)
@@ -1475,8 +1506,6 @@ class Isolde():
         Target distances/angles for each secondary structure definition are
         stored in `constants.py`.
         '''
-        sh = self.sim_handler
-        sc = self.sim_manager.sim_construct
         dihed_k = self.sim_params.phi_psi_spring_constant.value_in_unit(OPENMM_RADIAL_SPRING_UNIT)
         dist_k = self.sim_params.distance_restraint_spring_constant.value_in_unit(OPENMM_SPRING_UNIT)
         residues = atoms.unique_residues
@@ -1494,13 +1523,13 @@ class Isolde():
         ca_to_ca_plus_two.enableds = True
 
         pdr_m = sx.get_proper_dihedral_restraint_mgr(m)
-        phi = pdr_m.get_restraints_by_residues_and_name(residues, 'phi')
+        phi = pdr_m.add_restraints_by_residues_and_name(residues, 'phi')
         phi.targets = restraint_params.PHI_ANGLE
         phi.spring_constants = dihed_k
         phi.cutoffs = restraint_params.CUTOFF_ANGLE
         phi.enableds = True
 
-        psi = pdr_m.get_restraints_by_residues_and_name(residues, 'psi')
+        psi = pdr_m.add_restraints_by_residues_and_name(residues, 'psi')
         psi.targets = restraint_params.PSI_ANGLE
         psi.spring_constants = dihed_k
         psi.cutoffs = restraint_params.CUTOFF_ANGLE
@@ -1756,18 +1785,6 @@ class Isolde():
         rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
         rr = rrm.get_restraint(rotamer)
         rr.enabled = False
-
-    def _disable_rebuild_residue_frame(self):
-        if hasattr(self, '_res_info_update_handler') and self._res_info_update_handler is not None:
-            self.selected_model.triggers.remove_handler(self._res_info_update_handler)
-            self._res_info_update_handler = None
-        # if 'update_selected_residue_info' in self._event_handler.list_event_handlers():
-        #     self._event_handler.remove_event_handler('update_selected_residue_info')
-        self.iw._rebuild_sel_residue_info.setText('(Select a mobile residue)')
-        self.iw._rebuild_sel_res_pep_info.setText('')
-        self.iw._rebuild_sel_res_rot_info.setText('')
-        self.iw._rebuild_sel_res_rot_target_button.setText('Set target')
-        self.iw._rebuild_sel_residue_frame.setDisabled(True)
 
     def _update_selected_residue_info_live(self, trigger_name, changes):
         if changes is not None:

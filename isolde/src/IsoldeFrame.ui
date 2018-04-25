@@ -1386,7 +1386,7 @@ border: 1px;
                  </widget>
                 </item>
                 <item>
-                 <widget class="QFrame" name="horizontalFrame">
+                 <widget class="QFrame" name="_rebuild_sel_res_pep_frame">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                     <horstretch>0</horstretch>
