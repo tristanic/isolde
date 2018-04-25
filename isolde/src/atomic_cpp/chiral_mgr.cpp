@@ -3,7 +3,7 @@
  * @Date:   23-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 24-Apr-2018
+ * @Last modified time: 25-Apr-2018
  * @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
  * @Copyright: Copyright 2017-2018 Tristan Croll
  */
@@ -55,6 +55,9 @@ const Chiral_Def& Chiral_Mgr::get_chiral_def(const ResName& resname, const AtomN
 
 Chiral_Center* Chiral_Mgr::get_chiral(Atom* center, bool create)
 {
+    // Only atoms with 3 or more non-hydrogen substituents can be chiral centres
+    if (center->bonds().size() < 3)
+        return nullptr;
     auto it = _atom_to_chiral.find(center);
     if (it != _atom_to_chiral.end())
         return it->second;

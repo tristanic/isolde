@@ -3,7 +3,7 @@
  * @Date:   14-Feb-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 23-Apr-2018
+ * @Last modified time: 25-Apr-2018
  * @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
  * @Copyright: Copyright 2017-2018 Tristan Croll
  */
@@ -82,9 +82,6 @@ public:
         throw std::invalid_argument("Axial bond is only defined for a Proper_Dihedral!");
     }
 
-    virtual Atom* chiral_center() const {
-        throw std::invalid_argument("Chiral center is only defined for a Chiral_Dihedral!");
-    }
     //! Returns true only if all four atoms are visible.
     virtual bool visible() const
     {

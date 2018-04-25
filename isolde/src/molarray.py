@@ -1,8 +1,8 @@
 # @Author: Tristan Croll
 # @Date:   16-Apr-2018
 # @Email:  tic20@cam.ac.uk
-# @Last modified by:   Tristan Croll
-# @Last modified time: 18-Apr-2018
+# @Last modified by:   tic20
+# @Last modified time: 25-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -78,7 +78,7 @@ class Proper_Dihedrals(_Dihedrals):
             +'session.proper_dihedrals_mgr.delete_dihedrals(dihedrals).'
         raise RuntimeError(err_string)
 
-    residues = cvec_property('proper_dihedral_residue', cptr, astype=_residues, read_only=True,
+    residues = cvec_property('dihedral_residue', cptr, astype=_residues, read_only=True,
         doc='Returns a :class:`Residues` giving the parent residue of each dihedral. Read only')
     axial_bonds = cvec_property('proper_dihedral_axial_bond', cptr, astype=_bonds, read_only=True,
         doc='Returns a :class:`Bonds` giving the axial bond for each dihedral. Read-only')

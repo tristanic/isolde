@@ -3,7 +3,7 @@
  * @Date:   23-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 23-Apr-2018
+ * @Last modified time: 25-Apr-2018
  * @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
  * @Copyright: Copyright 2017-2018 Tristan Croll
  */
@@ -43,14 +43,15 @@ public:
     // Returns true if the central atom is visible;
     bool visible() const { return _atoms[0]->visible(); }
     double expected_angle() const { return _expected_angle; }
+    double deviation() const { return util::wrapped_angle(angle()-expected_angle()); }
     Atom* chiral_atom() const { return _atoms[0]; }
 
 private:
     const char* err_msg_not_bonded() const
         { return "Substituent atoms must all be bonded to the chiral center"; }
     double _expected_angle;
-    const std::string _r = "R";
-    const std::string _s = "S";
+    // const std::string _r = "R";
+    // const std::string _s = "S";
 
 }; // Chiral_Center
 

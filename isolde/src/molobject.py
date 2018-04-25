@@ -1,8 +1,8 @@
 # @Author: Tristan Croll
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
-# @Last modified by:   Tristan Croll
-# @Last modified time: 18-Apr-2018
+# @Last modified by:   tic20
+# @Last modified time: 25-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -129,9 +129,6 @@ def _get_restraint_change_tracker(session):
         return session.isolde_changes
     return Restraint_Change_Tracker(session)
 
-class Dummy:
-    pass
-
 class _Dihedral_Mgr:
     '''Base class. Do not instantiate directly.'''
     def __init__(self, session, c_pointer=None):
@@ -161,6 +158,50 @@ class _Dihedral_Mgr:
         '''Has the C++ side been deleted?'''
         return not hasattr(self, '_c_pointer')
 
+class Chiral_Mgr(_Dihedral_Mgr):
+    '''
+    A session-level singleton managing all chiral centres. Rather than
+    instantiating directly, it is best created/retrieved using
+    :func:`session_extensions.get_chiral_mgr`.
+    '''
+
+    def __init__(self, session, c_pointer=None):
+        super().__init__(session, c_pointer=c_pointer)
+        if hasattr(session, 'chiral_mgr') and not session.chiral_mgr.deleted:
+            raise RuntimeError('Session already has a chiral atoms manager!')
+        session.chiral_mgr = self
+        self._load_dict()
+
+    def _load_dict(self):
+        import json
+        with open(os.path.join(DICT_DIR, 'chirals.json'), 'r') as f:
+            cdict = self._dihedral_dict = json.load(f)
+
+        f = c_function('chiral_mgr_add_chiral_def',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                ctypes.c_size_t,ctypes.c_size_t, ctypes.c_size_t,
+                ctypes.c_double)
+            )
+        for resname, res_data in cdict.items():
+            rn_key = ctypes.py_object()
+            rn_key.value = resname
+            for center, cdata in res_data.items():
+                cn_key = ctypes.py_object()
+                cn_key.value = center
+                sname_objs = []
+                snums = []
+                snames = cdata[0]
+                expected_angle = cdata[1]
+                for sname_list in snames:
+                    snums.append(len(sname_list))
+                    sname_objs.append(numpy.array(sname_list, numpy.object))
+            f(self._c_pointer, ctypes.byref(rn_key), ctypes.byref(cn_key),
+                *[pointer(n) for n in sname_objs], *snums, expected_angle)
+
+
+
+
 class Proper_Dihedral_Mgr(_Dihedral_Mgr):
     '''
     A session-level singleton managing all proper dihedrals (phi, psi, chi etc.).
@@ -170,10 +211,10 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
 
     def __init__(self, session, c_pointer=None):
         super().__init__(session, c_pointer=c_pointer)
-        self._load_dict()
         if hasattr(session, 'proper_dihedral_mgr') and not session.proper_dihedral_mgr.deleted:
             raise RuntimeError('Session already has a proper dihedral manager!')
         session.proper_dihedral_mgr = self
+        self._load_dict()
 
     def delete(self):
         c_function('proper_dihedral_mgr_delete', args=(ctypes.c_void_p,))(self.cpp_pointer)
@@ -191,12 +232,6 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
         f = c_function('proper_dihedral_mgr_delete_dihedral',
                 args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
         f(self.cpp_pointer, len(dihedrals), dihedrals._c_pointers)
-
-    # def add_dihedrals(self, dihedrals):
-    #     f = c_function('proper_dihedral_mgr_add_dihedral',
-    #         args = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
-    #         )
-    #     f(self.cpp_pointer, dihedrals._c_pointers, len(dihedrals))
 
     @property
     def dihedral_dict(self):
@@ -2840,7 +2875,7 @@ class Proper_Dihedral(_Dihedral):
     A Proper_Dihedral is defined as a dihedral in which the four atoms are
     strictly bonded a1-a2-a3-a4.
     '''
-    residue = c_property('proper_dihedral_residue', cptr, astype=_residue, read_only=True,
+    residue = c_property('dihedral_residue', cptr, astype=_residue, read_only=True,
         doc = 'Residue this dihedral belongs to. Read only.')
     axial_bond = c_property('proper_dihedral_axial_bond', cptr, astype=_bond_or_none, read_only=True,
         doc='Bond forming the axis of this dihedral. Read-only')
@@ -3323,9 +3358,10 @@ for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint, Tuggable_A
     class_obj.c_ptr_to_existing_py_inst = lambda ptr, fname=func_name: c_function(fname,
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
 
-for class_obj in (Proper_Dihedral_Mgr, Rama_Mgr, Rota_Mgr, Position_Restraint_Mgr,
-            Tuggable_Atoms_Mgr, MDFF_Mgr, Distance_Restraint_Mgr,
-            Proper_Dihedral_Restraint_Mgr, Rotamer_Restraint_Mgr):
+for class_obj in (Proper_Dihedral_Mgr, Chiral_Mgr, Rama_Mgr, Rota_Mgr,
+            Position_Restraint_Mgr, Tuggable_Atoms_Mgr, MDFF_Mgr,
+            Distance_Restraint_Mgr, Proper_Dihedral_Restraint_Mgr,
+            Rotamer_Restraint_Mgr):
     cname = class_obj.__name__.lower()
     func_name = cname + '_py_inst'
     class_obj.c_ptr_to_py_inst = lambda ptr, fname=func_name: c_function(fname,

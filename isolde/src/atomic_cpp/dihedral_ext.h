@@ -2,8 +2,8 @@
  * @Author: Tristan Croll
  * @Date:   03-Apr-2018
  * @Email:  tic20@cam.ac.uk
- * @Last modified by:   Tristan Croll
- * @Last modified time: 18-Apr-2018
+ * @Last modified by:   tic20
+ * @Last modified time: 25-Apr-2018
  * @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
  * @Copyright: Copyright 2017-2018 Tristan Croll
  */
@@ -67,6 +67,12 @@ dihedral_atoms(void *dihedrals, size_t n, pyobject_t *atoms)
     }
 }
 
+extern "C" EXPORT void dihedral_residue(void *dihedrals, size_t n, pyobject_t *resp)
+{
+    Dihedral **d = static_cast<Dihedral **>(dihedrals);
+    error_wrap_array_get(d, n, &Dihedral::residue, resp);
+}
+
  /**************************************************
   *
   * Proper_Dihedral functions
@@ -80,10 +86,5 @@ proper_dihedral_axial_bond(void *dihedrals, size_t n, pyobject_t *bonds)
     error_wrap_array_get(d, n, &Dihedral::axial_bond, bonds);
 }
 
-extern "C" EXPORT void proper_dihedral_residue(void *dihedrals, size_t n, pyobject_t *resp)
-{
-    Dihedral **d = static_cast<Dihedral **>(dihedrals);
-    error_wrap_array_get(d, n, &Dihedral::residue, resp);
-}
 
 #endif
