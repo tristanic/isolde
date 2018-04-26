@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 25-Apr-2018
+# @Last modified time: 26-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -43,6 +43,11 @@ c_array_function = _c_functions.c_array_function
 def _asptr(arr, dtype):
     return arr.ctypes.data_as(pointer(dtype))
 
+def _chiral_center_or_none(p):
+    return Chiral_Center.c_ptr_to_py_inst(p) if p else None
+def _chiral_centers(p):
+    from .molarray import Chiral_Centers
+    return Chiral_Centers(p)
 def _proper_dihedrals(p):
     from .molarray import Proper_Dihedrals
     return Proper_Dihedrals(p)
@@ -184,24 +189,122 @@ class Chiral_Mgr(_Dihedral_Mgr):
                 ctypes.c_double)
             )
         for resname, res_data in cdict.items():
-            rn_key = ctypes.py_object()
-            rn_key.value = resname
             for center, cdata in res_data.items():
-                cn_key = ctypes.py_object()
-                cn_key.value = center
-                sname_objs = []
-                snums = []
-                snames = cdata[0]
-                expected_angle = cdata[1]
-                for sname_list in snames:
-                    snums.append(len(sname_list))
-                    sname_objs.append(numpy.array(sname_list, numpy.object))
-            f(self._c_pointer, ctypes.byref(rn_key), ctypes.byref(cn_key),
-                *[pointer(n) for n in sname_objs], *snums, expected_angle)
+                self._add_chiral_def(resname, center, *cdata[0], cdata[1])
 
     @property
     def chiral_center_dict(self):
         return self._chiral_dict
+
+    def _add_chiral_def(self, residue_name, chiral_atom_name, s1_names, s2_names,
+        s3_names, expected_angle):
+        f = c_function('chiral_mgr_add_chiral_def',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                ctypes.c_size_t,ctypes.c_size_t, ctypes.c_size_t,
+                ctypes.c_double)
+            )
+        rn_key = ctypes.py_object()
+        rn_key.value = residue_name
+        cn_key = ctypes.py_object()
+        cn_key.value = chiral_atom_name
+        sname_objs = []
+        snums = []
+        for sname_list in (s1_names, s2_names, s3_names):
+            snums.append(len(sname_list))
+            sname_objs.append(numpy.array(sname_list, numpy.object))
+
+        f(self._c_pointer, ctypes.byref(rn_key), ctypes.byref(cn_key),
+            *[pointer(n) for n in sname_objs], *snums, expected_angle)
+
+
+    def add_chiral_def(self, residue_name, chiral_atom_name, s1_names, s2_names,
+        s3_names, expected_angle):
+        '''
+        Add a definition to the dictionary of known chiral centres. The
+        definition will only be valid for the current session. All instances of
+        the chiral centre will be automatically found and tracked.
+
+        Since chiral bonds can occur across residues, substituent atom names
+        should be provided as lists of possible names.
+
+        Args:
+            * residue_name:
+                - the 3-letter name of the residue the centre is found in
+            * chiral_atom_name:
+                - the name of the central chiral atom
+            * s1_names:
+                - a list of potential names for the highest priority substituent
+            * s2_names:
+                - a list of potential names for the second substituent
+            * s3_names:
+                - a list of potential names for the third substituent
+            * expected_angle:
+                - the expected dihedral angle (in radians) for the chiral centre
+                  at equilibrium. While it is best to provide more accurate
+                  measures based on an energy-minimised model of your compound,
+                  fairly typical values are 0.6 for a (S) isomer and -0.6 for a
+                  (R) isomer. Note that chirality restraints only become active
+                  for deviations more than 15 degrees (0.26 radians), from the
+                  expected angle, relying on the forcefield parameterisation
+                  inside that range.
+        '''
+        cdict = self._chiral_dict
+        try:
+            # Raise an error if the entry already exists
+            existing = cdict[residue_name][chiral_atom_name]
+            raise AttributeError('A defintion already exists for this residue/atom name pair!')
+        except KeyError:
+            pass
+        if residue_name not in cdict.keys():
+            cdict[residue_name] = {}
+        cdict[residue_name][chiral_atom_name] = [[s1_names, s2_names, s3_names], expected_angle]
+        self._add_chiral_def(residue_name, chiral_atom_name, s1_names, s2_names,
+            s3_names, expected_angle)
+
+    def get_chiral(self, atom, create=True):
+        '''
+        Returns a :class:`Chiral_Center` for the given atom if it is a known
+        chiral atom. Returns None if the atom is achiral, no definition exists
+        for the chiral centre, required substituent atoms are missing, or
+        create is False and the c++ object has not previously been created.
+
+        Args:
+            * atom:
+                - a :class:`chimerax.Atom` instance
+            * create:
+                - if True, an attempt will be made to create the chiral centre
+                  if it doesn't already exist.
+        '''
+        from chimerax.atomic import Atoms
+        a = Atoms([atom])
+        c = self.get_chirals(a, create)
+        if len(c):
+            return c[0]
+        return None
+
+    def get_chirals(self, atoms, create=True):
+        '''
+        Returns a :class:`Chiral_Centers` containing all known chiral centres in
+        the given atoms.
+
+        Args:
+            * atoms:
+                - a :class:`chimerax.Atoms` instance.
+            * create:
+                - if True, for every atom where a chiral definition exists but
+                  no :cpp:class:`Chiral_Center` has been created, an attempt
+                  will be made to create it. Otherwise, only previously-created
+                  chirals will be returned.
+        '''
+        f = c_function('chiral_mgr_get_chiral',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+                ctypes.c_bool),
+            ret=ctypes.py_object
+        )
+        n = len(atoms)
+        return _chiral_centers(f(self._c_pointer, atoms._c_pointers, n, create))
+
 
     @property
     def num_mapped_chiral_centers(self):
@@ -210,6 +313,18 @@ class Chiral_Mgr(_Dihedral_Mgr):
             ret=ctypes.c_size_t
         )
         return f(self._c_pointer)
+
+    def delete_chirals(self, chirals):
+        '''
+        Delete the C++ objects for the given :class:`Chiral_Centers`. Note that
+        this only deletes the chirality information, not any atoms/bonds. In
+        general it should not be necessary to use this method - creation and
+        deletion is fully automatic.
+        '''
+        f = c_function('chiral_mgr_delete_chiral',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p)
+        )
+        f(self._c_pointer, len(chirals), chirals._c_pointers)
 
     def delete(self):
         c_function('chiral_mgr_delete', args=(ctypes.c_void_p,))(self.cpp_pointer)
@@ -349,7 +464,7 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
                 - If True, if the dihedral does not currently exist an attempt
                   will be made to create it.
         '''
-        from chimerax.core.atomic import Residues
+        from chimerax.atomic import Residues
         r = Residues([residue])
         d = self.get_dihedrals(r, name, create)
         if len(d):
@@ -364,7 +479,7 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
 
         Args:
             * residues:
-                - A :class:`Residues` instance
+                - A :class:`chimerax.Residues` instance
             * name:
                 - A string giving the lowercase name of the dihedral (e.g.
                   'phi', 'omega', 'chi1', etc.)
@@ -2884,14 +2999,36 @@ class _Dihedral(State):
     name = c_property('dihedral_name', string, read_only = True, doc = 'Name of this dihedral. Read only.')
     atoms = c_property('dihedral_atoms', cptr, 4, astype=_atoms, read_only=True,
         doc = 'Atoms making up this dihedral. Read only.')
+    residue = c_property('dihedral_residue', cptr, astype=_residue, read_only=True,
+        doc = 'Residue this dihedral belongs to. Read only.')
+
+class Chiral_Center(_Dihedral):
+    '''
+    A chiral centre is an atom with four chemically distinct substituents, such
+    that it cannot be overlaid with its mirror image by rotation and
+    translation. Within ISOLDE, chiral centres are treated as improper dihedrals
+    (that is, dihedrals for which the axis isn't a real bond). Atom ordering
+    within a :class:`Chiral_Center` is defined with the central atom first,
+    followed by  the first three substituents in order of decreasing priority by
+    standard Cahn-Ingold-Prelog rules. Typical tetrahedral centres will have
+    dihedral angles in the vicinity of +/-35 degrees - S positive, R negative.
+
+    :class:`Chiral_Center` instances are not created directly - they are
+    generated as  needed by :class:`Chiral_Mgr` based on dictionary definitions.
+    '''
+
+    expected_angle = c_property('chiral_center_expected_angle', float64, read_only=True,
+        doc='The equilibrium angle of the chiral dihedral in its correct isomeric state. Read only.')
+    deviation = c_property('chiral_center_deviation', float64, read_only=True,
+        doc='The difference between the current dihedral angle and :attr:`expected_angle`. Read only.')
+    chiral_atom = c_property('chiral_center_chiral_atom', cptr, astype=_atom_or_none, read_only=True,
+        doc='The chiral atom. Read only.')
 
 class Proper_Dihedral(_Dihedral):
     '''
     A Proper_Dihedral is defined as a dihedral in which the four atoms are
     strictly bonded a1-a2-a3-a4.
     '''
-    residue = c_property('dihedral_residue', cptr, astype=_residue, read_only=True,
-        doc = 'Residue this dihedral belongs to. Read only.')
     axial_bond = c_property('proper_dihedral_axial_bond', cptr, astype=_bond_or_none, read_only=True,
         doc='Bond forming the axis of this dihedral. Read-only')
 
@@ -3355,9 +3492,9 @@ class Rotamer_Restraint(State):
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance
 # from the pointer (needed by Collections)
-for class_obj in (Proper_Dihedral, Rama, Rotamer, Position_Restraint, Tuggable_Atom,
-                  MDFF_Atom, Distance_Restraint, Proper_Dihedral_Restraint,
-                  Rotamer_Restraint):
+for class_obj in (Chiral_Center, Proper_Dihedral, Rama, Rotamer,
+        Position_Restraint, Tuggable_Atom, MDFF_Atom, Distance_Restraint,
+        Proper_Dihedral_Restraint, Rotamer_Restraint):
     if hasattr(class_obj, '_c_class_name'):
         cname = class_obj._c_class_name
     else:

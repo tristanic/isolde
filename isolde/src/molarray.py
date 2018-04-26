@@ -2,7 +2,7 @@
 # @Date:   16-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 25-Apr-2018
+# @Last modified time: 26-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -15,7 +15,7 @@ from chimerax.core.atomic.molarray import Collection
 from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
-from .molobject import Proper_Dihedral, Rotamer, Rama, Position_Restraint, \
+from .molobject import Chiral_Center, Proper_Dihedral, Rotamer, Rama, Position_Restraint, \
         Tuggable_Atom, MDFF_Atom, Distance_Restraint, Proper_Dihedral_Restraint, \
         Rotamer_Restraint
 import ctypes
@@ -28,6 +28,8 @@ from chimerax.core.atomic.molarray import _atoms, _atoms_or_nones, \
         _non_null_chains, _atomic_structures, structure_datas, \
         _atoms_pair, _pseudobond_group_map
 
+def _chiral_centers(p):
+    return Chiral_Centers(p)
 def _proper_dihedrals(p):
     return Proper_Dihedrals(p)
 def _rotamers(p):
@@ -65,6 +67,26 @@ class _Dihedrals(Collection):
     angles = cvec_property('dihedral_angle', float64, read_only=True,
         doc='Returns the angle in radians for each dihedral. Read only.')
     names = cvec_property('dihedral_name', string, read_only=True)
+    residues = cvec_property('dihedral_residue', cptr, astype=_residues, read_only=True,
+        doc='Returns a :class:`Residues` giving the parent residue of each dihedral. Read only')
+
+class Chiral_Centers(_Dihedrals):
+
+    def __init__(self, c_pointers = None):
+        super().__init__(c_pointers, Chiral_Center, Chiral_Centers)
+
+    def delete(self):
+        err_string = 'Dihedrals are not in charge of their own creation '\
+            +'and deletion. Instead, use '\
+            +'session.chiral_mgr.delete_chirals(chirals).'
+        raise RuntimeError(err_string)
+
+    expected_angles = cvec_property('chiral_center_expected_angle', float64, read_only=True,
+        doc='The equilibrium angle of each chiral dihedral in its correct isomeric state. Read only.')
+    deviations = cvec_property('chiral_center_deviation', float64, read_only=True,
+        doc='The difference between each current dihedral angle and its :attr:`expected_angle`. Read only.')
+    chiral_atoms = cvec_property('chiral_center_chiral_atom', cptr, astype=_atoms, read_only=True,
+        doc='The chiral atoms. Read only.')
 
 
 class Proper_Dihedrals(_Dihedrals):
@@ -78,8 +100,6 @@ class Proper_Dihedrals(_Dihedrals):
             +'session.proper_dihedrals_mgr.delete_dihedrals(dihedrals).'
         raise RuntimeError(err_string)
 
-    residues = cvec_property('dihedral_residue', cptr, astype=_residues, read_only=True,
-        doc='Returns a :class:`Residues` giving the parent residue of each dihedral. Read only')
     axial_bonds = cvec_property('proper_dihedral_axial_bond', cptr, astype=_bonds, read_only=True,
         doc='Returns a :class:`Bonds` giving the axial bond for each dihedral. Read-only')
 
