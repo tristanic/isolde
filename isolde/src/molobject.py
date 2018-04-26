@@ -175,7 +175,7 @@ class Chiral_Mgr(_Dihedral_Mgr):
     def _load_dict(self):
         import json
         with open(os.path.join(DICT_DIR, 'chirals.json'), 'r') as f:
-            cdict = self._dihedral_dict = json.load(f)
+            cdict = self._chiral_dict = json.load(f)
 
         f = c_function('chiral_mgr_add_chiral_def',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
@@ -199,6 +199,21 @@ class Chiral_Mgr(_Dihedral_Mgr):
             f(self._c_pointer, ctypes.byref(rn_key), ctypes.byref(cn_key),
                 *[pointer(n) for n in sname_objs], *snums, expected_angle)
 
+    @property
+    def chiral_center_dict(self):
+        return self._chiral_dict
+
+    @property
+    def num_mapped_chiral_centers(self):
+        f = c_function('chiral_mgr_num_chirals',
+            args=(ctypes.c_void_p,),
+            ret=ctypes.c_size_t
+        )
+        return f(self._c_pointer)
+
+    def delete(self):
+        c_function('chiral_mgr_delete', args=(ctypes.c_void_p,))(self.cpp_pointer)
+        delattr(self.session, 'chiral_mgr')
 
 
 
