@@ -15,9 +15,9 @@ from chimerax.core.atomic.molarray import Collection
 from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
-from .molobject import Chiral_Center, Proper_Dihedral, Rotamer, Rama, Position_Restraint, \
-        Tuggable_Atom, MDFF_Atom, Distance_Restraint, Proper_Dihedral_Restraint, \
-        Rotamer_Restraint
+from .molobject import Chiral_Center, Proper_Dihedral, Rotamer, Rama,\
+        Position_Restraint, Tuggable_Atom, MDFF_Atom, Distance_Restraint,\
+        Chiral_Restraint, Proper_Dihedral_Restraint, Rotamer_Restraint
 import ctypes
 
 from chimerax.core.atomic import Atom, Atoms, Residue, Residues
@@ -42,6 +42,8 @@ def _non_null_proper_dihedrals(p):
     return Proper_Dihedrals(p[p!=0])
 def _atoms_four_tuple(p):
     return tuple((Atoms(p[:,i].copy()) for i in range(4)))
+def _chiral_restraints(p):
+    return Chiral_Restraints(p)
 def _proper_dihedral_restraints(p):
     return Proper_Dihedral_Restraints(p)
 def _rotamer_restraints(p):
@@ -321,6 +323,38 @@ class Distance_Restraints(Collection):
         indices equal to -1. Can be set, but only if you know what you are
         doing.
          ''')
+
+class Chiral_Restraints(Collection):
+    def __init__(self, c_pointers=None):
+        super().__init__(c_pointers, Chiral_Restraint, Chiral_Restraints)
+
+    def clear_sim_indices(self):
+        f = c_function('chiral_restraint_clear_sim_index',
+            args = (ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointers, len(self))
+
+    @property
+    def chiral_atoms(self):
+        return self.dihedrals.chiral_atoms
+
+    targets = cvec_property('chiral_restraint_target', float64, read_only = True,
+        doc = 'Target angles for each restraint in radians. Read only.')
+    dihedrals = cvec_property('chiral_restraint_chiral_center', cptr, astype=_chiral_centers, read_only=True,
+        doc = 'Returns the restrained :py:class:`Chiral_Centers`. Read only.')
+    offsets = cvec_property('chiral_restraint_offset', float64, read_only = True,
+        doc = 'Differences between current and target angles in radians. Read only.')
+    cutoffs = cvec_property('chiral_restraint_cutoff', float64,
+        doc = 'Cutoff angle offsets below which no restraint will be applied. Can be set.')
+    enableds = cvec_property('chiral_restraint_enabled', npy_bool,
+        doc = 'Enable/disable each restraint or get their current states.')
+    spring_constants = cvec_property('chiral_restraint_k', float64,
+        doc = 'Get/set the spring constants for each restraint in :math:`kJ mol^{-1} rad^{-2}`')
+    sim_indices = cvec_property('chiral_restraint_sim_index', int32,
+        doc='''
+        Index of each restraint in the relevant Force in a running simulation.
+        Returns -1 for restraints not currently in a simulation. Can be
+        set, but only if you know what you are doing.
+        ''')
 
 class Proper_Dihedral_Restraints(Collection):
     def __init__(self, c_pointers=None):

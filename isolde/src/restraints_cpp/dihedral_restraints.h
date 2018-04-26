@@ -2,8 +2,8 @@
  * @Author: Tristan Croll
  * @Date:   05-Mar-2018
  * @Email:  tic20@cam.ac.uk
- * @Last modified by:   Tristan Croll
- * @Last modified time: 18-Apr-2018
+ * @Last modified by:   tic20
+ * @Last modified time: 26-Apr-2018
  * @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
  * @Copyright: Copyright 2017-2018 Tristan Croll
  */
@@ -18,6 +18,7 @@
 #include "../constants.h"
 #include "../util.h"
 #include "../atomic_cpp/dihedral.h"
+#include "../atomic_cpp/chiral.h"
 #include "../colors.h"
 #include "changetracker.h"
 #include "sim_restraint_base.h"
@@ -36,6 +37,7 @@ namespace isolde
 template <class DType, class RType>
 class Dihedral_Restraint_Mgr_Base;
 class Proper_Dihedral_Restraint_Mgr;
+class Chiral_Restraint_Mgr;
 
 class Dihedral_Restraint_Change_Mgr
 {
@@ -79,7 +81,9 @@ public:
     Dihedral_Restraint_Base(DType *dihedral, Dihedral_Restraint_Change_Mgr *mgr)
         : _dihedral(dihedral), _mgr(mgr) {}
     DType* get_dihedral() const {return _dihedral;}
-    double get_target() const {return _target;}
+
+    // Chiral_Restraint has a fixed target set by its Chiral_Center
+    virtual double get_target() const {return _target;}
     /* Setters need to be implemented in the derived classes to ensure the
      * correct pointer is handed to the change tracker.
      */
@@ -101,7 +105,7 @@ public:
     double get_spring_constant() const {return _spring_constant;}
     double get_cutoff() const { return _cutoff; }
     //! Returns (current angle) - (target angle) in radians
-    double offset() const {return util::wrapped_angle(_dihedral->angle()-_target);}
+    double offset() const {return util::wrapped_angle(_dihedral->angle()-get_target());}
     //! Returns (current angle) - (target angle) in degrees
     double offset_deg() const {return util::degrees(offset()); }
     //! Get the transform mapping an annotation primitive to the dihedral location
@@ -124,14 +128,55 @@ protected:
     double _cutoff = 0.0;
     bool _enabled = false;
     bool _display = true;
+    DType *_dihedral;
 
 private:
-    DType *_dihedral;
     Dihedral_Restraint_Change_Mgr *_mgr;
     const char* err_msg_not_implemented() const
         { return "Not implemented!";}
 
 }; // Dihedral_Restraint_Base
+
+class Chiral_Restraint:
+    public Dihedral_Restraint_Base<Chiral_Center>,
+    public pyinstance::PythonInstance<Chiral_Restraint>
+{
+public:
+    Chiral_Restraint(Chiral_Center *chiral, Dihedral_Restraint_Change_Mgr *mgr);
+    double get_target() const { return _dihedral->expected_angle(); }
+    void set_target(double target)
+    {
+        throw std::logic_error("Chiral restraint targets are immutable!");
+    }
+    void set_enabled(bool flag)
+    {
+        if (_enabled != flag)
+        {
+            _enabled = flag;
+            mgr()->track_change(this, change_tracker()->REASON_ENABLED_CHANGED);
+        }
+    }
+    void set_display(bool flag)
+    {
+        if (_display != flag)
+        {
+            _display = flag;
+            mgr()->track_change(this, change_tracker()->REASON_DISPLAY_CHANGED);
+        }
+    }
+    void set_spring_constant(const double &k)
+    {
+        _spring_constant = k<0 ? 0.0 : ( k > MAX_RADIAL_SPRING_CONSTANT ? MAX_RADIAL_SPRING_CONSTANT : k);
+        mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
+    }
+
+    // Optional cutoff angle below which no force will be applied
+    void set_cutoff(double cutoff)
+    {
+        _cutoff = cutoff; _cutoffs[1] = cutoff;
+        mgr()->track_change(this, change_tracker()->REASON_CUTOFF_CHANGED);
+    }
+}; // class Chiral_Restraint
 
 class Proper_Dihedral_Restraint:
     public Dihedral_Restraint_Base<Proper_Dihedral>,
@@ -224,6 +269,23 @@ private:
     void _delete_restraints(const std::set<RType *>& to_delete);
 
 };
+
+class Chiral_Restraint_Mgr:
+    public Dihedral_Restraint_Mgr_Base<Chiral_Center, Chiral_Restraint>,
+    public pyinstance::PythonInstance<Chiral_Restraint_Mgr>
+{
+public:
+    Chiral_Restraint_Mgr(Structure *s, Change_Tracker *ct)
+        :Dihedral_Restraint_Mgr_Base<Chiral_Center, Chiral_Restraint>(s, ct)
+    {
+        _mgr_type = std::type_index(typeid(this));
+        _mgr_pointer = static_cast<void *>(this);
+        change_tracker()->register_mgr(_mgr_type, _py_name, _managed_class_py_name);
+    }
+private:
+    const std::string _py_name = "Chiral_Restraint_Mgr";
+    const std::string _managed_class_py_name = "Chiral_Restraint";
+}; // class Chiral_Restraint_Mgr
 
 class Proper_Dihedral_Restraint_Mgr:
     public Dihedral_Restraint_Mgr_Base<Proper_Dihedral, Proper_Dihedral_Restraint>,

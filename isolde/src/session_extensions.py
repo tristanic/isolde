@@ -2,7 +2,7 @@
 # @Date:   10-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 25-Apr-2018
+# @Last modified time: 26-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -31,6 +31,13 @@ def get_rotamer_mgr(session):
         return session.rota_mgr
     from .molobject import Rota_Mgr
     return Rota_Mgr(session)
+
+def get_chiral_restraint_mgr(model):
+    from .molobject import Chiral_Restraint_Mgr
+    for m in model.child_models():
+        if isinstance(m, Chiral_Restraint_Mgr):
+            return m
+    return Chiral_Restraint_Mgr(model)
 
 def get_proper_dihedral_restraint_mgr(model):
     from .molobject import Proper_Dihedral_Restraint_Mgr

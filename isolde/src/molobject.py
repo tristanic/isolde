@@ -95,6 +95,13 @@ def _rotamer_restraints(p):
 def _pseudobond_or_none(p):
     from chimerax.core.atomic import Pseudobond
     return Pseudobond.c_ptr_to_py_inst(p) if p else None
+def _chiral_restraint_or_none(p):
+    return Chiral_Restraint.c_ptr_to_py_inst(p) if p else None
+def _chiral_restraints(p):
+    from .molarray import Chiral_Restraints
+    return Chiral_Restraints(p)
+def _chiral_restraint_mgr(p):
+    return Chiral_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
 def _proper_dihedral_restraint_or_none(p):
     return Proper_Dihedral_Restraint.c_ptr_to_py_inst(p) if p else None
 def _proper_dihedral_restraints(p):
@@ -113,6 +120,10 @@ def _mdff_mgr(p):
 def _rotamer_restraint_mgr(p):
     return Rotamer_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
 
+def get_chiral_mgr(session):
+    if hasattr(session, 'chiral_mgr') and not session.chiral_mgr.deleted:
+        return session.chiral_mgr
+    return Chiral_Mgr(session)
 
 def get_proper_dihedral_manager(session):
     if hasattr(session, 'proper_dihedral_mgr') and not session.proper_dihedral_mgr.deleted:
@@ -1397,6 +1408,7 @@ class Restraint_Change_Tracker:
     necessary.
     '''
     _mgr_name_to_class_functions = {
+        'Chiral_Restraint_Mgr': (_chiral_restraint_mgr, _chiral_restraints),
         'Proper_Dihedral_Restraint_Mgr': (_proper_dihedral_restraint_mgr, _proper_dihedral_restraints),
         'Position_Restraint_Mgr': (_position_restraint_mgr, _position_restraints),
         'Distance_Restraint_Mgr': (_distance_restraint_mgr, _distance_restraints),
@@ -2381,11 +2393,141 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
             ret = ctypes.py_object)
         return _distance_restraints(f(self._c_pointer))
 
+class Chiral_Restraint_Mgr(_Restraint_Mgr):
+    '''
+    Manages creation, deletion and mapping of chiral restraints for a single
+    atomic structure. Appears as a :py:class:`chimerax.Model` under the
+    :py:class:`chimerax.AtomicStructure` it manages.
+
+    Chirality restraints are always on by default, and are
+    not drawn. The restraint targets are likewise fixed quantities - if you
+    want to switch chirality, you should replace/rename the residue in question
+    to your desired isomer.
+
+    The preferred way to create/retrieve the chirality restraint manager for a
+    given :py:class:`AtomicStructure` instance m is:
+
+    .. code:: python
+
+        from chimerax.isolde import session_extensions as sx
+        chir_mgr = sx.get_chirality_restraint_mgr(m)
+    '''
+    def __init__(self, model, c_pointer = None):
+        super().__init__('Chirality Restraints', model, c_pointer)
+
+    def _get_restraints(self, chirals, create=False):
+        n = len(chirals)
+        f = c_function('chiral_restraint_mgr_get_restraint',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool, ctypes.c_size_t,
+                ctypes.c_void_p),
+            ret = ctypes.c_size_t)
+        ptrs = numpy.empty(n, cptr)
+        found = f(self._c_pointer, chirals._c_pointers, create, n, pointer(ptrs))
+        return _chiral_restraints(ptrs[0:found])
+
+    def add_restraints(self, chirals):
+        '''
+        Returns a :py:class:`Chiral_Restraints` instance covering the
+        :py:class:`Chiral_Centres` in the input. Only one
+        :cpp:class:`Chiral_Restraint` will ever be created for a given chiral
+        centre, so it is safe to use this repeatedly on the same set of centres.
+        Use this method when you want to ensure that all chiral centres in the
+        input will be restrainable in simulations.
+
+        Args:
+            * chirals:
+                - a :py:class:`Chiral_Centers` instance.
+        '''
+        return self._get_restraints(chirals, create=True)
+
+    def add_restraint(self, chiral):
+        '''
+        Singular form of :func:`add_restraints`, returning a
+        :py:class:`Chiral_Restraint` instance (or None if things go
+        wrong).
+
+        Args:
+            * dihedral:
+                - a :py:class:`Chiral_Center` instance
+        '''
+        from .molarray import Chiral_Centers
+        result = self._get_restraints(Dihedrals([dihedral]), create=True)
+        if len(result):
+            return result[0]
+        return None
+
+    def get_restraints(self, chirals):
+        '''
+        Returns a :py:class:`Chiral_Restraints` instance covering the
+        :class:`Chiral_Centers` in the input. Unlike :func:`add_restraints`, no
+        new :cpp:class:`Chiral_Restraint` will be created. Use this method when
+        you've already defined all the restraints you need, and don't want to
+        accidentally add more.
+
+        Args:
+            * chirals:
+                - a :py:class:`Chiral_Centers` instance.
+        '''
+        return self._get_restraints(chirals)
+
+    def get_restraint(self, chiral):
+        '''
+        Singular form of :func:`get_restraints`, returning a
+        :py:class:`Chiral_Restraint` instance (or None if no restraint
+        exists for this chiral centre).
+
+        Args:
+            * chiral:
+                - a :py:class:`Chiral_Center` instance
+        '''
+        from .molarray import Chirals
+        r = self._get_restraints(Chirals([chiral]), create=False)
+        if len(r):
+            return r[0]
+        return None
+
+    def _get_restraints_by_atoms(self, atoms, create):
+        chir_m = get_chiral_mgr(self.session)
+        chirals = chir_m.get_chirals(atoms)
+        return self._get_restraints(chirals, create=create)
+
+    def add_restraints_by_atoms(self, atoms):
+        '''
+        Returns a :py:class:`Chiral_Restraints` covering all chiral centers in
+        the given atoms.
+
+        Args:
+            * atoms:
+                - a :py:class:`chimerax.Atoms` instance
+        '''
+        return self._get_restraints_by_atoms(atoms, create=True)
+
+    def get_restraints_by_atoms(self, atoms):
+        '''
+        Returns a :py:class:`Chiral_Restraints` covering only those chiral
+        centers in  the given atoms for which a restraint has already been
+        defined.
+
+        Args:
+            * atoms:
+                - a :py:class:`chimerax.Atoms` instance
+        '''
+        return self._get_restraints_by_atoms(atoms, create=False)
+
+    @property
+    def num_restraints(self):
+        '''Number of chirality restrains currently owned by this manager.'''
+        f = c_function('chiral_restraint_mgr_num_restraints',
+            args=(ctypes.c_void_p,),
+            ret=ctypes.c_size_t)
+        return f(self._c_pointer)
+
+
 class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
     '''
     Manages creation, deletion, mapping and drawing of proper dihedral
     restraints for a single atomic structure. Appears as a child
-    :py:class:`chimeraX.Model` under the :py:class:`chimerax.AtomicStructure` it
+    :py:class:`chimerax.Model` under the :py:class:`chimerax.AtomicStructure` it
     manages.
 
     The preferred way to create/retrieve the proper dihedral restraint manager
@@ -2464,7 +2606,10 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
                 - a :py:class:`Proper_Dihedral` instance
         '''
         from .molarray import Dihedrals
-        return self._get_restraints(Dihedrals([dihedral]), create=True)[0]
+        r = self._get_restraints(Dihedrals([dihedral]), create=True)
+        if len(r):
+            return r[0]
+        return None
 
     def get_restraints(self, dihedrals):
         '''
@@ -2498,7 +2643,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
 
     def _get_restraints_by_residues_and_name(self, residues, name, create):
         pdm = get_proper_dihedral_manager(self.session)
-        dihedrals = pdm.get_dihedrals(residues, name, create=create)
+        dihedrals = pdm.get_dihedrals(residues, name)
         return self._get_restraints(dihedrals, create=create)
 
     def get_restraints_by_residues_and_name(self, residues, name):
@@ -3360,6 +3505,62 @@ class Distance_Restraint(State):
         simulation. Can be set, but only if you know what you are doing.
         ''')
 
+class Chiral_Restraint(State):
+    '''
+    Handles the restraint of a single chiral centre in simulations. Unlike other
+    restraints, :class:`Chiral_Restraint` instances are enabled by default. In
+    addition, :attr:`target` is immutable, and set to the equilibrium angle of
+    the chiral improper dihedral (defined in `dictionaries/chirals.json` and
+    viewable via :attr:`Chiral_Mgr.chiral_center_dict`).
+    '''
+    def __init__(self, c_pointer):
+        set_c_pointer(self, c_pointer)
+
+    @property
+    def cpp_pointer(self):
+        '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
+        return self._c_pointer.value
+
+    @property
+    def deleted(self):
+        '''Has the C++ side been deleted?'''
+        return not hasattr(self, '_c_pointer')
+
+    def __str__(self):
+        return "Not implemented"
+
+    def reset_state(self):
+        pass
+
+    def clear_sim_index(self):
+        f = c_function('chiral_restraint_clear_sim_index',
+            args = (ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointer_ref, 1)
+
+    @property
+    def chiral_atom(self):
+        return self.dihedral.chiral_atom
+
+    target = c_property('chiral_restraint_target', float64, read_only = True,
+        doc = 'Target angle for this restraint in radians. Read only.')
+    dihedral = c_property('chiral_restraint_chiral_center', cptr, astype=_chiral_center_or_none, read_only=True,
+        doc = 'The restrained :py:class:`Chiral_Center`. Read only.')
+    offset = c_property('chiral_restraint_offset', float64, read_only = True,
+        doc = 'Difference between current and target angle in radians. Read only.')
+    cutoff = c_property('chiral_restraint_cutoff', float64,
+        doc = 'Cutoff angle offset below which no restraint will be applied. Can be set.')
+    enabled = c_property('chiral_restraint_enabled', npy_bool,
+        doc = 'Enable/disable this restraint or get its current state.')
+    spring_constant = c_property('chiral_restraint_k', float64,
+        doc = 'Get/set the spring constant for this restraint in :math:`kJ mol^{-1} rad^{-2}`')
+    sim_index = c_property('chiral_restraint_sim_index', int32,
+        doc='''
+        Index of this restraint in the relevant Force in a running simulation.
+        Returns -1 if the restraint is not currently in a simulation. Can be
+        set, but only if you know what you are doing.
+        ''')
+
+
 class Proper_Dihedral_Restraint(State):
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
@@ -3409,9 +3610,9 @@ class Proper_Dihedral_Restraint(State):
         doc = 'Get the color of the annotation for this restraint according to the current colormap. Read only.')
     sim_index = c_property('proper_dihedral_restraint_sim_index', int32,
         doc='''
-        Index of this restraint in the relevant MDFF Force in a running
-        simulation. Returns -1 if the restraint is not currently in a
-        simulation. Can be set, but only if you know what you are doing.
+        Index of this restraint in the relevant Force in a running simulation.
+        Returns -1 if the restraint is not currently in a simulation. Can be
+        set, but only if you know what you are doing.
         ''')
 
 class Rotamer_Restraint(State):
@@ -3494,7 +3695,7 @@ class Rotamer_Restraint(State):
 # from the pointer (needed by Collections)
 for class_obj in (Chiral_Center, Proper_Dihedral, Rama, Rotamer,
         Position_Restraint, Tuggable_Atom, MDFF_Atom, Distance_Restraint,
-        Proper_Dihedral_Restraint, Rotamer_Restraint):
+        Chiral_Restraint, Proper_Dihedral_Restraint, Rotamer_Restraint):
     if hasattr(class_obj, '_c_class_name'):
         cname = class_obj._c_class_name
     else:
@@ -3512,8 +3713,8 @@ for class_obj in (Chiral_Center, Proper_Dihedral, Rama, Rotamer,
 
 for class_obj in (Proper_Dihedral_Mgr, Chiral_Mgr, Rama_Mgr, Rota_Mgr,
             Position_Restraint_Mgr, Tuggable_Atoms_Mgr, MDFF_Mgr,
-            Distance_Restraint_Mgr, Proper_Dihedral_Restraint_Mgr,
-            Rotamer_Restraint_Mgr):
+            Distance_Restraint_Mgr, Chiral_Restraint_Mgr,
+            Proper_Dihedral_Restraint_Mgr, Rotamer_Restraint_Mgr):
     cname = class_obj.__name__.lower()
     func_name = cname + '_py_inst'
     class_obj.c_ptr_to_py_inst = lambda ptr, fname=func_name: c_function(fname,

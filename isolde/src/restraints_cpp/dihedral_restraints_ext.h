@@ -2,8 +2,8 @@
  * @Author: Tristan Croll
  * @Date:   03-Apr-2018
  * @Email:  tic20@cam.ac.uk
- * @Last modified by:   Tristan Croll
- * @Last modified time: 18-Apr-2018
+ * @Last modified by:   tic20
+ * @Last modified time: 26-Apr-2018
  * @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
  * @Copyright: Copyright 2017-2018 Tristan Croll
  */
@@ -18,6 +18,90 @@
 
 using namespace atomstruct;
 using namespace isolde;
+
+
+/***************************************************************
+ *
+ * Chiral_Restraint_Mgr functions
+ *
+ ***************************************************************/
+SET_PYTHON_INSTANCE(chiral_restraint_mgr, Chiral_Restraint_Mgr)
+GET_PYTHON_INSTANCES(chiral_restraint_mgr, Chiral_Restraint_Mgr)
+
+extern "C" EXPORT void*
+chiral_restraint_mgr_new(void *structure, void *change_tracker)
+{
+    Structure *s = static_cast<Structure *>(structure);
+    isolde::Change_Tracker *ct = static_cast<isolde::Change_Tracker *>(change_tracker);
+    try {
+        Chiral_Restraint_Mgr *mgr = new Chiral_Restraint_Mgr(s, ct);
+        return mgr;
+    } catch (...) {
+        molc_error();
+        return nullptr;
+    }
+} //chiral_restraint_mgr_new
+
+extern "C" EXPORT void
+chiral_restraint_mgr_delete(void *mgr)
+{
+    Chiral_Restraint_Mgr *m = static_cast<Chiral_Restraint_Mgr *>(mgr);
+    try {
+        delete m;
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT size_t
+chiral_restraint_mgr_num_restraints(void *mgr)
+{
+    Chiral_Restraint_Mgr *m = static_cast<Chiral_Restraint_Mgr *>(mgr);
+    try {
+        return m->num_restraints();
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT size_t
+chiral_restraint_mgr_get_restraint(void *mgr, void *chiral,
+        npy_bool create, size_t n, pyobject_t *restraint)
+{
+    Chiral_Restraint_Mgr *m = static_cast<Chiral_Restraint_Mgr *>(mgr);
+    Chiral_Center **c = static_cast<Chiral_Center **>(chiral);
+    try {
+        size_t found = 0;
+        for (size_t i=0; i<n; ++i) {
+            auto r = m->get_restraint(*c++, create);
+            if (r!=nullptr) {
+                *restraint++ = r;
+                found++;
+            }
+        }
+        return found;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
+extern "C" EXPORT void
+chiral_restraint_mgr_delete_restraint(void *mgr, void *restraint, size_t n)
+{
+    Chiral_Restraint_Mgr *m = static_cast<Chiral_Restraint_Mgr *>(mgr);
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    try {
+        std::set<Chiral_Restraint *> to_delete;
+        for (size_t i=0; i<n; ++i) {
+            to_delete.insert(*r++);
+        }
+        m->delete_restraints(to_delete);
+    } catch (...) {
+        molc_error();
+    }
+}
 
 
 /***************************************************************
@@ -131,6 +215,170 @@ proper_dihedral_restraint_mgr_delete_restraint(void *mgr, void *restraint, size_
         molc_error();
     }
 }
+
+/***************************************************************
+ *
+ * Chiral_Restraint functions
+ *
+ ***************************************************************/
+
+SET_PYTHON_CLASS(chiral_restraint, Chiral_Restraint)
+GET_PYTHON_INSTANCES(chiral_restraint, Chiral_Restraint)
+
+extern "C" EXPORT void
+chiral_restraint_target(void *restraint, size_t n, double *target)
+{
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(target++) = (*r++)->get_target();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+chiral_restraint_chiral_center(void *restraint, size_t n, pyobject_t *center)
+{
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *center++ = (*r++)->get_dihedral();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+chiral_restraint_offset(void *restraint, size_t n, double *offset)
+{
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*offset++) = (*r++)->offset();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+chiral_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
+{
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(flag++) = (*r++)->is_enabled();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_chiral_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
+{
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->set_enabled(*(flag++));
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+chiral_restraint_k(void *restraint, size_t n, double *spring_constant)
+{
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(spring_constant++) = (*r++)->get_spring_constant();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_chiral_restraint_k(void *restraint, size_t n, double *spring_constant)
+{
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->set_spring_constant(*(spring_constant++));
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+chiral_restraint_sim_index(void *restraint, size_t n, int *index)
+{
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            *(index++) = (*r++)->get_sim_index();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+set_chiral_restraint_sim_index(void *restraint, size_t n, int *index)
+{
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            (*r++)->set_sim_index(*(index++));
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+chiral_restraint_clear_sim_index(void *restraint, size_t n)
+{
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            (*r++)->clear_sim_index();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+chiral_restraint_cutoff(void *restraint, size_t n, double *cutoff)
+{
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(cutoff++) = (*r++)->get_cutoff();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+extern "C" EXPORT void
+set_chiral_restraint_cutoff(void *restraint, size_t n, double *cutoff)
+{
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->set_cutoff(*(cutoff++));
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
+
 /***************************************************************
  *
  * Proper_Dihedral_Restraint functions
@@ -190,7 +438,6 @@ proper_dihedral_restraint_offset(void *restraint, size_t n, double *offset)
     } catch (...) {
         molc_error();
     }
-
 }
 
 extern "C" EXPORT void

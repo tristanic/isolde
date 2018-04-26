@@ -2,8 +2,8 @@
  * @Author: Tristan Croll
  * @Date:   09-Mar-2018
  * @Email:  tic20@cam.ac.uk
- * @Last modified by:   Tristan Croll
- * @Last modified time: 18-Apr-2018
+ * @Last modified by:   tic20
+ * @Last modified time: 26-Apr-2018
  * @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
  * @Copyright: Copyright 2017-2018 Tristan Croll
  */
@@ -13,6 +13,9 @@
 #define PYINSTANCE_EXPORT
 #include "dihedral_restraints.h"
 #include <pyinstance/PythonInstance.instantiate.h>
+
+template class pyinstance::PythonInstance<isolde::Chiral_Restraint_Mgr>;
+template class pyinstance::PythonInstance<isolde::Chiral_Restraint>;
 
 template class pyinstance::PythonInstance<isolde::Proper_Dihedral_Restraint_Mgr>;
 template class pyinstance::PythonInstance<isolde::Proper_Dihedral_Restraint>;
@@ -110,6 +113,17 @@ std::vector<RType *> Dihedral_Restraint_Mgr_Base<DType, RType>::visible_restrain
  *
  ***************************************************/
 
+Chiral_Restraint::Chiral_Restraint(
+    Chiral_Center *chiral, Dihedral_Restraint_Change_Mgr *mgr)
+    : Dihedral_Restraint_Base<Chiral_Center>(chiral, mgr)
+    {
+        // Chiral_Restraint instances are enabled by default.
+        _enabled = true;
+        _spring_constant = DEFAULT_CHIRAL_RESTRAINT_SPRING_CONSTANT;
+        _cutoff = DEFAULT_CHIRAL_RESTRAINT_CUTOFF;
+    }
+
+
  Proper_Dihedral_Restraint::Proper_Dihedral_Restraint(
      Proper_Dihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr)
      : Dihedral_Restraint_Base<Proper_Dihedral>(dihedral, mgr)
@@ -169,6 +183,8 @@ void Proper_Dihedral_Restraint::get_annotation_color(uint8_t *color)
 } //get_annotation_color
 
 
+template class Dihedral_Restraint_Base<Chiral_Center>;
+template class Dihedral_Restraint_Mgr_Base<Chiral_Center, Chiral_Restraint>;
 
 template class Dihedral_Restraint_Base<Proper_Dihedral>;
 template class Dihedral_Restraint_Mgr_Base<Proper_Dihedral, Proper_Dihedral_Restraint>;
