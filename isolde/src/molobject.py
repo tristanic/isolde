@@ -3538,6 +3538,10 @@ class Chiral_Restraint(State):
         f(self._c_pointer_ref, 1)
 
     @property
+    def atoms(self):
+        return self.dihedral.atoms
+
+    @property
     def chiral_atom(self):
         return self.dihedral.chiral_atom
 

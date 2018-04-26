@@ -334,6 +334,10 @@ class Chiral_Restraints(Collection):
         f(self._c_pointers, len(self))
 
     @property
+    def atoms(self):
+        return self.dihedrals.atoms
+
+    @property
     def chiral_atoms(self):
         return self.dihedrals.chiral_atoms
 

@@ -1,8 +1,8 @@
 # @Author: Tristan Croll
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
-# @Last modified by:   Tristan Croll
-# @Last modified time: 18-Apr-2018
+# @Last modified by:   tic20
+# @Last modified time: 26-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -513,6 +513,7 @@ class Sim_Manager:
     def _prepare_restraint_managers(self):
         from .. import session_extensions as sx
         m = self.model
+        self.chiral_restraint_mgr = sx.get_chiral_restraint_mgr(m)
         self.proper_dihedral_restraint_mgr = sx.get_proper_dihedral_restraint_mgr(m)
         self.position_restraint_mgr = sx.get_position_restraint_mgr(m)
         self.tuggable_atoms_mgr = sx.get_tuggable_atoms_mgr(m)
@@ -530,6 +531,11 @@ class Sim_Manager:
         ramas = rama_mgr.get_ramas(mobile_res)
         ramas = ramas[ramas.valids]
         sh.add_amber_cmap_torsions(ramas)
+
+        cr_m = self.chiral_restraint_mgr
+        crs = cr_m.add_restraints_by_atoms(sc.mobile_atoms)
+        sh.add_dihedral_restraints(crs)
+        uh.append((cr_m, cr_m.triggers.add_handler('changes', self._dihe_r_changed_cb)))
 
         pdr_m = self.proper_dihedral_restraint_mgr
         pdrs = pdr_m.add_all_defined_restraints_for_residues(mobile_res)
@@ -549,7 +555,7 @@ class Sim_Manager:
 
 
         sh.add_dihedral_restraints(pdrs)
-        uh.append((pdr_m, pdr_m.triggers.add_handler('changes', self._pdr_changed_cb)))
+        uh.append((pdr_m, pdr_m.triggers.add_handler('changes', self._dihe_r_changed_cb)))
 
         dr_m = self.distance_restraint_mgr
         # Pre-create all restraints necessary for secondary structure manipulation
@@ -676,7 +682,7 @@ class Sim_Manager:
         self._update_handlers = []
         self._pr_sim_end_cb()
         self._dr_sim_end_cb()
-        self._pdr_sim_end_cb()
+        self._dihe_r_sim_end_cb()
         self._tug_sim_end_cb()
         self._rama_a_sim_end_cb()
         self._rota_a_sim_end_cb()
@@ -754,8 +760,8 @@ class Sim_Manager:
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
-
-    def _pdr_changed_cb(self, trigger_name, changes):
+    def _dihe_r_changed_cb(self, trigger_name, changes):
+        '''Used for all forms of dihedral restraints.'''
         mgr, changes = changes
         change_types = list(changes.keys())
         from chimerax.core.atomic import concatenate
@@ -764,7 +770,7 @@ class Sim_Manager:
             # avoid double counting
             created = changes['created']
             created = created[created.sim_indices == -1]
-            # add only restraints with both atoms in the sim
+            # add only restraints with all atoms in the sim
             all_atoms = self.sim_construct.all_atoms
             indices = numpy.array([all_atoms.indices(atoms) for atoms in created.atoms])
             created = created[numpy.all(indices != -1, axis=0)]
@@ -781,9 +787,13 @@ class Sim_Manager:
             self.sim_handler.update_dihedral_restraints(all_changeds)
 
 
-    def _pdr_sim_end_cb(self, *_):
-        restraints = self.proper_dihedral_restraint_mgr.get_all_restraints_for_residues(self.sim_construct.all_atoms.unique_residues)
-        restraints.clear_sim_indices()
+    def _dihe_r_sim_end_cb(self, *_):
+        ''' Used for all forms of dihedral restraints.'''
+        sc = self.sim_construct
+        pdrs = self.proper_dihedral_restraint_mgr.get_all_restraints_for_residues(sc.mobile_residues)
+        pdrs.clear_sim_indices()
+        crs = self.chiral_restraint_mgr.get_restraints_by_atoms(sc.mobile_atoms)
+        crs.clear_sim_indices()
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
