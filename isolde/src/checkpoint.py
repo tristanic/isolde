@@ -27,6 +27,7 @@ class CheckPoint:
         from . import session_extensions as sx
 
         pr_m = self.position_restraint_mgr = sx.get_position_restraint_mgr(structure)
+        cr_m = self.chiral_restraint_mgr = sx.get_chiral_restraint_mgr(structure)
         pdr_m = self.proper_dihedral_restraint_mgr = sx.get_proper_dihedral_restraint_mgr(structure)
         dr_m = self.distance_restraint_mgr = sx.get_distance_restraint_mgr(structure)
         tug_m = self.tuggable_atoms_mgr = sx.get_tuggable_atoms_mgr(structure)
@@ -43,6 +44,12 @@ class CheckPoint:
             'targets':              prs.targets,
             'spring_constants':     prs.spring_constants,
             'enableds':             prs.enableds
+        }
+
+        chirals = self.saved_chirals = cr_m.get_restraints_by_atoms(atoms)
+        self.saved_cr_properties = {
+            'spring_constants':     chirals.spring_constants,
+            'enableds':             chirals.enableds,
         }
 
         pdrs = self.saved_pdrs = pdr_m.get_all_restraints_for_residues(atoms.unique_residues)
@@ -87,20 +94,35 @@ class CheckPoint:
         # checkpoint was saved, it is much more straightforward/less costly to
         # just disable all restraints, then re-enable only those that were
         # enabled at the checkpoint.
-        prs = self.saved_prs
-        prs.enableds = False
+        atoms = self.mobile_atoms
+
+        pr_m = self.position_restraint_mgr
+        saved_prs = self.saved_prs
+        all_prs = pr_m.get_restraints(atoms)
+        all_prs.enableds = False
         for prop, val in self.saved_pr_properties.items():
-            setattr(prs, prop, val)
+            setattr(saved_prs, prop, val)
 
-        pdrs = self.saved_pdrs
-        pdrs.enableds = False
+        cr_m = self.chiral_restraint_mgr
+        saved_chirals = self.saved_chirals
+        all_chirals = cr_m.get_restraints_by_atoms(atoms)
+        all_chirals.enableds = False
+        for prop, val in self.saved_cr_properties.items():
+            setattr(saved_chirals, prop, val)
+
+        pdr_m = self.proper_dihedral_restraint_mgr
+        saved_pdrs = self.saved_pdrs
+        all_pdrs = pdr_m.get_all_restraints_for_residues(atoms.unique_residues)
+        all_pdrs.enableds = False
         for prop, val in self.saved_pdr_properties.items():
-            setattr(pdrs, prop, val)
+            setattr(saved_pdrs, prop, val)
 
-        drs = self.saved_drs
-        drs.enableds = False
+        dr_m = self.distance_restraint_mgr
+        saved_drs = self.saved_drs
+        all_drs = dr_m.atoms_restraints(atoms)
+        all_drs.enableds = False
         for prop, val in self.saved_dr_properties.items():
-            setattr(drs, prop, val)
+            setattr(saved_drs, prop, val)
 
         atoms = self.mobile_atoms
         tugs = self.tuggable_atoms_mgr.get_tuggables(atoms)
