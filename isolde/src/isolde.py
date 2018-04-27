@@ -2,7 +2,7 @@
 # @Date:   25-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 27-Apr-2018
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -974,10 +974,12 @@ class Isolde():
             if is_continuous_protein_chain(sel):
                 self._enable_secondary_structure_restraints_frame()
                 self._enable_register_shift_frame()
-                self._enable_selection_extend_frame()
             else:
                 self._disable_secondary_structure_restraints_frame()
                 self._disable_register_shift_frame()
+            if is_continuous_protein_chain(sel, allow_single=True):
+                self._enable_selection_extend_frame()
+            else:
                 self._disable_selection_extend_frame()
 
             # A running simulation takes precedence for memory control

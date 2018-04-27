@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 27-Apr-2018
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -10,7 +10,7 @@
 
 import numpy
 from chimerax.core.atomic import Residue, AtomicStructure
-def is_continuous_protein_chain(sel):
+def is_continuous_protein_chain(sel, allow_single = False):
     '''
     Checks if the residues in a selection are all protein, and form a
     continuous chain with no breaks.
@@ -25,7 +25,9 @@ def is_continuous_protein_chain(sel):
         return False
 
     indices = sorted(p.indices(res))
-    first = indices[0]
+    if len(indices) <= 1 and not allow_single:
+        return False
+
     # Check if the indices are continuous
     return all(a == b for a, b in enumerate(indices, indices[0]))
 

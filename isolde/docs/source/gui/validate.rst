@@ -1,6 +1,9 @@
 Monitoring the quality of your model
 ====================================
 
+.. toctree::
+   :maxdepth: 2
+
 While ISOLDE's live annotations help you see at a glance where the problems are
 in whatever part of the model you happen to be looking at, it is of course still
 important to have access to a quick summary of *all* its known (potential)
