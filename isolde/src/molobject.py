@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 27-Apr-2018
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -66,6 +66,7 @@ def _proper_dihedral_or_none(p):
 def _rotamer_or_none(p):
     return Rotamer.c_ptr_to_py_inst(p) if p else None
 def _bond_or_none(p):
+    from chimerax.atomic import Bond
     return Bond.c_ptr_to_py_inst(p) if p else None
 def _distance_restraint_or_none(p):
     return Distance_Restraint.c_ptr_to_py_inst(p) if p else None
@@ -3140,12 +3141,11 @@ class _Dihedral(State):
     def reset_state(self):
         pass
 
-    angle = c_property('dihedral_angle', float64, read_only=True, doc = 'Angle in radians. Read only.')
-    name = c_property('dihedral_name', string, read_only = True, doc = 'Name of this dihedral. Read only.')
-    atoms = c_property('dihedral_atoms', cptr, 4, astype=_atoms, read_only=True,
-        doc = 'Atoms making up this dihedral. Read only.')
-    residue = c_property('dihedral_residue', cptr, astype=_residue, read_only=True,
-        doc = 'Residue this dihedral belongs to. Read only.')
+    @property
+    def _natoms(self):
+        return 4
+    #TODO: remove this hack once ChimeraX c_array_property bug is fixed
+
 
 class Chiral_Center(_Dihedral):
     '''
@@ -3162,6 +3162,14 @@ class Chiral_Center(_Dihedral):
     generated as  needed by :class:`Chiral_Mgr` based on dictionary definitions.
     '''
 
+    atoms = c_property('chiral_atoms', cptr, '_natoms', astype=_atoms, read_only=True,
+        doc = 'Atoms making up this chiral centre. Read only.')
+
+    angle = c_property('chiral_angle', float64, read_only=True,
+        doc = 'Angle in radians. Read only.')
+    residue = c_property('chiral_residue', cptr, astype=_residue, read_only=True,
+        doc = 'Residue this chiral centre belongs to. Read only.')
+
     expected_angle = c_property('chiral_center_expected_angle', float64, read_only=True,
         doc='The equilibrium angle of the chiral dihedral in its correct isomeric state. Read only.')
     deviation = c_property('chiral_center_deviation', float64, read_only=True,
@@ -3174,6 +3182,15 @@ class Proper_Dihedral(_Dihedral):
     A Proper_Dihedral is defined as a dihedral in which the four atoms are
     strictly bonded a1-a2-a3-a4.
     '''
+    angle = c_property('proper_dihedral_angle', float64, read_only=True,
+        doc = 'Angle in radians. Read only.')
+    name = c_property('proper_dihedral_name', string, read_only = True,
+        doc = 'Name of this dihedral. Read only.')
+
+    atoms = c_property('proper_dihedral_atoms', cptr, '_natoms', astype=_atoms, read_only=True,
+        doc = 'Atoms making up this dihedral. Read only.')
+    residue = c_property('proper_dihedral_residue', cptr, astype=_residue, read_only=True,
+        doc = 'Residue this dihedral belongs to. Read only.')
     axial_bond = c_property('proper_dihedral_axial_bond', cptr, astype=_bond_or_none, read_only=True,
         doc='Bond forming the axis of this dihedral. Read-only')
 

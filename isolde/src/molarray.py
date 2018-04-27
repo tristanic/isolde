@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 27-Apr-2018
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -60,17 +60,11 @@ class _Dihedrals(Collection):
     def __init__(self, c_pointers, single_class, array_class):
         super().__init__(c_pointers, single_class, array_class)
 
-    atoms = cvec_property('dihedral_atoms', cptr, 4, astype=_atoms_four_tuple, read_only=True,
-        doc = '''
-        Returns a four-tuple of :class:`Atoms` objects. For each dihedral,
-        its constituent atoms are in the matching position in the four
-        :class:`Atoms` collections. Read only.
-        ''')
-    angles = cvec_property('dihedral_angle', float64, read_only=True,
-        doc='Returns the angle in radians for each dihedral. Read only.')
-    names = cvec_property('dihedral_name', string, read_only=True)
-    residues = cvec_property('dihedral_residue', cptr, astype=_residues, read_only=True,
-        doc='Returns a :class:`Residues` giving the parent residue of each dihedral. Read only')
+    @property
+    def _natoms(self):
+        return 4
+    #TODO: remove this hack once ChimeraX c_array_property bug is fixed
+
 
 class Chiral_Centers(_Dihedrals):
 
@@ -82,6 +76,17 @@ class Chiral_Centers(_Dihedrals):
             +'and deletion. Instead, use '\
             +'session.chiral_mgr.delete_chirals(chirals).'
         raise RuntimeError(err_string)
+
+    atoms = cvec_property('chiral_atoms', cptr, '_natoms', astype=_atoms_four_tuple, read_only=True,
+        doc = '''
+        Returns a four-tuple of :class:`Atoms` objects. For each dihedral,
+        its constituent atoms are in the matching position in the four
+        :class:`Atoms` collections. Read only.
+        ''')
+    angles = cvec_property('chiral_angle', float64, read_only=True,
+        doc='Returns the angle in radians for each dihedral. Read only.')
+    residues = cvec_property('chiral_residue', cptr, astype=_residues, read_only=True,
+        doc='Returns a :class:`Residues` giving the parent residue of each dihedral. Read only')
 
     expected_angles = cvec_property('chiral_center_expected_angle', float64, read_only=True,
         doc='The equilibrium angle of each chiral dihedral in its correct isomeric state. Read only.')
@@ -101,6 +106,22 @@ class Proper_Dihedrals(_Dihedrals):
             +'and deletion. Instead, use '\
             +'session.proper_dihedrals_mgr.delete_dihedrals(dihedrals).'
         raise RuntimeError(err_string)
+
+    @property
+    def natoms(self):
+        return 4
+    #TODO: remove this hack once ChimeraX c_array_property bug is fixed
+    atoms = cvec_property('proper_dihedral_atoms', cptr, '_natoms', astype=_atoms_four_tuple, read_only=True,
+        doc = '''
+        Returns a four-tuple of :class:`Atoms` objects. For each dihedral,
+        its constituent atoms are in the matching position in the four
+        :class:`Atoms` collections. Read only.
+        ''')
+    angles = cvec_property('proper_dihedral_angle', float64, read_only=True,
+        doc='Returns the angle in radians for each dihedral. Read only.')
+    names = cvec_property('proper_dihedral_name', string, read_only=True)
+    residues = cvec_property('proper_dihedral_residue', cptr, astype=_residues, read_only=True,
+        doc='Returns a :class:`Residues` giving the parent residue of each dihedral. Read only')
 
     axial_bonds = cvec_property('proper_dihedral_axial_bond', cptr, astype=_bonds, read_only=True,
         doc='Returns a :class:`Bonds` giving the axial bond for each dihedral. Read-only')
