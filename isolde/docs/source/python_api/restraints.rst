@@ -35,6 +35,7 @@ MDFF_Mgr
 ~~~~~~~~
     .. autoclass:: MDFF_Mgr
         :members:
+        :inherited-members:
 
 MDFF_Atom
 ~~~~~~~~~
@@ -54,6 +55,7 @@ Position_Restraint_Mgr
 ~~~~~~~~~~~~~~~~~~~~~~
     .. autoclass:: Position_Restraint_Mgr
         :members:
+        :inherited-members:
 
 Position_Restraint
 ~~~~~~~~~~~~~~~~~~
@@ -76,6 +78,7 @@ Tuggable_Atoms_Mgr
 ~~~~~~~~~~~~~~~~~~
     .. autoclass:: Tuggable_Atoms_Mgr
         :members:
+        :inherited-members:
 
 Tuggable_Atom
 ~~~~~~~~~~~~~
@@ -93,6 +96,7 @@ Distance_Restraint_Mgr
 ~~~~~~~~~~~~~~~~~~~~~~
     .. autoclass:: Distance_Restraint_Mgr
         :members:
+        :inherited-members:
 
 Distance_Restraint
 ~~~~~~~~~~~~~~~~~~
@@ -110,6 +114,7 @@ Proper_Dihedral_Restraint_Mgr
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     .. autoclass:: Proper_Dihedral_Restraint_Mgr
         :members:
+        :inherited-members:
 
 Proper_Dihedral_Restraint
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -121,6 +126,26 @@ Proper_Dihedral_Restraints
     .. autoclass:: Proper_Dihedral_Restraints
         :members:
 
+Chirality Restraints
+--------------------
+
+Chiral_Restraint_Mgr
+~~~~~~~~~~~~~~~~~~~~
+    .. autoclass:: Chiral_Restraint_Mgr
+        :members:
+        :inherited-members:
+
+Chiral_Restraint
+~~~~~~~~~~~~~~~~
+    .. autoclass:: Chiral_Restraint
+        :members:
+
+Chiral_Restraints
+~~~~~~~~~~~~~~~~~
+    .. autoclass:: Chiral_Restraints
+        :members:
+
+
 Rotamer Restraints
 ------------------
 
@@ -128,6 +153,7 @@ Rotamer_Restraint_Mgr
 ~~~~~~~~~~~~~~~~~~~~~
     .. autoclass:: Rotamer_Restraint_Mgr
         :members:
+        :inherited-members:
 
 Rotamer_Restraint
 ~~~~~~~~~~~~~~~~~

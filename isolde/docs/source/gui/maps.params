@@ -1,8 +1,9 @@
  maps {
    input {
-     pdb_file_name = None
+     pdb_file_name = None # Replace this with the name of your pdb file
      reflection_data {
-       file_name = None
+       file_name = None # Replace this with the file containing your structure
+                        # factors (e.g. 1xxy-sf.cif or reflections.mtz)
        labels = None
        high_resolution = None
        low_resolution = None
@@ -43,21 +44,21 @@
      format = *mtz phs
      mtz_label_amplitudes = 2FOFCWT
      mtz_label_phases = PH2FOFCWT
-     fill_missing_f_obs = False
+     fill_missing_f_obs = True
      sharpening = False
      sharpening_b_factor = None
-     exclude_free_r_reflections = False
+     exclude_free_r_reflections = True # IMPORTANT: keep this set to True
      isotropize = True
    }
    map_coefficients {
      map_type = 2mFo-DFc
      format = *mtz phs
-     mtz_label_amplitudes = 2FOFCWT_fill
-     mtz_label_phases = PH2FOFCWT_fill
+     mtz_label_amplitudes = 2FOFCWT_sharp
+     mtz_label_phases = PH2FOFCWT_sharp
      fill_missing_f_obs = True
-     sharpening = False
-     sharpening_b_factor = None
-     exclude_free_r_reflections = False
+     sharpening = True
+     sharpening_b_factor = 80 # Reasonable for most ~3A maps
+     exclude_free_r_reflections = True # IMPORTANT: keep this set to True
      isotropize = True
    }
    map_coefficients {
@@ -65,35 +66,10 @@
      format = *mtz phs
      mtz_label_amplitudes = FOFCWT
      mtz_label_phases = PHFOFCWT
-     fill_missing_f_obs = False
+     fill_missing_f_obs = TRUE
      sharpening = False
      sharpening_b_factor = None
-     exclude_free_r_reflections = False
-     isotropize = True
-   }
-   map_coefficients {
-     map_type = anomalous
-     format = *mtz phs
-     mtz_label_amplitudes = ANOM
-     mtz_label_phases = PHANOM
-     fill_missing_f_obs = False
-     sharpening = False
-     sharpening_b_factor = None
-     exclude_free_r_reflections = False
-     isotropize = True
-   }
-   map {
-     map_type = 2mFo-DFc
-     format = xplor *ccp4
-     file_name = None
-     fill_missing_f_obs = False
-     grid_resolution_factor = 1/4.
-     region = *selection cell
-     atom_selection = None
-     atom_selection_buffer = 3
-     sharpening = False
-     sharpening_b_factor = None
-     exclude_free_r_reflections = False
+     exclude_free_r_reflections = True # IMPORTANT: keep this set to True
      isotropize = True
    }
  }

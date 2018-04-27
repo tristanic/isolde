@@ -145,7 +145,7 @@ direction of pull:
 
 This mouse mode is set every time the simulation starts. You can still use the
 buttons on the ChimeraX mouse modes toolbar to make the right mouse button do
-other things (just avoid anything that actually edits the model while your
+other things (just avoid anything that actually adds or removes atoms while your
 simulation is running, otherwise Bad Things\ :sup:`TM` will happen), and come
 back to tugging using the ISOLDE tugging mouse modes toolbar (at the bottom left
 of the ISOLDE panel):

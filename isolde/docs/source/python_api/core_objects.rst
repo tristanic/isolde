@@ -72,62 +72,81 @@ Some general key points:
 
 .. automodule:: chimerax.isolde.atomic
 
-    Proper Dihedrals
-    -------------------
+Proper Dihedrals
+----------------
 
-    Proper_Dihedral_Mgr
-    ~~~~~~~~~~~~~~~~~~~
+Proper_Dihedral_Mgr
+~~~~~~~~~~~~~~~~~~~
     .. autoclass:: Proper_Dihedral_Mgr
         :members:
 
-    Proper_Dihedral
-    ~~~~~~~~~~~~~~~
+
+Proper_Dihedral
+~~~~~~~~~~~~~~~
     .. autoclass:: Proper_Dihedral
         :members:
         :inherited-members:
 
-    Proper_Dihedrals
-    ~~~~~~~~~~~~~~~~
+Proper_Dihedrals
+~~~~~~~~~~~~~~~~
     .. autoclass:: Proper_Dihedrals
         :members:
         :inherited-members:
 
+Chiral Centres
+--------------
 
+Chiral_Mgr
+~~~~~~~~~~
+    .. autoclass:: Chiral_Mgr
+        :members:
 
-    Ramachandran validation
-    -----------------------
+Chiral_Center
+~~~~~~~~~~~~~
+    .. autoclass:: Chiral_Center
+        :members:
+        :inherited-members:
 
-    Rama_Mgr
-    ~~~~~~~~
+Chiral_Centers
+~~~~~~~~~~~~~~
+    .. autoclass:: Chiral_Centers
+        :members:
+        :inherited-members:
+
+Ramachandran validation
+-----------------------
+
+Rama_Mgr
+~~~~~~~~
     .. autoclass:: Rama_Mgr
         :members:
 
-    Rama
-    ~~~~
+Rama
+~~~~
     .. autoclass:: Rama
         :members:
 
-    Ramas
-    ~~~~~
+Ramas
+~~~~~
     .. autoclass:: Ramas
         :members:
         :inherited-members:
 
-    Amino acid rotamers
-    -------------------
+Amino acid rotamers
+-------------------
 
-    Rota_Mgr
-    ~~~~~~~~
+Rota_Mgr
+~~~~~~~~
     .. autoclass:: Rota_Mgr
         :members:
 
-    Rotamer
-    ~~~~~~~
+Rotamer
+~~~~~~~
     .. autoclass:: Rotamer
         :members:
 
-    Rotamers
-    ~~~~~~~~
+Rotamers
+~~~~~~~~
     .. autoclass:: Rotamers
         :members:
         :inherited-members:

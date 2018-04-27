@@ -168,7 +168,7 @@ Then click "Map MTZ:", and navigate to/select your MTZ file in the browser that
 opens. Finally, click "Initialise" to add your maps. Note that addition of
 multiple MTZ files to the same model is not currently supported.
 
-Template file for generation of suitable crystallographic maps:
+Template `phenix.maps` input for generation of suitable crystallographic maps:
 
 .. literalinclude:: maps.params
   :language: python
