@@ -31,7 +31,7 @@ The residue rebuilding toolbar
     protein residue.
 
     +-----------------+--------------------------------------------------------+
-    | Top line        | Basic information about the selected residue: chain id,|
+    | Top line        | Basic information about the selected residue: chain ID,|
     |                 | residue number, residue name, peptide bond conformation|
     |                 | (if applicable), rotamer (if applicable). The rotamer  |
     |                 | information provides the name of the nearest named     |
@@ -258,7 +258,7 @@ Distance Restraint Toolbar
 
 
     .. |dr_set| image:: ../images/distance-restraint-icon.png
-    .. |dr_dist| image:: ../images/diagonal_arrows.png
+    .. |dr_dist| image:: ../images/diagonal-arrows.png
     .. |multi_x| image:: ../images/multi-x.png
 
 Distance restraints appear in the model as double-ended pistons:

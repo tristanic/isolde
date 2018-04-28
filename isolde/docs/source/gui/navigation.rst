@@ -22,7 +22,12 @@ first).
 .. figure:: images/loaded_model.jpg
     :alt: Model/Map display in ChimeraX window
 
-    A typical ISOLDE scene
+    A typical ISOLDE scene. The default background colour in ChimeraX is black
+    like in this image, but personally I prefer white and will be using it for
+    most of this tutorial. You can change background colour to black, white or
+    grey using the square buttons near the middle of the ChimeraX display
+    toolbar (top of the ChimeraX window), or *set bgColor <color>* in the
+    ChimeraX command line if you're feeling adventurous.
 
 First, let's talk about what's changed in the model itself. Perhaps most
 immediately obvious is the change in the appearance of the cartoon: it's now
