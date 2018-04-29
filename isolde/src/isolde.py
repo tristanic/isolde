@@ -924,9 +924,9 @@ class Isolde():
         valid_models = mtd[AtomicStructure]
         valid_models = sorted(valid_models, key=lambda m: m.id)
 
-        update_selected_model = False
+        force = False
         if not len(self._available_models):
-            update_selected_model = True
+            force = True
         self._available_models = {}
 
         for m in valid_models:
@@ -935,8 +935,7 @@ class Isolde():
             self._available_models[id_str] = _get_atomic_model(m)
 
         self._populate_available_volumes_combo_box()
-        if update_selected_model:
-            self._change_selected_model(force=True)
+        self._change_selected_model(force=force)
 
     def _selection_changed(self, *_):
         from chimerax.atomic import selected_atoms
