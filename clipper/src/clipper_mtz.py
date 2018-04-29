@@ -2,7 +2,7 @@
 # @Date:   28-Feb-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 19-Apr-2018
+# @Last modified time: 29-Apr-2018
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -13,6 +13,12 @@ from clipper_python import Grid_sampling, HKL_data_Flag, CCP4MTZfile, HKL_info, 
                     HKL_data_I_sigI, HKL_data_F_sigF, HKL_data_F_phi
 from chimerax.core.models import Model
 
+def calculate_voxel_size(resolution, shannon_rate):
+    return resolution.limit()/2/shannon_rate
+
+def calculate_shannon_rate(resolution, voxel_size):
+    return resolution.limit()/(2*voxel_size)
+
 class ReflectionDataContainer(Model):
     '''
     A container class to hold a set of reciprocal-space data, and
@@ -20,7 +26,7 @@ class ReflectionDataContainer(Model):
     ChimeraX Model class allowing it to be loaded into the model
     hierarchy making it easily visible to the user.
     '''
-    def __init__(self, session, hklfile, shannon_rate = 1.5):
+    def __init__(self, session, hklfile, shannon_rate = 1.5, min_voxel_size = 0.5):
         '''
         This class should hold the information that's common to all
         the data contained in its children (e.g. the HKLinfo object,
@@ -31,6 +37,10 @@ class ReflectionDataContainer(Model):
         hklinfo, free, exp, calc = load_hkl_data(hklfile)
         self.hklinfo = hklinfo
         self._grid_sampling = None
+
+        voxel_size = calculate_voxel_size(hklinfo.resolution, shannon_rate)
+        if voxel_size < min_voxel_size:
+            shannon_rate = calculate_shannon_rate(hklinfo.resolution, min_voxel_size)
         self.shannon_rate = shannon_rate
 
         self.free_flags = None
