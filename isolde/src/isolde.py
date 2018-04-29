@@ -2,7 +2,7 @@
 # @Date:   25-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 27-Apr-2018
+# @Last modified time: 29-Apr-2018
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -596,7 +596,7 @@ class Isolde():
 
         # Run all connected functions once to initialise
         self._change_force_field()
-        self._change_selected_model()
+        self._change_selected_model(force=True)
         self._change_b_and_a_padding()
         self._change_sim_platform()
 
@@ -892,7 +892,7 @@ class Isolde():
 
     def _update_sim_temperature(self):
         t = self.iw._sim_temp_spin_box.value()
-        if self.sim_handler is not None:
+        if self.simulation_running:
             self.sim_handler.temperature = t
         self.sim_params.temperature = t
 
@@ -936,7 +936,7 @@ class Isolde():
 
         self._populate_available_volumes_combo_box()
         if update_selected_model:
-            self._change_selected_model()
+            self._change_selected_model(force=True)
 
     def _selection_changed(self, *_):
         from chimerax.atomic import selected_atoms
