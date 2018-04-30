@@ -119,6 +119,11 @@ imposes a few requirements:
       is not yet available in ChimeraX/ISOLDE, so for now you'll have to do that
       in another package. Stay tuned!
 
+  3.  Alternative conformations (altlocs - that is, the same atom in two or more
+      different places) are not supported. This is usually not a problem, since
+      at the resolutions ISOLDE can help the most with altlocs aren't generally
+      resolvable in the data anyway!
+
 Adding maps
 -----------
 
@@ -135,6 +140,12 @@ three maps:
   - a standard 2mFo-DFc map;
   - a 2mFo-DFc map with a suitable amount of B-factor sharpening applied; and
   - a mFo-DFc difference map.
+
+If your map is better than ~2Å I would advise replacing the sharpened map with a
+smoothed map instead, by providing a negative value for the
+`sharpening_b_factor` parameter). This becomes particularly important at very
+high resolutions, since MDFF works best when the density has smooth gradients
+(as opposed to abrupt "walls") for the atoms to fall down.
 
 Note that for crystallographic maps, inclusion of free reflections when
 generating any map that the atoms will "feel" is equivalent to including them

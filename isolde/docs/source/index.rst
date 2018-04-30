@@ -14,10 +14,12 @@ Interactive Structure Optimisation by Local Direct Exploration
 
    Home <self>
    intro
+   requirements
    gui/index
    python_api/index
    license
    citing
+   contact
 
 Indices and tables
 ==================

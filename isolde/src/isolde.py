@@ -2,7 +2,7 @@
 # @Date:   25-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 27-Apr-2018
+# @Last modified time: 30-Apr-2018
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -596,7 +596,7 @@ class Isolde():
 
         # Run all connected functions once to initialise
         self._change_force_field()
-        self._change_selected_model()
+        self._change_selected_model(force=True)
         self._change_b_and_a_padding()
         self._change_sim_platform()
 
@@ -892,7 +892,7 @@ class Isolde():
 
     def _update_sim_temperature(self):
         t = self.iw._sim_temp_spin_box.value()
-        if self.sim_handler is not None:
+        if self.simulation_running:
             self.sim_handler.temperature = t
         self.sim_params.temperature = t
 
@@ -924,9 +924,9 @@ class Isolde():
         valid_models = mtd[AtomicStructure]
         valid_models = sorted(valid_models, key=lambda m: m.id)
 
-        update_selected_model = False
+        force = False
         if not len(self._available_models):
-            update_selected_model = True
+            force = True
         self._available_models = {}
 
         for m in valid_models:
@@ -935,8 +935,7 @@ class Isolde():
             self._available_models[id_str] = _get_atomic_model(m)
 
         self._populate_available_volumes_combo_box()
-        if update_selected_model:
-            self._change_selected_model()
+        self._change_selected_model(force=force)
 
     def _selection_changed(self, *_):
         from chimerax.atomic import selected_atoms
@@ -2845,7 +2844,7 @@ class Isolde():
         import os
         import webbrowser
         fname = os.path.join(self._root_dir, 'doc', 'index.html')
-        webbrowser.open(fname)
+        webbrowser.open('file://' + os.path.realpath(fname))
 
     ##############################################
     # Demo
