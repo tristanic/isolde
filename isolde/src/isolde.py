@@ -2,7 +2,7 @@
 # @Date:   25-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 29-Apr-2018
+# @Last modified time: 30-Apr-2018
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -2838,7 +2838,7 @@ class Isolde():
         import os
         import webbrowser
         fname = os.path.join(self._root_dir, 'doc', 'index.html')
-        webbrowser.open(fname)
+        webbrowser.open('file://' + os.path.realpath(fname))
 
     ##############################################
     # Demo
