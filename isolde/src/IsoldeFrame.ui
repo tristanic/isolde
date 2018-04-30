@@ -2066,14 +2066,14 @@ border: 1px;
                         </widget>
                        </item>
                        <item>
-                        <widget class="QFrame" name="_rebuild_2ry_struct_restr_master_container">
+                        <widget class="QFrame" name="frame_14">
                          <property name="frameShape">
                           <enum>QFrame::StyledPanel</enum>
                          </property>
                          <property name="frameShadow">
                           <enum>QFrame::Raised</enum>
                          </property>
-                         <layout class="QHBoxLayout" name="horizontalLayout_31">
+                         <layout class="QHBoxLayout" name="horizontalLayout_38">
                           <property name="spacing">
                            <number>1</number>
                           </property>
@@ -2090,87 +2090,114 @@ border: 1px;
                            <number>1</number>
                           </property>
                           <item>
-                           <widget class="QFrame" name="_rebuild_2ry_struct_restr_container">
+                           <widget class="QFrame" name="_rebuild_2ry_struct_restr_master_container">
                             <property name="frameShape">
                              <enum>QFrame::NoFrame</enum>
                             </property>
                             <property name="frameShadow">
-                             <enum>QFrame::Plain</enum>
+                             <enum>QFrame::Raised</enum>
                             </property>
-                            <layout class="QHBoxLayout" name="horizontalLayout_32">
+                            <layout class="QHBoxLayout" name="horizontalLayout_31">
                              <property name="spacing">
                               <number>1</number>
                              </property>
                              <property name="leftMargin">
-                              <number>0</number>
+                              <number>1</number>
                              </property>
                              <property name="topMargin">
-                              <number>0</number>
+                              <number>1</number>
                              </property>
                              <property name="rightMargin">
-                              <number>0</number>
+                              <number>1</number>
                              </property>
                              <property name="bottomMargin">
-                              <number>0</number>
+                              <number>1</number>
                              </property>
                              <item>
-                              <widget class="QToolButton" name="_rebuild_restrain_helix_button">
-                               <property name="toolTip">
-                                <string>Restrain selection to alpha helix</string>
+                              <widget class="QFrame" name="_rebuild_2ry_struct_restr_container">
+                               <property name="frameShape">
+                                <enum>QFrame::NoFrame</enum>
                                </property>
-                               <property name="text">
-                                <string>...</string>
+                               <property name="frameShadow">
+                                <enum>QFrame::Plain</enum>
                                </property>
-                               <property name="icon">
-                                <iconset resource="resources/resources.qrc">
-                                 <normaloff>:/icons/helix-icon.png</normaloff>:/icons/helix-icon.png</iconset>
-                               </property>
-                               <property name="iconSize">
-                                <size>
-                                 <width>36</width>
-                                 <height>36</height>
-                                </size>
-                               </property>
-                              </widget>
-                             </item>
-                             <item>
-                              <widget class="QToolButton" name="_rebuild_restrain_anti_beta_button">
-                               <property name="toolTip">
-                                <string>Restrain selection to antiparallel beta</string>
-                               </property>
-                               <property name="text">
-                                <string>...</string>
-                               </property>
-                               <property name="icon">
-                                <iconset resource="resources/resources.qrc">
-                                 <normaloff>:/icons/antiparallel-beta-icon.png</normaloff>:/icons/antiparallel-beta-icon.png</iconset>
-                               </property>
-                               <property name="iconSize">
-                                <size>
-                                 <width>36</width>
-                                 <height>36</height>
-                                </size>
-                               </property>
-                              </widget>
-                             </item>
-                             <item>
-                              <widget class="QToolButton" name="_rebuild_restrain_par_beta_button">
-                               <property name="toolTip">
-                                <string>Restrain selection to parallel beta</string>
-                               </property>
-                               <property name="text">
-                                <string>...</string>
-                               </property>
-                               <property name="icon">
-                                <iconset resource="resources/resources.qrc">
-                                 <normaloff>:/icons/parallel-beta-icon.png</normaloff>:/icons/parallel-beta-icon.png</iconset>
-                               </property>
-                               <property name="iconSize">
-                                <size>
-                                 <width>36</width>
-                                 <height>36</height>
-                                </size>
-                               </property>
+                               <layout class="QHBoxLayout" name="horizontalLayout_32">
+                                <property name="spacing">
+                                 <number>1</number>
+                                </property>
+                                <property name="leftMargin">
+                                 <number>0</number>
+                                </property>
+                                <property name="topMargin">
+                                 <number>0</number>
+                                </property>
+                                <property name="rightMargin">
+                                 <number>0</number>
+                                </property>
+                                <property name="bottomMargin">
+                                 <number>0</number>
+                                </property>
+                                <item>
+                                 <widget class="QToolButton" name="_rebuild_restrain_helix_button">
+                                  <property name="toolTip">
+                                   <string>Restrain selection to alpha helix</string>
+                                  </property>
+                                  <property name="text">
+                                   <string>...</string>
+                                  </property>
+                                  <property name="icon">
+                                   <iconset resource="resources/resources.qrc">
+                                    <normaloff>:/icons/helix-icon.png</normaloff>:/icons/helix-icon.png</iconset>
+                                  </property>
+                                  <property name="iconSize">
+                                   <size>
+                                    <width>36</width>
+                                    <height>36</height>
+                                   </size>
+                                  </property>
+                                 </widget>
+                                </item>
+                                <item>
+                                 <widget class="QToolButton" name="_rebuild_restrain_anti_beta_button">
+                                  <property name="toolTip">
+                                   <string>Restrain selection to antiparallel beta</string>
+                                  </property>
+                                  <property name="text">
+                                   <string>...</string>
+                                  </property>
+                                  <property name="icon">
+                                   <iconset resource="resources/resources.qrc">
+                                    <normaloff>:/icons/antiparallel-beta-icon.png</normaloff>:/icons/antiparallel-beta-icon.png</iconset>
+                                  </property>
+                                  <property name="iconSize">
+                                   <size>
+                                    <width>36</width>
+                                    <height>36</height>
+                                   </size>
+                                  </property>
+                                 </widget>
+                                </item>
+                                <item>
+                                 <widget class="QToolButton" name="_rebuild_restrain_par_beta_button">
+                                  <property name="toolTip">
+                                   <string>Restrain selection to parallel beta</string>
+                                  </property>
+                                  <property name="text">
+                                   <string>...</string>
+                                  </property>
+                                  <property name="icon">
+                                   <iconset resource="resources/resources.qrc">
+                                    <normaloff>:/icons/parallel-beta-icon.png</normaloff>:/icons/parallel-beta-icon.png</iconset>
+                                  </property>
+                                  <property name="iconSize">
+                                   <size>
+                                    <width>36</width>
+                                    <height>36</height>
+                                   </size>
+                                  </property>
+                                 </widget>
+                                </item>
+                               </layout>
                               </widget>
                              </item>
                             </layout>
