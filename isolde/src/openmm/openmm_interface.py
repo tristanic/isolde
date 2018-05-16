@@ -468,8 +468,8 @@ class Sim_Manager:
                 - 'start': revert to the state the model was in prior to
                   starting the simulation
         '''
-        self.sim_handler.stop()
         self._revert_to = revert
+        self.sim_handler.stop()
 
     def toggle_pause(self):
         '''
@@ -691,6 +691,7 @@ class Sim_Manager:
         if rt == 'checkpoint':
             self._current_checkpoint.revert(update_sim=False)
         elif rt == 'start':
+            print('reverting to start')
             self._starting_checkpoint.revert(update_sim=False)
         self.sim_construct.revert_visualisation()
 
