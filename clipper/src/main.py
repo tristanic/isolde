@@ -113,7 +113,8 @@ def test_pack_box(model, xmap, size = 50):
     from chimerax.core.surface.shapes import sphere_geometry
     d = Drawing('box corners')
     m = Model('box', session)
-    d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    d.set_geometry(*sphere_geometry(80))
+    #d.vertices, d.normals, d.triangles = sphere_geometry(80)
     box_min = clipper.Coord_orth(coord-box_size/2).coord_frac(xmap.cell()).coord_grid(xmap.grid_sampling())
     box_max = box_min + clipper.Coord_grid(*box_size.tolist())
     minmax = [box_min, box_max]
@@ -146,7 +147,8 @@ def pack_box(model, xmap, box_origin_xyz, size = 100):
     from chimerax.core.surface.shapes import sphere_geometry
     d = Drawing('box corners')
     m = Model('box', session)
-    d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    #d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    d.set_geometry(*sphere_geometry(80))
     minmax = [box_origin_xyz, box_origin_xyz+box_size_xyz]
     dp = []
     for i in range(2):
@@ -164,7 +166,8 @@ def draw_box(min_corner, max_corner, name='box'):
     from chimerax.core.surface.shapes import sphere_geometry
     d = Drawing('corners')
     m = Model(name, session)
-    d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    #d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    d.set_geometry(*sphere_geometry(80))
     minmax = [min_corner, max_corner]
     dp = []
     base_color = numpy.array([255,255,255,255])
@@ -190,7 +193,8 @@ def draw_asu(xmap):
     from chimerax.core.surface.shapes import sphere_geometry
     d = Drawing('asu corners')
     m = Model('asu box', session)
-    d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    #d.vertices, d.normals, d.triangles = sphere_geometry(80)
+    d.set_geometry(*sphere_geometry(80))
     asu = xmap.grid_asu()
     grid = xmap.grid_sampling()
     cell = xmap.cell()

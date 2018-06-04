@@ -109,7 +109,7 @@ class SelectVolumeToContour(mousemodes.MouseMode):
         self._start_deselect_timer()
     def _get_vol_list(self):
         '''Get a list of currently visible volumes.'''
-        from chimerax.core.map import Volume
+        from chimerax.map import Volume
         vlist = self.session.models.list(type=Volume)
         for i in reversed(range(len(vlist))):
             if not vlist[i].visible:

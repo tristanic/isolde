@@ -905,8 +905,8 @@ class SymRibbonDrawing(Drawing):
             self.rebuild()
             return
         for td, md in zip(sad, mad):
-            td.vertices, td.normals, td.triangles, td.display = \
-                md.vertices, md.normals, md.triangles, md.display
+            td.set_geometry(md.vertices, md.normals, md.triangles)
+            td.display = md.display
             vertex_colors = md.vertex_colors
             if vertex_colors is not None:
                 vertex_colors = vertex_colors.astype(numpy.float32)
@@ -964,7 +964,8 @@ def _copy_ribbon_drawing(master_drawing, target_drawing, dim_factor):
             v, n, t, p, d = c.vertices, c.normals, c.triangles, c.positions, c.display
             if v is None or len(v) == 0:
                 continue
-            nc.vertices, nc.normals, nc.triangles, nc.positions, nc.display = v, n, t, p, d
+            nc.set_geometry(v, n, t)
+            nc.positions, nc.display = p, d
             vc = c.vertex_colors
             if vc is not None:
                 vc = vc.astype(numpy.float32)

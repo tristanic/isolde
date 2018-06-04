@@ -13,16 +13,16 @@ import copy
 from collections import defaultdict
 
 from chimerax.core.triggerset import TriggerSet
-from chimerax.core.atomic import AtomicStructure, concatenate
+from chimerax.atomic import AtomicStructure, concatenate
 from chimerax.core.geometry import Place, Places
 from chimerax.core.geometry import find_close_points, find_close_points_sets
-from chimerax.core.surface import zone
-from chimerax.core.surface.shapes import sphere_geometry
+from chimerax.surface import zone
+from chimerax.surface.shapes import sphere_geometry
 
 from chimerax.core.models import Model, Drawing
 from chimerax.core.commands import camera, cofr, cartoon, atomspec
-from chimerax.core.map.data import Array_Grid_Data
-from chimerax.core.map import Volume, volumecommand
+from chimerax.map.data import Array_Grid_Data
+from chimerax.map import Volume, volumecommand
 
 from .mousemodes import initialize_map_contour_mouse_modes
 from .main import atom_list_from_sel
@@ -758,7 +758,8 @@ class CrystalStructure(Model):
         d = Drawing('points')
         sphere = numpy.array(sphere_geometry(80))
         sphere[0]*=0.25
-        d.vertices, d.normals, d.triangles = sphere
+        d.set_geometry(*sphere)
+        #d.vertices, d.normals, d.triangles = sphere
 
         if len(spc):
 
@@ -912,7 +913,7 @@ class Surface_Zone:
 
 def surface_zones(models, points, distance):
     '''
-    Essentially a copy of chimerax.core.surface.zone.surface_zone, but uses
+    Essentially a copy of chimerax.surface.zone.surface_zone, but uses
     find_close_points_sets to eke a little extra performance
     '''
     vlist = []
@@ -1520,7 +1521,7 @@ class XmapHandler(Volume):
         darray = self._generate_and_fill_data_array(new_origin, new_grid_origin, new_dim)
         self._box_dimensions = new_dim
         self.replace_data(darray)
-        self.new_region((0,0,0), darray.size)
+        self.new_region(ijk_min=(0,0,0), ijk_max=darray.size, ijk_step=(1,1,1), adjust_step=False)
 
     def _generate_and_fill_data_array(self, origin, grid_origin, dim):
         dim = dim[::-1]
@@ -1545,5 +1546,5 @@ class XmapHandler(Volume):
             coords = sz.all_coords
             distance = sz.distance
             if coords is not None:
-                from chimerax.core.surface.zone import surface_zone
+                from chimerax.surface.zone import surface_zone
                 surface_zone(self, coords, distance)
