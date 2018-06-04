@@ -272,8 +272,12 @@ class Sim_Construct:
         '''
         self.model = model
 
+        # Chains in OpenMM must be in a single unbroken block
+        residues = model.residues
+        residues = residues[numpy.argsort(residues.chain_ids)]
+
         # Sort all the atoms according to their order in the model#
-        model_atoms = model.residues.atoms
+        model_atoms = residues.atoms
         if len(mobile_atoms.intersect(fixed_atoms)):
             raise TypeError('Atoms cannot be both fixed and mobile!')
         from chimerax.atomic import concatenate
