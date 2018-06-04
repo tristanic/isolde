@@ -38,7 +38,7 @@ from chimerax import clipper
 
 from chimerax.core import triggerset
 from chimerax.core.models import Drawing, Model
-from chimerax.core.map import Volume
+from chimerax.map import Volume
 from chimerax.atomic import AtomicStructure
 
 from .eventhandler import EventHandler
@@ -2870,7 +2870,7 @@ class Isolde():
         sd = sharp_map.mean_sd_rms()[1]
         from . import visualisation as v
         styleargs= v.map_style_settings[v.map_styles.solid_t20]
-        from chimerax.core.map import volumecommand
+        from chimerax.map import volumecommand
         volumecommand.volume(self.session, [sharp_map], **styleargs)
         sharp_map.set_parameters(surface_levels = (2.5*sd,))
 

@@ -82,7 +82,7 @@ class AtomPicker(MouseMode):
                     self._atoms = self._atoms.merge(m.atoms)
 
     def pick_from_selection(atoms):
-        from chimerax.core.atomic.molarray import Atoms
+        from chimerax.atomic.molarray import Atoms
         if type(atoms) != Atoms:
             raise TypeError('Please provide an Atoms array as your selection!')
         self._choose_from_all_models = False

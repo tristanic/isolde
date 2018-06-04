@@ -9,7 +9,7 @@
 
 
 import os, sys, glob
-from chimerax.core.atomic.molc import CFunctions, string, cptr, pyobject, \
+from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
     set_c_pointer, pointer, size_t
 from numpy import uint8, int32, uint32, float64, float32, byte, bool as npy_bool
 import ctypes

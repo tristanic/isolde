@@ -27,8 +27,8 @@ from ..constants import defaults
 
 import os, sys, glob
 import ctypes
-from chimerax.core.atomic import molc
-from chimerax.core.atomic.molc import CFunctions, string, cptr, pyobject, \
+from chimerax.atomic import molc
+from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
     set_c_pointer, pointer, size_t
 from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
 from ..ctypes import convert_and_sanitize_numpy_array

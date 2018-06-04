@@ -14,11 +14,11 @@ import ctypes
 from enum import IntEnum
 
 from chimerax.core.state import State
-from chimerax.core.atomic import molc
-from chimerax.core.atomic.molc import CFunctions, string, cptr, pyobject, \
+from chimerax.atomic import molc
+from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
     set_c_pointer, pointer, size_t
 # object map lookups
-from chimerax.core.atomic.molobject import _atoms, \
+from chimerax.atomic.molobject import _atoms, \
                 _atom_pair, _atom_or_none, _bonds, _chain, _element, \
                 _pseudobonds, _residue, _residues, _rings, _non_null_residues, \
                 _residue_or_none, _residues_or_nones, _residues_or_nones, \
@@ -94,7 +94,7 @@ def _rotamer_restraints(p):
     from .molarray import Rotamer_Restraints
     return Rotamer_Restraints(p)
 def _pseudobond_or_none(p):
-    from chimerax.core.atomic import Pseudobond
+    from chimerax.atomic import Pseudobond
     return Pseudobond.c_ptr_to_py_inst(p) if p else None
 def _chiral_restraint_or_none(p):
     return Chiral_Restraint.c_ptr_to_py_inst(p) if p else None
@@ -829,7 +829,7 @@ class Rama_Mgr:
               :class:`Ramas` instance
         '''
         from .molarray import Ramas
-        from chimerax.core.atomic import Residues
+        from chimerax.atomic import Residues
         if isinstance(residues_or_ramas, Ramas):
             return self._validate(residues_or_ramas)
         elif isinstance(residues_or_ramas, Residues):
@@ -1292,7 +1292,7 @@ class Rota_Mgr:
             * residue:
                 - a :class:`chimerax.Residue` instance
         '''
-        from chimerax.core.atomic import Residues
+        from chimerax.atomic import Residues
         rots = self.get_rotamers(Residues([residue]))
         if len(rots):
             return rots[0]
@@ -1848,7 +1848,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
             * atom:
                 - a :py:class:`chimerax.Atom` instance
         '''
-        from chimerax.core.atomic import Atoms
+        from chimerax.atomic import Atoms
         r = self._get_restraints(Atoms([atom]), create=True)
         if len(r):
             return r[0]
@@ -1878,7 +1878,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
             * atom:
                 - a :py:class:`chimerax.Atom` instance
         '''
-        from chimerax.core.atomic import Atoms
+        from chimerax.atomic import Atoms
         r = self._get_restraints(Atoms([atom]))
         if len(r):
             return r[0]
@@ -2038,7 +2038,7 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
             * atom:
                 - a :py:class:`chimerax.Atom` instance
         '''
-        from chimerax.core.atomic import Atoms
+        from chimerax.atomic import Atoms
         t = self._get_tuggables(Atoms([atom]), create=True)
         if len(t):
             return t[0]
@@ -2066,7 +2066,7 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
             * atom:
                 - a :py:class:`chimerax.Atom` instance
         '''
-        from chimerax.core.atomic import Atoms
+        from chimerax.atomic import Atoms
         t = self._get_tuggables(Atoms([atom]), create=False)
         if len(t):
             return t[0]
@@ -2240,7 +2240,7 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         f = c_function('distance_restraint_mgr_get_restraint',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool),
             ret = ctypes.c_void_p)
-        from chimerax.core.atomic import Atoms
+        from chimerax.atomic import Atoms
         atoms = Atoms([atom1, atom2])
         return _distance_restraint_or_none(f(self._c_pointer, atoms._c_pointers, create))
 
@@ -2687,7 +2687,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
             * name:
                 - Lowercase name of a known dihedral definition (e.g. 'phi')
         '''
-        from chimerax.core.atomic import Residues
+        from chimerax.atomic import Residues
         r = self._get_restraints_by_residues_and_name(Residues([residue]), name, False)
         if len(r):
             return r[0]
@@ -2706,7 +2706,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
             * name:
                 - Lowercase name of a known dihedral definition (e.g. 'phi')
         '''
-        from chimerax.core.atomic import Residues
+        from chimerax.atomic import Residues
         r = self._get_restraints_by_residues_and_name(Residues([residue]), name, True)
         if len(r):
             return r[0]
@@ -2906,7 +2906,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
                 - a :py:class:`Rotamers` or :py:class:`chimerax.Residues` with
                   all elements belonging to the same molecule as this manager
         '''
-        from chimerax.core.atomic import Residues
+        from chimerax.atomic import Residues
         if isinstance(rotamers_or_residues, Residues):
             rota_mgr = _get_rotamer_manager(session)
             rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
@@ -2924,7 +2924,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
                 - a :py:class:`Rotamers` or :py:class:`chimerax.Residues` with
                   all elements belonging to the same molecule as this manager
         '''
-        from chimerax.core.atomic import Residues
+        from chimerax.atomic import Residues
         if isinstance(rotamers_or_residues, Residues):
             rota_mgr = _get_rotamer_manager(session)
             rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
@@ -2944,7 +2944,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
                 - a :py:class:`Rotamer` or :py:class:`chimerax.Residue`
                   belonging to the same molecule as this manager
         '''
-        from chimerax.core.atomic import Residue, Residues
+        from chimerax.atomic import Residue, Residues
         if isinstance(rotamer_or_residue, Residue):
             rota_mgr = _get_rotamer_manager(session)
             r = rota_mgr.get_rotamer(r)
@@ -2968,7 +2968,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
                 - a :py:class:`Rotamer` or :py:class:`chimerax.Residue`
                   belonging to the same molecule as this manager
         '''
-        from chimerax.core.atomic import Residue, Residues
+        from chimerax.atomic import Residue, Residues
         if isinstance(rotamer_or_residue, Residue):
             rota_mgr = _get_rotamer_manager(session)
             r = rota_mgr.get_rotamer(r)

@@ -12,11 +12,11 @@ import os, sys, glob
 import numpy
 import ctypes
 from chimerax.core.state import State
-from chimerax.core.atomic import molc
-from chimerax.core.atomic.molc import CFunctions, string, cptr, pyobject, \
+from chimerax.atomic import molc
+from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
     set_c_pointer, pointer, size_t
 # object map lookups
-from chimerax.core.atomic.molobject import _atoms, \
+from chimerax.atomic.molobject import _atoms, \
                 _atom_pair, _atom_or_none, _bonds, _chain, _element, \
                 _pseudobonds, _residue, _residues, _rings, _non_null_residues, \
                 _residue_or_none, _residues_or_nones, _residues_or_nones, \
@@ -708,7 +708,7 @@ class Sim_Manager:
     def _pr_changed_cb(self, trigger_name, changes):
         mgr, changes = changes
         change_types = list(changes.keys())
-        from chimerax.core.atomic import concatenate
+        from chimerax.atomic import concatenate
         changeds = []
         if 'target changed' in change_types:
             changeds.append(changes['target changed'])
@@ -732,7 +732,7 @@ class Sim_Manager:
     def _dr_changed_cb(self, trigger_name, changes):
         mgr, changes = changes
         change_types = list(changes.keys())
-        from chimerax.core.atomic import concatenate
+        from chimerax.atomic import concatenate
         if 'created' in change_types:
             # avoid double counting
             created = changes['created']
@@ -765,7 +765,7 @@ class Sim_Manager:
         '''Used for all forms of dihedral restraints.'''
         mgr, changes = changes
         change_types = list(changes.keys())
-        from chimerax.core.atomic import concatenate
+        from chimerax.atomic import concatenate
         changeds = []
         if 'created' in change_types:
             # avoid double counting
@@ -802,7 +802,7 @@ class Sim_Manager:
     def _tug_changed_cb(self, trigger_name, changes):
         mgr, changes = changes
         change_types = list(changes.keys())
-        from chimerax.core.atomic import concatenate
+        from chimerax.atomic import concatenate
         changeds = []
         if 'target changed' in change_types:
             changeds.append(changes['target changed'])
@@ -1927,7 +1927,7 @@ def find_residue_templates(residues):
     return templates
 
 def cys_type(residue):
-    from chimerax.core.atomic import Bonds, concatenate
+    from chimerax.atomic import Bonds, concatenate
     atoms = residue.atoms
     names = atoms.names
     sulfur_atom = atoms[names == 'SG'][0]

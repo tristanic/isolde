@@ -14,7 +14,7 @@ Utilities for shifting chains in register.
 import numpy
 from scipy import interpolate
 from ..util import is_continuous_protein_chain, find_polymer
-from chimerax.core.atomic import Atoms
+from chimerax.atomic import Atoms
 from ..constants import defaults
 
 class Protein_Register_Shifter:

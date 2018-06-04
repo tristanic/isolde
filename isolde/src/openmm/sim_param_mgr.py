@@ -17,7 +17,7 @@ from warnings import warn
 from time import time, sleep
 from simtk import unit
 from simtk.unit import Quantity, Unit
-from chimerax.core.atomic import concatenate, Bonds
+from chimerax.atomic import concatenate, Bonds
 
 from ..checkpoint import CheckPoint
 from ..constants import defaults, sim_outcomes, control

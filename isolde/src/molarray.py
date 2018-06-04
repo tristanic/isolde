@@ -10,8 +10,8 @@
 
 import numpy
 from numpy import uint8, int32, uint32, float64, float32, uintp, byte, bool as npy_bool, integer, empty, array
-from chimerax.core.atomic.molc import string, cptr, pyobject, set_cvec_pointer, pointer, size_t
-from chimerax.core.atomic.molarray import Collection
+from chimerax.atomic.molc import string, cptr, pyobject, set_cvec_pointer, pointer, size_t
+from chimerax.atomic.molarray import Collection
 from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
@@ -20,9 +20,9 @@ from .molobject import Chiral_Center, Proper_Dihedral, Rotamer, Rama,\
         Chiral_Restraint, Proper_Dihedral_Restraint, Rotamer_Restraint
 import ctypes
 
-from chimerax.core.atomic import Atom, Atoms, Residue, Residues
+from chimerax.atomic import Atom, Atoms, Residue, Residues
 
-from chimerax.core.atomic.molarray import _atoms, _atoms_or_nones, \
+from chimerax.atomic.molarray import _atoms, _atoms_or_nones, \
         _bonds, _non_null_atoms, _pseudobond_groups, _pseudobonds, \
         _elements, _residues, _non_null_residues, _chains, \
         _non_null_chains, _atomic_structures, structure_datas, \
