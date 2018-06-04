@@ -45,7 +45,7 @@ Rotamer::Rotamer(Residue *res, Rota_Mgr *mgr): _residue(res), _mgr(mgr)
         //~ std::string chi_name = basename+std::to_string(i);
         auto d = dmgr->get_dihedral(res, basename+std::to_string(i), true);
         if (d==nullptr) {
-            std::cerr << "Missing dihedral " << basename + std::to_string(i) << + " for residue " << res->name() <<std::endl; //DELETEME
+            std::cerr << "Missing dihedral " << basename + std::to_string(i) << + " for residue " << res->chain_id() << res->number() << ": " << res->name() <<std::endl; //DELETEME
             throw std::out_of_range("Rotamer is missing a dihedral!");
         }
         _chi_dihedrals.push_back(d);
@@ -133,10 +133,10 @@ Rota_Def* Rota_Mgr::get_rotamer_def(const std::string &resname)
     return &(_resname_to_rota_def.at(resname));
 }
 
-Rota_Def* Rota_Mgr::get_rotamer_def(const ResName &resname)
-{
-    return &(_resname_to_rota_def.at(std::string(resname)));
-}
+// Rota_Def* Rota_Mgr::get_rotamer_def(const ResName &resname)
+// {
+//     return &(_resname_to_rota_def.at(std::string(resname)));
+// }
 
 void Rota_Mgr::add_interpolator(const std::string &resname, const size_t &dim,
     uint32_t *n, double *min, double *max, double *data)

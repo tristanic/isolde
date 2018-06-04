@@ -152,7 +152,7 @@ public:
     void add_rotamer_def(const std::string &resname, size_t n_chi, size_t val_nchi,
         bool symmetric, const std::vector<std::vector<std::string>>& moving_atom_names);
     Rota_Def* get_rotamer_def(const std::string &resname);
-    Rota_Def* get_rotamer_def(const ResName &resname);
+    // Rota_Def* get_rotamer_def(const ResName &resname);
     Rotamer* new_rotamer(Residue* residue);
     Rotamer* get_rotamer(Residue* residue);
 
@@ -162,10 +162,10 @@ public:
     {
         return &(_interpolators.at(resname));
     }
-    RegularGridInterpolator<double>* get_interpolator(const ResName &resname)
-    {
-        return &(_interpolators.at(std::string(resname)));
-    }
+    // RegularGridInterpolator<double>* get_interpolator(const ResName &resname)
+    // {
+    //     return &(_interpolators.at(std::string(resname)));
+    // }
     Proper_Dihedral_Mgr* dihedral_mgr() { return _dmgr; }
     void validate(Rotamer** rotamers, size_t n, double* scores);
     void validate(Residue** residues, size_t n, double* scores);

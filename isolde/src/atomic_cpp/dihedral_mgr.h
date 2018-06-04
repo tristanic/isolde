@@ -65,9 +65,10 @@ public:
         }
     }
 
-    const d_def& get_dihedral_def(const ResName &rname, const std::string &dname) {
-        return get_dihedral_def(std::string(rname), dname);
-    }
+    // ResName is now a std::string
+    // const d_def& get_dihedral_def(const ResName &rname, const std::string &dname) {
+    //     return get_dihedral_def(std::string(rname), dname);
+    // }
 
     //! Attempt to create a new dihedral for the given residue and name
     /*! The <residue name, dihedral name> pair must already exist in the
