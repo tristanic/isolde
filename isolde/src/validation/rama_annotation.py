@@ -152,8 +152,8 @@ class Rama_Annotator(Model):
         if not hasattr(self, '_rama_drawing'):
             rd = self._rama_drawing = Drawing('Ramachandran score indicators')
             rd.skip_bounds = True
-            from chimerax.core.surface.shapes import sphere_geometry2
-            rd.vertices, rd.normals, rd.triangles = sphere_geometry2(80)
+            from chimerax.surface.shapes import sphere_geometry2
+            rd.set_geometry(*sphere_geometry2(80))
             self.add_drawing(rd)
 
     def restrict_to_selected_residues(self, residues):
@@ -241,7 +241,8 @@ class Rama_Annotator(Model):
 
         v, n, t, c = mgr._draw_cis_and_twisted_omegas(ramas)
         if len(v):
-            od.vertices, od.normals, od.triangles, od.vertex_colors = v, n, t, c
+            od.set_geometry(v, n, t)
+            od.vertex_colors = c
             od.display = True
         else:
             od.display = False

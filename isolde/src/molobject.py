@@ -1704,8 +1704,8 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         bd.skip_bounds = True
         self.add_drawing(pd)
         self.add_drawing(bd)
-        pd.vertices, pd.normals, pd.triangles = self._target_pin_geometry()
-        bd.vertices, bd.normals, bd.triangles = self._pseudobond_geometry()
+        pd.set_geometry(*self._target_pin_geometry())
+        bd.set_geometry(*self._pseudobond_geometry())
         self.set_bond_color(self._DEFAULT_BOND_COLOR)
         self.set_pin_color(self._DEFAULT_PIN_COLOR)
         pd.display = False
@@ -1938,11 +1938,11 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
     def _prepare_drawings(self):
         ad = self._arrow_drawing = Drawing('Tugging force vectors')
         self.add_drawing(ad)
-        ad.vertices, ad.normals, ad.triangles = self._arrow_geometry()
+        ad.set_geometry(*self._arrow_geometry())
         self.set_arrow_color(self._DEFAULT_ARROW_COLOR)
 
         # nd = self._nearest_atoms_drawing = Drawing('Nearest tuggable atoms')
-        # from chimerax.core.surface.shapes import sphere_geometry2
+        # from chimerax.surface.shapes import sphere_geometry2
         # nd.vertices, d.normals, d.triangles = sphere_geometry2(80)
         # self.set_near_atoms_color(self._NEAR_ATOMS_COLOR)
 
@@ -2143,11 +2143,11 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         bd = self._bond_drawing = Drawing('Restraint bonds')
         bd.skip_bounds = True
         self.add_drawing(bd)
-        bd.vertices, bd.normals, bd.triangles = self._pseudobond_geometry()
+        bd.set_geometry(*self._pseudobond_geometry())
         self.set_bond_color(self._DEFAULT_BOND_COLOR)
         td = self._target_drawing = Drawing('Target distances')
         td.skip_bounds = True
-        td.vertices, td.normals, td.triangles = self._target_geometry()
+        td.set_geometry(*self._target_geometry())
         self.add_drawing(td)
         self.set_target_color(self._DEFAULT_TARGET_COLOR)
         bd.display = False
@@ -2566,8 +2566,8 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
             self.add_drawing(post_d)
         ring_d = self._ring_drawing
         post_d = self._post_drawing
-        ring_d.vertices, ring_d.normals, ring_d.triangles = geometry.ring_arrow_with_post(0.5, 0.05, 5, 6, 0.25, 0.1, 0.05, 1)
-        post_d.vertices, post_d.normals, post_d.triangles = geometry.post_geometry(0.05, 1, caps=True)
+        ring_d.set_geometry(*geometry.ring_arrow_with_post(0.5, 0.05, 5, 6, 0.25, 0.1, 0.05, 1))
+        post_d.set_geometry(*geometry.post_geometry(0.05, 1, caps=True))
         ring_d.display = False
         post_d.display = False
 

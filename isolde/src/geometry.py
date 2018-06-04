@@ -170,7 +170,8 @@ def dihedral_fill_planes(dihedrals, target_drawing):
         thist += i*5
         tarray[ntri:ntri+3] = thist
         ntri += 3
-    dw.vertices, dw.normals, dw.triangles = varray, narray, tarray
+    dw.set_geometry(varray, narray, tarray)
+    #dw.vertices, dw.normals, dw.triangles = varray, narray, tarray
 
 _dihedral_fill_planes=_geometry.dihedral_fill_planes
 def dihedral_fill_planes(dihedrals, target_drawing):
@@ -189,7 +190,8 @@ def dihedral_fill_planes(dihedrals, target_drawing):
                              varray.ctypes.data_as(V_TYPE),
                              narray.ctypes.data_as(N_TYPE),
                              tarray.ctypes.data_as(T_TYPE))
-    dw.vertices, dw.normals, dw.triangles = varray, narray, tarray
+    dw.set_geometry(varray, narray, tarray)
+    #dw.vertices, dw.normals, dw.triangles = varray, narray, tarray
 
 _dihedral_fill_and_color_planes = _geometry.dihedral_fill_and_color_planes
 def dihedral_fill_and_color_planes(dihedrals, target_drawing,
@@ -222,7 +224,9 @@ def dihedral_fill_and_color_planes(dihedrals, target_drawing,
                              narray.ctypes.data_as(N_TYPE),
                              tarray.ctypes.data_as(T_TYPE),
                              carray.ctypes.data_as(C_TYPE))
-    dw.vertices, dw.normals, dw.triangles, dw.vertex_colors = varray, narray, tarray, carray
+    dw.set_geometry(varray, narray, tarray)
+    dw.vertex_colors = carray
+    #dw.vertices, dw.normals, dw.triangles, dw.vertex_colors = varray, narray, tarray, carray
 
 def cone_geometry(radius = 1, height = 1, nc = 10, caps = True, flipped = False):
     '''
@@ -334,9 +338,9 @@ def simple_arrow(radius = 0.1, height = 1, nc = 20, color = [255, 0, 0, 255], ca
     from chimerax.core.models import Drawing
     d = Drawing(name='Arrow')
     d.color = color
-    d.vertices, d.normals, d.triangles = simple_arrow_geometry(
+    d.set_geometry(*simple_arrow_geometry(
         radius, height, nc, caps, head_length_fraction,
-        head_width_ratio, points_out)
+        head_width_ratio, points_out))
     return d
 
 def simple_arrow_geometry(radius = 0.1, height = 1, nc = 20, caps = True,
@@ -562,7 +566,7 @@ def test_ra(session):
     from chimerax.core.models import Model, Drawing
     m = Model('test', session)
     d = Drawing('ring')
-    d.vertices, d.normals, d.triangles = ring_arrow_with_post(0.5, 0.05, 4, 6, 0.3, 0.1, 0.05, 1)
+    d.set_geometry(*ring_arrow_with_post(0.5, 0.05, 4, 6, 0.3, 0.1, 0.05, 1))
     m.add_drawing(d)
     session.models.add([m])
 

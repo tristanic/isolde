@@ -209,7 +209,7 @@ class Rotamer_Annotator(Model):
         translation((0,0.5,0.25)).move(v)
         d = Drawing('rotamer indicator')
         d.skip_bounds = True
-        d.vertices, d.normals, d.triangles = v, n, t
+        d.set_geometry(v, n, t)
         return d
 
 
@@ -218,12 +218,12 @@ class Rotamer_Annotator(Model):
         rotation((1,0,0),180).move(v)
         translation((0,1,0)).move(v)
         d = Drawing('rotamer cb indicator')
-        d.vertices, d.normals, d.triangles = v, n, t
+        d.set_geometry(v, n, t)
         return d
 
     def _cb_annotation(self):
-        from chimerax.core.surface.shapes import cylinder_geometry
+        from chimerax.surface.shapes import cylinder_geometry
         v, n, t = cylinder_geometry(radius=0.1, height=2, nc=8, caps=True)
         d = Drawing('rotamer cb indicator')
-        d.vertices, d.normals, d.triangles = v, n, t
+        d.set_geometry(v, n, t)
         return d
