@@ -1712,7 +1712,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         bd.display = False
 
     def _pseudobond_geometry(self, segments=3):
-        from chimerax.core import surface
+        from chimerax import surface
         return surface.dashed_cylinder_geometry(segments, height=1.0, nc = 6)
 
     def _target_pin_geometry(self, handle_radius=0.4, pin_radius=0.05, total_height=1.0):
@@ -2179,14 +2179,14 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         Length is scaled to the target distance. Radius scales according to
         spring constant.
         '''
-        from chimerax.core import surface
+        from chimerax import surface
         return surface.cylinder_geometry(radius=1.0, height=1.0)
 
     def _pseudobond_geometry(self):
         '''
         Connects the two restrained atoms. Radius is fixed.
         '''
-        from chimerax.core import surface
+        from chimerax import surface
         return surface.cylinder_geometry(radius = 0.025, height=1.0, caps=False)
 
     def _restraint_changes_cb(self, trigger_name, changes):
