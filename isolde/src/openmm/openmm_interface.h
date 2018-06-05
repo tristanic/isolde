@@ -48,13 +48,13 @@ public:
      *  indices of any excessively fast-moving atoms can be retrieved using
      *  overly_fast_atoms().
      */
-    void step_threaded(size_t steps)
+    void step_threaded(size_t steps, bool average)
     {
         //_thread_safety_check();
         finalize_thread();
         if (_unstable)
             throw std::logic_error("The last round had atoms moving dangerously fast. Fix the issues and minimise first.");
-        _thread = std::thread(&OpenMM_Thread_Handler::_step_threaded, this, steps);
+        _thread = std::thread(&OpenMM_Thread_Handler::_step_threaded, this, steps, average);
     }
 
     void set_minimum_thread_time_in_ms(double time)
@@ -94,6 +94,7 @@ public:
     std::vector<size_t> overly_fast_atoms(const std::vector<OpenMM::Vec3>& velocities);
 
     std::vector<OpenMM::Vec3> get_coords_in_angstroms(const OpenMM::State& state);
+    std::vector<OpenMM::Vec3> get_averaged_coords_in_angstroms();
     void set_coords_in_angstroms(const std::vector<OpenMM::Vec3>& coords_ang);
     void set_coords_in_angstroms(double *coords, size_t n);
     void finalize_thread()
@@ -116,6 +117,7 @@ private:
     OpenMM::Context* _context;
     OpenMM::State _starting_state;
     OpenMM::State _final_state;
+    std::vector<OpenMM::Vec3> _averaged_coords;
 
     std::thread _thread;
     std::exception_ptr _thread_except;
@@ -123,12 +125,13 @@ private:
     bool _thread_running = false;
     bool _thread_finished = true;
     bool _unstable = false;
+    bool _averaging = false;
 
     milliseconds _min_time_per_loop = milliseconds(1.0); // ms: limit on the speed of the simulation
     const double MAX_VELOCITY = 50; //nm ps-1 (50,000 m/s)
     const double MIN_TOLERANCE = 1.0; //kJ mol-1
     const size_t MAX_MIN_ITERATIONS = 500;
-    const size_t STEPS_PER_VELOCITY_CHECK = 10;
+    const size_t STEPS_PER_VELOCITY_CHECK = 5;
 
     void _thread_safety_check() const {
         if (_thread_running) {
@@ -148,7 +151,7 @@ private:
         }
     }
 
-    void _step_threaded(size_t steps);
+    void _step_threaded(size_t steps, bool average);
     void _minimize_threaded();
     void _reinitialize_context_threaded();
 };

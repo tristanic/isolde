@@ -27,7 +27,7 @@ OpenMM_Thread_Handler::OpenMM_Thread_Handler(OpenMM::Context* context)
     _natoms = _starting_state.getPositions().size();
 }
 
-void OpenMM_Thread_Handler::_step_threaded(size_t steps)
+void OpenMM_Thread_Handler::_step_threaded(size_t steps, bool average)
 {
     try
     {
@@ -37,6 +37,9 @@ void OpenMM_Thread_Handler::_step_threaded(size_t steps)
         _thread_finished = false;
         size_t steps_done = 0;
         _starting_state = _final_state;
+        //if (average)
+        _averaging = average;
+        std::vector<OpenMM::State> states;
         for (; steps_done < steps; )
         {
             size_t these_steps, remaining_steps = steps-steps_done;
@@ -47,14 +50,27 @@ void OpenMM_Thread_Handler::_step_threaded(size_t steps)
             }
             integrator().step(these_steps);
             steps_done += these_steps;
-            auto state = _context->getState(OpenMM::State::Velocities);
+            auto state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
             if (overly_fast_atoms(state.getVelocities()).size() >0)
             {
                 _unstable = true;
                 break;
             }
+            if (average)
+                states.push_back(state);
         }
         _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
+        if (average) {
+            std::vector<OpenMM::Vec3> averaged_coords(_natoms);
+            size_t nstates = states.size();
+            for (const auto &s: states) {
+                const auto &scoords = s.getPositions();
+                for (size_t i=0; i<_natoms; ++i) {
+                    averaged_coords[i] += scoords[i]/nstates;
+                }
+            }
+            _averaged_coords = averaged_coords;
+        }
         auto end = std::chrono::steady_clock::now();
         auto loop_time = end-start;
         if (loop_time < _min_time_per_loop)
@@ -134,9 +150,23 @@ std::vector<OpenMM::Vec3> OpenMM_Thread_Handler::get_coords_in_angstroms(const O
     auto to = coords_ang.begin();
     for (; from != coords_nm.end(); from++, to++)
     {
-        for (size_t i=0; i<3; ++i) {
-            (*to)[i] = (*from)[i]*10.0;
-        }
+        *to = *from * 10.0;
+    }
+    return coords_ang;
+}
+
+std::vector<OpenMM::Vec3> OpenMM_Thread_Handler::get_averaged_coords_in_angstroms()
+{
+    finalize_thread();
+    if (!_averaging) {
+        throw std::logic_error("Last round of equilibration was not run with averaging enabled!");
+    }
+    std::vector<OpenMM::Vec3> coords_ang(_natoms);
+    auto from = _averaged_coords.begin();
+    auto to = coords_ang.begin();
+    for (; from != _averaged_coords.end(); from++, to++)
+    {
+        *to = *from * 10.0;
     }
     return coords_ang;
 }
@@ -211,11 +241,11 @@ openmm_thread_handler_num_atoms(void *handler)
 }
 
 extern "C" EXPORT void
-openmm_thread_handler_step(void *handler, size_t steps)
+openmm_thread_handler_step(void *handler, size_t steps, npy_bool average)
 {
     OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
     try {
-        h->step_threaded(steps);
+        h->step_threaded(steps, average);
     } catch (...) {
         molc_error();
     }
@@ -313,6 +343,24 @@ openmm_thread_handler_current_coords(void *handler, size_t n, double *coords)
     } catch (...) {
         molc_error();
     }
+}
+
+extern "C" EXPORT void
+openmm_thread_handler_averaged_coords(void *handler, size_t n, double *coords)
+{
+    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
+    try {
+        if (n != h->natoms())
+            throw std::logic_error("Mismatch between number of atoms and output array size!");
+        auto sim_coords = h->get_averaged_coords_in_angstroms();
+        for (const auto &coord: sim_coords) {
+            for (size_t i=0; i<3; ++i)
+                *coords++ = coord[i];
+        }
+    } catch (...) {
+        molc_error();
+    }
+
 }
 
 extern "C" EXPORT void

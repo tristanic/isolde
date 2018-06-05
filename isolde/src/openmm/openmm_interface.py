@@ -82,6 +82,22 @@ class OpenMM_Thread_Handler:
         f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
         self.context = context
+        self._averaging = True
+        self._last_average = False
+        self._last_mode = None
+
+    @property
+    def averaging(self):
+        '''
+        If true, the displayed coordinates will be a smoothed average of the
+        last set of equilibration steps. Note that for large values of
+        sim_steps_per_gui_update this can lead to distorted geometry.
+        '''
+        return self._averaging
+
+    @averaging.setter
+    def averaging(self, flag):
+        self._averaging = flag
 
     @property
     def cpp_pointer(self):
@@ -107,8 +123,10 @@ class OpenMM_Thread_Handler:
                 - an integer value
         '''
         f = c_function('openmm_thread_handler_step',
-            args=(ctypes.c_void_p, ctypes.c_size_t))
-        f(self._c_pointer, steps)
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_bool))
+        f(self._c_pointer, steps, self._averaging)
+        self._last_mode = 'equil'
+        self._last_average = self._averaging
 
     def minimize(self):
         '''
@@ -120,6 +138,7 @@ class OpenMM_Thread_Handler:
         f = c_function('openmm_thread_handler_minimize',
             args = (ctypes.c_void_p,))
         f(self._c_pointer)
+        self._last_mode = 'min'
 
     def reinitialize_velocities(self):
         '''
@@ -207,8 +226,12 @@ class OpenMM_Thread_Handler:
         completes. Can also be set, to push edited coordinates back to the
         simulation.
         '''
-        f = c_function('openmm_thread_handler_current_coords',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
+        if not self._averaging or not self._last_average or self._last_mode !='equil':
+            f = c_function('openmm_thread_handler_current_coords',
+                args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
+        else:
+            f = c_function('openmm_thread_handler_averaged_coords',
+                args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
         n = self.natoms
         coords = numpy.empty((n,3), float64)
         f(self._c_pointer, n, pointer(coords))
@@ -221,6 +244,8 @@ class OpenMM_Thread_Handler:
         n = self.natoms
         f(self._c_pointer, n, pointer(coords))
         self.reinitialize_velocities()
+
+
 
     def _get_min_thread_period(self):
         '''
