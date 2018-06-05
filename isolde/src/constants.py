@@ -90,6 +90,7 @@ class _Defaults:
         ###
         # Force constants
         ###
+        'CLASH_FORCE':                          1e5,     # * unit.kilojoule_per_mole/unit.nanometer,
         'MAX_RESTRAINT_FORCE':                  25000.0, # * unit.kilojoule_per_mole/unit.nanometer,
         'HAPTIC_SPRING_CONSTANT':                2500.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
         'MOUSE_TUG_SPRING_CONSTANT':            10000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,

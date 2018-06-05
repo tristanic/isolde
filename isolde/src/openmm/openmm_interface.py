@@ -140,6 +140,17 @@ class OpenMM_Thread_Handler:
         f(self._c_pointer)
         self._last_mode = 'min'
 
+    @property
+    def clashing(self):
+        '''
+        True if any atom is experiencing an extreme force after energy
+        minimisation.
+        '''
+        f = c_function('openmm_thread_handler_clashing',
+            args=(ctypes.c_void_p,),
+            ret=ctypes.c_bool)
+        return f(self._c_pointer)
+
     def reinitialize_velocities(self):
         '''
         Set the atomic velocities to random values consistent with the current
@@ -917,6 +928,7 @@ class Sim_Handler:
 
         self._paused = False
         self._sim_running = False
+        self._unstable = True
 
         atoms = self._atoms = sim_construct.all_atoms
         # Forcefield used in this simulation
@@ -950,6 +962,7 @@ class Sim_Handler:
 
         trigger_names = (
             'sim started',
+            'clash detected',
             'coord update',
             'sim paused',
             'sim resumed',
@@ -1106,6 +1119,18 @@ class Sim_Handler:
         self._sim_running = True
         self._minimize_and_go()
 
+    def find_clashing_atoms(self):
+        if not self._sim_running:
+            raise RuntimeError('Simulation must be running first!')
+        c = self._context
+        state = c.getState(getForces=True)
+        forces = state.getForces(asNumpy = True)
+        import numpy
+        force_mags = numpy.linalg.norm(forces, axis=1)
+        clashing_indices = numpy.argwhere(force_mags > defaults.CLASH_FORCE)
+        return clashing_indices
+
+
     def _minimize_and_go(self):
         th = self.thread_handler
         delayed_reaction(self.session.triggers, 'new frame', th.minimize, [],
@@ -1118,7 +1143,7 @@ class Sim_Handler:
             f = self._reinitialize_context
             f_args = []
             final_args = []
-        elif th.unstable():
+        elif th.unstable() or self._unstable:
             f = th.minimize
             f_args = []
             final_args = [True]
@@ -1132,9 +1157,21 @@ class Sim_Handler:
             final_args = []
         delayed_reaction(self.session.triggers, 'new frame', f, f_args,
             th.thread_finished, self._update_coordinates_and_repeat, final_args)
+        self._unstable = False
+
+    def _resume(self):
+        if self._force_update_pending:
+            self._update_forces_in_context_if_needed()
+        self._repeat_step()
+
 
     def _update_coordinates_and_repeat(self, reinit_vels = False):
         th = self.thread_handler
+        if th.clashing:
+            self.triggers.activate_trigger('clash detected', self.find_clashing_atoms())
+            self.pause = True
+            self._unstable = True
+            return
         self.atoms.coords = th.coords
         self.triggers.activate_trigger('coord update', None)
         if self._force_update_pending:
@@ -1166,13 +1203,18 @@ class Sim_Handler:
         if coords is None:
             coords = self._atoms.coords
         self._pending_coords = coords
-        self.triggers.add_handler('coord update', self._push_coords_to_sim)
+        if self.pause:
+            self._push_coords_to_sim()
+        else:
+            self.triggers.add_handler('coord update', self._push_coords_to_sim)
 
     def _push_coords_to_sim(self, *_):
         self.thread_handler.coords = self._pending_coords
         self._pending_coords = None
+        self._unstable = True
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
+
 
     @property
     def thread_handler(self):
@@ -1200,7 +1242,8 @@ class Sim_Handler:
                 self.triggers.activate_trigger('sim paused', None)
             else:
                 self.triggers.activate_trigger('sim resumed', None)
-                self._update_coordinates_and_repeat()
+                self._resume()
+                #self._update_coordinates_and_repeat()
 
     def stop(self):
         '''

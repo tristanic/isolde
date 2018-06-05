@@ -101,15 +101,18 @@ void OpenMM_Thread_Handler::_minimize_threaded()
     {
         _thread_except = nullptr;
         auto start = std::chrono::steady_clock::now();
+        _clash = false;
         _thread_running = true;
         _thread_finished = false;
         _starting_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Energy);
         OpenMM::LocalEnergyMinimizer::minimize(*_context, MIN_TOLERANCE, MAX_MIN_ITERATIONS);
-        _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Energy);
+        _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Forces + OpenMM::State::Energy);
         if (_starting_state.getPotentialEnergy() - _final_state.getPotentialEnergy() > MIN_TOLERANCE)
             _unstable = true;
         else
             _unstable = false;
+        if (max_force(_final_state.getForces()) > MAX_FORCE)
+            _clash = true;
         auto end = std::chrono::steady_clock::now();
         auto loop_time = end-start;
         if (loop_time < _min_time_per_loop)
@@ -211,6 +214,22 @@ void OpenMM_Thread_Handler::set_coords_in_angstroms(double *coords, size_t n)
     _context->setPositions(coords_nm);
 }
 
+double OpenMM_Thread_Handler::max_force(const std::vector<OpenMM::Vec3>& forces) const
+{
+    double max_force = 0;
+    size_t i=0;
+
+    for (const auto &fv: forces)
+    {
+        double f_mag = 0;
+        for (size_t j=0; j<3; ++j)
+            f_mag += fv[j]*fv[j];
+        f_mag = sqrt(f_mag);
+        max_force = f_mag>max_force ? f_mag : max_force;
+    }
+    return max_force;
+}
+
 // PYTHON INTERFACE BELOW
 
 SET_PYTHON_INSTANCE(openmm_thread_handler, OpenMM_Thread_Handler)
@@ -304,6 +323,18 @@ openmm_thread_handler_unstable(void *handler)
     OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
     try {
         return h->unstable();
+    } catch(...) {
+        molc_error();
+        return false;
+    }
+}
+
+extern "C" EXPORT npy_bool
+openmm_thread_handler_clashing(void *handler)
+{
+    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
+    try {
+        return h->clash_detected();
     } catch(...) {
         molc_error();
         return false;

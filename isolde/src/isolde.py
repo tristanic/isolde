@@ -995,7 +995,7 @@ class Isolde():
             self._enable_peptide_bond_manipulation_frame()
 
 
-    def _update_sim_control_button_states(self):
+    def _update_sim_control_button_states(self, *_):
         # Set enabled/disabled states of main simulation control panel
         # based on whether a simulation is currently running
         running = self.simulation_running
@@ -1005,10 +1005,13 @@ class Isolde():
         if paused and not running:
             go_button.setChecked(False)
         elif paused:
+            go_button.setChecked(False)
             go_button.setToolTip('Resume')
         elif running:
+            go_button.setChecked(True)
             go_button.setToolTip('Pause')
         if not running:
+            go_button.setChecked(False)
             go_button.setToolTip('Start a simulation')
 
         iw._map_masking_frame.setDisabled(
@@ -2390,6 +2393,7 @@ class Isolde():
         self._update_sim_control_button_states()
         self._set_right_mouse_mode_tug_atom()
         self.sim_handler.triggers.add_handler('sim terminated', self._sim_end_cb)
+        self.sim_handler.triggers.add_handler('sim paused', self._update_sim_control_button_states)
 
     def _sim_end_cb(self, name, outcome):
         self._update_menu_after_sim()

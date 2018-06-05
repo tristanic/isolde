@@ -54,6 +54,8 @@ public:
         finalize_thread();
         if (_unstable)
             throw std::logic_error("The last round had atoms moving dangerously fast. Fix the issues and minimise first.");
+        if (_clash)
+            throw std::logic_error("You still have clashing atoms! Fix these and minimise first.");
         _thread = std::thread(&OpenMM_Thread_Handler::_step_threaded, this, steps, average);
     }
 
@@ -105,6 +107,8 @@ public:
         _thread_running = false;
     }
 
+    double max_force(const std::vector<OpenMM::Vec3>& forces) const;
+
     const OpenMM::State& initial_state() const { _thread_finished_check(); return _starting_state; }
     const OpenMM::State& final_state() const { _thread_finished_check(); return _final_state; }
 
@@ -112,6 +116,7 @@ public:
     bool thread_running() const { return _thread_running; }
     bool unstable() const { return _unstable; }
     size_t natoms() const { return _natoms; }
+    bool clash_detected() const { return _clash; }
 
 private:
     OpenMM::Context* _context;
@@ -122,6 +127,7 @@ private:
     std::thread _thread;
     std::exception_ptr _thread_except;
     size_t _natoms;
+    bool _clash = false;
     bool _thread_running = false;
     bool _thread_finished = true;
     bool _unstable = false;
@@ -129,9 +135,10 @@ private:
 
     milliseconds _min_time_per_loop = milliseconds(1.0); // ms: limit on the speed of the simulation
     const double MAX_VELOCITY = 50; //nm ps-1 (50,000 m/s)
+    const double MAX_FORCE = 1e5; // kJ mol-1 nm-1
     const double MIN_TOLERANCE = 1.0; //kJ mol-1
-    const size_t MAX_MIN_ITERATIONS = 500;
-    const size_t STEPS_PER_VELOCITY_CHECK = 5;
+    const size_t MAX_MIN_ITERATIONS = 1000;
+    const size_t STEPS_PER_VELOCITY_CHECK = 10;
 
     void _thread_safety_check() const {
         if (_thread_running) {
