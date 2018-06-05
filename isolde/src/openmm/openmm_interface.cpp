@@ -62,7 +62,19 @@ void OpenMM_Thread_Handler::_step_threaded(size_t steps, bool average)
         _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
         if (average) {
             std::vector<OpenMM::Vec3> averaged_coords(_natoms);
-            size_t nstates = states.size();
+            size_t nstates;
+            if (_averaged_coords.size() == 0) {
+                // Average just the current set
+                averaged_coords.resize(_natoms);
+                // std::vector<OpenMM::Vec3> averaged_coords(_natoms);
+                nstates = states.size();
+            } else {
+                // Average along with the previous coords for smoother result
+                averaged_coords = _averaged_coords;
+                for (auto &c: averaged_coords)
+                    c*=0.5;
+                nstates = states.size() * 2;
+            }
             for (const auto &s: states) {
                 const auto &scoords = s.getPositions();
                 for (size_t i=0; i<_natoms; ++i) {
