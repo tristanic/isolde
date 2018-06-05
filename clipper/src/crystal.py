@@ -911,37 +911,44 @@ class Surface_Zone:
             return self.atoms.coords
         return self.coords
 
+# def surface_zones(models, points, distance):
+#     '''
+#     Essentially a copy of chimerax.surface.zone.surface_zone, but uses
+#     find_close_points_sets to eke a little extra performance
+#     '''
+#     vlist = []
+#     dlist = []
+#     ident_matrix = Place().matrix.astype(numpy.float32)
+#     search_entry = [(numpy.array(points, numpy.float32), Place().matrix.astype(numpy.float32))]
+#     for m in models:
+#         #for d in m.child_drawings():
+#         for d in m.surfaces:
+#             if not d.display:
+#                 continue
+#             if d.vertices is not None:
+#                 dlist.append(d)
+#                 vlist.append((d.vertices.astype(numpy.float32), ident_matrix))
+#
+#     i1, i2 = find_close_points_sets(vlist, search_entry, distance)
+#
+#     for vp, i, d in zip(vlist, i1, dlist):
+#         v = vp[0]
+#         nv = len(v)
+#         mask = numpy.zeros((nv,), numpy.bool)
+#         numpy.put(mask, i, 1)
+#         t = d.triangles
+#         if t is None:
+#             return
+#         tmask = numpy.logical_and(mask[t[:,0]], mask[t[:,1]])
+#         numpy.logical_and(tmask, mask[t[:,2]], tmask)
+#         d.triangle_mask = tmask
+
 def surface_zones(models, points, distance):
-    '''
-    Essentially a copy of chimerax.surface.zone.surface_zone, but uses
-    find_close_points_sets to eke a little extra performance
-    '''
-    vlist = []
-    dlist = []
-    ident_matrix = Place().matrix.astype(numpy.float32)
-    search_entry = [(numpy.array(points, numpy.float32), Place().matrix.astype(numpy.float32))]
+    from chimerax.surface import zone
     for m in models:
-        for d in m.child_drawings():
-            if not d.display:
-                continue
-            if d.vertices is not None:
-                dlist.append(d)
-                vlist.append((d.vertices.astype(numpy.float32), ident_matrix))
-
-    i1, i2 = find_close_points_sets(vlist, search_entry, distance)
-
-    for vp, i, d in zip(vlist, i1, dlist):
-        v = vp[0]
-        nv = len(v)
-        mask = numpy.zeros((nv,), numpy.bool)
-        numpy.put(mask, i, 1)
-        t = d.triangles
-        if t is None:
-            return
-        tmask = numpy.logical_and(mask[t[:,0]], mask[t[:,1]])
-        numpy.logical_and(tmask, mask[t[:,2]], tmask)
-        d.triangle_mask = tmask
-
+        for s in m.surfaces:
+            spoints = s.position.inverse() * points
+            zone.surface_zone(s, spoints, distance, auto_update=True)
 
 class XmapSet(Model):
     '''
@@ -1052,8 +1059,16 @@ class XmapSet(Model):
                 self.add_xmap_handler(dataset)
 
         # Apply the surface mask
+        self.session.triggers.add_handler('frame drawn', self._rezone_once_cb)
         # self._reapply_zone()
 
+    def _rezone_once_cb(self, *_):
+        print('Reapplying zone')
+        print(self._surface_zone.all_coords)
+        print(self._surface_zone.distance)
+        self._reapply_zone()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
 
     @property
     def hklinfo(self):
@@ -1304,13 +1319,13 @@ class XmapSet(Model):
 
     def _reapply_zone(self):
         '''
-        Reapply any surface zone applied to the volume after changing
-        position or contour level.
+        Reapply any surface zone applied to the volume after changing box
+        position.
         '''
         coords = self._surface_zone.all_coords
         radius = self._surface_zone.distance
         if coords is not None:
-            surface_zones(self.child_models(), coords, radius)
+            surface_zones(self, coords, radius)
 
     def delete(self):
         self.live_scrolling = False
@@ -1539,12 +1554,12 @@ class XmapHandler(Volume):
         xmap = self.xmap
         xmap.export_section_numpy(start_grid_coor, target = target,  order = 'C', rot = 'zyx')
 
-    def update_drawings(self):
-        super().update_drawings()
-        if hasattr(self, '_surface_zone'):
-            sz = self._surface_zone
-            coords = sz.all_coords
-            distance = sz.distance
-            if coords is not None:
-                from chimerax.surface.zone import surface_zone
-                surface_zone(self, coords, distance)
+    # def update_drawings(self):
+    #     super().update_drawings()
+    #     if hasattr(self, '_surface_zone'):
+    #         sz = self._surface_zone
+    #         coords = sz.all_coords
+    #         distance = sz.distance
+    #         if coords is not None:
+    #             from chimerax.surface.zone import surface_zone
+    #             surface_zone(self, coords, distance)
