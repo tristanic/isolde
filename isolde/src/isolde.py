@@ -336,7 +336,7 @@ class Isolde():
 
     def _prepare_environment(self):
         session = self.session
-        from chimerax.core.commands import cofr, camera
+        from chimerax.std_commands import cofr, camera
         cofr.cofr(session, 'centerOfView', show_pivot=True)
         camera.camera(session, 'ortho')
         self._mouse_modes.register_all_isolde_modes()
@@ -2754,7 +2754,7 @@ class Isolde():
             self.rezone_maps()
 
     def rezone_maps(self):
-        from chimerax.core.commands.sop import surface_zone
+        from chimerax.surface.sop import surface_zone
         for key, m in self.master_map_list.items():
             v = m.get_source_map()
             cutoff = m.get_mask_cutoff()
@@ -2856,7 +2856,7 @@ class Isolde():
         from chimerax.core.commands import open
         data_dir = os.path.join(self._root_dir, 'demo_data', '3io0')
         before_struct = open.open(self.session, os.path.join(data_dir, 'before.pdb'))[0]
-        from chimerax.core.commands import color
+        from chimerax.std_commands import color
         color.color(self.session, before_struct, color='bychain', target='ac')
         color.color(self.session, before_struct, color='byhetero', target='a')
         from chimerax.clipper import symmetry

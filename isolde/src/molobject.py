@@ -3083,7 +3083,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         if pm is not None and pm.rotamer != rotamer:
             self._remove_preview()
         if self._preview_model is None:
-            from chimerax.core.commands.split import molecule_from_atoms
+            from chimerax.std_commands.split import molecule_from_atoms
             pm = self._preview_model = molecule_from_atoms(self.model, rotamer.residue.atoms)
             pm.bonds.radii = 0.1
             from chimerax.atomic import Atom

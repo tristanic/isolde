@@ -251,7 +251,7 @@ class XtalSymmetryHandler(Model):
 
     @spotlight_mode.setter
     def spotlight_mode(self, flag):
-        from chimerax.core.commands import cofr
+        from chimerax.std_commands import cofr
         cofr.cofr(self.session, 'centerOfView', show_pivot=True)
         self._atomic_symmetry_model.live_scrolling = flag
         if self.xmapset is not None:

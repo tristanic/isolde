@@ -20,7 +20,8 @@ from chimerax.surface import zone
 from chimerax.surface.shapes import sphere_geometry
 
 from chimerax.core.models import Model, Drawing
-from chimerax.core.commands import camera, cofr, cartoon, atomspec
+from chimerax.std_commands import camera, cofr, cartoon
+from chimerax.core.commands import atomspec
 from chimerax.map.data import Array_Grid_Data
 from chimerax.map import Volume, volumecommand
 
@@ -1058,15 +1059,13 @@ class XmapSet(Model):
                 print('Working on dataset: {}'.format(dataset.name))
                 self.add_xmap_handler(dataset)
 
+        self.display=False
         # Apply the surface mask
         self.session.triggers.add_handler('frame drawn', self._rezone_once_cb)
         # self._reapply_zone()
 
     def _rezone_once_cb(self, *_):
-        print('Reapplying zone')
-        print(self._surface_zone.all_coords)
-        print(self._surface_zone.distance)
-        self._reapply_zone()
+        self.display = True
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
