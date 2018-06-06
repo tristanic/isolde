@@ -14,18 +14,17 @@ import ctypes
 
 from . import clipper
 
-from chimerax.core.atomic import molc
+from chimerax.atomic import molc, structure
+# from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
+#     set_c_pointer, pointer, size_t
 
-from chimerax.core.atomic.molc import CFunctions, string, cptr, pyobject, \
-    set_c_pointer, pointer, size_t
-
-from chimerax.core.atomic.molobject import _atoms, \
-                _atom_pair, _atom_or_none, _bonds, _chain, _element, \
-                _pseudobonds, _residue, _residues, _rings, _non_null_residues, \
-                _residue_or_none, _residues_or_nones, _residues_or_nones, \
-                _chains, _atomic_structure, _pseudobond_group, \
-                _pseudobond_group_map
-
+CFunctions = molc.CFunctions
+string = molc.string
+cptr = molc.cptr
+pyobject = molc.pyobject
+set_c_pointer = molc.set_c_pointer
+pointer = molc.pointer
+size_t = molc.size_t
 
 dpath = os.path.dirname(os.path.abspath(__file__))
 libfile = glob.glob(os.path.join(dpath, '_symmetry.cpython*'))[0]
@@ -41,14 +40,14 @@ c_array_function = _c_functions.c_array_function
 HIDE_ISOLDE = 0x02
 
 def _format_sym_tuple(result):
-    from chimerax.core.atomic.molarray import _atoms, _bonds
+    from chimerax.atomic import ctypes_support as convert
     from chimerax.core.geometry import Places
-    primary_atoms = _atoms(result[0])
-    sym_atoms = _atoms(result[1])
+    primary_atoms = convert.atoms(result[0])
+    sym_atoms = convert.atoms(result[1])
     n_sym_atoms = len(sym_atoms)
     sym_coords = result[2].reshape((n_sym_atoms,3))
     atom_syms = result[3]
-    sym_bonds = _bonds(result[4])
+    sym_bonds = convert.bonds(result[4])
     nbonds = len(sym_bonds)
     bond_positions = Places(opengl_array=result[5].reshape((nbonds*2,4,4)))
     bond_syms = result[6]
@@ -406,8 +405,8 @@ class AtomicSymmetryModel(Model):
         self._box_dim = numpy.array([radius*2, radius*2, radius*2], numpy.double)
         ad = self._atoms_drawing = SymAtomsDrawing('Symmetry atoms')
         self.add_drawing(ad)
-        from chimerax.core.atomic.structure import PickedBonds
-        bd = self._bonds_drawing = SymBondsDrawing('Symmetry bonds', PickedSymBond, PickedBonds)
+        #from chimerax.core.atomic.structure import PickedBonds
+        bd = self._bonds_drawing = SymBondsDrawing('Symmetry bonds', PickedSymBond, structure.PickedBonds)
         self.add_drawing(bd)
         rd = self._ribbon_drawing = SymRibbonDrawing('Symmetry ribbons',
             atomic_structure._ribbon_drawing, dim_colors_to)
@@ -558,7 +557,7 @@ class AtomicSymmetryModel(Model):
 
     @property
     def _level_of_detail(self):
-        from chimerax.core.atomic.structure import structure_graphics_updater
+        from chimerax.atomic import structure_graphics_updater
         gu = structure_graphics_updater(self.session)
         return gu.level_of_detail
 
@@ -768,8 +767,8 @@ class AtomicSymmetryModel(Model):
             return
         rd.update()
 
-from chimerax.core.atomic.structure import AtomsDrawing
-class SymAtomsDrawing(AtomsDrawing):
+#from chimerax.core.atomic.structure import AtomsDrawing
+class SymAtomsDrawing(structure.AtomsDrawing):
     def first_intercept(self, mxyz1, mxyz2, exclude=None):
         if not self.display or self.visible_atoms is None or (exclude and exclude(self)):
             return None
@@ -819,15 +818,15 @@ class PickedSymAtom(Pick):
     def select(self, mode = 'add'):
         pass
 
-from chimerax.core.atomic.structure import BondsDrawing
-class SymBondsDrawing(BondsDrawing):
+#from chimerax.core.atomic.structure import BondsDrawing
+class SymBondsDrawing(structure.BondsDrawing):
     def first_intercept(self, mxyz1, mxyz2, exclude=None):
         return None #too-hard basket for now.
 
         if not self.display or (exclude and exclude(self)):
             return None
-        from chimerax.core.atomic.structure import _bond_intercept
-        b, f = _bond_intercept(bonds, mxyz1, mxyz2)
+        #from chimerax.core.atomic.structure import _bond_intercept
+        b, f = structure._bond_intercept(bonds, mxyz1, mxyz2)
 
     def planes_pick(self, mxyz1, mxyz2, exclude=None):
         return []

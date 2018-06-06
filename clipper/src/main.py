@@ -110,7 +110,7 @@ def test_pack_box(model, xmap, size = 50):
     model.positions = P
 
     from chimerax.core.models import Drawing, Model
-    from chimerax.core.surface.shapes import sphere_geometry
+    from chimerax.surface.shapes import sphere_geometry
     d = Drawing('box corners')
     m = Model('box', session)
     d.set_geometry(*sphere_geometry(80))
@@ -144,7 +144,7 @@ def pack_box(model, xmap, box_origin_xyz, size = 100):
     model.positions = P
 
     from chimerax.core.models import Drawing, Model
-    from chimerax.core.surface.shapes import sphere_geometry
+    from chimerax.surface.shapes import sphere_geometry
     d = Drawing('box corners')
     m = Model('box', session)
     #d.vertices, d.normals, d.triangles = sphere_geometry(80)
@@ -163,7 +163,7 @@ def pack_box(model, xmap, box_origin_xyz, size = 100):
 def draw_box(min_corner, max_corner, name='box'):
     from chimerax.core.geometry import Place, Places
     from chimerax.core.models import Drawing, Model
-    from chimerax.core.surface.shapes import sphere_geometry
+    from chimerax.surface.shapes import sphere_geometry
     d = Drawing('corners')
     m = Model(name, session)
     #d.vertices, d.normals, d.triangles = sphere_geometry(80)
@@ -190,7 +190,7 @@ def draw_box(min_corner, max_corner, name='box'):
 def draw_asu(xmap):
     from chimerax.core.geometry import Place, Places
     from chimerax.core.models import Drawing, Model
-    from chimerax.core.surface.shapes import sphere_geometry
+    from chimerax.surface.shapes import sphere_geometry
     d = Drawing('asu corners')
     m = Model('asu box', session)
     #d.vertices, d.normals, d.triangles = sphere_geometry(80)

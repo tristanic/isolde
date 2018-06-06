@@ -15,15 +15,19 @@ from enum import IntEnum
 
 from chimerax.core.state import State
 from chimerax.atomic import molc
-from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
-    set_c_pointer, pointer, size_t
+# from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
+#     set_c_pointer, pointer, size_t
+
+CFunctions = molc.CFunctions
+string = molc.string
+cptr = molc.cptr
+pyobject = molc.pyobject
+set_c_pointer = molc.set_c_pointer
+pointer = molc.pointer
+size_t = molc.size_t
+
 # object map lookups
-from chimerax.atomic.molobject import _atoms, \
-                _atom_pair, _atom_or_none, _bonds, _chain, _element, \
-                _pseudobonds, _residue, _residues, _rings, _non_null_residues, \
-                _residue_or_none, _residues_or_nones, _residues_or_nones, \
-                _chains, _atomic_structure, _pseudobond_group, \
-                _pseudobond_group_map
+from chimerax.atomic import ctypes_support as convert
 
 from chimerax.core.models import Model, Drawing
 
@@ -3162,19 +3166,19 @@ class Chiral_Center(_Dihedral):
     generated as  needed by :class:`Chiral_Mgr` based on dictionary definitions.
     '''
 
-    atoms = c_property('chiral_atoms', cptr, '_natoms', astype=_atoms, read_only=True,
+    atoms = c_property('chiral_atoms', cptr, '_natoms', astype=convert.atoms, read_only=True,
         doc = 'Atoms making up this chiral centre. Read only.')
 
     angle = c_property('chiral_angle', float64, read_only=True,
         doc = 'Angle in radians. Read only.')
-    residue = c_property('chiral_residue', cptr, astype=_residue, read_only=True,
+    residue = c_property('chiral_residue', cptr, astype=convert.residue, read_only=True,
         doc = 'Residue this chiral centre belongs to. Read only.')
 
     expected_angle = c_property('chiral_center_expected_angle', float64, read_only=True,
         doc='The equilibrium angle of the chiral dihedral in its correct isomeric state. Read only.')
     deviation = c_property('chiral_center_deviation', float64, read_only=True,
         doc='The difference between the current dihedral angle and :attr:`expected_angle`. Read only.')
-    chiral_atom = c_property('chiral_center_chiral_atom', cptr, astype=_atom_or_none, read_only=True,
+    chiral_atom = c_property('chiral_center_chiral_atom', cptr, astype=convert.atom_or_none, read_only=True,
         doc='The chiral atom. Read only.')
 
 class Proper_Dihedral(_Dihedral):
@@ -3187,9 +3191,9 @@ class Proper_Dihedral(_Dihedral):
     name = c_property('proper_dihedral_name', string, read_only = True,
         doc = 'Name of this dihedral. Read only.')
 
-    atoms = c_property('proper_dihedral_atoms', cptr, '_natoms', astype=_atoms, read_only=True,
+    atoms = c_property('proper_dihedral_atoms', cptr, '_natoms', astype=convert.atoms, read_only=True,
         doc = 'Atoms making up this dihedral. Read only.')
-    residue = c_property('proper_dihedral_residue', cptr, astype=_residue, read_only=True,
+    residue = c_property('proper_dihedral_residue', cptr, astype=convert.residue, read_only=True,
         doc = 'Residue this dihedral belongs to. Read only.')
     axial_bond = c_property('proper_dihedral_axial_bond', cptr, astype=_bond_or_none, read_only=True,
         doc='Bond forming the axis of this dihedral. Read-only')
@@ -3260,9 +3264,9 @@ class Rama(State):
             return _proper_dihedral_or_none(ret[0])
         return None
 
-    residue = c_property('rama_residue', cptr, astype=_residue_or_none, read_only = True,
+    residue = c_property('rama_residue', cptr, astype=convert.residue_or_none, read_only = True,
             doc = 'The :class:`chimerax.Residue` to which this Rama belongs. Read only.')
-    ca_atom = c_property('rama_ca_atom', cptr, astype=_atom_or_none, read_only = True,
+    ca_atom = c_property('rama_ca_atom', cptr, astype=convert.atom_or_none, read_only = True,
             doc = 'The alpha carbon :py:class:`chimerax.Atom` of the amino acid residue. Read only.')
     valid = c_property('rama_is_valid', npy_bool, read_only = True,
             doc = 'True if this residue has all three of omega, phi and psi. Read only.')
@@ -3333,7 +3337,7 @@ class Rotamer(State):
         f = c_function('rotamer_moving_atoms',
             args=(ctypes.c_void_p, ctypes.c_size_t),
             ret=ctypes.py_object)
-        return _atoms(f(self._c_pointer, chi_index))
+        return convert.atoms(f(self._c_pointer, chi_index))
 
     @property
     def nearest_target(self):
@@ -3364,7 +3368,7 @@ class Rotamer(State):
         return _proper_dihedrals(ret)
 
 
-    residue = c_property('rotamer_residue', cptr, astype=_residue_or_none, read_only=True,
+    residue = c_property('rotamer_residue', cptr, astype=convert.residue_or_none, read_only=True,
                 doc=':py:class:`chimerax.Residue` this rotamer belongs to. Read only.')
     score = c_property('rotamer_score', float64, read_only=True,
                 doc='P-value for the current conformation of this rotamer. Read only.')
@@ -3406,7 +3410,7 @@ class Position_Restraint(State):
             args = (ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointer_ref, 1)
 
-    atom = c_property('position_restraint_atom', cptr, astype=_atom_or_none, read_only=True,
+    atom = c_property('position_restraint_atom', cptr, astype=convert.atom_or_none, read_only=True,
         doc = 'Returns the restrained :py:class:`chimerax.Atom`. Read-only.')
     target = c_property('position_restraint_target', float64, 3,
         doc = 'Target (x,y,z) position in Angstroms. Can be written.')
@@ -3460,7 +3464,7 @@ class MDFF_Atom(State):
 
     enabled = c_property('mdff_atom_enabled', npy_bool,
         doc='Enable/disable MDFF tugging on this atom or get its current state.')
-    atom = c_property('mdff_atom_atom', cptr, astype=_atom_or_none, read_only=True,
+    atom = c_property('mdff_atom_atom', cptr, astype=convert.atom_or_none, read_only=True,
         doc='Returns the ChimeraX Atom. Read only.')
     coupling_constant = c_property('mdff_atom_coupling_constant', float64,
         doc='''
@@ -3507,7 +3511,7 @@ class Distance_Restraint(State):
             doc = 'Enable/disable this restraint or get its current state.')
     visible = c_property('distance_restraint_visible', npy_bool, read_only = True,
             doc = 'Restraint will be visible if it is enabled and both atoms are visible.')
-    atoms = c_property('distance_restraint_atoms', cptr, 2, astype=_atom_pair, read_only=True,
+    atoms = c_property('distance_restraint_atoms', cptr, 2, astype=convert.atom_pair, read_only=True,
             doc = 'Returns a tuple of :py:class:`chimerax.Atoms` pointing to the pair of restrained atoms. Read only.' )
     target = c_property('distance_restraint_target', float64,
             doc = 'Target distance in Angstroms')
@@ -3693,7 +3697,7 @@ class Rotamer_Restraint(State):
 
     rotamer = c_property('rotamer_restraint_rotamer', cptr, astype=_rotamer_or_none, read_only=True,
         doc = ':py:class:`Rotamer` to be restrained. Read only.')
-    residue = c_property('rotamer_restraint_residue', cptr, astype=_residue_or_none, read_only=True,
+    residue = c_property('rotamer_restraint_residue', cptr, astype=convert.residue_or_none, read_only=True,
         doc = ':py:class:`chimerax.Residue` to be restrained. Read only.')
     enabled = c_property('rotamer_restraint_enabled', npy_bool,
         doc = 'Enable/disable chi dihedral restraints. Returns False if any chi restraint is disabled.')

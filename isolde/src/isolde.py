@@ -2428,7 +2428,7 @@ class Isolde():
         all_res = sm.residues
         sel_res = selatoms.unique_residues
         sel_res_indices = all_res.indices(sel_res)
-        from chimerax.atomic.structure import Structure
+        from chimerax.atomic import Structure
 
         allfrags = sm.polymers(missing_structure_treatment=Structure.PMS_NEVER_CONNECTS)
 

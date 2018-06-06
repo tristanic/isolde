@@ -13,15 +13,17 @@ import numpy
 import ctypes
 from chimerax.core.state import State
 from chimerax.atomic import molc
-from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
-    set_c_pointer, pointer, size_t
+# from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
+#     set_c_pointer, pointer, size_t
+
+CFunctions = molc.CFunctions
+string = molc.string
+cptr = molc.cptr
+pyobject = molc.pyobject
+set_c_pointer = molc.set_c_pointer
+pointer = molc.pointer
+size_t = molc.size_t
 # object map lookups
-from chimerax.atomic.molobject import _atoms, \
-                _atom_pair, _atom_or_none, _bonds, _chain, _element, \
-                _pseudobonds, _residue, _residues, _rings, _non_null_residues, \
-                _residue_or_none, _residues_or_nones, _residues_or_nones, \
-                _chains, _atomic_structure, _pseudobond_group, \
-                _pseudobond_group_map
 
 from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
 

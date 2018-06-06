@@ -9,8 +9,18 @@
 
 
 import os, sys, glob
-from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
-    set_c_pointer, pointer, size_t
+from chimerax.atomic import molc
+# from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
+#     set_c_pointer, pointer, size_t
+
+CFunctions = molc.CFunctions
+string = molc.string
+cptr = molc.cptr
+pyobject = molc.pyobject
+set_c_pointer = molc.set_c_pointer
+pointer = molc.pointer
+size_t = molc.size_t
+
 from numpy import uint8, int32, uint32, float64, float32, byte, bool as npy_bool
 import ctypes
 import numpy
