@@ -2082,7 +2082,7 @@ class Isolde():
         ff_key = self.iw._sim_force_field_combo_box.currentText()
         from .openmm.forcefields import forcefields
 
-        self._sim_main_ff = forcefields[ff_key]
+        self.sim_params.forcefield = ff_key
 
     def change_selected_model(self, model):
         '''

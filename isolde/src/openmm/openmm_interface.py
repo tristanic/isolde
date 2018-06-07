@@ -343,7 +343,7 @@ class Sim_Construct:
 
         # Chains in OpenMM must be in a single unbroken block
         residues = model.residues
-        residues = residues[numpy.argsort(residues.chain_ids)]
+        residues = residues[numpy.lexsort((residues.numbers, residues.chain_ids))]
 
         # Sort all the atoms according to their order in the model#
         model_atoms = residues.atoms
@@ -598,12 +598,16 @@ class Sim_Manager:
         sim_params = self.sim_params
         uh = update_handlers
         mobile_res = sc.mobile_atoms.unique_residues
-        sh.initialize_restraint_forces()
-        from .. import session_extensions as sx
-        rama_mgr = sx.get_ramachandran_mgr(self.session)
-        ramas = rama_mgr.get_ramas(mobile_res)
-        ramas = ramas[ramas.valids]
-        sh.add_amber_cmap_torsions(ramas)
+        amber_cmap = False
+        if self.sim_params.forcefield == 'amber14':
+            amber_cmap = True
+        sh.initialize_restraint_forces(amber_cmap)
+        if (amber_cmap):
+            from .. import session_extensions as sx
+            rama_mgr = sx.get_ramachandran_mgr(self.session)
+            ramas = rama_mgr.get_ramas(mobile_res)
+            ramas = ramas[ramas.valids]
+            sh.add_amber_cmap_torsions(ramas)
 
         cr_m = self.chiral_restraint_mgr
         crs = cr_m.add_restraints_by_atoms(sc.mobile_atoms)
@@ -1954,6 +1958,7 @@ class Sim_Handler:
                 - An iterable of file names.
         '''
         from simtk.openmm.app import ForceField
+        print(forcefield_file_list)
         ff = ForceField(*[f for f in forcefield_file_list if f is not None])
         return ff
 
