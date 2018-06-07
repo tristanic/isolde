@@ -53,6 +53,8 @@ def _distance_restraints(p):
     return Distance_Restraints(p)
 def _non_null_proper_dihedrals(p):
     return Proper_Dihedrals(p[p!=0])
+def _atoms_pair(p):
+    return (Atoms(p[:,0].copy()), Atoms(p[:,1].copy()))
 def _atoms_four_tuple(p):
     return tuple((Atoms(p[:,i].copy()) for i in range(4)))
 def _chiral_restraints(p):
@@ -342,7 +344,7 @@ class Distance_Restraints(Collection):
             doc = 'Enable/disable these restraints or get their current states.')
     visibles = cvec_property('distance_restraint_visible', npy_bool, read_only = True,
             doc = 'Each restraint will be visible if it is enabled and both atoms are visible.')
-    atoms = cvec_property('distance_restraint_atoms', cptr, 2, astype=convert.atom_pair, read_only=True,
+    atoms = cvec_property('distance_restraint_atoms', cptr, 2, astype=_atoms_pair, read_only=True,
             doc = 'Returns a 2-tuple of :class:`Atoms` containing the restrained atoms. Read only.' )
     targets = cvec_property('distance_restraint_target', float64,
             doc = 'Target distances in Angstroms')
