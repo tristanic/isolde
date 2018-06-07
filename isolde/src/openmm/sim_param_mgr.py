@@ -129,7 +129,6 @@ class SimParams(Param_Mgr):
         'fixed_integrator_timestep':            (defaults.OPENMM_FIXED_INTEGRATOR_TS, None),
         'constraint_tolerance':                 (defaults.OPENMM_CONSTRAINT_TOL, None),
         'sim_steps_per_gui_update':             (defaults.SIM_STEPS_PER_GUI_UPDATE, None),
-        'minimization_steps_per_gui_update':    (defaults.MIN_STEPS_PER_GUI_UPDATE, None),
         'simulation_startup_rounds':            (defaults.SIM_STARTUP_ROUNDS, None),
         'maximum_unstable_rounds':              (defaults.MAX_UNSTABLE_ROUNDS, None),
         'minimization_convergence_tol':         (defaults.MIN_CONVERGENCE_FORCE_TOL, OPENMM_FORCE_UNIT),
