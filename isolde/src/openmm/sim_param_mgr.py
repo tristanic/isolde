@@ -141,4 +141,7 @@ class SimParams(Param_Mgr):
         'display_omega_restraints':             (defaults.DISPLAY_OMEGA_RESTRAINTS, None),
 
         'peptide_flipper_max_rounds':           (defaults.PEPTIDE_FLIPPER_MAX_ROUNDS, None),
+
+        'trajectory_smoothing':                 (defaults.TRAJECTORY_SMOOTHING, None),
+        'smoothing_alpha':                      (defaults.SMOOTHING_ALPHA, None),
     }

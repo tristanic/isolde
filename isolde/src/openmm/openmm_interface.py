@@ -84,22 +84,53 @@ class OpenMM_Thread_Handler:
         f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
         self.context = context
-        self._averaging = True
-        self._last_average = False
+        self._smoothing = False
+        self._last_smooth = False
         self._last_mode = None
 
     @property
-    def averaging(self):
+    def smoothing(self):
         '''
         If true, the displayed coordinates will be a smoothed average of the
         last set of equilibration steps. Note that for large values of
         sim_steps_per_gui_update this can lead to distorted geometry.
         '''
-        return self._averaging
+        return self._smoothing
 
-    @averaging.setter
-    def averaging(self, flag):
-        self._averaging = flag
+    @smoothing.setter
+    def smoothing(self, flag):
+        self._smoothing = flag
+
+
+    def _get_smoothing_alpha(self):
+        '''
+        ISOLDE uses an exponential smoothing scheme, where
+        :attr:`smoothing_alpha` defines the contribution of each new set of
+        coordinates to the moving average. Values are limited to the range
+        (0.01..0.9), where 1 indicates no smoothing and 0.01 provides extremely
+        strong smoothing. Values outside of this range will be automatically
+        clamped. Internally, coordinates are added to the moving  average
+        every 10 steps or the number of steps to the next graphics  update,
+        whichever is smaller.
+
+        Note that smoothing only affects the *visualisation* of the simulation,
+        not the simulation itself. Applying energy minimisation or pausing  the
+        simulation fetches the latest instantaneous coordinates and restarts the
+        smoothing.
+        '''
+        f = c_function('openmm_thread_handler_smoothing_alpha',
+            args=(ctypes.c_void_p,),
+            ret=ctypes.c_double)
+        return f(self._c_pointer)
+
+    def _set_smoothing_alpha(self, alpha):
+        f = c_function('set_openmm_thread_handler_smoothing_alpha',
+            args=(ctypes.c_void_p, ctypes.c_double))
+        f(self._c_pointer, alpha)
+
+
+    smoothing_alpha = property(_get_smoothing_alpha, _set_smoothing_alpha)
+
 
     @property
     def cpp_pointer(self):
@@ -126,9 +157,9 @@ class OpenMM_Thread_Handler:
         '''
         f = c_function('openmm_thread_handler_step',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_bool))
-        f(self._c_pointer, steps, self._averaging)
+        f(self._c_pointer, steps, self._smoothing)
         self._last_mode = 'equil'
-        self._last_average = self._averaging
+        self._last_smooth = self._smoothing
 
     def minimize(self):
         '''
@@ -239,11 +270,11 @@ class OpenMM_Thread_Handler:
         completes. Can also be set, to push edited coordinates back to the
         simulation.
         '''
-        if not self._averaging or not self._last_average or self._last_mode !='equil':
+        if not self._smoothing or not self._last_smooth or self._last_mode !='equil':
             f = c_function('openmm_thread_handler_current_coords',
                 args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
         else:
-            f = c_function('openmm_thread_handler_averaged_coords',
+            f = c_function('openmm_thread_handler_smoothed_coords',
                 args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
         n = self.natoms
         coords = numpy.empty((n,3), float64)
@@ -997,6 +1028,31 @@ class Sim_Handler:
         self._simulation.integrator.setTemperature(temperature)
 
     @property
+    def smoothing(self):
+        if self.thread_handler is not None:
+            return self.thread_handler.smoothing
+        return self._params.trajectory_smoothing
+
+    @smoothing.setter
+    def smoothing(self, flag):
+        if self.thread_handler is not None:
+            self.thread_handler.smoothing = flag
+
+    smoothing.__doc__ = OpenMM_Thread_Handler.smoothing.__doc__
+
+    @property
+    def smoothing_alpha(self):
+        if self.thread_handler is not None:
+            return self.thread_handler.smoothing_alpha
+
+    @smoothing_alpha.setter
+    def smoothing_alpha(self, alpha):
+        if self.thread_handler is not None:
+            self.thread_handler.smoothing_alpha = alpha
+
+    smoothing_alpha.__doc__ = OpenMM_Thread_Handler.smoothing_alpha.__doc__
+
+    @property
     def minimize(self):
         ''' Force the simulation to continue minimizing indefinitely. '''
         return self._minimize
@@ -1084,6 +1140,8 @@ class Sim_Handler:
         c.setPositions(0.1*self._atoms.coords)
         c.setVelocitiesToTemperature(self.temperature)
         self._thread_handler = OpenMM_Thread_Handler(c)
+        self.smoothing = params.trajectory_smoothing
+        self.smoothing_alpha = params.smoothing_alpha
 
     def _prepare_integrator(self, params):
         integrator = params.integrator

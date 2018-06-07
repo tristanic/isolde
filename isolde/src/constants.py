@@ -125,6 +125,15 @@ class _Defaults:
         'PEPTIDE_FLIPPER_MAX_ROUNDS':   50,
 
         ###
+        # Dynamic visualisation
+        ###
+        'TRAJECTORY_SMOOTHING':         True,
+        'SMOOTHING_ALPHA':              0.1,
+        'SMOOTHING_ALPHA_MAX':          0.9,
+        'SMOOTHING_ALPHA_MIN':          0.01,
+
+
+        ###
         # Constants specific to ChimeraX - lengths in Angstroms beyond this point!
         ###
 

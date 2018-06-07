@@ -27,7 +27,7 @@ OpenMM_Thread_Handler::OpenMM_Thread_Handler(OpenMM::Context* context)
     _natoms = _starting_state.getPositions().size();
 }
 
-void OpenMM_Thread_Handler::_step_threaded(size_t steps, bool average)
+void OpenMM_Thread_Handler::_step_threaded(size_t steps, bool smooth)
 {
     try
     {
@@ -37,9 +37,10 @@ void OpenMM_Thread_Handler::_step_threaded(size_t steps, bool average)
         _thread_finished = false;
         size_t steps_done = 0;
         _starting_state = _final_state;
-        //if (average)
-        _averaging = average;
-        std::vector<OpenMM::State> states;
+        _smoothing = smooth;
+        if (!smooth)
+            _smoothed_coords.clear();
+
         for (; steps_done < steps; )
         {
             size_t these_steps, remaining_steps = steps-steps_done;
@@ -56,33 +57,10 @@ void OpenMM_Thread_Handler::_step_threaded(size_t steps, bool average)
                 _unstable = true;
                 break;
             }
-            if (average)
-                states.push_back(state);
+            if (smooth)
+                _apply_smoothing(state);
         }
         _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
-        if (average) {
-            std::vector<OpenMM::Vec3> averaged_coords(_natoms);
-            size_t nstates;
-            if (_averaged_coords.size() == 0) {
-                // Average just the current set
-                averaged_coords.resize(_natoms);
-                // std::vector<OpenMM::Vec3> averaged_coords(_natoms);
-                nstates = states.size();
-            } else {
-                // Average along with the previous coords for smoother result
-                averaged_coords = _averaged_coords;
-                for (auto &c: averaged_coords)
-                    c*=0.5;
-                nstates = states.size() * 2;
-            }
-            for (const auto &s: states) {
-                const auto &scoords = s.getPositions();
-                for (size_t i=0; i<_natoms; ++i) {
-                    averaged_coords[i] += scoords[i]/nstates;
-                }
-            }
-            _averaged_coords = averaged_coords;
-        }
         auto end = std::chrono::steady_clock::now();
         auto loop_time = end-start;
         if (loop_time < _min_time_per_loop)
@@ -95,6 +73,22 @@ void OpenMM_Thread_Handler::_step_threaded(size_t steps, bool average)
     }
 }
 
+void OpenMM_Thread_Handler::_apply_smoothing(const OpenMM::State& state)
+{
+    const auto& coords = state.getPositions();
+    if (_smoothed_coords.size() == 0) {
+        _smoothed_coords = coords;
+        return;
+    }
+    for (size_t i=0; i<_natoms; ++i)
+    {
+        auto& smoothed = _smoothed_coords[i];
+        const auto& current = coords[i];
+        smoothed = current * _smoothing_alpha + smoothed * (1-_smoothing_alpha);
+    }
+}
+
+
 void OpenMM_Thread_Handler::_minimize_threaded()
 {
     try
@@ -102,6 +96,7 @@ void OpenMM_Thread_Handler::_minimize_threaded()
         _thread_except = nullptr;
         auto start = std::chrono::steady_clock::now();
         _clash = false;
+        _smoothed_coords.clear();
         _thread_running = true;
         _thread_finished = false;
         _starting_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Energy);
@@ -170,16 +165,16 @@ std::vector<OpenMM::Vec3> OpenMM_Thread_Handler::get_coords_in_angstroms(const O
     return coords_ang;
 }
 
-std::vector<OpenMM::Vec3> OpenMM_Thread_Handler::get_averaged_coords_in_angstroms()
+std::vector<OpenMM::Vec3> OpenMM_Thread_Handler::get_smoothed_coords_in_angstroms()
 {
     finalize_thread();
-    if (!_averaging) {
-        throw std::logic_error("Last round of equilibration was not run with averaging enabled!");
+    if (!_smoothing) {
+        throw std::logic_error("Last round of equilibration was not run with smoothing enabled!");
     }
     std::vector<OpenMM::Vec3> coords_ang(_natoms);
-    auto from = _averaged_coords.begin();
+    auto from = _smoothed_coords.begin();
     auto to = coords_ang.begin();
-    for (; from != _averaged_coords.end(); from++, to++)
+    for (; from != _smoothed_coords.end(); from++, to++)
     {
         *to = *from * 10.0;
     }
@@ -199,6 +194,7 @@ void OpenMM_Thread_Handler::set_coords_in_angstroms(const std::vector<OpenMM::Ve
         }
     }
     _context->setPositions(coords_nm);
+    _smoothed_coords.clear();
 }
 
 void OpenMM_Thread_Handler::set_coords_in_angstroms(double *coords, size_t n)
@@ -212,22 +208,32 @@ void OpenMM_Thread_Handler::set_coords_in_angstroms(double *coords, size_t n)
             v[i] = (*coords++)/10.0;
     }
     _context->setPositions(coords_nm);
+    _smoothed_coords.clear();
 }
 
 double OpenMM_Thread_Handler::max_force(const std::vector<OpenMM::Vec3>& forces) const
 {
     double max_force = 0;
-    size_t i=0;
 
     for (const auto &fv: forces)
     {
         double f_mag = 0;
-        for (size_t j=0; j<3; ++j)
-            f_mag += fv[j]*fv[j];
+        for (size_t i=0; i<3; ++i)
+            f_mag += fv[i]*fv[i];
         f_mag = sqrt(f_mag);
         max_force = f_mag>max_force ? f_mag : max_force;
     }
     return max_force;
+}
+
+void OpenMM_Thread_Handler::set_smoothing_alpha(const double &alpha)
+{
+    if (alpha < SMOOTHING_ALPHA_MIN)
+        _smoothing_alpha = SMOOTHING_ALPHA_MIN;
+    else if (alpha > SMOOTHING_ALPHA_MAX)
+        _smoothing_alpha = SMOOTHING_ALPHA_MAX;
+    else
+        _smoothing_alpha = alpha;
 }
 
 // PYTHON INTERFACE BELOW
@@ -271,12 +277,37 @@ openmm_thread_handler_num_atoms(void *handler)
     }
 }
 
-extern "C" EXPORT void
-openmm_thread_handler_step(void *handler, size_t steps, npy_bool average)
+extern "C" EXPORT double
+openmm_thread_handler_smoothing_alpha(void *handler)
 {
     OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
     try {
-        h->step_threaded(steps, average);
+        return h->smoothing_alpha();
+    } catch (...) {
+        molc_error();
+        return -1;
+    }
+}
+
+extern "C" EXPORT void
+set_openmm_thread_handler_smoothing_alpha(void *handler, double alpha)
+{
+    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
+    try {
+        h->set_smoothing_alpha(alpha);
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
+
+extern "C" EXPORT void
+openmm_thread_handler_step(void *handler, size_t steps, npy_bool smooth)
+{
+    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
+    try {
+        h->step_threaded(steps, smooth);
     } catch (...) {
         molc_error();
     }
@@ -389,13 +420,13 @@ openmm_thread_handler_current_coords(void *handler, size_t n, double *coords)
 }
 
 extern "C" EXPORT void
-openmm_thread_handler_averaged_coords(void *handler, size_t n, double *coords)
+openmm_thread_handler_smoothed_coords(void *handler, size_t n, double *coords)
 {
     OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
     try {
         if (n != h->natoms())
             throw std::logic_error("Mismatch between number of atoms and output array size!");
-        auto sim_coords = h->get_averaged_coords_in_angstroms();
+        auto sim_coords = h->get_smoothed_coords_in_angstroms();
         for (const auto &coord: sim_coords) {
             for (size_t i=0; i<3; ++i)
                 *coords++ = coord[i];

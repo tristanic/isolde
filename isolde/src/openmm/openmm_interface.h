@@ -96,7 +96,7 @@ public:
     std::vector<size_t> overly_fast_atoms(const std::vector<OpenMM::Vec3>& velocities);
 
     std::vector<OpenMM::Vec3> get_coords_in_angstroms(const OpenMM::State& state);
-    std::vector<OpenMM::Vec3> get_averaged_coords_in_angstroms();
+    std::vector<OpenMM::Vec3> get_smoothed_coords_in_angstroms();
     void set_coords_in_angstroms(const std::vector<OpenMM::Vec3>& coords_ang);
     void set_coords_in_angstroms(double *coords, size_t n);
     void finalize_thread()
@@ -118,11 +118,14 @@ public:
     size_t natoms() const { return _natoms; }
     bool clash_detected() const { return _clash; }
 
+    double smoothing_alpha() const { return _smoothing_alpha; }
+    void set_smoothing_alpha(const double &alpha);
+
 private:
     OpenMM::Context* _context;
     OpenMM::State _starting_state;
     OpenMM::State _final_state;
-    std::vector<OpenMM::Vec3> _averaged_coords;
+    std::vector<OpenMM::Vec3> _smoothed_coords;
 
     std::thread _thread;
     std::exception_ptr _thread_except;
@@ -131,7 +134,12 @@ private:
     bool _thread_running = false;
     bool _thread_finished = true;
     bool _unstable = false;
-    bool _averaging = false;
+
+    // Exponential smoothing
+    bool _smoothing = false;
+    double _smoothing_alpha = 0.5;
+    const double SMOOTHING_ALPHA_MAX = 0.9; // no smoothing
+    const double SMOOTHING_ALPHA_MIN = 0.01; // extremely strong smoothing
 
     milliseconds _min_time_per_loop = milliseconds(1.0); // ms: limit on the speed of the simulation
     const double MAX_VELOCITY = 50; //nm ps-1 (50,000 m/s)
@@ -161,6 +169,7 @@ private:
     void _step_threaded(size_t steps, bool average);
     void _minimize_threaded();
     void _reinitialize_context_threaded();
+    void _apply_smoothing(const OpenMM::State& state);
 };
 
 } //namespace isolde

@@ -635,6 +635,18 @@ class Isolde():
         )
 
         ####
+        # Trajectory smoothing
+        ####
+
+        iw._smoothing_checkbox.stateChanged.connect(
+            self._change_smoothing_state_from_gui
+        )
+        iw._smoothing_amount_slider.valueChanged.connect(
+            self._change_smoothing_amount_from_gui
+        )
+
+
+        ####
         # Xtal map parameters (can only be set before starting simulation)
         ####
         iw._sim_basic_xtal_init_open_button.clicked.connect(
@@ -2257,7 +2269,23 @@ class Isolde():
         ]
         v.set_parameters(surface_colors=carg)
 
+    def _change_smoothing_state_from_gui(self, *_):
+        flag = self.iw._smoothing_checkbox.checkState()
+        self.sim_params.trajectory_smoothing = flag
+        if self.simulation_running:
+            self.sim_handler.smoothing = flag
 
+    def _change_smoothing_amount_from_gui(self, *_):
+        sval = self.iw._smoothing_amount_slider.value()
+        alpha = 10**-(sval/100)
+        mina, maxa = defaults.SMOOTHING_ALPHA_MIN, defaults.SMOOTHING_ALPHA_MAX
+        if alpha < mina:
+            alpha = mina
+        elif alpha > maxa:
+            alpha = maxa
+        self.sim_params.smoothing_alpha = alpha
+        if self.simulation_running:
+            self.sim_handler.smoothing_alpha = alpha
 
 
 
@@ -2659,6 +2687,31 @@ class Isolde():
                 +'terminate: \n{}'.format(
                     '\n'.join([r for r in self.checkpoint_disabled_reasons.values()]))
             raise TypeError(err_str)
+
+    def set_smoothing(self, flag):
+        if self.gui_mode:
+            # then just let the GUI controls handle it
+            self.iw._smoothing_checkbox.setChecked(flag)
+        else:
+            self.sim_params.trajectory_smoothing = flag
+            if self.simulation_running:
+                self.sim_handler.smoothing = flag
+
+    def set_smoothing_alpha(self, alpha):
+        if self.gui_mode:
+            # then just let the GUI controls handle it
+            slider = self.iw._smoothing_amount_slider
+            from math import log
+            la = log(alpha, 10)
+            slider.setValue(int(-100*la))
+        else:
+            if alpha < defaults.SMOOTHING_ALPHA_MIN:
+                alpha = defaults.SMOOTHING_ALPHA_MIN
+            elif alpha > defaults.SMOOTHING_ALPHA_MAX:
+                alpha = defaults.SMOOTHING_ALPHA_MAX
+            self.sim_params.smoothing_alpha = alpha
+            if self.simulation_running:
+                self.sim_handler.smoothing_alpha = alpha
 
 
     ####
