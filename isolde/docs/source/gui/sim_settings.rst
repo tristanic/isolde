@@ -167,3 +167,20 @@ of the ISOLDE panel):
 
 .. |tuga| image:: ../images/tug_atom.png
 .. |tugr| image:: ../images/tug_residue.png
+
+Trajectory smoothing
+--------------------
+
+Molecular dynamics simulations are designed to closely replicate real-world
+behaviour of molecules, including random thermal motion. While this is often
+quite helpful in that it helps the model "rattle" into the map, the
+high frequency frame-to-frame random jitters can become distracting to watch.
+By default, ISOLDE therefore provides a smoothed visualisation of the evolving
+trajectory, which can be turned on/off and/or adjusted using the button and dial
+found at the middle bottom of the ISOLDE widget:
+
+.. figure:: images/trajectory_smoothing.png
+    :alt: Trajectory smoothing controls
+
+**IMPORTANT NOTE:** Smoothing has no effect whatsoever on the simulation itself,
+just on how you see it.
