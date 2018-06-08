@@ -138,7 +138,7 @@ private:
     // Exponential smoothing
     bool _smoothing = false;
     double _smoothing_alpha = 0.5;
-    const double SMOOTHING_ALPHA_MAX = 0.9; // no smoothing
+    const double SMOOTHING_ALPHA_MAX = 1.0; // no smoothing
     const double SMOOTHING_ALPHA_MIN = 0.01; // extremely strong smoothing
 
     milliseconds _min_time_per_loop = milliseconds(1.0); // ms: limit on the speed of the simulation

@@ -107,7 +107,7 @@ class OpenMM_Thread_Handler:
         ISOLDE uses an exponential smoothing scheme, where
         :attr:`smoothing_alpha` defines the contribution of each new set of
         coordinates to the moving average. Values are limited to the range
-        (0.01..0.9), where 1 indicates no smoothing and 0.01 provides extremely
+        (0.01..1), where 1 indicates no smoothing and 0.01 provides extremely
         strong smoothing. Values outside of this range will be automatically
         clamped. Internally, coordinates are added to the moving  average
         every 10 steps or the number of steps to the next graphics  update,
@@ -915,7 +915,6 @@ class Sim_Manager:
     def _mdff_global_k_change_cb(self, trigger_name, data):
         mgr, k = data
         self.sim_handler.set_mdff_global_k(mgr.volume, k)
-        print('Changed map coupling constant to {}'.format(k))
 
     def _mdff_sim_end_cb(self, *_):
         for v, mgr in self.mdff_mgrs.items():
@@ -1958,7 +1957,6 @@ class Sim_Handler:
                 - An iterable of file names.
         '''
         from simtk.openmm.app import ForceField
-        print(forcefield_file_list)
         ff = ForceField(*[f for f in forcefield_file_list if f is not None])
         return ff
 

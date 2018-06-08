@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>smooth_icon.png</file>
     <file>rainbow.png</file>
     <file>icecube.png</file>
     <file>mapsurf.png</file>

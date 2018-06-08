@@ -638,10 +638,10 @@ class Isolde():
         # Trajectory smoothing
         ####
 
-        iw._smoothing_checkbox.stateChanged.connect(
+        iw._trajectory_smooth_button.clicked.connect(
             self._change_smoothing_state_from_gui
         )
-        iw._smoothing_amount_slider.valueChanged.connect(
+        iw._smoothing_amount_dial.valueChanged.connect(
             self._change_smoothing_amount_from_gui
         )
 
@@ -2270,13 +2270,13 @@ class Isolde():
         v.set_parameters(surface_colors=carg)
 
     def _change_smoothing_state_from_gui(self, *_):
-        flag = self.iw._smoothing_checkbox.checkState()
+        flag = self.iw._trajectory_smooth_button.isChecked()
         self.sim_params.trajectory_smoothing = flag
         if self.simulation_running:
             self.sim_handler.smoothing = flag
 
     def _change_smoothing_amount_from_gui(self, *_):
-        sval = self.iw._smoothing_amount_slider.value()
+        sval = self.iw._smoothing_amount_dial.value()
         alpha = 10**-(sval/100)
         mina, maxa = defaults.SMOOTHING_ALPHA_MIN, defaults.SMOOTHING_ALPHA_MAX
         if alpha < mina:
@@ -2691,16 +2691,15 @@ class Isolde():
     def set_smoothing(self, flag):
         if self.gui_mode:
             # then just let the GUI controls handle it
-            self.iw._smoothing_checkbox.setChecked(flag)
-        else:
-            self.sim_params.trajectory_smoothing = flag
-            if self.simulation_running:
-                self.sim_handler.smoothing = flag
+            self.iw._smoothing_button.setChecked(flag)
+        self.sim_params.trajectory_smoothing = flag
+        if self.simulation_running:
+            self.sim_handler.smoothing = flag
 
     def set_smoothing_alpha(self, alpha):
         if self.gui_mode:
             # then just let the GUI controls handle it
-            slider = self.iw._smoothing_amount_slider
+            slider = self.iw._smoothing_amount_dial
             from math import log
             la = log(alpha, 10)
             slider.setValue(int(-100*la))
