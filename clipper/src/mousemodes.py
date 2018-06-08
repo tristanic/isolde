@@ -109,7 +109,7 @@ class SelectVolumeToContour(mousemodes.MouseMode):
         self._start_deselect_timer()
     def _get_vol_list(self):
         '''Get a list of currently visible volumes.'''
-        from chimerax.core.map import Volume
+        from chimerax.map import Volume
         vlist = self.session.models.list(type=Volume)
         for i in reversed(range(len(vlist))):
             if not vlist[i].visible:
@@ -198,8 +198,10 @@ def adjust_threshold_level(m, step, sym):
         new_levels[-1] = (max(l,1.01*ms.maximum),b)
         m.set_parameters(solid_levels = new_levels)
     else:
-        if sym and len(m.surface_levels) > 1:
-            old_levels = m.surface_levels
+        #if sym and len(m.surface_levels) > 1:
+        if sym and len(m.surfaces) > 1:
+            #old_levels = m.surface_levels
+            old_levels = [s.level for s in m.surfaces]
             new_levels = []
             for l in old_levels:
                 if l < 0:
@@ -213,6 +215,8 @@ def adjust_threshold_level(m, step, sym):
                         newl = abs(step)
                     new_levels.append(newl)
         else:
-            new_levels = tuple(l+step for l in m.surface_levels)
+            old_levels = [s.level for s in m.surfaces]
+            #new_levels = tuple(l+step for l in m.surface_levels)
+            new_levels = tuple(l+step for l in old_levels)
         m.set_parameters(surface_levels = new_levels)
     return(m.representation, new_levels)

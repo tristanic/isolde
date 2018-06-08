@@ -10,8 +10,20 @@
 
 import numpy
 from numpy import uint8, int32, uint32, float64, float32, uintp, byte, bool as npy_bool, integer, empty, array
-from chimerax.core.atomic.molc import string, cptr, pyobject, set_cvec_pointer, pointer, size_t
-from chimerax.core.atomic.molarray import Collection
+from chimerax.atomic import molc
+# from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
+#     set_c_pointer, pointer, size_t
+
+CFunctions = molc.CFunctions
+string = molc.string
+cptr = molc.cptr
+pyobject = molc.pyobject
+set_c_pointer = molc.set_c_pointer
+pointer = molc.pointer
+size_t = molc.size_t
+
+from chimerax.atomic import molarray as ma
+Collection = ma.Collection
 from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
@@ -20,13 +32,14 @@ from .molobject import Chiral_Center, Proper_Dihedral, Rotamer, Rama,\
         Chiral_Restraint, Proper_Dihedral_Restraint, Rotamer_Restraint
 import ctypes
 
-from chimerax.core.atomic import Atom, Atoms, Residue, Residues
+from chimerax.atomic import Atom, Atoms, Residue, Residues
 
-from chimerax.core.atomic.molarray import _atoms, _atoms_or_nones, \
-        _bonds, _non_null_atoms, _pseudobond_groups, _pseudobonds, \
-        _elements, _residues, _non_null_residues, _chains, \
-        _non_null_chains, _atomic_structures, structure_datas, \
-        _atoms_pair, _pseudobond_group_map
+from chimerax.atomic import ctypes_support as convert
+# from chimerax.atomic.molarray import _atoms, _atoms_or_nones, \
+#         _bonds, _non_null_atoms, _pseudobond_groups, _pseudobonds, \
+#         _elements, _residues, _non_null_residues, _chains, \
+#         _non_null_chains, _atomic_structures, structure_datas, \
+#         _atoms_pair, _pseudobond_group_map
 
 def _chiral_centers(p):
     return Chiral_Centers(p)
@@ -40,6 +53,8 @@ def _distance_restraints(p):
     return Distance_Restraints(p)
 def _non_null_proper_dihedrals(p):
     return Proper_Dihedrals(p[p!=0])
+def _atoms_pair(p):
+    return (Atoms(p[:,0].copy()), Atoms(p[:,1].copy()))
 def _atoms_four_tuple(p):
     return tuple((Atoms(p[:,i].copy()) for i in range(4)))
 def _chiral_restraints(p):
@@ -85,14 +100,14 @@ class Chiral_Centers(_Dihedrals):
         ''')
     angles = cvec_property('chiral_angle', float64, read_only=True,
         doc='Returns the angle in radians for each dihedral. Read only.')
-    residues = cvec_property('chiral_residue', cptr, astype=_residues, read_only=True,
+    residues = cvec_property('chiral_residue', cptr, astype=convert.residues, read_only=True,
         doc='Returns a :class:`Residues` giving the parent residue of each dihedral. Read only')
 
     expected_angles = cvec_property('chiral_center_expected_angle', float64, read_only=True,
         doc='The equilibrium angle of each chiral dihedral in its correct isomeric state. Read only.')
     deviations = cvec_property('chiral_center_deviation', float64, read_only=True,
         doc='The difference between each current dihedral angle and its :attr:`expected_angle`. Read only.')
-    chiral_atoms = cvec_property('chiral_center_chiral_atom', cptr, astype=_atoms, read_only=True,
+    chiral_atoms = cvec_property('chiral_center_chiral_atom', cptr, astype=convert.atoms, read_only=True,
         doc='The chiral atoms. Read only.')
 
 
@@ -120,10 +135,10 @@ class Proper_Dihedrals(_Dihedrals):
     angles = cvec_property('proper_dihedral_angle', float64, read_only=True,
         doc='Returns the angle in radians for each dihedral. Read only.')
     names = cvec_property('proper_dihedral_name', string, read_only=True)
-    residues = cvec_property('proper_dihedral_residue', cptr, astype=_residues, read_only=True,
+    residues = cvec_property('proper_dihedral_residue', cptr, astype=convert.residues, read_only=True,
         doc='Returns a :class:`Residues` giving the parent residue of each dihedral. Read only')
 
-    axial_bonds = cvec_property('proper_dihedral_axial_bond', cptr, astype=_bonds, read_only=True,
+    axial_bonds = cvec_property('proper_dihedral_axial_bond', cptr, astype=convert.bonds, read_only=True,
         doc='Returns a :class:`Bonds` giving the axial bond for each dihedral. Read-only')
 
 class Ramas(Collection):
@@ -178,9 +193,9 @@ class Ramas(Collection):
         found = f(self._c_pointers, n, pointer(ret))
         return _proper_dihedrals(ret[:found])
 
-    residues = cvec_property('rama_residue', cptr, astype=_residues, read_only = True,
+    residues = cvec_property('rama_residue', cptr, astype=convert.residues, read_only = True,
             doc = 'Returns a :class:`chimerax.Residues` instance giving the residue to which each Rama belongs. Read only.')
-    ca_atoms = cvec_property('rama_ca_atom', cptr, astype=_atoms, read_only = True,
+    ca_atoms = cvec_property('rama_ca_atom', cptr, astype=convert.atoms, read_only = True,
             doc = 'Returns a :class:`chimerax.Atoms` instance giving the alpha carbon of each amino acid residue. Read only.')
     valids = cvec_property('rama_is_valid', npy_bool, read_only = True,
             doc = 'True for each residue that has all three of omega, phi and psi. Read only.')
@@ -202,11 +217,11 @@ class Rotamers(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, Rotamer, Rotamers)
 
-    residues = cvec_property('rotamer_residue', cptr, astype=_residues, read_only=True,
+    residues = cvec_property('rotamer_residue', cptr, astype=convert.residues, read_only=True,
                 doc=':py:class:`chimerax.Residue` this rotamer belongs to. Read only.')
     scores = cvec_property('rotamer_score', float64, read_only=True,
                 doc='P-value for the current conformation of this rotamer. Read only.')
-    ca_cb_bonds = cvec_property('rotamer_ca_cb_bond', cptr, astype=_bonds, read_only=True,
+    ca_cb_bonds = cvec_property('rotamer_ca_cb_bond', cptr, astype=convert.bonds, read_only=True,
                 doc='The "stem" :py:class:`chimerax.Bond` of this rotamer. Read only.')
     visibles = cvec_property('rotamer_visible', npy_bool, read_only=True,
                 doc='True for each rotamer whose CA-CB bond is visible')
@@ -238,7 +253,7 @@ class Position_Restraints(Collection):
             args = (ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointers, len(self))
 
-    atoms = cvec_property('position_restraint_atom', cptr, astype=_atoms, read_only=True,
+    atoms = cvec_property('position_restraint_atom', cptr, astype=convert.atoms, read_only=True,
         doc = 'Returns the restrained :py:class:`chimerax.Atoms`. Read-only.')
     targets = cvec_property('position_restraint_target', float64, 3,
         doc = 'Target (x,y,z) positions in Angstroms. Can be written.')
@@ -275,7 +290,7 @@ class MDFF_Atoms(Collection):
 
     enableds = cvec_property('mdff_atom_enabled', npy_bool,
         doc='Enable/disable MDFF tugging on each atom or get the current states.')
-    atoms = cvec_property('mdff_atom_atom', cptr, astype=_atoms, read_only=True,
+    atoms = cvec_property('mdff_atom_atom', cptr, astype=convert.atoms, read_only=True,
         doc='Returns the :py:class:`chimerax.Atom`. Read only.')
     coupling_constants = cvec_property('mdff_atom_coupling_constant', float64,
         doc='''
@@ -448,7 +463,7 @@ class Rotamer_Restraints(Collection):
 
     rotamers = cvec_property('rotamer_restraint_rotamer', cptr, astype=_rotamers, read_only=True,
         doc = ':py:class:`Rotamers` to be restrained. Read only.')
-    residues = cvec_property('rotamer_restraint_residue', cptr, astype=_residues, read_only=True,
+    residues = cvec_property('rotamer_restraint_residue', cptr, astype=convert.residues, read_only=True,
         doc = ':py:class:`chimerax.Residues` to be restrained. Read only.')
     enableds = cvec_property('rotamer_restraint_enabled', npy_bool,
         doc = '''

@@ -181,7 +181,7 @@ class StructureStepper:
 
 
 def _res_ss_type(residue):
-  from chimerax.core.atomic import Residue
+  from chimerax.atomic import Residue
   if residue.is_strand:
     return Residue.SS_STRAND
   if residue.is_helix:

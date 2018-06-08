@@ -40,7 +40,7 @@
 
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>
-    <Dependency name="ChimeraX-Core" version="==0.6"/>
+    <Dependency name="ChimeraX-Core" version=">=0.7"/>
     <Dependency name="Clipper-Python" version=">=0.1.1"/>
   </Dependencies>
 

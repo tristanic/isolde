@@ -9,7 +9,7 @@
 
 
 import numpy
-from chimerax.core.atomic import Residue, AtomicStructure
+from chimerax.atomic import Residue, AtomicStructure
 def is_continuous_protein_chain(sel, allow_single = False):
     '''
     Checks if the residues in a selection are all protein, and form a

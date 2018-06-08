@@ -14,16 +14,20 @@ import ctypes
 from enum import IntEnum
 
 from chimerax.core.state import State
-from chimerax.core.atomic import molc
-from chimerax.core.atomic.molc import CFunctions, string, cptr, pyobject, \
-    set_c_pointer, pointer, size_t
+from chimerax.atomic import molc
+# from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
+#     set_c_pointer, pointer, size_t
+
+CFunctions = molc.CFunctions
+string = molc.string
+cptr = molc.cptr
+pyobject = molc.pyobject
+set_c_pointer = molc.set_c_pointer
+pointer = molc.pointer
+size_t = molc.size_t
+
 # object map lookups
-from chimerax.core.atomic.molobject import _atoms, \
-                _atom_pair, _atom_or_none, _bonds, _chain, _element, \
-                _pseudobonds, _residue, _residues, _rings, _non_null_residues, \
-                _residue_or_none, _residues_or_nones, _residues_or_nones, \
-                _chains, _atomic_structure, _pseudobond_group, \
-                _pseudobond_group_map
+from chimerax.atomic import ctypes_support as convert
 
 from chimerax.core.models import Model, Drawing
 
@@ -94,7 +98,7 @@ def _rotamer_restraints(p):
     from .molarray import Rotamer_Restraints
     return Rotamer_Restraints(p)
 def _pseudobond_or_none(p):
-    from chimerax.core.atomic import Pseudobond
+    from chimerax.atomic import Pseudobond
     return Pseudobond.c_ptr_to_py_inst(p) if p else None
 def _chiral_restraint_or_none(p):
     return Chiral_Restraint.c_ptr_to_py_inst(p) if p else None
@@ -829,7 +833,7 @@ class Rama_Mgr:
               :class:`Ramas` instance
         '''
         from .molarray import Ramas
-        from chimerax.core.atomic import Residues
+        from chimerax.atomic import Residues
         if isinstance(residues_or_ramas, Ramas):
             return self._validate(residues_or_ramas)
         elif isinstance(residues_or_ramas, Residues):
@@ -1292,7 +1296,7 @@ class Rota_Mgr:
             * residue:
                 - a :class:`chimerax.Residue` instance
         '''
-        from chimerax.core.atomic import Residues
+        from chimerax.atomic import Residues
         rots = self.get_rotamers(Residues([residue]))
         if len(rots):
             return rots[0]
@@ -1704,15 +1708,15 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         bd.skip_bounds = True
         self.add_drawing(pd)
         self.add_drawing(bd)
-        pd.vertices, pd.normals, pd.triangles = self._target_pin_geometry()
-        bd.vertices, bd.normals, bd.triangles = self._pseudobond_geometry()
+        pd.set_geometry(*self._target_pin_geometry())
+        bd.set_geometry(*self._pseudobond_geometry())
         self.set_bond_color(self._DEFAULT_BOND_COLOR)
         self.set_pin_color(self._DEFAULT_PIN_COLOR)
         pd.display = False
         bd.display = False
 
     def _pseudobond_geometry(self, segments=3):
-        from chimerax.core import surface
+        from chimerax import surface
         return surface.dashed_cylinder_geometry(segments, height=1.0, nc = 6)
 
     def _target_pin_geometry(self, handle_radius=0.4, pin_radius=0.05, total_height=1.0):
@@ -1848,7 +1852,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
             * atom:
                 - a :py:class:`chimerax.Atom` instance
         '''
-        from chimerax.core.atomic import Atoms
+        from chimerax.atomic import Atoms
         r = self._get_restraints(Atoms([atom]), create=True)
         if len(r):
             return r[0]
@@ -1878,7 +1882,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
             * atom:
                 - a :py:class:`chimerax.Atom` instance
         '''
-        from chimerax.core.atomic import Atoms
+        from chimerax.atomic import Atoms
         r = self._get_restraints(Atoms([atom]))
         if len(r):
             return r[0]
@@ -1938,11 +1942,11 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
     def _prepare_drawings(self):
         ad = self._arrow_drawing = Drawing('Tugging force vectors')
         self.add_drawing(ad)
-        ad.vertices, ad.normals, ad.triangles = self._arrow_geometry()
+        ad.set_geometry(*self._arrow_geometry())
         self.set_arrow_color(self._DEFAULT_ARROW_COLOR)
 
         # nd = self._nearest_atoms_drawing = Drawing('Nearest tuggable atoms')
-        # from chimerax.core.surface.shapes import sphere_geometry2
+        # from chimerax.surface.shapes import sphere_geometry2
         # nd.vertices, d.normals, d.triangles = sphere_geometry2(80)
         # self.set_near_atoms_color(self._NEAR_ATOMS_COLOR)
 
@@ -2038,7 +2042,7 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
             * atom:
                 - a :py:class:`chimerax.Atom` instance
         '''
-        from chimerax.core.atomic import Atoms
+        from chimerax.atomic import Atoms
         t = self._get_tuggables(Atoms([atom]), create=True)
         if len(t):
             return t[0]
@@ -2066,7 +2070,7 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
             * atom:
                 - a :py:class:`chimerax.Atom` instance
         '''
-        from chimerax.core.atomic import Atoms
+        from chimerax.atomic import Atoms
         t = self._get_tuggables(Atoms([atom]), create=False)
         if len(t):
             return t[0]
@@ -2143,11 +2147,11 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         bd = self._bond_drawing = Drawing('Restraint bonds')
         bd.skip_bounds = True
         self.add_drawing(bd)
-        bd.vertices, bd.normals, bd.triangles = self._pseudobond_geometry()
+        bd.set_geometry(*self._pseudobond_geometry())
         self.set_bond_color(self._DEFAULT_BOND_COLOR)
         td = self._target_drawing = Drawing('Target distances')
         td.skip_bounds = True
-        td.vertices, td.normals, td.triangles = self._target_geometry()
+        td.set_geometry(*self._target_geometry())
         self.add_drawing(td)
         self.set_target_color(self._DEFAULT_TARGET_COLOR)
         bd.display = False
@@ -2179,14 +2183,14 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         Length is scaled to the target distance. Radius scales according to
         spring constant.
         '''
-        from chimerax.core import surface
+        from chimerax import surface
         return surface.cylinder_geometry(radius=1.0, height=1.0)
 
     def _pseudobond_geometry(self):
         '''
         Connects the two restrained atoms. Radius is fixed.
         '''
-        from chimerax.core import surface
+        from chimerax import surface
         return surface.cylinder_geometry(radius = 0.025, height=1.0, caps=False)
 
     def _restraint_changes_cb(self, trigger_name, changes):
@@ -2240,7 +2244,7 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         f = c_function('distance_restraint_mgr_get_restraint',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool),
             ret = ctypes.c_void_p)
-        from chimerax.core.atomic import Atoms
+        from chimerax.atomic import Atoms
         atoms = Atoms([atom1, atom2])
         return _distance_restraint_or_none(f(self._c_pointer, atoms._c_pointers, create))
 
@@ -2566,8 +2570,8 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
             self.add_drawing(post_d)
         ring_d = self._ring_drawing
         post_d = self._post_drawing
-        ring_d.vertices, ring_d.normals, ring_d.triangles = geometry.ring_arrow_with_post(0.5, 0.05, 5, 6, 0.25, 0.1, 0.05, 1)
-        post_d.vertices, post_d.normals, post_d.triangles = geometry.post_geometry(0.05, 1, caps=True)
+        ring_d.set_geometry(*geometry.ring_arrow_with_post(0.5, 0.05, 5, 6, 0.25, 0.1, 0.05, 1))
+        post_d.set_geometry(*geometry.post_geometry(0.05, 1, caps=True))
         ring_d.display = False
         post_d.display = False
 
@@ -2687,7 +2691,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
             * name:
                 - Lowercase name of a known dihedral definition (e.g. 'phi')
         '''
-        from chimerax.core.atomic import Residues
+        from chimerax.atomic import Residues
         r = self._get_restraints_by_residues_and_name(Residues([residue]), name, False)
         if len(r):
             return r[0]
@@ -2706,7 +2710,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
             * name:
                 - Lowercase name of a known dihedral definition (e.g. 'phi')
         '''
-        from chimerax.core.atomic import Residues
+        from chimerax.atomic import Residues
         r = self._get_restraints_by_residues_and_name(Residues([residue]), name, True)
         if len(r):
             return r[0]
@@ -2906,7 +2910,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
                 - a :py:class:`Rotamers` or :py:class:`chimerax.Residues` with
                   all elements belonging to the same molecule as this manager
         '''
-        from chimerax.core.atomic import Residues
+        from chimerax.atomic import Residues
         if isinstance(rotamers_or_residues, Residues):
             rota_mgr = _get_rotamer_manager(session)
             rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
@@ -2924,7 +2928,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
                 - a :py:class:`Rotamers` or :py:class:`chimerax.Residues` with
                   all elements belonging to the same molecule as this manager
         '''
-        from chimerax.core.atomic import Residues
+        from chimerax.atomic import Residues
         if isinstance(rotamers_or_residues, Residues):
             rota_mgr = _get_rotamer_manager(session)
             rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
@@ -2944,7 +2948,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
                 - a :py:class:`Rotamer` or :py:class:`chimerax.Residue`
                   belonging to the same molecule as this manager
         '''
-        from chimerax.core.atomic import Residue, Residues
+        from chimerax.atomic import Residue, Residues
         if isinstance(rotamer_or_residue, Residue):
             rota_mgr = _get_rotamer_manager(session)
             r = rota_mgr.get_rotamer(r)
@@ -2968,7 +2972,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
                 - a :py:class:`Rotamer` or :py:class:`chimerax.Residue`
                   belonging to the same molecule as this manager
         '''
-        from chimerax.core.atomic import Residue, Residues
+        from chimerax.atomic import Residue, Residues
         if isinstance(rotamer_or_residue, Residue):
             rota_mgr = _get_rotamer_manager(session)
             r = rota_mgr.get_rotamer(r)
@@ -3083,7 +3087,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         if pm is not None and pm.rotamer != rotamer:
             self._remove_preview()
         if self._preview_model is None:
-            from chimerax.core.commands.split import molecule_from_atoms
+            from chimerax.std_commands.split import molecule_from_atoms
             pm = self._preview_model = molecule_from_atoms(self.model, rotamer.residue.atoms)
             pm.bonds.radii = 0.1
             from chimerax.atomic import Atom
@@ -3162,19 +3166,19 @@ class Chiral_Center(_Dihedral):
     generated as  needed by :class:`Chiral_Mgr` based on dictionary definitions.
     '''
 
-    atoms = c_property('chiral_atoms', cptr, '_natoms', astype=_atoms, read_only=True,
+    atoms = c_property('chiral_atoms', cptr, '_natoms', astype=convert.atoms, read_only=True,
         doc = 'Atoms making up this chiral centre. Read only.')
 
     angle = c_property('chiral_angle', float64, read_only=True,
         doc = 'Angle in radians. Read only.')
-    residue = c_property('chiral_residue', cptr, astype=_residue, read_only=True,
+    residue = c_property('chiral_residue', cptr, astype=convert.residue, read_only=True,
         doc = 'Residue this chiral centre belongs to. Read only.')
 
     expected_angle = c_property('chiral_center_expected_angle', float64, read_only=True,
         doc='The equilibrium angle of the chiral dihedral in its correct isomeric state. Read only.')
     deviation = c_property('chiral_center_deviation', float64, read_only=True,
         doc='The difference between the current dihedral angle and :attr:`expected_angle`. Read only.')
-    chiral_atom = c_property('chiral_center_chiral_atom', cptr, astype=_atom_or_none, read_only=True,
+    chiral_atom = c_property('chiral_center_chiral_atom', cptr, astype=convert.atom_or_none, read_only=True,
         doc='The chiral atom. Read only.')
 
 class Proper_Dihedral(_Dihedral):
@@ -3187,9 +3191,9 @@ class Proper_Dihedral(_Dihedral):
     name = c_property('proper_dihedral_name', string, read_only = True,
         doc = 'Name of this dihedral. Read only.')
 
-    atoms = c_property('proper_dihedral_atoms', cptr, '_natoms', astype=_atoms, read_only=True,
+    atoms = c_property('proper_dihedral_atoms', cptr, '_natoms', astype=convert.atoms, read_only=True,
         doc = 'Atoms making up this dihedral. Read only.')
-    residue = c_property('proper_dihedral_residue', cptr, astype=_residue, read_only=True,
+    residue = c_property('proper_dihedral_residue', cptr, astype=convert.residue, read_only=True,
         doc = 'Residue this dihedral belongs to. Read only.')
     axial_bond = c_property('proper_dihedral_axial_bond', cptr, astype=_bond_or_none, read_only=True,
         doc='Bond forming the axis of this dihedral. Read-only')
@@ -3260,9 +3264,9 @@ class Rama(State):
             return _proper_dihedral_or_none(ret[0])
         return None
 
-    residue = c_property('rama_residue', cptr, astype=_residue_or_none, read_only = True,
+    residue = c_property('rama_residue', cptr, astype=convert.residue_or_none, read_only = True,
             doc = 'The :class:`chimerax.Residue` to which this Rama belongs. Read only.')
-    ca_atom = c_property('rama_ca_atom', cptr, astype=_atom_or_none, read_only = True,
+    ca_atom = c_property('rama_ca_atom', cptr, astype=convert.atom_or_none, read_only = True,
             doc = 'The alpha carbon :py:class:`chimerax.Atom` of the amino acid residue. Read only.')
     valid = c_property('rama_is_valid', npy_bool, read_only = True,
             doc = 'True if this residue has all three of omega, phi and psi. Read only.')
@@ -3333,7 +3337,7 @@ class Rotamer(State):
         f = c_function('rotamer_moving_atoms',
             args=(ctypes.c_void_p, ctypes.c_size_t),
             ret=ctypes.py_object)
-        return _atoms(f(self._c_pointer, chi_index))
+        return convert.atoms(f(self._c_pointer, chi_index))
 
     @property
     def nearest_target(self):
@@ -3364,7 +3368,7 @@ class Rotamer(State):
         return _proper_dihedrals(ret)
 
 
-    residue = c_property('rotamer_residue', cptr, astype=_residue_or_none, read_only=True,
+    residue = c_property('rotamer_residue', cptr, astype=convert.residue_or_none, read_only=True,
                 doc=':py:class:`chimerax.Residue` this rotamer belongs to. Read only.')
     score = c_property('rotamer_score', float64, read_only=True,
                 doc='P-value for the current conformation of this rotamer. Read only.')
@@ -3406,7 +3410,7 @@ class Position_Restraint(State):
             args = (ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointer_ref, 1)
 
-    atom = c_property('position_restraint_atom', cptr, astype=_atom_or_none, read_only=True,
+    atom = c_property('position_restraint_atom', cptr, astype=convert.atom_or_none, read_only=True,
         doc = 'Returns the restrained :py:class:`chimerax.Atom`. Read-only.')
     target = c_property('position_restraint_target', float64, 3,
         doc = 'Target (x,y,z) position in Angstroms. Can be written.')
@@ -3460,7 +3464,7 @@ class MDFF_Atom(State):
 
     enabled = c_property('mdff_atom_enabled', npy_bool,
         doc='Enable/disable MDFF tugging on this atom or get its current state.')
-    atom = c_property('mdff_atom_atom', cptr, astype=_atom_or_none, read_only=True,
+    atom = c_property('mdff_atom_atom', cptr, astype=convert.atom_or_none, read_only=True,
         doc='Returns the ChimeraX Atom. Read only.')
     coupling_constant = c_property('mdff_atom_coupling_constant', float64,
         doc='''
@@ -3507,7 +3511,7 @@ class Distance_Restraint(State):
             doc = 'Enable/disable this restraint or get its current state.')
     visible = c_property('distance_restraint_visible', npy_bool, read_only = True,
             doc = 'Restraint will be visible if it is enabled and both atoms are visible.')
-    atoms = c_property('distance_restraint_atoms', cptr, 2, astype=_atom_pair, read_only=True,
+    atoms = c_property('distance_restraint_atoms', cptr, 2, astype=convert.atom_pair, read_only=True,
             doc = 'Returns a tuple of :py:class:`chimerax.Atoms` pointing to the pair of restrained atoms. Read only.' )
     target = c_property('distance_restraint_target', float64,
             doc = 'Target distance in Angstroms')
@@ -3693,7 +3697,7 @@ class Rotamer_Restraint(State):
 
     rotamer = c_property('rotamer_restraint_rotamer', cptr, astype=_rotamer_or_none, read_only=True,
         doc = ':py:class:`Rotamer` to be restrained. Read only.')
-    residue = c_property('rotamer_restraint_residue', cptr, astype=_residue_or_none, read_only=True,
+    residue = c_property('rotamer_restraint_residue', cptr, astype=convert.residue_or_none, read_only=True,
         doc = ':py:class:`chimerax.Residue` to be restrained. Read only.')
     enabled = c_property('rotamer_restraint_enabled', npy_bool,
         doc = 'Enable/disable chi dihedral restraints. Returns False if any chi restraint is disabled.')

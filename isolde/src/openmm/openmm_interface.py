@@ -12,16 +12,18 @@ import os, sys, glob
 import numpy
 import ctypes
 from chimerax.core.state import State
-from chimerax.core.atomic import molc
-from chimerax.core.atomic.molc import CFunctions, string, cptr, pyobject, \
-    set_c_pointer, pointer, size_t
+from chimerax.atomic import molc
+# from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
+#     set_c_pointer, pointer, size_t
+
+CFunctions = molc.CFunctions
+string = molc.string
+cptr = molc.cptr
+pyobject = molc.pyobject
+set_c_pointer = molc.set_c_pointer
+pointer = molc.pointer
+size_t = molc.size_t
 # object map lookups
-from chimerax.core.atomic.molobject import _atoms, \
-                _atom_pair, _atom_or_none, _bonds, _chain, _element, \
-                _pseudobonds, _residue, _residues, _rings, _non_null_residues, \
-                _residue_or_none, _residues_or_nones, _residues_or_nones, \
-                _chains, _atomic_structure, _pseudobond_group, \
-                _pseudobond_group_map
 
 from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
 
@@ -82,6 +84,53 @@ class OpenMM_Thread_Handler:
         f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
         self.context = context
+        self._smoothing = False
+        self._last_smooth = False
+        self._last_mode = None
+
+    @property
+    def smoothing(self):
+        '''
+        If true, the displayed coordinates will be a smoothed average of the
+        last set of equilibration steps. Note that for large values of
+        sim_steps_per_gui_update this can lead to distorted geometry.
+        '''
+        return self._smoothing
+
+    @smoothing.setter
+    def smoothing(self, flag):
+        self._smoothing = flag
+
+
+    def _get_smoothing_alpha(self):
+        '''
+        ISOLDE uses an exponential smoothing scheme, where
+        :attr:`smoothing_alpha` defines the contribution of each new set of
+        coordinates to the moving average. Values are limited to the range
+        (0.01..0.9), where 1 indicates no smoothing and 0.01 provides extremely
+        strong smoothing. Values outside of this range will be automatically
+        clamped. Internally, coordinates are added to the moving  average
+        every 10 steps or the number of steps to the next graphics  update,
+        whichever is smaller.
+
+        Note that smoothing only affects the *visualisation* of the simulation,
+        not the simulation itself. Applying energy minimisation or pausing  the
+        simulation fetches the latest instantaneous coordinates and restarts the
+        smoothing.
+        '''
+        f = c_function('openmm_thread_handler_smoothing_alpha',
+            args=(ctypes.c_void_p,),
+            ret=ctypes.c_double)
+        return f(self._c_pointer)
+
+    def _set_smoothing_alpha(self, alpha):
+        f = c_function('set_openmm_thread_handler_smoothing_alpha',
+            args=(ctypes.c_void_p, ctypes.c_double))
+        f(self._c_pointer, alpha)
+
+
+    smoothing_alpha = property(_get_smoothing_alpha, _set_smoothing_alpha)
+
 
     @property
     def cpp_pointer(self):
@@ -107,8 +156,10 @@ class OpenMM_Thread_Handler:
                 - an integer value
         '''
         f = c_function('openmm_thread_handler_step',
-            args=(ctypes.c_void_p, ctypes.c_size_t))
-        f(self._c_pointer, steps)
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_bool))
+        f(self._c_pointer, steps, self._smoothing)
+        self._last_mode = 'equil'
+        self._last_smooth = self._smoothing
 
     def minimize(self):
         '''
@@ -120,6 +171,18 @@ class OpenMM_Thread_Handler:
         f = c_function('openmm_thread_handler_minimize',
             args = (ctypes.c_void_p,))
         f(self._c_pointer)
+        self._last_mode = 'min'
+
+    @property
+    def clashing(self):
+        '''
+        True if any atom is experiencing an extreme force after energy
+        minimisation.
+        '''
+        f = c_function('openmm_thread_handler_clashing',
+            args=(ctypes.c_void_p,),
+            ret=ctypes.c_bool)
+        return f(self._c_pointer)
 
     def reinitialize_velocities(self):
         '''
@@ -207,8 +270,12 @@ class OpenMM_Thread_Handler:
         completes. Can also be set, to push edited coordinates back to the
         simulation.
         '''
-        f = c_function('openmm_thread_handler_current_coords',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
+        if not self._smoothing or not self._last_smooth or self._last_mode !='equil':
+            f = c_function('openmm_thread_handler_current_coords',
+                args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
+        else:
+            f = c_function('openmm_thread_handler_smoothed_coords',
+                args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
         n = self.natoms
         coords = numpy.empty((n,3), float64)
         f(self._c_pointer, n, pointer(coords))
@@ -221,6 +288,8 @@ class OpenMM_Thread_Handler:
         n = self.natoms
         f(self._c_pointer, n, pointer(coords))
         self.reinitialize_velocities()
+
+
 
     def _get_min_thread_period(self):
         '''
@@ -272,8 +341,12 @@ class Sim_Construct:
         '''
         self.model = model
 
+        # Chains in OpenMM must be in a single unbroken block
+        residues = model.residues
+        residues = residues[numpy.lexsort((residues.numbers, residues.chain_ids))]
+
         # Sort all the atoms according to their order in the model#
-        model_atoms = model.residues.atoms
+        model_atoms = residues.atoms
         if len(mobile_atoms.intersect(fixed_atoms)):
             raise TypeError('Atoms cannot be both fixed and mobile!')
         from chimerax.atomic import concatenate
@@ -468,8 +541,8 @@ class Sim_Manager:
                 - 'start': revert to the state the model was in prior to
                   starting the simulation
         '''
-        self.sim_handler.stop()
         self._revert_to = revert
+        self.sim_handler.stop()
 
     def toggle_pause(self):
         '''
@@ -525,12 +598,16 @@ class Sim_Manager:
         sim_params = self.sim_params
         uh = update_handlers
         mobile_res = sc.mobile_atoms.unique_residues
-        sh.initialize_restraint_forces()
-        from .. import session_extensions as sx
-        rama_mgr = sx.get_ramachandran_mgr(self.session)
-        ramas = rama_mgr.get_ramas(mobile_res)
-        ramas = ramas[ramas.valids]
-        sh.add_amber_cmap_torsions(ramas)
+        amber_cmap = False
+        if self.sim_params.forcefield == 'amber14':
+            amber_cmap = True
+        sh.initialize_restraint_forces(amber_cmap)
+        if (amber_cmap):
+            from .. import session_extensions as sx
+            rama_mgr = sx.get_ramachandran_mgr(self.session)
+            ramas = rama_mgr.get_ramas(mobile_res)
+            ramas = ramas[ramas.valids]
+            sh.add_amber_cmap_torsions(ramas)
 
         cr_m = self.chiral_restraint_mgr
         crs = cr_m.add_restraints_by_atoms(sc.mobile_atoms)
@@ -691,6 +768,7 @@ class Sim_Manager:
         if rt == 'checkpoint':
             self._current_checkpoint.revert(update_sim=False)
         elif rt == 'start':
+            print('reverting to start')
             self._starting_checkpoint.revert(update_sim=False)
         self.sim_construct.revert_visualisation()
 
@@ -707,7 +785,7 @@ class Sim_Manager:
     def _pr_changed_cb(self, trigger_name, changes):
         mgr, changes = changes
         change_types = list(changes.keys())
-        from chimerax.core.atomic import concatenate
+        from chimerax.atomic import concatenate
         changeds = []
         if 'target changed' in change_types:
             changeds.append(changes['target changed'])
@@ -731,7 +809,7 @@ class Sim_Manager:
     def _dr_changed_cb(self, trigger_name, changes):
         mgr, changes = changes
         change_types = list(changes.keys())
-        from chimerax.core.atomic import concatenate
+        from chimerax.atomic import concatenate
         if 'created' in change_types:
             # avoid double counting
             created = changes['created']
@@ -764,7 +842,7 @@ class Sim_Manager:
         '''Used for all forms of dihedral restraints.'''
         mgr, changes = changes
         change_types = list(changes.keys())
-        from chimerax.core.atomic import concatenate
+        from chimerax.atomic import concatenate
         changeds = []
         if 'created' in change_types:
             # avoid double counting
@@ -801,7 +879,7 @@ class Sim_Manager:
     def _tug_changed_cb(self, trigger_name, changes):
         mgr, changes = changes
         change_types = list(changes.keys())
-        from chimerax.core.atomic import concatenate
+        from chimerax.atomic import concatenate
         changeds = []
         if 'target changed' in change_types:
             changeds.append(changes['target changed'])
@@ -887,6 +965,7 @@ class Sim_Handler:
 
         self._paused = False
         self._sim_running = False
+        self._unstable = True
 
         atoms = self._atoms = sim_construct.all_atoms
         # Forcefield used in this simulation
@@ -920,6 +999,7 @@ class Sim_Handler:
 
         trigger_names = (
             'sim started',
+            'clash detected',
             'coord update',
             'sim paused',
             'sim resumed',
@@ -950,6 +1030,31 @@ class Sim_Handler:
     @temperature.setter
     def temperature(self, temperature):
         self._simulation.integrator.setTemperature(temperature)
+
+    @property
+    def smoothing(self):
+        if self.thread_handler is not None:
+            return self.thread_handler.smoothing
+        return self._params.trajectory_smoothing
+
+    @smoothing.setter
+    def smoothing(self, flag):
+        if self.thread_handler is not None:
+            self.thread_handler.smoothing = flag
+
+    smoothing.__doc__ = OpenMM_Thread_Handler.smoothing.__doc__
+
+    @property
+    def smoothing_alpha(self):
+        if self.thread_handler is not None:
+            return self.thread_handler.smoothing_alpha
+
+    @smoothing_alpha.setter
+    def smoothing_alpha(self, alpha):
+        if self.thread_handler is not None:
+            self.thread_handler.smoothing_alpha = alpha
+
+    smoothing_alpha.__doc__ = OpenMM_Thread_Handler.smoothing_alpha.__doc__
 
     @property
     def minimize(self):
@@ -1039,6 +1144,8 @@ class Sim_Handler:
         c.setPositions(0.1*self._atoms.coords)
         c.setVelocitiesToTemperature(self.temperature)
         self._thread_handler = OpenMM_Thread_Handler(c)
+        self.smoothing = params.trajectory_smoothing
+        self.smoothing_alpha = params.smoothing_alpha
 
     def _prepare_integrator(self, params):
         integrator = params.integrator
@@ -1076,6 +1183,18 @@ class Sim_Handler:
         self._sim_running = True
         self._minimize_and_go()
 
+    def find_clashing_atoms(self):
+        if not self._sim_running:
+            raise RuntimeError('Simulation must be running first!')
+        c = self._context
+        state = c.getState(getForces=True)
+        forces = state.getForces(asNumpy = True)
+        import numpy
+        force_mags = numpy.linalg.norm(forces, axis=1)
+        clashing_indices = numpy.argwhere(force_mags > defaults.CLASH_FORCE)
+        return clashing_indices
+
+
     def _minimize_and_go(self):
         th = self.thread_handler
         delayed_reaction(self.session.triggers, 'new frame', th.minimize, [],
@@ -1088,7 +1207,7 @@ class Sim_Handler:
             f = self._reinitialize_context
             f_args = []
             final_args = []
-        elif th.unstable():
+        elif th.unstable() or self._unstable:
             f = th.minimize
             f_args = []
             final_args = [True]
@@ -1102,9 +1221,21 @@ class Sim_Handler:
             final_args = []
         delayed_reaction(self.session.triggers, 'new frame', f, f_args,
             th.thread_finished, self._update_coordinates_and_repeat, final_args)
+        self._unstable = False
+
+    def _resume(self):
+        if self._force_update_pending:
+            self._update_forces_in_context_if_needed()
+        self._repeat_step()
+
 
     def _update_coordinates_and_repeat(self, reinit_vels = False):
         th = self.thread_handler
+        if th.clashing:
+            self.triggers.activate_trigger('clash detected', self.find_clashing_atoms())
+            self.pause = True
+            self._unstable = True
+            return
         self.atoms.coords = th.coords
         self.triggers.activate_trigger('coord update', None)
         if self._force_update_pending:
@@ -1136,13 +1267,18 @@ class Sim_Handler:
         if coords is None:
             coords = self._atoms.coords
         self._pending_coords = coords
-        self.triggers.add_handler('coord update', self._push_coords_to_sim)
+        if self.pause:
+            self._push_coords_to_sim()
+        else:
+            self.triggers.add_handler('coord update', self._push_coords_to_sim)
 
     def _push_coords_to_sim(self, *_):
         self.thread_handler.coords = self._pending_coords
         self._pending_coords = None
+        self._unstable = True
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
+
 
     @property
     def thread_handler(self):
@@ -1170,7 +1306,8 @@ class Sim_Handler:
                 self.triggers.activate_trigger('sim paused', None)
             else:
                 self.triggers.activate_trigger('sim resumed', None)
-                self._update_coordinates_and_repeat()
+                self._resume()
+                #self._update_coordinates_and_repeat()
 
     def stop(self):
         '''
@@ -1821,6 +1958,7 @@ class Sim_Handler:
                 - An iterable of file names.
         '''
         from simtk.openmm.app import ForceField
+        print(forcefield_file_list)
         ff = ForceField(*[f for f in forcefield_file_list if f is not None])
         return ff
 
@@ -1926,7 +2064,7 @@ def find_residue_templates(residues):
     return templates
 
 def cys_type(residue):
-    from chimerax.core.atomic import Bonds, concatenate
+    from chimerax.atomic import Bonds, concatenate
     atoms = residue.atoms
     names = atoms.names
     sulfur_atom = atoms[names == 'SG'][0]

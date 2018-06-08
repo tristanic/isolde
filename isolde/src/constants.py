@@ -57,13 +57,12 @@ class _Defaults:
         'OPENMM_FORCEFIELD':          'amber14',
         'OPENMM_INTEGRATOR_TYPE':     VariableLangevinIntegrator,
         'OPENMM_NONBONDED_METHOD':    CutoffNonPeriodic,
-        'OPENMM_NONBONDED_CUTOFF':    2.0, #* unit.nanometers,
+        'OPENMM_NONBONDED_CUTOFF':    1.7, #* unit.nanometers,
         'OPENMM_FRICTION':            5.0, #/ unit.picoseconds,
         'OPENMM_VAR_INTEGRATOR_TOL':  1e-4,
         'OPENMM_CONSTRAINT_TOL':      1e-4,
         'OPENMM_FIXED_INTEGRATOR_TS': 0.001, #* unit.picoseconds,
         'SIM_STEPS_PER_GUI_UPDATE':   50,
-        'MIN_STEPS_PER_GUI_UPDATE':   50,
         'SIM_STARTUP_ROUNDS':         10,
         'MAX_UNSTABLE_ROUNDS':        20,
         'TEMPERATURE':                100.0, # * unit.kelvin,
@@ -73,7 +72,7 @@ class _Defaults:
         'GBSA_SOLUTE_DIELECTRIC':     1.0, # * unit.debye,
         'GBSA_SA_METHOD':             'ACE', # alternative is None
         'GBSA_CUTOFF':                2.0, # *unit.nanometer, TODO: Remove (must be same as OPENMM_NONBONDED_CUTOFF anyway)
-        'GBSA_KAPPA':                 3.0, # /unit.nanometer,
+        'GBSA_KAPPA':                 1.0, # /unit.nanometer,
         'VACUUM_DIELECTRIC_CORR':     150, # *unit.debye,
         'RIGID_BONDS':                HBonds,
         'RIGID_WATER':                True,
@@ -90,6 +89,7 @@ class _Defaults:
         ###
         # Force constants
         ###
+        'CLASH_FORCE':                          1e5,     # * unit.kilojoule_per_mole/unit.nanometer,
         'MAX_RESTRAINT_FORCE':                  25000.0, # * unit.kilojoule_per_mole/unit.nanometer,
         'HAPTIC_SPRING_CONSTANT':                2500.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
         'MOUSE_TUG_SPRING_CONSTANT':            10000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
@@ -122,6 +122,15 @@ class _Defaults:
         # Manipulation constants
         ###
         'PEPTIDE_FLIPPER_MAX_ROUNDS':   50,
+
+        ###
+        # Dynamic visualisation
+        ###
+        'TRAJECTORY_SMOOTHING':         True,
+        'SMOOTHING_ALPHA':              0.1,
+        'SMOOTHING_ALPHA_MAX':          0.9,
+        'SMOOTHING_ALPHA_MIN':          0.01,
+
 
         ###
         # Constants specific to ChimeraX - lengths in Angstroms beyond this point!

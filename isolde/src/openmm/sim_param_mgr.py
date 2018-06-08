@@ -17,7 +17,7 @@ from warnings import warn
 from time import time, sleep
 from simtk import unit
 from simtk.unit import Quantity, Unit
-from chimerax.core.atomic import concatenate, Bonds
+from chimerax.atomic import concatenate, Bonds
 
 from ..checkpoint import CheckPoint
 from ..constants import defaults, sim_outcomes, control
@@ -129,7 +129,6 @@ class SimParams(Param_Mgr):
         'fixed_integrator_timestep':            (defaults.OPENMM_FIXED_INTEGRATOR_TS, None),
         'constraint_tolerance':                 (defaults.OPENMM_CONSTRAINT_TOL, None),
         'sim_steps_per_gui_update':             (defaults.SIM_STEPS_PER_GUI_UPDATE, None),
-        'minimization_steps_per_gui_update':    (defaults.MIN_STEPS_PER_GUI_UPDATE, None),
         'simulation_startup_rounds':            (defaults.SIM_STARTUP_ROUNDS, None),
         'maximum_unstable_rounds':              (defaults.MAX_UNSTABLE_ROUNDS, None),
         'minimization_convergence_tol':         (defaults.MIN_CONVERGENCE_FORCE_TOL, OPENMM_FORCE_UNIT),
@@ -141,4 +140,7 @@ class SimParams(Param_Mgr):
         'display_omega_restraints':             (defaults.DISPLAY_OMEGA_RESTRAINTS, None),
 
         'peptide_flipper_max_rounds':           (defaults.PEPTIDE_FLIPPER_MAX_ROUNDS, None),
+
+        'trajectory_smoothing':                 (defaults.TRAJECTORY_SMOOTHING, None),
+        'smoothing_alpha':                      (defaults.SMOOTHING_ALPHA, None),
     }

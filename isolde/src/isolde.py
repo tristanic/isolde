@@ -38,7 +38,7 @@ from chimerax import clipper
 
 from chimerax.core import triggerset
 from chimerax.core.models import Drawing, Model
-from chimerax.core.map import Volume
+from chimerax.map import Volume
 from chimerax.atomic import AtomicStructure
 
 from .eventhandler import EventHandler
@@ -336,7 +336,7 @@ class Isolde():
 
     def _prepare_environment(self):
         session = self.session
-        from chimerax.core.commands import cofr, camera
+        from chimerax.std_commands import cofr, camera
         cofr.cofr(session, 'centerOfView', show_pivot=True)
         camera.camera(session, 'ortho')
         self._mouse_modes.register_all_isolde_modes()
@@ -633,6 +633,18 @@ class Isolde():
         iw._real_space_map_from_volume_button.clicked.connect(
             self._add_real_space_map_from_gui
         )
+
+        ####
+        # Trajectory smoothing
+        ####
+
+        iw._smoothing_checkbox.stateChanged.connect(
+            self._change_smoothing_state_from_gui
+        )
+        iw._smoothing_amount_slider.valueChanged.connect(
+            self._change_smoothing_amount_from_gui
+        )
+
 
         ####
         # Xtal map parameters (can only be set before starting simulation)
@@ -995,7 +1007,7 @@ class Isolde():
             self._enable_peptide_bond_manipulation_frame()
 
 
-    def _update_sim_control_button_states(self):
+    def _update_sim_control_button_states(self, *_):
         # Set enabled/disabled states of main simulation control panel
         # based on whether a simulation is currently running
         running = self.simulation_running
@@ -1005,10 +1017,13 @@ class Isolde():
         if paused and not running:
             go_button.setChecked(False)
         elif paused:
+            go_button.setChecked(False)
             go_button.setToolTip('Resume')
         elif running:
+            go_button.setChecked(True)
             go_button.setToolTip('Pause')
         if not running:
+            go_button.setChecked(False)
             go_button.setToolTip('Start a simulation')
 
         iw._map_masking_frame.setDisabled(
@@ -2067,7 +2082,7 @@ class Isolde():
         ff_key = self.iw._sim_force_field_combo_box.currentText()
         from .openmm.forcefields import forcefields
 
-        self._sim_main_ff = forcefields[ff_key]
+        self.sim_params.forcefield = ff_key
 
     def change_selected_model(self, model):
         '''
@@ -2121,7 +2136,6 @@ class Isolde():
     def _change_soft_shell_cutoff_from_sel_menu(self, *_):
         iw = self.iw
         val = iw._sim_basic_mobile_sel_within_spinbox.value()
-        sb2 = iw._sim_basic_mobile_chains_within_spinbox
         if sb2.value() != val:
             sb2.setValue(val)
         self.params.soft_shell_cutoff_distance = val
@@ -2255,7 +2269,23 @@ class Isolde():
         ]
         v.set_parameters(surface_colors=carg)
 
+    def _change_smoothing_state_from_gui(self, *_):
+        flag = self.iw._smoothing_checkbox.checkState()
+        self.sim_params.trajectory_smoothing = flag
+        if self.simulation_running:
+            self.sim_handler.smoothing = flag
 
+    def _change_smoothing_amount_from_gui(self, *_):
+        sval = self.iw._smoothing_amount_slider.value()
+        alpha = 10**-(sval/100)
+        mina, maxa = defaults.SMOOTHING_ALPHA_MIN, defaults.SMOOTHING_ALPHA_MAX
+        if alpha < mina:
+            alpha = mina
+        elif alpha > maxa:
+            alpha = maxa
+        self.sim_params.smoothing_alpha = alpha
+        if self.simulation_running:
+            self.sim_handler.smoothing_alpha = alpha
 
 
 
@@ -2391,6 +2421,7 @@ class Isolde():
         self._update_sim_control_button_states()
         self._set_right_mouse_mode_tug_atom()
         self.sim_handler.triggers.add_handler('sim terminated', self._sim_end_cb)
+        self.sim_handler.triggers.add_handler('sim paused', self._update_sim_control_button_states)
 
     def _sim_end_cb(self, name, outcome):
         self._update_menu_after_sim()
@@ -2425,7 +2456,7 @@ class Isolde():
         all_res = sm.residues
         sel_res = selatoms.unique_residues
         sel_res_indices = all_res.indices(sel_res)
-        from chimerax.atomic.structure import Structure
+        from chimerax.atomic import Structure
 
         allfrags = sm.polymers(missing_structure_treatment=Structure.PMS_NEVER_CONNECTS)
 
@@ -2657,6 +2688,31 @@ class Isolde():
                     '\n'.join([r for r in self.checkpoint_disabled_reasons.values()]))
             raise TypeError(err_str)
 
+    def set_smoothing(self, flag):
+        if self.gui_mode:
+            # then just let the GUI controls handle it
+            self.iw._smoothing_checkbox.setChecked(flag)
+        else:
+            self.sim_params.trajectory_smoothing = flag
+            if self.simulation_running:
+                self.sim_handler.smoothing = flag
+
+    def set_smoothing_alpha(self, alpha):
+        if self.gui_mode:
+            # then just let the GUI controls handle it
+            slider = self.iw._smoothing_amount_slider
+            from math import log
+            la = log(alpha, 10)
+            slider.setValue(int(-100*la))
+        else:
+            if alpha < defaults.SMOOTHING_ALPHA_MIN:
+                alpha = defaults.SMOOTHING_ALPHA_MIN
+            elif alpha > defaults.SMOOTHING_ALPHA_MAX:
+                alpha = defaults.SMOOTHING_ALPHA_MAX
+            self.sim_params.smoothing_alpha = alpha
+            if self.simulation_running:
+                self.sim_handler.smoothing_alpha = alpha
+
 
     ####
     # Restraint controls
@@ -2755,7 +2811,7 @@ class Isolde():
             self.rezone_maps()
 
     def rezone_maps(self):
-        from chimerax.core.commands.sop import surface_zone
+        from chimerax.surface.sop import surface_zone
         for key, m in self.master_map_list.items():
             v = m.get_source_map()
             cutoff = m.get_mask_cutoff()
@@ -2857,7 +2913,7 @@ class Isolde():
         from chimerax.core.commands import open
         data_dir = os.path.join(self._root_dir, 'demo_data', '3io0')
         before_struct = open.open(self.session, os.path.join(data_dir, 'before.pdb'))[0]
-        from chimerax.core.commands import color
+        from chimerax.std_commands import color
         color.color(self.session, before_struct, color='bychain', target='ac')
         color.color(self.session, before_struct, color='byhetero', target='a')
         from chimerax.clipper import symmetry
@@ -2870,7 +2926,7 @@ class Isolde():
         sd = sharp_map.mean_sd_rms()[1]
         from . import visualisation as v
         styleargs= v.map_style_settings[v.map_styles.solid_t20]
-        from chimerax.core.map import volumecommand
+        from chimerax.map import volumecommand
         volumecommand.volume(self.session, [sharp_map], **styleargs)
         sharp_map.set_parameters(surface_levels = (2.5*sd,))
 

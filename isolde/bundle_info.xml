@@ -67,7 +67,7 @@ with the surroundings.
       <Library>OpenMM</Library>
       <Library>atomstruct</Library>
       <Library>pyinstance</Library>
-      <IncludeDir>/usr/local/openmm/include</IncludeDir>
+      <IncludeDir>/home/tic20/anaconda3/pkgs/openmm-7.2.2-py36_1/include</IncludeDir>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
       <SourceFile>src/openmm/custom_forces.cpp</SourceFile>
   </CModule>
@@ -75,7 +75,7 @@ with the surroundings.
 
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>
-    <Dependency name="ChimeraX-Core" version="==0.6"/>
+    <Dependency name="ChimeraX-Core" version=">=0.7"/>
     <Dependency name="ChimeraX-Clipper" version=">=0.2"/>
   </Dependencies>
 

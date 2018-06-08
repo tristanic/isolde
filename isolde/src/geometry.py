@@ -170,7 +170,8 @@ def dihedral_fill_planes(dihedrals, target_drawing):
         thist += i*5
         tarray[ntri:ntri+3] = thist
         ntri += 3
-    dw.vertices, dw.normals, dw.triangles = varray, narray, tarray
+    dw.set_geometry(varray, narray, tarray)
+    #dw.vertices, dw.normals, dw.triangles = varray, narray, tarray
 
 _dihedral_fill_planes=_geometry.dihedral_fill_planes
 def dihedral_fill_planes(dihedrals, target_drawing):
@@ -189,7 +190,8 @@ def dihedral_fill_planes(dihedrals, target_drawing):
                              varray.ctypes.data_as(V_TYPE),
                              narray.ctypes.data_as(N_TYPE),
                              tarray.ctypes.data_as(T_TYPE))
-    dw.vertices, dw.normals, dw.triangles = varray, narray, tarray
+    dw.set_geometry(varray, narray, tarray)
+    #dw.vertices, dw.normals, dw.triangles = varray, narray, tarray
 
 _dihedral_fill_and_color_planes = _geometry.dihedral_fill_and_color_planes
 def dihedral_fill_and_color_planes(dihedrals, target_drawing,
@@ -222,7 +224,9 @@ def dihedral_fill_and_color_planes(dihedrals, target_drawing,
                              narray.ctypes.data_as(N_TYPE),
                              tarray.ctypes.data_as(T_TYPE),
                              carray.ctypes.data_as(C_TYPE))
-    dw.vertices, dw.normals, dw.triangles, dw.vertex_colors = varray, narray, tarray, carray
+    dw.set_geometry(varray, narray, tarray)
+    dw.vertex_colors = carray
+    #dw.vertices, dw.normals, dw.triangles, dw.vertex_colors = varray, narray, tarray, carray
 
 def cone_geometry(radius = 1, height = 1, nc = 10, caps = True, flipped = False):
     '''
@@ -295,7 +299,7 @@ def exclamation_mark(radius = 0.1, height = 2, nc=8, color = [255,0,0,255]):
     '''
     An exclamation mark for annotating rotamer outliers
     '''
-    from chimerax.core.surface.shapes import cone_geometry, sphere_geometry2
+    from chimerax.surface.shapes import cone_geometry, sphere_geometry2
     from chimerax.core.geometry import translation, scale
     import numpy
     stem = cone_geometry(radius=radius, height=height, nc=nc, caps=True)
@@ -319,7 +323,7 @@ def spiral(major_radius=0.25, minor_radius=0.1, height=1, turns=1.0,
     Draw a 3D spiral.
     '''
     from math import pi
-    from chimerax.core.surface import tube
+    from chimerax.surface import tube
     spline_points = numpy.array(range(turn_segments), float)/(turn_segments-1)
     spline_xyz = numpy.empty((turn_segments, 3), float)
     spline_xyz[:,0] = numpy.cos(spline_points * turns * 2*pi)*major_radius
@@ -334,9 +338,9 @@ def simple_arrow(radius = 0.1, height = 1, nc = 20, color = [255, 0, 0, 255], ca
     from chimerax.core.models import Drawing
     d = Drawing(name='Arrow')
     d.color = color
-    d.vertices, d.normals, d.triangles = simple_arrow_geometry(
+    d.set_geometry(*simple_arrow_geometry(
         radius, height, nc, caps, head_length_fraction,
-        head_width_ratio, points_out)
+        head_width_ratio, points_out))
     return d
 
 def simple_arrow_geometry(radius = 0.1, height = 1, nc = 20, caps = True,
@@ -442,7 +446,7 @@ def pin_geometry(handle_radius, pin_radius, total_height):
             The overall height of the drawing
     '''
     import numpy
-    from chimerax.core.surface.shapes import cylinder_geometry, cone_geometry
+    from chimerax.surface.shapes import cylinder_geometry, cone_geometry
     from chimerax.core.geometry import translation
     pin_height = total_height*5/12
     handle_height = total_height*7/12
@@ -475,7 +479,7 @@ def pin_geometry(handle_radius, pin_radius, total_height):
     return vertices, normals, triangles
 
 def dumbbell_geometry(major_radius=1, minor_radius=0.1, thickness=0.1, height=1, nz=2, nc1 = 10, nc2=10):
-    from chimerax.core.surface.shapes import cylinder_geometry
+    from chimerax.surface.shapes import cylinder_geometry
     dva, dna, dta = cylinder_geometry(major_radius, thickness, nz, nc1, True)
     hva, hna, hta = cylinder_geometry(minor_radius, height, nz, nc2, False)
     nv = len(dva)
@@ -515,7 +519,7 @@ def split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segme
     minor_radius defines the thickness of the solid_portion.
     '''
     from math import pi
-    from chimerax.core.surface import tube
+    from chimerax.surface import tube
     from chimerax.core.geometry import rotation
     path = arc_points(ring_segments, major_radius, starting_angle, final_angle)
     return tube.tube_spline(path, minor_radius, segment_subdivisions = 2, circle_subdivisions = circle_segments)
@@ -562,7 +566,7 @@ def test_ra(session):
     from chimerax.core.models import Model, Drawing
     m = Model('test', session)
     d = Drawing('ring')
-    d.vertices, d.normals, d.triangles = ring_arrow_with_post(0.5, 0.05, 4, 6, 0.3, 0.1, 0.05, 1)
+    d.set_geometry(*ring_arrow_with_post(0.5, 0.05, 4, 6, 0.3, 0.1, 0.05, 1))
     m.add_drawing(d)
     session.models.add([m])
 
@@ -571,7 +575,7 @@ def post_geometry(radius, height, caps=False):
     Returns a simple cylinder, rotated and translated so its base is on
     the origin and it points along (1,0,0)
     '''
-    from chimerax.core.surface.shapes import cylinder_geometry
+    from chimerax.surface.shapes import cylinder_geometry
     from chimerax.core.geometry import rotation, translation
     v, n, t = cylinder_geometry(radius=radius, height=height, caps=caps, nc=6)
     tr = translation([0,0,height/2])

@@ -49,6 +49,8 @@ def expand_selection_along_chains(atoms, extension):
     sel_frags = []
     sel_frag_res_indices = []
     master_sel_mask = numpy.zeros(len(all_residues), numpy.bool)
+    # Make sure we keep the original selection including heteroatoms
+    master_sel_mask[res_indices] = True
     for frag in all_frags:
         frag = frag[0]
         if numpy.any(frag.indices(residues) > -1):

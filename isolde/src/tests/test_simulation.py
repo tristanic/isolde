@@ -131,7 +131,7 @@ class SimTester:
     def _pr_changed_cb(self, trigger_name, changes):
         mgr, changes = changes
         change_types = list(changes.keys())
-        from chimerax.core.atomic import concatenate
+        from chimerax.atomic import concatenate
         changeds = []
         if 'target changed' in change_types:
             changeds.append(changes['target changed'])
@@ -155,7 +155,7 @@ class SimTester:
     def _dr_changed_cb(self, trigger_name, changes):
         mgr, changes = changes
         change_types = list(changes.keys())
-        from chimerax.core.atomic import concatenate
+        from chimerax.atomic import concatenate
         changeds = []
         if 'target changed' in change_types:
             changeds.append(changes['target changed'])
@@ -178,7 +178,7 @@ class SimTester:
     def _pdr_changed_cb(self, trigger_name, changes):
         mgr, changes = changes
         change_types = list(changes.keys())
-        from chimerax.core.atomic import concatenate
+        from chimerax.atomic import concatenate
         changeds = []
         if 'target changed' in change_types:
             changeds.append(changes['target changed'])
@@ -201,7 +201,7 @@ class SimTester:
     def _tug_changed_cb(self, trigger_name, changes):
         mgr, changes = changes
         change_types = list(changes.keys())
-        from chimerax.core.atomic import concatenate
+        from chimerax.atomic import concatenate
         changeds = []
         if 'target changed' in change_types:
             changeds.append(changes['target changed'])
@@ -247,7 +247,7 @@ class SimTester:
 
 def get_shell_of_residues(model, existing_sel, dist_cutoff):
     from chimerax.core.geometry import find_close_points
-    from chimerax.core.atomic import selected_atoms, Atoms, concatenate
+    from chimerax.atomic import selected_atoms, Atoms, concatenate
     selatoms = existing_sel
     allatoms = model.atoms
     unselected_atoms = allatoms.subtract(selatoms)
