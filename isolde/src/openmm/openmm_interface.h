@@ -143,9 +143,9 @@ private:
 
     milliseconds _min_time_per_loop = milliseconds(1.0); // ms: limit on the speed of the simulation
     const double MAX_VELOCITY = 50; //nm ps-1 (50,000 m/s)
-    const double MAX_FORCE = 1e5; // kJ mol-1 nm-1
-    const double MIN_TOLERANCE = 1.0; //kJ mol-1
-    const size_t MAX_MIN_ITERATIONS = 1000;
+    const double MAX_FORCE = 1e6; // kJ mol-1 nm-1
+    const double MIN_TOLERANCE = 50.0; //kJ mol-1
+    const size_t MAX_MIN_ITERATIONS = 500;
     const size_t STEPS_PER_VELOCITY_CHECK = 10;
 
     void _thread_safety_check() const {
