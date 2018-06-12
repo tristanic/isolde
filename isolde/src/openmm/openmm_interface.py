@@ -1182,7 +1182,7 @@ class Sim_Handler:
         self._sim_running = True
         self._minimize_and_go()
 
-    def find_clashing_atoms(self):
+    def find_clashing_atoms(self, max_force = defaults.CLASH_FORCE):
         if not self._sim_running:
             raise RuntimeError('Simulation must be running first!')
         c = self._context
@@ -1190,8 +1190,10 @@ class Sim_Handler:
         forces = state.getForces(asNumpy = True)
         import numpy
         force_mags = numpy.linalg.norm(forces, axis=1)
-        clashing_indices = numpy.argwhere(force_mags > defaults.CLASH_FORCE)
-        return clashing_indices
+        sort_i = numpy.argsort(force_mags)[::-1]
+        sorted_forces = numpy.sort(force_mags)[::-1]
+        clashes = sort_i[sorted_forces > max_force]
+        return clashes
 
 
     def _minimize_and_go(self):

@@ -100,12 +100,15 @@ void OpenMM_Thread_Handler::_minimize_threaded()
         _thread_running = true;
         _thread_finished = false;
         _starting_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Energy);
-        OpenMM::LocalEnergyMinimizer::minimize(*_context, MIN_TOLERANCE, MAX_MIN_ITERATIONS);
-        _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Forces + OpenMM::State::Energy);
-        if (_starting_state.getPotentialEnergy() - _final_state.getPotentialEnergy() > MIN_TOLERANCE)
-            _unstable = true;
-        else
-            _unstable = false;
+        _unstable = true;
+        for (size_t i=0; i<20; ++i) {
+            OpenMM::LocalEnergyMinimizer::minimize(*_context, MIN_TOLERANCE, MAX_MIN_ITERATIONS);
+            _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Forces + OpenMM::State::Energy);
+            if (_starting_state.getPotentialEnergy() - _final_state.getPotentialEnergy() < MIN_TOLERANCE) {
+                _unstable = false;
+                break;
+            }
+        }
         if (max_force(_final_state.getForces()) > MAX_FORCE)
             _clash = true;
         auto end = std::chrono::steady_clock::now();
