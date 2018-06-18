@@ -2060,14 +2060,19 @@ def find_residue_templates(residues):
     templates = {}
     cys_indices = numpy.where(residues.names == 'CYS')[0]
     for c_i in cys_indices:
-        templates[c_i] = cys_type(residues[c_i])
+        rtype = cys_type(residues[c_i])
+        if rtype is not None:
+            templates[c_i] = rtype
     return templates
 
 def cys_type(residue):
     from chimerax.atomic import Bonds, concatenate
     atoms = residue.atoms
     names = atoms.names
-    sulfur_atom = atoms[names == 'SG'][0]
+    try:
+        sulfur_atom = atoms[names == 'SG'][0]
+    except:
+        return None
     bonds = Bonds(sulfur_atom.bonds)
     if len(bonds) == 1:
         # Deprotonated
