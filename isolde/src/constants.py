@@ -72,7 +72,7 @@ class _Defaults:
         'GBSA_SOLUTE_DIELECTRIC':     1.0, # * unit.debye,
         'GBSA_SA_METHOD':             'ACE', # alternative is None
         'GBSA_CUTOFF':                2.0, # *unit.nanometer, TODO: Remove (must be same as OPENMM_NONBONDED_CUTOFF anyway)
-        'GBSA_KAPPA':                 1.0, # /unit.nanometer,
+        'GBSA_KAPPA':                 3.0, # /unit.nanometer,
         'VACUUM_DIELECTRIC_CORR':     150, # *unit.debye,
         'RIGID_BONDS':                HBonds,
         'RIGID_WATER':                True,
