@@ -30,9 +30,9 @@ from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as np
 from simtk import unit, openmm
 
 from ..delayed_reaction import delayed_reaction
-
+from ..util import compiled_lib_extension
 libdir = os.path.dirname(os.path.abspath(__file__))
-libfile = glob.glob(os.path.join(libdir, '..', 'openmm.cpython*'))[0]
+libfile = os.path.join(libdir, '..', 'libopenmm.'+compiled_lib_extension())
 
 _c_functions = CFunctions(os.path.splitext(libfile)[0])
 c_property = _c_functions.c_property

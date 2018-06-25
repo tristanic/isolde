@@ -80,3 +80,12 @@ def add_disulfides_from_model_metadata(model):
         if not len(bonds):
             a1, a2 = atoms
             b = model.new_bond(a1, a2)
+
+def compiled_lib_extension():
+    import platform
+    pname = platform.system()
+    if pname == "Windows":
+        return "dll"
+    elif pname == "Darwin":
+        return "dylib"
+    return "so"

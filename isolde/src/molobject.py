@@ -34,8 +34,9 @@ from chimerax.core.models import Model, Drawing
 from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
 import json
 
+from .util import compiled_lib_extension
 libdir = os.path.dirname(os.path.abspath(__file__))
-libfile = glob.glob(os.path.join(libdir, 'molc.cpython*'))[0]
+libfile = os.path.join(libdir, 'libmolc.'+compiled_lib_extension())
 DICT_DIR = os.path.join(libdir, 'dictionaries')
 
 _c_functions = CFunctions(os.path.splitext(libfile)[0])

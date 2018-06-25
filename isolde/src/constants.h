@@ -13,6 +13,8 @@
 #ifndef ISOLDE_CONSTANTS
 #define ISOLDE_CONSTANTS
 
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <cmath>
 namespace isolde
 {

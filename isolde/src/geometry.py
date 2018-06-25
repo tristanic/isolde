@@ -38,7 +38,10 @@ def get_dihedral(p0, p1, p2, p3):
 # C version. Saves about 16 microseconds per dihedral.
 
 dpath = os.path.dirname(os.path.abspath(__file__))
-libfile = glob.glob(os.path.join(dpath, '_geometry.cpython*'))[0]
+
+from .util import compiled_lib_extension
+libfile = os.path.join(dpath, 'lib_geometry.'+compiled_lib_extension())
+print("Libfile = {}".format(libfile))
 _geometry = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)), libfile))
 COORTYPE = ctypes.POINTER(ctypes.c_double * 3)
 

@@ -26,9 +26,9 @@ import ctypes
 import numpy
 
 from ..ctypes import convert_and_sanitize_numpy_array
-
+from ..util import compiled_lib_extension
 libdir = os.path.dirname(os.path.abspath(__file__))
-libfile = glob.glob(os.path.join(libdir, '..', '_nd_interp.cpython*'))[0]
+libfile = os.path.join(libdir, '..', 'lib_nd_interp.'+compiled_lib_extension())
 
 
 

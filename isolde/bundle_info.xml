@@ -36,16 +36,16 @@ with the surroundings.
   </Categories>
 
   <!-- Compiled modules in bundle
-       CModule gives the name of the module
+       CLibrary gives the name of the module
        Source files are listed in one or more SourceFile elements -->
-  <CModule name="_geometry">
+  <CLibrary name="_geometry">
     <SourceFile>src/_geometry.cpp</SourceFile>
-  </CModule>
+  </CLibrary>
   <!-- TODO: Move nd_interp entirely into molc -->
-  <CModule name="_nd_interp">
+  <CLibrary name="_nd_interp">
     <SourceFile>src/interpolation/nd_interp.cpp</SourceFile>
-  </CModule>
-  <CModule name="molc" usesNumpy="true">
+  </CLibrary>
+  <CLibrary name="molc" usesNumpy="true">
     <SourceFile>src/atomic_cpp/dihedral.cpp</SourceFile>
     <SourceFile>src/atomic_cpp/dihedral_mgr.cpp</SourceFile>
     <SourceFile>src/atomic_cpp/chiral.cpp</SourceFile>
@@ -61,16 +61,19 @@ with the surroundings.
     <SourceFile>src/restraints_cpp/mdff.cpp</SourceFile>
     <SourceFile>src/molc.cpp</SourceFile>
     <Library>atomstruct</Library>
+    <Library>element</Library>
+    <Library>arrays</Library>
     <Library>pyinstance</Library>
-  </CModule>
-  <CModule name="openmm" usesNumpy="true">
+  </CLibrary>
+  <CLibrary name="openmm" usesNumpy="true">
       <Library>OpenMM</Library>
       <Library>atomstruct</Library>
       <Library>pyinstance</Library>
       <IncludeDir>/home/tic20/anaconda3/pkgs/openmm-7.2.2-py36_1/include</IncludeDir>
+      <IncludeDir>"C:\Users\tic20\Anaconda3\pkgs\openmm-7.2.2-py36_1\include"</IncludeDir>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
       <SourceFile>src/openmm/custom_forces.cpp</SourceFile>
-  </CModule>
+  </CLibrary>
 
 
   <!-- Dependencies on other ChimeraX/Python packages -->
