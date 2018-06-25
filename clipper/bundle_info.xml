@@ -33,10 +33,11 @@
   <!-- Compiled modules in bundle
        CModule gives the name of the module
        Source files are listed in one or more SourceFile elements -->
-  <CModule name = "_symmetry" usesNumpy="true">
+  <CLibrary name = "_symmetry" usesNumpy="true">
       <SourceFile>src/symmetry_cpp/symmetry.cpp</SourceFile>
       <Library>atomstruct</Library>
-  </CModule>
+      <Library>arrays</Library>
+  </CLibrary>
 
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>
