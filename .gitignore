@@ -6,3 +6,5 @@ pyqt-commercial.sip
 *.obj
 *.exp
 *.lib
+*.o
+*.o.d
