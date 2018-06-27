@@ -69,7 +69,7 @@ with the surroundings.
       <Library>OpenMM</Library>
       <Library>atomstruct</Library>
       <Library>pyinstance</Library>
-      <IncludeDir>/home/tic20/anaconda3/pkgs/openmm-7.2.2-py36_1/include</IncludeDir>
+      <IncludeDir>$HOME/anaconda3/pkgs/openmm-7.2.2-py36_1/include</IncludeDir>
       <IncludeDir>"C:\Users\tic20\Anaconda3\pkgs\openmm-7.2.2-py36_1\include"</IncludeDir>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
       <SourceFile>src/openmm/custom_forces.cpp</SourceFile>
