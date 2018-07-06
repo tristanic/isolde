@@ -84,6 +84,7 @@ class _Defaults:
         'TUGGABLE_HYDROGENS':         False,
         'RESTRAIN_PEPTIDE_OMEGA':     True,
         'DISPLAY_OMEGA_RESTRAINTS':   False,
+        'MAX_CUBIC_MAP_SIZE':         10e6, # Switch to linear interpolation above this size
 
 
         ###

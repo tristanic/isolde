@@ -127,10 +127,10 @@ class AmberCMAPForce(CMAPTorsionForce):
         super().addTorsion(map_index, *phi_indices.tolist(), *psi_indices.tolist())
 
 
-class LinearInterpMapForce(CustomCompoundBondForce):
+class _Map_Force_Base(CustomCompoundBondForce):
     '''
-    Converts a map of (i,j,k) data and a (x,y,z)->(i,j,k) transformation
-    matrix to a potential energy field, with trilinear interpolation of values.
+    Base class for :class:`LinearInterpMapForce` and
+    :class:`CubicInterpMapForce`.
     '''
     def __init__(self, data, xyz_to_ijk_transform, units = 'angstroms'):
         '''
@@ -140,7 +140,7 @@ class LinearInterpMapForce(CustomCompoundBondForce):
         .. math::
             global_k * individual_k * pot_xyz
 
-        where `pot_xyz` is calculated by linear interpolation from the
+        where `pot_xyz` is calculated by interpolation from the
         (i,j,k) map grid after applying `xyz_to_ijk_transform`.
 
         Args:
@@ -154,7 +154,7 @@ class LinearInterpMapForce(CustomCompoundBondForce):
                   Either 'angstroms' or 'nanometers'
         '''
         tf = self._transform = xyz_to_ijk_transform
-        map_func = self._discrete3D_from_volume(data)
+        map_func = self._openmm_3D_function_from_volume(data)
 
         energy_func = self._set_energy_function(tf, units)
 
@@ -169,77 +169,11 @@ class LinearInterpMapForce(CustomCompoundBondForce):
             name = 'enabled')
         self.update_needed = False
 
+    def _openmm_3D_function_from_volume(self, data):
+        raise RuntimeError('Cannot instantiate the base class!')
+
     def _set_energy_function(self, tf, units):
-        if type(tf) == Quantity:
-            rot_and_scale = tf[:,0:3].value_in_unit(OPENMM_LENGTH_UNIT)
-            tf = tf.value_in_unit(tf.unit)
-            tf[:,0:3] = rot_and_scale
-
-        # TODO: Legacy code. Remove when possible.
-        elif units == 'angstroms':
-            # OpenMM calcs will be in nm
-            # Only the 3x3 rotation/scale portion of the transformation
-            # matrix changes with length units. The translation is applied
-            # after scaling to the map coordinate system.
-            tf[:,0:3] *= 10
-        elif units != 'nanometers':
-            raise TypeError('Units must be either "angstroms" or "nanometers"!')
-
-        # Transform xyz to ijk
-        tf_strings = ['i = ', 'j = ', 'k = ']
-        entries = ('x1 * {}','y1 * {}','z1 * {}','{}')
-        for i in range(3):
-            vals = tf[i]
-            count = 0
-            for (entry, val) in zip(entries, vals):
-                if count > 0:
-                    spacer = ' + '
-                else:
-                    spacer = ''
-                if abs(val) > NEARLY_ZERO:
-                    count += 1
-                    tf_strings[i] += spacer + entry.format(val)
-
-        i_str, j_str, k_str = tf_strings
-
-
-        min_str = 'min_i = floor(i); min_j = floor(j); min_k = floor(k)'
-        max_str = 'max_i = ceil(i); max_j = ceil(j); max_k = ceil(k)'
-
-        v000_str = 'v000 = map_potential(min_i, min_j, min_k)'
-        v100_str = 'v100 = map_potential(max_i, min_j, min_k)'
-        v010_str = 'v010 = map_potential(min_i, max_j, min_k)'
-        v001_str = 'v001 = map_potential(min_i, min_j, max_k)'
-        v101_str = 'v101 = map_potential(max_i, min_j, max_k)'
-        v011_str = 'v011 = map_potential(min_i, max_j, max_k)'
-        v110_str = 'v110 = map_potential(max_i, max_j, min_k)'
-        v111_str = 'v111 = map_potential(max_i, max_j, max_k)'
-
-        val_str = ';'.join((v000_str, v100_str, v010_str, v001_str,
-                            v101_str, v011_str, v110_str, v111_str))
-
-        # Shift i, j and k into the range (0..1)
-        norm_str = 'ni = i - min_i; nj = j - min_j; nk = k - min_k'
-
-        interp_str = '(v000*(1-ni)*(1-nj)*(1-nk) + v100* ni   *(1-nj)*(1-nk) +\
-                      v010*(1-ni)* nj   *(1-nk) + v001*(1-ni)*(1-nj)* nk    +\
-                      v101* ni   *(1-nj)* nk    + v011*(1-ni)* nj   * nk    +\
-                      v110* ni   * nj   *(1-nk) + v111* ni   * nj   * nk)'
-
-        energy_str = '-global_k * individual_k * {}'.format(interp_str)
-
-        enabled_eqn = 'step(enabled-0.5)'
-
-        funcs = ';'.join(( norm_str, val_str, min_str, max_str,
-                        i_str, j_str, k_str))
-        final_func = 'select({}, {}, 0); {}'.format(enabled_eqn, energy_str, funcs)
-
-        return final_func
-
-    def _discrete3D_from_volume(self, data):
-        dim = data.shape[::-1]
-        data_1d = numpy.ravel(data, order = 'C')
-        return Discrete3DFunction(*dim, data_1d)
+        raise RuntimeError('Cannot instantiate the base class!')
 
     def set_global_k(self, k):
         '''
@@ -341,6 +275,181 @@ class LinearInterpMapForce(CustomCompoundBondForce):
         if self.update_needed:
             self.updateParametersInContext(context)
             self.update_needed = False
+
+class CubicInterpMapForce(_Map_Force_Base):
+    '''
+    Converts a map of (i,j,k) data and a (x,y,z)->(i,j,k) transformation
+    matrix to a potential energy field, with tricubic interpolation of values.
+    '''
+    def __init__(self, data, xyz_to_ijk_transform, units = 'angstroms'):
+        '''
+        For a given atom at (x,y,z), the map potential will be defined
+        as:
+
+        .. math::
+            global_k * individual_k * pot_xyz
+
+        where `pot_xyz` is calculated by linear interpolation from the
+        (i,j,k) map grid after applying `xyz_to_ijk_transform`.
+
+        Args:
+            * data:
+                - The map data as a 3D (i,j,k) NumPy array in C-style order
+            * xyz_to_ijk_transform:
+                - A NumPy 3x4 float array defining the transformation matrix
+                  mapping (x,y,z) coordinates to (i,j,k)
+            * units:
+                - The units in which the transformation matrix is defined.
+                  Either 'angstroms' or 'nanometers'
+        '''
+        super().__init__(data, xyz_to_ijk_transform, units=units)
+
+    def _openmm_3D_function_from_volume(self, data):
+        dim = data.shape[::-1]
+        data_1d = numpy.ravel(data, order = 'C')
+        return Continuous3DFunction(*dim, data_1d, 0, dim[0]-1, 0, dim[1]-1, 0, dim[2]-1)
+
+    def _set_energy_function(self, tf, units):
+        if type(tf) == Quantity:
+            rot_and_scale = tf[:,0:3].value_in_unit(OPENMM_LENGTH_UNIT)
+            tf = tf.value_in_unit(tf.unit)
+            tf[:,0:3] = rot_and_scale
+
+        # TODO: Legacy code. Remove when possible.
+        elif units == 'angstroms':
+            # OpenMM calcs will be in nm
+            # Only the 3x3 rotation/scale portion of the transformation
+            # matrix changes with length units. The translation is applied
+            # after scaling to the map coordinate system.
+            tf[:,0:3] *= 10
+        elif units != 'nanometers':
+            raise TypeError('Units must be either "angstroms" or "nanometers"!')
+
+        # Transform xyz to ijk
+        tf_strings = ['i = ', 'j = ', 'k = ']
+        entries = ('x1 * {}','y1 * {}','z1 * {}','{}')
+        for i in range(3):
+            vals = tf[i]
+            count = 0
+            for (entry, val) in zip(entries, vals):
+                if count > 0:
+                    spacer = ' + '
+                else:
+                    spacer = ''
+                if abs(val) > NEARLY_ZERO:
+                    count += 1
+                    tf_strings[i] += spacer + entry.format(val)
+
+        funcs = ';'.join(tf_strings)
+        enabled_eqn = 'step(enabled-0.5)'
+        energy_str = '-global_k * individual_k * map_potential(i,j,k)'
+
+        final_func = 'select({}, {}, 0); {}'.format(enabled_eqn, energy_str, funcs)
+        return final_func
+
+
+
+
+class LinearInterpMapForce(_Map_Force_Base):
+    '''
+    Converts a map of (i,j,k) data and a (x,y,z)->(i,j,k) transformation
+    matrix to a potential energy field, with trilinear interpolation of values.
+    '''
+    def __init__(self, data, xyz_to_ijk_transform, units = 'angstroms'):
+        '''
+        For a given atom at (x,y,z), the map potential will be defined
+        as:
+
+        .. math::
+            global_k * individual_k * pot_xyz
+
+        where `pot_xyz` is calculated by linear interpolation from the
+        (i,j,k) map grid after applying `xyz_to_ijk_transform`.
+
+        Args:
+            * data:
+                - The map data as a 3D (i,j,k) NumPy array in C-style order
+            * xyz_to_ijk_transform:
+                - A NumPy 3x4 float array defining the transformation matrix
+                  mapping (x,y,z) coordinates to (i,j,k)
+            * units:
+                - The units in which the transformation matrix is defined.
+                  Either 'angstroms' or 'nanometers'
+        '''
+        super().__init__(data, xyz_to_ijk_transform, units=units)
+
+    def _set_energy_function(self, tf, units):
+        if type(tf) == Quantity:
+            rot_and_scale = tf[:,0:3].value_in_unit(OPENMM_LENGTH_UNIT)
+            tf = tf.value_in_unit(tf.unit)
+            tf[:,0:3] = rot_and_scale
+
+        # TODO: Legacy code. Remove when possible.
+        elif units == 'angstroms':
+            # OpenMM calcs will be in nm
+            # Only the 3x3 rotation/scale portion of the transformation
+            # matrix changes with length units. The translation is applied
+            # after scaling to the map coordinate system.
+            tf[:,0:3] *= 10
+        elif units != 'nanometers':
+            raise TypeError('Units must be either "angstroms" or "nanometers"!')
+
+        # Transform xyz to ijk
+        tf_strings = ['i = ', 'j = ', 'k = ']
+        entries = ('x1 * {}','y1 * {}','z1 * {}','{}')
+        for i in range(3):
+            vals = tf[i]
+            count = 0
+            for (entry, val) in zip(entries, vals):
+                if count > 0:
+                    spacer = ' + '
+                else:
+                    spacer = ''
+                if abs(val) > NEARLY_ZERO:
+                    count += 1
+                    tf_strings[i] += spacer + entry.format(val)
+
+        i_str, j_str, k_str = tf_strings
+
+
+        min_str = 'min_i = floor(i); min_j = floor(j); min_k = floor(k)'
+        max_str = 'max_i = ceil(i); max_j = ceil(j); max_k = ceil(k)'
+
+        v000_str = 'v000 = map_potential(min_i, min_j, min_k)'
+        v100_str = 'v100 = map_potential(max_i, min_j, min_k)'
+        v010_str = 'v010 = map_potential(min_i, max_j, min_k)'
+        v001_str = 'v001 = map_potential(min_i, min_j, max_k)'
+        v101_str = 'v101 = map_potential(max_i, min_j, max_k)'
+        v011_str = 'v011 = map_potential(min_i, max_j, max_k)'
+        v110_str = 'v110 = map_potential(max_i, max_j, min_k)'
+        v111_str = 'v111 = map_potential(max_i, max_j, max_k)'
+
+        val_str = ';'.join((v000_str, v100_str, v010_str, v001_str,
+                            v101_str, v011_str, v110_str, v111_str))
+
+        # Shift i, j and k into the range (0..1)
+        norm_str = 'ni = i - min_i; nj = j - min_j; nk = k - min_k'
+
+        interp_str = '(v000*(1-ni)*(1-nj)*(1-nk) + v100* ni   *(1-nj)*(1-nk) +\
+                      v010*(1-ni)* nj   *(1-nk) + v001*(1-ni)*(1-nj)* nk    +\
+                      v101* ni   *(1-nj)* nk    + v011*(1-ni)* nj   * nk    +\
+                      v110* ni   * nj   *(1-nk) + v111* ni   * nj   * nk)'
+
+        energy_str = '-global_k * individual_k * {}'.format(interp_str)
+
+        enabled_eqn = 'step(enabled-0.5)'
+
+        funcs = ';'.join(( norm_str, val_str, min_str, max_str,
+                        i_str, j_str, k_str))
+        final_func = 'select({}, {}, 0); {}'.format(enabled_eqn, energy_str, funcs)
+
+        return final_func
+
+    def _openmm_3D_function_from_volume(self, data):
+        dim = data.shape[::-1]
+        data_1d = numpy.ravel(data, order = 'C')
+        return Discrete3DFunction(*dim, data_1d)
+
 
 class TopOutBondForce(CustomBondForce):
     r'''

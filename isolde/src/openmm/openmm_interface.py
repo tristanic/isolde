@@ -1793,18 +1793,24 @@ class Sim_Handler:
             * volume:
                 - a :py:class:`chimerax.Volume` instance
         '''
-        from .custom_forces import LinearInterpMapForce
+        from .custom_forces import LinearInterpMapForce, CubicInterpMapForce
         v = volume
         region = v.region
         # Ensure that the region ijk step size is [1,1,1]
         v.new_region(ijk_min=region[0], ijk_max=region[1], ijk_step=[1,1,1])
         data = v.region_matrix()
+        if data.size < self._params.max_cubic_map_size:
+            Map_Force = CubicInterpMapForce
+        else:
+            print("Map is too large for cubic interpolation on the GPU!"\
+                  +" Switching to linear interpolation for this simulation.")
+            Map_Force = LinearInterpMapForce
         from chimerax.core.geometry import Place
         tf = v.data.xyz_to_ijk_transform
         # Shift the transform to the origin of the region
         region_tf = Place(axes=tf.axes(), origin = tf.origin() -
             v.data.xyz_to_ijk(v.region_origin_and_step(v.region)[0]))
-        f = LinearInterpMapForce(data, region_tf.matrix, units='angstroms')
+        f = Map_Force(data, region_tf.matrix, units='angstroms')
         self.all_forces.append(f)
         self._system.addForce(f)
         self.mdff_forces[v] = f

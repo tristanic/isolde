@@ -143,4 +143,5 @@ class SimParams(Param_Mgr):
 
         'trajectory_smoothing':                 (defaults.TRAJECTORY_SMOOTHING, None),
         'smoothing_alpha':                      (defaults.SMOOTHING_ALPHA, None),
+        'max_cubic_map_size':                   (defaults.MAX_CUBIC_MAP_SIZE, None),
     }
