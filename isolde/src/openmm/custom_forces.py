@@ -153,12 +153,14 @@ class _Map_Force_Base(CustomCompoundBondForce):
                 - The units in which the transformation matrix is defined.
                   Either 'angstroms' or 'nanometers'
         '''
-        tf = self._transform = xyz_to_ijk_transform
+        super().__init__(1, '')
+        self._process_transform(xyz_to_ijk_transform, units)
+        self._initialize_transform_arguments()
         map_func = self._openmm_3D_function_from_volume(data)
 
-        energy_func = self._set_energy_function(tf, units)
-
-        super().__init__(1, energy_func)
+        energy_func = self._set_energy_function()
+        self.setEnergyFunction(energy_func)
+        #super().__init__(1, energy_func)
         self._map_potential_index = self.addTabulatedFunction(
             name = 'map_potential', function = map_func)
         self._global_k_index = self.addGlobalParameter(
@@ -169,10 +171,41 @@ class _Map_Force_Base(CustomCompoundBondForce):
             name = 'enabled')
         self.update_needed = False
 
+    def _process_transform(self, tf, units):
+        if type(tf) == Quantity:
+            rot_and_scale = tf[:,0:3].value_in_unit(OPENMM_LENGTH_UNIT)
+            tf = tf.value_in_unit(tf.unit)
+            tf[:,0:3] = rot_and_scale
+
+        # TODO: Legacy code. Remove when possible.
+        elif units == 'angstroms':
+            # OpenMM calcs will be in nm
+            # Only the 3x3 rotation/scale portion of the transformation
+            # matrix changes with length units. The translation is applied
+            # after scaling to the map coordinate system.
+            tf[:,0:3] *= 10
+        elif units != 'nanometers':
+            raise TypeError('Units must be either "angstroms" or "nanometers"!')
+        self._transform = tf
+
+    def _initialize_transform_arguments(self):
+        tf = self._transform
+        tfi = self._tf_term_indices = numpy.zeros(tf.shape, numpy.int)
+        for i in range(3):
+            for j in range(3):
+                tfi[i][j] = self.addGlobalParameter(
+                    name = 'rot{}{}'.format(i,j), defaultValue=tf[i,j]
+                )
+        for j in range(3):
+            tfi[j,3] = self.addGlobalParameter(
+                name = 'trn{}'.format(j), defaultValue=tf[j,3]
+            )
+
+
     def _openmm_3D_function_from_volume(self, data):
         raise RuntimeError('Cannot instantiate the base class!')
 
-    def _set_energy_function(self, tf, units):
+    def _set_energy_function(self):
         raise RuntimeError('Cannot instantiate the base class!')
 
     def set_global_k(self, k):
@@ -182,6 +215,16 @@ class _Map_Force_Base(CustomCompoundBondForce):
         '''
         self.setGlobalParameterDefaultValue(self._global_k_index, k)
         self.update_needed = True
+
+    def update_transform(self, transform, units):
+        self._process_transform(transform, units)
+        tf = self._transform
+        tfi = self._tf_term_indices
+        for i in range(3):
+            for j in range(4):
+                self.setGlobalParameterDefaultValue(tfi[i][j], tf[i][j])
+        self.update_needed = True
+
 
     #~ def update_volume_data(self, data, xyz_to_ijk_transform):
         #~ if not numpy.allclose(xyz_to_ijk_transform, self._transform):
@@ -309,36 +352,25 @@ class CubicInterpMapForce(_Map_Force_Base):
         data_1d = numpy.ravel(data, order = 'C')
         return Continuous3DFunction(*dim, data_1d, 0, dim[0]-1, 0, dim[1]-1, 0, dim[2]-1)
 
-    def _set_energy_function(self, tf, units):
-        if type(tf) == Quantity:
-            rot_and_scale = tf[:,0:3].value_in_unit(OPENMM_LENGTH_UNIT)
-            tf = tf.value_in_unit(tf.unit)
-            tf[:,0:3] = rot_and_scale
-
-        # TODO: Legacy code. Remove when possible.
-        elif units == 'angstroms':
-            # OpenMM calcs will be in nm
-            # Only the 3x3 rotation/scale portion of the transformation
-            # matrix changes with length units. The translation is applied
-            # after scaling to the map coordinate system.
-            tf[:,0:3] *= 10
-        elif units != 'nanometers':
-            raise TypeError('Units must be either "angstroms" or "nanometers"!')
-
+    def _set_energy_function(self):
+        tf = self._transform
         # Transform xyz to ijk
         tf_strings = ['i = ', 'j = ', 'k = ']
         entries = ('x1 * {}','y1 * {}','z1 * {}','{}')
         for i in range(3):
             vals = tf[i]
             count = 0
-            for (entry, val) in zip(entries, vals):
+            for j, (entry, val) in enumerate(zip(entries, vals)):
                 if count > 0:
                     spacer = ' + '
                 else:
                     spacer = ''
                 if abs(val) > NEARLY_ZERO:
                     count += 1
-                    tf_strings[i] += spacer + entry.format(val)
+                    if j<3:
+                        tf_strings[i] += spacer + entry.format('rot{}{}'.format(i,j))
+                    else:
+                        tf_strings[i] += spacer + entry.format('trn{}'.format(i))
 
         funcs = ';'.join(tf_strings)
         enabled_eqn = 'step(enabled-0.5)'
@@ -378,36 +410,25 @@ class LinearInterpMapForce(_Map_Force_Base):
         '''
         super().__init__(data, xyz_to_ijk_transform, units=units)
 
-    def _set_energy_function(self, tf, units):
-        if type(tf) == Quantity:
-            rot_and_scale = tf[:,0:3].value_in_unit(OPENMM_LENGTH_UNIT)
-            tf = tf.value_in_unit(tf.unit)
-            tf[:,0:3] = rot_and_scale
-
-        # TODO: Legacy code. Remove when possible.
-        elif units == 'angstroms':
-            # OpenMM calcs will be in nm
-            # Only the 3x3 rotation/scale portion of the transformation
-            # matrix changes with length units. The translation is applied
-            # after scaling to the map coordinate system.
-            tf[:,0:3] *= 10
-        elif units != 'nanometers':
-            raise TypeError('Units must be either "angstroms" or "nanometers"!')
-
+    def _set_energy_function(self):
+        tf = self._transform
         # Transform xyz to ijk
         tf_strings = ['i = ', 'j = ', 'k = ']
         entries = ('x1 * {}','y1 * {}','z1 * {}','{}')
         for i in range(3):
             vals = tf[i]
             count = 0
-            for (entry, val) in zip(entries, vals):
+            for j, (entry, val) in enumerate(zip(entries, vals)):
                 if count > 0:
                     spacer = ' + '
                 else:
                     spacer = ''
                 if abs(val) > NEARLY_ZERO:
                     count += 1
-                    tf_strings[i] += spacer + entry.format(val)
+                    if j<3:
+                        tf_strings[i] += spacer + entry.format('rot{}{}'.format(i,j))
+                    else:
+                        tf_strings[i] += spacer + entry.format('trn{}'.format(i))
 
         i_str, j_str, k_str = tf_strings
 
