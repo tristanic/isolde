@@ -86,11 +86,11 @@ public:
     }
 
 
-    void minimize_threaded()
+    void minimize_threaded(const double &tolerance, int max_iterations)
     {
         //_thread_safety_check();
         finalize_thread();
-        _thread = std::thread(&OpenMM_Thread_Handler::_minimize_threaded, this);
+        _thread = std::thread(&OpenMM_Thread_Handler::_minimize_threaded, this, tolerance, max_iterations);
     }
 
     std::vector<size_t> overly_fast_atoms(const std::vector<OpenMM::Vec3>& velocities);
@@ -167,7 +167,7 @@ private:
     }
 
     void _step_threaded(size_t steps, bool average);
-    void _minimize_threaded();
+    void _minimize_threaded(const double &tolerance, int max_iterations);
     void _reinitialize_context_threaded();
     void _apply_smoothing(const OpenMM::State& state);
 };

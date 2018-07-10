@@ -66,7 +66,7 @@ class OpenMM_Thread_Handler:
     Additionally, the :class:`OpenMM_Thread_Handler` object *must* be destroyed
     before the :class:`openmm.Context` it is attached to.
     '''
-    def __init__(self, context, c_pointer=None):
+    def __init__(self, context, params, c_pointer=None):
         '''
         Initialise the thread handler.
 
@@ -87,6 +87,7 @@ class OpenMM_Thread_Handler:
         self._smoothing = False
         self._last_smooth = False
         self._last_mode = None
+        self.params = params
 
     @property
     def smoothing(self):
@@ -161,16 +162,28 @@ class OpenMM_Thread_Handler:
         self._last_mode = 'equil'
         self._last_smooth = self._smoothing
 
-    def minimize(self):
+    def minimize(self, tolerance=None, max_iterations=None):
         '''
         Run an energy minimization on the coordinates. If the minimisation
         converges to within tolerance, unstable will be set to False.
         Don't forget to run :func:`reinitialize_velocities` before continuing
         equilibration!
+
+        Args:
+            * tolerance:
+                - Convergence tolerance, in kJ/mol/atom.
+            * max_iterations:
+                - Maximum number of iterations to run for before returning
+                  coordinates. NOTE: minimisation runs best if this number is
+                  kept large (at least a few hundred).
         '''
+        if tolerance is None:
+            tolerance = self.params.minimization_convergence_tol_start
+        if max_iterations is None:
+            max_iterations=self.params.minimization_max_iterations
         f = c_function('openmm_thread_handler_minimize',
-            args = (ctypes.c_void_p,))
-        f(self._c_pointer)
+            args = (ctypes.c_void_p, ctypes.c_double, ctypes.c_int))
+        f(self._c_pointer, tolerance, max_iterations)
         self._last_mode = 'min'
 
     @property
@@ -1142,7 +1155,7 @@ class Sim_Handler:
         c = self._context = s.context
         c.setPositions(0.1*self._atoms.coords)
         c.setVelocitiesToTemperature(self.temperature)
-        self._thread_handler = OpenMM_Thread_Handler(c)
+        self._thread_handler = OpenMM_Thread_Handler(c, params)
         self.smoothing = params.trajectory_smoothing
         self.smoothing_alpha = params.smoothing_alpha
 
@@ -1180,6 +1193,7 @@ class Sim_Handler:
         self._pause = False
         self._stop = False
         self._sim_running = True
+        self._startup = True
         self._minimize_and_go()
 
     def find_clashing_atoms(self, max_force = defaults.CLASH_FORCE):
@@ -1214,7 +1228,7 @@ class Sim_Handler:
             final_args = [True]
         elif self.minimize:
             f = th.minimize
-            f_args=[]
+            f_args=[params.minimization_convergence_tol_end]
             final_args = [True]
         else:
             f = th.step

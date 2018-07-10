@@ -77,14 +77,16 @@ class _Defaults:
         'RIGID_BONDS':                HBonds,
         'RIGID_WATER':                True,
         'REMOVE_C_OF_M_MOTION':       False,
-        'MIN_CONVERGENCE_FORCE_TOL':  50.0, # *unit.kilojoule_per_mole/unit.nanometer
+        'MIN_CONVERGENCE_TOL_START':  0.01, # *unit.kilojoule_per_mole
+        'MIN_CONVERGENCE_TOL_END':    1e-4,
+        'MAX_MIN_ITERATIONS':         1000,
         'SIM_TIMEOUT':                120.0, # seconds
         'TARGET_LOOP_PERIOD':         0.1, # seconds
         'HYDROGENS_FEEL_MAPS':        True,
         'TUGGABLE_HYDROGENS':         False,
         'RESTRAIN_PEPTIDE_OMEGA':     True,
         'DISPLAY_OMEGA_RESTRAINTS':   False,
-        'MAX_CUBIC_MAP_SIZE':         10e6, # Switch to linear interpolation above this size
+        'MAX_CUBIC_MAP_SIZE':         5e6, # Switch to linear interpolation above this size
 
 
         ###

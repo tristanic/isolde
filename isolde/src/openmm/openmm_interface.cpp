@@ -89,7 +89,7 @@ void OpenMM_Thread_Handler::_apply_smoothing(const OpenMM::State& state)
 }
 
 
-void OpenMM_Thread_Handler::_minimize_threaded()
+void OpenMM_Thread_Handler::_minimize_threaded(const double &tolerance, int max_iterations)
 {
     try
     {
@@ -102,7 +102,7 @@ void OpenMM_Thread_Handler::_minimize_threaded()
         _starting_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Energy);
         _unstable = true;
         for (size_t i=0; i<20; ++i) {
-            OpenMM::LocalEnergyMinimizer::minimize(*_context, MIN_TOLERANCE, MAX_MIN_ITERATIONS);
+            OpenMM::LocalEnergyMinimizer::minimize(*_context, tolerance*_natoms, max_iterations);
             _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Forces + OpenMM::State::Energy);
             if (_starting_state.getPotentialEnergy() - _final_state.getPotentialEnergy() < MIN_TOLERANCE) {
                 _unstable = false;
@@ -317,11 +317,11 @@ openmm_thread_handler_step(void *handler, size_t steps, npy_bool smooth)
 }
 
 extern "C" EXPORT void
-openmm_thread_handler_minimize(void *handler)
+openmm_thread_handler_minimize(void *handler, double tolerance, int max_iterations)
 {
     OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
     try {
-        h->minimize_threaded();
+        h->minimize_threaded(tolerance, max_iterations);
     } catch (...) {
         molc_error();
     }
