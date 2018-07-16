@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: mmdb2
+Description: Macromolecular coordinate library
+Version: @VERSION@
+Libs: -L${libdir} -lmmdb2
+Cflags: -I${includedir}
+

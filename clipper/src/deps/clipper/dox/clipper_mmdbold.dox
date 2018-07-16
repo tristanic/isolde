@@ -1,0 +1,190 @@
+/*! \mainpage Old MMDB Interface
+
+<b>This package is deprecated. Use the new MMDB interface or MiniMol
+instead.</b>
+
+\section s_mmdbund Understanding MMDB
+
+MMDB defines a class, called \c CMMDBManager, which manages a
+hierarchy of information describing an atomic model in the form in
+which it might be described in a PDB file or a coordinate subset of a
+CIF file. The MMDB manager provides numerous methods for accessing and
+modifying the information stored in the hierarchy in manners which
+reflect common tasks in X-ray crystallography.
+
+The hierarchy is congruent to the structure of a PDB file, in that an
+MMDB object may contain multiple models (a feature mainly used in NMR
+rather than crystallography). Each model is made up of several chains,
+which are generally named with letter codes, but may be unnamed or
+even have longer names. Each chain is made of residues, and each
+residue consists of atoms.
+
+The chain/residue/atom hierarchy, while suggesting a protein model, is
+also used for other atoms, for example nucleic acid bases are also
+treated as residues. Heavy atoms and water atoms usually have a dummy
+residue name (typically WAT, H2O or HOH) and are each considered to be
+the sole member of a residue.
+
+
+\section s_clipper_mmdb The Clipper MMDB classes
+
+To facilitate the use of MMDB and Clipper together, Clipper provides a
+set of wrappers for accessing MMDB models. There are several reasons
+for this:
+
+ - MMDB returns coordinates and other data as individual numbers,
+ whereas Clipper uses strictly defined types to manipulate such
+ information as a single entity. The wrapper allows value from MMDB to
+ be returned as Clipper types.
+
+ - MMDB and Clipper are programmed in slightly different paradigms:
+ In particular Clipper uses a very strict subset of C++, which most
+ noticeably does not involve pointers in public APIs. The wrappers
+ provide an interface to MMDB which is more sympathetic to the rest of
+ the Clipper API.
+
+ - Some additional benefits can be gained through the newer language
+ features and libraries available to Clipper, for example the
+ selection objects and boolean operators with which they may be
+ combined.
+
+The wrapper implements the most commonly used functionality of
+MMDB. For less commonly used features, pointers to the original MMDB
+objects may be retrieved at any level to allow access to the full
+functionality of MMDB.
+
+The Clipper wrapper to MMDB consists of the following objects:
+
+ - The MMDB class. This wraps the CMMDBManager class, and provides
+ global functions such as import and export, selection functions, and
+ control of the list of models.
+
+ - The DBModel, DBChain, DBResidue and DBAtom classes. These are
+ wrappers for the MMDB CModel, CChain, CResidue and CAtom
+ classes. They provide access methods for the main properties of these
+ classes, and in addition a size() method and \c [] operator to allow
+ the next level of the hierarchy to be accessed as if it were an
+ array. Thus mmdb[i] returns the i'th model, model[j] returns the j'th
+ chain in that model, chain[k] returns the k'th residue in the chain
+ and residue[l] returns the l'th atom in a chain, where mmdb, model,
+ chain, and atom are of types MMDB, DBModel, DBChain, DBResidue and
+ DBAtom respectively. Alternatively, the same atom may be accessed as
+ mmdb[i][j][k][l].
+
+ - DBModel_selection, DBChain_selection, DBResidue_selection and
+ DBAtom_selection objects hold selections or lists of models, chains,
+ residue and atoms respectively. These are returned from the selection
+ functions defined in the MMDB class, and may be combined with the
+ usual boolean logical operators, &, |, ^, and !. (Note that there are
+ some restrictions on the use of the inversion operator !).
+
+ - Non-database NDBModel, NDBChain, NDBResidue, and NDBAtom classes
+ are also provided to store properties of atoms etc. which are not
+ part of an MMDB hierarchy. These have all the important properties of
+ their database-equivalents, but without the relationships, thus an
+ NDBAtom does not belong to a residue, neither does an NDBResidue
+ contain any atoms. A non-database object may be set from a database
+ object by assignment, the reverse requires use of the \c set() method
+ of the target object to prevent accidental modification of the
+ database hierarchy.
+
+Note that when accessing the MMDB hierarchy through the array-like
+indices, MMDB may return a null object. This may be detected through
+the \c is_null() of each object. In this case the only method which
+may safely be called is the \c size() method, which will return zero,
+allowing nested loops through the hierarchy with only a test on the
+innermost loop.
+
+Atoms may be null, but may also be used to represent PDB 'TER'
+records. The \c is_atom() method checks whether an atom is both
+non-null and non-TER.
+
+
+\subsection ss_mmdbbases Class interface commonality.
+
+Two sets of abstract base classes are used to define the interfaces to
+the classes. As a result it possible to write functions which will
+work on both DB- and NDB- atoms.
+
+DBAtom_base defines an interface for both DBAtom and NDBAtom. Thus any
+function which accepts a DBAtom_base will work with both DBAtom and
+NDBAtom objects. Similar interfaces are provided for DBResidue,
+DBChain and DBModel.
+
+In addition, DBAtom_list defines an interface for both
+DBAtom_selection and DBResidue, since both residues and atom
+selections describe a list of database atoms. Thus ans function which
+accepts a DBAtom_list will accept either a residue or an atom
+selection. Similar interfaces are provided for the other list and data
+types.
+
+
+\subsection ss_mmdbtech Technical issues
+
+The DB... classes simply contain a pointer to the underlying database
+object, and a set of methods. Thus they can be copied cheaply without
+affecting the underlying database. However, if the database is
+modified by removing atoms, residues, chains or models, then the
+corresponding DB... objects will be invalidated. It is up to the
+programmer to ensure this does not happen.
+
+The safest way to prevent the creation of invalid objects is not to
+store any DB... classes while removing atoms from the
+database. Addition of new atoms may also provide difficulties, however
+the precise scope of these issues is not clear in the MMDB
+documentation.
+
+
+\section s_mmdbcode MMDB code fragments
+
+
+\subsection ss_mmdbloop Looping through the hierarchy.
+
+To loop over all atoms in the first (or only) model of an MMDB object
+and print their names and coordinates, the following code may be used:
+
+\code
+  clipper::MMDB mmdb();
+  // --- set the mmdb object here ---
+  for ( int chn = 0; chn < mmdb[0].size(); chn++ )
+    for ( int res = 0; res < mmdb[0][chn].size(); res++ )
+      for ( int atm = 0; atm < mmdb[0][chn][res].size(); atm++ ) {
+        clipper::DBAtom atom = mmdb[0][chn][res][atm];
+        if ( atom.is_atom() )
+     	   std::cout << atom.type() << atom.coord_orth().format() << "\n";
+      }
+\endcode
+
+If you prefer, substitute \c mmdb[0] with \c mmdb.model().
+
+
+\subsection ss_mmdbsel Using selections
+
+Selections can be generated by calling a selection method of the
+parent mmdb object. Multiple selections may then be combined using the
+&, |, ^, and ! boolean operators. (Note that the ! operator is not
+fully implemented for performance reasons, however it is emulated for
+expressions which can be simplified by boolean logic to a form which
+does not contain a conversion. If you need it try it and see. If the
+compiler gives an error, try a logical rearrangement of the same
+expression).
+
+The following example defines 3 selections: the first includes all the
+atoms in a sphere, the second all atoms in residue 14, and the third
+all Nitrogen atoms. These are then combined to produce 2 more
+selections. The final selection is printed.
+
+\code
+  DBAtom_selection sel1,sel2,sel3,sel4,sel5;
+  sel1 = mmdb.select_atoms_sphere( coord, rad );
+  sel2 = mmdb.select_atoms( "14" );
+  sel3 = mmdb.select_atoms( "[N]" );
+  sel4 = ( sel1 & !sel2 ) | sel3;
+  sel5 = sel4 ^ sel1;
+  for ( int i = 0; i < sel5.size(); i++ )
+    std::cout << sel5[i].dbresidue().type() << " " << sel5[i].type() << "\n";
+\endcode
+
+For more details of atom selection strings, see the MMDB documentation.
+
+*/

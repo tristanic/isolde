@@ -4,6 +4,10 @@ setpaths.sh
 __pycache__/
 *.py[cod]
 
+# automake stuff
+*.Plo
+
+
 # C extensions
 *.so
 

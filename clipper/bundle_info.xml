@@ -33,6 +33,163 @@
   <!-- Compiled modules in bundle
        CModule gives the name of the module
        Source files are listed in one or more SourceFile elements -->
+  <CLibrary name="mmdb2">
+      <Define>MMDB_EXPORT</Define>
+      <SourceFile>src/deps/mmdb2/mmdb2/hybrid_36.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_io_stream.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_math_linalg.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_symop.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_atom.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_machine_.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_math_rand.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_tables.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_bondmngr.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_manager.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_mattype.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_title.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_chain.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_mask.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_mmcif_.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_uddata.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_cifdefs.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_math_.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_model.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_utils.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_coormngr.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_math_align.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_root.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_xml_.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_cryst.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_math_bfgsmin.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_rwbrook.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_ficif.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_math_fft.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_selmngr.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_io_file.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_math_graph.cpp</SourceFile>
+      <SourceFile>src/deps/mmdb2/mmdb2/mmdb_seqsuperpose.cpp</SourceFile>
+  </CLibrary>
+  <CLibrary name="ccp4">
+      <Define>CCP4_EXPORT</Define>
+      <SourceFile>src/deps/libccp4/ccp4/ccp4_array.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/cmap_data.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/cmtzlib.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/ccp4_general.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/cmap_header.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/csymlib.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/ccp4_parser.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/cmap_labels.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/cvecmat.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/ccp4_program.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/cmap_open.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/library_err.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/ccp4_unitcell.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/cmap_skew.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/library_file.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/cmap_accessor.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/cmap_stats.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/library_utils.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/cmap_close.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/cmap_symop.c</SourceFile>
+      <SourceFile>src/deps/libccp4/ccp4/pack_c.c</SourceFile>
+  </CLibrary>
+  <CLibrary name="clipper">
+      <Define>CLIPPER_EXPORTS</Define>
+      <Define>FFTW_MKL</Define>
+      <IncludeDir>src/deps/libccp4</IncludeDir>
+      <IncludeDir>src/deps/mmdb2</IncludeDir>
+      <IncludeDir>src/deps/clipper</IncludeDir>
+      <IncludeDir>src/deps/fftw2/include</IncludeDir>
+      <LibraryDir>src</LibraryDir>
+      <Library>mmdb2</Library>
+      <Library>ccp4</Library>
+      <Library>fftw2xc</Library>
+
+      <SourceFile>src/deps/clipper/core/atomsf.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/coords.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/nxmap_operator.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/cell.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/derivs.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/ramachandran.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_instance.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/fftmap.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/resol_basisfn.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_memory.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/fftmap_sparse.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/resol_fn.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_message.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/hkl_compute.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/resol_targetfn.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_stats.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/hkl_data.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/rotation.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_test.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/hkl_datatypes.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/spacegroup.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_types.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/hkl_info.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/spacegroup_data.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_util.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/hkl_lookup.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/symop.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/container.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/hkl_operators.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/container_hkl.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/map_interp.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/container_map.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/map_utils.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/xmap.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/container_types.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/nxmap.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_thread.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/test_core.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/test_data.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/contrib/convolution_search.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/sfcalc.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/edcalc.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/sfcalc_obs.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/fffear.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/sfscale.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/function_object_bases.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/sfweight.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/mapfilter.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/skeleton.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/originmatch.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/mmdb/clipper_mmdb.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/minimol/minimol.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/minimol/container_minimol.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/minimol/minimol_data.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/minimol/minimol_io.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/minimol/minimol_seq.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/minimol/minimol_utils.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/phs/phs_io.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/cif/cif_data_io.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/ccp4/ccp4_mtz_types.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/ccp4/ccp4_mtz_io.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/ccp4/ccp4_map_io.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/ccp4/ccp4_utils.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/cns/cns_hkl_io.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/cns/cns_map_io.cpp</SourceFile>
+
+  </CLibrary>
+
+  <CLibrary name="_clipper" usesNumpy="true">
+      <IncludeDir>src/deps/clipper</IncludeDir>
+      <IncludeDir>src/deps/libccp4</IncludeDir>
+      <IncludeDir>src/deps/mmdb2</IncludeDir>
+      <LibraryDir>src</LibraryDir>
+      <Library>clipper</Library>
+
+      <SourceFile>src/bindings/_clipper.cpp</SourceFile>
+  </CLibrary>
+
   <CLibrary name = "_symmetry" usesNumpy="true">
       <SourceFile>src/symmetry_cpp/symmetry.cpp</SourceFile>
       <Library>atomstruct</Library>
@@ -43,7 +200,7 @@
   <Dependencies>
     <Dependency name="ChimeraX-Core" version=">=0.7"/>
     <Dependency name="ChimeraX-Atomic" version=">=1.0"/>
-    <Dependency name="Clipper-Python" version=">=0.1.1"/>
+    <!-- <Dependency name="Clipper-Python" version=">=0.1.1"/> -->
   </Dependencies>
 
 
@@ -62,6 +219,8 @@
        <DataFiles>
          <DataFile>tests/*.pdb</DataFile>
          <DataFile>tests/*.mtz</DataFile>
+         <DataFile platform="linux">src/libfftw2xc.so</DataFile>
+         <DataFile platform="linux">src/libfftw_mkl_core.so</DataFile>
      </DataFiles>
 
   <!-- <DataFiles>

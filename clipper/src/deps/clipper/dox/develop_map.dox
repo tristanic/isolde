@@ -1,0 +1,281 @@
+/*! \page p_develop_map Developing using Crystallographic Maps
+
+\section s_mapund Understanding Xmaps
+
+The most commonly used map object in Clipper is the crystallographic
+map, or Xmap. This is the map class which is used to describe any
+function of position in a crystal which obeys the crystal cell repeat
+and symmetry. Electron density is the most common example.
+
+The aim of the Xmap is to provide a fast and efficient way of storing
+some property, in such a way that the crystallographic symmetry and
+cell repeat are imposed without any effort from the
+programmer. Therefore, a clipper::Xmap appears to be infinite in every
+direction, allowing the map to be queried at any position in crystal
+space. However, only a unique subregion of a single cell is stored. If
+a value in the map is changed, then every copy of that value
+throughout crystal space also changes.
+
+
+\subsection ss_mapgrid Grids
+
+Representing the electron density across the whole unit cell is simple
+enough. A sampling is chosen which is sufficient to represent the
+electron density to the desired level of detail. The unit cell is then
+divided into a 3-dimensional grid with the given sampling. The first
+point is at the origin, and the first point along each line through
+the array lies on the surface of the unit cell. The last point along
+each line is the point before the surface of the next cell. Since
+the cell repeats, there is no point storing each surface twice.
+
+There are generally some restrictions on the grid sampling, imposed by
+the cell dimensions, spacegroup, and FFT requirements. The
+clipper::Grid_sampling class can be used to select an appropriate grid
+sampling for any particular problem.
+
+The following image shows a slice of a unit cell which has been
+sampled on a (6x8) grid. 48 points are stored, with fractional
+coordinates 0...5/6 on the horizontal axis and 0...7/8 on the vertical
+axis.
+
+\image html map_p1.png
+\image latex map_p1.eps width=5cm
+
+The fraction coordinate of any map grid point may therefore be
+determined by dividing the zero-based grid coordinate by the grid
+sampling along each direction.
+
+
+\subsection s_mapasu Asymmetric units
+
+Unfortunately the general case in crystallography is rather more
+complex. In addition to the unit cell repeat, most molecules
+crystallise with some sort of symmetry within the unit cell. Thus the
+unique region of crystal space, referred to as an asymmetric unit
+(ASU), is smaller than the the unit cell by a factor equal to the
+number of symmetry operators.
+
+A naive approach to this problem would be to store only an oblong
+'brick' within the unit cell. Unfortunately in the general case this
+does not work, since some symmetry operators are not aligned along
+grid axes. Even simple cases, such as a single 2-fold rotation axis,
+can cause problems, as illustrated in the figure below:
+
+\image html map_p2.png
+\image latex map_p2.eps width=5cm
+
+The map section shows a sampling of a P2 unit cell. An attempt has
+been made to select an asymmetric unit using a rectangular subregion
+of the section. However it can be seen that the origin is related to
+itself, and the 2-fold axis also relates the points on the left and
+right-hand edges of the oblong to other points on the same
+edge. Therefore 26 points are required to store a complete asymmetric
+unit section, and the brick containing those points is just over half
+the unit cell wide and contains 32 points.
+
+The approach used by the Xmap class is therefore to store a compact
+brick of density, along with a flag array marking which points within
+that brick are considered to be part of the ASU, and which are
+considered to be outside the ASU.
+
+\note In actual fact, clipper stores a border of 1 extra cell around
+the ASU brick. This extra row is used to speed up systematic searches
+through the density by flagging the edge of the ASU. In addition these
+extra points cache the number of the symop required to get back into
+the ASU, making systematic density searches very efficient.
+
+
+\subsection ss_mapcoord Coordinates
+
+There are three kinds of coordinates which are commonly used in real
+space. They are:
+ - Orthogonal (Angstom) coordinates (clipper::Coord_orth)
+ - Fractional (cell) coordinates (clipper::Coord_frac)
+ - Grid coordinates (clipper::Coord_grid)
+
+Grid coordinates are always integers, the others are floating point
+values.
+
+Conversion between orthogonal and fractional coordinates is performed
+using the clipper::Coord_orth::coord_frac() and
+clipper::Coord_frac::coord_orth() methods, supplying the cell as an
+argument. e.g. corth.coord_frac(xmap.cell())
+
+Conversion between fractional and grid coordinates is performed using
+the clipper::Coord_map::coord_frac() and
+clipper::Coord_frac::coord_map() methods, supplying the grid as an
+argument. e.g. cfrac.coord_map(xmap.grid_sampling())
+
+
+\section s_mapxmap The Xmap class
+
+The clipper Xmap class therefore holds a flag array and data array
+corresponding to a compact brick containing at least complete
+asymmetric unit.
+
+The Xmap is constructed by providing a spacegroup, cell, and grid
+sampling. These are used to determine an appropriate ASU, and allocate
+an array to store the map data. The data may then be read or written
+by providing the appropriate grid coordinate. Alternatively,
+interpolated values and gradients at non-grid locations may be read by
+providing a fraction coordinate. A variety of interpolation methods
+are provided for this purpose.
+
+In order to use the class efficiently, some important difficulties
+must be borne in mind.
+
+A problem arises when we wish to apply some transformation to the
+values stored in the map. In this case, we must access every unique
+value in the asymmetric unit once and once only, applying the desired
+transformation. Only then will the entire map have been transformed
+correctly.
+
+A second problem arises if we want to access the stored value of the
+density at some position in crystal space, represented by a grid
+coordinate. Then it is necessary to search through all the symmetry
+operators, applying each one in turn to the coordinate to find the
+operator which brings the coordinate into the stored asymmetric
+unit. Any cell translations must also be taken into account. The value
+of the map for that coordinate can then be returned. Clearly this can
+be time consuming, especially if there are many symmetry
+operators.
+
+Both these problems are addressed by the use of map reference
+types. These come in two forms:
+ - index-like references (clipper::Xmap_base::Map_reference_index)
+ - coordinate-like references (clipper::Xmap_base::Map_reference_coord)
+
+The index-like reference behaves like an index: it stores a reference
+to a map and an index into that map. It is used to loop over all the
+values in the asymmetric unit of a map, using the Xmap<>::first(), and
+Map_reference_index::last() and Map_reference_index::next()
+methods. The coordinate corresponding to the index can be returned at
+any point.
+
+The coordinate-like reference behaves like a coordinate: it stores a
+reference to a map and a grid coordinate into that map. However to
+enhance performance it also stores the index corresponding to that
+coordinate, and the number of the symmetry operator used to get back
+into the stored asymmetric unit. Since maps are usually accessed
+systematically, the next coordinate used will commonly require the
+same symmetry operator, and so that operator is tried first. An
+efficient caching mechanism makes incrementing or decrementing the
+coordinate along the u, v, or w directions particularly fast.
+
+The differences between the index-like and coordinate-like reference types can be summarised as follows:
+- index-like types can only refer to the position of a stored datum, i.e. a coordinate in the stored ASU.
+- coordinate-like types can refer to any possible position, and therefore also store the symmetry transformations required to get back to the stored data.
+
+Use of map reference types is always preferred over requesting a
+coordinate directly. The accessor methods for the map are designed to
+encourage efficient usage.
+
+Map reference types may be shared between any maps which have the same
+symmetry and grid sampling. It is the responsibility of the programmer
+to ensure this restriction is obeyed.
+
+
+\section s_mapcode Xmap code fragments
+
+
+\subsection ss_mapio Importing and exporting Xmaps
+
+Importing and exporting Xmaps to or from CCP4 map files couldn't be
+easier. To import a map, use:
+\code
+  clipper::CCP4MAPfile file;
+  file.open_read( "my.map" );
+  file.import_xmap( xmap );
+  file.close_read();
+\endcode
+
+The extent and axis order of the input map do not matter, the
+resulting map will always cover the preferred ASU. However, if there
+is insufficient information in the input map to obtain an ASU, the
+remaining portion of the map will be untouched.
+
+To export a map, use:
+\code
+  clipper::CCP4MAPfile file;
+  file.open_write( "my.map" );
+  file.export_xmap( xmap );
+  file.close_write();
+\endcode
+
+
+\subsection ss_mapexp Expanding a map to a lower symmetry
+
+Sometimes it is necessary to expand a map to a lower symmetry. The ASU
+for the new spacegroup will be larger than the ASU for the old
+spacegroup, so the additional density values must be generated by
+applying the symmetry operators from the old spacegroup. This can be
+handled automatically by the map class.
+
+The new map is constructed to share a grid and cell with the old map,
+but with the new spacegroup. We must ensure that every value in the
+new map is set, so we loop over the new map using a
+clipper::Xmap_base::Map_reference_index. The we request the
+corresponding density from the old map, using the coordinate of the
+Map_reference_index:
+\code
+  clipper::Xmap<float> oldmap, newmap;
+...
+  newmap.init( newspacegroup, oldmap.cell(), oldmap.grid_sampling() );
+  clipper::Xmap_base::Map_reference_index ix;
+  for ( ix = newmap.first(); !ix.last(); ix.next() ) {
+    newmap[ ix ] = oldmap.get_data( ix.coord() );
+  }
+\endcode
+
+This works, but it would be faster to use a Map_reference_coord to
+access the second map, so that the symmetry operators do not need to
+be searched every time. The coordinate of the Map_reference_coord can
+be set from the Map_reference_index into the first map. i.e.:
+\code
+  clipper::Xmap<float> oldmap, newmap;
+...
+  newmap.init( newspacegroup, oldmap.cell(), oldmap.grid_sampling() );
+  clipper::Xmap_base::Map_reference_index ix;
+  clipper::Xmap_base::Map_reference_coord iy(oldmap);
+  for ( ix = newmap.first(); !ix.last(); ix.next() ) {
+    iy.set_coord( ix.coord() );
+    newmap[ ix ] = oldmap[ iy ];
+  }
+\endcode
+
+
+\subsection ss_mapbloc Looping over a small block of density
+
+Sometimes it is necessary to access all of the map values in a cubic
+or oblong block of the unit cell. To perform this operation
+efficiently, coordinate-like map references must be used to eliminate
+the need to search over symmetry operators. Either of the following
+approaches may be used, depending on the situation:
+
+Three map references can be used, one each for looping along the u, v,
+and w directions. Suppose the loop must run over the box bounded by
+Coord_grid g0 and Coord_grid g1. This leads to code of the following
+form:
+\code
+  clipper::Xmap_base::Map_reference_coord i0, iu, iv, iw;
+  i0 = clipper::Xmap_base::Map_reference_coord( xmap, g0 );
+  for ( iu = i0; iu.coord().u() <= g1.u(); iu.next_u() )
+    for ( iv = iu; iv.coord().v() <= g1.v(); iv.next_v() )
+      for ( iw = iv; iw.coord().w() <= g1.w(); iw.next_w() ) {
+        // ---- access xmap[iw] here ----
+      }
+\endcode
+
+Alternatively, in most cases it is only necessary to optimise the
+innermost loop.
+\code
+  int u, v;
+  clipper::Xmap_base::Map_reference_coord ix( xmap );
+  for ( u = g0.u(); u <= g1.u(); u++ )
+    for ( v = g0.v(); v <= g1.v(); v++ )
+      for ( ix.set_coord(Coord_grid(u,v,g0.w())); ix.coord().w() <= g1.w(); ix.next_w() ) {
+        // ---- access xmap[ix] here ----
+      }
+\endcode
+
+*/

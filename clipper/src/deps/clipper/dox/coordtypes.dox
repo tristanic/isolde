@@ -1,0 +1,101 @@
+/*! \page p_coords Coordinates and related types
+
+
+\section s_ctintro Introduction
+
+There are a large number of coordinate types used in crystallographic calculations, and a significant number of other small data types also in common use. These types, their uses, and the conversions between them will be discussed in the following sections.
+
+The coordinate types are divided into two classes:
+
+ - Reciprocal space coordinates. These are used when handling data in reciprocal space, e.g. structure factor data. Generally only the HKL types is required, however for fast rotation functions other forms may be required.
+
+ - Real space coordinates. These are used when data is being manipulated in real space, e.g. electron density maps or coordinate models.
+
+In addition, data types are defined for map gradients and curvatures and for anisotropic atomic displacement parameters (B or U values).
+
+
+\subsection ss_ctvec 3-vector and matrix types.
+
+All of the coordinate types are derived from a template class for a vector of 3 values; clipper::Vec3<T>. Generally T will be the floating point type, but in some cases vectors of \c int are used. Vec3<> also defines various simple arithmetic operations, including addition, subtraction, negation, and scaling. Any coordinate type may be constructed from a Vec3<> by using an explicit constructor. (Implicit conversion is not allowed, since this would allow accidental type conversion between coordinate types). The elements of the vector may be accessed as v[0], v[1], and v[2], however the coordinate types all define type-specific names for the members.
+
+Similarly, clipper::Mat33<T> provides a template class for a 3x3 matrix of values. Matrix-vector and matrix-matrix products are defined. If a vector pre-multiplies a matrix, it is assumed that the vector is a row rather than column vector.
+
+Symmetric matrices are common on crystallography, so a type is defined for these; clipper::Mat33sym<T>. This does not define any operations except conversion to or from Mat33<T>. This form is therefore used mainly for packed storage of some quantities, such as anisotropic U values.
+
+
+Rotation-translation operators are provided by the clipper::RTop<T> template class. A rotation-translation operator consists of a rotation defined by a Mat33<T>, and a translation defined by a Vec3<T>. The matrix and vector components may be accessed through the rot() and trn() methods. RTop's may be applied to vectors or combined using the '*' operator.
+
+
+\section s_ctcoord Coordinate types
+
+\subsection s_ctrecip Reciprocal space coordinate types
+
+\par HKL
+The integral index (sometimes referred to as a Miller index) of a reflection. It has components h, k, and l.
+
+\par Coord_reci_frac
+Reciprocal space fractional coordinate. This is identical to an HKL, except that the values are floating point. This would commonly be used in rotation function calculations when interpolation is required in reciprocal space.
+
+\par Coord_reci_orth
+Reciprocal space orthogonal coordinate. This is a coordinate defined in inverse Angstroms along three orthogonal axes. The exact convention for selection of these axes is defined by the clipper::Cell class.
+
+
+\subsection ss_ctreal Real space coordinate types
+
+\par Coord_orth
+Orthogonal coordinate in Angstroms. This is a coordinate defined in Angstroms along three orthogonal axes. The exact convention for selection of these axes is defined by the clipper::Cell class.
+
+\par Coord_frac
+Fractional (crystal) coordinate. This is defined as the fractional position in the unit cell, with each component traversing a unique cell over the range (0..1).
+
+\par Coord_map
+Map coordinate. This is a floating point coordinate representing a position in the frame of a map. In the case of a crystallographic map, this will simply be the fractional coordinate scaled by the grid sampling of the unit cell (not the asymmetric unit). However in most cases Coord_frac is used in preference for crystallographic maps. In the case of a non-crystallographic map, fractional coordinates are undefined, but the NXmap will define a conversion between orthogonal and map coordinates.
+
+\par Coord_grid
+Map grid coordinate. This is the integer version of a Coord_map, and represents the index of a grid point in a map. The origin is always at the origin of the coordinate frame of the map, thus for crystallographic maps the origin is the crystallographic origin. For non-crystallographic maps, the origin is the first grid point in the map.
+
+
+\section s_ctderiv Derivative types
+
+Derivatives and curvatures may be with respect to orthogonal, fractional, or map coordinates. When performing calculations on a crystallographic map, derivatives are usually with respect to fractional coordinates, however map coordinates may be used if preferred. The resulting derivatives may then be converted to orthogonal coordinates if necessary. When performing calculations on a non-crystallographic map, derivatives are calculated with respect to map coordinates.
+
+Derivatives are stored as Vec3<> with the template type matching the type of the map. Curvatures are stored as a Mat33<>.
+
+
+\section s_ctops Operator Types
+
+Two types of rotation-translation operators are defined as special cases of RTop<> with a floating point template type.
+
+\par RTop_frac
+This is a rotation-translation operator defined on fractional coordinates. A Crystallographic symmetry operator is an example of this type, and in fact Symop is derived from this class.
+
+\par RTop_orth
+This is a rotation-translation operator defined on orthogonal coordinates. A non-crystallographic symmetry operator is an example of this type.
+
+
+\section s_ctother Other types
+
+Anisotropic atomic displacement parameters (ADPs) are also defined.
+These are derived from Mat33sym<> with a floating point template type.
+There are two types:
+
+\par U_aniso_orth
+Anisotropic atomic displacement parameters defined on orthogonal Angstrom coordinates, as used in PDB files. The terms have units of inverse angstroms squared.
+
+\par U_aniso_frac
+Anisotropic atomic displacement parameters defined on fractional coordinates.
+
+
+\section s_ctconv Conversion of coordinates and related types
+
+Coordinates and related types are converted by the following means:
+
+ - Any fraction coordinate, gradient, curvature, operator, or ADP (with the \c _frac suffix) may be converted to an orthogonal coordinate, etc. (with the \c _orth suffix) or vice-versa using the appropriate method of the Cell class. The name of the required method is always the return type in lower case. e.g. to convert a clipper::Coord_orth to a clipper::Coord_frac, call the clipper::Cell::coord_frac() method of the appropriate clipper::Cell object.
+
+ - A real space fractional coordinate, gradient, or curvature may be converted to a map coordinate, gradient, or curvature or vice-versa, by using the appropriate method of the clipper::Grid_sampling class. The name of the required method is always the return type in lower case. Fractional coordinates may also be converted directly to grid coordinates and vice-versa.
+
+ - Coord_grid can be converted directly to Coord_map using the appropriate constructor. Coord_map can be converted to Coord_grid using a method specifying the type of rounding required.
+
+ - Coord_map for a non-crystallographic map may be converted to a Coord_orth or vice-versa using the methods of the clipper::NXmap object concerned.
+
+*/

@@ -1,0 +1,11 @@
+prefix=/Users/tic20/clipper-python/builds/build_py36_macos/src/clipper_python
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libccp4c
+Description: CCP4 core C libraries
+Version: 7.0.0
+Requires:
+Libs: -L${libdir} -lccp4c
+Cflags: -I${includedir}

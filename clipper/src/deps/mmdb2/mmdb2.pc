@@ -1,0 +1,11 @@
+prefix=/Users/tic20/clipper-python/builds/build_py36_macos/src/clipper_python
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: mmdb2
+Description: Macromolecular coordinate library
+Version: 2.0.12
+Libs: -L${libdir} -lmmdb2
+Cflags: -I${includedir}
+

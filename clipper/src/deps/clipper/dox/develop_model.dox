@@ -1,0 +1,99 @@
+/*! \page p_develop_model Developing using Atomic Models
+
+\section s_model_basic Core model handling facilities
+
+Requirements for the manipulation of atomic models in crystallographic
+calculations are very varied, and often the objects required must be
+tailored to the specific calculation. Therefore, Clipper provides only
+the minimum tools required for atomic models to interact with
+structure factors and maps. More advanced facilities are provided
+through optional packages.
+
+The most common interaction between atomic models and structure factors
+or maps is through electron density or mask calculation. For this
+purpose, only a subset of atomic properties are required: element,
+coordinate, occupancy and temperature factor (U-value). Clipper
+therefore provides a simple class, clipper::Atom, which contains this
+information. It has a template constructor which allows it to be
+initialised from any Atom-like object.
+
+Electron density and mask calculations require a list of atoms,
+therefore a simple class for holding a list of atoms,
+clipper::Atom_list is provided. This is a trivial extension of
+std::vector<clipper::Atom>, and provides a template constructor to
+build an atom list from any vector-like object of atom-like objects.
+Atom lists can also be constructed using the standard vector methods,
+e.g. push_back(), insert().
+
+Clipper methods requiring an atom list, e.g. a <a
+href=contrib/classclipper_1_1SFcalc__aniso__fft.html>structure factor
+calculation</a> may be given a Clipper::Atom_list, any class derived
+from that class, or a std::vector<clipper::Atom> as an argument.
+
+<hr>
+
+\section s_model_opt Optional model handling packages
+
+Two optional packages are provided for model manipulation. Both
+require the the 'MMDB' coordinate library by E. Krissinel to be
+installed (see http://msd.ebi.ac.uk/~keb/cldoc/).
+
+
+\subsection ss_model_mmdb MMDB interface.
+
+The <a href=mmdb>MMDB interface</a> is a lightweight interface to
+allow MMDB to be used with Clipper. It consists of one main class:
+clipper::MMDBAtom_list. This is a trivial extension of
+clipper::Atom_list which may be used anywhere an Atom_list would be
+used. It provides an additional constructor which will build an atom
+list from an MMDB atom selection (i.e. PPCAtom + count).
+
+Other classes are provided which may optionally be used to access
+information in the MMDB hierarchy in the form of Clipper
+objects. These are trivial extensions of MMDB objects. The MMDB
+objects may therefore be cast to the Clipper types to access the
+additional conversion methods.
+
+
+\subsection ss_model_mini MiniMol package.
+
+The <a href=minimol>MiniMol package</a> is a lightweight, STL based
+implementation of a small subset of the MMDB functionality. It
+provides simpler tools for manipulating single models and their
+constituents. The use of STL-style code means that no memory
+management is required, and all common operations such as assignment
+and passing variables have the most obvious effect.
+
+The minimum necessary information is stored for each object in the
+hierarchy, however additional information of any type may be added to
+any object through use of the clipper::PropertyManager.
+
+Basic searching and selection tools are provided, and logical 'and'
+and 'or' operators may be used to combine models, polymers, and
+monomers.
+
+MiniMol provides an MMDBfile class which may be used to extract models
+from and store models back into an MMDB, or a file.
+
+<hr>
+
+\section s_model_which Choosing a model package.
+
+If you have very specific model requirements, you may be better off
+writing your own objects tailored to those requirements, and then
+deriving an Atom_list class to allow your objects to be communicated
+to Clipper. Otherwise, consider the following points:
+
+ - MMDB is a very powerful package, with an enormous range of
+ facilities. However, it requires a good knowledge of C++, and the API
+ can be quite complex.
+
+ - MiniMol is a very simple package with a concise and intuitive
+ interface. It has a simple API accessible to non-C++ programmers.
+
+MiniMol will do simple tasks much more easily than MMDB, but it won't
+do hard tasks at all. If MiniMol does everything you will need (or can
+easily be extended to do so), then it is probably a good choice,
+otherwise use MMDB.
+
+*/

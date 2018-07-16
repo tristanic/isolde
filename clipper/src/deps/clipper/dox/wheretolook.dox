@@ -1,0 +1,150 @@
+/*! \page p_wheretolook Where to Look for help on specific tasks.
+
+This document provides a thematic index to some of the Clipper
+documentation. It should provide a starting point to help you to find
+out how to tackle a particular task using Clipper.
+
+It is divided into two main sections, the first indexing information
+be theme, and the second providing useful links for performing
+specific tasks.
+
+<hr>
+
+\section s_where_theme Thematic index.
+
+This section describes the documentation which might help when
+addressing a particular type of problem.
+
+\subsection ss_where_theme_all Documentation common to all problems.
+
+Some information is common to all tasks in Clipper. Most fundamental
+are the coordinate types. There are described in the following essay:
+\ref p_coords. The most commonly used classes are clipper::Coord_orth,
+clipper::Coord_frac, clipper::Coord_grid and clipper::HKL.
+
+All crystallographic tasks depend upon the spacegroup and cell
+classes, so read their documentation. The cell class is clipper::Cell,
+and the spacegroup class is clipper::Spacegroup. You may want to look
+at their parent classes, Cell_descr, and clipper::Spgr_descr, which
+are used to initialise the classes if the information is not coming
+from a file.
+
+If you are going to need to perform operations on coordinates, then
+you may want to look at the clipper::RTop_orth documentation. Its
+counterpart, clipper::RTop_frac is the base class of the symmetry
+operator clipper::Symop.
+
+Often, the parent classes of a class also contain useful methods. For
+example, the coordinate classes are all derived from clipper::Vec3<T>,
+and the operators are derived from clipper::RTop<T>.
+
+The clipper::Util class may contain some helpful utility
+functions. The clipper::String class is a trivial extension of the STL
+std::string. You can use either interchangeably.
+
+
+\subsection ss_where_theme_hkl Documentation for reflection-related problems.
+
+First, look at the essay \ref p_develop_hkl, which describes how Clipper
+handles reciprocal space data.
+
+The fundamental types which hold lists of HKL's and lists of
+associated reflection data (e.g. F's, phases, etc.) are
+clipper::HKL_info and clipper::HKL_data<T>.
+
+clipper::HKL_data<T> is a template class which can be used to hold any
+kind of data. A range of common datatypes are provided which you can
+store in this object: Look at the derived classes of
+clipper::Datatype_base for a list. Alternatively, you can add your
+own.
+
+Most common reflection data conversions have built in methods. Look at
+the clipper::HKL_data<T>::compute() method. For operators to use with
+it, look at the <a href=annotated.html>class listing</a> for classes
+labelled clipper::datatypes::Compute_*.
+
+Scaling of data is also built in. See clipper::ResolutionFn and the
+examples on that page, and the derived classes of
+clipper::BasisFn_base and clipper::TargetFn_base.
+
+
+\subsection ss_where_theme_map Documentation for map-related problems.
+
+First, look at the essay \ref p_develop_map, which describes how
+Clipper handles real space map data.
+
+Crystallographic maps are handled by the clipper::Xmap<T>
+class. Calculation of FFT's to and from reciprocal space is build in
+to this class, as are interpolation methods. The clipper::Map_stats
+class provides tools for calculating map statistics.
+
+Calculation of maps and masks from atomic coordinates is handled in
+the <a href=contrib>contrib</a> package by the EDcalc-
+and MASKcalc- classes. Filtering of maps and calculation of masks is
+aided by the MapFilter- classes in the <a
+href=contrib>contrib</a> package.
+
+Non-crystallographic maps (i.e. maps with no symmetry or cell repeat)
+are handled by the clipper::NXmap<T> class. Non-crystallographic maps
+may be referred into a crystallographic frame using the
+clipper::NXoperator class.
+
+
+\subsection ss_where_theme_model Documentation for model-related problems.
+
+First, look at the essay \ref p_develop_model, which describes how
+Clipper handles atomic models.
+
+The clipper::Atom and clipper::Atom_list classes provide basic support
+for atoms and lists of atoms, or you can use the more advanced <a
+href=mmdb>MMDB</a> or <a href=minimol>MiniMol</a> packages.
+
+To calculate structure factors, maps, or masks from a coordinate
+model, look at the SFcalc-, EDcalc-, and MASKcalc- classes in the <a
+href=contrib>contrib</a> package.
+
+
+<hr>
+
+\section s_where_task Task index
+
+This section describes the documentation which might help when
+addressing a particular crystallographic task.
+
+
+\subsection ss_where_molrep Molecular Replacement.
+
+Rotations are handled in a generic form as Quaternions by the
+clipper::Rotation class. These may be converted to and from Polar
+angles, Euler angles (24 conventions), and matrix representations. See
+the clipper::Polar_ccp4, clipper::Euler_ccp4, clipper::Euler<T>, and
+clipper::Mat33<T> classes.
+
+Rotation-translation operators are handled by the derived classes of
+clipper::RTop<T>, i.e. clipper::RTop_orth and clipper::RTop_frac.
+
+
+\subsection ss_where_phaseimp Phase improvement (Density modification)
+
+Filtering of maps and calculation of masks is aided by the MapFilter-
+classes in the <a href=contrib>contrib</a> package.
+
+Data scaling and sigmaa estimation can be performed using the
+clipper::ResolutionFn class and its related classes.
+
+
+\subsection ss_where_refinement Refinement
+
+Agarwal coefficients for calculation of refinement residual gradients
+may be generated using the clipper::AtomShapeFn class.
+
+Data scaling and sigmaa estimation can be performed using the
+clipper::ResolutionFn class and its related classes.
+
+
+\subsection ss_where_modelbuild Model building
+
+FFFear-style translation functions may be calculated using the FFFear-
+classes in the <a href=contrib>contrib</a> package.
+
+*/

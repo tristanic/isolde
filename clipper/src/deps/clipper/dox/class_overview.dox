@@ -1,0 +1,421 @@
+/*! \page p_class_overview Class Overview
+
+\section s_classov_intro Introduction
+
+This page contains a brief outline of the types of classes provided by
+the Clipper libraries, followed by a more detailed description of the
+different classes.
+
+<ol>
+<li> \ref ss_ordi
+
+Ordinates include Miller indices (clipper::HKL), orthogonal and
+fractional coordinates (clipper::Coord_orth, clipper::Coord_frac), and
+grid coordinates (clipper::Coord_grid).
+
+Grids describe the storage of 3D data: The basic grid class
+(clipper::Grid) describes the dimensions and indexing of a 3D
+rectangular arrays. The unit cell grid (clipper::Grid_sampling) also
+provides methods for converting between fractional and grid
+coordinates, and the map grid (clipper::Grid_range) describes a general
+sampled map, which is bounded by lower and upper grid coordinates.
+
+<li> \ref ss_crys
+
+A crystal is defined by two main classes: a unit cell (clipper::Cell)
+and a spacegroup (clipper::Spacegroup).
+
+These are complex classes which store derived information and provide
+optimised methods for handling it. Two smaller `descriptor' objects
+provide a more compact representation for storage and transmission:
+The cell descriptor (clipper::Cell_descr) holds just the cell edges
+and angles, and the spacegroup descriptor (clipper::Spgr_descr) hold
+the Hall code of the spacegroup.
+
+<li> \ref ss_data
+
+Data objects hold the actual crystallographic data. They include
+reciprocal space data (clipper::HKL_info, clipper::HKL_data),
+crystallographic and non-crystallographic maps (clipper::Xmap,
+clipper::NXmap), and FFT maps (clipper::FFTmap)
+
+The primary design goal of the data objects is that they hide all the
+bookkeeping associated with crystallographic symmetry (and in real
+space, cell repeat). Data can be written to and read from any region
+of real or reciprocal space, and the unique stored copy of the data
+will be modified correctly. This is all achieved in a computationally
+efficient manner.
+
+The data objects are templates which can hold data of any type. In the
+case of a map, this type will usually be `double' or `float', however
+in the case of reciprocal space data the types are often more complex,
+for example `magnitude and phase' (F_phi) or Hendrickson-Lattman
+coefficient (ABCD).
+
+<li> \ref ss_io
+
+Input/Output objects are used to record the contents of an
+object in a file or restore the contents from a
+file. (MTZfile, MAPfile)
+
+The crystal descriptors and data objects may be used as
+stand-alone objects. However, the data objects are related to
+a particular crystal, and may be related to each other. In
+order to facilitate the organisation of information, all the
+objects have `container' variants.
+</ol>
+
+<hr>
+
+\section s_class Classes
+
+The classes which a developer will commonly encounter are as follows:
+
+\subsection ss_ordi Ordinates and grids:
+
+<ul>
+<li>clipper::HKL
+
+Reflection/Miller index. Constructed with 3 integers, h, k and
+l. Read-write access is provided to these members through the h(), k()
+and l() methods.
+
+<li>clipper::Coord_orth
+
+Orthogonal Angstrom coordinate, defined on some unspecified coordinate
+frame. Constructed from 3 real numbers, x, y, and z. Read access is
+provided to these members through the x(), y() and z()
+methods.
+
+<li>clipper::Coord_frac
+
+Fractional coordinate, defined in fractions of the cell edges. The
+coordinates are therefore not necessarily orthogonal. Constructed from
+3 real numbers, u, v, and w, being fractions of the a, b, and c
+axes. Read access is provided to these members through the u(), v()
+and w() methods.
+
+<li>clipper::Coord_grid
+
+Grid coordinate, defined on some unspecified grid. (Ideally this
+object should define its own grid, but these things are used so
+frequently that the overhead would be unacceptable.) Constructed with
+3 integers, u, v and w, being grid positions along the a, b and c
+axes. Read-write access is provided to these members through the u(),
+v() and w() methods.
+
+<li>clipper::Grid
+
+A generic grid definition. Constructed with 3 integers, nu, nv and nw,
+defining the size of a grid along 3 direction. Read access is provided
+to these members through the nu(), nv() and nw() methods. Methods are
+provided for simple indexing of a 3D array stored as a 1D list (Like a
+multidimensional local array in C, or a Fortran array with the indices
+reversed).
+
+<li>clipper::Grid_sampling
+
+Derived from clipper::Grid, this class is used for a grid which
+defines the sampling of a unit cell. Constructor as for
+clipper::Grid. It provides additional methods for converting between
+fractional and grid coordinates, and for reducing a coordinate from
+anywhere in crystal space to the unit cell (0-1,0-1,0-1).
+
+<li>clipper::Grid_range
+
+Derived from clipper::Grid, this class is used for defining a map
+grid. The map grid need not cover a unit cell, and need not be based
+at the origin. It is constructed by two clipper::Coord_grid's,
+representing the lower and upper bounds of the volume in 3D
+space. Methods are provided for simple indexing of a 3D array stored
+as a 1D list.
+</ul>
+
+\subsection ss_crys Crystal information
+<ul>
+<li>clipper::Cell_descr
+
+The cell descriptor class (clipper::Cell_descr) contains the basic
+information required to describe a unit cell, i.e. the cell edges a,
+b, and c, and the cell angles, alpha, beta and gamma. It is
+constructed by providing these 6 values in order. The angles may be
+given in degrees or radians, if they are less than pi they are assumed
+to be in radians. If they angles are omitted they are assumed to be 90
+degrees.
+
+<li>clipper::Cell
+
+The cell class (clipper::Cell) is constructed from a cell descriptor
+(clipper::Cell_descr), but additionally contains derived information,
+including the cell volume, the orthogonalising and fractionalising
+matrices (for converting between orthogonal and fractional
+coordinates) and the metric tensors (for computing the distance
+between points in real space, or the resolution of a reflection in
+reciprocal space).
+
+It provides methods for conversion between fractional and orthogonal
+coordinates (frac_to_orth, orth_to_frac), calculating distances in
+real space (distancesq) and reflection resolutions (invresolsq).
+
+<li>clipper::Spgr_descr
+
+The spacegroup descriptor class (clipper::Spgr_descr) contains the
+Hall symbol, which uniquely describes the spacegroup. It can be
+constructed from a spacegroup number, a traditional Hermann-Maugnuin
+symbol, or a list of symmetry operators (not implemented).
+
+<li>clipper::Spacegroup
+
+The spacegroup class (clipper::Spacegroup) is constructed from a
+spacegroup descriptor (clipper::Spgr_descr), but additionally contains
+a list of all the symmetry operators, and tables for looking up
+inverses of symmetry operators.
+
+It provides methods for returning symmetry operators, along with other
+information such as the point group and Laue group.
+
+Symmetry operators are represented as a 3x3 matrix and 3x1 vector of
+either real numbers (Rsymop) or integers (Isymop). For integer symops
+the translation components are scaled by a factor of 12. Both real and
+integer symops provide methods for transforming Miller indices
+(sym_hkl) and fractional coordinates (sym_coord), and for calculating
+the phase shift associated with the symmetry transformation of a
+reflection (sym_phase_shift).
+</ul>
+
+\subsection ss_data Data objects
+<b>Reciprocal space data</b>
+
+The reciprocal space data object is divided into two parts: the first
+part (clipper::HKL_info) handles indexing of reflections and information
+derived from the Miller indices, and the second part contains the
+actual data. The reasons for this division are that it is common to
+have several lists of information for each reflection, so a single
+list of Miller indices can be used for several lists of data. This
+also allows the use of optimised tables for looking up reflections,
+without wasting space duplicating them for several data lists.
+
+However, if reciprocal space data are stored which do not have the
+same list of Miller indices, it is quite possible to provide several
+clipper::HKL_info objects, one for each list of data.
+
+<ul>
+<li>clipper::HKL_info
+
+The reflection indexing class (clipper::HKL_info) contains a cell, a
+spacegroup, and a list of Miller indices. Reflection data is most
+commonly accessed by looping through each reflection in turn, and so
+the reflections can be referred to by number, or by coordinate-reference types provided
+for that purpose. However, it is occasionally necessary to refer to a
+reflection directly by its Miller index. For this purpose, a fast
+lookup table is also maintained, allowing efficient access to any
+reflection. This operation may however require searching through
+several symmetry equivalents, so there is still some overhead. The
+overhead is reduced by using the appropriate coordinate-reference type
+(clipper::HKL_info::HKL_reference_coord), which stores the last use symmetry
+operator as a guess at which operator will be required next.
+
+clipper::HKL_info is constructed by providing a clipper::Spacegroup
+and clipper::Cell (unless the container version is used). A method is
+provided to generate a list of unique non-absent reflections to a
+given resolution (generate_hkl_list), or alternatively a list may be
+imported using an I/O object.
+
+Coordinate-Reference Types are provided for looping through the list
+of reflections (clipper::HKL_info::HKL_reference_index) or accessing
+reflections by Miller index
+(clipper::HKL_info::HKL_reference_coord). The latter is optimised for
+the case where reflections are taken consecutively from the same
+region of reciprocal space.
+
+<li>clipper::HKL_data<T>
+
+The reflection data object is a template object, where the template
+type is the type of crystallographic information to be stored in the
+object. It simply stores a list of data of that type.
+
+Data types typically include several values. Examples include measured
+X-ray intensity and its standard deviation (I_sigI), structure factor
+magnitude and phase (F_sigF), and Hendrickson-Lattman coefficients
+(ABCD). Data types are derived from a base type (Datatype_base), and
+should override all the methods of that type. This will allow the data
+to be automatically transformed about reciprocal space, and imported
+or exported to a file, as required.
+
+The class provides methods for accessing the data by index number, by
+coordinate-reference type, or by Miller index. The last method should
+avoided for speed critical tasks.
+
+The coordinate-reference types are typedef'ed from those in
+clipper::HKL_info, and may be used interchangeably with them. However
+clipper::HKL_data<T> provides an additional method (next_data) for
+accessing only the non-missing data in a list.
+</ul>
+
+<b>Real space data</b>
+<ul>
+<li>clipper::Xmap<T>
+
+The crystallographic map data object is a template object, with the
+template type being the type of the data; usually double or float for
+maps, or int or bool for masks. (In future a specialisation for
+complex data will be available, with a complex fft method.)
+
+The map object is constructed by providing a clipper::Spacegroup and
+clipper::Cell (unless the container version is used), and the unit
+cell sampling (clipper::Grid_sampling). Methods are provided to set and
+get data by grid coordinate (clipper::Coord_grid), however it is more
+efficient to use coordinate-reference types for this purpose.
+
+Coordinate-Reference Types are provided for looping through the
+unique map grid points (clipper::Xmap_base::Map_reference_index) or
+accessing map grid points by coordinate
+(clipper::Xmap_base::Map_reference_coord). The latter is optimised for
+the case where map values are taken consecutively from the same region
+of crystal space. Methods are also provided for moving one grid step
+along any of the cell axes.
+
+<li>clipper::NXmap<T>
+
+The non-crystallographic map data object is a template object, with
+the template type being the type of the data; usually double or float
+for maps, or int or bool for masks. It contains a finite bounded grid
+of data with no symmetry or repeat. A rotation-translation operator
+allows the grid coordinates to be related to an arbitrary orthogonal
+coordinate frame. This will often relate to the orthogonal coordinate
+representation of a portion of some unit cell to which the map is
+related.
+
+Coordinate-Reference Types are provided for looping through the map
+grid points (clipper::NXmap_base::Map_reference_index) or accessing
+map grid points by coordinate
+(clipper::NXmap_base::Map_reference_coord).
+
+</ul>
+
+<b>Other objects</b>
+<ul>
+<li> clipper::FFTmap
+
+The FFT map (clipper::FFTmap) is a map used for calculating Fast
+Fourier transforms. It can hold represent data in either real or
+reciprocal space, and transform between representations. The data is
+stored covering the whole of the P1 unit cell in real space, or the
+L>0 hemisphere in reciprocal space, however the crystallographic
+symmetry of the data is maintained at all times. This is achieved by
+setting every symmetry equivalent value when writing to the
+object. When reading the symmetry is assumed and only the requested
+value is returned.
+
+In general it is not necessary to use an FFT map directly, since one
+will be created whenever an FFT is required. However if data is being
+transformed very frequently, or if very fast random access to
+reflection or map values is required, then it may be beneficial to use
+an clipper::FFTmap for this purpose.
+
+<li> clipper::ResolutionFn
+
+The resolution function evaluator is a class for the calculation of
+arbitrary functions of resolution or position in reciprocal space. It
+can be used for the generation of Wilson plots, or for the calculation
+of simple likelihood function such as sigma-a. It is a superior
+replacement for any calculation which would previously have been
+performed using resolution bins.
+</ul>
+
+
+
+\subsection ss_io Input/Output objects
+<ul>
+<li> clipper::MTZfile
+
+Import/export class for MTZ files.
+
+<li> clipper::MAPfile
+
+Import/export class for CCP4 maps.
+
+</ul>
+
+
+\subsection ss_refer Coordinate-reference types.
+
+Coordinate-reference types are provided for accessing data in both
+real and reciprocal space. Data is commonly referred to in one of two
+ways:
+ -# by index into a list of unique data, or
+ -# by 3-dimensional coordinate.
+The coordinate-reference types are designed to make switching between
+the two forms of reference easier. Two coordinate-reference types are
+provided in each space - one which behaves more like an index, and one
+which behaves more like a coordinate. However, either may be asked to
+return either an index or a coordinate on request. References may also
+return other useful information, for example the HKL_reference types
+will return the resolution and reflection class of a reflection
+(i.e. centricity, phase restriction, multiplicity).
+
+The coordinate reference types are as follows:
+
+\code
+clipper::HKL_info::HKL_reference_index
+clipper::HKL_info::HKL_reference_coord
+clipper::XMap_base::Map_reference_index
+clipper::XMap_base::Map_reference_coord
+clipper::NXMap_base::Map_reference_index
+clipper::NXMap_base::Map_reference_coord
+\endcode
+
+The index-like reference is simply an index, and a pointer to the
+parent object, which allows the corresponding coordinate to be looked
+up. It provides a convenient way to access either every unique
+reflection in a list, or every unique map grid point in the asymmetric
+unit, in turn. The coordinate-reference type is usually initialised by
+assignment from the `first' method in the parent object. It may then
+be incremented by its own `next' method. Completion is tested by the
+`last' method. For example, if hklinfo is an object of type
+clipper::HKL_info and xmap is an object of type clipper::Xmap<double>,
+then the following loops could be used to access all the data:
+\code
+  for ( clipper::HKL_info::HKL_reference_index ih = hklinfo.first(); !ih.last(); ih.next )
+\endcode
+However, if the Miller indices of a reflection are are required, the
+reference type may be queried directly. Other information can also be obtained:
+\code
+  HKL hkl = ih.hkl();
+  int index = ih.index();
+  ftype s = ih.invresolsq();
+  HKL_class cls = ih.hkl_class();
+\endcode
+
+Similarly, if hkldata is an object of type clipper::HKL_data<I_sigI>,
+then the following will loop over all non-missing data in the list:
+\code
+  for ( clipper::HKL_info::HKL_reference_index ih = hkldata.first_data(); !ih.last(); ih.next_data(hkldata) )
+\endcode
+
+The reference types in real space are equivalent: 
+\code
+  for ( clipper::Xmap_base::Map_reference_index ix = xmap.first(); !ix.last(); ix.next ) {
+    int i = ix.index()
+    Coord_grid coord = ix.coord();
+  }
+\endcode
+
+The coordinate-like types are more sophisticated. They hold a
+coordinate and a pointer to the parent object. However, the
+corresponding index is also stored (if it exists), along with the
+symmetry operator (and in reciprocal space the Friedel operator) used
+to obtain it. If an new coordinate is assigned to the reference, then
+this symmetry operator will be tried first, providing a significant
+performance gain.
+
+The differences between the index-like and coordinate-like reference types can be summarised as follows:
+- index-like types can only refer to the position of a stored datum, i.e. a coordinate in the stored ASU or a non-absent reflection in the reciprocal ASU.
+- coodinate-like types can refer to any possible position, and therefore also store the symmetry transformations required to get back to the stored data.
+
+Generally index-like types are used to loop through the stored data,
+whereas coordinate-like types are used to interact with data stored in
+a different way.
+
+*/
+

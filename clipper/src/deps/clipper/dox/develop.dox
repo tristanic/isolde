@@ -1,0 +1,169 @@
+/*! \page p_develop Developing using Clipper
+
+\section s_fftexam An FFT example 
+
+Most crystallographic calculations are based upon the observed data,
+i.e structure factors, phase probability estimates, and associated
+data. This page describes how to read observed structure factors and
+phases from an MTZ file, and perform a Fourier transformation to obtain
+an electron density map.
+
+For reflection data to be meaningful, a cell, spacegroup, and
+resolution limit must first be defined. This can be achieved by
+defining a Spacegroup object (clipper::Spacegroup), a Cell object
+(clipper::Cell), and a resolution object (clipper::Resolution), and
+using them to create a reflection list (clipper::HKL_info). However,
+in this case the cell, spacegroup and resolution will be imported from
+the MTZ file, so it is not necessary to set their values. Therefore an
+uninitialised clipper::HKL_info object is created using the null
+constructor.
+
+\code
+clipper::HKL_info myhkl();
+\endcode
+
+If we want to calculate a map, we need a structure factor and
+phase. So we'll create a data list of type \c F_phi . The data list
+must refer to a reflection list, so we pass our clipper::HKL_info
+object to the constructor.
+
+\code
+clipper::HKL_data<clipper::data32::F_phi> fphidata( myhkl );
+\endcode
+
+Next, we want to open an MTZ file. I'll assume it is called \c my.mtz
+. To do this we create an \c clipper::MTZfile object. This is an i/o
+object which can be linked to an MTZ file by an open command, and can
+then fill Clipper data objects using the information from that file.
+
+\code
+clipper::CCP4MTZfile mtzin;
+mtzin.open_read( "my.mtz" );   // open new file
+\endcode
+
+When we created the reflection list object, we did not provide a cell
+or spacegroup, or generate a reflection list. So we'll get those from
+the file now.
+
+\code
+mtzin.import_hkl_info( myhkl );    // read sg, cell, reso, hkls
+\endcode
+
+Now we want some actual data. We read a couple of MTZ columns into the
+data list we created earlier.
+
+\code
+mtzin.import_hkl_data( fphidata, "/native/CuKa/[FCAL,PHICAL]" );
+\endcode
+
+Note that we create the data-list as a child of the reflection list \c
+myhkl . (Actually, any descendent will do). The import operation will
+actually move it, by inserting the appropriate \c CCrystal and \c
+CDataset objects, according to the information on the file.
+
+Note also that we give specify the MTZ columns by giving the full
+path: crystal, dataset, and column names. The column names are grouped
+in square brackets. (For older MTZ files, which do not have crystal
+and dataset entries, the dummy names "unnamed_crystal" and
+"unnamed_dataset" are used.)
+
+Now we close the MTZ file. \b NOTE: No data is actually read until you
+close the file!
+
+\code
+mtzin.close_read();
+\endcode
+
+Next, we create a map. For this we need to provide a grid. The grid
+depends on the spacegroup, cell, and resolution, which we get from the
+reflection list:
+
+\code
+clipper::Grid_sampling mygrid( myhkl.spacegroup(), myhkl.cell(), myhkl.resolution() );  // define grid
+\endcode
+
+Now we make the map itself, using the spacegroup, cell, and grid.
+
+\code
+clipper::Xmap<float> mymap( myhkl.spacegroup(), myhkl.cell(), mygrid );  // define map
+\endcode
+
+Next, we calculate the map by FFT.
+
+\code
+mymap.fft_from( fphidata );                  // generate map
+\endcode
+
+Finally, then map is written out to an output file.
+
+\code
+clipper::CCP4MAPfile mapout;
+mapout.open_write( "my.map" );      // write map
+mapout.export_xmap( mymap );
+mapout.close_write();
+\endcode
+
+To summarise, here is the complete program:
+
+\code
+  clipper::HKL_info myhkl;
+  clipper::HKL_data<clipper::data32::F_phi> fphidata( myhkl );
+
+  clipper::CCP4MTZfile mtzin;
+  mtzin.open_read( "my.mtz" );        // open new file
+  mtzin.import_hkl_info( myhkl );     // read sg, cell, reso, hkls
+  mtzin.import_hkl_data( fphidata, "/native/CuKa/[FCAL,PHICAL]" );
+  mtzin.close_read();
+
+  clipper::Grid_sampling mygrid( myhkl.spacegroup(), myhkl.cell(), myhkl.resolution() );  // define grid
+  clipper::Xmap<float> mymap( myhkl.spacegroup(), myhkl.cell(), mygrid );  // define map
+  mymap.fft_from( fphidata );                  // generate map
+
+  clipper::CCP4MAPfile mapout;
+  mapout.open_write( "my.map" );      // write map
+  mapout.export_xmap( mymap );
+  mapout.close_write();
+\endcode
+
+
+\section s_incl Libraries and Include files
+
+Which header and library files should you include in your application? 
+The libraries are as follows, and there is an aggregated header file
+for each library.
+
+<table>
+<tr>
+<td> <b>Contents</b>
+<td> <b>Library</b>
+<td> <b>Include</b>
+<tr>
+<td> Reflection, maps, models
+<td> $PREFIX/lib/libclipper.a
+<td> $PREFIX/include/clipper/clipper.h
+<tr>
+<td> Function objects (e.g. SFcalc)
+<td> $PREFIX/lib/libclipper-contrib.a
+<td> $PREFIX/include/clipper/clipper-contrib.h
+<tr>
+<td> CCP4 mtz/map i/o
+<td> $PREFIX/lib/libclipper-ccp4.a
+<td> $PREFIX/include/clipper/clipper-ccp4.h
+<tr>
+<td> SHELX phs i/o
+<td> $PREFIX/lib/libclipper-phs.a
+<td> $PREFIX/include/clipper/clipper-phs.h
+<tr>
+<td> cctbx interface
+<td> $PREFIX/lib/libclipper-cctbx.a
+<td> $PREFIX/include/clipper/clipper-cctbx.h
+</table>
+
+Alternatively, you can include individual header files from the
+subdirectories of include/clipper/. The precise header files can be
+identified by the following include tree:
+
+\image html include.png
+\image latex include.eps \width=10cm
+
+*/

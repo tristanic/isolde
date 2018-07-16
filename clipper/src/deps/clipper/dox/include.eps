@@ -1,0 +1,1282 @@
+%!PS-Adobe-2.0
+%%Creator: dot version 1.7.11 (Tue Jan 21 14:14:28 GMT 2003)
+%%For: (cowtan) Kevin Cowtan
+%%Title: 1
+%%Pages: (atend)
+%%BoundingBox: 35 35 613 660
+%%EndComments
+%%BeginProlog
+save
+/DotDict 200 dict def
+DotDict begin
+
+%%BeginResource: procset
+/coord-font-family /Times-Roman def
+/default-font-family /Times-Roman def
+/coordfont coord-font-family findfont 8 scalefont def
+
+/InvScaleFactor 1.0 def
+/set_scale {
+	dup 1 exch div /InvScaleFactor exch def
+	dup scale
+} bind def
+
+% styles
+/solid { } bind def
+/dashed { [9 InvScaleFactor mul dup ] 0 setdash } bind def
+/dotted { [1 InvScaleFactor mul 6 InvScaleFactor mul] 0 setdash } bind def
+/invis {/fill {newpath} def /stroke {newpath} def /show {pop newpath} def} bind def
+/bold { 2 setlinewidth } bind def
+/filled { } bind def
+/unfilled { } bind def
+/rounded { } bind def
+/diagonals { } bind def
+
+% hooks for setting color 
+/nodecolor { sethsbcolor } bind def
+/edgecolor { sethsbcolor } bind def
+/graphcolor { sethsbcolor } bind def
+/nopcolor {pop pop pop} bind def
+
+/beginpage {	% i j npages
+	/npages exch def
+	/j exch def
+	/i exch def
+	/str 10 string def
+	npages 1 gt {
+		gsave
+			coordfont setfont
+			0 0 moveto
+			(\() show i str cvs show (,) show j str cvs show (\)) show
+		grestore
+	} if
+} bind def
+
+/set_font {
+	findfont exch
+	scalefont setfont
+} def
+
+% draw aligned label in bounding box aligned to current point
+% alignfactor tells what fraction to place on the left.
+% -.5 is centered.
+/alignedtext {			% text labelwidth fontsz alignfactor
+	/alignfactor exch def
+	/fontsz exch def
+	/width exch def
+	/text exch def
+	gsave
+		% even if node or edge is dashed, don't paint text with dashes
+		[] 0 setdash
+		currentpoint newpath moveto
+		text stringwidth pop
+		alignfactor mul fontsz -.3 mul rmoveto
+		text show
+	grestore
+} def
+
+/boxprim {				% xcorner ycorner xsize ysize
+		4 2 roll
+		moveto
+		2 copy
+		exch 0 rlineto
+		0 exch rlineto
+		pop neg 0 rlineto
+		closepath
+} bind def
+
+/ellipse_path {
+	/ry exch def
+	/rx exch def
+	/y exch def
+	/x exch def
+	matrix currentmatrix
+	newpath
+	x y translate
+	rx ry scale
+	0 0 1 0 360 arc
+	setmatrix
+} bind def
+
+/endpage { showpage } bind def
+
+/layercolorseq
+	[	% layer color sequence - darkest to lightest
+		[0 0 0]
+		[.2 .8 .8]
+		[.4 .8 .8]
+		[.6 .8 .8]
+		[.8 .8 .8]
+	]
+def
+
+/setlayer {/maxlayer exch def /curlayer exch def
+	layercolorseq curlayer get
+	aload pop sethsbcolor
+	/nodecolor {nopcolor} def
+	/edgecolor {nopcolor} def
+	/graphcolor {nopcolor} def
+} bind def
+
+/onlayer { curlayer ne {invis} if } def
+
+/onlayers {
+	/myupper exch def
+	/mylower exch def
+	curlayer mylower lt
+	curlayer myupper gt
+	or
+	{invis} if
+} def
+
+/curlayer 0 def
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+14 default-font-family set_font
+1 setmiterlimit
+% /arrowlength 10 def
+% /arrowwidth 5 def
+
+% make sure pdfmark is harmless for PS-interpreters other than Distiller
+/pdfmark where {pop} {userdict /pdfmark /cleartomark load put} ifelse
+% make '<<' and '>>' safe on PS Level 1 devices
+/languagelevel where {pop languagelevel}{1} ifelse
+2 lt {
+    userdict (<<) cvn ([) cvn load put
+    userdict (>>) cvn ([) cvn load put
+} if
+
+%%EndSetup
+%%Page: 1 1
+%%PageBoundingBox: 36 36 613 660
+%%PageOrientation: Portrait
+gsave
+35 35 578 625 boxprim clip newpath
+36 36 translate
+0 0 1 beginpage
+0.8079 set_scale
+0 0 translate 0 rotate
+[ /CropBox [36 36 613 660] /PAGES pdfmark
+0.000 0.000 0.000 graphcolor
+14.00 /Times-Roman set_font
+
+%	coords.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 481 433 moveto
+419 433 lineto
+419 405 lineto
+481 405 lineto
+closepath
+fill
+newpath 481 433 moveto
+419 433 lineto
+419 405 lineto
+481 405 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+450 420 moveto (coords.h) 47 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	atomsf.h
+gsave 10 dict begin
+newpath 385 367 moveto
+323 367 lineto
+323 339 lineto
+385 339 lineto
+closepath
+stroke
+gsave 10 dict begin
+354 354 moveto (atomsf.h) 48 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	coords.h -> atomsf.h
+newpath 421 399 moveto
+406 389 389 377 375 368 curveto
+stroke
+newpath 422 397 moveto
+429 404 lineto
+419 401 lineto
+closepath
+fill
+
+%	container_types.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 398 235 moveto
+286 235 lineto
+286 207 lineto
+398 207 lineto
+closepath
+fill
+newpath 398 235 moveto
+286 235 lineto
+286 207 lineto
+398 207 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+342 222 moveto (container_types.h) 98 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	coords.h -> container_types.h
+newpath 436 398 moveto
+421 375 397 341 394 338 curveto
+381 321 372 321 361 302 curveto
+350 280 345 253 343 236 curveto
+stroke
+newpath 437 394 moveto
+440 404 lineto
+432 397 lineto
+closepath
+fill
+
+%	derivs.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 511 367 moveto
+453 367 lineto
+453 339 lineto
+511 339 lineto
+closepath
+fill
+newpath 511 367 moveto
+453 367 lineto
+453 339 lineto
+511 339 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+482 354 moveto (derivs.h) 44 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	coords.h -> derivs.h
+newpath 462 395 moveto
+466 386 471 376 475 368 curveto
+stroke
+newpath 464 396 moveto
+457 404 lineto
+460 394 lineto
+closepath
+fill
+
+%	fftmap.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 713 367 moveto
+651 367 lineto
+651 339 lineto
+713 339 lineto
+closepath
+fill
+newpath 713 367 moveto
+651 367 lineto
+651 339 lineto
+713 339 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+682 354 moveto (fftmap.h) 47 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	coords.h -> fftmap.h
+newpath 489 410 moveto
+528 400 589 384 642 368 curveto
+643 367 646 366 651 365 curveto
+stroke
+newpath 491 412 moveto
+481 412 lineto
+490 407 lineto
+closepath
+fill
+
+%	fftmap_sparse.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 633 367 moveto
+529 367 lineto
+529 339 lineto
+633 339 lineto
+closepath
+fill
+newpath 633 367 moveto
+529 367 lineto
+529 339 lineto
+633 339 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+581 354 moveto (fftmap_sparse.h) 89 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	coords.h -> fftmap_sparse.h
+newpath 487 400 moveto
+508 390 533 378 552 368 curveto
+stroke
+newpath 489 402 moveto
+479 404 lineto
+487 397 lineto
+closepath
+fill
+
+%	hkl_lookup.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 267 367 moveto
+179 367 lineto
+179 339 lineto
+267 339 lineto
+closepath
+fill
+newpath 267 367 moveto
+179 367 lineto
+179 339 lineto
+267 339 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+223 354 moveto (hkl_lookup.h) 74 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	coords.h -> hkl_lookup.h
+newpath 411 408 moveto
+371 396 309 378 267 366 curveto
+stroke
+newpath 410 405 moveto
+419 410 lineto
+409 410 lineto
+closepath
+fill
+
+%	clipper_types.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 407 631 moveto
+307 631 lineto
+307 603 lineto
+407 603 lineto
+closepath
+fill
+newpath 407 631 moveto
+307 631 lineto
+307 603 lineto
+407 603 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+357 618 moveto (clipper_types.h) 85 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	cell.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 446 499 moveto
+392 499 lineto
+392 471 lineto
+446 471 lineto
+closepath
+fill
+newpath 446 499 moveto
+392 499 lineto
+392 471 lineto
+446 471 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+419 486 moveto (cell.h) 30 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	clipper_types.h -> cell.h
+newpath 376 597 moveto
+386 586 397 573 400 566 curveto
+404 560 412 521 416 500 curveto
+stroke
+newpath 380 597 moveto
+371 602 lineto
+376 593 lineto
+closepath
+fill
+
+%	container.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 333 499 moveto
+257 499 lineto
+257 471 lineto
+333 471 lineto
+closepath
+fill
+newpath 333 499 moveto
+257 499 lineto
+257 471 lineto
+333 471 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+295 486 moveto (container.h) 62 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	clipper_types.h -> container.h
+newpath 339 597 moveto
+329 586 317 573 314 566 curveto
+311 560 303 521 298 500 curveto
+stroke
+newpath 339 593 moveto
+344 602 lineto
+335 597 lineto
+closepath
+fill
+
+%	ramachandran.h
+gsave 10 dict begin
+newpath 267 565 moveto
+165 565 lineto
+165 537 lineto
+267 537 lineto
+closepath
+stroke
+gsave 10 dict begin
+216 552 moveto (ramachandran.h) 89 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	clipper_types.h -> ramachandran.h
+newpath 317 598 moveto
+295 588 268 576 247 566 curveto
+stroke
+newpath 318 596 moveto
+326 602 lineto
+316 600 lineto
+closepath
+fill
+
+%	rotation.h
+gsave 10 dict begin
+newpath 391 565 moveto
+323 565 lineto
+323 537 lineto
+391 537 lineto
+closepath
+stroke
+gsave 10 dict begin
+357 552 moveto (rotation.h) 54 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	clipper_types.h -> rotation.h
+newpath 357 592 moveto
+357 583 357 574 357 566 curveto
+stroke
+newpath 360 592 moveto
+357 602 lineto
+355 592 lineto
+closepath
+fill
+
+%	symop.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 645 565 moveto
+583 565 lineto
+583 537 lineto
+645 537 lineto
+closepath
+fill
+newpath 645 565 moveto
+583 565 lineto
+583 537 lineto
+645 537 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+614 552 moveto (symop.h) 47 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	clipper_types.h -> symop.h
+newpath 414 604 moveto
+468 592 544 575 574 566 curveto
+577 565 580 564 583 563 curveto
+stroke
+newpath 417 606 moveto
+407 606 lineto
+416 601 lineto
+closepath
+fill
+
+%	cell.h -> coords.h
+newpath 429 464 moveto
+433 454 439 443 443 434 curveto
+stroke
+newpath 433 462 moveto
+426 470 lineto
+428 460 lineto
+closepath
+fill
+
+%	clipper_message.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 346 763 moveto
+228 763 lineto
+228 735 lineto
+346 735 lineto
+closepath
+fill
+newpath 346 763 moveto
+228 763 lineto
+228 735 lineto
+346 735 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+287 750 moveto (clipper_message.h) 103 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	clipper_memory.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 350 697 moveto
+234 697 lineto
+234 669 lineto
+350 669 lineto
+closepath
+fill
+newpath 350 697 moveto
+234 697 lineto
+234 669 lineto
+350 669 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+292 684 moveto (clipper_memory.h) 102 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	clipper_message.h -> clipper_memory.h
+newpath 289 728 moveto
+289 718 290 707 291 698 curveto
+stroke
+newpath 292 725 moveto
+288 734 lineto
+287 724 lineto
+closepath
+fill
+
+%	clipper_memory.h -> clipper_types.h
+newpath 313 661 moveto
+323 652 334 641 343 632 curveto
+stroke
+newpath 315 663 moveto
+306 668 lineto
+311 659 lineto
+closepath
+fill
+
+%	clipper_util.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 462 697 moveto
+374 697 lineto
+374 669 lineto
+462 669 lineto
+closepath
+fill
+newpath 462 697 moveto
+374 697 lineto
+374 669 lineto
+462 669 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+418 684 moveto (clipper_util.h) 75 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	clipper_util.h -> clipper_types.h
+newpath 398 661 moveto
+389 651 378 641 370 632 curveto
+stroke
+newpath 399 659 moveto
+404 668 lineto
+396 662 lineto
+closepath
+fill
+
+%	clipper_precision.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 612 763 moveto
+490 763 lineto
+490 735 lineto
+612 735 lineto
+closepath
+fill
+newpath 612 763 moveto
+490 763 lineto
+490 735 lineto
+612 735 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+551 750 moveto (clipper_precision.h) 107 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	clipper_precision.h -> clipper_util.h
+newpath 516 731 moveto
+494 721 467 708 447 698 curveto
+stroke
+newpath 514 727 moveto
+521 734 lineto
+511 731 lineto
+closepath
+fill
+
+%	clipper_sysdep.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 472 763 moveto
+364 763 lineto
+364 735 lineto
+472 735 lineto
+closepath
+fill
+newpath 472 763 moveto
+364 763 lineto
+364 735 lineto
+472 735 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+418 750 moveto (clipper_sysdep.h) 94 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	clipper_sysdep.h -> clipper_util.h
+newpath 418 724 moveto
+418 715 418 706 418 698 curveto
+stroke
+newpath 421 724 moveto
+418 734 lineto
+416 724 lineto
+closepath
+fill
+
+%	container.h -> container_types.h
+newpath 298 463 moveto
+302 428 310 361 314 338 curveto
+316 333 331 266 338 236 curveto
+stroke
+newpath 301 460 moveto
+297 470 lineto
+296 460 lineto
+closepath
+fill
+
+%	container_hkl.h
+gsave 10 dict begin
+newpath 392 169 moveto
+292 169 lineto
+292 141 lineto
+392 141 lineto
+closepath
+stroke
+gsave 10 dict begin
+342 156 moveto (container_hkl.h) 87 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	container_types.h -> container_hkl.h
+newpath 342 196 moveto
+342 187 342 178 342 170 curveto
+stroke
+newpath 345 196 moveto
+342 206 lineto
+340 196 lineto
+closepath
+fill
+
+%	container_map.h
+gsave 10 dict begin
+newpath 588 169 moveto
+480 169 lineto
+480 141 lineto
+588 141 lineto
+closepath
+stroke
+gsave 10 dict begin
+534 156 moveto (container_map.h) 93 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	container_types.h -> container_map.h
+newpath 391 204 moveto
+422 193 462 180 491 170 curveto
+stroke
+newpath 395 205 moveto
+385 206 lineto
+394 200 lineto
+closepath
+fill
+
+%	hkl_data.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 259 235 moveto
+187 235 lineto
+187 207 lineto
+259 207 lineto
+closepath
+fill
+newpath 259 235 moveto
+187 235 lineto
+187 207 lineto
+259 207 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+223 222 moveto (hkl_data.h) 58 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	hkl_data.h -> container_hkl.h
+newpath 254 203 moveto
+274 193 298 180 315 170 curveto
+stroke
+newpath 259 203 moveto
+249 206 lineto
+256 199 lineto
+closepath
+fill
+
+%	hkl_datatypes.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 274 169 moveto
+172 169 lineto
+172 141 lineto
+274 141 lineto
+closepath
+fill
+newpath 274 169 moveto
+172 169 lineto
+172 141 lineto
+274 141 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+223 156 moveto (hkl_datatypes.h) 88 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	hkl_data.h -> hkl_datatypes.h
+newpath 223 196 moveto
+223 187 223 178 223 170 curveto
+stroke
+newpath 226 196 moveto
+223 206 lineto
+221 196 lineto
+closepath
+fill
+
+%	resol_fn.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 119 169 moveto
+49 169 lineto
+49 141 lineto
+119 141 lineto
+closepath
+fill
+newpath 119 169 moveto
+49 169 lineto
+49 141 lineto
+119 141 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+84 156 moveto (resol_fn.h) 56 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	hkl_data.h -> resol_fn.h
+newpath 184 202 moveto
+162 192 135 180 115 170 curveto
+stroke
+newpath 184 199 moveto
+192 206 lineto
+182 204 lineto
+closepath
+fill
+
+%	nxmap_operator.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 663 235 moveto
+547 235 lineto
+547 207 lineto
+663 207 lineto
+closepath
+fill
+newpath 663 235 moveto
+547 235 lineto
+547 207 lineto
+663 207 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+605 222 moveto (nxmap_operator.h) 102 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	nxmap_operator.h -> container_map.h
+newpath 584 202 moveto
+573 192 560 180 550 170 curveto
+stroke
+newpath 583 198 moveto
+589 206 lineto
+580 202 lineto
+closepath
+fill
+
+%	spacegroup.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 552 499 moveto
+464 499 lineto
+464 471 lineto
+552 471 lineto
+closepath
+fill
+newpath 552 499 moveto
+464 499 lineto
+464 471 lineto
+552 471 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+508 486 moveto (spacegroup.h) 74 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	spacegroup.h -> coords.h
+newpath 491 465 moveto
+481 455 471 443 463 434 curveto
+stroke
+newpath 491 461 moveto
+495 470 lineto
+487 464 lineto
+closepath
+fill
+
+%	map_interp.h
+gsave 10 dict begin
+newpath 458 301 moveto
+370 301 lineto
+370 273 lineto
+458 273 lineto
+closepath
+stroke
+gsave 10 dict begin
+414 288 moveto (map_interp.h) 74 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	derivs.h -> map_interp.h
+newpath 460 331 moveto
+450 322 438 311 429 302 curveto
+stroke
+newpath 462 329 moveto
+467 338 lineto
+458 333 lineto
+closepath
+fill
+
+%	map_utils.h
+gsave 10 dict begin
+newpath 556 301 moveto
+476 301 lineto
+476 273 lineto
+556 273 lineto
+closepath
+stroke
+gsave 10 dict begin
+516 288 moveto (map_utils.h) 65 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	derivs.h -> map_utils.h
+newpath 495 329 moveto
+499 320 504 310 509 302 curveto
+stroke
+newpath 497 330 moveto
+490 338 lineto
+493 328 lineto
+closepath
+fill
+
+%	nxmap.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 636 301 moveto
+574 301 lineto
+574 273 lineto
+636 273 lineto
+closepath
+fill
+newpath 636 301 moveto
+574 301 lineto
+574 273 lineto
+636 273 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+605 288 moveto (nxmap.h) 48 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	derivs.h -> nxmap.h
+newpath 517 334 moveto
+537 323 561 312 578 302 curveto
+stroke
+newpath 519 336 moveto
+509 338 lineto
+517 331 lineto
+closepath
+fill
+
+%	xmap.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 710 301 moveto
+654 301 lineto
+654 273 lineto
+710 273 lineto
+closepath
+fill
+newpath 710 301 moveto
+654 301 lineto
+654 273 lineto
+710 273 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+682 288 moveto (xmap.h) 41 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	derivs.h -> xmap.h
+newpath 521 338 moveto
+574 319 590 320 645 302 curveto
+648 301 651 300 654 299 curveto
+stroke
+newpath 521 341 moveto
+511 341 lineto
+520 336 lineto
+closepath
+fill
+
+%	fftmap.h -> xmap.h
+newpath 682 328 moveto
+682 319 682 310 682 302 curveto
+stroke
+newpath 685 328 moveto
+682 338 lineto
+680 328 lineto
+closepath
+fill
+
+%	fftmap_sparse.h -> xmap.h
+newpath 611 333 moveto
+627 323 646 311 660 302 curveto
+stroke
+newpath 613 335 moveto
+603 338 lineto
+610 331 lineto
+closepath
+fill
+
+%	hkl_compute.h
+gsave 10 dict begin
+newpath 214 103 moveto
+116 103 lineto
+116 75 lineto
+214 75 lineto
+closepath
+stroke
+gsave 10 dict begin
+165 90 moveto (hkl_compute.h) 83 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	hkl_datatypes.h -> hkl_compute.h
+newpath 203 133 moveto
+195 123 185 113 178 104 curveto
+stroke
+newpath 205 131 moveto
+210 140 lineto
+201 135 lineto
+closepath
+fill
+
+%	hkl_operators.h
+gsave 10 dict begin
+newpath 332 103 moveto
+232 103 lineto
+232 75 lineto
+332 75 lineto
+closepath
+stroke
+gsave 10 dict begin
+282 90 moveto (hkl_operators.h) 87 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	hkl_datatypes.h -> hkl_operators.h
+newpath 240 135 moveto
+249 125 260 113 269 104 curveto
+stroke
+newpath 244 134 moveto
+236 140 lineto
+240 131 lineto
+closepath
+fill
+
+%	resol_targetfn.h
+gsave 10 dict begin
+newpath 255 37 moveto
+153 37 lineto
+153 9 lineto
+255 9 lineto
+closepath
+stroke
+gsave 10 dict begin
+204 24 moveto (resol_targetfn.h) 88 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	hkl_datatypes.h -> resol_targetfn.h
+newpath 278 137 moveto
+305 128 334 116 341 104 curveto
+349 92 349 84 341 74 curveto
+336 66 289 49 252 38 curveto
+stroke
+newpath 281 138 moveto
+271 140 lineto
+279 134 lineto
+closepath
+fill
+
+%	hkl_info.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 259 301 moveto
+187 301 lineto
+187 273 lineto
+259 273 lineto
+closepath
+fill
+newpath 259 301 moveto
+187 301 lineto
+187 273 lineto
+259 273 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+223 288 moveto (hkl_info.h) 57 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	hkl_info.h -> hkl_data.h
+newpath 223 262 moveto
+223 253 223 244 223 236 curveto
+stroke
+newpath 226 262 moveto
+223 272 lineto
+221 262 lineto
+closepath
+fill
+
+%	hkl_lookup.h -> hkl_info.h
+newpath 223 328 moveto
+223 319 223 310 223 302 curveto
+stroke
+newpath 226 328 moveto
+223 338 lineto
+221 328 lineto
+closepath
+fill
+
+%	nxmap.h -> nxmap_operator.h
+newpath 605 262 moveto
+605 253 605 244 605 236 curveto
+stroke
+newpath 608 262 moveto
+605 272 lineto
+603 262 lineto
+closepath
+fill
+
+%	xmap.h -> nxmap_operator.h
+newpath 660 268 moveto
+648 258 633 246 622 236 curveto
+stroke
+newpath 659 264 moveto
+665 272 lineto
+656 268 lineto
+closepath
+fill
+
+%	resol_basisfn.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 98 103 moveto
+0 103 lineto
+0 75 lineto
+98 75 lineto
+closepath
+fill
+newpath 98 103 moveto
+0 103 lineto
+0 75 lineto
+98 75 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+49 90 moveto (resol_basisfn.h) 84 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	resol_fn.h -> resol_basisfn.h
+newpath 71 131 moveto
+67 122 62 112 57 104 curveto
+stroke
+newpath 73 130 moveto
+76 140 lineto
+69 132 lineto
+closepath
+fill
+
+%	resol_basisfn.h -> resol_targetfn.h
+newpath 92 70 moveto
+116 60 147 48 170 38 curveto
+stroke
+newpath 93 72 moveto
+83 74 lineto
+91 68 lineto
+closepath
+fill
+
+%	symop.h -> spacegroup.h
+newpath 582 531 moveto
+566 521 546 509 531 500 curveto
+stroke
+newpath 583 529 moveto
+590 536 lineto
+580 533 lineto
+closepath
+fill
+
+%	spacegroup_data.h
+gsave 10 dict begin
+filled
+0.000 0.000 0.827 nodecolor
+newpath 565 565 moveto
+447 565 lineto
+447 537 lineto
+565 537 lineto
+closepath
+fill
+newpath 565 565 moveto
+447 565 lineto
+447 537 lineto
+565 537 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+506 552 moveto (spacegroup_data.h) 104 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	spacegroup_data.h -> spacegroup.h
+newpath 507 526 moveto
+507 517 507 508 508 500 curveto
+stroke
+newpath 509 526 moveto
+506 536 lineto
+505 526 lineto
+closepath
+fill
+endpage
+grestore
+%%PageTrailer
+%%EndPage: 1
+%%Trailer
+%%Pages: 1
+end
+restore
+%%EOF

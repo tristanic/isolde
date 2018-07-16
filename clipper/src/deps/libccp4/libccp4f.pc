@@ -1,0 +1,11 @@
+prefix=/Users/tic20/clipper-python/builds/build_py36_macos/src/clipper_python
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libccp4f
+Description: CCP4 core FORTRAN libraries
+Version: 7.0.0
+Requires.private: libccp4c mmdb
+Libs: -L${libdir} -lccp4f
+Cflags: -I${includedir}

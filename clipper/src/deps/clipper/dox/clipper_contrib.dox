@@ -1,0 +1,58 @@
+/*! \mainpage Clipper contributed packages.
+
+The Clipper 'contrib' package is a collection of method objects which
+are not part of the core data storage and manipulation process, but
+which implement common crystallographic tasks.
+
+Many of these tasks can be performed in a variety of ways. For
+example, a structure factor calculation can be performed by direct
+summation, or by density calculation and FFT. An application may wish
+to switch between these. Therefore, an abstract base class is defined
+for each type of task, which defines the interface. Actual
+implementations are derived from the base class, differing only in
+their constructors. These may then be used interchangeably.
+
+To find the documentation for a particular implementation, select the
+base class in which you are interested, and then pick the appropriate
+implementation from its derived classes.
+
+\par Structure factor calculation from coordinates:
+ - clipper::SFcalc_base< T >
+  - clipper::SFcalc_iso_sum< T >
+  - clipper::SFcalc_aniso_sum< T >
+  - clipper::SFcalc_iso_fft< T >
+  - clipper::SFcalc_aniso_fft< T >
+
+\par Structure factor calculation against Fo from coordinates:
+ - clipper::SFcalc_obs_base< T >
+  - clipper::SFcalc_obs_bulk< T >
+
+\par Structure factor weighting (sigmaa):
+ - clipper::SFweight_base< T >
+  - clipper::SFweight_spline< T >
+
+\par Electron density calculation, mask calculation from coordinates:
+ - clipper::EDcalc_base< T >
+  - clipper::EDcalc_iso< T >
+  - clipper::EDcalc_aniso< T >
+
+\par Map filtering (e.g. for solvent mask estimation from density):
+ - clipper::MapFilter_base< T >
+  - clipper::MapFilter_slow< T >
+  - clipper::MapFilter_fft< T >
+ - See also the filter functions, clipper::MapFilterFn_step, clipper::MapFilterFn_linear, clipper::MapFilterFn_quadratic
+
+\par Fragment searching:
+ - clipper::FFFear_base< T >
+  - clipper::FFFear_slow< T >
+  - clipper::FFFear_fft< T >
+
+\par Origin matching:
+ - clipper::OriginMatch_base< T >
+  - clipper::OriginMatch< T >
+
+\par Skeletonisation:
+ - clipper::Skeleton_base< T1, T2 >
+  - clipper::Skeleton_basic
+
+*/

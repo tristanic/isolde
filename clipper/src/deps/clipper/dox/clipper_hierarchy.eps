@@ -1,0 +1,462 @@
+%!PS-Adobe-2.0
+%%Creator: dot version 1.7.11 (Fri Nov 16 14:55:37 GMT 2001)
+%%For: (cowtan) Kevin Cowtan
+%%Title: G
+%%Pages: (atend)
+%%BoundingBox: 35 35 481 191
+%%EndComments
+%%BeginProlog
+save
+/DotDict 200 dict def
+DotDict begin
+
+%%BeginResource: procset
+/coord-font-family /Times-Roman def
+/default-font-family /Times-Roman def
+/coordfont coord-font-family findfont 8 scalefont def
+
+/InvScaleFactor 1.0 def
+/set_scale {
+	dup 1 exch div /InvScaleFactor exch def
+	dup scale
+} bind def
+
+% styles
+/solid { } bind def
+/dashed { [9 InvScaleFactor mul dup ] 0 setdash } bind def
+/dotted { [1 InvScaleFactor mul 6 InvScaleFactor mul] 0 setdash } bind def
+/invis {/fill {newpath} def /stroke {newpath} def /show {pop newpath} def} bind def
+/bold { 2 setlinewidth } bind def
+/filled { } bind def
+/unfilled { } bind def
+/rounded { } bind def
+/diagonals { } bind def
+
+% hooks for setting color 
+/nodecolor { sethsbcolor } bind def
+/edgecolor { sethsbcolor } bind def
+/graphcolor { sethsbcolor } bind def
+/nopcolor {pop pop pop} bind def
+
+/beginpage {	% i j npages
+	/npages exch def
+	/j exch def
+	/i exch def
+	/str 10 string def
+	npages 1 gt {
+		gsave
+			coordfont setfont
+			0 0 moveto
+			(\() show i str cvs show (,) show j str cvs show (\)) show
+		grestore
+	} if
+} bind def
+
+/set_font {
+	findfont exch
+	scalefont setfont
+} def
+
+% draw aligned label in bounding box aligned to current point
+% alignfactor tells what fraction to place on the left.
+% -.5 is centered.
+/alignedtext {			% text labelwidth fontsz alignfactor
+	/alignfactor exch def
+	/fontsz exch def
+	/width exch def
+	/text exch def
+	gsave
+		% even if node or edge is dashed, don't paint text with dashes
+		[] 0 setdash
+		currentpoint newpath moveto
+		text stringwidth pop
+		alignfactor mul fontsz -.3 mul rmoveto
+		text show
+	grestore
+} def
+
+/boxprim {				% xcorner ycorner xsize ysize
+		4 2 roll
+		moveto
+		2 copy
+		exch 0 rlineto
+		0 exch rlineto
+		pop neg 0 rlineto
+		closepath
+} bind def
+
+/ellipse_path {
+	/ry exch def
+	/rx exch def
+	/y exch def
+	/x exch def
+	matrix currentmatrix
+	newpath
+	x y translate
+	rx ry scale
+	0 0 1 0 360 arc
+	setmatrix
+} bind def
+
+/endpage { showpage } bind def
+
+/layercolorseq
+	[	% layer color sequence - darkest to lightest
+		[0 0 0]
+		[.2 .8 .8]
+		[.4 .8 .8]
+		[.6 .8 .8]
+		[.8 .8 .8]
+	]
+def
+
+/setlayer {/maxlayer exch def /curlayer exch def
+	layercolorseq curlayer get
+	aload pop sethsbcolor
+	/nodecolor {nopcolor} def
+	/edgecolor {nopcolor} def
+	/graphcolor {nopcolor} def
+} bind def
+
+/onlayer { curlayer ne {invis} if } def
+
+/onlayers {
+	/myupper exch def
+	/mylower exch def
+	curlayer mylower lt
+	curlayer myupper gt
+	or
+	{invis} if
+} def
+
+/curlayer 0 def
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+14 default-font-family set_font
+1 setmiterlimit
+% /arrowlength 10 def
+% /arrowwidth 5 def
+
+% make sure pdfmark is harmless for PS-interpreters other than Distiller
+/pdfmark where {pop} {userdict /pdfmark /cleartomark load put} ifelse
+% make '<<' and '>>' safe on PS Level 1 devices
+/languagelevel where {pop languagelevel}{1} ifelse
+2 lt {
+    userdict (<<) cvn ([) cvn load put
+    userdict (>>) cvn ([) cvn load put
+} if
+
+%%EndSetup
+%%Page: 1 1
+%%PageBoundingBox: 36 36 481 191
+%%PageOrientation: Portrait
+gsave
+35 35 446 156 boxprim clip newpath
+36 36 translate
+0 0 1 beginpage
+0 0 translate 0 rotate
+[ /CropBox [36 36 481 191] /PAGES pdfmark
+0.000 0.000 0.000 graphcolor
+10.00 /Times-Roman set_font
+
+%	Container
+gsave 10 dict begin
+newpath 210 88 moveto
+152 88 lineto
+152 66 lineto
+210 66 lineto
+closepath
+stroke
+gsave 10 dict begin
+181 78 moveto (Container) 39 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	CCell
+gsave 10 dict begin
+newpath 93 30 moveto
+35 30 lineto
+35 8 lineto
+93 8 lineto
+closepath
+stroke
+gsave 10 dict begin
+64 20 moveto (CCell) 23 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Container -> CCell
+newpath 159 66 moveto
+141 57 115 44 95 34 curveto
+stroke
+newpath 95 37 moveto
+87 30 lineto
+97 32 lineto
+closepath
+fill
+
+%	CSpacegroup
+gsave 10 dict begin
+newpath 192 30 moveto
+128 30 lineto
+128 8 lineto
+192 8 lineto
+closepath
+stroke
+gsave 10 dict begin
+160 20 moveto (CSpacegroup) 53 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Container -> CSpacegroup
+newpath 177 66 moveto
+174 59 171 48 167 39 curveto
+stroke
+newpath 165 40 moveto
+164 30 lineto
+170 39 lineto
+closepath
+fill
+
+%	CHKL_info
+gsave 10 dict begin
+newpath 277 30 moveto
+219 30 lineto
+219 8 lineto
+277 8 lineto
+closepath
+stroke
+gsave 10 dict begin
+248 20 moveto (CHKL_info) 48 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Container -> CHKL_info
+newpath 194 66 moveto
+204 58 217 46 228 36 curveto
+stroke
+newpath 226 35 moveto
+235 30 lineto
+229 38 lineto
+closepath
+fill
+
+%	CHKL_data
+gsave 10 dict begin
+newpath 357 30 moveto
+299 30 lineto
+299 8 lineto
+357 8 lineto
+closepath
+stroke
+gsave 10 dict begin
+328 20 moveto (CHKL_data) 48 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Container -> CHKL_data
+newpath 209 66 moveto
+232 57 266 43 292 33 curveto
+stroke
+newpath 290 31 moveto
+300 30 lineto
+292 36 lineto
+closepath
+fill
+
+%	CXmap
+gsave 10 dict begin
+newpath 436 30 moveto
+378 30 lineto
+378 8 lineto
+436 8 lineto
+closepath
+stroke
+gsave 10 dict begin
+407 20 moveto (CXmap) 31 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Container -> CXmap
+newpath 210 68 moveto
+214 67 217 66 219 66 curveto
+283 48 300 46 366 30 curveto
+367 30 369 29 371 29 curveto
+stroke
+newpath 368 27 moveto
+378 27 lineto
+369 32 lineto
+closepath
+fill
+
+%	Cell
+gsave 10 dict begin
+newpath 58 88 moveto
+0 88 lineto
+0 66 lineto
+58 66 lineto
+closepath
+stroke
+gsave 10 dict begin
+29 78 moveto (Cell) 16 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Cell -> CCell
+newpath 36 66 moveto
+41 58 47 47 52 38 curveto
+stroke
+newpath 50 37 moveto
+57 30 lineto
+54 40 lineto
+closepath
+fill
+
+%	Spacegroup
+gsave 10 dict begin
+newpath 134 88 moveto
+76 88 lineto
+76 66 lineto
+134 66 lineto
+closepath
+stroke
+gsave 10 dict begin
+105 78 moveto (Spacegroup) 47 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Spacegroup -> CSpacegroup
+newpath 116 66 moveto
+124 58 135 46 144 37 curveto
+stroke
+newpath 142 36 moveto
+150 30 lineto
+145 39 lineto
+closepath
+fill
+
+%	HKL_info
+gsave 10 dict begin
+newpath 286 88 moveto
+228 88 lineto
+228 66 lineto
+286 66 lineto
+closepath
+stroke
+gsave 10 dict begin
+257 78 moveto (HKL_info) 41 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	HKL_info -> CHKL_info
+newpath 255 66 moveto
+254 59 252 48 251 39 curveto
+stroke
+newpath 249 40 moveto
+250 30 lineto
+254 40 lineto
+closepath
+fill
+
+%	HKL_data_base
+gsave 10 dict begin
+newpath 368 146 moveto
+294 146 lineto
+294 124 lineto
+368 124 lineto
+closepath
+stroke
+gsave 10 dict begin
+331 136 moveto (HKL_data_base) 64 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	HKL_data
+gsave 10 dict begin
+newpath 362 88 moveto
+304 88 lineto
+304 66 lineto
+362 66 lineto
+closepath
+stroke
+gsave 10 dict begin
+333 78 moveto (HKL_data) 42 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	HKL_data_base -> HKL_data
+newpath 331 124 moveto
+332 117 332 106 332 97 curveto
+stroke
+newpath 329 98 moveto
+333 88 lineto
+334 98 lineto
+closepath
+fill
+
+%	HKL_data -> CHKL_data
+newpath 332 66 moveto
+331 59 331 48 330 39 curveto
+stroke
+newpath 328 40 moveto
+329 30 lineto
+333 40 lineto
+closepath
+fill
+
+%	Xmap_base
+gsave 10 dict begin
+newpath 444 146 moveto
+386 146 lineto
+386 124 lineto
+444 124 lineto
+closepath
+stroke
+gsave 10 dict begin
+415 136 moveto (Xmap_base) 47 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Xmap
+gsave 10 dict begin
+newpath 440 88 moveto
+382 88 lineto
+382 66 lineto
+440 66 lineto
+closepath
+stroke
+gsave 10 dict begin
+411 78 moveto (Xmap) 24 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Xmap_base -> Xmap
+newpath 414 124 moveto
+413 117 413 106 412 97 curveto
+stroke
+newpath 410 98 moveto
+412 88 lineto
+415 98 lineto
+closepath
+fill
+
+%	Xmap -> CXmap
+newpath 410 66 moveto
+409 59 409 48 408 39 curveto
+stroke
+newpath 406 40 moveto
+408 30 lineto
+411 40 lineto
+closepath
+fill
+endpage
+grestore
+%%PageTrailer
+%%EndPage: 1
+%%Trailer
+%%Pages: 1
+end
+restore
+%%EOF

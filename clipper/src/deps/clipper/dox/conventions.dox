@@ -1,0 +1,137 @@
+/*! \page p_conventions Conventions
+
+\section s_conv_intro Introduction
+
+This page discusses the conventions of coding style and memory
+management adopted in the Clipper libraries.
+
+\section s_notation Notation
+
+ - Miller indices have componented h, k, l.
+ - Fractional coordinates have components u, v, w.
+ - Orthogonal coordinates have components x, y, z.
+ - The squared distance from the origin in reciprocal space, in
+ A<sup>-2</sup>, is usually referred to as 'invresolsq'. This is equal to \f$ 4\sin^2 \theta / \lambda^2 \f$
+ - Temperature factors and anisotrpic displacement parameters are always given as U-values.
+ - Angles are always given in radians.
+
+\section s_codingstype Coding Style
+
+\subsection ss_dialect Dialect
+
+Clipper is written in C++, with extensive use of modern constructs
+such templates, and in particular the Standard Template Library
+(STL). The coding style of the library, and its API, both reflect
+this.
+
+In particular, a developer writing code using Clipper objects should
+be able to do so with minimal or no use of pointers, or of the
+built-in \c new and \c delete operators. References are
+used in preference to pointers where possible. Heap objects, with the
+corresponding dangers of memory leakage, are avoided. (However, for
+the cases where the developer needs to use heap objects, an optional
+mechanism is provided for automatic garbage collection).
+
+<b>Clipper objects should generally be passed by reference rather than
+by value</b>.
+
+\subsection ss_floatrep Floating-point representation.
+
+The package may be compiled to use either \c float or
+\c double for the representation of floating-point numbers. This
+is acheived by defining floating-point values with a user-defined type
+\c ftype. This is set by a \c typedef in lib/clipper_util.h.
+
+Data may have a different type. Since data objects may be large, these
+may be individually typed to save memory or provide additional
+precision as required. Data types are based on templates in
+lib/clipper_datatypes.h.
+
+The type for Fast-Fourier transforms is dependent on the FFTw library
+to which Clipper is linked. FFTw may be compiled for \c float or
+\c double.
+
+Since crystallographic FFTs generally have quite short dimensions (<
+1000), \c float is recommended.
+
+\subsection ss_namespaces Namespaces
+
+All Clipper objects belong to the \c Clipper namespace, and can
+be accessed by using the \c Clipper:: prefix or
+\code
+using namespace Clipper;
+\endcode
+
+Templates for reciprocal space datatypes are provided in the
+\c Clipper::datatypes namespace. Instantiations of these types
+for \c float and \c double data are provided in
+\c Clipper::data32 and \c Clipper::data64.
+
+Classes are all named with an initial capital letter. Method names are
+all lowercase, with words separated by underscore ('_'). A handful of
+top level functions are implemented; these have an initial capital
+letter to distinguish them from standard library functions.
+
+
+\section s_memory Memory management
+
+All Clipper objects are designed to be created on the stack. Such
+objects are destroyed automatically when they go out of scope. Large
+or variable-sized data items within an object are generally held in
+STL vectors, and so are stored on the heap, and automatically
+destroyed with the associated object.
+
+Sometimes it may be useful to create Clipper container objects on the
+heap. In this case, the developer can arrange for the object to be
+destroyed when it is no-longer needed. However an alternative,
+automatic, method for memory management is provided, in the form of a
+\c destroyed_with_parent flag. If in object is created on the
+heap (i.e. with \c new), this flag may be set as follows:
+
+
+\code
+  Container* new_container = new Container( parent, "A container" );
+  new_container->set_destroyed_with_parent();
+\endcode
+
+Then, as soon as \c parent is destroyed, either by going out of
+scope, or by a \c delete operator, the new container will also
+be destroyed.
+
+\subsection ss_passing Passing objects
+
+Clipper objects should generally be passed by reference rather than by
+value. In particular passing a container type by value will lead to a
+container which is orphaned from the tree.
+
+Passing or assigning an object always results in a 'deep copy',
+i.e. all of the data associated with the object is copied.
+
+
+\section s_standards Coding standards
+
+Code in the Clipper library should obey the following standards. Some
+of these are stylistic, but most are simply good practice. Code which
+does not obey these standards will be rejected from my tree.
+-# No C-style casts.
+-# No reinterpret_cast<> except for conversion of external types.
+-# No static_cast<> without a very strong performance argument.
+-# No const_cast<>.
+-# No preprocessor macros, except for a stand-alone portability library.
+-# No global functions. Useful functions are contained in the Util class.
+-# Absolutely strict use of const, both for parameters and methods.
+-# Parameters are passed by reference.
+-# No pointers in public APIs.
+-# No pointers internally, expect for
+ - testing for NULL after a dynamic_cast
+ - member variables which point to other objects
+-# No 'new' or 'malloc'. Use STL containers. (Exception: for
+explicitly memory managed objects. There are still a couple of 'new's
+in the MTZ i/o layer).
+-# 'explicit' is used where necessary to prevent accidental type conversion.
+-# Access specifiers are ordered public, protected, private.
+
+There are a few places where I haven't yet finished implementing all
+of these standards, but I'm working on it.
+
+*/

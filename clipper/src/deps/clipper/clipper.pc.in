@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: clipper
+Description: crystallographic automation and complex data manipulation libraries
+Version: @VERSION@
+Requires: @CLIPPER_REQUIRES@
+Libs: -L${libdir} @CLIPPER_LIBS@
+Libs.private: @FFTW2_LIBS@ -lm @PTHREAD_LIBS@
+Cflags: -I${includedir} @PTHREAD_CFLAGS@

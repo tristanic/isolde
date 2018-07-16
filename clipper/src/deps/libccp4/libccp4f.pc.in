@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libccp4f
+Description: CCP4 core FORTRAN libraries
+Version: @VERSION@
+Requires.private: libccp4c mmdb
+Libs: -L${libdir} -lccp4f
+Cflags: -I${includedir}

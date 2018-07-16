@@ -1,0 +1,33 @@
+C
+C     dna_header.fh: include file for dna_output.f
+C     Copyright (C) 2004  CCLRC, Graeme Winter
+C
+C     This library is free software: you can redistribute it and/or
+C     modify it under the terms of the GNU Lesser General Public License
+C     version 3, modified in accordance with the provisions of the 
+C     license to address the requirements of UK law.
+C 
+C     You should have received a copy of the modified GNU Lesser General 
+C     Public License along with this library.  If not, copies may be 
+C     downloaded from http://www.ccp4.ac.uk/ccp4license.php
+C 
+C     This program is distributed in the hope that it will be useful,
+C     but WITHOUT ANY WARRANTY; without even the implied warranty of
+C     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+C     GNU Lesser General Public License for more details.
+C
+c     common block for dna use
+c     do not compile directly
+
+      integer dnafd
+      logical dnaout
+
+c     some bits to keep track of the "state" of the output XML file
+
+      logical dnaintable, dnainlist
+      character dna_image*80
+
+      common /dnabits/ dnafd, dnaout, dnaintable, dnainlist
+      common /dnabobs/ dna_image
+
+c     end common block

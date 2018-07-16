@@ -1,0 +1,12 @@
+prefix=/Users/tic20/clipper-python/builds/build_py36_macos/src/clipper_python
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: clipper
+Description: crystallographic automation and complex data manipulation libraries
+Version: 2.1
+Requires: libccp4c mmdb2
+Libs: -L${libdir} -lclipper-ccp4 -lclipper-cif -lclipper-minimol -lclipper-mmdb -lclipper-cns -lclipper-phs -lclipper-contrib -lclipper-core
+Libs.private: -lfftw2xc -lm 
+Cflags: -I${includedir} -D_THREAD_SAFE -pthread

@@ -1,0 +1,39 @@
+
+* symop.lib: symmetry operators -- see symlib code.  Contains symmetry
+  operators for the 230 spacegroups listed in (and following the conventions
+  of) the International Tables Vol A and non-standard settings used by various
+  CCP4 programs.  Each space group has a header line comprising
+  space-separated values of:
+   * SG number
+   * number of lines of symmetry equivalents (`positions' in Int Tab) (N)
+   * number of lines of primitive equivalents (P)
+   * SG `short' name; subscripts are typed as-is and a prefix `-' represents
+     an overbar e.g. P21/m, P-1
+   * point group name; the Int. Tab. name is prefixed by `PG'; contrary to the
+     SG name, an overbar  is represented by a trailing `bar' e.g. PG4bar3m
+   * crystal system
+   * possible comments about non-standard settings
+  Following are N lines of symmetry equivalents, of which the first P are the
+  primitive ones.
+
+  * Layout:
+    * The symmetry operator lines are limited to 80 characters
+    * The elements of operator triplets are separated by commas, and triplets
+      are separated by `*' or newline; the translations may be before or
+      after the coordinate e.g. `1/2+X' or `X+1/2'
+    * The header lines should start in the first column and the other lines be
+      indented (for ease of locating the headers)
+
+* font84.ascii: Used directly by plot84lib.f. Previously: data for creating
+  the binary plot84 font file in $CCP4/lib with fontpack.
+
+* atomsf.lib, atomsf_neutron.lib: formfactors for every known atom (for SFALL,
+  MLPHARE, VECREF).  The format of the atomsf.lib file is as follows. 
+  1) atom type
+  2) atomic number, number of electrons, `c' constant for the scattering
+     factor
+  3) a(1) ... a(4)
+  4) b(1) ... b(4)
+  5) f'(Cu) f"(Cu)  f'(Mo) f"(Mo)
+  See the sfall documentation for the equations containing the as, bs and c.
+

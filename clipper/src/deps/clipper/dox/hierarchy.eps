@@ -1,0 +1,1215 @@
+%!PS-Adobe-2.0
+%%Creator: dot version 1.7.11 (Fri Nov 16 14:55:37 GMT 2001)
+%%For: (cowtan) Kevin Cowtan
+%%Title: inheritance
+%%Pages: (atend)
+%%BoundingBox: 35 35 683 377
+%%EndComments
+%%BeginProlog
+save
+/DotDict 200 dict def
+DotDict begin
+
+%%BeginResource: procset
+/coord-font-family /Times-Roman def
+/default-font-family /Times-Roman def
+/coordfont coord-font-family findfont 8 scalefont def
+
+/InvScaleFactor 1.0 def
+/set_scale {
+	dup 1 exch div /InvScaleFactor exch def
+	dup scale
+} bind def
+
+% styles
+/solid { } bind def
+/dashed { [9 InvScaleFactor mul dup ] 0 setdash } bind def
+/dotted { [1 InvScaleFactor mul 6 InvScaleFactor mul] 0 setdash } bind def
+/invis {/fill {newpath} def /stroke {newpath} def /show {pop newpath} def} bind def
+/bold { 2 setlinewidth } bind def
+/filled { } bind def
+/unfilled { } bind def
+/rounded { } bind def
+/diagonals { } bind def
+
+% hooks for setting color 
+/nodecolor { sethsbcolor } bind def
+/edgecolor { sethsbcolor } bind def
+/graphcolor { sethsbcolor } bind def
+/nopcolor {pop pop pop} bind def
+
+/beginpage {	% i j npages
+	/npages exch def
+	/j exch def
+	/i exch def
+	/str 10 string def
+	npages 1 gt {
+		gsave
+			coordfont setfont
+			0 0 moveto
+			(\() show i str cvs show (,) show j str cvs show (\)) show
+		grestore
+	} if
+} bind def
+
+/set_font {
+	findfont exch
+	scalefont setfont
+} def
+
+% draw aligned label in bounding box aligned to current point
+% alignfactor tells what fraction to place on the left.
+% -.5 is centered.
+/alignedtext {			% text labelwidth fontsz alignfactor
+	/alignfactor exch def
+	/fontsz exch def
+	/width exch def
+	/text exch def
+	gsave
+		% even if node or edge is dashed, don't paint text with dashes
+		[] 0 setdash
+		currentpoint newpath moveto
+		text stringwidth pop
+		alignfactor mul fontsz -.3 mul rmoveto
+		text show
+	grestore
+} def
+
+/boxprim {				% xcorner ycorner xsize ysize
+		4 2 roll
+		moveto
+		2 copy
+		exch 0 rlineto
+		0 exch rlineto
+		pop neg 0 rlineto
+		closepath
+} bind def
+
+/ellipse_path {
+	/ry exch def
+	/rx exch def
+	/y exch def
+	/x exch def
+	matrix currentmatrix
+	newpath
+	x y translate
+	rx ry scale
+	0 0 1 0 360 arc
+	setmatrix
+} bind def
+
+/endpage { showpage } bind def
+
+/layercolorseq
+	[	% layer color sequence - darkest to lightest
+		[0 0 0]
+		[.2 .8 .8]
+		[.4 .8 .8]
+		[.6 .8 .8]
+		[.8 .8 .8]
+	]
+def
+
+/setlayer {/maxlayer exch def /curlayer exch def
+	layercolorseq curlayer get
+	aload pop sethsbcolor
+	/nodecolor {nopcolor} def
+	/edgecolor {nopcolor} def
+	/graphcolor {nopcolor} def
+} bind def
+
+/onlayer { curlayer ne {invis} if } def
+
+/onlayers {
+	/myupper exch def
+	/mylower exch def
+	curlayer mylower lt
+	curlayer myupper gt
+	or
+	{invis} if
+} def
+
+/curlayer 0 def
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+14 default-font-family set_font
+1 setmiterlimit
+% /arrowlength 10 def
+% /arrowwidth 5 def
+
+% make sure pdfmark is harmless for PS-interpreters other than Distiller
+/pdfmark where {pop} {userdict /pdfmark /cleartomark load put} ifelse
+% make '<<' and '>>' safe on PS Level 1 devices
+/languagelevel where {pop languagelevel}{1} ifelse
+2 lt {
+    userdict (<<) cvn ([) cvn load put
+    userdict (>>) cvn ([) cvn load put
+} if
+
+%%EndSetup
+%%Page: 1 1
+%%PageBoundingBox: 36 36 683 377
+%%PageOrientation: Portrait
+gsave
+35 35 648 342 boxprim clip newpath
+36 36 translate
+0 0 1 beginpage
+0 0 translate 0 rotate
+[ /CropBox [36 36 683 377] /PAGES pdfmark
+0.000 0.000 0.000 graphcolor
+10.00 /Helvetica set_font
+
+%	Node101
+[ /Rect [ 276 294 336 308 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Cell.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 336 308 moveto
+276 308 lineto
+276 294 lineto
+336 294 lineto
+closepath
+stroke
+gsave 10 dict begin
+306 302 moveto (clipper::Cell) 50 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node98
+[ /Rect [ 416 262 482 276 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1CCell.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 482 276 moveto
+416 276 lineto
+416 262 lineto
+482 262 lineto
+closepath
+stroke
+gsave 10 dict begin
+449 270 moveto (clipper::CCell) 56 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node101 -> Node98
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 345 292 moveto
+368 287 396 280 418 276 curveto
+stroke
+newpath 346 294 moveto
+336 294 lineto
+345 289 lineto
+closepath
+fill
+end grestore
+
+%	Node102
+[ /Rect [ 404 294 494 308 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1MTZcrystal.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 494 308 moveto
+404 308 lineto
+404 294 lineto
+494 294 lineto
+closepath
+stroke
+gsave 10 dict begin
+449 302 moveto (clipper::MTZcrystal) 81 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node101 -> Node102
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 345 301 moveto
+363 301 384 301 403 301 curveto
+stroke
+newpath 346 304 moveto
+336 301 lineto
+346 299 lineto
+closepath
+fill
+end grestore
+
+%	Node99
+[ /Rect [ 540 212 638 226 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1CMTZcrystal.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 638 226 moveto
+540 226 lineto
+540 212 lineto
+638 212 lineto
+closepath
+stroke
+gsave 10 dict begin
+589 220 moveto (clipper::CMTZcrystal) 87 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node102 -> Node99
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 484 292 moveto
+492 289 500 287 504 285 curveto
+536 269 568 240 582 226 curveto
+stroke
+newpath 486 294 moveto
+476 294 lineto
+485 289 lineto
+closepath
+fill
+end grestore
+
+%	Node97
+[ /Rect [ 265 131 347 145 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Container.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 347 145 moveto
+265 145 lineto
+265 131 lineto
+347 131 lineto
+closepath
+stroke
+gsave 10 dict begin
+306 139 moveto (clipper::Container) 72 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node97 -> Node98
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 339 148 moveto
+348 151 355 154 358 157 curveto
+391 189 361 222 394 253 curveto
+400 258 408 262 415 264 curveto
+stroke
+newpath 340 151 moveto
+332 145 lineto
+342 147 lineto
+closepath
+fill
+end grestore
+
+%	Node97 -> Node99
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 356 142 moveto
+412 147 497 154 504 157 curveto
+521 163 563 197 581 212 curveto
+stroke
+newpath 358 145 moveto
+348 141 lineto
+358 140 lineto
+closepath
+fill
+end grestore
+
+%	Node14
+[ /Rect [ 394 198 504 212 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1CGrid__sampling.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 504 212 moveto
+394 212 lineto
+394 198 lineto
+504 198 lineto
+closepath
+stroke
+gsave 10 dict begin
+449 206 moveto (clipper::CGrid_sampling) 100 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node97 -> Node14
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 341 148 moveto
+347 151 353 154 358 157 curveto
+377 167 376 178 394 189 curveto
+401 193 409 196 417 198 curveto
+stroke
+newpath 341 151 moveto
+332 145 lineto
+342 146 lineto
+closepath
+fill
+end grestore
+
+%	Node78
+[ /Rect [ 403 230 495 244 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1CHKL__data.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 495 244 moveto
+403 244 lineto
+403 230 lineto
+495 230 lineto
+closepath
+stroke
+gsave 10 dict begin
+449 238 moveto (clipper::CHKL_data) 82 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node97 -> Node78
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 335 148 moveto
+347 152 357 156 358 157 curveto
+383 178 369 200 394 221 curveto
+399 225 405 228 411 230 curveto
+stroke
+newpath 335 151 moveto
+327 145 lineto
+337 146 lineto
+closepath
+fill
+end grestore
+
+%	Node75
+[ /Rect [ 403 166 495 180 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1CHKL__info.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 495 180 moveto
+403 180 lineto
+403 166 lineto
+495 166 lineto
+closepath
+stroke
+gsave 10 dict begin
+449 174 moveto (clipper::CHKL_info) 81 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node97 -> Node75
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 344 147 moveto
+368 153 399 161 421 166 curveto
+stroke
+newpath 344 150 moveto
+335 145 lineto
+345 145 lineto
+closepath
+fill
+end grestore
+
+%	Node47
+[ /Rect [ 400 96 498 110 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1CMTZdataset.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 498 110 moveto
+400 110 lineto
+400 96 lineto
+498 96 lineto
+closepath
+stroke
+gsave 10 dict begin
+449 104 moveto (clipper::CMTZdataset) 88 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node97 -> Node47
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 344 129 moveto
+368 123 399 115 421 110 curveto
+stroke
+newpath 345 131 moveto
+335 131 lineto
+344 126 lineto
+closepath
+fill
+end grestore
+
+%	Node35
+[ /Rect [ 403 64 495 78 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1CResolution.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 495 78 moveto
+403 78 lineto
+403 64 lineto
+495 64 lineto
+closepath
+stroke
+gsave 10 dict begin
+449 72 moveto (clipper::CResolution) 83 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node97 -> Node35
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 341 128 moveto
+347 125 353 122 358 119 curveto
+377 109 376 98 394 87 curveto
+401 83 409 80 417 78 curveto
+stroke
+newpath 342 130 moveto
+332 131 lineto
+341 125 lineto
+closepath
+fill
+end grestore
+
+%	Node27
+[ /Rect [ 401 32 497 46 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1CSpacegroup.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 497 46 moveto
+401 46 lineto
+401 32 lineto
+497 32 lineto
+closepath
+stroke
+gsave 10 dict begin
+449 40 moveto (clipper::CSpacegroup) 87 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node97 -> Node27
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 335 128 moveto
+347 124 357 120 358 119 curveto
+383 98 369 76 394 55 curveto
+399 51 405 48 411 46 curveto
+stroke
+newpath 337 130 moveto
+327 131 lineto
+335 125 lineto
+closepath
+fill
+end grestore
+
+%	Node2
+[ /Rect [ 412 0 486 14 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1CXmap.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 486 14 moveto
+412 14 lineto
+412 0 lineto
+486 0 lineto
+closepath
+stroke
+gsave 10 dict begin
+449 8 moveto (clipper::CXmap) 64 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node97 -> Node2
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 339 128 moveto
+348 125 355 122 358 119 curveto
+391 87 361 54 394 23 curveto
+399 18 405 15 412 13 curveto
+stroke
+newpath 342 129 moveto
+332 131 lineto
+340 125 lineto
+closepath
+fill
+end grestore
+
+%	Node76
+[ /Rect [ 109 262 217 276 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1HKL__data__base.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 217 276 moveto
+109 276 lineto
+109 262 lineto
+217 262 lineto
+closepath
+stroke
+gsave 10 dict begin
+163 270 moveto (clipper::HKL_data_base) 98 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node77
+[ /Rect [ 264 262 348 276 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1HKL__data.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 348 276 moveto
+264 276 lineto
+264 262 lineto
+348 262 lineto
+closepath
+stroke
+gsave 10 dict begin
+306 270 moveto (clipper::HKL_data) 75 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node76 -> Node77
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 224 269 moveto
+237 269 251 269 263 269 curveto
+stroke
+newpath 227 272 moveto
+217 269 lineto
+227 267 lineto
+closepath
+fill
+end grestore
+
+%	Node77 -> Node78
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 343 261 moveto
+366 256 396 249 418 244 curveto
+stroke
+newpath 347 263 moveto
+337 262 lineto
+346 258 lineto
+closepath
+fill
+end grestore
+
+%	Node74
+[ /Rect [ 264 166 348 180 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1HKL__info.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 348 180 moveto
+264 180 lineto
+264 166 lineto
+348 166 lineto
+closepath
+stroke
+gsave 10 dict begin
+306 174 moveto (clipper::HKL_info) 74 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node74 -> Node75
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 359 173 moveto
+373 173 389 173 403 173 curveto
+stroke
+newpath 359 176 moveto
+349 173 lineto
+359 171 lineto
+closepath
+fill
+end grestore
+
+%	Node46
+[ /Rect [ 260 96 352 110 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1MTZdataset.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 352 110 moveto
+260 110 lineto
+260 96 lineto
+352 96 lineto
+closepath
+stroke
+gsave 10 dict begin
+306 104 moveto (clipper::MTZdataset) 82 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node46 -> Node47
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 362 103 moveto
+374 103 387 103 399 103 curveto
+stroke
+newpath 362 106 moveto
+352 103 lineto
+362 101 lineto
+closepath
+fill
+end grestore
+
+%	Node34
+[ /Rect [ 263 64 349 78 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Resolution.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 349 78 moveto
+263 78 lineto
+263 64 lineto
+349 64 lineto
+closepath
+stroke
+gsave 10 dict begin
+306 72 moveto (clipper::Resolution) 76 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node34 -> Node35
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 360 71 moveto
+374 71 388 71 402 71 curveto
+stroke
+newpath 360 74 moveto
+350 71 lineto
+360 69 lineto
+closepath
+fill
+end grestore
+
+%	Node26
+[ /Rect [ 261 32 351 46 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Spacegroup.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 351 46 moveto
+261 46 lineto
+261 32 lineto
+351 32 lineto
+closepath
+stroke
+gsave 10 dict begin
+306 40 moveto (clipper::Spacegroup) 80 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node26 -> Node27
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 361 39 moveto
+374 39 387 39 400 39 curveto
+stroke
+newpath 361 42 moveto
+351 39 lineto
+361 37 lineto
+closepath
+fill
+end grestore
+
+%	Node3
+[ /Rect [ 8 166 72 180 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Vec3.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 72 180 moveto
+8 180 lineto
+8 166 lineto
+72 166 lineto
+closepath
+stroke
+gsave 10 dict begin
+40 174 moveto (clipper::Vec3) 54 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node4
+[ /Rect [ 119 102 207 116 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Coord__frac.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 207 116 moveto
+119 116 lineto
+119 102 lineto
+207 102 lineto
+closepath
+stroke
+gsave 10 dict begin
+163 110 moveto (clipper::Coord_frac) 78 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node3 -> Node4
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 57 160 moveto
+73 148 98 131 108 125 curveto
+110 124 125 120 139 116 curveto
+stroke
+newpath 59 161 moveto
+50 166 lineto
+56 158 lineto
+closepath
+fill
+end grestore
+
+%	Node5
+[ /Rect [ 119 70 207 84 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Coord__grid.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 207 84 moveto
+119 84 lineto
+119 70 lineto
+207 70 lineto
+closepath
+stroke
+gsave 10 dict begin
+163 78 moveto (clipper::Coord_grid) 79 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node3 -> Node5
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 50 160 moveto
+65 139 95 102 108 93 curveto
+111 92 124 88 137 84 curveto
+stroke
+newpath 53 160 moveto
+45 166 lineto
+49 157 lineto
+closepath
+fill
+end grestore
+
+%	Node6
+[ /Rect [ 119 38 207 52 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Coord__orth.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 207 52 moveto
+119 52 lineto
+119 38 lineto
+207 38 lineto
+closepath
+stroke
+gsave 10 dict begin
+163 46 moveto (clipper::Coord_orth) 79 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node3 -> Node6
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 45 159 moveto
+54 135 75 87 108 61 curveto
+113 58 123 55 133 52 curveto
+stroke
+newpath 48 158 moveto
+42 166 lineto
+44 156 lineto
+closepath
+fill
+end grestore
+
+%	Node7
+[ /Rect [ 109 326 217 340 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Coord__reci__frac.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 217 340 moveto
+109 340 lineto
+109 326 lineto
+217 326 lineto
+closepath
+stroke
+gsave 10 dict begin
+163 334 moveto (clipper::Coord_reci_frac) 98 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node3 -> Node7
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 43 189 moveto
+50 219 68 283 108 317 curveto
+113 321 118 324 124 326 curveto
+stroke
+newpath 41 190 moveto
+41 180 lineto
+46 189 lineto
+closepath
+fill
+end grestore
+
+%	Node8
+[ /Rect [ 109 294 217 308 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Coord__reci__orth.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 217 308 moveto
+109 308 lineto
+109 294 lineto
+217 294 lineto
+closepath
+stroke
+gsave 10 dict begin
+163 302 moveto (clipper::Coord_reci_orth) 99 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node3 -> Node8
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 45 187 moveto
+54 211 75 259 108 285 curveto
+113 288 123 291 133 294 curveto
+stroke
+newpath 44 190 moveto
+42 180 lineto
+48 188 lineto
+closepath
+fill
+end grestore
+
+%	Node9
+[ /Rect [ 121 230 205 244 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Grad__frac.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 205 244 moveto
+121 244 lineto
+121 230 lineto
+205 230 lineto
+closepath
+stroke
+gsave 10 dict begin
+163 238 moveto (clipper::Grad_frac) 73 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node3 -> Node9
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 57 186 moveto
+73 198 98 215 108 221 curveto
+110 222 125 226 139 230 curveto
+stroke
+newpath 56 188 moveto
+50 180 lineto
+59 185 lineto
+closepath
+fill
+end grestore
+
+%	Node10
+[ /Rect [ 121 166 205 180 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Grad__orth.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 205 180 moveto
+121 180 lineto
+121 166 lineto
+205 166 lineto
+closepath
+stroke
+gsave 10 dict begin
+163 174 moveto (clipper::Grad_orth) 74 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node3 -> Node10
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 82 173 moveto
+94 173 108 173 121 173 curveto
+stroke
+newpath 82 176 moveto
+72 173 lineto
+82 171 lineto
+closepath
+fill
+end grestore
+
+%	Node11
+[ /Rect [ 132 198 194 212 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Grid.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 194 212 moveto
+132 212 lineto
+132 198 lineto
+194 198 lineto
+closepath
+stroke
+gsave 10 dict begin
+163 206 moveto (clipper::Grid) 51 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node3 -> Node11
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 73 181 moveto
+93 186 118 193 136 198 curveto
+stroke
+newpath 76 184 moveto
+67 180 lineto
+77 179 lineto
+closepath
+fill
+end grestore
+
+%	Node15
+[ /Rect [ 131 134 195 148 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1HKL.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 195 148 moveto
+131 148 lineto
+131 134 lineto
+195 134 lineto
+closepath
+stroke
+gsave 10 dict begin
+163 142 moveto (clipper::HKL) 53 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node3 -> Node15
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 73 165 moveto
+93 160 118 153 136 148 curveto
+stroke
+newpath 77 167 moveto
+67 166 lineto
+76 162 lineto
+closepath
+fill
+end grestore
+
+%	Node12
+[ /Rect [ 264 230 348 244 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Grid__map.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 348 244 moveto
+264 244 lineto
+264 230 lineto
+348 230 lineto
+closepath
+stroke
+gsave 10 dict begin
+306 238 moveto (clipper::Grid_map) 73 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node11 -> Node12
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 200 213 moveto
+223 218 253 225 275 230 curveto
+stroke
+newpath 203 216 moveto
+194 212 lineto
+204 211 lineto
+closepath
+fill
+end grestore
+
+%	Node13
+[ /Rect [ 255 198 357 212 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Grid__sampling.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 357 212 moveto
+255 212 lineto
+255 198 lineto
+357 198 lineto
+closepath
+stroke
+gsave 10 dict begin
+306 206 moveto (clipper::Grid_sampling) 93 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node11 -> Node13
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 203 205 moveto
+219 205 237 205 254 205 curveto
+stroke
+newpath 204 208 moveto
+194 205 lineto
+204 203 lineto
+closepath
+fill
+end grestore
+
+%	Node13 -> Node14
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 368 205 moveto
+377 205 385 205 394 205 curveto
+stroke
+newpath 368 208 moveto
+358 205 lineto
+368 203 lineto
+closepath
+fill
+end grestore
+
+%	Node0
+[ /Rect [ 118 0 208 14 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Xmap__base.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 208 14 moveto
+118 14 lineto
+118 0 lineto
+208 0 lineto
+closepath
+stroke
+gsave 10 dict begin
+163 8 moveto (clipper::Xmap_base) 80 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node1
+[ /Rect [ 272 0 340 14 ]
+  /Border [ 0 0 0 ]
+ /Action << /Subtype /URI /URI ($classclipper_1_1Xmap.html) >>
+  /Subtype /Link
+/ANN pdfmark
+gsave 10 dict begin
+newpath 340 14 moveto
+272 14 lineto
+272 0 lineto
+340 0 lineto
+closepath
+stroke
+gsave 10 dict begin
+306 8 moveto (clipper::Xmap) 57 10.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Node0 -> Node1
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 215 7 moveto
+234 7 255 7 272 7 curveto
+stroke
+newpath 218 10 moveto
+208 7 lineto
+218 5 lineto
+closepath
+fill
+end grestore
+
+%	Node1 -> Node2
+gsave 10 dict begin
+solid
+0.667 0.776 0.439 edgecolor
+newpath 349 7 moveto
+370 7 393 7 412 7 curveto
+stroke
+newpath 350 10 moveto
+340 7 lineto
+350 5 lineto
+closepath
+fill
+end grestore
+endpage
+grestore
+%%PageTrailer
+%%EndPage: 1
+%%Trailer
+%%Pages: 1
+end
+restore
+%%EOF

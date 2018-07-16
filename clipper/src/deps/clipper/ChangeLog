@@ -1,0 +1,111 @@
+Latest changes:
+<dl>
+<dt>16/04/10: <dd> Minor compatibility fixes. A lot of extra searching and selection functionality added to MiniMol.
+<dt>15/12/09: <dd> Update anisotropy correction code to handle I's and low resolution data. Update autoconf and bump so version.
+<dt>14/07/09: <dd> Update mtz write to give correct symbols. Extend csymmatch to handle waters and to do optional origin and hand matching. Provide legacy mtz column label syntax. gcc 4.4 fixes.
+<dt>22/05/09: <dd> Enable MiniMol to export alternate conformation codes. Correntions to new Clipper2-stype HKL_data handling.
+<dt>20/05/09: <dd> Clipper2-stype HKL_data handling extended, including CNS, CIF import. Experimental patch to allow clean shutdown in Coot. Screw operator decomposition in RTop_orth (Phil).
+<dt>10/02/09: <dd> Support for new extended CNS file import, minor warning fixes.
+<dt>01/12/08: <dd> 2.1 release. Support for threading. New MLHL weighting function. Improved anisotropy correction. gcc 4.3 fixes.
+<dt>18/11/08: <dd> 2.1 release. Support for threading. New MLHL weighting function. Improved anisotropy correction. gcc 4.3 fixes.
+<dt>07/09/07: <dd> Minor bug fix in Rotation::abs_angle. Avoid crash on reading pdb file with missing CRYST1. Compiler warning fix.
+<dt>25/04/07: <dd> Work around for compiler bug in gcc 3.2/3.3. No other changes.
+<dt>12/04/07: <dd> MTZ file creation from scratch fixes. Anisotropic scaling improvements. 'caniso' anisotropic correction tool. 'convert2mtz' file conversion tool. Autoconf build system option.
+<dt>16/06/06: <dd> Rotation fixes. Backport of ccp4 utilities from 2.0 branch.
+<dt>31/08/05: <dd> Minimol fix. Additional cfft output.
+<dt>15/07/05: <dd> Fedora Core 4 NaN fix. New mapfilter method to support NCS in pirate.
+<dt>17/03/05: <dd> Minor portability fixes for CCP4 release. 'Lattman' spelling fix (sorry).
+<dt>25/02/05: <dd> Minor portability fixes for CCP4 release.
+<dt>22/11/04: <dd> Minor portability fixes for CCP4 release.
+<dt>22/10/04: <dd> Added Fortran sfcalc demo code. Fix in SF weighting 'best' coeffs (from RWGK).
+<dt>12/10/04: <dd> Fixes and testing of SF calc, SF weighting. Additional cctbx methods. cmakereference app for pirate.
+<dt>16/07/04: <dd> Add some additional spacegroup methods, extend utilities and add 2 new utilties programs.
+<dt>25/06/04: <dd> Fix for compilation -O3 on gcc 3.2, other portability fixes, add 1 new jiffy programs.
+<dt>16/06/04: <dd> Add structure factor calculation with bulk solvent method, sigmaa spline method, add 3 new jiffy programs.
+<dt>25/05/04: <dd> Add error checking on mtz/map i/o, add origin/hand matching method, add map curvature methods, add 4 new jiffy programs.
+<dt>06/04/04: <dd> Synchronize to fixes in CCP4 libs.
+<dt>08/03/04: <dd> Bugfix in MiniMol export to MMDB.
+<dt>18/02/04: <dd> Bugfix in LogPhaseProb conversion to and from HL coeffs.
+<dt>03/02/04: <dd> Bugfixes in MiniMol, license update, CCP4v5 install.
+<dt>27/10/03: <dd> Virtual destructors adjusted for gcc 3.2 bug.
+<dt>23/10/03: <dd> MTZ History now preserved. Created MTZ's now fixed for common spacegroups. Virtual destructors supplied for all virtual bases (I hope).
+<dt>08/10/03: <dd> Second attempt at update for new CCP4 v5 libraries.
+<dt>06/10/03: <dd> Update for new CCP4 v5 libraries.
+<dt>31/07/03: <dd> New classes for phase probability distributions. Lots of portability fixes.
+<dt>18/07/03: <dd> License now LGPL (or CCP4 part 0). SCONS now build non-shared libraries on alpha and sun. rpath still not implmented.
+<dt>07/06/03: <dd> Resolution function tidyup, added SCONS build system.
+<dt>30/05/03: <dd> Bug fix release for xmap crash and gcc 2.95.3.
+<dt>17/05/03: <dd> API change from previous release reversed.
+<dt>14/05/03: <dd> Port Xmap and Spacegroup to ObjectCache architecture for improved performance.
+<dt>24/04/03: <dd> More documentation. Even more documentation. Documentation tidyup. MiniMol tidyup.
+<dt>17/04/03: <dd> New MMDB lightweight interface added. New MiniMol STL model added.
+<dt>10/04/03: <dd> Separated out old MMDB interface as separate package. Started work for ObjectCache architecture. Fixes for Windows build using MinGW.
+<dt>27/03/03: <dd> Support for new CCP4 C-libraries. New fast NaN tests.
+<dt>12/03/03: <dd> Fix reflection cif build. Fix to mmdb wrapper segfault.
+<dt>04/03/03: <dd> Reflection cif import added (Paul Emsley). Preparation for new MTZ interface. Minor updates.
+<dt>14/02/03: <dd> Tiny MMDB 'is_atom()' fix. Minor updates.
+<dt>07/02/03: <dd> Ported to Sun. This version tested on gcc 3.2, SGI, Alpha, Sun. Hopefully still builds on MacOSX and gcc 2.96 too.
+<dt>20/01/03: <dd> Implemented AtomShapeFn, with Agarwal coeffs for isotropic atoms.
+<dt>10/01/03: <dd> Minor cleanups.
+<dt>08/01/03: <dd> New FFFear methods, MapFilter methods, generic Euler angles.
+<dt>10/12/02: <dd> +=, -= implemented for all maps, Vec3<>s.
+<dt>28/11/02: <dd> Heavy spacegroup testing completed: see cctbxtest.
+<dt>22/11/02: <dd> Sparse FFT map added.
+<dt>23/10/02: <dd> Ramachandran class, FFFear methods, new FFTmap backend.
+<dt>10/10/02: <dd> All files and libraries reorganised, mccp4 and cctbx optional.
+<dt>07/10/02: <dd> Stand-alone spacegroup library.
+<dt>30/09/02: <dd> MMDB associative behaviour, MMDB unsorted selections, map statistics objects, map sorting object, PHS file i/o.
+<dt>30/08/02: <dd> Generic rotation class, least squares coordinate fitting, and lots of stress testing on real calculations.
+<dt>18/07/02: <dd> Function objects for structure factor calculations, skeletonisation. Message passing library added.
+<dt>25/06/02: <dd> Slight changes for skeletonisation.
+<dt>24/06/02: <dd> Anisotropic map calculation implemented (see sftest.cpp). Anisotropic basis function added to resolution function evaluator.
+<dt>22/05/02: <dd> Audit of communication in hierarchies completed. Minor changes to i/o classes.
+<dt>08/05/02: <dd> Form factor class added. Demo structure factor calculation added, using either FFT or direct summation. Map bug fixed (for spacegroups where symops do not commute, e.g. P422).
+<dt>26/04/02: <dd> Rewrite of coordinate types. Reflection datalist operators added.
+<dt>21/03/02: <dd> More complete MMDB wrapper. New classes for Aniso U's.
+<dt>16/03/02: <dd> First attempt at MMDB wrapper object. Numerous other cleanups.
+<dt>05/03/02: <dd> NX_operator, NXmap_operator added. Pluggable interpolators added. Code style imporvements. Resolution function evaluator speedups. New mccp4 library.
+<dt>12/02/02: <dd> More documentation, cleanups.
+<dt>09/02/02: <dd> Added lots of conversion operators for structure factor arithmetic and manipulation of HL coeffs. A new mini-ccp4 library includes both mmtzlib and cmaplib. Most importantly, the SGI PORT IS WORKING. There is now a 'fake' configure script which detect the platform. You'll need up to date compilers and gmake.
+<dt>30/01/02: <dd> Cleanups, more documentation.
+<dt>23/01/02: <dd> Hopefully finished method renaming, updated fft example.
+<dt>22/01/02: <dd> Major rewrite of the container hierarchy, including new inheritables (resolution, grid sampling), updated i/o classes, more flexibility, more automation. In particular containers can now be stored in STL vectors.
+<dt>13/01/02: <dd> New classes for grid samplings (consistent with spacegroup, cell, resolution and FFT), and reciprocal space fractional and orthogonal coordinates. Documentation improvements (now 250 pages).
+<dt>11/01/02: <dd> Bspline FFTmap class added. Classes for orthogonal and fractional gradients and curvatures and their transformations added. Map I/O class now imports and exports NXmap&lt;&gt;s. 
+<dt>07/01/02: <dd> Map I/O class now imports and exports Xmap&lt;&gt;s. NXmap&lt;&gt;s coming soon. The patched CMAP lib has now been packaged, and the auto-install script updated accordingly.
+<dt>04/01/02: <dd> Map I/O class started. Map import is working, as long as you have a hacked version of the CMAP lib. I'll tidy this up for distribution as soon as I can.
+<dt>19/12/01: <dd> More tidyups.
+<dt>15/12/01: <dd> More tidyups.
+<dt>13/12/01: <dd> More tidyups: easier MTZ import function, lose the last few pointer methods, fill in some default parameters to allow default name generation for container objects.
+<dt>08/12/01: <dd> Basic interpolation methods added to Xmap. Documentation improvements.
+<dt>05/12/01: <dd> Smooth bspline resolution basis function implemented. Lots more cleanups.
+<dt>04/12/01: <dd> 'cfft' works again. Major cleanups. 'HKL_data_base' now contains a full list of virtual functions. Naive binner replaced with something rather more sensible.
+<dt>03/12/01: <dd> Implemented the strict donor/recipient model for inheriting cell and spacegroup information. Some tidying up will probably be needed. I think cfft is broken - I don't know when this happened yet.
+<dt>01/12/01: <dd> Iterators and reflection classes renamed to something clearer. Updated to use cctbx 1.0. That should make installation rather simpler.
+<dt>29/11/01: <dd> The mtz i/o layer has been abstracted from the Clipper core, i.e. Clipper is now completely independent of MTZ (and therefore CCP4). This should make it very simple to interface to other file formats, e.g. CNS, and eventually the PHENIX database.<br>
+A sigmaa-target has been implemented for the resolution function evaluator. Convergence is not very fast since it doesn't know how to pick sensible starting values, and it produces copious debugging output, but I think it is working.
+<dt>01/11/01: <dd> Conversion operators to convert between HKL_data types are implented. (Unary only for now, but binary operators are easy). A sample operator to convert phi_fom to abcd is provided. The reciprocal ASU is now mandatory, as this allows rather faster symmetry lookups.
+<dt>15/10/01: <dd> Resolution function evaluator implemented. This will evaluate an arbitrary function of HKL, by optimising the parameters of a user defined basis function to minimise a user defined target functions. This completely replaces the idea of 'resolution bins', and does a lot of other things besides. A terget for mean |F|<sup>2</sup> is provided, a sigmaa taget shouldn't be too hard. <br>FFTw config has changed again: FFTw should be configured with just --enable-float
+<dt>01/10/01: <dd> Do type conversion in fft's. FFTw should be configured with --enable-float --enable-type-prefix
+<dt>25/09/01: <dd> Update to latest version of cctbx.
+<dt>10/09/01: <dd> Small tidyups and documentation improvements.
+<dt>04/09/01: <dd> Various small tidyups and documentation improvements. umtzlib extended to handle multi-record MTZ files.
+<dt>01/09/01: <dd> MTZ interface completely replaced. MTZ i/o is now handled through a new lightweight C library: umtzlib/mmtzlib (Micro/Mini mtzlib). The mtz i/o interface has also been cleaned up.
+<dt>16/08/01: <dd> Interface redesign completed. The whole package is now (at least from the outside) written in such a way that programs can be written without using new, delete, or pointers. License changed to CCP4 part (i).
+<dt>09/08/01: <dd> FFTs implemented! You'll need <a href=http://www.fftw.org/>fftw</a>. The interfaces have been largely redesigned to remove most of the pointers and new/delete. My current priorities are: finishing the interface cleanup, relicencing under CCP4 part (i) (to be consistent with fftw), writing a binner/optimiser, and a non-crystal map class. Long term it would be nice to implement mmdb coordinate objects and density generation (including anisotropic atoms).
+<dt>26/07/01: <dd> Two big jobs completed: Firstly, the optimised map class is working. Secondly, the package now uses the <a href=http://cctbx.sourceforge.net>cctbx</a> libraries for all its symmetry information. You'll need to install cctbx to compile clipper. The Makefile needs to be tweaked by hand for now.
+<dt>29/06/01: <dd> Map class working (but not optimised, and no interpolation yet). More importantly I've done another major re-architecture. Every object now comes in two forms: a non-tree and a tree variant. You can now use the maps and Datalists as stand-alone components, although for Datalists you will have to manage linking a Datalist to an HKL_list yourself. In future the map class will probably be split up in the same way, providing one object which provides organizational and fast indexing services, from which a number of Data objects can be hung.
+<dt>20/06/01: <dd> Map class started (It doesn't build yet). Spacegroup extended to include ASU calculation.
+<dt>01/05/01: <dd> MTZ io re-written to allow extension to other formats in future. Other general tidyups.
+<dt>25/04/01: <dd> Created a simple `cad' utility to combine and manipulate mtz files as clipper datalists. A few extra methods were provided for this purpose. In the light of this work the MTZ import/export framework is going to be rewritten again.
+<dt>28/03/01: <dd> Updated to latest CMTZ library.
+<dt>27/03/01: <dd> The mtz i/o has been rewritten to allow any combination of input, input-append, output, output-append. This should make it trivial to write a clipper-cad utility.
+<dt>05/03/01: <dd> Namespaces have been implemented. The data types have been templatised as `dtype' so that float or double data may be stored, and selected by a single `using' statement. (i/o to mtz must be float of course). All other values are defined as `ftype', defined in clipper_util, which will normally be double. (This could easily be templatised too).
+<dt>22/02/01: <dd> Efficient handle class for Datalists implemented. MTZ hierarchical name parsing improved. Recursive update fixed. Doxygen documentation implemented. CMTZ cell export bug fixed (my fault - thanks Martyn).
+<dt>20/02/01: <dd> Project level removed from both CMTZ and Clipper hierarchy. Minor architechture improvements.
+<dt>12/02/01: <dd> Mark 2 design now exports as well as imports MTZs.
+<dt>10/02/01: <dd> CMTZ modified to support hierarchical data naming and duplicate names. `reflection_data_mtz' now updated use the new data structure (import works, export still pending).
+<dt>07/02/01: <dd> Data structure completely rewritten. The data hierarchy is now a completely generic tree object, so any type can be insterted anywhere. Objects are addressed using UNIX-like directory references. MTZ i/o has not yet been ported to the new structure, but MTZ items will arrive in the hierarchy at '/project/crystal/dataset/datalist', and must be similarly positioned for export.
+</dl>
+
+<h3>Things to do</h3>

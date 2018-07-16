@@ -1,0 +1,173 @@
+/*! \mainpage Clipper-MMDB interface.
+
+MMDB is a powerful package for the storage and manipulation of atomic
+coordinate models, by E. Krissinel. Full documentation for the MMDB
+package is available here: http://msd.ebi.ac.uk/~keb/cldoc/
+
+The Clipper-MMDB interface package provides an interface to allow MMDB
+models to interact with other types of crystallographic data as part
+of a structure solution application. It is designed to be minimally
+intrusive on both packages, so that either package may be used alone,
+or in conjunction with other software.
+
+The most common interactions between atomic models, structure factors,
+maps, and masks come in the form of the generation of structure
+factors, electron density and masks from a model. For these purposes,
+most of the information in an atomic model (e.g. bonding, residue
+types), is redundant; all we need is a list of atomic coordinates,
+elements, occupancies and temperature factors (U-values). These are
+handled by the Clipper classes clipper::Atom and clipper::Atom_list.
+
+MMDB describes atom lists in terms of an array of pointers to atoms,
+and a count (of types PPCAtom and int). These are commonly generated
+using a selection function to select some portion of the stored atomic
+model.
+
+The main component of the Clipper-MMDB interface is therefore a class
+which communicated atom lists from one package to the other.
+
+
+\section s_mmdb_atom_list The clipper::MMDBAtom_list class.
+
+The clipper::MMDBAtom_list class is a trivial derivation of the
+clipper::Atom_list class which can be constructed from an MMDB atom
+list. This involves extracting all the relevant information from MMDB
+and building a new list of clipper::Atom objects, but this list is
+both small and quickly created in comparison to any purpose for which
+it will be used. The clipper::MMDBAtom_list class may be used
+wherever a clipper::Atom_list would be used, e.g. in a structure
+factor calculation.
+
+A typical usage is therefore as follows:
+ - Perform an atom selection in MMDB using the MMDB selection functions.
+ - Call the MMDB GetSelIndex() method to return a PPCAtom and a count.
+ - Give these to the constructor of clipper::MMDBAtom_list.
+ - Use the resulting atom list in Clipper.
+
+For example, the following code reads a PDB file from disk, selects
+all the atoms from the model, and uses them to perform a structure
+factors calculation:
+
+\code
+  /* mmdb part of the calculation */
+
+  CMMDBManager mmdb;
+  mmdb.ReadPDBASCII( "input.pdb" );           // read pdb file
+  int hndl = mmdb.NewSelection();             // make selection handle
+  mmdb.SelectAtoms( hndl, 0, 0, SKEY_NEW );   // select all atoms
+  PPCAtom psel;
+  int nsel;
+  mmdb.GetSelIndex( hndl, psel, nsel );       // get the selection
+
+  /* Clipper part of the calculation */
+
+  clipper::HKL_info hkls;       // make reflection lists for result
+  /* *********************************************************** */
+  /* NOTE: we need to initialise the reflection list 'hkls' here */
+  /* *********************************************************** */
+  clipper::HKL_data<clipper::data32::F_phi> fphi(hkls);  // and data list
+  clipper::MMDBAtom_list atoms( psel, nsel );            // make atom list
+  clipper::SFcalc_aniso_fft<float>( fphi, atoms );       // and do SF calc
+\endcode
+
+Note that we have assumed that the reflection list has been
+initialised in the intervening code. For this, spacegroup and cell
+information are required. If that information is to be obtained from
+the PDB file from MMDB, some additional functions are required, which
+will be described below.
+
+
+\section s_mmdb_other Other Classes.
+
+Sometimes we need to communicate other information between Clipper and
+MMDB. For example, as above, we may want to use the spacegroup or cell
+information from MMDB in Clipper.
+
+For this purpose, additional classes are provided. In every case,
+these are trivial derivations of MMDB classes (i.e. adding no
+additional data members), which simply add additional functions for
+communicating information to or from MMDB in terms of Clipper
+types. The following classes are provided:
+ - clipper::MMDBManager derives from CMMDBManager
+ - clipper::MMDBModel derives from CModel
+ - clipper::MMDBChain derives from CChain
+ - clipper::MMDBResidue derives from CResidue
+ - clipper::MMDBAtom derives from CAtom
+
+Of these, the clipper::MMDBManager and clipper::MMDBAtom classes are
+probably the most useful.
+
+Since these classes are trivial derivations, you can safely cast a
+pointer or reference to your MMDB object to the derived type in order
+to gain access to the addition methods. C and C++ casts are
+permissible, although the C++ static_cast mechanism provides better
+type safety.
+
+
+\subsection ss_mmdb_manager The clipper::MMDBManager class.
+
+This provides 4 additional methods in addition to the MMDB
+version. These are used for getting and setting the cell and
+spacegroup information. They are:
+ - clipper::MMDBManager::spacegroup()
+ - clipper::MMDBManager::cell()
+ - clipper::MMDBManager::set_spacegroup( const Spacegroup& )
+ - clipper::MMDBManager::set_cell( const Cell& )
+
+The first two return the spacegroup and cell from MMDB, and the last
+two set the spacegroup and cell.
+
+When fetching the MMDB spacegroup, if the operators are present then
+these will be used to determine the Clipper spacegroup. If the
+operators are missing, the spacegroup name will be used. When setting
+the spacegroup the name is always set, however the operators will only
+be set if MMDB recognizes the Clipper spacegroup name.
+
+Therefore, to return a clipper::Cell from a PDB file, the
+following code is used:
+\code
+  CMMDBManager mmdb;
+  mmdb.ReadPDBASCII( "input.pdb" );           // read pdb file
+
+  clipper::Cell cell = static_cast<clipper::MMDBManager&>(mmdb).cell();
+\endcode
+(Alternatively, if we created a clipper::MMDBManager in the first place,
+no cast would be required.)
+
+The following example shows how a reference to the CMMDBManager in the
+structure factor calculation above could be cast to return the
+spacegroup and cell information.
+
+\code
+  clipper::MMDBManager& cmmdb = static_cast<clipper::MMDBManager&>( mmdb );
+  hkls.init( cmmdb.spacegroup(), cmmdb.cell(), clipper::Resolution(2.0) );
+\endcode
+
+
+\subsection ss_mmdb_atom The clipper::MMDBAtom class.
+
+The clipper::MMDBAtom class is used in exactly the same way as the
+previous class to obtain access to atom properties as Clipper data
+items. For example, given a pointer to an MMDB CAtom, the coordinates,
+occupancy and anisotropic U could be extracted as follows:
+\code
+  PCAtom atom;
+  /* set the atom pointer here */
+  clipper::MMDBAtom* catom = static_cast<clipper::MMDBAtom*>( atom );
+  clipper::Coord_orth coord   = catom->coord_orth();
+  double occup                = catom->occupancy();
+  clipper::U_aniso_orth uanis = catom->u_aniso_orth();
+\endcode
+
+If the requested property of the MMDB atom is not set, then the
+corresponding Clipper object will be set to its null state, which is
+tested by the corresponding is_null method,
+e.g. clipper::Coord_orth::is_null(). In the case of numeric
+properties, if they are missing the result will be NaN, testable by
+the clipper::Util::is_nan() method.
+
+Write accessors ('set' methods) are also provided for all properties
+where MMDB permits. Null objects will be translated to unset
+properties in MMDB.
+
+*/

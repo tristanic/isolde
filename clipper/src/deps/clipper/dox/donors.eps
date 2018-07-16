@@ -1,0 +1,493 @@
+%!PS-Adobe-2.0
+%%Creator: dot version 1.7.11 (Fri Nov 16 14:55:37 GMT 2001)
+%%For: (cowtan) Kevin Cowtan
+%%Title: G
+%%Pages: (atend)
+%%BoundingBox: 35 35 351 307
+%%EndComments
+%%BeginProlog
+save
+/DotDict 200 dict def
+DotDict begin
+
+%%BeginResource: procset
+/coord-font-family /Times-Roman def
+/default-font-family /Times-Roman def
+/coordfont coord-font-family findfont 8 scalefont def
+
+/InvScaleFactor 1.0 def
+/set_scale {
+	dup 1 exch div /InvScaleFactor exch def
+	dup scale
+} bind def
+
+% styles
+/solid { } bind def
+/dashed { [9 InvScaleFactor mul dup ] 0 setdash } bind def
+/dotted { [1 InvScaleFactor mul 6 InvScaleFactor mul] 0 setdash } bind def
+/invis {/fill {newpath} def /stroke {newpath} def /show {pop newpath} def} bind def
+/bold { 2 setlinewidth } bind def
+/filled { } bind def
+/unfilled { } bind def
+/rounded { } bind def
+/diagonals { } bind def
+
+% hooks for setting color 
+/nodecolor { sethsbcolor } bind def
+/edgecolor { sethsbcolor } bind def
+/graphcolor { sethsbcolor } bind def
+/nopcolor {pop pop pop} bind def
+
+/beginpage {	% i j npages
+	/npages exch def
+	/j exch def
+	/i exch def
+	/str 10 string def
+	npages 1 gt {
+		gsave
+			coordfont setfont
+			0 0 moveto
+			(\() show i str cvs show (,) show j str cvs show (\)) show
+		grestore
+	} if
+} bind def
+
+/set_font {
+	findfont exch
+	scalefont setfont
+} def
+
+% draw aligned label in bounding box aligned to current point
+% alignfactor tells what fraction to place on the left.
+% -.5 is centered.
+/alignedtext {			% text labelwidth fontsz alignfactor
+	/alignfactor exch def
+	/fontsz exch def
+	/width exch def
+	/text exch def
+	gsave
+		% even if node or edge is dashed, don't paint text with dashes
+		[] 0 setdash
+		currentpoint newpath moveto
+		text stringwidth pop
+		alignfactor mul fontsz -.3 mul rmoveto
+		text show
+	grestore
+} def
+
+/boxprim {				% xcorner ycorner xsize ysize
+		4 2 roll
+		moveto
+		2 copy
+		exch 0 rlineto
+		0 exch rlineto
+		pop neg 0 rlineto
+		closepath
+} bind def
+
+/ellipse_path {
+	/ry exch def
+	/rx exch def
+	/y exch def
+	/x exch def
+	matrix currentmatrix
+	newpath
+	x y translate
+	rx ry scale
+	0 0 1 0 360 arc
+	setmatrix
+} bind def
+
+/endpage { showpage } bind def
+
+/layercolorseq
+	[	% layer color sequence - darkest to lightest
+		[0 0 0]
+		[.2 .8 .8]
+		[.4 .8 .8]
+		[.6 .8 .8]
+		[.8 .8 .8]
+	]
+def
+
+/setlayer {/maxlayer exch def /curlayer exch def
+	layercolorseq curlayer get
+	aload pop sethsbcolor
+	/nodecolor {nopcolor} def
+	/edgecolor {nopcolor} def
+	/graphcolor {nopcolor} def
+} bind def
+
+/onlayer { curlayer ne {invis} if } def
+
+/onlayers {
+	/myupper exch def
+	/mylower exch def
+	curlayer mylower lt
+	curlayer myupper gt
+	or
+	{invis} if
+} def
+
+/curlayer 0 def
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+14 default-font-family set_font
+1 setmiterlimit
+% /arrowlength 10 def
+% /arrowwidth 5 def
+
+% make sure pdfmark is harmless for PS-interpreters other than Distiller
+/pdfmark where {pop} {userdict /pdfmark /cleartomark load put} ifelse
+% make '<<' and '>>' safe on PS Level 1 devices
+/languagelevel where {pop languagelevel}{1} ifelse
+2 lt {
+    userdict (<<) cvn ([) cvn load put
+    userdict (>>) cvn ([) cvn load put
+} if
+
+%%EndSetup
+%%Page: 1 1
+%%PageBoundingBox: 36 36 351 307
+%%PageOrientation: Portrait
+gsave
+35 35 316 272 boxprim clip newpath
+36 36 translate
+0 0 1 beginpage
+0 0 translate 0 rotate
+[ /CropBox [36 36 351 307] /PAGES pdfmark
+0.000 0.000 0.000 graphcolor
+12.00 /Helvetica set_font
+
+%	Spacegroup
+gsave 10 dict begin
+newpath 162 262 moveto
+76 262 lineto
+76 240 lineto
+162 240 lineto
+closepath
+stroke
+gsave 10 dict begin
+119 252 moveto (Spacegroup) 56 12.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Cell
+gsave 10 dict begin
+newpath 162 204 moveto
+76 204 lineto
+76 182 lineto
+162 182 lineto
+closepath
+stroke
+gsave 10 dict begin
+119 194 moveto (Cell) 20 12.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Spacegroup -> Cell
+gsave 10 dict begin
+bold
+newpath 119 240 moveto
+119 233 119 222 119 213 curveto
+stroke
+newpath 117 214 moveto
+119 204 lineto
+122 214 lineto
+closepath
+fill
+end grestore
+
+%	HKL_info
+gsave 10 dict begin
+newpath 96 88 moveto
+10 88 lineto
+10 66 lineto
+96 66 lineto
+closepath
+stroke
+gsave 10 dict begin
+53 78 moveto (HKL_info) 49 12.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Spacegroup -> HKL_info
+gsave 10 dict begin
+solid
+0.000 1.000 1.000 edgecolor
+newpath 102 240 moveto
+90 231 75 218 67 204 curveto
+53 181 57 172 54 146 curveto
+52 129 52 110 53 96 curveto
+stroke
+newpath 51 98 moveto
+53 88 lineto
+56 98 lineto
+closepath
+fill
+end grestore
+
+%	Grid_sampling
+gsave 10 dict begin
+newpath 200 88 moveto
+114 88 lineto
+114 66 lineto
+200 66 lineto
+closepath
+stroke
+gsave 10 dict begin
+157 78 moveto (Grid_sampling) 72 12.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Spacegroup -> Grid_sampling
+gsave 10 dict begin
+solid
+0.000 1.000 1.000 edgecolor
+newpath 135 240 moveto
+147 231 162 218 171 204 curveto
+189 172 191 159 184 124 curveto
+181 111 179 104 175 96 curveto
+stroke
+newpath 173 98 moveto
+170 88 lineto
+177 95 lineto
+closepath
+fill
+end grestore
+
+%	Xmap<>
+gsave 10 dict begin
+newpath 200 30 moveto
+114 30 lineto
+114 8 lineto
+200 8 lineto
+closepath
+stroke
+gsave 10 dict begin
+157 20 moveto (Xmap<>) 42 12.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Spacegroup -> Xmap<>
+gsave 10 dict begin
+solid
+0.000 1.000 1.000 edgecolor
+newpath 153 240 moveto
+168 232 175 223 188 204 curveto
+216 158 214 141 222 88 curveto
+225 63 219 48 204 36 curveto
+stroke
+newpath 203 38 moveto
+196 30 lineto
+206 34 lineto
+closepath
+fill
+end grestore
+
+%	Resolution
+gsave 10 dict begin
+newpath 162 146 moveto
+76 146 lineto
+76 124 lineto
+162 124 lineto
+closepath
+stroke
+gsave 10 dict begin
+119 136 moveto (Resolution) 52 12.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Cell -> Resolution
+gsave 10 dict begin
+bold
+newpath 119 182 moveto
+119 175 119 164 119 155 curveto
+stroke
+newpath 117 156 moveto
+119 146 lineto
+122 156 lineto
+closepath
+fill
+end grestore
+
+%	Cell -> HKL_info
+gsave 10 dict begin
+solid
+0.667 1.000 1.000 edgecolor
+newpath 106 182 moveto
+91 168 67 147 67 146 curveto
+59 130 55 111 54 96 curveto
+stroke
+newpath 52 98 moveto
+53 88 lineto
+57 98 lineto
+closepath
+fill
+end grestore
+
+%	Cell -> Grid_sampling
+gsave 10 dict begin
+solid
+0.667 1.000 1.000 edgecolor
+newpath 134 182 moveto
+147 171 167 155 171 146 curveto
+174 137 172 133 171 124 curveto
+170 114 166 105 164 97 curveto
+stroke
+newpath 162 98 moveto
+161 88 lineto
+167 97 lineto
+closepath
+fill
+end grestore
+
+%	Cell -> Xmap<>
+gsave 10 dict begin
+solid
+0.667 1.000 1.000 edgecolor
+newpath 147 182 moveto
+151 179 154 175 160 170 curveto
+170 159 175 158 184 146 curveto
+199 122 203 115 209 88 curveto
+210 78 212 74 209 66 curveto
+203 54 193 43 183 35 curveto
+stroke
+newpath 183 38 moveto
+176 30 lineto
+186 34 lineto
+closepath
+fill
+end grestore
+
+%	Resolution -> HKL_info
+gsave 10 dict begin
+solid
+0.333 1.000 1.000 edgecolor
+newpath 101 124 moveto
+90 116 77 104 67 94 curveto
+stroke
+newpath 66 97 moveto
+61 88 lineto
+70 93 lineto
+closepath
+fill
+end grestore
+
+%	Resolution -> HKL_info
+gsave 10 dict begin
+bold
+newpath 112 124 moveto
+104 116 90 104 79 94 curveto
+stroke
+newpath 78 96 moveto
+71 88 lineto
+81 92 lineto
+closepath
+fill
+end grestore
+
+%	Resolution -> Grid_sampling
+gsave 10 dict begin
+solid
+0.333 1.000 1.000 edgecolor
+newpath 121 124 moveto
+125 116 132 105 138 96 curveto
+stroke
+newpath 136 95 moveto
+144 88 lineto
+140 98 lineto
+closepath
+fill
+end grestore
+
+%	Resolution -> Grid_sampling
+gsave 10 dict begin
+bold
+newpath 132 124 moveto
+139 116 146 105 151 96 curveto
+stroke
+newpath 148 96 moveto
+155 88 lineto
+153 98 lineto
+closepath
+fill
+end grestore
+
+%	HKL_data<>
+gsave 10 dict begin
+newpath 96 30 moveto
+10 30 lineto
+10 8 lineto
+96 8 lineto
+closepath
+stroke
+gsave 10 dict begin
+53 20 moveto (HKL_data<>) 63 12.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	HKL_info -> HKL_data<>
+gsave 10 dict begin
+solid
+0.000 0.745 0.647 edgecolor
+newpath 48 66 moveto
+47 59 46 48 47 39 curveto
+stroke
+newpath 44 40 moveto
+48 30 lineto
+49 40 lineto
+closepath
+fill
+end grestore
+
+%	HKL_info -> HKL_data<>
+gsave 10 dict begin
+bold
+newpath 58 66 moveto
+59 59 60 48 59 39 curveto
+stroke
+newpath 57 40 moveto
+58 30 lineto
+62 40 lineto
+closepath
+fill
+end grestore
+
+%	Grid_sampling -> Xmap<>
+gsave 10 dict begin
+solid
+0.000 0.000 0.753 edgecolor
+newpath 152 66 moveto
+151 59 150 48 151 39 curveto
+stroke
+newpath 148 40 moveto
+152 30 lineto
+153 40 lineto
+closepath
+fill
+end grestore
+
+%	Grid_sampling -> Xmap<>
+gsave 10 dict begin
+bold
+newpath 162 66 moveto
+163 59 164 48 163 39 curveto
+stroke
+newpath 161 40 moveto
+162 30 lineto
+166 40 lineto
+closepath
+fill
+end grestore
+endpage
+grestore
+%%PageTrailer
+%%EndPage: 1
+%%Trailer
+%%Pages: 1
+end
+restore
+%%EOF
