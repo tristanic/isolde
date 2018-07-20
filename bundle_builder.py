@@ -546,7 +546,7 @@ class _CModule(_CompiledCode):
             return None
         import sys
         if sys.platform == "linux":
-            extra_link_args.append("-Wl,-rpath,$ORIGIN")
+            extra_link_args.append("-Wl,-rpath,\$ORIGIN")
         return Extension(package + '.' + self.name,
                          define_macros=macros,
                          extra_compile_args=cpp_flags+self.compile_arguments,
@@ -596,8 +596,8 @@ class _CLibrary(_CompiledCode):
         from concurrent.futures import ThreadPoolExecutor
         import os
         results = []
-        #with ThreadPoolExecutor(max_workers=os.cpu_count()-1) as executor:
-        with ThreadPoolExecutor(max_workers=1) as executor:
+        with ThreadPoolExecutor(max_workers=os.cpu_count()-1) as executor:
+        # with ThreadPoolExecutor(max_workers=1) as executor:
             for f in self.source_files:
                 l = compiler.detect_language(f)
                 if l == 'c':
@@ -634,7 +634,7 @@ class _CLibrary(_CompiledCode):
                 lib = compiler.library_filename(lib_name, lib_type="dylib")
                 extra_link_args.append("-Wl,-install_name,@loader_path/%s" % lib)
                 compiler.link_shared_object(objs, lib, output_dir=output_dir,
-                                            extra_postargs=extra_link_args,
+                                            extra_preargs=extra_link_args,
                                             debug=debug)
             elif sys.platform == "win32":
                 # On Windows, we need both .dll and .lib
@@ -642,13 +642,14 @@ class _CLibrary(_CompiledCode):
                 extra_link_args.append("/LIBPATH:%s" % link_lib)
                 lib = compiler.shared_object_filename(lib_name)
                 compiler.link_shared_object(objs, lib, output_dir=output_dir,
-                                            extra_postargs=extra_link_args,
+                                            extra_preargs=extra_link_args,
                                             debug=debug)
             else:
                 # On Linux, we only need the .so
                 lib = compiler.library_filename(lib_name, lib_type="shared")
+                extra_link_args.append("-Wl,-rpath,\$ORIGIN")
                 compiler.link_shared_object(objs, lib, output_dir=output_dir,
-                                            extra_postargs=extra_link_args,
+                                            extra_preargs=extra_link_args,
                                             debug=debug)
         return lib
 

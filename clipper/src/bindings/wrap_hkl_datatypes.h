@@ -11,7 +11,7 @@ template <class C>
 void declare_HKL_data(py::module &m, const std::string &class_str)
 {
     using Class=HKL_data<C>;
-    std::string pyclass_name = std::string("HKL_data_" + class_str);
+    std::string pyclass_name = std::string("HKL_data_") + class_str;
     py::class_<Class>(m, pyclass_name.c_str())
         .def(py::init<>())
         .def(py::init<const HKL_info&>())

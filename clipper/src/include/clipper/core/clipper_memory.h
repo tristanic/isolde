@@ -152,7 +152,7 @@ namespace clipper
   {
   public:
     //! ObjectCache reference class
-    class Reference
+    class CLIPPER_IMEX Reference
     {
     public:
       Reference()                         : obj_(NULL) {}
