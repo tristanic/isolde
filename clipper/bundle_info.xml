@@ -95,7 +95,94 @@
       <SourceFile>src/deps/libccp4/ccp4/cmap_symop.c</SourceFile>
       <SourceFile>src/deps/libccp4/ccp4/pack_c.c</SourceFile>
   </CLibrary> -->
-?
+  <CLibrary name="clipper">
+      <Define>CLIPPER_EXPORTS</Define>
+      <Define>FFTW_MKL</Define>
+      <CompileArgument>-fvisibility=hidden</CompileArgument>
+      <IncludeDir>src/deps/libccp4</IncludeDir>
+      <IncludeDir>src/deps/mmdb2</IncludeDir>
+      <IncludeDir>src/deps/clipper</IncludeDir>
+      <IncludeDir>src/deps/fftw2/include</IncludeDir>
+      <LibraryDir>src</LibraryDir>
+      <Library>mmdb2</Library>
+      <Library>ccp4</Library>
+      <Library>fftw2xc</Library>
+
+      <SourceFile>src/deps/clipper/core/atomsf.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/coords.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/nxmap_operator.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/cell.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/derivs.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/ramachandran.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_instance.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/fftmap.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/resol_basisfn.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_memory.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/fftmap_sparse.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/resol_fn.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_message.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/hkl_compute.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/resol_targetfn.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_stats.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/hkl_data.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/rotation.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_test.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/hkl_datatypes.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/spacegroup.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_types.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/hkl_info.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/spacegroup_data.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_util.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/hkl_lookup.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/symop.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/container.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/hkl_operators.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/container_hkl.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/map_interp.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/container_map.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/map_utils.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/xmap.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/container_types.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/nxmap.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/clipper_thread.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/test_core.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/core/test_data.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/contrib/convolution_search.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/sfcalc.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/edcalc.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/sfcalc_obs.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/fffear.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/sfscale.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/function_object_bases.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/sfweight.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/mapfilter.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/skeleton.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/contrib/originmatch.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/mmdb/clipper_mmdb.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/minimol/minimol.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/minimol/container_minimol.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/minimol/minimol_data.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/minimol/minimol_io.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/minimol/minimol_seq.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/minimol/minimol_utils.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/phs/phs_io.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/cif/cif_data_io.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/ccp4/ccp4_mtz_types.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/ccp4/ccp4_mtz_io.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/ccp4/ccp4_map_io.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/ccp4/ccp4_utils.cpp</SourceFile>
+
+      <SourceFile>src/deps/clipper/cns/cns_hkl_io.cpp</SourceFile>
+      <SourceFile>src/deps/clipper/cns/cns_map_io.cpp</SourceFile>
+
+  </CLibrary>
+
   <!-- <CLibrary name="_clipper" usesNumpy="true">
       <IncludeDir>src/include</IncludeDir>
       <LibraryDir>src</LibraryDir>
