@@ -215,6 +215,8 @@ class BundleBuilder:
                 c.add_library(self._get_element_text(e))
             for e in self._get_elements(ce, "LibraryDir"):
                 c.add_library_dir(self._get_element_text(e))
+            for e in self._get_elements(ce, "CompileArgument"):
+                c.add_compile_argument(self._get_element_text(e))
             for e in self._get_elements(ce, "LinkArgument"):
                 c.add_link_argument(self._get_element_text(e))
             for e in self._get_elements(ce, "Framework"):
@@ -407,9 +409,8 @@ class BundleBuilder:
             if node not in self._used_elements:
                 print("WARNING: unsupported element:", node.nodeName)
 
-
+import os
 class _CompiledCode:
-
     def __init__(self, name, uses_numpy):
         self.name = name
         self.uses_numpy = uses_numpy
@@ -417,6 +418,7 @@ class _CompiledCode:
         self.source_files = []
         self.frameworks = []
         self.libraries = []
+        self.compile_arguments = []
         self.link_arguments = []
         self.include_dirs = []
         self.library_dirs = []
@@ -437,6 +439,9 @@ class _CompiledCode:
 
     def add_library_dir(self, d):
         self.library_dirs.append(d)
+
+    def add_compile_argument(self, a):
+        self.compile_arguments.append(a)
 
     def add_link_argument(self, a):
         self.link_arguments.append(a)
@@ -544,7 +549,7 @@ class _CModule(_CompiledCode):
             extra_link_args.append("-Wl,-rpath,$ORIGIN")
         return Extension(package + '.' + self.name,
                          define_macros=macros,
-                         extra_compile_args=cpp_flags,
+                         extra_compile_args=cpp_flags+self.compile_arguments,
                          include_dirs=inc_dirs,
                          library_dirs=lib_dirs,
                          libraries=libraries,
@@ -587,7 +592,29 @@ class _CLibrary(_CompiledCode):
         if not self.static:
             macros.append(("DYNAMIC_LIBRARY", 1))
             # compiler.define_macro("DYNAMIC_LIBRARY", 1)
-        compiler.compile(self.source_files, extra_preargs=cpp_flags, macros=macros, debug=debug)
+
+        from concurrent.futures import ThreadPoolExecutor
+        import os
+        results = []
+        #with ThreadPoolExecutor(max_workers=os.cpu_count()-1) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            for f in self.source_files:
+                l = compiler.detect_language(f)
+                if l == 'c':
+                    preargs = []
+                elif l == 'c++':
+                    preargs = cpp_flags
+                else:
+                    raise RuntimeError('Unsupported language for {}'.format(f))
+                results.append(
+                    executor.submit(
+                        compiler.compile, [f],
+                        extra_preargs=preargs+self.compile_arguments,
+                        macros=macros, debug=debug))
+            #Ensure all have finished before continuing
+            for r in results:
+                r.result()
+        #compiler.compile(self.source_files, extra_preargs=cpp_flags, macros=macros, debug=debug)
         objs = compiler.object_filenames(self.source_files)
         compiler.mkpath(output_dir)
         if self.static:

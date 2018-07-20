@@ -71,9 +71,8 @@ class CCP4MTZFile:
         Open or create an MTZ file for writing
         '''
         f = c_function('mtzfile_open_write',
-            args=ctypes.c_void_p, ctypes.c_char_p))
+            args=(ctypes.c_void_p, ctypes.c_char_p))
         f(self._c_pointer, filename.encode('utf-8'))
-        self._mode = 'write'
 
     def close_write(self):
         '''

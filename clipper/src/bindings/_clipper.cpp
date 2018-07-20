@@ -43,42 +43,26 @@ extern "C" EXPORT void
 mtzfile_open_read(void *handler, const char *fname)
 {
     auto h = static_cast<CCP4MTZfile *>(handler);
-    try {
-        h->open_read(String(fname));
-    } catch(...) {
-        molc_error();
-    }
+    error_wrap(h, &CCP4MTZfile::open_read, String(fname));
 }
 
 extern "C" EXPORT void
 mtzfile_close_read(void *handler)
 {
     auto h = static_cast<CCP4MTZfile *>(handler);
-    try {
-        h->close_read();
-    } catch(...) {
-        molc_error();
-    }
+    error_wrap(h, &CCP4MTZfile::close_read);
 }
 
 extern "C" EXPORT void
 mtzfile_open_write(void *handler, const char *fname)
 {
     auto h = static_cast<CCP4MTZfile *>(handler);
-    try {
-        h->open_write(String(fname));
-    } catch(...) {
-        molc_error();
-    }
+    error_wrap(h, &CCP4MTZfile::open_write, String(fname));
 }
 
 extern "C" EXPORT void
 mtzfile_close_write(void *handler)
 {
     auto h = static_cast<CCP4MTZfile *>(handler);
-    try {
-        h->close_write();
-    } catch(...) {
-        molc_error();
-    }
+    error_wrap(h, &CCP4MTZfile::close_write);
 }

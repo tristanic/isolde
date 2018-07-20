@@ -9,7 +9,7 @@
 
 
 #from . import clipper
-from clipper_python import Grid_sampling, HKL_data_Flag, CCP4MTZfile, HKL_info, \
+from .clipper_python import Grid_sampling, HKL_data_Flag, CCP4MTZfile, HKL_info, \
                     HKL_data_I_sigI, HKL_data_F_sigF, HKL_data_F_phi
 from chimerax.core.models import Model
 
@@ -168,7 +168,7 @@ class ReflectionData_Calc(ReflectionData):
             self.is_difference_map = is_difference_map
 
     def _guess_if_difference_map(self, name):
-        if name in ['F, PHIF', 'FWT, PHIFWT']:
+        if name.split(',')[0] in ('F','FWT'):
             return False
         if '2' in name:
             return False

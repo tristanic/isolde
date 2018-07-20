@@ -142,9 +142,9 @@ namespace clipper {
   }
 
 
-  template class ObjectCache<Spgr_cacheobj>;
-  template class ObjectCache<HKL_data_cacheobj>;
-  template class ObjectCache<Xmap_cacheobj>;
+  template class CLIPPER_IMEX ObjectCache<Spgr_cacheobj>;
+  template class CLIPPER_IMEX ObjectCache<HKL_data_cacheobj>;
+  template class CLIPPER_IMEX ObjectCache<Xmap_cacheobj>;
 
 
   // clipper instance

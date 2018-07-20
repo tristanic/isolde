@@ -8,25 +8,25 @@
 
 
 
-import clipper_python as clipper
+from . import clipper_python as clipper
 import numpy
 
 # Override logging of Clipper messages to send them to the ChimeraX log
 # rather than just printing them to the console.
 
-_clipper_messages = clipper._clipper_messages
+# _clipper_messages = clipper._clipper_messages
+#
+# def _log_clipper(func):
+#   def func_wrapper(*args, **kwargs):
+#     _clipper_messages.clear()
+#     func(*args, **kwargs)
+#     message_string = _clipper_messages.read_and_clear()
+#     if message_string:
+#       session.logger.info("CLIPPER WARNING:")
+#       session.logger.info(message_string)
+#   return func_wrapper
 
-def _log_clipper(func):
-  def func_wrapper(*args, **kwargs):
-    _clipper_messages.clear()
-    func(*args, **kwargs)
-    message_string = _clipper_messages.read_and_clear()
-    if message_string:
-      session.logger.info("CLIPPER WARNING:")
-      session.logger.info(message_string)
-  return func_wrapper
-
-clipper._clipper.log_clipper = _log_clipper
+# clipper._clipper.log_clipper = _log_clipper
 
 def add_crystal(session, name):
   from .crystal import Xtal_Project
