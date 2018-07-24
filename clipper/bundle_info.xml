@@ -33,7 +33,7 @@
   <!-- Compiled modules in bundle
        CModule gives the name of the module
        Source files are listed in one or more SourceFile elements -->
-  <CLibrary name="mmdb2">
+  <!-- <CLibrary name="mmdb2">
       <Define>MMDB_EXPORT</Define>
       <CompileArgument>-fvisibility=hidden</CompileArgument>
       <SourceFile>src/deps/mmdb2/mmdb2/hybrid_36.cpp</SourceFile>
@@ -69,8 +69,8 @@
       <SourceFile>src/deps/mmdb2/mmdb2/mmdb_io_file.cpp</SourceFile>
       <SourceFile>src/deps/mmdb2/mmdb2/mmdb_math_graph.cpp</SourceFile>
       <SourceFile>src/deps/mmdb2/mmdb2/mmdb_seqsuperpose.cpp</SourceFile>
-  </CLibrary>
-  <CLibrary name="ccp4">
+  </CLibrary> -->
+  <!-- <CLibrary name="ccp4">
       <Define>CCP4_EXPORT</Define>
       <CompileArgument>-fvisibility=hidden</CompileArgument>
       <SourceFile>src/deps/libccp4/ccp4/ccp4_array.c</SourceFile>
@@ -94,8 +94,8 @@
       <SourceFile>src/deps/libccp4/ccp4/cmap_close.c</SourceFile>
       <SourceFile>src/deps/libccp4/ccp4/cmap_symop.c</SourceFile>
       <SourceFile>src/deps/libccp4/ccp4/pack_c.c</SourceFile>
-  </CLibrary>
-  <CLibrary name="clipper">
+  </CLibrary> -->
+  <!-- <CLibrary name="clipper">
       <Define>CLIPPER_EXPORTS</Define>
       <Define>FFTW_MKL</Define>
       <CompileArgument>-fvisibility=hidden</CompileArgument>
@@ -181,7 +181,7 @@
       <SourceFile>src/deps/clipper/cns/cns_hkl_io.cpp</SourceFile>
       <SourceFile>src/deps/clipper/cns/cns_map_io.cpp</SourceFile>
 
-  </CLibrary>
+  </CLibrary> -->
 
   <!-- <CLibrary name="_clipper" usesNumpy="true">
       <IncludeDir>src/include</IncludeDir>
@@ -198,11 +198,16 @@
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
 
-      <SourceFile>src/bindings/clipper_pybind11.cpp</SourceFile>
+      <SourceFile>src/bindings/wrap_coords.cpp</SourceFile>
+      <SourceFile>src/bindings/wrap_clipper_stats.cpp</SourceFile>
+      <SourceFile>src/bindings/wrap_cell.cpp</SourceFile>
+      <SourceFile>src/bindings/wrap_atomsf.cpp</SourceFile>
+      <SourceFile>src/bindings/wrap_symop.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_clipper_types.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_hkl_info.cpp</SourceFile>
-      <!-- <SourceFile>src/bindings/hkl_data.cpp</SourceFile> -->
+      <SourceFile>src/bindings/wrap_hkl_datatypes.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_containers.cpp</SourceFile>
+      <SourceFile>src/bindings/clipper_pybind11.cpp</SourceFile>
   </CModule>
 
   <!-- <CLibrary name = "_symmetry" usesNumpy="true">

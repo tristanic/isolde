@@ -7,23 +7,24 @@
 
 namespace py=pybind11;
 
+
 // check that the given Numpy array matches expected dimensions, and throw an
 // error if not. direction is true for incoming, false for outgoing.
 template<typename T>
-void check_numpy_array_shape(py::array_t<T> target, std::vector<size_t> dim, bool direction)
+void check_numpy_array_shape(py::array_t<T> target, std::vector<int> dim, bool direction)
 {
     auto buf = target.request();
     bool fail=false;
-    if (buf.ndim != dim.size())
+    if ((size_t)buf.ndim != dim.size())
         fail = true;
     else
-        for (size_t i=0; i<buf.ndim; ++i)
+        for (ssize_t i=0; i<buf.ndim; ++i)
             if (buf.shape[i] != dim[i])
                 fail = true;
     if (fail) {
         auto shapet_txt = std::string("( ");
         auto shapeb_txt = std::string("( ");
-        for (size_t i=0; i<buf.ndim; ++i)
+        for (ssize_t i=0; i<buf.ndim; ++i)
             shapet_txt += std::to_string(buf.shape[i]) + " ";
         for (size_t i=0; i<dim.size(); ++i)
             shapeb_txt += std::to_string(dim[i]) + " ";
@@ -43,4 +44,36 @@ void check_numpy_array_shape(py::array_t<T> target, std::vector<size_t> dim, boo
         msg += ".";
         throw std::runtime_error(msg.c_str());
     }
+}
+
+template<class C, typename T>
+py::array_t<T> array_as_numpy_1d(const C& v, int n)
+{
+    py::array_t<T> ret(n);
+    auto buf = ret.request();
+    T* ptr = (T*)buf.ptr;
+    for (int i=0; i<n; ++i)
+        ptr[i] = v[i];
+    return ret;
+}
+
+template<class C, typename T>
+void array_as_numpy_1d(const C& v, int n, py::array_t<T> target)
+{
+    check_numpy_array_shape(target, {n}, true);
+    auto buf = target.request();
+    T* ptr = (T*)buf.ptr;
+    for (int i=0; i<n; ++i)
+        ptr[i] = v[i];
+}
+
+
+template<class C, typename T>
+void fill_array_from_numpy_1d(C& v, int n, py::array_t<T> arr)
+{
+    check_numpy_array_shape(arr, {n}, true);
+    auto buf = arr.request();
+    T* ptr = (T*)buf.ptr;
+    for (int i=0; i<n; ++i)
+        v[i] = ptr[i];
 }

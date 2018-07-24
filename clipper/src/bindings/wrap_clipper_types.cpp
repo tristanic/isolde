@@ -12,10 +12,11 @@ using namespace clipper;
 
 
 template<class T>
-void init_vec3(py::module &m)
+void init_vec3(py::module &m, const std::string& dtype)
 {
     using Class=Vec3<T>;
-    py::class_<Class>(m, "Vec3")
+    auto pyclass_name = std::string("Vec3_")+dtype;
+    py::class_<Class>(m, pyclass_name.c_str())
         .def(py::init<>())
         .def(py::init<const T&, const T&, const T&>())
         // From a numpy array
@@ -31,40 +32,44 @@ void init_vec3(py::module &m)
         .def(py::init<const Vec3<int>&>())
         .def("equals", &Class::equals)
         .def("__getitem__", [](const Class& self, const int& i){ return self[i]; })
-        .def("as_numpy", [](const Class& self) -> py::array_t<T>
-            {
-                auto result = py::array_t<T>(3);
-                auto buf=result.request();
-                T* ptr = (T*)buf.ptr;
-                for (size_t i=0; i<3; ++i) {
-                    ptr[i] = self[i];
-                }
-                return result;
-            })
-        .def("as_numpy", [](const Class& self, py::array_t<T> result)
-            {
-                check_numpy_array_shape(result, {3}, false);
-                auto buf = result.request();
-                T* ptr = (T*)buf.ptr;
-                for(size_t i=0; i<3; ++i)
-                    ptr[i] = self[i];
-            })
+        .def("as_numpy", [](const Class& self) { return array_as_numpy_1d<Class, T>(self, 3); })
+        .def("as_numpy", [](const Class& self, py::array_t<T> target) { array_as_numpy_1d(self, 3, target); })
+        // .def("as_numpy", [](const Class& self) -> py::array_t<T>
+        //     {
+        //         auto result = py::array_t<T>(3);
+        //         auto buf=result.request();
+        //         T* ptr = (T*)buf.ptr;
+        //         for (size_t i=0; i<3; ++i) {
+        //             ptr[i] = self[i];
+        //         }
+        //         return result;
+        //     })
+        // .def("as_numpy", [](const Class& self, py::array_t<T> result)
+        //     {
+        //         check_numpy_array_shape(result, {3}, false);
+        //         auto buf = result.request();
+        //         T* ptr = (T*)buf.ptr;
+        //         for(size_t i=0; i<3; ++i)
+        //             ptr[i] = self[i];
+        //     })
         .def("__setitem__", [](Class& self, const int& i, const T& val) { self[i] = val; })
-        .def("from_numpy", [](Class& self, py::array_t<T> vals)
-            {
-                check_numpy_array_shape(vals, {3}, true);
-                auto buf = vals.request();
-                T* ptr = (T*)buf.ptr;
-                for (size_t i=0; i<3; ++i)
-                    self[i] = ptr[i];
-            })
+        .def("from_numpy", [](Class& self, py::array_t<T> vals) { fill_array_from_numpy_1d<Class, T>(self, 3, vals); })
+        // .def("from_numpy", [](Class& self, py::array_t<T> vals)
+        //     {
+        //         check_numpy_array_shape(vals, {3}, true);
+        //         auto buf = vals.request();
+        //         T* ptr = (T*)buf.ptr;
+        //         for (size_t i=0; i<3; ++i)
+        //             self[i] = ptr[i];
+        //     })
         .def("unit", &Class::unit)
         .def_static("zero", &Class::zero)
         .def_static("null", &Class::null)
         .def("is_null", &Class::is_null)
         .def_static("dot", &Class::dot)
         .def_static("cross", &Class::cross)
-        .def("__str__", &Class::format)
+        //.def("__repr__", [](const Class& self) { return self.format().c_str(); })
+        .def("__str__", [](const Class& self) { return self.format().c_str(); })
         .def("format", &Class::format)
         .def("__iadd__", &Class::operator+=)
         .def("__isub__", &Class::operator-=)
@@ -80,10 +85,11 @@ void init_vec3(py::module &m)
 
 
 template<typename T>
-void init_mat33(py::module &m)
+void init_mat33(py::module &m, const std::string& dtype)
 {
     using Class=Mat33<T>;
-    py::class_<Class>(m, "Mat33")
+    auto pyclass_name = std::string("Mat33_")+dtype;
+    py::class_<Class>(m, pyclass_name.c_str())
         .def(py::init<>())
         .def(py::init<const T&, const T&, const T&, const T&, const T&, const T&, const T&, const T&, const T&>())
         // From a 3x3 numpy array
@@ -133,8 +139,8 @@ void init_mat33(py::module &m)
                 for (size_t j=0; j<3; ++j)
                     self(i,j) = *ptr++;
         })
-        .def("__repr__", [](const Class& self){ return std::string("Clipper Mat33: ") + std::string(self.format()); })
-        .def("__str__", [](const Class& self){ return self.format(); })
+        //.def("__repr__", [](const Class& self) { return self.format().c_str(); })
+        .def("__str__", [](const Class& self) { return self.format().c_str(); })
         .def_static("identity", &Class::identity)
         .def_static("null", &Class::null)
         .def("is_null", &Class::is_null)
@@ -148,10 +154,11 @@ void init_mat33(py::module &m)
 } // init_mat33
 
 template <typename T>
-void init_mat33sym(py::module &m)
+void init_mat33sym(py::module &m, const std::string& dtype)
 {
     using Class=Mat33sym<T>;
-    py::class_<Class>(m, "Mat33sym")
+    auto pyclass_name = std::string("Mat33sym_")+dtype;
+    py::class_<Class>(m, pyclass_name.c_str())
         .def(py::init<>())
         .def(py::init<const Mat33<ftype32>&>())
         .def(py::init<const Mat33<ftype64>&>())
@@ -167,8 +174,8 @@ void init_mat33sym(py::module &m)
             return std::unique_ptr<Class>(new Class(
                 ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]));
         }))
-        .def("__repr__", [](const Class& self){ return std::string("Clipper Mat33sym: ")+ std::string(self.format()); })
-        .def("__str__", [](const Class& self){ return std::string(self.format()); })
+        //.def("__repr__", [](const Class& self){ return self.format().c_str(); })
+        .def("__str__", [](const Class& self){ return self.format().c_str(); })
         .def_static("identity", &Class::identity)
         .def_static("null", &Class::null)
         .def("is_null", &Class::is_null)
@@ -208,19 +215,29 @@ void init_mat33sym(py::module &m)
         ;
 } // init_mat33sym
 
+/*
+There's no real need for Python to know about the RTop<> base class - just the
+derived classes RTop_frac, RTop_orth, Symop and Isymop - all defined in
+coords.h. The below template will wrap the base class if absolutely necessary,
+but at present the base-class methods are instead added to the derived class
+wrappings in wrap_coords.cpp.
+
+
 template<typename T>
 void init_rtop(py::module &m, const std::string& dtype)
 {
     using Class=RTop<T>;
-    std::string pyclass_name = std::string("RTop_")+dtype;
+    std::string pyclass_name = std::string("_RTop_Base")+dtype;
     py::class_<Class>(m, pyclass_name.c_str())
         .def(py::init<>())
         .def(py::init<const Mat33<T>&>())
         .def(py::init<const Mat33<T>&, const Vec3<T>&>())
         .def("inverse", &Class::inverse)
         .def("equals", &Class::equals)
-        // .def("rot", &Class::rot)
-        // .def("trn", &Class::trn)
+        .def("get_rot", [](const Class& self) { return self.rot(); })
+        .def("set_rot", [](Class& self, const Mat33<T>& rot) {self.rot() = rot; })
+        .def("get_trn", [](const Class& self) { return self.trn(); })
+        .def("set_trn", [](Class& self, const Vec3<T>& trn) {self.trn() = trn; })
         .def_static("identity", &Class::identity)
         .def_static("null", &Class::null)
         .def("is_null", &Class::is_null)
@@ -233,6 +250,78 @@ void init_rtop(py::module &m, const std::string& dtype)
         .def("__mul__", [](const Class& self, const Class& other){ return self*other; }, py::is_operator())
         ;
 } // init_rtop
+
+*/
+
+template<typename T>
+void init_array2d(py::module &m, const std::string& dtype)
+{
+    using Class=Array2d<T>;
+    std::string pyclass_name = std::string("Array2d_") + dtype;
+    py::class_<Class>(m, pyclass_name.c_str())
+        .def(py::init<>())
+        .def(py::init<const int&, const int&>())
+        .def(py::init<const int&, const int&>())
+        .def("resize", (void (Class::*)(const int&, const int&)) &Class::resize)
+        .def("resize", (void (Class::*)(const int&, const int&, const T&)) &Class::resize)
+        .def("size", &Class::size)
+        .def("rows", &Class::rows)
+        .def("cols", &Class::cols)
+        .def("get", [](const Class& self, const int& i1, const int& i2) { return self(i1, i2); })
+        .def("set", [](Class& self, const int& i1, const int& i2, const T& val) { self(i1, i2) = val; })
+        .def("as_numpy", [](const Class& self)
+        {
+            int rows = self.rows();
+            int cols = self.cols();
+            auto target = py::array_t<T>({rows, cols});
+            auto buf=target.request();
+            T* ptr = (T*)buf.ptr;
+            for (int i=0; i<rows; ++i)
+                for (int j=0; j<cols; ++j)
+                    *ptr++ = self(i,j);
+            return target;
+        })
+        .def("as_numpy", [](const Class& self, py::array_t<T> target)
+        {
+            int rows = self.rows();
+            int cols = self.cols();
+            check_numpy_array_shape(target, {rows, cols}, false);
+            auto buf=target.request();
+            T* ptr = (T*)buf.ptr;
+            for (int i=0; i<rows; ++i)
+                for (int j=0; j<cols; ++j)
+                    *ptr++ = self(i,j);
+        })
+        .def("from_numpy", [](Class& self, py::array_t<T> vals)
+        {
+            int rows = self.rows();
+            int cols = self.cols();
+            check_numpy_array_shape(vals, {rows, cols}, true);
+            auto buf=vals.request();
+            T* ptr = (T*)buf.ptr;
+            for (int i=0; i<rows; ++i)
+                for (int j=0; j<cols; ++j)
+                    self(i,j) = *ptr++;
+        })
+        ;
+}
+
+template <class T>
+void init_matrix(py::module&m, const std::string& dtype)
+{
+    using Class=Matrix<T>;
+    std::string pyclass_name = std::string("Matrix_") + dtype;
+    py::class_<Class, Array2d<T> >(m, pyclass_name.c_str())
+        .def(py::init<>())
+        .def(py::init<const int&, const int&>())
+        .def(py::init<const int&, const int&, T>())
+        .def("solve", &Class::solve)
+        .def("eigen", &Class::eigen)
+        .def("__mul__", [](const Class& self, const std::vector<T>& v) { return self*v; })
+        ;
+
+}
+
 
 void init_clipper_types(py::module &m, py::module &m32, py::module &m64) {
 
@@ -254,19 +343,39 @@ void init_clipper_types(py::module &m, py::module &m32, py::module &m64) {
         .def_static("rational", [](const double& f, const int& b, bool sign=false){ return String::rational(f, b, sign); })
         .def("__int__", &String::l)
         .def("__float__", &String::f64)
-        .def("__str__", [](const String& self){ return std::string(self); })
-        .def("__repr__", [](const String& self) { return std::string(self); })
+        .def("__str__", [](const String& self) { return self.c_str(); })
+        .def("__repr__", [](const String& self) { return self.c_str(); })
         ;
 
-    // RTop is only ever instantiated as ftype (alias for double in a default
-    // build) or int.
-    init_rtop<ftype>(m, "float");
+    // init_rtop<int>(m, "int");
+    init_vec3<int>(m, "int");
+    init_mat33<int>(m, "int");
+    init_array2d<int>(m, "int");
+    init_vec3<ftype64>(m, "double");
+    init_mat33<ftype64>(m, "double");
+    init_mat33sym<ftype64>(m, "double");
+    init_array2d<ftype64>(m, "double");
+    init_matrix<ftype64>(m, "double");
 
-    init_vec3<ftype32>(m32);
-    init_mat33<ftype32>(m32);
-    init_mat33sym<ftype32>(m32);
+    // TODO: are 32-bit versions of these actually necessary?
+    init_vec3<ftype32>(m, "float");
+    init_mat33<ftype32>(m, "float");
+    init_mat33sym<ftype32>(m, "float");
+    init_array2d<ftype32>(m, "float");
+    init_matrix<ftype32>(m, "float");
 
-    init_vec3<ftype64>(m64);
-    init_mat33<ftype64>(m64);
-    init_mat33sym<ftype64>(m64);
+
+    // // init_rtop<ftype32>(m32, "float");
+    // init_vec3<ftype32>(m32, "float");
+    // init_mat33<ftype32>(m32, "float");
+    // init_mat33sym<ftype32>(m32, "float");
+    // init_array2d<ftype32>(m32, "float");
+    // init_matrix<ftype32>(m32, "float");
+    //
+    // // init_rtop<ftype64>(m64, "double");
+    // init_vec3<ftype64>(m64, "double");
+    // init_mat33<ftype64>(m64, "double");
+    // init_mat33sym<ftype64>(m64, "double");
+    // init_array2d<ftype64>(m64, "double");
+    // init_matrix<ftype64>(m64, "double");
 }

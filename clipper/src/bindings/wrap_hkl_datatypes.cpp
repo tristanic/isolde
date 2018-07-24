@@ -77,3 +77,70 @@ void declare_HKL_data(py::module &m, const std::string &class_str)
         .def("first_data", [](HKL_data_base& b) { return b.first_data(); })
         .def("next_data", [](HKL_data_base& b, HKL_info::HKL_reference_index& ih) { return b.next_data(ih); });
 }
+
+template <class T>
+void declare_CHKL_data(py::module &m, const std::string &class_str)
+{
+    using Class=CHKL_data<T>;
+    std::string pyclass_name = std::string("CHKL_data_" + class_str);
+    py::class_<Class, Container, HKL_data<T> >(m, pyclass_name.c_str())
+        .def(py::init<>())
+        .def(py::init<Container&, const String>())
+        .def("init", (void (Class::*)(const HKL_info&, const Cell&)) &Class::init)
+        .def("init", (void (Class::*)(const Spacegroup&, const Cell&, const HKL_sampling&)) &Class::init)
+        .def("update", &Class::update)
+        .def("copy_from", [](Class& self, const HKL_data<T>& other) { self = other; })
+        .def("set_all_values_to", [](Class& self, const T& value) { self = value; });
+}
+
+void init_hkl_datatypes(py::module& m, py::module& m32, py::module& m64)
+{
+    // Non-floating-point datatypes go in the main module
+    declare_HKL_data<clipper::datatypes::Flag>(m, "Flag");
+    declare_HKL_data<clipper::datatypes::Flag_bool>(m, "Flag_bool");
+    declare_CHKL_data<clipper::datatypes::Flag>(m, "Flag");
+    declare_CHKL_data<clipper::datatypes::Flag_bool>(m, "Flag_bool");
+
+    // 32-bit floating point datatypes go in the data32 module
+    declare_HKL_data<clipper::data32::I_sigI>(m32, "I_sigI_float");
+    declare_HKL_data<clipper::data32::I_sigI_ano>(m32, "I_sigI_anom");
+    declare_HKL_data<clipper::data32::F_sigF>(m32, "F_sigF");
+    declare_HKL_data<clipper::data32::F_sigF_ano>(m32, "F_sigF_anom");
+    declare_HKL_data<clipper::data32::E_sigE>(m32, "E_sigE");
+    declare_HKL_data<clipper::data32::F_phi>(m32, "F_phi");
+    declare_HKL_data<clipper::data32::Phi_fom>(m32, "Phi_phom");
+    declare_HKL_data<clipper::data32::ABCD>(m32, "ABCD");
+    declare_HKL_data<clipper::data32::D_sigD>(m32, "D_sigD");
+
+    declare_CHKL_data<clipper::data32::I_sigI>(m32, "I_sigI_float");
+    declare_CHKL_data<clipper::data32::I_sigI_ano>(m32, "I_sigI_anom");
+    declare_CHKL_data<clipper::data32::F_sigF>(m32, "F_sigF");
+    declare_CHKL_data<clipper::data32::F_sigF_ano>(m32, "F_sigF_anom");
+    declare_CHKL_data<clipper::data32::E_sigE>(m32, "E_sigE");
+    declare_CHKL_data<clipper::data32::F_phi>(m32, "F_phi");
+    declare_CHKL_data<clipper::data32::Phi_fom>(m32, "Phi_phom");
+    declare_CHKL_data<clipper::data32::ABCD>(m32, "ABCD");
+    declare_CHKL_data<clipper::data32::D_sigD>(m32, "D_sigD");
+
+    // 64-bit floating point datatypes go in the data64 module
+    declare_HKL_data<clipper::data64::I_sigI>(m64, "I_sigI");
+    declare_HKL_data<clipper::data64::I_sigI_ano>(m64, "I_sigI_anom");
+    declare_HKL_data<clipper::data64::F_sigF>(m64, "F_sigF");
+    declare_HKL_data<clipper::data64::F_sigF_ano>(m64, "F_sigF_anom");
+    declare_HKL_data<clipper::data64::E_sigE>(m64, "E_sigE");
+    declare_HKL_data<clipper::data64::F_phi>(m64, "F_phi");
+    declare_HKL_data<clipper::data64::Phi_fom>(m64, "Phi_phom");
+    declare_HKL_data<clipper::data64::ABCD>(m64, "ABCD");
+    declare_HKL_data<clipper::data64::D_sigD>(m64, "D_sigD");
+
+    declare_CHKL_data<clipper::data64::I_sigI>(m64, "I_sigI_float");
+    declare_CHKL_data<clipper::data64::I_sigI_ano>(m64, "I_sigI_anom");
+    declare_CHKL_data<clipper::data64::F_sigF>(m64, "F_sigF");
+    declare_CHKL_data<clipper::data64::F_sigF_ano>(m64, "F_sigF_anom");
+    declare_CHKL_data<clipper::data64::E_sigE>(m64, "E_sigE");
+    declare_CHKL_data<clipper::data64::F_phi>(m64, "F_phi");
+    declare_CHKL_data<clipper::data64::Phi_fom>(m64, "Phi_phom");
+    declare_CHKL_data<clipper::data64::ABCD>(m64, "ABCD");
+    declare_CHKL_data<clipper::data64::D_sigD>(m64, "D_sigD");
+
+}
