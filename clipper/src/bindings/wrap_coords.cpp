@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include <pybind11/numpy.h>
+#include <pybind11/stl.h>
 
 
 #include <clipper/clipper.h>
@@ -480,7 +481,16 @@ py::class_<Atom>(m, "Atom")
     ;
 
 
-py::class_<Atom_list>(m, "Atom_list")
+const char* atom_list_docstring_=
+"Manages a list of :class:`Atom` objects, with functions to add, remove or modify \
+atoms individually or in groups. One big caveat applies: \n\
+\n\
+    - Atoms are retrieved and inserted as copies, not references. If you \
+      retrieve an atom from the list and modify it, you will need to re-insert \
+      it for the changes to have any effect. \
+";
+
+py::class_<Atom_list>(m, "Atom_list", atom_list_docstring_)
     .def(py::init<>())
     .def(py::init<const std::vector<Atom>&>())
     // from arrays of atom properties
@@ -517,7 +527,186 @@ py::class_<Atom_list>(m, "Atom_list")
         }
         return std::unique_ptr<Atom_list>(al);
     }))
-
+    .def("delete_atom", [](Atom_list& self, const int& i)
+    {
+        self.erase(self.begin()+i);
+    }, "Deletes the atom at the given index and adjusts the array indexing accordingly.")
+    .def("__getitem__", [](const Atom_list& self, const int& i) -> Atom
+        { return self.at(i); },
+        "Returns a copy of the designated atom.")
+    .def("__setitem__", [](Atom_list& self, const int&i, const Atom& atom)
+        {
+            self.at(i) = atom;
+        },
+        "Replaces the atom at the given index"
+    )
+    .def("get_elements", [](const Atom_list& self, py::array_t<int> indices) -> std::vector<std::string>
+    {
+        std::vector<std::string> ret;
+        auto buf = indices.request();
+        if (buf.ndim !=1)
+            throw std::runtime_error("Indices must be a 1D array!");
+        int n = buf.shape[0];
+        int* iptr = (int*)buf.ptr;
+        for (int i=0; i<n; ++i)
+            ret.push_back(self.at(*(iptr++)).element());
+        return ret;
+    },
+    "Get the names of the elements at the given indices."
+    )
+    .def("set_elements", [](Atom_list& self, py::array_t<int> indices, const std::vector<std::string>& elements)
+    {
+        try {
+            check_numpy_array_shape(indices, {(int)elements.size()}, true);
+        } catch (std::runtime_error) {
+            throw std::runtime_error("Number of elements doesn't match the number of indices!");
+        }
+        int* ptr = (int*)indices.request().ptr;
+        for (size_t i=0; i<elements.size(); ++i)
+            self.at(*ptr++).set_element(String(elements[i]));
+    },
+    "Change the elements at the given indices."
+    )
+    .def("get_coords", [](const Atom_list& self, py::array_t<int> indices) -> py::array_t<ftype>
+    {
+        auto ibuf = indices.request();
+        if (ibuf.ndim !=1)
+            throw std::runtime_error("Indices must be a 1D array!");
+        int n = ibuf.shape[0];
+        int* iptr = (int*)ibuf.ptr;
+        auto ret = py::array_t<ftype>({n,3});
+        ftype* rptr = (ftype*)ret.request().ptr;
+        for (int i=0; i<n; ++i)
+        {
+            const auto& coord = self.at(*(iptr++)).coord_orth();
+            for (int j=0; j<3; ++j)
+                *rptr++ = coord[j];
+        }
+        return ret;
+    },
+    "Get the coordinates of the atoms at the given indices in Angstroms."
+    )
+    .def("set_coords", [](Atom_list& self, py::array_t<int> indices, py::array_t<ftype> coords)
+    {
+        auto ibuf = indices.request();
+        auto cbuf = coords.request();
+        if (ibuf.ndim !=1 || cbuf.ndim !=2 || cbuf.shape[0] != ibuf.shape[0] ||
+            cbuf.shape[1] != 3)
+            throw std::runtime_error("Malformed input arrays! indices must be a 1D "
+                "array of length n, and coords must be a n x 3 array.");
+        int* iptr = (int*)ibuf.ptr;
+        ftype* cptr = (ftype*)cbuf.ptr;
+        int n = ibuf.shape[0];
+        for (int i=0; i<n; ++i) {
+            self.at(*(iptr++)).set_coord_orth(Coord_orth(*cptr, *(cptr+1), *(cptr+2)));
+            cptr += 3;
+        }
+    },
+    "Set the coordinates for the given atoms in Angstroms."
+    )
+    .def("get_u_anisos", [](const Atom_list& self, py::array_t<int> indices) -> py::array_t<ftype>
+    {
+        auto ibuf = indices.request();
+        if (ibuf.ndim !=1)
+            throw std::runtime_error("Indices must be a 1D array!");
+        int n = ibuf.shape[0];
+        int* iptr = (int*)ibuf.ptr;
+        auto ret = py::array_t<ftype>({n,6});
+        ftype* rptr = (ftype*)ret.request().ptr;
+        for (int i=0; i<n; ++i)
+        {
+            const auto& ua = self.at(*(iptr++)).u_aniso_orth();
+            *rptr++ = ua.mat00();
+            *rptr++ = ua.mat11();
+            *rptr++ = ua.mat22();
+            *rptr++ = ua.mat01();
+            *rptr++ = ua.mat02();
+            *rptr++ = ua.mat12();
+        }
+        return ret;
+    },
+    "Get the anisotropic B-factor parameters for the atoms at the given indices."
+    )
+    .def("set_u_anisos", [](Atom_list& self, py::array_t<int> indices, py::array_t<ftype> uas)
+    {
+        auto ibuf = indices.request();
+        auto ubuf = uas.request();
+        if (ibuf.ndim !=1 || ubuf.ndim !=2 || ubuf.shape[0] != ibuf.shape[0] ||
+            ubuf.shape[1] != 6)
+            throw std::runtime_error("Malformed input arrays! indices must be a 1D "
+                "array of length n, and u_anisos must be a n x 6 array.");
+        int* iptr = (int*)ibuf.ptr;
+        ftype* uptr = (ftype*)ubuf.ptr;
+        int n = ibuf.shape[0];
+        for(int i=0; i<n; ++i) {
+            self.at(*(iptr++)).set_u_aniso_orth(
+                U_aniso_orth(*uptr, *(uptr+1), *(uptr+2), *(uptr+3), *(uptr+4), *(uptr+5))
+            );
+            uptr+=6;
+        }
+    },
+    "Set the anisotropic B-factors for the given atoms."
+    )
+    .def("get_occupancies", [](const Atom_list& self, py::array_t<int> indices) -> py::array_t<ftype>
+    {
+        auto ibuf = indices.request();
+        if (ibuf.ndim !=1)
+            throw std::runtime_error("Indices must be a 1D array!");
+        int n = ibuf.shape[0];
+        int* iptr = (int*)ibuf.ptr;
+        auto ret = py::array_t<ftype>(n);
+        ftype* rptr = (ftype*)ret.request().ptr;
+        for (int i=0; i<n; ++i)
+            *rptr++ = self.at(*(iptr++)).occupancy();
+        return ret;
+    },
+    "Get the fractional occupancies of the atoms at the given indices."
+    )
+    .def("set_occupancies", [](Atom_list& self, py::array_t<int> indices, py::array_t<ftype> occs)
+    {
+        auto ibuf = indices.request();
+        auto obuf = occs.request();
+        if (ibuf.ndim !=1 || obuf.ndim !=1 || obuf.shape[0] != ibuf.shape[0])
+            throw std::runtime_error("Index and occupancy arrays must be the same length!");
+        int* iptr = (int*)ibuf.ptr;
+        ftype* optr = (ftype*)obuf.ptr;
+        int n = ibuf.shape[0];
+        for (int i=0; i<n; ++i) {
+            self.at(*(iptr++)).set_occupancy(*(optr++));
+        }
+    },
+    "Set the fractional occupancies for the given atoms."
+    )
+    .def("get_u_isos", [](const Atom_list& self, py::array_t<int> indices) -> py::array_t<ftype>
+    {
+        auto ibuf = indices.request();
+        if (ibuf.ndim !=1)
+            throw std::runtime_error("Indices must be a 1D array!");
+        int n = ibuf.shape[0];
+        int* iptr = (int*)ibuf.ptr;
+        auto ret = py::array_t<ftype>(n);
+        ftype* rptr = (ftype*)ret.request().ptr;
+        for (int i=0; i<n; ++i)
+            *rptr++ = self.at(*(iptr++)).u_iso();
+        return ret;
+    },
+    "Get the isotropic B-factors of the atoms at the given indices."
+    )
+    .def("set_u_isos", [](Atom_list& self, py::array_t<int> indices, py::array_t<ftype> u_isos)
+    {
+        auto ibuf = indices.request();
+        auto ubuf = u_isos.request();
+        if (ibuf.ndim !=1 || ubuf.ndim !=1 || ubuf.shape[0] != ibuf.shape[0])
+            throw std::runtime_error("Index and u_iso arrays must be the same length!");
+        int* iptr = (int*)ibuf.ptr;
+        ftype* uptr = (ftype*)ubuf.ptr;
+        int n = ibuf.shape[0];
+        for (int i=0; i<n; ++i) {
+            self.at(*(iptr++)).set_u_iso(*(uptr++));
+        }
+    },
+    "Set the occupancies for the given atoms."
+    )
     ;
 
 
