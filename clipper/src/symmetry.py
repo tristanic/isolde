@@ -39,6 +39,15 @@ c_array_function = _c_functions.c_array_function
 
 HIDE_ISOLDE = 0x02
 
+
+BACKBONE_MODE_RIBBON=0
+BACKBONE_MODE_CA_TRACE=1
+
+_backbone_mode_descr = {
+    BACKBONE_MODE_RIBBON: "ribbon",
+    BACKBONE_MODE_CA_TRACE: "CA trace"
+}
+
 def _format_sym_tuple(result):
     from chimerax.atomic import ctypes_support as convert
     from chimerax.core.geometry import Places
@@ -161,6 +170,7 @@ class XtalSymmetryHandler(Model):
             'map box changed',  # Changed shape of box for map viewing
             'map box moved',    # Changed location of box for map viewing
             'atom box changed', # Changed shape or centre of box for showing symmetry atoms
+            'backbone mode changed', # Changed backbone mode from ribbon to CA trace or vice versa
         )
         for t in trigger_names:
             trig.add_trigger(t)
@@ -369,9 +379,141 @@ class XtalSymmetryHandler(Model):
         if focus:
             focus_on_selection(self.session, self.session.view, atoms)
 
+    _cube_pairs = numpy.array([[0,1], [0,2], [0,4], [1,3], [1,5], [2,3], [2,6], [3,7], [4,5], [4,6], [5,7], [6,7]], numpy.int)
+
+    def draw_unit_cell_box(self, offset=None, cylinder_radius = 0.05):
+        '''
+        Draw a rhombohedral box around one unit cell.
+        '''
+        m, d = _get_special_positions_model(self)
+        model = self.structure
+        uc = self.unit_cell
+
+        if offset is None:
+            offset = numpy.zeros(3)
+
+        from chimerax.core.geometry import Place, Places
+        positions = []
+        colors = []
+        rgba_edge = numpy.array([0,255,255,128],numpy.uint8)
+        corners_frac = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]],numpy.double) + offset\
+                        + uc.min.coord_frac(self.grid).uvw
+
+        corners = numpy.array([clipper.Coord_frac(c).coord_orth(self.cell).xyz for c in corners_frac])
+        from chimerax.surface.shapes import cylinder_geometry
+        d.set_geometry(*cylinder_geometry())
+        d.set_color(rgba_edge)
+        from chimerax.core.geometry import cylinder_rotations, Places
+        xyz0 = numpy.array([corners[p[0]] for p in self._cube_pairs])
+        xyz1 = numpy.array([corners[p[1]] for p in self._cube_pairs])
+        radii = numpy.ones(12)*cylinder_radius
+        p = numpy.empty((12, 4, 4), numpy.float32)
+        cylinder_rotations(xyz0, xyz1, radii, p)
+        p[:,3,:3] = 0.5*(xyz0+xyz1)
+        pl = Places(opengl_array = p)
+        d.set_positions(pl)
+        m.display = True
 
 
 
+
+    def draw_unit_cell_and_special_positions(self, offset = None):
+        '''
+        Quick-and-dirty drawing mapping out the special positions
+        (positions which map back to themselves by at least one
+        non-unity symop) within one unit cell. A sphere will be drawn
+        at each grid-point with non-unit multiplicity, and colour-coded
+        according to multiplicity:
+            2-fold: white
+            3-fold: cyan
+            4-fold: yellow
+            6-fold: magenta
+
+        Ultimately it would be nice to replace this with something more
+        elegant, that masks and scrolls continuously along with the model/
+        map visualisation.
+
+        Args:
+            offset (1x3 numpy array, default = None):
+                Optional (u,v,w) offset (in fractions of a unit cell axis)
+        '''
+        m, d = _get_special_positions_model(self)
+        model = self.structure
+
+        ref = model.bounds().center().astype(float)
+        frac_coords = clipper.Coord_orth(ref).coord_frac(self.cell).uvw
+        if offset is None:
+            offset = numpy.array([0,0,0],int)
+
+        xmap = self.xmapset[0].xmap
+        uc = self.unit_cell
+        spc = numpy.array(xmap.special_positions_unit_cell_xyz(uc, offset))
+        from chimerax.surface.shapes import sphere_geometry2
+        sphere = numpy.array(sphere_geometry2(80))
+        sphere[0]*=0.25
+        d.set_geometry(*sphere)
+        #d.vertices, d.normals, d.triangles = sphere
+
+        from chimerax.core.geometry import Place, Places
+        positions = []
+        colors = []
+        rgba_corner = numpy.array([255,0,255,128],numpy.uint8)
+        corners_frac = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]],numpy.double) + offset\
+                        + self.unit_cell.min.coord_frac(self.grid).uvw
+
+        corners = []
+        for c in corners_frac:
+            co = clipper.Coord_frac(c).coord_orth(self.cell)
+            positions.append(Place(axes=numpy.identity(3)*4, origin=co.xyz))
+            colors.append(rgba_corner)
+
+        if len(spc):
+
+            coords = spc[:,0:3]
+            multiplicity = spc[:,3].astype(int)
+            scale_2fold = numpy.identity(3)
+            scale_3fold = numpy.identity(3)* 1.5
+            scale_4fold = numpy.identity(3)* 2
+            scale_6fold = numpy.identity(3)* 3
+            rgba_2fold = numpy.array([255,255,255,255],numpy.uint8)
+            rgba_3fold = numpy.array([0,255,255,255],numpy.uint8)
+            rgba_4fold = numpy.array([255,255,0,255],numpy.uint8)
+            rgba_6fold = numpy.array([255,0,0,255],numpy.uint8)
+
+            for coord, mult in zip(coords, multiplicity):
+                if mult == 2:
+                    positions.append(Place(axes=scale_2fold, origin=coord))
+                    colors.append(rgba_2fold)
+                elif mult == 3:
+                    positions.append(Place(axes=scale_3fold, origin=coord))
+                    colors.append(rgba_3fold)
+                elif mult == 4:
+                    positions.append(Place(axes=scale_4fold, origin=coord))
+                    colors.append(rgba_4fold)
+                elif mult == 6:
+                    positions.append(Place(axes=scale_6fold, origin=coord))
+                    colors.append(rgba_6fold)
+            for c in corners:
+                positions.append(Place(axes=scale_6fold, origin=c))
+                colors.append(rgba_corner)
+
+        d.set_positions(Places(positions))
+        d.set_colors(numpy.array(colors, numpy.uint8))
+        # m.add_drawing(d)
+        # model.parent.add([m])
+        m.display = True
+
+
+def _get_special_positions_model(m):
+    for cm in m.child_models():
+        if cm.name == "Special positions":
+            return cm, cm.child_drawings()[0]
+    from chimerax.core.models import Model, Drawing
+    d = Drawing("Special positions")
+    sm = Model("Special positions", m.session)
+    sm.add_drawing(d)
+    m.add([sm])
+    return sm, d
 
 
 class AtomicSymmetryModel(Model):
@@ -379,7 +521,7 @@ class AtomicSymmetryModel(Model):
     Finds and draws local symmetry atoms for an atomic structure
     '''
     def __init__(self, atomic_structure, parent, unit_cell, radius = 15,
-        dim_colors_to = 0.6, live = True):
+        dim_colors_to = 0.6, backbone_mode = 'CA trace', live = True):
         self._live_scrolling = False
         self.structure = atomic_structure
         session = self.session = atomic_structure.session
@@ -490,6 +632,22 @@ class AtomicSymmetryModel(Model):
             self.structure.triggers.remove_handler(mh)
         self.unhide_all_atoms()
         super().delete()
+
+    @property
+    def backbone_mode(self):
+        return _backbone_mode_descr[self._backbone_mode]
+
+    @backbone_mode.setter
+    def backbone_mode(self, mode):
+        old_mode = self.backbone_mode
+        if mode == "ribbon":
+            self._backbone_mode = BACKBONE_MODE_RIBBON
+        elif mode == "CA trace":
+            self._backbone_mode = BACKBONE_MODE_CA_TRACE
+        else:
+            raise TypeError('Unrecognised mode! Should be one of "ribbon" or "CA trace"')
+        if old_mode != mode:
+            self.triggers.activate_trigger('backbone mode changed', mode)
 
     def unhide_all_atoms(self):
         self.structure.atoms.hides &= ~HIDE_ISOLDE
@@ -977,3 +1135,30 @@ def _copy_ribbon_drawing(master_drawing, target_drawing, dim_factor):
             tod.add_drawing(nc)
             recursively_add_drawings(c, nc, dim_factor)
     recursively_add_drawings(d, t, dim_factor)
+
+def _get_ca_pbg(m):
+    from chimerax.atomic import PseudobondGroup
+    for cm in m.child_models():
+        if isinstance(cm, PseudobondGroup) and m.name == "CA trace":
+            return cm
+    pbg = m.pseudobond_group("CA trace")
+    pbg.dashes = 1
+    return pbg
+
+def create_ca_trace(m):
+    pbg = _get_ca_pbg(m)
+    pbg.clear()
+    chains = m.polymers(missing_structure_treatment = m.PMS_NEVER_CONNECTS)
+    for chain in chains:
+        chain = chain[0]
+        if not chain[0].polymer_type == Residue.PT_AMINO:
+            continue
+        for i in range(len(chain)-1):
+            r1, r2 = chain[i:i+2]
+            try:
+                ca1 = r1.atoms[r1.atoms.names=='CA'][0]
+                ca2 = r2.atoms[r2.atoms.names=='CA'][0]
+                pb = pbg.new_pseudobond(ca1, ca2)
+                pb.color = ca1.color
+            except:
+                continue
