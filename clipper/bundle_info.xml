@@ -198,6 +198,7 @@
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
 
+      <SourceFile>src/bindings/wrap_nxmap.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_hkl_datatypes.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_hkl_data.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_derivs.cpp</SourceFile>
