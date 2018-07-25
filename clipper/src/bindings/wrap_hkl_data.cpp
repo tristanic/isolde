@@ -367,7 +367,7 @@ void declare_hkl_data_d_sigd(py::module& m, const char* dtype)
 {
     auto class_str = std::string("D_sigD_") + dtype;
     using namespace clipper::datatypes;
-    auto pyclass = declare_HKL_data<ABCD<T>>(m, class_str, std::string("Deprecated. Do not use."));
+    auto pyclass = declare_HKL_data<D_sigD<T>>(m, class_str, std::string("Deprecated. Do not use."));
 }
 
 
