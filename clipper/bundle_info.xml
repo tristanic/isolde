@@ -198,6 +198,7 @@
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
 
+      <SourceFile>src/bindings/wrap_derivs.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_coords.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_clipper_stats.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_cell.cpp</SourceFile>
