@@ -11,10 +11,10 @@
 
 namespace py=pybind11;
 void init_hkl_info(py::module &m);
-//void init_hkl_data(py::module &m);
+void init_hkl_data(py::module &m, py::module& m32, py::module& m64);
+void init_hkl_datatypes(py::module &m, py::module &m32, py::module &m64);
 void init_containers(py::module &m);
 void init_clipper_types(py::module &m, py::module &m32, py::module &m64);
-void init_hkl_datatypes(py::module &m, py::module &m32, py::module &m64);
 void init_coords(py::module &m);
 void init_derivs(py::module &m);
 void init_symop(py::module& m);
@@ -41,9 +41,9 @@ PYBIND11_MODULE(clipper_python, m) {
 
     init_hkl_info(m);
     init_containers(m);
-    //init_hkl_data(m);
-    init_clipper_types(m, m32, m64);
+    init_hkl_data(m, m32, m64);
     init_hkl_datatypes(m, m32, m64);
+    init_clipper_types(m, m32, m64);
     init_coords(m);
     init_derivs(m);
     init_symop(m);

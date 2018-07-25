@@ -77,3 +77,20 @@ void fill_array_from_numpy_1d(C& v, int n, py::array_t<T> arr)
     for (int i=0; i<n; ++i)
         v[i] = ptr[i];
 }
+
+template<class HKLdtype, class dtype>
+py::array_t<dtype> hkl_data_export_numpy(const HKLdtype& self, const int& size)
+{
+    auto ret = py::array_t<dtype>(size);
+    dtype* ptr = (dtype*)ret.request().ptr;
+    self.data_export(ptr);
+    return ret;
+} // hkl_data_export_numpy
+
+template<class HKLdtype, class dtype>
+void hkl_data_import_numpy(HKLdtype& self, const int& size, py::array_t<dtype> vals)
+{
+    check_numpy_array_shape(vals, {size}, true);
+    dtype* ptr = (dtype*)vals.request().ptr;
+    self.data_import(ptr);
+} // hkl_data_import_numpy
