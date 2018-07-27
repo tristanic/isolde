@@ -18,7 +18,10 @@ void init_clipper_types(py::module &m, py::module &m32, py::module &m64);
 void init_coords(py::module &m);
 void init_derivs(py::module &m);
 void init_symop(py::module& m);
+void init_symops(py::module& m);
 void init_cell(py::module& m);
+void init_unit_cell(py::module& m);
+void init_spacegroup(py::module& m);
 void init_clipper_stats(py::module& m);
 
 void init_nxmap(py::module& m);
@@ -49,7 +52,10 @@ PYBIND11_MODULE(clipper_python, m) {
     init_coords(m);
     init_derivs(m);
     init_symop(m);
+    init_symops(m);
     init_cell(m);
+    init_unit_cell(m);
+    init_spacegroup(m);
     init_clipper_stats(m);
 
     init_nxmap(m);
