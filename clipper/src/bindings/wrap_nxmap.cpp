@@ -9,6 +9,94 @@
 namespace py=pybind11;
 using namespace clipper;
 
+
+template<typename T>
+void numpy_export_core_(const NXmap<T>& nxmap,
+    py::array_t<T> target,
+    const Coord_grid& origin)
+{
+    auto tbuf = target.request();
+    T* tptr = (T*)tbuf.ptr;
+    Coord_grid duvw(tbuf.shape[0], tbuf.shape[1], tbuf.shape[2]);
+    Coord_grid last = origin + duvw;
+    if (!nxmap.in_map(origin))
+        throw std::out_of_range("Requested origin is outside the map!");
+    if (!nxmap.in_map(last))
+    {
+        auto g = nxmap.grid();
+        last = Coord_grid(g.nu(), g.nv(), g.nw());
+    }
+    Coord_grid c;
+    for (c.u() = origin.u(); c.u() < last.u(); c.u()++)
+        for (c.v() = origin.v(); c.v() < last.v(); c.v()++)
+            for (c.w() = origin.w(); c.w() < last.w(); c.w()++)
+                *tptr++ = nxmap.get_data(c);
+}
+
+template<typename T>
+void numpy_import_core_(NXmap<T>& nxmap,
+    py::array_t<T> vals,
+    const Coord_grid& origin)
+{
+    auto vbuf = vals.request();
+    T* vptr = (T*)vbuf.ptr;
+    Coord_grid duvw(vbuf.shape[0], vbuf.shape[1], vbuf.shape[2]);
+    Coord_grid last = origin + duvw;
+    if (!nxmap.in_map(origin))
+        throw std::out_of_range("Input origin is outside the map!");
+    if (!nxmap.in_map(last))
+    {
+        auto g = nxmap.grid();
+        last = Coord_grid(g.nu(), g.nv(), g.nw());
+    }
+    Coord_grid c;
+    for (c.u() = origin.u(); c.u() < last.u(); c.u()++)
+        for (c.v() = origin.v(); c.v() < last.v(); c.v()++)
+            for (c.w() = origin.w(); c.w() < last.w(); c.w()++)
+                nxmap.set_data(c, *vptr++);
+}
+
+
+
+template<class C, class T>
+void add_nxmap_numpy_functions(py::class_<C>& pyclass)
+{
+    pyclass
+        .def("export_numpy", [](const C& self)
+        {
+            auto g = self.grid();
+            auto target = py::array_t<T>({g[0],g[1],g[2]});
+            numpy_export_core_(self, target, Coord_grid(0,0,0));
+            return target;
+        },
+        "Export the whole map to a Numpy array.")
+        .def("export_numpy", [](const C& self, py::array_t<T> target)
+        { numpy_export_core_(self, target, Coord_grid(0,0,0)); },
+        "Export the map into the given numpy array, starting at the origin. "
+        "If the target array is smaller than the map, the output will be "
+        "truncated to fit.")
+        .def("export_fragment_numpy", [](const C& self, const Coord_grid& origin,
+            const Coord_grid& size)
+        {
+            if (!self.in_map(origin+size))
+                throw std::out_of_range("Requested data extends beyond the range of the map!");
+            auto target = py::array_t<T>({size[0], size[1], size[2]});
+            numpy_export_core_(self, target, origin);
+            return target;
+        },
+        "Export a fragment of the map with the given origin and size, as a "
+         "numpy array.")
+        .def("export_fragment_numpy", [](const C& self, const Coord_grid& origin,
+            py::array_t<T> target)
+            { numpy_export_core_(self, target, origin); },
+        "Export a fragment of the map with the given origin into the given numpy array.")
+        .def("import_numpy", [](C& self, const Coord_grid& origin, py::array_t<T> vals)
+            { numpy_import_core_(self, vals, origin); },
+            "Import data from numpy. Import will start at the origin of the numpy "
+            "array, and be written to the map starting at the given origin.")
+        ;
+}
+
 void declare_nxmap_reference_index(py::module& m)
 {
     using Class = NXmap_base::Map_reference_index;
@@ -94,6 +182,7 @@ void declare_nxmap(py::module& m, const char* dtype)
         .def(py::self -= py::self)
         ;
     apply_nxmap_base_methods<Class, T>(nxmap);
+    add_nxmap_numpy_functions<Class, T>(nxmap);
 }
 
 void init_nxmap(py::module& m)
