@@ -198,6 +198,7 @@
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
 
+      <SourceFile>src/bindings/wrap_xmap.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_unit_cell.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_symops.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_spacegroup.cpp</SourceFile>

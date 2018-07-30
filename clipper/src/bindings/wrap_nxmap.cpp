@@ -97,17 +97,27 @@ void add_nxmap_numpy_functions(py::class_<C>& pyclass)
         ;
 }
 
+// Handing these reference coordinates in an efficient way is tricky. On the
+// C++ side, the increment/decrement functions return a reference back to
+// themselves for convenience. Fine on the C++ side, but a naive wrapping will
+// cause the creation of a brand new python object on every iteration - which
+// will make things agonizingly slow. A much better option is to wrap all
+// increment/decrement functions in lambdas that return void.
+
 void declare_nxmap_reference_index(py::module& m)
 {
     using Class = NXmap_base::Map_reference_index;
     py::class_<Class>(m, "NXmap_reference_index")
-        .def(py::init<>())
-        .def(py::init<const NXmap_base&>())
-        .def(py::init<const NXmap_base&, const Coord_grid&>())
-        .def("coord", &Class::coord)
-        .def("coord_orth", &Class::coord_orth)
-        .def("set_coord", &Class::set_coord)
-        .def("next", &Class::next)
+        // Let NXmap take control of creation
+        // .def(py::init<>())
+        // .def(py::init<const NXmap_base&>())
+        // .def(py::init<const NXmap_base&, const Coord_grid&>())
+        .def_property("coord",
+            &Class::coord,
+            [](Class& self, const Coord_grid& pos) -> void { self.set_coord(pos); }
+        )
+        .def_property_readonly("coord_orth", &Class::coord_orth)
+        .def("next", [](Class& self) -> void { self.next(); })
         .def("index_offset", &Class::index_offset)
         // base class methods
         .def_property_readonly("base_nxmap", [](const Class& self) { return self.base_nxmap(); })
@@ -120,19 +130,22 @@ void declare_nxmap_reference_coord(py::module& m)
 {
     using Class = NXmap_base::Map_reference_coord;
     py::class_<Class>(m, "NXmap_reference_coord")
-        .def(py::init<>())
-        .def(py::init<const NXmap_base&>())
-        .def(py::init<const NXmap_base&, const Coord_grid&>())
-        .def("coord", &Class::coord)
-        .def("coord_orth", &Class::coord_orth)
-        .def("set_coord", &Class::set_coord)
-        .def("next", &Class::next)
-        .def("next_u", &Class::next_u)
-        .def("next_v", &Class::next_v)
-        .def("next_w", &Class::next_w)
-        .def("prev_u", &Class::prev_u)
-        .def("prev_v", &Class::prev_v)
-        .def("prev_w", &Class::prev_w)
+        // Let NXmap take control of creation
+        // .def(py::init<>())
+        // .def(py::init<const NXmap_base&>())
+        // .def(py::init<const NXmap_base&, const Coord_grid&>())
+        .def_property("coord",
+            &Class::coord,
+            [](Class& self, const Coord_grid& pos) -> void { self.set_coord(pos); }
+        )
+        .def_property_readonly("coord_orth", &Class::coord_orth)
+        .def("next", [](Class& self) -> void { self.next(); })
+        .def("next_u", [](Class& self) -> void { self.next_u(); })
+        .def("next_v", [](Class& self) -> void { self.next_v(); })
+        .def("next_w", [](Class& self) -> void { self.next_w(); })
+        .def("prev_u", [](Class& self) -> void { self.prev_u(); })
+        .def("prev_v", [](Class& self) -> void { self.prev_v(); })
+        .def("prev_w", [](Class& self) -> void { self.prev_w(); })
         // base class methods
         .def_property_readonly("base_nxmap", [](const Class& self) { return self.base_nxmap(); })
         .def_property_readonly("index", [](const Class& self) { return self.index(); })
@@ -156,6 +169,15 @@ void apply_nxmap_base_methods(py::class_<Derived>& pyclass)
 
         .def("first", [](const Derived& self) { return self.first(); })
         .def("first_coord", [](const Derived& self) { return self.first_coord(); })
+        // Let NXmap take control of creation of Map_reference... types
+        .def("map_reference_index", [](const Derived& self, const Coord_grid& pos)
+        {
+            return NXmap_base::Map_reference_index(self, pos);
+        })
+        .def("map_reference_coord", [](const Derived& self, const Coord_grid& pos)
+        {
+            return NXmap_base::Map_reference_coord(self, pos);
+        })
         ;
 }
 
@@ -175,6 +197,7 @@ void declare_nxmap(py::module& m, const char* dtype)
         .def("__setitem__", [](Class& self, const NXmap_base::Map_reference_index i, const T& val){ self[i] = val; })
         .def("__getitem__", [](const Class& self, const NXmap_base::Map_reference_coord i) { return self[i]; })
         .def("__setitem__", [](Class& self, const NXmap_base::Map_reference_coord i, const T& val) { self[i] = val; })
+        //TODO: Would these be better off as __getitem__/__setitem__ as well?
         .def("get_data", [](const Class& self, const Coord_grid& pos) { return self.get_data(pos); })
         .def("set_data", [](Class& self, const Coord_grid& pos, const T& val) { self.set_data(pos, val); })
         .def("set_all_values_to", [](Class& self, const T& val) { self = val; })

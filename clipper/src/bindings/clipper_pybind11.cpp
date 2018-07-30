@@ -25,6 +25,7 @@ void init_spacegroup(py::module& m);
 void init_clipper_stats(py::module& m);
 
 void init_nxmap(py::module& m);
+void init_xmap(py::module &m);
 
 void init_atomsf(py::module& m);
 using namespace clipper;
@@ -59,6 +60,7 @@ PYBIND11_MODULE(clipper_python, m) {
     init_clipper_stats(m);
 
     init_nxmap(m);
+    init_xmap(m);
 
     init_atomsf(m);
 
