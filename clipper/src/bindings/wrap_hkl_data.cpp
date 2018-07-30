@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 
+#include "type_conversions.h"
 #include <clipper/clipper.h>
 #include <clipper/core/hkl_operators.h>
 #include <clipper/core/hkl_compute.h>
@@ -9,6 +10,12 @@
 
 namespace py=pybind11;
 using namespace clipper;
+
+/* Hacky workaround because HKL_data_base has a protected destructor, requiring
+ * us to use py::nodelete - which leads to an error if we try to instantiate
+ * derived classes normally.
+*/
+template <typename T> struct Deleter { void operator() (T* o) const { delete o; }};
 
 template<class C>
 void catch_null(const C& c)
@@ -32,6 +39,27 @@ void catch_mismatched_lengths(const C1& c1, const C2& c2, const C3& c3)
 }
 
 
+void declare_hkl_data_base(py::module &m)
+{
+    py::class_<HKL_data_base, std::unique_ptr<HKL_data_base, py::nodelete>>(m, "_HKL_data_base")
+        .def_property_readonly("is_null", &HKL_data_base::is_null)
+        .def_property_readonly("base_hkl_info", &HKL_data_base::base_hkl_info)
+        .def_property_readonly("base_cell", &HKL_data_base::base_cell)
+        .def_property_readonly("spacegroup", &HKL_data_base::spacegroup)
+        .def_property_readonly("cell", &HKL_data_base::cell)
+        .def_property_readonly("resolution", &HKL_data_base::resolution)
+        .def_property_readonly("hkl_sampling", &HKL_data_base::hkl_sampling)
+        .def_property_readonly("hkl_info", &HKL_data_base::hkl_info)
+        .def("invresolsq", &HKL_data_base::invresolsq)
+        .def("invresolsq_range", &HKL_data_base::invresolsq_range)
+        .def_property_readonly("num_obs", &HKL_data_base::num_obs)
+        .def_property_readonly("first", &HKL_data_base::first)
+        .def_property_readonly("first_data", &HKL_data_base::first_data)
+        .def("next_data", [](const HKL_data_base& self, HKL_info::HKL_reference_index& ih) { self.next_data(ih); })
+        ;
+
+}
+
 // Common to all HKL datatypes
 template <class C>
 py::class_<HKL_data<C>> declare_HKL_data(py::module &m, const std::string &class_str,
@@ -39,7 +67,7 @@ py::class_<HKL_data<C>> declare_HKL_data(py::module &m, const std::string &class
 {
     using Class=HKL_data<C>;
     std::string pyclass_name = std::string("HKL_data_") + class_str;
-    py::class_<Class> theclass(m, pyclass_name.c_str(), docstring.c_str());
+    py::class_<Class, /*std::unique_ptr<Class, Deleter<Class>>,*/ HKL_data_base> theclass(m, pyclass_name.c_str(), docstring.c_str());
     theclass
         .def(py::init<>())
         .def(py::init<const HKL_info&>())
@@ -136,20 +164,20 @@ py::class_<HKL_data<C>> declare_HKL_data(py::module &m, const std::string &class
         would be a serious pain, so instead we'll hide the base class from
         Python entirely and expose all base class functions using lambdas.
         */
-        .def("is_null", [](const Class& self) { return self.is_null(); })
-        .def("base_hkl_info", [](const Class& self) { return self.base_hkl_info(); })
-        .def("base_cell", [](const Class& self) { return self.base_cell(); })
-        .def("spacegroup", [](const Class& self) { return self.spacegroup(); })
-        .def("cell", [](const Class& self) { return self.cell(); })
-        .def("resolution", [](const Class& self) { return self.resolution(); })
-        .def("hkl_sampling", [](const Class& self) { return self.hkl_sampling(); })
-        .def("hkl_info", [](const Class& self) { return self.hkl_info(); })
-        .def("invresolsq", [](const Class& self, const int& index) { return self.invresolsq(index); })
-        .def("invresolsq_range", [](const Class& self) { return self.invresolsq_range(); })
-        .def("num_obs", [](const Class& self) { return self.num_obs(); })
-        .def("first", [](const Class& self) { return self.first(); })
-        .def("first_data", [](const Class& self) { return self.first_data(); })
-        .def("next_data", [](const Class& self, HKL_info::HKL_reference_index& ih) { return self.next_data(ih); })
+        // .def("is_null", [](const Class& self) { return self.is_null(); })
+        // .def("base_hkl_info", [](const Class& self) { return self.base_hkl_info(); })
+        // .def("base_cell", [](const Class& self) { return self.base_cell(); })
+        // .def("spacegroup", [](const Class& self) { return self.spacegroup(); })
+        // .def("cell", [](const Class& self) { return self.cell(); })
+        // .def("resolution", [](const Class& self) { return self.resolution(); })
+        // .def("hkl_sampling", [](const Class& self) { return self.hkl_sampling(); })
+        // .def("hkl_info", [](const Class& self) { return self.hkl_info(); })
+        // .def("invresolsq", [](const Class& self, const int& index) { return self.invresolsq(index); })
+        // .def("invresolsq_range", [](const Class& self) { return self.invresolsq_range(); })
+        // .def("num_obs", [](const Class& self) { return self.num_obs(); })
+        // .def("first", [](const Class& self) { return self.first(); })
+        // .def("first_data", [](const Class& self) { return self.first_data(); })
+        // .def("next_data", [](const Class& self, HKL_info::HKL_reference_index& ih) { return self.next_data(ih); })
         // Comparison operators common to all, from hkl_operators.h
         .def(py::self & py::self)
         .def(py::self | py::self)
@@ -398,7 +426,7 @@ void declare_CHKL_data(py::module &m, const char* class_name, const char* dtype)
 {
     using Class=CHKL_data<T>;
     std::string pyclass_name = std::string("CHKL_data_") + class_name + dtype;
-    py::class_<Class, Container, HKL_data<T> >(m, pyclass_name.c_str())
+    py::class_<Class, /*std::unique_ptr<Class, Deleter<Class>>,*/ Container, HKL_data<T> >(m, pyclass_name.c_str())
         .def(py::init<>())
         .def(py::init<Container&, const String>())
         .def("init", (void (Class::*)(const HKL_info&, const Cell&)) &Class::init)
@@ -410,6 +438,7 @@ void declare_CHKL_data(py::module &m, const char* class_name, const char* dtype)
 
 void init_hkl_data(py::module& m, py::module& m32, py::module& m64)
 {
+    declare_hkl_data_base(m);
     {
         using namespace clipper::datatypes;
         // Non-floating-point datatypes go in the main module

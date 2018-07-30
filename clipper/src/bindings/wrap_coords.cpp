@@ -3,7 +3,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
-
+#include "type_conversions.h"
 #include <clipper/clipper.h>
 
 #include "numpy_helper.h"
@@ -19,8 +19,8 @@ py::class_<Resolution>(m, "Resolution")
     .def(py::init<const ftype&>())
     .def("init", &Resolution::init)
     .def("limit", &Resolution::limit)
-    .def("invresolsq_limit", &Resolution::invresolsq_limit)
-    .def("is_null", &Resolution::is_null)
+    .def_property_readonly("invresolsq_limit", &Resolution::invresolsq_limit)
+    .def_property_readonly("is_null", &Resolution::is_null)
     .def("__str__", [](const Resolution& self)
     {
         return std::string(String(self.limit())) + " Å";
@@ -389,6 +389,8 @@ py::class_<Grid, Vec3<int>>(m, "Grid")
 py::class_<Grid_sampling, Grid>(m, "Grid_sampling")
     .def(py::init<>())
     .def(py::init<const int&, const int&, const int&>())
+    .def(py::init<const Spacegroup&, const Cell&, const Resolution&, const ftype>(),
+        py::arg("spacegroup"), py::arg("cell"), py::arg("resolution"), py::arg("rate")=1.5)
     // from numpy
     .def(py::init([](py::array_t<int> vals)
     {

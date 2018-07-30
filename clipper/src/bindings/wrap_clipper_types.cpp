@@ -2,7 +2,7 @@
 #include <pybind11/operators.h>
 #include <pybind11/numpy.h>
 
-
+#include "type_conversions.h"
 #include <clipper/clipper.h>
 
 #include "numpy_helper.h"
@@ -322,30 +322,29 @@ void init_matrix(py::module&m, const std::string& dtype)
 
 }
 
-
 void init_clipper_types(py::module &m, py::module &m32, py::module &m64) {
 
-    py::class_<String>(m, "String")
-        .def(py::init<>())
-        .def(py::init<const std::string>())
-        .def(py::init<const char*>())
-        .def(py::init<const char*, const int>())
-        .def(py::init<const int, const int>())
-        .def(py::init<const long, const int>())
-        .def(py::init<const float, const int, const int>())
-        .def(py::init<const double, const int, const int>())
-        .def("split", &String::split)
-        .def("trim", &String::trim)
-        .def("tail", &String::tail)
-        .def("head", &String::head)
-        .def("nohead", &String::nohead)
-        .def("notail", &String::notail)
-        .def_static("rational", [](const double& f, const int& b, bool sign=false){ return String::rational(f, b, sign); })
-        .def("__int__", &String::l)
-        .def("__float__", &String::f64)
-        .def("__str__", [](const String& self) { return self.c_str(); })
-        .def("__repr__", [](const String& self) { return self.c_str(); })
-        ;
+    // py::class_<String>(m, "String")
+    //     .def(py::init<>())
+    //     .def(py::init<const std::string>())
+    //     .def(py::init<const char*>())
+    //     .def(py::init<const char*, const int>())
+    //     .def(py::init<const int, const int>())
+    //     .def(py::init<const long, const int>())
+    //     .def(py::init<const float, const int, const int>())
+    //     .def(py::init<const double, const int, const int>())
+    //     .def("split", &String::split)
+    //     .def("trim", &String::trim)
+    //     .def("tail", &String::tail)
+    //     .def("head", &String::head)
+    //     .def("nohead", &String::nohead)
+    //     .def("notail", &String::notail)
+    //     .def_static("rational", [](const double& f, const int& b, bool sign=false){ return String::rational(f, b, sign); })
+    //     .def("__int__", &String::l)
+    //     .def("__float__", &String::f64)
+    //     .def("__str__", [](const String& self) { return self.c_str(); })
+    //     .def("__repr__", [](const String& self) { return self.c_str(); })
+    //     ;
 
     // init_rtop<int>(m, "int");
     init_vec3<int>(m, "int");

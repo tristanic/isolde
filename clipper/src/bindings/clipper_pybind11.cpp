@@ -23,11 +23,13 @@ void init_cell(py::module& m);
 void init_unit_cell(py::module& m);
 void init_spacegroup(py::module& m);
 void init_clipper_stats(py::module& m);
-
 void init_nxmap(py::module& m);
 void init_xmap(py::module &m);
-
 void init_atomsf(py::module& m);
+
+void init_ccp4_mtz_io(py::module& m);
+
+
 using namespace clipper;
 
 
@@ -64,6 +66,7 @@ PYBIND11_MODULE(clipper_python, m) {
 
     init_atomsf(m);
 
+    init_ccp4_mtz_io(m);
 
 
 }

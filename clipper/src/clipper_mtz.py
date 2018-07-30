@@ -9,8 +9,10 @@
 
 
 #from . import clipper
-from .clipper_python import Grid_sampling, HKL_data_Flag, CCP4MTZfile, HKL_info, \
-                    HKL_data_I_sigI, HKL_data_F_sigF, HKL_data_F_phi
+from .clipper_python import Grid_sampling, HKL_data_Flag, CCP4MTZfile, HKL_info
+from .clipper_python.data64 import HKL_data_I_sigI_double as HKL_data_I_sigI
+from .clipper_python.data64 import HKL_data_F_sigF_double as HKL_data_F_sigF
+from .clipper_python.data64 import HKL_data_F_phi_double as HKL_data_F_phi
 from chimerax.core.models import Model
 
 def calculate_voxel_size(resolution, shannon_rate):
@@ -292,7 +294,7 @@ def load_hkl_data(filename, free_flag_label = None):
         mtzin.open_read(filename)
         mtzin.import_hkl_info(hkl)
         # Get all the column names and types
-        column_labels = mtzin.column_labels
+        column_labels = mtzin.column_paths()
         # Sort the columns into groups, and organise into a temporary tree
         from .data_tree import DataTree
         temp_tree = DataTree()['Experiment']

@@ -3,7 +3,7 @@
 #include <pybind11/numpy.h>
 #include "numpy_helper.h"
 
-
+#include "type_conversions.h"
 #include <clipper/clipper.h>
 #include "unit_cell.h"
 

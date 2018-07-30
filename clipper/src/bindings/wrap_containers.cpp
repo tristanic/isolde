@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 
+#include "type_conversions.h"
 #include <clipper/clipper.h>
 
 namespace py=pybind11;

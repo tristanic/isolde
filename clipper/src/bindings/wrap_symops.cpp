@@ -3,6 +3,7 @@
 #include <pybind11/operators.h>
 #include <pybind11/numpy.h>
 
+#include "type_conversions.h"
 #include "symops.h"
 
 #include "numpy_helper.h"

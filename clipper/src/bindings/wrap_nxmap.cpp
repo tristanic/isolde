@@ -2,7 +2,7 @@
 #include <pybind11/operators.h>
 #include <pybind11/numpy.h>
 
-
+#include "type_conversions.h"
 #include <clipper/clipper.h>
 #include "numpy_helper.h"
 
@@ -65,7 +65,7 @@ void add_nxmap_numpy_functions(py::class_<C>& pyclass)
         .def("export_numpy", [](const C& self)
         {
             auto g = self.grid();
-            auto target = py::array_t<T>({g[0],g[1],g[2]});
+            auto target = py::array_t<T>({g.nu(),g.nv(),g.nw()});
             numpy_export_core_(self, target, Coord_grid(0,0,0));
             return target;
         },

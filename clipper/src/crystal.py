@@ -1260,7 +1260,7 @@ class XmapSet(Model):
                 [negative contour, positive contour]
         '''
         data = dataset.data
-        new_xmap = clipper.Xmap(self.spacegroup, self.cell, self.grid, name = dataset.name, hkldata = data)
+        new_xmap = Xmap(self.spacegroup, self.cell, self.grid, name = dataset.name, hkldata = data)
         if is_difference_map is None:
             is_difference_map = dataset.is_difference_map
         new_xmap.is_difference_map = is_difference_map
@@ -1374,6 +1374,16 @@ def _get_bounding_box(coords, padding, grid, cell):
     box_origin_xyz = clipper.Coord_grid(box_origin_grid).coord_frac(grid).coord_orth(cell)
     dim = box_bounds_grid[1] - box_bounds_grid[0]
     return [box_origin_grid, box_origin_xyz, dim]
+
+from .clipper_python import Xmap_double
+class Xmap(Xmap_double):
+    def __init__(self, spacegroup, cell, grid_sampling,
+                 name = None, hkldata = None, is_difference_map = None):
+        super().__init__(spacegroup, cell, grid_sampling)
+        self.name = name
+        self.is_difference_map = is_difference_map
+        if hkldata is not None:
+            self.fft_from(hkldata)
 
 
 class XmapHandler(Volume):
@@ -1550,8 +1560,9 @@ class XmapHandler(Volume):
         #shape = (numpy.array(target.shape)[::-1] - 1)
         #end_grid_coor = start_grid_coor + clipper.Coord_grid(shape)
         #self.data.set_origin(origin_xyz)
+        from .clipper_python import Coord_grid
         xmap = self.xmap
-        xmap.export_section_numpy(start_grid_coor, target = target,  order = 'C', rot = 'zyx')
+        xmap.export_section_numpy(Coord_grid(start_grid_coor), target)
 
     # def update_drawings(self):
     #     super().update_drawings()
