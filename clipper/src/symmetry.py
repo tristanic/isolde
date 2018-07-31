@@ -12,7 +12,7 @@ import numpy
 import sys, os, glob
 import ctypes
 
-from . import clipper
+from . import clipper_python
 
 from chimerax.atomic import molc, structure
 # from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
@@ -144,6 +144,39 @@ def get_symmetry_handler(structure, create=False):
         return XtalSymmetryHandler(structure)
     return None
 
+class Unit_Cell(clipper_python.Unit_Cell):
+   def __init__(self, ref, atom_list, cell,
+                 spacegroup, grid_sampling, padding = 0):
+        '''
+        __init__(self, ref, atom_list, cell, spacegroup, grid_sampling) -> Unit_Cell
+
+        Note: internal calculations for finding symmetry equivalents are
+        run using integer symmetry operations on grid coordinates for
+        improved performance. This means that if you change the sampling
+        rate of your maps, you will need to create a new Unit_Cell object
+        to match.
+
+        Args:
+            ref ([float*3]):
+                (x,y,z) coordinate of the reference you want to construct
+                the unit cell relative to. Set this to the centroid of
+                your atomic model for best results.
+            atom_list (clipper.Atom_list):
+                A Clipper Atom_list object containing your reference model.
+            cell (clipper.Cell)
+            spacegroup (clipper.Spacegroup)
+            grid_sampling (clipper.Grid_Sampling)
+            padding (int):
+                An optional extra padding (in number of grid steps) to
+                add around the reference model when defining the reference
+                box for finding symmetry operations. In most cases this
+                can be left as zero.
+        '''
+        ref_frac = clipper_python.Coord_orth(ref).coord_frac(cell)
+        super().__init__(ref_frac, atom_list, cell,
+                                        spacegroup, grid_sampling, padding)
+
+
 class XtalSymmetryHandler(Model):
     '''
     Handles crystallographic symmetry and maps for an atomic model.
@@ -214,7 +247,7 @@ class XtalSymmetryHandler(Model):
         from .main import atom_list_from_sel
         ca = self._clipper_atoms = atom_list_from_sel(model.atoms)
 
-        uc = self._unit_cell = clipper.Unit_Cell(ref, ca, cell, spacegroup, grid)
+        uc = self._unit_cell = Unit_Cell(ref, ca, cell, spacegroup, grid)
 
 
         self._atomic_symmetry_model = AtomicSymmetryModel(model, self, uc,
@@ -301,7 +334,7 @@ class XtalSymmetryHandler(Model):
     def update(self, *_, force=False):
         v = self.session.view
         cofr = self._box_center = v.center_of_rotation
-        cofr_grid = clipper.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
+        cofr_grid = clipper_python.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
         if force:
             update_needed=True
         else:
@@ -364,14 +397,14 @@ class XtalSymmetryHandler(Model):
             coords=main_coords)
         asm._current_focal_set = context_set
         asm.set_sym_display(context_set[3], *atom_and_bond_sym_transforms_from_sym_atoms(*context_set[0:3]))
-
         cell = self.cell
         grid = self.grid
         xmaps = self.xmapset
         from .crystal import calculate_grid_padding
         pad = calculate_grid_padding(mask_radius, grid, cell)
         ep = calculate_grid_padding(extra_padding, grid, cell)
-        box_bounds_grid = clipper.Util.get_minmax_grid(main_coords, cell, grid) \
+        from .clipper_util import get_minmax_grid
+        box_bounds_grid = get_minmax_grid(main_coords, cell, grid) \
             + numpy.array((-pad, pad)) + numpy.array((-ep, ep))
         xmaps.set_box_limits(box_bounds_grid)
         xmaps._surface_zone.update(mask_radius, coords = main_coords)
@@ -399,7 +432,7 @@ class XtalSymmetryHandler(Model):
         corners_frac = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]],numpy.double) + offset\
                         + uc.min.coord_frac(self.grid).uvw
 
-        corners = numpy.array([clipper.Coord_frac(c).coord_orth(self.cell).xyz for c in corners_frac])
+        corners = numpy.array([clipper_python.Coord_frac(c).coord_orth(self.cell).xyz for c in corners_frac])
         from chimerax.surface.shapes import cylinder_geometry
         d.set_geometry(*cylinder_geometry())
         d.set_color(rgba_edge)
@@ -441,7 +474,7 @@ class XtalSymmetryHandler(Model):
         model = self.structure
 
         ref = model.bounds().center().astype(float)
-        frac_coords = clipper.Coord_orth(ref).coord_frac(self.cell).uvw
+        frac_coords = clipper_python.Coord_orth(ref).coord_frac(self.cell).uvw
         if offset is None:
             offset = numpy.array([0,0,0],int)
 
@@ -463,7 +496,7 @@ class XtalSymmetryHandler(Model):
 
         corners = []
         for c in corners_frac:
-            co = clipper.Coord_frac(c).coord_orth(self.cell)
+            co = clipper_python.Coord_frac(c).coord_orth(self.cell)
             positions.append(Place(axes=numpy.identity(3)*4, origin=co.xyz))
             colors.append(rgba_corner)
 
@@ -582,14 +615,15 @@ class AtomicSymmetryModel(Model):
         coords = coords.astype(numpy.float32)
         master_atoms = self.structure.atoms
         master_coords = master_atoms.coords.astype(numpy.float32)
-        grid_minmax = clipper.Util.get_minmax_grid(coords, self.cell, self.grid)
+        from .clipper_util import get_minmax_grid
+        grid_minmax = get_minmax_grid(coords, self.cell, self.grid)
         from .crystal import calculate_grid_padding
         pad = calculate_grid_padding(cutoff, self.grid, self.cell)
         grid_minmax += numpy.array((-pad, pad))
-        min_xyz = clipper.Coord_grid(grid_minmax[0]).coord_frac(self.grid).coord_orth(self.cell).xyz
+        min_xyz = clipper_python.Coord_grid(grid_minmax[0]).coord_frac(self.grid).coord_orth(self.cell).xyz
         dim = grid_minmax[1]-grid_minmax[0]
         symops = self.unit_cell.all_symops_in_box(min_xyz, dim, True)
-        symmats = symops.all_matrices_orth(self.cell, format='3x4')
+        symmats = symops.all_matrices_orth(self.cell, '3x4')
         from chimerax.core.geometry import Place
         target = [(coords, Place().matrix.astype(numpy.float32))]
         search_list = []
@@ -618,6 +652,10 @@ class AtomicSymmetryModel(Model):
             from chimerax.atomic import concatenate
             found_atoms = concatenate(found_atoms)
             sym_indices = numpy.concatenate(sym_indices)
+        # elif len(found_atoms) == 0:
+        #     from chimerax.atomic import Atoms
+        #     found_atoms = Atoms()
+        #     sym_indices = numpy.array(sym_indices, numpy.int32)
         else:
             found_atoms = found_atoms[0]
             sym_indices = sym_indices[0]
@@ -737,7 +775,7 @@ class AtomicSymmetryModel(Model):
         grid_dim = (dim / self.parent._voxel_size).astype(numpy.int32)
         symops = self._current_symops = self.unit_cell.all_symops_in_box(box_corner_xyz, grid_dim, True)
         # Identity symop will always be the first in the list
-        tfs = self._current_tfs = symops.all_matrices_orth(self.cell, format='3x4')
+        tfs = self._current_tfs = symops.all_matrices_orth(self.cell, '3x4')
         atoms = self.structure.atoms
         atoms.hides |=HIDE_ISOLDE
         self._current_master_atoms, self._current_sym_atoms, self._current_sym_atom_coords, \
@@ -786,7 +824,7 @@ class AtomicSymmetryModel(Model):
         all_atoms.hides |= HIDE_ISOLDE
         primary_atoms.hides &= ~HIDE_ISOLDE
         self._current_symops = symops
-        self._current_tfs = symops.all_matrices_orth(self.cell, format='3x4')
+        self._current_tfs = symops.all_matrices_orth(self.cell, '3x4')
         self._current_master_atoms = primary_atoms
         self._current_sym_atoms = sym_atoms
         self._current_sym_atom_coords = sym_coords

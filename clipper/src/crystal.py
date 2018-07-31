@@ -1384,6 +1384,41 @@ class Xmap(Xmap_double):
         self.is_difference_map = is_difference_map
         if hkldata is not None:
             self.fft_from(hkldata)
+        from .clipper_python import Map_stats
+        self._stats = Map_stats(self)
+
+    @property
+    def stats(self):
+        if self._stats is None:
+            from .clipper_python import Map_stats
+            self._stats = Map_stats(self)
+        return self._stats
+
+    @property
+    def mean(self):
+        return self.stats.mean
+
+    @property
+    def std_dev(self):
+        return self.stats.std_dev
+
+    @property
+    def sigma(self):
+        return self.stats.std_dev
+
+    @property
+    def min(self):
+        return self.stats.min
+
+    @property
+    def max(self):
+        return self.stats.max
+
+    @property
+    def range(self):
+        return self.stats.range
+
+
 
 
 class XmapHandler(Volume):
@@ -1552,6 +1587,7 @@ class XmapHandler(Volume):
         data = numpy.empty(dim, numpy.double)
         self._fill_volume_data(data, grid_origin)
         darray = Array_Grid_Data(data, origin = origin,
+            rotation=((0,0,1),(0,1,0),(1,0,0)),
             step = self.voxel_size, cell_angles = self.cell.angles_deg)
         return darray
 

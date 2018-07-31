@@ -30,7 +30,6 @@ void catch_null(const C& c)
 // }
 
 
-
 template<class Derived>
 void declare_base_methods(py::class_<Derived> pyclass)
 {

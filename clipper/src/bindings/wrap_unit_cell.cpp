@@ -42,10 +42,25 @@ void declare_unit_cell(py::module& m)
         .def("all_symops_in_box",
             (Symops (Unit_Cell::*)(const Coord_orth& origin_xyz,
                const Vec3<int>& box_size_uvw,
-               bool always_include_identity, int sample_frequency))
+               bool always_include_identity, int sample_frequency) const)
                &Unit_Cell::all_symops_in_box,
                py::arg("origin_xyz"), py::arg("box_size_uvw"),
                py::arg("always_include_identity")=true, py::arg("sample_frequency")=2
+         )
+         .def("all_symops_in_box",
+         [](const Unit_Cell& self, py::array_t<ftype> origin_xyz, py::array_t<int> box_size_uvw,
+            bool always_include_identity, int sample_frequency)
+         {
+             check_numpy_array_shape(origin_xyz, {3}, true);
+             check_numpy_array_shape(box_size_uvw, {3}, true);
+             ftype* optr = (ftype*)origin_xyz.request().ptr;
+             int* bptr = (int*)box_size_uvw.request().ptr;
+             auto orig = Coord_orth(optr[0], optr[1], optr[2]);
+             auto box = Vec3<int>(bptr[0], bptr[1], bptr[2]);
+             return self.all_symops_in_box(orig, box, always_include_identity, sample_frequency);
+         },
+         py::arg("origin_xyz"), py::arg("box_size_uvw"),
+         py::arg("always_include_identity")=true, py::arg("sample_frequency")=2
          )
          ;
 } // declare_unit_cell

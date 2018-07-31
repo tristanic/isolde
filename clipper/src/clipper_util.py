@@ -9,22 +9,24 @@
 
 
 import numpy
-from clipper_python import Util as _util
+from .clipper_python import Util as _util
 
 ### Constants ###
-eightpi2 = _util.eightpi2()
+from math import pi
+eightpi2 = 8*pi*pi;
 
 ### Math functions ###
 
 def atanh(x):
     ''' Hyperbolic tan '''
-    return _util.atanh(x)
+    from math import atanh
+    return atanh(x)
 
-def b2u(b_factor):
+def bfactor_to_uvalue(b_factor):
     ''' Convert isotropic B-factor to U-value '''
     return _util.b2u(b_factor)
 
-def u2b(u_value):
+def uvalue_to_bfactor(u_value):
     ''' Convert isotropic U-value to B-factor '''
     return _util.u2b(u_value)
 
@@ -34,23 +36,27 @@ def bessel_i0(x):
 
 def d2rad(angle):
     ''' Convert degrees to radians '''
-    return _util.d2rad(angle)
+    from math import radians
+    return radians(angle)
 
 def rad2d(angle):
     ''' Convert radians to degrees '''
-    return _util.rad2d(angle)
+    from math import degrees
+    return degrees(angle)
 
 def int_ceiling(fp_num):
     ''' Round the given number up and return as an integer. '''
-    return _util.intc(fp_num)
+    from math import ceil
+    return ceil(fp_num)
 
 def int_floor(fp_num):
     ''' Round the given number down and return as an integer. '''
-    return _util.intf(fp_num)
+    from math import floor
+    return floor(fp_num)
 
 def int_round(fp_num):
     ''' Round the given number to the nearest integer. '''
-    return _util.intr(fp_num)
+    return round(fp_num)
 
 def invsim(x):
     ''' Inverse Sim function: I1(X)/I0(X). '''

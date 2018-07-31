@@ -90,9 +90,9 @@ public:
     void find_symops_for_coord(std::set<Symop_and_Unit_Cell_Offset>& pairlist,
         const Coord_grid& coord) const;
 
-    Symops all_symops_in_box(const Grid_range& range, bool always_include_identity=false, int sample_frequency=2);
+    Symops all_symops_in_box(const Grid_range& range, bool always_include_identity=false, int sample_frequency=2) const;
     Symops all_symops_in_box(const Coord_orth& origin_xyz, const Vec3<int>& box_size_uvw,
-        bool always_include_identity=false, int sample_frequency=2);
+        bool always_include_identity=false, int sample_frequency=2) const;
 
 
     /* Find the minimum and maximum grid coordinates of a box encompassing the atoms,
@@ -243,7 +243,7 @@ Unit_Cell::find_symops_for_coord(std::set<Symop_and_Unit_Cell_Offset>& pairlist,
 
 Symops
 Unit_Cell::all_symops_in_box(const Coord_orth& origin_xyz, const Vec3<int>& box_size_uvw,
-    bool always_include_identity, int sample_frequency)
+    bool always_include_identity, int sample_frequency) const
 {
     Coord_grid grid_min = origin_xyz.coord_frac(cell_).coord_grid(grid_);
     Coord_grid grid_max = grid_min + Coord_grid(box_size_uvw);
@@ -252,7 +252,7 @@ Unit_Cell::all_symops_in_box(const Coord_orth& origin_xyz, const Vec3<int>& box_
 }
 
 Symops
-Unit_Cell::all_symops_in_box(const Grid_range& range, bool always_include_identity, int sample_frequency)
+Unit_Cell::all_symops_in_box(const Grid_range& range, bool always_include_identity, int sample_frequency) const
 {
     static const Symop_and_Unit_Cell_Offset identity(0, Coord_grid(0,0,0));
     Symops ret;

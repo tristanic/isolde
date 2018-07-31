@@ -1,7 +1,11 @@
+#include <iomanip>
+#include <sstream>
+
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
+
 
 #include "type_conversions.h"
 #include <clipper/clipper.h>
@@ -23,21 +27,23 @@ py::class_<Resolution>(m, "Resolution")
     .def_property_readonly("is_null", &Resolution::is_null)
     .def("__str__", [](const Resolution& self)
     {
-        return std::string(String(self.limit())) + " Å";
+        std::stringstream stream;
+        stream << std::fixed << std::setprecision(2) << self.limit();
+        return std::string("Resolution limit: ") + stream.str() + "Å";
     })
     ;
 
 py::class_<HKL_class>(m, "HKL_class")
     .def(py::init<>())
     .def(py::init<const Spacegroup&, const HKL&>())
-    .def("epsilon", &HKL_class::epsilon)
-    .def("epsilonc", &HKL_class::epsilonc)
-    .def("allowed", &HKL_class::allowed)
-    .def("centric", &HKL_class::centric)
-    .def("sys_abs", &HKL_class::sys_abs)
+    .def_property_readonly("epsilon", &HKL_class::epsilon)
+    .def_property_readonly("epsilonc", &HKL_class::epsilonc)
+    .def_property_readonly("allowed", &HKL_class::allowed)
+    .def_property_readonly("centric", &HKL_class::centric)
+    .def_property_readonly("sys_abs", &HKL_class::sys_abs)
     ;
 
-py::class_<RTop_orth>(m, "RTop_orth")
+py::class_<RTop_orth, RTop<ftype>>(m, "RTop_orth")
     .def(py::init<>())
     .def(py::init<const RTop<>&>())
     .def(py::init<const Mat33<>&>())
@@ -46,25 +52,10 @@ py::class_<RTop_orth>(m, "RTop_orth")
     .def(py::init<const std::vector<Coord_orth>&, const std::vector<Coord_orth>&, const std::vector<ftype>&>())
     .def(py::init<const Atom_list&, const Atom_list&>())
     .def("rtop_frac", &RTop_orth::rtop_frac)
-    .def("inverse", &RTop_orth::inverse)
+    .def_property_readonly("inverse", &RTop_orth::inverse)
     .def("axis_coordinate_near", &RTop_orth::axis_coordinate_near)
-    .def("screw_translation", &RTop_orth::screw_translation)
+    .def_property_readonly("screw_translation", &RTop_orth::screw_translation)
     .def_static("identity", &RTop_orth::identity)
-    //.def_static("null", &RTop_orth::null)
-    .def("format", [](const RTop<>& self){ return self.format(); })
-    .def("__repr__", [](const RTop<>& self) { return std::string(self.format()); })
-    .def("__str__", [](const RTop<>& self) { return std::string(self.format()); })
-    // base class methods
-    .def("equals", [](const RTop_orth& self, const RTop_orth& other, const ftype& tol) { return self.equals(other, tol); })
-    .def_property("rot",
-    [](const RTop_orth& self) { return self.rot(); },
-    [](RTop_orth& self, const Mat33<ftype>& rot) { self.rot() = rot; }
-    )
-    .def_property("trn",
-         [](const RTop_orth& self) { return self.trn(); },
-         [](RTop_orth& self, const Vec3<>& trn) { self.trn() = trn; }
-    )
-    .def("is_null", [](const RTop_orth& self) { return self.is_null(); })
     ;
 
 py::class_<HKL, Vec3<int>>(m, "HKL")
@@ -75,8 +66,7 @@ py::class_<HKL, Vec3<int>>(m, "HKL")
     .def(py::init([](py::array_t<int> hkl)
     {
         check_numpy_array_shape(hkl, {3}, true);
-        auto buf = hkl.request();
-        int* ptr = (int*)buf.ptr;
+        int* ptr = (int*)hkl.request().ptr;
         return std::unique_ptr<HKL>(new HKL(ptr[0], ptr[1], ptr[2]));
     }))
     .def_property("h",
@@ -102,8 +92,7 @@ py::class_<HKL, Vec3<int>>(m, "HKL")
     .def("transform", (HKL (HKL::*)(const Symop&) const) &HKL::transform)
     .def("transform", (HKL (HKL::*)(const Isymop&) const) &HKL::transform)
     .def("sym_phase_shift", &HKL::sym_phase_shift)
-    .def("__repr__", [](const HKL& self) { return std::string(self.format()); })
-    .def("__str__", [](const HKL& self) { return std::string(self.format()); })
+    .def("__str__", &HKL::format)
     .def("__neg__", [](const HKL& self) { return -self; })
     .def("__add__", [](const HKL& self, const HKL& other){ return self+other; }, py::is_operator())
     .def("__sub__", [](const HKL& self, const HKL& other) { return self-other; }, py::is_operator())
@@ -117,11 +106,10 @@ py::class_<Coord_reci_orth, Vec3<>>(m, "Coord_reci_orth")
     .def(py::init<const Vec3<>&>())
     .def(py::init<const ftype&, const ftype&, const ftype&>())
     // from numpy array
-    .def(py::init([](py::array_t<int> xyz_reci)
+    .def(py::init([](py::array_t<ftype> xyz_reci)
     {
         check_numpy_array_shape(xyz_reci, {3}, true);
-        auto buf = xyz_reci.request();
-        int* ptr = (int*)buf.ptr;
+        ftype* ptr = (ftype*)xyz_reci.request().ptr;
         return std::unique_ptr<Coord_reci_orth>(new Coord_reci_orth(ptr[0], ptr[1], ptr[2]));
     }))
     .def_property_readonly("xs", &Coord_reci_orth::xs)
@@ -130,11 +118,10 @@ py::class_<Coord_reci_orth, Vec3<>>(m, "Coord_reci_orth")
     .def_property_readonly("xyz_reci",
         [](const Coord_reci_orth& self) { return array_as_numpy_1d<Coord_reci_orth, ftype>(self, 3); }
     )
-    .def("invresolsq", &Coord_reci_orth::invresolsq)
+    .def_property_readonly("invresolsq", &Coord_reci_orth::invresolsq)
     .def("coord_reci_frac", &Coord_reci_orth::coord_reci_frac)
     .def("transform", &Coord_reci_orth::transform)
-    .def("__repr__", [](const Coord_reci_orth& self) { return std::string(self.format()); })
-    .def("__str__", [](const Coord_reci_orth& self) { return std::string(self.format()); })
+    .def("__str__", &Coord_reci_orth::format)
     ;
 
 py::class_<Coord_reci_frac, Vec3<>>(m, "Coord_reci_frac")
@@ -143,14 +130,13 @@ py::class_<Coord_reci_frac, Vec3<>>(m, "Coord_reci_frac")
     .def(py::init<const ftype&, const ftype&, const ftype&>())
     .def(py::init<const HKL&>())
     // from numpy array
-    .def(py::init([](py::array_t<int> uvw_reci)
+    .def(py::init([](py::array_t<ftype> uvw_reci)
     {
         check_numpy_array_shape(uvw_reci, {3}, true);
-        auto buf = uvw_reci.request();
-        int* ptr = (int*)buf.ptr;
+        ftype* ptr = (ftype*)uvw_reci.request().ptr;
         return std::unique_ptr<Coord_reci_frac>(new Coord_reci_frac(ptr[0], ptr[1], ptr[2]));
     }))
-    .def("hkl", &Coord_reci_frac::hkl)
+    .def_property_readonly("hkl", &Coord_reci_frac::hkl)
     .def("invresolsq", &Coord_reci_frac::invresolsq)
     .def_property_readonly("us", &Coord_reci_frac::us)
     .def_property_readonly("vs", &Coord_reci_frac::vs)
@@ -160,8 +146,7 @@ py::class_<Coord_reci_frac, Vec3<>>(m, "Coord_reci_frac")
     )
     .def("coord_reci_orth", &Coord_reci_frac::coord_reci_orth)
     .def("transform", &Coord_reci_frac::transform)
-    .def("__repr__", [](const Coord_reci_frac& self) { return std::string(self.format()); })
-    .def("__str__", [](const Coord_reci_frac& self) { return std::string(self.format()); })
+    .def("__str__", &Coord_reci_frac::format)
     ;
 
 py::class_<Coord_grid, Vec3<int>>(m, "Coord_grid")
@@ -173,8 +158,7 @@ py::class_<Coord_grid, Vec3<int>>(m, "Coord_grid")
     .def(py::init([](py::array_t<int> uvw)
     {
         check_numpy_array_shape(uvw, {3}, true);
-        auto buf = uvw.request();
-        int* ptr = (int*)buf.ptr;
+        int* ptr = (int*)uvw.request().ptr;
         return std::unique_ptr<Coord_grid>(new Coord_grid(ptr[0], ptr[1], ptr[2]));
     }))
     .def_property("u",
@@ -203,8 +187,7 @@ py::class_<Coord_grid, Vec3<int>>(m, "Coord_grid")
     .def("last", (bool (Coord_grid::*)(const Grid_range&) const) &Coord_grid::last)
     .def("index", &Coord_grid::index)
     .def("deindex", &Coord_grid::deindex)
-    .def("__repr__", [](const Coord_grid& self) { return std::string(self.format()); })
-    .def("__str__", [](const Coord_grid& self) { return std::string(self.format()); })
+    .def("__str__", &Coord_grid::format)
     .def("__neg__", [](const Coord_grid& self) { return -self; })
     .def(py::self + py::self)
     .def(py::self - py::self)
@@ -223,8 +206,7 @@ py::class_<Coord_orth, Vec3<>>(m, "Coord_orth")
     .def(py::init([](py::array_t<ftype> xyz)
     {
         check_numpy_array_shape(xyz, {3}, true);
-        auto buf = xyz.request();
-        int* ptr = (int*)buf.ptr;
+        ftype* ptr = (ftype*)xyz.request().ptr;
         return std::unique_ptr<Coord_orth>(new Coord_orth(ptr[0], ptr[1], ptr[2]));
     }))
     .def_property_readonly("x", &Coord_orth::x)
@@ -233,11 +215,10 @@ py::class_<Coord_orth, Vec3<>>(m, "Coord_orth")
     .def_property_readonly("xyz",
         [](const Coord_orth& self) { return array_as_numpy_1d<Coord_orth, ftype>(self, 3); }
     )
-    .def("lengthsq", &Coord_orth::lengthsq)
+    .def_property_readonly("lengthsq", &Coord_orth::lengthsq)
     .def("coord_frac", &Coord_orth::coord_frac)
     .def("transform", &Coord_orth::transform)
-    .def("__repr__", [](const Coord_orth& self) { return std::string(self.format()); })
-    .def("__str__", [](const Coord_orth& self) { return std::string(self.format()); })
+    .def("__str__", &Coord_orth::format)
     .def_static("length", &Coord_orth::length)
     .def_static("angle", &Coord_orth::angle)
     .def_static("torsion", &Coord_orth::torsion)
@@ -252,12 +233,11 @@ py::class_<Coord_frac, Vec3<>>(m, "Coord_frac")
     .def(py::init<>())
     .def(py::init<const Vec3<>&>())
     .def(py::init<const ftype&, const ftype&, const ftype&>())
-    // from numpy array
+    // // from numpy array
     .def(py::init([](py::array_t<ftype> uvw)
     {
         check_numpy_array_shape(uvw, {3}, true);
-        auto buf = uvw.request();
-        int* ptr = (int*)buf.ptr;
+        ftype* ptr = (ftype*)uvw.request().ptr;
         return std::unique_ptr<Coord_frac>(new Coord_frac(ptr[0], ptr[1], ptr[2]));
     }))
     .def_property_readonly("u", &Coord_frac::u)
@@ -276,8 +256,7 @@ py::class_<Coord_frac, Vec3<>>(m, "Coord_frac")
     .def("lattice_copy_unit", &Coord_frac::lattice_copy_unit)
     .def("lattice_copy_near", &Coord_frac::lattice_copy_near)
     .def("symmetry_copy_near", &Coord_frac::symmetry_copy_near)
-    .def("format", &Coord_frac::format)
-    .def("__str__", [](const Coord_frac& self) { return self.format().c_str(); })
+    .def("__str__", &Coord_frac::format)
     .def("__neg__", [](const Coord_frac& self) { return -self; })
     .def(py::self + py::self)
     .def(py::self - py::self)
@@ -295,8 +274,7 @@ py::class_<Coord_map, Vec3<>>(m, "Coord_map")
     .def(py::init([](py::array_t<ftype> uvw)
     {
         check_numpy_array_shape(uvw, {3}, true);
-        auto buf = uvw.request();
-        int* ptr = (int*)buf.ptr;
+        ftype* ptr = (ftype*)uvw.request().ptr;
         return std::unique_ptr<Coord_map>(new Coord_map(ptr[0], ptr[1], ptr[2]));
     }))
     .def("coord_frac", &Coord_map::coord_frac)
@@ -309,8 +287,7 @@ py::class_<Coord_map, Vec3<>>(m, "Coord_map")
     .def_property_readonly("uvw",
         [](const Coord_map& self) { return array_as_numpy_1d<Coord_map, ftype>(self, 3); }
     )
-    .def("format", &Coord_map::format)
-    .def("__str__", [](const Coord_map& self) { return self.format().c_str(); })
+    .def("__str__", &Coord_map::format)
     .def("__neg__", [](const Coord_map& self) { return -self; })
     .def(py::self + py::self)
     .def(py::self - py::self)
@@ -326,9 +303,7 @@ py::class_<U_aniso_orth, Mat33sym<>>(m, "U_aniso_orth")
     // from numpy
     .def(py::init([](py::array_t<ftype> vals)
     {
-        check_numpy_array_shape(vals, {6}, true);
-        auto buf = vals.request();
-        ftype* ptr = (ftype*)buf.ptr;
+        ftype* ptr = (ftype*)vals.request().ptr;
         return std::unique_ptr<U_aniso_orth>(new U_aniso_orth(ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]));
     }))
     .def_property_readonly("u_iso", &U_aniso_orth::u_iso)
@@ -349,8 +324,7 @@ py::class_<U_aniso_frac, Mat33sym<>>(m, "U_aniso_frac")
     .def(py::init([](py::array_t<ftype> vals)
     {
         check_numpy_array_shape(vals, {6}, true);
-        auto buf = vals.request();
-        ftype* ptr = (ftype*)buf.ptr;
+        ftype* ptr = (ftype*)vals.request().ptr;
         return std::unique_ptr<U_aniso_frac>(new U_aniso_frac(ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]));
     }))
     .def("u_aniso_orth", &U_aniso_frac::u_aniso_orth)
@@ -382,9 +356,18 @@ py::class_<Grid, Vec3<int>>(m, "Grid")
     .def("in_grid", &Grid::in_grid)
     .def("index", &Grid::index)
     .def("deindex", &Grid::deindex)
-    .def("format", &Grid::format)
-    .def("__str__", [](const Grid& self) { return self.format().c_str(); })
-    ;
+    .def("__str__", &Grid::format)
+    // Extra useful features for Python
+    .def_property_readonly("dim", [](const Grid& self) -> py::array_t<int>
+    {
+        py::array_t<int> ret(3);
+        int* ptr = (int*)ret.request().ptr;
+        *ptr++ = self.nu();
+        *ptr++ = self.nv();
+        *ptr++ = self.nw();
+        return ret;
+    })
+;
 
 py::class_<Grid_sampling, Grid>(m, "Grid_sampling")
     .def(py::init<>())
@@ -401,18 +384,17 @@ py::class_<Grid_sampling, Grid>(m, "Grid_sampling")
     .def("init", &Grid_sampling::init)
     .def_property_readonly("matrix_grid_frac", &Grid_sampling::matrix_grid_frac)
     .def_property_readonly("matrix_frac_grid", &Grid_sampling::matrix_frac_grid)
-    .def("is_null", &Grid_sampling::is_null)
+    .def_property_readonly("is_null", &Grid_sampling::is_null)
     ;
 
 py::class_<HKL_sampling>(m, "HKL_sampling")
     .def(py::init<>())
     .def(py::init<const Cell&, const Resolution&>())
-    .def("hkl_limit", &HKL_sampling::hkl_limit)
+    .def_property_readonly("hkl_limit", &HKL_sampling::hkl_limit)
     .def("resolution", &HKL_sampling::resolution)
     .def("in_resolution", &HKL_sampling::in_resolution)
-    .def("is_null", &HKL_sampling::is_null)
-    .def("format", &HKL_sampling::format)
-    .def("__str__", [](const HKL_sampling& self) { return self.format().c_str(); })
+    .def_property_readonly("is_null", &HKL_sampling::is_null)
+    .def("__str__", &HKL_sampling::format)
     .def(py::self == py::self)
     ;
 
@@ -433,8 +415,8 @@ py::class_<Atom>(m, "Atom")
     .def(py::init<>())
     .def(py::init<const Atom&>())
     .def_property("element",
-        [](const Atom& self) { return self.element().c_str(); },
-        [](Atom& self, const std::string& e) { self.set_element( String(e)); }
+        [](const Atom& self) { return self.element(); },
+        [](Atom& self, const String& e) { self.set_element(e); }
     )
     .def_property("coord_orth",
         //[](const Atom& self) { return array_as_numpy_1d<Coord_orth, ftype>(self.coord_orth()); }
@@ -479,7 +461,7 @@ py::class_<Atom>(m, "Atom")
     })
     .def("transform", &Atom::transform)
     .def("__rmul__", [](Atom& self, const RTop_orth& rt) { self.transform(rt); })
-    .def("is_null", &Atom::is_null)
+    .def_property_readonly("is_null", &Atom::is_null)
     ;
 
 
@@ -496,14 +478,11 @@ py::class_<Atom_list>(m, "Atom_list", atom_list_docstring_)
     .def(py::init<>())
     .def(py::init<const std::vector<Atom>&>())
     // from arrays of atom properties
-    .def(py::init([](int n, const std::vector<std::string>& elements, py::array_t<ftype> coords,
-                     py::array_t<ftype> u_anisos, py::array_t<ftype> occupancies, py::array_t<ftype> u_isos)
+    .def(py::init([](const std::vector<std::string>& elements, py::array_t<ftype> coords,
+                     py::array_t<ftype> occupancies, py::array_t<ftype> u_isos, py::array_t<ftype> u_anisos)
                      -> std::unique_ptr<Atom_list>
     {
-        if (elements.size() != n) {
-            throw std::logic_error("Element array length does not match the number of atoms!");
-            return 0;
-        }
+        int n = elements.size();
         check_numpy_array_shape(coords, {n,3}, true);
         check_numpy_array_shape(u_anisos, {n, 6}, true);
         check_numpy_array_shape(occupancies, {n}, true);

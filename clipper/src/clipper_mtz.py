@@ -294,7 +294,7 @@ def load_hkl_data(filename, free_flag_label = None):
         mtzin.open_read(filename)
         mtzin.import_hkl_info(hkl)
         # Get all the column names and types
-        column_labels = mtzin.column_paths()
+        column_labels = mtzin.column_paths
         # Sort the columns into groups, and organise into a temporary tree
         from .data_tree import DataTree
         temp_tree = DataTree()['Experiment']

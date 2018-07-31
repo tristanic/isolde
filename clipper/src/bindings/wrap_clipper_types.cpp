@@ -23,8 +23,7 @@ void init_vec3(py::module &m, const std::string& dtype)
         .def(py::init([](py::array_t<T> vals)
         {
             check_numpy_array_shape(vals, {3}, true);
-            auto buf=vals.request();
-            T* ptr = (T*)buf.ptr;
+            T* ptr = (T*)vals.request().ptr;
             return std::unique_ptr<Class>(new Class(ptr[0], ptr[1], ptr[2]));
         }))
         .def(py::init<const Vec3<ftype32>&>())
@@ -215,43 +214,36 @@ void init_mat33sym(py::module &m, const std::string& dtype)
         ;
 } // init_mat33sym
 
-/*
-There's no real need for Python to know about the RTop<> base class - just the
-derived classes RTop_frac, RTop_orth, Symop and Isymop - all defined in
-coords.h. The below template will wrap the base class if absolutely necessary,
-but at present the base-class methods are instead added to the derived class
-wrappings in wrap_coords.cpp.
-
 
 template<typename T>
 void init_rtop(py::module &m, const std::string& dtype)
 {
     using Class=RTop<T>;
-    std::string pyclass_name = std::string("_RTop_Base")+dtype;
+    std::string pyclass_name = std::string("RTop_")+dtype;
     py::class_<Class>(m, pyclass_name.c_str())
         .def(py::init<>())
         .def(py::init<const Mat33<T>&>())
         .def(py::init<const Mat33<T>&, const Vec3<T>&>())
         .def("inverse", &Class::inverse)
         .def("equals", &Class::equals)
-        .def("get_rot", [](const Class& self) { return self.rot(); })
-        .def("set_rot", [](Class& self, const Mat33<T>& rot) {self.rot() = rot; })
-        .def("get_trn", [](const Class& self) { return self.trn(); })
-        .def("set_trn", [](Class& self, const Vec3<T>& trn) {self.trn() = trn; })
+        .def_property("rot",
+            [](const Class& self) { return self.rot(); },
+            [](Class& self, const Mat33<T>& rot) {self.rot() = rot; }
+        )
+        .def_property("trn",
+            [](const Class& self) { return self.trn(); },
+            [](Class& self, const Vec3<T>& trn) {self.trn() = trn; }
+        )
         .def_static("identity", &Class::identity)
         .def_static("null", &Class::null)
-        .def("is_null", &Class::is_null)
+        .def_property_readonly("is_null", &Class::is_null)
         .def("format", &Class::format)
-        .def("__repr__", [&pyclass_name](const Class& self){
-             return std::string("Clipper ")+pyclass_name+std::string(": ")+std::string(self.format());
-         })
-        .def("__str__", [](const Class& self) { return std::string(self.format()); })
+        .def("__str__", &Class::format)
         .def("__mul__", [](const Class& self, const Vec3<T>& v){ return self*v; }, py::is_operator())
         .def("__mul__", [](const Class& self, const Class& other){ return self*other; }, py::is_operator())
         ;
 } // init_rtop
 
-*/
 
 template<typename T>
 void init_array2d(py::module &m, const std::string& dtype)
@@ -346,12 +338,13 @@ void init_clipper_types(py::module &m, py::module &m32, py::module &m64) {
     //     .def("__repr__", [](const String& self) { return self.c_str(); })
     //     ;
 
-    // init_rtop<int>(m, "int");
+    init_rtop<int>(m, "int");
     init_vec3<int>(m, "int");
     init_mat33<int>(m, "int");
     init_array2d<int>(m, "int");
     init_vec3<ftype64>(m, "double");
     init_mat33<ftype64>(m, "double");
+    init_rtop<ftype64>(m, "double");
     init_mat33sym<ftype64>(m, "double");
     init_array2d<ftype64>(m, "double");
     init_matrix<ftype64>(m, "double");
@@ -359,22 +352,10 @@ void init_clipper_types(py::module &m, py::module &m32, py::module &m64) {
     // TODO: are 32-bit versions of these actually necessary?
     init_vec3<ftype32>(m, "float");
     init_mat33<ftype32>(m, "float");
+    init_rtop<ftype32>(m, "float");
     init_mat33sym<ftype32>(m, "float");
     init_array2d<ftype32>(m, "float");
     init_matrix<ftype32>(m, "float");
 
 
-    // // init_rtop<ftype32>(m32, "float");
-    // init_vec3<ftype32>(m32, "float");
-    // init_mat33<ftype32>(m32, "float");
-    // init_mat33sym<ftype32>(m32, "float");
-    // init_array2d<ftype32>(m32, "float");
-    // init_matrix<ftype32>(m32, "float");
-    //
-    // // init_rtop<ftype64>(m64, "double");
-    // init_vec3<ftype64>(m64, "double");
-    // init_mat33<ftype64>(m64, "double");
-    // init_mat33sym<ftype64>(m64, "double");
-    // init_array2d<ftype64>(m64, "double");
-    // init_matrix<ftype64>(m64, "double");
 }

@@ -44,7 +44,7 @@ void export_rot_trn_(const Mat33<ftype>& rot, const Vec3<ftype>& trn, int nrows,
     }
 }
 
-void all_matrices_frac_(const Symops& self, int nrows, py::array_t<ftype> target)
+void all_matrices_frac_(const Symops& self, int nrows, py::array_t<ftype>& target)
 {
     int n = self.size();
     check_numpy_array_shape(target, {n, nrows, 4}, false);
@@ -55,10 +55,11 @@ void all_matrices_frac_(const Symops& self, int nrows, py::array_t<ftype> target
         const Mat33<ftype>& rot = thisop.rot();
         const Vec3<ftype>& trn = thisop.trn();
         export_rot_trn_(rot, trn, nrows, tptr);
+        tptr+= nrows*4;
     }
 }
 
-void all_matrices_orth_(const Symops& self, const Cell& cell, int nrows, py::array_t<ftype> target)
+void all_matrices_orth_(const Symops& self, const Cell& cell, int nrows, py::array_t<ftype>& target)
 {
     int n = self.size();
     check_numpy_array_shape(target, {n, nrows, 4}, false);
@@ -69,6 +70,7 @@ void all_matrices_orth_(const Symops& self, const Cell& cell, int nrows, py::arr
         const Mat33<ftype>& rot = thisop.rot();
         const Vec3<ftype>& trn = thisop.trn();
         export_rot_trn_(rot, trn, nrows, tptr);
+        tptr+=nrows*4;
     }
 }
 
