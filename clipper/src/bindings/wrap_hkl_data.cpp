@@ -113,11 +113,11 @@ py::class_<HKL_data<C>> declare_HKL_data(py::module &m, const std::string &class
         .def("copy_from", [](Class& self, const Class& other) { self=other; })
         .def("set_all_values_to", [](Class& self, const C& value) { self=value; })
         // To/from numpy
-        .def_property("data",
+        .def_property_readonly("data",
         [](const Class& self) -> py::tuple
         {
             auto w = self.data_size();
-            auto l = self.num_obs();
+            auto l = self.hkl_info().num_reflections();
             py::array_t<xtype> data({l, w});
             py::array_t<int> hkl({l,3});
             xtype* dptr = (xtype*)data.request().ptr;
@@ -134,6 +134,10 @@ py::class_<HKL_data<C>> declare_HKL_data(py::module &m, const std::string &class
             }
             return py::make_tuple(hkl, data);
         },
+        "Dumps the data to Python as a tuple of two Numpy arrays containing "
+        "HKL indices and data values respectively."
+        )
+        .def("set_data",
         [](Class& self, py::array_t<int> hkl, py::array_t<xtype> data)
         {
             auto w = self.data_size();
@@ -142,9 +146,9 @@ py::class_<HKL_data<C>> declare_HKL_data(py::module &m, const std::string &class
             if (hbuf.shape[1] != 3 || dbuf.shape[1] != w || hbuf.shape[0] != dbuf.shape[0])
                 throw std::logic_error("Array lengths don't match, or data does not have the expected width!");
             auto l = dbuf.shape[0];
-            HKL_info::HKL_reference_index ih;
-            for ( ih = self.first_data(); !ih.last(); self.next_data(ih))
-                self.set_null(ih.index());
+            // HKL_info::HKL_reference_index ih;
+            // for ( ih = self.first_data(); !ih.last(); self.next_data(ih))
+            //     self.set_null(ih.index());
             int* hptr = (int*)hbuf.ptr;
             xtype* dptr = (xtype*)dbuf.ptr;
             HKL h;
@@ -153,9 +157,8 @@ py::class_<HKL_data<C>> declare_HKL_data(py::module &m, const std::string &class
                 self.data_import(h, dptr); dptr+= w;
             }
         },
-        "Exports the data to/from numpy as a tuple of two Numpy arrays containing "
-        "HKL indices and data values respectively. NOTE: setting this way will "
-        "destroy all existing data in this array.")
+        "Takes a matched pair of Numpy arrays containing (h,k,l) indices and "
+        "data values respectively.")
         /*
         Since the base class HKL_data_base has a protected virtual destructor,
         exposing it to Python via PyBind11 requires it (and all derived classes)
