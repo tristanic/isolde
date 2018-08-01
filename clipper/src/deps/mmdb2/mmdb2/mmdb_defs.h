@@ -45,6 +45,9 @@
 
 namespace mmdb  {
 
+// compatibility with Python Extension builder
+#undef MAJOR_VERSION
+#undef MINOR_VERSION
   enum  MMDB_VERSION  {
     MAJOR_VERSION = 2,  //!< MMDB major version
     MINOR_VERSION = 0,  //!< MMDB minor version
@@ -268,4 +271,3 @@ namespace mmdb  {
 }  // namespace mmdb
 
 #endif
-
