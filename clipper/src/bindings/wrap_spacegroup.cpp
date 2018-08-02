@@ -32,6 +32,7 @@ void declare_spgr_descr(py::module& m)
         .value("Symops", Spgr_descr::TYPE::Symops)
         .value("Number", Spgr_descr::TYPE::Number)
         .value("Unknown", Spgr_descr::TYPE::Unknown)
+        .export_values();
         ;
 } //init_spgr_descr
 

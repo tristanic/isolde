@@ -133,7 +133,7 @@ namespace clipper {
     //! constructor: takes radius for step function cutoff
     MapFilterFn_step( const ftype& radius ) : radius_( radius ) {}
     //! destructor
-    MapFilterFn_step() {}
+    ~MapFilterFn_step() {}
     //! evaluate radial step function: 1.0 if inside or 0.0 outside
     ftype operator() ( const ftype& radius ) const
       { return (radius<radius_)?1.0:0.0; }
@@ -148,7 +148,7 @@ namespace clipper {
     //! constructor: takes radius for step function cutoff
     MapFilterFn_linear( const ftype& radius ) : radius_( radius ) {}
     //! destructor
-    MapFilterFn_linear() {}
+    ~MapFilterFn_linear() {}
     //! evaluate radial step function: 1-r/r0 if inside or 0.0 outside
     ftype operator() ( const ftype& radius ) const
       { return (radius<radius_)?(1.0-radius/radius_):0.0; }
@@ -163,7 +163,7 @@ namespace clipper {
     //! constructor: takes radius for step function cutoff
     MapFilterFn_quadratic( const ftype& radius ) : radius_( radius ) {}
     //! destructor
-    MapFilterFn_quadratic() {}
+    ~MapFilterFn_quadratic() {}
     //! evaluate radial step function: (1-r/r0)^2 if inside or 0.0 outside
     ftype operator() ( const ftype& radius ) const
       { return (radius<radius_)?pow(1.0-radius/radius_,2):0.0; }

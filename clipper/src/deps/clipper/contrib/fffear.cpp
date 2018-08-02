@@ -445,10 +445,10 @@ template<class T> bool FFFear_fft<T>::operator() ( Xmap<T>& result, const NXmap<
 
 // compile templates
 
-template class FFFear_slow<ftype32>;
-template class FFFear_slow<ftype64>;
-template class FFFear_fft<ftype32>;
-template class FFFear_fft<ftype64>;
+template class CLIPPER_IMEX FFFear_slow<ftype32>;
+template class CLIPPER_IMEX FFFear_slow<ftype64>;
+template class CLIPPER_IMEX FFFear_fft<ftype32>;
+template class CLIPPER_IMEX FFFear_fft<ftype64>;
 
 
 } // namespace clipper
@@ -544,7 +544,7 @@ template<class T> bool FFFear_fft<T>::operator() ( Xmap<T>& result, const RTop_o
 	hkl.l() = Util::mod( c.w() + gx.nw()/2, gx.nw() ) - gx.nw()/2;
 	cro = hkl.coord_reci_orth( cell );
 	if ( Vec3<>::dot( cro, cro ) < slim2 ) {
-	  cm = ( Coord_map( sx * ( rtop.rot() * cro ) ) + 
+	  cm = ( Coord_map( sx * ( rtop.rot() * cro ) ) +
 		 Coord_map( cx, cx, cx ) );
 	  gu0 = Util::intf( cm.u() );
 	  gv0 = Util::intf( cm.v() );

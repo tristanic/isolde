@@ -61,7 +61,7 @@ Skeleton_basic::Neighbours::Neighbours( const clipper::Xmap_base &map, const flo
    it (all directions) is less than a certain cuttoff distance.  We
    are left with a list of ndn neighbouring cells that are
    sufficicently close to be considered neighbours.
-    
+
    Typically, ndn will be 18-20 at then end of this block.
 
    Note that body diagonals have length sqrt(3) ~= 1.73, but we passed
@@ -72,7 +72,7 @@ Skeleton_basic::Neighbours::Neighbours( const clipper::Xmap_base &map, const flo
   clipper::Cell_descr vcd( 1.0,1.0,1.0, rcd.alpha(), rcd.beta(), rcd.gamma() );
   clipper::Cell vcell( vcd );
 
-  clipper::Coord_grid g0(-1,-1,-1); 
+  clipper::Coord_grid g0(-1,-1,-1);
   clipper::Coord_grid g1( 1, 1, 1);
   clipper::Grid_sampling vgrid( 1, 1, 1 );
 
@@ -99,7 +99,7 @@ bool Skeleton_basic::operator() ( clipper::Xmap<int>& xskl, const clipper::Xmap<
 {
   std::vector<int> index;
   clipper::Xmap<float>::Map_reference_index ix;
-  
+
   /* now get the map in sorted order.
      We only sort those points which are to be considered, i.e. non-zero */
   for ( ix = xmap.first(); !ix.last(); ix.next() )
@@ -212,7 +212,7 @@ template <class T1, class T2> Skeleton_fast<T1,T2>::Neighbours::Neighbours( cons
    it (all directions) is less than a certain cuttoff distance.  We
    are left with a list of ndn neighbouring cells that are
    sufficicently close to be considered neighbours.
-    
+
    Typically, ndn will be 18-20 at then end of this block.
 
    Note that body diagonals have length sqrt(3) ~= 1.73, but we passed
@@ -223,7 +223,7 @@ template <class T1, class T2> Skeleton_fast<T1,T2>::Neighbours::Neighbours( cons
   clipper::Cell_descr vcd( 1.0,1.0,1.0, rcd.alpha(), rcd.beta(), rcd.gamma() );
   clipper::Cell vcell( vcd );
 
-  clipper::Coord_grid g0(-1,-1,-1); 
+  clipper::Coord_grid g0(-1,-1,-1);
   clipper::Coord_grid g1( 1, 1, 1);
   clipper::Grid_sampling vgrid( 1, 1, 1 );
 
@@ -244,7 +244,7 @@ template<class T1, class T2> bool Skeleton_fast<T1,T2>::operator() ( clipper::Xm
 {
   std::vector<int> index;
   Xmap_base::Map_reference_index ix;
-  
+
   /* now get the map in sorted order.
      We only sort those points which are to be considered, i.e. non-zero */
   for ( ix = xmap.first(); !ix.last(); ix.next() )
@@ -344,12 +344,12 @@ template<class T1, class T2> void Skeleton_fast<T1,T2>::flood_cube( const int x,
 
 // template instantiations
 
-template class Skeleton_fast<char,float>;
-template class Skeleton_fast<char,double>;
-template class Skeleton_fast<short,float>;
-template class Skeleton_fast<short,double>;
-template class Skeleton_fast<int,float>;
-template class Skeleton_fast<int,double>;
+template class CLIPPER_IMEX Skeleton_fast<char,float>;
+template class CLIPPER_IMEX Skeleton_fast<char,double>;
+template class CLIPPER_IMEX Skeleton_fast<short,float>;
+template class CLIPPER_IMEX Skeleton_fast<short,double>;
+template class CLIPPER_IMEX Skeleton_fast<int,float>;
+template class CLIPPER_IMEX Skeleton_fast<int,double>;
 
 
 } // namespace clipper

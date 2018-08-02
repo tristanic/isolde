@@ -29,8 +29,20 @@ void init_map_utils(py::module& m);
 void init_clipper_util(py::module& m);
 void init_atomsf(py::module& m);
 
-
+// ccp4
 void init_ccp4_mtz_io(py::module& m);
+
+// contrib
+void init_sfcalc_base(py::module& m);
+void init_convolution_search(py::module& m);
+void init_edcalc(py::module& m);
+void init_fffear(py::module& m);
+void init_mapfilter(py::module& m);
+void init_originmatch(py::module& m);
+void init_sfcalc_obs(py::module& m);
+void init_sfcalc(py::module& m);
+void init_sfscale(py::module& m);
+void init_sfweight(py::module& m);
 
 
 using namespace clipper;
@@ -71,7 +83,19 @@ PYBIND11_MODULE(clipper_python, m) {
     init_atomsf(m);
     init_clipper_util(m);
 
+    // ccp4
     init_ccp4_mtz_io(m);
 
+    // contrib
+    init_sfcalc_base(m);
+    init_convolution_search(m);
+    init_edcalc(m);
+    init_fffear(m);
+    init_mapfilter(m);
+    init_originmatch(m);
+    init_sfcalc_obs(m);
+    init_sfcalc(m);
+    init_sfscale(m);
+    init_sfweight(m);
 
 }

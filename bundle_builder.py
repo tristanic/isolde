@@ -100,11 +100,19 @@ class BundleBuilder:
 
     @distlib_hack
     def make_clean(self):
-        import os.path
+        import os
+        import fnmatch
         self._rmtree(os.path.join(self.path, "build"))
         self._rmtree(os.path.join(self.path, "dist"))
         self._rmtree(os.path.join(self.path, "src/__pycache__"))
         self._rmtree(self.egg_info)
+        for root, dirnames, filenames in os.walk('src'):
+            # Linux, Mac
+            for filename in fnmatch.filter(filenames, '*.o*'):
+                os.remove(os.path.join(root, filename))
+            # Windows
+            for filename in fnmatch.filter(filenames, '*.obj*'):
+                os.remove(os.path.join(root, filename))
 
     def dump(self):
         for a in dir(self):
