@@ -1583,12 +1583,12 @@ class XmapHandler(Volume):
         self.new_region(ijk_min=(0,0,0), ijk_max=darray.size, ijk_step=(1,1,1), adjust_step=False)
 
     def _generate_and_fill_data_array(self, origin, grid_origin, dim):
-        dim = dim[::-1]
         data = numpy.empty(dim, numpy.double)
         self._fill_volume_data(data, grid_origin)
+        order = numpy.array([2,1,0], int)
         darray = Array_Grid_Data(data, origin = origin,
             rotation=((0,0,1),(0,1,0),(1,0,0)),
-            step = self.voxel_size, cell_angles = self.cell.angles_deg)
+            step = self.voxel_size[::-1], cell_angles = self.cell.angles_deg[::-1])
         return darray
 
 
