@@ -113,21 +113,23 @@ Xmap_cacheobj::Xmap_cacheobj( const Key& xmap_cachekey ) :
 
 }
 
+
 void Xmap_cacheobj::find_asu_sym_(const Coord_grid& begin,
                                   const Coord_grid& end)
 {
+    Grid_range range(begin, end);
     auto len = asu_grid.index(end) - asu_grid.index(begin);
     Coord_grid base, rot;
     int sym;
     if (len<loops_per_thread_)
     {
-        for ( base = begin; base!=end; base.next(asu_grid) ) {
-          for ( sym = 1; sym < nsym; sym++ ) {
-            rot = base.transform(isymop[sym]).unit(xtl_grid);
-            if ( asu_grid.in_grid( rot ) )
-      	if ( asu[ map_grid.index( rot ) ] == 0 ) break;
-          }
-          if ( sym == nsym ) asu[ map_grid.index( base ) ] = 0;
+        for ( base = begin; !base.last(range); base.next(asu_grid) ) {
+            for ( sym = 1; sym < nsym; sym++ ) {
+                rot = base.transform(isymop[sym]).unit(xtl_grid);
+                if ( asu_grid.in_grid( rot ) )
+                    if ( asu[ map_grid.index( rot ) ] == 0 ) break;
+            }
+            if ( sym == nsym ) asu[ map_grid.index( base ) ] = 0;
         }
     } else
     {
@@ -141,21 +143,22 @@ void Xmap_cacheobj::find_asu_sym_(const Coord_grid& begin,
 void Xmap_cacheobj::find_map_sym_(const Coord_grid& begin,
                                   const Coord_grid& end)
 {
+    Grid_range range(begin, end);
     auto len = map_grid.index(end) - map_grid.index(begin);
     Coord_grid base, rot;
     int sym;
     if (len<loops_per_thread_)
     {
-        for ( base = begin; base != end; base.next(map_grid) )
+        for ( base = begin; !base.last(range); base.next(map_grid) )
         {
-          if ( asu[ map_grid.index( base ) ] == 255 ) {
-            for ( sym = 0; sym < nsym; sym++ ) {
-      	rot = base.transform(isymop[sym]).unit(xtl_grid);
-      	if ( asu_grid.in_grid( rot ) )
-      	  if ( asu[ map_grid.index( rot ) ] == 0 ) break;
+            if ( asu[ map_grid.index( base ) ] == 255 ) {
+                for ( sym = 0; sym < nsym; sym++ ) {
+                    rot = base.transform(isymop[sym]).unit(xtl_grid);
+                    if ( asu_grid.in_grid( rot ) )
+                        if ( asu[ map_grid.index( rot ) ] == 0 ) break;
+                }
+                asu[ map_grid.index( base ) ] = sym + 1;
             }
-            asu[ map_grid.index( base ) ] = sym + 1;
-          }
         }
     } else
     {
