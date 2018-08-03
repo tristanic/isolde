@@ -198,6 +198,7 @@
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
       <CompileArgument>-Os</CompileArgument>
+      <SourceFile>src/bindings/contrib/wrap_skeleton.cpp</SourceFile>
       <SourceFile>src/bindings/contrib/wrap_sfweight.cpp</SourceFile>
       <SourceFile>src/bindings/contrib/wrap_sfscale.cpp</SourceFile>
       <SourceFile>src/bindings/contrib/wrap_sfcalc.cpp</SourceFile>
@@ -207,7 +208,6 @@
       <SourceFile>src/bindings/contrib/wrap_fffear.cpp</SourceFile>
       <SourceFile>src/bindings/contrib/wrap_edcalc.cpp</SourceFile>
       <SourceFile>src/bindings/contrib/wrap_convolution_search.cpp</SourceFile>
-      <SourceFile>src/bindings/contrib/wrap_sfcalc_base.cpp</SourceFile>
 
 
       <SourceFile>src/bindings/wrap_clipper_util.cpp</SourceFile>
