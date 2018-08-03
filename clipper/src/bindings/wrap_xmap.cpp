@@ -101,7 +101,7 @@ void declare_xmap_reference_coord(py::module &m)
         ;
 }
 
-
+#include <iostream> //DELETEME
 template<typename T>
 void numpy_export_core_(const Xmap<T>& xmap, py::array_t<T> target, const Coord_grid& origin)
 {
@@ -115,7 +115,7 @@ void numpy_export_core_(const Xmap<T>& xmap, py::array_t<T> target, const Coord_
     Xmap_base::Map_reference_coord ix(xmap);
     for (u=origin.u(); u<maxu; ++u)
         for (v=origin.v(); v<maxv; ++v)
-            for (ix.set_coord(Coord_grid(u, v, origin.w())), w=origin.w(); w<maxw; ix.next_w(), ++w)
+            for (ix.set_coord(Coord_grid(u, v, origin.w())); ix.coord().w() < maxw; ix.next_w())
                 *tptr++ = xmap[ix];
 }
 
@@ -132,7 +132,7 @@ void numpy_import_core_(const Xmap<T>& xmap, py::array_t<T> vals, const Coord_gr
     Xmap_base::Map_reference_coord ix(xmap);
     for (u=origin.u(); u<maxu; ++u)
         for (v=origin.v(); v<maxv; ++v)
-            for (w=origin.w(), ix.set_coord(Coord_grid(u,v,origin.w())); w<maxw; ix.next_w(), ++w)
+            for (ix.set_coord(Coord_grid(u,v,origin.w())); ix.coord().w()<maxw; ix.next_w())
                 xmap[ix] = *vptr++;
 }
 
@@ -146,11 +146,13 @@ void add_xmap_numpy_functions(py::class_<C, Xmap_base>& pyclass)
             auto s = g.max()-g.min();
             auto target = py::array_t<T>({s.u(), s.v(), s.w()});
             numpy_export_core_(self, target, g.min());
+            return target;
         })
         .def("export_section_numpy", [](const C& self, const Coord_grid& origin, const Coord_grid& size)
         {
             auto target = py::array_t<T>({size[0], size[1], size[2]});
             numpy_export_core_(self, target, origin);
+            return target;
         })
         .def("export_section_numpy", [](const C& self, const Coord_grid& origin, py::array_t<T> target )
         { numpy_export_core_(self, target, origin); })
