@@ -213,11 +213,12 @@
       <SourceFile>src/bindings/wrap_clipper_util.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_map_utils.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_ccp4_mtz_io.cpp</SourceFile>
-      <SourceFile>src/bindings/wrap_xmap.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_unit_cell.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_symops.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_spacegroup.cpp</SourceFile>
+      <SourceFile>src/bindings/wrap_xmap.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_nxmap.cpp</SourceFile>
+      <SourceFile>src/bindings/wrap_nxmap_operator.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_hkl_datatypes.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_hkl_data.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_derivs.cpp</SourceFile>
