@@ -25,14 +25,14 @@ OS = $(patsubst CYGWIN_NT%,CYGWIN_NT,$(shell uname -s))
 # CHIMERAX_APP is the ChimeraX install folder
 ifeq ($(OS),CYGWIN_NT)
 # Windows
-CHIMERAX_APP = "/c/Program Files/ChimeraX.app"
+CHIMERAX_APP = "/c/Program Files/ChimeraX"
 endif
 ifeq ($(OS),Darwin)
 # Mac
 CHIMERAX_APP = /Applications/ChimeraX.app
 endif
 ifeq ($(OS),Linux)
-CHIMERAX_APP = /home/tic20/apps/chimerax
+CHIMERAX_APP = \{$HOME}/apps/chimerax
 endif
 
 # ==================================================================
