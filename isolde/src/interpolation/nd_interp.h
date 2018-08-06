@@ -18,7 +18,6 @@
 #include <stdint.h>
 #include <vector>
 #include <math.h>
-#include <stdexcept>
 #include <iostream>
 #include "../molc.h"
 
