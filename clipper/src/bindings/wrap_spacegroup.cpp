@@ -10,9 +10,22 @@ using namespace clipper;
 void declare_spgr_descr(py::module& m)
 {
     py::class_<Spgr_descr> spgr_descr(m, "Spgr_descr");
-        spgr_descr
+
+    py::enum_<Spgr_descr::TYPE>(spgr_descr, "TYPE")
+        .value("Hall", Spgr_descr::TYPE::Hall)
+        .value("HM", Spgr_descr::TYPE::HM)
+        .value("XHM", Spgr_descr::TYPE::XHM)
+        .value("Symops", Spgr_descr::TYPE::Symops)
+        .value("Number", Spgr_descr::TYPE::Number)
+        .value("Unknown", Spgr_descr::TYPE::Unknown)
+        .export_values();
+        ;
+
+
+    spgr_descr
         .def(py::init<>())
-        .def(py::init<const String&, Spgr_descr::TYPE>())
+        .def(py::init<const String&, Spgr_descr::TYPE>(),
+            py::arg("symbol_or_operators"), py::arg("type") = Spgr_descr::TYPE::Unknown)
         .def(py::init<const int&>())
         .def(py::init<const Spgr_descr::Symop_codes&>())
         .def_property_readonly("spacegroup_number", &Spgr_descr::spacegroup_number)
@@ -25,15 +38,6 @@ void declare_spgr_descr(py::module& m)
         .def("__hash__", &Spgr_descr::hash)
         ;
 
-    py::enum_<Spgr_descr::TYPE>(spgr_descr, "TYPE")
-        .value("Hall", Spgr_descr::TYPE::Hall)
-        .value("HM", Spgr_descr::TYPE::HM)
-        .value("XHM", Spgr_descr::TYPE::XHM)
-        .value("Symops", Spgr_descr::TYPE::Symops)
-        .value("Number", Spgr_descr::TYPE::Number)
-        .value("Unknown", Spgr_descr::TYPE::Unknown)
-        .export_values();
-        ;
 } //init_spgr_descr
 
 void declare_symop_codes(py::module& m)
