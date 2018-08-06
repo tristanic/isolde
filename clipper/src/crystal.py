@@ -1479,7 +1479,7 @@ class XmapHandler(Volume):
             # Just set the origin and fill the box with the data for
             # the current location
             origin, grid_origin, ignore = self.box_params
-            self._fill_volume_data(self.data.array, grid_origin)
+            self._fill_volume_data(self._data_fill_target, grid_origin)
         super(XmapHandler, self).show(*args, **kwargs)
 
     @property
@@ -1548,7 +1548,7 @@ class XmapHandler(Volume):
         if not self.display:
             return
         self.data.set_origin(params[0])
-        self._fill_volume_data(self.data.array, params[1])
+        self._fill_volume_data(self._data_fill_target, params[1])
         self.data.values_changed()
 
     def delete(self):
@@ -1583,12 +1583,11 @@ class XmapHandler(Volume):
         self.new_region(ijk_min=(0,0,0), ijk_max=darray.size, ijk_step=(1,1,1), adjust_step=False)
 
     def _generate_and_fill_data_array(self, origin, grid_origin, dim):
-        data = numpy.empty(dim, numpy.double)
+        data = self._data_fill_target = numpy.empty(dim, numpy.double)
         self._fill_volume_data(data, grid_origin)
         order = numpy.array([2,1,0], int)
-        darray = Array_Grid_Data(data, origin = origin,
-            rotation=((0,0,1),(0,1,0),(1,0,0)),
-            step = self.voxel_size[::-1], cell_angles = self.cell.angles_deg[::-1])
+        darray = Array_Grid_Data(data.transpose(), origin = origin,
+            step = self.voxel_size, cell_angles = self.cell.angles_deg)
         return darray
 
 
