@@ -13,14 +13,16 @@ def _parallelCCompile(self, sources, output_dir=None, macros=None,
     with ThreadPoolExecutor(max_workers=os.cpu_count()-1) as executor:
         print("using ThreadPoolExecutor")
         for o in objects:
-            src, ext = build[obj]
+            src, ext = build[o]
             results.append(
                 executor.submit(
-                    self._compile(obj, src, ext, cc_args, extra_postargs, pp_opts)
+                    self._compile(o, src, ext, cc_args, extra_postargs, pp_opts)
                 )
             )
         for r in results:
-            r.result()
+            # Loop until all are done
+            while not r.done():
+                pass
     return objects
 import distutils.ccompiler
 distutils.ccompiler.CCompiler.compile = _parallelCCompile
