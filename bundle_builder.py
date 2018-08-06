@@ -1,31 +1,31 @@
 # vim: set expandtab ts=4 sw=4:
 
-# Monkey patch to make _CModule compile in parallel
-def _parallelCCompile(self, sources, output_dir=None, macros=None,
-            include_dirs=None, debug=0, extra_preargs=None,
-            extra_postargs=None, depends=None):
-    # those lines are copied from distutils.ccompiler.CCompiler directly
-    macros, objects, extra_postargs, pp_opts, build = self._setup_compile(output_dir, macros, include_dirs, sources, depends, extra_postargs)
-    cc_args = self._get_cc_args(pp_opts, debug, extra_preargs)
-    from concurrent.futures import ThreadPoolExecutor
-    import os
-    results = []
-    with ThreadPoolExecutor(max_workers=os.cpu_count()-1) as executor:
-        print("using ThreadPoolExecutor")
-        for o in objects:
-            src, ext = build[o]
-            results.append(
-                executor.submit(
-                    self._compile(o, src, ext, cc_args, extra_postargs, pp_opts)
-                )
-            )
-        for r in results:
-            # Loop until all are done
-            while not r.done():
-                pass
-    return objects
-import distutils.ccompiler
-distutils.ccompiler.CCompiler.compile = _parallelCCompile
+# # Monkey patch to make _CModule compile in parallel
+# def _parallelCCompile(self, sources, output_dir=None, macros=None,
+#             include_dirs=None, debug=0, extra_preargs=None,
+#             extra_postargs=None, depends=None):
+#     # those lines are copied from distutils.ccompiler.CCompiler directly
+#     macros, objects, extra_postargs, pp_opts, build = self._setup_compile(output_dir, macros, include_dirs, sources, depends, extra_postargs)
+#     cc_args = self._get_cc_args(pp_opts, debug, extra_preargs)
+#     from concurrent.futures import ThreadPoolExecutor
+#     import os
+#     results = []
+#     with ThreadPoolExecutor(max_workers=os.cpu_count()-1) as executor:
+#         print("using ThreadPoolExecutor")
+#         for o in objects:
+#             src, ext = build[o]
+#             results.append(
+#                 executor.submit(
+#                     self._compile(o, src, ext, cc_args, extra_postargs, pp_opts)
+#                 )
+#             )
+#         for r in results:
+#             # Loop until all are done
+#             while not r.done():
+#                 pass
+#     return objects
+# import distutils.ccompiler
+# distutils.ccompiler.CCompiler.compile = _parallelCCompile
 
 
 def distlib_hack(_func):
