@@ -64,7 +64,9 @@ def atom_list_from_sel(atom_list):
     elements = atom_list.element_names.tolist()
     coords = atom_list.coords
     occupancies = atom_list.occupancies
-    u_iso = atom_list.bfactors
+    import numpy
+    from math import pi
+    u_iso = numpy.sqrt(atom_list.bfactors/(8*pi**2))
     # Have to be careful here. Atoms.aniso_u6 returns None if any atom in
     # the array has no aniso_u6 entry.
     u_aniso = atom_list.aniso_u6

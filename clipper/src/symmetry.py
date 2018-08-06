@@ -228,13 +228,16 @@ class XtalSymmetryHandler(Model):
             from .crystal import symmetry_from_model_metadata
             self.cell, self.spacegroup, self.grid = symmetry_from_model_metadata(model)
 
-        from .crystal import XmapSet
-        xmapset = self.xmapset = XmapSet(session, self,
-            datasets = mtzdata.calculated_data,
-            live_scrolling = spotlight_mode,
-            display_radius = map_scrolling_radius)
-        xmapset.pickable = False
-        self.add([xmapset])
+        if calculate_maps and mtzfile is not None:
+            from .crystal import XmapSet
+            xmapset = self.xmapset = XmapSet(session, self,
+                datasets = mtzdata.calculated_data,
+                live_scrolling = spotlight_mode,
+                display_radius = map_scrolling_radius)
+            xmapset.pickable = False
+            self.add([xmapset])
+        else:
+            self.xmapset = None
 
         cell = self.cell
         spacegroup = self.spacegroup

@@ -37,7 +37,7 @@ class ReflectionDataContainer(Model):
         '''
         Model.__init__(self, 'Reflection Data', session)
         hklinfo, free, exp, calc = load_hkl_data(hklfile)
-        self.hklinfo = hklinfo
+        self._hklinfo = hklinfo
         self._grid_sampling = None
 
         voxel_size = calculate_voxel_size(hklinfo.resolution, shannon_rate)
@@ -45,30 +45,43 @@ class ReflectionDataContainer(Model):
             shannon_rate = calculate_shannon_rate(hklinfo.resolution, min_voxel_size)
         self.shannon_rate = shannon_rate
 
-        self.free_flags = None
         if free[0] is not None:
             self.free_flags = ReflectionData_FreeFlags(free[0], self.session, free[1])
             self.add([self.free_flags])
 
-        self.experimental_data = None
+        self._experimental_data = None
         if len(exp[0]):
-            exp_dict = {}
+            dsets = []
             for name, data in zip(*exp):
-                exp_dict[name] = thisexp = \
-                    ReflectionData_Exp(name, self.session, data)
-            self.experimental_data = ReflectionData_Node(
-                'Experimental', self.session, exp_dict)
-            self.add([self.experimental_data])
+                    dsets.append(ReflectionData_Exp(name, self.session, data))
+            self.experimental_data.add(dsets)
 
-        self.calculated_data = None
+        self._calculated_data = None
         if len(calc[0]):
-            calc_dict = {}
+            dsets = []
             for name, data in zip(*calc):
-                calc_dict[name] = thiscalc = \
-                    ReflectionData_Calc(name, self.session, data)
-            self.calculated_data = ReflectionData_Node(
-                'Calculated', self.session, calc_dict)
-            self.add([self.calculated_data])
+                    dsets.append(ReflectionData_Calc(name, self.session, data))
+            self.calculated_data.add(dsets)
+
+    @property
+    def experimental_data(self):
+        ed = self._experimental_data
+        if ed is None or ed.deleted:
+            ed = self._experimental_data=ReflectionData_Node('Experimental', self.session)
+            self.add([ed])
+        return ed
+
+    @property
+    def calculated_data(self):
+        cd = self._calculated_data
+        if cd is None or cd.deleted:
+            cd = self._calculated_data=ReflectionData_Node('Calculated', self.session)
+            self.add([cd])
+        return cd
+
+    @property
+    def hklinfo(self):
+        return self._hklinfo
 
     @property
     def cell(self):
@@ -99,11 +112,15 @@ class ReflectionData_Node(Model):
     ReflectionDataContainer tree. Typically the subset will be either
     'Experimental' or 'Calculated'.
     '''
-    def __init__(self, name, session, datasets):
-        Model.__init__(self, name, session)
-        self.datasets = datasets
-        for name, data in datasets.items():
-            self.add([data])
+    # def __init__(self, name, session):
+    #     Model.__init__(self, name, session)
+    #     # self.datasets = datasets
+    #     for name, data in datasets.items():
+    #         self.add([data])
+
+    @property
+    def datasets(self):
+        return dict((m.name, m) for m in self.child_models())
 
     def __iter__(self):
         return iter(self.datasets.values())
