@@ -111,8 +111,8 @@ def symmetry_from_model_metadata_pdb(model):
     CRYST1 card.
     '''
     cryst1 = model.metadata['CRYST1'][0].split()
-    abc = cryst1[1:4]
-    angles = cryst1[4:7]
+    abc = [float(a) for a in cryst1[1:4]]
+    angles = [float(c) for c in cryst1[4:7]]
 
     remarks = model.metadata['REMARK']
     i = 0
@@ -180,7 +180,7 @@ def symmetry_from_model_metadata_pdb(model):
     cell = clipper.Cell(cell_descr)
     spgr_descr = clipper.Spgr_descr(symstr)
     spacegroup = clipper.Spacegroup(spgr_descr)
-    resolution = clipper.Resolution(res)
+    resolution = clipper.Resolution(float(res))
     grid_sampling = clipper.Grid_sampling(spacegroup, cell, resolution)
     return cell, spacegroup, grid_sampling
 
