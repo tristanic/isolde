@@ -32,11 +32,17 @@ class ISOLDE_ToolUI(ToolInstance):
         pp = parent.parent().parent()
         pp.resize(540,850)
 
+        import os
+        basedir = os.path.dirname(os.path.abspath(__file__))
+        from PyQt5 import uic
+        uifile = os.path.join(basedir, 'ui', 'IsoldeFrame.ui')
         from PyQt5 import QtWidgets, QtGui
         from . import isoldewidget
-        self.mainwin = QtWidgets.QFrame(parent=parent)
-        iw = self.iw = isoldewidget.Ui_isolde_widget()
-        iw.setupUi(self.mainwin)
+        mw = self.mainwin = QtWidgets.QFrame(parent=parent)
+        iw = self.iw = uic.loadUi(uifile, mw)
+        # iw = self.iw = isoldewidget.Ui_isolde_widget()
+        #iw = w.Ui_isolde_widget()
+        # iw.setupUi(self.mainwin)
 
         import os
         icon_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources/logo_small.png')

@@ -111,6 +111,8 @@ with the surroundings.
     <DataFile>doc/_images/*</DataFile>
     <DataFile>doc/_images/math/*</DataFile>
     <DataFile>doc/_static/*</DataFile>
+    <DataFile>ui/*</DataFile>
+
 
 
 
