@@ -46,6 +46,9 @@ void init_sfweight(py::module& m);
 void init_skeleton(py::module& m);
 
 
+// ChimeraX extensions
+void init_xtal_mgr(py::module& m);
+
 using namespace clipper;
 
 
@@ -100,4 +103,7 @@ PYBIND11_MODULE(clipper_python, m) {
     init_sfweight(m);
     init_skeleton(m);
 
+    // ChimeraX extensions
+    py::module cx_ext = m.def_submodule("ext", "ChimeraX extensions");
+    init_xtal_mgr(cx_ext);
 }

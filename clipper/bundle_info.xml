@@ -183,6 +183,15 @@
 
   </CLibrary>
 
+  <CLibrary name="clipper_cx" usesNumpy="true">
+      <Define>CLIPPER_CX_EXPORTS</Define>
+      <CompileArgument>-fvisibility=hidden</CompileArgument>
+      <IncludeDir>src/include</IncludeDir>
+      <LibraryDir>src</LibraryDir>
+      <Library>clipper</Library>
+      <SourceFile>src/clipper_ext/xtal_mgr.cpp</SourceFile>
+  </CLibrary>
+
   <!-- <CLibrary name="_clipper" usesNumpy="true">
       <IncludeDir>src/include</IncludeDir>
       <LibraryDir>src</LibraryDir>
@@ -195,9 +204,14 @@
   <CModule name="clipper_python" usesNumpy="true">
       <CompileArgument>-fvisibility=hidden</CompileArgument>
       <IncludeDir>src/include</IncludeDir>
+      <IncludeDir>src</IncludeDir>
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
+      <Library>clipper_cx</Library>
       <CompileArgument>-Os</CompileArgument>
+
+      <SourceFile>src/bindings/ext/wrap_xtal_mgr.cpp</SourceFile>
+
       <SourceFile>src/bindings/contrib/wrap_skeleton.cpp</SourceFile>
       <SourceFile>src/bindings/contrib/wrap_sfweight.cpp</SourceFile>
       <SourceFile>src/bindings/contrib/wrap_sfscale.cpp</SourceFile>
