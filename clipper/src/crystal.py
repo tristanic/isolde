@@ -113,6 +113,7 @@ def symmetry_from_model_metadata_pdb(model):
     cryst1 = model.metadata['CRYST1'][0].split()
     abc = [float(a) for a in cryst1[1:4]]
     angles = [float(c) for c in cryst1[4:7]]
+    symstr = ' '.join(cryst1[7:])
 
     remarks = model.metadata['REMARK']
     i = 0
@@ -137,43 +138,43 @@ def symmetry_from_model_metadata_pdb(model):
     except:
         res = 3.0
 
-    '''
-    The spacegroup identifier tends to be the most unreliable part
-    of the CRYST1 card, so it's considered safer to let Clipper
-    infer it from the list of symmetry operators at remark 290. This
-    typically looks something like the following:
-
-    REMARK 290      SYMOP   SYMMETRY
-    REMARK 290     NNNMMM   OPERATOR
-    REMARK 290       1555   X,Y,Z
-    REMARK 290       2555   -X,-Y,Z+1/2
-    REMARK 290       3555   -Y+1/2,X+1/2,Z+1/4
-    REMARK 290       4555   Y+1/2,-X+1/2,Z+3/4
-    REMARK 290       5555   -X+1/2,Y+1/2,-Z+1/4
-    REMARK 290       6555   X+1/2,-Y+1/2,-Z+3/4
-    REMARK 290       7555   Y,X,-Z
-    REMARK 290       8555   -Y,-X,-Z+1/2
-
-    Clipper is able to initialise a Spacegroup object from a
-    string containing a semicolon-delimited list of the symop
-    descriptors in the SYMMETRY OPERATOR column, so we need to
-    parse those out.
-    '''
-    # Find the start of the REMARK 290 section
-    while 'REMARK 290' not in remarks[i]:
-        i += 1
-    while 'NNNMMM' not in remarks[i]:
-        i += 1
-    i+=1
-    symstr = ''
-    thisline = remarks[i]
-    while 'X' in thisline and 'Y' in thisline and 'Z' in thisline:
-        if len(symstr):
-            symstr += ';'
-        splitline = thisline.split()
-        symstr += splitline[3]
-        i+=1
-        thisline = remarks[i]
+    # '''
+    # The spacegroup identifier tends to be the most unreliable part
+    # of the CRYST1 card, so it's considered safer to let Clipper
+    # infer it from the list of symmetry operators at remark 290. This
+    # typically looks something like the following:
+    #
+    # REMARK 290      SYMOP   SYMMETRY
+    # REMARK 290     NNNMMM   OPERATOR
+    # REMARK 290       1555   X,Y,Z
+    # REMARK 290       2555   -X,-Y,Z+1/2
+    # REMARK 290       3555   -Y+1/2,X+1/2,Z+1/4
+    # REMARK 290       4555   Y+1/2,-X+1/2,Z+3/4
+    # REMARK 290       5555   -X+1/2,Y+1/2,-Z+1/4
+    # REMARK 290       6555   X+1/2,-Y+1/2,-Z+3/4
+    # REMARK 290       7555   Y,X,-Z
+    # REMARK 290       8555   -Y,-X,-Z+1/2
+    #
+    # Clipper is able to initialise a Spacegroup object from a
+    # string containing a semicolon-delimited list of the symop
+    # descriptors in the SYMMETRY OPERATOR column, so we need to
+    # parse those out.
+    # '''
+    # # Find the start of the REMARK 290 section
+    # while 'REMARK 290' not in remarks[i]:
+    #     i += 1
+    # while 'NNNMMM' not in remarks[i]:
+    #     i += 1
+    # i+=1
+    # symstr = ''
+    # thisline = remarks[i]
+    # while 'X' in thisline and 'Y' in thisline and 'Z' in thisline:
+    #     if len(symstr):
+    #         symstr += ';'
+    #     splitline = thisline.split()
+    #     symstr += splitline[3]
+    #     i+=1
+    #     thisline = remarks[i]
 
 
     cell_descr = clipper.Cell_descr(*abc, *angles)
