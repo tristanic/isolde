@@ -22,12 +22,12 @@ Xtal_mgr_base::Xtal_mgr_base(const HKL_info& hklinfo, const HKL_data<Flag>& free
 int
 Xtal_mgr_base::guess_free_flag_value(const HKL_data<Flag>& flags)
 {
-    HKL_info::HKL_reference_index ix;
+    HKL_info::HKL_reference_index ih;
     int f_min = 1e-6, f_max=-1e6;
     std::set<int> flag_vals;
-    for (ix=flags.first(); !ix.last(); ix.next())
+    for (ih=flags.first(); !ih.last(); ih.next())
     {
-        const auto &f = flags[ix];
+        const auto &f = flags[ih];
         if (!f.missing())
         {
             if (f.flag() < f_min) f_min = f.flag();
@@ -43,8 +43,8 @@ Xtal_mgr_base::guess_free_flag_value(const HKL_data<Flag>& flags)
         std::unordered_map<int, int> val_counts;
         for (const auto& v: flag_vals)
             val_counts[v] = 0;
-        for (ix=flags.first(); !ix.last(); ix.next())
-            val_counts[flags[ix].flag()] += 1;
+        for (ih=flags.first(); !ih.last(); ih.next())
+            val_counts[flags[ih].flag()] += 1;
 
         std::unordered_map<int, float> val_fracs;
         // Convert to fractions of total reflections
@@ -78,15 +78,15 @@ void
 Xtal_mgr_base::set_freeflag(int f)
 {
     freeflag_ = f;
-    HKL_info::HKL_reference_index ix;
-    for (ix = usage_.first(); !ix.last(); ix.next())
+    HKL_info::HKL_reference_index ih;
+    for (ih = usage_.first(); !ih.last(); ih.next())
     {
-        auto f = free_flags_[ix];
-        auto fobs = fobs_[ix];
+        auto f = free_flags_[ih];
+        auto fobs = fobs_[ih];
         if (!f.missing() && !fobs.missing() && !f.flag()==freeflag_)
-            usage_[ix].flag() = SFweight_spline<ftype32>::BOTH;
+            usage_[ih].flag() = SFweight_spline<ftype32>::BOTH;
         else
-            usage_[ix].flag() = SFweight_spline<ftype32>::NONE;
+            usage_[ih].flag() = SFweight_spline<ftype32>::NONE;
     }
 }
 
@@ -95,67 +95,149 @@ Xtal_mgr_base::generate_fcalc(const Atom_list& atoms)
 {
     SFcalc_obs_bulk<ftype32>(fcalc_, fobs_, atoms);
     fcalc_initialized_ = true;
+    calculate_r_factors();
 }
 
 // Generate the standard set of map coefficients
 void
-Xtal_mgr_base::generate_base_map_coeffs(bool exclude_free_reflections,
-    bool fill_with_fcalc)
+Xtal_mgr_base::generate_base_map_coeffs()
 {
     if (!fcalc_initialized())
         throw std::runtime_error("No Fcalc values have been calculated! Run "
             " generate_fcalc() on a suitable set of atoms first!");
     map_calculator_(base_2fofc_, base_fofc_, phi_fom_, fobs_, fcalc_, usage_);
-    if (exclude_free_reflections)
-    {
-        if (fill_with_fcalc)
-            set_map_free_terms_to_dfc();
-        else
-            set_map_free_terms_to_zero();
-    }
 
     coeffs_initialized_=true;
+} // generate_base_map_coeffs
+
+void
+Xtal_mgr_base::calculate_r_factors()
+{
+    if (!fcalc_initialized())
+        throw std::runtime_error("No Fcalc values have been calculated! Run "
+            " generate_fcalc() on a suitable set of atoms first!");
+    HKL_info::HKL_reference_index ih;
+    // for standard rwork, rfree
+    ftype sum_fwork=0, sum_ffree=0, sum_dwork=0, sum_dfree=0;
+    // for sigma-weighted rwork, rfree
+    ftype sum_wfwork2=0, sum_wffree2=0, sum_wdwork2=0, sum_wdfree2=0;
+    for (ih=fcalc.first(); !ih.last(); ih.next())
+    {
+        const auto& fo = fobs_[ih];
+        const auto& fc = fcalc_[ih];
+        const auto& fflag = free_flags_[ih];
+        if (!fo.missing() && !fc.missing())
+        {
+            if (fflag.flag()==freeflag_) {
+                sum_ffree+=fo.f();
+                sum_dfree+=std::abs(fo.f()-fc.f());
+
+                sum_wffree2 += 1/fo.sigf()*pow(fo.f(), 2);
+                sum_wdfree2 += 1/fo.sigf()*pow(fo.f()-fc.f(), 2);
+            } else {
+                sum_fwork+=fo.f();
+                sum_dwork+=std::abs(fo.f()-fc.f());
+
+                sum_wfwork2 += 1/fo.sigf()*pow(fo.f(), 2);
+                sum_wdwork2 += 1/fo.sigf()*pow(fo.f()-fc.f(), 2);
+            }
+        }
+    }
+    rfree_ = sum_dfree/sum_ffree;
+    rwork_ = sum_dwork/sum_fwork;
+
+    w_rfree = sqrt(sum_wdfree2/sum_wffree2);
+    w_rwork = sqrt(sum_wdwork2/sum_wfwork2);
+} // calculate_r_factors
+
+
+void
+Xtal_mgr_base::apply_b_factor_sharpening(HKL_data<F_phi<ftype32>>& coeffs,
+    const ftype& bsharp)
+{
+    HKL_info::HKL_reference_index ih;
+    for (ih=coeffs.first(); !ih.last(); ih.next())
+    {
+        auto& fphi = coeffs[ih];
+        if (!fphi.missing())
+            fphi.f()*=exp(-bsharp*ONE_1_ON_4_PI_SQUARED);
+    }
 }
 
 void
-Xtal_mgr_base::set_map_free_terms_to_zero()
+Xtal_mgr_base::add_xmap(const std::string& name, const HKL_data<F_phi<ftype32>>& base_coeffs,
+    const ftype& bsharp, bool is_difference_map,
+    bool exclude_free_reflections, bool fill_with_fcalc)
 {
-    if (!coeffs_initialized_())
+    maps_.emplace(name, Xmap_details(base_coeffs, bsharp, grid_sampling_, is_difference_map,
+                              exclude_free_reflections, fill_with_fcalc));
+    recalculate_map(name);
+} // add_xmap
+
+void
+Xtal_mgr_base::recalculate_map(const std::string& name)
+{
+    Xmap_details& xmd = maps_.at(name);
+    if (xmd.exclude_free_reflections()) {
+        if (xmd.fill_with_fcalc() && !xmd.is_difference_map())
+            set_map_free_terms_to_dfc(xmd.base_coeffs(), xmd.coeffs());
+        else
+            set_map_free_terms_to_zero(xmd.base_coeffs(), xmd.coeffs());
+    }
+    if (xmd.b_sharp() != 0)
+        apply_b_factor_sharpening(xmd.coeffs(), xmd.b_sharp());
+    xmd.xmap().fft_from(xmd.coeffs());
+    xmd.map_stats() = Map_stats(xmd.xmap());
+} // recalculate_map
+
+
+void
+Xtal_mgr_base::set_map_free_terms_to_zero(const HKL_data<F_phi<ftype32>>& source,
+    HKL_data<F_phi<ftype32>>& dest)
+{
+    if (!coeffs_initialized())
         throw std::runtime_error("Coefficients have not yet been calculated!");
-    HKL_info::HKL_reference_index ix;
-    for (ix = base_2fofc_.first(); !ix.last(); ix.next())
+    HKL_info::HKL_reference_index ih;
+    for (ih = source.first(); !ih.last(); ih.next())
     {
-        if (usage_[ix].missing() || usage[ix].flag() = SFweight_spline<ftype32>::NONE)
+        if (usage_[ih].missing() || usage_[ih].flag() == SFweight_spline<ftype32>::NONE)
         {
-            if (!base_2fofc_[ix].missing())
-                base_2fofc_[ix].f() = 0;
-            if (!base_fofc_[ix].missing())
-                base_fofc_[ix].f() = 0;
+            if (!source[ih].missing())
+                dest[ih].f() = 0;
+            else
+                dest[ih].set_null();
+        } else {
+            dest[ih] = source[ih];
         }
     }
 }
 
 void
-Xtal_mgr_base::set_map_free_terms_to_dfc()
+Xtal_mgr_base::set_map_free_terms_to_dfc(const HKL_data<F_phi<ftype32>>& source,
+    HKL_data<F_phi<ftype32>>& dest)
 {
-    if (!coeffs_initialized_())
+    if (!coeffs_initialized())
         throw std::runtime_error("Coefficients have not yet been calculated!");
-    HKL_info::HKL_reference_index ix;
+    HKL_info::HKL_reference_index ih;
+    HKL_data<Flag_bool> flag(source.hkl_info());
+    for (ih=flag.first(); !ih.last(); ih.next())
+        flag[ih].flag() = (!source[ih].missing() && usage_[ih].flag()!=SFweight_base<ftype32>::NONE);
     const auto& param_s = map_calculator_.params_scale();
     // const auto& param_w = map_calculator_.params_error();
     BasisFn_spline basisfn( flag, param_s.size(), 1.0);
-    for (ix=base_2fofc_.first(); !ix.last(); ix.next())
+    for (ih=source.first(); !ih.last(); ih.next())
     {
-        if (usage_[ix].missing() || usage[ix].flag() = SFweight_spline<ftype32>::NONE)
+        const auto& fpo = source[ih];
+        if (usage_[ih].missing() || usage_[ih].flag() == SFweight_spline<ftype32>::NONE)
         {
-            auto& fpo = base_2fofc_[ix];
-            if (!fpo.missing())
-            {
-                auto s = basisfn.f_s( ix.invresolsq(), param_s);
-                fpo.f() = s*fcalc_[ix].f();
+            if (!fpo.missing()) {
+                auto s = basisfn.f_s( ih.invresolsq(), param_s);
+                dest[ih].f() = s*fcalc_[ih].f();
+            } else {
+                dest[ih].set_null();
             }
-            if (!base_fofc_[ix].missing())
-                base_fofc_[ix].f() = 0;
+        } else {
+            dest[ih] = fpo;
         }
     }
 }

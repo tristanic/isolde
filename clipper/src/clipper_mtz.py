@@ -10,9 +10,9 @@
 
 #from . import clipper
 from .clipper_python import Grid_sampling, HKL_data_Flag, CCP4MTZfile, HKL_info
-from .clipper_python.data64 import HKL_data_I_sigI_double as HKL_data_I_sigI
-from .clipper_python.data64 import HKL_data_F_sigF_double as HKL_data_F_sigF
-from .clipper_python.data64 import HKL_data_F_phi_double as HKL_data_F_phi
+from .clipper_python.data32 import HKL_data_I_sigI_float as HKL_data_I_sigI
+from .clipper_python.data32 import HKL_data_F_sigF_float as HKL_data_F_sigF
+from .clipper_python.data32 import HKL_data_F_phi_float as HKL_data_F_phi
 from chimerax.core.models import Model
 
 def calculate_voxel_size(resolution, shannon_rate):

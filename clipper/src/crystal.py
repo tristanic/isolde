@@ -1376,8 +1376,8 @@ def _get_bounding_box(coords, padding, grid, cell):
     dim = box_bounds_grid[1] - box_bounds_grid[0]
     return [box_origin_grid, box_origin_xyz, dim]
 
-from .clipper_python import Xmap_double
-class Xmap(Xmap_double):
+from .clipper_python import Xmap_float
+class Xmap(Xmap_float):
     def __init__(self, spacegroup, cell, grid_sampling,
                  name = None, hkldata = None, is_difference_map = None):
         super().__init__(spacegroup, cell, grid_sampling)
