@@ -1,6 +1,7 @@
 #pragma once
 
 #include <set>
+#include <iostream>
 
 #include <clipper/clipper.h>
 #include "symops.h"
@@ -53,20 +54,15 @@ class Unit_Cell
 public:
     ~Unit_Cell() {};
 
-    Unit_Cell(const Coord_frac& ref, const Atom_list& atoms, const Cell& cell,
+    Unit_Cell(const Atom_list& atoms, const Cell& cell,
         const Spacegroup& sg, const Grid_sampling& grid, int padding=0);
 
-    inline const Symops& symops() const { return symops_; } // Getter
-    // inline Symops& symops() { return symops_; } // Setter
+    inline const RTop_fracs& symops() const { return symops_; } // Getter
+    // inline RTop_fracs& symops() { return symops_; } // Setter
 
-    inline const Symops& inv_symops() const { return inv_symops_; } // Getter
-    // inline Symops& inv_symops() { return inv_symops(); } // Setter
+    inline const RTop_fracs& inv_symops() const { return inv_symops_; } // Getter
+    // inline RTop_fracs& inv_symops() { return inv_symops(); } // Setter
 
-    inline const Isymops& isymops() const { return isymops_; } // Getter
-    // inline Isymops& isymops() const { return isymops_; } // Setter
-
-    inline const Isymops& inv_isymops() const { return inv_isymops_; } // Getter
-    // inline Isymops& inv_isymops() { return inv_isymops_; } // Setter
 
     inline const Coord_frac& ref_coord() const { return ref_; } // Getter
     inline void set_ref_coord(const Coord_frac& new_ref) {
@@ -90,8 +86,8 @@ public:
     void find_symops_for_coord(std::set<Symop_and_Unit_Cell_Offset>& pairlist,
         const Coord_grid& coord) const;
 
-    Symops all_symops_in_box(const Grid_range& range, bool always_include_identity=false, int sample_frequency=2) const;
-    Symops all_symops_in_box(const Coord_orth& origin_xyz, const Vec3<int>& box_size_uvw,
+    RTop_fracs all_symops_in_box(const Grid_range& range, bool always_include_identity=false, int sample_frequency=2) const;
+    RTop_fracs all_symops_in_box(const Coord_orth& origin_xyz, const Vec3<int>& box_size_uvw,
         bool always_include_identity=false, int sample_frequency=2) const;
 
 
@@ -108,15 +104,14 @@ private:
     Grid_sampling grid_;
     Coord_frac ref_;  // Our reference coordinate in fractional...
     Coord_grid grid_ref_; // ... and grid coordinates.
-    Symops symops_; // The list of RTops mapping our reference coordinate to equivalent positions in the same unit cell
-    Symops inv_symops_; // For convenience, the inverse symops are also saved.
-    Isymops isymops_; // Integerised symops for fast operations on grid coordinates
-    Isymops inv_isymops_; //... and their inverses
+    RTop_fracs symops_; // The list of RTops mapping our reference coordinate to equivalent positions in the same unit cell
+    RTop_fracs inv_symops_; // For convenience, the inverse symops are also saved.
     std::vector<int> symop_map_; // Mapping of the indices of symops_ to Clipper's internal symop indices
     //Grid_range ref_asu_;
     Coord_grid cell_origin_; // The origin of the unit cell containing our reference model
     Grid_range reference_model_bounds_; // Smallest grid range encompassing our atomic model
     int min_side_; // The length of the smallest side of the grid box in reference_model_bounds
+    ftype search_radius_;
     /* Because life is never easy, the reference model will almost certainly
      * span across multiple unit cells (unlike the nice, neat map reference
      * asu used by Clipper. Therefore, to find symmetry equivalents we
@@ -132,17 +127,14 @@ private:
 
 // Implementations
 
-Unit_Cell::Unit_Cell(const Coord_frac& ref, const Atom_list& atoms, const Cell& cell,
+Unit_Cell::Unit_Cell(const Atom_list& atoms, const Cell& cell,
     const Spacegroup& sg, const Grid_sampling& grid, int padding)
-    : cell_(cell),  sg_(sg), grid_(grid), ref_(ref)
+    : cell_(cell),  sg_(sg), grid_(grid)
 {
     /* Store the nearest grid coordinate to the input reference coordinate.
      * Make the equivalent grid, fractional and map reference coords
      * and store for repeated use.
      */
-    grid_ref_ = ref.coord_grid(grid);
-    cell_origin_ = grid_ref_ - grid_ref_.unit(grid);
-    ref_ = grid_ref_.coord_frac(grid);
     update_reference_model_bounds(atoms, padding);
 
     // In order to catch all corner cases, we'll need to search the 3x3 block
@@ -165,10 +157,10 @@ Unit_Cell::recalculate_symops_()
 {
     // For each symop in this spacegroup, we need to find the whole-unit-cell
     // translations needed to bring the transformed reference coordinate back
-    // into this unit cell. The result will be stored as a Symops array.
+    // into this unit cell. The result will be stored as a RTop_fracs array.
     Coord_frac origin_frac = cell_origin_.coord_frac(grid_);
-    symops_ = Symops();
-    inv_symops_ = Symops();
+    symops_ = RTop_fracs();
+    inv_symops_ = RTop_fracs();
     for (int i=0; i<sg_.num_symops(); ++i)
     {
         const Symop& this_symop = sg_.symop(i);
@@ -180,12 +172,10 @@ Unit_Cell::recalculate_symops_()
     // Pre-calculate the inverse and integer symops
     for (size_t i=0; i<symops_.size(); ++i)
     {
-        RTop_frac inv_op = symops_.with_cell_translation(i).inverse();
+        RTop_frac inv_op = symops_[i].inverse();
         inv_symops_.append(inv_op);
     }
 
-    isymops_ = Isymops(symops_, grid_);
-    inv_isymops_ = Isymops(inv_symops_, grid_);
 }
 
 void
@@ -194,14 +184,34 @@ Unit_Cell::update_reference_model_bounds(const Atom_list& atoms, const int& padd
     Coord_grid ref_min = atoms[0].coord_orth().coord_frac(cell_).coord_grid(grid_);
     Coord_grid ref_max = ref_min;
     Coord_grid pad(padding,padding,padding);
+    Coord_orth ref_orth(0,0,0);
     for (const auto& atom: atoms) {
-      const Coord_grid& thiscoord = atom.coord_orth().coord_frac(cell_).coord_grid(grid_);
+      ref_orth += atom.coord_orth();
+      Coord_grid thiscoord = atom.coord_orth().coord_frac(cell_).coord_grid(grid_);
       for (size_t i = 0; i < 3; i++) {
         if (thiscoord[i] < ref_min[i]) ref_min[i] = thiscoord[i];
         else if (thiscoord[i] > ref_max[i]) ref_max[i] = thiscoord[i];
       }
     }
+    for (int i=0; i<3; ++i)
+        ref_orth[i] /= atoms.size();
+    ref_ = ref_orth.coord_frac(cell_);
+    grid_ref_ = ref_.coord_grid(grid_);
+    cell_origin_ = grid_ref_ - grid_ref_.unit(grid_);
+
+    Grid_range unpadded_bounds(ref_min, ref_max);
     reference_model_bounds_ = Grid_range( ref_min-pad, ref_max+pad );
+
+    // Find the maximum distance of any atom from the reference coordinate.
+    search_radius_ = 0;
+    Coord_orth d;
+    for (const auto& atom: atoms) {
+        d = atom.coord_orth() - ref_orth;
+        ftype dist = sqrt(d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);
+        if (dist > search_radius_)
+            search_radius_ = dist;
+    }
+    search_radius_ *= 1.1;
 
     /* Find the side of the reference box covering the shortest
     * distance. When searching a box for relevant symops, we'll
@@ -209,9 +219,9 @@ Unit_Cell::update_reference_model_bounds(const Atom_list& atoms, const int& padd
     */
 
     size_t nu, nv, nw;
-    nu = reference_model_bounds_.nu();
-    nv = reference_model_bounds_.nv();
-    nw = reference_model_bounds_.nw();
+    nu = unpadded_bounds.nu();
+    nv = unpadded_bounds.nv();
+    nw = unpadded_bounds.nw();
     min_side_ = nv < nu ? (nw < nv ? nw : nv) : nu;
 
 }
@@ -220,28 +230,34 @@ void
 Unit_Cell::find_symops_for_coord(std::set<Symop_and_Unit_Cell_Offset>& pairlist,
         const Coord_grid& coord) const
 {
-    Coord_grid shift, t_coord;
-    for (const auto& co: ref_model_cell_origins_)
+    Coord_frac t_ref;
+    Coord_frac f_coord = coord.coord_frac(grid_);
+    Coord_frac cell_offset;
+    for (int i=0; i<sg_.num_symops(); ++i)
     {
-        // First work out how many unit cells we are away from our reference
-        shift = coord - coord.unit(grid_) - co;
-        /* Now try the inverse symops, and work out which (if any) put us
-         * within the bounds of our reference box. NOTE: since our box
-         * is the limits of the model (not an ASU), it's entirely possible
-         * for the coordinate to be in more than one box - or, indeed, no box
-         * at all. Therefore, we should err on the side of caution and test
-         * all symops for each point.
-        */
-        for (size_t i=0; i< inv_symops_.size(); ++i) {
-            t_coord = (coord.unit(grid_) + co).transform(inv_isymops_.with_cell_translation(i));
-            if (reference_model_bounds_.in_grid(t_coord))
-                pairlist.insert(Symop_and_Unit_Cell_Offset(i, shift));
+        t_ref = sg_.symop(i)*ref_;
+        Coord_frac total_offset = f_coord-t_ref;
+        Coord_frac cell_offset;
+        for (int j=0; j<3; ++j)
+            cell_offset[j] = round(total_offset[j]);
+
+        t_ref += cell_offset;
+        Coord_orth t_ref_orth = t_ref.coord_orth(cell_);
+        Coord_orth f_coord_orth = f_coord.coord_orth(cell_);
+
+        ftype distance=0;
+        Coord_orth d = t_ref_orth-f_coord_orth;
+        distance = sqrt(d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);
+
+        if (distance < search_radius_)
+        {
+            pairlist.insert(Symop_and_Unit_Cell_Offset(i, cell_offset.coord_grid(grid_)));
         }
     }
+
 }
 
-
-Symops
+RTop_fracs
 Unit_Cell::all_symops_in_box(const Coord_orth& origin_xyz, const Vec3<int>& box_size_uvw,
     bool always_include_identity, int sample_frequency) const
 {
@@ -251,11 +267,11 @@ Unit_Cell::all_symops_in_box(const Coord_orth& origin_xyz, const Vec3<int>& box_
     return all_symops_in_box(range, always_include_identity, sample_frequency);
 }
 
-Symops
+RTop_fracs
 Unit_Cell::all_symops_in_box(const Grid_range& range, bool always_include_identity, int sample_frequency) const
 {
     static const Symop_and_Unit_Cell_Offset identity(0, Coord_grid(0,0,0));
-    Symops ret;
+    RTop_fracs ret;
     std::set<Symop_and_Unit_Cell_Offset> ops_and_translations;
 
     const Coord_grid& box_origin = range.min();
@@ -298,10 +314,12 @@ Unit_Cell::all_symops_in_box(const Grid_range& range, bool always_include_identi
         ret.append(RTop_frac::identity());
 
     for (const auto& ot: ops_and_translations) {
-        RTop_frac thisop = symops_.with_cell_translation(ot.symop);
+        RTop_frac thisop = sg_.symop(ot.symop);
+        // RTop_frac thisop = symops_.at(ot.symop);
         thisop.trn() += ot.uc_offset.coord_frac(grid_);
         ret.append(thisop);
     }
+
     return ret;
 }
 

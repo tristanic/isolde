@@ -23,7 +23,7 @@ void declare_unit_cell(py::module& m)
 {
     py::class_<Unit_Cell>(m, "Unit_Cell", unit_cell_docstring)
         //.def(py::init<>())
-        .def(py::init<const Coord_frac&, const Atom_list&, const Cell&,
+        .def(py::init<const Atom_list&, const Cell&,
                       const Spacegroup&, const Grid_sampling&, int>())
         .def_property_readonly("symops", &Unit_Cell::symops)
         .def_property_readonly("inv_symops", &Unit_Cell::inv_symops)
@@ -40,7 +40,7 @@ void declare_unit_cell(py::module& m)
         .def_property_readonly("top_corner", &Unit_Cell::max)
         .def("update_reference_model_bounds", &Unit_Cell::update_reference_model_bounds)
         .def("all_symops_in_box",
-            (Symops (Unit_Cell::*)(const Coord_orth& origin_xyz,
+            (RTop_fracs (Unit_Cell::*)(const Coord_orth& origin_xyz,
                const Vec3<int>& box_size_uvw,
                bool always_include_identity, int sample_frequency) const)
                &Unit_Cell::all_symops_in_box,

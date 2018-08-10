@@ -532,8 +532,8 @@ class CrystalStructure(Model):
         g = self.grid
         self._sym_box_center = v.center_of_rotation
         self._sym_last_cofr_grid = clipper.Coord_orth(self._sym_box_center).coord_frac(c).coord_grid(g)
-        box_corner_grid, box_corner_xyz = _find_box_corner(self._sym_box_center, c, g, radius)
-        self._sym_box_dimensions = (numpy.ceil(radius / self._voxel_size * 2)).astype(int)
+        box_corner_grid, box_corner_xyz, self._sym_box_dimensions = find_box_params(self._sym_box_center, c, g, radius)
+        # self._sym_box_dimensions = (numpy.ceil(radius / self._voxel_size * 2)).astype(int)
         self._update_sym_box(force_update = True)
         self._sym_box_initialized = True
 
@@ -553,7 +553,7 @@ class CrystalStructure(Model):
                     return
         self._sym_last_cofr_grid = cofr_grid
         self._sym_box_center = cofr
-        box_corner_grid, box_corner_xyz = _find_box_corner(
+        box_corner_grid, box_corner_xyz, dim = find_box_params(
                   self._sym_box_center, self.cell,
                   self.grid, self._sym_box_radius)
         symops = uc.all_symops_in_box(box_corner_xyz,
@@ -598,8 +598,8 @@ class CrystalStructure(Model):
         self.live_atomic_symmetry = False
         box_center = self.master_model.bounds().center()
         uc = self.unit_cell
-        dim = (numpy.ceil(box_width / self._voxel_size)).astype(int)
-        box_corner_grid, box_corner_xyz = _find_box_corner(
+        # dim = (numpy.ceil(box_width / self._voxel_size)).astype(int)
+        box_corner_grid, box_corner_xyz, dim = find_box_params(
                   box_center, self.cell,
                   self.grid, box_width/2)
         symops = uc.all_symops_in_box(box_corner_xyz, dim, True)
@@ -1113,12 +1113,12 @@ class XmapSet(Model):
         v = self.session.view
         cofr = self._box_center = v.center_of_rotation
         self._box_center_grid = clipper.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
-        dim = self._box_dimensions = \
-            2 * calculate_grid_padding(radius, self.grid, self.cell)
-        self._box_corner_grid, self._box_corner_xyz = _find_box_corner(
+        # dim = self._box_dimensions = \
+        #     2 * calculate_grid_padding(radius, self.grid, self.cell)
+        self._box_corner_grid, self._box_corner_xyz, self._box_dimensions = find_box_params(
             cofr, self.cell, self.grid, radius)
         self.triggers.activate_trigger('map box changed',
-            (self._box_corner_xyz, self._box_corner_grid, dim))
+            (self._box_corner_xyz, self._box_corner_grid, self._box_dimensions))
         self._surface_zone.update(radius, coords = numpy.array([cofr]))
         self._reapply_zone()
 
@@ -1312,7 +1312,7 @@ class XmapSet(Model):
             # Just store the box parameters for when we're re-displayed
             return
         if self.live_scrolling:
-            box_corner_grid, box_corner_xyz = _find_box_corner(center, self.cell, self.grid, self.display_radius)
+            box_corner_grid, box_corner_xyz, dim = find_box_params(center, self.cell, self.grid, self.display_radius)
             self.triggers.activate_trigger('map box moved', (box_corner_xyz, box_corner_grid, self._box_dimensions))
             self._surface_zone.update(self.display_radius, coords = numpy.array([center]))
             self._reapply_zone()
@@ -1332,12 +1332,26 @@ class XmapSet(Model):
         super(XmapSet, self).delete()
 
 
+def calculate_grid_padding2(radius, grid, cell):
+    angles = cell.angles
+    d = 2*radius
+    # a is always parallel to x
+    da = d
+    # gamma is angle between a and b
+    db = d/sin(angles[2])
+    # beta is the angle between a and c
+    dc = d/sin(angles[1])
+    dabc = numpy.array([da, db, dc])
+    dabc_grid = numpy.ceil(dabc/(cell.dim/grid.dim)).astype(numpy.int32)
+    return dabc_grid
+
+
 def calculate_grid_padding(radius, grid, cell):
     '''
     Calculate the number of grid steps needed on each crystallographic axis
     in order to capture at least radius angstroms in x, y and z.
     '''
-    corner_mask = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,0,0],[1,1,1]])
+    corner_mask = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]])
     corners = (corner_mask * radius).astype(float)
     grid_upper = numpy.zeros([8,3], numpy.int)
     grid_lower = numpy.zeros([8,3], numpy.int)
@@ -1348,20 +1362,18 @@ def calculate_grid_padding(radius, grid, cell):
         grid_lower[i,:] = numpy.floor(cm).astype(int)
     return grid_upper.max(axis=0) - grid_lower.min(axis=0)
 
-def find_box_corner(center, cell, grid, radius=20):
-    return _find_box_corner(center, cell, grid, radius)
-
-def _find_box_corner(center, cell, grid, radius = 20):
+def find_box_params(center, cell, grid, radius = 20):
     '''
-    Find the bottom corner (i.e. the origin) of a rhombohedral box
-    big enough to hold a sphere of the desired radius.
+    Return the origin (in grid and cartesian coordinates) and dimensions of a
+    rhombohedral box big enough to hold a sphere of the desired radius.
     '''
     radii_frac = clipper.Coord_frac(radius/cell.dim)
     center_frac = clipper.Coord_orth(center).coord_frac(cell)
+    half_dim = calculate_grid_padding(radius, grid, cell)
     bottom_corner_grid = center_frac.coord_grid(grid) \
-                - clipper.Coord_grid(calculate_grid_padding(radius, grid, cell))
+                - clipper.Coord_grid(half_dim)
     bottom_corner_orth = bottom_corner_grid.coord_frac(grid).coord_orth(cell)
-    return bottom_corner_grid, bottom_corner_orth.xyz
+    return bottom_corner_grid, bottom_corner_orth.xyz, half_dim*2
 
 def _get_bounding_box(coords, padding, grid, cell):
     '''
@@ -1584,7 +1596,7 @@ class XmapHandler(Volume):
         self.new_region(ijk_min=(0,0,0), ijk_max=darray.size, ijk_step=(1,1,1), adjust_step=False)
 
     def _generate_and_fill_data_array(self, origin, grid_origin, dim):
-        data = self._data_fill_target = numpy.empty(dim, numpy.double)
+        data = self._data_fill_target = numpy.empty(dim, numpy.float32)
         self._fill_volume_data(data, grid_origin)
         order = numpy.array([2,1,0], int)
         darray = Array_Grid_Data(data.transpose(), origin = origin,

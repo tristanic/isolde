@@ -2,6 +2,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include <pybind11/numpy.h>
+#include <pybind11/stl.h>
 
 #include "type_conversions.h"
 #include "symops.h"
@@ -44,14 +45,14 @@ void export_rot_trn_(const Mat33<ftype>& rot, const Vec3<ftype>& trn, int nrows,
     }
 }
 
-void all_matrices_frac_(const Symops& self, int nrows, py::array_t<ftype>& target)
+void all_matrices_frac_(const RTop_fracs& self, int nrows, py::array_t<ftype>& target)
 {
     int n = self.size();
     check_numpy_array_shape(target, {n, nrows, 4}, false);
     ftype* tptr = (ftype*)target.request().ptr;
     for (int i=0; i<n; ++i)
     {
-        const RTop_frac& thisop = self.with_cell_translation(i);
+        const RTop_frac& thisop = self[i];
         const Mat33<ftype>& rot = thisop.rot();
         const Vec3<ftype>& trn = thisop.trn();
         export_rot_trn_(rot, trn, nrows, tptr);
@@ -59,14 +60,14 @@ void all_matrices_frac_(const Symops& self, int nrows, py::array_t<ftype>& targe
     }
 }
 
-void all_matrices_orth_(const Symops& self, const Cell& cell, int nrows, py::array_t<ftype>& target)
+void all_matrices_orth_(const RTop_fracs& self, const Cell& cell, int nrows, py::array_t<ftype>& target)
 {
     int n = self.size();
     check_numpy_array_shape(target, {n, nrows, 4}, false);
     ftype* tptr = (ftype*)target.request().ptr;
     for (int i=0; i<n; ++i)
     {
-        const RTop_orth& thisop = self.with_cell_translation(i).rtop_orth(cell);
+        const RTop_orth& thisop = self[i].rtop_orth(cell);
         const Mat33<ftype>& rot = thisop.rot();
         const Vec3<ftype>& trn = thisop.trn();
         export_rot_trn_(rot, trn, nrows, tptr);
@@ -80,19 +81,17 @@ using namespace clipper;
 
 void declare_symops(py::module& m)
 {
-    py::class_<Symops>(m, "Symops")
+    py::class_<RTop_fracs>(m, "RTop_fracs")
         .def(py::init<>())
         .def(py::init<std::vector<RTop_frac>&>())
-        .def(py::init<std::vector<Symop>&>())
-        .def("__getitem__", &Symops::at)
-        .def("__setitem__", &Symops::replace)
-        .def("with_cell_translation", &Symops::with_cell_translation)
-        .def("append", (void (Symops::*)(const Symop& op, const Coord_frac& offset)) &Symops::append)
-        .def("append", (void (Symops::*)(const RTop_frac& op)) &Symops::append)
-        .def("pop", &Symops::pop)
-        .def("__len__", &Symops::size)
+        .def("__getitem__", &RTop_fracs::at)
+        .def("__setitem__", &RTop_fracs::replace)
+        .def("append", (void (RTop_fracs::*)(const Symop& op, const Coord_frac& offset)) &RTop_fracs::append)
+        .def("append", (void (RTop_fracs::*)(const RTop_frac& op)) &RTop_fracs::append)
+        .def("pop", &RTop_fracs::pop)
+        .def("__len__", &RTop_fracs::size)
         .def("all_matrices_frac",
-            [](const Symops& self, const std::string& shape) -> py::array_t<ftype>
+            [](const RTop_fracs& self, const std::string& shape) -> py::array_t<ftype>
             {
                 auto nrows = nrows_from_shape_string(shape);
                 py::array_t<ftype> target({(int)self.size(), nrows, 4});
@@ -100,13 +99,13 @@ void declare_symops(py::module& m)
                 return target;
             })
         .def("all_matrices_frac",
-            [](const Symops& self, const std::string& shape, py::array_t<ftype> target) -> void
+            [](const RTop_fracs& self, const std::string& shape, py::array_t<ftype> target) -> void
             {
                 auto nrows = nrows_from_shape_string(shape);
                 all_matrices_frac_(self, nrows, target);
             })
             .def("all_matrices_orth",
-                [](const Symops& self, const Cell& cell, const std::string& shape) -> py::array_t<ftype>
+                [](const RTop_fracs& self, const Cell& cell, const std::string& shape) -> py::array_t<ftype>
                 {
                     auto nrows = nrows_from_shape_string(shape);
                     py::array_t<ftype> target({(int)self.size(), nrows, 4});
@@ -114,7 +113,7 @@ void declare_symops(py::module& m)
                     return target;
                 })
             .def("all_matrices_orth",
-                [](const Symops& self, const Cell& cell, const std::string& shape, py::array_t<ftype> target) -> void
+                [](const RTop_fracs& self, const Cell& cell, const std::string& shape, py::array_t<ftype> target) -> void
                 {
                     auto nrows = nrows_from_shape_string(shape);
                     all_matrices_orth_(self, cell, nrows, target);

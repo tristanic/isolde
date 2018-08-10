@@ -145,8 +145,8 @@ def get_symmetry_handler(structure, create=False):
     return None
 
 class Unit_Cell(clipper_python.Unit_Cell):
-   def __init__(self, ref, atom_list, cell,
-                 spacegroup, grid_sampling, padding = 0):
+   def __init__(self, atom_list, cell,
+                 spacegroup, grid_sampling, padding = 10):
         '''
         __init__(self, ref, atom_list, cell, spacegroup, grid_sampling) -> Unit_Cell
 
@@ -157,10 +157,6 @@ class Unit_Cell(clipper_python.Unit_Cell):
         to match.
 
         Args:
-            ref ([float*3]):
-                (x,y,z) coordinate of the reference you want to construct
-                the unit cell relative to. Set this to the centroid of
-                your atomic model for best results.
             atom_list (clipper.Atom_list):
                 A Clipper Atom_list object containing your reference model.
             cell (clipper.Cell)
@@ -172,9 +168,7 @@ class Unit_Cell(clipper_python.Unit_Cell):
                 box for finding symmetry operations. In most cases this
                 can be left as zero.
         '''
-        ref_frac = clipper_python.Coord_orth(ref).coord_frac(cell)
-        super().__init__(ref_frac, atom_list, cell,
-                                        spacegroup, grid_sampling, padding)
+        super().__init__(atom_list, cell, spacegroup, grid_sampling, padding)
 
 
 class XtalSymmetryHandler(Model):
@@ -183,11 +177,11 @@ class XtalSymmetryHandler(Model):
     '''
     def __init__(self, model, mtzfile=None, calculate_maps=True, map_oversampling=1.5,
         min_voxel_size = 0.5, spotlight_mode = True, map_scrolling_radius=12,
-        atomic_symmetry_radius=15, hydrogens='polar'):
+        atomic_symmetry_radius=15, hydrogens='polar', debug=False):
         name = 'Crystal'
         session = self.session = model.session
         super().__init__(name, session)
-
+        self._debug = debug
         self.structure = model
         self._box_center = session.view.center_of_rotation
         self._box_center_grid = None
@@ -245,16 +239,16 @@ class XtalSymmetryHandler(Model):
 
         self._voxel_size = cell.dim/grid.dim
 
-        ref = model.bounds().center()
+        # ref = model.bounds().center()
 
         from .main import atom_list_from_sel
         ca = self._clipper_atoms = atom_list_from_sel(model.atoms)
 
-        uc = self._unit_cell = Unit_Cell(ref, ca, cell, spacegroup, grid)
+        uc = self._unit_cell = Unit_Cell(ca, cell, spacegroup, grid)
 
 
         self._atomic_symmetry_model = AtomicSymmetryModel(model, self, uc,
-            radius = atomic_symmetry_radius, live = spotlight_mode)
+            radius = atomic_symmetry_radius, live = spotlight_mode, debug=debug)
 
         self._update_handler = session.triggers.add_handler('new frame',
             self.update)
@@ -433,7 +427,7 @@ class XtalSymmetryHandler(Model):
         colors = []
         rgba_edge = numpy.array([0,255,255,128],numpy.uint8)
         corners_frac = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]],numpy.double) + offset\
-                        + uc.min.coord_frac(self.grid).uvw
+                        + uc.origin.coord_frac(self.grid).uvw
 
         corners = numpy.array([clipper_python.Coord_frac(c).coord_orth(self.cell).xyz for c in corners_frac])
         from chimerax.surface.shapes import cylinder_geometry
@@ -476,8 +470,6 @@ class XtalSymmetryHandler(Model):
         m, d = _get_special_positions_model(self)
         model = self.structure
 
-        ref = model.bounds().center().astype(float)
-        frac_coords = clipper_python.Coord_orth(ref).coord_frac(self.cell).uvw
         if offset is None:
             offset = numpy.array([0,0,0],int)
 
@@ -557,7 +549,8 @@ class AtomicSymmetryModel(Model):
     Finds and draws local symmetry atoms for an atomic structure
     '''
     def __init__(self, atomic_structure, parent, unit_cell, radius = 15,
-        dim_colors_to = 0.6, backbone_mode = 'CA trace', live = True):
+        dim_colors_to = 0.6, backbone_mode = 'CA trace', live = True, debug=False):
+        self._debug = debug
         self._live_scrolling = False
         self.structure = atomic_structure
         session = self.session = atomic_structure.session
@@ -568,6 +561,7 @@ class AtomicSymmetryModel(Model):
         self.session = atomic_structure.session
         self._color_dim_factor = dim_colors_to
 
+        self._sym_search_frequency = 2
         self._current_focal_set = None
 
         self.manager = parent
@@ -595,6 +589,32 @@ class AtomicSymmetryModel(Model):
         self.live_scrolling = live
         from .crystal import set_to_default_cartoon
         set_to_default_cartoon(session)
+
+
+    @property
+    def _box_corner_drawing(self):
+        if not hasattr(self, "_bcd") or self._bcd is None:
+            from chimerax.core.models import Drawing
+            from chimerax.surface.shapes import sphere_geometry2
+            d = self._bcd = Drawing("symmetry box corners")
+            d.set_geometry(*sphere_geometry2(200))
+            self.add_drawing(d)
+        return self._bcd
+
+    @property
+    def _search_positions_drawing(self):
+        if not hasattr(self, "_spd") or self._spd is None:
+            from chimerax.core.models import Drawing
+            from chimerax.surface.shapes import sphere_geometry2
+            d = self._spd = Drawing("symmetry search positions")
+            v, n, t = sphere_geometry2(200)
+            from chimerax.core.geometry import scale
+            v = scale(0.5).moved(v)
+            d.set_geometry(v,n,t)
+            self.add_drawing(d)
+        return self._spd
+
+
 
     def sym_select_within(self, atoms, cutoff, coords=None, whole_residues = True):
         '''
@@ -625,7 +645,7 @@ class AtomicSymmetryModel(Model):
         grid_minmax += numpy.array((-pad, pad))
         min_xyz = clipper_python.Coord_grid(grid_minmax[0]).coord_frac(self.grid).coord_orth(self.cell).xyz
         dim = grid_minmax[1]-grid_minmax[0]
-        symops = self.unit_cell.all_symops_in_box(min_xyz, dim, True)
+        symops = self.unit_cell.all_symops_in_box(min_xyz, dim, True, self._sym_search_frequency)
         symmats = symops.all_matrices_orth(self.cell, '3x4')
         from chimerax.core.geometry import Place
         target = [(coords, Place().matrix.astype(numpy.float32))]
@@ -769,14 +789,13 @@ class AtomicSymmetryModel(Model):
         self.update_graphics()
 
     def _update_box(self):
-        from .crystal import find_box_corner
+        from .crystal import find_box_params
         center = self._center
         radius = self._radius
-        box_corner_grid, box_corner_xyz = find_box_corner(center, self.cell, self.grid, radius)
+        box_corner_grid, box_corner_xyz, grid_dim = find_box_params(center, self.cell, self.grid, radius)
         dim = self._box_dim
         dim[:] = radius*2
-        grid_dim = (dim / self.parent._voxel_size).astype(numpy.int32)
-        symops = self._current_symops = self.unit_cell.all_symops_in_box(box_corner_xyz, grid_dim, True)
+        symops = self._current_symops = self.unit_cell.all_symops_in_box(box_corner_xyz, grid_dim, True, self._sym_search_frequency)
         # Identity symop will always be the first in the list
         tfs = self._current_tfs = symops.all_matrices_orth(self.cell, '3x4')
         atoms = self.structure.atoms
@@ -793,7 +812,51 @@ class AtomicSymmetryModel(Model):
             self._current_ribbon_syms = crs[crs!=0]
         else:
             self._current_ribbon_syms = sym_ribbons_in_sphere(self._ribbon_drawing._tether_coords, tfs, center, radius)
+        if(self._debug):
+            self._draw_box_corners(box_corner_grid, grid_dim)
+            self._draw_search_positions(box_corner_grid, grid_dim, self._sym_search_frequency)
 
+    def _draw_box_corners(self, box_corner_grid, grid_dim):
+        from . import clipper
+        corner_mask = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]])
+        colors = numpy.ones((8,4), numpy.uint8)*50
+        colors[:,3]=255
+        colors[:,:3]+=(corner_mask*200).astype(numpy.uint8)
+        from chimerax.core.geometry import Place, Places
+        places=[]
+        for c in corner_mask:
+            places.append(Place(origin=(box_corner_grid+clipper.Coord_grid(grid_dim*c)).coord_frac(self.grid).coord_orth(self.cell).xyz))
+        self._box_corner_drawing.positions = Places(places)
+        self._box_corner_drawing.colors = colors
+
+    def _draw_search_positions(self, box_corner_grid, grid_dim, search_frequency):
+        ref_size = self.unit_cell.ref_box.nuvw
+        from .clipper_python import Coord_grid
+        box_max = box_corner_grid + Coord_grid(grid_dim)
+        step_size = max(ref_size.min()//search_frequency, 1)
+        from chimerax.core.geometry import Place, Places
+        places = []
+        u = box_corner_grid.u
+        u_done = False
+        while not u_done:
+            v = box_corner_grid.v
+            v_done = False
+            if u == box_max.u:
+                u_done = True
+            while not v_done:
+                w = box_corner_grid.w
+                w_done = False
+                if v == box_max.v:
+                    v_done = True
+                while not w_done:
+                    if w == box_max.w:
+                        w_done = True
+                    p = Coord_grid(u, v, w).coord_frac(self.grid).coord_orth(self.cell)
+                    places.append(Place(origin=p.xyz))
+                    w = min(w+step_size, box_max.w)
+                v = min(v+step_size, box_max.v)
+            u = min(u+step_size, box_max.u)
+        self._search_positions_drawing.positions = Places(places)
 
     def set_sym_display(self, symops, primary_atoms, sym_atoms, sym_coords, atom_sym_indices,
         sym_bonds, sym_bond_tfs, bond_sym_indices):
