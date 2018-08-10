@@ -93,7 +93,7 @@ Xtal_mgr_base::set_freeflag(int f)
 void
 Xtal_mgr_base::generate_fcalc(const Atom_list& atoms)
 {
-    SFcalc_obs_bulk<ftype32>(fcalc_, fobs_, atoms);
+    bulk_solvent_calculator_(fcalc_, fobs_, atoms);
     fcalc_initialized_ = true;
     calculate_r_factors();
 }
@@ -116,38 +116,47 @@ Xtal_mgr_base::calculate_r_factors()
     if (!fcalc_initialized())
         throw std::runtime_error("No Fcalc values have been calculated! Run "
             " generate_fcalc() on a suitable set of atoms first!");
+
+    int nparams = 12;
+    std::vector<ftype> params(nparams, 1.0);
+    BasisFn_spline basisfn(hklinfo_, nparams, 1.0);
+    TargetFn_scaleF1F2<F_phi<ftype32>, F_sigF<ftype32>> targetfn (fcalc_, fobs_);
+    ResolutionFn rfn(hklinfo_, basisfn, targetfn, params);
+
     HKL_info::HKL_reference_index ih;
     // for standard rwork, rfree
     ftype sum_fwork=0, sum_ffree=0, sum_dwork=0, sum_dfree=0;
     // for sigma-weighted rwork, rfree
     ftype sum_wfwork2=0, sum_wffree2=0, sum_wdwork2=0, sum_wdfree2=0;
-    for (ih=fcalc.first(); !ih.last(); ih.next())
+    for (ih=fcalc_.first(); !ih.last(); ih.next())
     {
         const auto& fo = fobs_[ih];
         const auto& fc = fcalc_[ih];
         const auto& fflag = free_flags_[ih];
-        if (!fo.missing() && !fc.missing())
+        if (!fo.missing())
         {
+            ftype eps = ih.hkl_class().epsilon();
+            ftype two_on_eps = 2.0/eps;
             if (fflag.flag()==freeflag_) {
-                sum_ffree+=fo.f();
-                sum_dfree+=std::abs(fo.f()-fc.f());
+                sum_ffree+=two_on_eps*fo.f();
+                sum_dfree+=two_on_eps*std::abs(fo.f()-sqrt(rfn.f(ih))*fc.f());
 
-                sum_wffree2 += 1/fo.sigf()*pow(fo.f(), 2);
-                sum_wdfree2 += 1/fo.sigf()*pow(fo.f()-fc.f(), 2);
+                sum_wffree2 += 1/fo.sigf()*pow(two_on_eps*fo.f(), 2);
+                sum_wdfree2 += 1/fo.sigf()*pow(two_on_eps*(fo.f()-sqrt(rfn.f(ih))*fc.f()), 2);
             } else {
-                sum_fwork+=fo.f();
-                sum_dwork+=std::abs(fo.f()-fc.f());
+                sum_fwork+=two_on_eps*fo.f();
+                sum_dwork+=two_on_eps*std::abs(fo.f()-sqrt(rfn.f(ih))*fc.f());
 
-                sum_wfwork2 += 1/fo.sigf()*pow(fo.f(), 2);
-                sum_wdwork2 += 1/fo.sigf()*pow(fo.f()-fc.f(), 2);
+                sum_wfwork2 += 1/fo.sigf()*pow(two_on_eps*fo.f(), 2);
+                sum_wdwork2 += 1/fo.sigf()*pow(two_on_eps*(fo.f()-sqrt(rfn.f(ih))*fc.f()), 2);
             }
         }
     }
     rfree_ = sum_dfree/sum_ffree;
     rwork_ = sum_dwork/sum_fwork;
 
-    w_rfree = sqrt(sum_wdfree2/sum_wffree2);
-    w_rwork = sqrt(sum_wdwork2/sum_wfwork2);
+    w_rfree_ = sqrt(sum_wdfree2/sum_wffree2);
+    w_rwork_ = sqrt(sum_wdwork2/sum_wfwork2);
 } // calculate_r_factors
 
 

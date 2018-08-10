@@ -86,6 +86,23 @@ public:
     inline const ftype& weighted_rwork() { return w_rwork_; }
     inline const ftype& weighted_rfree() { return w_rfree_; }
 
+    inline const ftype& bulk_frac()
+    {
+        if (!fcalc_initialized())
+            throw std::runtime_error("Coefficients have not been calculated yet!");
+        return bulk_solvent_calculator_.bulk_frac();
+    }
+    inline const ftype& bulk_scale()
+    {
+        if (!fcalc_initialized())
+            throw std::runtime_error("Coefficients have not been calculated yet!");
+        return bulk_solvent_calculator_.bulk_scale();
+    }
+
+    inline const HKL_data<F_sigF<ftype32>>& fobs() const
+    {
+        return fobs_;
+    }
     inline const HKL_data<F_phi<ftype32>>& fcalc() const
     {
         if (!fcalc_initialized())
@@ -176,6 +193,8 @@ private:
     std::unordered_map<std::string, Xmap_details> maps_;
     // Most recent Fcalc values
     HKL_data<F_phi<ftype32>> fcalc_;
+
+    SFcalc_obs_bulk<ftype32> bulk_solvent_calculator_ = SFcalc_obs_bulk<ftype32>();
 
     // Calculates sigmaa-weighted maximum-likelihood map coefficients
     SFweight_spline<ftype32> map_calculator_ = SFweight_spline<ftype32>();

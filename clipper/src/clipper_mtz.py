@@ -28,7 +28,8 @@ class ReflectionDataContainer(Model):
     ChimeraX Model class allowing it to be loaded into the model
     hierarchy making it easily visible to the user.
     '''
-    def __init__(self, session, hklfile, shannon_rate = 1.5, min_voxel_size = 0.5):
+    def __init__(self, session, hklfile, shannon_rate = 1.5, min_voxel_size = 0.5,
+        free_flag_label = None):
         '''
         This class should hold the information that's common to all
         the data contained in its children (e.g. the HKLinfo object,
@@ -36,7 +37,7 @@ class ReflectionDataContainer(Model):
         etc.
         '''
         Model.__init__(self, 'Reflection Data', session)
-        hklinfo, free, exp, calc = load_hkl_data(hklfile)
+        hklinfo, free, exp, calc = load_hkl_data(hklfile, free_flag_label=free_flag_label)
         self._hklinfo = hklinfo
         self._grid_sampling = None
 
@@ -394,7 +395,7 @@ def load_hkl_data(filename, free_flag_label = None):
                 if len(possible_free_flags) == 0:
                     raise RuntimeError(errstring.format(temp_tree[crystal][dataset]['I'].keys()))
                 else:
-                    raise RuntimeError(errstring.format(possible_free_flags_names))
+                    raise RuntimeError(errstring.format(possible_free_flag_names))
             else:
                 if len(possible_free_flags):
                     free_flags = possible_free_flags[0]

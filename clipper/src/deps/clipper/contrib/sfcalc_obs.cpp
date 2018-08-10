@@ -83,7 +83,7 @@ template<class T> bool SFcalc_obs_bulk<T>::operator() ( HKL_data<datatypes::F_ph
   EDcalc_mask<ftype32> emcalc;
   emcalc( xmap, atomu );
   for ( Xmap<ftype32>::Map_reference_index ix = xmap.first();
-	!ix.last(); ix.next() )
+        !ix.last(); ix.next() )
     xmap[ix] = 1.0 - xmap[ix];
   xmap.fft_to( fphi_mask );
   fphi_mask.compute( fphi_mask, datatypes::Compute_scale_u_iso<datatypes::F_phi<T> >( 1.0, -u_mask ) );
@@ -100,16 +100,17 @@ template<class T> bool SFcalc_obs_bulk<T>::operator() ( HKL_data<datatypes::F_ph
       HKL_data<data32::F_phi>::HKL_reference_index ih;
       x = x1 + T(d)*dx;
       for ( ih = fphi.first(); !ih.last(); ih.next() )
-	fphi[ih] = std::complex<T>(fphi_atom[ih]) +
-	       x * std::complex<T>(fphi_mask[ih]);
+        fphi[ih] = std::complex<T>(fphi_atom[ih]) +
+               x * std::complex<T>(fphi_mask[ih]);
       ResolutionFn rfn( hkls, basisfn, targetfn, params );
       double r = 0.0;
       for ( ih = fsig.first(); !ih.last(); ih.next() )
-	if ( !fsig[ih].missing() ) {
-	  double eps = ih.hkl_class().epsilon();
-	  r += (2.0/eps) * fabs( sqrt(rfn.f(ih))*fphi[ih].f() - fsig[ih].f() );
-	  // r += ( 2.0/eps ) * pow( rfn.f(ih) * pow(fphi[ih].f(),2)/eps - pow(fsig[ih].f(),2)/eps, 2 );
-	}
+        if ( !fsig[ih].missing() ) {
+          double eps = ih.hkl_class().epsilon();
+          r += (2.0/eps) * fabs( sqrt(rfn.f(ih))*fphi[ih].f() - fsig[ih].f() );
+          // r += ( 2.0/eps ) * pow( rfn.f(ih) * pow(fphi[ih].f(),2)/eps - pow(fsig[ih].f(),2)/eps, 2 );
+        }
+        std::cerr << "R: " << r << std::endl;
       y[d+1] = r;
       //std::cout << d << "\t" << x << "\t" << r << "\n";
     }
@@ -123,14 +124,14 @@ template<class T> bool SFcalc_obs_bulk<T>::operator() ( HKL_data<datatypes::F_ph
 
   // adopt final scale
   for ( HKL_data<data32::F_phi>::HKL_reference_index ih = fphi.first();
-	!ih.last(); ih.next() )
+        !ih.last(); ih.next() )
     fphi[ih] = std::complex<T>(fphi_atom[ih]) +
           x1 * std::complex<T>(fphi_mask[ih]);
 
   // store stats
   ftype64 w, s0 = 0.0, s1 = 0.0;
   for ( Xmap<ftype32>::Map_reference_index ix = xmap.first();
-	!ix.last(); ix.next() ) {
+        !ix.last(); ix.next() ) {
     w = 1.0/ftype64( xmap.multiplicity( ix.coord() ) );
     s0 += w;
     s1 += w*xmap[ix];
