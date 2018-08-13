@@ -110,6 +110,9 @@ public:
         return fcalc_;
     }
 
+    // Fcalc scaled to Fobs
+    HKL_data<F_phi<ftype32>> scaled_fcalc() const;
+
     inline const HKL_data<Flag>& usage() const { return usage_; }
     inline const HKL_data<F_phi<ftype32>>& base_2fofc() const
     {
@@ -174,6 +177,7 @@ private:
 
     // Basic information
     HKL_info hklinfo_;
+    Cell cell_;
     // Original free-r flags from the reflection data file
     HKL_data<Flag> free_flags_;
     // Flags defining which reflections to use in map calculations

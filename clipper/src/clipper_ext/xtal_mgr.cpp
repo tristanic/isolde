@@ -9,11 +9,12 @@ Xtal_mgr_base::Xtal_mgr_base(const HKL_info& hklinfo, const HKL_data<Flag>& free
     const Grid_sampling& grid_sampling, const HKL_data<F_sigF<ftype32>>& fobs)
     : hklinfo_(hklinfo), free_flags_(free_flags), grid_sampling_(grid_sampling), fobs_(fobs)
 {
-    fcalc_ = HKL_data<F_phi<ftype32>>(hklinfo);
-    base_2fofc_ = HKL_data<F_phi<ftype32>>(hklinfo);
-    base_fofc_ = HKL_data<F_phi<ftype32>>(hklinfo);
-    phi_fom_ = HKL_data<Phi_fom<ftype32>>(hklinfo);
-    usage_ = HKL_data<Flag>(hklinfo);
+    cell_ = fobs.cell();
+    fcalc_ = HKL_data<F_phi<ftype32>>(hklinfo_);
+    base_2fofc_ = HKL_data<F_phi<ftype32>>(hklinfo_);
+    base_fofc_ = HKL_data<F_phi<ftype32>>(hklinfo_);
+    phi_fom_ = HKL_data<Phi_fom<ftype32>>(hklinfo_);
+    usage_ = HKL_data<Flag>(hklinfo_);
 
     set_freeflag(guess_free_flag_value(free_flags));
 }
@@ -23,7 +24,7 @@ int
 Xtal_mgr_base::guess_free_flag_value(const HKL_data<Flag>& flags)
 {
     HKL_info::HKL_reference_index ih;
-    int f_min = 1e-6, f_max=-1e6;
+    int f_min = 1e6, f_max=-1e6;
     std::set<int> flag_vals;
     for (ih=flags.first(); !ih.last(); ih.next())
     {
@@ -83,7 +84,7 @@ Xtal_mgr_base::set_freeflag(int f)
     {
         auto f = free_flags_[ih];
         auto fobs = fobs_[ih];
-        if (!f.missing() && !fobs.missing() && !f.flag()==freeflag_)
+        if (!f.missing() && !fobs.missing() && !(f.flag()==freeflag_))
             usage_[ih].flag() = SFweight_spline<ftype32>::BOTH;
         else
             usage_[ih].flag() = SFweight_spline<ftype32>::NONE;
@@ -110,6 +111,27 @@ Xtal_mgr_base::generate_base_map_coeffs()
     coeffs_initialized_=true;
 } // generate_base_map_coeffs
 
+HKL_data<F_phi<ftype32>>
+Xtal_mgr_base::scaled_fcalc() const
+{
+    int nparams = 12;
+    std::vector<ftype> params(nparams, 1.0);
+    HKL_data<F_phi<ftype32>> ret(hklinfo_);
+    BasisFn_aniso_gaussian basisfn;
+    TargetFn_scaleF1F2<F_phi<ftype32>, F_sigF<ftype32>> targetfn (fcalc_, fobs_);
+    ResolutionFn rfn(hklinfo_, basisfn, targetfn, params);
+    HKL_info::HKL_reference_index ih;
+    for (ih=fcalc_.first(); !ih.last(); ih.next())
+    {
+        if (!fobs_[ih].missing())
+            ret[ih].f() = sqrt(rfn.f(ih))*fcalc_[ih].f();
+            ret[ih].phi() = fcalc[ih].phi();
+    }
+    return ret;
+
+}
+
+
 void
 Xtal_mgr_base::calculate_r_factors()
 {
@@ -119,7 +141,8 @@ Xtal_mgr_base::calculate_r_factors()
 
     int nparams = 12;
     std::vector<ftype> params(nparams, 1.0);
-    BasisFn_spline basisfn(hklinfo_, nparams, 1.0);
+    // BasisFn_spline basisfn(hklinfo_, nparams, 1.0);
+    BasisFn_aniso_gaussian basisfn;
     TargetFn_scaleF1F2<F_phi<ftype32>, F_sigF<ftype32>> targetfn (fcalc_, fobs_);
     ResolutionFn rfn(hklinfo_, basisfn, targetfn, params);
 
@@ -137,18 +160,19 @@ Xtal_mgr_base::calculate_r_factors()
         {
             ftype eps = ih.hkl_class().epsilon();
             ftype two_on_eps = 2.0/eps;
+            auto scaled_fcalc = sqrt(rfn.f(ih))*fc.f();
             if (fflag.flag()==freeflag_) {
                 sum_ffree+=two_on_eps*fo.f();
-                sum_dfree+=two_on_eps*std::abs(fo.f()-sqrt(rfn.f(ih))*fc.f());
+                sum_dfree+=two_on_eps*std::abs(fo.f()-scaled_fcalc);
 
                 sum_wffree2 += 1/fo.sigf()*pow(two_on_eps*fo.f(), 2);
-                sum_wdfree2 += 1/fo.sigf()*pow(two_on_eps*(fo.f()-sqrt(rfn.f(ih))*fc.f()), 2);
+                sum_wdfree2 += 1/fo.sigf()*pow(two_on_eps*(fo.f()-scaled_fcalc), 2);
             } else {
                 sum_fwork+=two_on_eps*fo.f();
-                sum_dwork+=two_on_eps*std::abs(fo.f()-sqrt(rfn.f(ih))*fc.f());
+                sum_dwork+=two_on_eps*std::abs(fo.f()-scaled_fcalc);
 
                 sum_wfwork2 += 1/fo.sigf()*pow(two_on_eps*fo.f(), 2);
-                sum_wdwork2 += 1/fo.sigf()*pow(two_on_eps*(fo.f()-sqrt(rfn.f(ih))*fc.f()), 2);
+                sum_wdwork2 += 1/fo.sigf()*pow(two_on_eps*(fo.f()-scaled_fcalc), 2);
             }
         }
     }
