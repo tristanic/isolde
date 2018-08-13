@@ -54,7 +54,7 @@ Xtal_mgr_base::guess_free_flag_value(const HKL_data<Flag>& flags)
 
         // Weed out those that don't fit the criteria
         std::set<int> candidates;
-        int last_candidate;
+        int last_candidate=-10;
         for (auto v: flag_vals)
         {
             if (val_counts[v] < 5000)
@@ -125,7 +125,7 @@ Xtal_mgr_base::scaled_fcalc() const
     {
         if (!fobs_[ih].missing())
             ret[ih].f() = sqrt(rfn.f(ih))*fcalc_[ih].f();
-            ret[ih].phi() = fcalc[ih].phi();
+            ret[ih].phi() = fcalc_[ih].phi();
     }
     return ret;
 

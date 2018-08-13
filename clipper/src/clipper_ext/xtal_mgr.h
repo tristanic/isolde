@@ -6,6 +6,8 @@
 #include <clipper/clipper.h>
 #include <clipper/clipper-contrib.h>
 
+#include "sfcalc_obs_vdw.h"
+
 using namespace clipper;
 using namespace clipper::datatypes;
 namespace clipper_cx { // ChimeraX extensions to clipper
@@ -198,7 +200,9 @@ private:
     // Most recent Fcalc values
     HKL_data<F_phi<ftype32>> fcalc_;
 
-    SFcalc_obs_bulk<ftype32> bulk_solvent_calculator_ = SFcalc_obs_bulk<ftype32>();
+    SFcalc_obs_bulk_vdw<ftype32> bulk_solvent_calculator_ = SFcalc_obs_bulk_vdw<ftype32>();
+
+    // SFcalc_obs_bulk<ftype32> bulk_solvent_calculator_ = SFcalc_obs_bulk<ftype32>();
 
     // Calculates sigmaa-weighted maximum-likelihood map coefficients
     SFweight_spline<ftype32> map_calculator_ = SFweight_spline<ftype32>();

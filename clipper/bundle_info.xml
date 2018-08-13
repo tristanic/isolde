@@ -190,6 +190,8 @@
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
       <SourceFile>src/clipper_ext/xtal_mgr.cpp</SourceFile>
+      <SourceFile>src/clipper_ext/edcalc_ext.cpp</SourceFile>
+      <SourceFile>src/clipper_ext/sfcalc_obs_vdw.cpp</SourceFile>
   </CLibrary>
 
   <!-- <CLibrary name="_clipper" usesNumpy="true">

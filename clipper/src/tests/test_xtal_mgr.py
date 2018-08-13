@@ -9,7 +9,7 @@ def test_xtal_mgr(session):
     from .. import atom_list_from_sel
     from ..clipper_python.ext import Xtal_mgr
 
-    rdc = ReflectionDataContainer(session, '3io0-sf.mtz')
+    rdc = ReflectionDataContainer(session, os.path.join(_basedir, '3io0-sf.mtz'))
     xm = Xtal_mgr(rdc.hklinfo, rdc.free_flags.data, rdc.grid_sampling,
         rdc.experimental_data.datasets['FOBS, SIGFOBS'].data)
     xm.generate_fcalc(atom_list_from_sel(m.atoms))
