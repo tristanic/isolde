@@ -5,6 +5,7 @@
 namespace clipper_cx
 {
 
+
 Xtal_mgr_base::Xtal_mgr_base(const HKL_info& hklinfo, const HKL_data<Flag>& free_flags,
     const Grid_sampling& grid_sampling, const HKL_data<F_sigF<ftype32>>& fobs)
     : hklinfo_(hklinfo), free_flags_(free_flags), grid_sampling_(grid_sampling), fobs_(fobs)
@@ -188,13 +189,10 @@ void
 Xtal_mgr_base::apply_b_factor_sharpening(HKL_data<F_phi<ftype32>>& coeffs,
     const ftype& bsharp)
 {
-    HKL_info::HKL_reference_index ih;
-    for (ih=coeffs.first(); !ih.last(); ih.next())
-    {
-        auto& fphi = coeffs[ih];
-        if (!fphi.missing())
-            fphi.f()*=exp(-bsharp*ONE_1_ON_4_PI_SQUARED);
-    }
+    coeffs.compute(
+        coeffs,
+        clipper::datatyes::Compute_scale_u_iso<clipper::datatypes::F_phi<ftype32>>(
+            1.0, clipper::Util::b2u(bsharp)));
 }
 
 void
@@ -210,6 +208,12 @@ Xtal_mgr_base::add_xmap(const std::string& name, const HKL_data<F_phi<ftype32>>&
 void
 Xtal_mgr_base::recalculate_map(const std::string& name)
 {
+    recalculate_map(maps_.at(name));
+}
+
+void
+Xtal_mgr_base::recalculate_map(Xmap_details& xmd)
+{
     Xmap_details& xmd = maps_.at(name);
     if (xmd.exclude_free_reflections()) {
         if (xmd.fill_with_fcalc() && !xmd.is_difference_map())
@@ -222,6 +226,14 @@ Xtal_mgr_base::recalculate_map(const std::string& name)
     xmd.xmap().fft_from(xmd.coeffs());
     xmd.map_stats() = Map_stats(xmd.xmap());
 } // recalculate_map
+
+void
+Xtal_mgr_base::recalculate_all(const Atom_list& atoms)
+{
+    generate_fcalc(atoms);
+    for (auto& it: maps_)
+        recalculate_map(it.second);
+}
 
 
 void
@@ -274,5 +286,13 @@ Xtal_mgr_base::set_map_free_terms_to_dfc(const HKL_data<F_phi<ftype32>>& source,
         }
     }
 }
+
+// THREADED IMPLEMENTATIONS
+Xtal_mgr_thread::Xtal_mgr_thread(const HKL_info& hklinfo, const HKL_data<Flag>& free_flags,
+    const Grid_sampling& grid_sampling, const HKL_data<F_sigF<ftype32>>& fobs,
+    const size_t num_threads = 1)
+    : mgr_(hklinfo, free_flags, grid_sampling, fobs), num_threads_(num_threads)
+    {}
+
 
 } //namespace clipper_cx;

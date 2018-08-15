@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <unordered_map>
+#include <future>
+#include <chrono>
 
 #include "imex.h"
 #include <clipper/clipper.h>
@@ -31,6 +33,7 @@ public:
         coeffs_ = HKL_data<F_phi<ftype32>>(base_coeffs.hkl_info());
         xmap_ = Xmap<ftype32>(base_coeffs.spacegroup(), base_coeffs.cell(), grid_sampling);
     }
+
 
     inline const Xmap<ftype32>& xmap() const { return xmap_; }
     inline Xmap<ftype32>& xmap() { return xmap_; }
@@ -161,6 +164,11 @@ public:
     // under the given name)
     void recalculate_map(const std::string& name);
 
+    void recalculate_map(Xmap_details& xmd);
+
+    // Generate fresh Fcalc, and regenerate all existing maps
+    void recalculate_all(const Atom_list& atoms);
+
     //
     inline Xmap<ftype32>& get_xmap(const std::string& name) { return maps_.at(name).xmap(); }
 
@@ -174,7 +182,7 @@ protected:
 
 private:
     // constants
-    static constexpr ftype ONE_1_ON_4_PI_SQUARED = 1/(4*M_PI*M_PI);
+    //static constexpr ftype ONE_1_ON_4_PI_SQUARED = 1/(4*M_PI*M_PI);
     int freeflag_ = 0;
 
     // Basic information
@@ -222,5 +230,42 @@ private:
 
 
 }; // class Xmap_mgr
+
+
+//! Parallel handler for map calculations
+/*! Uses std::async to push the task of (re)generating maps to a separate thread
+    from the main program. Further splits up map calculations into individual
+    threads if available.
+*/
+class CLIPPER_CX_IMEX Xtal_mgr_thread
+{
+public:
+    Xtal_mgr_thread(const HKL_info& hklinfo, const HKL_data<Flag>& free_flags,
+        const Grid_sampling& grid_sampling, const HKL_data<F_sigF<ftype32>>& fobs,
+        const size_t num_threads = 1);
+
+    inline size_t num_threads() const { return num_threads_; }
+    inline void set_num_threads(size_t n) const { num_threads_=std::max(n, 1); }
+
+    bool thread_running() const { return master_thread_result_.valid(); }
+    bool ready() const {
+        if (!thread_running()) return false;
+        // std::future does not yet have an is_ready() function. Current
+        // workaround is to call wait_for with zero time and query the result.
+        auto result = master_thread_result_.wait_for(
+            std::chrono::duration<std::chrono::microseconds>(0))
+        return (result == std::future_status::ready);
+    }
+
+
+
+private:
+    Xtal_mgr_base mgr_;
+    size_t num_threads_;
+    std::future<void> master_thread_result_;
+    std::vector<std::future<Xmap_details>> xmap_thread_results_;
+
+}
+
 
 } // namespace clipper_cx
