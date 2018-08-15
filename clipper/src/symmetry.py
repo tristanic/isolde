@@ -219,14 +219,15 @@ class XtalSymmetryHandler(Model):
             if len(mtzdata.calculated_data):
                 datasets = mtzdata.calculated_data
         else:
-            from .crystal import symmetry_from_model_metadata
+            from .crystal_exp import symmetry_from_model_metadata
             self.cell, self.spacegroup, self.grid = symmetry_from_model_metadata(model)
 
         if calculate_maps and mtzfile is not None:
-            from .crystal import XmapSet
-            xmapset = self.xmapset = XmapSet(session, self,
-                datasets = mtzdata.calculated_data,
-                live_scrolling = spotlight_mode,
+            from .crystal_exp import XmapSet, viewing_bsharp
+            xmapset = self.xmapset = XmapSet(session, self, model.atoms,
+                bsharp_vals=[viewing_bsharp(self.hklinfo.resolution.limit)],
+                exclude_free_reflections=False,
+                fill_with_fcalc=False,
                 display_radius = map_scrolling_radius)
             xmapset.pickable = False
             self.add([xmapset])

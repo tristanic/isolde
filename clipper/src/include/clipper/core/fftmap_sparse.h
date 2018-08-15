@@ -113,15 +113,6 @@ namespace clipper
 
     //! Transform to real space
     void fft_h_to_x( const ftype& scale );
-
-private:
-    void transform_along_hu_(void* planu_ptr, const int& start, const int& end);
-    void transform_along_kv_(void* planv_ptr, const int& start, const int& end,
-        const ffttype& s, const int& nmax);
-    void transform_along_lw_(void* planw_ptr, const int& start, const int& end);
-    int layers_per_thread_ = 25;
-    std::vector<bool> map_l;
-    std::vector<bool> row_u;
   };
 
   //! FFTmap_sparse_p1_xh: low level sparse P1 map used for calculating FFTs

@@ -2917,17 +2917,18 @@ class Isolde():
         color.color(self.session, before_struct, color='byhetero', target='a')
         from chimerax.clipper import symmetry
         sym_handler = symmetry.XtalSymmetryHandler(before_struct,
-            mtzfile=os.path.join(data_dir, 'before_maps.mtz'),
+            #mtzfile=os.path.join(data_dir, 'before_maps.mtz'),
+            mtzfile=os.path.join(data_dir, '3io0-sf.mtz'),
             map_oversampling = self.params.map_shannon_rate)
         #~ from chimerax.core.commands import lighting
         #~ lighting.lighting(self.session, depth_cue=True)
-        sharp_map = sym_handler.xmapset['2FOFCWT_sharp, PH2FOFCWT_sharp']
-        sd = sharp_map.mean_sd_rms()[1]
-        from . import visualisation as v
-        styleargs= v.map_style_settings[v.map_styles.solid_t20]
-        from chimerax.map import volumecommand
-        volumecommand.volume(self.session, [sharp_map], **styleargs)
-        sharp_map.set_parameters(surface_levels = (2.5*sd,))
+        # sharp_map = sym_handler.xmapset['2mFo-DFc_smooth_']
+        # sd = sharp_map.mean_sd_rms()[1]
+        # from . import visualisation as v
+        # styleargs= v.map_style_settings[v.map_styles.solid_t20]
+        # from chimerax.map import volumecommand
+        # volumecommand.volume(self.session, [sharp_map], **styleargs)
+        # sharp_map.set_parameters(surface_levels = (2.5*sd,))
 
         # from chimerax.clipper import crystal
         # crystal.set_to_default_cartoon(self.session)

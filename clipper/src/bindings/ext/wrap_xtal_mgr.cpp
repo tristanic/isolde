@@ -1,4 +1,5 @@
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <clipper_ext/xtal_mgr.h>
 
@@ -18,6 +19,8 @@ void declare_xmap_container(py::module& m)
         .def_property_readonly("exclude_free_reflections", &Class::exclude_free_reflections)
         .def_property_readonly("fill_with_fcalc", &Class::fill_with_fcalc)
         .def_property_readonly("b_sharp", &Class::b_sharp)
+        .def_property_readonly("_coeffs", [](const Class& self) { return self.coeffs(); })
+        .def_property_readonly("_base_coeffs", &Class::base_coeffs)
         ;
 
 } // declare_xmap_container
@@ -45,18 +48,63 @@ void declare_xtal_mgr(py::module& m)
         .def("generate_fcalc", &Class::generate_fcalc)
         .def("generate_base_map_coeffs", &Class::generate_base_map_coeffs)
         .def("add_xmap", &Class::add_xmap,
-            py::arg("name"), py::arg("base_coeffs"), py::arg("b_sharp"),
+            py::arg("name"), py::arg("b_sharp"),
             py::arg("is_difference_map")=true, py::arg("exclude_free_reflections")=true,
             py::arg("fill_with_fcalc")=true)
-        .def("recalculate_map", &Class::recalculate_map)
+        .def("recalculate_map", (void (Class::*)(const std::string&)) &Class::recalculate_map)
         // Get a reference to the managed xmap of a given name
-        .def("get_xmap", &Class::get_xmap, py::return_value_policy::reference_internal)
+        .def("get_xmap_ref", &Class::get_xmap, py::return_value_policy::reference_internal)
+        .def("get_xmap_copy", &Class::get_xmap)
         .def("delete_xmap", &Class::delete_xmap)
         ;
+} // declare_xal_mgr
+
+void declare_xtal_thread_mgr(py::module& m)
+{
+    using Class=cx::Xtal_thread_mgr;
+    py::class_<Class>(m, "Xtal_thread_mgr")
+        .def(py::init<const HKL_info&, const HKL_data<Flag>&, const Grid_sampling&,
+            const HKL_data<F_sigF<ftype32>>&, const size_t>(),
+            py::arg("hkl_info"), py::arg("free_flags"), py::arg("grid_sampling"),
+            py::arg("f_obs"), py::arg("num_threads") = 1)
+        .def("init", &Class::init)
+        .def_property("num_threads", &Class::num_threads, &Class::set_num_threads)
+        .def_property_readonly("thread_running", &Class::thread_running)
+        .def("ready", &Class::ready)
+        .def("recalculate_all_maps", &Class::recalculate_all)
+        .def("apply_new_maps", &Class::apply_new_maps)
+        .def_property_readonly("free_flag", &Class::freeflag)
+        .def_property_readonly("rwork", &Class::rwork)
+        .def_property_readonly("rfree", &Class::rfree)
+        .def_property_readonly("weighted_rwork", &Class::weighted_rwork)
+        .def_property_readonly("weighted_rfree", &Class::weighted_rfree)
+        .def_property_readonly("bulk_frac", &Class::bulk_frac)
+        .def_property_readonly("bulk_scale", &Class::bulk_scale)
+        .def_property_readonly("f_obs", &Class::fobs)
+        .def_property_readonly("f_calc", &Class::fcalc)
+        .def_property_readonly("scaled_fcalc", &Class::scaled_fcalc)
+        .def_property_readonly("base_fofc", &Class::base_fofc)
+        .def_property_readonly("base_2fofc", &Class::base_2fofc)
+        .def_property_readonly("weights", &Class::weights)
+        .def_property_readonly("num_maps", &Class::n_maps)
+        .def_property_readonly("map_names", &Class::map_names)
+        .def("add_xmap", &Class::add_xmap,
+            py::arg("name"), py::arg("b_sharp"),
+            py::arg("is_difference_map")=false,
+            py::arg("exclude_free_reflections")=true,
+            py::arg("fill_with_fcalc")=true)
+        .def("delete_xmap", &Class::delete_xmap)
+        .def("_xmap_details", &Class::map_details)
+        .def("get_xmap_ref", &Class::get_xmap, py::return_value_policy::reference_internal)
+        .def("get_xmap_copy", &Class::get_xmap)
+        ;
 }
+
+
 
 void init_xtal_mgr(py::module& m)
 {
     declare_xmap_container(m);
     declare_xtal_mgr(m);
+    declare_xtal_thread_mgr(m);
 } // init_xtal_mgr

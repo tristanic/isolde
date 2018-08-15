@@ -32,32 +32,10 @@ from .clipper_mtz import ReflectionDataContainer
 
 DEFAULT_BOND_RADIUS = 0.2
 
+def _available_cores():
+    import os
+    return max(os.cpu_count()-2, 1)
 
-def move_model(session, model, new_parent):
-    '''
-    Temporary method until something similar is added to the ChimeraX
-    core. Picks up a model from the ChimeraX model tree and transplants
-    it (with all its children intact) as the child of a different model.
-    '''
-    model._auto_style = False
-    mlist = model.all_models()
-    model_id = model.id
-    if new_parent in mlist:
-        raise RuntimeError('Target model cannot be one of the models being moved!')
-    for m in mlist:
-        m.removed_from_session(session)
-        mid = m.id
-        if mid is not None:
-            del session.models._models[mid]
-            m.id = None
-    session.triggers.activate_trigger('remove models', mlist)
-    if len(model_id) == 1:
-        parent = session.models.drawing
-    else:
-        parent = session.models._models[model_id[:-1]]
-    parent.remove_drawing(model, delete=False)
-    parent._next_unused_id = None
-    new_parent.add([model])
 
 def symmetry_from_model_metadata(model):
     if 'CRYST1' in model.metadata.keys():
@@ -110,10 +88,12 @@ def symmetry_from_model_metadata_pdb(model):
     Generate Cell, Spacegroup and a default Grid_Sampling from the PDB
     CRYST1 card.
     '''
-    cryst1 = model.metadata['CRYST1'][0].split()
-    abc = [float(a) for a in cryst1[1:4]]
-    angles = [float(c) for c in cryst1[4:7]]
-    symstr = ' '.join(cryst1[7:])
+    cryst1 = model.metadata['CRYST1'][0]
+    abc = [float(cryst1[7:16]), float(cryst1[16:25]), float(cryst1[25:34])]
+    angles = [float(cryst1[34:41]), float(cryst1[41:48]), float(cryst1[48:55])]
+    symstr = cryst1[56:67]
+    # zval = int(cryst1[67:71])
+
 
     remarks = model.metadata['REMARK']
     i = 0
@@ -204,6 +184,80 @@ def set_to_default_cartoon(session, model = None):
     except:
         return
 
+#TODO: update Surface_Zone class to handle symmetry atoms
+class Surface_Zone:
+    '''
+    Add this as a property to a Volume object to provide it with the
+    necessary information to update its triangle mask after re-contouring.
+    '''
+    def __init__(self, distance, atoms = None, coords = None):
+        '''
+        Args:
+          distance (float in Angstroms):
+            distance from points to which the map will be masked
+          atoms:
+            Atoms to mask to (coordinates will be updated upon re-masking)
+          coords:
+            (x,y,z) coordinates to mask to (will not be updated upon
+            re-masking).
+
+          Set both atoms and coords to None to disable automatic re-masking.
+        '''
+        self.update(distance, atoms, coords)
+
+    def update(self, distance, atoms = None, coords = None):
+        self.distance = distance
+        self.atoms = atoms
+        self.coords = coords
+
+    @property
+    def all_coords(self):
+        if self.atoms is not None:
+            if self.coords is not None:
+                return numpy.concatenate(self.atoms.coords, self.coords)
+            return self.atoms.coords
+        return self.coords
+
+# def surface_zones(models, points, distance):
+#     '''
+#     Essentially a copy of chimerax.surface.zone.surface_zone, but uses
+#     find_close_points_sets to eke a little extra performance
+#     '''
+#     vlist = []
+#     dlist = []
+#     ident_matrix = Place().matrix.astype(numpy.float32)
+#     search_entry = [(numpy.array(points, numpy.float32), Place().matrix.astype(numpy.float32))]
+#     for m in models:
+#         #for d in m.child_drawings():
+#         for d in m.surfaces:
+#             if not d.display:
+#                 continue
+#             if d.vertices is not None:
+#                 dlist.append(d)
+#                 vlist.append((d.vertices.astype(numpy.float32), ident_matrix))
+#
+#     i1, i2 = find_close_points_sets(vlist, search_entry, distance)
+#
+#     for vp, i, d in zip(vlist, i1, dlist):
+#         v = vp[0]
+#         nv = len(v)
+#         mask = numpy.zeros((nv,), numpy.bool)
+#         numpy.put(mask, i, 1)
+#         t = d.triangles
+#         if t is None:
+#             return
+#         tmask = numpy.logical_and(mask[t[:,0]], mask[t[:,1]])
+#         numpy.logical_and(tmask, mask[t[:,2]], tmask)
+#         d.triangle_mask = tmask
+
+def surface_zones(models, points, distance):
+    from chimerax.surface import zone
+    for m in models:
+        for s in m.surfaces:
+            spoints = s.position.inverse() * points
+            zone.surface_zone(s, spoints, distance, auto_update=True)
+
+
 class XmapSet(Model):
     '''
     Handles creation, deletion, recalculation and visualisation of
@@ -220,9 +274,9 @@ class XmapSet(Model):
     DEFAULT_DIFF_MAP_COLORS = [[1.0,0,0,1.0],[0,1.0,0,1.0]] #Solid red and green
 
 
-    def __init__(self, session, crystal, fsigf, atoms, bsharp_vals=[],
-                 exclude_free_reflections=True, fill_with_fcalc=True,
-                 display_radius = 12):
+    def __init__(self, session, crystal, atoms, fsigf_name = 'FOBS, SIGFOBS',
+                bsharp_vals=[], exclude_free_reflections=False,
+                 fill_with_fcalc=False, display_radius = 12):
         '''
         Prepare the C++ Xtal_mgr object and create a set of crystallographic
         maps. The standard 2mFo-DFc and mFo-DFc maps will always be created,
@@ -233,9 +287,9 @@ class XmapSet(Model):
                 The ChimeraX session
             crystal:
                 The parent XtalSymmetryHandler object
-            fsigf:
-                A Clipper HKL_data_F_sigF_float object containing the observed
-                amplitudes and standard deviations.
+            fsigf_name:
+                The label of the :class:`F_sigF_float` object containing the
+                observed amplitudes
             atoms:
                 A ChimeraX `Atoms` object encompassing the atoms to be used to
                 calculate the maps. Unless deliberately generating omit
@@ -253,10 +307,9 @@ class XmapSet(Model):
             exclude_free_reflections:
                 If True, observed amplitudes corresponding to the free set will
                 not be used in generating the maps. The values used in their
-                place will depend on the value of `fill_with_fcalc`. If the maps
-                are to be used solely for viewing it is safe to include the
-                free set, but inclusion when actively fitting a model will
-                render your Rfree statistic meaningless.
+                place will depend on the value of `fill_with_fcalc`. Note that
+                this only affects maps generated for viewing - the MDFF potential
+                map is always generated with free reflections excluded.
             fill_with_fcalc:
                 If `exclude_free_reflections` is False this argument will be
                 ignored. Otherwise, if `fill_with_fcalc` is True then the
@@ -313,17 +366,40 @@ class XmapSet(Model):
         self._box_initialized = True
 
         # The master C++ manager for handling all map operations
-        from .clipper_python.ext import Xtal_mgr
-        xm = self._xtal_mgr = Xtal_mgr(crystal.hkl_info,
-            crystal.mtzdata.free_flags.data, crystal.grid, fsigf.data)
+        from .clipper_python.ext import Xtal_thread_mgr
+        xm = self._xtal_mgr = Xtal_thread_mgr(crystal.hklinfo,
+            crystal.mtzdata.free_flags.data, crystal.grid,
+            crystal.mtzdata.experimental_data.datasets[fsigf_name].data,
+            num_threads=_available_cores())
 
         from . import atom_list_from_sel
-        xm.generate_fcalc(atom_list_from_sel(atoms))
-        xm.generate_base_map_coeffs()
-        xm.add_xmap('2mFo-DFc', xm.base_2fofc, 0, is_difference_map=False,
-            exclude_free_reflections=True, fill_with_fcalc=True)
-        xm.add_xmap('mFo-DFc', xm.base_fofc, 0, is_difference_map=True,
-            exclude_free_reflections=True)
+        xm.init(atom_list_from_sel(atoms))
+        # Only this map will actually be used as the MDFF potential
+        self.add_live_xmap('MDFF potential', 0, is_difference_map=False,
+            exclude_free_reflections=True, fill_with_fcalc=True,
+            display=False)
+
+        # xm.add_xmap('MDFF potential', map_potential_bsharp(self.resolution),
+        #     is_difference_map=False,
+        #     exclude_free_reflections=True,
+        #     fill_with_fcalc=True)
+
+        self.add_live_xmap('2mFo-DFc', 0, is_difference_map=False,
+            exclude_free_reflections=exclude_free_reflections,
+            fill_with_fcalc=fill_with_fcalc,
+            display=True)
+        # xm.add_xmap('2mFo-DFc', 0,
+        #     is_difference_map=False,
+        #     exclude_free_reflections=exclude_free_reflections,
+        #     fill_with_fcalc=fill_with_fcalc)
+        self.add_live_xmap('mFo-DFc', 0, is_difference_map=True,
+            exclude_free_reflections=exclude_free_reflections,
+            fill_with_fcalc=fill_with_fcalc,
+            display=True)
+
+        # xm.add_xmap('mFo-DFc', 0,
+        #     is_difference_map=True,
+        #     exclude_free_reflections=exclude_free_reflections)
 
         for b in bsharp_vals:
             if b == 0:
@@ -332,8 +408,15 @@ class XmapSet(Model):
                 name_str = "2mFo-DFc_sharp_{:.0f}".format(-b)
             else:
                 name_str = "2mFo-DFc_smooth_{:.0f}".format(b)
-            xm.add_xmap(name_str, xm.base_2fofc, b, is_difference_map=False,
-                exclude_free_reflections=True, fill_with_fcalc=True)
+            self.add_live_xmap(name_str, b, is_difference_map=False,
+                exclude_free_reflections=exclude_free_reflections,
+                fill_with_fcalc=fill_with_fcalc
+            )
+
+            # xm.add_xmap(name_str, b,
+            #     is_difference_map=False,
+            #     exclude_free_reflections=exclude_free_reflections,
+            #     fill_with_fcalc=fill_with_fcalc)
 
         self.display=False
         # Apply the surface mask
@@ -359,7 +442,11 @@ class XmapSet(Model):
 
     @property
     def res(self):
-        return self.hklinfo.resolution
+        return self.hklinfo.resolution.limit
+
+    @property
+    def resolution(self):
+        return self.hklinfo.resolution.limit
 
     @property
     def grid(self):
@@ -500,21 +587,53 @@ class XmapSet(Model):
                     places.append(Place(origin = thisorigin))
         self.positions = Places(places)
 
+    def recalculate_all_maps(self, atoms):
+        from . import atom_list_from_sel
+        from .delayed_reaction import delayed_reaction
+        xm = self._xtal_mgr
+        delayed_reaction(self.session.triggers, 'new frame',
+            xm.recalculate_all_maps, [atom_list_from_sel(atoms)],
+            xm.ready,
+            self._apply_new_maps, []
+            )
 
+    def _apply_new_maps(self):
+        print('Applying new maps...')
+        self._xtal_mgr.apply_new_maps()
+        for xmap in self:
+            xmap.stat_recalc_needed()
 
     def add_nxmap_handler(self, volume):
         from .real_space_map import NXmapHandler
         m = NXmapHandler(self.session, self, volume)
         self.add([m])
 
+    def add_live_xmap(self, name, b_sharp,
+        is_difference_map=False,
+        exclude_free_reflections=True,
+        fill_with_fcalc=True,
+        color=None, style=None, contour=None, display=True):
+        xm = self._xtal_mgr
+        xm.add_xmap(name, b_sharp, is_difference_map=is_difference_map,
+            exclude_free_reflections=exclude_free_reflections,
+            fill_with_fcalc = fill_with_fcalc)
+        xmap = xm.get_xmap_ref(name)
+        new_handler = self.add_xmap_handler(name, xmap, is_difference_map=is_difference_map,
+            color=color, style=style, contour=contour)
+        if display:
+            new_handler.show()
+        else:
+            new_handler.display = False
 
-    def add_xmap_handler(self, dataset, is_difference_map = None,
+    def add_xmap_handler(self, name, xmap, is_difference_map = None,
                 color = None, style = None, contour = None):
         '''
         Add a new XmapHandler based on the given reflections and phases.
         Args:
-            dataset:
-                a ReflectionData_Calc object.
+            name:
+                A unique string describing this map
+            xmap:
+                a Clipper :class:`Xmap_float` object.
             is_difference_map:
                 Decides whether this map is to be treated as a difference
                 map (with positive and negative contours) or a standard
@@ -535,11 +654,6 @@ class XmapSet(Model):
                 single value; for a difference map it should be
                 [negative contour, positive contour]
         '''
-        data = dataset.data
-        new_xmap = Xmap(self.spacegroup, self.cell, self.grid, name = dataset.name, hkldata = data)
-        if is_difference_map is None:
-            is_difference_map = dataset.is_difference_map
-        new_xmap.is_difference_map = is_difference_map
         if is_difference_map and color is not None and len(color) != 2:
             err_string = '''
             ERROR: For a difference map you need to define colours for
@@ -547,8 +661,9 @@ class XmapSet(Model):
             [[r,g,b,a],[r,g,b,a]] in order [positive, negative].
             '''
             raise TypeError(err_string)
-        new_handler = XmapHandler(self.session, self, dataset.name, new_xmap,
-            self._box_corner_xyz, self._box_corner_grid, self._box_dimensions)
+        new_handler = XmapHandler(self.session, self, name, xmap,
+            self._box_corner_xyz, self._box_corner_grid, self._box_dimensions,
+            is_difference_map = is_difference_map)
         if style is None:
             style = 'mesh'
         if color is None:
@@ -567,7 +682,7 @@ class XmapSet(Model):
                 contour = numpy.array([contour])
         else:
             contour = numpy.array(contour)
-        contour = contour * new_xmap.sigma
+        contour = contour * new_handler.sigma
         self.add([new_handler])
         new_handler.set_representation(style)
         new_handler.set_parameters(**{'cap_faces': False,
@@ -576,7 +691,7 @@ class XmapSet(Model):
                                   'surface_colors': color,
                                   'square_mesh': True})
         # new_handler.update_surface()
-        new_handler.show()
+        return new_handler
 
     def update_box(self, trigger_name, new_center, force=True):
         '''Update the map box to surround the current centre of rotation.'''
@@ -606,6 +721,26 @@ class XmapSet(Model):
         self.live_scrolling = False
         super(XmapSet, self).delete()
 
+def map_potential_bsharp(resolution):
+    '''
+    Return a recommended sharpening/smoothing B-factor for a given map to
+    optimise its use as an MDFF potential. For now this is a simple linear
+    function of resolution, passing through zero at 2.5 Angstroms (smoothing
+    below, sharpening above). Improved methods will be developed over time.
+    '''
+    # smooth by 30 A**2 at 1.5A res; sharpen by 30A**2 at 3.5A res; 0 at 2.5A res
+    bsharp_base = 30
+    return bsharp_base*resolution-2.5*bsharp_base
+
+def viewing_bsharp(resolution):
+    '''
+    For viewing purposes it is also often useful to have a smoothed or
+    sharpened visualisation of your map, but the optimal degree of sharpening
+    for visualisation is not necessarily the same as that for MDFF.
+    '''
+    # smooth by 50 A**2 at 1.5A res; sharpen by 50 A**2 at 3.5A res, 0 at 2.5A res
+    bsharp_base = 50
+    return bsharp_base*resolution-2.5*bsharp_base
 
 def calculate_grid_padding(radius, grid, cell):
     '''
@@ -706,7 +841,8 @@ class XmapHandler(Volume):
     a box centred on the centre of rotation) and static display of a
     given region.
     '''
-    def __init__(self, session, manager, name, xmap, origin, grid_origin, dim):
+    def __init__(self, session, manager, name, xmap, origin, grid_origin, dim,
+        is_difference_map = False):
         '''
         Args:
             sesssion:
@@ -725,14 +861,18 @@ class XmapHandler(Volume):
                 origin.
             dim:
                 The shape of the box in (u,v,w) grid coordinates.
+            is_difference_map:
+                Is this a difference map?
         '''
         self.box_params = (origin, grid_origin, dim)
         self.xmap = xmap
         self.manager = manager
         darray = self._generate_and_fill_data_array(origin, grid_origin, dim)
+        self._stats = None
+        self._stat_recalc_needed = True
         Volume.__init__(self, darray, session)
 
-        self.is_difference_map = xmap.is_difference_map
+        self.is_difference_map = is_difference_map
         self.name = name
         self.initialize_thresholds()
 
@@ -745,6 +885,15 @@ class XmapHandler(Volume):
         self._box_moved_cb_handler = self.manager.triggers.add_handler(
             'map box moved', self._box_moved_cb)
 
+    @property
+    def stats(self):
+        if self._stats is None or self._stat_recalc_needed:
+            from .clipper_python import Map_stats
+            self._stats = Map_stats(self.xmap)
+        return self._stats
+
+    def stat_recalc_needed(self):
+        self._stat_recalc_needed = True
 
 
     def show(self, *args, **kwargs):
@@ -799,11 +948,12 @@ class XmapHandler(Volume):
         Overrides the standard Volume method to give the overall values
         from the Clipper object.
         '''
-        x = self.xmap
-        # RMS is not currently calculated by Clipper, so we'll just return
-        # the sigma twice.
-        return (x.mean, x.sigma, x.sigma)
+        s = self.stats
+        return (s.mean, s.std_dev, s.std_dev)
 
+    @property
+    def sigma(self):
+        return self.stats.std_dev
 
     def _box_changed_cb(self, name, params):
         self.box_params = params

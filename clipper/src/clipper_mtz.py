@@ -16,10 +16,10 @@ from .clipper_python.data32 import HKL_data_F_phi_float as HKL_data_F_phi
 from chimerax.core.models import Model
 
 def calculate_voxel_size(resolution, shannon_rate):
-    return resolution.limit()/2/shannon_rate
+    return resolution.limit/2/shannon_rate
 
 def calculate_shannon_rate(resolution, voxel_size):
-    return resolution.limit()/(2*voxel_size)
+    return resolution.limit/(2*voxel_size)
 
 class ReflectionDataContainer(Model):
     '''

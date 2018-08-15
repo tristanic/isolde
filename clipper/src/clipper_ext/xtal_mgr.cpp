@@ -1,10 +1,13 @@
 #include "xtal_mgr.h"
 
 #include <set>
+#include <iostream>
+
+using namespace clipper;
+using namespace clipper::datatypes;
 
 namespace clipper_cx
 {
-
 
 Xtal_mgr_base::Xtal_mgr_base(const HKL_info& hklinfo, const HKL_data<Flag>& free_flags,
     const Grid_sampling& grid_sampling, const HKL_data<F_sigF<ftype32>>& fobs)
@@ -18,7 +21,7 @@ Xtal_mgr_base::Xtal_mgr_base(const HKL_info& hklinfo, const HKL_data<Flag>& free
     usage_ = HKL_data<Flag>(hklinfo_);
 
     set_freeflag(guess_free_flag_value(free_flags));
-}
+} // Xtal_mgr_base
 
 
 int
@@ -90,7 +93,7 @@ Xtal_mgr_base::set_freeflag(int f)
         else
             usage_[ih].flag() = SFweight_spline<ftype32>::NONE;
     }
-}
+} // set_freeflag
 
 void
 Xtal_mgr_base::generate_fcalc(const Atom_list& atoms)
@@ -98,7 +101,7 @@ Xtal_mgr_base::generate_fcalc(const Atom_list& atoms)
     bulk_solvent_calculator_(fcalc_, fobs_, atoms);
     fcalc_initialized_ = true;
     calculate_r_factors();
-}
+} // generate_fcalc
 
 // Generate the standard set of map coefficients
 void
@@ -130,7 +133,7 @@ Xtal_mgr_base::scaled_fcalc() const
     }
     return ret;
 
-}
+} // scaled_fcalc
 
 
 void
@@ -191,17 +194,29 @@ Xtal_mgr_base::apply_b_factor_sharpening(HKL_data<F_phi<ftype32>>& coeffs,
 {
     coeffs.compute(
         coeffs,
-        clipper::datatyes::Compute_scale_u_iso<clipper::datatypes::F_phi<ftype32>>(
-            1.0, clipper::Util::b2u(bsharp)));
-}
+        Compute_scale_u_iso<F_phi<ftype32>>(
+            1.0, Util::b2u(bsharp)));
+} // apply_b_factor_sharpening
 
 void
-Xtal_mgr_base::add_xmap(const std::string& name, const HKL_data<F_phi<ftype32>>& base_coeffs,
+Xtal_mgr_base::add_xmap(const std::string& name,
     const ftype& bsharp, bool is_difference_map,
     bool exclude_free_reflections, bool fill_with_fcalc)
 {
-    maps_.emplace(name, Xmap_details(base_coeffs, bsharp, grid_sampling_, is_difference_map,
+    if (!coeffs_initialized())
+        throw std::logic_error("You need to calculate base coefficients before "
+        "creating any maps! Run init() on a suitable set of atoms first.");
+    // Throw an error if a map with that name already exists
+    auto it = maps_.find(name);
+    if (it != maps_.end())
+        throw std::logic_error("Each map must have a unique name!");
+    if (is_difference_map)
+        maps_.emplace(name, Xmap_details(hklinfo_, base_fofc_, bsharp, grid_sampling_, is_difference_map,
                               exclude_free_reflections, fill_with_fcalc));
+    else
+        maps_.emplace(name, Xmap_details(hklinfo_, base_2fofc_, bsharp, grid_sampling_, is_difference_map,
+                            exclude_free_reflections, fill_with_fcalc));
+
     recalculate_map(name);
 } // add_xmap
 
@@ -209,19 +224,20 @@ void
 Xtal_mgr_base::recalculate_map(const std::string& name)
 {
     recalculate_map(maps_.at(name));
-}
+} // recalculate_map
 
 void
 Xtal_mgr_base::recalculate_map(Xmap_details& xmd)
 {
-    Xmap_details& xmd = maps_.at(name);
     if (xmd.exclude_free_reflections()) {
         if (xmd.fill_with_fcalc() && !xmd.is_difference_map())
             set_map_free_terms_to_dfc(xmd.base_coeffs(), xmd.coeffs());
         else
             set_map_free_terms_to_zero(xmd.base_coeffs(), xmd.coeffs());
+    } else {
+        xmd.coeffs() = xmd.base_coeffs();
     }
-    if (xmd.b_sharp() != 0)
+    if (xmd.b_sharp() != 0.0)
         apply_b_factor_sharpening(xmd.coeffs(), xmd.b_sharp());
     xmd.xmap().fft_from(xmd.coeffs());
     xmd.map_stats() = Map_stats(xmd.xmap());
@@ -231,9 +247,10 @@ void
 Xtal_mgr_base::recalculate_all(const Atom_list& atoms)
 {
     generate_fcalc(atoms);
+    generate_base_map_coeffs();
     for (auto& it: maps_)
         recalculate_map(it.second);
-}
+} //recalculate_map
 
 
 void
@@ -255,7 +272,7 @@ Xtal_mgr_base::set_map_free_terms_to_zero(const HKL_data<F_phi<ftype32>>& source
             dest[ih] = source[ih];
         }
     }
-}
+} // set_map_free_terms_to_zero
 
 void
 Xtal_mgr_base::set_map_free_terms_to_dfc(const HKL_data<F_phi<ftype32>>& source,
@@ -285,14 +302,144 @@ Xtal_mgr_base::set_map_free_terms_to_dfc(const HKL_data<F_phi<ftype32>>& source,
             dest[ih] = fpo;
         }
     }
-}
+} // set_map_free_terms_to_dfc
 
 // THREADED IMPLEMENTATIONS
-Xtal_mgr_thread::Xtal_mgr_thread(const HKL_info& hklinfo, const HKL_data<Flag>& free_flags,
+Xtal_thread_mgr::Xtal_thread_mgr(const HKL_info& hklinfo, const HKL_data<Flag>& free_flags,
     const Grid_sampling& grid_sampling, const HKL_data<F_sigF<ftype32>>& fobs,
-    const size_t num_threads = 1)
+    const size_t num_threads)
     : mgr_(hklinfo, free_flags, grid_sampling, fobs), num_threads_(num_threads)
     {}
+
+void
+Xtal_thread_mgr::recalculate_all(const Atom_list& atoms)
+{
+    if (thread_running())
+        throw std::runtime_error("Map recalculation already in progress! Run "
+        "apply_new_maps() first.");
+    master_thread_result_ = std::async(std::launch::async,
+        &Xtal_thread_mgr::recalculate_all_, this, atoms);
+} // recalculate_all
+
+bool
+Xtal_thread_mgr::recalculate_all_(const Atom_list& atoms)
+{
+    ready_ = false;
+    mgr_.generate_fcalc(atoms);
+    mgr_.generate_base_map_coeffs();
+    auto map_names = mgr_.map_names();
+    auto nmaps = map_names.size();
+    size_t maps_per_thread = (size_t) ceil(( (float)mgr_.n_maps()) /num_threads_);
+    // Make copies of all maps to work on. Expensive, but necessary for thread
+    // safety.
+    xmap_thread_results_ = mgr_.maps();
+    size_t n=0;
+    std::vector<std::future<bool>> results;
+    while (n<nmaps)
+    {
+        //std::cerr << "Recalculating maps " << n << " to " << std::min(n+maps_per_thread, nmaps)-1 << std::endl;
+        results.push_back(std::async(std::launch::async,
+            &Xtal_thread_mgr::recalculate_inner_, this, map_names,
+            n, std::min(n+maps_per_thread, nmaps)));
+        n+=maps_per_thread;
+    }
+    // Wait for all threads to finish
+    for (auto& r: results)
+        r.get();
+    ready_ = true;
+    return true;
+} // recalculate_all_
+
+bool
+Xtal_thread_mgr::recalculate_inner_(const std::vector<std::string>& names,
+    size_t i_min, size_t i_max)
+{
+    for (size_t i= i_min; i<i_max; ++i)
+    {
+        std::cerr << "Recalculating map " << i << std::endl;
+        mgr_.recalculate_map(xmap_thread_results_[names[i]]);
+    }
+    return true;
+} // recalculate_inner_
+
+void
+Xtal_thread_mgr::apply_new_maps()
+{
+    if (!thread_running())
+        throw std::logic_error("You haven't generated any new maps yet! Call "
+            "recalculate_all() first.");
+    master_thread_result_.get();
+    for (const auto& it: xmap_thread_results_)
+        mgr_.maps_.at(it.first).xmap() = it.second.xmap();
+    xmap_thread_results_.clear();
+    ready_ = false;
+} // apply_new_maps
+
+void
+Xtal_thread_mgr::set_freeflag(int f)
+{
+    finalize_threads_if_necessary();
+    mgr_.set_freeflag(f);
+}
+
+HKL_data<F_phi<ftype32>>
+Xtal_thread_mgr::fcalc()
+{
+    finalize_threads_if_necessary();
+    return mgr_.fcalc();
+}
+
+HKL_data<F_phi<ftype32>>
+Xtal_thread_mgr::scaled_fcalc()
+{
+    finalize_threads_if_necessary();
+    return mgr_.scaled_fcalc();
+}
+
+HKL_data<F_phi<ftype32>>
+Xtal_thread_mgr::base_fofc()
+{
+    finalize_threads_if_necessary();
+    return mgr_.base_fofc();
+}
+
+HKL_data<F_phi<ftype32>>
+Xtal_thread_mgr::base_2fofc()
+{
+    finalize_threads_if_necessary();
+    return mgr_.base_2fofc();
+}
+
+HKL_data<Phi_fom<ftype32>>
+Xtal_thread_mgr::weights()
+{
+    finalize_threads_if_necessary();
+    return mgr_.weights();
+}
+
+void
+Xtal_thread_mgr::init(const Atom_list& atoms)
+{
+    finalize_threads_if_necessary();
+    mgr_.init(atoms);
+}
+
+void
+Xtal_thread_mgr::add_xmap(const std::string& name,
+    const ftype& bsharp, bool is_difference_map,
+    bool exclude_free_reflections, bool fill_with_fcalc)
+{
+    finalize_threads_if_necessary();
+    mgr_.add_xmap(name, bsharp, is_difference_map,
+        exclude_free_reflections, fill_with_fcalc);
+}
+
+void
+Xtal_thread_mgr::delete_xmap(const std::string& name)
+{
+    finalize_threads_if_necessary();
+    mgr_.delete_xmap(name);
+}
 
 
 } //namespace clipper_cx;

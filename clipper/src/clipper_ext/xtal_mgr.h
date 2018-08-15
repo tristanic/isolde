@@ -10,28 +10,35 @@
 
 #include "sfcalc_obs_vdw.h"
 
-using namespace clipper;
-using namespace clipper::datatypes;
 namespace clipper_cx { // ChimeraX extensions to clipper
 
+using namespace clipper;
+using namespace clipper::datatypes;
+
+// Forward declaration
+class Xtal_thread_mgr;
+
+static HKL_data<F_phi<ftype32>> null_base_coeffs = HKL_data<F_phi<ftype32>>();
 // Container for a crystallographic map and its coefficients, including the
 // details needed to regenerate it. Just stores everything - calculations are
 // handled by Xtal_mgr_base
 struct CLIPPER_CX_IMEX Xmap_details
 {
 public:
-    inline Xmap_details(const HKL_data<F_phi<ftype32>>& base_coeffs, const ftype& b_sharp,
+    Xmap_details() : base_coeffs_(null_base_coeffs) {} // null constructor
+    inline Xmap_details(const HKL_info& hklinfo, const HKL_data<F_phi<ftype32>>& base_coeffs, const ftype& b_sharp,
         const Grid_sampling& grid_sampling, bool is_difference_map=false,
         bool exclude_free_reflections=true,
         bool fill_with_fcalc=true)
-        : base_coeffs_(base_coeffs), b_sharp_(b_sharp),
+        : hkl_info_(hklinfo),
+          base_coeffs_(base_coeffs), b_sharp_(b_sharp),
           is_difference_map_(is_difference_map),
           exclude_freer_(exclude_free_reflections),
           fill_(fill_with_fcalc)
     {
         // initialise empty data objects
-        coeffs_ = HKL_data<F_phi<ftype32>>(base_coeffs.hkl_info());
-        xmap_ = Xmap<ftype32>(base_coeffs.spacegroup(), base_coeffs.cell(), grid_sampling);
+        coeffs_ = HKL_data<F_phi<ftype32>>(hklinfo);
+        xmap_ = Xmap<ftype32>(hklinfo.spacegroup(), hklinfo.cell(), grid_sampling);
     }
 
 
@@ -49,6 +56,7 @@ public:
 
 
 private:
+    HKL_info hkl_info_;
     // Base coefficients before removing free reflections, sharpening etc.
     const HKL_data<F_phi<ftype32>>& base_coeffs_;
     // Final coefficients used to generate xmap_
@@ -76,6 +84,7 @@ private:
 //  maps and their data
 class CLIPPER_CX_IMEX Xtal_mgr_base
 {
+    friend class Xtal_thread_mgr;
 public:
     Xtal_mgr_base() {} // default constructor
     Xtal_mgr_base(const HKL_info& hklinfo, const HKL_data<Flag>& free_flags,
@@ -90,6 +99,16 @@ public:
     inline const ftype& rfree() { return rfree_; }
     inline const ftype& weighted_rwork() { return w_rwork_; }
     inline const ftype& weighted_rfree() { return w_rfree_; }
+
+    const Xmap_details& map_details(const std::string& name) const { return maps_.at(name); }
+
+    size_t n_maps() const { return maps_.size(); }
+    std::vector<std::string> map_names() const {
+        std::vector<std::string> names;
+        for (const auto& it: maps_)
+            names.push_back(it.first);
+        return names;
+    }
 
     inline const ftype& bulk_frac()
     {
@@ -147,13 +166,20 @@ public:
     // Generate the standard set of map coefficients
     void generate_base_map_coeffs();
 
+    // One-stop wrapper for to generate fcalcs and base map coefficients
+    inline void init(const Atom_list& atoms)
+    {
+        generate_fcalc(atoms);
+        generate_base_map_coeffs();
+    }
+
     // Calculate Rwork and Rfree. Called automatically by generate_fcalc()
     void calculate_r_factors();
 
     // Apply in-place B-factor sharpening to a set of map coefficients
     void apply_b_factor_sharpening(HKL_data<F_phi<ftype32>>& coeffs, const ftype& bsharp);
 
-    void add_xmap(const std::string& name, const HKL_data<F_phi<ftype32>>& base_coeffs,
+    void add_xmap(const std::string& name,
         const ftype& bsharp, bool is_difference_map=false,
         bool exclude_free_reflections=true, bool fill_with_fcalc=true);
 
@@ -164,13 +190,16 @@ public:
     // under the given name)
     void recalculate_map(const std::string& name);
 
+    // Recalculate a map in-place
     void recalculate_map(Xmap_details& xmd);
 
     // Generate fresh Fcalc, and regenerate all existing maps
     void recalculate_all(const Atom_list& atoms);
 
+    inline const std::unordered_map<std::string, Xmap_details>& maps() const { return maps_; }
+
     //
-    inline Xmap<ftype32>& get_xmap(const std::string& name) { return maps_.at(name).xmap(); }
+    inline const Xmap<ftype32>& get_xmap(const std::string& name) const { return maps_.at(name).xmap(); }
 
 
 protected:
@@ -235,37 +264,99 @@ private:
 //! Parallel handler for map calculations
 /*! Uses std::async to push the task of (re)generating maps to a separate thread
     from the main program. Further splits up map calculations into individual
-    threads if available.
+    threads if available.    for (const auto& name: map_names)
+    {
+
+    }
+
 */
-class CLIPPER_CX_IMEX Xtal_mgr_thread
+class CLIPPER_CX_IMEX Xtal_thread_mgr
 {
 public:
-    Xtal_mgr_thread(const HKL_info& hklinfo, const HKL_data<Flag>& free_flags,
+    Xtal_thread_mgr(const HKL_info& hklinfo, const HKL_data<Flag>& free_flags,
         const Grid_sampling& grid_sampling, const HKL_data<F_sigF<ftype32>>& fobs,
         const size_t num_threads = 1);
 
     inline size_t num_threads() const { return num_threads_; }
-    inline void set_num_threads(size_t n) const { num_threads_=std::max(n, 1); }
+    inline void set_num_threads(size_t n) { num_threads_=std::max(n, size_t(1)); }
 
     bool thread_running() const { return master_thread_result_.valid(); }
-    bool ready() const {
-        if (!thread_running()) return false;
-        // std::future does not yet have an is_ready() function. Current
-        // workaround is to call wait_for with zero time and query the result.
-        auto result = master_thread_result_.wait_for(
-            std::chrono::duration<std::chrono::microseconds>(0))
-        return (result == std::future_status::ready);
+    bool ready() const { return ready_; }
+
+    // Recalculate all maps in a separate thread (which will in turn spawn
+    // worker threads up to the num_threads() limit). New maps will be stored
+    // in xmap_thread_results_ until pushed to the manager by apply_new_maps();
+    void recalculate_all(const Atom_list& atoms);
+    // Swap newly-created maps into the manager seen by Python. This will return
+    // an error if recalculate_all() wasn't called first, or block until the
+    // threads are finished. For best performance, wait until ready() returns
+    // true before calling.
+    void apply_new_maps();
+
+    // It would be a Bad Thing(TM) to change parameters in the base manager
+    // while a map recalculation is in progress. This function ensures that
+    // any recalculations are done before making changes.
+    void finalize_threads_if_necessary()
+    {
+        if (thread_running())
+            apply_new_maps();
     }
 
+    // Pass through calls to base manager functions in a thread-safe manner
+    inline int freeflag() const { return mgr_.freeflag(); }
+    void set_freeflag(int f);
+    inline const ftype& rwork() { return mgr_.rwork(); }
+    inline const ftype& rfree() { return mgr_.rfree(); }
+    inline const ftype& weighted_rwork() { return mgr_.weighted_rwork(); }
+    inline const ftype& weighted_rfree() { return mgr_.weighted_rfree(); }
 
+    inline const Xmap_details& map_details(const std::string& name) const { return mgr_.map_details(name); }
+    inline size_t n_maps() const { return mgr_.n_maps(); }
+    std::vector<std::string> map_names() const { return mgr_.map_names(); }
+
+    inline const ftype& bulk_frac() { return mgr_.bulk_frac(); }
+    inline const ftype& bulk_scale() { return mgr_.bulk_scale(); }
+
+    inline const HKL_data<F_sigF<ftype32>>& fobs() const { return mgr_.fobs(); }
+
+    // Finalise thread and return a copy
+    HKL_data<F_phi<ftype32>> fcalc();
+
+    HKL_data<F_phi<ftype32>> scaled_fcalc();
+
+    // Finalise thread and return a copy
+    HKL_data<F_phi<ftype32>> base_fofc();
+
+    HKL_data<F_phi<ftype32>> base_2fofc();
+
+    // Finalise thread and return a copy
+    HKL_data<Phi_fom<ftype32>> weights();
+
+    void init(const Atom_list& atoms);
+
+    void add_xmap(const std::string& name,
+        const ftype& bsharp, bool is_difference_map=false,
+        bool exclude_free_reflections=true, bool fill_with_fcalc=true);
+
+    void delete_xmap(const std::string& name);
+
+    inline const Xmap<ftype32>& get_xmap(const std::string& name) { return mgr_.get_xmap(name); }
 
 private:
     Xtal_mgr_base mgr_;
     size_t num_threads_;
-    std::future<void> master_thread_result_;
-    std::vector<std::future<Xmap_details>> xmap_thread_results_;
+    // std::future does not (yet) have an is_ready() function, so just have the
+    // thread set a flag instead.
+    bool ready_ = false;
+    std::future<bool> master_thread_result_;
+    std::unordered_map<std::string, Xmap_details> xmap_thread_results_;
+    //std::vector<std::pair<std::string, Xmap_details>> xmap_thread_results_;
 
-}
+    // Master thread function called by recalculate_all();
+    bool recalculate_all_(const Atom_list& atoms);
+    // Inner threads called by recalculate_all_();
+    bool recalculate_inner_(const std::vector<std::string>& names, size_t i_min, size_t i_max);
+}; // Xtal_thread_mgr
 
 
 } // namespace clipper_cx
