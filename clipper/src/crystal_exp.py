@@ -33,6 +33,7 @@ from .clipper_mtz import ReflectionDataContainer
 DEFAULT_BOND_RADIUS = 0.2
 
 def _available_cores():
+    return 1
     import os
     return max(os.cpu_count()-2, 1)
 
@@ -600,8 +601,6 @@ class XmapSet(Model):
     def _apply_new_maps(self):
         print('Applying new maps...')
         self._xtal_mgr.apply_new_maps()
-        for xmap in self:
-            xmap.stat_recalc_needed()
 
     def add_nxmap_handler(self, volume):
         from .real_space_map import NXmapHandler
@@ -617,15 +616,15 @@ class XmapSet(Model):
         xm.add_xmap(name, b_sharp, is_difference_map=is_difference_map,
             exclude_free_reflections=exclude_free_reflections,
             fill_with_fcalc = fill_with_fcalc)
-        xmap = xm.get_xmap_ref(name)
-        new_handler = self.add_xmap_handler(name, xmap, is_difference_map=is_difference_map,
+        #xmap = xm.get_xmap_ref(name)
+        new_handler = self.add_xmap_handler(name, is_difference_map=is_difference_map,
             color=color, style=style, contour=contour)
         if display:
             new_handler.show()
         else:
             new_handler.display = False
 
-    def add_xmap_handler(self, name, xmap, is_difference_map = None,
+    def add_xmap_handler(self, name, is_difference_map = None,
                 color = None, style = None, contour = None):
         '''
         Add a new XmapHandler based on the given reflections and phases.
@@ -661,7 +660,7 @@ class XmapSet(Model):
             [[r,g,b,a],[r,g,b,a]] in order [positive, negative].
             '''
             raise TypeError(err_string)
-        new_handler = XmapHandler(self.session, self, name, xmap,
+        new_handler = XmapHandler(self.session, self, name,
             self._box_corner_xyz, self._box_corner_grid, self._box_dimensions,
             is_difference_map = is_difference_map)
         if style is None:
@@ -841,7 +840,7 @@ class XmapHandler(Volume):
     a box centred on the centre of rotation) and static display of a
     given region.
     '''
-    def __init__(self, session, manager, name, xmap, origin, grid_origin, dim,
+    def __init__(self, session, manager, name, origin, grid_origin, dim,
         is_difference_map = False):
         '''
         Args:
@@ -851,8 +850,6 @@ class XmapHandler(Volume):
                 The CrystalStructure object this belongs to
             name:
                 A descriptive name for this map
-            xmap:
-                A clipper.Xmap
             origin:
                 The (x,y,z) coordinates of the bottom left corner of the
                 volume.
@@ -865,15 +862,12 @@ class XmapHandler(Volume):
                 Is this a difference map?
         '''
         self.box_params = (origin, grid_origin, dim)
-        self.xmap = xmap
         self.manager = manager
-        darray = self._generate_and_fill_data_array(origin, grid_origin, dim)
-        self._stats = None
-        self._stat_recalc_needed = True
+        darray = self._generate_data_array(origin, grid_origin, dim)
         Volume.__init__(self, darray, session)
-
-        self.is_difference_map = is_difference_map
         self.name = name
+        self._fill_volume_data(self._data_fill_target, grid_origin)
+        self.is_difference_map = is_difference_map
         self.initialize_thresholds()
 
         # If the box shape changes while the volume is hidden, the change
@@ -886,14 +880,13 @@ class XmapHandler(Volume):
             'map box moved', self._box_moved_cb)
 
     @property
-    def stats(self):
-        if self._stats is None or self._stat_recalc_needed:
-            from .clipper_python import Map_stats
-            self._stats = Map_stats(self.xmap)
-        return self._stats
+    def xmap(self):
+        return self.manager._xtal_mgr.get_xmap_ref(self.name)
 
-    def stat_recalc_needed(self):
-        self._stat_recalc_needed = True
+    @property
+    def stats(self):
+        return self.manager._xtal_mgr.get_map_stats(self.name)
+
 
 
     def show(self, *args, **kwargs):
@@ -1009,8 +1002,12 @@ class XmapHandler(Volume):
         self.new_region(ijk_min=(0,0,0), ijk_max=darray.size, ijk_step=(1,1,1), adjust_step=False)
 
     def _generate_and_fill_data_array(self, origin, grid_origin, dim):
-        data = self._data_fill_target = numpy.empty(dim, numpy.double)
-        self._fill_volume_data(data, grid_origin)
+        darray = self._generate_data_array(origin, grid_origin, dim)
+        self._fill_volume_data(self._data_fill_target, grid_origin)
+        return darray
+
+    def _generate_data_array(self, origin, grid_origin, dim):
+        data = self._data_fill_target = numpy.empty(dim, numpy.float32)
         order = numpy.array([2,1,0], int)
         darray = Array_Grid_Data(data.transpose(), origin = origin,
             step = self.voxel_size, cell_angles = self.cell.angles_deg)

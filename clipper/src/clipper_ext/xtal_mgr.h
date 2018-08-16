@@ -26,6 +26,7 @@ struct CLIPPER_CX_IMEX Xmap_details
 {
 public:
     Xmap_details() : base_coeffs_(null_base_coeffs) {} // null constructor
+    Xmap_details(const Xmap_details& other);
     inline Xmap_details(const HKL_info& hklinfo, const HKL_data<F_phi<ftype32>>& base_coeffs, const ftype& b_sharp,
         const Grid_sampling& grid_sampling, bool is_difference_map=false,
         bool exclude_free_reflections=true,
@@ -40,15 +41,16 @@ public:
         coeffs_ = HKL_data<F_phi<ftype32>>(hklinfo);
         xmap_ = Xmap<ftype32>(hklinfo.spacegroup(), hklinfo.cell(), grid_sampling);
     }
+    Xmap_details operator= (const Xmap_details& other) { return Xmap_details(other); }
 
-
+    inline const HKL_info& hkl_info() const { return hkl_info_; }
     inline const Xmap<ftype32>& xmap() const { return xmap_; }
     inline Xmap<ftype32>& xmap() { return xmap_; }
     inline const Map_stats& map_stats() const { return map_stats_; }
     inline Map_stats& map_stats() { return map_stats_; }
     inline const HKL_data<F_phi<ftype32>>& coeffs() const { return coeffs_; }
     inline HKL_data<F_phi<ftype32>>& coeffs() { return coeffs_; }
-    inline const HKL_data<F_phi<ftype32>>& base_coeffs() { return base_coeffs_; }
+    inline const HKL_data<F_phi<ftype32>>& base_coeffs() const { return base_coeffs_; }
     inline const ftype& b_sharp() const { return b_sharp_; }
     inline bool is_difference_map() const { return is_difference_map_; }
     inline bool exclude_free_reflections() const { return exclude_freer_; }
@@ -200,6 +202,7 @@ public:
 
     //
     inline const Xmap<ftype32>& get_xmap(const std::string& name) const { return maps_.at(name).xmap(); }
+    inline const Map_stats& get_map_stats(const std::string& name) { return maps_.at(name).map_stats(); }
 
 
 protected:
@@ -341,6 +344,8 @@ public:
     void delete_xmap(const std::string& name);
 
     inline const Xmap<ftype32>& get_xmap(const std::string& name) { return mgr_.get_xmap(name); }
+
+    inline const Map_stats& get_map_stats(const std::string& name) { return mgr_.get_map_stats(name); }
 
 private:
     Xtal_mgr_base mgr_;

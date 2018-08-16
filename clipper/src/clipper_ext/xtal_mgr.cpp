@@ -9,6 +9,16 @@ using namespace clipper::datatypes;
 namespace clipper_cx
 {
 
+Xmap_details::Xmap_details(const Xmap_details& other)
+    : hkl_info_(other.hkl_info()), base_coeffs_(other.base_coeffs()),
+      b_sharp_(other.b_sharp()), is_difference_map_(other.is_difference_map()),
+      exclude_freer_(other.exclude_free_reflections()), fill_(other.fill_with_fcalc())
+      {
+          xmap_ = other.xmap();
+          coeffs_ = other.coeffs();
+      }
+
+
 Xtal_mgr_base::Xtal_mgr_base(const HKL_info& hklinfo, const HKL_data<Flag>& free_flags,
     const Grid_sampling& grid_sampling, const HKL_data<F_sigF<ftype32>>& fobs)
     : hklinfo_(hklinfo), free_flags_(free_flags), grid_sampling_(grid_sampling), fobs_(fobs)
@@ -332,7 +342,9 @@ Xtal_thread_mgr::recalculate_all_(const Atom_list& atoms)
     size_t maps_per_thread = (size_t) ceil(( (float)mgr_.n_maps()) /num_threads_);
     // Make copies of all maps to work on. Expensive, but necessary for thread
     // safety.
-    xmap_thread_results_ = mgr_.maps();
+    xmap_thread_results_.clear();
+    for (const auto& name: map_names)
+        xmap_thread_results_[name] = mgr_.maps_[name];
     size_t n=0;
     std::vector<std::future<bool>> results;
     while (n<nmaps)
