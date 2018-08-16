@@ -1813,6 +1813,10 @@ class Sim_Handler:
         # Ensure that the region ijk step size is [1,1,1]
         v.new_region(ijk_min=region[0], ijk_max=region[1], ijk_step=[1,1,1])
         data = v.region_matrix()
+        if not data.data.c_contiguous:
+            data_copy = numpy.empty(data.shape, numpy.float32)
+            data_copy[:] = data
+            data = data_copy
         if data.size < self._params.max_cubic_map_size:
             Map_Force = CubicInterpMapForce
         else:

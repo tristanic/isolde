@@ -18,16 +18,15 @@ using namespace clipper::datatypes;
 // Forward declaration
 class Xtal_thread_mgr;
 
-static HKL_data<F_phi<ftype32>> null_base_coeffs = HKL_data<F_phi<ftype32>>();
 // Container for a crystallographic map and its coefficients, including the
 // details needed to regenerate it. Just stores everything - calculations are
 // handled by Xtal_mgr_base
 struct CLIPPER_CX_IMEX Xmap_details
 {
 public:
-    Xmap_details() : base_coeffs_(null_base_coeffs) {} // null constructor
+    Xmap_details() {} // null constructor
     Xmap_details(const Xmap_details& other);
-    inline Xmap_details(const HKL_info& hklinfo, const HKL_data<F_phi<ftype32>>& base_coeffs, const ftype& b_sharp,
+    inline Xmap_details(const HKL_info& hklinfo, HKL_data<F_phi<ftype32>> const* base_coeffs, const ftype& b_sharp,
         const Grid_sampling& grid_sampling, bool is_difference_map=false,
         bool exclude_free_reflections=true,
         bool fill_with_fcalc=true)
@@ -50,7 +49,7 @@ public:
     inline Map_stats& map_stats() { return map_stats_; }
     inline const HKL_data<F_phi<ftype32>>& coeffs() const { return coeffs_; }
     inline HKL_data<F_phi<ftype32>>& coeffs() { return coeffs_; }
-    inline const HKL_data<F_phi<ftype32>>& base_coeffs() const { return base_coeffs_; }
+    inline const HKL_data<F_phi<ftype32>>& base_coeffs() const { return *base_coeffs_; }
     inline const ftype& b_sharp() const { return b_sharp_; }
     inline bool is_difference_map() const { return is_difference_map_; }
     inline bool exclude_free_reflections() const { return exclude_freer_; }
@@ -59,8 +58,10 @@ public:
 
 private:
     HKL_info hkl_info_;
-    // Base coefficients before removing free reflections, sharpening etc.
-    const HKL_data<F_phi<ftype32>>& base_coeffs_;
+    // Base coefficients before removing free reflections, sharpening etc..
+    // These are common to all maps, so only a pointer is kept here. The actual
+    // object is held by Xtal_mgr_base
+    HKL_data<F_phi<ftype32>> const* base_coeffs_;
     // Final coefficients used to generate xmap_
     ftype b_sharp_=0;
     // If this is a difference map, fill_ is ignored
@@ -88,7 +89,7 @@ class CLIPPER_CX_IMEX Xtal_mgr_base
 {
     friend class Xtal_thread_mgr;
 public:
-    Xtal_mgr_base() {} // default constructor
+    //Xtal_mgr_base() {} // default constructor
     Xtal_mgr_base(const HKL_info& hklinfo, const HKL_data<Flag>& free_flags,
         const Grid_sampling& grid_sampling, const HKL_data<F_sigF<ftype32>>& fobs);
 

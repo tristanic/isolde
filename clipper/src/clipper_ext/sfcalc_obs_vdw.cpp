@@ -47,6 +47,10 @@ bool SFcalc_obs_bulk_vdw<T>::operator() ( HKL_data<datatypes::F_phi<T> >& fphi, 
   xmap.fft_to( fphi_mask );
   fphi_mask.compute( fphi_mask, datatypes::Compute_scale_u_iso<datatypes::F_phi<T> >( 1.0, -u_mask ) );
 
+  // set (0,0,0) terms to null
+  fphi_atom[fphi_atom.first()].set_null();
+  fphi_mask[fphi_mask.first()].set_null();
+
   // try some different scale factors
   std::vector<double> params( nparams, 1.0 );
   BasisFn_spline basisfn( hkls, nparams, 1.0 );
@@ -69,7 +73,7 @@ bool SFcalc_obs_bulk_vdw<T>::operator() ( HKL_data<datatypes::F_phi<T> >& fphi, 
           r += (2.0/eps) * fabs( sqrt(rfn.f(ih))*fphi[ih].f() - fsig[ih].f() );
           // r += ( 2.0/eps ) * pow( rfn.f(ih) * pow(fphi[ih].f(),2)/eps - pow(fsig[ih].f(),2)/eps, 2 );
         }
-        std::cerr << "Bulk solvent fraction: " << x << "R: " << r << std::endl;
+        // std::cerr << "Bulk solvent fraction: " << x << "R: " << r << std::endl;
       y[d+1] = r;
       //std::cout << d << "\t" << x << "\t" << r << "\n";
     }
@@ -103,7 +107,7 @@ bool SFcalc_obs_bulk_vdw<T>::operator() ( HKL_data<datatypes::F_phi<T> >& fphi, 
               r += (2.0/eps) * fabs( sqrt(rfn.f(ih))*fphi[ih].f() - fsig[ih].f() );
               // r += ( 2.0/eps ) * pow( rfn.f(ih) * pow(fphi[ih].f(),2)/eps - pow(fsig[ih].f(),2)/eps, 2 );
             }
-            std::cerr << "B_sol: " << Util::u2b(u_mask + ua) << "R: " << r << std::endl;
+            // std::cerr << "B_sol: " << Util::u2b(u_mask + ua) << "R: " << r << std::endl;
           y[d+1] = r;
           //std::cout << d << "\t" << x << "\t" << r << "\n";
       }

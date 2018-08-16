@@ -224,7 +224,7 @@ class XtalSymmetryHandler(Model):
 
         if calculate_maps and mtzfile is not None:
             from .crystal_exp import XmapSet, viewing_bsharp
-            xmapset = self.xmapset = XmapSet(session, self, model.atoms,
+            xmapset = self.xmapset = XmapSet(session, self, model,
                 bsharp_vals=[viewing_bsharp(self.hklinfo.resolution.limit)],
                 exclude_free_reflections=False,
                 fill_with_fcalc=False,

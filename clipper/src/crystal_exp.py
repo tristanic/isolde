@@ -33,7 +33,6 @@ from .clipper_mtz import ReflectionDataContainer
 DEFAULT_BOND_RADIUS = 0.2
 
 def _available_cores():
-    return 1
     import os
     return max(os.cpu_count()-2, 1)
 
@@ -219,38 +218,6 @@ class Surface_Zone:
             return self.atoms.coords
         return self.coords
 
-# def surface_zones(models, points, distance):
-#     '''
-#     Essentially a copy of chimerax.surface.zone.surface_zone, but uses
-#     find_close_points_sets to eke a little extra performance
-#     '''
-#     vlist = []
-#     dlist = []
-#     ident_matrix = Place().matrix.astype(numpy.float32)
-#     search_entry = [(numpy.array(points, numpy.float32), Place().matrix.astype(numpy.float32))]
-#     for m in models:
-#         #for d in m.child_drawings():
-#         for d in m.surfaces:
-#             if not d.display:
-#                 continue
-#             if d.vertices is not None:
-#                 dlist.append(d)
-#                 vlist.append((d.vertices.astype(numpy.float32), ident_matrix))
-#
-#     i1, i2 = find_close_points_sets(vlist, search_entry, distance)
-#
-#     for vp, i, d in zip(vlist, i1, dlist):
-#         v = vp[0]
-#         nv = len(v)
-#         mask = numpy.zeros((nv,), numpy.bool)
-#         numpy.put(mask, i, 1)
-#         t = d.triangles
-#         if t is None:
-#             return
-#         tmask = numpy.logical_and(mask[t[:,0]], mask[t[:,1]])
-#         numpy.logical_and(tmask, mask[t[:,2]], tmask)
-#         d.triangle_mask = tmask
-
 def surface_zones(models, points, distance):
     from chimerax.surface import zone
     for m in models:
@@ -275,9 +242,10 @@ class XmapSet(Model):
     DEFAULT_DIFF_MAP_COLORS = [[1.0,0,0,1.0],[0,1.0,0,1.0]] #Solid red and green
 
 
-    def __init__(self, session, crystal, atoms, fsigf_name = 'FOBS, SIGFOBS',
+    def __init__(self, session, crystal, model, fsigf_name = 'FOBS, SIGFOBS',
                 bsharp_vals=[], exclude_free_reflections=False,
-                 fill_with_fcalc=False, display_radius = 12):
+                 fill_with_fcalc=False, display_radius = 12,
+                 live_update=True):
         '''
         Prepare the C++ Xtal_mgr object and create a set of crystallographic
         maps. The standard 2mFo-DFc and mFo-DFc maps will always be created,
@@ -291,10 +259,9 @@ class XmapSet(Model):
             fsigf_name:
                 The label of the :class:`F_sigF_float` object containing the
                 observed amplitudes
-            atoms:
-                A ChimeraX `Atoms` object encompassing the atoms to be used to
-                calculate the maps. Unless deliberately generating omit
-                maps, this should contain all atoms in the model.
+            model:
+                A ChimeraX `AtomicStructure` object to be used to
+                calculate the maps.
             bsharp_vals:
                 For each value in this list, a 2mFo-DFc map will be generated
                 with the given B_sharp value. A negative B_sharp yields a
@@ -319,6 +286,9 @@ class XmapSet(Model):
             display_radius:
                 The radius (in Angstroms) of the display sphere used in
                 live scrolling mode.
+            live_update:
+                If True, maps will be automatically recalculated whenever
+                coordinates change
         '''
         Model.__init__(self, 'Real-space maps', session)
         self.crystal = crystal
@@ -328,14 +298,23 @@ class XmapSet(Model):
         trigger_names = (
             'map box changed',  # Changed shape of box for map viewing
             'map box moved',    # Just changed the centre of the box
+            'maps recalculated'
         )
         for t in trigger_names:
             trig.add_trigger(t)
+
+        self._live_update = False
+        self._recalc_needed = False
+        self._model_changes_handler = None
+        self._delayed_recalc_handler = None
+
         #############
         # Variables involved in handling live redrawing of maps in a box
         # centred on the cofr
         #############
 
+        self.model = model
+        atoms = model.atoms
         # Handler for live box update
         self._box_update_handler = None
         # Is the box already initialised?
@@ -406,9 +385,9 @@ class XmapSet(Model):
             if b == 0:
                 continue
             elif b < 0:
-                name_str = "2mFo-DFc_sharp_{:.0f}".format(-b)
+                name_str = "2mFo-DFc_smooth_{:.0f}".format(-b)
             else:
-                name_str = "2mFo-DFc_smooth_{:.0f}".format(b)
+                name_str = "2mFo-DFc_sharp_{:.0f}".format(b)
             self.add_live_xmap(name_str, b, is_difference_map=False,
                 exclude_free_reflections=exclude_free_reflections,
                 fill_with_fcalc=fill_with_fcalc
@@ -423,11 +402,32 @@ class XmapSet(Model):
         # Apply the surface mask
         self.session.triggers.add_handler('frame drawn', self._rezone_once_cb)
         # self._reapply_zone()
+        self.live_update = live_update
 
     def _rezone_once_cb(self, *_):
         self.display = True
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
+
+    @property
+    def live_update(self):
+        return self._live_update
+
+    @live_update.setter
+    def live_update(self, flag):
+        if flag == self._live_update:
+            return
+        if flag:
+            if self._model_changes_handler is None:
+                self._model_changes_handler = self.model.triggers.add_handler(
+                    'changes', self._model_changed_cb
+                )
+        else:
+            if self._model_changes_handler is not None:
+                self.model.triggers.remove_handler(
+                    self._model_changes_handler
+                )
+                self._model_changes_handler = None
 
     @property
     def hklinfo(self):
@@ -588,6 +588,31 @@ class XmapSet(Model):
                     places.append(Place(origin = thisorigin))
         self.positions = Places(places)
 
+    _map_impacting_changes = set ((
+        "aniso_u changed",
+        "bfactor changed",
+        "coord changed",
+        "coordset changed",
+        "occupancy changed",
+    ))
+    def _model_changed_cb(self, trigger_name, changes):
+        if changes is not None:
+            changes = set(changes[1].atom_reasons()).intersection(self._map_impacting_changes)
+            if changes:
+                self._recalc_needed = True
+                if self._delayed_recalc_handler is None:
+                    self._delayed_recalc_handler = self.session.triggers.add_handler(
+                        'new frame', self._recalculate_maps_if_needed
+                    )
+
+    def _recalculate_maps_if_needed(self, *_):
+        xm = self._xtal_mgr
+        if self._recalc_needed and not xm.thread_running:
+            self.recalculate_all_maps(self.model.atoms)
+            if self._delayed_recalc_handler is not None:
+                self.session.triggers.remove_handler(self._delayed_recalc_handler)
+                self._delayed_recalc_handler = None
+
     def recalculate_all_maps(self, atoms):
         from . import atom_list_from_sel
         from .delayed_reaction import delayed_reaction
@@ -597,10 +622,13 @@ class XmapSet(Model):
             xm.ready,
             self._apply_new_maps, []
             )
+        self._recalc_needed = False
 
     def _apply_new_maps(self):
         print('Applying new maps...')
         self._xtal_mgr.apply_new_maps()
+        self.triggers.activate_trigger('maps recalculated', None)
+
 
     def add_nxmap_handler(self, volume):
         from .real_space_map import NXmapHandler
@@ -878,6 +906,9 @@ class XmapHandler(Volume):
             'map box changed', self._box_changed_cb)
         self._box_moved_cb_handler = self.manager.triggers.add_handler(
             'map box moved', self._box_moved_cb)
+        self._map_recalc_cb_handler = self.manager.triggers.add_handler(
+            'maps recalculated', self._map_recalc_cb
+        )
 
     @property
     def xmap(self):
@@ -962,6 +993,7 @@ class XmapHandler(Volume):
         self.data.values_changed()
         self.show()
 
+
     def _box_moved_cb(self, name, params):
         self.box_params = params
         if not self.display:
@@ -969,6 +1001,11 @@ class XmapHandler(Volume):
         self.data.set_origin(params[0])
         self._fill_volume_data(self._data_fill_target, params[1])
         self.data.values_changed()
+
+    def _map_recalc_cb(self, name, *_):
+        self._fill_volume_data(self._data_fill_target, self.box_params[1])
+        self.data.values_changed()
+
 
     def delete(self):
         bh = self._box_shape_changed_cb_handler

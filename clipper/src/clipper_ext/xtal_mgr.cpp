@@ -1,7 +1,9 @@
 #include "xtal_mgr.h"
 
 #include <set>
-#include <iostream>
+#include <memory>
+
+#include <iostream> // debugging
 
 using namespace clipper;
 using namespace clipper::datatypes;
@@ -10,7 +12,7 @@ namespace clipper_cx
 {
 
 Xmap_details::Xmap_details(const Xmap_details& other)
-    : hkl_info_(other.hkl_info()), base_coeffs_(other.base_coeffs()),
+    : hkl_info_(other.hkl_info()), base_coeffs_(&other.base_coeffs()),
       b_sharp_(other.b_sharp()), is_difference_map_(other.is_difference_map()),
       exclude_freer_(other.exclude_free_reflections()), fill_(other.fill_with_fcalc())
       {
@@ -221,10 +223,10 @@ Xtal_mgr_base::add_xmap(const std::string& name,
     if (it != maps_.end())
         throw std::logic_error("Each map must have a unique name!");
     if (is_difference_map)
-        maps_.emplace(name, Xmap_details(hklinfo_, base_fofc_, bsharp, grid_sampling_, is_difference_map,
+        maps_.emplace(name, Xmap_details(hklinfo_, &base_fofc_, bsharp, grid_sampling_, is_difference_map,
                               exclude_free_reflections, fill_with_fcalc));
     else
-        maps_.emplace(name, Xmap_details(hklinfo_, base_2fofc_, bsharp, grid_sampling_, is_difference_map,
+        maps_.emplace(name, Xmap_details(hklinfo_, &base_2fofc_, bsharp, grid_sampling_, is_difference_map,
                             exclude_free_reflections, fill_with_fcalc));
 
     recalculate_map(name);
@@ -344,7 +346,7 @@ Xtal_thread_mgr::recalculate_all_(const Atom_list& atoms)
     // safety.
     xmap_thread_results_.clear();
     for (const auto& name: map_names)
-        xmap_thread_results_[name] = mgr_.maps_[name];
+        xmap_thread_results_.emplace(name, mgr_.maps_[name]);
     size_t n=0;
     std::vector<std::future<bool>> results;
     while (n<nmaps)
@@ -368,7 +370,7 @@ Xtal_thread_mgr::recalculate_inner_(const std::vector<std::string>& names,
 {
     for (size_t i= i_min; i<i_max; ++i)
     {
-        std::cerr << "Recalculating map " << i << std::endl;
+        // std::cerr << "Recalculating map " << i << std::endl;
         mgr_.recalculate_map(xmap_thread_results_[names[i]]);
     }
     return true;
