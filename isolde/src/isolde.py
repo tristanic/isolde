@@ -1159,6 +1159,9 @@ class Isolde():
         for xmap in xmaps:
             if not isinstance(xmap, Volume):
                 continue
+            from chimerax.clipper.crystal_exp import XmapHandler_Live
+            if isinstance(xmap, XmapHandler_Live) and xmap.name != 'MDFF potential':
+                continue
             is_difference_map = xmap.is_difference_map
             from .molobject import MDFF_Mgr
             mdff_mgr = None
@@ -2523,7 +2526,7 @@ class Isolde():
     def _discard_sim(self, *_):
         self.discard_sim(revert_to='start')
 
-    def discard_sim(self, revert_to='checkpoint'):
+    def discard_sim(self, revert_to='checkpoint', warn=True):
         '''
         Stop the simulation and revert to either the starting state or
         the last saved checkpoint.
@@ -2535,7 +2538,7 @@ class Isolde():
         if not revert_to in ('checkpoint', 'start'):
             raise TypeError('Unrecognised option! Argument should be '\
                 +'either "checkpoint" or "start".')
-        if revert_to == 'start':
+        if warn and revert_to == 'start' :
             msg = 'All changes since you started this simulation will be '\
                 +'lost! Are you sure you want to continue?'
             ok = _choice_warning(msg)

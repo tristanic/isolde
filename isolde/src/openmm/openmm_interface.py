@@ -665,12 +665,21 @@ class Sim_Manager:
         sh.add_tuggables(tuggables)
 
     def _prepare_mdff_managers(self):
+        '''
+        Take experimental density maps and convert to MDFF potential energy
+        fields. For crystallographic data, only the map named "MDFF potential"
+        will be used, since it is guaranteed to exclude the free reflections.
+        '''
         from .. import session_extensions as sx
         m = self.model
         mdff_mgr_map = self.mdff_mgrs = {}
         from chimerax.map import Volume
+        from chimerax.clipper.crystal_exp import XmapHandler_Live
         for v in m.all_models():
-            if isinstance(v, Volume):
+            if isinstance(v, XmapHandler_Live):
+                if v.name == 'MDFF potential':
+                    mdff_mgr_map[v] = sx.get_mdff_mgr(m, v)
+            elif isinstance(v, Volume):
                 mdff_mgr_map[v] = sx.get_mdff_mgr(m, v)
         if len(mdff_mgr_map.keys()):
             isolde_params = self.isolde_params
