@@ -2922,6 +2922,22 @@ class Isolde():
             map_oversampling = self.params.map_shannon_rate)
         #~ from chimerax.core.commands import lighting
         #~ lighting.lighting(self.session, depth_cue=True)
+        standard_map = sym_handler.xmapset['2mFo-DFc']
+        sharp_map = sym_handler.xmapset['2mFo-DFc_sharp_25']
+        diff_map = sym_handler.xmapset['mFo-DFc']
+        from . import visualisation as v
+        styleargs= v.map_style_settings[v.map_styles.solid_t20]
+        from chimerax.map import volumecommand
+        volumecommand.volume(self.session, [sharp_map], **styleargs)
+        styleargs = v.map_style_settings[v.map_styles.solid_t40]
+        volumecommand.volume(self.session, [diff_map], **styleargs)
+        standard_map.set_parameters(surface_levels = (2.5*standard_map.mean_sd_rms()[1],))
+        sharp_map.set_parameters(surface_levels = (3.0*sharp_map.mean_sd_rms()[1],))
+        diff_map.set_parameters(surface_levels = (-0.05, 0.05))
+        from chimerax.std_commands import set
+        from chimerax.core.colors import Color
+        set.set(self.session, bg_color=Color([255,255,255,255]))
+
         # sharp_map = sym_handler.xmapset['2mFo-DFc_smooth_']
         # sd = sharp_map.mean_sd_rms()[1]
         # from . import visualisation as v
