@@ -2,7 +2,6 @@
 #include <string>
 #include <unordered_map>
 #include <future>
-#include <memory>
 #include <chrono>
 
 #include "imex.h"
@@ -24,8 +23,6 @@ class Xtal_thread_mgr;
 // handled by Xtal_mgr_base
 struct CLIPPER_CX_IMEX Xmap_details
 {
-    friend class Xtal_thread_mgr;
-
 public:
     Xmap_details() {} // null constructor
     Xmap_details(const Xmap_details& other);
@@ -40,20 +37,18 @@ public:
           fill_(fill_with_fcalc)
     {
         // initialise empty data objects
-        coeffs_ = std::unique_ptr<HKL_data<F_phi<ftype32>>> (
-            new HKL_data<F_phi<ftype32>>(hklinfo));
-        xmap_ = std::unique_ptr<Xmap<ftype32>> (
-            new Xmap<ftype32>(hklinfo.spacegroup(), hklinfo.cell(), grid_sampling));
+        coeffs_ = HKL_data<F_phi<ftype32>>(hklinfo);
+        xmap_ = Xmap<ftype32>(hklinfo.spacegroup(), hklinfo.cell(), grid_sampling);
     }
     Xmap_details operator= (const Xmap_details& other) { return Xmap_details(other); }
 
     inline const HKL_info& hkl_info() const { return hkl_info_; }
-    inline const Xmap<ftype32>& xmap() const { return *xmap_; }
-    inline Xmap<ftype32>& xmap() { return *xmap_; }
+    inline const Xmap<ftype32>& xmap() const { return xmap_; }
+    inline Xmap<ftype32>& xmap() { return xmap_; }
     inline const Map_stats& map_stats() const { return map_stats_; }
     inline Map_stats& map_stats() { return map_stats_; }
-    inline const HKL_data<F_phi<ftype32>>& coeffs() const { return *coeffs_; }
-    inline HKL_data<F_phi<ftype32>>& coeffs() { return *coeffs_; }
+    inline const HKL_data<F_phi<ftype32>>& coeffs() const { return coeffs_; }
+    inline HKL_data<F_phi<ftype32>>& coeffs() { return coeffs_; }
     inline const HKL_data<F_phi<ftype32>>& base_coeffs() const { return *base_coeffs_; }
     inline const ftype& b_sharp() const { return b_sharp_; }
     inline bool is_difference_map() const { return is_difference_map_; }
@@ -76,12 +71,10 @@ private:
     // if exclude_freer_, replace free reflections with DFcalc?
     bool fill_=true;
 
-    std::unique_ptr<HKL_data<F_phi<ftype32>>> coeffs_;
+    HKL_data<F_phi<ftype32>> coeffs_;
     // Sharpening/smoothing B-factor to apply
     // The real-space map
-
-    std::unique_ptr<Xmap<ftype32>> xmap_;
-    // Xmap<ftype32> xmap_;
+    Xmap<ftype32> xmap_;
 
     // max, min, mean, std_dev, range
     Map_stats map_stats_;

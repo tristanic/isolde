@@ -16,8 +16,8 @@ Xmap_details::Xmap_details(const Xmap_details& other)
       b_sharp_(other.b_sharp()), is_difference_map_(other.is_difference_map()),
       exclude_freer_(other.exclude_free_reflections()), fill_(other.fill_with_fcalc())
       {
-          xmap_ = std::unique_ptr<Xmap<ftype32>>(new Xmap<ftype32>(other.xmap()));
-          coeffs_ = std::unique_ptr<HKL_data<F_phi<ftype32>>>( new HKL_data<F_phi<ftype32>>(other.coeffs()) );
+          xmap_ = other.xmap();
+          coeffs_ = other.coeffs();
       }
 
 
@@ -383,15 +383,8 @@ Xtal_thread_mgr::apply_new_maps()
         throw std::logic_error("You haven't generated any new maps yet! Call "
             "recalculate_all() first.");
     master_thread_result_.get();
-    for (auto& it: xmap_thread_results_)
-    {
-        auto& source = it.second;
-        auto& target = mgr_.maps_.at(it.first);
-        source.coeffs_.swap(target.coeffs_);
-        source.xmap_.swap(target.xmap_);
-    }
-    // for (const auto& it: xmap_thread_results_)
-    //     mgr_.maps_.at(it.first).xmap() = it.second.xmap();
+    for (const auto& it: xmap_thread_results_)
+        mgr_.maps_.at(it.first).xmap() = it.second.xmap();
     xmap_thread_results_.clear();
     ready_ = false;
 } // apply_new_maps

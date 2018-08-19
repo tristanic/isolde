@@ -226,7 +226,7 @@ def surface_zones(models, points, distance):
             zone.surface_zone(s, spoints, distance, auto_update=True)
 
 
-class XmapSet(Model):
+class XmapSet_Live(Model):
     '''
     Handles creation, deletion, recalculation and visualisation of
     crystallographic maps based on the current model and a set of observed
@@ -290,7 +290,7 @@ class XmapSet(Model):
                 If True, maps will be automatically recalculated whenever
                 coordinates change
         '''
-        Model.__init__(self, 'Real-space maps', session)
+        Model.__init__(self, 'Live real-space maps', session)
         self.crystal = crystal
         from chimerax.core.triggerset import TriggerSet
         trig = self.triggers = TriggerSet()
@@ -430,6 +430,14 @@ class XmapSet(Model):
                 self._model_changes_handler = None
 
     @property
+    def rfree(self):
+        return self._xtal_mgr.rfree
+
+    @property
+    def rwork(self):
+        return self._xtal_mgr.rwork
+
+    @property
     def hklinfo(self):
         return self.crystal.hklinfo
 
@@ -481,7 +489,7 @@ class XmapSet(Model):
         self._box_corner_grid, self._box_corner_xyz = _find_box_corner(
             cofr, self.cell, self.grid, radius)
         self.triggers.activate_trigger('map box changed',
-            (self._box_corner_xyz, self._box_corner_grid, dim))
+            ((self._box_corner_xyz, self._box_corner_grid, dim), False))
         self._surface_zone.update(radius, coords = numpy.array([cofr]))
         self._reapply_zone()
 
@@ -540,7 +548,7 @@ class XmapSet(Model):
             return self.child_models()[name_or_index]
 
 
-    def set_box_limits(self, minmax):
+    def set_box_limits(self, minmax, force_fill = False):
         '''
         Set the map box to fill a volume encompassed by the provided minimum
         and maximum grid coordinates. Automatically turns off live scrolling.
@@ -550,7 +558,7 @@ class XmapSet(Model):
         cmin_xyz = cmin.coord_frac(self.grid).coord_orth(self.cell).xyz
         dim = (minmax[1]-minmax[0])
         self.triggers.activate_trigger('map box changed',
-            (cmin_xyz, cmin, dim))
+            ((cmin_xyz, cmin, dim), force_fill))
 
     def cover_unit_cells(self, nuvw = [1,1,1], offset = [0,0,0]):
         '''
@@ -625,14 +633,13 @@ class XmapSet(Model):
         self._recalc_needed = False
 
     def _apply_new_maps(self):
-        print('Applying new maps...')
         self._xtal_mgr.apply_new_maps()
         self.triggers.activate_trigger('maps recalculated', None)
 
 
     def add_nxmap_handler(self, volume):
-        from .real_space_map import NXmapHandler
-        m = NXmapHandler(self.session, self, volume)
+        from .real_space_map import NXmapHandler_Live
+        m = NXmapHandler_Live(self.session, self, volume)
         self.add([m])
 
     def add_live_xmap(self, name, b_sharp,
@@ -655,7 +662,7 @@ class XmapSet(Model):
     def add_xmap_handler(self, name, is_difference_map = None,
                 color = None, style = None, contour = None):
         '''
-        Add a new XmapHandler based on the given reflections and phases.
+        Add a new XmapHandler_Live based on the given reflections and phases.
         Args:
             name:
                 A unique string describing this map
@@ -688,7 +695,7 @@ class XmapSet(Model):
             [[r,g,b,a],[r,g,b,a]] in order [positive, negative].
             '''
             raise TypeError(err_string)
-        new_handler = XmapHandler(self.session, self, name,
+        new_handler = XmapHandler_Live(self.session, self, name,
             self._box_corner_xyz, self._box_corner_grid, self._box_dimensions,
             is_difference_map = is_difference_map)
         if style is None:
@@ -859,9 +866,9 @@ class Xmap(Xmap_float):
 
 
 
-class XmapHandler(Volume):
+class XmapHandler_Live(Volume):
     '''
-    An XmapHandler is in effect a resizable window into a periodic
+    An XmapHandler_Live is in effect a resizable window into a periodic
     crystallographic map. The actual map data (a clipper Xmap object) is
     held within, and filled into the XmapWindow.data array as needed.
     Methods are included for both live updating (e.g. tracking and filling
@@ -929,7 +936,7 @@ class XmapHandler(Volume):
             # the current location
             origin, grid_origin, ignore = self.box_params
             self._fill_volume_data(self._data_fill_target, grid_origin)
-        super(XmapHandler, self).show(*args, **kwargs)
+        super(XmapHandler_Live, self).show(*args, **kwargs)
 
     @property
     def hklinfo(self):
@@ -980,19 +987,20 @@ class XmapHandler(Volume):
         return self.stats.std_dev
 
     def _box_changed_cb(self, name, params):
-        self.box_params = params
+        box_params, force_fill = params
+        self.box_params = box_params
         self._needs_update = True
-        if not self.display:
+        if not self.display and not force_fill:
             # No sense in wasting cycles on this if the volume is hidden.
             # We'll just store the params and apply them when we show the
             # volume.
             # NOTE: this means we need to over-ride show() to ensure
             # it's updated before re-displaying.
             return
-        self._swap_volume_data(params)
+        self._swap_volume_data(box_params)
         self.data.values_changed()
-        self.show()
-
+        self._use_thread = True
+        self.call_change_callbacks('data values changed')
 
     def _box_moved_cb(self, name, params):
         self.box_params = params
@@ -1016,7 +1024,7 @@ class XmapHandler(Volume):
         if bm is not None:
             self.manager.triggers.remove_handler(bm)
             self._box_moved_cb_handler = None
-        super(XmapHandler, self).delete()
+        super(XmapHandler_Live, self).delete()
 
 
 

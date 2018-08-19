@@ -223,8 +223,8 @@ class XtalSymmetryHandler(Model):
             self.cell, self.spacegroup, self.grid = symmetry_from_model_metadata(model)
 
         if calculate_maps and mtzfile is not None:
-            from .crystal_exp import XmapSet, viewing_bsharp
-            xmapset = self.xmapset = XmapSet(session, self, model,
+            from .crystal_exp import XmapSet_Live, viewing_bsharp
+            xmapset = self.xmapset = XmapSet_Live(session, self, model,
                 bsharp_vals=[viewing_bsharp(self.hklinfo.resolution.limit)],
                 exclude_free_reflections=False,
                 fill_with_fcalc=False,
@@ -404,7 +404,7 @@ class XtalSymmetryHandler(Model):
         from .clipper_util import get_minmax_grid
         box_bounds_grid = get_minmax_grid(main_coords, cell, grid) \
             + numpy.array((-pad, pad)) + numpy.array((-ep, ep))
-        xmaps.set_box_limits(box_bounds_grid)
+        xmaps.set_box_limits(box_bounds_grid, force_fill=True)
         xmaps._surface_zone.update(mask_radius, coords = main_coords)
         xmaps._reapply_zone()
         if focus:
