@@ -753,7 +753,7 @@ class XmapSet_Live(Model):
 
     def delete(self):
         self.live_scrolling = False
-        super(XmapSet, self).delete()
+        super().delete()
 
 def map_potential_bsharp(resolution):
     '''
@@ -936,7 +936,7 @@ class XmapHandler_Live(Volume):
             # the current location
             origin, grid_origin, ignore = self.box_params
             self._fill_volume_data(self._data_fill_target, grid_origin)
-        super(XmapHandler_Live, self).show(*args, **kwargs)
+        super().show(*args, **kwargs)
 
     @property
     def hklinfo(self):
@@ -1024,7 +1024,7 @@ class XmapHandler_Live(Volume):
         if bm is not None:
             self.manager.triggers.remove_handler(bm)
             self._box_moved_cb_handler = None
-        super(XmapHandler_Live, self).delete()
+        super().delete()
 
 
 

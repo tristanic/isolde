@@ -104,6 +104,7 @@ public:
     inline bool coeffs_initialized() const { return coeffs_initialized_; }
     inline int freeflag() const { return freeflag_; }
     void set_freeflag(int f);
+    inline const HKL_data<Flag>& flags() const { return free_flags_; }
 
     inline const ftype& rwork() { return rwork_; }
     inline const ftype& rfree() { return rfree_; }
@@ -316,6 +317,8 @@ public:
     // Pass through calls to base manager functions in a thread-safe manner
     inline int freeflag() const { return mgr_.freeflag(); }
     void set_freeflag(int f);
+    inline const HKL_data<Flag>& flags() const { return mgr_.flags(); }
+    inline const HKL_data<Flag>& usage_flags() const { return mgr_.usage(); }
     inline const ftype& rwork() { return mgr_.rwork(); }
     inline const ftype& rfree() { return mgr_.rfree(); }
     inline const ftype& weighted_rwork() { return mgr_.weighted_rwork(); }
