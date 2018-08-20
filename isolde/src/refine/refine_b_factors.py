@@ -5,8 +5,108 @@ class B_Factor_Direct_Iso:
     atoms in a MDFF simulation. The model is simulated at a constant 300K until
     sufficient samples have been taken to give a good estimation of the variance
     of each atom's coordinates.
+    NOTE: any aniso_u records will be cleared!
     '''
-    pass
+    def __init__(self, isolde, num_samples = 100):
+        self.isolde = isolde
+        self.session = isolde.session
+        m = self.model = isolde.selected_model
+        self._num_samples = num_samples
+
+        from copy import deepcopy
+        self._original_sim_params = deepcopy(isolde.sim_params)
+        isolde.sim_params.temperature = 300
+        import numpy
+
+        m.atoms.aniso_u6 = numpy.nan
+
+        self._trajectory = numpy.empty((num_samples, *m.atoms.coords.shape))
+
+        self._count = 0
+
+        from chimerax.clipper.clipper_python import Util
+
+        self._badd = 25
+
+        self._log_weights = numpy.array([-1, 0, 1], float)
+        self._dlog_weight = 1
+        self._scores = numpy.array([0,0,0], float)
+
+        self._outer_iteration = 0
+        self._max_iterations = 10
+        self._best_log_weight = 0
+        self._inner_iteration = 0
+
+
+        m.atoms.selected = True
+        isolde.start_sim()
+        isolde.sim_handler.triggers.add_handler('coord update', self._coord_update_cb)
+
+    def _coord_update_cb(self, *_):
+        if self.isolde.simulation_mode == 'min':
+            return
+        m = self.model
+        if self._count < self._num_samples:
+            coords = m.atoms.coords
+            self._trajectory[self._count] = coords
+            self._count += 1
+        else:
+            self.isolde.discard_sim(revert_to='start', warn=False)
+            self._optimize_u_iso()
+            from chimerax.core.triggerset import DEREGISTER
+            return DEREGISTER
+
+    def _optimize_u_iso(self):
+        import numpy
+        traj = self._trajectory
+        variance = traj.var(axis=0).sum(axis=1)
+        from chimerax.clipper.clipper_python import Util
+        self._u_base = numpy.array([Util.u2b(u) for u in variance]).astype(numpy.float32)
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sh = get_symmetry_handler(self.model)
+        xmapset = self._xmapset = sh.xmapset
+        xmapset.triggers.add_handler('maps recalculated', self._map_update_cb)
+        self._map_update_cb()
+
+    def _map_update_cb(self, *_):
+        m = self.model
+        xmapset = self._xmapset
+        scores = self._scores
+        logweights = self._log_weights
+        inner = self._inner_iteration
+        outer = self._outer_iteration
+        if (inner > 0):
+            scores[inner-1] = xmapset.rwork
+        if self._outer_iteration < self._max_iterations:
+            if (inner == 3):
+                import operator
+                min_index, min_val = min(enumerate(scores), key=operator.itemgetter(1))
+                scores[:] = 0
+                scores[1] = min_val
+                best_weight = self._best_log_weight = logweights[min_index]
+                logweights[:] = 0
+                logweights[1] = best_weight
+                self._dlog_weight *= 0.7
+                logweights[0] = best_weight-self._dlog_weight
+                logweights[2] = best_weight+self._dlog_weight
+                self._inner_iteration = 0
+                self._outer_iteration += 1
+                self._map_update_cb()
+                return
+            if scores[inner] == 0:
+                m.atoms.bfactors = self._badd+self._u_base*10**logweights[inner]
+                self._inner_iteration += 1
+            else:
+                self._inner_iteration += 1
+                self._map_update_cb()
+        else:
+            m.atoms.bfactors = self._badd+self._u_base*10**(self._best_log_weight)
+            self.isolde.sim_params = self._original_sim_params
+            from chimerax.core.triggerset import DEREGISTER
+            return DEREGISTER
+
+
+
 
 class B_Factor_Direct_Aniso:
     '''

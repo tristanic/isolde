@@ -2914,7 +2914,8 @@ class Isolde():
         '''
         from chimerax.core.commands import open
         data_dir = os.path.join(self._root_dir, 'demo_data', '3io0')
-        before_struct = open.open(self.session, os.path.join(data_dir, 'before.pdb'))[0]
+        #before_struct = open.open(self.session, os.path.join(data_dir, 'before.pdb'))[0]
+        before_struct = open.open(self.session, os.path.join(data_dir, 'refined.pdb'))[0]
         from chimerax.std_commands import color
         color.color(self.session, before_struct, color='bychain', target='ac')
         color.color(self.session, before_struct, color='byhetero', target='a')
