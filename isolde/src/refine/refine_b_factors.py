@@ -7,7 +7,7 @@ class B_Factor_Direct_Iso:
     of each atom's coordinates.
     NOTE: any aniso_u records will be cleared!
     '''
-    def __init__(self, isolde, num_samples = 100):
+    def __init__(self, isolde, num_samples = 100, base_b_factor=20):
         self.isolde = isolde
         self.session = isolde.session
         m = self.model = isolde.selected_model
@@ -26,7 +26,7 @@ class B_Factor_Direct_Iso:
 
         from chimerax.clipper.clipper_python import Util
 
-        self._badd = 25
+        self._badd = base_b_factor
 
         self._log_weights = numpy.array([-1, 0, 1], float)
         self._dlog_weight = 1
