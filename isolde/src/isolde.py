@@ -2908,6 +2908,45 @@ class Isolde():
     # Demo
     ##############################################
 
+    def load_model_and_data(self, pdbfile, mtzfile):
+        from chimerax.core.commands import open
+        model = open.open(self.session, pdbfile)[0]
+        from chimerax.std_commands import color
+        color.color(self.session, model, color='bychain', target='ac')
+        color.color(self.session, model, color='byhetero', target='a')
+        from chimerax.clipper import symmetry
+        sym_handler = symmetry.XtalSymmetryHandler(model,
+            #mtzfile=os.path.join(data_dir, 'before_maps.mtz'),
+            mtzfile=mtzfile,
+            map_oversampling = self.params.map_shannon_rate)
+        standard_map = sym_handler.xmapset['2mFo-DFc']
+        diff_map = sym_handler.xmapset['mFo-DFc']
+        from . import visualisation as v
+        from chimerax.map import volumecommand
+        styleargs = v.map_style_settings[v.map_styles.solid_t40]
+        volumecommand.volume(self.session, [diff_map], **styleargs)
+        standard_map.set_parameters(surface_levels = (2.5*standard_map.mean_sd_rms()[1],))
+        diff_map.set_parameters(surface_levels = (-0.05, 0.05))
+        from chimerax.std_commands import set
+        from chimerax.core.colors import Color
+        set.set(self.session, bg_color=Color([255,255,255,255]))
+
+        # sharp_map = sym_handler.xmapset['2mFo-DFc_smooth_']
+        # sd = sharp_map.mean_sd_rms()[1]
+        # from . import visualisation as v
+        # styleargs= v.map_style_settings[v.map_styles.solid_t20]
+        # from chimerax.map import volumecommand
+        # volumecommand.volume(self.session, [sharp_map], **styleargs)
+        # sharp_map.set_parameters(surface_levels = (2.5*sd,))
+
+        # from chimerax.clipper import crystal
+        # crystal.set_to_default_cartoon(self.session)
+        self._change_selected_model(model=model, force=True)
+        model.atoms[model.atoms.idatm_types != 'HC'].displays = True
+        from . import view
+        view.focus_on_selection(self.session, self.session.main_view, model.atoms)
+
+
     def load_demo_data(self):
         '''
         Load a small protein model with crystallographic maps to explore.
