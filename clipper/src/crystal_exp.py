@@ -382,7 +382,7 @@ class XmapSet_Live(Model):
         #     exclude_free_reflections=exclude_free_reflections)
 
         for b in bsharp_vals:
-            if b == 0:
+            if abs(b) < 5:
                 continue
             elif b < 0:
                 name_str = "2mFo-DFc_smooth_{:.0f}".format(-b)
@@ -428,6 +428,7 @@ class XmapSet_Live(Model):
                     self._model_changes_handler
                 )
                 self._model_changes_handler = None
+        self._live_update = flag
 
     @property
     def rfree(self):
@@ -536,6 +537,9 @@ class XmapSet_Live(Model):
             self.crystal.triggers.remove_handler(self._box_update_handler)
             self._box_update_handler = None
         self._live_scrolling = False
+
+    def items(self):
+        return ((m.name, m) for m in self.child_models() if isinstance(m, XmapHandler_Live))
 
     def __getitem__(self, name_or_index):
         '''Get one of the child maps by name or index.'''

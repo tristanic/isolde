@@ -661,9 +661,18 @@ class Isolde():
         iw._sim_basic_xtal_init_go_button.clicked.connect(
             self._initialize_xtal_structure
             )
+
+        # Live maps direct from structure factors
+        iw._sim_basic_xtal_init_exp_data_button.clicked.connect(
+            self._choose_reflections_file
+        )
+
         iw._sim_basic_xtal_map_settings_show_button.clicked.connect(
             self._toggle_xtal_map_dialog
             )
+        iw._sim_basic_xtal_settings_live_recalc_checkbox.stateChanged.connect(
+            self._set_live_xmap_recalc
+        )
         iw._sim_basic_xtal_settings_map_combo_box.currentIndexChanged.connect(
             self._populate_xtal_map_params
             )
@@ -1129,6 +1138,59 @@ class Isolde():
         self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
         self._update_sim_control_button_states()
 
+    def _choose_reflections_file(self, *_):
+        options = QFileDialog.Options()
+        caption = 'Choose a file containing at minimum Fobs/SigFobs and free flags'
+        filetypes = 'MTZ files (*.mtz)'
+        filename, _ = QFileDialog.getOpenFileName(None, caption, filetypes, filetypes, options=options)
+        self._initialize_live_xtal_structure(filename)
+
+    def _initialize_live_xtal_structure(self, filename):
+        m = self.selected_model
+        live = self.iw._xtal_settings_live_recalc_checkbox.checkState()
+        if m is None:
+            _generic_warning("You must have the corresponding model loaded before loading reflection data!")
+        from chimerax.clipper import symmetry
+        sh = symmetry.XtalSymmetryHandler(m, mtzfile=filename,
+            map_oversampling=self.params.map_shannon_rate,
+            live_update = live)
+        standard_map = sh.xmapset['2mFo-DFc']
+        diff_map = sh.xmapset['mFo-DFc']
+        has_extra_map = False
+        extra_map_is_sharp = False
+        extra_map = None
+        for key, xmap in sh.xmapset.items():
+            if "sharp" in key:
+                has_extra_map = True
+                extra_map_is_sharp = True
+                extra_map = xmap
+            elif "smooth" in key:
+                has_extra_map = True
+                extra_map = xmap
+        from . import visualisation as v
+        from chimerax.map import volumecommand
+        sd = standard_map.mean_sd_rms()[1]
+        diff_styleargs = v.map_style_settings[v.map_styles.solid_t40]
+        volumecommand.volume(self.session, [diff_map], **diff_styleargs)
+        if has_extra_map:
+            xsd = extra_map.mean_sd_rms()[1]
+            styleargs = v.map_style_settings[v.map_styles.solid_t20]
+            if extra_map_is_sharp:
+                volumecommand.volume(self.session, [extra_map], **styleargs)
+                standard_map.set_parameters(surface_levels = (1.5*sd,))
+                extra_map.set_parameters(surface_levels=(3.0*xsd,))
+            else:
+                volumecommand.volume(self.session, [standard_map], **styleargs)
+                standard_map.set_parameters(surface_levels = (3.0*sd,))
+                extra_map.set_parameters(surface_levels=(1.5*xsd,))
+        # Set difference map according to standard map SD, since this is more
+        # meaningful
+        diff_map.set_parameters(surface_levels=(-0.8*sd, 0.8*sd))
+
+
+
+
+
     @property
     def selected_model_has_maps(self):
         m = self.selected_model
@@ -1226,6 +1288,12 @@ class Isolde():
         else:
             frame.hide()
             button.setText(show_text)
+
+    def _set_live_xmap_recalc(self, state):
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sh = get_symmetry_handler(self.selected_model)
+        if sh is not None:
+            sh.xmapset.live_update = state
 
     def _populate_xtal_map_combo_box(self, *_):
         cb = self.iw._sim_basic_xtal_settings_map_combo_box
@@ -2925,8 +2993,9 @@ class Isolde():
         from chimerax.map import volumecommand
         styleargs = v.map_style_settings[v.map_styles.solid_t40]
         volumecommand.volume(self.session, [diff_map], **styleargs)
-        standard_map.set_parameters(surface_levels = (2.5*standard_map.mean_sd_rms()[1],))
-        diff_map.set_parameters(surface_levels = (-0.05, 0.05))
+        sd = standard_map.mean_sd_rms()[1]
+        standard_map.set_parameters(surface_levels = (2.5*sd,))
+        diff_map.set_parameters(surface_levels = (-0.8*sd, 0.8*sd))
         from chimerax.std_commands import set
         from chimerax.core.colors import Color
         set.set(self.session, bg_color=Color([255,255,255,255]))
@@ -2953,8 +3022,8 @@ class Isolde():
         '''
         from chimerax.core.commands import open
         data_dir = os.path.join(self._root_dir, 'demo_data', '3io0')
-        #before_struct = open.open(self.session, os.path.join(data_dir, 'before.pdb'))[0]
-        before_struct = open.open(self.session, os.path.join(data_dir, 'refined.pdb'))[0]
+        before_struct = open.open(self.session, os.path.join(data_dir, 'before.pdb'))[0]
+        #before_struct = open.open(self.session, os.path.join(data_dir, 'refined.pdb'))[0]
         from chimerax.std_commands import color
         color.color(self.session, before_struct, color='bychain', target='ac')
         color.color(self.session, before_struct, color='byhetero', target='a')

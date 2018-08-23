@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>547</width>
-    <height>864</height>
+    <height>793</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -73,7 +73,7 @@
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap resource="resources/resources.qrc">:/icons/logo_small.png</pixmap>
+        <pixmap resource="../resources/resources.qrc">:/icons/logo_small.png</pixmap>
        </property>
        <property name="scaledContents">
         <bool>true</bool>
@@ -262,7 +262,7 @@
         <x>0</x>
         <y>0</y>
         <width>539</width>
-        <height>714</height>
+        <height>652</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -365,7 +365,7 @@ border: 1px;
                   <x>0</x>
                   <y>0</y>
                   <width>531</width>
-                  <height>567</height>
+                  <height>564</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0">
@@ -714,6 +714,16 @@ border: 1px;
                      </widget>
                     </item>
                     <item>
+                     <widget class="QPushButton" name="_sim_basic_xtal_init_exp_data_button">
+                      <property name="toolTip">
+                       <string>Load a MTZ file containing measured amplitudes and auto-generate maps for the selected model</string>
+                      </property>
+                      <property name="text">
+                       <string>Load crystallographic dataset</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
                      <widget class="QPushButton" name="_sim_basic_xtal_map_settings_show_button">
                       <property name="text">
                        <string>Show map settings dialogue</string>
@@ -735,11 +745,14 @@ border: 1px;
                        <enum>QFrame::Plain</enum>
                       </property>
                       <layout class="QVBoxLayout" name="verticalLayout_24">
+                       <property name="spacing">
+                        <number>1</number>
+                       </property>
                        <property name="leftMargin">
                         <number>0</number>
                        </property>
                        <property name="topMargin">
-                        <number>0</number>
+                        <number>20</number>
                        </property>
                        <property name="rightMargin">
                         <number>0</number>
@@ -747,6 +760,23 @@ border: 1px;
                        <property name="bottomMargin">
                         <number>0</number>
                        </property>
+                       <item>
+                        <layout class="QHBoxLayout" name="horizontalLayout_43">
+                         <property name="topMargin">
+                          <number>20</number>
+                         </property>
+                         <item>
+                          <widget class="QCheckBox" name="_sim_basic_xtal_settings_live_recalc_checkbox">
+                           <property name="text">
+                            <string>Live crystallographic map recalculation</string>
+                           </property>
+                           <property name="checked">
+                            <bool>true</bool>
+                           </property>
+                          </widget>
+                         </item>
+                        </layout>
+                       </item>
                        <item>
                         <layout class="QHBoxLayout" name="horizontalLayout_35">
                          <item>
@@ -845,7 +875,7 @@ border: 1px;
                             <string>...</string>
                            </property>
                            <property name="icon">
-                            <iconset resource="resources/resources.qrc">
+                            <iconset resource="../resources/resources.qrc">
                              <normaloff>:/icons/mapsurf.png</normaloff>:/icons/mapsurf.png</iconset>
                            </property>
                            <property name="iconSize">
@@ -865,7 +895,7 @@ border: 1px;
                             <string>...</string>
                            </property>
                            <property name="icon">
-                            <iconset resource="resources/resources.qrc">
+                            <iconset resource="../resources/resources.qrc">
                              <normaloff>:/icons/icecube.png</normaloff>:/icons/icecube.png</iconset>
                            </property>
                            <property name="iconSize">
@@ -885,7 +915,7 @@ border: 1px;
                             <string>...</string>
                            </property>
                            <property name="icon">
-                            <iconset resource="resources/resources.qrc">
+                            <iconset resource="../resources/resources.qrc">
                              <normaloff>:/icons/mesh.png</normaloff>:/icons/mesh.png</iconset>
                            </property>
                            <property name="iconSize">
@@ -905,7 +935,7 @@ border: 1px;
                             <string>...</string>
                            </property>
                            <property name="icon">
-                            <iconset resource="resources/resources.qrc">
+                            <iconset resource="../resources/resources.qrc">
                              <normaloff>:/icons/rainbow.png</normaloff>:/icons/rainbow.png</iconset>
                            </property>
                            <property name="iconSize">
@@ -1050,7 +1080,7 @@ border: 1px;
                   <x>0</x>
                   <y>0</y>
                   <width>531</width>
-                  <height>567</height>
+                  <height>499</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1436,7 +1466,7 @@ border: 1px;
                       <string/>
                      </property>
                      <property name="icon">
-                      <iconset resource="resources/resources.qrc">
+                      <iconset resource="../resources/resources.qrc">
                        <normaloff>:/icons/pep-flip-icon.png</normaloff>:/icons/pep-flip-icon.png</iconset>
                      </property>
                      <property name="iconSize">
@@ -1462,7 +1492,7 @@ border: 1px;
                       <string/>
                      </property>
                      <property name="icon">
-                      <iconset resource="resources/resources.qrc">
+                      <iconset resource="../resources/resources.qrc">
                        <normaloff>:/icons/cis-trans-icon.png</normaloff>:/icons/cis-trans-icon.png</iconset>
                      </property>
                      <property name="iconSize">
@@ -1552,7 +1582,7 @@ border: 1px;
                          <string/>
                         </property>
                         <property name="icon">
-                         <iconset resource="resources/resources.qrc">
+                         <iconset resource="../resources/resources.qrc">
                           <normaloff>:/icons/reverse_icon.png</normaloff>:/icons/reverse_icon.png</iconset>
                         </property>
                         <property name="iconSize">
@@ -1581,7 +1611,7 @@ border: 1px;
                          <string/>
                         </property>
                         <property name="pixmap">
-                         <pixmap resource="resources/resources.qrc">:/icons/rotamer-preview-icon.png</pixmap>
+                         <pixmap resource="../resources/resources.qrc">:/icons/rotamer-preview-icon.png</pixmap>
                         </property>
                         <property name="scaledContents">
                          <bool>true</bool>
@@ -1597,7 +1627,7 @@ border: 1px;
                          <string/>
                         </property>
                         <property name="icon">
-                         <iconset resource="resources/resources.qrc">
+                         <iconset resource="../resources/resources.qrc">
                           <normaloff>:/icons/play_icon.png</normaloff>:/icons/play_icon.png</iconset>
                         </property>
                         <property name="iconSize">
@@ -1642,7 +1672,7 @@ border: 1px;
                       <string>Clear</string>
                      </property>
                      <property name="icon">
-                      <iconset resource="resources/resources.qrc">
+                      <iconset resource="../resources/resources.qrc">
                        <normaloff>:/icons/rotamer-clear-icon.png</normaloff>:/icons/rotamer-clear-icon.png</iconset>
                      </property>
                      <property name="iconSize">
@@ -1662,7 +1692,7 @@ border: 1px;
                       <string>Commit</string>
                      </property>
                      <property name="icon">
-                      <iconset resource="resources/resources.qrc">
+                      <iconset resource="../resources/resources.qrc">
                        <normaloff>:/icons/rotamer-commit-icon.png</normaloff>:/icons/rotamer-commit-icon.png</iconset>
                      </property>
                      <property name="iconSize">
@@ -1682,7 +1712,7 @@ border: 1px;
                       <string>Set target</string>
                      </property>
                      <property name="icon">
-                      <iconset resource="resources/resources.qrc">
+                      <iconset resource="../resources/resources.qrc">
                        <normaloff>:/icons/rotamer-set-target-icon.png</normaloff>:/icons/rotamer-set-target-icon.png</iconset>
                      </property>
                      <property name="iconSize">
@@ -1702,7 +1732,7 @@ border: 1px;
                       <string>Release</string>
                      </property>
                      <property name="icon">
-                      <iconset resource="resources/resources.qrc">
+                      <iconset resource="../resources/resources.qrc">
                        <normaloff>:/icons/rotamer-release-icon.png</normaloff>:/icons/rotamer-release-icon.png</iconset>
                      </property>
                      <property name="iconSize">
@@ -1770,7 +1800,7 @@ border: 1px;
                   <x>0</x>
                   <y>0</y>
                   <width>531</width>
-                  <height>445</height>
+                  <height>373</height>
                  </rect>
                 </property>
                 <property name="sizePolicy">
@@ -1915,7 +1945,7 @@ border: 1px;
                              <string/>
                             </property>
                             <property name="pixmap">
-                             <pixmap resource="resources/resources.qrc">:/icons/sel-base-icon.png</pixmap>
+                             <pixmap resource="../resources/resources.qrc">:/icons/sel-base-icon.png</pixmap>
                             </property>
                             <property name="scaledContents">
                              <bool>true</bool>
@@ -1949,7 +1979,7 @@ border: 1px;
                              <string/>
                             </property>
                             <property name="icon">
-                             <iconset resource="resources/resources.qrc">
+                             <iconset resource="../resources/resources.qrc">
                               <normaloff>:/icons/play_icon.png</normaloff>:/icons/play_icon.png</iconset>
                             </property>
                             <property name="iconSize">
@@ -1981,7 +2011,7 @@ border: 1px;
                              <string/>
                             </property>
                             <property name="icon">
-                             <iconset resource="resources/resources.qrc">
+                             <iconset resource="../resources/resources.qrc">
                               <normaloff>:/icons/reverse_icon_red.png</normaloff>:/icons/reverse_icon_red.png</iconset>
                             </property>
                             <property name="iconSize">
@@ -2019,7 +2049,7 @@ border: 1px;
                              <string/>
                             </property>
                             <property name="icon">
-                             <iconset resource="resources/resources.qrc">
+                             <iconset resource="../resources/resources.qrc">
                               <normaloff>:/icons/reverse_icon.png</normaloff>:/icons/reverse_icon.png</iconset>
                             </property>
                             <property name="iconSize">
@@ -2051,7 +2081,7 @@ border: 1px;
                              <string/>
                             </property>
                             <property name="icon">
-                             <iconset resource="resources/resources.qrc">
+                             <iconset resource="../resources/resources.qrc">
                               <normaloff>:/icons/play_icon_red.png</normaloff>:/icons/play_icon_red.png</iconset>
                             </property>
                             <property name="iconSize">
@@ -2146,7 +2176,7 @@ border: 1px;
                                    <string>...</string>
                                   </property>
                                   <property name="icon">
-                                   <iconset resource="resources/resources.qrc">
+                                   <iconset resource="../resources/resources.qrc">
                                     <normaloff>:/icons/helix-icon.png</normaloff>:/icons/helix-icon.png</iconset>
                                   </property>
                                   <property name="iconSize">
@@ -2166,7 +2196,7 @@ border: 1px;
                                    <string>...</string>
                                   </property>
                                   <property name="icon">
-                                   <iconset resource="resources/resources.qrc">
+                                   <iconset resource="../resources/resources.qrc">
                                     <normaloff>:/icons/antiparallel-beta-icon.png</normaloff>:/icons/antiparallel-beta-icon.png</iconset>
                                   </property>
                                   <property name="iconSize">
@@ -2186,7 +2216,7 @@ border: 1px;
                                    <string>...</string>
                                   </property>
                                   <property name="icon">
-                                   <iconset resource="resources/resources.qrc">
+                                   <iconset resource="../resources/resources.qrc">
                                     <normaloff>:/icons/parallel-beta-icon.png</normaloff>:/icons/parallel-beta-icon.png</iconset>
                                   </property>
                                   <property name="iconSize">
@@ -2212,7 +2242,7 @@ border: 1px;
                              <string>...</string>
                             </property>
                             <property name="icon">
-                             <iconset resource="resources/resources.qrc">
+                             <iconset resource="../resources/resources.qrc">
                               <normaloff>:/icons/red-x-icon.png</normaloff>:/icons/red-x-icon.png</iconset>
                             </property>
                             <property name="iconSize">
@@ -2332,7 +2362,7 @@ border: 1px;
                                    <string>...</string>
                                   </property>
                                   <property name="icon">
-                                   <iconset resource="resources/resources.qrc">
+                                   <iconset resource="../resources/resources.qrc">
                                     <normaloff>:/icons/registershift-icon.png</normaloff>:/icons/registershift-icon.png</iconset>
                                   </property>
                                   <property name="iconSize">
@@ -2382,7 +2412,7 @@ border: 1px;
                                       <string/>
                                      </property>
                                      <property name="icon">
-                                      <iconset resource="resources/resources.qrc">
+                                      <iconset resource="../resources/resources.qrc">
                                        <normaloff>:/icons/reverse_icon.png</normaloff>:/icons/reverse_icon.png</iconset>
                                      </property>
                                      <property name="iconSize">
@@ -2441,7 +2471,7 @@ border: 1px;
                                       <string/>
                                      </property>
                                      <property name="icon">
-                                      <iconset resource="resources/resources.qrc">
+                                      <iconset resource="../resources/resources.qrc">
                                        <normaloff>:/icons/play_icon_red.png</normaloff>:/icons/play_icon_red.png</iconset>
                                      </property>
                                      <property name="iconSize">
@@ -2467,7 +2497,7 @@ border: 1px;
                                 <string>...</string>
                                </property>
                                <property name="icon">
-                                <iconset resource="resources/resources.qrc">
+                                <iconset resource="../resources/resources.qrc">
                                  <normaloff>:/icons/red-x-icon.png</normaloff>:/icons/red-x-icon.png</iconset>
                                </property>
                                <property name="iconSize">
@@ -2529,7 +2559,7 @@ border: 1px;
                        <string>...</string>
                       </property>
                       <property name="icon">
-                       <iconset resource="resources/resources.qrc">
+                       <iconset resource="../resources/resources.qrc">
                         <normaloff>:/icons/pin-to-current-icon.png</normaloff>:/icons/pin-to-current-icon.png</iconset>
                       </property>
                       <property name="iconSize">
@@ -2549,7 +2579,7 @@ border: 1px;
                        <string>...</string>
                       </property>
                       <property name="icon">
-                       <iconset resource="resources/resources.qrc">
+                       <iconset resource="../resources/resources.qrc">
                         <normaloff>:/icons/pin-to-pivot-icon.png</normaloff>:/icons/pin-to-pivot-icon.png</iconset>
                       </property>
                       <property name="iconSize">
@@ -2640,7 +2670,7 @@ border: 1px;
                        <string>...</string>
                       </property>
                       <property name="icon">
-                       <iconset resource="resources/resources.qrc">
+                       <iconset resource="../resources/resources.qrc">
                         <normaloff>:/icons/red-x-icon.png</normaloff>:/icons/red-x-icon.png</iconset>
                       </property>
                       <property name="iconSize">
@@ -2706,7 +2736,7 @@ border: 1px;
                        <string>...</string>
                       </property>
                       <property name="icon">
-                       <iconset resource="resources/resources.qrc">
+                       <iconset resource="../resources/resources.qrc">
                         <normaloff>:/icons/distance-restraint-icon.png</normaloff>:/icons/distance-restraint-icon.png</iconset>
                       </property>
                       <property name="iconSize">
@@ -2889,7 +2919,7 @@ border: 1px;
                              <string>...</string>
                             </property>
                             <property name="icon">
-                             <iconset resource="resources/resources.qrc">
+                             <iconset resource="../resources/resources.qrc">
                               <normaloff>:/icons/diagonal-arrows.png</normaloff>:/icons/diagonal-arrows.png</iconset>
                             </property>
                             <property name="iconSize">
@@ -2915,7 +2945,7 @@ border: 1px;
                        <string>...</string>
                       </property>
                       <property name="icon">
-                       <iconset resource="resources/resources.qrc">
+                       <iconset resource="../resources/resources.qrc">
                         <normaloff>:/icons/red-x-icon.png</normaloff>:/icons/red-x-icon.png</iconset>
                       </property>
                       <property name="iconSize">
@@ -2935,7 +2965,7 @@ border: 1px;
                        <string>...</string>
                       </property>
                       <property name="icon">
-                       <iconset resource="resources/resources.qrc">
+                       <iconset resource="../resources/resources.qrc">
                         <normaloff>:/icons/multi-x.png</normaloff>:/icons/multi-x.png</iconset>
                       </property>
                       <property name="iconSize">
@@ -3011,8 +3041,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>518</width>
-                  <height>813</height>
+                  <width>531</width>
+                  <height>820</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -3679,7 +3709,7 @@ border: 1px;
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="resources/resources.qrc">
+               <iconset resource="../resources/resources.qrc">
                 <normaloff>:/icons/play_icon.png</normaloff>
                 <normalon>:/icons/pause_icon.png</normalon>:/icons/play_icon.png</iconset>
               </property>
@@ -3813,7 +3843,7 @@ background-color: rgb(5, 200, 0);
                <string/>
               </property>
               <property name="pixmap">
-               <pixmap resource="resources/resources.qrc">:/icons/thermometer.png</pixmap>
+               <pixmap resource="../resources/resources.qrc">:/icons/thermometer.png</pixmap>
               </property>
               <property name="scaledContents">
                <bool>true</bool>
@@ -3864,7 +3894,7 @@ background-color: rgb(5, 200, 0);
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="resources/resources.qrc">
+               <iconset resource="../resources/resources.qrc">
                 <normaloff>:/icons/checkpoint_green.png</normaloff>:/icons/checkpoint_green.png</iconset>
               </property>
               <property name="iconSize">
@@ -3884,7 +3914,7 @@ background-color: rgb(5, 200, 0);
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="resources/resources.qrc">
+               <iconset resource="../resources/resources.qrc">
                 <normaloff>:/icons/checkpoint_red.png</normaloff>:/icons/checkpoint_red.png</iconset>
               </property>
               <property name="iconSize">
@@ -3917,7 +3947,7 @@ background-color: rgb(5, 200, 0);
                <string>...</string>
               </property>
               <property name="icon">
-               <iconset resource="resources/resources.qrc">
+               <iconset resource="../resources/resources.qrc">
                 <normaloff>:/icons/stop_sign_green.png</normaloff>:/icons/stop_sign_green.png</iconset>
               </property>
               <property name="iconSize">
@@ -3937,7 +3967,7 @@ background-color: rgb(5, 200, 0);
                <string>...</string>
               </property>
               <property name="icon">
-               <iconset resource="resources/resources.qrc">
+               <iconset resource="../resources/resources.qrc">
                 <normaloff>:/icons/checkpoint_stop_red.png</normaloff>:/icons/checkpoint_stop_red.png</iconset>
               </property>
               <property name="iconSize">
@@ -3957,7 +3987,7 @@ background-color: rgb(5, 200, 0);
                <string>...</string>
               </property>
               <property name="icon">
-               <iconset resource="resources/resources.qrc">
+               <iconset resource="../resources/resources.qrc">
                 <normaloff>:/icons/stop_sign_red.png</normaloff>:/icons/stop_sign_red.png</iconset>
               </property>
               <property name="iconSize">
@@ -4034,7 +4064,7 @@ background-color: rgb(5, 200, 0);
                   <string>...</string>
                  </property>
                  <property name="icon">
-                  <iconset resource="resources/resources.qrc">
+                  <iconset resource="../resources/resources.qrc">
                    <normaloff>:/icons/tug_atom.png</normaloff>:/icons/tug_atom.png</iconset>
                  </property>
                  <property name="iconSize">
@@ -4057,7 +4087,7 @@ background-color: rgb(5, 200, 0);
                   <string>...</string>
                  </property>
                  <property name="icon">
-                  <iconset resource="resources/resources.qrc">
+                  <iconset resource="../resources/resources.qrc">
                    <normaloff>:/icons/tug_residue.png</normaloff>:/icons/tug_residue.png</iconset>
                  </property>
                  <property name="iconSize">
@@ -4096,7 +4126,7 @@ background-color: rgb(5, 200, 0);
                <string>...</string>
               </property>
               <property name="icon">
-               <iconset resource="resources/resources.qrc">
+               <iconset resource="../resources/resources.qrc">
                 <normaloff>:/icons/smooth_icon.png</normaloff>:/icons/smooth_icon.png</iconset>
               </property>
               <property name="iconSize">
@@ -4203,7 +4233,7 @@ background-color: rgb(5, 200, 0);
                   <string>...</string>
                  </property>
                  <property name="icon">
-                  <iconset resource="resources/resources.qrc">
+                  <iconset resource="../resources/resources.qrc">
                    <normaloff>:/icons/reverse_icon.png</normaloff>:/icons/reverse_icon.png</iconset>
                  </property>
                 </widget>
@@ -4220,7 +4250,7 @@ background-color: rgb(5, 200, 0);
                   <string/>
                  </property>
                  <property name="pixmap">
-                  <pixmap resource="resources/resources.qrc">:/icons/stepper.png</pixmap>
+                  <pixmap resource="../resources/resources.qrc">:/icons/stepper.png</pixmap>
                  </property>
                  <property name="scaledContents">
                   <bool>true</bool>
@@ -4236,7 +4266,7 @@ background-color: rgb(5, 200, 0);
                   <string>...</string>
                  </property>
                  <property name="icon">
-                  <iconset resource="resources/resources.qrc">
+                  <iconset resource="../resources/resources.qrc">
                    <normaloff>:/icons/play_icon.png</normaloff>:/icons/play_icon.png</iconset>
                  </property>
                 </widget>
@@ -4250,7 +4280,7 @@ background-color: rgb(5, 200, 0);
                   <string>...</string>
                  </property>
                  <property name="icon">
-                  <iconset resource="resources/resources.qrc">
+                  <iconset resource="../resources/resources.qrc">
                    <normaloff>:/icons/mask_to_sel.png</normaloff>:/icons/mask_to_sel.png</iconset>
                  </property>
                  <property name="iconSize">
@@ -4270,7 +4300,7 @@ background-color: rgb(5, 200, 0);
                   <string>...</string>
                  </property>
                  <property name="icon">
-                  <iconset resource="resources/resources.qrc">
+                  <iconset resource="../resources/resources.qrc">
                    <normaloff>:/icons/spotlight.png</normaloff>:/icons/spotlight.png</iconset>
                  </property>
                  <property name="iconSize">
@@ -4349,6 +4379,7 @@ background-color: rgb(5, 200, 0);
   </layout>
  </widget>
  <resources>
+  <include location="../resources/resources.qrc"/>
   <include location="resources/resources.qrc"/>
  </resources>
  <connections/>
