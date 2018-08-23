@@ -245,7 +245,7 @@ class XmapSet_Live(Model):
     def __init__(self, session, crystal, model, fsigf_name = 'FOBS, SIGFOBS',
                 bsharp_vals=[], exclude_free_reflections=False,
                  fill_with_fcalc=False, display_radius = 12,
-                 live_update=True):
+                 live_update=True, show_r_factors=True):
         '''
         Prepare the C++ Xtal_mgr object and create a set of crystallographic
         maps. The standard 2mFo-DFc and mFo-DFc maps will always be created,
@@ -289,6 +289,9 @@ class XmapSet_Live(Model):
             live_update:
                 If True, maps will be automatically recalculated whenever
                 coordinates change
+            show_r_factors:
+                If True, print new R factors to the status bar on each map
+                recalculation
         '''
         Model.__init__(self, 'Live real-space maps', session)
         self.crystal = crystal
@@ -307,6 +310,7 @@ class XmapSet_Live(Model):
         self._recalc_needed = False
         self._model_changes_handler = None
         self._delayed_recalc_handler = None
+        self._show_r_factors = show_r_factors
 
         #############
         # Variables involved in handling live redrawing of maps in a box
@@ -408,6 +412,14 @@ class XmapSet_Live(Model):
         self.display = True
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
+
+    @property
+    def show_r_factors(self):
+        return self._show_r_factors
+
+    @show_r_factors.setter
+    def show_r_factors(self, flag):
+        self._show_r_factors = flag
 
     @property
     def live_update(self):
@@ -638,6 +650,12 @@ class XmapSet_Live(Model):
 
     def _apply_new_maps(self):
         self._xtal_mgr.apply_new_maps()
+        if self.show_r_factors:
+            self.session.logger.status(
+                'R-work: {:0.4f}  Rfree: {:0.4f}'.format(
+                    self._xtal_mgr.rwork, self._xtal_mgr.rfree
+                )
+            )
         self.triggers.activate_trigger('maps recalculated', None)
 
 

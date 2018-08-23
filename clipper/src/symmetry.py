@@ -271,6 +271,10 @@ class XtalSymmetryHandler(Model):
         self.spotlight_mode = spotlight_mode
 
     @property
+    def has_experimental_maps(self):
+        return self.xmapset is not None
+
+    @property
     def stepper(self):
         '''
         Provides methods for "stepping" back and forth through the
