@@ -53,7 +53,7 @@ def find_polymer(sel):
 
 
 def add_disulfides_from_model_metadata(model):
-    m_id = model.id_string()
+    m_id = model.id_string
     from chimerax.core.commands import atomspec
     metadata = model.metadata
     try:

@@ -177,7 +177,7 @@ def set_to_default_cartoon(session, model = None):
             atoms = None
         else:
             arg = atomspec.AtomSpecArg('thearg')
-            atoms = arg.parse('#' + model.id_string(), session)[0]
+            atoms = arg.parse('#' + model.id_string, session)[0]
         cartoon.cartoon(session, atoms = atoms, suppress_backbone_display=False)
         cartoon.cartoon_style(session, atoms = atoms, width=0.4, thickness=0.1, arrows_helix=True, arrow_scale = 2)
         cartoon.cartoon_tether(session, structures=atoms, opacity=0)

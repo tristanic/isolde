@@ -951,7 +951,7 @@ class Isolde():
         self._available_models = {}
 
         for m in valid_models:
-            id_str = '{}. {}'.format(m.id_string(), m.name)
+            id_str = '{}. {}'.format(m.id_string, m.name)
             mmcb.addItem(id_str, _get_atomic_model(m))
             self._available_models[id_str] = _get_atomic_model(m)
 
@@ -1250,7 +1250,7 @@ class Isolde():
         cb.clear()
         for v in shortlist:
             if type(v) == Volume:
-                label = '{}  {}'.format(v.id_string(), v.name)
+                label = '{}  {}'.format(v.id_string, v.name)
                 cb.addItem(label, v)
 
     def _show_real_space_map_dialog(self, *_):
