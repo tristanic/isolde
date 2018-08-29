@@ -35,7 +35,8 @@
        Source files are listed in one or more SourceFile elements -->
   <CLibrary name="mmdb2">
       <Define>MMDB_EXPORT</Define>
-      <CompileArgument>-fvisibility=hidden</CompileArgument>
+      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
       <SourceFile>src/deps/mmdb2/mmdb2/hybrid_36.cpp</SourceFile>
       <SourceFile>src/deps/mmdb2/mmdb2/mmdb_io_stream.cpp</SourceFile>
       <SourceFile>src/deps/mmdb2/mmdb2/mmdb_math_linalg.cpp</SourceFile>
@@ -72,7 +73,8 @@
   </CLibrary>
   <CLibrary name="ccp4">
       <Define>CCP4_EXPORT</Define>
-      <CompileArgument>-fvisibility=hidden</CompileArgument>
+      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
       <SourceFile>src/deps/libccp4/ccp4/ccp4_array.c</SourceFile>
       <SourceFile>src/deps/libccp4/ccp4/cmap_data.c</SourceFile>
       <SourceFile>src/deps/libccp4/ccp4/cmtzlib.c</SourceFile>
@@ -98,7 +100,8 @@
   <CLibrary name="clipper">
       <Define>CLIPPER_EXPORTS</Define>
       <Define>FFTW_MKL</Define>
-      <CompileArgument>-fvisibility=hidden</CompileArgument>
+      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
       <IncludeDir>src/deps/libccp4</IncludeDir>
       <IncludeDir>src/deps/mmdb2</IncludeDir>
       <IncludeDir>src/deps/clipper</IncludeDir>
@@ -185,7 +188,8 @@
 
   <CLibrary name="clipper_cx" usesNumpy="true">
       <Define>CLIPPER_CX_EXPORTS</Define>
-      <CompileArgument>-fvisibility=hidden</CompileArgument>
+      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
       <IncludeDir>src/include</IncludeDir>
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
@@ -204,13 +208,14 @@
   </CLibrary> -->
 
   <CModule name="clipper_python" usesNumpy="true">
-      <CompileArgument>-fvisibility=hidden</CompileArgument>
+      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
       <IncludeDir>src/include</IncludeDir>
       <IncludeDir>src</IncludeDir>
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
       <Library>clipper_cx</Library>
-      <CompileArgument>-Os</CompileArgument>
+      <!-- <CompileArgument>-Os</CompileArgument> -->
 
       <SourceFile>src/bindings/ext/wrap_xtal_mgr.cpp</SourceFile>
 
@@ -251,7 +256,8 @@
 
   <CLibrary name = "_symmetry" usesNumpy="true">
       <SourceFile>src/symmetry_cpp/symmetry.cpp</SourceFile>
-      <CompileArgument>-fvisibility=hidden</CompileArgument>
+      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
       <Library>atomstruct</Library>
       <Library>arrays</Library>
   </CLibrary>
