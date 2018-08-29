@@ -109,7 +109,7 @@ void numpy_export_core_(const Xmap<T>& xmap, py::array_t<T> target, const Coord_
     T* tptr = (T*)tbuf.ptr;
     int nu, nv, nw;
     nu=tbuf.shape[0]; nv=tbuf.shape[1]; nw=tbuf.shape[2];
-    int u,v,w;
+    int u,v;
     int maxu, maxv, maxw;
     maxu = origin.u()+nu; maxv=origin.v()+nv; maxw=origin.w()+nw;
     Xmap_base::Map_reference_coord ix(xmap);

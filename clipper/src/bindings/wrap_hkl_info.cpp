@@ -66,4 +66,4 @@ void init_hkl_info(py::module &m) {
 
 
 
-} //init_chkl_info
+} //init_hkl_info
