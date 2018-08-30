@@ -2105,7 +2105,11 @@ def cys_type(residue):
     try:
         sulfur_atom = atoms[names == 'SG'][0]
     except:
-        return None
+        # Assume it's been truncated to ALA if CA present, otherwise GLY
+        if 'CA' in names:
+            return 'ALA'
+        else:
+            return 'GLY'
     bonds = Bonds(sulfur_atom.bonds)
     if len(bonds) == 1:
         # Deprotonated
