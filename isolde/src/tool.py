@@ -37,7 +37,8 @@ class ISOLDE_ToolUI(ToolInstance):
         from PyQt5 import uic
         uifile = os.path.join(basedir, 'ui', 'IsoldeFrame.ui')
         from PyQt5 import QtWidgets, QtGui
-        from . import isoldewidget
+        #from . import isoldewidget
+        from .resources import resources_rc
         mw = self.mainwin = QtWidgets.QFrame(parent=parent)
         iw = self.iw = uic.loadUi(uifile, mw)
         # iw = self.iw = isoldewidget.Ui_isolde_widget()
