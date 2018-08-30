@@ -295,14 +295,14 @@ Xtal_mgr_base::set_map_free_terms_to_dfc(const HKL_data<F_phi<ftype32>>& source,
     HKL_info::HKL_reference_index ih;
     HKL_data<Flag_bool> flag(source.hkl_info());
     for (ih=flag.first(); !ih.last(); ih.next())
-        flag[ih].flag() = (!source[ih].missing() && usage_[ih].flag()!=SFweight_base<ftype32>::NONE);
+        flag[ih].flag() = (!source[ih].missing() && (usage_[ih].flag()!=SFweight_base<ftype32>::NONE));
     const auto& param_s = map_calculator_.params_scale();
     // const auto& param_w = map_calculator_.params_error();
     BasisFn_spline basisfn( flag, param_s.size(), 1.0);
     for (ih=source.first(); !ih.last(); ih.next())
     {
         const auto& fpo = source[ih];
-        if (usage_[ih].missing() || usage_[ih].flag() == SFweight_spline<ftype32>::NONE)
+        if (usage_[ih].missing() || (usage_[ih].flag() == SFweight_spline<ftype32>::NONE))
         {
             if (!fpo.missing()) {
                 auto s = basisfn.f_s( ih.invresolsq(), param_s);
