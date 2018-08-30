@@ -8,8 +8,8 @@
 
 
 
-def focus_on_selection(session, view, atoms, clip = True):
-    v = view
+def focus_on_selection(session, atoms, clip = True):
+    v = session.view
     pad = 5.0
     bounds = atoms.scene_bounds
     bounds.xyz_min = bounds.xyz_min - pad

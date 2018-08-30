@@ -30,6 +30,7 @@
 #include "atomic_cpp/dihedral_mgr_ext.h"
 #include "atomic_cpp/chiral_ext.h"
 #include "atomic_cpp/chiral_mgr_ext.h"
+#include "atomic_cpp/util.h"
 
 #include "validation/rama_ext.h"
 #include "validation/rota_ext.h"

@@ -342,6 +342,26 @@ class Isolde():
         self._mouse_modes.register_all_isolde_modes()
 
     @property
+    def ignored_residues(self):
+        '''
+        Residues in this list will be retained in the model and used for map
+        calculations, but will not be included in simulations. In most cases,
+        this should only be populated with residues that have not been
+        parameterised for MD.
+        '''
+        m = self.selected_model
+        if m is None:
+            return None
+        if not hasattr(m, '_isolde_ignored_residues') or m._isolde_ignored_residues is None:
+            from chimerax.atomic import Residues
+            m._isolde_ignored_residues = Residues()
+        return m._isolde_ignored_residues
+
+    @ignored_residues.setter
+    def ignored_residues(self, residues):
+        self.selected_model._isolde_ignored_residues = residues
+
+    @property
     def sim_handler(self):
         '''
         Returns the :class:`isolde.openmm.Sim_Handler` instance controlling
@@ -349,6 +369,8 @@ class Isolde():
         Read only.
         '''
         if self.sim_manager is None:
+            return None
+        if not hasattr(self.sim_manager, 'sim_handler'):
             return None
         return self.sim_manager.sim_handler
 
@@ -1122,14 +1144,10 @@ class Isolde():
 
     def _initialize_xtal_structure(self, *_):
         fname = self.iw._sim_basic_xtal_init_reflections_file_name.text()
-        # if not cb.count:
-        #     errstring = 'No atomic structures are available that are not \
-        #         already part of an existing crystal structure. Please load \
-        #         one first.'
-        #     _generic_warning(errstring)
         if not os.path.isfile(fname):
+            from .dialog import generic_warning
             errstring = 'Please select a valid MTZ file!'
-            _generic_warning(errstring)
+            generic_warning(errstring)
         m = self.selected_model
         from chimerax.clipper import symmetry
         sym_handler = symmetry.XtalSymmetryHandler(m, fname,
@@ -1149,7 +1167,8 @@ class Isolde():
         m = self.selected_model
         live = self.iw._xtal_settings_live_recalc_checkbox.checkState()
         if m is None:
-            _generic_warning("You must have the corresponding model loaded before loading reflection data!")
+            from .dialog import generic_warning
+            generic_warning("You must have the corresponding model loaded before loading reflection data!")
         from chimerax.clipper import symmetry
         sh = symmetry.XtalSymmetryHandler(m, mtzfile=filename,
             map_oversampling=self.params.map_shannon_rate,
@@ -2085,7 +2104,7 @@ class Isolde():
     def _show_selected_iffy_peptide(self, item):
         res = item.data
         from . import view
-        view.focus_on_selection(self.session, self.session.main_view, res.atoms)
+        view.focus_on_selection(self.session, res.atoms)
         self.session.selection.clear()
         res.atoms.selected = True
 
@@ -2136,7 +2155,7 @@ class Isolde():
     def _show_selected_iffy_rota(self, item):
         res = item.data
         from . import view
-        view.focus_on_selection(self.session, self.session.main_view, res.atoms)
+        view.focus_on_selection(self.session, res.atoms)
         self.session.selection.clear()
         res.atoms.selected = True
 
@@ -2422,12 +2441,17 @@ class Isolde():
             raise TypeError('Simulation already running!')
         self.sim_params.platform = self.iw._sim_platform_combo_box.currentText()
         from .openmm.openmm_interface import Sim_Manager
-        main_sel = self._get_main_sim_selection()
-        sm = self._sim_manager = Sim_Manager(self, self.selected_model, main_sel,
-            self.params, self.sim_params)
+        main_sel = self._last_main_sel = self._get_main_sim_selection()
+        try:
+            sm = self._sim_manager = Sim_Manager(self, self.selected_model, main_sel,
+                self.params, self.sim_params, excluded_residues = self.ignored_residues)
+        except ValueError:
+            return
+        except:
+            raise
         sm.start_sim()
         self._sim_start_cb()
-
+    
     def _start_sim_haptics(self, *_):
         self._event_handler.add_event_handler('sim haptic update',
                                               'new frame',
@@ -2482,7 +2506,37 @@ class Isolde():
                     si.release_tugged_atom(a)
                     self._haptic_tug_atom[i] = None
 
-
+    def _handle_bad_template(self, residue):
+        '''
+        Called if OpenMM encounters a residue it doesn't recognise while
+        attempting to prepare a simulation.
+        '''
+        self.selected_model.atoms.selected = False
+        residue.atoms.selected = True
+        from .view import focus_on_selection
+        focus_on_selection(self.session, residue.atoms)
+        from .dialog import failed_template_warning
+        choice = failed_template_warning(residue)
+        if choice == 'addh':
+            print('Adding hydrogens')
+            from chimerax.atomic import AtomicStructures
+            from chimerax.atomic.addh import cmd
+            cmd.cmd_addh(self.session, AtomicStructures([self.selected_model]), hbond=True)
+            self._sim_end_cb()
+            self.selected_model.atoms.selected = False
+            self._last_main_sel.selected = True
+            self.start_sim()
+        elif choice == 'exclude':
+            print('Excluding residue')
+            from chimerax.atomic import Residues
+            self.ignored_residues = self.ignored_residues.merge(Residues([residue]))
+            self._sim_end_cb()
+            self.selected_model.atoms.selected = False
+            self._last_main_sel.selected=True
+            self.start_sim()
+        else:
+            print('Doing nothing')
+            self._sim_end_cb()
 
     def _sim_start_cb(self, *_):
         '''
@@ -2494,7 +2548,7 @@ class Isolde():
         self.sim_handler.triggers.add_handler('sim terminated', self._sim_end_cb)
         self.sim_handler.triggers.add_handler('sim paused', self._update_sim_control_button_states)
 
-    def _sim_end_cb(self, name, outcome):
+    def _sim_end_cb(self, *_):
         self._update_menu_after_sim()
         for d in self._haptic_devices:
             d.cleanup()
@@ -2606,10 +2660,17 @@ class Isolde():
         if not revert_to in ('checkpoint', 'start'):
             raise TypeError('Unrecognised option! Argument should be '\
                 +'either "checkpoint" or "start".')
-        if warn and revert_to == 'start' :
+        if warn and revert_to == 'start':
             msg = 'All changes since you started this simulation will be '\
                 +'lost! Are you sure you want to continue?'
-            ok = _choice_warning(msg)
+            if self.gui_mode:
+                from .dialog import choice_warning
+                ok = choice_warning(msg)
+            else:
+                result = input(msg + ' (y or n)')
+                while result.lower() not in ('y', 'n'):
+                    result = input ('Please enter either "y" or "n"')
+                ok = result.lower()=='y'
             if not ok:
                 return
         self._release_register_shifter()
@@ -3013,7 +3074,7 @@ class Isolde():
         self._change_selected_model(model=model, force=True)
         model.atoms[model.atoms.idatm_types != 'HC'].displays = True
         from . import view
-        view.focus_on_selection(self.session, self.session.main_view, model.atoms)
+        view.focus_on_selection(self.session, model.atoms)
 
 
     def load_demo_data(self):
@@ -3063,29 +3124,8 @@ class Isolde():
         self._change_selected_model(model=before_struct, force=True)
         before_struct.atoms[before_struct.atoms.idatm_types != 'HC'].displays = True
         from . import view
-        view.focus_on_selection(self.session, self.session.main_view, before_struct.atoms)
+        view.focus_on_selection(self.session, before_struct.atoms)
 
-
-def _generic_warning(message):
-    msg = QMessageBox()
-    msg.setIcon(QMessageBox.Warning)
-    msg.setText(message)
-    msg.setStandardButtons(QMessageBox.Ok)
-    msg.exec()
-
-def _choice_warning(message):
-    '''
-    Pop up a warning dialog box with the given message, and return True
-    if the user wants to go ahead.
-    '''
-    msg = QMessageBox()
-    msg.setIcon(QMessageBox.Warning)
-    msg.setText(message)
-    msg.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
-    reply = msg.exec()
-    if reply == QMessageBox.Ok:
-        return True
-    return False
 
 def _get_atomic_model(m):
     if hasattr(m, 'master_model'):

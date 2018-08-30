@@ -329,7 +329,7 @@ class Sim_Construct:
     in a simulation. Also responsible for storing the visualisation state of
     these atoms prior to simulation startup, and reverting it when done.
     '''
-    def __init__(self, model, mobile_atoms, fixed_atoms):
+    def __init__(self, model, mobile_atoms, fixed_atoms, excluded_atoms=None):
         '''
         Prepare the construct. The atoms in each array will be sorted in the
         same order as :attr:`model.residues.atoms`, primarily because OpenMM
@@ -345,6 +345,9 @@ class Sim_Construct:
             * fixed_atoms:
                 - A :py:class:`chimerax.Atoms` instance defining the atoms that
                   are to be fixed
+            * excluded_atoms:
+                - A :py:class:`chimerax.Atoms` instance defining any atoms to
+                  be excluded from the simulation. This may be set to None.
 
         NOTE: the simulation will fail if mobile_atoms and fixed_atoms do not
         combine to form a set containing only complete residues. Also note that
@@ -373,10 +376,14 @@ class Sim_Construct:
         mr = self._mobile_residues = ma.unique_residues
         fixed_i = model_atoms.indices(fixed_atoms)
         self._fixed_atoms = model_atoms[numpy.sort(fixed_i)]
+        self._excluded_atoms = excluded_atoms
 
-        self.surroundings = model_atoms.subtract(all_atoms)
         self.residue_templates = find_residue_templates(all_atoms.unique_residues)
         self.store_original_visualisation()
+        self.surroundings = model_atoms.subtract(all_atoms)
+        if excluded_atoms is not None:
+            self.surroundings = self.surroundings.subtract(excluded_atoms)
+            excluded_atoms[excluded_atoms.element_names=='C'].colors = [50,50,50,255]
 
     @property
     def mobile_atoms(self):
@@ -408,6 +415,14 @@ class Sim_Construct:
         simulation, sorted in the same order as :attr:`model.residues.atoms`.
         '''
         return self._all_atoms
+
+    @property
+    def all_residues(self):
+        '''
+        A :py:class:`chimerax.Residues` instance containing all residues in the
+        simulation, sorted in the same order as :attr:`model.residues`
+        '''
+        return self._all_atoms.unique_residues
 
     def store_original_visualisation(self):
         '''
@@ -469,7 +484,7 @@ class Sim_Manager:
     parameters change.
     '''
     def __init__(self, isolde, model, selected_atoms,
-        isolde_params, sim_params, expansion_mode = 'extend'):
+        isolde_params, sim_params, excluded_residues=None, expansion_mode = 'extend'):
         '''
         Prepares a simulation according to the following workflow:
             * Expands an initial selection of atoms to complete residues
@@ -507,6 +522,14 @@ class Sim_Manager:
                 - a :py:class:`IsoldeParams` instance
             * sim_params:
                 - a :py:class:`SimParams` instance
+            * excluded_residues:
+                - optional :py:class:`chimerax.Residues` defining residues that
+                  should be excluded from the simulation (typically because
+                  there is no MD parameterisation for them). These will remain
+                  visible in the model and be considered for map calculations,
+                  but will not have any impact whatsoever on simulations. Any
+                  atom(s) directly bonded to an excluded residue will be fixed
+                  in space along with their attendant hydrogen atoms.
             * expansion_mode:
                 - string defining how the initial selection will be expanded.
                   For allowable options, see :func:`expand_mobile_selection`
@@ -524,14 +547,40 @@ class Sim_Manager:
         self._prepare_validation_managers(mobile_atoms)
         self._prepare_restraint_managers()
         fixed_atoms = self._add_fixed_atoms_from_distance_restraints(mobile_atoms, fixed_atoms)
-        sc = self.sim_construct = Sim_Construct(model, mobile_atoms, fixed_atoms)
+        if excluded_residues is not None:
+            mobile_atoms, fixed_atoms, excluded_atoms = self._add_fixed_atoms_from_excluded_residues(mobile_atoms, fixed_atoms, excluded_residues)
+
+        sc = self.sim_construct = Sim_Construct(model, mobile_atoms, fixed_atoms, excluded_atoms)
         self.prepare_sim_visualisation()
 
         self._prepare_mdff_managers()
-        sh = self.sim_handler = Sim_Handler(session, sim_params, sc)
+        sh = self.sim_handler = None
+        try:
+            sh = self.sim_handler = Sim_Handler(session, sim_params, sc)
+        except ValueError as e:
+            # If it's an error in template handling, parse out the offending
+            # residue and tell ISOLDE about it
+            self._parse_template_error(e)
+            # Return early to avoid further errors. This object will be cleaned
+            # up automatically
+            raise e
         uh = self._update_handlers = []
         self._initialize_restraints(uh)
         self._initialize_mdff(uh)
+
+    def _parse_template_error(self, e):
+        err_text = str(e)
+        if not err_text.startswith('No template found'):
+            # Not a template error. Just raise it
+            return
+        else:
+            tokens = err_text.split()
+            res_num = int(tokens[5])
+            print("Bad residue number: {}".format(tokens[5]))
+            # OpenMM residue numbering starts from 1
+            residue = self.sim_construct.all_residues[res_num-1]
+            self.isolde._handle_bad_template(residue)
+
 
     def start_sim(self):
         '''
@@ -620,10 +669,12 @@ class Sim_Manager:
             rama_mgr = sx.get_ramachandran_mgr(self.session)
             ramas = rama_mgr.get_ramas(mobile_res)
             ramas = ramas[ramas.valids]
+            # ramas = ramas.restrict_to_sel(self.sim_construct.all_atoms)
             sh.add_amber_cmap_torsions(ramas)
 
         cr_m = self.chiral_restraint_mgr
         crs = cr_m.add_restraints_by_atoms(sc.mobile_atoms)
+        # crs = crs.restrict_to_sel(sc.all_atoms)
         sh.add_dihedral_restraints(crs)
         uh.append((cr_m, cr_m.triggers.add_handler('changes', self._dihe_r_changed_cb)))
 
@@ -725,6 +776,42 @@ class Sim_Manager:
         remainder = remainder.subtract(remainder.intersect(fixed_atoms))
         fixed_atoms = concatenate((fixed_atoms, remainder.unique_residues.atoms))
         return fixed_atoms
+
+    def _add_fixed_atoms_from_excluded_residues(self, mobile_atoms, fixed_atoms, excluded_residues):
+        '''
+        Filter out any residues that are to be excluded from the simulation, and
+        fix any atoms (with their attendant hydrogens) that are directly bonded
+        to an excluded residue.
+        '''
+        from ..molobject import residue_bonded_neighbors
+        all_sim_atoms = mobile_atoms.merge(fixed_atoms)
+        all_sim_res = mobile_atoms.unique_residues
+        sim_excludes = excluded_residues.atoms.intersect(all_sim_atoms)
+        sim_exclude_res = sim_excludes.unique_residues
+        from chimerax.atomic import Atoms
+        extra_fixed = []
+        for r in sim_exclude_res:
+            neighbors = residue_bonded_neighbors(r)
+            for n in neighbors:
+                if n in all_sim_res:
+                    bonds = r.bonds_between(n)
+                    for b in bonds:
+                        for a in b.atoms:
+                            if a.residue == n:
+                                extra_fixed.append(a)
+                                for na in a.neighbors:
+                                    if na.element.name == 'H':
+                                        extra_fixed.append(na)
+        extra_fixed = Atoms(extra_fixed)
+        fixed_atoms = fixed_atoms.merge(extra_fixed)
+        fixed_atoms = fixed_atoms.subtract(sim_excludes)
+        mobile_atoms = mobile_atoms.subtract(extra_fixed)
+        mobile_atoms = mobile_atoms.subtract(sim_excludes)
+        return mobile_atoms, fixed_atoms, sim_excludes
+
+
+
+
 
     def expand_mobile_selection(self, core_atoms, expansion_mode):
         '''
@@ -1102,6 +1189,9 @@ class Sim_Handler:
         }
         return forcefield.createSystem(top, **system_params)
 
+
+
+
     def initialize_restraint_forces(self, amber_cmap=True, tugging=True, position_restraints=True,
         distance_restraints=True, dihedral_restraints=True):
         '''
@@ -1425,7 +1515,13 @@ class Sim_Handler:
         phi_atoms = valid_ramas.phi_dihedrals.atoms
         psi_atoms = valid_ramas.psi_dihedrals.atoms
         phi_indices = numpy.column_stack([sc.indices(atoms) for atoms in phi_atoms])
+        phi_filter = numpy.all(phi_indices!=-1, axis=1)
         psi_indices = numpy.column_stack([sc.indices(atoms) for atoms in psi_atoms])
+        psi_filter = numpy.all(psi_indices!=-1, axis=1)
+        combined_filter = numpy.logical_and(phi_filter, psi_filter)
+        resnames = resnames[combined_filter]
+        phi_indices = phi_indices[combined_filter]
+        psi_indices = psi_indices[combined_filter]
         cf.add_torsions(resnames, phi_indices, psi_indices)
 
     ####
@@ -1463,7 +1559,12 @@ class Sim_Handler:
         force = self._dihedral_restraint_force
         all_atoms = self._atoms
         dihedral_atoms = restraints.dihedrals.atoms
-        atom_indices = [all_atoms.indices(atoms) for atoms in dihedral_atoms]
+        atom_indices = numpy.array([all_atoms.indices(atoms) for atoms in dihedral_atoms])
+        # Filter out those which don't have all atoms in the simulation
+        ifilter = numpy.all(atom_indices!=-1, axis=0)
+        atom_indices = [a[ifilter] for a in atom_indices]
+        #atom_indices = atom_indices[ifilter]
+        restraints = restraints[ifilter]
         restraints.sim_indices = force.add_torsions(atom_indices,
             restraints.enableds, restraints.spring_constants, restraints.targets, restraints.cutoffs)
         self.context_reinit_needed()
@@ -1557,7 +1658,10 @@ class Sim_Handler:
         force = self._distance_restraints_force
         all_atoms = self._atoms
         dr_atoms = restraints.atoms
-        indices = [all_atoms.indices(atoms) for atoms in dr_atoms]
+        indices = numpy.array([all_atoms.indices(atoms) for atoms in dr_atoms])
+        ifilter = numpy.all(indices!=-1, axis=0)
+        indices = [i[ifilter] for i in indices]
+        restraints = restraints[ifilter]
         restraints.sim_indices = force.add_bonds(indices,
             restraints.enableds, restraints.spring_constants, restraints.targets/10)
         self.context_reinit_needed()
@@ -1576,6 +1680,8 @@ class Sim_Handler:
         all_atoms = self._atoms
         dr_atoms = restraint.atoms
         indices = [all_atoms.index(atom) for atom in dr_atoms]
+        if -1 in indices:
+            raise TypeError('At least one atom in this restraint is not in the simulation!')
         restraint.sim_index = force.addBond(*indices,
             (float(restraint.enabled), restraint.spring_constant, restraint.target/10))
         self.context_reinit_needed()

@@ -151,6 +151,17 @@ def _get_restraint_change_tracker(session):
         return session.isolde_changes
     return Restraint_Change_Tracker(session)
 
+
+# Useful utilities not available in ChimeraX main API
+def residue_bonded_neighbors(residue):
+    f = c_function('residue_bonded_neighbors',
+        args=(ctypes.c_void_p,),
+        ret=ctypes.py_object)
+    from chimerax.atomic import Residues
+    return Residues(f(residue._c_pointer))
+
+
+
 class _Dihedral_Mgr:
     '''Base class. Do not instantiate directly.'''
     def __init__(self, session, c_pointer=None):

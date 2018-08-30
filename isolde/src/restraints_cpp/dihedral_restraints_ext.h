@@ -377,6 +377,42 @@ set_chiral_restraint_cutoff(void *restraint, size_t n, double *cutoff)
     }
 }
 
+extern "C" EXPORT PyObject*
+chiral_all_atoms_in_sel(void* restraint, size_t nr, void* atom, size_t na)
+{
+    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    Atom **a = static_cast<Atom **>(atom);
+    try {
+        std::set<Atom *> search_atoms;
+        for (size_t i=0; i<na; ++i)
+            search_atoms.insert(*(a++));
+        std::vector<Chiral_Restraint *> ret;
+        for (size_t i=0; i<nr; ++i)
+        {
+            const auto& atoms = (*r)->get_dihedral()->atoms();
+            bool keep=true;
+            for (size_t j=0; j<4; ++j)
+            {
+                if (search_atoms.find(atoms[j]) == search_atoms.end())
+                {
+                    keep=false;
+                    break;
+                }
+            }
+            if (keep)
+                ret.push_back(*(r++));
+        }
+        void **rptr;
+        PyObject* ra = python_voidp_array(ret.size(), &rptr);
+        for (auto rr: ret)
+            *(rptr++) = rr;
+        return ra;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
 
 
 /***************************************************************
@@ -623,6 +659,42 @@ proper_dihedral_restraint_annotation_color(void *restraint, size_t n, uint8_t *c
         }
     } catch (...) {
         molc_error();
+    }
+}
+
+extern "C" EXPORT PyObject*
+proper_dihedral_restraint_all_atoms_in_sel(void* restraint, size_t nr, void* atom, size_t na)
+{
+    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    Atom **a = static_cast<Atom **>(atom);
+    try {
+        std::set<Atom *> search_atoms;
+        for (size_t i=0; i<na; ++i)
+            search_atoms.insert(*(a++));
+        std::vector<Proper_Dihedral_Restraint *> ret;
+        for (size_t i=0; i<nr; ++i)
+        {
+            const auto& atoms = (*r)->get_dihedral()->atoms();
+            bool keep=true;
+            for (size_t j=0; j<4; ++j)
+            {
+                if (search_atoms.find(atoms[j]) == search_atoms.end())
+                {
+                    keep=false;
+                    break;
+                }
+            }
+            if (keep)
+                ret.push_back(*(r++));
+        }
+        void **rptr;
+        PyObject* ra = python_voidp_array(ret.size(), &rptr);
+        for (auto rr: ret)
+            *(rptr++) = rr;
+        return ra;
+    } catch (...) {
+        molc_error();
+        return 0;
     }
 }
 

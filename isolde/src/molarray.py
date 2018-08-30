@@ -377,6 +377,17 @@ class Chiral_Restraints(Collection):
     def chiral_atoms(self):
         return self.dihedrals.chiral_atoms
 
+    def restrict_to_sel(self, atoms):
+        '''
+        Returns a new :py:class:`Chiral_Restraints` containing only the
+        restraints for which every atom is in the given selection.
+        '''
+        f = c_function('chiral_restraint_all_atoms_in_sel',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t),
+            ret=ctypes.py_object
+            )
+        return _chiral_restraints(f(self._c_pointers, len(self), atoms._c_pointers, len(atoms)))
+
     targets = cvec_property('chiral_restraint_target', float64, read_only = True,
         doc = 'Target angles for each restraint in radians. Read only.')
     dihedrals = cvec_property('chiral_restraint_chiral_center', cptr, astype=_chiral_centers, read_only=True,
@@ -418,6 +429,18 @@ class Proper_Dihedral_Restraints(Collection):
     @property
     def atoms(self):
         return self.dihedrals.atoms
+
+    def restrict_to_sel(self, atoms):
+        '''
+        Returns a new :py:class:`Chiral_Restraints` containing only the
+        restraints for which every atom is in the given selection.
+        '''
+        f = c_function('proper_dihedral_restraint_all_atoms_in_sel',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t),
+            ret=ctypes.py_object
+            )
+        return _proper_dihedral_restraints(f(self._c_pointers, len(self), atoms._c_pointers, len(atoms)))
+
 
     targets = cvec_property('proper_dihedral_restraint_target', float64,
         doc = 'Target angles for each restraint in radians. Can be written.')
