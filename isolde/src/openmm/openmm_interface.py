@@ -799,9 +799,15 @@ class Sim_Manager:
                         for a in b.atoms:
                             if a.residue == n:
                                 extra_fixed.append(a)
+                                # Fix directly attached atoms, atoms directly
+                                # attached to those, and associated hydrogens
                                 for na in a.neighbors:
-                                    if na.element.name == 'H':
+                                    if na.residue !=r:
                                         extra_fixed.append(na)
+                                        if na.element.name != 'H':
+                                            for nb in na.neighbors:
+                                                if nb.element.name == 'H':
+                                                    extra_fixed.append(nb)
         extra_fixed = Atoms(extra_fixed)
         fixed_atoms = fixed_atoms.merge(extra_fixed)
         fixed_atoms = fixed_atoms.subtract(sim_excludes)
