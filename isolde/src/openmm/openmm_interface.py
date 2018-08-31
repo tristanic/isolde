@@ -560,26 +560,47 @@ class Sim_Manager:
         except ValueError as e:
             # If it's an error in template handling, parse out the offending
             # residue and tell ISOLDE about it
-            self._parse_template_error(e)
+            self._parse_auto_template_error(e)
             # Return early to avoid further errors. This object will be cleaned
             # up automatically
             raise e
+        except Exception as e:
+            # Explicit template provision (e.g. for CYS residues) throws a
+            # generic Exception if the template doesn't match the residue
+            # topology. Catch and handle that case, then throw it upwards as a
+            # ValueError
+            if self._parse_explicit_template_error(e):
+                raise ValueError(str(e))
+            else:
+                raise e
+
         uh = self._update_handlers = []
         self._initialize_restraints(uh)
         self._initialize_mdff(uh)
 
-    def _parse_template_error(self, e):
+    def _parse_auto_template_error(self, e):
         err_text = str(e)
         if not err_text.startswith('No template found'):
             # Not a template error. Just raise it
             return
-        else:
-            tokens = err_text.split()
-            res_num = int(tokens[5])
-            print("Bad residue number: {}".format(tokens[5]))
-            # OpenMM residue numbering starts from 1
-            residue = self.sim_construct.all_residues[res_num-1]
-            self.isolde._handle_bad_template(residue)
+        tokens = err_text.split()
+        res_num = int(tokens[5])
+        print("Bad residue number: {}".format(tokens[5]))
+        # OpenMM residue numbering starts from 1
+        residue = self.sim_construct.all_residues[res_num-1]
+        self.isolde._handle_bad_template(residue)
+
+    def _parse_explicit_template_error(self, e):
+        err_text = str(e)
+        if not err_text.startswith('User-supplied template'):
+            return False
+        tokens = err_text.split()
+        res_num = int(tokens[8])
+        print("Bad residue number: {}".format(tokens[5]))
+        # OpenMM residue numbering starts from 1
+        residue = self.sim_construct.all_residues[res_num-1]
+        self.isolde._handle_bad_template(residue)
+        return True
 
 
     def start_sim(self):
