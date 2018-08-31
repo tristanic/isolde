@@ -944,6 +944,7 @@ class Isolde():
     ##############################################################
     def _update_model_list(self, *_):
         mmcb = self.iw._master_model_combo_box
+        current_model = mmcb.currentData()
         mmcb.clear()
 
         _models = self.session.models.list()
@@ -978,7 +979,7 @@ class Isolde():
             self._available_models[id_str] = _get_atomic_model(m)
 
         self._populate_available_volumes_combo_box()
-        self._change_selected_model(force=force)
+        self._change_selected_model(model=current_model)
 
     def _selection_changed(self, *_):
         from chimerax.atomic import selected_atoms
@@ -2451,7 +2452,7 @@ class Isolde():
             raise
         sm.start_sim()
         self._sim_start_cb()
-    
+
     def _start_sim_haptics(self, *_):
         self._event_handler.add_event_handler('sim haptic update',
                                               'new frame',
