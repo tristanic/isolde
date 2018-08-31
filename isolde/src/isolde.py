@@ -1166,14 +1166,14 @@ class Isolde():
 
     def _initialize_live_xtal_structure(self, filename):
         m = self.selected_model
-        live = self.iw._xtal_settings_live_recalc_checkbox.checkState()
+        live = self.iw._sim_basic_xtal_settings_live_recalc_checkbox.checkState()
         if m is None:
             from .dialog import generic_warning
             generic_warning("You must have the corresponding model loaded before loading reflection data!")
         from chimerax.clipper import symmetry
         sh = symmetry.XtalSymmetryHandler(m, mtzfile=filename,
-            map_oversampling=self.params.map_shannon_rate,
-            live_update = live)
+            map_oversampling=self.params.map_shannon_rate)
+        sh.xmapset.live_update = live
         standard_map = sh.xmapset['2mFo-DFc']
         diff_map = sh.xmapset['mFo-DFc']
         has_extra_map = False
