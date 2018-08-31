@@ -60,7 +60,7 @@ bool EDcalc_mask_vdw<T>::operator() (Xmap<T>& xmap, const Atom_list& atoms ) con
                     for (iw=iv; iw.coord().w() < g1.w(); iw.next_w() ) {
                         if (unshrunk[iw] == zero) {
                             if ( (xyz-iw.coord_orth()).lengthsq() < pow(shrink_radius_, 2) ) {
-                                std::cerr << "Filling in value at " << iw.coord().format() << std::endl;
+                                //std::cerr << "Filling in value at " << iw.coord().format() << std::endl;
                                 xmap[iw] = 0.0;
 
                             }
