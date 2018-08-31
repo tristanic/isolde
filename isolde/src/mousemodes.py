@@ -55,8 +55,21 @@ class AtomPicker(MouseMode):
         self._sim_end_handler = isolde.triggers.add_handler(
             'simulation terminated', self._on_sim_end)
 
+    @property
+    def atoms(self):
+        if not self._choose_from_all_models:
+            if self._atoms is None:
+                return self._isolde._selected_model.atoms
+            return self._atoms
+        from chimerax.atomic import Atoms
+        ret = Atoms()
+        for m in self.session.models.list():
+            if m.atomspec_has_atoms():
+                ret = ret.merge(m.atoms)
+        return ret
+
     def _isolde_changed_model(self, trigger_name, m):
-        self._atoms = m.atoms
+        self._atoms = None
 
     def _on_sim_start(self, *_):
         self._atoms = self._isolde.mobile_atoms
@@ -65,7 +78,7 @@ class AtomPicker(MouseMode):
         if self._choose_from_all_models:
             self.pick_from_any()
         else:
-            self._atoms = self._isolde.selected_model.atoms
+            self._atoms = None
 
     def pick_from_any(self):
         self._choose_from_all_models = True
@@ -74,12 +87,6 @@ class AtomPicker(MouseMode):
 
     def _update_atomic_models(self, *_):
         self._atoms = None
-        for m in self.session.models.list():
-            if m.atomspec_has_atoms():
-                if self._atoms is None:
-                    self._atoms = m.atoms
-                else:
-                    self._atoms = self._atoms.merge(m.atoms)
 
     def pick_from_selection(atoms):
         from chimerax.atomic import Atoms
@@ -116,8 +123,8 @@ class AtomPicker(MouseMode):
 
     def mouse_up(self, event):
         self._undraw_drag_rectangle()
-        if self._atoms is None:
-            return
+        # if self._atoms is None:
+        #     return
         if self._is_drag(event):
             # Select atoms in rectangle
             self._mouse_drag_select(self.mouse_down_position, event)
@@ -187,14 +194,14 @@ class AtomPicker(MouseMode):
             else:
                 import numpy
                 if hasattr(p, 'atoms'):
-                    patoms = p.atoms.filter(self._atoms.indices(p.atoms) != -1)
+                    patoms = p.atoms.filter(self.atoms.indices(p.atoms) != -1)
                     if len(patoms):
                         if not mode == 'subtract':
                             patoms.selected = True
                         else:
                             patoms.selected = False
                 elif hasattr(p, 'residues'):
-                    presidues = p.residues.filter(self._atoms.unique_residues.indices(p.residues) != -1)
+                    presidues = p.residues.filter(self.atoms.unique_residues.indices(p.residues) != -1)
                     if len(presidues):
                         if not mode == 'subtract':
                             presidues.atoms.selected = True
@@ -209,7 +216,7 @@ class AtomPicker(MouseMode):
         x, y = event.position()
         # Allow atoms within 0.5 Angstroms of the cursor to be picked
         cutoff = 0.5
-        picked_atom = picking.pick_closest_to_line(session, x, y, self._atoms,
+        picked_atom = picking.pick_closest_to_line(session, x, y, self.atoms,
             cutoff, hydrogens = True)
         # If shift is down, add to an existing selection, otherwise clear the
         # old selection
