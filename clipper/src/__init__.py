@@ -9,7 +9,7 @@
 
 
 from .main import *
-from .crystal import CrystalStructure
+#from .crystal import CrystalStructure
 from .clipper_mtz import ReflectionDataContainer
 
 # from clipper_python import Coord_grid

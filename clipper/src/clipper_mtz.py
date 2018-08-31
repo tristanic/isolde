@@ -9,10 +9,6 @@
 
 
 #from . import clipper
-from .clipper_python import Grid_sampling, HKL_data_Flag, CCP4MTZfile, HKL_info
-from .clipper_python.data32 import HKL_data_I_sigI_float as HKL_data_I_sigI
-from .clipper_python.data32 import HKL_data_F_sigF_float as HKL_data_F_sigF
-from .clipper_python.data32 import HKL_data_F_phi_float as HKL_data_F_phi
 from chimerax.core.models import Model
 
 def calculate_voxel_size(resolution, shannon_rate):
@@ -37,7 +33,7 @@ class ReflectionDataContainer(Model):
         etc.
         '''
         Model.__init__(self, 'Reflection Data', session)
-        hklinfo, free, exp, calc = load_hkl_data(hklfile, free_flag_label=free_flag_label)
+        hklinfo, free, exp, calc = load_hkl_data(session, hklfile, free_flag_label=free_flag_label)
         self._hklinfo = hklinfo
         self._grid_sampling = None
 
@@ -99,6 +95,7 @@ class ReflectionDataContainer(Model):
     @property
     def grid_sampling(self):
         if self._grid_sampling is None:
+            from .clipper_python import Grid_sampling
             self._grid_sampling = Grid_sampling(
                 self.spacegroup, self.cell, self.resolution, self.shannon_rate)
         return self._grid_sampling
@@ -253,7 +250,7 @@ def find_free_set(mtzin, temp_tree, label = None):
     '''Find the free set, optionally given an explicit label to look for.'''
     possible_free_flags = []
     possible_free_flags_names = []
-
+    from .clipper_python import HKL_data_Flag
     for crystal in temp_tree.keys():
         for dataset in temp_tree[crystal].keys():
             # Find and store the free set
@@ -277,7 +274,7 @@ def find_free_set(mtzin, temp_tree, label = None):
     return (possible_free_flags, possible_free_flags_names)
 
 
-def load_hkl_data(filename, free_flag_label = None):
+def load_hkl_data(session, filename, free_flag_label = None):
     '''
     Load in an mtz file, create Clipper objects from the data, and
     return the tuple:
@@ -307,6 +304,7 @@ def load_hkl_data(filename, free_flag_label = None):
         return
 
     if extension == '.mtz':
+        from .clipper_python import CCP4MTZfile, HKL_info
         mtzin = CCP4MTZfile()
         hkl = HKL_info()
         mtzin.open_read(filename)
@@ -351,6 +349,9 @@ def load_hkl_data(filename, free_flag_label = None):
 
         # Find I/sigI pairs and pull them in as
         # Clipper HKL_data_I_sigI objects
+        from .clipper_python.data32 import HKL_data_I_sigI_float as HKL_data_I_sigI
+        from .clipper_python.data32 import HKL_data_F_sigF_float as HKL_data_F_sigF
+        from .clipper_python.data32 import HKL_data_F_phi_float as HKL_data_F_phi
         isigi, isigi_names = find_data_pairs(
             mtzin, temp_tree, 'J', 'Q', HKL_data_I_sigI)
         experimental_sets.extend(isigi)
@@ -377,30 +378,41 @@ def load_hkl_data(filename, free_flag_label = None):
         free_flags = None
         free_flags_name = None
 
-        if free_flag_label != -1:
-            possible_free_flags, possible_free_flag_names = find_free_set(
-                mtzin, temp_tree, free_flag_label)
+        possible_free_flag_names = []
+        all_integer_column_names = []
+        for crystal in temp_tree.keys():
+            for dataset in temp_tree[crystal].keys():
+                for iname in temp_tree[crystal][dataset]['I'].keys():
+                    if 'free' in iname.lower():
+                        possible_free_flag_names.append(iname)
+                    all_integer_column_names.append(iname)
 
-            if (len(possible_free_flags) == 0 and len(experimental_sets)) \
-                    or (len(possible_free_flags) > 1):
-                errstring = '''
-                ERROR: Automatic detection of free flag array failed.
-                Possible names are: {}. Please re-run load_hkl_data with the
-                argument:
-                    free_flag_label = 'label'
-                with 'label' replaced by the correct name, or
-                    free_flag_label = -1
-                to continue without free flags.
-                '''
-                if len(possible_free_flags) == 0:
-                    raise RuntimeError(errstring.format(temp_tree[crystal][dataset]['I'].keys()))
-                else:
-                    raise RuntimeError(errstring.format(possible_free_flag_names))
+        # possible_free_flags, possible_free_flag_names = find_free_set(
+        #     mtzin, temp_tree, free_flag_label)
+
+        if (len(possible_free_flag_names) == 0 and len(experimental_sets)):
+            all_integer_column_names = temp_tree[crystal][dataset]['I'].keys()
+            if not len(all_integer_column_names) and free_flag_label !=-1:
+                err_string = 'This MTZ file does not appear to contain any '\
+                + 'columns suitable for use as a free set. Please generate '\
+                + 'a suitable set of free flags using your favourite '\
+                + 'package (I recommend PHENIX) and try again.'
+                raise RuntimeError(err_string)
             else:
-                if len(possible_free_flags):
-                    free_flags = possible_free_flags[0]
-                    free_flags_name = 'Free Flags'
+                possible_free_flag_names = all_integer_column_names
+                if len(possible_free_flag_names) == 1:
+                    session.logger.info('WARNING: assuming column with label {}'
+                    + ' defines the free set.'.format(possible_free_flag_names[0]))
+                    #possible_free_flags = [temp_tree[crystal][dataset]['I'][possible_free_flag_names[0]]]
+        if len(possible_free_flag_names) > 1:
+            free_flags_name = _r_free_chooser(session, possible_free_flag_names)
+            if free_flags_name is None:
+                if free_flag_label != -1:
+                    raise RuntimeError('No free flags chosen. Bailing out.')
+        else:
+            free_flags_name = possible_free_flag_names[0]
 
+        free_flags = find_free_set(mtzin, temp_tree, label=free_flags_name)[0][0]
 
         mtzin.close_read()
 
@@ -408,3 +420,10 @@ def load_hkl_data(filename, free_flag_label = None):
             (free_flags_name, free_flags),
             (experimental_set_names, experimental_sets),
             (calculated_set_names, calculated_sets) )
+
+def _r_free_chooser(session, possible_names):
+    from PyQt5.QtWidgets import QInputDialog
+    choice, ok_pressed = QInputDialog.getItem(session.ui.main_window, 'Choose R-free column', 'Label: ', possible_names, 0, False)
+    if ok_pressed and choice:
+        return choice
+    return None

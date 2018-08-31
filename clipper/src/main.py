@@ -8,7 +8,7 @@
 
 
 
-from . import clipper_python as clipper
+#from . import clipper_python as clipper
 import numpy
 
 # Override logging of Clipper messages to send them to the ChimeraX log
@@ -77,7 +77,8 @@ def atom_list_from_sel(atom_list):
         #for i, a in enumerate(atom_list):
             #if a.aniso_u6 is not None:
                 #u_aniso[i] = a.aniso_u6
-    clipper_atom_list = clipper.Atom_list(elements, coords, occupancies, u_iso, u_aniso)
+    from .clipper_python import Atom_list
+    clipper_atom_list = Atom_list(elements, coords, occupancies, u_iso, u_aniso)
     return clipper_atom_list
 
 def make_unit_cell(model, xmap, draw = True):
@@ -86,7 +87,8 @@ def make_unit_cell(model, xmap, draw = True):
     atoms = model.atoms
     clipper_atoms = atom_list_from_sel(atoms)
     coord = model.bounds().center()
-    coord_orth = clipper.Coord_orth(coord)
+    from .clipper_python import Coord_orth
+    coord_orth = Coord_orth(coord)
     coord_frac = coord_orth.coord_frac(cell)
     sg = xmap.spacegroup()
     unit_cell_frac_symops = xmap.unit_cell_symops(coord_frac, clipper_atoms)
@@ -117,14 +119,15 @@ def test_pack_box(model, xmap, size = 50):
     m = Model('box', session)
     d.set_geometry(*sphere_geometry(80))
     #d.vertices, d.normals, d.triangles = sphere_geometry(80)
-    box_min = clipper.Coord_orth(coord-box_size/2).coord_frac(xmap.cell()).coord_grid(xmap.grid_sampling())
-    box_max = box_min + clipper.Coord_grid(*box_size.tolist())
+    from .clipper_python import Coord_orth, Coord_grid
+    box_min = Coord_orth(coord-box_size/2).coord_frac(xmap.cell()).coord_grid(xmap.grid_sampling())
+    box_max = box_min + Coord_grid(*box_size.tolist())
     minmax = [box_min, box_max]
     dp = []
     for i in range(2):
         for j in range(2):
             for k in range(2):
-                thiscg = clipper.Coord_grid([minmax[i].u(), minmax[j].v(), minmax[k].w()])
+                thiscg = Coord_grid([minmax[i].u(), minmax[j].v(), minmax[k].w()])
                 dp.append(Place(origin=thiscg.coord_frac(xmap.grid_sampling()).coord_orth(xmap.cell()).xyz))
     d.positions = Places(dp)
     m.add_drawing(d)

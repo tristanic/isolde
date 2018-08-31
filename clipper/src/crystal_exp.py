@@ -27,7 +27,7 @@ from chimerax.map import Volume, volumecommand
 
 from .mousemodes import initialize_map_contour_mouse_modes
 from .main import atom_list_from_sel
-from . import clipper
+# from . import clipper
 from .clipper_mtz import ReflectionDataContainer
 
 DEFAULT_BOND_RADIUS = 0.2
@@ -74,12 +74,13 @@ def symmetry_from_model_metadata_mmcif(model):
     # TODO: ChimeraX does not currently keep refinement metadata (including resolution)
     res = 3.0
 
-    cell_descr = clipper.Cell_descr(*abc, *angles)
-    cell = clipper.Cell(cell_descr)
-    spgr_descr = clipper.Spgr_descr(spgr_str)
-    spacegroup = clipper.Spacegroup(spgr_descr)
-    resolution = clipper.Resolution(res)
-    grid_sampling = clipper.Grid_sampling(spacegroup, cell, resolution)
+    from .clipper_python import Cell_descr, Cell, Spgr_descr, Spacegroup, Resolution, Grid_sampling
+    cell_descr = Cell_descr(*abc, *angles)
+    cell = Cell(cell_descr)
+    spgr_descr = Spgr_descr(spgr_str)
+    spacegroup = Spacegroup(spgr_descr)
+    resolution = Resolution(res)
+    grid_sampling = Grid_sampling(spacegroup, cell, resolution)
     return cell, spacegroup, grid_sampling
 
 
@@ -156,13 +157,14 @@ def symmetry_from_model_metadata_pdb(model):
     #     i+=1
     #     thisline = remarks[i]
 
+    from .clipper_python import Cell_descr, Cell, Spgr_descr, Spacegroup, Resolution, Grid_sampling
 
-    cell_descr = clipper.Cell_descr(*abc, *angles)
-    cell = clipper.Cell(cell_descr)
-    spgr_descr = clipper.Spgr_descr(symstr)
-    spacegroup = clipper.Spacegroup(spgr_descr)
-    resolution = clipper.Resolution(float(res))
-    grid_sampling = clipper.Grid_sampling(spacegroup, cell, resolution)
+    cell_descr = Cell_descr(*abc, *angles)
+    cell = Cell(cell_descr)
+    spgr_descr = Spgr_descr(symstr)
+    spacegroup = Spacegroup(spgr_descr)
+    resolution = Resolution(float(res))
+    grid_sampling = Grid_sampling(spacegroup, cell, resolution)
     return cell, spacegroup, grid_sampling
 
 
@@ -496,7 +498,8 @@ class XmapSet_Live(Model):
         self._display_radius = radius
         v = self.session.view
         cofr = self._box_center = v.center_of_rotation
-        self._box_center_grid = clipper.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
+        from .clipper_python import Coord_orth
+        self._box_center_grid = Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
         dim = self._box_dimensions = \
             2 * calculate_grid_padding(radius, self.grid, self.cell)
         self._box_corner_grid, self._box_corner_xyz = _find_box_corner(
@@ -570,7 +573,8 @@ class XmapSet_Live(Model):
         and maximum grid coordinates. Automatically turns off live scrolling.
         '''
         self.live_scrolling = False
-        cmin = clipper.Coord_grid(minmax[0])
+        from .clipper_python import Coord_grid
+        cmin = Coord_grid(minmax[0])
         cmin_xyz = cmin.coord_frac(self.grid).coord_orth(self.cell).xyz
         dim = (minmax[1]-minmax[0])
         self.triggers.activate_trigger('map box changed',
@@ -595,7 +599,8 @@ class XmapSet_Live(Model):
         uc = self.unit_cell
         box_min_grid = uc.min.uvw
         # Add a little padding to the max to create a slight overlap between copies
-        box_max_grid = (uc.max+clipper.Coord_grid([2,2,2])).uvw
+        from .clipper_python import Coord_grid
+        box_max_grid = (uc.max+Coord_grid([2,2,2])).uvw
         minmax = [box_min_grid, box_max_grid]
         self.set_box_limits(minmax)
         self._surface_zone.update(None, None)
@@ -607,7 +612,7 @@ class XmapSet_Live(Model):
         for i in range(ou, nu+ou):
             for j in range(ov, nv+ov):
                 for k in range(ow, nw+ow):
-                    thisgrid = clipper.Coord_grid(numpy.array([i,j,k])*grid_dim)
+                    thisgrid = Coord_grid(numpy.array([i,j,k])*grid_dim)
                     thisorigin = thisgrid.coord_frac(self.grid).coord_orth(self.cell).xyz
                     places.append(Place(origin = thisorigin))
         self.positions = Places(places)
@@ -807,8 +812,9 @@ def calculate_grid_padding(radius, grid, cell):
     corners = (corner_mask * radius).astype(float)
     grid_upper = numpy.zeros([8,3], numpy.int)
     grid_lower = numpy.zeros([8,3], numpy.int)
+    from .clipper_python import Coord_orth
     for i, c in enumerate(corners):
-        co = clipper.Coord_orth(c)
+        co = Coord_orth(c)
         cm = co.coord_frac(cell).coord_map(grid).uvw
         grid_upper[i,:] = numpy.ceil(cm).astype(int)
         grid_lower[i,:] = numpy.floor(cm).astype(int)
@@ -822,10 +828,11 @@ def _find_box_corner(center, cell, grid, radius = 20):
     Find the bottom corner (i.e. the origin) of a rhombohedral box
     big enough to hold a sphere of the desired radius.
     '''
-    radii_frac = clipper.Coord_frac(radius/cell.dim)
-    center_frac = clipper.Coord_orth(center).coord_frac(cell)
+    from .clipper_python import Coord_frac, Coord_orth, Coord_grid
+    radii_frac = Coord_frac(radius/cell.dim)
+    center_frac = Coord_orth(center).coord_frac(cell)
     bottom_corner_grid = center_frac.coord_grid(grid) \
-                - clipper.Coord_grid(calculate_grid_padding(radius, grid, cell))
+                - Coord_grid(calculate_grid_padding(radius, grid, cell))
     bottom_corner_orth = bottom_corner_grid.coord_frac(grid).coord_orth(cell)
     return bottom_corner_grid, bottom_corner_orth.xyz
 
@@ -834,11 +841,12 @@ def _get_bounding_box(coords, padding, grid, cell):
     Find the minimum and maximum grid coordinates of a box which will
     encompass the given (x,y,z) coordinates plus padding (in Angstroms).
     '''
+    from .clipper_python import Util, Coord_grid
     grid_pad = calculate_grid_padding(padding, grid, cell)
-    box_bounds_grid = clipper.Util.get_minmax_grid(coords, cell, grid)\
+    box_bounds_grid = Util.get_minmax_grid(coords, cell, grid)\
                         + numpy.array((-grid_pad, grid_pad))
     box_origin_grid = box_bounds_grid[0]
-    box_origin_xyz = clipper.Coord_grid(box_origin_grid).coord_frac(grid).coord_orth(cell)
+    box_origin_xyz = Coord_grid(box_origin_grid).coord_frac(grid).coord_orth(cell)
     dim = box_bounds_grid[1] - box_bounds_grid[0]
     return [box_origin_grid, box_origin_xyz, dim]
 
@@ -1020,9 +1028,9 @@ class XmapHandler_Live(Volume):
             # it's updated before re-displaying.
             return
         self._swap_volume_data(box_params)
-        self.data.values_changed()
         self._use_thread = True
-        self.call_change_callbacks('data values changed')
+        self.data.values_changed()
+        # self.call_change_callbacks('data values changed')
 
     def _box_moved_cb(self, name, params):
         self.box_params = params
@@ -1030,6 +1038,7 @@ class XmapHandler_Live(Volume):
             return
         self.data.set_origin(params[0])
         self._fill_volume_data(self._data_fill_target, params[1])
+        self._use_thread=True
         self.data.values_changed()
 
     def _map_recalc_cb(self, name, *_):

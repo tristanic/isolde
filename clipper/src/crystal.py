@@ -27,7 +27,7 @@ from chimerax.map import Volume, volumecommand
 
 from .mousemodes import initialize_map_contour_mouse_modes
 from .main import atom_list_from_sel
-from . import clipper
+#from . import clipper
 from .clipper_mtz import ReflectionDataContainer
 
 DEFAULT_BOND_RADIUS = 0.2
@@ -95,13 +95,13 @@ def symmetry_from_model_metadata_mmcif(model):
 
     # TODO: ChimeraX does not currently keep refinement metadata (including resolution)
     res = 3.0
-
-    cell_descr = clipper.Cell_descr(*abc, *angles)
-    cell = clipper.Cell(cell_descr)
-    spgr_descr = clipper.Spgr_descr(spgr_str)
-    spacegroup = clipper.Spacegroup(spgr_descr)
-    resolution = clipper.Resolution(res)
-    grid_sampling = clipper.Grid_sampling(spacegroup, cell, resolution)
+    from .clipper_python import Cell_descr, Cell, Spgr_descr, Spacegroup, Resolution, Grid_sampling
+    cell_descr = Cell_descr(*abc, *angles)
+    cell = Cell(cell_descr)
+    spgr_descr = Spgr_descr(spgr_str)
+    spacegroup = Spacegroup(spgr_descr)
+    resolution = Resolution(res)
+    grid_sampling = Grid_sampling(spacegroup, cell, resolution)
     return cell, spacegroup, grid_sampling
 
 
@@ -176,13 +176,14 @@ def symmetry_from_model_metadata_pdb(model):
     #     i+=1
     #     thisline = remarks[i]
 
+    from .clipper_python import Cell_descr, Cell, Spgr_descr, Spacegroup, Resolution, Grid_sampling
 
-    cell_descr = clipper.Cell_descr(*abc, *angles)
-    cell = clipper.Cell(cell_descr)
-    spgr_descr = clipper.Spgr_descr(symstr)
-    spacegroup = clipper.Spacegroup(spgr_descr)
-    resolution = clipper.Resolution(float(res))
-    grid_sampling = clipper.Grid_sampling(spacegroup, cell, resolution)
+    cell_descr = Cell_descr(*abc, *angles)
+    cell = Cell(cell_descr)
+    spgr_descr = Spgr_descr(symstr)
+    spacegroup = Spacegroup(spgr_descr)
+    resolution = Resolution(float(res))
+    grid_sampling = Grid_sampling(spacegroup, cell, resolution)
     return cell, spacegroup, grid_sampling
 
 
@@ -323,7 +324,8 @@ class CrystalStructure(Model):
         # unit cell relative to the current atomic model, along with fast
         # functions returning the symops necessary to pack a given box in
         # xyz space.
-        self.unit_cell = clipper.Unit_Cell(ref,
+        from .clipper_python import Unit_Cell
+        self.unit_cell = Unit_Cell(ref,
                     self._clipper_atoms, self.cell, self.spacegroup, self.grid)
 
         # Container for managing all the symmetry copies
@@ -462,12 +464,10 @@ class CrystalStructure(Model):
 
 
     def items(self):
-        return ((clipper.RTop_frac.identity(), self.master_model), *self.sym_model_container.items())
+        from .clipper import RTop_frac
+        return ((RTop_frac.identity(), self.master_model), *self.sym_model_container.items())
 
-    def add_model_to_self(self, model):
-        '''
-        Transplant a model from
-        '''
+
 
     def sym_select_within(self, coords, radius):
         '''
@@ -484,10 +484,12 @@ class CrystalStructure(Model):
         c[:] = coords
         master_atoms = self.master_model.atoms
         master_coords = master_atoms.coords.astype(numpy.float32)
-        grid_minmax = clipper.Util.get_minmax_grid(coords, self.cell, self.grid)
+        from .clipper_python import Util
+        grid_minmax = Util.get_minmax_grid(coords, self.cell, self.grid)
         pad = calculate_grid_padding(radius, self.grid, self.cell)
         grid_minmax += numpy.array((-pad, pad))
-        min_xyz = clipper.Coord_grid(grid_minmax[0]).coord_frac(self.grid).coord_orth(self.cell).xyz
+        from .clipper_python import Coord_grid
+        min_xyz = Coord_grid(grid_minmax[0]).coord_frac(self.grid).coord_orth(self.cell).xyz
         dim = grid_minmax[1] - grid_minmax[0]
         symops = self.unit_cell.all_symops_in_box(min_xyz, dim)
         symmats = symops.all_matrices_orth(self.cell, format = '3x4')
@@ -531,7 +533,8 @@ class CrystalStructure(Model):
         c = self.cell
         g = self.grid
         self._sym_box_center = v.center_of_rotation
-        self._sym_last_cofr_grid = clipper.Coord_orth(self._sym_box_center).coord_frac(c).coord_grid(g)
+        from .clipper_python import Coord_orth
+        self._sym_last_cofr_grid = Coord_orth(self._sym_box_center).coord_frac(c).coord_grid(g)
         box_corner_grid, box_corner_xyz, self._sym_box_dimensions = find_box_params(self._sym_box_center, c, g, radius)
         # self._sym_box_dimensions = (numpy.ceil(radius / self._voxel_size * 2)).astype(int)
         self._update_sym_box(force_update = True)
@@ -546,7 +549,8 @@ class CrystalStructure(Model):
         v = self.session.view
         uc = self.unit_cell
         cofr = v.center_of_rotation
-        cofr_grid = clipper.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
+        from .clipper_python import Coord_orth
+        cofr_grid = Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
         if not force_update:
             if self._sym_last_cofr_grid is not None:
                 if cofr_grid == self._sym_last_cofr_grid:
@@ -672,7 +676,8 @@ class CrystalStructure(Model):
                   coords, show_context)).residues.atoms.subtract(atoms)
         pad = calculate_grid_padding(mask_radius, self.grid, self.cell)
         ep = calculate_grid_padding(extra_padding, self.grid, self.cell)
-        box_bounds_grid = clipper.Util.get_minmax_grid(coords, self.cell, self.grid) \
+        from .clipper_python import Util
+        box_bounds_grid = Util.get_minmax_grid(coords, self.cell, self.grid) \
                                 + numpy.array((-pad, pad)) + numpy.array((-ep, ep))
         self.xmaps.set_box_limits(box_bounds_grid)
 
@@ -736,7 +741,8 @@ class CrystalStructure(Model):
         model = self.master_model
 
         ref = model.bounds().center().astype(float)
-        frac_coords = clipper.Coord_orth(ref).coord_frac(self.cell).uvw
+        from .clipper_python import Coord_orth, Coord_frac
+        frac_coords = Coord_orth(ref).coord_frac(self.cell).uvw
         if offset is None:
             offset = numpy.array([0,0,0],int)
 
@@ -748,7 +754,7 @@ class CrystalStructure(Model):
 
         corners = []
         for c in corners_frac:
-            co = clipper.Coord_frac(c).coord_orth(self.cell)
+            co = Coord_frac(c).coord_orth(self.cell)
             positions.append(Place(axes=numpy.identity(3)*4, origin=co.xyz))
             colors.append(rgba_corner)
 
@@ -836,7 +842,8 @@ class SymModels(defaultdict):
         return self._sym_container
 
     def __missing__(self, key):
-        if type(key) is not clipper.RTop_frac:
+        from .clipper_python import RTop_frac
+        if type(key) is not RTop_frac:
             raise TypeError('Key must be a clipper.RTop_frac!')
         thisplace = Place(matrix=key.rtop_orth(self.parent.cell).mat34)
         if not thisplace.is_identity():
@@ -1112,7 +1119,8 @@ class XmapSet(Model):
         self._display_radius = radius
         v = self.session.view
         cofr = self._box_center = v.center_of_rotation
-        self._box_center_grid = clipper.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
+        from .clipper_python import Coord_orth
+        self._box_center_grid = Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
         # dim = self._box_dimensions = \
         #     2 * calculate_grid_padding(radius, self.grid, self.cell)
         self._box_corner_grid, self._box_corner_xyz, self._box_dimensions = find_box_params(
@@ -1183,7 +1191,8 @@ class XmapSet(Model):
         and maximum grid coordinates. Automatically turns off live scrolling.
         '''
         self.live_scrolling = False
-        cmin = clipper.Coord_grid(minmax[0])
+        from .clipper_python import Coord_grid
+        cmin = Coord_grid(minmax[0])
         cmin_xyz = cmin.coord_frac(self.grid).coord_orth(self.cell).xyz
         dim = (minmax[1]-minmax[0])
         self.triggers.activate_trigger('map box changed',
@@ -1208,7 +1217,8 @@ class XmapSet(Model):
         uc = self.unit_cell
         box_min_grid = uc.min.uvw
         # Add a little padding to the max to create a slight overlap between copies
-        box_max_grid = (uc.max+clipper.Coord_grid([2,2,2])).uvw
+        from .clipper_python import Coord_grid
+        box_max_grid = (uc.max+Coord_grid([2,2,2])).uvw
         minmax = [box_min_grid, box_max_grid]
         self.set_box_limits(minmax)
         self._surface_zone.update(None, None)
@@ -1220,7 +1230,7 @@ class XmapSet(Model):
         for i in range(ou, nu+ou):
             for j in range(ov, nv+ov):
                 for k in range(ow, nw+ow):
-                    thisgrid = clipper.Coord_grid(numpy.array([i,j,k])*grid_dim)
+                    thisgrid = Coord_grid(numpy.array([i,j,k])*grid_dim)
                     thisorigin = thisgrid.coord_frac(self.grid).coord_orth(self.cell).xyz
                     places.append(Place(origin = thisorigin))
         self.positions = Places(places)
@@ -1355,8 +1365,9 @@ def calculate_grid_padding(radius, grid, cell):
     corners = (corner_mask * radius).astype(float)
     grid_upper = numpy.zeros([8,3], numpy.int)
     grid_lower = numpy.zeros([8,3], numpy.int)
+    from .clipper_python import Coord_orth
     for i, c in enumerate(corners):
-        co = clipper.Coord_orth(c)
+        co = Coord_orth(c)
         cm = co.coord_frac(cell).coord_map(grid).uvw
         grid_upper[i,:] = numpy.ceil(cm).astype(int)
         grid_lower[i,:] = numpy.floor(cm).astype(int)
@@ -1367,11 +1378,12 @@ def find_box_params(center, cell, grid, radius = 20):
     Return the origin (in grid and cartesian coordinates) and dimensions of a
     rhombohedral box big enough to hold a sphere of the desired radius.
     '''
-    radii_frac = clipper.Coord_frac(radius/cell.dim)
-    center_frac = clipper.Coord_orth(center).coord_frac(cell)
+    from .clipper_python import Coord_orth, Coord_frac, Coord_grid
+    radii_frac = Coord_frac(radius/cell.dim)
+    center_frac = Coord_orth(center).coord_frac(cell)
     half_dim = calculate_grid_padding(radius, grid, cell)
     bottom_corner_grid = center_frac.coord_grid(grid) \
-                - clipper.Coord_grid(half_dim)
+                - Coord_grid(half_dim)
     bottom_corner_orth = bottom_corner_grid.coord_frac(grid).coord_orth(cell)
     return bottom_corner_grid, bottom_corner_orth.xyz, half_dim*2
 
@@ -1380,244 +1392,245 @@ def _get_bounding_box(coords, padding, grid, cell):
     Find the minimum and maximum grid coordinates of a box which will
     encompass the given (x,y,z) coordinates plus padding (in Angstroms).
     '''
+    from .clipper_python import Util, Coord_grid
     grid_pad = calculate_grid_padding(padding, grid, cell)
-    box_bounds_grid = clipper.Util.get_minmax_grid(coords, cell, grid)\
+    box_bounds_grid = Util.get_minmax_grid(coords, cell, grid)\
                         + numpy.array((-grid_pad, grid_pad))
     box_origin_grid = box_bounds_grid[0]
-    box_origin_xyz = clipper.Coord_grid(box_origin_grid).coord_frac(grid).coord_orth(cell)
+    box_origin_xyz = Coord_grid(box_origin_grid).coord_frac(grid).coord_orth(cell)
     dim = box_bounds_grid[1] - box_bounds_grid[0]
     return [box_origin_grid, box_origin_xyz, dim]
 
-from .clipper_python import Xmap_float
-class Xmap(Xmap_float):
-    def __init__(self, spacegroup, cell, grid_sampling,
-                 name = None, hkldata = None, is_difference_map = None):
-        super().__init__(spacegroup, cell, grid_sampling)
-        self.name = name
-        self.is_difference_map = is_difference_map
-        if hkldata is not None:
-            self.fft_from(hkldata)
-        from .clipper_python import Map_stats
-        self._stats = Map_stats(self)
-
-    @property
-    def stats(self):
-        if self._stats is None:
-            from .clipper_python import Map_stats
-            self._stats = Map_stats(self)
-        return self._stats
-
-    @property
-    def mean(self):
-        return self.stats.mean
-
-    @property
-    def std_dev(self):
-        return self.stats.std_dev
-
-    @property
-    def sigma(self):
-        return self.stats.std_dev
-
-    @property
-    def min(self):
-        return self.stats.min
-
-    @property
-    def max(self):
-        return self.stats.max
-
-    @property
-    def range(self):
-        return self.stats.range
-
-
-
-
-class XmapHandler(Volume):
-    '''
-    An XmapHandler is in effect a resizable window into a periodic
-    crystallographic map. The actual map data (a clipper Xmap object) is
-    held within, and filled into the XmapWindow.data array as needed.
-    Methods are included for both live updating (e.g. tracking and filling
-    a box centred on the centre of rotation) and static display of a
-    given region.
-    '''
-    def __init__(self, session, manager, name, xmap, origin, grid_origin, dim):
-        '''
-        Args:
-            sesssion:
-                The ChimeraX session
-            crystal:
-                The CrystalStructure object this belongs to
-            name:
-                A descriptive name for this map
-            xmap:
-                A clipper.Xmap
-            origin:
-                The (x,y,z) coordinates of the bottom left corner of the
-                volume.
-            grid_origin:
-                The (u,v,w) integer grid coordinates corresponding to
-                origin.
-            dim:
-                The shape of the box in (u,v,w) grid coordinates.
-        '''
-        self.box_params = (origin, grid_origin, dim)
-        self.xmap = xmap
-        self.manager = manager
-        darray = self._generate_and_fill_data_array(origin, grid_origin, dim)
-        Volume.__init__(self, darray, session)
-
-        self.is_difference_map = xmap.is_difference_map
-        self.name = name
-        self.initialize_thresholds()
-
-        # If the box shape changes while the volume is hidden, the change
-        # will not be applied until it's shown again.
-        self._needs_update = True
-        self.show()
-        self._box_shape_changed_cb_handler = self.manager.triggers.add_handler(
-            'map box changed', self._box_changed_cb)
-        self._box_moved_cb_handler = self.manager.triggers.add_handler(
-            'map box moved', self._box_moved_cb)
-
-
-
-    def show(self, *args, **kwargs):
-        if self._needs_update:
-            self._swap_volume_data(self.box_params, force_update = True)
-            self._needs_update = False
-        else:
-            # Just set the origin and fill the box with the data for
-            # the current location
-            origin, grid_origin, ignore = self.box_params
-            self._fill_volume_data(self._data_fill_target, grid_origin)
-        super(XmapHandler, self).show(*args, **kwargs)
-
-    @property
-    def hklinfo(self):
-        return self.manager.hklinfo
-
-    @property
-    def spacegroup(self):
-        return self.manager.spacegroup
-
-    @property
-    def cell(self):
-        return self.manager.cell
-
-    @property
-    def res(self):
-        return self.hklinfo.resolution
-
-    @property
-    def grid(self):
-        return self.manager.grid
-
-    @property
-    def voxel_size(self):
-        return self.cell.dim / self.grid.dim
-
-    @property
-    def voxel_size_frac(self):
-        return 1/ self.grid.dim
-
-    @property
-    def unit_cell(self):
-        return self.manager.unit_cell
-
-    @property
-    def _surface_zone(self):
-        return self.manager._surface_zone
-
-    def mean_sd_rms(self):
-        '''
-        Overrides the standard Volume method to give the overall values
-        from the Clipper object.
-        '''
-        x = self.xmap
-        # RMS is not currently calculated by Clipper, so we'll just return
-        # the sigma twice.
-        return (x.mean, x.sigma, x.sigma)
-
-
-    def _box_changed_cb(self, name, params):
-        self.box_params = params
-        self._needs_update = True
-        if not self.display:
-            # No sense in wasting cycles on this if the volume is hidden.
-            # We'll just store the params and apply them when we show the
-            # volume.
-            # NOTE: this means we need to over-ride show() to ensure
-            # it's updated before re-displaying.
-            return
-        self._swap_volume_data(params)
-        self.data.values_changed()
-        self.show()
-
-    def _box_moved_cb(self, name, params):
-        self.box_params = params
-        if not self.display:
-            return
-        self.data.set_origin(params[0])
-        self._fill_volume_data(self._data_fill_target, params[1])
-        self.data.values_changed()
-
-    def delete(self):
-        bh = self._box_shape_changed_cb_handler
-        if bh is not None:
-            self.manager.triggers.remove_handler(bh)
-            self._box_shape_changed_cb_handler = None
-        bm = self._box_moved_cb_handler
-        if bm is not None:
-            self.manager.triggers.remove_handler(bm)
-            self._box_moved_cb_handler = None
-        super(XmapHandler, self).delete()
-
-
-
-
-    def _swap_volume_data(self, params, force_update = False):
-        '''
-        Replace this Volume's data array with one of a new shape/size
-        Args:
-            params:
-                A tuple of (new_origin, new_grid_origin, new_dim)
-        '''
-        if not self._needs_update and not force_update:
-            # Just store the parameters
-            self.box_params = params
-            return
-        new_origin, new_grid_origin, new_dim = params
-        darray = self._generate_and_fill_data_array(new_origin, new_grid_origin, new_dim)
-        self._box_dimensions = new_dim
-        self.replace_data(darray)
-        self.new_region(ijk_min=(0,0,0), ijk_max=darray.size, ijk_step=(1,1,1), adjust_step=False)
-
-    def _generate_and_fill_data_array(self, origin, grid_origin, dim):
-        data = self._data_fill_target = numpy.empty(dim, numpy.float32)
-        self._fill_volume_data(data, grid_origin)
-        order = numpy.array([2,1,0], int)
-        darray = Array_Grid_Data(data.transpose(), origin = origin,
-            step = self.voxel_size, cell_angles = self.cell.angles_deg)
-        return darray
-
-
-    def _fill_volume_data(self, target, start_grid_coor):
-        #shape = (numpy.array(target.shape)[::-1] - 1)
-        #end_grid_coor = start_grid_coor + clipper.Coord_grid(shape)
-        #self.data.set_origin(origin_xyz)
-        from .clipper_python import Coord_grid
-        xmap = self.xmap
-        xmap.export_section_numpy(Coord_grid(start_grid_coor), target)
-
-    # def update_drawings(self):
-    #     super().update_drawings()
-    #     if hasattr(self, '_surface_zone'):
-    #         sz = self._surface_zone
-    #         coords = sz.all_coords
-    #         distance = sz.distance
-    #         if coords is not None:
-    #             from chimerax.surface.zone import surface_zone
-    #             surface_zone(self, coords, distance)
+# from .clipper_python import Xmap_float
+# class Xmap(Xmap_float):
+#     def __init__(self, spacegroup, cell, grid_sampling,
+#                  name = None, hkldata = None, is_difference_map = None):
+#         super().__init__(spacegroup, cell, grid_sampling)
+#         self.name = name
+#         self.is_difference_map = is_difference_map
+#         if hkldata is not None:
+#             self.fft_from(hkldata)
+#         from .clipper_python import Map_stats
+#         self._stats = Map_stats(self)
+#
+#     @property
+#     def stats(self):
+#         if self._stats is None:
+#             from .clipper_python import Map_stats
+#             self._stats = Map_stats(self)
+#         return self._stats
+#
+#     @property
+#     def mean(self):
+#         return self.stats.mean
+#
+#     @property
+#     def std_dev(self):
+#         return self.stats.std_dev
+#
+#     @property
+#     def sigma(self):
+#         return self.stats.std_dev
+#
+#     @property
+#     def min(self):
+#         return self.stats.min
+#
+#     @property
+#     def max(self):
+#         return self.stats.max
+#
+#     @property
+#     def range(self):
+#         return self.stats.range
+#
+#
+#
+#
+# class XmapHandler(Volume):
+#     '''
+#     An XmapHandler is in effect a resizable window into a periodic
+#     crystallographic map. The actual map data (a clipper Xmap object) is
+#     held within, and filled into the XmapWindow.data array as needed.
+#     Methods are included for both live updating (e.g. tracking and filling
+#     a box centred on the centre of rotation) and static display of a
+#     given region.
+#     '''
+#     def __init__(self, session, manager, name, xmap, origin, grid_origin, dim):
+#         '''
+#         Args:
+#             sesssion:
+#                 The ChimeraX session
+#             crystal:
+#                 The CrystalStructure object this belongs to
+#             name:
+#                 A descriptive name for this map
+#             xmap:
+#                 A clipper.Xmap
+#             origin:
+#                 The (x,y,z) coordinates of the bottom left corner of the
+#                 volume.
+#             grid_origin:
+#                 The (u,v,w) integer grid coordinates corresponding to
+#                 origin.
+#             dim:
+#                 The shape of the box in (u,v,w) grid coordinates.
+#         '''
+#         self.box_params = (origin, grid_origin, dim)
+#         self.xmap = xmap
+#         self.manager = manager
+#         darray = self._generate_and_fill_data_array(origin, grid_origin, dim)
+#         Volume.__init__(self, darray, session)
+#
+#         self.is_difference_map = xmap.is_difference_map
+#         self.name = name
+#         self.initialize_thresholds()
+#
+#         # If the box shape changes while the volume is hidden, the change
+#         # will not be applied until it's shown again.
+#         self._needs_update = True
+#         self.show()
+#         self._box_shape_changed_cb_handler = self.manager.triggers.add_handler(
+#             'map box changed', self._box_changed_cb)
+#         self._box_moved_cb_handler = self.manager.triggers.add_handler(
+#             'map box moved', self._box_moved_cb)
+#
+#
+#
+#     def show(self, *args, **kwargs):
+#         if self._needs_update:
+#             self._swap_volume_data(self.box_params, force_update = True)
+#             self._needs_update = False
+#         else:
+#             # Just set the origin and fill the box with the data for
+#             # the current location
+#             origin, grid_origin, ignore = self.box_params
+#             self._fill_volume_data(self._data_fill_target, grid_origin)
+#         super(XmapHandler, self).show(*args, **kwargs)
+#
+#     @property
+#     def hklinfo(self):
+#         return self.manager.hklinfo
+#
+#     @property
+#     def spacegroup(self):
+#         return self.manager.spacegroup
+#
+#     @property
+#     def cell(self):
+#         return self.manager.cell
+#
+#     @property
+#     def res(self):
+#         return self.hklinfo.resolution
+#
+#     @property
+#     def grid(self):
+#         return self.manager.grid
+#
+#     @property
+#     def voxel_size(self):
+#         return self.cell.dim / self.grid.dim
+#
+#     @property
+#     def voxel_size_frac(self):
+#         return 1/ self.grid.dim
+#
+#     @property
+#     def unit_cell(self):
+#         return self.manager.unit_cell
+#
+#     @property
+#     def _surface_zone(self):
+#         return self.manager._surface_zone
+#
+#     def mean_sd_rms(self):
+#         '''
+#         Overrides the standard Volume method to give the overall values
+#         from the Clipper object.
+#         '''
+#         x = self.xmap
+#         # RMS is not currently calculated by Clipper, so we'll just return
+#         # the sigma twice.
+#         return (x.mean, x.sigma, x.sigma)
+#
+#
+#     def _box_changed_cb(self, name, params):
+#         self.box_params = params
+#         self._needs_update = True
+#         if not self.display:
+#             # No sense in wasting cycles on this if the volume is hidden.
+#             # We'll just store the params and apply them when we show the
+#             # volume.
+#             # NOTE: this means we need to over-ride show() to ensure
+#             # it's updated before re-displaying.
+#             return
+#         self._swap_volume_data(params)
+#         self.data.values_changed()
+#         self.show()
+#
+#     def _box_moved_cb(self, name, params):
+#         self.box_params = params
+#         if not self.display:
+#             return
+#         self.data.set_origin(params[0])
+#         self._fill_volume_data(self._data_fill_target, params[1])
+#         self.data.values_changed()
+#
+#     def delete(self):
+#         bh = self._box_shape_changed_cb_handler
+#         if bh is not None:
+#             self.manager.triggers.remove_handler(bh)
+#             self._box_shape_changed_cb_handler = None
+#         bm = self._box_moved_cb_handler
+#         if bm is not None:
+#             self.manager.triggers.remove_handler(bm)
+#             self._box_moved_cb_handler = None
+#         super(XmapHandler, self).delete()
+#
+#
+#
+#
+#     def _swap_volume_data(self, params, force_update = False):
+#         '''
+#         Replace this Volume's data array with one of a new shape/size
+#         Args:
+#             params:
+#                 A tuple of (new_origin, new_grid_origin, new_dim)
+#         '''
+#         if not self._needs_update and not force_update:
+#             # Just store the parameters
+#             self.box_params = params
+#             return
+#         new_origin, new_grid_origin, new_dim = params
+#         darray = self._generate_and_fill_data_array(new_origin, new_grid_origin, new_dim)
+#         self._box_dimensions = new_dim
+#         self.replace_data(darray)
+#         self.new_region(ijk_min=(0,0,0), ijk_max=darray.size, ijk_step=(1,1,1), adjust_step=False)
+#
+#     def _generate_and_fill_data_array(self, origin, grid_origin, dim):
+#         data = self._data_fill_target = numpy.empty(dim, numpy.float32)
+#         self._fill_volume_data(data, grid_origin)
+#         order = numpy.array([2,1,0], int)
+#         darray = Array_Grid_Data(data.transpose(), origin = origin,
+#             step = self.voxel_size, cell_angles = self.cell.angles_deg)
+#         return darray
+#
+#
+#     def _fill_volume_data(self, target, start_grid_coor):
+#         #shape = (numpy.array(target.shape)[::-1] - 1)
+#         #end_grid_coor = start_grid_coor + clipper.Coord_grid(shape)
+#         #self.data.set_origin(origin_xyz)
+#         from .clipper_python import Coord_grid
+#         xmap = self.xmap
+#         xmap.export_section_numpy(Coord_grid(start_grid_coor), target)
+#
+#     # def update_drawings(self):
+#     #     super().update_drawings()
+#     #     if hasattr(self, '_surface_zone'):
+#     #         sz = self._surface_zone
+#     #         coords = sz.all_coords
+#     #         distance = sz.distance
+#     #         if coords is not None:
+#     #             from chimerax.surface.zone import surface_zone
+#     #             surface_zone(self, coords, distance)
