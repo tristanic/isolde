@@ -37,6 +37,7 @@
       <Define>MMDB_EXPORT</Define>
       <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
       <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <Library>stdc++</Library>
       <SourceFile>src/deps/mmdb2/mmdb2/hybrid_36.cpp</SourceFile>
       <SourceFile>src/deps/mmdb2/mmdb2/mmdb_io_stream.cpp</SourceFile>
       <SourceFile>src/deps/mmdb2/mmdb2/mmdb_math_linalg.cpp</SourceFile>
@@ -75,6 +76,7 @@
       <Define>CCP4_EXPORT</Define>
       <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
       <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <Library>stdc++</Library>
       <SourceFile>src/deps/libccp4/ccp4/ccp4_array.c</SourceFile>
       <SourceFile>src/deps/libccp4/ccp4/cmap_data.c</SourceFile>
       <SourceFile>src/deps/libccp4/ccp4/cmtzlib.c</SourceFile>
@@ -110,6 +112,7 @@
       <Library>mmdb2</Library>
       <Library>ccp4</Library>
       <Library>fftw2xc</Library>
+      <Library>stdc++</Library>
 
       <SourceFile>src/deps/clipper/core/atomsf.cpp</SourceFile>
       <SourceFile>src/deps/clipper/core/coords.cpp</SourceFile>
@@ -193,6 +196,7 @@
       <IncludeDir>src/include</IncludeDir>
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
+      <Library>stdc++</Library>
       <SourceFile>src/clipper_ext/xtal_mgr.cpp</SourceFile>
       <SourceFile>src/clipper_ext/edcalc_ext.cpp</SourceFile>
       <SourceFile>src/clipper_ext/sfcalc_obs_vdw.cpp</SourceFile>
@@ -215,6 +219,7 @@
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
       <Library>clipper_cx</Library>
+      <Library>stdc++</Library>
       <!-- <CompileArgument>-Os</CompileArgument> -->
 
       <SourceFile>src/bindings/ext/wrap_xtal_mgr.cpp</SourceFile>
@@ -260,6 +265,7 @@
       <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
       <Library>atomstruct</Library>
       <Library>arrays</Library>
+      <Library>stdc++</Library>
   </CLibrary>
 
   <!-- Dependencies on other ChimeraX/Python packages -->
