@@ -73,12 +73,11 @@ Xtal_mgr_base::guess_free_flag_value(const HKL_data<Flag>& flags)
         int last_candidate=-10;
         for (auto v: flag_vals)
         {
-            if (val_counts[v] < 5000)
-                if (val_fracs[v] > 0.005 && val_fracs[v] < 0.1)
-                {
-                    candidates.insert(v);
-                    last_candidate = v;
-                }
+            if (val_fracs[v] > 0.005 && val_fracs[v] < 0.1)
+            {
+                candidates.insert(v);
+                last_candidate = v;
+            }
         }
         if (candidates.size() != 1) {
             throw std::runtime_error("Cannot determine the correct value for the "
@@ -157,8 +156,8 @@ Xtal_mgr_base::calculate_r_factors()
 
     int nparams = 12;
     std::vector<ftype> params(nparams, 1.0);
-    // BasisFn_spline basisfn(hklinfo_, nparams, 1.0);
-    BasisFn_aniso_gaussian basisfn;
+    BasisFn_spline basisfn(hklinfo_, nparams, 1.0);
+    // BasisFn_aniso_gaussian basisfn;
     TargetFn_scaleF1F2<F_phi<ftype32>, F_sigF<ftype32>> targetfn (fcalc_, fobs_);
     ResolutionFn rfn(hklinfo_, basisfn, targetfn, params);
 
@@ -172,7 +171,7 @@ Xtal_mgr_base::calculate_r_factors()
         const auto& fo = fobs_[ih];
         const auto& fc = fcalc_[ih];
         const auto& fflag = free_flags_[ih];
-        if (!fo.missing())
+        if (!fo.missing() && !fc.missing())
         {
             ftype eps = ih.hkl_class().epsilon();
             ftype two_on_eps = 2.0/eps;
@@ -186,6 +185,15 @@ Xtal_mgr_base::calculate_r_factors()
             } else {
                 sum_fwork+=two_on_eps*fo.f();
                 sum_dwork+=two_on_eps*std::abs(fo.f()-scaled_fcalc);
+                if (Util::is_nan(sum_fwork) || Util::is_nan(sum_dwork))
+                {
+                    std::cerr << "Invalid value encountered at " << ih.hkl().format() << "!" << std::endl;
+                    std::cerr << "eps: " << eps << " two_on_eps: " << two_on_eps << std::endl;
+                    std::cerr << "fcalc: " << fc.f() << std::endl;
+                    std::cerr << "scaled_fcalc: " << scaled_fcalc << std::endl;
+                    std::cerr << "fsigf: " << fo.f() << ", " << fo.sigf() << std::endl;
+                    throw std::runtime_error("Invalid value encountered in R-factor calculation!");
+                }
 
                 sum_wfwork2 += 1/fo.sigf()*pow(two_on_eps*fo.f(), 2);
                 sum_wdwork2 += 1/fo.sigf()*pow(two_on_eps*(fo.f()-scaled_fcalc), 2);
