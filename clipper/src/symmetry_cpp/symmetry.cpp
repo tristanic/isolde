@@ -490,7 +490,7 @@ atom_and_bond_sym_transforms_from_sym_atoms(void *atoms, uint8_t *sym_indices,
             aa = ret_atoms.data();
             uint8_t *asym = ret_atom_sym.data();
             size_t count = 0;
-            for (size_t i=0; i<n_tf, count<natoms; ++i)
+            for (size_t i=0; i<n_tf && count<natoms; ++i)
             {
                 current_sym = *asym;
                 std::unordered_map<Atom*, double*> amap;

@@ -30,6 +30,16 @@
     <Category name="General"/>
   </Categories>
 
+  <CModule name="contour_thread" usesNumpy="true">
+      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden</LinkArgument>
+      <!-- <LinkArgument>-s</LinkArgument> -->
+        <Library>stdc++</Library>
+
+        <SourceFile>src/contour/contour_threaded.cpp</SourceFile>
+        <SourceFile>src/contour/contourdata.cpp</SourceFile>
+  </CModule>
+
   <!-- Compiled modules in bundle
        CModule gives the name of the module
        Source files are listed in one or more SourceFile elements -->
