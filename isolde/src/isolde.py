@@ -2339,7 +2339,7 @@ class Isolde():
             return
         from .visualisation import map_styles, map_style_settings
         from chimerax.map import volumecommand
-        volumecommand.volume(self.session, [v], **map_style_settings[map_styles.mesh_square])
+        volumecommand.volume(self.session, [v], **map_style_settings[map_styles.mesh_triangle])
 
     def _choose_map_color(self, *_):
         v = self.iw._sim_basic_xtal_settings_map_combo_box.currentData()
