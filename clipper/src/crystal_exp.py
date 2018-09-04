@@ -1038,10 +1038,13 @@ class XmapHandler_Live(Volume):
             return
         self.data.set_origin(params[0])
         self._fill_volume_data(self._data_fill_target, params[1])
-        self._use_thread=True
+        for s in self.surfaces:
+            s._use_thread=True
         self.data.values_changed()
 
     def _map_recalc_cb(self, name, *_):
+        for s in self.surfaces:
+            s._use_thread=True
         self._fill_volume_data(self._data_fill_target, self.box_params[1])
         self.data.values_changed()
 
