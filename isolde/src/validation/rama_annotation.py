@@ -235,7 +235,7 @@ class Rama_Annotator(Model):
             from chimerax.core.geometry import Places
             rd.positions = Places(shift_and_scale = xyzr)
             rd.colors = colors
-            rd.selected_positions = selecteds
+            rd.highlighted_positions = selecteds
 
             rd.display = True
 
