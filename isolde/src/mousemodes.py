@@ -271,20 +271,23 @@ class MouseModeRegistry():
 
         mm.bind_mouse_mode(button, modifiers, mode)
         self._registered_modes[name] = (mode, button, modifiers)
+        return mode
 
     def register_all_isolde_modes(self):
         # Button, modifier(s), name, class, args
-        from chimerax.clipper.mousemodes import ZoomMouseMode
+        from chimerax.clipper.mousemodes import ZoomMouseMode, ClipPlaneAdjuster
         session = self.session
         isolde = self._isolde
         standard_modes = (
             ('left', ['control',], 'select', AtomPicker, (session, isolde)),
             ('left', ['control','shift'], 'select add', AtomPickAdd, (session, isolde)),
             ('left', ['control','alt'], 'select subtract', AtomPickSubtract, (session, isolde)),
-            ('right', ['shift',], 'zoom', ZoomMouseMode, (session,)),
             )
         for m in standard_modes:
             self.register_mode(m[2], m[3](*m[4]), m[0], m[1])
+
+        zoom_mode = self.register_mode('zoom', ZoomMouseMode(session), 'right', ['shift'])
+        self.register_mode('adjust clip', ClipPlaneAdjuster(session, zoom_mode), 'wheel', ['shift'])
 
 
     def remove_mode(self, name):

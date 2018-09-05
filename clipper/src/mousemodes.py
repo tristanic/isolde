@@ -19,11 +19,56 @@ def initialize_map_contour_mouse_modes(session):
     session.ui.mouse_modes.bind_mouse_mode('wheel',['control'], s)
     session.ui.mouse_modes.bind_mouse_mode('wheel',[], v)
 
+class ClipPlaneAdjuster(mousemodes.MouseMode):
+    def __init__(self, session, zoom_mode):
+        super().__init__(session)
+        self._zoomer = zoom_mode
+
+    def cleanup(self):
+        pass
+
+    def wheel(self, event):
+        mult = 1-event.wheel_value()/30
+        z = self._zoomer
+        z.far_clip_multiplier *= mult
+        z.near_clip_multiplier *= mult
 
 
 class ZoomMouseMode(mousemodes.ZoomMouseMode):
     def __init__(self, session):
         mousemodes.ZoomMouseMode.__init__(self, session)
+        self._far_clip_multiplier = 0.5
+        self._near_clip_multiplier = 0.5
+
+    @property
+    def far_clip_multiplier(self):
+        '''
+        Multiplier applied to the camera-cofr distance to decide the position
+        of the rear clipping plane. Clamped to the range (0..1)
+        '''
+        return self._far_clip_multiplier
+
+    @far_clip_multiplier.setter
+    def far_clip_multiplier(self, val):
+        val = max(min(val, 1), 0)
+        self._far_clip_multiplier = val
+        # Zoom with a delta-z of zero to force redraw
+        self.zoom(0)
+
+    @property
+    def near_clip_multiplier(self):
+        '''
+        Multiplier applied to the camera-cofr distance to decide the position
+        of the near clipping plane. Clamped to the range (0..1)
+        '''
+        return self._near_clip_multiplier
+
+    @near_clip_multiplier.setter
+    def near_clip_multiplier(self, val):
+        val = max(min(val, 1), 0)
+        self._near_clip_multiplier = val
+        # Zoom with a delta-z of zero to force redraw
+        self.zoom(0)
 
     @property
     def far_clip(self):
@@ -37,11 +82,31 @@ class ZoomMouseMode(mousemodes.ZoomMouseMode):
             c = v.camera
             cofr = v.center_of_rotation
             cpos = c.position.origin()
-            clip_point = cpos + 2* (cofr-cpos)
+            clip_point = cpos + (1+self.far_clip_multiplier)* (cofr-cpos)
             fc = ClipPlane('far', c.view_direction(),
                                 clip_point, camera_normal = (0,0,1))
+            # Put the near clip at the camera position for depth cueing
             v.clip_planes.add_plane(fc)
             return fc
+
+    @property
+    def near_clip(self):
+        v = self.session.view
+        cp = v.clip_planes
+        nc = cp.find_plane('near')
+        if nc is not None:
+            return nc
+        else:
+            from chimerax.core.graphics.view import ClipPlane
+            c = v.camera
+            cofr = v.center_of_rotation
+            cpos = c.position.origin()
+            clip_point = cpos + (1-self.near_clip_multiplier) * (cofr-cpos)
+            nc = ClipPlane('near', c.view_direction(),
+                                clip_point, camera_normal = (0,0,-1))
+            # Put the near clip at the camera position for depth cueing
+            v.clip_planes.add_plane(nc)
+            return nc
 
     def cleanup(self):
         pass
@@ -65,14 +130,15 @@ class ZoomMouseMode(mousemodes.ZoomMouseMode):
             new_origin = c.position.origin() + shift*vd
             new_pos = place.Place(axes = c.position.axes(), origin = new_origin)
             c.position = new_pos
-            self.far_clip.plane_point = new_origin + (cofr-new_origin)*2
+            distance = cofr-new_origin
+            self.far_clip.plane_point = new_origin + distance*(1+self.far_clip_multiplier)
+            self.near_clip.plane_point = new_origin + distance*(1-self.near_clip_multiplier)
             c.redraw_needed = True
         else:
             shift = c.position.apply_without_translation((0, 0, delta_z))
             v.translate(shift)
             new_origin = c.position.origin()
             self.far_clip.plane_point = new_origin + (cofr-new_origin)*2
-
 
 class SelectVolumeToContour(mousemodes.MouseMode):
     '''
