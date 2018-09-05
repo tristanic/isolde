@@ -32,7 +32,7 @@
 
   <CModule name="contour_thread" usesNumpy="true">
       <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
       <!-- <LinkArgument>-s</LinkArgument> -->
         <Library>stdc++</Library>
 

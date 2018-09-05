@@ -24,6 +24,7 @@ from chimerax.std_commands import camera, cofr, cartoon
 from chimerax.core.commands import atomspec
 from chimerax.map.data import Array_Grid_Data
 from chimerax.map import Volume, volumecommand
+from chimerax.map.volume import VolumeSurface
 
 from .mousemodes import initialize_map_contour_mouse_modes
 from .main import atom_list_from_sel
@@ -750,7 +751,7 @@ class XmapSet_Live(Model):
                                   'surface_levels': contour,
                                   'show_outline_box': False,
                                   'surface_colors': color,
-                                  'square_mesh': True})
+                                  'square_mesh': False})
         # new_handler.update_surface()
         return new_handler
 
@@ -1016,6 +1017,16 @@ class XmapHandler_Live(Volume):
     def sigma(self):
         return self.stats.std_dev
 
+    def add_surface(self, level, rgba=None):
+        ses = self.session
+        s = FastVolumeSurface(self, level, rgba)
+        self._surfaces.append(s)
+        if self.id is None:
+            self.add([s])
+        else:
+            ses.models.add([s], parent=self)
+        return s
+
     def _box_changed_cb(self, name, params):
         box_params, force_fill = params
         self.box_params = box_params
@@ -1061,8 +1072,6 @@ class XmapHandler_Live(Volume):
         super().delete()
 
 
-
-
     def _swap_volume_data(self, params, force_update = False):
         '''
         Replace this Volume's data array with one of a new shape/size
@@ -1101,12 +1110,77 @@ class XmapHandler_Live(Volume):
         xmap = self.xmap
         xmap.export_section_numpy(Coord_grid(start_grid_coor), target)
 
-    # def update_drawings(self):
-    #     super().update_drawings()
-    #     if hasattr(self, '_surface_zone'):
-    #         sz = self._surface_zone
-    #         coords = sz.all_coords
-    #         distance = sz.distance
-    #         if coords is not None:
-    #             from chimerax.surface.zone import surface_zone
-    #             surface_zone(self, coords, distance)
+class FastVolumeSurface(VolumeSurface):
+    def __init__(self, volume, level, rgba=(1.0, 1.0, 1.0, 1.0)):
+        super().__init__(volume, level, rgba)
+        self._update_needed = False
+
+    def _postprocess(self, varray, narray, tarray, rendering_options, level):
+        ro = rendering_options
+        if ro.flip_normals and level < 0:
+          from chimerax.surface import invert_vertex_normals
+          invert_vertex_normals(narray, tarray)
+
+        # reverse_triangle_vertex_order done in thread
+
+        if ro.subdivide_surface:
+            from chimerax.surface import subdivide_triangles
+            for i in range(ro.subdivision_levels):
+                varray, tarray, narray = subdivide_triangles(varray, tarray, narray)
+
+        if ro.square_mesh:
+            from numpy import empty, uint8
+            hidden_edges = empty((len(tarray),), uint8)
+            from chimerax.map import _map
+            _map.principle_plane_edges(varray, tarray, hidden_edges)
+        else:
+            hidden_edges = None
+
+        if ro.surface_smoothing:
+          sf, si = ro.smoothing_factor, ro.smoothing_iterations
+          from chimerax.surface import smooth_vertex_positions
+          smooth_vertex_positions(varray, tarray, sf, si)
+          smooth_vertex_positions(narray, tarray, sf, si)
+
+        # Transforms and normalization done in thread
+        return varray, narray, tarray, hidden_edges
+
+
+
+    def _use_fast_thread_result(self, show_mesh, rendering_options):
+        sct = self._surf_calc_thread
+        if sct is not None:
+            va, ta, na = sct.get_result()
+            va, na, ta, hidden_edges = self._postprocess(va, na, ta, self.volume.rendering_options, self.level)
+            self._set_surface(va, na, ta, hidden_edges)
+            self._set_appearance(show_mesh, rendering_options)
+            self._surf_calc_thread = None
+            if self._update_needed:
+                # surface properties were changed while the thread was working
+                self.update_surface(show_mesh, rendering_options)
+            self._update_needed = False
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+    def update_surface(self, show_mesh, rendering_options):
+        # if not self._use_thread:
+        #     super().update_surface(show_mesh, rendering_options)
+        #     return
+        sct = self._surf_calc_thread
+        if sct is not None and not sct.ready():
+            self._update_needed = True
+        #self._use_fast_thread_result(show_mesh, rendering_options)
+
+        v = self.volume
+        level = self.level
+        vertex_transform = v.matrix_indices_to_xyz_transform()
+        normal_transform = vertex_transform.inverse().transpose().zero_translation()
+        det = vertex_transform.determinant()
+
+        from .delayed_reaction import delayed_reaction
+        from .contour_thread import Contour_Thread_Mgr
+        sct = self._surf_calc_thread = Contour_Thread_Mgr()
+        delayed_reaction(self.volume.session.triggers, 'new frame',
+            sct.start_compute, (v.matrix(), level, det, vertex_transform.matrix, normal_transform.matrix, False, True),
+            sct.ready,
+            self._use_fast_thread_result, (show_mesh, rendering_options))

@@ -28,20 +28,97 @@ public:
     }
 };
 
+void copy_transform(py::array_t<float> source, float dest[3][4])
+{
+    for (size_t i=0; i<3; ++i)
+        for (size_t j=0; j<4; ++j)
+            dest[i][j] = *(source.data(i,j));
+}
+
+
+/* HELPER FUNCTIONS */
+
+template <typename T>
+void transform_coord (T tf[3][4], T coord[3], T out[3])
+{
+    for (size_t i=0; i<3; ++i) {
+        T* row = tf[i];
+        out[i] = row[0]*coord[0] + row[1]*coord[1] + row[2]*coord[2] + row[3];
+    }
+}
+
+// Transform coordinates in-place
+template <typename T>
+void transform_coords (T tf[3][4], T* coords, int n)
+{
+    T temp[3];
+    for (int i=0; i<n; ++i)
+    {
+        transform_coord(tf, coords, temp);
+        for (int j=0; j<3; ++j)
+            *coords++ = temp[j];
+    }
+}
+
+template <typename T>
+T l2_norm_3d(T a[3])
+{
+    T accum = 0;
+    for (int i = 0; i < 3; i++) {
+        accum += a[i]*a[i];
+    }
+    return sqrt(accum);
+}
+
+// Normalize 3D vectors in-place
+template <typename T>
+void normalize_3d_vectors(T* vecs, int n)
+{
+    for (int i=0; i<n; ++i)
+    {
+        T norm = l2_norm_3d(vecs);
+        // Avoid divide-by-zero
+        norm = norm > 0 ? norm : 1;
+        for (int j=0; j<3; ++j)
+            *vecs++ /= norm;
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Swap vertex 1 and 2 of each triangle.
+//
+void reverse_triangle_vertex_order(int* ta, int n)
+{
+  int s0=3, s1 = 1;
+  // int s0 = triangles.stride(0), s1 = triangles.stride(1);
+  for (int t = 0 ; t < n ; ++t)
+    {
+      int i1 = s0*t+s1, i2 = i1 + s1;
+      int v1 = ta[i1], v2 = ta[i2];
+      ta[i1] = v2;
+      ta[i2] = v1;
+    }
+}
 
 class Contour_Thread_Mgr
 {
 public:
     Contour_Thread_Mgr() {}
-    void start_compute(py::array_t<float> data, float threshold,
+    void start_compute(py::array_t<float> data, float threshold, float det,
+        py::array_t<float> vertex_transform, py::array_t<float> normal_transform,
         bool cap_faces=true, bool return_normals=false);
     bool ready() const { return ready_; }
     bool return_normals() const { return return_normals_; }
     Contour_Geometry get_result();
 private:
+    std::unique_ptr<float> data_;
+    float threshold_;
+    bool flip_triangles_; // if det < 0
+    float vertex_transform_[3][4]; // Transform mapping vertices into model coordinates
+    float normal_transform_[3][4]; // Transform mapping normals into model coordinates
+
     Stride stride_[3];
     Index size_[3];
-    std::unique_ptr<float> data_;
     std::future<Contour_Geometry> geom_;
     bool working_=false;
     bool ready_=false;
@@ -51,13 +128,18 @@ private:
 };
 
 void Contour_Thread_Mgr::start_compute(py::array_t<float> data, float threshold,
+    float det, py::array_t<float> vertex_transform, py::array_t<float> normal_transform,
     bool cap_faces, bool return_normals)
 {
     if (working_)
         throw std::runtime_error("Contour thread is already running!");
     // Make a copy of the data to ensure C-contiguity and prevent it going out
     // of scope
+    threshold_=threshold;
     copy_3d_array(data);
+    flip_triangles_ = det < 0;
+    copy_transform(vertex_transform, vertex_transform_);
+    copy_transform(normal_transform, normal_transform_);
     working_=true;
     return_normals_ = return_normals;
     ready_=false;
@@ -94,10 +176,24 @@ void Contour_Thread_Mgr::copy_3d_array(py::array_t<float> source)
 Contour_Geometry Contour_Thread_Mgr::contour_surface_thread_(float* data, float threshold, bool cap_faces)
 {
     auto cptr = std::unique_ptr<Contour_Surface>(surface(data, size_, stride_, threshold, cap_faces));
-    Contour_Geometry geom(cptr->vertex_count(), cptr->triangle_count());
+    int vc = cptr->vertex_count();
+    int tc = cptr->triangle_count();
+    Contour_Geometry geom(vc, tc);
     cptr->geometry(geom.vertex_xyz, reinterpret_cast<Index *>(geom.tv_indices));
     if (return_normals_)
         cptr->normals(geom.normals);
+    if (flip_triangles_)
+        reverse_triangle_vertex_order(geom.tv_indices, tc);
+
+    // Transform coords and normals to model coordinates
+    transform_coords(vertex_transform_, geom.vertex_xyz, vc);
+    if (return_normals_)
+    {
+        transform_coords(normal_transform_, geom.normals, vc);
+        // Set all normals to unit length;
+        normalize_3d_vectors(geom.normals, vc);
+
+    }
     ready_=true;
     return geom;
 }
@@ -119,6 +215,7 @@ void delete_when_done(void *data)
 }
 
 
+
 PYBIND11_MODULE(contour_thread, m) {
     m.doc() = "Threaded contouring implementation";
 
@@ -126,7 +223,9 @@ PYBIND11_MODULE(contour_thread, m) {
     py::class_<Contour_Thread_Mgr>(m, "Contour_Thread_Mgr")
         .def(py::init<>())
         .def("start_compute", &Contour_Thread_Mgr::start_compute,
-            py::arg("data"), py::arg("threshold"), py::arg("cap_faces")=true,
+            py::arg("data"), py::arg("threshold"), py::arg("determinant"),
+            py::arg("vertex_transform"), py::arg("normal_transform"),
+            py::arg("cap_faces")=true,
             py::arg("return_normals")=false)
         .def("ready", &Contour_Thread_Mgr::ready)
         .def("get_result", [](Contour_Thread_Mgr& self)

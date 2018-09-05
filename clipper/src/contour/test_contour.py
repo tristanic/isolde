@@ -53,23 +53,28 @@ class Threaded_Contour_Test:
                 self._iterate(v, s)
 
     def _iterate(self, volume, surface):
-        from time import time
-        start = time()
         from random import random
         m = volume.matrix()
         level = random()*(m.max()-m.min())+m.min()
+        vertex_transform = volume.matrix_indices_to_xyz_transform()
+        normal_transform = vertex_transform.inverse().transpose().zero_translation()
+        det = vertex_transform.determinant()
+
         from chimerax.clipper.contour_thread import Contour_Thread_Mgr
         cm = Contour_Thread_Mgr()
         delayed_reaction(self.session.triggers, 'new frame',
-            cm.start_compute, (m, level, False, True),
+            cm.start_compute, (m, level, det, vertex_transform, normal_transform, False, True),
             cm.ready,
             self._thread_done_cb, (cm, volume, surface, level))
-        self._accumulated_time+=time()-start
-        self._count += 1
 
     def _thread_done_cb(self, thread_mgr, volume, surface, level):
+        from time import time
+        start = time()
         va, ta, na = thread_mgr.get_result()
-        va, na, ta, hidden_edges = surface._adjust_surface_geometry(va, na, ta, volume.rendering_options, level)
-        surface._set_surface(va, na, ta, hidden_edges)
+        surface._set_surface(va, na, ta, None)
+        # va, na, ta, hidden_edges = surface._adjust_surface_geometry(va, na, ta, volume.rendering_options, level)
+        # surface._set_surface(va, na, ta, hidden_edges)
+        self._accumulated_time+=time()-start
+        self._count += 1
         if not self.stop:
             self._iterate(volume, surface)
