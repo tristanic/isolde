@@ -2446,8 +2446,13 @@ class Isolde():
         try:
             sm = self._sim_manager = Sim_Manager(self, self.selected_model, main_sel,
                 self.params, self.sim_params, excluded_residues = self.ignored_residues)
-        except ValueError:
-            return
+        except ValueError as e:
+            err_text = str(e)
+            if err_text.startswith("No template found") or \
+               err_text.startswith("User-supplied template"):
+                # These errors are already handled
+                return
+            raise
         except:
             raise
         sm.start_sim()
