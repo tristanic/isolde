@@ -1145,8 +1145,6 @@ class FastVolumeSurface(VolumeSurface):
         # Transforms and normalization done in thread
         return varray, narray, tarray, hidden_edges
 
-
-
     def _use_fast_thread_result(self, show_mesh, rendering_options):
         sct = self._surf_calc_thread
         if sct is not None:
@@ -1163,13 +1161,9 @@ class FastVolumeSurface(VolumeSurface):
         return DEREGISTER
 
     def update_surface(self, show_mesh, rendering_options):
-        # if not self._use_thread:
-        #     super().update_surface(show_mesh, rendering_options)
-        #     return
         sct = self._surf_calc_thread
         if sct is not None and not sct.ready():
             self._update_needed = True
-        #self._use_fast_thread_result(show_mesh, rendering_options)
 
         v = self.volume
         level = self.level
