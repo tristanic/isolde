@@ -555,26 +555,28 @@ class Sim_Manager:
 
         self._prepare_mdff_managers()
         sh = self.sim_handler = None
+        uh = self._update_handlers = []
         try:
             sh = self.sim_handler = Sim_Handler(session, sim_params, sc)
-        except ValueError as e:
-            # If it's an error in template handling, parse out the offending
-            # residue and tell ISOLDE about it
-            self._parse_auto_template_error(e)
-            # Return early to avoid further errors. This object will be cleaned
-            # up automatically
-            raise e
         except Exception as e:
-            # Explicit template provision (e.g. for CYS residues) throws a
-            # generic Exception if the template doesn't match the residue
-            # topology. Catch and handle that case, then throw it upwards as a
-            # ValueError
-            if self._parse_explicit_template_error(e):
-                raise ValueError(str(e))
-            else:
+            self._sim_end_cb()
+            if isinstance(e, ValueError):
+                # If it's an error in template handling, parse out the offending
+                # residue and tell ISOLDE about it
+                self._parse_auto_template_error(e)
+                # Return early to avoid further errors. This object will be cleaned
+                # up automatically
                 raise e
+            else:
+                # Explicit template provision (e.g. for CYS residues) throws a
+                # generic Exception if the template doesn't match the residue
+                # topology. Catch and handle that case, then throw it upwards as a
+                # ValueError
+                if self._parse_explicit_template_error(e):
+                    raise ValueError(str(e))
+                else:
+                    raise e
 
-        uh = self._update_handlers = []
         self._initialize_restraints(uh)
         self._initialize_mdff(uh)
 
