@@ -72,7 +72,7 @@ class AtomPicker(MouseMode):
         self._atoms = None
 
     def _on_sim_start(self, *_):
-        self._atoms = self._isolde.mobile_atoms
+        self._atoms = self._isolde.sim_manager.sim_construct.mobile_atoms
 
     def _on_sim_end(self, *_):
         if self._choose_from_all_models:

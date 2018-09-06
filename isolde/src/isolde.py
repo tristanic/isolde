@@ -478,6 +478,10 @@ class Isolde():
         # Work out menu state based on current ChimeraX session
         self._update_sim_control_button_states()
 
+        st = iw._sim_tab_widget
+        st.setCurrentIndex(0)
+
+
     def _populate_menus_and_update_params(self):
         iw = self.iw
         params = self.params
@@ -2154,7 +2158,8 @@ class Isolde():
                 if score < outlier_cutoff:
                     item.setBackground(badColor)
                 table.setItem(i, j, item)
-
+        table.resizeColumnsToContents()
+        
     def _show_selected_iffy_rota(self, item):
         res = item.data
         from . import view
@@ -2553,6 +2558,7 @@ class Isolde():
         '''
         self._update_sim_control_button_states()
         self._set_right_mouse_mode_tug_atom()
+        self.triggers.activate_trigger('simulation started', None)
         self.sim_handler.triggers.add_handler('sim terminated', self._sim_end_cb)
         self.sim_handler.triggers.add_handler('sim paused', self._update_sim_control_button_states)
 
@@ -2562,6 +2568,7 @@ class Isolde():
             d.cleanup()
         from chimerax.core.ui.mousemodes import TranslateMouseMode
         self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
+        self.triggers.activate_trigger('simulation terminated', None)
 
     def _get_main_sim_selection(self):
         '''
