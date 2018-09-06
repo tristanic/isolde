@@ -77,8 +77,8 @@ class _Defaults:
         'RIGID_BONDS':                HBonds,
         'RIGID_WATER':                True,
         'REMOVE_C_OF_M_MOTION':       False,
-        'MIN_CONVERGENCE_TOL_START':  0.01, # *unit.kilojoule_per_mole
-        'MIN_CONVERGENCE_TOL_END':    1e-4,
+        'MIN_CONVERGENCE_TOL_START':  1e-7, # *unit.kilojoule_per_mole
+        'MIN_CONVERGENCE_TOL_END':    1e-9,
         'MAX_MIN_ITERATIONS':         1000,
         'SIM_TIMEOUT':                120.0, # seconds
         'TARGET_LOOP_PERIOD':         0.1, # seconds
