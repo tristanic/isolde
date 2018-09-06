@@ -1164,6 +1164,7 @@ class FastVolumeSurface(VolumeSurface):
         sct = self._surf_calc_thread
         if sct is not None and not sct.ready():
             self._update_needed = True
+            return
 
         v = self.volume
         level = self.level
