@@ -852,6 +852,8 @@ class Isolde():
             self._show_selected_iffy_rota
         )
 
+        from .validation.clashes import Clash_Table_Mgr
+        self._clash_mgr = Clash_Table_Mgr(self)
 
         ####
         # Simulation control functions

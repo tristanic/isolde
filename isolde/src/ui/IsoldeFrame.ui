@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>547</width>
-    <height>793</height>
+    <width>580</width>
+    <height>830</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -261,8 +261,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>539</width>
-        <height>652</height>
+        <width>566</width>
+        <height>644</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -317,7 +317,7 @@ border: 1px;
 }</string>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>3</number>
            </property>
            <property name="elideMode">
             <enum>Qt::ElideNone</enum>
@@ -364,8 +364,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>531</width>
-                  <height>564</height>
+                  <width>542</width>
+                  <height>701</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0">
@@ -1079,8 +1079,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>531</width>
-                  <height>499</height>
+                  <width>556</width>
+                  <height>476</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1799,8 +1799,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>531</width>
-                  <height>373</height>
+                  <width>556</width>
+                  <height>334</height>
                  </rect>
                 </property>
                 <property name="sizePolicy">
@@ -3040,9 +3040,9 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>0</y>
-                  <width>531</width>
-                  <height>820</height>
+                  <y>-710</y>
+                  <width>542</width>
+                  <height>1262</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -3059,7 +3059,7 @@ border: 1px;
                   <number>1</number>
                  </property>
                  <property name="bottomMargin">
-                  <number>1</number>
+                  <number>50</number>
                  </property>
                  <item>
                   <widget class="QFrame" name="_validate_rama_stub_frame">
@@ -3645,6 +3645,185 @@ border: 1px;
                       </item>
                       <item>
                        <widget class="QPushButton" name="_validate_rota_update_button">
+                        <property name="text">
+                         <string>Update list</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QFrame" name="_validate_clashes_stub_frame">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QHBoxLayout" name="horizontalLayout_45">
+                    <property name="spacing">
+                     <number>1</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>1</number>
+                    </property>
+                    <item>
+                     <widget class="QLabel" name="label_11">
+                      <property name="text">
+                       <string>Clashes</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <spacer name="horizontalSpacer_28">
+                      <property name="orientation">
+                       <enum>Qt::Horizontal</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>387</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                     </spacer>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="_validate_clashes_show_button">
+                      <property name="text">
+                       <string>Show</string>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QFrame" name="_validate_clashes_main_frame">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QVBoxLayout" name="verticalLayout_10">
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_46">
+                      <item>
+                       <widget class="QLabel" name="label_13">
+                        <property name="text">
+                         <string>Clashes</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <spacer name="horizontalSpacer_29">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="_validate_clashes_hide_button">
+                        <property name="text">
+                         <string>Hide</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                    <item>
+                     <widget class="QTableWidget" name="_validate_clashes_geom_table">
+                      <column>
+                       <property name="text">
+                        <string>Atom 1</string>
+                       </property>
+                      </column>
+                      <column>
+                       <property name="text">
+                        <string>Atom 2</string>
+                       </property>
+                      </column>
+                      <column>
+                       <property name="text">
+                        <string>Overlap (Å)</string>
+                       </property>
+                      </column>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QTableWidget" name="_validate_clashes_energy_table">
+                      <column>
+                       <property name="text">
+                        <string>Chain</string>
+                       </property>
+                      </column>
+                      <column>
+                       <property name="text">
+                        <string>Residue</string>
+                       </property>
+                      </column>
+                      <column>
+                       <property name="text">
+                        <string>Atom</string>
+                       </property>
+                      </column>
+                      <column>
+                       <property name="text">
+                        <string>Energy (kJ mol⁻¹ Å⁻¹)</string>
+                       </property>
+                      </column>
+                     </widget>
+                    </item>
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_47">
+                      <property name="bottomMargin">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <spacer name="horizontalSpacer_31">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="_validate_clashes_update_button">
                         <property name="text">
                          <string>Update list</string>
                         </property>
@@ -4380,7 +4559,7 @@ background-color: rgb(5, 200, 0);
  </widget>
  <resources>
   <include location="../resources/resources.qrc"/>
-  <include location="resources/resources.qrc"/>
+  <include location="../resources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

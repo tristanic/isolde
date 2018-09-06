@@ -1322,6 +1322,7 @@ class Sim_Handler:
         self._stop = False
         self._sim_running = True
         self._startup = True
+        self._startup_counter = 0
         self._minimize_and_go()
 
     def find_clashing_atoms(self, max_force = defaults.CLASH_FORCE):
@@ -1334,8 +1335,9 @@ class Sim_Handler:
         force_mags = numpy.linalg.norm(forces, axis=1)
         sort_i = numpy.argsort(force_mags)[::-1]
         sorted_forces = numpy.sort(force_mags)[::-1]
-        clashes = sort_i[sorted_forces > max_force]
-        return clashes, sorted_forces[sorted_forces>max_force]
+        fmask = (sorted_forces > max_force)
+        clashes = sort_i[fmask]
+        return clashes, sorted_forces[fmask]
 
 
     def _minimize_and_go(self):
@@ -1373,14 +1375,20 @@ class Sim_Handler:
 
 
     def _update_coordinates_and_repeat(self, reinit_vels = False):
+        if self._startup:
+            self._startup_counter += 1
+            if self._startup_counter >= self._params.simulation_startup_rounds:
+                self._startup = False
         th = self.thread_handler
         self.atoms.coords = th.coords
         self.triggers.activate_trigger('coord update', None)
         if th.clashing:
-            self.triggers.activate_trigger('clash detected', self.find_clashing_atoms())
-            self.pause = True
+            if not self._startup:
+                self.triggers.activate_trigger('clash detected', self.find_clashing_atoms())
+                self.pause = True
+                self._unstable = True
+                return
             self._unstable = True
-            return
         if self._force_update_pending:
             self._update_forces_in_context_if_needed()
         if reinit_vels:
