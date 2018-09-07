@@ -317,7 +317,7 @@ border: 1px;
 }</string>
            </property>
            <property name="currentIndex">
-            <number>3</number>
+            <number>0</number>
            </property>
            <property name="elideMode">
             <enum>Qt::ElideNone</enum>
@@ -363,7 +363,7 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>0</y>
+                  <y>-225</y>
                   <width>542</width>
                   <height>701</height>
                  </rect>
@@ -1045,6 +1045,61 @@ border: 1px;
                 <zorder>_force_field_selection_frame</zorder>
                 <zorder>_sim_platform_frame</zorder>
                </widget>
+              </widget>
+             </item>
+             <item>
+              <widget class="QFrame" name="_live_map_control_frame">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>50</height>
+                </size>
+               </property>
+               <property name="frameShape">
+                <enum>QFrame::NoFrame</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+               </property>
+               <layout class="QHBoxLayout" name="horizontalLayout_48">
+                <item>
+                 <widget class="QCheckBox" name="_live_map_recalc_checkbox">
+                  <property name="text">
+                   <string>Live map recalc</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QToolButton" name="_live_map_recalc_button">
+                  <property name="text">
+                   <string>Recalculate maps now</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="horizontalSpacer_32">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QToolButton" name="_live_map_update_sim_button">
+                  <property name="text">
+                   <string>Update sim potentials</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </widget>
              </item>
             </layout>
@@ -3799,7 +3854,7 @@ border: 1px;
                       </column>
                       <column>
                        <property name="text">
-                        <string>Energy (kJ mol⁻¹ Å⁻¹)</string>
+                        <string>|Force| (kJ mol⁻¹ Å⁻¹)</string>
                        </property>
                       </column>
                      </widget>
@@ -3856,7 +3911,7 @@ border: 1px;
           </widget>
          </item>
          <item>
-          <widget class="QFrame" name="frame">
+          <widget class="QFrame" name="_main_sim_controls_frame">
            <layout class="QHBoxLayout" name="horizontalLayout">
             <property name="spacing">
              <number>3</number>
@@ -4181,7 +4236,7 @@ background-color: rgb(5, 200, 0);
           </widget>
          </item>
          <item>
-          <widget class="QFrame" name="_main_bottom_frame">
+          <widget class="QFrame" name="_misc_sim_control_frame">
            <property name="minimumSize">
             <size>
              <width>0</width>

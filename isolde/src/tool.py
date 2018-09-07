@@ -117,6 +117,7 @@ class ISOLDE_ToolUI(ToolInstance):
             iw._sim_basic_xtal_map_settings_frame,
             iw._real_space_map_from_volume_frame,
             iw._real_space_map_from_volume_show_button, # Not yet working correctly
+            iw._live_map_control_frame,
             ]
 
         for f in self._hidden_at_start:
@@ -147,6 +148,8 @@ class ISOLDE_ToolUI(ToolInstance):
             iw._rebuild_dist_restraint_apply_button,
             iw._rebuild_grow_shrink_sel_frame,
             iw._right_mouse_modes_frame,
+            iw._live_map_recalc_button,
+            iw._live_map_update_sim_button,
             ]
         for f in self._disabled_at_start:
             f.setEnabled(False)

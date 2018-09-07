@@ -310,6 +310,7 @@ class Isolde():
 
         self.gui_mode = False
 
+        self._ui_panels = []
 
         if gui is not None:
             from PyQt5.QtGui import QPixmap
@@ -901,7 +902,6 @@ class Isolde():
         mm = self.session.tools.find_by_class(MouseModePanel)[0]
         mm.buttons.setEnabled(state)
 
-
     def initialize_haptics(self):
         '''
         If the HapticHandler plugin is installed, start it and create
@@ -986,6 +986,8 @@ class Isolde():
 
         self._populate_available_volumes_combo_box()
         self._change_selected_model(model=current_model)
+        for p in self._ui_panels:
+            p.chimerax_models_changed(self.selected_model)
 
     def _selection_changed(self, *_):
         from chimerax.atomic import selected_atoms
@@ -2159,7 +2161,7 @@ class Isolde():
                     item.setBackground(badColor)
                 table.setItem(i, j, item)
         table.resizeColumnsToContents()
-        
+
     def _show_selected_iffy_rota(self, item):
         res = item.data
         from . import view
@@ -3021,6 +3023,9 @@ class Isolde():
     #############################################
     def _on_close(self, *_):
         self.session.logger.status('Closing ISOLDE and cleaning up')
+
+        for p in self._ui_panels:
+            p.remove_trigger_handlers()
 
         if self.simulation_running:
             self.sim_manager.stop_sim()
