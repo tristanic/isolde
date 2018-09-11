@@ -98,21 +98,21 @@ with the surroundings.
          Topic :: Scientific/Engineering :: Bio-Informatics
        The "ChimeraX :: Bundle" classifier is also supplied automatically.  -->
   <DataFiles>
-    <DataFile>openmm/amberff/*</DataFile>
-    <DataFile>openmm/amberff/amap/*</DataFile>
-    <DataFile>validation/molprobity_data/*</DataFile>
-    <DataFile>resources/*</DataFile>
-    <DataFile>demo_data/*</DataFile>
-    <DataFile>demo_data/3io0/*</DataFile>
-    <DataFile>dictionaries/*</DataFile>
+    <DataDir>openmm/amberff</DataDir>
+    <DataDir>openmm/amberff/amap</DataDir>
+    <DataDir>validation/molprobity_data</DataDir>
+    <DataDir>resources</DataDir>
+    <DataDir>demo_data</DataDir>
+    <DataDir>demo_data/3io0</DataDir>
+    <DataDir>dictionaries</DataDir>
     <DataFile>tests/1pmx_1.pdb</DataFile>
-    <DataFile>doc/*</DataFile>
-    <DataFile>doc/python_api/*</DataFile>
-    <DataFile>doc/gui/*</DataFile>
-    <DataFile>doc/_images/*</DataFile>
-    <DataFile>doc/_images/math/*</DataFile>
-    <DataFile>doc/_static/*</DataFile>
-    <DataFile>ui/*</DataFile>
+    <DataDir>doc</DataDir>
+    <DataDir>doc/python_api</DataDir>
+    <DataDir>doc/gui</DataDir>
+    <DataDir>doc/_images</DataDir>
+    <DataDir>doc/_images/math</DataDir>
+    <DataDir>doc/_static</DataDir>
+    <DataDir>ui</DataDir>
 
 
 
