@@ -20,7 +20,6 @@ class B_Factor_Direct_Iso:
 
         m.atoms.aniso_u6 = numpy.nan
 
-        self._trajectory = numpy.empty((num_samples, *m.atoms.coords.shape))
 
         self._count = 0
 
@@ -40,6 +39,13 @@ class B_Factor_Direct_Iso:
 
         m.atoms.selected = True
         isolde.start_sim()
+        # Since unparameterised residues are ignored by the simulation, the
+        # cohort of mobile atoms may not match the total set of atoms. We only
+        # want to update B-factors for the mobile atoms
+        sim_construct = isolde.sim_manager.sim_construct
+        ma = self._mobile_atoms = sim_construct.mobile_atoms
+        self._trajectory = numpy.empty((num_samples, *ma.coords.shape))
+
         isolde.sim_handler.triggers.add_handler('coord update', self._coord_update_cb)
 
     def _coord_update_cb(self, *_):
@@ -47,7 +53,7 @@ class B_Factor_Direct_Iso:
             return
         m = self.model
         if self._count < self._num_samples:
-            coords = m.atoms.coords
+            coords = self._mobile_atoms.coords
             self._trajectory[self._count] = coords
             self._count += 1
         else:
@@ -94,13 +100,13 @@ class B_Factor_Direct_Iso:
                 self._map_update_cb()
                 return
             if scores[inner] == 0:
-                m.atoms.bfactors = self._badd+self._u_base*10**logweights[inner]
+                self._mobile_atoms.bfactors = self._badd+self._u_base*10**logweights[inner]
                 self._inner_iteration += 1
             else:
                 self._inner_iteration += 1
                 self._map_update_cb()
         else:
-            m.atoms.bfactors = self._badd+self._u_base*10**(self._best_log_weight)
+            self._mobile_atoms.bfactors = self._badd+self._u_base*10**(self._best_log_weight)
             self.isolde.sim_params = self._original_sim_params
             from chimerax.core.triggerset import DEREGISTER
             return DEREGISTER
