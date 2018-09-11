@@ -46,6 +46,7 @@ void declare_xtal_mgr(py::module& m)
         .def_property_readonly("weighted_rfree", &Class::weighted_rfree)
         .def_property_readonly("bulk_solvent_frac", &Class::bulk_frac)
         .def_property_readonly("bulk_solvent_scale", &Class::bulk_scale)
+        .def_property_readonly("scaling_function", &Class::scaling_function)
         .def("generate_fcalc", &Class::generate_fcalc)
         .def("generate_base_map_coeffs", &Class::generate_base_map_coeffs)
         .def("add_xmap", &Class::add_xmap,
@@ -91,6 +92,7 @@ void declare_xtal_thread_mgr(py::module& m)
         .def_property_readonly("weights", &Class::weights)
         .def_property_readonly("num_maps", &Class::n_maps)
         .def_property_readonly("map_names", &Class::map_names)
+        .def_property_readonly("scaling_function", &Class::scaling_function)
         .def("add_xmap", &Class::add_xmap,
             py::arg("name"), py::arg("b_sharp"),
             py::arg("is_difference_map")=false,

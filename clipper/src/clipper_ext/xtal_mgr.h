@@ -213,6 +213,10 @@ public:
     inline const Xmap<ftype32>& get_xmap(const std::string& name) const { return maps_.at(name).xmap(); }
     inline const Map_stats& get_map_stats(const std::string& name) { return maps_.at(name).map_stats(); }
 
+    // Return the values of the current scaling function scaling fcalc to fobs
+    // for each (H,K,L)
+    std::vector<float> scaling_function() const;
+
 
 protected:
     // Safety
@@ -357,6 +361,11 @@ public:
     inline const Xmap<ftype32>& get_xmap(const std::string& name) { return mgr_.get_xmap(name); }
 
     inline const Map_stats& get_map_stats(const std::string& name) { return mgr_.get_map_stats(name); }
+
+    // Return the values of the current scaling function scaling fcalc to fobs
+    // for each (H,K,L)
+    inline std::vector<float> scaling_function() const { return mgr_.scaling_function(); }
+
 
 private:
     Xtal_mgr_base mgr_;

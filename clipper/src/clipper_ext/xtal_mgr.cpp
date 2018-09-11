@@ -146,6 +146,25 @@ Xtal_mgr_base::scaled_fcalc() const
 
 } // scaled_fcalc
 
+std::vector<float>
+Xtal_mgr_base::scaling_function() const
+{
+    auto l = hklinfo_.num_reflections();
+    std::vector<float> ret(l);
+
+    int nparams = 12;
+    std::vector<ftype> params(nparams, 1.0);
+    BasisFn_spline basisfn(hklinfo_, nparams, 1.0);
+    // BasisFn_aniso_gaussian basisfn;
+    TargetFn_scaleF1F2<F_phi<ftype32>, F_sigF<ftype32>> targetfn (fcalc_, fobs_);
+    ResolutionFn rfn(hklinfo_, basisfn, targetfn, params);
+    HKL_info::HKL_reference_index ih;
+    size_t i=0;
+    for (ih = fcalc_.first(); !ih.last(); ih.next(), ++i)
+        ret[i] = rfn.f(ih);
+    return ret;
+}
+
 
 void
 Xtal_mgr_base::calculate_r_factors()
@@ -156,8 +175,8 @@ Xtal_mgr_base::calculate_r_factors()
 
     int nparams = 12;
     std::vector<ftype> params(nparams, 1.0);
-    BasisFn_spline basisfn(hklinfo_, nparams, 1.0);
-    // BasisFn_aniso_gaussian basisfn;
+    //BasisFn_spline basisfn(hklinfo_, nparams, 1.0);
+    BasisFn_aniso_gaussian basisfn;
     TargetFn_scaleF1F2<F_phi<ftype32>, F_sigF<ftype32>> targetfn (fcalc_, fobs_);
     ResolutionFn rfn(hklinfo_, basisfn, targetfn, params);
 
@@ -175,7 +194,15 @@ Xtal_mgr_base::calculate_r_factors()
         {
             ftype eps = ih.hkl_class().epsilon();
             ftype two_on_eps = 2.0/eps;
-            auto scaled_fcalc = sqrt(rfn.f(ih))*fc.f();
+            // Shouldn't really have to do this, but the spline function can
+            // dip below zero for sudden changes
+            float scale = rfn.f(ih);
+            if (scale < 0)
+            {
+              std::cerr << "Below-zero scaling value of " << scale << " at " << ih.hkl().format() << "!" << std::endl;
+              scale = 0;
+            }
+            auto scaled_fcalc = sqrt(scale)*fc.f();
             if (fflag.flag()==freeflag_) {
                 sum_ffree+=two_on_eps*fo.f();
                 sum_dfree+=two_on_eps*std::abs(fo.f()-scaled_fcalc);
@@ -189,7 +216,9 @@ Xtal_mgr_base::calculate_r_factors()
                 {
                     std::cerr << "Invalid value encountered at " << ih.hkl().format() << "!" << std::endl;
                     std::cerr << "eps: " << eps << " two_on_eps: " << two_on_eps << std::endl;
+                    std::cerr << "fobs: " << fo.f() << std::endl;
                     std::cerr << "fcalc: " << fc.f() << std::endl;
+                    std::cerr << "ResolutionFn value: " << rfn.f(ih) << std::endl;
                     std::cerr << "scaled_fcalc: " << scaled_fcalc << std::endl;
                     std::cerr << "fsigf: " << fo.f() << ", " << fo.sigf() << std::endl;
                     throw std::runtime_error("Invalid value encountered in R-factor calculation!");
