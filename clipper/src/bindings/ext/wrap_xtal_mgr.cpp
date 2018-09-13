@@ -16,6 +16,7 @@ void declare_xmap_container(py::module& m)
             py::return_value_policy::reference_internal)
         .def_property_readonly("stats", (const Map_stats& (Class::*)() const) &Class::map_stats)
         .def_property_readonly("is_difference_map", &Class::is_difference_map)
+        .def_property_readonly("exclude_missing_reflections", &Class::exclude_missing)
         .def_property_readonly("exclude_free_reflections", &Class::exclude_free_reflections)
         .def_property_readonly("fill_with_fcalc", &Class::fill_with_fcalc)
         .def_property_readonly("b_sharp", &Class::b_sharp)
@@ -51,7 +52,9 @@ void declare_xtal_mgr(py::module& m)
         .def("generate_base_map_coeffs", &Class::generate_base_map_coeffs)
         .def("add_xmap", &Class::add_xmap,
             py::arg("name"), py::arg("b_sharp"),
-            py::arg("is_difference_map")=true, py::arg("exclude_free_reflections")=true,
+            py::arg("is_difference_map")=true,
+            py::arg("exclude_missing_reflections")=false,
+            py::arg("exclude_free_reflections")=true,
             py::arg("fill_with_fcalc")=true)
         .def("recalculate_map", (void (Class::*)(const std::string&)) &Class::recalculate_map)
         // Get a reference to the managed xmap of a given name
@@ -96,6 +99,7 @@ void declare_xtal_thread_mgr(py::module& m)
         .def("add_xmap", &Class::add_xmap,
             py::arg("name"), py::arg("b_sharp"),
             py::arg("is_difference_map")=false,
+            py::arg("exclude_missing_reflections")=false,
             py::arg("exclude_free_reflections")=true,
             py::arg("fill_with_fcalc")=true)
         .def("delete_xmap", &Class::delete_xmap)

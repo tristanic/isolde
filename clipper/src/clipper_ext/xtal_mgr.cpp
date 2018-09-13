@@ -14,7 +14,9 @@ namespace clipper_cx
 Xmap_details::Xmap_details(const Xmap_details& other)
     : hkl_info_(other.hkl_info()), base_coeffs_(&other.base_coeffs()),
       b_sharp_(other.b_sharp()), is_difference_map_(other.is_difference_map()),
-      exclude_freer_(other.exclude_free_reflections()), fill_(other.fill_with_fcalc())
+      exclude_missing_(other.exclude_missing()),
+      exclude_freer_(other.exclude_free_reflections()),
+      fill_(other.fill_with_fcalc())
       {
           xmap_ = std::unique_ptr<Xmap<ftype32>>(new Xmap<ftype32>(other.xmap()));
           coeffs_ = std::unique_ptr<HKL_data<F_phi<ftype32>>>( new HKL_data<F_phi<ftype32>>(other.coeffs()) );
@@ -250,6 +252,7 @@ Xtal_mgr_base::apply_b_factor_sharpening(HKL_data<F_phi<ftype32>>& coeffs,
 void
 Xtal_mgr_base::add_xmap(const std::string& name,
     const ftype& bsharp, bool is_difference_map,
+    bool exclude_missing_reflections,
     bool exclude_free_reflections, bool fill_with_fcalc)
 {
     if (!coeffs_initialized())
@@ -261,10 +264,10 @@ Xtal_mgr_base::add_xmap(const std::string& name,
         throw std::logic_error("Each map must have a unique name!");
     if (is_difference_map)
         maps_.emplace(name, Xmap_details(hklinfo_, &base_fofc_, bsharp, grid_sampling_, is_difference_map,
-                              exclude_free_reflections, fill_with_fcalc));
+                              exclude_missing_reflections, exclude_free_reflections, fill_with_fcalc));
     else
         maps_.emplace(name, Xmap_details(hklinfo_, &base_2fofc_, bsharp, grid_sampling_, is_difference_map,
-                            exclude_free_reflections, fill_with_fcalc));
+                            exclude_missing_reflections, exclude_free_reflections, fill_with_fcalc));
 
     recalculate_map(name);
 } // add_xmap
@@ -286,6 +289,8 @@ Xtal_mgr_base::recalculate_map(Xmap_details& xmd)
     } else {
         xmd.coeffs() = xmd.base_coeffs();
     }
+    if (xmd.exclude_missing())
+        remove_missing_reflections_from_map_coeffs(xmd.coeffs(), fobs_);
     if (xmd.b_sharp() != 0.0)
         apply_b_factor_sharpening(xmd.coeffs(), xmd.b_sharp());
     xmd.xmap().fft_from(xmd.coeffs());
@@ -340,6 +345,7 @@ Xtal_mgr_base::set_map_free_terms_to_dfc(const HKL_data<F_phi<ftype32>>& source,
     {
         const auto& fpo = source[ih];
         if (usage_[ih].missing() || (usage_[ih].flag() == SFweight_spline<ftype32>::NONE))
+        //if (flag[ih].flag())
         {
             if (!fpo.missing()) {
                 auto s = basisfn.f_s( ih.invresolsq(), param_s);
@@ -352,6 +358,27 @@ Xtal_mgr_base::set_map_free_terms_to_dfc(const HKL_data<F_phi<ftype32>>& source,
         }
     }
 } // set_map_free_terms_to_dfc
+
+void
+Xtal_mgr_base::remove_missing_reflections_from_map_coeffs(HKL_data<F_phi<ftype32>>& coeffs,
+    const HKL_data<F_sigF<ftype32>>& f_sigf)
+{
+    if (!coeffs_initialized())
+        throw std::runtime_error("Coefficients have not yet been calculated!");
+    HKL_info::HKL_reference_index ih;
+    for (ih=coeffs.first(); !ih.last(); ih.next())
+    {
+        if (f_sigf[ih].missing())
+        {
+            // std::cerr << "Setting " << ih.hkl().format() << " to null" << std::endl;
+            coeffs[ih].set_null();
+        }
+    }
+
+
+}
+
+
 
 // THREADED IMPLEMENTATIONS
 Xtal_thread_mgr::Xtal_thread_mgr(const HKL_info& hklinfo, const HKL_data<Flag>& free_flags,
@@ -485,11 +512,12 @@ Xtal_thread_mgr::init(const Atom_list& atoms)
 void
 Xtal_thread_mgr::add_xmap(const std::string& name,
     const ftype& bsharp, bool is_difference_map,
+    bool exclude_missing_reflections,
     bool exclude_free_reflections, bool fill_with_fcalc)
 {
     finalize_threads_if_necessary();
     mgr_.add_xmap(name, bsharp, is_difference_map,
-        exclude_free_reflections, fill_with_fcalc);
+        exclude_missing_reflections, exclude_free_reflections, fill_with_fcalc);
 }
 
 void

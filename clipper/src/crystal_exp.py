@@ -363,6 +363,7 @@ class XmapSet_Live(Model):
         xm.init(atom_list_from_sel(atoms))
         # Only this map will actually be used as the MDFF potential
         self.add_live_xmap('MDFF potential', 0, is_difference_map=False,
+            exclude_missing_reflections=True,
             exclude_free_reflections=True, fill_with_fcalc=True,
             display=False)
 
@@ -672,11 +673,13 @@ class XmapSet_Live(Model):
 
     def add_live_xmap(self, name, b_sharp,
         is_difference_map=False,
+        exclude_missing_reflections=False,
         exclude_free_reflections=True,
         fill_with_fcalc=True,
         color=None, style=None, contour=None, display=True):
         xm = self._xtal_mgr
         xm.add_xmap(name, b_sharp, is_difference_map=is_difference_map,
+            exclude_missing_reflections=exclude_missing_reflections,
             exclude_free_reflections=exclude_free_reflections,
             fill_with_fcalc = fill_with_fcalc)
         #xmap = xm.get_xmap_ref(name)

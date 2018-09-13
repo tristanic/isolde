@@ -31,11 +31,12 @@ public:
     Xmap_details(const Xmap_details& other);
     inline Xmap_details(const HKL_info& hklinfo, HKL_data<F_phi<ftype32>> const* base_coeffs, const ftype& b_sharp,
         const Grid_sampling& grid_sampling, bool is_difference_map=false,
-        bool exclude_free_reflections=true,
+        bool exclude_missing_reflections=false, bool exclude_free_reflections=true,
         bool fill_with_fcalc=true)
         : hkl_info_(hklinfo),
           base_coeffs_(base_coeffs), b_sharp_(b_sharp),
           is_difference_map_(is_difference_map),
+          exclude_missing_(exclude_missing_reflections),
           exclude_freer_(exclude_free_reflections),
           fill_(fill_with_fcalc)
     {
@@ -57,6 +58,7 @@ public:
     inline const HKL_data<F_phi<ftype32>>& base_coeffs() const { return *base_coeffs_; }
     inline const ftype& b_sharp() const { return b_sharp_; }
     inline bool is_difference_map() const { return is_difference_map_; }
+    inline bool exclude_missing() const { return exclude_missing_; }
     inline bool exclude_free_reflections() const { return exclude_freer_; }
     inline bool fill_with_fcalc() const { return fill_; }
 
@@ -70,7 +72,11 @@ private:
     // Final coefficients used to generate xmap_
     ftype b_sharp_=0;
     // If this is a difference map, fill_ is ignored
-    bool is_difference_map_ = false;
+    bool is_difference_map_=false;
+    // Exclude missing reflections from map? CAUTION: if false these will be
+    // replaced by f_calc, which can lead to severe model bias for data with
+    // a large proportion of missing reflections.
+    bool exclude_missing_=false;
     // Exclude free reflections from map?
     bool exclude_freer_=true;
     // if exclude_freer_, replace free reflections with DFcalc?
@@ -192,6 +198,7 @@ public:
 
     void add_xmap(const std::string& name,
         const ftype& bsharp, bool is_difference_map=false,
+        bool exclude_missing_reflections=false,
         bool exclude_free_reflections=true, bool fill_with_fcalc=true);
 
     void delete_xmap(const std::string& name) { maps_.erase(name); }
@@ -272,6 +279,8 @@ private:
         HKL_data<F_phi<ftype32>>& dest);
     void set_map_free_terms_to_dfc(const HKL_data<F_phi<ftype32>>& source,
         HKL_data<F_phi<ftype32>>& dest);
+    void remove_missing_reflections_from_map_coeffs(HKL_data<F_phi<ftype32>>& coeffs,
+        const HKL_data<F_sigF<ftype32>>& f_sigf);
 
 
 }; // class Xmap_mgr
@@ -354,6 +363,7 @@ public:
 
     void add_xmap(const std::string& name,
         const ftype& bsharp, bool is_difference_map=false,
+        bool exclude_missing_reflections=false,
         bool exclude_free_reflections=true, bool fill_with_fcalc=true);
 
     void delete_xmap(const std::string& name);
