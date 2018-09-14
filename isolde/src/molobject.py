@@ -1150,20 +1150,21 @@ class Rota_Mgr:
             func(self._c_pointer, ctypes.byref(nkey), n, pointer(names),
                 pointer(frequencies), pointer(angles), pointer(esds))
 
-    def get_rota_targets(self, resname):
-        '''
-        Returns an OrderedDict giving rotamer name, angles, esds and frequencies
-        sorted in order of decreasing frequency.
-
-        Args:
-            * resname
-                - three-letter element_name, in capitals
-        '''
-        from copy import copy
-        rd = self._rota_targets
-        if resname in rd.keys():
-            return copy(rd[resname])
-        return None
+    # TODO: Update to use C++ API
+    # def get_rota_targets(self, resname):
+    #     '''
+    #     Returns an OrderedDict giving rotamer name, angles, esds and frequencies
+    #     sorted in order of decreasing frequency.
+    #
+    #     Args:
+    #         * resname
+    #             - three-letter element_name, in capitals
+    #     '''
+    #     from copy import copy
+    #     rd = self._rota_targets
+    #     if resname in rd.keys():
+    #         return copy(rd[resname])
+    #     return None
 
     def set_default_colors(self):
         '''
