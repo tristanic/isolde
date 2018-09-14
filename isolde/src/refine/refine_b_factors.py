@@ -106,7 +106,9 @@ class B_Factor_Direct_Iso:
                 self._inner_iteration += 1
                 self._map_update_cb()
         else:
-            self._mobile_atoms.bfactors = self._badd+self._u_base*10**(self._best_log_weight)
+            final_bfactors = bfactors = self._badd+self._u_base*10**(self._best_log_weight)
+            final_bfactors[final_bfactors>999] = 999
+            self._mobile_atoms.bfactors = final_bfactors
             self.isolde.sim_params = self._original_sim_params
             from chimerax.core.triggerset import DEREGISTER
             return DEREGISTER
