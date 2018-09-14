@@ -883,6 +883,8 @@ def set_to_default_cartoon(session, model = None):
         cartoon.cartoon(session, atoms = atoms, suppress_backbone_display=False)
         cartoon.cartoon_style(session, atoms = atoms, width=0.4, thickness=0.1, arrows_helix=True, arrow_scale = 2)
         cartoon.cartoon_tether(session, structures=atoms, opacity=0)
+        from chimerax.atomic import nucleotides
+        nucleotides.cmd.nucleotides(session, 'atoms')
     except:
         return
 
