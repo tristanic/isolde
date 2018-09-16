@@ -49,12 +49,9 @@
 #include "clipper_util.h"
 #include "clipper_memory.h"
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600
-// Workaround to avoid DLL export errors
-const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;
-#endif
 
 #include "../imex.h"
+
 
 namespace clipper
 {
@@ -106,7 +103,7 @@ namespace clipper
     ftype f() const;      //!< convert to ftype
     ftype rational() const;  //!< convert from rational to ftype
   };
- 
+
 
   //! 3-vector class
   template<class T = ftype> class Vec3
@@ -439,7 +436,7 @@ namespace clipper
 
   template<class T> bool Vec3<T>::equals( const Vec3<T>& v, const T& tol ) const
   {
-    return ( pow(vec[0]-v[0],T(2)) + pow(vec[1]-v[1],T(2)) + 
+    return ( pow(vec[0]-v[0],T(2)) + pow(vec[1]-v[1],T(2)) +
 	     pow(vec[2]-v[2],T(2)) <= pow(tol,T(2)) );
   }
 
@@ -471,7 +468,7 @@ namespace clipper
 
   template<class T> T Mat33<T>::det() const
   {
-    return ( mat[0][0]*(mat[1][1]*mat[2][2] - mat[1][2]*mat[2][1]) + 
+    return ( mat[0][0]*(mat[1][1]*mat[2][2] - mat[1][2]*mat[2][1]) +
 	     mat[0][1]*(mat[1][2]*mat[2][0] - mat[1][0]*mat[2][2]) +
 	     mat[0][2]*(mat[1][0]*mat[2][1] - mat[1][1]*mat[2][0]) );
   }

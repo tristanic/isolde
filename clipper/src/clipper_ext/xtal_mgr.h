@@ -1,15 +1,16 @@
 #pragma once
-#include <string>
+//#include <string>
+
+#include "imex.h"
+#include <clipper/clipper.h>
+#include <clipper/clipper-contrib.h>
+#include "sfcalc_obs_vdw.h"
+
 #include <unordered_map>
 #include <future>
 #include <memory>
 #include <chrono>
 
-#include "imex.h"
-#include <clipper/clipper.h>
-#include <clipper/clipper-contrib.h>
-
-#include "sfcalc_obs_vdw.h"
 
 namespace clipper_cx { // ChimeraX extensions to clipper
 

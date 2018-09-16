@@ -48,6 +48,7 @@
 namespace clipper {
 
 
+
 String::String( const char* str, const int l )
 {
   std::ostringstream s;

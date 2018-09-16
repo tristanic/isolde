@@ -61,7 +61,7 @@ namespace clipper {
 
     class Neighbours {
     public:
-      Neighbours( const clipper::Xmap_base &map, const float min_dist = 0.5, const float max_dist = 2.5 ); 
+      Neighbours( const clipper::Xmap_base &map, const float min_dist = 0.5, const float max_dist = 2.5 );
       clipper::Coord_grid operator[] (int i) const { return nlist[i]; }
       int size() const { return nlist.size(); }
     private:
@@ -101,10 +101,10 @@ namespace clipper {
   public:
     // helper classes
 
-    class Neighbours {
+    class CLIPPER_IMEX Neighbours {
     public:
       Neighbours() {}
-      Neighbours( const clipper::Xmap_base &map, const float min_dist = 0.5, const float max_dist = 2.5 ); 
+      Neighbours( const clipper::Xmap_base &map, const float min_dist = 0.5, const float max_dist = 2.5 );
       clipper::Coord_grid operator[] (int i) const { return nlist[i]; }
       int size() const { return nlist.size(); }
     private:

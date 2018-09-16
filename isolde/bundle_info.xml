@@ -43,7 +43,7 @@ with the surroundings.
   </CLibrary>
   <!-- TODO: Move nd_interp entirely into molc -->
   <CLibrary name="_nd_interp">
-      <Library>stdc++</Library>
+      <!-- <Library>stdc++</Library> -->
     <SourceFile>src/interpolation/nd_interp.cpp</SourceFile>
   </CLibrary>
   <CLibrary name="molc" usesNumpy="true">

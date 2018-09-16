@@ -31,10 +31,13 @@
   </Categories>
 
   <CModule name="contour_thread" usesNumpy="true">
-      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+    <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+    <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+    <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+    <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+    <IncludeDir platform="windows">C:\include</IncludeDir>
       <!-- <LinkArgument>-s</LinkArgument> -->
-        <Library>stdc++</Library>
+        <!-- <Library>stdc++</Library> -->
 
         <SourceFile>src/contour/contour_threaded.cpp</SourceFile>
         <SourceFile>src/contour/contourdata.cpp</SourceFile>
@@ -45,9 +48,11 @@
        Source files are listed in one or more SourceFile elements -->
   <CLibrary name="mmdb2">
       <Define>MMDB_EXPORT</Define>
-      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
-      <Library>stdc++</Library>
+      <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <!-- <Library>stdc++</Library> -->
       <SourceFile>src/deps/mmdb2/mmdb2/hybrid_36.cpp</SourceFile>
       <SourceFile>src/deps/mmdb2/mmdb2/mmdb_io_stream.cpp</SourceFile>
       <SourceFile>src/deps/mmdb2/mmdb2/mmdb_math_linalg.cpp</SourceFile>
@@ -84,9 +89,13 @@
   </CLibrary>
   <CLibrary name="ccp4">
       <Define>CCP4_EXPORT</Define>
-      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
-      <Library>stdc++</Library>
+      <Define platform="windows">NOMINMAX</Define>
+      <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="windows">AdvAPI32.Lib</LinkArgument>
+      <!-- <Library>stdc++</Library> -->
       <SourceFile>src/deps/libccp4/ccp4/ccp4_array.c</SourceFile>
       <SourceFile>src/deps/libccp4/ccp4/cmap_data.c</SourceFile>
       <SourceFile>src/deps/libccp4/ccp4/cmtzlib.c</SourceFile>
@@ -111,9 +120,12 @@
   </CLibrary>
   <CLibrary name="clipper">
       <Define>CLIPPER_EXPORTS</Define>
+      <Define platform="windows">NOMINMAX</Define>
       <Define>FFTW_MKL</Define>
-      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
       <IncludeDir>src/deps/libccp4</IncludeDir>
       <IncludeDir>src/deps/mmdb2</IncludeDir>
       <IncludeDir>src/deps/clipper</IncludeDir>
@@ -121,8 +133,13 @@
       <LibraryDir>src</LibraryDir>
       <Library>mmdb2</Library>
       <Library>ccp4</Library>
-      <Library>fftw2xc</Library>
-      <Library>stdc++</Library>
+      <Library platform="linux">fftw2xc</Library>
+      <Library platform="mac">fftw2xc</Library>
+      <LinkArgument platform="windows">lib\fftw2xc_win\mkl_fftw2.lib</LinkArgument>
+      <LinkArgument platform="windows">lib\fftw2xc_win\fftw2xc_single_msvs.lib</LinkArgument>
+
+
+      <!-- <Library>stdc++</Library> -->
 
       <SourceFile>src/deps/clipper/core/atomsf.cpp</SourceFile>
       <SourceFile>src/deps/clipper/core/coords.cpp</SourceFile>
@@ -201,12 +218,17 @@
 
   <CLibrary name="clipper_cx" usesNumpy="true">
       <Define>CLIPPER_CX_EXPORTS</Define>
-      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
-      <IncludeDir>src/include</IncludeDir>
+      <Define platform="windows">NOMINMAX</Define>
+      <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="windows">/FORCE:MULTIPLE</LinkArgument>
+
+      <IncludeDir>src/deps</IncludeDir>
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
-      <Library>stdc++</Library>
+      <!-- <Library>stdc++</Library> -->
       <SourceFile>src/clipper_ext/xtal_mgr.cpp</SourceFile>
       <SourceFile>src/clipper_ext/edcalc_ext.cpp</SourceFile>
       <SourceFile>src/clipper_ext/sfcalc_obs_vdw.cpp</SourceFile>
@@ -222,14 +244,22 @@
   </CLibrary> -->
 
   <CModule name="clipper_python" usesNumpy="true">
-      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
-      <IncludeDir>src/include</IncludeDir>
+    <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+    <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+    <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+    <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <IncludeDir platform="windows">C:\include</IncludeDir>
+      <IncludeDir>src/deps</IncludeDir>
+      <IncludeDir>src/deps/libccp4</IncludeDir>
+      <IncludeDir>src/deps/mmdb2</IncludeDir>
+      <IncludeDir>src/deps/fftw2</IncludeDir>
       <IncludeDir>src</IncludeDir>
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
       <Library>clipper_cx</Library>
-      <Library>stdc++</Library>
+      <Define platform="windows">NOMINMAX</Define>
+      <LinkArgument platform="windows">/FORCE:MULTIPLE</LinkArgument>
+      <!-- <Library>stdc++</Library> -->
       <!-- <CompileArgument>-Os</CompileArgument> -->
 
       <SourceFile>src/bindings/ext/wrap_xtal_mgr.cpp</SourceFile>
@@ -271,11 +301,13 @@
 
   <CLibrary name = "_symmetry" usesNumpy="true">
       <SourceFile>src/symmetry_cpp/symmetry.cpp</SourceFile>
-      <CompileArgument>-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <LinkArgument>-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
       <Library>atomstruct</Library>
       <Library>arrays</Library>
-      <Library>stdc++</Library>
+      <!-- <Library>stdc++</Library> -->
   </CLibrary>
 
   <!-- Dependencies on other ChimeraX/Python packages -->
@@ -305,6 +337,7 @@
          <DataFile platform="linux">libfftw_mkl_core.so</DataFile>
          <DataFile platform="mac">libfftw2xc.dylib</DataFile>
          <DataFile platform="mac">mkl_custom.dylib</DataFile>
+         <DataFile platform="windows">mkl_fftw2.dll</DataFile>
      </DataFiles>
 
   <!-- <DataFiles>

@@ -1,4 +1,5 @@
-#include <pybind11/pybind11.h>
+#include <string>
+const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) -1;
 
 #include <clipper/clipper.h>
 #include <clipper/clipper-ccp4.h>
@@ -8,6 +9,10 @@
 #include <clipper/clipper-minimol.h>
 #include <clipper/clipper-mmdb.h>
 #include <clipper/clipper-phs.h>
+
+#include <pybind11/pybind11.h>
+
+
 
 namespace py=pybind11;
 void init_hkl_info(py::module &m);
