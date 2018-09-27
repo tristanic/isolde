@@ -131,12 +131,12 @@ Xtal_mgr_base::generate_base_map_coeffs()
 HKL_data<F_phi<ftype32>>
 Xtal_mgr_base::scaled_fcalc() const
 {
-    int nparams = 12;
-    std::vector<ftype> params(nparams, 1.0);
+    int nparams = 7;
+    std::vector<ftype> params(nparams, 0.0);
     HKL_data<F_phi<ftype32>> ret(hklinfo_);
     BasisFn_aniso_gaussian basisfn;
     TargetFn_scaleF1F2<F_phi<ftype32>, F_sigF<ftype32>> targetfn (fcalc_, fobs_);
-    ResolutionFn rfn(hklinfo_, basisfn, targetfn, params);
+    ResolutionFn_nonlinear rfn(hklinfo_, basisfn, targetfn, params);
     HKL_info::HKL_reference_index ih;
     for (ih=fcalc_.first(); !ih.last(); ih.next())
     {
@@ -154,12 +154,12 @@ Xtal_mgr_base::scaling_function() const
     auto l = hklinfo_.num_reflections();
     std::vector<float> ret(l);
 
-    int nparams = 12;
-    std::vector<ftype> params(nparams, 1.0);
-    BasisFn_spline basisfn(hklinfo_, nparams, 1.0);
-    // BasisFn_aniso_gaussian basisfn;
+    int nparams = 7;
+    std::vector<ftype> params(nparams, 0.0);
+    //BasisFn_spline basisfn(hklinfo_, nparams, 1.0);
+    BasisFn_aniso_gaussian basisfn;
     TargetFn_scaleF1F2<F_phi<ftype32>, F_sigF<ftype32>> targetfn (fcalc_, fobs_);
-    ResolutionFn rfn(hklinfo_, basisfn, targetfn, params);
+    ResolutionFn_nonlinear rfn(hklinfo_, basisfn, targetfn, params);
     HKL_info::HKL_reference_index ih;
     size_t i=0;
     for (ih = fcalc_.first(); !ih.last(); ih.next(), ++i)
@@ -175,12 +175,12 @@ Xtal_mgr_base::calculate_r_factors()
         throw std::runtime_error("No Fcalc values have been calculated! Run "
             " generate_fcalc() on a suitable set of atoms first!");
 
-    int nparams = 12;
-    std::vector<ftype> params(nparams, 1.0);
+    int nparams = 7;
+    std::vector<ftype> params(nparams, 0.0);
     //BasisFn_spline basisfn(hklinfo_, nparams, 1.0);
     BasisFn_aniso_gaussian basisfn;
     TargetFn_scaleF1F2<F_phi<ftype32>, F_sigF<ftype32>> targetfn (fcalc_, fobs_);
-    ResolutionFn rfn(hklinfo_, basisfn, targetfn, params);
+    ResolutionFn_nonlinear rfn(hklinfo_, basisfn, targetfn, params);
 
     HKL_info::HKL_reference_index ih;
     // for standard rwork, rfree
