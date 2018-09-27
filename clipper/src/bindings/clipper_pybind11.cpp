@@ -1,5 +1,8 @@
+
+#if defined(_MSC_VER) && _MSC_VER >= 1600
 #include <string>
 const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) -1;
+#endif
 
 #include <clipper/clipper.h>
 #include <clipper/clipper-ccp4.h>
