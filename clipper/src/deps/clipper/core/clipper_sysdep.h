@@ -45,19 +45,6 @@
 #ifndef CLIPPER_SYSDEP
 #define CLIPPER_SYSDEP
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600
-// Workaround to avoid DLL export errors
-#include <string>
-#include "../imex.h"
-// const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) -1;
-//extern template class CLIPPER_IMEX std::basic_string<char,std::char_traits<char>,std::allocator<char>>;
-// template class CLIPPER_IMEX std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >;
-// using basic_string2 = std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >;
-// #ifdef CLIPPER_EXPORTS
-// const basic_string2::size_type basic_string2::npos = (basic_string2::size_type) -1;
-// #endif
-#endif
-
 /* cmath is so variable, that we ignore it and use the C version:
  - include the math library
  - mirror into the 'std' namespace as below:
