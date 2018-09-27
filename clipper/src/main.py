@@ -73,10 +73,6 @@ def atom_list_from_sel(atom_list):
     if u_aniso is None:
         u_aniso = numpy.ones([n,6],numpy.double)*numpy.nan
         u_aniso[atom_list.has_aniso_u] = atom_list.filter(atom_list.has_aniso_u).aniso_u6
-        # FIXME Once new ChimeraX build arrives with Atoms.has_aniso_u entry
-        #for i, a in enumerate(atom_list):
-            #if a.aniso_u6 is not None:
-                #u_aniso[i] = a.aniso_u6
     from .clipper_python import Atom_list
     clipper_atom_list = Atom_list(elements, coords, occupancies, u_iso, u_aniso)
     return clipper_atom_list
