@@ -14,7 +14,7 @@ def test_hkl_plot(session, datafile, scale=1.0):
     return plot
 
 class HKL_Plot_3D(Model):
-    def __init__(self, name, session, hkls, vals, dim_scale=2.0, highlight_negatives=True):
+    def __init__(self, name, session, hkls, vals, scale_to=None, dim_scale=2.0, highlight_negatives=True):
         super().__init__(name, session)
         self._values = vals
         if len(vals.shape) > 1:
@@ -28,7 +28,14 @@ class HKL_Plot_3D(Model):
         hkls = hkls[mask]
         real_vals = real_vals[mask]
         # Normalise values
-        real_vals /= real_vals.max()
+        if scale_to is None:
+            real_vals /= numpy.abs(real_vals).max()
+        else:
+            scale_to = scale_to.copy()
+            if len(scale_to.shape) > 1:
+                scale_to = scale_to[:,0]
+            scale_to = scale_to[numpy.logical_not(numpy.isnan(scale_to))]
+            real_vals /= numpy.abs(scale_to).max()
         self._axes = _HKL_Axes(axis_length=dim_scale*(hkls.max()-hkls.min()))
         self._data_plot = _HKL_Plot_3D('data', hkls, real_vals, dim_scale=dim_scale, highlight_negatives=highlight_negatives)
         self.add_drawing(self._axes)
