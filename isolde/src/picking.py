@@ -35,7 +35,7 @@ def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, 
         atoms = atoms.filter(atoms.visibles)
     if not hydrogens:
         atoms = atoms.filter(atoms.element_names != 'H')
-    atomic_coords = atoms.coords
+    atomic_coords = atoms.scene_coords
     from chimerax.core.geometry import find_close_points
     line_indices, atom_indices = find_close_points(xyzlist, atomic_coords, cutoff)
     line_shortlist = xyzlist[line_indices]
@@ -52,7 +52,7 @@ def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, 
 
 def pick_closest_to_point(session, xyz, atoms, cutoff, displayed_only = True, hydrogens = False):
     '''
-    Pick the atom closest to an (x,y,z) point in space. Optionally the
+    Pick the atom closest to an (x,y,z) point in scene coordinates. Optionally the
     selection can be limited to include only displayed atoms and/or
     exclude hydrogens.
     '''
@@ -62,7 +62,7 @@ def pick_closest_to_point(session, xyz, atoms, cutoff, displayed_only = True, hy
         atoms = atoms.filter(atoms.displays)
     if not hydrogens:
         atoms = atoms.filter(atoms.element_names != 'H')
-    atomic_coords = atoms.coords
+    atomic_coords = atoms.scene_coords
 
     from chimerax.core.geometry import find_closest_points
     ignore1, ignore2, nearest = find_closest_points([xyz], atomic_coords, cutoff)
