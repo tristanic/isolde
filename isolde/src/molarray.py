@@ -432,7 +432,7 @@ class Proper_Dihedral_Restraints(Collection):
 
     def restrict_to_sel(self, atoms):
         '''
-        Returns a new :py:class:`Chiral_Restraints` containing only the
+        Returns a new :py:class:`Proper_Dihedral_Restraints` containing only the
         restraints for which every atom is in the given selection.
         '''
         f = c_function('proper_dihedral_restraint_all_atoms_in_sel',
