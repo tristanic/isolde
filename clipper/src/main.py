@@ -69,10 +69,9 @@ def atom_list_from_sel(atom_list):
     u_iso = numpy.sqrt(atom_list.bfactors/(8*pi**2))
     # Have to be careful here. Atoms.aniso_u6 returns None if any atom in
     # the array has no aniso_u6 entry.
-    u_aniso = atom_list.aniso_u6
-    if u_aniso is None:
-        u_aniso = numpy.ones([n,6],numpy.double)*numpy.nan
-        u_aniso[atom_list.has_aniso_u] = atom_list.filter(atom_list.has_aniso_u).aniso_u6
+
+    u_aniso = numpy.ones([n,6],numpy.double)*numpy.nan
+    u_aniso[atom_list.has_aniso_u] = atom_list.filter(atom_list.has_aniso_u).aniso_u6
     from .clipper_python import Atom_list
     clipper_atom_list = Atom_list(elements, coords, occupancies, u_iso, u_aniso)
     return clipper_atom_list
