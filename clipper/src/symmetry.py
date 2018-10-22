@@ -1056,13 +1056,13 @@ class SymAtomsDrawing(structure.AtomsDrawing):
 
     def bounds(self, positions=True):
         if not positions:
-            return self._geometry_bounds()
+            return self.geometry_bounds()
         cpb = self._cached_position_bounds
         if cpb is not None:
             return cpb
         xyzr = self.positions.shift_and_scale_array()
         if xyzr is None:
-            return self._geometry_bounds()
+            return self.geometry_bounds()
         coords, radii = xyzr[:, :3], xyzr[:,3]
         from chimerax.core.geometry import sphere_bounds
         b = sphere_bounds(coords, radii)
@@ -1100,7 +1100,7 @@ class SymBondsDrawing(structure.BondsDrawing):
 
     def bounds(self, positions=True):
         #TODO: properly calculate bounds
-        return self._geometry_bounds()
+        return self.geometry_bounds()
 
     def select(self, mode = 'add'):
         pass
