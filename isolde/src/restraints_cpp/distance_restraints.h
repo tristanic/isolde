@@ -51,8 +51,8 @@ public:
     bool enabled() const { return _enabled; }
     void set_enabled(bool flag);
     double radius() const;
-    void target_transform(double *rot44) const;
-    void bond_cylinder_transform(double *rot44) const;
+    void target_transform(float *rot44) const;
+    void bond_cylinder_transform(float *rot44) const;
     bool visible() const;
     const Atoms &atoms() const {return _atoms;}
     double distance() const {return _atoms[0]->coord().distance(_atoms[1]->coord());}
@@ -60,7 +60,7 @@ public:
     Change_Tracker *change_tracker() const;
 
 private:
-    void _bond_transform(double *rot44, double radius, double length_scale) const;
+    void _bond_transform(float *rot44, float radius, float length_scale) const;
     Atoms _atoms;
     Distance_Restraint_Mgr *_mgr;
     double _target = 0;

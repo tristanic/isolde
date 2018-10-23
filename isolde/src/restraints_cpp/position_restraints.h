@@ -62,7 +62,7 @@ public:
     Atom *atom() const { return _atom; }
     double radius() const;
     //! Provide a 4x4 OpenGL array transforming a primitive unit bond onto this restraint
-    void bond_cylinder_transform(double *rot44) const;
+    void bond_cylinder_transform(float *rot44) const;
     Change_Tracker* change_tracker() const;
     Position_Restraint_Mgr_Base* mgr() const { return _mgr; }
 

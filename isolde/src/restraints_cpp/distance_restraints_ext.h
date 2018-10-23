@@ -351,7 +351,7 @@ distance_restraint_visible(void *restraint, size_t n, npy_bool *flag)
 }
 
 extern "C" EXPORT void
-distance_restraint_bond_transform(void *restraint, size_t n, double *rot44)
+distance_restraint_bond_transform(void *restraint, size_t n, float *rot44)
 {
     Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
     try {
@@ -365,7 +365,7 @@ distance_restraint_bond_transform(void *restraint, size_t n, double *rot44)
 }
 
 extern "C" EXPORT void
-distance_restraint_target_transform(void *restraint, size_t n, double *rot44)
+distance_restraint_target_transform(void *restraint, size_t n, float *rot44)
 {
     Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
     try {

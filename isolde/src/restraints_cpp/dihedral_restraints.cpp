@@ -137,17 +137,17 @@ Chiral_Restraint::Chiral_Restraint(
  *  The transform matrices are in 3x4 format where the left-hand-side
  *  3x3 is the rotation and the right-hand-side is the translation.
  */
-void Proper_Dihedral_Restraint::get_annotation_transform(double *tf)
+void Proper_Dihedral_Restraint::get_annotation_transform(float *tf)
 {
     // First the rotational component (rotating the ring relative to the post)
     // Sets the direction the arrow points
-    double *tf1 = tf;
-    double *tf2 = tf+16;
+    float *tf1 = tf;
+    float *tf2 = tf+16;
     bool flip = offset() < 0;
-    double width = get_spring_constant()/MAX_RADIAL_SPRING_CONSTANT *
+    float width = get_spring_constant()/MAX_RADIAL_SPRING_CONSTANT *
         (DIHEDRAL_RESTRAINT_MAX_WIDTH-DIHEDRAL_RESTRAINT_MIN_WIDTH) + DIHEDRAL_RESTRAINT_MIN_WIDTH;
 
-    geometry::rotation_gl<double>(Z_AXIS, offset(), tf1);
+    geometry::rotation_gl<float>(Z_AXIS, offset(), tf1);
     if(flip)
     // Flipping on x axis - negate y and z components
     {
@@ -156,7 +156,7 @@ void Proper_Dihedral_Restraint::get_annotation_transform(double *tf)
     auto b = get_dihedral()->axial_bond();
     const auto &c0 = b->atoms()[0]->coord();
     const auto &c1 = b->atoms()[1]->coord();
-    double xyz0[3], xyz1[3];
+    float xyz0[3], xyz1[3];
     for (size_t i=0; i<3; ++i)
     {
         xyz0[i]=c0[i];
@@ -164,10 +164,10 @@ void Proper_Dihedral_Restraint::get_annotation_transform(double *tf)
     }
 
     // get the transformation mapping to the bond position
-    geometry::bond_cylinder_transform_gl<double>(xyz0, xyz1, 1.0, width, tf2);
+    geometry::bond_cylinder_transform_gl<float>(xyz0, xyz1, 1.0, width, tf2);
     // apply the bond transformation to the rotational component
-    double temp[16];
-    geometry::multiply_transforms_gl<double>(tf1, tf2, temp);
+    float temp[16];
+    geometry::multiply_transforms_gl<float>(tf1, tf2, temp);
     for (size_t i = 0; i<16; ++i) {
         tf1[i] = temp[i];
     }

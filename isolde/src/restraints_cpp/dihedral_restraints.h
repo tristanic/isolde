@@ -109,7 +109,7 @@ public:
     //! Returns (current angle) - (target angle) in degrees
     double offset_deg() const {return util::degrees(offset()); }
     //! Get the transform mapping an annotation primitive to the dihedral location
-    virtual void get_annotation_transform(double *tf)
+    virtual void get_annotation_transform(float *tf)
     {
         throw std::logic_error(err_msg_not_implemented());
     }
@@ -184,7 +184,7 @@ class Proper_Dihedral_Restraint:
 {
 public:
     Proper_Dihedral_Restraint(Proper_Dihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr);
-    void get_annotation_transform(double *tf);
+    void get_annotation_transform(float *tf);
     virtual void get_annotation_color(uint8_t *color);
     void set_target(double target)
     {

@@ -1815,7 +1815,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
 
     def _update_pin_drawing(self, pd, visibles, n):
         from chimerax.core.geometry import Places
-        xyzr = numpy.ones((n,4), numpy.double)
+        xyzr = numpy.ones((n,4), numpy.float32)
         xyzr[:, :3] = visibles.targets
         pd.positions = Places(shift_and_scale=xyzr)
 

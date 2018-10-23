@@ -630,14 +630,14 @@ set_proper_dihedral_restraint_cutoff(void *restraint, size_t n, double *cutoff)
 
 
 extern "C" EXPORT void
-proper_dihedral_restraint_annotation_transform(void *restraint, size_t n, double *tf1, double *tf2)
+proper_dihedral_restraint_annotation_transform(void *restraint, size_t n, float *tf1, float *tf2)
 {
     Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
     try {
-        double transforms[32];
+        float transforms[32];
         for (size_t i=0; i<n; ++i) {
             (*r++)->get_annotation_transform(transforms);
-            double *ttf1 = transforms, *ttf2 = transforms+16;
+            float *ttf1 = transforms, *ttf2 = transforms+16;
             for (size_t j=0; j<16; ++j) {
                 *(tf1++) = *(ttf1++);
                 *(tf2++) = *(ttf2++);

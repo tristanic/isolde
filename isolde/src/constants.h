@@ -35,7 +35,7 @@ const double DEFAULT_CHIRAL_RESTRAINT_SPRING_CONSTANT = 1000.0;
 const double DEFAULT_CHIRAL_RESTRAINT_CUTOFF = 15.0/180*M_PI;
 const double DIHEDRAL_RESTRAINT_MAX_WIDTH = 3.0;
 const double DIHEDRAL_RESTRAINT_MIN_WIDTH = 0.5;
-const double Z_AXIS[3] = {0.0, 0.0, 1.0};
+const float Z_AXIS[3] = {0.0, 0.0, 1.0};
 const double MIN_DISTANCE_RESTRAINT_TARGET = 1.0; //Angstroms
 
 }

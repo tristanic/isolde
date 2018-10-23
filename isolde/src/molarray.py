@@ -239,9 +239,9 @@ class Position_Restraints(Collection):
         '''Transforms mapping a unit cylinder onto the restraint bonds. Read only.'''
         f = c_function('position_restraint_bond_transform',
             args = (ctypes.c_void_p, ctypes.c_size_t,
-                ctypes.POINTER(ctypes.c_double)))
+                ctypes.POINTER(ctypes.c_float)))
         n = len(self)
-        transforms = empty((n,4,4), float64)
+        transforms = empty((n,4,4), float32)
         f(self._c_pointers, n, pointer(transforms))
         return transforms
 
@@ -316,9 +316,9 @@ class Distance_Restraints(Collection):
         from chimerax.core.geometry import Places
         f = c_function('distance_restraint_bond_transform',
             args = (ctypes.c_void_p, ctypes.c_size_t,
-                ctypes.POINTER(ctypes.c_double)))
+                ctypes.POINTER(ctypes.c_float)))
         n = len(self)
-        transforms = empty((n,4,4), float64)
+        transforms = empty((n,4,4), float32)
         f(self._c_pointers, n, pointer(transforms))
         return Places(opengl_array=transforms)
 
@@ -326,9 +326,9 @@ class Distance_Restraints(Collection):
     def _target_transforms(self):
         from chimerax.core.geometry import Places
         f = c_function('distance_restraint_target_transform',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_float)))
         n = len(self)
-        transforms=empty((n,4,4), float64)
+        transforms=empty((n,4,4), float32)
         f(self._c_pointers, n, pointer(transforms))
         return Places(opengl_array=transforms)
 
@@ -415,8 +415,8 @@ class Proper_Dihedral_Restraints(Collection):
         n = len(self)
         f = c_function('proper_dihedral_restraint_annotation_transform',
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p))
-        tf1 = numpy.empty((n,4,4), float64)
-        tf2 = numpy.empty((n,4,4), float64)
+        tf1 = numpy.empty((n,4,4), float32)
+        tf2 = numpy.empty((n,4,4), float32)
         f(self._c_pointers, n, pointer(tf1), pointer(tf2))
         from chimerax.core.geometry import Places
         return (Places(opengl_array=tf1), Places(opengl_array=tf2))

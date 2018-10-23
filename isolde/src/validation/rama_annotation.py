@@ -229,7 +229,7 @@ class Rama_Annotator(Model):
         coords, colors, selecteds = mgr._ca_positions_colors_and_selecteds(ramas, self.hide_favored)
         n = len(coords)
         if n > 0:
-            xyzr = numpy.empty((n, 4), numpy.double)
+            xyzr = numpy.empty((n, 4), numpy.float32)
             xyzr[:,:3] = coords
             xyzr[:,3] = self.ca_radius
             from chimerax.core.geometry import Places
