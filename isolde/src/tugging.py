@@ -101,7 +101,7 @@ class TugAtomsMode(MouseMode):
                 pa = a.residue.atoms
             tugs = self._picked_tuggables = self._tug_mgr.get_tuggables(pa)
             pa = self._picked_atoms = tugs.atoms
-            atom_xyz, pull_vector = self._pull_direction(a, x, y)
+            pull_vector = self._pull_direction(a, x, y)
             tugs.targets = tugs.atoms.coords + pull_vector
             # Scale the tugging force by atom masses and number of atoms
             n = len(tugs)
@@ -116,7 +116,7 @@ class TugAtomsMode(MouseMode):
         if not self.tugging:
             return
         self._xy = x,y = event.position()
-        atom_xyz, pull_vector = self._pull_direction(self._focal_atom, x, y)
+        pull_vector = self._pull_direction(self._focal_atom, x, y)
         tugs = self._picked_tuggables
         tugs.targets = self._picked_atoms.coords + pull_vector
 
@@ -132,8 +132,10 @@ class TugAtomsMode(MouseMode):
         dir = x1 - x0
         da = axyz - x0
         from chimerax.core.geometry import inner_product
-        offset = da - (inner_product(da, dir)/inner_product(dir,dir)) * dir
-        return axyz, -offset
+        offset = atom.structure.scene_position.inverse().apply_without_translation(
+            da - (inner_product(da, dir)/inner_product(dir,dir)) * dir
+        )
+        return -offset
 
 
 
