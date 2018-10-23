@@ -143,7 +143,7 @@ class B_Factor_Direct_Aniso:
 
         self._log_weight = 0
         self._dlog_weight = 1
-        self._log_weights = numpy.array([0,0,0], float)
+        self._log_weights = numpy.array([0,1,2], float)
         self._scores = numpy.array([0,0,0], float)
         self._outer_iteration = 0
         self._max_iterations = 10
@@ -222,6 +222,7 @@ class B_Factor_Direct_Aniso:
                 self._map_update_cb()
                 return
             if scores[inner] == 0:
+                print("Trying weight = 10**{}".format(logweights[inner]))
                 m.atoms.aniso_u6 = self._anisou_base*10**(logweights[inner])
                 self._inner_iteration += 1
             else:
