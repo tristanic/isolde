@@ -49,14 +49,27 @@ class _HKL_Plot_3D(Drawing):
 
         from chimerax.core.geometry import Places, Place, identity
         id_axes = identity().axes()
-        positions =[Place(origin=hkl*dim_scale, axes=id_axes*max(rval, 0))
-            for (hkl, rval) in zip(hkls, vals)
-        ]
+        sanitized_vals = vals.copy()
+        sanitized_vals[sanitized_vals<0] = 0
+        import numpy
+        place_array = numpy.zeros((len(hkls),3,4))
+        place_array[:,:,3] = hkls*dim_scale
+        place_array[:,:,:3] = id_axes
+        for i in range(3):
+            place_array[:,i,i] *=sanitized_vals
+
+        # positions =[Place(origin=hkl*dim_scale, axes=id_axes*max(rval, 0))
+        #     for (hkl, rval) in zip(hkls, vals)
+        # ]
         if highlight_negatives:
             import numpy
             negatives = numpy.argwhere(vals < 0).flatten()
-            for ni in negatives:
-                positions[ni] = Place(origin=positions[ni].origin(), axes=id_axes)
+            place_array[negatives, :, :3] = id_axes
+            # for ni in negatives:
+            #     positions[ni] = Place(origin=positions[ni].origin(), axes=id_axes)
+
+        positions = Places(place_array=place_array)
+
         self.set_positions(Places(positions))
         from chimerax.core.colors import BuiltinColormaps
         cmap = BuiltinColormaps['ylgnbu'].linear_range(0,1)
