@@ -72,7 +72,7 @@ class RamaPlot:
         contours = mgr.RAMA_CASE_DETAILS[key]['cutoffs']
         logvalues = numpy.log(values)
         contour_plot = self.axes.contour(*grid, values, contours)
-        pcolor_plot = self.axes.pcolor(*grid, logvalues, cmap = 'Greys')
+        pcolor_plot = self.axes.pcolormesh(*grid, logvalues, cmap = 'Greys')
         for coll in contour_plot.collections:
            coll.remove()
         pcolor_plot.remove()
