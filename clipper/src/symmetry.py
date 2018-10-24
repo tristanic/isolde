@@ -336,18 +336,19 @@ class XtalSymmetryHandler(Model):
     def update(self, *_, force=False):
         v = self.session.view
         cofr = self._box_center = v.center_of_rotation
-        cofr_grid = clipper_python.Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
+        center = self.scene_position.inverse()*cofr
+        center_grid = clipper_python.Coord_orth(center).coord_frac(self.cell).coord_grid(self.grid)
         if force:
             update_needed=True
         else:
             update_needed = False
             if self._box_center_grid is None:
                 update_needed = True
-            elif (cofr_grid != self._box_center_grid):
+            elif (center_grid != self._box_center_grid):
                 update_needed = True
         if update_needed:
-            self.triggers.activate_trigger('box center moved', (cofr, cofr_grid))
-            self._box_center_grid = cofr_grid
+            self.triggers.activate_trigger('box center moved', (center, center_grid))
+            self._box_center_grid = center_grid
 
     @property
     def atom_sym(self):
