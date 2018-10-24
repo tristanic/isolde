@@ -2648,7 +2648,7 @@ class Isolde():
         otherwise False.
         '''
         if self.simulation_running:
-            return self.sim_handler.pause
+            return self.sim_manager.pause
         return True
 
     def _sim_pause_cb(self, *_):

@@ -80,6 +80,7 @@ class Clash_Table_Mgr:
             self._show_clash_frame()
 
     def _severe_clash_cb(self, *_):
+        self.isolde.sim_manager.pause=True
         from ..dialog import generic_warning
         msg_string = ('ISOLDE has detected severe clashes in the model that the '
             'minimiser is unable to reconcile on its own. The simulation '

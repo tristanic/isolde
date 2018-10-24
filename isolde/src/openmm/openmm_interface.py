@@ -539,6 +539,9 @@ class Sim_Manager:
         session = self.session = model.session
         self.isolde_params = isolde_params
         self.sim_params = sim_params
+        # If changes are made to the model while the simulation is paused, we
+        # need to push them to the simulation before resuming
+        self._pause_atom_changes_handler = None
         self._revert_to = None
         mobile_atoms = self.expand_mobile_selection(selected_atoms, expansion_mode)
         from ..selections import get_shell_of_residues
@@ -629,11 +632,28 @@ class Sim_Manager:
         self._revert_to = revert
         self.sim_handler.stop()
 
+    @property
+    def pause(self):
+        return self.sim_handler.pause
+
+    @pause.setter
+    def pause(self, flag):
+        if flag:
+            if self._pause_atom_changes_handler is None:
+                self._pause_atom_changes_handler = self.model.triggers.add_handler(
+                    'changes', self._atom_changes_while_paused_cb
+                )
+        else:
+            if self._pause_atom_changes_handler is not None:
+                self.model.triggers.remove_handler(self._pause_atom_changes_handler)
+                self._pause_atom_changes_handler = None
+        self.sim_handler.pause = flag
+
     def toggle_pause(self):
         '''
         Pause/resume the simulation.
         '''
-        self.sim_handler.toggle_pause()
+        self.pause = not self.pause
 
     def checkpoint(self):
         '''
@@ -891,7 +911,30 @@ class Sim_Manager:
     # CALLBACKS
     #######################################
 
+    def _atom_changes_while_paused_cb(self, trigger_name, changes):
+        '''
+        If changes are made to the model while the simulation is paused, we need
+        to deal with them before resuming. Changes in coordinates need to be
+        pushed to the simulation, while addition/deletion of atoms within the
+        simulation construct should stop the simulation entirely.
+        '''
+        changes = changes[1]
+        if changes.num_deleted_atoms() or len(changes.created_atoms()):
+            msg_string = ('ISOLDE has detected the addition or removal of atoms '
+                'from the model. The current simulation has been stopped to '
+                'avoid data corruption. It is safe to start a new simulation.')
+            from ..dialog import generic_warning
+            self.stop_sim(revert_to=None)
+            generic_warning(msg_string)
+            return
+        sh = self.sim_handler
+        if 'coord changed' in changes.atom_reasons():
+            self.sim_handler.push_coords_to_sim()
+
+
     def _sim_end_cb(self, *_):
+        if self._pause_atom_changes_handler is not None:
+            self.model.triggers.remove_handler(self._pause_atom_changes_handler)
         for mgr, handler in self._update_handlers:
             mgr.triggers.remove_handler(handler)
         self._update_handlers = []
@@ -1103,6 +1146,7 @@ class Sim_Handler:
         self._paused = False
         self._sim_running = False
         self._unstable = True
+        self._unstable_counter = 0
 
         atoms = self._atoms = sim_construct.all_atoms
         # Forcefield used in this simulation
@@ -1114,6 +1158,7 @@ class Sim_Handler:
 
         # A Volume: LinearInterpMapForce dict covering all MDFF forces
         self.mdff_forces = {}
+
 
         # Overall simulation topology
         top, residue_templates = self.create_openmm_topology(atoms, sim_construct.residue_templates)
@@ -1130,6 +1175,8 @@ class Sim_Handler:
         self._tugging_force = None
 
         self._force_update_pending = False
+        self._coord_update_pending = False
+
         self._context_reinit_pending = False
         self._minimize = False
         self._current_mode = 'min' # One of "min" or "equil"
@@ -1371,6 +1418,9 @@ class Sim_Handler:
     def _resume(self):
         if self._force_update_pending:
             self._update_forces_in_context_if_needed()
+        if self._coord_update_pending:
+            self._push_coords_to_sim()
+            self._coord_update_pending=False
         self._repeat_step()
 
 
@@ -1383,12 +1433,15 @@ class Sim_Handler:
         self.atoms.coords = th.coords
         self.triggers.activate_trigger('coord update', None)
         if th.clashing:
-            if not self._startup:
-                self.triggers.activate_trigger('clash detected', self.find_clashing_atoms())
-                self.pause = True
-                self._unstable = True
-                return
             self._unstable = True
+            if not self._startup:
+                if self._unstable_counter >= self._params.maximum_unstable_rounds:
+                    self._unstable_counter = 0
+                    self.triggers.activate_trigger('clash detected', self.find_clashing_atoms())
+                    return
+            self._unstable_counter += 1
+        else:
+            self._unstable_counter = 0
         if self._force_update_pending:
             self._update_forces_in_context_if_needed()
         if reinit_vels:
@@ -1419,7 +1472,7 @@ class Sim_Handler:
             coords = self._atoms.coords
         self._pending_coords = coords
         if self.pause:
-            self._push_coords_to_sim()
+            self._coord_update_pending=True
         else:
             self.triggers.add_handler('coord update', self._push_coords_to_sim)
 
@@ -1459,6 +1512,7 @@ class Sim_Handler:
                 self.triggers.activate_trigger('sim resumed', None)
                 self._resume()
                 #self._update_coordinates_and_repeat()
+
 
     def stop(self):
         '''
