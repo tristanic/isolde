@@ -1995,7 +1995,8 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
             update_needed = True
         if 'coord changed' in atom_reasons:
             update_needed = True
-        self.update_graphics()
+        if update_needed:
+            self.update_graphics()
 
     def update_graphics(self):
         '''
