@@ -463,12 +463,19 @@ class Sim_Construct:
         atoms = m.atoms
         bonds = m.bonds
         residues = m.residues
-        atoms.colors, atoms.draw_modes, atoms.displays, atoms.radii = \
-            self._original_atom_states
-        bonds.displays, bonds.radii = \
-            self._original_bond_states
-        residues.ribbon_displays, residues.ribbon_colors = \
-            self._original_residue_states
+        # If atoms are added or deleted while a simulation is running, the
+        # stored settings will become invalid. In that case, just revert to a
+        # default visualisation.
+        try:
+            atoms.colors, atoms.draw_modes, atoms.displays, atoms.radii = \
+                self._original_atom_states
+            bonds.displays, bonds.radii = \
+                self._original_bond_states
+            residues.ribbon_displays, residues.ribbon_colors = \
+                self._original_residue_states
+        except:
+            from ..visualisation import default_atom_visualisation
+            default_atom_visualisation(self.model)
 
         sym = self.symmetry_handler
         if sym:
@@ -920,19 +927,14 @@ class Sim_Manager:
         '''
         changes = changes[1]
         if changes.num_deleted_atoms() or len(changes.created_atoms()):
-            msg_string = ('ISOLDE has detected the addition or removal of atoms '
-                'from the model. The current simulation has been stopped to '
-                'avoid data corruption. It is safe to start a new simulation.')
-            from ..dialog import generic_warning
-            self.stop_sim(revert_to=None)
-            generic_warning(msg_string)
+            self.sim_handler.stop(reason = 'coord length mismatch')
             return
         sh = self.sim_handler
         if 'coord changed' in changes.atom_reasons():
             self.sim_handler.push_coords_to_sim()
 
 
-    def _sim_end_cb(self, *_):
+    def _sim_end_cb(self, trigger_name, reason):
         if self._pause_atom_changes_handler is not None:
             self.model.triggers.remove_handler(self._pause_atom_changes_handler)
         for mgr, handler in self._update_handlers:
@@ -945,13 +947,24 @@ class Sim_Manager:
         self._rama_a_sim_end_cb()
         self._rota_a_sim_end_cb()
         self._mdff_sim_end_cb()
-        rt = self._revert_to
+        if reason == 'coord length mismatch':
+            rt = None
+        else:
+            rt = self._revert_to
         if rt == 'checkpoint':
             self._current_checkpoint.revert(update_sim=False)
         elif rt == 'start':
             print('reverting to start')
             self._starting_checkpoint.revert(update_sim=False)
         self.sim_construct.revert_visualisation()
+        if reason == 'coord length mismatch':
+            msg = ('Mismatch between number of simulated atoms and the model. '
+                'The most common cause of this is the addition or removal of '
+                'atoms while a simulation is running (this should be avoided). '
+                'The simulation has been terminated to avoid data corruption, '
+                'and the display reverted to a default state.')
+            from ..dialog import generic_warning
+            generic_warning(msg)
 
     def _rama_a_sim_end_cb(self, *_):
         self.rama_annotator.track_whole_model = True
@@ -1430,7 +1443,10 @@ class Sim_Handler:
             if self._startup_counter >= self._params.simulation_startup_rounds:
                 self._startup = False
         th = self.thread_handler
-        self.atoms.coords = th.coords
+        try:
+            self.atoms.coords = th.coords
+        except ValueError:
+            self.stop(reason='coord length mismatch')
         self.triggers.activate_trigger('coord update', None)
         if th.clashing:
             self._unstable = True
@@ -1451,7 +1467,7 @@ class Sim_Handler:
             self._thread_handler = None
             self._simulation = None
             self._sim_running = False
-            self.triggers.activate_trigger('sim terminated', None)
+            self.triggers.activate_trigger('sim terminated', self._stop_reason)
             return
         if not self._pause:
             self._repeat_step()
@@ -1514,19 +1530,20 @@ class Sim_Handler:
                 #self._update_coordinates_and_repeat()
 
 
-    def stop(self):
+    def stop(self, reason=None):
         '''
         Stop the simulation. This will destroy the
         :cpp:class:`OpenMM_Thread_Handler` object, rendering the Python class
         unusable.
         '''
         self._stop = True
+        self._stop_reason = reason
         if self.pause:
             self._thread_handler.delete()
             self._thread_handler = None
             self._simulation = None
             self._sim_running = False
-            self.triggers.activate_trigger('sim terminated', None)
+            self.triggers.activate_trigger('sim terminated', reason)
 
     @property
     def sim_running(self):

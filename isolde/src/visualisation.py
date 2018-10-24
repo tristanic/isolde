@@ -39,3 +39,19 @@ map_style_settings = {
     map_styles.solid_t80: {'style': 'surface', 'transparency': 0.2},
     map_styles.solid_opaque: {'style': 'surface', 'transparency': 0.0}
     }
+
+def default_atom_visualisation(model):
+    session = model.session
+    from chimerax.core.objects import Objects
+    from chimerax.std_commands import color
+    from chimerax.atomic import Atom
+    atoms = model.atoms
+    ao = Objects(atoms=atoms)
+    color.color(session, ao, color='bychain')
+    color.color(session, ao, color='byhetero')
+    model.bonds.radii = 0.2
+    model.bonds.displays=True
+    atoms.draw_modes = Atom.STICK_STYLE
+    atoms.displays = True
+    atoms[atoms.idatm_types == 'HC'].displays=False
+    model.residues.ribbon_displays = True
