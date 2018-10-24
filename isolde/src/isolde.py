@@ -1253,6 +1253,9 @@ class Isolde():
             if isinstance(xmap, XmapHandler_Live) and xmap.name != 'MDFF potential':
                 continue
             is_difference_map = xmap.is_difference_map
+            if is_difference_map:
+                # Difference maps are for display only
+                continue
             from .molobject import MDFF_Mgr
             mdff_mgr = None
             for m in xmap.child_models():
@@ -1262,10 +1265,10 @@ class Isolde():
             if mdff_mgr is None:
                 from .session_extensions import get_mdff_mgr
                 mdff_mgr = get_mdff_mgr(model, xmap)
-                if is_difference_map:
-                    mdff_mgr.global_k = self.sim_params.difference_map_coupling_constant
-                else:
-                    mdff_mgr.global_k = self.sim_params.standard_map_coupling_constant
+                from .openmm.weighting import guess_mdff_weight
+                mdff_mgr.global_k = guess_mdff_weight(
+                    mdff_mgr,
+                    constant=self.sim_params.standard_map_coupling_base_constant)
         return True
 
     def _populate_available_volumes_combo_box(self, *_):
@@ -2293,7 +2296,10 @@ class Isolde():
         m.atoms.selected = False
         sel = sh.stepper.step_forward()
         sel.selected = True
-        self._xtal_mask_to_atoms(sel, focus)
+        self._xtal_mask_to_atoms(sel, focus=False)
+        if focus:
+            from .view import focus_on_selection
+            focus_on_selection(self.session, sel[0].residue.atoms)
 
     def _xtal_step_backward(self, *_):
         m = self.selected_model
@@ -2303,7 +2309,10 @@ class Isolde():
         m.atoms.selected = False
         sel = sh.stepper.step_backward()
         sel.selected = True
-        self._xtal_mask_to_atoms(sel, focus)
+        self._xtal_mask_to_atoms(sel, focus=False)
+        if focus:
+            from .view import focus_on_selection
+            focus_on_selection(self.session, sel[-1].residue.atoms)
 
     def _xtal_mask_to_selection(self, *_):
         atoms = self.selected_model.atoms
@@ -3052,10 +3061,9 @@ class Isolde():
     ##############################################
 
     def show_master_help_in_browser(self, *_):
-        import os
-        import webbrowser
+        from chimerax.help_viewer import show_url
         fname = os.path.join(self._root_dir, 'doc', 'index.html')
-        webbrowser.open('file://' + os.path.realpath(fname))
+        show_url(self.session, 'file://' + os.path.realpath(fname))
 
     ##############################################
     # Demo

@@ -102,8 +102,8 @@ class _Defaults:
         'PEPTIDE_SPRING_CONSTANT':                500.0, # * unit.kilojoule_per_mole/unit.radians**2,
         'PHI_PSI_SPRING_CONSTANT':                250.0, # * unit.kilojoule_per_mole/unit.radians**2,
         'ROTAMER_SPRING_CONSTANT':                500.0, # * unit.kilojoule_per_mole/unit.radians**2,
-        'STANDARD_MAP_K':                           5.0, # * kJ/mol per map unit,
-        'DIFFERENCE_MAP_K':                         0.5, # * kJ/mol per map unit,
+        'STANDARD_MAP_MDFF_BASE_CONSTANT':          1.0, # * kJ/mol per map unit,
+        #'DIFFERENCE_MAP_K':                         0.5, # * kJ/mol per map unit,
 
         ###
         # Numeric limits
