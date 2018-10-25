@@ -1170,10 +1170,14 @@ class Isolde():
         caption = 'Choose a file containing at minimum Fobs/SigFobs and free flags'
         filetypes = 'MTZ files (*.mtz)'
         filename, _ = QFileDialog.getOpenFileName(None, caption, filetypes, filetypes, options=options)
-        self._initialize_live_xtal_structure(filename)
+        self.initialize_live_xtal_structure(filename)
+        self._initialize_maps(self.selected_model)
 
-    def _initialize_live_xtal_structure(self, filename):
-        m = self.selected_model
+    def initialize_live_xtal_structure(self, filename, model=None):
+        if model is not None:
+            m = model
+        else:
+            m = self.selected_model
         live = self.iw._sim_basic_xtal_settings_live_recalc_checkbox.checkState()
         if m is None:
             from .dialog import generic_warning
@@ -1214,7 +1218,6 @@ class Isolde():
         # Set difference map according to standard map SD, since this is more
         # meaningful
         diff_map.set_parameters(surface_levels=(-0.8*sd, 0.8*sd))
-        self._initialize_maps(m)
 
 
 
@@ -1990,7 +1993,7 @@ class Isolde():
         container = self._rama_plot_window = iw._validate_rama_plot_layout
         from .validation.ramaplot import RamaPlot
         from . import session_extensions
-        rama_mgr = session_extensions.get_ramachandran_mgr(self._selected_model)
+        rama_mgr = session_extensions.get_ramachandran_mgr(self.selected_model)
         self._rama_plot = RamaPlot(self.session, rama_mgr, container)
 
     def _show_rama_plot(self, *_):
@@ -2037,7 +2040,7 @@ class Isolde():
         self.iw._validate_rama_go_button.setEnabled(True)
 
     def _rama_static_plot(self, *_):
-        model = self._selected_model
+        model = self.selected_model
         rplot = self._rama_plot
         whole_model = not bool(self.iw._validate_rama_sel_combo_box.currentIndex())
         if whole_model:
@@ -2065,7 +2068,7 @@ class Isolde():
     def _update_iffy_peptide_lists(self, *_):
         from .session_extensions import get_proper_dihedral_mgr
         pd_mgr = get_proper_dihedral_mgr(self.session)
-        model = self._selected_model
+        model = self.selected_model
         # clist = self.iw._validate_pep_cis_list
         # tlist = self.iw._validate_pep_twisted_list
         # clist.clear()
@@ -2145,7 +2148,7 @@ class Isolde():
         if self.simulation_running:
             residues = self.sim_manager.sim_construct.mobile_residues
         else:
-            residues = self._selected_model.residues
+            residues = self.selected_model.residues
         rotas = rota_m.get_rotamers(residues)
         iffy, scores = rota_m.non_favored_rotamers(rotas)
         order = numpy.argsort(scores)
