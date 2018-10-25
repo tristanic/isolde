@@ -163,10 +163,10 @@ class Backrub:
 
         # By now we should have narrowed it down to quite a short list
         # (hopefully just one). Now to do some more detailed minimization
-        print("Number of remaining targets: {}".format(len(targets)))
-        print("Remaining targets: {}".format(
-            ','.join([t['Name'] for t in targets])
-        ))
+        # print("Number of remaining targets: {}".format(len(targets)))
+        # print("Remaining targets: {}".format(
+        #     ','.join([t['Name'] for t in targets])
+        # ))
 
         from math import radians
         final_results = []
@@ -262,7 +262,7 @@ class Backrub:
                 ' residue before trying again')
         result = -sum(dvals*weights)/sum(weights)
         clashscore = clash_weight*clash_score(self.session, check_atoms, self._potential_clashes)
-        print("Density score: {}   Clash score: {}".format(result, clashscore))
+        # print("Density score: {}   Clash score: {}".format(result, clashscore))
         result += clashscore
         #print('Fine tune rotamer result: {}'.format(result))
         return result
