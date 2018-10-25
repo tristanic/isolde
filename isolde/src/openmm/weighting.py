@@ -29,7 +29,7 @@ def guess_mdff_weight(mdff_mgr, percentile=80, constant = 1):
 
         spotlight_mode = sh.spotlight_mode
         # Expand the map to cover the whole model
-        sh.isolate_and_cover_selection(model.atoms)
+        sh.isolate_and_cover_selection(model.atoms, focus=False)
 
     vs = volume.voxel_size
     voxel_vol = vs[0]*vs[1]*vs[2]
