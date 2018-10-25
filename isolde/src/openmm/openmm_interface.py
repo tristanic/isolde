@@ -569,7 +569,7 @@ class Sim_Manager:
         try:
             sh = self.sim_handler = Sim_Handler(session, sim_params, sc)
         except Exception as e:
-            self._sim_end_cb()
+            self._sim_end_cb(None, None)
             if isinstance(e, ValueError):
                 # If it's an error in template handling, parse out the offending
                 # residue and tell ISOLDE about it
@@ -586,6 +586,8 @@ class Sim_Manager:
                     raise ValueError(str(e))
                 else:
                     raise e
+        sh.triggers.add_handler('sim paused', self._sim_pause_cb)
+        sh.triggers.add_handler('sim resumed', self._sim_resume_cb)
 
         self._initialize_restraints(uh)
         self._initialize_mdff(uh)
@@ -645,16 +647,22 @@ class Sim_Manager:
 
     @pause.setter
     def pause(self, flag):
-        if flag:
-            if self._pause_atom_changes_handler is None:
-                self._pause_atom_changes_handler = self.model.triggers.add_handler(
-                    'changes', self._atom_changes_while_paused_cb
-                )
-        else:
-            if self._pause_atom_changes_handler is not None:
-                self.model.triggers.remove_handler(self._pause_atom_changes_handler)
-                self._pause_atom_changes_handler = None
         self.sim_handler.pause = flag
+
+    def _sim_pause_cb(self, *_):
+        '''
+        Make sure we capture any changes to the model while paused.
+        '''
+        if self._pause_atom_changes_handler is None:
+            self._pause_atom_changes_handler = self.model.triggers.add_handler(
+                'changes', self._atom_changes_while_paused_cb
+            )
+
+    def _sim_resume_cb(self, *_):
+        if self._pause_atom_changes_handler is not None:
+            self.model.triggers.remove_handler(self._pause_atom_changes_handler)
+            self._pause_atom_changes_handler = None
+
 
     def toggle_pause(self):
         '''
@@ -777,11 +785,9 @@ class Sim_Manager:
         from chimerax.map import Volume
         from chimerax.clipper.crystal_exp import XmapHandler_Live
         for v in m.all_models():
-            if isinstance(v, XmapHandler_Live):
-                if v.name == 'MDFF potential':
-                    mdff_mgr_map[v] = sx.get_mdff_mgr(m, v)
-            elif isinstance(v, Volume):
-                mdff_mgr_map[v] = sx.get_mdff_mgr(m, v)
+            mgr = sx.get_mdff_mgr(m, v, create=False)
+            if mgr is not None:
+                mdff_mgr_map[v] = mgr
         if len(mdff_mgr_map.keys()):
             isolde_params = self.isolde_params
             from chimerax.clipper.symmetry import get_symmetry_handler
@@ -1471,6 +1477,13 @@ class Sim_Handler:
             return
         if not self._pause:
             self._repeat_step()
+        else:
+            # Need to delay the trigger firing until after the frame is drawn,
+            # so that the last coordinate update doesn't falsely register as
+            # changes during pause.
+            self.session.triggers.add_handler('frame drawn',
+                self._fire_sim_paused_trigger)
+
 
     def push_coords_to_sim(self, coords=None):
         '''
@@ -1523,12 +1536,18 @@ class Sim_Handler:
         if flag != self._pause:
             self._pause = flag
             if flag:
-                self.triggers.activate_trigger('sim paused', None)
+                pass
+                # Trigger firing delayed until *after* the last coordinate
+                # update has been applied
+                # self.triggers.activate_trigger('sim paused', None)
             else:
                 self.triggers.activate_trigger('sim resumed', None)
                 self._resume()
-                #self._update_coordinates_and_repeat()
 
+    def _fire_sim_paused_trigger(self, *_):
+        self.triggers.activate_trigger('sim paused', None)
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
 
     def stop(self, reason=None):
         '''
