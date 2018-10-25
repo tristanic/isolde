@@ -363,7 +363,7 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-225</y>
+                  <y>-278</y>
                   <width>542</width>
                   <height>701</height>
                  </rect>
@@ -805,58 +805,60 @@ border: 1px;
                         </layout>
                        </item>
                        <item>
-                        <layout class="QHBoxLayout" name="horizontalLayout_34">
-                         <item>
-                          <widget class="QLabel" name="label_40">
-                           <property name="text">
-                            <string>Weight:</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QDoubleSpinBox" name="_sim_basic_xtal_map_weight_spin_box">
-                           <property name="decimals">
-                            <number>2</number>
-                           </property>
-                           <property name="maximum">
-                            <double>100.000000000000000</double>
-                           </property>
-                           <property name="value">
-                            <double>1.000000000000000</double>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QLabel" name="label_9">
-                           <property name="text">
-                            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;x 1000 kJ mol&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt; (map density units)&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt; Å&lt;span style=&quot; vertical-align:super;&quot;&gt;3&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                           </property>
-                           <property name="textFormat">
-                            <enum>Qt::RichText</enum>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <spacer name="horizontalSpacer_3">
-                           <property name="orientation">
-                            <enum>Qt::Horizontal</enum>
-                           </property>
-                           <property name="sizeHint" stdset="0">
-                            <size>
-                             <width>40</width>
-                             <height>20</height>
-                            </size>
-                           </property>
-                          </spacer>
-                         </item>
-                         <item>
-                          <widget class="QPushButton" name="_sim_basic_xtal_settings_set_button">
-                           <property name="text">
-                            <string>Set</string>
-                           </property>
-                          </widget>
-                         </item>
-                        </layout>
+                        <widget class="QFrame" name="_sim_basic_xtal_map_weight_frame">
+                         <layout class="QHBoxLayout" name="horizontalLayout_34">
+                          <item>
+                           <widget class="QLabel" name="label_40">
+                            <property name="text">
+                             <string>Weight:</string>
+                            </property>
+                           </widget>
+                          </item>
+                          <item>
+                           <widget class="QDoubleSpinBox" name="_sim_basic_xtal_map_weight_spin_box">
+                            <property name="decimals">
+                             <number>2</number>
+                            </property>
+                            <property name="maximum">
+                             <double>100.000000000000000</double>
+                            </property>
+                            <property name="value">
+                             <double>1.000000000000000</double>
+                            </property>
+                           </widget>
+                          </item>
+                          <item>
+                           <widget class="QLabel" name="label_9">
+                            <property name="text">
+                             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;x 1000 kJ mol&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt; (map density units)&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt; Å&lt;span style=&quot; vertical-align:super;&quot;&gt;3&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                            </property>
+                            <property name="textFormat">
+                             <enum>Qt::RichText</enum>
+                            </property>
+                           </widget>
+                          </item>
+                          <item>
+                           <spacer name="horizontalSpacer_3">
+                            <property name="orientation">
+                             <enum>Qt::Horizontal</enum>
+                            </property>
+                            <property name="sizeHint" stdset="0">
+                             <size>
+                              <width>40</width>
+                              <height>20</height>
+                             </size>
+                            </property>
+                           </spacer>
+                          </item>
+                          <item>
+                           <widget class="QPushButton" name="_sim_basic_xtal_settings_set_button">
+                            <property name="text">
+                             <string>Set</string>
+                            </property>
+                           </widget>
+                          </item>
+                         </layout>
+                        </widget>
                        </item>
                        <item>
                         <layout class="QHBoxLayout" name="horizontalLayout_14">
@@ -3095,7 +3097,7 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-710</y>
+                  <y>0</y>
                   <width>542</width>
                   <height>1262</height>
                  </rect>

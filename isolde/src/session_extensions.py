@@ -74,13 +74,16 @@ def get_tuggable_atoms_mgr(model):
             return m
     return Tuggable_Atoms_Mgr(model)
 
-def get_mdff_mgr(model, volume):
+def get_mdff_mgr(model, volume, create=False):
     from .molobject import MDFF_Mgr
     for m in model.all_models():
         if isinstance(m, MDFF_Mgr):
             if m.volume == volume:
                 return m
-    return MDFF_Mgr(model, volume)
+    if create:
+        return MDFF_Mgr(model, volume)
+    else:
+        return None
 
 def get_rota_annotator(model):
     from .validation.rota_annotation import Rotamer_Annotator

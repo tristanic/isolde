@@ -1214,6 +1214,7 @@ class Isolde():
         # Set difference map according to standard map SD, since this is more
         # meaningful
         diff_map.set_parameters(surface_levels=(-0.8*sd, 0.8*sd))
+        self._initialize_maps(m)
 
 
 
@@ -1264,7 +1265,7 @@ class Isolde():
                     break
             if mdff_mgr is None:
                 from .session_extensions import get_mdff_mgr
-                mdff_mgr = get_mdff_mgr(model, xmap)
+                mdff_mgr = get_mdff_mgr(model, xmap, create=True)
                 from .openmm.weighting import guess_mdff_weight
                 mdff_mgr.global_k = guess_mdff_weight(
                     mdff_mgr,
@@ -1346,8 +1347,13 @@ class Isolde():
         gb.setEnabled(True)
         from .session_extensions import get_mdff_mgr
         mgr = get_mdff_mgr(self.selected_model, this_map)
-        self.iw._sim_basic_xtal_map_weight_spin_box.setValue(
-            mgr.global_k)
+        wf = self.iw._sim_basic_xtal_map_weight_frame
+        if mgr is not None:
+            wf.setEnabled(True)
+            self.iw._sim_basic_xtal_map_weight_spin_box.setValue(
+                mgr.global_k)
+        else:
+            wf.setEnabled(False)
 
     def _apply_xtal_map_params(self, *_):
         cb = self.iw._sim_basic_xtal_settings_map_combo_box
