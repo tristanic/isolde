@@ -144,6 +144,12 @@ def get_symmetry_handler(structure, create=False):
         return XtalSymmetryHandler(structure)
     return None
 
+def is_crystal_map(volume):
+    from .crystal_exp import XmapHandler_Live
+    if isinstance(volume, XmapHandler_Live):
+        return True
+    return False
+
 class Unit_Cell(clipper_python.Unit_Cell):
    def __init__(self, atom_list, cell,
                  spacegroup, grid_sampling, padding = 10):
