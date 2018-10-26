@@ -193,6 +193,7 @@ class XtalSymmetryHandler(Model):
         self._box_center_grid = None
         self._atomic_sym_radius = atomic_symmetry_radius
         self._stepper = None
+        self._last_covered_selection = None
 
         from chimerax.core.triggerset import TriggerSet
         trig = self.triggers = TriggerSet()
@@ -275,6 +276,17 @@ class XtalSymmetryHandler(Model):
         from .mousemodes import initialize_map_contour_mouse_modes
         initialize_map_contour_mouse_modes(session)
         self.spotlight_mode = spotlight_mode
+
+    @property
+    def last_covered_selection(self):
+        return self._last_covered_selection
+
+    @last_covered_selection.setter
+    def last_covered_selection(self, sel):
+        from chimerax.atomic import Atoms
+        if not isinstance(sel, Atoms) and sel is not None:
+            raise TypeError("Selection must be an Atoms array or None!")
+        self._last_covered_selection = sel
 
     @property
     def has_experimental_maps(self):
@@ -396,7 +408,7 @@ class XtalSymmetryHandler(Model):
             show_context.
         '''
         self.spotlight_mode = False
-        original_atoms = atoms
+        original_atoms = self.last_covered_selection = atoms
         atoms = original_atoms.unique_residues.atoms
         asm = self.atomic_symmetry_model
         maps = self.xmapset
