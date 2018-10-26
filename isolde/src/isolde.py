@@ -2300,11 +2300,12 @@ class Isolde():
         focus = self.iw._vis_focus_on_sel_checkbox.checkState()
         m.atoms.selected = False
         sel = sh.stepper.step_forward()
-        sel.selected = True
         self._xtal_mask_to_atoms(sel, focus=False)
         if focus:
             from .view import focus_on_selection
             focus_on_selection(self.session, sel[0].residue.atoms)
+        sel.selected = True
+
 
     def _xtal_step_backward(self, *_):
         m = self.selected_model
@@ -2313,11 +2314,11 @@ class Isolde():
         focus = self.iw._vis_focus_on_sel_checkbox.checkState()
         m.atoms.selected = False
         sel = sh.stepper.step_backward()
-        sel.selected = True
         self._xtal_mask_to_atoms(sel, focus=False)
         if focus:
             from .view import focus_on_selection
             focus_on_selection(self.session, sel[-1].residue.atoms)
+        sel.selected = True
 
     def _xtal_mask_to_selection(self, *_):
         atoms = self.selected_model.atoms
