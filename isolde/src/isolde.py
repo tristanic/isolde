@@ -1269,10 +1269,6 @@ class Isolde():
             if mdff_mgr is None:
                 from .session_extensions import get_mdff_mgr
                 mdff_mgr = get_mdff_mgr(model, xmap, create=True)
-                from .openmm.weighting import guess_mdff_weight
-                mdff_mgr.global_k = guess_mdff_weight(
-                    mdff_mgr,
-                    constant=self.sim_params.standard_map_coupling_base_constant)
         return True
 
     def _populate_available_volumes_combo_box(self, *_):

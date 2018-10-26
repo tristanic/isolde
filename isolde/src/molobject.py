@@ -1611,6 +1611,8 @@ class MDFF_Mgr(_Restraint_Mgr):
         self.volume.add([self])
         if 'global k changed' not in self.triggers.trigger_names():
             self.triggers.add_trigger('global k changed')
+        self.guess_global_k()
+
 
     @property
     def volume(self):
@@ -1618,6 +1620,57 @@ class MDFF_Mgr(_Restraint_Mgr):
         The Volume object providing the MDFF potential for the managed atoms.
         '''
         return self._volume
+
+    def guess_global_k(self, distance_cutoff=3, percentile=80, scaling_constant=1):
+        '''
+        Guesses a reasonable value for the global coupling constant defining
+        how strongly the map "pulls" on atoms, based on the steepness of the
+        map gradients in the vicinity of the model. The map is first masked down
+        to voxels within `distance_cutoff` of the model, and the gradient at
+        each voxel is calculated based on linear interpolation of surrounding
+        voxels. The gradients are ranked in increasing order of value, and the
+        the value at the given `percentile` is selected. The final `global_k`
+        is selected such that :math:`value * global_k = scaling_constant`.
+
+        Args:
+            * distance_cutoff:
+                - mask radius in Angstroms
+            * percentile:
+                - defines the gradient value to be selected for the weighting
+                  calculation
+            * scaling constant:
+                - Defines the final strength of the map forces (larger value =
+                  stronger pull)
+        '''
+        import numpy
+        session = self.session
+        m = self.model
+        v = self.volume
+
+        from chimerax.clipper.crystal_exp import XmapHandler_Live
+        is_xmap = isinstance(v, XmapHandler_Live)
+        if is_xmap:
+            sh = v.manager.crystal
+
+            spotlight_mode = sh.spotlight_mode
+            sh.isolate_and_cover_selection(m.atoms, focus=False)
+
+        from chimerax.core.geometry import find_close_points, identity
+        grid_coords = v.grid_points(v.scene_position)
+
+        data = v.data.matrix()
+        close_i = find_close_points(m.atoms.scene_coords, grid_coords, distance_cutoff)[1]
+        close_points = grid_coords[close_i]
+        gradients = v.interpolated_gradients(close_points, identity())
+        gradient_mags = numpy.linalg.norm(gradients, axis=1)
+        ref_g = numpy.percentile(gradient_mags, percentile)
+
+        if is_xmap:
+            sh.spotlight_mode = spotlight_mode
+
+        self.global_k = scaling_constant/ref_g
+
+
 
     def _get_mdff_atoms(self, atoms, create=False):
         f = c_function('mdff_mgr_get_mdff_atom',
