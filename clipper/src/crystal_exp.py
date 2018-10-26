@@ -1030,6 +1030,9 @@ class XmapHandler_Live(Volume):
             ses.models.add([s], parent=self)
         return s
 
+    def force_refill(self):
+        self._box_changed_cb(None, (self.box_params, True))
+
     def _box_changed_cb(self, name, params):
         box_params, force_fill = params
         self.box_params = box_params
