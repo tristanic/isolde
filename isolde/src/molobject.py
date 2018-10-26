@@ -1604,8 +1604,8 @@ class MDFF_Mgr(_Restraint_Mgr):
     '''
     def __init__(self, model, volume, c_pointer=None):
         name = 'MDFF - ' + volume.name
-        super().__init__(name, model, c_pointer=c_pointer, c_class_name = "mdff_mgr")
         self._volume = volume
+        super().__init__(name, model, c_pointer=c_pointer, c_class_name = "mdff_mgr")
         # Place as sub-model to the Volume object so deleting the Volume automatically
         # deletes the MDFF manager
         self.volume.add([self])
@@ -3116,7 +3116,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         rr = self.add_restraint(rotamer)
         rr.enabled=False
         rotamer.residue.atoms.coords = pm.atoms.coords
-        self._remove_preview()
+        self.remove_preview()
 
     def set_targets(self, rotamer, target_index = None):
         '''
@@ -3144,7 +3144,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
             else:
                target_index = pm.target_index
         rr.target_index = target_index
-        self._remove_preview()
+        self.remove_preview()
 
 
 
@@ -3152,7 +3152,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
     def _create_preview(self, rotamer, target_def, target_index):
         pm = self._preview_model
         if pm is not None and pm.rotamer != rotamer:
-            self._remove_preview()
+            self.remove_preview()
         if self._preview_model is None:
             from chimerax.std_commands.split import molecule_from_atoms
             pm = self._preview_model = molecule_from_atoms(self.model, rotamer.residue.atoms)
@@ -3181,7 +3181,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
             tf = rotation(axis, rot_angles[i], center)
             ma.coords = tf.moved(ma.coords)
 
-    def _remove_preview(self):
+    def remove_preview(self):
         if self._preview_model is not None and not self._preview_model.deleted:
             self.session.models.remove([self._preview_model])
             self._preview_model = None

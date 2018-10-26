@@ -317,7 +317,7 @@ border: 1px;
 }</string>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>2</number>
            </property>
            <property name="elideMode">
             <enum>Qt::ElideNone</enum>
@@ -1812,6 +1812,26 @@ border: 1px;
                       </size>
                      </property>
                     </spacer>
+                   </item>
+                   <item>
+                    <widget class="QToolButton" name="_rebuild_sel_res_rot_backrub_button">
+                     <property name="toolTip">
+                      <string>Attempt to auto-fit sidechain using the Backrub algorithm</string>
+                     </property>
+                     <property name="text">
+                      <string>Auto</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QComboBox" name="_rebuild_sel_res_rot_backrub_map_combo_box">
+                     <property name="maximumSize">
+                      <size>
+                       <width>20</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </widget>

@@ -768,6 +768,9 @@ class Isolde():
         iw._rebuild_sel_res_rot_release_button.clicked.connect(
             self._release_rotamer
             )
+        iw._rebuild_sel_res_rot_backrub_button.clicked.connect(
+            self._backrub_rotamer
+        )
 
         iw._rebuild_restrain_helix_button.clicked.connect(
             self._restrain_selection_as_alpha_helix
@@ -985,6 +988,7 @@ class Isolde():
             self._available_models[id_str] = _get_atomic_model(m)
 
         self._populate_available_volumes_combo_box()
+        self._populate_rot_mdff_target_combo_box()
         self._change_selected_model(model=current_model)
         for p in self._ui_panels:
             p.chimerax_models_changed(self.selected_model)
@@ -1826,6 +1830,7 @@ class Isolde():
         iw._rebuild_sel_res_rot_target_button.setEnabled(switch)
         iw._rebuild_sel_res_rot_discard_button.setEnabled(switch)
         iw._rebuild_sel_res_rot_release_button.setEnabled(switch)
+        iw._rebuild_sel_res_rot_backrub_button.setEnabled(switch)
 
     def _update_rotamer_preview_text(self, name, freq):
         f = self.iw._rebuild_sel_res_rot_preview_info
@@ -1870,7 +1875,7 @@ class Isolde():
     def _clear_rotamer(self, *_):
         from . import session_extensions
         rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
-        rrm._remove_preview()
+        rrm.remove_preview()
         self._target_rotamer = None
         self._clear_rotamer_preview_text()
 
@@ -1878,6 +1883,54 @@ class Isolde():
         rot = self._selected_rotamer
         if rot is not None:
             self.release_rotamer(rot)
+
+    def _backrub_rotamer(self, *_):
+        self._clear_rotamer()
+        self._release_rotamer()
+        if self.simulation_running and not self.sim_manager.pause:
+            # We need to pause the simulation and the backrub until after the
+            # coordinates update
+            self.sim_manager.pause=True
+            self.sim_handler.triggers.add_handler('sim paused', self._apply_backrub)
+        else:
+            # Just do it immediately
+            self._apply_backrub(None, None)
+
+    def _apply_backrub(self, trigger_name, data):
+        res = self._selected_rotamer.residue
+        from.refine.backrub_rotamer import apply_backrub
+        mdff_mgr = self.iw._rebuild_sel_res_rot_backrub_map_combo_box.currentData()
+        if mdff_mgr is not None:
+            apply_backrub(self, mdff_mgr, res)
+        if trigger_name == 'sim paused':
+            # Simulation was called after automatically pausing the simulation.
+            # Resume now
+            self.session.triggers.add_handler('frame drawn', self._sim_delayed_resume_cb)
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+    def _populate_rot_mdff_target_combo_box(self, *_):
+        from chimerax.map import Volume
+        from .session_extensions import get_mdff_mgr
+        m = self.selected_model
+        cb = self.iw._rebuild_sel_res_rot_backrub_map_combo_box
+        current_mgr = cb.currentData()
+        cb.clear()
+        if m is None:
+            return
+        for v in m.all_models():
+            if isinstance(v, Volume):
+                mgr = get_mdff_mgr(m, v)
+                if mgr is not None:
+                    label = '{} {}'.format(v.id_string, v.name)
+                    cb.addItem(label, mgr)
+        index = cb.findData(current_mgr)
+        if index != -1:
+            cb.setCurrentIndex(index)
+
+
+
+
 
     def release_rotamers_by_residues(self, residues):
         '''
@@ -1917,7 +1970,8 @@ class Isolde():
         from . import session_extensions
         rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
         rr = rrm.get_restraint(rotamer)
-        rr.enabled = False
+        if rr is not None:
+            rr.enabled = False
 
     def _update_selected_residue_info_live(self, trigger_name, changes):
         if changes is not None:
@@ -2648,6 +2702,12 @@ class Isolde():
     ##############################################################
     # Simulation on-the-fly control functions
     ##############################################################
+
+    def _sim_delayed_resume_cb(self, *_):
+        if self.simulation_running and self.sim_paused:
+            self.sim_manager.pause=False
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
 
     def pause_sim_toggle(self):
         '''

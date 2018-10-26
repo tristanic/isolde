@@ -4,10 +4,11 @@ class Backrub:
     Automatically fit a protein sidechain into density using the
     Backrub algorithm (Davis et al. 2006, Structure 14: 265-274)
     '''
-    def __init__(self, residue, density_map, clash_weight = 0.1):
+    def __init__(self, residue, density_map, clash_weight = 0.1, map_weight=1):
         self.session = residue.session
         dm = self._density_map = density_map
         self._clash_weight = clash_weight
+        self._map_weight = map_weight
         self._model = residue.structure
         # Make sure the map is covering the selected residue
         from chimerax.atomic import Residue
@@ -18,6 +19,7 @@ class Backrub:
         rota = self.rotamer = rota_mgr.get_rotamer(residue)
         if rota is None:
             raise TypeError('Not a rotameric residue!')
+        self._ensure_map_covers_residue(density_map, residue)
         res_atoms = self._main_res_atoms = residue.atoms
         natom = res_atoms[res_atoms.names=='N'][0]
         catom = res_atoms[res_atoms.names=='C'][0]
@@ -64,6 +66,23 @@ class Backrub:
         self._next_pep = res_atoms[numpy.in1d(res_atoms.names, ['C', 'O'])].merge(
             next_atoms[numpy.in1d(next_atoms.names, ['N', 'H'])]
         )
+
+    def _ensure_map_covers_residue(self, density_map, residue):
+        atoms = residue.atoms
+        dvals, outside = density_map.interpolated_values(atoms.coords, out_of_bounds_list=True)
+        if len(outside):
+            from chimerax.clipper.symmetry import is_crystal_map
+            if is_crystal_map(density_map):
+                # Force a refill and try again
+                density_map.force_refill()
+                dvals, outside = density_map.interpolated_values(atoms.coords, out_of_bounds_list=True)
+                if len(outside):
+                    sh = density_map.manager.crystal
+                    sh.isolate_and_cover_selection(residue.atoms, focus=True)
+            else:
+                raise RuntimeError('Selected residue is outside of the given density map!')
+
+
 
     def auto_fit(self):
         '''
@@ -141,7 +160,7 @@ class Backrub:
 
                     results.append(self.rotate_chi_and_check_fit(
                         chi, moving_atoms, t['Angles'][i],
-                        self._clash_weight, check_atoms
+                        self._clash_weight, self._map_weight, check_atoms
                     ))
                 results = numpy.array(results)
                 # print("Results for chi {}: {}".format(i, results))
@@ -179,13 +198,13 @@ class Backrub:
             # print('Bounds: {}'.format(bounds))
             final_results.append(
                 minimize(self.fine_tune_rotamer, t_angles,
-                args=(rotamer, self._clash_weight), bounds=bounds, method='L-BFGS-B',
+                args=(rotamer, self._clash_weight, self._map_weight), bounds=bounds, method='L-BFGS-B',
                 options={'eps':radians(1)} ))
         #print(len(final_results))
         scores = numpy.array([r.fun for r in final_results])
         # print("Scores: {}".format(scores))
         best = final_results[numpy.argmin(scores)].x
-        self.fine_tune_rotamer(best, rotamer, self._clash_weight)
+        self.fine_tune_rotamer(best, rotamer, self._clash_weight, self._map_weight)
 
 
 
@@ -202,17 +221,20 @@ class Backrub:
         ma.coords = tf.moved(ma.coords)
 
     def rotate_chi_and_check_fit(self, chi_dihedral, moving_atoms, target_angle,
-            clash_weight, check_atoms = None):
+            clash_weight, map_weight, check_atoms = None):
         '''
         Returns the negative sum of density values at the centre of each of the atoms in
         check_atoms after rotating moving_atoms by angle around axis.
         '''
         if check_atoms is None:
             check_atoms = moving_atoms
-        weights = check_atoms.elements.numbers
+        atom_weights = check_atoms.elements.numbers
         self.rotate_chi_to(chi_dihedral, moving_atoms, target_angle)
-        result = -sum(self._density_map.interpolated_values(check_atoms.coords)*weights)/sum(weights)
-        result += clash_weight*clash_score(self.session, moving_atoms, self._potential_clashes)
+        result = -map_weight*sum(
+            self._density_map.interpolated_values(
+                check_atoms.coords)*atom_weights)/sum(atom_weights)
+        result += clash_weight*clash_score(
+            self.session, moving_atoms, self._potential_clashes)
         return result
 
     def rotate_and_check_fit(self, angle, axis, center, moving_atoms, original_coords, check_atoms, clash_weight):
@@ -231,13 +253,14 @@ class Backrub:
                 ' the edge of the displayed map box. Re-center the map on the'
                 ' residue before trying again')
         result = -sum(dvals*weights)/sum(weights)
-        result += clash_weight*clash_score(self.session, check_atoms, self._potential_clashes)
+        result += clash_weight*clash_score(
+            self.session, check_atoms, self._potential_clashes)
         # print("Result for angle {}: {}".format(angle, result))
         return result
         #return -sum(dvals)
 
 
-    def fine_tune_rotamer(self, angles, rotamer, clash_weight):
+    def fine_tune_rotamer(self, angles, rotamer, clash_weight, map_weight):
         check_atoms = rotamer.residue.atoms
         nchi = rotamer.num_chi_dihedrals
         import numpy
@@ -260,8 +283,9 @@ class Backrub:
             raise RuntimeError('At least one atom is currently projecting past'
                 ' the edge of the displayed map box. Re-center the map on the'
                 ' residue before trying again')
-        result = -sum(dvals*weights)/sum(weights)
-        clashscore = clash_weight*clash_score(self.session, check_atoms, self._potential_clashes)
+        result = -map_weight*sum(dvals*weights)/sum(weights)
+        clashscore = clash_weight*clash_score(
+            self.session, check_atoms, self._potential_clashes)
         # print("Density score: {}   Clash score: {}".format(result, clashscore))
         result += clashscore
         #print('Fine tune rotamer result: {}'.format(result))
@@ -299,20 +323,43 @@ def near_atoms(atoms, model, distance):
     return other_atoms.filter(a)
 
 
-def test_backrub(session, isolde, clash_weight=0.1, selected=False, focus=True):
+def apply_backrub(isolde, mdff_mgr, residue, clash_weight=0.5, focus=False):
+    '''
+    Attempt to automatically fit a protein sidechain into density using the
+    backrub algorithm (https://doi.org/10.1093/bioinformatics/btn169).
+
+    Args:
+        * isolde:
+            - pointer to the main ISOLDE session
+        * mdff_mgr:
+            - a :class:`MDFF_Mgr` object managing the map into which the
+              sidechain is to be fitted.
+        * residue:
+            - a :class:`Residue` defining the residue to be fitted.
+        * clash_weight:
+            - weighting factor to apply to atomic clashes when scoring poses
+        * focus:
+            - do we want to focus the view on the residue?
+    '''
+    session = isolde.session
     m = isolde.selected_model
-    if selected:
-        from chimerax.atomic import selected_atoms
-        r = selected_atoms(session).unique_residues[0]
-    else:
-        r = m.residues[36]
+    from chimerax.atomic import selected_atoms
+    r = residue
+    if isolde.simulation_running:
+        sm = isolde.sim_manager
+        sc = sm.sim_construct
+        if sc.mobile_residues.index(r) == -1:
+            raise RuntimeError('If a simulation is running, the target residue '
+                'must be within the mobile selection!')
+        if not sm.pause:
+            raise RuntimeError('If a simulation is running, it must be paused '
+                'first! ')
     if focus:
         from ..view import focus_on_selection
         focus_on_selection(session, r.atoms)
-    from chimerax.clipper.symmetry import get_symmetry_handler
-    sh = get_symmetry_handler(m)
-    mdff_p = sh.xmapset['MDFF potential']
-    b = Backrub(r, mdff_p, clash_weight=clash_weight)
+    mdff_p = mdff_mgr.volume
+    map_weight = mdff_mgr.global_k
+    b = Backrub(r, mdff_p, clash_weight=clash_weight, map_weight=map_weight)
     from ..delayed_reaction import delayed_reaction
     delayed_reaction(session.triggers, 'new frame', _true, [], _true, b.auto_fit, [])
     return b
