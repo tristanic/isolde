@@ -915,8 +915,8 @@ class XmapHandler_Live(Volume):
         Args:
             sesssion:
                 The ChimeraX session
-            crystal:
-                The CrystalStructure object this belongs to
+            manager:
+                The XmapSet_Live object this belongs to
             name:
                 A descriptive name for this map
             origin:
