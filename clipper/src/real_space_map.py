@@ -57,7 +57,7 @@ class NXmapHandler(Volume):
         self.update_mask()
 
     def _box_moved_cb(self, name, params):
-        self.box_params = params
+        #self.box_params = params
         if not self.display:
             return
         self.update_mask()
@@ -79,11 +79,7 @@ class NXmapHandler(Volume):
             self._box_moved_cb_handler = None
         super().delete()
 
+_corners = numpy.array([(x,y,z) for x in (-1,1) for y in (-1,1) for z in (-1,1)])
 def _find_box_corners(center, radius, xyz_to_ijk_transform):
-    corners = []
-    for x in (-1,1):
-        for y in (-1,1):
-            for z in (-1,1):
-                corners.append(xyz_to_ijk_transform*(center+radius*numpy.array((x,y,z))))
-    corners = numpy.array(corners)
+    corners = xyz_to_ijk_transform*(center+radius*_corners)
     return (numpy.min(corners, axis=0), numpy.max(corners, axis=0))
