@@ -31,8 +31,7 @@ class Isolde_Model_Container(Model):
             raise NotImplementedError('Precalculated crystallographic maps not yet supported')
 
         if xtal_data_mtz is not None:
-            from .isolde import initialize_live_xtal_structure
-            initialize_live_xtal_structure(xtal_data_mtz, live=live_xtal_map_recalc)
+            self.initialize_live_xtal_structure(xtal_data_mtz, live=live_xtal_map_recalc)
 
         session.models.add([self])
 
@@ -100,7 +99,7 @@ class Isolde_Model_Container(Model):
         potentials = []
         from .session_extensions import get_mdff_mgr
         from chimerax.map import Volume
-        for m in self.all_models:
+        for m in self.all_models():
             if isinstance(m, Volume):
                 mgr = get_mdff_mgr(self.atomic_model, m)
                 if mgr is not None:
