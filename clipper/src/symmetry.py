@@ -150,6 +150,143 @@ def is_crystal_map(volume):
         return True
     return False
 
+def symmetry_from_model_metadata(model):
+    '''
+    Create crystallographic symmetry objects based on the information in the
+    model's metadata (PDB CRYST1 card or mmCIF header info)
+    '''
+    if 'CRYST1' in model.metadata.keys():
+        return symmetry_from_model_metadata_pdb(model)
+    elif 'cell' in model.metadata.keys():
+        return symmetry_from_model_metadata_mmcif(model)
+    raise TypeError('Model does not appear to have symmetry information!')
+
+def simple_p1_box(model, resolution=3):
+    '''
+    If the model lacks crystallographic information or the available symmetry
+    information is incompatible with a real crystal structure, just create
+    a large, rectangular P1 box.
+    '''
+    coord_range = model.atoms.coords.max(axis=0) - model.atoms.coords.min(axis=0)
+    abc = coord_range*3
+    angles = [90,90,90]
+    sym_str = 'P 1'
+    from .clipper_python import Cell_descr, Cell, Spgr_descr, Spacegroup, Resolution, Grid_sampling
+    cell = Cell(Cell_descr(*abc, *angles))
+    spacegroup = Spacegroum(Spgr_descr(sym_str))
+    res = Resolution(res)
+    grid_sampling=Grid_Sampling(spacegroup, cell, res)
+    return cell, spacegroup, grid_sampling
+
+
+def symmetry_from_model_metadata_mmcif(model):
+    metadata = model.metadata
+
+    if 'refine' in metadata.keys():
+        refine_dict = dict((key, data) for (key,data) in zip(
+            metadata['refine'][1:], metadata['refine data']
+        ))
+        res_str = refine_dict.get('ls_d_res_high', '?')
+        if res_str != '?':
+            res = float(res_str)
+        else:
+            res = 3.0
+    else:
+        res=3.0
+
+    if 'ELECTRON MICROSCOPY' in metadata['exptl data']:
+        return simple_p1_box(model, resolution=res)
+
+    try:
+        cell_headers = metadata['cell'][1:]
+        cell_data = metadata['cell data']
+        cell_dict = dict((key, data) for (key, data) in zip(cell_headers, cell_data))
+        abc = [cell_dict['length_a'], cell_dict['length_b'], cell_dict['length_c']]
+        angles = [cell_dict['angle_alpha'], cell_dict['angle_beta'], cell_dict['angle_gamma']]
+    except:
+        raise TypeError('No cell information available!')
+
+    try:
+        spgr_headers = metadata['symmetry']
+        spgr_data = metadata['symmetry data']
+    except:
+        raise TypeError('No space group headers in metadata!')
+
+    spgr_dict = dict((key, data) for (key, data) in zip(spgr_headers, spgr_data))
+    spgr_str = spgr_dict['int_tables_number']
+    if spgr_str == '?':
+        spgr_str = spgr_dict['space_group_name_h-m']
+    if spgr_str == '?':
+        spgr_str = spgr_dict['space_group_name_hall']
+    if spgr_str == '?':
+        raise TypeError('No space group information available!')
+
+
+    from .clipper_python import Cell_descr, Cell, Spgr_descr, Spacegroup, Resolution, Grid_sampling
+    cell_descr = Cell_descr(*abc, *angles)
+    cell = Cell(cell_descr)
+    spgr_descr = Spgr_descr(spgr_str)
+    spacegroup = Spacegroup(spgr_descr)
+    resolution = Resolution(res)
+    grid_sampling = Grid_sampling(spacegroup, cell, resolution)
+    return cell, spacegroup, grid_sampling
+
+
+def symmetry_from_model_metadata_pdb(model):
+    '''
+    Generate Cell, Spacegroup and a default Grid_Sampling from the PDB
+    CRYST1 card.
+    '''
+    cryst1 = model.metadata['CRYST1'][0]
+    abc = [float(cryst1[7:16]), float(cryst1[16:25]), float(cryst1[25:34])]
+    angles = [float(cryst1[34:41]), float(cryst1[41:48]), float(cryst1[48:55])]
+    symstr = cryst1[55:67]
+    # zval = int(cryst1[67:71])
+
+
+    remarks = model.metadata['REMARK']
+    i = 0
+
+    '''
+    Get the resolution. We need this to define a Grid_sampling
+    for the unit cell (needed even in the absence of a map since
+    atomic symmetry lookups are done with integerised symops for
+    performance). We want to be as forgiving as possible at this
+    stage - we'll use the official resolution if we find it, and
+    set a default resolution if we don't. This will be overridden
+    by the value from any mtz file that's loaded later.
+    '''
+    try:
+        while 'REMARK   2' not in remarks[i]:
+            i += 1
+        # The first 'REMARK   2' line is blank by convention, and
+        # resolution is on the second line
+        i += 1
+        line = remarks[i].split()
+        res = line[3]
+    except:
+        res = 3.0
+
+    # If this is an EM structure, the CRYST1 card should look something like:
+    # CRYST1    1.000    1.000    1.000  90.00  90.00  90.00 P 1
+    # If this is the case, just put the model into a big P1 box.
+
+    import numpy
+    if 'P 1  ' in symstr and numpy.allclose(abc, 1.0) and numpy.allclose(angles, 90):
+        return simple_p1_box(model, resolution=res)
+
+    from .clipper_python import Cell_descr, Cell, Spgr_descr, Spacegroup, Resolution, Grid_sampling
+
+    cell_descr = Cell_descr(*abc, *angles)
+    cell = Cell(cell_descr)
+    spgr_descr = Spgr_descr(symstr)
+    spacegroup = Spacegroup(spgr_descr)
+    resolution = Resolution(float(res))
+    grid_sampling = Grid_sampling(spacegroup, cell, resolution)
+    return cell, spacegroup, grid_sampling
+
+
+
 class Unit_Cell(clipper_python.Unit_Cell):
    def __init__(self, atom_list, cell,
                  spacegroup, grid_sampling, padding = 10):
@@ -214,20 +351,22 @@ class XtalSymmetryHandler(Model):
 
         map_data = None
 
+        self.cell, self.spacegroup, self.grid = symmetry_from_model_metadata(model)
+
         if mtzfile is not None:
             from .clipper_mtz import ReflectionDataContainer
             mtzdata = self.mtzdata = ReflectionDataContainer(self.session, mtzfile, shannon_rate = map_oversampling)
             self.add([mtzdata])
-            self.cell = mtzdata.cell
-            self.spacegroup = mtzdata.spacegroup
+            if (not mtzdata.cell.equals(self.cell, 1.0)
+                or mtzdata.spacegroup.spacegroup_number != self.spacegroup.spacegroup_number):
+                raise RuntimeError("Symmetry info from model does not match "
+                    "symmetry info from MTZ file!")
+            # Grid sampling from MTZ file supersedes that estimated from model
             self.grid = mtzdata.grid_sampling
             self.hklinfo = mtzdata.hklinfo
 
             if len(mtzdata.calculated_data):
                 datasets = mtzdata.calculated_data
-        else:
-            from .crystal_exp import symmetry_from_model_metadata
-            self.cell, self.spacegroup, self.grid = symmetry_from_model_metadata(model)
 
         if calculate_maps and mtzfile is not None:
             from .crystal_exp import XmapSet_Live, viewing_bsharp
