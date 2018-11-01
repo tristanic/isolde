@@ -54,6 +54,54 @@ def set_to_default_cartoon(session, model = None):
     except:
         return
 
+def _model_volume(model, exclude_hydrogens=True, radius_scale=1):
+    from math import pi
+    atoms = model.atoms
+    if exclude_hydrogens:
+        atoms = atoms[atoms.element_names != 'H']
+    return sum( 4/3 * pi * (atoms.radii*radius_scale)**3 )
+
+
+def guess_suitable_contour(volume, model, mask_radius=3, atom_radius_scale = 0.5):
+    '''
+    Find the contour level that would make the volume inside the contour for the
+    region immediately surrounding the model approximately equal to the volume
+    of the model's atoms scaled by atom_radius_scale.
+    '''
+    import numpy
+    session = model.session
+
+    from .symmetry import is_crystal_map
+    is_xmap = is_crystal_map(volume)
+    if is_xmap:
+        sh = volume.manager.crystal
+
+        spotlight_mode = sh.spotlight_mode
+        # Expand the map to cover the whole model
+        sh.isolate_and_cover_selection(model.atoms, focus=False)
+
+    from .util import voxel_volume
+    vv = voxel_volume(volume)
+    mv = _model_volume(model, radius_scale=atom_radius_scale)
+
+    from chimerax.core.geometry import find_close_points
+    grid_coords = volume.grid_points(volume.scene_position)
+
+    data = numpy.array(volume.data.matrix(), order='C')
+    close_i = find_close_points(model.atoms.scene_coords, grid_coords, mask_radius)[1]
+    close_vals = data.ravel()[close_i]
+
+
+    target_percentile = (1-mv/(vv*len(close_i)))*100
+    level = numpy.percentile(close_vals, target_percentile)
+
+    if is_xmap:
+        sh.spotlight_mode = spotlight_mode
+
+    return level
+
+
+
 #TODO: update Surface_Zone class to handle symmetry atoms
 class Surface_Zone:
     '''
@@ -104,7 +152,7 @@ class XmapSet_Live(Model):
     '''
 
     STANDARD_LOW_CONTOUR = numpy.array([1.5])
-    STANDARD_HIGH_CONTOUR = numpy.array([2.0])
+    STANDARD_HIGH_CONTOUR = numpy.array([2.5])
     STANDARD_DIFFERENCE_MAP_CONTOURS = numpy.array([-3.0, 3.0])
 
     DEFAULT_MESH_MAP_COLOR = [0,1.0,1.0,1.0] # Solid cyan
@@ -176,18 +224,23 @@ class XmapSet_Live(Model):
         for t in trigger_names:
             trig.add_trigger(t)
 
+
         self._live_update = False
         self._recalc_needed = False
         self._model_changes_handler = None
         self._delayed_recalc_handler = None
         self._show_r_factors = show_r_factors
 
-        #############
-        # Variables involved in handling live redrawing of maps in a box
-        # centred on the cofr
-        #############
-
         self.model = model
+
+        # Since the calculation of crystallographic maps is directly reliant on
+        # the atomic model, we need to ensure that deletion of the model deletes
+        # this class
+
+        from chimerax.core.models import REMOVE_MODELS
+        self._model_removed_handler = session.triggers.add_handler(
+            REMOVE_MODELS, self._model_removed_cb)
+
         atoms = model.atoms
         # Handler for live box update
         self._box_update_handler = None
@@ -234,27 +287,15 @@ class XmapSet_Live(Model):
             exclude_free_reflections=True, fill_with_fcalc=True,
             display=False)
 
-        # xm.add_xmap('MDFF potential', map_potential_bsharp(self.resolution),
-        #     is_difference_map=False,
-        #     exclude_free_reflections=True,
-        #     fill_with_fcalc=True)
-
         self.add_live_xmap('2mFo-DFc', 0, is_difference_map=False,
             exclude_free_reflections=exclude_free_reflections,
             fill_with_fcalc=fill_with_fcalc,
             display=True)
-        # xm.add_xmap('2mFo-DFc', 0,
-        #     is_difference_map=False,
-        #     exclude_free_reflections=exclude_free_reflections,
-        #     fill_with_fcalc=fill_with_fcalc)
+
         self.add_live_xmap('mFo-DFc', 0, is_difference_map=True,
             exclude_free_reflections=exclude_free_reflections,
             fill_with_fcalc=fill_with_fcalc,
             display=True)
-
-        # xm.add_xmap('mFo-DFc', 0,
-        #     is_difference_map=True,
-        #     exclude_free_reflections=exclude_free_reflections)
 
         for b in bsharp_vals:
             if abs(b) < 5:
@@ -268,16 +309,20 @@ class XmapSet_Live(Model):
                 fill_with_fcalc=fill_with_fcalc
             )
 
-            # xm.add_xmap(name_str, b,
-            #     is_difference_map=False,
-            #     exclude_free_reflections=exclude_free_reflections,
-            #     fill_with_fcalc=fill_with_fcalc)
-
         self.display=False
         # Apply the surface mask
         self.session.triggers.add_handler('frame drawn', self._rezone_once_cb)
-        # self._reapply_zone()
         self.live_update = live_update
+
+
+    def _model_removed_cb(self, trigger_name, removed_models):
+        if self.model in removed_models:
+            if not self.deleted:
+                if self in self.session.models.list():
+                    self.session.models.remove([self])
+            self.delete()
+            from chimerax.core.triggerset import DEREGISTER
+            return DEREGISTER
 
     def _rezone_once_cb(self, *_):
         self.display = True
@@ -532,6 +577,45 @@ class XmapSet_Live(Model):
             )
         self.triggers.activate_trigger('maps recalculated', None)
 
+    def add_nxmap(self, volume, is_difference_map=False, color=None,
+        style=None, contour=None, delete_original=True, display=True):
+        '''
+        Add a new real-space map from an existing Volume object. Makes a copy of
+        the original Volume's data, and optionally closes the original.
+        '''
+        from .real_space_map import NXmapHandler
+        new_handler = NXmapHandler(self.session, self, volume,
+            is_difference_map = is_difference_map)
+
+        if style is None:
+            style = 'mesh'
+        if color is None:
+            if is_difference_map:
+                color = self.DEFAULT_DIFF_MAP_COLORS
+            elif style == 'mesh':
+                color = [self.DEFAULT_MESH_MAP_COLOR]
+            else:
+                color = [self.DEFAULT_SOLID_MAP_COLOR]
+
+        if contour is None:
+            if is_difference_map:
+                contour = self.STANDARD_DIFFERENCE_MAP_CONTOURS
+            else:
+                contour = [guess_suitable_contour(new_handler, self.model)]
+        self.add([new_handler])
+        new_handler.set_representation(style)
+        new_handler.set_parameters(**{'cap_faces': False,
+                                  'surface_levels': contour,
+                                  'show_outline_box': False,
+                                  'surface_colors': color,
+                                  'square_mesh': False})
+        if delete_original:
+            self.session.models.remove([volume])
+            volume.delete()
+        self._reapply_zone()
+
+        return new_handler
+
     def add_live_xmap(self, name, b_sharp,
         is_difference_map=False,
         exclude_missing_reflections=False,
@@ -548,6 +632,7 @@ class XmapSet_Live(Model):
             color=color, style=style, contour=contour)
         if display:
             new_handler.show()
+            self._reapply_zone()
         else:
             new_handler.display = False
 
@@ -643,8 +728,15 @@ class XmapSet_Live(Model):
         if coords is not None:
             surface_zones(self, coords, radius)
 
+    def removed_from_session(self, session):
+        if self._model_removed_handler is not None:
+            session.triggers.remove_handler(self._model_removed_handler)
+        super().removed_from_session(session)
+        self.crystal.xmapset = None
+
     def delete(self):
         self.live_scrolling = False
+        self.live_update = False
         super().delete()
 
 def map_potential_bsharp(resolution):

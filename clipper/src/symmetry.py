@@ -137,11 +137,11 @@ def symmetry_coords(atoms, sym_matrices, sym_indices):
 from chimerax.core.models import Model, Drawing
 
 def get_symmetry_handler(structure, create=False):
-    for m in structure.child_models():
-        if isinstance(m, XtalSymmetryHandler):
-            return m
+    p = structure.parent
+    if isinstance(p, Symmetry_Manager):
+            return p
     if create:
-        return XtalSymmetryHandler(structure)
+        return Symmetry_Manager(structure)
     return None
 
 def is_crystal_map(volume):
@@ -159,7 +159,8 @@ def symmetry_from_model_metadata(model):
         return symmetry_from_model_metadata_pdb(model)
     elif 'cell' in model.metadata.keys():
         return symmetry_from_model_metadata_mmcif(model)
-    raise TypeError('Model does not appear to have symmetry information!')
+    return simple_p1_box(model)
+    # raise TypeError('Model does not appear to have symmetry information!')
 
 def simple_p1_box(model, resolution=3):
     '''
@@ -176,7 +177,7 @@ def simple_p1_box(model, resolution=3):
     spacegroup = Spacegroum(Spgr_descr(sym_str))
     res = Resolution(res)
     grid_sampling=Grid_Sampling(spacegroup, cell, res)
-    return cell, spacegroup, grid_sampling
+    return cell, spacegroup, grid_sampling, False
 
 
 def symmetry_from_model_metadata_mmcif(model):
@@ -194,7 +195,7 @@ def symmetry_from_model_metadata_mmcif(model):
     else:
         res=3.0
 
-    if 'ELECTRON MICROSCOPY' in metadata['exptl data']:
+    if 'X-RAY DIFFRACTION' not in metadata['exptl data']:
         return simple_p1_box(model, resolution=res)
 
     try:
@@ -229,7 +230,7 @@ def symmetry_from_model_metadata_mmcif(model):
     spacegroup = Spacegroup(spgr_descr)
     resolution = Resolution(res)
     grid_sampling = Grid_sampling(spacegroup, cell, resolution)
-    return cell, spacegroup, grid_sampling
+    return cell, spacegroup, grid_sampling, True
 
 
 def symmetry_from_model_metadata_pdb(model):
@@ -283,7 +284,7 @@ def symmetry_from_model_metadata_pdb(model):
     spacegroup = Spacegroup(spgr_descr)
     resolution = Resolution(float(res))
     grid_sampling = Grid_sampling(spacegroup, cell, resolution)
-    return cell, spacegroup, grid_sampling
+    return cell, spacegroup, grid_sampling, True
 
 
 
@@ -314,16 +315,18 @@ class Unit_Cell(clipper_python.Unit_Cell):
         super().__init__(atom_list, cell, spacegroup, grid_sampling, padding)
 
 
-class XtalSymmetryHandler(Model):
+class Symmetry_Manager(Model):
     '''
     Handles crystallographic symmetry and maps for an atomic model.
     '''
     def __init__(self, model, mtzfile=None, calculate_maps=True, map_oversampling=1.5,
         min_voxel_size = 0.5, spotlight_mode = True, map_scrolling_radius=12,
         atomic_symmetry_radius=15, hydrogens='polar', debug=False):
-        name = 'Crystal'
+        name = model.name + ' Symmetry Manager'
         session = self.session = model.session
         super().__init__(name, session)
+        session.models.add([self])
+        self.add([model])
         self._debug = debug
         self.structure = model
         self._box_center = session.view.center_of_rotation
@@ -351,19 +354,25 @@ class XtalSymmetryHandler(Model):
 
         map_data = None
 
-        self.cell, self.spacegroup, self.grid = symmetry_from_model_metadata(model)
+        self.cell, self.spacegroup, self.grid, self._has_symmetry = symmetry_from_model_metadata(model)
 
         if mtzfile is not None:
             from .clipper_mtz import ReflectionDataContainer
             mtzdata = self.mtzdata = ReflectionDataContainer(self.session, mtzfile, shannon_rate = map_oversampling)
             self.add([mtzdata])
-            if (not mtzdata.cell.equals(self.cell, 1.0)
+            if not self.has_symmetry:
+                session.logger.info('NOTE: No symmetry information found in model. '
+                    'Using symmetry from MTZ file.')
+                self.cell = mtzdata.cell
+                self.spacegroup = mtzdata.spacegroup
+            elif (not mtzdata.cell.equals(self.cell, 1.0)
                 or mtzdata.spacegroup.spacegroup_number != self.spacegroup.spacegroup_number):
                 raise RuntimeError("Symmetry info from model does not match "
                     "symmetry info from MTZ file!")
             # Grid sampling from MTZ file supersedes that estimated from model
             self.grid = mtzdata.grid_sampling
             self.hklinfo = mtzdata.hklinfo
+            self._has_symmetry=True
 
             if len(mtzdata.calculated_data):
                 datasets = mtzdata.calculated_data
@@ -400,7 +409,7 @@ class XtalSymmetryHandler(Model):
         self._update_handler = session.triggers.add_handler('new frame',
             self.update)
 
-        model.add([self])
+        #model.add([self])
 
         display_atoms = model.atoms
         display_atoms.draw_modes = display_atoms.STICK_STYLE
@@ -415,6 +424,10 @@ class XtalSymmetryHandler(Model):
         from .mousemodes import initialize_map_contour_mouse_modes
         initialize_map_contour_mouse_modes(session)
         self.spotlight_mode = spotlight_mode
+
+    @property
+    def has_symmetry(self):
+        return self._has_symmetry
 
     @property
     def last_covered_selection(self):

@@ -780,19 +780,19 @@ class Sim_Manager:
         will be used, since it is guaranteed to exclude the free reflections.
         '''
         from .. import session_extensions as sx
+        isolde_params = self.isolde.params
         m = self.model
         mdff_mgr_map = self.mdff_mgrs = {}
         from chimerax.map import Volume
-        from chimerax.clipper.crystal_exp import XmapHandler_Live
-        for v in m.all_models():
-            mgr = sx.get_mdff_mgr(m, v, create=False)
-            if mgr is not None:
-                mdff_mgr_map[v] = mgr
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sh = get_symmetry_handler(m)
+        for v in sh.all_models():
+            if isinstance(v, Volume):
+                mgr = sx.get_mdff_mgr(m, v, create=False)
+                if mgr is not None:
+                    mdff_mgr_map[v] = mgr
         if len(mdff_mgr_map.keys()):
-            isolde_params = self.isolde_params
-            from chimerax.clipper.symmetry import get_symmetry_handler
-            sym = get_symmetry_handler(m)
-            sym.isolate_and_cover_selection(self.sim_construct.mobile_atoms,
+            sh.isolate_and_cover_selection(self.sim_construct.mobile_atoms,
                 include_surrounding_residues = 0,
                 show_context = isolde_params.hard_shell_cutoff_distance,
                 mask_radius = isolde_params.standard_map_mask_cutoff,

@@ -16,7 +16,7 @@ class NXmapHandler(Volume):
     Real-space equivalent to crystal.XmapHandler. Doesn't actually use any of
     the clipper engine, but provides a unified interface.
     '''
-    def __init__(self, session, manager, volume):
+    def __init__(self, session, manager, volume, is_difference_map = False):
         '''
         Copies the data from an existing Volume object. The input volume may
         safely be closed.
@@ -26,7 +26,7 @@ class NXmapHandler(Volume):
         super().__init__(volume.data, session)
         self.name = volume.name
 
-        self.is_difference_map = False
+        self._is_difference_map = is_difference_map
         self.initialize_thresholds()
 
         # self._needs_update = True
@@ -45,6 +45,10 @@ class NXmapHandler(Volume):
     @property
     def radius(self):
         return self.manager.display_radius
+
+    @property
+    def is_difference_map(self):
+        return self._is_difference_map
 
     def show(self, *args, **kwargs):
         self.update_mask()

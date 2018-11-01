@@ -75,10 +75,15 @@ def get_tuggable_atoms_mgr(model):
     return Tuggable_Atoms_Mgr(model)
 
 def get_mdff_mgr(model, volume, create=False):
+    from chimerax.map import Volume
+    from chimerax.atomic import AtomicStructure
+    if (not isinstance(model, AtomicStructure) or
+        not isinstance(volume, Volume)):
+        return None
     from .molobject import MDFF_Mgr
-    for m in model.all_models():
+    for m in volume.all_models():
         if isinstance(m, MDFF_Mgr):
-            if m.volume == volume:
+            if m.model == model:
                 return m
     if create:
         return MDFF_Mgr(model, volume)

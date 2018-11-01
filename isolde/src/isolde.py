@@ -1133,9 +1133,9 @@ class Isolde():
             if not os.path.isfile(self.iw._sim_basic_xtal_init_reflections_file_name.text()):
                 valid = False
             if valid:
-                from chimerax.clipper.symmetry import XtalSymmetryHandler
+                from chimerax.clipper.symmetry import Symmetry_Manager
                 for m in sm.all_models():
-                    if isinstance(m, XtalSymmetryHandler):
+                    if isinstance(m, Symmetry_Manager):
                         valid = False
                         break
         else:
@@ -1163,7 +1163,7 @@ class Isolde():
             generic_warning(errstring)
         m = self.selected_model
         from chimerax.clipper import symmetry
-        sym_handler = symmetry.XtalSymmetryHandler(m, fname,
+        sym_handler = symmetry.Symmetry_Manager(m, fname,
             map_oversampling = self.params.map_shannon_rate)
         self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
         self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
@@ -1187,7 +1187,7 @@ class Isolde():
             from .dialog import generic_warning
             generic_warning("You must have the corresponding model loaded before loading reflection data!")
         from chimerax.clipper import symmetry
-        sh = symmetry.XtalSymmetryHandler(m, mtzfile=filename,
+        sh = symmetry.Symmetry_Manager(m, mtzfile=filename,
             map_oversampling=self.params.map_shannon_rate)
         sh.xmapset.live_update = live
         standard_map = sh.xmapset['2mFo-DFc']
@@ -1918,7 +1918,11 @@ class Isolde():
         cb.clear()
         if m is None:
             return
-        for v in m.all_models():
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sh = get_symmetry_handler(m)
+        if sh is None:
+            return
+        for v in sh.all_models():
             if isinstance(v, Volume):
                 mgr = get_mdff_mgr(m, v)
                 if mgr is not None:
@@ -3142,7 +3146,7 @@ class Isolde():
         color.color(self.session, model, color='bychain', target='ac')
         color.color(self.session, model, color='byhetero', target='a')
         from chimerax.clipper import symmetry
-        sym_handler = symmetry.XtalSymmetryHandler(model,
+        sym_handler = symmetry.Symmetry_Manager(model,
             #mtzfile=os.path.join(data_dir, 'before_maps.mtz'),
             mtzfile=mtzfile,
             map_oversampling = self.params.map_shannon_rate)
@@ -3187,7 +3191,7 @@ class Isolde():
         color.color(self.session, before_struct, color='bychain', target='ac')
         color.color(self.session, before_struct, color='byhetero', target='a')
         from chimerax.clipper import symmetry
-        sym_handler = symmetry.XtalSymmetryHandler(before_struct,
+        sym_handler = symmetry.Symmetry_Manager(before_struct,
             #mtzfile=os.path.join(data_dir, 'before_maps.mtz'),
             mtzfile=os.path.join(data_dir, '3io0-sf.mtz'),
             map_oversampling = self.params.map_shannon_rate)
