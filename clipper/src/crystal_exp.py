@@ -92,7 +92,7 @@ def surface_zones(models, points, distance):
     from chimerax.surface import zone
     for m in models:
         for s in m.surfaces:
-            spoints = s.position.inverse() * points
+            spoints = s.position.inverse(is_orthonormal=True) * points
             zone.surface_zone(s, spoints, distance, auto_update=True)
 
 
@@ -1036,7 +1036,8 @@ class FastVolumeSurface(VolumeSurface):
         v = self.volume
         level = self.level
         vertex_transform = v.matrix_indices_to_xyz_transform()
-        normal_transform = vertex_transform.inverse().transpose().zero_translation()
+        normal_transform = vertex_transform.zero_translation()
+        #normal_transform = vertex_transform.inverse().transpose().zero_translation()
         det = vertex_transform.determinant()
 
         from .delayed_reaction import delayed_reaction

@@ -306,12 +306,12 @@ def exclamation_mark(radius = 0.1, height = 2, nc=8, color = [255,0,0,255]):
     import numpy
     stem = cone_geometry(radius=radius, height=height, nc=nc, caps=True)
     spheres = list(sphere_geometry2(nc*4))
-    spheres[0] = scale(radius*0.7).moved(spheres[0])
+    spheres[0] = scale(radius*0.7).transform_points(spheres[0])
 
     v, n, t = stem
 
 
-    vbottom = translation((0,0, height/2+radius*1.5)).moved(spheres[0])
+    vbottom = translation((0,0, height/2+radius*1.5)).transform_points(spheres[0])
     t = numpy.concatenate((t, spheres[2]+len(v)))
     v = numpy.concatenate((v, vbottom))
     n = numpy.concatenate((n, spheres[1]))
@@ -461,13 +461,13 @@ def pin_geometry(handle_radius, pin_radius, total_height):
 
 
     pint = translation((0,0,pin_height/2))
-    pin[0] = pint.moved(pin[0])
+    pin[0] = pint.transform_points(pin[0])
     hbt = translation((0,0, pin_height + tb_height/2.05))
-    handle_bottom[0] = hbt.moved(handle_bottom[0])
+    handle_bottom[0] = hbt.transform_points(handle_bottom[0])
     hmt = translation((0,0, handle_height/2 + pin_height))
-    handle_middle[0] = hmt.moved(handle_middle[0])
+    handle_middle[0] = hmt.transform_points(handle_middle[0])
     htt = translation((0,0,total_height - tb_height/2.05))
-    handle_top[0] = htt.moved(handle_top[0])
+    handle_top[0] = htt.transform_points(handle_top[0])
 
     vertices = numpy.concatenate((pin[0], handle_bottom[0], handle_middle[0], handle_top[0]))
     normals = numpy.concatenate((pin[1], handle_bottom[1], handle_middle[1], handle_top[1]))
@@ -537,11 +537,11 @@ def ring_arrow(major_radius, minor_radius, circle_segments, ring_segments, head_
     # Rotate the cone
     move_dir = numpy.array(((major_radius, 0, -head_length),), numpy.double)
     r1 = rotation((1,0,0), -90)
-    r1.move(vh)
-    r1.move(move_dir)
+    r1.transform_points(vh, in_place=True)
+    r1.transform_points(move_dir, in_place=True)
     r2 = rotation((0,0,1), degrees(starting_angle))
-    r2.move(vh)
-    r2.move(move_dir)
+    r2.transform_points(vh, in_place=True)
+    r2.transform_points(move_dir, in_place=True)
     # ... and move it into position
     vh += move_dir
 
@@ -581,10 +581,10 @@ def post_geometry(radius, height, caps=False):
     from chimerax.core.geometry import rotation, translation
     v, n, t = cylinder_geometry(radius=radius, height=height, caps=caps, nc=6)
     tr = translation([0,0,height/2])
-    tr.move(v)
+    tr.transform_points(v, in_place=True)
     r = rotation([0,1,0], 90)
-    r.move(v)
-    r.apply_without_translation(n)
+    r.transform_points(v, in_place=True)
+    r.transform_vectors(n, in_place=True)
     return v,n,t
 
 def bond_cylinder_placements(bonds):

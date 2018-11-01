@@ -131,7 +131,7 @@ def symmetry_coords(atoms, sym_matrices, sym_indices):
     for i in unique_indices:
         mask = sym_indices == i
         tf = Place(matrix=sym_matrices[i])
-        coords[mask] = tf.moved(coords[mask])
+        coords[mask] = tf.transform_points(coords[mask])
     return coords
 
 from chimerax.core.models import Model, Drawing
@@ -445,7 +445,6 @@ class XtalSymmetryHandler(Model):
             self._stepper = StructureStepper(self.session, self.structure)
         return self._stepper
 
-
     @property
     def spotlight_mode(self):
         return self._spotlight_mode
@@ -493,7 +492,7 @@ class XtalSymmetryHandler(Model):
     def update(self, *_, force=False):
         v = self.session.view
         cofr = self._box_center = v.center_of_rotation
-        center = self.scene_position.inverse()*cofr
+        center = self.scene_position.inverse(is_orthonormal=True)*cofr
         center_grid = clipper_python.Coord_orth(center).coord_frac(self.cell).coord_grid(self.grid)
         if force:
             update_needed=True
@@ -772,7 +771,7 @@ class AtomicSymmetryModel(Model):
             d = self._spd = Drawing("symmetry search positions")
             v, n, t = sphere_geometry2(200)
             from chimerax.core.geometry import scale
-            v = scale(0.5).moved(v)
+            v = scale(0.5).transform_points(v)
             d.set_geometry(v,n,t)
             self.add_drawing(d)
         return self._spd
@@ -854,7 +853,8 @@ class AtomicSymmetryModel(Model):
         mh = self._model_changes_handler
         if mh is not None:
             self.structure.triggers.remove_handler(mh)
-        self.unhide_all_atoms()
+        if not self.structure.deleted:
+            self.unhide_all_atoms()
         super().delete()
 
     @property

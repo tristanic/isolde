@@ -1720,7 +1720,7 @@ class Isolde():
         k = self.iw._rebuild_pos_restraint_spring_constant.value()*100
         cofr = self.session.view.center_of_rotation
         # Transform target from scene to model coordinates
-        target = m.position.inverse()*cofr
+        target = m.position.inverse(is_orthonormal=True)*cofr
         self.restrain_atom_to_xyz(atom, target, k)
 
     def restrain_atom_to_xyz(self, atom, target, spring_constant):

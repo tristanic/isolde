@@ -132,7 +132,7 @@ class TugAtomsMode(MouseMode):
         dir = x1 - x0
         da = axyz - x0
         from chimerax.core.geometry import inner_product
-        offset = atom.structure.scene_position.inverse().apply_without_translation(
+        offset = atom.structure.scene_position.inverse(is_orthonormal=True).transform_vectors(
             da - (inner_product(da, dir)/inner_product(dir,dir)) * dir
         )
         return -offset

@@ -218,7 +218,7 @@ class Backrub:
         center = matrix.project_to_axis(coords[3], axis, coords[1])
         from chimerax.core.geometry import rotation
         tf = rotation(axis, degrees(target_angle-chi_dihedral.angle), center)
-        ma.coords = tf.moved(ma.coords)
+        ma.coords = tf.transform_points(ma.coords)
 
     def rotate_chi_and_check_fit(self, chi_dihedral, moving_atoms, target_angle,
             clash_weight, map_weight, check_atoms = None):
@@ -246,7 +246,7 @@ class Backrub:
         coords = moving_atoms.coords
         weights = check_atoms.elements.numbers
         tf = rotation(axis, angle, center)
-        moving_atoms.coords = tf.moved(original_coords)
+        moving_atoms.coords = tf.transform_points(original_coords)
         dvals, outside = self._density_map.interpolated_values(check_atoms.coords, out_of_bounds_list=True)
         if len(outside):
             raise RuntimeError('At least one atom is currently projecting past'
@@ -276,7 +276,7 @@ class Backrub:
             axis = coords[2]-coords[1]
             center = matrix.project_to_axis(coords[3], axis, coords[1])
             tf = rotation(axis, rot_angles[i], center)
-            ma.coords = tf.moved(ma.coords)
+            ma.coords = tf.transform_points(ma.coords)
         dvals, outside = self._density_map.interpolated_values(check_atoms.coords,
             out_of_bounds_list = True)
         if len(outside):

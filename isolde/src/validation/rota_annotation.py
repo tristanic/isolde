@@ -199,14 +199,14 @@ class Rotamer_Annotator(Model):
         v1, n1, t1 = exclamation_mark(radius=0.1, height=0.5, nc = 8)
         v2, n2, t2 = spiral(major_radius=0.3, minor_radius = 0.05, height=0.4,
                             turn_segments=6, circle_segments=3)
-        translation((0,0,-0.15)).move(v2)
+        translation((0,0,-0.15)).transform_points(v2, in_place=True)
         v = numpy.concatenate((v1, v2))
         n = numpy.concatenate((n1, n2))
         t = numpy.concatenate((t1, t2+len(v1)))
         r = rotation((1,0,0),180)
-        r.move(v)
-        r.move(n)
-        translation((0,0.5,0.25)).move(v)
+        r.transform_points(v, in_place=True)
+        r.transform_vectors(n, in_place=True)
+        translation((0,0.5,0.25)).transform_points(v, in_place=True)
         d = Drawing('rotamer indicator')
         d.skip_bounds = True
         d.set_geometry(v, n, t)
@@ -215,8 +215,10 @@ class Rotamer_Annotator(Model):
 
     def _exclamation_mark(self):
         v, n, t = exclamation_mark(radius=0.1, height=0.5, nc = 8)
-        rotation((1,0,0),180).move(v)
-        translation((0,1,0)).move(v)
+        flip = rotation((1,0,0), 180)
+        flip.transform_points(v, in_place=True)
+        flip.transform_vectors(n, in_place=True)
+        translation((0,1,0)).transform_points(v, in_place=True)
         d = Drawing('rotamer cb indicator')
         d.set_geometry(v, n, t)
         return d

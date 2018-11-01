@@ -135,7 +135,7 @@ class ZoomMouseMode(mousemodes.ZoomMouseMode):
             self.near_clip.plane_point = new_origin + distance*(1-self.near_clip_multiplier)
             c.redraw_needed = True
         else:
-            shift = c.position.apply_without_translation((0, 0, delta_z))
+            shift = c.position.transform_vectors((0, 0, delta_z))
             v.translate(shift)
             new_origin = c.position.origin()
             self.far_clip.plane_point = new_origin + (cofr-new_origin)*2

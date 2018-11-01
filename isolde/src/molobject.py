@@ -3179,7 +3179,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
             axis = coords[2] - coords[1]
             center = matrix.project_to_axis(coords[3], axis, coords[1])
             tf = rotation(axis, rot_angles[i], center)
-            ma.coords = tf.moved(ma.coords)
+            ma.coords = tf.transform_points(ma.coords)
 
     def remove_preview(self):
         if self._preview_model is not None and not self._preview_model.deleted:

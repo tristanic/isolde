@@ -850,7 +850,7 @@ class SymModels(defaultdict):
             thismodel = self.master.copy(name=key.format_as_symop)
             atoms = thismodel.atoms
             #thismodel.position = thisplace
-            atoms.coords = thisplace.moved(atoms.coords)
+            atoms.coords = thisplace.transform_points(atoms.coords)
             atom_colors = atoms.colors
             atom_colors[:,0:3] = (self.master.atoms.colors[:,0:3].astype(float)*0.6).astype(numpy.uint8)
             atoms.colors = atom_colors
@@ -958,7 +958,7 @@ def surface_zones(models, points, distance):
     from chimerax.surface import zone
     for m in models:
         for s in m.surfaces:
-            spoints = s.position.inverse() * points
+            spoints = s.position.inverse(is_orthonormal=True) * points
             zone.surface_zone(s, spoints, distance, auto_update=True)
 
 class XmapSet(Model):
