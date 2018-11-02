@@ -20,6 +20,7 @@ class MapSet_Base(Model):
     def __init__(self, manager, name):
         super().__init__(name, manager.session)
         self._mgr = manager
+        manager.add([self])
 
     @property
     def master_map_mgr(self):
@@ -54,5 +55,47 @@ class MapSet_Base(Model):
         '''Get/set the radius (in Angstroms) of the live map display sphere.'''
         return self.master_map_mgr.display_radius
 
-    def add_map_handler(self):
-        raise NotImplementedError('Function not valid for base class!')
+    def __getitem__(self, name_or_index):
+        '''Get one of the child maps by name or index.'''
+        if type(name_or_index) == str:
+            for m in self.child_models():
+                if m.name == name_or_index:
+                    return m
+            raise KeyError('No map with that name!')
+        else:
+            return self.child_models()[name_or_index]
+
+    @property
+    def spotlight_mode(self):
+        return self.master_map_mgr.spotlight_mode
+
+    @spotlight_mode.setter
+    def spotlight_mode(self, switch):
+        raise NotImplementedError('Spotlight mode can only be enabled/disabled '
+            'via the master map manager!')
+
+_pad_base = numpy.array([-1,1], numpy.int)
+class XmapSet_Base(MapSet_Base):
+    def expand_to_cover_coords(self, coords, padding):
+        from .map_mgr import calculate_grid_padding
+        cell = self.cell
+        grid = self.grid
+        pad = calculate_grid_padding(padding, grid, cell)
+        from ..clipper_util import get_minmax_grid
+        box_bounds_grid = \
+            get_minmax_grid(coords, cell, grid) + _pad_base*pad
+        self.set_box_limits(box_bounds_grid, force_fill=True)
+
+    def set_box_limits(self, minmax, force_fill = False):
+        '''
+        Set the map box to fill a volume encompassed by the provided minimum
+        and maximum grid coordinates. Automatically turns off live scrolling.
+        '''
+        self.live_scrolling = False
+        from .clipper_python import Coord_grid
+        cmin = Coord_grid(minmax[0])
+        cmin_xyz = cmin.coord_frac(self.grid).coord_orth(self.cell).xyz
+        dim = (minmax[1]-minmax[0])
+        for v in self:
+            v._box_changed_cb('map box changed',
+            ((cmin_xyz, cmin, dim), force_fill))

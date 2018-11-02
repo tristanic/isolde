@@ -16,3 +16,62 @@ def voxel_volume(volume):
     cos_alpha, cos_beta, cos_gamma = numpy.cos(angles)
     return a*b*c*sqrt(1-cos_alpha**2-cos_beta**2-cos_gamma**2
         + 2*cos_alpha*cos_beta*cos_gamma)
+
+def available_cores():
+    import os
+    return max(os.cpu_count()-2, 1)
+
+def set_to_default_cartoon(session, model = None):
+    '''
+    Adjust the ribbon representation to provide information without
+    getting in the way.
+    '''
+    try:
+        if model is None:
+            atoms = None
+        else:
+            arg = atomspec.AtomSpecArg('thearg')
+            atoms = arg.parse('#' + model.id_string, session)[0]
+        cartoon.cartoon(session, atoms = atoms, suppress_backbone_display=False)
+        cartoon.cartoon_style(session, atoms = atoms, width=0.4, thickness=0.1, arrows_helix=True, arrow_scale = 2)
+        cartoon.cartoon_tether(session, structures=atoms, opacity=0)
+    except:
+        return
+
+def guess_suitable_contour(volume, model, mask_radius=3, atom_radius_scale = 0.5):
+    '''
+    Find the contour level that would make the volume inside the contour for the
+    region immediately surrounding the model approximately equal to the volume
+    of the model's atoms scaled by atom_radius_scale.
+    '''
+    import numpy
+    session = model.session
+
+    from .symmetry import is_crystal_map
+    is_xmap = is_crystal_map(volume)
+    if is_xmap:
+        sh = volume.manager.crystal
+
+        spotlight_mode = sh.spotlight_mode
+        # Expand the map to cover the whole model
+        sh.isolate_and_cover_selection(model.atoms, focus=False)
+
+    from .util import voxel_volume
+    vv = voxel_volume(volume)
+    mv = _model_volume(model, radius_scale=atom_radius_scale)
+
+    from chimerax.core.geometry import find_close_points
+    grid_coords = volume.grid_points(volume.scene_position)
+
+    data = numpy.array(volume.data.matrix(), order='C')
+    close_i = find_close_points(model.atoms.scene_coords, grid_coords, mask_radius)[1]
+    close_vals = data.ravel()[close_i]
+
+
+    target_percentile = (1-mv/(vv*len(close_i)))*100
+    level = numpy.percentile(close_vals, target_percentile)
+
+    if is_xmap:
+        sh.spotlight_mode = spotlight_mode
+
+    return level

@@ -311,8 +311,14 @@ class XmapSet_Live(Model):
 
         self.display=False
         # Apply the surface mask
-        self.session.triggers.add_handler('frame drawn', self._rezone_once_cb)
+        self._rezone_pending=False
+        self.session.triggers.add_handler('frame drawn', self._first_init_cb)
         self.live_update = live_update
+
+    def _first_init_cb(self, *_):
+        self.display = True
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
 
 
     def _model_removed_cb(self, trigger_name, removed_models):
@@ -324,8 +330,13 @@ class XmapSet_Live(Model):
             from chimerax.core.triggerset import DEREGISTER
             return DEREGISTER
 
+    def rezone_needed(self):
+        if not self._rezone_pending:
+            self.session.triggers.add_handler('frame drawn', self._rezone_once_cb)
+
     def _rezone_once_cb(self, *_):
-        self.display = True
+        self._reapply_zone()
+        self._rezone_pending=False
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
@@ -857,7 +868,7 @@ class XmapHandler_Live(Volume):
     '''
     An XmapHandler_Live is in effect a resizable window into a periodic
     crystallographic map. The actual map data (a clipper Xmap object) is
-    held within, and filled into the XmapWindow.data array as needed.
+    held within, and filled into the XmapHandler_Live.data array as needed.
     Methods are included for both live updating (e.g. tracking and filling
     a box centred on the centre of rotation) and static display of a
     given region.
@@ -911,8 +922,6 @@ class XmapHandler_Live(Volume):
     @property
     def stats(self):
         return self.manager._xtal_mgr.get_map_stats(self.name)
-
-
 
     def show(self, *args, **kwargs):
         if self._needs_update:

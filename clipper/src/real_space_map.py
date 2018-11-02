@@ -18,8 +18,8 @@ class NXmapHandler(Volume):
     '''
     def __init__(self, session, manager, volume, is_difference_map = False):
         '''
-        Copies the data from an existing Volume object. The input volume may
-        safely be closed.
+        Takes ownership of the data from an existing Volume object.
+        The input volume will be closed.
         '''
         self.session = session
         self.manager = manager
@@ -37,6 +37,7 @@ class NXmapHandler(Volume):
         self._box_moved_cb_handler = self.manager.triggers.add_handler(
             'map box moved', self._box_moved_cb
         )
+        session.models.remove([volume])
 
     @property
     def center(self):
@@ -76,7 +77,7 @@ class NXmapHandler(Volume):
         bh = self._box_shape_changed_cb_handler
         if bh is not None:
             self.manager.triggers.remove_handler(bh)
-            self._box_shape_changed_cb_handler = None
+            self._box_changed_cb_handler = None
         bm = self._box_moved_cb_handler
         if bm is not None:
             self.manager.triggers.remove_handler(bm)

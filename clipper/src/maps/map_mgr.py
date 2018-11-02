@@ -70,7 +70,7 @@ class Map_Mgr(Model):
         # adjusting contours)
         self._surface_zone = Surface_Zone(display_radius, None, None)
         # Is the map box moving with the centre of rotation?
-        self._live_scrolling = False
+        self._spotlight_mode = False
 
         # Radius of the sphere in which the map will be displayed when
         # in live-scrolling mode
@@ -89,13 +89,14 @@ class Map_Mgr(Model):
         self._box_corner_grid = None
 
 
-        self.live_scrolling = True
+        self.spotlight_mode = True
 
         self._box_initialized = True
 
         self.display=False
+        self._rezone_pending = False
         # Apply the surface mask
-        self.session.triggers.add_handler('frame drawn', self._rezone_once_cb)
+        self.session.triggers.add_handler('frame drawn', self._first_init_cb)
 
     @property
     def live_xmapsets(self):
@@ -150,6 +151,14 @@ class Map_Mgr(Model):
         '''Get/set the radius (in Angstroms) of the live map display sphere.'''
         return self._display_radius
 
+    @property
+    def box_center(self):
+        return self._box_center
+
+    @property
+    def box_params(self):
+        return (self._box_corner_xyz, self._box_corner_grid, self._box_dimensions)
+
     @display_radius.setter
     def display_radius(self, radius):
         self._display_radius = radius
@@ -167,22 +176,22 @@ class Map_Mgr(Model):
         self._reapply_zone()
 
     @property
-    def live_scrolling(self):
+    def spotlight_mode(self):
         '''Turn live map scrolling on and off.'''
-        return self._live_scrolling
+        return self._spotlight_mode
 
-    @live_scrolling.setter
-    def live_scrolling(self, switch):
+    @spotlight_mode.setter
+    def spotlight_mode(self, switch):
         if switch:
             self.position = Place()
-            if not self._live_scrolling:
+            if not self._spotlight_mode:
                 '''
                 Set the box dimensions to match the stored radius.
                 '''
                 self.display_radius = self._display_radius
-            self._start_live_scrolling()
+            self._start_spotlight_mode()
         else:
-            self._stop_live_scrolling()
+            self._stop_spotlight_mode()
 
     @property
     def display(self):
@@ -191,24 +200,24 @@ class Map_Mgr(Model):
     @display.setter
     def display(self, switch):
         if switch:
-            if self.live_scrolling:
-                self._start_live_scrolling()
+            if self.spotlight_mode:
+                self._start_spotlight_mode()
         Model.display.fset(self, switch)
 
-    def _start_live_scrolling(self):
+    def _start_spotlight_mode(self):
         if self._box_update_handler is None:
             self._box_update_handler = self.crystal_mgr.triggers.add_handler(
                 'box center moved', self.update_box)
         if self._box_center is not None:
             self.update_box(None, (self._box_center, self._box_center_grid), force=True)
         self.positions = Places()
-        self._live_scrolling = True
+        self._spotlight_mode = True
 
-    def _stop_live_scrolling(self):
+    def _stop_spotlight_mode(self):
         if self._box_update_handler is not None:
             self.crystal.triggers.remove_handler(self._box_update_handler)
             self._box_update_handler = None
-        self._live_scrolling = False
+        self._spotlight_mode = False
 
     def all_maps(self):
         '''
@@ -221,7 +230,7 @@ class Map_Mgr(Model):
         Set the map box to fill a volume encompassed by the provided minimum
         and maximum grid coordinates. Automatically turns off live scrolling.
         '''
-        self.live_scrolling = False
+        self.spotlight_mode = False
         from .clipper_python import Coord_grid
         cmin = Coord_grid(minmax[0])
         cmin_xyz = cmin.coord_frac(self.grid).coord_orth(self.cell).xyz
@@ -242,7 +251,7 @@ class Map_Mgr(Model):
         if not self.visible and not force:
             # Just store the box parameters for when we're re-displayed
             return
-        if self.live_scrolling:
+        if self.spotlight_mode:
             box_corner_grid, box_corner_xyz = _find_box_corner(
                 center, self.cell, self.grid, self.display_radius)
             self.triggers.activate_trigger('map box moved',
@@ -270,9 +279,18 @@ class Map_Mgr(Model):
         '''
         pass
 
+    def _first_init_cb(self, *_):
+        self.display = True
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+    def rezone_needed(self):
+        if not self._rezone_pending:
+            self.session.triggers.add_handler('new frame', self._rezone_once_cb)
 
     def _rezone_once_cb(self, *_):
-        self.display = True
+        self._reapply_zone()
+        self._rezone_pending=False
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
@@ -287,9 +305,28 @@ class Map_Mgr(Model):
             surface_zones(self.all_maps, coords, radius)
 
     def delete(self):
-        self.live_scrolling = False
+        self.spotlight_mode = False
         self.live_update = False
         super().delete()
+
+    def update_box(self, trigger_name, new_center, force=True):
+        '''Update the map box to surround the current centre of rotation.'''
+        center, center_grid = new_center
+        self._box_center = center
+        self._box_center_grid = center_grid
+        if not self.visible and not force:
+            # Just store the box parameters for when we're re-displayed
+            return
+        if self.spotlight_mode:
+            box_corner_grid, box_corner_xyz = _find_box_corner(
+                center, self.cell, self.grid, self.display_radius)
+            self.triggers.activate_trigger(
+                'map box moved',
+                (box_corner_xyz, box_corner_grid, self._box_dimensions)
+            )
+            self._surface_zone.update(
+                self.display_radius, coords = numpy.array([center]))
+            self._reapply_zone()
 
 
 def calculate_grid_padding(radius, grid, cell):
