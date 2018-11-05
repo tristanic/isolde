@@ -95,7 +95,7 @@ class ReflectionDataContainer(Model):
     @property
     def grid_sampling(self):
         if self._grid_sampling is None:
-            from .clipper_python import Grid_sampling
+            from . import Grid_sampling
             self._grid_sampling = Grid_sampling(
                 self.spacegroup, self.cell, self.resolution, self.shannon_rate)
         return self._grid_sampling
@@ -147,8 +147,17 @@ class ReflectionData(Model):
         '''
 
         Model.__init__(self, name, session)
-        self.data = data
-    pass
+        self._data = data
+
+    @property
+    def data(self):
+        return self._data
+
+    @property
+    def dtype(self):
+        return type(self.data)
+
+
 
 class ReflectionData_FreeFlags(ReflectionData):
     '''Holds the array of free flags.'''
@@ -250,7 +259,7 @@ def find_free_set(mtzin, temp_tree, label = None):
     '''Find the free set, optionally given an explicit label to look for.'''
     possible_free_flags = []
     possible_free_flags_names = []
-    from .clipper_python import HKL_data_Flag
+    from . import HKL_data_Flag
     for crystal in temp_tree.keys():
         for dataset in temp_tree[crystal].keys():
             # Find and store the free set
@@ -304,7 +313,7 @@ def load_hkl_data(session, filename, free_flag_label = None):
         return
 
     if extension == '.mtz':
-        from .clipper_python import CCP4MTZfile, HKL_info
+        from . import CCP4MTZfile, HKL_info
         mtzin = CCP4MTZfile()
         hkl = HKL_info()
         mtzin.open_read(filename)
@@ -349,9 +358,9 @@ def load_hkl_data(session, filename, free_flag_label = None):
 
         # Find I/sigI pairs and pull them in as
         # Clipper HKL_data_I_sigI objects
-        from .clipper_python.data32 import HKL_data_I_sigI_float as HKL_data_I_sigI
-        from .clipper_python.data32 import HKL_data_F_sigF_float as HKL_data_F_sigF
-        from .clipper_python.data32 import HKL_data_F_phi_float as HKL_data_F_phi
+        from . import HKL_data_I_sigI
+        from . import HKL_data_F_sigF
+        from . import HKL_data_F_phi
         isigi, isigi_names = find_data_pairs(
             mtzin, temp_tree, 'J', 'Q', HKL_data_I_sigI)
         experimental_sets.extend(isigi)
