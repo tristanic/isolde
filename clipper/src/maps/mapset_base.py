@@ -22,6 +22,17 @@ class MapSet_Base(Model):
         self._mgr = manager
         manager.add([self])
 
+        from chimerax.core.triggerset import TriggerSet
+        trig = self._triggers = TriggerSet()
+
+        trigger_names = (
+            'map box changed',
+            'map box moved',
+        )
+        for t in trigger_names:
+            trig.add_trigger(t)
+
+
     @property
     def master_map_mgr(self):
         return self._mgr
@@ -74,28 +85,16 @@ class MapSet_Base(Model):
         raise NotImplementedError('Spotlight mode can only be enabled/disabled '
             'via the master map manager!')
 
-_pad_base = numpy.array([-1,1], numpy.int)
-class XmapSet_Base(MapSet_Base):
-    def expand_to_cover_coords(self, coords, padding):
-        from .map_mgr import calculate_grid_padding
-        cell = self.cell
-        grid = self.grid
-        pad = calculate_grid_padding(padding, grid, cell)
-        from ..clipper_util import get_minmax_grid
-        box_bounds_grid = \
-            get_minmax_grid(coords, cell, grid) + _pad_base*pad
-        self.set_box_limits(box_bounds_grid, force_fill=True)
+    def _box_changed_cb(self, trigger_name, data):
+        '''
+        By default, just re-fires with the same data. Override in derived class
+        if more complex handling is needed
+        '''
+        self.triggers.activate_trigger('map box changed', data)
 
-    def set_box_limits(self, minmax, force_fill = False):
+    def _box_moved_cb(self, trigger_name, data):
         '''
-        Set the map box to fill a volume encompassed by the provided minimum
-        and maximum grid coordinates. Automatically turns off live scrolling.
+        By default, just re-fires with the same data. Override in derived class
+        if more complex handling is needed
         '''
-        self.live_scrolling = False
-        from .clipper_python import Coord_grid
-        cmin = Coord_grid(minmax[0])
-        cmin_xyz = cmin.coord_frac(self.grid).coord_orth(self.cell).xyz
-        dim = (minmax[1]-minmax[0])
-        for v in self:
-            v._box_changed_cb('map box changed',
-            ((cmin_xyz, cmin, dim), force_fill))
+        self.triggers.activate_trigger('map box moved', data)

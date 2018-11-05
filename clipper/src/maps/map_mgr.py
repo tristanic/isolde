@@ -56,6 +56,11 @@ class Map_Mgr(Model):
         trig = self._triggers = TriggerSet()
 
         trigger_names = (
+            # Change shape/size of box for map viewing.
+            # Data is a tuple of (xyz centre, xyz min, xyz max) denoting the
+            # rectangular prism that needs to be covered. It is up to
+            # each XmapSet or NXmapHandler to work out the necessary box size
+            # on its own grid.
             'map box changed',  # Changed shape of box for map viewing
             'map box moved',    # Just changed the centre of the box
         )
@@ -99,14 +104,9 @@ class Map_Mgr(Model):
         self.session.triggers.add_handler('frame drawn', self._first_init_cb)
 
     @property
-    def live_xmapsets(self):
-        from .xmapset import XmapSet_Live
-        return (m for m in self.child_models() if isinstance(m, XmapSet_Live))
-
-    @property
-    def static_xmapsets(self):
-        from .xmapset import XmapSet_Static
-        return (m for m in self.child_models() if isinstance(m, XmapSet_Static))
+    def xmapsets(self):
+        from .xmapset import XmapSet
+        return (m for m in self.child_models() if isinstance(m, XmapSet))
 
     @property
     def nxmapsets(self):
@@ -164,14 +164,12 @@ class Map_Mgr(Model):
         self._display_radius = radius
         v = self.session.view
         cofr = self._box_center = v.center_of_rotation
-        from .clipper_python import Coord_orth
-        self._box_center_grid = Coord_orth(cofr).coord_frac(self.cell).coord_grid(self.grid)
-        dim = self._box_dimensions = \
-            2 * calculate_grid_padding(radius, self.grid, self.cell)
-        self._box_corner_grid, self._box_corner_xyz = _find_box_corner(
-            cofr, self.cell, self.grid, radius)
+        xyz_min = cofr-radius
+        xyz_max = cofr+radius
+
         self.triggers.activate_trigger('map box changed',
-            ((self._box_corner_xyz, self._box_corner_grid, dim), False))
+            (cofr, xyz_min, xyz_max)
+        )
         self._surface_zone.update(radius, coords = numpy.array([cofr]))
         self._reapply_zone()
 
@@ -228,15 +226,13 @@ class Map_Mgr(Model):
     def cover_box(self, minmax, force_fill=False):
         '''
         Set the map box to fill a volume encompassed by the provided minimum
-        and maximum grid coordinates. Automatically turns off live scrolling.
+        and maximum xyz coordinates. Automatically turns off live scrolling.
         '''
         self.spotlight_mode = False
-        from .clipper_python import Coord_grid
-        cmin = Coord_grid(minmax[0])
-        cmin_xyz = cmin.coord_frac(self.grid).coord_orth(self.cell).xyz
-        dim = (minmax[1]-minmax[0])
+        xyz_min, xyz_max = minmax
+        center = (xyz_min + xyz_max)/2
         self.triggers.activate_trigger('map box changed',
-            ((cmin_xyz, cmin, dim), force_fill))
+            (center, xyz_min, xyz_max))
 
     def update_spotlight(self, trigger_name, new_center, force=True):
         '''
@@ -245,17 +241,13 @@ class Map_Mgr(Model):
         volumes with data around the new position will be deferred unless
         force is set to True.
         '''
-        center, center_grid = new_center
-        self._box_center = center
-        self._box_center_grid = center_grid
+        self._box_center = new_center
         if not self.visible and not force:
             # Just store the box parameters for when we're re-displayed
             return
         if self.spotlight_mode:
-            box_corner_grid, box_corner_xyz = _find_box_corner(
-                center, self.cell, self.grid, self.display_radius)
             self.triggers.activate_trigger('map box moved',
-                (box_corner_xyz, box_corner_grid, self._box_dimensions))
+                new_center)
             self._surface_zone.update(self.display_radius, coords = numpy.array([center]))
             self._reapply_zone()
 
@@ -308,68 +300,3 @@ class Map_Mgr(Model):
         self.spotlight_mode = False
         self.live_update = False
         super().delete()
-
-    def update_box(self, trigger_name, new_center, force=True):
-        '''Update the map box to surround the current centre of rotation.'''
-        center, center_grid = new_center
-        self._box_center = center
-        self._box_center_grid = center_grid
-        if not self.visible and not force:
-            # Just store the box parameters for when we're re-displayed
-            return
-        if self.spotlight_mode:
-            box_corner_grid, box_corner_xyz = _find_box_corner(
-                center, self.cell, self.grid, self.display_radius)
-            self.triggers.activate_trigger(
-                'map box moved',
-                (box_corner_xyz, box_corner_grid, self._box_dimensions)
-            )
-            self._surface_zone.update(
-                self.display_radius, coords = numpy.array([center]))
-            self._reapply_zone()
-
-
-def calculate_grid_padding(radius, grid, cell):
-    '''
-    Calculate the number of grid steps needed on each crystallographic axis
-    in order to capture at least radius angstroms in x, y and z.
-    '''
-    corner_mask = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,0,0],[1,1,1]])
-    corners = (corner_mask * radius).astype(float)
-    grid_upper = numpy.zeros([8,3], numpy.int)
-    grid_lower = numpy.zeros([8,3], numpy.int)
-    from .clipper_python import Coord_orth
-    for i, c in enumerate(corners):
-        co = Coord_orth(c)
-        cm = co.coord_frac(cell).coord_map(grid).uvw
-        grid_upper[i,:] = numpy.ceil(cm).astype(int)
-        grid_lower[i,:] = numpy.floor(cm).astype(int)
-    return grid_upper.max(axis=0) - grid_lower.min(axis=0)
-
-
-def _find_box_corner(center, cell, grid, radius = 20):
-    '''
-    Find the bottom corner (i.e. the origin) of a rhombohedral box
-    big enough to hold a sphere of the desired radius.
-    '''
-    from .clipper_python import Coord_frac, Coord_orth, Coord_grid
-    radii_frac = Coord_frac(radius/cell.dim)
-    center_frac = Coord_orth(center).coord_frac(cell)
-    bottom_corner_grid = center_frac.coord_grid(grid) \
-                - Coord_grid(calculate_grid_padding(radius, grid, cell))
-    bottom_corner_orth = bottom_corner_grid.coord_frac(grid).coord_orth(cell)
-    return bottom_corner_grid, bottom_corner_orth.xyz
-
-def _get_bounding_box(coords, padding, grid, cell):
-    '''
-    Find the minimum and maximum grid coordinates of a box which will
-    encompass the given (x,y,z) coordinates plus padding (in Angstroms).
-    '''
-    from .clipper_python import Util, Coord_grid
-    grid_pad = calculate_grid_padding(padding, grid, cell)
-    box_bounds_grid = Util.get_minmax_grid(coords, cell, grid)\
-                        + numpy.array((-grid_pad, grid_pad))
-    box_origin_grid = box_bounds_grid[0]
-    box_origin_xyz = Coord_grid(box_origin_grid).coord_frac(grid).coord_orth(cell)
-    dim = box_bounds_grid[1] - box_bounds_grid[0]
-    return [box_origin_grid, box_origin_xyz, dim]

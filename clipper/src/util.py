@@ -38,6 +38,25 @@ def set_to_default_cartoon(session, model = None):
     except:
         return
 
+def atom_list_from_sel(atom_list):
+    '''
+    Takes a ChimeraX Atoms object, and creates a Clipper Atoms_list object
+    from the relevant atom properties.
+    '''
+    n = len(atom_list)
+    elements = atom_list.element_names.tolist()
+    coords = atom_list.coords
+    occupancies = atom_list.occupancies
+    import numpy
+    from math import pi
+    u_iso = numpy.sqrt(atom_list.bfactors/(8*pi**2))
+    u_aniso = numpy.ones([n,6],numpy.double)*numpy.nan
+    u_aniso[atom_list.has_aniso_u] = atom_list.filter(atom_list.has_aniso_u).aniso_u6
+    from .clipper_python import Atom_list
+    clipper_atom_list = Atom_list(elements, coords, occupancies, u_iso, u_aniso)
+    return clipper_atom_list
+
+
 def guess_suitable_contour(volume, model, mask_radius=3, atom_radius_scale = 0.5):
     '''
     Find the contour level that would make the volume inside the contour for the

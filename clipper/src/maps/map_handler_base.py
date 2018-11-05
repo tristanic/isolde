@@ -10,18 +10,20 @@ class MapHandler_Base(Volume):
         session = mapset.session
         super().__init__(data, session)
         self.name = name
-        self._mapset = mapset
+        ms = self._mapset = mapset
 
         self._is_difference_map = is_difference_map
         self.initialize_thresholds()
 
         self.show()
         mh = self._mgr_handlers = []
-        mh.append(self.manager.triggers.add_handler(
-            'map box changed', self._box_changed_cb)
+        mh.append(
+            (ms,
+            ms.triggers.add_handler('map box changed', self._box_changed_cb) )
         )
-        mh.append(self.manager.triggers.add_handler(
-            'map box moved', self._box_moved_cb
+        mh.append(
+            (ms,
+            ms.triggers.add_handler('map box moved', self._box_moved_cb) )
         )
 
     @property
@@ -41,10 +43,6 @@ class MapHandler_Base(Volume):
         return self.manager.display_radius
 
     @property
-    def box_params(self):
-        return self.manager.box_params
-
-    @property
     def is_difference_map(self):
         return self._is_difference_map
 
@@ -55,9 +53,9 @@ class MapHandler_Base(Volume):
         pass
 
     def delete(self):
-        for h in self._mgr_handlers:
+        for (mgr, h) in self._mgr_handlers:
             try:
-                self.manager.triggers.remove_handler(h)
+                mgr.triggers.remove_handler(h)
             except:
                 continue
         super().delete()
@@ -139,31 +137,31 @@ class FastVolumeSurface(VolumeSurface):
             sct.ready,
             self._use_fast_thread_result, (show_mesh, rendering_options))
 
-
-
 class XmapHandler_Base(MapHandler_Base):
     '''
     Base class for XmapHandler_Static and XmapHandler_Live
     '''
-    def __init__(self, mapset, name, origin, grid_origin, grid_dim,
+    def __init__(self, mapset, name,
             is_difference_map = False):
-        self.box_params = (origin, grid_origin, dim)
-        darray = self._generate_data_array(origin, grid_origin, dim)
+        darray = self._generate_data_array(*self.box_params)
         super().__init__(mapset, name, data)
-        self._mapset_handlers = []
 
+
+    @property
+    def box_params(self):
+        return self.mapset.box_params
 
     @property
     def hklinfo(self):
-        return self.manager.hklinfo
+        return self.mapset.hklinfo
 
     @property
     def spacegroup(self):
-        return self.manager.spacegroup
+        return self.mapset.spacegroup
 
     @property
     def cell(self):
-        return self.manager.cell
+        return self.mapset.cell
 
     @property
     def res(self):
@@ -171,7 +169,7 @@ class XmapHandler_Base(MapHandler_Base):
 
     @property
     def grid(self):
-        return self.manager.grid
+        return self.mapset.grid
 
     @property
     def voxel_size(self):
@@ -183,7 +181,7 @@ class XmapHandler_Base(MapHandler_Base):
 
     @property
     def unit_cell(self):
-        return self.manager.unit_cell
+        return self.mapset.unit_cell
 
     @property
     def xmap(self):
@@ -197,14 +195,6 @@ class XmapHandler_Base(MapHandler_Base):
         '''
         raise NotImplementedError('This property must be overridden in the '
             'derived class!')
-
-    def delete(self):
-        for h in self._mapset_handlers:
-            try:
-                self.mapset.triggers.remove_handler(h)
-            except:
-                continue
-        super().delete()
 
     def mean_sd_rms(self):
         '''
@@ -227,40 +217,15 @@ class XmapHandler_Base(MapHandler_Base):
             ses.models.add([s], parent=self)
         return s
 
-    def force_refill(self):
-        self._box_changed_cb(None, (self.box_params, True))
-
-    def show(self, *args, **kwargs):
-        if self._needs_update:
-            self._swap_volume_data(self.box_params)
-        else:
-            # Just set the origin and fill the box with the data for
-            # the current location
-            origin, grid_origin, ignore = self.box_params
-            self._fill_volume_data(self._data_fill_target, grid_origin)
-        super().show(*args, **kwargs)
-
-    def _box_changed_cb(self, name, params):
-        box_params, force_fill = params
-        self.box_params = box_params
-        self._needs_update = True
-        if not self.display and not force_fill:
-            # No sense in wasting cycles on this if the volume is hidden.
-            # We'll just store the params and apply them when we show the
-            # volume.
-            # NOTE: this means we need to over-ride show() to ensure
-            # it's updated before re-displaying.
-            return
-        self._swap_volume_data(box_params)
+    def _box_changed_cb(self, *_):
+        self._swap_volume_data(self.box_params)
         self._use_thread = True
         self.data.values_changed()
 
-    def _box_moved_cb(self, name, params):
-        self.box_params = params
-        if not self.display:
-            return
-        self.data.set_origin(params[0])
-        self._fill_volume_data(self._data_fill_target, params[1])
+    def _box_moved_cb(self, *_):
+        bp = self.box_params
+        self.data.set_origin(bp.origin_xyz)
+        self._fill_volume_data(self._data_fill_target, bp.origin_grid)
         for s in self.surfaces:
             s._use_thread=True
         self.data.values_changed()
@@ -294,4 +259,3 @@ class XmapHandler_Base(MapHandler_Base):
         self._box_dimensions = new_dim
         self.replace_data(darray)
         self.new_region(ijk_min=(0,0,0), ijk_max=darray.size, ijk_step=(1,1,1), adjust_step=False)
-        self._needs_update=False
