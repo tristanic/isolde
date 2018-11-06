@@ -319,19 +319,20 @@ class Symmetry_Manager(Model):
     '''
     Handles crystallographic symmetry and maps for an atomic model.
     '''
-    def __init__(self, model, mtzfile=None, calculate_maps=True, map_oversampling=1.5,
-        min_voxel_size = 0.5, spotlight_mode = True, map_scrolling_radius=12,
-        atomic_symmetry_radius=15, hydrogens='polar', debug=False):
-        name = model.name + ' Symmetry Manager'
-        session = self.session = model.session
+    # Shift of the centre of rotation required to trigger an update of the
+    # spotlight
+    SPOTLIGHT_UPDATE_THRESHOLD = 0.1
+    def __init__(self, model, mtzfile=None, map_oversampling=1.5,
+        min_voxel_size = 0.5, spotlight_mode = True, spotlight_radius=12,
+        hydrogens='polar', debug=False):
+        name = 'Data manager ({})'.format(model.name)
+        session = model.session
         super().__init__(name, session)
         session.models.add([self])
         self.add([model])
         self._debug = debug
-        self.structure = model
-        self._box_center = session.view.center_of_rotation
-        self._box_center_grid = None
-        self._atomic_sym_radius = atomic_symmetry_radius
+        self._structure = model
+        self._last_box_center = session.view.center_of_rotation
         self._stepper = None
         self._last_covered_selection = None
 
@@ -339,95 +340,72 @@ class Symmetry_Manager(Model):
         trig = self.triggers = TriggerSet()
 
         trigger_names = (
-            'box center moved',       # Centre of rotation moved to a new grid point
+            # Fires when Symmetry_Manager is in spotlight mode and the centre of
+            # rotation moves by more than the minimum distance from its previous
+            # location
+            'spotlight moved',
 
-            'map box changed',  # Changed shape of box for map viewing
-            'map box moved',    # Changed location of box for map viewing
-            'atom box changed', # Changed shape or centre of box for showing symmetry atoms
+            # Fires when spotlight mode turned on/off
+            'mode changed',
+
+            # Fires whenever the size and/or location of the map box needs to
+            # change - i.e. when the spotlight radius is changed, or when
+            # expanding to cover a specific selection.
+            'map box changed',
+            # Like 'map box changed' but for atomic symmetry (box parameters
+            # may be different)
+            'atom box changed',
             'backbone mode changed', # Changed backbone mode from ribbon to CA trace or vice versa
         )
         for t in trigger_names:
             trig.add_trigger(t)
 
-        self.mtzdata=None
-        self.xmapset = None
-
-        map_data = None
-
         self.cell, self.spacegroup, self.grid, self._has_symmetry = symmetry_from_model_metadata(model)
 
+        from .maps import Map_Mgr
+        mmgr = self._map_mgr = Map_Mgr(self)
+
         if mtzfile is not None:
-            from .clipper_mtz import ReflectionDataContainer
-            mtzdata = self.mtzdata = ReflectionDataContainer(self.session, mtzfile, shannon_rate = map_oversampling)
-            self.add([mtzdata])
-            if not self.has_symmetry:
-                session.logger.info('NOTE: No symmetry information found in model. '
-                    'Using symmetry from MTZ file.')
-                self.cell = mtzdata.cell
-                self.spacegroup = mtzdata.spacegroup
-            elif (not mtzdata.cell.equals(self.cell, 1.0)
-                or mtzdata.spacegroup.spacegroup_number != self.spacegroup.spacegroup_number):
-                raise RuntimeError("Symmetry info from model does not match "
-                    "symmetry info from MTZ file!")
-            # Grid sampling from MTZ file supersedes that estimated from model
-            self.grid = mtzdata.grid_sampling
-            self.hklinfo = mtzdata.hklinfo
-            self._has_symmetry=True
-
-            if len(mtzdata.calculated_data):
-                datasets = mtzdata.calculated_data
-
-        if calculate_maps and mtzfile is not None:
-            from .crystal_exp import XmapSet_Live, viewing_bsharp
-            xmapset = self.xmapset = XmapSet_Live(session, self, model,
-                bsharp_vals=[viewing_bsharp(self.hklinfo.resolution.limit)],
-                exclude_free_reflections=False,
-                fill_with_fcalc=False,
-                display_radius = map_scrolling_radius)
-            xmapset.pickable = False
-            self.add([xmapset])
-        else:
-            self.xmapset = None
+            mmgr.add_xmapset_from_mtz(mtzfile,
+                oversampling_rate=map_oversampling)
 
         cell = self.cell
         spacegroup = self.spacegroup
         grid = self.grid
 
-        self._voxel_size = cell.dim/grid.dim
-
-        # ref = model.bounds().center()
-
-        from .main import atom_list_from_sel
-        ca = self._clipper_atoms = atom_list_from_sel(model.atoms)
-
+        from .util import atom_list_from_sel
+        ca = atom_list_from_sel(model.atoms)
         uc = self._unit_cell = Unit_Cell(ca, cell, spacegroup, grid)
 
-
         self._atomic_symmetry_model = AtomicSymmetryModel(model, self, uc,
-            radius = atomic_symmetry_radius, live = spotlight_mode, debug=debug)
+            radius = spotlight_radius, live = spotlight_mode, debug=debug)
 
         self._update_handler = session.triggers.add_handler('new frame',
             self.update)
-
-        #model.add([self])
-
-        display_atoms = model.atoms
-        display_atoms.draw_modes = display_atoms.STICK_STYLE
-        display_atoms.displays = False
-        if hydrogens == 'polar':
-            display_atoms = display_atoms[display_atoms.idatm_types != 'HC']
-        elif hydrogens == 'none':
-            display_atoms = display_atoms[display_atoms.element_names != 'H']
-        display_atoms.displays = True
-
+        self.set_default_atom_display()
 
         from .mousemodes import initialize_map_contour_mouse_modes
         initialize_map_contour_mouse_modes(session)
         self.spotlight_mode = spotlight_mode
 
+
+    @property
+    def structure(self):
+        '''The atomic model managed by this symmetry manager.'''
+        return self._structure
+
+    @property
+    def map_mgr(self):
+        ''' Master manager handling all maps associated with this model.'''
+        return self._map_mgr
+
     @property
     def has_symmetry(self):
         return self._has_symmetry
+
+    @has_symmetry.setter
+    def has_symmetry(self, flag):
+        self._has_symmetry = flag
 
     @property
     def last_covered_selection(self):
@@ -460,16 +438,20 @@ class Symmetry_Manager(Model):
 
     @property
     def spotlight_mode(self):
+        if not hasattr(self, "_spotlight_mode"):
+            self._spotlight_mode=False
         return self._spotlight_mode
 
     @spotlight_mode.setter
     def spotlight_mode(self, flag):
-        from chimerax.std_commands import cofr
-        cofr.cofr(self.session, 'centerOfView', show_pivot=True)
-        self._atomic_symmetry_model.live_scrolling = flag
-        if self.xmapset is not None:
-            self.xmapset.live_scrolling = flag
-        self._spotlight_mode = flag
+        if flag == self._spotlight_mode:
+            return
+        else:
+            if flag:
+                from chimerax.std_commands import cofr
+                cofr.cofr(self.session, 'centerOfView', show_pivot=True)
+            self._spotlight_mode = flag
+            self.triggers.activate_trigger('mode changed', None)
         self.update(force=True)
 
     @property
@@ -478,23 +460,35 @@ class Symmetry_Manager(Model):
 
     @property
     def atomic_sym_radius(self):
-        return self._atomic_symmetry_model.radius
+        return self._atomic_symmetry_model.spotlight_radius
 
     @atomic_sym_radius.setter
     def atomic_sym_radius(self, radius):
-        self._atomic_symmetry_model.radius = radius
+        self._atomic_symmetry_model.spotlight_radius = radius
 
     @property
-    def map_view_radius(self):
-        return self.xmapset.display_radius
+    def spotlight_radius(self):
+        return self.map_mgr.spotlight_radius
 
-    @map_view_radius.setter
-    def map_view_radius(self, radius):
-        self.xmapset.display_radius = radius
+    @spotlight_radius.setter
+    def spotlight_radius(self, radius):
+        self.map_mgr.spotlight_radius = radius
+        self.atomic_symmetry_model.spotlight_radius = radius
 
     @property
     def unit_cell(self):
         return self._unit_cell
+
+    def set_default_atom_display(self):
+        model = self.structure
+        display_atoms = model.atoms
+        display_atoms.draw_modes = display_atoms.STICK_STYLE
+        display_atoms.displays = False
+        if hydrogens == 'polar':
+            display_atoms = display_atoms[display_atoms.idatm_types != 'HC']
+        elif hydrogens == 'none':
+            display_atoms = display_atoms[display_atoms.element_names != 'H']
+        display_atoms.displays = True
 
     def delete(self):
         if self._update_handler is not None:
@@ -502,26 +496,20 @@ class Symmetry_Manager(Model):
             self._update_handler = None
         super().delete()
 
-    def update(self, *_, force=False):
+    def update(self, *_):
         v = self.session.view
-        cofr = self._box_center = v.center_of_rotation
-        center = self.scene_position.inverse(is_orthonormal=True)*cofr
-        center_grid = clipper_python.Coord_orth(center).coord_frac(self.cell).coord_grid(self.grid)
-        if force:
-            update_needed=True
-        else:
-            update_needed = False
-            if self._box_center_grid is None:
-                update_needed = True
-            elif (center_grid != self._box_center_grid):
-                update_needed = True
+        cofr = v.center_of_rotation
+        # center = self.scene_position.inverse(is_orthonormal=True)*cofr
+        update_needed = False
+        if self._last_last_box_center is None:
+            update_needed = True
+        elif numpy.linalg.norm(cofr-self._last_box_center) > self.SPOTLIGHT_UPDATE_THRESHOLD:
+            update_needed = True
         if update_needed:
-            self.triggers.activate_trigger('box center moved', (center, center_grid))
-            self._box_center_grid = center_grid
+            self._last_box_center = cofr
+            self.triggers.activate_trigger('spotlight moved', (center, center_grid))
+            self._last_box_center_grid = center_grid
 
-    @property
-    def atom_sym(self):
-        return self._atomic_symmetry_model
 
     def isolate_and_cover_selection(self, atoms, include_surrounding_residues=5,
         show_context=5, mask_radius=3, extra_padding=0, hide_surrounds=True,
@@ -569,18 +557,9 @@ class Symmetry_Manager(Model):
             coords=main_coords)
         asm._current_focal_set = context_set
         asm.set_sym_display(context_set[3], *atom_and_bond_sym_transforms_from_sym_atoms(*context_set[0:3]))
-        cell = self.cell
-        grid = self.grid
-        xmaps = self.xmapset
-        from .crystal import calculate_grid_padding
-        pad = calculate_grid_padding(mask_radius, grid, cell)
-        ep = calculate_grid_padding(extra_padding, grid, cell)
-        from .clipper_util import get_minmax_grid
-        box_bounds_grid = get_minmax_grid(main_coords, cell, grid) \
-            + numpy.array((-pad, pad)) + numpy.array((-ep, ep))
-        xmaps.set_box_limits(box_bounds_grid, force_fill=True)
-        xmaps._surface_zone.update(mask_radius, coords = main_coords)
-        xmaps._reapply_zone()
+        self.map_mgr.cover_coords(coords,
+            mask_radius=mask_radius,
+            extra_padding=extra_padding)
         if focus:
             focus_on_selection(self.session, self.session.view, atoms)
 
@@ -588,7 +567,7 @@ class Symmetry_Manager(Model):
 
     def draw_unit_cell_box(self, offset=None, cylinder_radius = 0.05):
         '''
-        Draw a rhombohedral box around one unit cell.
+        Draw a parallellepiped around one unit cell.
         '''
         m, d = _get_special_positions_model(self)
         model = self.structure
@@ -748,7 +727,7 @@ class AtomicSymmetryModel(Model):
 
         self._box_changed_handler = None
         self._center = session.view.center_of_rotation
-        self._radius = radius
+        self._spotlight_radius = radius
         self._box_dim = numpy.array([radius*2, radius*2, radius*2], numpy.double)
         ad = self._atoms_drawing = SymAtomsDrawing('Symmetry atoms')
         self.add_drawing(ad)
@@ -907,13 +886,13 @@ class AtomicSymmetryModel(Model):
         bh = self._box_changed_handler
         if flag and not self._live_scrolling:
             if bh is None:
-                self._box_changed_handler = self.parent.triggers.add_handler('box center moved',
+                self._box_changed_handler = self.parent.triggers.add_handler('spotlight moved',
                     self._box_moved_cb)
                 self._update_box()
                 self.update_graphics()
         elif not flag and self._live_scrolling:
             from chimerax.atomic import concatenate
-            res = whole_residue_sym_sphere(self.structure.residues, self._current_tfs, self._center, self._radius, visible_only=False)
+            res = whole_residue_sym_sphere(self.structure.residues, self._current_tfs, self._center, self._spotlight_radius, visible_only=False)
             ma = res[0]
             sa = res[1]
             fa = concatenate((ma, sa))
@@ -926,12 +905,12 @@ class AtomicSymmetryModel(Model):
         self._live_scrolling = flag
 
     @property
-    def radius(self):
-        return self._radius
+    def spotlight_radius(self):
+        return self._spotlight_radius
 
-    @radius.setter
-    def radius(self, radius):
-        self._radius = radius
+    @spotlight_radius.setter
+    def spotlight_radius(self, radius):
+        self._spotlight_radius = radius
         if self.visible:
             self.update_graphics()
 
@@ -957,17 +936,17 @@ class AtomicSymmetryModel(Model):
         return gu.level_of_detail
 
 
-    def _box_moved_cb(self, trigger_name, box_params):
+    def _box_moved_cb(self, trigger_name, center):
         if not self.visible:
             return
-        self._center = box_params[0]
+        self._center = center
         self._update_box()
         self.update_graphics()
 
     def _update_box(self):
         from .crystal import find_box_params
         center = self._center
-        radius = self._radius
+        radius = self._spotlight_radius
         box_corner_grid, box_corner_xyz, grid_dim = find_box_params(center, self.cell, self.grid, radius)
         dim = self._box_dim
         dim[:] = radius*2

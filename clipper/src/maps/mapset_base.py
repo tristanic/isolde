@@ -1,4 +1,5 @@
 import numpy
+from chimerax.core.models import Model
 
 class MapSet_Base(Model):
     '''
@@ -32,10 +33,25 @@ class MapSet_Base(Model):
         for t in trigger_names:
             trig.add_trigger(t)
 
+        mh = self._mgr_handlers = []
+        mh.append((manager,
+            manager.triggers.add_handler('spotlight moved',
+                self._box_moved_cb)))
+        mh.append((manager,
+            manager.triggers.add_handler('spotlight changed',
+                self._box_changed_cb)))
+        mh.append((manager,
+            manager.triggers.add_handler('cover coords',
+                self._cover_coords_cb)))
+
 
     @property
     def master_map_mgr(self):
         return self._mgr
+
+    @property
+    def box_center(self):
+        return self.master_map_mgr.box_center
 
     @property
     def crystal_mgr(self):
@@ -85,6 +101,15 @@ class MapSet_Base(Model):
         raise NotImplementedError('Spotlight mode can only be enabled/disabled '
             'via the master map manager!')
 
+    def expand_to_cover_coords(self, coords, padding):
+        raise NotImplementedError('Function not defined in the base class!')
+
+    # Callbacks
+
+    def _cover_coords_cb(self, trigger_name, data):
+        coords, padding = data
+        self.expand_to_cover_coords(self, coords, padding)
+
     def _box_changed_cb(self, trigger_name, data):
         '''
         By default, just re-fires with the same data. Override in derived class
@@ -98,3 +123,11 @@ class MapSet_Base(Model):
         if more complex handling is needed
         '''
         self.triggers.activate_trigger('map box moved', data)
+
+    def delete(self):
+        for (mgr, h) in self._mgr_handlers:
+            try:
+                mgr.triggers.remove_handler(h)
+            except:
+                continue
+        super().delete()

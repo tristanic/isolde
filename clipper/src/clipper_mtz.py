@@ -412,8 +412,10 @@ def load_hkl_data(session, filename, free_flag_label = None):
                 if len(possible_free_flag_names) == 1:
                     session.logger.info('WARNING: assuming column with label {}'
                     + ' defines the free set.'.format(possible_free_flag_names[0]))
-                    #possible_free_flags = [temp_tree[crystal][dataset]['I'][possible_free_flag_names[0]]]
-        if len(possible_free_flag_names) > 1:
+                    #possible_freefrom ._flags = [temp_tree[crystal][dataset]['I'][possible_free_flag_names[0]]]
+        if not possible_free_flag_names:
+            free_flags_name = None
+        elif len(possible_free_flag_names) > 1:
             free_flags_name = _r_free_chooser(session, possible_free_flag_names)
             if free_flags_name is None:
                 if free_flag_label != -1:
@@ -421,7 +423,10 @@ def load_hkl_data(session, filename, free_flag_label = None):
         else:
             free_flags_name = possible_free_flag_names[0]
 
-        free_flags = find_free_set(mtzin, temp_tree, label=free_flags_name)[0][0]
+        if free_flags_name:
+            free_flags = find_free_set(mtzin, temp_tree, label=free_flags_name)[0][0]
+        else:
+            free_flags = None
 
         mtzin.close_read()
 

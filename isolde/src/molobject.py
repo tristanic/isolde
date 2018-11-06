@@ -3183,7 +3183,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
 
     def remove_preview(self):
         if self._preview_model is not None and not self._preview_model.deleted:
-            self.session.models.remove([self._preview_model])
+            self.session.models.close([self._preview_model])
             self._preview_model = None
 
 

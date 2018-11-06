@@ -40,7 +40,7 @@ class XmapSet_Box_Params:
         return self._data[i]
 
     def __setitem__(self, i, val):
-        if i > 2 || i < -3:
+        if i > 2 or i < -3:
             raise IndexError('XmapSet_Box_Params only has three parameters!')
 
     def set(self, params):
@@ -508,6 +508,12 @@ class XmapSet(MapSet_Base):
                 )
             )
         self.triggers.activate_trigger('maps recalculated', None)
+
+    # Callbacks
+
+    def _cover_coords_cb(self, trigger_name, params):
+        coords, padding = params
+        self.expand_to_cover_coords(coords, padding)
 
     def _box_changed_cb(self, trigger_name, params):
         coords = numpy.array(params)

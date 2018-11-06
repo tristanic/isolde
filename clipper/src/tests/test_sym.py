@@ -19,6 +19,6 @@ def test_clipper_sym(session, radius=15):
     cofr.cofr(session, method='center of view', show_pivot=True)
 
     from chimerax.clipper import symmetry
-    sym_handler = symmetry.XtalSymmetryHandler(m, os.path.join(libdir,'5f4y_map_coeffs.mtz'),
-        atomic_symmetry_radius = radius)
+    sym_handler = symmetry.Symmetry_Manager(m, mtzfile=os.path.join(libdir,'5f4y_map_coeffs.mtz'),
+        spotlight_radius = radius)
     return sym_handler

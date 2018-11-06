@@ -28,6 +28,7 @@ class Surface_Zone:
     @property
     def all_coords(self):
         if self.atoms is not None:
+            import numpy
             if self.coords is not None:
                 return numpy.concatenate(self.atoms.coords, self.coords)
             return self.atoms.coords
@@ -45,9 +46,9 @@ class Map_Mgr(Model):
     '''
     Top-level manager for all maps associated with a model.
     '''
-    def __init__(self, crystal_manager):
-        self._mgr = crystal_manager
-        super().__init__('Map Manager', manager.session)
+    def __init__(self, crystal_manager, spotlight_radius=12):
+        cm = self._mgr = crystal_manager
+        super().__init__('Map Manager', cm.session)
         self._live_xmapsets = []
         self._static_xmapsets = []
         self._nxmapsets = []
@@ -56,62 +57,77 @@ class Map_Mgr(Model):
         trig = self._triggers = TriggerSet()
 
         trigger_names = (
-            # Change shape/size of box for map viewing.
-            # Data is a tuple of (xyz centre, xyz min, xyz max) denoting the
-            # rectangular prism that needs to be covered. It is up to
-            # each XmapSet or NXmapHandler to work out the necessary box size
-            # on its own grid.
-            'map box changed',  # Changed shape of box for map viewing
-            'map box moved',    # Just changed the centre of the box
+            # Deprecated
+            'map box changed',
+            # Ask each MapSet to expand its volumes to cover an arbitrary set
+            # of coordinates as efficiently as possible.
+            'cover coords',
+            # Change the radius of the "spotlight" sphere. It is up to each
+            # MapSet to work out how to accommodate it
+            'spotlight changed',
+            'spotlight moved',    # Just changed the centre of the box
         )
         for t in trigger_names:
             trig.add_trigger(t)
 
         # Handler for live box update
         self._box_update_handler = None
-        # Is the box already initialised?
-        self._box_initialized = False
         # Object storing the parameters required for masking (used after
         # adjusting contours)
-        self._surface_zone = Surface_Zone(display_radius, None, None)
+        self._surface_zone = Surface_Zone(spotlight_radius, None, None)
         # Is the map box moving with the centre of rotation?
         self._spotlight_mode = False
 
+        self._spotlight_center = None
+
         # Radius of the sphere in which the map will be displayed when
         # in live-scrolling mode
-        self.display_radius = display_radius
-        # Actual box dimensions in (u,v,w) grid coordinates
-        self._box_dimensions = None
-        # Centre of the box (used when tracking the centre of rotation)
-        self._box_center = None
-        # Last grid coordinate of the box centre. We only need to update
-        # the map if the new centre maps to a different integer grid point
-        self._box_center_grid = None
-        # Minimum corner of the box in (x,y,z) coordinates. This must
-        # correspond to the grid coordinate in self._box_corner_grid
-        self._box_corner_xyz = None
-        # Minimum corner of the box in grid coordinates
-        self._box_corner_grid = None
+        self.spotlight_radius = spotlight_radius
 
-
-        self.spotlight_mode = True
-
-        self._box_initialized = True
+        if self.spotlight_mode:
+            self._start_spotlight_mode()
 
         self.display=False
         self._rezone_pending = False
         # Apply the surface mask
+
+        mh = self._mgr_handlers = []
+        mh.append((cm, cm.triggers.add_handler('mode changed',
+            self._spotlight_mode_changed_cb)))
+
+
         self.session.triggers.add_handler('frame drawn', self._first_init_cb)
 
     @property
     def xmapsets(self):
+        '''
+        Sets of crystallographic maps associated with this model. Each XmapSet
+        handles the set of maps derived from a single crystallographic dataset.
+        '''
         from .xmapset import XmapSet
         return (m for m in self.child_models() if isinstance(m, XmapSet))
 
     @property
-    def nxmapsets(self):
+    def nxmapset(self):
+        '''
+        Handler for all real-space (non-crystallographic) maps associated with
+        this model.
+        '''
         from .nxmapset import NXmapSet
-        return (m for m in self.child_models() if isinstance(m, NXmapSet))
+        for m in self.child_models():
+            if isinstance(m, NXmapSet):
+                return m
+        return NXmapSet(self, 'Non-crystallographic maps')
+
+    @property
+    def all_xtal_maps(self):
+        from .map_handler_base import XmapHandler_Base
+        return (m for m in self.all_models() if isinstance(m, XmapHandler_Base))
+
+    @property
+    def all_non_xtal_maps(self):
+        from .nxmapset import NXmapHandler
+        return (m for m in self.all_models() if isinstance(m, NXmapHandler))
 
     @property
     def all_maps(self):
@@ -131,10 +147,6 @@ class Map_Mgr(Model):
         return self._triggers
 
     @property
-    def hklinfo(self):
-        return self.crystal_mgr.hklinfo
-
-    @property
     def spacegroup(self):
         return self.crystal_mgr.spacegroup
 
@@ -143,13 +155,24 @@ class Map_Mgr(Model):
         return self.crystal_mgr.cell
 
     @property
-    def grid(self):
-        return self.crystal_mgr.grid
-
-    @property
-    def display_radius(self):
+    def spotlight_radius(self):
         '''Get/set the radius (in Angstroms) of the live map display sphere.'''
-        return self._display_radius
+        return self._spotlight_radius
+
+    @spotlight_radius.setter
+    def spotlight_radius(self, radius):
+        import numpy
+        self._spotlight_radius = radius
+        v = self.session.view
+        cofr = self._box_center = v.center_of_rotation
+        xyz_min = cofr-radius
+        xyz_max = cofr+radius
+        self._box_bounds = numpy.array([xyz_min, xyz_max])
+        self.triggers.activate_trigger('spotlight changed',
+            (cofr, xyz_min, xyz_max)
+        )
+        self._surface_zone.update(radius, coords = numpy.array([cofr]))
+        self._reapply_zone()
 
     @property
     def box_center(self):
@@ -159,37 +182,15 @@ class Map_Mgr(Model):
     def box_params(self):
         return (self._box_corner_xyz, self._box_corner_grid, self._box_dimensions)
 
-    @display_radius.setter
-    def display_radius(self, radius):
-        self._display_radius = radius
-        v = self.session.view
-        cofr = self._box_center = v.center_of_rotation
-        xyz_min = cofr-radius
-        xyz_max = cofr+radius
-
-        self.triggers.activate_trigger('map box changed',
-            (cofr, xyz_min, xyz_max)
-        )
-        self._surface_zone.update(radius, coords = numpy.array([cofr]))
-        self._reapply_zone()
 
     @property
     def spotlight_mode(self):
         '''Turn live map scrolling on and off.'''
-        return self._spotlight_mode
+        return self.crystal_mgr.spotlight_mode
 
     @spotlight_mode.setter
     def spotlight_mode(self, switch):
-        if switch:
-            self.position = Place()
-            if not self._spotlight_mode:
-                '''
-                Set the box dimensions to match the stored radius.
-                '''
-                self.display_radius = self._display_radius
-            self._start_spotlight_mode()
-        else:
-            self._stop_spotlight_mode()
+        raise RuntimeError('Mode can only be changed via the master symmetry manager!')
 
     @property
     def display(self):
@@ -202,28 +203,52 @@ class Map_Mgr(Model):
                 self._start_spotlight_mode()
         Model.display.fset(self, switch)
 
+    def add_xmapset_from_mtz(self, mtzfile, oversampling_rate=1.5):
+        from ..clipper_mtz import ReflectionDataContainer
+        mtzdata = ReflectionDataContainer(self.session, mtzfile,
+            shannon_rate = oversampling_rate)
+        cm = self.crystal_mgr
+        if not cm.has_symmetry:
+            session.logger.info('(CLIPPER) NOTE: No symmetry information found '
+                'in model. Using symmetry from MTZ file.')
+            cm = self.crystal_mgr
+            cm.cell = mtzdata.cell
+            cm.spacegroup = mtzdata.spacegroup
+            cm.grid = mtzdata.grid_sampling
+
+            cm.has_symmetry = True
+        elif not self.symmetry_matches(mtzdata):
+            raise RuntimeError('Symmetry info from MTZ file does not match '
+                'symmetry info from model!')
+        from .xmapset import XmapSet
+        return XmapSet(self, mtzdata, self._box_origin_xyz, self._box_max_xyz)
+
+    def symmetry_matches(self, xtal_data):
+        return (
+            xtal_data.cell.equals(self.cell, 1.0)
+            and xtal_data.spacegroup.spacegroup_number == self.spacegroup.spacegroup_number
+        )
+
+
+    def _spotlight_mode_changed_cb(self, *_):
+        if self.spotlight_mode:
+            self._start_spotlight_mode()
+        else:
+            self._stop_spotlight_mode()
+
     def _start_spotlight_mode(self):
         if self._box_update_handler is None:
             self._box_update_handler = self.crystal_mgr.triggers.add_handler(
-                'box center moved', self.update_box)
-        if self._box_center is not None:
-            self.update_box(None, (self._box_center, self._box_center_grid), force=True)
+                'spotlight moved', self.update_spotlight)
+            self.update_spotlight(None, self.box_center)
         self.positions = Places()
-        self._spotlight_mode = True
 
     def _stop_spotlight_mode(self):
         if self._box_update_handler is not None:
             self.crystal.triggers.remove_handler(self._box_update_handler)
             self._box_update_handler = None
-        self._spotlight_mode = False
 
-    def all_maps(self):
-        '''
-        Return all maps (of all types) managed by this object.
-        '''
-        pass
-
-    def cover_box(self, minmax, force_fill=False):
+    def cover_box(self, minmax):
         '''
         Set the map box to fill a volume encompassed by the provided minimum
         and maximum xyz coordinates. Automatically turns off live scrolling.
@@ -234,51 +259,45 @@ class Map_Mgr(Model):
         self.triggers.activate_trigger('map box changed',
             (center, xyz_min, xyz_max))
 
-    def update_spotlight(self, trigger_name, new_center, force=True):
+    def cover_coords(self, coords, mask_radius=3, extra_padding=0):
+        '''
+        Expand all maps to a region large enough to cover the coords, plus
+        mask_radius+extra_padding in every direction.
+        '''
+        self.triggers.activate_trigger('cover coords',
+            (coords, mask_radius+extra_padding))
+        self._surface_zone.update(mask_radius, coords=coords)
+        self._reapply_zone()
+
+    def update_spotlight(self, trigger_name, new_center):
         '''
         Update the position of the "spotlight" to surround the current centre of
         rotation. If this manager is not currently displayed, then filling the
         volumes with data around the new position will be deferred unless
         force is set to True.
         '''
-        self._box_center = new_center
         if not self.visible and not force:
             # Just store the box parameters for when we're re-displayed
             return
         if self.spotlight_mode:
-            self.triggers.activate_trigger('map box moved',
+            import numpy
+            self.triggers.activate_trigger('spotlight moved',
                 new_center)
-            self._surface_zone.update(self.display_radius, coords = numpy.array([center]))
+            self._surface_zone.update(self.spotlight_radius, coords = numpy.array([center]))
             self._reapply_zone()
 
-    def add_xmapset_live(self):
-        '''
-        Add a set of live-updating maps calculated from atomic coordinates and
-        experimental amplitudes.
-        '''
-        pass
+    def rezone_needed(self):
+        if not self._rezone_pending:
+            self.session.triggers.add_handler('new frame', self._rezone_once_cb)
 
-    def add_xmapset_static(self):
-        '''
-        Add a set of crystallographic maps based on pre-calculated structure
-        factors.
-        '''
-        pass
 
-    def add_nxmapset(self):
-        '''
-        Add a handler for real-space (non-crystallographic maps)
-        '''
-        pass
+    # Callbacks
 
     def _first_init_cb(self, *_):
         self.display = True
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
-    def rezone_needed(self):
-        if not self._rezone_pending:
-            self.session.triggers.add_handler('new frame', self._rezone_once_cb)
 
     def _rezone_once_cb(self, *_):
         self._reapply_zone()
@@ -297,6 +316,10 @@ class Map_Mgr(Model):
             surface_zones(self.all_maps, coords, radius)
 
     def delete(self):
-        self.spotlight_mode = False
-        self.live_update = False
+        self._stop_spotlight_mode()
+        for (mgr, h) in self._mgr_handlers:
+            try:
+                mgr.triggers.remove_handler(h)
+            except:
+                continue
         super().delete()
