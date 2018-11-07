@@ -2,50 +2,52 @@ import numpy
 from .mapset_base import MapSet_Base
 
 class XmapSet_Box_Params:
-    def __init__(self, origin_grid=None, origin_xyz=None, dim=None):
-        self._data = [None,None,None]
+    def __init__(self, origin_xyz=None, origin_grid=None, dim=None):
         self.origin_grid = origin_grid
         self.origin_xyz = origin_xyz
         self.dim = dim
 
     @property
-    def origin_grid(self):
-        return self._data[0]
-
-    @origin_grid.setter
-    def origin_grid(self, origin):
-        self._data[0] = origin
-
-    @property
     def origin_xyz(self):
-        return self._data[1]
+        return self._origin_xyz
 
     @origin_xyz.setter
     def origin_xyz(self, origin):
-        self._data[1] = origin
+        if origin is None:
+            origin = [0,0,0]
+        self._origin_xyz = numpy.array(origin, numpy.float32)
+        # print("Set XYZ origin to {}".format(self._origin_xyz))
+
+    @property
+    def origin_grid(self):
+        return self._origin_grid
+
+    @origin_grid.setter
+    def origin_grid(self, origin):
+        if origin is None:
+            origin = [0,0,0]
+        self._origin_grid = numpy.array(origin, numpy.int)
+        # print("Set grid origin to {}".format(self._origin_grid))
 
     @property
     def dim(self):
-        return self._data[2]
+        return self._dim
 
     @dim.setter
     def dim(self, dim):
-        self._data[2] = dim
+        if dim is None:
+            dim = [1,1,1]
+        self._dim = numpy.array(dim, numpy.int)
+        # print("Set XYZ origin to {}".format(self._dim))
 
 
     def __iter__(self):
-        return iter([self.origin_grid, self.origin_xyz, self.dim])
-
-    def __getitem__(self, i):
-        return self._data[i]
-
-    def __setitem__(self, i, val):
-        if i > 2 or i < -3:
-            raise IndexError('XmapSet_Box_Params only has three parameters!')
+        return iter((self._origin_xyz, self._origin_grid, self._dim))
 
     def set(self, params):
-        for i, p in enumerate(params):
-            self[i] = p
+        self.origin_xyz=params[0]
+        self.origin_grid = params[1]
+        self.dim = params[2]
 
 
 _pad_base = numpy.array([-1,1], numpy.int)
@@ -64,7 +66,7 @@ class XmapSet(MapSet_Base):
         '2mFo-DFc': {'b_sharp': 0, 'is_difference_map': False, 'display': True},
         'mFo-DFc': {'b_sharp': 0, 'is_difference_map': True, 'display': True},
     }
-    def __init__(self, manager, crystal_data, disp_origin_xyz, disp_max_xyz,
+    def __init__(self, manager, crystal_data,
         use_live_maps = True,
         use_static_maps = True,
         fsigf_name=None,
@@ -82,11 +84,6 @@ class XmapSet(MapSet_Base):
             * crystal_data:
                 - a ReflectionDataContainer object holding all the data for a
                   single crystal
-            * disp_origin_xyz:
-                - the origin of the display box in (x,y,z) Angstrom coordinates
-            * disp_max_xyz:
-                - the maximum corner of the display box in (x,y,z) Angstrom
-                  coordinates
             * use_live_maps:
                 - if True, then the F/sigF data in crystal_data (if present)
                   will be used to generate maps that automatically update on
@@ -128,30 +125,21 @@ class XmapSet(MapSet_Base):
         super().__init__(manager, 'Crystallographic maps')
 
         trigger_names = (
-            'maps recalculated'
+            'maps recalculated',
         )
         for t in trigger_names:
             self._triggers.add_trigger(t)
 
         self._crystal_data = crystal_data
-        self._box_params = XmapSet_Box_Params()
-        minmax = (disp_origin_xyz, disp_max_xyz)
-        corners = []
-        for x in [0,1]:
-            for y in [0,1]:
-                for z in [0,1]:
-                    corners.append([minmax[x][0], minmax[y][1], minmax[z][2]])
-        corners = numpy.array(corners)
-        self.expand_to_cover_coords(corners, 0)
 
 
         # Since the Unit_Cell class does much of its work in grid coordinates,
         # each XmapSet object needs its own Unit_Cell instance (since there is
         # no guarantee that resolutions will be equal).
         from .. import Unit_Cell, atom_list_from_sel
-        alist = atom_list_from_cell(self.model.atoms)
+        alist = atom_list_from_sel(self.structure.atoms)
         self._unit_cell = Unit_Cell(alist, self.cell, self.spacegroup,
-            self.grid_sampling, 5)
+            self.grid, 5)
         # Work out if we have experimental data, and launch the live data
         # manager if so.
         xm = self._live_xmap_mgr = None
@@ -160,6 +148,12 @@ class XmapSet(MapSet_Base):
         self._model_changes_handler = None
         self._delayed_recalc_handler = None
         self._show_r_factors = show_r_factors
+
+        self._box_params = XmapSet_Box_Params()
+        if self.spotlight_mode:
+            self._box_changed_cb('init', (self.spotlight_center, self.display_radius))
+        else:
+            self.expand_to_cover_coords(self.master_map_mgr.last_covered_selection, 10)
 
         if use_live_maps:
             if fsigf_name is not None:
@@ -178,7 +172,7 @@ class XmapSet(MapSet_Base):
 
             if fsigf is not None:
                 self._launch_live_xmap_mgr(crystal_data, fsigf)
-                self._prepare_standard_live_maps(self, exclude_free_reflections,
+                self._prepare_standard_live_maps(exclude_free_reflections,
                     fill_with_fcalc, exclude_missing_reflections)
                 for b in bsharp_vals:
                     if b<0:
@@ -192,11 +186,14 @@ class XmapSet(MapSet_Base):
                         fill_with_fcalc=fill_with_fcalc,
                         exclude_missing_reflections=exclude_missing_reflections
                         )
-
+        if self.live_xmap_mgr is not None:
+            self.live_update=True
         if use_static_maps:
             cdata = crystal_data.calculated_data
             for dataset in cdata:
                 self.add_static_xmap(dataset)
+
+
 
 
     @property
@@ -237,12 +234,12 @@ class XmapSet(MapSet_Base):
                     'data! Live map recalculation is not possible.')
             else:
                 if self._model_changes_handler is None:
-                    self._model_changes_handler = self.model.triggers.add_handler(
+                    self._model_changes_handler = self.structure.triggers.add_handler(
                         'changes', self._model_changed_cb
                     )
         else:
             if self._model_changes_handler is not None:
-                self.model.triggers.remove_handler(
+                self.structure.triggers.remove_handler(
                     self._model_changes_handler
                 )
                 self._model_changes_handler = None
@@ -284,17 +281,16 @@ class XmapSet(MapSet_Base):
     def unit_cell(self):
         return self._unit_cell
 
-    @property
-    def triggers(self):
-        return self._triggers
 
     def _launch_live_xmap_mgr(self, crystal_data, f_sigf):
         from ..util import available_cores
         # The master C++ manager for handling all map operations
         from ..clipper_python.ext import Xtal_thread_mgr
         xm = self._live_xmap_mgr = Xtal_thread_mgr(self.hklinfo,
-            crystal_data.free_flags.data, self.grid, f_sigf,
+            crystal_data.free_flags.data, self.grid, f_sigf.data,
             num_threads=available_cores())
+        from ..util import atom_list_from_sel
+        xm.init(atom_list_from_sel(self.structure.atoms))
 
     def _prepare_standard_live_maps(self, exclude_free_reflections,
         fill_with_fcalc, exclude_missing_reflections):
@@ -308,7 +304,6 @@ class XmapSet(MapSet_Base):
                 exclude_missing_reflections=exclude_missing_reflections
                 )
 
-        self.add_live_xmap()
 
     def set_xmap_display_style(self, xmap_handler, is_difference_map=False,
         color=None, style=None, contour=None):
@@ -393,6 +388,9 @@ class XmapSet(MapSet_Base):
         atomic model.
         '''
         data = dataset.data
+        from .. import HKL_data_F_phi
+        if not isinstance(data, HKL_data_F_phi):
+            raise RuntimeError('Invalid data type: {}!'.format(type(data)))
         if is_difference_map is None:
             is_difference_map = dataset.is_difference_map
         new_handler = XmapHandler_Static(self, dataset.name, data,
@@ -411,7 +409,7 @@ class XmapSet(MapSet_Base):
             new_handler.display=False
 
     def _choose_fsigf(self, crystal_data):
-        from . import HKL_data_F_sigF
+        from .. import HKL_data_F_sigF
         exp_data = crystal_data.experimental_data
         fsigfs = {key: data for key, data in exp_data.datasets.items() if data.dtype==HKL_data_F_sigF}
         if not len(fsigfs):
@@ -435,13 +433,14 @@ class XmapSet(MapSet_Base):
         return None
 
     def expand_to_cover_coords(self, coords, padding):
-        from .map_mgr import calculate_grid_padding
         cell = self.cell
         grid = self.grid
-        pad = calculate_grid_padding(padding, grid, cell)
+        pad = _calculate_grid_padding(padding, grid, cell)
         from ..clipper_util import get_minmax_grid
         box_bounds_grid = \
-            get_minmax_grid(coords, cell, grid) + _pad_base*pad
+            get_minmax_grid(coords, cell, grid)
+        box_bounds_grid[0] -= pad
+        box_bounds_grid[1] += pad
         self.set_box_limits(box_bounds_grid, force_fill=True)
 
     def set_box_limits(self, minmax, force_fill = False):
@@ -450,11 +449,11 @@ class XmapSet(MapSet_Base):
         and maximum grid coordinates. Automatically turns off live scrolling.
         '''
         self.live_scrolling = False
-        from .clipper_python import Coord_grid
+        from .. import Coord_grid
         cmin = Coord_grid(minmax[0])
         cmin_xyz = cmin.coord_frac(self.grid).coord_orth(self.cell).xyz
         dim = (minmax[1]-minmax[0])
-        self.box_params.set((cmin, cmin_xyz, dim))
+        self.box_params.set((cmin_xyz, minmax[0], dim))
         self.triggers.activate_trigger('map box changed', None)
 
     # Callbacks
@@ -470,8 +469,8 @@ class XmapSet(MapSet_Base):
         if changes is not None:
             changes = changes[1]
             atom_changes = set(changes.atom_reasons()).intersection(self._map_impacting_changes)
-            added = len(c.created_atoms())
-            deleted = c.num_deleted_atoms()
+            added = len(changes.created_atoms())
+            deleted = changes.num_deleted_atoms()
             if atom_changes or added or deleted:
                 self._recalc_needed = True
                 if self._delayed_recalc_handler is None:
@@ -480,9 +479,9 @@ class XmapSet(MapSet_Base):
                     )
 
     def _recalculate_maps_if_needed(self, *_):
-        xm = self._xtal_mgr
+        xm = self.live_xmap_mgr
         if self._recalc_needed and not xm.thread_running:
-            self.recalculate_all_maps(self.model.atoms)
+            self.recalculate_all_maps(self.structure.atoms)
             if self._delayed_recalc_handler is not None:
                 self.session.triggers.remove_handler(self._delayed_recalc_handler)
                 self._delayed_recalc_handler = None
@@ -490,7 +489,7 @@ class XmapSet(MapSet_Base):
     def recalculate_all_maps(self, atoms):
         from .. import atom_list_from_sel
         from ..delayed_reaction import delayed_reaction
-        xm = self._xtal_mgr
+        xm = self.live_xmap_mgr
         delayed_reaction(self.session.triggers, 'new frame',
             xm.recalculate_all_maps, [atom_list_from_sel(atoms)],
             xm.ready,
@@ -499,7 +498,7 @@ class XmapSet(MapSet_Base):
         self._recalc_needed = False
 
     def _apply_new_maps(self):
-        xm = self._xtal_mgr
+        xm = self.live_xmap_mgr
         xm.apply_new_maps()
         if self.show_r_factors:
             self.session.logger.status(
@@ -516,10 +515,10 @@ class XmapSet(MapSet_Base):
         self.expand_to_cover_coords(coords, padding)
 
     def _box_changed_cb(self, trigger_name, params):
-        coords = numpy.array(params)
-        box_origin_grid, box_origin_xyz, dim = _get_bounding_box(
-            coords, self.grid, self.cell)
-        self.box_params.set((box_origin_grid, box_origin_xyz, dim))
+        center, radius = params
+        origin_grid, origin_xyz = _find_box_corner(center, self.cell, self.grid, radius=radius)
+        dim = 2*_calculate_grid_padding(radius, self.grid, self.cell)
+        self.box_params.set((origin_xyz, origin_grid, dim))
         self.triggers.activate_trigger('map box changed', None)
 
     def _box_moved_cb(self, trigger_name, center):
@@ -550,17 +549,19 @@ class XmapHandler_Static(XmapHandler_Base):
             name:
                 A descriptive name for this map
             f_phi_data:
-                The Clipper HKL_Data_F_Phi object the map is to be calculated
+                The Clipper HKL_Data_F_phi object the map is to be calculated
                 from.
             is_difference_map:
                 Is this a difference map?
         '''
         name = '(STATIC) '+name
+        self._mapset = mapset
+        from .. import Xmap
+
+        xmap = self._xmap = Xmap(self.spacegroup, self.cell, self.grid)
+        xmap.fft_from(f_phi_data)
         super().__init__(mapset, name, is_difference_map=is_difference_map)
 
-        from .. import Xmap
-        xmap = self._xmap = Xmap(self.spacegroup, self.cell, self.grid_sampling)
-        xmap.fft_from(f_phi_data)
 
     @property
     def xmap(self):
@@ -569,8 +570,8 @@ class XmapHandler_Static(XmapHandler_Base):
     @property
     def stats(self):
         if not hasattr(self, '_stats') or self._stats is None:
-            from ..clipper_python import Map_stats
-            all = self._all_stats = Map_stats(self)
+            from .. import Map_stats
+            all = self._all_stats = Map_stats(self._xmap)
             self._stats = (all.mean, all.std_dev, all.std_dev)
         return self._stats
 
@@ -594,6 +595,7 @@ class XmapHandler_Live(XmapHandler_Base):
             is_difference_map:
                 Is this a difference map?
         '''
+        self._map_name = name
         name = '(LIVE) '+name
         super().__init__(mapset, name, is_difference_map=is_difference_map)
         self._mgr_handlers.append(
@@ -608,11 +610,13 @@ class XmapHandler_Live(XmapHandler_Base):
 
     @property
     def xmap(self):
-        return self.xmap_mgr.get_xmap_ref(self.name)
+        return self.xmap_mgr.get_xmap_ref(self._map_name)
 
     @property
     def stats(self):
-        return self.xmap_mgr.get_map_stats(self.name)
+        all = self.xmap_mgr.get_map_stats(self._map_name)
+        return (all.mean, all.std_dev, all.std_dev)
+
 
 
     def _map_recalc_cb(self, name, *_):
@@ -644,16 +648,16 @@ def viewing_recommended_bsharp(resolution):
     return bsharp_base*resolution-2.5*bsharp_base
 
 
-def calculate_grid_padding(radius, grid, cell):
+def _calculate_grid_padding(radius, grid, cell):
     '''
     Calculate the number of grid steps needed on each crystallographic axis
     in order to capture at least radius angstroms in x, y and z.
     '''
     corner_mask = numpy.array([[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,0,0],[1,1,1]])
-    corners = (corner_mask * radius).astype(float)
+    corners = (corner_mask * radius).astype(numpy.float32)
     grid_upper = numpy.zeros([8,3], numpy.int)
     grid_lower = numpy.zeros([8,3], numpy.int)
-    from .clipper_python import Coord_orth
+    from .. import Coord_orth
     for i, c in enumerate(corners):
         co = Coord_orth(c)
         cm = co.coord_frac(cell).coord_map(grid).uvw
@@ -667,21 +671,21 @@ def _find_box_corner(center, cell, grid, radius = 20):
     Find the bottom corner (i.e. the origin) of a rhombohedral box
     big enough to hold a sphere of the desired radius.
     '''
-    from .clipper_python import Coord_frac, Coord_orth, Coord_grid
+    from .. import Coord_frac, Coord_orth, Coord_grid
     radii_frac = Coord_frac(radius/cell.dim)
     center_frac = Coord_orth(center).coord_frac(cell)
     bottom_corner_grid = center_frac.coord_grid(grid) \
-                - Coord_grid(calculate_grid_padding(radius, grid, cell))
+                - Coord_grid(_calculate_grid_padding(radius, grid, cell))
     bottom_corner_orth = bottom_corner_grid.coord_frac(grid).coord_orth(cell)
-    return bottom_corner_grid, bottom_corner_orth.xyz
+    return bottom_corner_grid.uvw, bottom_corner_orth.xyz
 
 def _get_bounding_box(coords, grid, cell, padding=2):
     '''
     Find the minimum and maximum grid coordinates of a box which will
     encompass the given (x,y,z) coordinates plus padding (in Angstroms).
     '''
-    from .clipper_python import Util, Coord_grid
-    grid_pad = calculate_grid_padding(padding, grid, cell)
+    from .. import Util, Coord_grid
+    grid_pad = _calculate_grid_padding(padding, grid, cell)
     box_bounds_grid = Util.get_minmax_grid(coords, cell, grid)\
                         + numpy.array((-grid_pad, grid_pad))
     box_origin_grid = box_bounds_grid[0]

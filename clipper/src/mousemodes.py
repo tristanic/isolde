@@ -11,6 +11,16 @@
 import numpy
 from chimerax.core.ui import mousemodes
 
+def initialize_clipper_mouse_modes(session):
+    initialize_zoom_mouse_modes(session)
+    initialize_map_contour_mouse_modes(session)
+
+def initialize_zoom_mouse_modes(session):
+    z = ZoomMouseMode(session)
+    c = ClipPlaneAdjuster(session, z)
+    session.ui.mouse_modes.bind_mouse_mode('right',['shift'], z)
+    session.ui.mouse_modes.bind_mouse_mode('wheel',['shift'], c)
+
 def initialize_map_contour_mouse_modes(session):
     #z = ZoomMouseMode(session)
     s = SelectVolumeToContour(session)

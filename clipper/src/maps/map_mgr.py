@@ -49,6 +49,7 @@ class Map_Mgr(Model):
     def __init__(self, crystal_manager, spotlight_radius=12):
         cm = self._mgr = crystal_manager
         super().__init__('Map Manager', cm.session)
+        cm.add([self])
         self._live_xmapsets = []
         self._static_xmapsets = []
         self._nxmapsets = []
@@ -76,7 +77,6 @@ class Map_Mgr(Model):
         # adjusting contours)
         self._surface_zone = Surface_Zone(spotlight_radius, None, None)
         # Is the map box moving with the centre of rotation?
-        self._spotlight_mode = False
 
         self._spotlight_center = None
 
@@ -105,7 +105,7 @@ class Map_Mgr(Model):
         handles the set of maps derived from a single crystallographic dataset.
         '''
         from .xmapset import XmapSet
-        return (m for m in self.child_models() if isinstance(m, XmapSet))
+        return [m for m in self.child_models() if isinstance(m, XmapSet)]
 
     @property
     def nxmapset(self):
@@ -139,6 +139,10 @@ class Map_Mgr(Model):
         return self._mgr
 
     @property
+    def box_center(self):
+        return self.crystal_mgr.spotlight_center
+
+    @property
     def structure(self):
         return self.crystal_mgr.structure
 
@@ -163,20 +167,12 @@ class Map_Mgr(Model):
     def spotlight_radius(self, radius):
         import numpy
         self._spotlight_radius = radius
-        v = self.session.view
-        cofr = self._box_center = v.center_of_rotation
-        xyz_min = cofr-radius
-        xyz_max = cofr+radius
-        self._box_bounds = numpy.array([xyz_min, xyz_max])
+        center = self.crystal_mgr.spotlight_center
         self.triggers.activate_trigger('spotlight changed',
-            (cofr, xyz_min, xyz_max)
+            (center, radius)
         )
-        self._surface_zone.update(radius, coords = numpy.array([cofr]))
+        self._surface_zone.update(radius, coords = numpy.array([center]))
         self._reapply_zone()
-
-    @property
-    def box_center(self):
-        return self._box_center
 
     @property
     def box_params(self):
@@ -185,12 +181,31 @@ class Map_Mgr(Model):
 
     @property
     def spotlight_mode(self):
-        '''Turn live map scrolling on and off.'''
+        '''
+        Is live map scrolling turned on? Can only be changed via the master
+        symmetry manager.
+        '''
         return self.crystal_mgr.spotlight_mode
 
     @spotlight_mode.setter
     def spotlight_mode(self, switch):
-        raise RuntimeError('Mode can only be changed via the master symmetry manager!')
+        raise NotImplementedError(
+            'Mode can only be changed via the master symmetry manager!')
+
+    @property
+    def spotlight_center(self):
+        '''
+        Current (x,y,z) position of the centre of the "spotlight". Read-only.
+        '''
+        return self.crystal_mgr.spotlight_center
+
+    @property
+    def last_covered_selection(self):
+        '''
+        Last set of coordinates covered by
+        `self.crystal_mgr.isolate_and_cover_selection()`. Read-only.
+        '''
+        return self.crystal_mgr.last_covered_selection
 
     @property
     def display(self):
@@ -221,7 +236,7 @@ class Map_Mgr(Model):
             raise RuntimeError('Symmetry info from MTZ file does not match '
                 'symmetry info from model!')
         from .xmapset import XmapSet
-        return XmapSet(self, mtzdata, self._box_origin_xyz, self._box_max_xyz)
+        return XmapSet(self, mtzdata)
 
     def symmetry_matches(self, xtal_data):
         return (
@@ -240,12 +255,13 @@ class Map_Mgr(Model):
         if self._box_update_handler is None:
             self._box_update_handler = self.crystal_mgr.triggers.add_handler(
                 'spotlight moved', self.update_spotlight)
-            self.update_spotlight(None, self.box_center)
+            self.update_spotlight(None, self.spotlight_center)
+        from chimerax.core.geometry import Places
         self.positions = Places()
 
     def _stop_spotlight_mode(self):
         if self._box_update_handler is not None:
-            self.crystal.triggers.remove_handler(self._box_update_handler)
+            self.crystal_mgr.triggers.remove_handler(self._box_update_handler)
             self._box_update_handler = None
 
     def cover_box(self, minmax):
@@ -276,14 +292,11 @@ class Map_Mgr(Model):
         volumes with data around the new position will be deferred unless
         force is set to True.
         '''
-        if not self.visible and not force:
-            # Just store the box parameters for when we're re-displayed
-            return
         if self.spotlight_mode:
             import numpy
             self.triggers.activate_trigger('spotlight moved',
                 new_center)
-            self._surface_zone.update(self.spotlight_radius, coords = numpy.array([center]))
+            self._surface_zone.update(self.spotlight_radius, coords = numpy.array([new_center]))
             self._reapply_zone()
 
     def rezone_needed(self):

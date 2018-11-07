@@ -8,15 +8,6 @@ def compiled_lib_extension():
         return "dylib"
     return "so"
 
-def voxel_volume(volume):
-    import numpy
-    from math import sqrt
-    a,b,c = volume.data.step
-    angles = numpy.radians(volume.data.cell_angles)
-    cos_alpha, cos_beta, cos_gamma = numpy.cos(angles)
-    return a*b*c*sqrt(1-cos_alpha**2-cos_beta**2-cos_gamma**2
-        + 2*cos_alpha*cos_beta*cos_gamma)
-
 def available_cores():
     import os
     return max(os.cpu_count()-2, 1)
@@ -56,6 +47,12 @@ def atom_list_from_sel(atom_list):
     clipper_atom_list = Atom_list(elements, coords, occupancies, u_iso, u_aniso)
     return clipper_atom_list
 
+def _model_volume(model, exclude_hydrogens=True, radius_scale=1):
+    from math import pi
+    atoms = model.atoms
+    if exclude_hydrogens:
+        atoms = atoms[atoms.element_names != 'H']
+    return sum( 4/3 * pi * (atoms.radii*radius_scale)**3 )
 
 def guess_suitable_contour(volume, model, mask_radius=3, atom_radius_scale = 0.5):
     '''
@@ -75,8 +72,7 @@ def guess_suitable_contour(volume, model, mask_radius=3, atom_radius_scale = 0.5
         # Expand the map to cover the whole model
         sh.isolate_and_cover_selection(model.atoms, focus=False)
 
-    from .util import voxel_volume
-    vv = voxel_volume(volume)
+    vv = volume.data.voxel_volume()
     mv = _model_volume(model, radius_scale=atom_radius_scale)
 
     from chimerax.core.geometry import find_close_points

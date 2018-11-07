@@ -15,11 +15,14 @@ from .clipper_python import (
     Cell_descr,
     CCP4MTZfile,
     # CIFfile,
+    Coord_frac,
     Coord_grid,
+    Coord_orth,
     Grid,
     Grid_range,
     Grid_sampling,
     HKL_info,
+    Map_stats,
     Resolution,
     RTop_frac,
     RTop_orth,
@@ -28,6 +31,7 @@ from .clipper_python import (
     Symop,
     # Symops,
     Unit_Cell,
+    Util,
     Xmap_float as Xmap,
     )
 

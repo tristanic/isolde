@@ -44,6 +44,9 @@ class MapSet_Base(Model):
             manager.triggers.add_handler('cover coords',
                 self._cover_coords_cb)))
 
+    @property
+    def triggers(self):
+        return self._triggers
 
     @property
     def master_map_mgr(self):
@@ -80,7 +83,7 @@ class MapSet_Base(Model):
     @property
     def display_radius(self):
         '''Get/set the radius (in Angstroms) of the live map display sphere.'''
-        return self.master_map_mgr.display_radius
+        return self.master_map_mgr.spotlight_radius
 
     def __getitem__(self, name_or_index):
         '''Get one of the child maps by name or index.'''
@@ -99,7 +102,17 @@ class MapSet_Base(Model):
     @spotlight_mode.setter
     def spotlight_mode(self, switch):
         raise NotImplementedError('Spotlight mode can only be enabled/disabled '
-            'via the master map manager!')
+            'via the master symmetry manager!')
+
+    @property
+    def spotlight_center(self):
+        return self.master_map_mgr.spotlight_center
+
+    @spotlight_center.setter
+    def spotlight_center(self, *_):
+        raise NotImplementedError('Spotlight centre can only be changed '
+            'via the master symmetry manager!')
+
 
     def expand_to_cover_coords(self, coords, padding):
         raise NotImplementedError('Function not defined in the base class!')
@@ -108,7 +121,7 @@ class MapSet_Base(Model):
 
     def _cover_coords_cb(self, trigger_name, data):
         coords, padding = data
-        self.expand_to_cover_coords(self, coords, padding)
+        self.expand_to_cover_coords(coords, padding)
 
     def _box_changed_cb(self, trigger_name, data):
         '''

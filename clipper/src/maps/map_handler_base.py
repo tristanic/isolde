@@ -40,7 +40,7 @@ class MapHandler_Base(Volume):
 
     @property
     def display_radius(self):
-        return self.manager.display_radius
+        return self.manager.spotlight_radius
 
     @property
     def is_difference_map(self):
@@ -143,8 +143,13 @@ class XmapHandler_Base(MapHandler_Base):
     '''
     def __init__(self, mapset, name,
             is_difference_map = False):
-        darray = self._generate_data_array(*self.box_params)
-        super().__init__(mapset, name, data)
+        self._mapset = mapset
+        self._name = name
+        bp = mapset.box_params
+
+        darray = self._generate_and_fill_data_array(bp.origin_xyz, bp.origin_grid, bp.dim)
+        # darray = self._generate_data_array(*mapset.box_params)
+        super().__init__(mapset, name, darray)
 
 
     @property
@@ -204,6 +209,7 @@ class XmapHandler_Base(MapHandler_Base):
         s = self.stats
         return (s[0], s[1], s[1])
 
+    @property
     def sigma(self):
         return self.stats[1]
 
@@ -233,12 +239,13 @@ class XmapHandler_Base(MapHandler_Base):
     def _generate_data_array(self, origin, grid_origin, dim):
         data = self._data_fill_target = numpy.empty(dim, numpy.float32)
         order = numpy.array([2,1,0], int)
+        from chimerax.map.data import Array_Grid_Data
         darray = Array_Grid_Data(data.transpose(), origin = origin,
             step = self.voxel_size, cell_angles = self.cell.angles_deg)
         return darray
 
     def _fill_volume_data(self, target, start_grid_coor):
-        from .clipper_python import Coord_grid
+        from .. import Coord_grid
         xmap = self.xmap
         xmap.export_section_numpy(Coord_grid(start_grid_coor), target)
 

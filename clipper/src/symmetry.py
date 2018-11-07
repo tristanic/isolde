@@ -322,6 +322,7 @@ class Symmetry_Manager(Model):
     # Shift of the centre of rotation required to trigger an update of the
     # spotlight
     SPOTLIGHT_UPDATE_THRESHOLD = 0.1
+    ATOMIC_SYM_EXTRA_RADIUS = 3
     def __init__(self, model, mtzfile=None, map_oversampling=1.5,
         min_voxel_size = 0.5, spotlight_mode = True, spotlight_radius=12,
         hydrogens='polar', debug=False):
@@ -365,6 +366,9 @@ class Symmetry_Manager(Model):
         from .maps import Map_Mgr
         mmgr = self._map_mgr = Map_Mgr(self)
 
+        self._atomic_symmetry_model = None
+        self.spotlight_mode = spotlight_mode
+
         if mtzfile is not None:
             mmgr.add_xmapset_from_mtz(mtzfile,
                 oversampling_rate=map_oversampling)
@@ -379,14 +383,34 @@ class Symmetry_Manager(Model):
 
         self._atomic_symmetry_model = AtomicSymmetryModel(model, self, uc,
             radius = spotlight_radius, live = spotlight_mode, debug=debug)
+        self.spotlight_radius = spotlight_radius
 
         self._update_handler = session.triggers.add_handler('new frame',
             self.update)
-        self.set_default_atom_display()
+        self.set_default_atom_display(mode=hydrogens)
 
-        from .mousemodes import initialize_map_contour_mouse_modes
-        initialize_map_contour_mouse_modes(session)
-        self.spotlight_mode = spotlight_mode
+        from .mousemodes import initialize_clipper_mouse_modes
+        initialize_clipper_mouse_modes(session)
+
+    @property
+    def hydrogen_display_mode(self):
+        return self._hydrogens
+
+    @hydrogen_display_mode.setter
+    def hydrogen_display_mode(self, mode):
+        valid_names = ('polar', 'all', 'none')
+        if mode not in valid_names:
+            raise TypeError('Invalid mode! Mode must be one of ({})'.format(
+                ','.join(valid_names)
+            ))
+        atoms = self.structure.atoms
+        hydrogens = atoms[atoms.element_names == 'H']
+        hydrogens.displays = False
+        if mode == 'polar':
+            hydrogens[hydrogens.idatm_types != 'HC'].displays = True
+        elif mode == 'all':
+            hydrogens.displays=True
+        self._hydrogens = mode
 
 
     @property
@@ -452,7 +476,21 @@ class Symmetry_Manager(Model):
                 cofr.cofr(self.session, 'centerOfView', show_pivot=True)
             self._spotlight_mode = flag
             self.triggers.activate_trigger('mode changed', None)
-        self.update(force=True)
+        if self.atomic_symmetry_model is not None:
+            self.atomic_symmetry_model.live_scrolling = flag
+        self.update()
+
+    @property
+    def spotlight_center(self):
+        return self._last_box_center
+
+    @spotlight_center.setter
+    def spotlight_center(self, *_):
+        raise NotImplementedError(
+            'Centre of the spotlight should not be directly set. Change it by '
+            'changing the centre of rotation of the main view: '
+            'session.view.center_of_rotation = new_center'
+        )
 
     @property
     def atomic_symmetry_model(self):
@@ -460,11 +498,14 @@ class Symmetry_Manager(Model):
 
     @property
     def atomic_sym_radius(self):
-        return self._atomic_symmetry_model.spotlight_radius
+        if self.atomic_symmetry_model is not None:
+            return self.atomic_symmetry_model.spotlight_radius
+        return None
 
     @atomic_sym_radius.setter
     def atomic_sym_radius(self, radius):
-        self._atomic_symmetry_model.spotlight_radius = radius
+        if self.atomic_symmetry_model is not None:
+            self.atomic_symmetry_model.spotlight_radius = radius
 
     @property
     def spotlight_radius(self):
@@ -473,22 +514,18 @@ class Symmetry_Manager(Model):
     @spotlight_radius.setter
     def spotlight_radius(self, radius):
         self.map_mgr.spotlight_radius = radius
-        self.atomic_symmetry_model.spotlight_radius = radius
+        self.atomic_sym_radius = (radius + self.ATOMIC_SYM_EXTRA_RADIUS)
 
     @property
     def unit_cell(self):
         return self._unit_cell
 
-    def set_default_atom_display(self):
+    def set_default_atom_display(self, mode='polar'):
         model = self.structure
-        display_atoms = model.atoms
-        display_atoms.draw_modes = display_atoms.STICK_STYLE
-        display_atoms.displays = False
-        if hydrogens == 'polar':
-            display_atoms = display_atoms[display_atoms.idatm_types != 'HC']
-        elif hydrogens == 'none':
-            display_atoms = display_atoms[display_atoms.element_names != 'H']
-        display_atoms.displays = True
+        atoms = model.atoms
+        atoms.draw_modes = atoms.STICK_STYLE
+        atoms.displays=True
+        self.hydrogen_display_mode = mode
 
     def delete(self):
         if self._update_handler is not None:
@@ -501,14 +538,13 @@ class Symmetry_Manager(Model):
         cofr = v.center_of_rotation
         # center = self.scene_position.inverse(is_orthonormal=True)*cofr
         update_needed = False
-        if self._last_last_box_center is None:
+        if self._last_box_center is None:
             update_needed = True
         elif numpy.linalg.norm(cofr-self._last_box_center) > self.SPOTLIGHT_UPDATE_THRESHOLD:
             update_needed = True
         if update_needed:
             self._last_box_center = cofr
-            self.triggers.activate_trigger('spotlight moved', (center, center_grid))
-            self._last_box_center_grid = center_grid
+            self.triggers.activate_trigger('spotlight moved', cofr)
 
 
     def isolate_and_cover_selection(self, atoms, include_surrounding_residues=5,
@@ -550,14 +586,13 @@ class Symmetry_Manager(Model):
         original_atoms = self.last_covered_selection = atoms
         atoms = original_atoms.unique_residues.atoms
         asm = self.atomic_symmetry_model
-        maps = self.xmapset
         main_set = asm.sym_select_within(atoms, include_surrounding_residues)
         main_coords = symmetry_coords(*main_set[0:3])
         context_set = asm.sym_select_within(main_set[0], show_context,
             coords=main_coords)
         asm._current_focal_set = context_set
         asm.set_sym_display(context_set[3], *atom_and_bond_sym_transforms_from_sym_atoms(*context_set[0:3]))
-        self.map_mgr.cover_coords(coords,
+        self.map_mgr.cover_coords(atoms.coords,
             mask_radius=mask_radius,
             extra_padding=extra_padding)
         if focus:
