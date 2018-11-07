@@ -122,9 +122,9 @@
       <Define>CLIPPER_EXPORTS</Define>
       <Define platform="windows">NOMINMAX</Define>
       <Define>FFTW_MKL</Define>
-      <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <!-- <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument> -->
       <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <!-- <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument> -->
       <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
       <IncludeDir>src/deps/libccp4</IncludeDir>
       <IncludeDir>src/deps/mmdb2</IncludeDir>
@@ -219,9 +219,9 @@
   <CLibrary name="clipper_cx" usesNumpy="true">
       <Define>CLIPPER_CX_EXPORTS</Define>
       <Define platform="windows">NOMINMAX</Define>
-      <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+      <!-- <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument> -->
       <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <!-- <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument> -->
       <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
       <LinkArgument platform="windows">/FORCE:MULTIPLE</LinkArgument>
 
@@ -244,9 +244,9 @@
   </CLibrary> -->
 
   <CModule name="clipper_python" usesNumpy="true">
-    <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
+    <!-- <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument> -->
     <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-    <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+    <!-- <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument> -->
     <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
       <IncludeDir platform="windows">C:\include</IncludeDir>
       <IncludeDir>src/deps</IncludeDir>
@@ -333,6 +333,7 @@
        <DataFiles>
          <DataFile>tests/*.pdb</DataFile>
          <DataFile>tests/*.mtz</DataFile>
+         <DataFile>tests/*.ccp4</DataFile>
          <DataFile platform="linux">libfftw2xc.so</DataFile>
          <DataFile platform="linux">libfftw_mkl_core.so</DataFile>
          <DataFile platform="mac">libfftw2xc.dylib</DataFile>

@@ -9,16 +9,19 @@
 
 
 import numpy
-def test_clipper_sym(session, radius=15):
+def test_clipper_sym(session, radius=12):
     import os
     from chimerax.core.commands import open
     libdir = os.path.abspath(os.path.dirname(__file__))
-    m = open.open(session, os.path.join(libdir,'5f4y.pdb'))[0]
+    m = open.open(session, os.path.join(libdir,'3io0.pdb'))[0]
     m.atoms.displays = True
     from chimerax.std_commands import cofr
     cofr.cofr(session, method='center of view', show_pivot=True)
 
     from chimerax.clipper import symmetry
-    sym_handler = symmetry.Symmetry_Manager(m, mtzfile=os.path.join(libdir,'5f4y_map_coeffs.mtz'),
+    sym_handler = symmetry.Symmetry_Manager(m, mtzfile=os.path.join(libdir,'3io0_combined.mtz'),
         spotlight_radius = radius)
+    from chimerax.core.commands import open as cxopen
+    v = cxopen.open(session, os.path.join(libdir, '3io0_real_space.ccp4'))[0]
+    sym_handler.map_mgr.nxmapset.add_nxmap_handler(v)
     return sym_handler
