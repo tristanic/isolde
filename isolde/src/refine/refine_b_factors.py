@@ -68,9 +68,9 @@ class B_Factor_Direct_Iso:
         variance = traj.var(axis=0).sum(axis=1)
         from chimerax.clipper.clipper_python import Util
         self._u_base = numpy.array([Util.u2b(u) for u in variance]).astype(numpy.float32)
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sh = get_symmetry_handler(self.model)
-        xmapset = self._xmapset = sh.xmapset
+        from chimerax.clipper.symmetry import get_map_mgr
+        map_mgr = get_map_mgr(self.model)
+        xmapset = self._xmapset = map_mgr.xmapsets[0]
         xmapset.triggers.add_handler('maps recalculated', self._map_update_cb)
         self._map_update_cb()
 

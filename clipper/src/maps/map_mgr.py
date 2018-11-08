@@ -122,17 +122,17 @@ class Map_Mgr(Model):
     @property
     def all_xtal_maps(self):
         from .map_handler_base import XmapHandler_Base
-        return (m for m in self.all_models() if isinstance(m, XmapHandler_Base))
+        return [m for m in self.all_models() if isinstance(m, XmapHandler_Base)]
 
     @property
     def all_non_xtal_maps(self):
         from .nxmapset import NXmapHandler
-        return (m for m in self.all_models() if isinstance(m, NXmapHandler))
+        return [m for m in self.all_models() if isinstance(m, NXmapHandler)]
 
     @property
     def all_maps(self):
         from chimerax.map import Volume
-        return (m for m in self.all_models() if isinstance(m, Volume))
+        return [m for m in self.all_models() if isinstance(m, Volume)]
 
     @property
     def crystal_mgr(self):

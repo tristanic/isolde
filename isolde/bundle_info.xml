@@ -47,6 +47,7 @@ with the surroundings.
     <SourceFile>src/interpolation/nd_interp.cpp</SourceFile>
   </CLibrary>
   <CLibrary name="molc" usesNumpy="true">
+    <CompileArgument platform="mac">-mmacosx-version-min=10.12</CompileArgument>
     <SourceFile>src/atomic_cpp/dihedral.cpp</SourceFile>
     <SourceFile>src/atomic_cpp/dihedral_mgr.cpp</SourceFile>
     <SourceFile>src/atomic_cpp/chiral.cpp</SourceFile>
@@ -70,6 +71,7 @@ with the surroundings.
       <Library>OpenMM</Library>
       <Library>atomstruct</Library>
       <Library>pyinstance</Library>
+      <CompileArgument platform="mac">-mmacosx-version-min=10.12</CompileArgument>
       <IncludeDir platform="mac">$HOME/anaconda3/pkgs/openmm-7.2.2-py36_1/include</IncludeDir>
       <IncludeDir platform="linux">$HOME/anaconda3/pkgs/openmm-7.2.2-py36_1/include</IncludeDir>
       <IncludeDir platform="windows">"C:\Users\tic20\Anaconda3\pkgs\openmm-7.2.2-py36_1\include"</IncludeDir>

@@ -786,11 +786,12 @@ class Sim_Manager:
         from chimerax.map import Volume
         from chimerax.clipper.symmetry import get_symmetry_handler
         sh = get_symmetry_handler(m)
-        for v in sh.all_models():
-            if isinstance(v, Volume):
-                mgr = sx.get_mdff_mgr(m, v, create=False)
-                if mgr is not None:
-                    mdff_mgr_map[v] = mgr
+        if sh is None:
+            return
+        for v in sh.map_mgr.all_maps:
+            mgr = sx.get_mdff_mgr(m, v, create=False)
+            if mgr is not None:
+                mdff_mgr_map[v] = mgr
         if len(mdff_mgr_map.keys()):
             sh.isolate_and_cover_selection(self.sim_construct.mobile_atoms,
                 include_surrounding_residues = 0,

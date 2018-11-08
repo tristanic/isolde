@@ -474,7 +474,7 @@ class Isolde():
         eh.add_event_handler('update_menu_on_model_remove',
                              'remove models', self._update_model_list)
         self._selection_changed()
-        self._update_model_list()
+        self._update_model_list(None, None, force=True)
 
         # Work out menu state based on current ChimeraX session
         self._update_sim_control_button_states()
@@ -562,7 +562,7 @@ class Isolde():
         for key in reversed(keys):
             cb.addItem(rm.RAMA_CASE_DETAILS[key]['name'], key)
 
-        self._update_model_list()
+        self._update_model_list(None, None, force=True)
 
     def _connect_functions(self):
         '''
@@ -951,7 +951,17 @@ class Isolde():
     ##############################################################
     # Menu control functions to run on key events
     ##############################################################
-    def _update_model_list(self, *_):
+    def _update_model_list(self, trigger_name, models, force=False):
+        from chimerax.atomic import AtomicStructure
+        from chimerax.map import Volume
+        if not force:
+            needs_update = False
+            for m in models:
+                if isinstance(m, AtomicStructure) or isinstance(m, Volume):
+                    needs_update = True
+                    break
+            if not needs_update:
+                return
         mmcb = self.iw._master_model_combo_box
         current_model = mmcb.currentData()
         mmcb.clear()
@@ -1232,48 +1242,42 @@ class Isolde():
         m = self.selected_model
         if m is None:
             return False
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sh = get_symmetry_handler(m)
-        if sh is None:
+        from chimerax.clipper.symmetry import get_map_mgr
+        mgr = get_map_mgr(m)
+        if mgr is None:
             # No maps associated with this model.
             return False
-        if not hasattr(sh, "xmapset") or not len(sh.xmapset.child_models()):
+        if not len(mgr.all_maps):
             return False
         return True
 
     def _initialize_maps(self, model):
         '''
-        Set up all crystallographic maps associated with a model, ready
-        for simulation.
+        Set up all volumetric maps associated with a model, ready for simulation.
         '''
         from chimerax.map import Volume
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sh = get_symmetry_handler(model)
-        if sh is None:
+        from chimerax.clipper.symmetry import get_map_mgr
+        mgr = get_map_mgr(model)
+        if mgr is None:
             # No maps associated with this model.
             return False
 
-        xmaps = sh.xmapset.child_models()
-        for xmap in xmaps:
-            if not isinstance(xmap, Volume):
+        from chimerax.clipper.maps import XmapHandler_Live
+        from .session_extensions import get_mdff_mgr
+        mdff_mgrs = []
+        for v in mgr.all_maps:
+            # Only XmapHandler_Live objects specifically created to exclude the
+            # free set are allowed to act as MDFF potentials
+            if isinstance(v, XmapHandler_Live) and 'MDFF potential' not in v.name:
                 continue
-            from chimerax.clipper.crystal_exp import XmapHandler_Live
-            if isinstance(xmap, XmapHandler_Live) and xmap.name != 'MDFF potential':
+            # Difference maps are excluded from MDFF by default
+            if v.is_difference_map:
                 continue
-            is_difference_map = xmap.is_difference_map
-            if is_difference_map:
-                # Difference maps are for display only
-                continue
-            from .molobject import MDFF_Mgr
-            mdff_mgr = None
-            for m in xmap.child_models():
-                if isinstance(m, MDFF_Mgr):
-                    mdff_mgr = m
-                    break
-            if mdff_mgr is None:
-                from .session_extensions import get_mdff_mgr
-                mdff_mgr = get_mdff_mgr(model, xmap, create=True)
-        return True
+            mdff_mgrs.append(get_mdff_mgr(model, v, create=True))
+        if len(mdff_mgrs):
+            return True
+        return False
+
 
     def _populate_available_volumes_combo_box(self, *_):
         '''
@@ -1307,8 +1311,7 @@ class Isolde():
     def add_real_space_map_to_current_model(self, volume):
         from chimerax.clipper.symmetry import get_symmetry_handler
         sh = get_symmetry_handler(self.selected_model, create=True)
-        sh.xmapset.add_nxmap_handler(volume)
-        volume.display = False
+        sh.map_mgr.nxmapset.add_nxmap_handler(volume)
 
 
     def _toggle_xtal_map_dialog(self, *_):
@@ -1325,20 +1328,21 @@ class Isolde():
             button.setText(show_text)
 
     def _set_live_xmap_recalc(self, state):
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sh = get_symmetry_handler(self.selected_model)
-        if sh is not None:
-            sh.xmapset.live_update = state
+        from chimerax.clipper.symmetry import get_map_mgr
+        mgr = get_map_mgr(self.selected_model)
+        if mgr is not None:
+            for xs in mgr.xmapsets:
+                xs.live_update = state
 
     def _populate_xtal_map_combo_box(self, *_):
         cb = self.iw._sim_basic_xtal_settings_map_combo_box
         cb.clear()
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sh = get_symmetry_handler(self.selected_model)
-        from chimerax.map import Volume
-        for v in sh.xmapset.child_models():
-            if isinstance(v, Volume):
-                cb.addItem(v.name, v)
+        from chimerax.clipper.symmetry import get_map_mgr
+        mgr = get_map_mgr(self.selected_model)
+        if mgr is None:
+            return
+        for v in mgr.all_maps:
+            cb.addItem(v.name, v)
 
     def _populate_xtal_map_params(self, *_):
         cb = self.iw._sim_basic_xtal_settings_map_combo_box
@@ -1918,23 +1922,18 @@ class Isolde():
         cb.clear()
         if m is None:
             return
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sh = get_symmetry_handler(m)
-        if sh is None:
+        from chimerax.clipper.symmetry import get_map_mgr
+        mgr = get_map_mgr(m)
+        if mgr is None:
             return
-        for v in sh.all_models():
-            if isinstance(v, Volume):
-                mgr = get_mdff_mgr(m, v)
-                if mgr is not None:
-                    label = '{} {}'.format(v.id_string, v.name)
-                    cb.addItem(label, mgr)
+        for v in mgr.all_maps:
+            mdff_mgr = get_mdff_mgr(m, v)
+            if mgr is not None:
+                label = '{} {}'.format(v.id_string, v.name)
+                cb.addItem(label, mgr)
         index = cb.findData(current_mgr)
         if index != -1:
             cb.setCurrentIndex(index)
-
-
-
-
 
     def release_rotamers_by_residues(self, residues):
         '''
@@ -3186,20 +3185,27 @@ class Isolde():
         from chimerax.core.commands import open
         data_dir = os.path.join(self._root_dir, 'demo_data', '3io0')
         before_struct = open.open(self.session, os.path.join(data_dir, 'before.pdb'))[0]
-        #before_struct = open.open(self.session, os.path.join(data_dir, 'refined.pdb'))[0]
         from chimerax.std_commands import color
         color.color(self.session, before_struct, color='bychain', target='ac')
         color.color(self.session, before_struct, color='byhetero', target='a')
         from chimerax.clipper import symmetry
         sym_handler = symmetry.Symmetry_Manager(before_struct,
-            #mtzfile=os.path.join(data_dir, 'before_maps.mtz'),
             mtzfile=os.path.join(data_dir, '3io0-sf.mtz'),
             map_oversampling = self.params.map_shannon_rate)
-        #~ from chimerax.core.commands import lighting
-        #~ lighting.lighting(self.session, depth_cue=True)
-        standard_map = sym_handler.xmapset['2mFo-DFc']
-        sharp_map = sym_handler.xmapset['2mFo-DFc_sharp_25']
-        diff_map = sym_handler.xmapset['mFo-DFc']
+        xmapset = sym_handler.map_mgr.xmapsets[0]
+        from chimerax.clipper.maps.xmapset import map_potential_recommended_bsharp
+        mdff_b = map_potential_recommended_bsharp(xmapset.resolution)
+
+
+        mdff_p = xmapset.add_live_xmap('MDFF potential', b_sharp=mdff_b,
+            is_difference_map=False,
+            exclude_free_reflections=True,
+            fill_with_fcalc = True,
+            exclude_missing_reflections=True,
+            display=False)
+        standard_map = xmapset['(LIVE) 2mFo-DFc']
+        sharp_map = xmapset['(LIVE) 2mFo-DFc_sharp_25']
+        diff_map = xmapset['(LIVE) mFo-DFc']
         from . import visualisation as v
         styleargs= v.map_style_settings[v.map_styles.solid_t20]
         from chimerax.map import volumecommand
@@ -3213,16 +3219,6 @@ class Isolde():
         from chimerax.core.colors import Color
         set.set(self.session, bg_color=Color([255,255,255,255]))
 
-        # sharp_map = sym_handler.xmapset['2mFo-DFc_smooth_']
-        # sd = sharp_map.mean_sd_rms()[1]
-        # from . import visualisation as v
-        # styleargs= v.map_style_settings[v.map_styles.solid_t20]
-        # from chimerax.map import volumecommand
-        # volumecommand.volume(self.session, [sharp_map], **styleargs)
-        # sharp_map.set_parameters(surface_levels = (2.5*sd,))
-
-        # from chimerax.clipper import crystal
-        # crystal.set_to_default_cartoon(self.session)
         self._change_selected_model(model=before_struct, force=True)
         before_struct.atoms[before_struct.atoms.idatm_types != 'HC'].displays = True
         from . import view

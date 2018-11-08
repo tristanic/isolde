@@ -91,9 +91,14 @@ class MapSet_Base(Model):
             for m in self.child_models():
                 if m.name == name_or_index:
                     return m
-            raise KeyError('No map with that name!')
+            raise KeyError('No map with the name "{}"!'.format(name_or_index))
         else:
             return self.child_models()[name_or_index]
+
+    @property
+    def all_maps(self):
+        from chimerax.map import Volume
+        return [v for v in self.child_models() if isinstance(v, Volume)]
 
     @property
     def spotlight_mode(self):

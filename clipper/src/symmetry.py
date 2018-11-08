@@ -144,6 +144,11 @@ def get_symmetry_handler(structure, create=False):
         return Symmetry_Manager(structure)
     return None
 
+def get_map_mgr(structure):
+    sh = get_symmetry_handler(structure)
+    if sh is not None:
+        return sh.map_mgr
+
 def is_crystal_map(volume):
     from .crystal_exp import XmapHandler_Live
     if isinstance(volume, XmapHandler_Live):
@@ -363,8 +368,7 @@ class Symmetry_Manager(Model):
 
         self.cell, self.spacegroup, self.grid, self._has_symmetry = symmetry_from_model_metadata(model)
 
-        from .maps import Map_Mgr
-        mmgr = self._map_mgr = Map_Mgr(self)
+        mmgr = self.map_mgr
 
         self._atomic_symmetry_model = None
         self.spotlight_mode = spotlight_mode
@@ -421,6 +425,9 @@ class Symmetry_Manager(Model):
     @property
     def map_mgr(self):
         ''' Master manager handling all maps associated with this model.'''
+        if not hasattr(self, '_map_mgr') or self._map_mgr is None:
+            from .maps import Map_Mgr
+            self._map_mgr = Map_Mgr(self)
         return self._map_mgr
 
     @property
@@ -472,8 +479,9 @@ class Symmetry_Manager(Model):
             return
         else:
             if flag:
-                from chimerax.std_commands import cofr
+                from chimerax.std_commands import cofr, camera
                 cofr.cofr(self.session, 'centerOfView', show_pivot=True)
+                camera.camera(self.session, 'ortho')
             self._spotlight_mode = flag
             self.triggers.activate_trigger('mode changed', None)
         if self.atomic_symmetry_model is not None:

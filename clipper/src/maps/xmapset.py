@@ -70,7 +70,7 @@ class XmapSet(MapSet_Base):
         use_live_maps = True,
         use_static_maps = True,
         fsigf_name=None,
-        bsharp_vals=[],
+        bsharp_vals=None,
         exclude_free_reflections=False,
         fill_with_fcalc=False,
         exclude_missing_reflections=False,
@@ -100,7 +100,8 @@ class XmapSet(MapSet_Base):
                   for sharpening/smoothing B-factors. For each value in the
                   list, a new map will be created from amplitudes scaled by the
                   B-factor value. Negative values lead to smoothing, positive
-                  values to sharpening.
+                  values to sharpening. If None, a B-factor will be chosen for
+                  optimum viewing.
             * exclude_free_reflections
                 - (only applicable when use_live_maps is True) if True, live
                   maps will use all measured reflections in their calculations.
@@ -174,6 +175,8 @@ class XmapSet(MapSet_Base):
                 self._launch_live_xmap_mgr(crystal_data, fsigf)
                 self._prepare_standard_live_maps(exclude_free_reflections,
                     fill_with_fcalc, exclude_missing_reflections)
+                if bsharp_vals is None:
+                    bsharp_vals = [viewing_recommended_bsharp(self.resolution)]
                 for b in bsharp_vals:
                     if b<0:
                         name_str = "2mFo-DFc_smooth_{:.0f}".format(-b)
@@ -206,11 +209,11 @@ class XmapSet(MapSet_Base):
 
     @property
     def live_xmaps(self):
-        return {m.name: m for m in self.child_models if isinstance(m, XmapHandler_Live)}
+        return [m for m in self.child_models if isinstance(m, XmapHandler_Live)]
 
     @property
     def static_xmaps(self):
-        return {m.name: m for m in self.child_models if isinstance(m, XmapHandler_Static)}
+        return [m for m in self.child_models if isinstance(m, XmapHandler_Static)]
 
     @property
     def show_r_factors(self):
@@ -230,8 +233,8 @@ class XmapSet(MapSet_Base):
             return
         if flag:
             if self.live_xmap_mgr is None:
-                self.session.logger.status('This map set has no experimental '
-                    'data! Live map recalculation is not possible.')
+                self.session.logger.status('Map set {} has no experimental '
+                    'data! Live map recalculation is not possible.'.format(self.name))
             else:
                 if self._model_changes_handler is None:
                     self._model_changes_handler = self.structure.triggers.add_handler(
