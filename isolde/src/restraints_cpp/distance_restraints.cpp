@@ -177,8 +177,9 @@ const std::set<Distance_Restraint *>& Distance_Restraint_Mgr::get_restraints(Ato
 Distance_Restraint_Mgr::~Distance_Restraint_Mgr()
 {
     auto du = DestructionUser(this);
-    delete_restraints(_restraints);
-
+    for (auto r: _restraints) {
+        delete r;
+    }
 }
 
 void Distance_Restraint_Mgr::delete_restraints(const std::set<Distance_Restraint *> &delete_list)
