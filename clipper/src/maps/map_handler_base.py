@@ -8,7 +8,7 @@ class MapHandler_Base(Volume):
     '''
     def __init__(self, mapset, name, data, is_difference_map=False):
         session = mapset.session
-        super().__init__(data, session)
+        super().__init__(session, data)
         self.name = name
         ms = self._mapset = mapset
 
@@ -239,8 +239,8 @@ class XmapHandler_Base(MapHandler_Base):
     def _generate_data_array(self, origin, grid_origin, dim):
         data = self._data_fill_target = numpy.empty(dim, numpy.float32)
         order = numpy.array([2,1,0], int)
-        from chimerax.map.data import Array_Grid_Data
-        darray = Array_Grid_Data(data.transpose(), origin = origin,
+        from chimerax.map.data import ArrayGridData
+        darray = ArrayGridData(data.transpose(), origin = origin,
             step = self.voxel_size, cell_angles = self.cell.angles_deg)
         return darray
 

@@ -22,7 +22,7 @@ from chimerax.surface.shapes import sphere_geometry
 from chimerax.core.models import Model, Drawing
 from chimerax.std_commands import camera, cofr, cartoon
 from chimerax.core.commands import atomspec
-from chimerax.map.data import Array_Grid_Data
+from chimerax.map.data import ArrayGridData
 from chimerax.map import Volume, volumecommand
 
 from .mousemodes import initialize_map_contour_mouse_modes
@@ -1614,7 +1614,7 @@ def _get_bounding_box(coords, padding, grid, cell):
 #         data = self._data_fill_target = numpy.empty(dim, numpy.float32)
 #         self._fill_volume_data(data, grid_origin)
 #         order = numpy.array([2,1,0], int)
-#         darray = Array_Grid_Data(data.transpose(), origin = origin,
+#         darray = ArrayGridData(data.transpose(), origin = origin,
 #             step = self.voxel_size, cell_angles = self.cell.angles_deg)
 #         return darray
 #
