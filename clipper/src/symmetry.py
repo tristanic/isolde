@@ -150,10 +150,8 @@ def get_map_mgr(structure):
         return sh.map_mgr
 
 def is_crystal_map(volume):
-    from .crystal_exp import XmapHandler_Live
-    if isinstance(volume, XmapHandler_Live):
-        return True
-    return False
+    from .maps.map_handler_base import XmapHandler_Base
+    return isinstance(volume, XmapHandler_Base)
 
 def symmetry_from_model_metadata(model):
     '''
@@ -333,12 +331,10 @@ class Symmetry_Manager(Model):
         hydrogens='polar', debug=False):
         name = 'Data manager ({})'.format(model.name)
         session = model.session
+        self._last_box_center = session.view.center_of_rotation
         super().__init__(name, session)
-        session.models.add([self])
-        self.add([model])
         self._debug = debug
         self._structure = model
-        self._last_box_center = session.view.center_of_rotation
         self._stepper = None
         self._last_covered_selection = None
 
@@ -395,6 +391,8 @@ class Symmetry_Manager(Model):
 
         from .mousemodes import initialize_clipper_mouse_modes
         initialize_clipper_mouse_modes(session)
+        self.add([model])
+        session.models.add([self])
 
     @property
     def hydrogen_display_mode(self):

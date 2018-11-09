@@ -35,6 +35,10 @@ class MapHandler_Base(Volume):
         return self.mapset.master_map_mgr
 
     @property
+    def crystal_mgr(self):
+        return self.manager.crystal_mgr
+        
+    @property
     def center(self):
         return self.manager.box_center
 

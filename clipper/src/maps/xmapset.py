@@ -384,7 +384,8 @@ class XmapSet(MapSet_Base):
         is_difference_map=None,
         color=None,
         style=None,
-        contour=None):
+        contour=None,
+        display=True):
         '''
         Add a crystallographic map based on pre-calculated amplitudes and
         phases. This map will remain unchanged no matter what happens to the

@@ -252,6 +252,9 @@ class Map_Mgr(Model):
             self._stop_spotlight_mode()
 
     def _start_spotlight_mode(self):
+        self.triggers.activate_trigger('spotlight changed',
+            (self.spotlight_center, self.spotlight_radius)
+        )
         if self._box_update_handler is None:
             self._box_update_handler = self.crystal_mgr.triggers.add_handler(
                 'spotlight moved', self.update_spotlight)

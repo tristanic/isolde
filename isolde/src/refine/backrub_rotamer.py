@@ -74,10 +74,8 @@ class Backrub:
             from chimerax.clipper.symmetry import is_crystal_map
             if is_crystal_map(density_map):
                 # Force a refill and try again
-                density_map.force_refill()
-                dvals, outside = density_map.interpolated_values(atoms.coords, out_of_bounds_list=True)
                 if len(outside):
-                    sh = density_map.manager.crystal
+                    sh = density_map.crystal_mgr
                     sh.isolate_and_cover_selection(residue.atoms, focus=True)
             else:
                 raise RuntimeError('Selected residue is outside of the given density map!')
@@ -89,10 +87,7 @@ class Backrub:
         Attempt to automatically find the rotamer that best fits the density.
         '''
         dm = self._density_map
-        if not dm.display:
-            # Make sure the map is updated to cover the current region
-            dm._box_changed_cb('auto_fit', (dm.box_params, True))
-        map_range = dm.stats.max - dm.stats.min
+        # map_range = dm.stats.max - dm.stats.min
         # Store the original coordinates to allow reversion
         self._original_coords = self._all_movable_atoms.coords
         res_atoms = self._main_res_atoms
@@ -166,7 +161,7 @@ class Backrub:
                 # print("Results for chi {}: {}".format(i, results))
                 # If there is a wide range of values, select out the top few.
                 # Otherwise, keep them all
-                if max(results) - min(results) > map_range/10:
+                if max(results) - min(results) > dm.sigma/2:
                     min_val = min(results)
                     # Normalise to the range 0..1, and discard everything more than 20%
                     # away from the minimum
@@ -223,8 +218,9 @@ class Backrub:
     def rotate_chi_and_check_fit(self, chi_dihedral, moving_atoms, target_angle,
             clash_weight, map_weight, check_atoms = None):
         '''
-        Returns the negative sum of density values at the centre of each of the atoms in
-        check_atoms after rotating moving_atoms by angle around axis.
+        Returns the negative weighted mean of density values at the centre of
+        each of the atoms in check_atoms after rotating moving_atoms by angle
+        around axis.
         '''
         if check_atoms is None:
             check_atoms = moving_atoms
@@ -237,17 +233,20 @@ class Backrub:
             self.session, moving_atoms, self._potential_clashes)
         return result
 
-    def rotate_and_check_fit(self, angle, axis, center, moving_atoms, original_coords, check_atoms, clash_weight):
+    def rotate_and_check_fit(self, angle, axis, center, moving_atoms,
+        original_coords, check_atoms, clash_weight):
         '''
-        Returns the negative sum of density values at the centre of each of the atoms in
-        check_atoms after rotating moving_atoms by angle around axis.
+        Returns the negative weighted mean of density values at the centre of
+        each of the atoms in check_atoms after rotating moving_atoms by angle
+        around axis.
         '''
         from chimerax.core.geometry import Place, rotation
         coords = moving_atoms.coords
         weights = check_atoms.elements.numbers
         tf = rotation(axis, angle, center)
         moving_atoms.coords = tf.transform_points(original_coords)
-        dvals, outside = self._density_map.interpolated_values(check_atoms.coords, out_of_bounds_list=True)
+        dvals, outside = self._density_map.interpolated_values(
+            check_atoms.coords, out_of_bounds_list=True)
         if len(outside):
             raise RuntimeError('At least one atom is currently projecting past'
                 ' the edge of the displayed map box. Re-center the map on the'

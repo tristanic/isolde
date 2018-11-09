@@ -466,13 +466,16 @@ class Isolde():
         # initialise to current conditions
         ####
 
+        from chimerax.core.models import ADD_MODELS, MODEL_ID_CHANGED, REMOVE_MODELS
         eh = self._event_handler
         eh.add_event_handler('update_menu_on_selection',
                              'selection changed', self._selection_changed)
         eh.add_event_handler('update_menu_on_model_add',
-                            'add models', self._update_model_list)
+                            ADD_MODELS, self._update_model_list)
+        eh.add_event_handler('update_menu_on_model_id_change',
+                            MODEL_ID_CHANGED, self._update_model_list)
         eh.add_event_handler('update_menu_on_model_remove',
-                             'remove models', self._update_model_list)
+                             REMOVE_MODELS, self._update_model_list)
         self._selection_changed()
         self._update_model_list(None, None, force=True)
 
@@ -952,54 +955,69 @@ class Isolde():
     # Menu control functions to run on key events
     ##############################################################
     def _update_model_list(self, trigger_name, models, force=False):
+        from chimerax.core.models import Model
+        if isinstance(models, Model):
+            models = [models]
         from chimerax.atomic import AtomicStructure
         from chimerax.map import Volume
-        if not force:
+        from chimerax.clipper.symmetry import Symmetry_Manager
+        from .restraints import MDFF_Mgr
+
+        if force:
+            structures_need_update=True
+            volumes_need_update=True
+        else:
             needs_update = False
+            structures_need_update = False
+            volumes_need_update = False
+
             for m in models:
-                if isinstance(m, AtomicStructure) or isinstance(m, Volume):
-                    needs_update = True
+                if isinstance(m, AtomicStructure):
+                    structures_need_update = True
+                if isinstance(m, Volume) or isinstance(m, MDFF_Mgr):
+                    volumes_need_update = True
+                if structures_need_update and volumes_need_update:
                     break
-            if not needs_update:
-                return
         mmcb = self.iw._master_model_combo_box
         current_model = mmcb.currentData()
-        mmcb.clear()
 
-        _models = self.session.models.list()
-        # #Consider top-level models only
-        # models = []
-        # for m in _models:
-        #     if len(m.id) == 1:
-        #         models.append(m)
-        models = sorted(_models, key = lambda m: m.id)
-        mtd = {
-            AtomicStructure: [],
-            Volume: []
-        }
+        if structures_need_update:
+            mmcb = self.iw._master_model_combo_box
+            current_model = mmcb.currentData()
+            mmcb.clear()
 
-        for m in models:
-            for mtype in mtd.keys():
-                if type(m) == mtype:
-                    mtd[mtype].append(m)
+            _models = self.session.models.list()
+            # #Consider top-level models only
+            # models = []
+            # for m in _models:
+            #     if len(m.id) == 1:
+            #         models.append(m)
+            models = sorted(_models, key = lambda m: m.id)
+            mtd = {
+                AtomicStructure: [],
+                Volume: []
+            }
+
+            for m in models:
+                for mtype in mtd.keys():
+                    if type(m) == mtype:
+                        mtd[mtype].append(m)
 
 
-        valid_models = mtd[AtomicStructure]
-        valid_models = sorted(valid_models, key=lambda m: m.id)
+            valid_models = mtd[AtomicStructure]
+            valid_models = sorted(valid_models, key=lambda m: m.id)
 
-        force = False
-        if not len(self._available_models):
-            force = True
-        self._available_models = {}
+            self._available_models = {}
 
-        for m in valid_models:
-            id_str = '{}. {}'.format(m.id_string, m.name)
-            mmcb.addItem(id_str, _get_atomic_model(m))
-            self._available_models[id_str] = _get_atomic_model(m)
+            for m in valid_models:
+                id_str = '{}. {}'.format(m.id_string, m.name)
+                mmcb.addItem(id_str, _get_atomic_model(m))
+                self._available_models[id_str] = _get_atomic_model(m)
 
-        self._populate_available_volumes_combo_box()
-        self._populate_rot_mdff_target_combo_box()
-        self._change_selected_model(model=current_model)
+        if volumes_need_update:
+            self._populate_available_volumes_combo_box()
+
+        self._change_selected_model(model=current_model, force=True)
         for p in self._ui_panels:
             p.chimerax_models_changed(self.selected_model)
 
@@ -1928,9 +1946,9 @@ class Isolde():
             return
         for v in mgr.all_maps:
             mdff_mgr = get_mdff_mgr(m, v)
-            if mgr is not None:
+            if mdff_mgr is not None:
                 label = '{} {}'.format(v.id_string, v.name)
-                cb.addItem(label, mgr)
+                cb.addItem(label, mdff_mgr)
         index = cb.findData(current_mgr)
         if index != -1:
             cb.setCurrentIndex(index)
@@ -2275,14 +2293,23 @@ class Isolde():
         if self.simulation_running:
             return
         iw = self.iw
+        mmcb = iw._master_model_combo_box
+        old_index = mmcb.currentIndex()
         if model is not None and not force:
             # Find and select the model in the master combo box, which
             # will automatically call this function again with model = None
             index = iw._master_model_combo_box.findData(model)
-            iw._master_model_combo_box.setCurrentIndex(index)
-            return
+            if index == -1 and mmcb.count():
+                index = 0
+            mmcb.setCurrentIndex(index)
+            # If the new index happens to be the same as the old one, then the
+            # currentIndexChanged trigger won't fire.
+            if index != old_index:
+                return
         m = iw._master_model_combo_box.currentData()
         if force or (self._selected_model != m and m is not None):
+            from chimerax.clipper.symmetry import get_symmetry_handler
+            get_symmetry_handler(m, create=True)
             self._selected_model = m
             self.session.selection.clear()
             self._selected_model.selected = True
@@ -2296,6 +2323,7 @@ class Isolde():
             from . import session_extensions as sx
             sx.get_rota_annotator(m)
             sx.get_rama_annotator(m)
+            self._populate_rot_mdff_target_combo_box()
             self.triggers.activate_trigger('selected model changed', data=m)
         self._status('')
 

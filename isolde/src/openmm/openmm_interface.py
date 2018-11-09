@@ -792,15 +792,14 @@ class Sim_Manager:
             mgr = sx.get_mdff_mgr(m, v, create=False)
             if mgr is not None:
                 mdff_mgr_map[v] = mgr
-        if len(mdff_mgr_map.keys()):
-            sh.isolate_and_cover_selection(self.sim_construct.mobile_atoms,
-                include_surrounding_residues = 0,
-                show_context = isolde_params.hard_shell_cutoff_distance,
-                mask_radius = isolde_params.standard_map_mask_cutoff,
-                extra_padding = 5,
-                hide_surrounds = isolde_params.hide_surroundings_during_sim,
-                focus = False,
-                include_symmetry = True)
+        sh.isolate_and_cover_selection(self.sim_construct.mobile_atoms,
+            include_surrounding_residues = 0,
+            show_context = isolde_params.hard_shell_cutoff_distance,
+            mask_radius = isolde_params.standard_map_mask_cutoff,
+            extra_padding = 5,
+            hide_surrounds = isolde_params.hide_surroundings_during_sim,
+            focus = False,
+            include_symmetry = True)
 
 
     def _initialize_mdff(self, update_handlers):

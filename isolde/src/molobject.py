@@ -1522,7 +1522,6 @@ class _Restraint_Mgr(Model):
         super().__init__(name, session)
         self.pickable = False
         self.model = model
-        model.add([self])
 
     @property
     def triggers(self):
@@ -1763,6 +1762,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         self._prepare_drawings()
         self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
         self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
+        model.add([self])
 
     def delete(self):
         self.model.triggers.remove_handler(self._model_update_handler)
@@ -2004,6 +2004,7 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
         self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
         # self._show_nearest_atoms = False
         # self._near_atoms_radius = 0.5
+        model.add([self])
 
     def _prepare_drawings(self):
         ad = self._arrow_drawing = Drawing('Tugging force vectors')
@@ -2205,6 +2206,7 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         self._prepare_drawing()
         self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
         self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
+        model.add([self])
 
     def delete(self):
         self.model.triggers.remove_handler(self._model_update_handler)
@@ -2486,6 +2488,7 @@ class Chiral_Restraint_Mgr(_Restraint_Mgr):
     '''
     def __init__(self, model, c_pointer = None):
         super().__init__('Chirality Restraints', model, c_pointer)
+        model.add([self])
 
     def _get_restraints(self, chirals, create=False):
         n = len(chirals)
@@ -2617,6 +2620,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         self._prepare_drawings()
         self._restraint_changes_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
         self._atom_changes_handler = model.triggers.add_handler('changes', self._model_changes_cb)
+        model.add([self])
         self.update_graphics()
 
     def delete(self):
@@ -2938,8 +2942,8 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         Model.__init__(self, 'Rotamer Restraints', session)
         self.pickable=False
         self.model = model
-        model.add([self])
         self._preview_model = None
+        model.add([self])
 
     @property
     def num_restraints(self):
