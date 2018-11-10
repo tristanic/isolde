@@ -173,21 +173,40 @@ class XmapSet(MapSet_Base):
 
             if fsigf is not None:
                 self._launch_live_xmap_mgr(crystal_data, fsigf)
-                self._prepare_standard_live_maps(exclude_free_reflections,
-                    fill_with_fcalc, exclude_missing_reflections)
                 if bsharp_vals is None:
                     bsharp_vals = [viewing_recommended_bsharp(self.resolution)]
+                if bsharp_vals:
+                    if max(bsharp_vals) > 0:
+                        map_style = 'mesh'
+                        transparency = 0.0
+                    else:
+                        map_style='surface'
+                        transparency=0.6
+                map_params = self._default_live_xmap_params.copy()
+                map_params['2mFo-DFc']['style'] = map_style
+                map_params['2mFo-DFc']['transparency'] = transparency
+
+                self._prepare_standard_live_maps(exclude_free_reflections,
+                    fill_with_fcalc, exclude_missing_reflections,
+                    map_params)
                 for b in bsharp_vals:
+                    style = 'mesh'
+                    transparency = 0.0
                     if b<0:
                         name_str = "2mFo-DFc_smooth_{:.0f}".format(-b)
                     else:
                         name_str = "2mFo-DFc_sharp_{:.0f}".format(b)
+                        if b == max(bsharp_vals):
+                            style = 'surface'
+                            transparency = 0.6
                     self.add_live_xmap(name_str,
                         b_sharp=b,
                         is_difference_map=False,
                         exclude_free_reflections=exclude_free_reflections,
                         fill_with_fcalc=fill_with_fcalc,
-                        exclude_missing_reflections=exclude_missing_reflections
+                        exclude_missing_reflections=exclude_missing_reflections,
+                        style=style,
+                        transparency=transparency
                         )
         if self.live_xmap_mgr is not None:
             self.live_update=True
@@ -195,7 +214,7 @@ class XmapSet(MapSet_Base):
             cdata = crystal_data.calculated_data
             for dataset in cdata:
                 self.add_static_xmap(dataset)
-
+        manager.add([self])
 
 
 
@@ -296,11 +315,11 @@ class XmapSet(MapSet_Base):
         xm.init(atom_list_from_sel(self.structure.atoms))
 
     def _prepare_standard_live_maps(self, exclude_free_reflections,
-        fill_with_fcalc, exclude_missing_reflections):
+        fill_with_fcalc, exclude_missing_reflections, map_params):
         xm = self.live_xmap_mgr
         if xm is None:
             return
-        for name, params in self._default_live_xmap_params.items():
+        for name, params in map_params.items():
             self.add_live_xmap(name, **params,
                 exclude_free_reflections=exclude_free_reflections,
                 fill_with_fcalc=fill_with_fcalc,
@@ -309,7 +328,7 @@ class XmapSet(MapSet_Base):
 
 
     def set_xmap_display_style(self, xmap_handler, is_difference_map=False,
-        color=None, style=None, contour=None):
+        color=None, style=None, transparency=0.0, contour=None):
         if style is None:
             style = 'mesh'
         if is_difference_map and color is not None and len(color) != 2:
@@ -341,7 +360,9 @@ class XmapSet(MapSet_Base):
                                   'surface_levels': contour,
                                   'show_outline_box': False,
                                   'surface_colors': color,
-                                  'square_mesh': False})
+                                  'square_mesh': False,
+                                  'transparency_factor': transparency,
+                                  })
 
     def add_live_xmap(self, name,
         b_sharp=0,
@@ -351,6 +372,7 @@ class XmapSet(MapSet_Base):
         fill_with_fcalc=True,
         color=None,
         style=None,
+        transparency=0.0,
         contour=None,
         display=True):
         '''
@@ -372,6 +394,7 @@ class XmapSet(MapSet_Base):
             is_difference_map=is_difference_map,
             color=color,
             style=style,
+            transparency=transparency,
             contour=contour)
         self.add([new_handler])
         if display:
@@ -502,6 +525,8 @@ class XmapSet(MapSet_Base):
         self._recalc_needed = False
 
     def _apply_new_maps(self):
+        if self.deleted:
+            return
         xm = self.live_xmap_mgr
         xm.apply_new_maps()
         if self.show_r_factors:
@@ -511,6 +536,10 @@ class XmapSet(MapSet_Base):
                 )
             )
         self.triggers.activate_trigger('maps recalculated', None)
+
+    def delete(self):
+        self.live_update = False
+        super().delete()
 
     # Callbacks
 

@@ -21,7 +21,6 @@ class MapSet_Base(Model):
     def __init__(self, manager, name):
         super().__init__(name, manager.session)
         self._mgr = manager
-        manager.add([self])
 
         from chimerax.core.triggerset import TriggerSet
         trig = self._triggers = TriggerSet()

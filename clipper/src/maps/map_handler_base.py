@@ -37,7 +37,7 @@ class MapHandler_Base(Volume):
     @property
     def crystal_mgr(self):
         return self.manager.crystal_mgr
-        
+
     @property
     def center(self):
         return self.manager.box_center
@@ -153,7 +153,8 @@ class XmapHandler_Base(MapHandler_Base):
 
         darray = self._generate_and_fill_data_array(bp.origin_xyz, bp.origin_grid, bp.dim)
         # darray = self._generate_data_array(*mapset.box_params)
-        super().__init__(mapset, name, darray)
+        super().__init__(mapset, name, darray,
+            is_difference_map=is_difference_map)
 
 
     @property

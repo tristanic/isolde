@@ -49,7 +49,6 @@ class Map_Mgr(Model):
     def __init__(self, crystal_manager, spotlight_radius=12):
         cm = self._mgr = crystal_manager
         super().__init__('Map Manager', cm.session)
-        cm.add([self])
         self._live_xmapsets = []
         self._static_xmapsets = []
         self._nxmapsets = []
@@ -97,6 +96,7 @@ class Map_Mgr(Model):
 
 
         self.session.triggers.add_handler('frame drawn', self._first_init_cb)
+        cm.add([self])
 
     @property
     def xmapsets(self):

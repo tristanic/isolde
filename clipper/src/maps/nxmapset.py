@@ -7,6 +7,9 @@ class NXmapSet(MapSet_Base):
     crystallographic maps is that there is no guarantee that two maps will have
     the same grid (i.e. voxel size and angles).
     '''
+    def __init__(self, manager, name):
+        super().__init__(manager, name)
+        manager.add([self])
 
     def add_nxmap_handler(self, volume,
         is_difference_map=False,

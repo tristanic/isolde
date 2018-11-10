@@ -225,16 +225,6 @@ class _Map_Force_Base(CustomCompoundBondForce):
                 self.setGlobalParameterDefaultValue(tfi[i][j], tf[i][j])
         self.update_needed = True
 
-
-    #~ def update_volume_data(self, data, xyz_to_ijk_transform):
-        #~ if not numpy.allclose(xyz_to_ijk_transform, self._transform):
-            #~ raise TypeError('New map must be on the same grid as the original!')
-        #~ dim = data.shape[::-1]
-        #~ data_1d = numpy.ravel(data, order = 'C')
-        #~ f = self.getTabulatedFunction(0)
-        #~ f.setFunctionParameters(*dim, data_1d)
-        #~ self.update_needed = True
-
     def add_atoms(self, indices, ks, enableds):
         '''
         Add a set of atoms to the force, using a fast C++ function. Fastest if

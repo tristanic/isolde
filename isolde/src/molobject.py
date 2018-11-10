@@ -1646,10 +1646,10 @@ class MDFF_Mgr(_Restraint_Mgr):
         m = self.model
         v = self.volume
 
-        from chimerax.clipper.crystal_exp import XmapHandler_Live
-        is_xmap = isinstance(v, XmapHandler_Live)
+        from chimerax.clipper.maps.map_handler_base import XmapHandler_Base
+        is_xmap = isinstance(v, XmapHandler_Base)
         if is_xmap:
-            sh = v.manager.crystal
+            sh = v.crystal_mgr
 
             spotlight_mode = sh.spotlight_mode
             sh.isolate_and_cover_selection(m.atoms, focus=False)

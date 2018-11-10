@@ -137,6 +137,7 @@ def symmetry_coords(atoms, sym_matrices, sym_indices):
 from chimerax.core.models import Model, Drawing
 
 def get_symmetry_handler(structure, create=False):
+
     p = structure.parent
     if isinstance(p, Symmetry_Manager):
             return p
@@ -144,10 +145,11 @@ def get_symmetry_handler(structure, create=False):
         return Symmetry_Manager(structure)
     return None
 
-def get_map_mgr(structure):
-    sh = get_symmetry_handler(structure)
+def get_map_mgr(structure, create=False):
+    sh = get_symmetry_handler(structure, create=create)
     if sh is not None:
         return sh.map_mgr
+    return None
 
 def is_crystal_map(volume):
     from .maps.map_handler_base import XmapHandler_Base
@@ -329,6 +331,8 @@ class Symmetry_Manager(Model):
     def __init__(self, model, mtzfile=None, map_oversampling=1.5,
         min_voxel_size = 0.5, spotlight_mode = True, spotlight_radius=12,
         hydrogens='polar', debug=False):
+        if isinstance(model.parent, Symmetry_Manager):
+            raise RuntimeError('This model already has a symmetry manager!')
         name = 'Data manager ({})'.format(model.name)
         session = model.session
         self._last_box_center = session.view.center_of_rotation

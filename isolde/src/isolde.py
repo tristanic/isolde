@@ -1011,8 +1011,8 @@ class Isolde():
 
             for m in valid_models:
                 id_str = '{}. {}'.format(m.id_string, m.name)
-                mmcb.addItem(id_str, _get_atomic_model(m))
-                self._available_models[id_str] = _get_atomic_model(m)
+                mmcb.addItem(id_str, m)
+                self._available_models[id_str] = m
 
         if volumes_need_update:
             self._populate_available_volumes_combo_box()
@@ -1204,6 +1204,33 @@ class Isolde():
         filename, _ = QFileDialog.getOpenFileName(None, caption, filetypes, filetypes, options=options)
         self.initialize_live_xtal_structure(filename)
         self._initialize_maps(self.selected_model)
+
+    def add_xtal_data(self, filename, model=None):
+        if model is None:
+            model = self.selected_model
+        if model is None:
+            from .dialog import generic_warning
+            generic_warning("You must have the corresponding model loaded "
+                "before loading reflection data!")
+        m = model
+        from chimerax.clipper.symmetry import get_map_mgr
+        map_mgr = get_map_mgr(m, create=True)
+        xmapset = map_mgr.add_xmapset_from_mtz(filename, self.params.map_shannon_rate)
+        if xmapset.live_xmap_mgr is not None:
+            xmapset.live_update = self.iw._sim_basic_xtal_settings_live_recalc_checkbox.checkState()
+            # 2mFo-DFc and mFo-DFc maps are created automatically, but should
+            # not be used as MDFF potentials. For that, we need a specific map
+            # that we know excludes the free reflections.
+            from chimerax.clipper.maps.xmapset import map_potential_recommended_bsharp
+            mdff_b = map_potential_recommended_bsharp(xmapset.resolution)
+            mdff_p = xmapset.add_live_xmap('MDFF potential', b_sharp=mdff_b,
+                is_difference_map=False,
+                exclude_free_reflections=True,
+                fill_with_fcalc = True,
+                exclude_missing_reflections=True,
+                display=False)
+
+
 
     def initialize_live_xtal_structure(self, filename, model=None):
         if model is not None:
@@ -2294,6 +2321,9 @@ class Isolde():
             return
         iw = self.iw
         mmcb = iw._master_model_combo_box
+        if not mmcb.count():
+            self._selected_model = None
+            return
         old_index = mmcb.currentIndex()
         if model is not None and not force:
             # Find and select the model in the master combo box, which
@@ -2306,13 +2336,15 @@ class Isolde():
             # currentIndexChanged trigger won't fire.
             if index != old_index:
                 return
-        m = iw._master_model_combo_box.currentData()
+        if mmcb.currentIndex() == -1:
+            mmcb.setCurrentIndex(0)
+        m = mmcb.currentData()
         if force or (self._selected_model != m and m is not None):
             from chimerax.clipper.symmetry import get_symmetry_handler
             get_symmetry_handler(m, create=True)
             self._selected_model = m
             self.session.selection.clear()
-            self._selected_model.selected = True
+            m.selected = True
             has_maps = self._initialize_maps(m)
             if has_maps:
                 iw._map_masking_frame.setEnabled(True)
@@ -3251,15 +3283,6 @@ class Isolde():
         before_struct.atoms[before_struct.atoms.idatm_types != 'HC'].displays = True
         from . import view
         view.focus_on_selection(self.session, before_struct.atoms)
-
-
-def _get_atomic_model(m):
-    if hasattr(m, 'master_model'):
-        am = m.master_model
-    else:
-        am = m
-    return am
-
 
 
 class Logger:
