@@ -255,7 +255,10 @@ class ContourSelectedVolume(mousemodes.MouseMode):
         v = self.selector.picked_volume
         if v is not None:
             self.target_volume = v
-            sd = v.mean_sd_rms()[1]
+            if hasattr(v, 'sigma'):
+                sd = v.sigma
+            else:
+                sd = v.mean_sd_rms()[1]
             step = d/30 * sd
             rep, levels = adjust_threshold_level(v, step, self.symmetrical)
             lsig = tuple(l/sd for l in levels)
