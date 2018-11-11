@@ -224,7 +224,7 @@ class Map_Mgr(Model):
             shannon_rate = oversampling_rate)
         cm = self.crystal_mgr
         if not cm.has_symmetry:
-            session.logger.info('(CLIPPER) NOTE: No symmetry information found '
+            self.session.logger.info('(CLIPPER) NOTE: No symmetry information found '
                 'in model. Using symmetry from MTZ file.')
             cm = self.crystal_mgr
             cm.cell = mtzdata.cell
