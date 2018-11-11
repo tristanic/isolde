@@ -16,7 +16,7 @@ class NXmapSet(MapSet_Base):
         from chimerax.map.data import open_file
         grid_data = open_file(filename)[0]
         from chimerax.map.volume import volume_from_grid_data
-        return add_nxmap_handler_from_volume(
+        return self.add_nxmap_handler_from_volume(
             volume_from_grid_data(grid_data, self.session),
             is_difference_map=is_difference_map,
             color=color, style=style, contour=contour
