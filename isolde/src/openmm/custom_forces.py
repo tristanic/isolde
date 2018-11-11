@@ -132,7 +132,7 @@ class _Map_Force_Base(CustomCompoundBondForce):
     Base class for :class:`LinearInterpMapForce` and
     :class:`CubicInterpMapForce`.
     '''
-    def __init__(self, data, xyz_to_ijk_transform, units = 'angstroms'):
+    def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms'):
         '''
         For a given atom at (x,y,z), the map potential will be defined
         as:
@@ -149,27 +149,38 @@ class _Map_Force_Base(CustomCompoundBondForce):
             * xyz_to_ijk_transform:
                 - A NumPy 3x4 float array defining the transformation matrix
                   mapping (x,y,z) coordinates to (i,j,k)
+            * suffix:
+                - In OpenMM, global parameters are global to the *entire
+                  context*, not just to the force. To provide a global
+                  parameter unique to this instance, the suffix is appended
+                  to the base name of the parameter. Should be a unique string.
             * units:
                 - The units in which the transformation matrix is defined.
                   Either 'angstroms' or 'nanometers'
         '''
         super().__init__(1, '')
         self._process_transform(xyz_to_ijk_transform, units)
-        self._initialize_transform_arguments()
+        self._initialize_transform_arguments(suffix)
         map_func = self._openmm_3D_function_from_volume(data)
 
-        energy_func = self._set_energy_function()
+        global_k_name = self._global_k_name = 'mdff_global_k_{}'.format(suffix)
+
+        energy_func = self._set_energy_function(suffix)
         self.setEnergyFunction(energy_func)
         #super().__init__(1, energy_func)
         self._map_potential_index = self.addTabulatedFunction(
             name = 'map_potential', function = map_func)
         self._global_k_index = self.addGlobalParameter(
-            name = 'global_k', defaultValue = 1.0)
+            name = global_k_name, defaultValue = 1.0)
         self._individual_k_index = self.addPerBondParameter(
             name = 'individual_k')
         self._enabled_index = self.addPerBondParameter(
             name = 'enabled')
         self.update_needed = False
+
+    @property
+    def global_k_name(self):
+        return self._global_k_name
 
     def _process_transform(self, tf, units):
         if type(tf) == Quantity:
@@ -188,33 +199,36 @@ class _Map_Force_Base(CustomCompoundBondForce):
             raise TypeError('Units must be either "angstroms" or "nanometers"!')
         self._transform = tf
 
-    def _initialize_transform_arguments(self):
+    def _initialize_transform_arguments(self, suffix):
         tf = self._transform
         tfi = self._tf_term_indices = numpy.zeros(tf.shape, numpy.int)
         for i in range(3):
             for j in range(3):
                 tfi[i][j] = self.addGlobalParameter(
-                    name = 'rot{}{}'.format(i,j), defaultValue=tf[i,j]
+                    name = 'mdff_rot{}{}_{}'.format(i,j, suffix), defaultValue=tf[i,j]
                 )
         for j in range(3):
             tfi[j,3] = self.addGlobalParameter(
-                name = 'trn{}'.format(j), defaultValue=tf[j,3]
+                name = 'mdff_trn{}_{}'.format(j, suffix), defaultValue=tf[j,3]
             )
 
 
     def _openmm_3D_function_from_volume(self, data):
         raise RuntimeError('Cannot instantiate the base class!')
 
-    def _set_energy_function(self):
+    def _set_energy_function(self, suffix):
         raise RuntimeError('Cannot instantiate the base class!')
 
-    def set_global_k(self, k):
+    def set_global_k(self, k, context=None):
         '''
         Set the global coupling constant, in units of
         :math:`kJ mol^{-1} (\\text{map density unit})^{-1} nm^3`
         '''
-        self.setGlobalParameterDefaultValue(self._global_k_index, k)
-        self.update_needed = True
+        if context is not None:
+            context.setParameter(self._global_k_name, k)
+        else:
+            self.setGlobalParameterDefaultValue(self._global_k_index, k)
+            self.update_needed = True
 
     def update_transform(self, transform, units):
         self._process_transform(transform, units)
@@ -314,7 +328,7 @@ class CubicInterpMapForce(_Map_Force_Base):
     Converts a map of (i,j,k) data and a (x,y,z)->(i,j,k) transformation
     matrix to a potential energy field, with tricubic interpolation of values.
     '''
-    def __init__(self, data, xyz_to_ijk_transform, units = 'angstroms'):
+    def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms'):
         '''
         For a given atom at (x,y,z), the map potential will be defined
         as:
@@ -331,18 +345,23 @@ class CubicInterpMapForce(_Map_Force_Base):
             * xyz_to_ijk_transform:
                 - A NumPy 3x4 float array defining the transformation matrix
                   mapping (x,y,z) coordinates to (i,j,k)
+            * suffix:
+                - In OpenMM, global parameters are global to the *entire
+                  context*, not just to the force. To provide a global
+                  parameter unique to this instance, the suffix is appended
+                  to the base name of the parameter. Should be a unique string.
             * units:
                 - The units in which the transformation matrix is defined.
                   Either 'angstroms' or 'nanometers'
         '''
-        super().__init__(data, xyz_to_ijk_transform, units=units)
+        super().__init__(data, xyz_to_ijk_transform, suffix, units=units)
 
     def _openmm_3D_function_from_volume(self, data):
         dim = data.shape[::-1]
         data_1d = numpy.ravel(data, order = 'C')
         return Continuous3DFunction(*dim, data_1d, 0, dim[0]-1, 0, dim[1]-1, 0, dim[2]-1)
 
-    def _set_energy_function(self):
+    def _set_energy_function(self, suffix):
         tf = self._transform
         # Transform xyz to ijk
         tf_strings = ['i = ', 'j = ', 'k = ']
@@ -358,13 +377,13 @@ class CubicInterpMapForce(_Map_Force_Base):
                 if abs(val) > NEARLY_ZERO:
                     count += 1
                     if j<3:
-                        tf_strings[i] += spacer + entry.format('rot{}{}'.format(i,j))
+                        tf_strings[i] += spacer + entry.format('mdff_rot{}{}_{}'.format(i,j, suffix))
                     else:
-                        tf_strings[i] += spacer + entry.format('trn{}'.format(i))
+                        tf_strings[i] += spacer + entry.format('mdff_trn{}_{}'.format(i, suffix))
 
         funcs = ';'.join(tf_strings)
         enabled_eqn = 'step(enabled-0.5)'
-        energy_str = '-global_k * individual_k * map_potential(i,j,k)'
+        energy_str = '-{} * individual_k * map_potential(i,j,k)'.format(self._global_k_name)
 
         final_func = 'select({}, {}, 0); {}'.format(enabled_eqn, energy_str, funcs)
         return final_func
@@ -377,7 +396,7 @@ class LinearInterpMapForce(_Map_Force_Base):
     Converts a map of (i,j,k) data and a (x,y,z)->(i,j,k) transformation
     matrix to a potential energy field, with trilinear interpolation of values.
     '''
-    def __init__(self, data, xyz_to_ijk_transform, units = 'angstroms'):
+    def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms'):
         '''
         For a given atom at (x,y,z), the map potential will be defined
         as:
@@ -394,13 +413,18 @@ class LinearInterpMapForce(_Map_Force_Base):
             * xyz_to_ijk_transform:
                 - A NumPy 3x4 float array defining the transformation matrix
                   mapping (x,y,z) coordinates to (i,j,k)
+            * suffix:
+                - In OpenMM, global parameters are global to the *entire
+                  context*, not just to the force. To provide a global
+                  parameter unique to this instance, the suffix is appended
+                  to the base name of the parameter. Should be a unique string.
             * units:
                 - The units in which the transformation matrix is defined.
                   Either 'angstroms' or 'nanometers'
         '''
-        super().__init__(data, xyz_to_ijk_transform, units=units)
+        super().__init__(data, xyz_to_ijk_transform, suffix, units=units)
 
-    def _set_energy_function(self):
+    def _set_energy_function(self, suffix):
         tf = self._transform
         # Transform xyz to ijk
         tf_strings = ['i = ', 'j = ', 'k = ']
@@ -416,9 +440,9 @@ class LinearInterpMapForce(_Map_Force_Base):
                 if abs(val) > NEARLY_ZERO:
                     count += 1
                     if j<3:
-                        tf_strings[i] += spacer + entry.format('rot{}{}'.format(i,j))
+                        tf_strings[i] += spacer + entry.format('mdff_rot{}{}_{}'.format(i,j, suffix))
                     else:
-                        tf_strings[i] += spacer + entry.format('trn{}'.format(i))
+                        tf_strings[i] += spacer + entry.format('mdff_trn{}_{}'.format(i, suffix))
 
         i_str, j_str, k_str = tf_strings
 
@@ -446,7 +470,7 @@ class LinearInterpMapForce(_Map_Force_Base):
                       v101* ni   *(1-nj)* nk    + v011*(1-ni)* nj   * nk    +\
                       v110* ni   * nj   *(1-nk) + v111* ni   * nj   * nk)'
 
-        energy_str = '-global_k * individual_k * {}'.format(interp_str)
+        energy_str = '-{} * individual_k * {}'.format(self._global_k_name, interp_str)
 
         enabled_eqn = 'step(enabled-0.5)'
 

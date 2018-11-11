@@ -2072,7 +2072,12 @@ class Sim_Handler:
         # Shift the transform to the origin of the region
         region_tf = Place(axes=tf.axes(), origin = tf.origin() -
             v.data.xyz_to_ijk(v.region_origin_and_step(v.region)[0]))
-        f = Map_Force(data, region_tf.matrix, units='angstroms')
+        # In OpenMM forces, parameters can only be per-particle, or global to
+        # the entire context. So if we want a parameter that's constant to all
+        # particles in this force, it needs a unique name so it doesn't
+        # interfere with other instances of the same force.
+        suffix = str(len(self.mdff_forces)+1)
+        f = Map_Force(data, region_tf.matrix, suffix, units='angstroms')
         self.all_forces.append(f)
         self._system.addForce(f)
         self.mdff_forces[v] = f
@@ -2134,8 +2139,12 @@ class Sim_Handler:
                   :math:`kJ mol^{-1} (\\text{map density unit})^{-1} nm^3`
         '''
         f = self.mdff_forces[volume]
-        f.set_global_k(k)
-        self.context_reinit_needed()
+        if self.sim_running:
+            context = self.thread_handler.context
+            f.set_global_k(k, context = context)
+        else:
+            f.set_global_k(k)
+            self.context_reinit_needed()
 
     def update_mdff_atoms(self, mdff_atoms, volume):
         '''
