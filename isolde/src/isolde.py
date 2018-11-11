@@ -1199,11 +1199,10 @@ class Isolde():
 
     def _choose_reflections_file(self, *_):
         options = QFileDialog.Options()
-        caption = 'Choose a file containing at minimum Fobs/SigFobs and free flags'
+        caption = ('Choose a file containing amplitudes/phases or F/sigF/free flags')
         filetypes = 'MTZ files (*.mtz)'
         filename, _ = QFileDialog.getOpenFileName(None, caption, filetypes, filetypes, options=options)
-        self.initialize_live_xtal_structure(filename)
-        self._initialize_maps(self.selected_model)
+        self.add_xtal_data(filename)
 
     def add_xtal_data(self, filename, model=None):
         if model is None:
@@ -1230,56 +1229,24 @@ class Isolde():
                 exclude_missing_reflections=True,
                 display=False)
 
-
-
-    def initialize_live_xtal_structure(self, filename, model=None):
-        if model is not None:
-            m = model
-        else:
-            m = self.selected_model
-        live = self.iw._sim_basic_xtal_settings_live_recalc_checkbox.checkState()
-        if m is None:
+    def add_real_space_map(self, existing_volume=None, filename=None, to_model=None):
+        if to_model is None:
+            to_model = self.selected_model
+        if to_model is None:
             from .dialog import generic_warning
-            generic_warning("You must have the corresponding model loaded before loading reflection data!")
-        from chimerax.clipper import symmetry
-        sh = symmetry.Symmetry_Manager(m, mtzfile=filename,
-            map_oversampling=self.params.map_shannon_rate)
-        sh.xmapset.live_update = live
-        standard_map = sh.xmapset['2mFo-DFc']
-        diff_map = sh.xmapset['mFo-DFc']
-        has_extra_map = False
-        extra_map_is_sharp = False
-        extra_map = None
-        for key, xmap in sh.xmapset.items():
-            if "sharp" in key:
-                has_extra_map = True
-                extra_map_is_sharp = True
-                extra_map = xmap
-            elif "smooth" in key:
-                has_extra_map = True
-                extra_map = xmap
-        from . import visualisation as v
-        from chimerax.map import volumecommand
-        sd = standard_map.mean_sd_rms()[1]
-        diff_styleargs = v.map_style_settings[v.map_styles.solid_t40]
-        volumecommand.volume(self.session, [diff_map], **diff_styleargs)
-        if has_extra_map:
-            xsd = extra_map.mean_sd_rms()[1]
-            styleargs = v.map_style_settings[v.map_styles.solid_t20]
-            if extra_map_is_sharp:
-                volumecommand.volume(self.session, [extra_map], **styleargs)
-                standard_map.set_parameters(surface_levels = (1.5*sd,))
-                extra_map.set_parameters(surface_levels=(3.0*xsd,))
-            else:
-                volumecommand.volume(self.session, [standard_map], **styleargs)
-                standard_map.set_parameters(surface_levels = (3.0*sd,))
-                extra_map.set_parameters(surface_levels=(1.5*xsd,))
-        # Set difference map according to standard map SD, since this is more
-        # meaningful
-        diff_map.set_parameters(surface_levels=(-0.8*sd, 0.8*sd))
-
-
-
+            generic_warning("You must have the corresponding model loaded "
+                "before loading reflection data!")
+        m = to_model
+        if existing_volume is None and filename is None:
+            raise TypeError('Either existing_volume or filename must be provided!')
+        if existing_volume and filename:
+            raise TypeError('Cannot provide both existing_volume and filename!')
+        from chimerax.clipper.symmetry import get_map_mgr
+        map_mgr = get_map_mgr(m, create=True)
+        if existing_volume:
+            nxmap = map_mgr.nxmapset.add_nxmap_handler_from_volume(existing_volume)
+        else:
+            nxmap = map_mgr.nxmapset.add_nxmap_handler_from_file(filename)
 
 
     @property
@@ -1351,12 +1318,12 @@ class Isolde():
         if i == -1:
             return
         v = cb.itemData(i)
-        self.add_real_space_map_to_current_model(v)
+        self.add_real_space_map(existing_volume=v, to_model=self.selected_model)
 
     def add_real_space_map_to_current_model(self, volume):
         from chimerax.clipper.symmetry import get_symmetry_handler
         sh = get_symmetry_handler(self.selected_model, create=True)
-        sh.map_mgr.nxmapset.add_nxmap_handler(volume)
+        sh.map_mgr.nxmapset.add_nxmap_handler_from_volume(volume)
 
 
     def _toggle_xtal_map_dialog(self, *_):

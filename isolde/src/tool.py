@@ -113,10 +113,11 @@ class ISOLDE_ToolUI(ToolInstance):
             iw._validate_rama_main_frame,
             iw._validate_pep_main_frame,
             iw._validate_rota_main_frame,
+            iw._sim_basic_xtal_init_open_button,
             iw._sim_basic_xtal_init_main_frame,
             iw._sim_basic_xtal_map_settings_frame,
             iw._real_space_map_from_volume_frame,
-            iw._real_space_map_from_volume_show_button, # Not yet working correctly
+            #iw._real_space_map_from_volume_show_button, # Not yet working correctly
             iw._live_map_control_frame,
             ]
 
