@@ -3249,10 +3249,9 @@ class Isolde():
         color.color(self.session, before_struct, color='bychain', target='ac')
         color.color(self.session, before_struct, color='byhetero', target='a')
         from chimerax.clipper import symmetry
-        sym_handler = symmetry.Symmetry_Manager(before_struct,
-            mtzfile=os.path.join(data_dir, '3io0-sf.mtz'),
-            map_oversampling = self.params.map_shannon_rate)
-        xmapset = sym_handler.map_mgr.xmapsets[0]
+        sym_handler = symmetry.get_symmetry_handler(before_struct, create=True)
+        xmapset = sym_handler.map_mgr.add_xmapset_from_mtz(os.path.join(data_dir, '3io0-sf.mtz'),
+            oversampling_rate = self.params.map_shannon_rate)
         from chimerax.clipper.maps.xmapset import map_potential_recommended_bsharp
         mdff_b = map_potential_recommended_bsharp(xmapset.resolution)
 
