@@ -11,7 +11,19 @@ class NXmapSet(MapSet_Base):
         super().__init__(manager, name)
         manager.add([self])
 
-    def add_nxmap_handler(self, volume,
+    def add_nxmap_handler_from_file(self, filename, is_difference_map=False,
+        color=None, style=None, contour=None):
+        from chimerax.map.data import open_file
+        grid_data = open_file(filename)[0]
+        from chimerax.map.volume import volume_from_grid_data
+        return add_nxmap_handler_from_volume(
+            volume_from_grid_data(grid_data, self.session),
+            is_difference_map=is_difference_map,
+            color=color, style=style, contour=contour
+        )
+
+
+    def add_nxmap_handler_from_volume(self, volume,
         is_difference_map=False,
         color=None, style=None, contour=None):
         h = NXmapHandler(self, volume)
@@ -21,6 +33,7 @@ class NXmapSet(MapSet_Base):
             h.expand_to_cover_coords(corners, 15)
         self.add([h])
         self.set_nxmap_display_style(h)
+        return h
 
     def set_nxmap_display_style(self, nxmap_handler, is_difference_map=False,
         color=None, style=None, contour=None):
@@ -77,7 +90,8 @@ class NXmapHandler(MapHandler_Base):
         self._original_volume = volume
         super().__init__(mapset, volume.name, volume.data,
             is_difference_map=is_difference_map)
-        self.session.models.remove([volume])
+        if volume in self.session.models.list():
+            self.session.models.remove([volume])
 
 
     def _box_changed_cb(self, name, params):
@@ -85,6 +99,18 @@ class NXmapHandler(MapHandler_Base):
 
     def _box_moved_cb(self, name, params):
         self.update_mask()
+
+    @property
+    def stats(self):
+        return self.full_mean_sd_rms()
+
+    @property
+    def sigma(self):
+        return self.full_mean_sd_rms()[1]
+
+    def full_mean_sd_rms(self):
+        from chimerax.map.volume import mean_sd_rms
+        return mean_sd_rms(self.data.matrix())
 
     def update_mask(self):
         if not self.display:
