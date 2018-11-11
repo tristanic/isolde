@@ -177,11 +177,12 @@ def simple_p1_box(model, resolution=3):
     abc = coord_range*3
     angles = [90,90,90]
     sym_str = 'P 1'
-    from .clipper_python import Cell_descr, Cell, Spgr_descr, Spacegroup, Resolution, Grid_sampling
+    from .clipper_python import (Cell_descr, Cell, Spgr_descr, Spacegroup,
+        Resolution, Grid_sampling)
     cell = Cell(Cell_descr(*abc, *angles))
-    spacegroup = Spacegroum(Spgr_descr(sym_str))
-    res = Resolution(res)
-    grid_sampling=Grid_Sampling(spacegroup, cell, res)
+    spacegroup = Spacegroup(Spgr_descr(sym_str))
+    res = Resolution(resolution)
+    grid_sampling=Grid_sampling(spacegroup, cell, res)
     return cell, spacegroup, grid_sampling, False
 
 
@@ -269,7 +270,7 @@ def symmetry_from_model_metadata_pdb(model):
         # resolution is on the second line
         i += 1
         line = remarks[i].split()
-        res = line[3]
+        res = float(line[3])
     except:
         res = 3.0
 
@@ -294,7 +295,7 @@ def symmetry_from_model_metadata_pdb(model):
 
 
 class Unit_Cell(clipper_python.Unit_Cell):
-   def __init__(self, atom_list, cell,
+   def __init__(self, atoms, cell,
                  spacegroup, grid_sampling, padding = 10):
         '''
         __init__(self, ref, atom_list, cell, spacegroup, grid_sampling) -> Unit_Cell
@@ -317,6 +318,8 @@ class Unit_Cell(clipper_python.Unit_Cell):
                 box for finding symmetry operations. In most cases this
                 can be left as zero.
         '''
+        from .util import atom_list_from_sel
+        atom_list = atom_list_from_sel(atoms)
         super().__init__(atom_list, cell, spacegroup, grid_sampling, padding)
 
 
@@ -330,7 +333,7 @@ class Symmetry_Manager(Model):
     ATOMIC_SYM_EXTRA_RADIUS = 3
     def __init__(self, model, mtzfile=None, map_oversampling=1.5,
         min_voxel_size = 0.5, spotlight_mode = True, spotlight_radius=12,
-        hydrogens='polar', debug=False):
+        hydrogens='polar', ignore_model_symmetry=False, debug=False):
         if isinstance(model.parent, Symmetry_Manager):
             raise RuntimeError('This model already has a symmetry manager!')
         name = 'Data manager ({})'.format(model.name)
@@ -366,7 +369,13 @@ class Symmetry_Manager(Model):
         for t in trigger_names:
             trig.add_trigger(t)
 
-        self.cell, self.spacegroup, self.grid, self._has_symmetry = symmetry_from_model_metadata(model)
+        if ignore_model_symmetry:
+            f = simple_p1_box
+            args = []
+        else:
+            f = symmetry_from_model_metadata
+            args=[model]
+        self.cell, self.spacegroup, self.grid, self._has_symmetry = f(*args)
 
         mmgr = self.map_mgr
 
@@ -381,11 +390,9 @@ class Symmetry_Manager(Model):
         spacegroup = self.spacegroup
         grid = self.grid
 
-        from .util import atom_list_from_sel
-        ca = atom_list_from_sel(model.atoms)
-        uc = self._unit_cell = Unit_Cell(ca, cell, spacegroup, grid)
+        uc = self._unit_cell = Unit_Cell(model.atoms, cell, spacegroup, grid)
 
-        self._atomic_symmetry_model = AtomicSymmetryModel(model, self, uc,
+        self._atomic_symmetry_model = AtomicSymmetryModel(self,
             radius = spotlight_radius, live = spotlight_mode, debug=debug)
         self.spotlight_radius = spotlight_radius
 
@@ -397,6 +404,7 @@ class Symmetry_Manager(Model):
         initialize_clipper_mouse_modes(session)
         self.add([model])
         session.models.add([self])
+
 
     @property
     def hydrogen_display_mode(self):
@@ -529,6 +537,14 @@ class Symmetry_Manager(Model):
     @property
     def unit_cell(self):
         return self._unit_cell
+
+    def discard_model_symmetry(self):
+        if len(self.map_mgr.xmapsets):
+            raise RuntimeError('Cannot discard model symmetry while a crystal '
+                'dataset is loaded!')
+        self.cell, self.spacegroup, self.grid, self._has_symmetry = simple_p1_box(self.structure)
+        self._unit_cell = Unit_Cell(self.structure.atoms, self.cell, self.spacegroup, self.grid)
+
 
     def set_default_atom_display(self, mode='polar'):
         model = self.structure
@@ -747,17 +763,11 @@ class AtomicSymmetryModel(Model):
     '''
     Finds and draws local symmetry atoms for an atomic structure
     '''
-    def __init__(self, atomic_structure, parent, unit_cell, radius = 15,
+    def __init__(self, parent, radius = 15,
         dim_colors_to = 0.6, backbone_mode = 'CA trace', live = True, debug=False):
         self._debug = debug
         self._live_scrolling = False
-        self.structure = atomic_structure
-        session = self.session = atomic_structure.session
-        self.unit_cell = unit_cell
-        self.cell = parent.cell
-        self.spacegroup =parent.spacegroup
-        self.grid = parent.grid
-        self.session = atomic_structure.session
+        session = self.session = parent.session
         self._color_dim_factor = dim_colors_to
 
         self._sym_search_frequency = 2
@@ -767,7 +777,7 @@ class AtomicSymmetryModel(Model):
 
         super().__init__('Atomic symmetry', session)
         parent.add([self])
-
+        atomic_structure = self.structure
         self._last_hides = atomic_structure.atoms.hides
 
         self._box_changed_handler = None
@@ -789,6 +799,25 @@ class AtomicSymmetryModel(Model):
         from .crystal import set_to_default_cartoon
         set_to_default_cartoon(session)
 
+    @property
+    def unit_cell(self):
+        return self.manager.unit_cell
+
+    @property
+    def cell(self):
+        return self.manager.cell
+
+    @property
+    def spacegroup(self):
+        return self.manager.spacegroup
+
+    @property
+    def grid(self):
+        return self.manager.grid
+
+    @property
+    def structure(self):
+        return self.manager.structure
 
     @property
     def _box_corner_drawing(self):
