@@ -22,7 +22,5 @@ def test_clipper_sym(session, radius=12):
     sym_handler = symmetry.get_symmetry_handler(m, create=True)
     sym_handler.spotlight_radius = radius
     sym_handler.map_mgr.add_xmapset_from_mtz(os.path.join(libdir,'3io0_combined.mtz'), oversampling_rate=1.5)
-    from chimerax.core.commands import open as cxopen
-    v = cxopen.open(session, os.path.join(libdir, '3io0_real_space.ccp4'))[0]
-    sym_handler.map_mgr.nxmapset.add_nxmap_handler(v)
+    sym_handler.map_mgr.nxmapset.add_nxmap_handler_from_file(os.path.join(libdir, '3io0_real_space.ccp4'))
     return sym_handler
