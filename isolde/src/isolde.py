@@ -2664,8 +2664,10 @@ class Isolde():
         self._update_sim_control_button_states()
         self._set_right_mouse_mode_tug_atom()
         self.triggers.activate_trigger('simulation started', None)
-        self.sim_handler.triggers.add_handler('sim terminated', self._sim_end_cb)
-        self.sim_handler.triggers.add_handler('sim paused', self._update_sim_control_button_states)
+        sh = self.sim_handler
+        sh.triggers.add_handler('sim terminated', self._sim_end_cb)
+        sh.triggers.add_handler('sim paused', self._update_sim_control_button_states)
+        sh.triggers.add_handler('sim resumed', self._update_sim_control_button_states)
 
     def _sim_end_cb(self, *_):
         self._update_menu_after_sim()
