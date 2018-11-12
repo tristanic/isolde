@@ -188,18 +188,31 @@ def simple_p1_box(model, resolution=3):
 
 def symmetry_from_model_metadata_mmcif(model):
     metadata = model.metadata
+    res = None
 
-    if 'refine' in metadata.keys():
+    if 'em_3d_reconstruction' in metadata.keys():
+        em_dict = dict((key, data) for (key,data) in zip(
+            metadata['em_3d_reconstruction'][1:], metadata['em_3d_reconstruction data']
+        ))
+        res_str = em_dict.get('resolution', '?')
+        if res_str != '?':
+            try:
+                res = float(res_str)
+            except:
+                pass
+
+    if not res and 'refine' in metadata.keys():
         refine_dict = dict((key, data) for (key,data) in zip(
             metadata['refine'][1:], metadata['refine data']
         ))
         res_str = refine_dict.get('ls_d_res_high', '?')
         if res_str != '?':
-            res = float(res_str)
-        else:
+            try:
+                res = float(res_str)
+            except:
+                pass
+    if not res:
             res = 3.0
-    else:
-        res=3.0
 
     if 'X-RAY DIFFRACTION' not in metadata['exptl data']:
         return simple_p1_box(model, resolution=res)
