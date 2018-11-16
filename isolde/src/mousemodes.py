@@ -10,7 +10,7 @@
 
 # Useful mouse modes for working with ISOLDE
 
-from chimerax.core.ui import MouseMode
+from chimerax.mouse_modes import MouseMode
 
 from .tugging import TugAtomsMode
 

@@ -9,7 +9,7 @@
 
 
 import numpy
-from chimerax.core.ui import mousemodes
+from chimerax.mouse_modes import MouseMode, ZoomMouseMode as ZoomMouseMode_Base
 
 def initialize_clipper_mouse_modes(session):
     initialize_zoom_mouse_modes(session)
@@ -29,7 +29,7 @@ def initialize_map_contour_mouse_modes(session):
     session.ui.mouse_modes.bind_mouse_mode('wheel',['control'], s)
     session.ui.mouse_modes.bind_mouse_mode('wheel',[], v)
 
-class ClipPlaneAdjuster(mousemodes.MouseMode):
+class ClipPlaneAdjuster(MouseMode):
     def __init__(self, session, zoom_mode):
         super().__init__(session)
         self._zoomer = zoom_mode
@@ -44,9 +44,9 @@ class ClipPlaneAdjuster(mousemodes.MouseMode):
         z.near_clip_multiplier *= mult
 
 
-class ZoomMouseMode(mousemodes.ZoomMouseMode):
+class ZoomMouseMode(ZoomMouseMode_Base):
     def __init__(self, session):
-        mousemodes.ZoomMouseMode.__init__(self, session)
+        super().__init__(session)
         self._far_clip_multiplier = 0.5
         self._near_clip_multiplier = 0.5
 
@@ -150,7 +150,7 @@ class ZoomMouseMode(mousemodes.ZoomMouseMode):
             new_origin = c.position.origin()
             self.far_clip.plane_point = new_origin + (cofr-new_origin)*2
 
-class SelectVolumeToContour(mousemodes.MouseMode):
+class SelectVolumeToContour(MouseMode):
     '''
     Designed to work together with ContourSelectedVolume.
     Each step of the mouse wheel increments through the currently
@@ -161,7 +161,7 @@ class SelectVolumeToContour(mousemodes.MouseMode):
     the first Volume object in session.models.list().
     '''
     def __init__(self, session):
-        mousemodes.MouseMode.__init__(self, session)
+        super().__init__(session)
         self._last_picked_index = 0
         self._picked_volume = None
         self._deselect_handler = None
@@ -224,7 +224,7 @@ class SelectVolumeToContour(mousemodes.MouseMode):
             self._deselect_handler = None
             self._picked_volume.selected = False
 
-class ContourSelectedVolume(mousemodes.MouseMode):
+class ContourSelectedVolume(MouseMode):
     def __init__(self, session, selector, symmetrical=True):
         '''
         Modified volume contouring method which acts on a single volume
@@ -243,7 +243,7 @@ class ContourSelectedVolume(mousemodes.MouseMode):
                 If False, all contours will be shifted in the same
                 direction.
         '''
-        mousemodes.MouseMode.__init__(self, session)
+        super().__init__(session)
         # SelectVolumeToContour object telling us which volume to work on
         self.selector = selector
         self.symmetrical = symmetrical

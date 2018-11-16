@@ -10,7 +10,7 @@
 
 from chimerax.core.models import Drawing, Model
 
-from chimerax.core.ui import MouseMode
+from chimerax.mouse_modes import MouseMode
 from .constants import defaults
 _CARBON_MASS = defaults.CARBON_MASS
 
