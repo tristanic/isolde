@@ -2332,8 +2332,6 @@ class Isolde():
     def _change_soft_shell_cutoff_from_sel_menu(self, *_):
         iw = self.iw
         val = iw._sim_basic_mobile_sel_within_spinbox.value()
-        if sb2.value() != val:
-            sb2.setValue(val)
         self.params.soft_shell_cutoff_distance = val
 
     def _change_sim_platform(self, *_):
