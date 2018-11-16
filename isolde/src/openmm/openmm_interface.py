@@ -2059,8 +2059,6 @@ class Sim_Handler:
             data_copy = numpy.empty(data.shape, numpy.float32)
             data_copy[:] = data
             data = data_copy
-        print('Parameters for map {}: {}'.format(v.id_string, v.name))
-        print('Min: {}; Max: {}'.format(data.min(), data.max() ))
         if data.size < self._params.max_cubic_map_size:
             Map_Force = CubicInterpMapForce
         else:
