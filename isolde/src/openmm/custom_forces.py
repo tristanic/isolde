@@ -388,6 +388,128 @@ class CubicInterpMapForce(_Map_Force_Base):
         final_func = 'select({}, {}, 0); {}'.format(enabled_eqn, energy_str, funcs)
         return final_func
 
+class CubicInterpMapForce_Low_Memory(_Map_Force_Base):
+    '''
+    The Continuous3DFunction pre-calculates the 64 coefficients per voxel
+    necessary to quickly interpolate anywhere in the volume. This makes it
+    extremely fast, but the coefficients are stored on the GPU as a single 1D
+    array. In both OpenCL and CUDA, the size of a single array is limited to
+    (signed) INTMAX = 2**31-1 bytes - allowing a maximum of just over 8M voxels.
+    Beyond that, we need to fall back to the slower but more memory-efficient
+    approach of recalculating the interpolation coefficients as needed.
+    '''
+    def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms'):
+        '''
+        For a given atom at (x,y,z), the map potential will be defined
+        as:
+
+        .. math::
+            global_k * individual_k * pot_xyz
+
+        where `pot_xyz` is calculated by tricubic interpolation from the
+        (i,j,k) map grid after applying `xyz_to_ijk_transform`.
+
+        Args:
+            * data:
+                - The map data as a 3D (i,j,k) NumPy array in C-style order
+            * xyz_to_ijk_transform:
+                - A NumPy 3x4 float array defining the transformation matrix
+                  mapping (x,y,z) coordinates to (i,j,k)
+            * suffix:
+                - In OpenMM, global parameters are global to the *entire
+                  context*, not just to the force. To provide a global
+                  parameter unique to this instance, the suffix is appended
+                  to the base name of the parameter. Should be a unique string.
+            * units:
+                - The units in which the transformation matrix is defined.
+                  Either 'angstroms' or 'nanometers'
+        '''
+        super().__init__(data, xyz_to_ijk_transform, suffix, units=units)
+
+    def _set_energy_function(self, suffix):
+        tf = self._transform
+        # Transform xyz to ijk
+        tf_strings = ['i = ', 'j = ', 'k = ']
+        entries = ('x1 * {}','y1 * {}','z1 * {}','{}')
+        for i in range(3):
+            vals = tf[i]
+            count = 0
+            for j, (entry, val) in enumerate(zip(entries, vals)):
+                if count > 0:
+                    spacer = ' + '
+                else:
+                    spacer = ''
+                if abs(val) > NEARLY_ZERO:
+                    count += 1
+                    if j<3:
+                        tf_strings[i] += spacer + entry.format('mdff_rot{}{}_{}'.format(i,j, suffix))
+                    else:
+                        tf_strings[i] += spacer + entry.format('mdff_trn{}_{}'.format(i, suffix))
+
+        i_str, j_str, k_str = tf_strings
+
+        min_str = 'min_i = floor(i-1); min_j = floor(j-1); min_k = floor(k-1)'
+
+        offset_strings = (
+                          'ci0 = 1.0-ci1;'
+                          'cj0 = 1.0-cj1;'
+                          'ck0 = 1.0-ck1;'
+                          'ci1 = i-min_i-1;'
+                          'cj1 = j-min_j-1;'
+                          'ck1 = k-min_k-1'
+                          )
+
+        coeff_strings = ('sc_i0 = -0.5*ci1*ci0*ci0;'
+                         'sc_i1 = ci0*( -1.5*ci1*ci1 + ci1 + 1.0);'
+                         'sc_i2 = ci1*( -1.5*ci0*ci0 + ci0 + 1.0);'
+                         'sc_i3 = -0.5*ci1*ci1*ci0;'
+                         'sc_j0 = -0.5*cj1*cj0*cj0;'
+                         'sc_j1 = cj0*( -1.5*cj1*cj1 + cj1 + 1.0);'
+                         'sc_j2 = cj1*( -1.5*cj0*cj0 + cj0 + 1.0);'
+                         'sc_j3 = -0.5*cj1*cj1*cj0;'
+                         'sc_k0 = -0.5*ck1*ck0*ck0;'
+                         'sc_k1 = ck0*( -1.5*ck1*ck1 + ck1 + 1.0);'
+                         'sc_k2 = ck1*( -1.5*ck0*ck0 + ck0 + 1.0);'
+                         'sc_k3 = -0.5*ck1*ck1*ck0'
+                         )
+
+        sum_strings = []
+        for i in range(4):
+            sv_strings = []
+            for j in range(4):
+                str_1 = '(sc_k0 * map_potential(min_i+{}, min_j+{}, min_k))'.format(i,j)
+                str_2 = '(sc_k1 * map_potential(min_i+{}, min_j+{}, min_k+1))'.format(i,j)
+                str_3 = '(sc_k2 * map_potential(min_i+{}, min_j+{}, min_k+2))'.format(i,j)
+                str_4 = '(sc_k3 * map_potential(min_i+{}, min_j+{}, min_k+3))'.format(i,j)
+                sv_strings.append('sc_j{} * ({}+{}+{}+{})'.format(
+                    j, str_1, str_2, str_3, str_4
+                ))
+            sum_strings.append('sc_i{} * ({})'.format(
+                i, '+'.join(sv_strings)
+            ))
+        master_sum_str = '+'.join(sum_strings)
+
+        energy_str = '-{} * individual_k * ({})'.format(self._global_k_name, master_sum_str)
+
+        enabled_eqn = 'step(enabled-0.5)'
+
+        funcs = ';'.join((coeff_strings, offset_strings, min_str, i_str, j_str, k_str))
+        final_func = 'select({}, {}, 0); {}'.format(enabled_eqn, energy_str, funcs)
+        return final_func
+
+    def _openmm_3D_function_from_volume(self, data):
+        dim = data.shape[::-1]
+        data_1d = numpy.ravel(data, order = 'C')
+        return Discrete3DFunction(*dim, data_1d)
+
+
+
+
+
+
+
+
+
 
 
 

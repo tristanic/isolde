@@ -2049,7 +2049,9 @@ class Sim_Handler:
             * volume:
                 - a :py:class:`chimerax.Volume` instance
         '''
-        from .custom_forces import LinearInterpMapForce, CubicInterpMapForce
+        from .custom_forces import (CubicInterpMapForce,
+            CubicInterpMapForce_Low_Memory
+            )
         v = volume
         region = v.region
         # Ensure that the region ijk step size is [1,1,1]
@@ -2062,9 +2064,9 @@ class Sim_Handler:
         if data.size < self._params.max_cubic_map_size:
             Map_Force = CubicInterpMapForce
         else:
-            print("Map is too large for cubic interpolation on the GPU!"\
-                  +" Switching to linear interpolation for this simulation.")
-            Map_Force = LinearInterpMapForce
+            print("Map is too large for fast cubic interpolation on the GPU!"\
+                  +" Switching to slower, more memory-efficient implementation.")
+            Map_Force = CubicInterpMapForce_Low_Memory
         from chimerax.core.geometry import Place
         tf = v.data.xyz_to_ijk_transform
         # Shift the transform to the origin of the region
