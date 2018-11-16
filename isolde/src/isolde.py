@@ -972,7 +972,7 @@ class Isolde():
             volumes_need_update = False
 
             for m in models:
-                if isinstance(m, AtomicStructure):
+                if type(m) == AtomicStructure:
                     structures_need_update = True
                 if isinstance(m, Volume) or isinstance(m, MDFF_Mgr):
                     volumes_need_update = True
@@ -1017,7 +1017,7 @@ class Isolde():
         if volumes_need_update:
             self._populate_available_volumes_combo_box()
 
-        self._change_selected_model(model=current_model, force=True)
+        self._change_selected_model(model=current_model)
         for p in self._ui_panels:
             p.chimerax_models_changed(self.selected_model)
 

@@ -2915,6 +2915,16 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         post_d.positions = positions[1]
         ring_d.colors = post_d.colors = colors
 
+from chimerax.atomic import AtomicStructure
+class _Rotamer_Preview(AtomicStructure):
+    '''
+    Since ISOLDE maintains a trigger checking all added/removed `AtomicStructure`
+    instances to decide whether to rebuild its menu, we want to differentiate
+    the preview model to avoid downstream complexities.
+    '''
+    pass
+
+
 class Rotamer_Restraint_Mgr(_Restraint_Mgr):
     '''
     Rotamer restraints are a little special in that they primarily exist as
@@ -3160,10 +3170,11 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         if self._preview_model is None:
             from chimerax.std_commands.split import molecule_from_atoms
             pm = self._preview_model = molecule_from_atoms(self.model, rotamer.residue.atoms)
+            pm.__class__ = _Rotamer_Preview
             pm.bonds.radii = 0.1
             from chimerax.atomic import Atom
             pm.atoms.draw_modes = Atom.STICK_STYLE
-            self.model.add([pm])
+            self.add([pm])
             pm.rotamer = rotamer
         pm.target_def = target_def
         pm.target_index = target_index
