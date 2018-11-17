@@ -58,21 +58,6 @@ class ISOLDE_ToolUI(ToolInstance):
         self.tool_window.manage(placement=None)
         # Should load saved state here
 
-        # Define frames specific to crystallograpy, EM or free mode
-        self._xtal_frames = [
-            iw._sim_basic_xtal_map_frame,
-            ]
-        self._em_frames = [
-            ]
-        self._free_frames = [
-            ]
-
-        self._sim_mode_frame_lists = [
-            self._xtal_frames,
-            self._em_frames,
-            self._free_frames,
-            ]
-
         ###
         # Selection manipulation buttons
         ###
@@ -185,22 +170,9 @@ class ISOLDE_ToolUI(ToolInstance):
             traceback.print_stack(file=sys.__stderr__)
         super().delete()
 
-    def _change_experience_level_or_sim_mode(self):
+    def _change_experience_level(self):
         iw = self.iw
         exp_index = iw._experience_level_combo_box.currentIndex()
-        mode_index = iw._sim_basic_mode_combo_box.currentIndex()
-        # Need to consider both at once to ensure we don't show/hide
-        # something we shouldn't. For the simulation mode, we need to
-        # ensure all frames associated with the *other* two modes remain
-        # hidden.
-        import copy
-        hide_sim_modes = copy.copy(self._sim_mode_frame_lists)
-        hide_sim_modes.pop(mode_index)
-        # Flatten to a single list for easy searching
-        hide_sim_modes = [item for sublist in hide_sim_modes for item in sublist]
-        for f in hide_sim_modes:
-            f.hide()
-        show_sim_modes = self._sim_mode_frame_lists[mode_index]
         if (exp_index == 0):
             # Easy. Just hide everything intermediate or expert, and
             # everything belonging to other sim modes
@@ -208,27 +180,15 @@ class ISOLDE_ToolUI(ToolInstance):
                 f.hide()
             for f in self._expert_frames:
                 f.hide()
-            for f in show_sim_modes:
-                if f not in self._intermediate_frames and \
-                   f not in self._expert_frames:
-                    f.show()
         elif (exp_index == 1):
             for f in self._intermediate_frames:
-                if f not in hide_sim_modes:
-                    f.show()
+                f.show()
             for f in self._expert_frames:
                 f.hide()
-            for f in show_sim_modes:
-                if f not in self._expert_frames:
-                    f.show()
         else:
             for f in self._intermediate_frames:
-                if f not in hide_sim_modes:
-                    f.show()
+                f.show()
             for f in self._expert_frames:
-                if f not in hide_sim_modes:
-                    f.show()
-            for f in show_sim_modes:
                 f.show()
 
         return
