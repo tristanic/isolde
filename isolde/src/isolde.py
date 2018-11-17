@@ -2633,7 +2633,7 @@ class Isolde():
         self._update_menu_after_sim()
         for d in self._haptic_devices:
             d.cleanup()
-        from chimerax.core.ui.mousemodes import TranslateMouseMode
+        from chimerax.mouse_modes import TranslateMouseMode
         self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
         self.triggers.activate_trigger('simulation terminated', None)
 
