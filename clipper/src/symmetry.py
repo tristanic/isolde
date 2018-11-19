@@ -191,7 +191,7 @@ def symmetry_from_model_metadata_mmcif(model):
     res = None
 
     if 'em_3d_reconstruction' in metadata.keys():
-        em_dict = dict((key, data) for (key,data) in zip(
+        em_dict = dict((key.lower(), data.lower()) for (key,data) in zip(
             metadata['em_3d_reconstruction'][1:], metadata['em_3d_reconstruction data']
         ))
         res_str = em_dict.get('resolution', '?')
@@ -202,7 +202,7 @@ def symmetry_from_model_metadata_mmcif(model):
                 pass
 
     if not res and 'refine' in metadata.keys():
-        refine_dict = dict((key, data) for (key,data) in zip(
+        refine_dict = dict((key.lower(), data.lower()) for (key,data) in zip(
             metadata['refine'][1:], metadata['refine data']
         ))
         res_str = refine_dict.get('ls_d_res_high', '?')
@@ -220,7 +220,7 @@ def symmetry_from_model_metadata_mmcif(model):
     try:
         cell_headers = metadata['cell'][1:]
         cell_data = metadata['cell data']
-        cell_dict = dict((key, data) for (key, data) in zip(cell_headers, cell_data))
+        cell_dict = dict((key.lower(), data.lower()) for (key, data) in zip(cell_headers, cell_data))
         abc = [cell_dict['length_a'], cell_dict['length_b'], cell_dict['length_c']]
         angles = [cell_dict['angle_alpha'], cell_dict['angle_beta'], cell_dict['angle_gamma']]
     except:
@@ -232,7 +232,7 @@ def symmetry_from_model_metadata_mmcif(model):
     except:
         raise TypeError('No space group headers in metadata!')
 
-    spgr_dict = dict((key, data) for (key, data) in zip(spgr_headers, spgr_data))
+    spgr_dict = dict((key.lower(), data.lower()) for (key, data) in zip(spgr_headers, spgr_data))
     spgr_str = spgr_dict['int_tables_number']
     if spgr_str == '?':
         spgr_str = spgr_dict['space_group_name_h-m']
@@ -509,7 +509,7 @@ class Symmetry_Manager(Model):
             self.triggers.activate_trigger('mode changed', None)
         if self.atomic_symmetry_model is not None:
             self.atomic_symmetry_model.live_scrolling = flag
-        self.update()
+        self.update(force=True)
 
     @property
     def spotlight_center(self):
@@ -572,7 +572,7 @@ class Symmetry_Manager(Model):
             self._update_handler = None
         super().delete()
 
-    def update(self, *_):
+    def update(self, *_, force=False):
         v = self.session.view
         cofr = v.center_of_rotation
         # center = self.scene_position.inverse(is_orthonormal=True)*cofr
@@ -581,7 +581,7 @@ class Symmetry_Manager(Model):
             update_needed = True
         elif numpy.linalg.norm(cofr-self._last_box_center) > self.SPOTLIGHT_UPDATE_THRESHOLD:
             update_needed = True
-        if update_needed:
+        if update_needed or force:
             self._last_box_center = cofr
             self.triggers.activate_trigger('spotlight moved', cofr)
 
