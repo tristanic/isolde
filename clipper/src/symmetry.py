@@ -221,13 +221,13 @@ def symmetry_from_model_metadata_mmcif(model):
         cell_headers = metadata['cell'][1:]
         cell_data = metadata['cell data']
         cell_dict = dict((key.lower(), data.lower()) for (key, data) in zip(cell_headers, cell_data))
-        abc = [cell_dict['length_a'], cell_dict['length_b'], cell_dict['length_c']]
-        angles = [cell_dict['angle_alpha'], cell_dict['angle_beta'], cell_dict['angle_gamma']]
+        abc = [float(f) for f  in [cell_dict['length_a'], cell_dict['length_b'], cell_dict['length_c']]]
+        angles = [float(f) for f in [cell_dict['angle_alpha'], cell_dict['angle_beta'], cell_dict['angle_gamma']]]
     except:
         raise TypeError('No cell information available!')
 
     try:
-        spgr_headers = metadata['symmetry']
+        spgr_headers = metadata['symmetry'][1:]
         spgr_data = metadata['symmetry data']
     except:
         raise TypeError('No space group headers in metadata!')
@@ -245,7 +245,10 @@ def symmetry_from_model_metadata_mmcif(model):
     from .clipper_python import Cell_descr, Cell, Spgr_descr, Spacegroup, Resolution, Grid_sampling
     cell_descr = Cell_descr(*abc, *angles)
     cell = Cell(cell_descr)
-    spgr_descr = Spgr_descr(spgr_str)
+    try:
+        spgr_descr = Spgr_descr(spgr_str)
+    except RuntimeError:
+        raise RuntimeError('No spacegroup of name {}!'.format(spgr_str))
     spacegroup = Spacegroup(spgr_descr)
     resolution = Resolution(res)
     grid_sampling = Grid_sampling(spacegroup, cell, resolution)
