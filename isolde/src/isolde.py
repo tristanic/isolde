@@ -118,22 +118,10 @@ class Isolde():
     # Enums for menu options
     ####
 
-    # Different simulation modes to set map, symmetry etc. parameters.
-    class _sim_modes(IntEnum):
-        xtal    = 0
-        em      = 1
-        free    = 2
-
     _force_groups = {
         'main':                         0,
         'position restraints':          1,
         'map forces':                   2,
-        }
-
-    _human_readable_sim_modes = {
-        _sim_modes.xtal:  "Map Fitting mode",
-        _sim_modes.em: "Single-particle EM mode",
-        _sim_modes.free: "Free mode (no maps)"
         }
 
     # Master switch to set the level of control the user has over the simulation.
@@ -292,13 +280,6 @@ class Isolde():
         # Placeholder for the openmm_interface.Sim_Handler object used to perform
         # simulation setup and management
         self._sim_manager = None
-
-        # Holds the current simulation mode, to be chosen from the GUI
-        # drop-down menu or loaded from saved settings.
-        self.sim_mode = None
-
-        self.tug_hydrogens = False
-        self.hydrogens_feel_maps = False
 
         # self.initialize_haptics()
 
@@ -496,16 +477,6 @@ class Isolde():
         for lvl in self._experience_levels:
             cb.addItem(lvl.name, lvl)
 
-        # Clear simulation mode placeholders from QT Designer and repopulate
-        cb = iw._sim_basic_mode_combo_box
-        cb.clear()
-        for mode in self._sim_modes:
-            if mode == self._sim_modes.em:
-                #FIXME EM Mode is under development. Hide for now.
-                continue
-            text = self._human_readable_sim_modes[mode]
-            cb.addItem(text, mode)
-
         iw._sim_temp_spin_box.setValue(self.sim_params.temperature.value_in_unit(OPENMM_TEMPERATURE_UNIT))
 
         # Populate force field combo box with available forcefields
@@ -577,14 +548,10 @@ class Isolde():
         ####
 
         iw._experience_level_combo_box.currentIndexChanged.connect(
-            self.gui._change_experience_level_or_sim_mode
+            self.gui._change_experience_level
             )
+        self.gui._change_experience_level()
 
-        iw._sim_basic_mode_combo_box.currentIndexChanged.connect(
-            self._change_sim_mode
-            )
-        # Initialise to selected mode.
-        self._change_sim_mode()
 
         iw._demo_load_button.clicked.connect(self.load_demo_data)
 
@@ -2253,11 +2220,6 @@ class Isolde():
     ##############################################################
     # Simulation global settings functions
     ##############################################################
-    def _change_sim_mode(self, *_):
-        sm = self.iw._sim_basic_mode_combo_box.currentData()
-        self.sim_mode = sm
-        self.gui._change_experience_level_or_sim_mode()
-        #self._update_model_list()
 
     def _change_force_field(self):
         ff_key = self.iw._sim_force_field_combo_box.currentText()
@@ -2671,7 +2633,7 @@ class Isolde():
         self._update_menu_after_sim()
         for d in self._haptic_devices:
             d.cleanup()
-        from chimerax.core.ui.mousemodes import TranslateMouseMode
+        from chimerax.mouse_modes import TranslateMouseMode
         self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
         self.triggers.activate_trigger('simulation terminated', None)
 
@@ -2683,19 +2645,23 @@ class Isolde():
         selection by the desired padding up and down the chain (stopping at
         chain breaks and ends).
         '''
-        sm = self._selected_model
+        sm = self.selected_model
         all_atoms = sm.atoms
         pad = self.params.num_selection_padding_residues
         from chimerax.atomic import selected_atoms
         selatoms = selected_atoms(self.session)
-        us = selatoms.unique_structures
-        if len(us) != 1:
-            print(len(us))
-            for m in us:
-                print(m.category)
-            raise Exception('Selected atoms must all be in the same model!')
-        if sm != us[0]:
-            raise Exception('Selection must be in the model currently chosen for ISOLDE!')
+        selatoms = selatoms[selatoms.structures == sm]
+        if not len(selatoms):
+            raise TypeError('You must select at least one atom from the current '
+                'working model prior to starting a simulation!')
+        # us = selatoms.unique_structures
+        # if len(us) != 1:
+        #     print(len(us))
+        #     for m in us:
+        #         print(m.category)
+        #     raise Exception('Selected atoms must all be in the same model!')
+        # if sm != us[0]:
+        #     raise Exception('Selection must be in the model currently chosen for ISOLDE!')
         # selatoms_by_chain = selatoms.by_chain
         # selchains = [row[1] for row in selatoms_by_chain]
         all_res = sm.residues
@@ -3096,36 +3062,7 @@ class Isolde():
                     'custom', or 'script'"
             raise KeyError(e)
 
-    def set_sim_mode(self, mode):
-        try:
-            self.sim_mode = self._sim_modes[mode]
-        except KeyError:
-            e = "Mode must be one of 'xtal', 'em' or 'free'"
-            raise Exception(e)
 
-    ##############################################
-    # Warning dialogs
-    ##############################################
-    def _no_maps_warning(self):
-        '''
-        If the user has chosen crystallography or EM mode and has not
-        set up any maps.
-        '''
-        from PyQt5.QtWidgets import QMessageBox
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Warning)
-        errstring = 'You have selected {} but have not selected any maps. '\
-            .format(self._human_readable_sim_modes[self.sim_mode])\
-            + 'Click Ok to switch to Free mode and run without maps, or '\
-            + 'Cancel to stop and choose map(s).'
-        msg.setText(errstring)
-        msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        choice = msg.exec()
-        if choice == QMessageBox.Ok:
-            self.iw._sim_basic_mode_combo_box.setCurrentIndex(2)
-            self.start_sim()
-        else:
-            return
 
     #############################################
     # Final cleanup

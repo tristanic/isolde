@@ -261,8 +261,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>566</width>
-        <height>644</height>
+        <width>572</width>
+        <height>680</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -317,7 +317,7 @@ border: 1px;
 }</string>
            </property>
            <property name="currentIndex">
-            <number>2</number>
+            <number>0</number>
            </property>
            <property name="elideMode">
             <enum>Qt::ElideNone</enum>
@@ -363,12 +363,12 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-278</y>
-                  <width>542</width>
-                  <height>701</height>
+                  <y>0</y>
+                  <width>551</width>
+                  <height>585</height>
                  </rect>
                 </property>
-                <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0">
+                <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0">
                  <property name="spacing">
                   <number>1</number>
                  </property>
@@ -476,47 +476,6 @@ border: 1px;
                        </widget>
                       </item>
                      </layout>
-                    </item>
-                   </layout>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QFrame" name="_sim_basic_mode_choice_frame">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                   <layout class="QHBoxLayout" name="horizontalLayout_8">
-                    <property name="spacing">
-                     <number>1</number>
-                    </property>
-                    <property name="topMargin">
-                     <number>1</number>
-                    </property>
-                    <property name="bottomMargin">
-                     <number>1</number>
-                    </property>
-                    <item>
-                     <widget class="QComboBox" name="_sim_basic_mode_combo_box">
-                      <item>
-                       <property name="text">
-                        <string>Map fitting mode</string>
-                       </property>
-                      </item>
-                      <item>
-                       <property name="text">
-                        <string>Free mode (no maps)</string>
-                       </property>
-                      </item>
-                     </widget>
                     </item>
                    </layout>
                   </widget>
@@ -1041,7 +1000,6 @@ border: 1px;
                  </item>
                 </layout>
                 <zorder>_sim_basic_mobile_selection_frame</zorder>
-                <zorder>_sim_basic_mode_choice_frame</zorder>
                 <zorder>_sim_basic_xtal_map_frame</zorder>
                 <zorder>verticalSpacer</zorder>
                 <zorder>_force_field_selection_frame</zorder>
@@ -1136,8 +1094,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>556</width>
-                  <height>476</height>
+                  <width>564</width>
+                  <height>533</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1876,8 +1834,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>556</width>
-                  <height>334</height>
+                  <width>564</width>
+                  <height>411</height>
                  </rect>
                 </property>
                 <property name="sizePolicy">
@@ -3118,8 +3076,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>542</width>
-                  <height>1262</height>
+                  <width>551</width>
+                  <height>1148</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
