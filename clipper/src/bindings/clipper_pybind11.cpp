@@ -41,6 +41,9 @@ void init_atomsf(py::module& m);
 // ccp4
 void init_ccp4_mtz_io(py::module& m);
 
+// cif
+void init_cif_io(py::module& m);
+
 // contrib
 void init_convolution_search(py::module& m);
 void init_edcalc(py::module& m);
@@ -98,6 +101,9 @@ PYBIND11_MODULE(clipper_python, m) {
 
     // ccp4
     init_ccp4_mtz_io(m);
+
+    // cif
+    init_cif_io(m);
 
     // contrib
     init_convolution_search(m);

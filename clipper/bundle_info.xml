@@ -278,7 +278,10 @@
 
       <SourceFile>src/bindings/wrap_clipper_util.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_map_utils.cpp</SourceFile>
+
       <SourceFile>src/bindings/wrap_ccp4_mtz_io.cpp</SourceFile>
+      <SourceFile>src/bindings/wrap_clipper_cif_io.cpp</SourceFile>
+
       <SourceFile>src/bindings/wrap_unit_cell.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_symops.cpp</SourceFile>
       <SourceFile>src/bindings/wrap_spacegroup.cpp</SourceFile>
