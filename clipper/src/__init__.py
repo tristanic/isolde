@@ -14,7 +14,7 @@ from .clipper_python import (
     Cell,
     Cell_descr,
     CCP4MTZfile,
-    # CIFfile,
+    CIFfile,
     Coord_frac,
     Coord_grid,
     Coord_orth,
