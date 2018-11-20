@@ -1320,7 +1320,7 @@ class PickedSymAtom(Pick):
         self.sym = sym
 
     def description(self):
-        return '({}) {}'.format(self.sym, self.atom)
+        return '({}) {}'.format(self.sym.format_as_symop(), self.atom)
 
     def select(self, mode = 'add'):
         pass
@@ -1354,7 +1354,7 @@ class PickedSymBond(Pick):
         self.bond = bond
         self.sym = sym
     def description(self):
-        return '({}) {}'.format(self.sym, self.bond)
+        return '({}) {}'.format(self.sym.format_as_symop(), self.bond)
 
 class SymRibbonDrawing(Drawing):
     pickable = False

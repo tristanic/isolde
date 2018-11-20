@@ -22,7 +22,34 @@ py::class_<RTop_frac, RTop<ftype>>(m, "RTop_frac")
     .def("rtop_orth", &RTop_frac::rtop_orth)
     .def("inverse", &RTop_frac::inverse)
     .def_static("identity", &RTop_frac::identity)
+    .def("format_as_symop", [](const RTop_frac& self)
+    {
+        String s, t, xyz="xyz";
+        for (int i=0; i<3; ++i) {
+            t = "";
+            for (int j=0; j<3; ++j)
+            {
+                if (self.rot()(i,j) != 0.0 ) {
+                    t += (self.rot()(i,j) > 0.0) ? "+" : "-";
+                    if ( Util::intr( fabs( self.rot()(i,j))) != 1)
+                    {
+                        t += String::rational( fabs( self.rot()(i,j)), 24);
+                    }
+                    t += xyz[j];
+                }
+            }
+            if (self.trn()[i] != 0.0)
+            {
+                t += String::rational(self.trn()[i], 24, true);
+            }
+            s += t.substr((t[0] == '+') ? 1 : 0);
+            if (i<2) s+=", ";
+        }
+        return s;
+    })
     ;
+
+
 
 py::class_ <Symop, RTop_frac>(m, "Symop")
     .def(py::init<>())
