@@ -31,6 +31,7 @@ Dihedral_Mgr<DType>::~Dihedral_Mgr()
         for (auto &d: dm.second)
             delete d.second;
     }
+    _residue_map.clear();
 } //~Dihedral_Mgr
 
 template <class DType>

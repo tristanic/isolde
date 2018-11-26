@@ -27,6 +27,7 @@ Chiral_Mgr::~Chiral_Mgr()
     for (auto &a: _atom_to_chiral) {
         delete a.second;
     }
+    _atom_to_chiral.clear();
 } //~Chiral_Mgr
 
 void Chiral_Mgr::add_chiral_def(const std::string& resname,

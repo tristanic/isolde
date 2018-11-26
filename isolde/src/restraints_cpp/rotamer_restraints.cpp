@@ -74,6 +74,7 @@ Rotamer_Restraint_Mgr::~Rotamer_Restraint_Mgr()
 {
     auto du = DestructionUser(this);
     delete_restraints(all_restraints());
+    _restraint_map.clear();
 }
 
 Rotamer_Restraint* Rotamer_Restraint_Mgr::new_restraint(Rotamer *rot)

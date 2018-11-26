@@ -59,6 +59,7 @@ Dihedral_Restraint_Mgr_Base<DType, RType>::~Dihedral_Restraint_Mgr_Base()
     auto du = DestructionUser(this);
     for (auto &it: _dihedral_to_restraint)
         delete it.second;
+    _dihedral_to_restraint.clear();
 }
 
 template <class DType, class RType>

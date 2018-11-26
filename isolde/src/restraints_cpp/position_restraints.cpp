@@ -155,6 +155,7 @@ Position_Restraint_Mgr_Base::~Position_Restraint_Mgr_Base()
     for (auto &it: _atom_to_restraint) {
         delete it.second;
     }
+    _atom_to_restraint.clear();
 }
 
 } //namespace isolde

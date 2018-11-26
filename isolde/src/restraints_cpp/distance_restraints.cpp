@@ -180,6 +180,7 @@ Distance_Restraint_Mgr::~Distance_Restraint_Mgr()
     for (auto r: _restraints) {
         delete r;
     }
+    _atom_to_restraints.clear();
 }
 
 void Distance_Restraint_Mgr::delete_restraints(const std::set<Distance_Restraint *> &delete_list)
