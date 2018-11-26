@@ -26,9 +26,7 @@ def focus_on_coord(session, center, radius = 5.0, clip=True):
 
 
 def focus_on_selection(session, atoms, pad=5.0, clip = True):
-    v = session.view
-    pad = 5.0
     bounds = atoms.scene_bounds
-    focus_on_coord(bounds,center(), bounds.radius()+pad)
+    focus_on_coord(session, bounds.center(), bounds.radius()+pad)
     session.selection.clear()
     atoms.selected=True
