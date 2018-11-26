@@ -149,6 +149,7 @@ class Isolde():
         'selected model changed', # Changed the master model selection
         'simulation started',
         'simulation terminated',
+        'isolde closed'
         )
 
     def __init__(self, gui=None):
@@ -3069,6 +3070,7 @@ class Isolde():
     #############################################
     def _on_close(self, *_):
         self.session.logger.status('Closing ISOLDE and cleaning up')
+        self.triggers.activate_trigger('isolde closed', None)
 
         for p in self._ui_panels:
             p.remove_trigger_handlers()
