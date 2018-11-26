@@ -349,11 +349,16 @@ class Symmetry_Manager(Model):
     ATOMIC_SYM_EXTRA_RADIUS = 3
     def __init__(self, model, mtzfile=None, map_oversampling=1.5,
         min_voxel_size = 0.5, spotlight_mode = True, spotlight_radius=12,
-        hydrogens='polar', ignore_model_symmetry=False, debug=False):
+        hydrogens='polar', ignore_model_symmetry=False,
+        set_lighting_to_simple=True, debug=False):
         if isinstance(model.parent, Symmetry_Manager):
             raise RuntimeError('This model already has a symmetry manager!')
         name = 'Data manager ({})'.format(model.name)
         session = model.session
+        if set_lighting_to_simple:
+            from chimerax.std_commands import lighting
+            lighting.lighting(session, preset='simple')
+
         self._last_box_center = session.view.center_of_rotation
         super().__init__(name, session)
         self._debug = debug
