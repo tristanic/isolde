@@ -11,7 +11,7 @@
 
 
 #ifndef CHIRAL_EXT
-#define Chiral_EXT
+#define CHIRAL_EXT
 
 #include "chiral.h"
 
