@@ -86,9 +86,9 @@ void MDFF_Mgr::destructors_done(const std::set<void *>& destroyed)
     auto db = DestructionBatcher(this);
     std::set<MDFF_Atom *> to_delete;
     for (const auto &it: _atom_to_mdff) {
-        auto a = it.second;
-        if (destroyed.find(static_cast<void *>(a->atom())) != destroyed.end()) {
-            to_delete.insert(a);
+        auto a = it.first;
+        if (destroyed.find(static_cast<void *>(a)) != destroyed.end()) {
+            to_delete.insert(it.second);
         }
     }
     _delete_mdff_atoms(to_delete);
@@ -100,6 +100,7 @@ MDFF_Mgr::~MDFF_Mgr()
     for (auto &it: _atom_to_mdff) {
         delete it.second;
     }
+    _atom_to_mdff.clear();
 }
 
 } //namespace isolde
