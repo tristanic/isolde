@@ -2649,9 +2649,11 @@ class Isolde():
         sm = self.selected_model
         all_atoms = sm.atoms
         pad = self.params.num_selection_padding_residues
+        selatoms = sm.atoms[sm.atoms.selected]
         from chimerax.atomic import selected_atoms
-        selatoms = selected_atoms(self.session)
-        selatoms = selatoms[selatoms.structures == sm]
+        selected_atoms(self.session).selected=False
+        selatoms.selected = True
+        # selatoms = selatoms[selatoms.structures == sm]
         if not len(selatoms):
             raise TypeError('You must select at least one atom from the current '
                 'working model prior to starting a simulation!')
