@@ -266,20 +266,19 @@ def symmetry_from_model_metadata_pdb(model):
     symstr = cryst1[55:67]
     # zval = int(cryst1[67:71])
 
-
-    remarks = model.metadata['REMARK']
-    i = 0
-
-    '''
-    Get the resolution. We need this to define a Grid_sampling
-    for the unit cell (needed even in the absence of a map since
-    atomic symmetry lookups are done with integerised symops for
-    performance). We want to be as forgiving as possible at this
-    stage - we'll use the official resolution if we find it, and
-    set a default resolution if we don't. This will be overridden
-    by the value from any mtz file that's loaded later.
-    '''
     try:
+        remarks = model.metadata['REMARK']
+        i = 0
+
+        '''
+        Get the resolution. We need this to define a Grid_sampling
+        for the unit cell (needed even in the absence of a map since
+        atomic symmetry lookups are done with integerised symops for
+        performance). We want to be as forgiving as possible at this
+        stage - we'll use the official resolution if we find it, and
+        set a default resolution if we don't. This will be overridden
+        by the value from any mtz file that's loaded later.
+        '''
         while 'REMARK   2' not in remarks[i]:
             i += 1
         # The first 'REMARK   2' line is blank by convention, and
