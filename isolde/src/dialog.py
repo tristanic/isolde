@@ -48,7 +48,7 @@ def failed_template_warning(residue):
     msg.addButton(abort, QMessageBox.NoRole)
     msg.exec_()
     btn = msg.clickedButton()
-    print("Button: {}".format(btn))
+    # print("Button: {}".format(btn))
     if btn == addh:
         return "addh"
     if btn == exclude:
