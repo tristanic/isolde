@@ -1215,6 +1215,7 @@ class Isolde():
             nxmap = map_mgr.nxmapset.add_nxmap_handler_from_volume(existing_volume)
         else:
             nxmap = map_mgr.nxmapset.add_nxmap_handler_from_file(filename)
+        self.change_selected_model(self.selected_model)
 
 
     @property
