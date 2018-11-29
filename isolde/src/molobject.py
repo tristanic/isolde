@@ -1283,6 +1283,10 @@ class Rota_Mgr:
         data_dir = validation.get_molprobity_data_dir()
         prefix = os.path.join(data_dir, 'rota8000-')
         for aa in dmgr.dihedral_dict['aminoacids']:
+            # Ugly hack to avoid adding duplicate dict for MSE. TODO: Will need to
+            # revisit to work out how to handle all modified amino acids.
+            if aa == 'MSE':
+                aa = 'MET'
             fname = prefix + aa.lower()
             if not os.path.isfile(fname+'.data') and not os.path.isfile(fname+'.pickle'):
                 # Not a rotameric residue
