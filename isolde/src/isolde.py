@@ -1289,12 +1289,6 @@ class Isolde():
         v = cb.itemData(i)
         self.add_real_space_map(existing_volume=v, to_model=self.selected_model)
 
-    def add_real_space_map_to_current_model(self, volume):
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sh = get_symmetry_handler(self.selected_model, create=True)
-        sh.map_mgr.nxmapset.add_nxmap_handler_from_volume(volume)
-
-
     def _toggle_xtal_map_dialog(self, *_):
         button = self.iw._sim_basic_xtal_map_settings_show_button
         frame = self.iw._sim_basic_xtal_map_settings_frame
