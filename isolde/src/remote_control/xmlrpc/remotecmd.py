@@ -52,6 +52,7 @@ def remote_control_xmlrpc_on(session):
 class Isolde_XMLRPC_Server:
     REGISTERED_METHODS=(
         'run_command',
+        'spotlight_mode',
         'is_alive',
         'quit',
         'close_all',
@@ -113,10 +114,17 @@ class Isolde_XMLRPC_Server:
     def is_alive(self):
         return True
 
+    def spotlight_mode(self):
+        '''
+        Force a return to "spotlight" viewing mode.
+        '''
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sh = get_symmetry_handler(self._current_model)
+        sh.spotlight_mode=True
+
     def set_default_atom_coloring(self):
         self.run_command('color bychain')
         self.run_command('color byhetero')
-
 
     def quit(self):
         '''
@@ -165,7 +173,6 @@ class Isolde_XMLRPC_Server:
         get_symmetry_handler(m)
         self.set_default_atom_coloring()
         return True
-
 
     def _load_model_and_mtz(self, pdb_file, mtz_file):
         import os
@@ -241,12 +248,11 @@ class Isolde_XMLRPC_Server:
 
     def recenter_and_zoom(self, x, y, z):
         import numpy
+        self.spotlight_mode()
         from chimerax.isolde.view import focus_on_coord
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sh = get_symmetry_handler(self._current_model)
-        sh.spotlight_mode=True
         focus_on_coord(self.session, numpy.array([x,y,z]), radius=5.0)
         return True
+
 
     def close_maps(self):
         if self._current_model is None or self._current_model.deleted:
