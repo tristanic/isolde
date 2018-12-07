@@ -650,14 +650,17 @@ class XmapHandler_Live(XmapHandler_Base):
         all = self.xmap_mgr.get_map_stats(self._map_name)
         return (all.mean, all.std_dev, all.std_dev)
 
-
-
     def _map_recalc_cb(self, name, *_):
+        if self.deleted:
+            return
         for s in self.surfaces:
             s._use_thread=True
         self._fill_volume_data(self._data_fill_target, self.box_params.origin_grid)
         self.data.values_changed()
 
+    def delete(self):
+        self.xmap_mgr.delete_xmap(self._map_name)
+        super().delete()
 
 def map_potential_recommended_bsharp(resolution):
     '''
