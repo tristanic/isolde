@@ -2252,7 +2252,7 @@ class Isolde():
             self._selected_model = None
             return
         old_index = mmcb.currentIndex()
-        if model is not None and not force:
+        if model is not None:
             # Find and select the model in the master combo box, which
             # will automatically call this function again with model = None
             index = iw._master_model_combo_box.findData(model)
