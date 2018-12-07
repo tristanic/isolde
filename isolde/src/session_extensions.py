@@ -90,16 +90,18 @@ def get_mdff_mgr(model, volume, create=False):
     else:
         return None
 
-def get_rota_annotator(model):
+def get_rota_annotator(model, create=True):
     from .validation.rota_annotation import Rotamer_Annotator
     for m in model.child_models():
         if isinstance(m, Rotamer_Annotator):
             return m
-    return Rotamer_Annotator(model)
+    if create:
+        return Rotamer_Annotator(model)
 
-def get_rama_annotator(model):
+def get_rama_annotator(model, create=True):
     from .validation.rama_annotation import Rama_Annotator
     for m in model.child_models():
         if isinstance(m, Rama_Annotator):
             return m
-    return Rama_Annotator(model)
+    if create:
+        return Rama_Annotator(model)
