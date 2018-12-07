@@ -266,6 +266,7 @@ def symmetry_from_model_metadata_pdb(model):
     symstr = cryst1[55:67]
     # zval = int(cryst1[67:71])
 
+    res = 3.0
     try:
         remarks = model.metadata['REMARK']
         i = 0
@@ -285,9 +286,10 @@ def symmetry_from_model_metadata_pdb(model):
         # resolution is on the second line
         i += 1
         line = remarks[i].split()
-        res = float(line[3])
+        if line[2] == 'RESOLUTION':
+            res = float(line[3])
     except:
-        res = 3.0
+        pass
 
     # If this is an EM structure, the CRYST1 card should look something like:
     # CRYST1    1.000    1.000    1.000  90.00  90.00  90.00 P 1
