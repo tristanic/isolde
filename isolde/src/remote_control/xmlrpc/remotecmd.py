@@ -9,44 +9,40 @@
 # or derivations thereof.
 # === UCSF ChimeraX Copyright ===
 
-def register_remote_control_command(command_name, logger):
+def register_remote_control_command(logger):
 
-    from chimerax.core.commands import CmdDesc, register, BoolArg, StringArg, IntArg, FloatArg
+    from chimerax.core.commands import (
+        CmdDesc, register,
+        BoolArg, StringArg, IntArg, FloatArg,
+        EnumOf
+        )
     desc = CmdDesc(
-        required = [('enable', BoolArg)],
+        required = [('cmd', EnumOf(('start', 'stop')))],
         keyword = [('address', StringArg),
                    ('port', IntArg),
                    ('timeout', FloatArg)],
-        synopsis = 'Allow other processes to send XMLRPC commands to ChimeraX')
-    register(command_name, desc, remote_control, logger=logger)
-    register('remotecontrol_xmlrpc_on', CmdDesc(synopsis='start xmlrpc server'), remote_control_xmlrpc_on, logger=logger)
+        synopsis = 'Allow other processes to send XMLRPC commands to ISOLDE')
+    register('isolde xmlrpc', desc, remote_control, logger=logger)
 
-def remote_control(session, enable, address = '127.0.0.1', port = 42184, timeout = 0.01):
+def remote_control(session, cmd, address = '127.0.0.1', port = 42184, timeout = 0.01):
     '''
     Start XMLRPC server so Phenix can remotely control ISOLDE.
     '''
-    isolde = getattr(session, 'isolde', None)
-    if isolde is None:
-        from chimerax.isolde import bundle_api
-        bundle_api.start_tool(session, 'ISOLDE')
-        isolde = session.isolde
+    from chimerax.isolde.cmd import isolde_start
+    isolde = isolde_start(session)
     s = getattr(isolde, '_xmlrpc_server', None)
-    if enable:
+    if cmd=='start':
         if s is None:
             s = Isolde_XMLRPC_Server(isolde, address, port, timeout)
             isolde._xmlrpc_server = s
         return s
-    else:
+    elif cmd=='stop':
         if s:
             del isolde._xmlrpc_server
             s.close()
+    else:
+        raise TypeError('Unrecognised command!')
 
-def remote_control_xmlrpc_on(session):
-    remote_control(session, True)
-#
-# XML remote procedure call server run by ChimeraX to allow other apps such as
-# the Phenix x-ray model building program to use ChimeraX for visualizing results.
-#
 
 
 class Isolde_XMLRPC_Server:

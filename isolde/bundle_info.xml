@@ -126,7 +126,6 @@ with the surroundings.
     <PythonClassifier>License :: Free for non-commercial use.</PythonClassifier>
 ]
     <ChimeraXClassifier>ChimeraX :: Tool :: ISOLDE :: General :: Interactive Molecular Dynamics Flexible Fitting (iMDFF)</ChimeraXClassifier>
-    <ChimeraXClassifier>ChimeraX :: Command :: fps :: General :: Display graphics frame rate</ChimeraXClassifier>
     <ChimeraXClassifier>ChimeraX :: Command :: isolde :: General :: Command-line control of ISOLDE simulations</ChimeraXClassifier>
 ]
   </Classifiers>

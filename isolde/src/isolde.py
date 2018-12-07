@@ -1037,14 +1037,15 @@ class Isolde():
 
             # A running simulation takes precedence for memory control
             #return
+        iw = self.iw
         if not self.simulation_running:
             self._disable_register_shift_frame()
             self._disable_peptide_bond_manipulation_frame()
             flag = not(self.session.selection.empty())
-            iw = self.iw
             iw._sim_go_button.setEnabled(flag)
         else:
             self._enable_peptide_bond_manipulation_frame()
+            iw._sim_go_button.setEnabled(True)
 
 
     def _update_sim_control_button_states(self, *_):
@@ -1196,6 +1197,7 @@ class Isolde():
                 fill_with_fcalc = True,
                 exclude_missing_reflections=True,
                 display=False)
+        self._change_selected_model(model=m, force=True)
 
     def add_real_space_map(self, existing_volume=None, filename=None, to_model=None):
         if to_model is None:
@@ -2908,7 +2910,7 @@ class Isolde():
                 +'following scripts and will be re-enabled when they '\
                 +'terminate: \n{}'.format(
                     '\n'.join([r for r in self.checkpoint_disabled_reasons.values()]))
-            raise TypeError(err_str)
+            self._log.warning(err_str)
 
     def set_smoothing(self, flag):
         if self.gui_mode:
