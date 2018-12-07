@@ -38,5 +38,11 @@ class _MyAPI(BundleAPI):
         if command_name == 'isolde':
             from . import cmd
             cmd.register_isolde(logger)
+        elif command_name == 'rama':
+            from .validation import cmd
+            cmd.register_rama(logger)
+        elif command_name == 'rota':
+            from .validation import cmd
+            cmd.register_rota(logger)
 
 bundle_api = _MyAPI()
