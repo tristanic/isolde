@@ -96,18 +96,6 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         else:
             isolde.discard_sim(revert_to=discard_to, warn=False)
 
-
-
-
-
-
-
-
-
-
-
-
-
 def register_isolde(logger):
     from chimerax.core.commands import (
         register, CmdDesc,
@@ -133,3 +121,5 @@ def register_isolde(logger):
 
     register_isolde_start()
     register_isolde_sim()
+    from chimerax.isolde.remote_control.xmlrpc import remotecmd
+    remotecmd.register_remote_control_command(logger)
