@@ -830,9 +830,41 @@ class Rama_Mgr:
             * residues:
                 - a :class:`chimerax.Residues` instance
         '''
-        scores, cases = self.validate_by_residue(residues)
+        from chimerax.atomic import Residue
+        residues = residues[residues.polymer_types==Residue.PT_AMINO]
+        scores, cases = self.validate(residues)
         bins = self.bin_scores(scores, cases)
         return residues[bins==self.Rama_Bin.OUTLIER]
+
+    def cis(self, residues):
+        '''
+        Returns a :class:`chimerax.Residues` instance encompassing the subset
+        of input residues whose peptide bonds are in the cis conformation.
+        '''
+        from chimerax.atomic import Residue
+        residues = residues[residues.polymer_types==Residue.PT_AMINO]
+        omegas = self._dihedral_mgr.get_dihedrals(residues, 'omega')
+        from math import radians
+        import numpy
+        cis = omegas[numpy.abs(omegas.angles) < radians(30)]
+        return cis.residues
+
+    def twisted(self, residues):
+        '''
+        Returns a list of (:class:`chimerax.Residue`, angle) 2-tuples giving the
+        subset of input residues whose peptide bonds are twisted more than 30
+        degrees from planar.
+        '''
+        from chimerax.atomic import Residue
+        residues = residues[residues.polymer_types==Residue.PT_AMINO]
+        omegas = self._dihedral_mgr.get_dihedrals(residues, 'omega')
+        from math import radians
+        import numpy
+        angles = omegas.angles
+        abs_angles = numpy.abs(angles)
+        twisted_mask = numpy.logical_and(abs_angles >= radians(30), abs_angles < radians(150))
+        return [(t.residue, angle) for t, angle in zip(omegas[twisted_mask], numpy.degrees(angles[twisted_mask]))]
+
 
     def validate(self, residues_or_ramas):
         '''
