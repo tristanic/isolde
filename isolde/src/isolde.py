@@ -2023,7 +2023,7 @@ class Isolde():
         container = self._rama_plot_window = iw._validate_rama_plot_layout
         from .validation.ramaplot import RamaPlot
         from . import session_extensions
-        rama_mgr = session_extensions.get_ramachandran_mgr(self.selected_model)
+        rama_mgr = session_extensions.get_ramachandran_mgr(self.session)
         self._rama_plot = RamaPlot(self.session, rama_mgr, container)
 
     def _show_rama_plot(self, *_):
@@ -2072,6 +2072,10 @@ class Isolde():
     def _rama_static_plot(self, *_):
         model = self.selected_model
         rplot = self._rama_plot
+        if model is None:
+            rplot.set_target_residues(None)
+            rplot.update_scatter()
+            return
         whole_model = not bool(self.iw._validate_rama_sel_combo_box.currentIndex())
         if whole_model:
             res = model.residues

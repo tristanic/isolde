@@ -49,6 +49,13 @@ class RamaPlot:
         self.change_case(cenum.GENERAL)
         self.on_resize()
 
+    def _isolde_model_change_cb(self, trigger_name, model):
+        pass
+
+    def _model_changes_cb(self, trigger_name, changes):
+        pass
+
+
     def _format_axes(self):
         axes = self.axes
         fig = self.figure
@@ -139,6 +146,7 @@ class RamaPlot:
 
     def update_scatter(self, *_, residues=None):
         if not self.container.parent().isVisible():
+            print('Container not visible!')
             return
         if residues is not None:
             self.set_target_residues(residues)
