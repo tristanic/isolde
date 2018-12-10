@@ -424,8 +424,11 @@ class Symmetry_Manager(Model):
 
         from .mousemodes import initialize_clipper_mouse_modes
         initialize_clipper_mouse_modes(session)
+        id = model.id
         self.add([model])
         session.models.add([self])
+        if len(id) == 1:
+            session.models.assign_id(self, id)
 
 
     @property
