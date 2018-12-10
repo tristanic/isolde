@@ -33,6 +33,7 @@ class NXmapSet(MapSet_Base):
             h.expand_to_cover_coords(corners, 15)
         self.add([h])
         self.set_nxmap_display_style(h)
+        self.master_map_mgr._reapply_zone()
         return h
 
     def set_nxmap_display_style(self, nxmap_handler, is_difference_map=False,
