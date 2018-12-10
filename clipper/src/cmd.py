@@ -53,6 +53,29 @@ def associate_volumes(session, volumes, to_model=None):
     for v in volumes:
         mgr.nxmapset.add_nxmap_handler_from_volume(v)
 
+def isolate(session, atoms,
+        surround_distance=5,
+        context_distance=5,
+        mask_radius=3,
+        hide_surrounds=True,
+        focus=False,
+        include_symmetry=True):
+    from chimerax.clipper.symmetry import get_symmetry_handler
+    us = atoms.unique_structures
+    for s in us:
+        sel = us.atoms.intersect(atoms)
+        sh = get_symmetry_handler(s, create=True)
+        sh.isolate_and_cover_selection(sel,
+            include_surrounding_residues = surround_distance,
+            show_context = context_distance,
+            mask_radius = mask_radius,
+            hide_surrounds = hide_surrounds,
+            focus = focus,
+            include_symmetry = include_symmetry)
+
+
+
+
 from chimerax.core.commands.atomspec import AtomSpecArg
 class VolumesArg(AtomSpecArg):
     """Parse command models specifier"""
@@ -96,3 +119,27 @@ def register_clipper_cmd(logger):
         synopsis='Have Clipper take control of the chosen volumes and associate them with the given model'
     )
     register('cxclipper associate', vol_desc, associate_volumes, logger=logger)
+
+    isol_desc = CmdDesc(
+        required=[('atoms', AtomsArg)],
+        keyword=[
+            ('surround_distance', FloatArg),
+            ('context_distance', FloatArg),
+            ('mask_radius', FloatArg),
+            ('hide_surrounds', BoolArg),
+            ('focus', BoolArg),
+            ('include_symmetry', BoolArg)
+        ],
+        synopsis=('Visually isolate the selected atoms from their surroundings, '
+            'and mask their maps to their immediate vicinity. The selection '
+            'covered by the map(s) will be expanded to include all residues '
+            'approaching within surroundDistance of the given selection. Any '
+            'residues approaching within contextDistance of the result will be '
+            'displayed, but not covered by the map(s). If hideSurrounds is '
+            'True, all other atoms will be hidden. If focus is True, the view '
+            'will be reset to cover the visible atoms. If includeSymmetry is '
+            'True, symmetry atoms will be included in the contextDistance '
+            'calculation. To revert to the default viewing mode, use '
+            '"cxclipper spotlight".')
+    )
+    register('cxclipper isolate', isol_desc, isolate, logger=logger)
