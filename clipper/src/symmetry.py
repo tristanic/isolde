@@ -998,7 +998,7 @@ class AtomicSymmetryModel(Model):
             fa = concatenate((ma, sa))
             fs = numpy.concatenate((numpy.zeros(len(ma), numpy.uint8), res[3]))
             self._current_focal_set = (fa, self._current_tfs, fs, self._current_symops)
-
+            self.unhide_all_atoms()
             if bh is not None:
                 self.parent.triggers.remove_handler(bh)
                 self._box_changed_handler = None
