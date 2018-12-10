@@ -32,8 +32,11 @@ def open_mtz(session, path, structure_model = None,
             session.logger.warning(str(e))
             return None, None
 
-def spotlight(session, models, enable=True):
+def spotlight(session, models=None, enable=True):
     from chimerax.clipper.symmetry import get_symmetry_handler
+    if models is None:
+        from chimerax.atomic import AtomicStructure
+        models = session.models.list(type=AtomicStructure)
     for m in models:
         sh = get_symmetry_handler(m, create=True)
         session.logger.info('Setting spotlight mode for model {} to {}'.format(
@@ -68,12 +71,17 @@ class VolumesArg(AtomSpecArg):
 
 
 def register_clipper_cmd(logger):
-    from chimerax.core.commands import register, CmdDesc, BoolArg
-    from chimerax.atomic import StructuresArg, StructureArg
+    from chimerax.core.commands import (
+        register, CmdDesc,
+        BoolArg, FloatArg
+        )
+    from chimerax.atomic import StructuresArg, StructureArg, AtomsArg
 
     spot_desc = CmdDesc(
-        required=[('models', StructuresArg)],
-        optional=[('enable', BoolArg)],
+        optional=[
+            ('models', StructuresArg),
+            ('enable', BoolArg)
+        ],
         synopsis='Switch on/off "Scrolling sphere" visualisation with live atomic symmetry'
     )
     register('cxclipper spotlight', spot_desc, spotlight, logger=logger)
