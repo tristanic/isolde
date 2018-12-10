@@ -11,7 +11,7 @@ class MapSet_Base(Model):
     # derived class if you wish
 
     STANDARD_LOW_CONTOUR = numpy.array([1.5])
-    STANDARD_HIGH_CONTOUR = numpy.array([2.0])
+    STANDARD_HIGH_CONTOUR = numpy.array([2.5])
     STANDARD_DIFFERENCE_MAP_CONTOURS = numpy.array([-3.0, 3.0])
 
     DEFAULT_MESH_MAP_COLOR = [0,1.0,1.0,1.0] # Solid cyan
