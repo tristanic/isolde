@@ -61,3 +61,32 @@ from .clipper_python.data32 import (
     )
 
 from .clipper_mtz import ReflectionDataContainer
+
+from chimerax.core.toolshed import BundleAPI
+class _ClipperBundle(BundleAPI):
+    from chimerax.core.commands import FloatArg
+    from chimerax.atomic import StructureArg
+    @staticmethod
+    def initialize(session, bundle_info):
+        from chimerax.clipper import cmd
+        # cmd.register_mtz_file_format(session)
+
+    @staticmethod
+    def register_command(command_name, logger):
+        # 'register_command' is lazily called when the command is referenced
+        from chimerax.clipper import cmd
+        if command_name == 'cxclipper':
+            cmd.register_clipper_cmd(logger)
+
+    @staticmethod
+    def open_file(session, path, format_name, structure_model=None,
+            over_sampling=1.5):
+        if structure_model is None:
+            from chimerax.core.errors import UserError
+            raise UserError('Must specify a structure model to associate with crystallographic data')
+        if format_name == 'mtz':
+            from .cmd import open_mtz
+            return open_mtz(session, path, structure_model=structure_model,
+                over_sampling=over_sampling)
+
+bundle_api = _ClipperBundle()

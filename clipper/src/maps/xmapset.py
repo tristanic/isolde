@@ -280,6 +280,10 @@ class XmapSet(MapSet_Base):
         return self.live_xmap_mgr.rwork
 
     @property
+    def experimental_data(self):
+        return self._crystal_data.experimental_data.datasets
+
+    @property
     def hklinfo(self):
         return self._crystal_data.hklinfo
 
@@ -578,7 +582,7 @@ class XmapHandler_Static(XmapHandler_Base):
         '''
         Args:
             mapset:
-                The XmapSet_Live object this belongs to
+                The XmapSet object this belongs to
             name:
                 A descriptive name for this map
             f_phi_data:
@@ -622,7 +626,7 @@ class XmapHandler_Live(XmapHandler_Base):
         '''
         Args:
             mapset:
-                The XmapSet_Live object this belongs to
+                The XmapSet object this belongs to
             name:
                 A descriptive name for this map
             is_difference_map:
