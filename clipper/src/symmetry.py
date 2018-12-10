@@ -460,10 +460,11 @@ class Symmetry_Manager(Model):
     @property
     def map_mgr(self):
         ''' Master manager handling all maps associated with this model.'''
-        if not hasattr(self, '_map_mgr') or self._map_mgr is None:
-            from .maps import Map_Mgr
-            self._map_mgr = Map_Mgr(self)
-        return self._map_mgr
+        from .maps import Map_Mgr
+        for m in self.child_models():
+            if isinstance(m, Map_Mgr):
+                return m
+        return Map_Mgr(self)
 
     @property
     def has_symmetry(self):
