@@ -219,8 +219,6 @@ class Isolde():
         self._rama_plot_window = None
         # Object holding Ramachandran plot information and controls
         self._rama_plot = None
-        # Is the Ramachandran plot running live?
-        self._update_rama_plot = False
 
         ####
         # Settings for handling of map visualisation
@@ -527,16 +525,6 @@ class Isolde():
         # Validate tab
         ####
 
-        # Populate the Ramachandran plot case selector with available
-        # cases
-        cb = iw._validate_rama_case_combo_box
-        cb.clear()
-        from . import session_extensions
-        rm = session_extensions.get_ramachandran_mgr(self.session)
-        keys = list(rm.Rama_Case)[1:]
-        for key in reversed(keys):
-            cb.addItem(rm.RAMA_CASE_DETAILS[key]['name'], key)
-
         self._update_model_list(None, None, force=True)
 
     def _connect_functions(self):
@@ -799,12 +787,7 @@ class Isolde():
         iw._validate_rama_hide_button.clicked.connect(
             self._hide_rama_plot
             )
-        iw._validate_rama_case_combo_box.currentIndexChanged.connect(
-            self._change_rama_case
-            )
-        iw._validate_rama_go_button.clicked.connect(
-            self._rama_static_plot
-            )
+
         iw._validate_pep_show_button.clicked.connect(
             self._show_peptide_validation_frame
             )
@@ -2020,11 +2003,14 @@ class Isolde():
         Prepare an empty MatPlotLib figure to put the Ramachandran plots in.
         '''
         iw = self.iw
+        iw._validate_rama_go_button.setEnabled(False)
         container = self._rama_plot_window = iw._validate_rama_plot_layout
         from .validation.ramaplot import RamaPlot
-        from . import session_extensions
-        rama_mgr = session_extensions.get_ramachandran_mgr(self.session)
-        self._rama_plot = RamaPlot(self.session, rama_mgr, container)
+        mode_menu = iw._validate_rama_sel_combo_box
+        case_menu = iw._validate_rama_case_combo_box
+        restrict_button = iw._validate_rama_go_button
+        self._rama_plot = RamaPlot(self.session, self, container, mode_menu,
+            case_menu, restrict_button)
 
     def _show_rama_plot(self, *_):
         self.iw._validate_rama_stub_frame.hide()
@@ -2032,63 +2018,56 @@ class Isolde():
         if self._rama_plot is None:
             # Create the basic MatPlotLib canvas for the Ramachandran plot
             self._prepare_ramachandran_plot()
-        if self.simulation_running:
-            self._rama_go_live()
-        else:
-            self._rama_static_plot()
 
     def _hide_rama_plot(self, *_):
         self.iw._validate_rama_main_frame.hide()
         self.iw._validate_rama_stub_frame.show()
-        self._rama_go_static()
 
 
-    def _change_rama_case(self, *_):
-        case_key = self.iw._validate_rama_case_combo_box.currentData()
-        self._rama_plot.change_case(case_key)
 
-    def _rama_go_live(self, *_):
-        if not self.simulation_running:
-            print('No simulation running!')
-            return
-        res = self.sim_manager.sim_construct.mobile_atoms.unique_residues
-        rp = self._rama_plot
-        rp.set_target_residues(res)
-        self._rama_plot_update_handler =\
-            self.selected_model.triggers.add_handler('changes',
-            rp.update_scatter)
-        self.iw._validate_rama_sel_combo_box.setDisabled(True)
-        self.iw._validate_rama_go_button.setDisabled(True)
 
-    def _rama_go_static(self, *_):
-        # self._update_rama_plot = False
-        if hasattr(self, '_rama_plot_update_handler') and \
-                self._rama_plot_update_handler is not None:
-            self.selected_model.triggers.remove_handler(self._rama_plot_update_handler)
-            self._rama_plot_update_handler = None
-        self.iw._validate_rama_sel_combo_box.setEnabled(True)
-        self.iw._validate_rama_go_button.setEnabled(True)
-
-    def _rama_static_plot(self, *_):
-        model = self.selected_model
-        rplot = self._rama_plot
-        if model is None:
-            rplot.set_target_residues(None)
-            rplot.update_scatter()
-            return
-        whole_model = not bool(self.iw._validate_rama_sel_combo_box.currentIndex())
-        if whole_model:
-            res = model.residues
-            rplot.update_scatter(residues = res)
-
-        else:
-            sel = model.atoms.filter(model.atoms.selected)
-            residues = sel.unique_residues
-            if not len(residues):
-                rplot.set_target_residues(None)
-                residues = None
-            rplot.set_target_residues(residues)
-            rplot.update_scatter()
+    # def _rama_go_live(self, *_):
+    #     if not self.simulation_running:
+    #         print('No simulation running!')
+    #         return
+    #     res = self.sim_manager.sim_construct.mobile_atoms.unique_residues
+    #     rp = self._rama_plot
+    #     rp.set_target_residues(res)
+    #     self._rama_plot_update_handler =\
+    #         self.selected_model.triggers.add_handler('changes',
+    #         rp.update_scatter)
+    #     self.iw._validate_rama_sel_combo_box.setDisabled(True)
+    #     self.iw._validate_rama_go_button.setDisabled(True)
+    #
+    # def _rama_go_static(self, *_):
+    #     # self._update_rama_plot = False
+    #     if hasattr(self, '_rama_plot_update_handler') and \
+    #             self._rama_plot_update_handler is not None:
+    #         self.selected_model.triggers.remove_handler(self._rama_plot_update_handler)
+    #         self._rama_plot_update_handler = None
+    #     self.iw._validate_rama_sel_combo_box.setEnabled(True)
+    #     self.iw._validate_rama_go_button.setEnabled(True)
+    #
+    # def _rama_static_plot(self, *_):
+    #     model = self.selected_model
+    #     rplot = self._rama_plot
+    #     if model is None:
+    #         rplot.set_target_residues(None)
+    #         rplot.update_scatter()
+    #         return
+    #     whole_model = not bool(self.iw._validate_rama_sel_combo_box.currentIndex())
+    #     if whole_model:
+    #         res = model.residues
+    #         rplot.update_scatter(residues = res)
+    #
+    #     else:
+    #         sel = model.atoms.filter(model.atoms.selected)
+    #         residues = sel.unique_residues
+    #         if not len(residues):
+    #             rplot.set_target_residues(None)
+    #             residues = None
+    #         rplot.set_target_residues(residues)
+    #         rplot.update_scatter()
 
     def _show_peptide_validation_frame(self, *_):
         self.iw._validate_pep_stub_frame.hide()
@@ -3044,13 +3023,6 @@ class Isolde():
             cutoff = m.get_mask_cutoff()
             surface_zone(self.session, v.surface_drawings,
                 near_atoms = self.sim_manager.sim_construct.mobile_atoms, range = cutoff)
-
-
-    def update_ramachandran(self, *_):
-        self._rama_counter = (self._rama_counter + 1) % self.params.rounds_per_rama_update
-        if self._rama_counter == 0:
-            if self._update_rama_plot:
-                self._rama_plot.update_scatter()
 
 
 

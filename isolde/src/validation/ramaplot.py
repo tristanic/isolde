@@ -11,13 +11,26 @@
 import numpy
 
 class RamaPlot:
-    def __init__(self, session, rama_mgr, container):
+    WHOLE_MODEL = 0
+    SELECTED_ONLY = 1
+    MOBILE_ONLY = 2
+
+    mode_dict = {
+        WHOLE_MODEL: 'All residues',
+        SELECTED_ONLY: 'Selection',
+        MOBILE_ONLY: 'Mobile atoms only'
+    }
+    def __init__(self, session, isolde, container, mode_menu, case_menu,
+            restrict_button):
         import numpy
         self.session = session
-        mgr = self._rama_mgr = rama_mgr
-        cenum = self._case_enum = rama_mgr.Rama_Case
+        from chimerax.isolde import session_extensions as sx
+        mgr = self._rama_mgr = sx.get_ramachandran_mgr(session)
+        self.isolde = isolde
+        cenum = self._case_enum = mgr.Rama_Case
         self.container = container
         self.current_case = None
+        self._selection_mode = self.WHOLE_MODEL
 
         from matplotlib.figure import Figure
         from matplotlib.backends.backend_qt5agg import (
@@ -25,6 +38,7 @@ class RamaPlot:
             NavigationToolbar2QT as NavigationToolbar
             )
 
+        self._current_model = None
         self._current_residues = None
         self._all_current_ramas = None
         self._case_ramas = None
@@ -47,14 +61,148 @@ class RamaPlot:
 
         self.contours = {}
         self.change_case(cenum.GENERAL)
+
+        self._isolde_switch_model_handler = isolde.triggers.add_handler(
+            'selected model changed',
+            self._isolde_switch_model_cb
+        )
+
+        self._model_changes_handler = None
+        self.current_model = isolde.selected_model
         self.on_resize()
 
-    def _isolde_model_change_cb(self, trigger_name, model):
-        pass
+        self._sel_restrict_button = restrict_button
+        restrict_button.clicked.connect(
+            self._restrict_sel_cb
+        )
 
-    def _model_changes_cb(self, trigger_name, changes):
-        pass
+        self._mode_menu = mode_menu
+        self._populate_mode_menu(mode_menu)
+        mode_menu.currentIndexChanged.connect(
+            self._mode_change_cb
+        )
 
+        self._case_menu = case_menu
+        self._populate_case_menu(case_menu)
+        case_menu.currentIndexChanged.connect(self._case_change_cb)
+
+        self.isolde.triggers.add_handler(
+            'simulation started', self._sim_start_cb
+        )
+
+        self.isolde.triggers.add_handler(
+            'simulation terminated', self._sim_end_cb
+        )
+
+
+    def _sim_start_cb(self, *_):
+        sc = self.isolde.sim_manager.sim_construct
+        self.set_target_residues(sc.mobile_residues)
+        self.selection_mode = self.MOBILE_ONLY
+
+    def _sim_end_cb(self, *_):
+        self._mode_change_cb()
+
+    def _restrict_sel_cb(self, *_):
+        m = self.current_model
+        if m is None:
+            self.clear()
+            return
+        selres = m.atoms[m.atoms.selected].unique_residues
+        self.set_target_residues(selres)
+        self.update_scatter()
+
+    def _populate_mode_menu(self, menu):
+        menu.clear()
+        shown_modes = [
+            self.WHOLE_MODEL,
+            self.SELECTED_ONLY
+        ]
+        for mode in shown_modes:
+            menu.addItem(self.mode_dict[mode])
+
+    def _populate_case_menu(self, menu):
+        menu.clear()
+        rm = self._rama_mgr
+        keys = list(rm.Rama_Case)[1:]
+        for key in reversed(keys):
+            menu.addItem(rm.RAMA_CASE_DETAILS[key]['name'], key)
+
+    def _mode_change_cb(self, *_):
+        mode = self._mode_menu.currentIndex()
+        self.selection_mode = mode
+
+    def _case_change_cb(self, *_):
+        case_key = self._case_menu.currentData()
+        self.change_case(case_key)
+
+    @property
+    def current_model(self):
+        return self._current_model
+
+    @current_model.setter
+    def current_model(self, model):
+        if self._model_changes_handler is not None:
+            self.current_model.triggers.remove_handler(
+                self._model_changes_handler
+            )
+            self._model_changes_handler = None
+        if model:
+            self._model_changes_handler = model.triggers.add_handler(
+                'changes', self._model_changed_cb
+            )
+        self._current_model=model
+        if self.selection_mode == self.WHOLE_MODEL:
+            residues = model.residues
+        else:
+            residues = model.atoms[model.atoms.selected].unique_residues
+        self.set_target_residues(residues)
+        self.update_scatter()
+
+    @property
+    def selection_mode(self):
+        return self._selection_mode
+
+    @selection_mode.setter
+    def selection_mode(self, mode):
+        if mode not in self.mode_dict.keys():
+            raise TypeError('Unrecognised mode!')
+        self._selection_mode = mode
+        if mode == self.WHOLE_MODEL:
+            self.set_target_residues(self.current_model.residues)
+
+        sflag = (mode == self.SELECTED_ONLY)
+        self._sel_restrict_button.setEnabled(sflag)
+
+        mflag = (mode != self.MOBILE_ONLY)
+        self._mode_menu.setEnabled(mflag)
+
+        self.update_scatter()
+
+
+    def _isolde_switch_model_cb(self, trigger_name, model):
+        self.current_model = model
+
+    def _model_changed_cb(self, trigger_name, changes):
+        changes = changes[1]
+        update_needed = False
+        reasons = changes.atom_reasons()
+        if 'coord changed' in reasons:
+            update_needed = True
+        added = len(changes.created_atoms())
+        deleted = changes.num_deleted_atoms()
+        if added or deleted:
+            update_needed = True
+        if update_needed:
+            self.update_scatter()
+
+    @property
+    def parent(self):
+        return self.container.parentWidget()
+
+    @property
+    def visible(self):
+        return self.parent.isVisible()
 
     def _format_axes(self):
         axes = self.axes
@@ -129,12 +277,16 @@ class RamaPlot:
         self.set_target_residues(self._current_residues)
         self.on_resize()
 
+    def clear(self):
+        self.set_target_residues(None)
+        self.update_scatter()
+
     def set_target_residues(self, residues):
         self._current_residues = residues
         case = self.current_case
         mgr = self._rama_mgr
         cenum = self._case_enum
-        if residues is not None:
+        if residues is not None and len(residues):
             ramas = mgr.get_ramas(residues)
             ramas = ramas[ramas.valids]
             cases = ramas.cases
@@ -145,8 +297,7 @@ class RamaPlot:
             self._case_ramas = None
 
     def update_scatter(self, *_, residues=None):
-        if not self.container.parent().isVisible():
-            print('Container not visible!')
+        if not self.visible:
             return
         if residues is not None:
             self.set_target_residues(residues)

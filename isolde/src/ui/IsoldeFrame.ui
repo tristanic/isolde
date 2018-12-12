@@ -261,8 +261,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>572</width>
-        <height>680</height>
+        <width>566</width>
+        <height>644</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -317,7 +317,7 @@ border: 1px;
 }</string>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>3</number>
            </property>
            <property name="elideMode">
             <enum>Qt::ElideNone</enum>
@@ -364,8 +364,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>551</width>
-                  <height>585</height>
+                  <width>542</width>
+                  <height>664</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0">
@@ -1094,8 +1094,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>564</width>
-                  <height>533</height>
+                  <width>556</width>
+                  <height>476</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1834,8 +1834,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>564</width>
-                  <height>411</height>
+                  <width>556</width>
+                  <height>334</height>
                  </rect>
                 </property>
                 <property name="sizePolicy">
@@ -3076,8 +3076,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>551</width>
-                  <height>1148</height>
+                  <width>542</width>
+                  <height>1262</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -3340,7 +3340,7 @@ border: 1px;
                       <item>
                        <widget class="QPushButton" name="_validate_rama_go_button">
                         <property name="text">
-                         <string>Make it so</string>
+                         <string>Restrict to current selection</string>
                         </property>
                        </widget>
                       </item>
