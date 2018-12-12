@@ -17,7 +17,7 @@ def open_mtz(session, path, structure_model = None,
             log_str += 'Found experimental reflection data: \n'
             log_str += '\n'.join(['\t{}'.format(n) for n in xmapset.experimental_data.keys()])
             log_str += '\n'
-            log_str += 'Rwork: {:.4f}; Rfree: {:.4f}'.format(
+            log_str += 'Rwork: {:.4f}; Rfree: {:.4f}\n'.format(
                 xmapset.rwork, xmapset.rfree
             )
         log_str += 'Generated maps: \n{}\n'.format(
