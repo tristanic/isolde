@@ -6,6 +6,7 @@ class MapHandler_Base(Volume):
     '''
     Base class for all Clipper map objects for use in ChimeraX.
     '''
+    pickable=False
     def __init__(self, mapset, name, data, is_difference_map=False):
         session = mapset.session
         super().__init__(session, data)
