@@ -7,7 +7,6 @@
 # @Copyright: 2017-2018 Tristan Croll
 
 
-
 import numpy
 
 class RamaPlot:
@@ -47,19 +46,24 @@ class RamaPlot:
 
         axes = self.axes = fig.add_subplot(111, aspect='equal')
 
-        # Scatter plot needs to always have at least one point, so we'll
-        # define a point off the scale for when there's nothing to plot
-        self.default_coords = numpy.array([200,200])
-        self.default_logscores = numpy.ones(1)
-        self.scatter = None
 
-        self.base_scatter_size = 10
         canvas = self.canvas = FigureCanvas(fig)
         self.resize_cid = self.canvas.mpl_connect('resize_event', self.on_resize)
         self.on_pick_cid = self.canvas.mpl_connect('pick_event', self.on_pick)
         container.addWidget(canvas)
 
         self.contours = {}
+
+        # Scatter plot needs to always have at least one point, so we'll
+        # define a point off the scale for when there's nothing to plot
+        self.default_coords = numpy.array([200,200])
+        base_size = self.base_scatter_size = 10
+        self.default_logscores = numpy.ones(1)
+        scatter = self.scatter = self.axes.scatter(
+            (200),(200), picker = 2.0, s=base_size,
+            edgecolors='black', linewidths = 0.5)
+        scatter.set_cmap('RdYlGn_r')
+
         self.change_case(cenum.GENERAL)
 
         self._isolde_switch_model_handler = isolde.triggers.add_handler(
@@ -69,7 +73,7 @@ class RamaPlot:
 
         self._model_changes_handler = None
         self.current_model = isolde.selected_model
-        self.on_resize()
+        #self.on_resize()
 
         self._sel_restrict_button = restrict_button
         restrict_button.clicked.connect(
@@ -93,6 +97,47 @@ class RamaPlot:
         self.isolde.triggers.add_handler(
             'simulation terminated', self._sim_end_cb
         )
+
+
+    def _prepare_tooltip(self):
+        ax = self.axes
+        annot = self._hover_annotation = ax.annotate(
+            '', xy=(0,0),
+            xytext=(20,20),
+            textcoords='offset points',
+            bbox=dict(boxstyle='round', fc='w'),
+            arrowprops=dict(arrowstyle='->'))
+        annot.set_visible(False)
+
+        def _hover(event):
+            sp = self.scatter
+            annot = self._hover_annotation
+            if event.inaxes == ax:
+                cont, ind = sp.contains(event)
+                if cont:
+                    indices = ind['ind']
+                    text = []
+                    ramas = self._case_ramas[indices]
+                    phipsi = numpy.degrees(ramas.phipsis)
+                    x = phipsi[:,0].mean()
+                    y = phipsi[:,1].mean()
+                    for rama in ramas:
+                        res = rama.residue
+                        text.append('{} {}{}'.format(res.name, res.chain_id, res.number))
+                    annot.set_text('\n'.join(text))
+                    annot.xy = x, y
+                    if y > 0:
+                        annot.xyann=(20,-20)
+                    else:
+                        annot.xyann=(20,20)
+                    annot.set_visible(True)
+                else:
+                    annot.set_visible(False)
+                self.canvas.draw()
+
+        self.canvas.mpl_connect('motion_notify_event', _hover)
+
+
 
 
     def _sim_start_cb(self, *_):
@@ -209,7 +254,6 @@ class RamaPlot:
         fig = self.figure
         axes.set_xticks([-120,-60,0,60,120])
         axes.set_yticks([-120,-60,0,60,120])
-        #axes.set_xticklabels(axes.get_xticklabels(), rotation=60)
         axes.set_xticklabels([])
         axes.set_yticklabels([])
         axes.set_xlim(-180,180)
@@ -239,13 +283,10 @@ class RamaPlot:
         f = self.figure
         c = self.canvas
         self._format_axes()
-        if self.scatter.figure is not None:
-            self.scatter.remove()
+        self.scatter.set_offsets(self.default_coords)
         f.patch.set_facecolor('0.5')
         c.draw()
         self.background = c.copy_from_bbox(axes.bbox)
-        axes.add_artist(self.scatter)
-        c.draw()
         self.update_scatter()
 
     def on_pick(self, event):
@@ -258,24 +299,23 @@ class RamaPlot:
         import numpy
         mgr = self._rama_mgr
         self.current_case = case_key
-        self.axes.clear()
+        ax = self.axes
+        ax.clear()
         try:
             contourplots = self.contours[case_key]
         except KeyError:
             self.cache_contour_plots(case_key)
             contourplots = self.contours[case_key]
         for coll in contourplots[0].collections:
-            self.axes.add_artist(coll)
-        self.axes.add_artist(contourplots[1])
+            ax.add_artist(coll)
+        ax.add_artist(contourplots[1])
+        ax.add_artist(self.scatter)
         from math import log
         contours = mgr.RAMA_CASE_DETAILS[case_key]['cutoffs']
         self.P_limits = [0, -log(contours[0])]
-        scatter = self.scatter = self.axes.scatter(
-            (200),(200), picker = 2.0, s=self.base_scatter_size,
-            edgecolors='black', linewidths = 0.5)
-        scatter.set_cmap('RdYlGn_r')
         self.set_target_residues(self._current_residues)
         self.on_resize()
+        self._prepare_tooltip()
 
     def clear(self):
         self.set_target_residues(None)
@@ -303,7 +343,6 @@ class RamaPlot:
             self.set_target_residues(residues)
         import numpy
         case = self.current_case
-        #~ rv = self.validator
         mgr = self._rama_mgr
         cenum = self._case_enum
         r = self._case_ramas
