@@ -1275,12 +1275,23 @@ class Isolde():
         show_text = 'Show map settings dialogue'
         hide_text = 'Hide map settings dialogue'
         if button.text() == show_text:
+            if (not hasattr(self, '_xtal_dialog_model_change_handler') or
+                    self._xtal_dialog_model_change_handler is None):
+                self.triggers.add_handler('selected model changed',
+                    self._xtal_dialog_model_changed_cb)
             self._populate_xtal_map_combo_box()
             frame.show()
             button.setText(hide_text)
         else:
             frame.hide()
             button.setText(show_text)
+            if self._xtal_dialog_model_change_handler is not None:
+                self.triggers.remove_handler(self._xtal_dialog_model_change_handler)
+                self._xtal_dialog_model_change_handler = None
+
+    def _xtal_dialog_model_changed_cb(self, trigger_name, changes):
+        self._populate_xtal_map_combo_box()
+        #self._populate_xtal_map_params()
 
     def _set_live_xmap_recalc(self, state):
         from chimerax.clipper.symmetry import get_map_mgr
