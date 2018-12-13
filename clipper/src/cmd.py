@@ -107,7 +107,7 @@ def register_clipper_cmd(logger):
         ],
         synopsis='Switch on/off "Scrolling sphere" visualisation with live atomic symmetry'
     )
-    register('cxclipper spotlight', spot_desc, spotlight, logger=logger)
+    register('clipper spotlight', spot_desc, spotlight, logger=logger)
 
     vol_desc = CmdDesc(
         required=[
@@ -118,7 +118,7 @@ def register_clipper_cmd(logger):
         ],
         synopsis='Have Clipper take control of the chosen volumes and associate them with the given model'
     )
-    register('cxclipper associate', vol_desc, associate_volumes, logger=logger)
+    register('clipper associate', vol_desc, associate_volumes, logger=logger)
 
     isol_desc = CmdDesc(
         required=[('atoms', AtomsArg)],
@@ -140,6 +140,6 @@ def register_clipper_cmd(logger):
             'will be reset to cover the visible atoms. If includeSymmetry is '
             'True, symmetry atoms will be included in the contextDistance '
             'calculation. To revert to the default viewing mode, use '
-            '"cxclipper spotlight".')
+            '"clipper spotlight".')
     )
-    register('cxclipper isolate', isol_desc, isolate, logger=logger)
+    register('clipper isolate', isol_desc, isolate, logger=logger)

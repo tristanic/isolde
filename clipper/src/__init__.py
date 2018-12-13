@@ -75,7 +75,7 @@ class _ClipperBundle(BundleAPI):
     def register_command(command_name, logger):
         # 'register_command' is lazily called when the command is referenced
         from chimerax.clipper import cmd
-        if command_name == 'cxclipper':
+        if command_name == 'clipper':
             cmd.register_clipper_cmd(logger)
 
     @staticmethod

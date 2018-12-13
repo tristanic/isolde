@@ -354,7 +354,7 @@
 ]
     <ChimeraXClassifier>ChimeraX :: DataFormat :: MTZ reflection file :: mtz :: Reflection data :: .mtz :: :: :: :: :: Crystallographic reflection file</ChimeraXClassifier>
     <ChimeraXClassifier>ChimeraX :: Open :: MTZ reflection file :: mtz :: true :: structure_model:Structure, over_sampling:Float</ChimeraXClassifier>
-    <ChimeraXClassifier>ChimeraX :: Command :: cxclipper :: General :: Command-line control of Clipper plugin for symmetry and map visualisation</ChimeraXClassifier>
+    <ChimeraXClassifier>ChimeraX :: Command :: clipper :: General :: Command-line control of Clipper plugin for symmetry and map visualisation</ChimeraXClassifier>
 ]
   </Classifiers>
 
