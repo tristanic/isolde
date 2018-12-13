@@ -1867,7 +1867,7 @@ class Isolde():
         if mdff_mgr is not None:
             apply_backrub(self, mdff_mgr, res)
         if trigger_name == 'sim paused':
-            # Simulation was called after automatically pausing the simulation.
+            # Function was called after automatically pausing the simulation.
             # Resume now
             self.session.triggers.add_handler('frame drawn', self._sim_delayed_resume_cb)
         from chimerax.core.triggerset import DEREGISTER
@@ -1943,10 +1943,6 @@ class Isolde():
                 return
         from math import degrees
         res = self._rebuild_residue
-        # c = self._sel_res_update_counter
-        # s = self._steps_per_sel_res_update
-        # c = (c + 1) % s
-        # if c == 0:
         if True:
             # Get the residue's omega value
             omega = self._rebuild_res_omega
@@ -1984,9 +1980,6 @@ class Isolde():
                 rot_text.setText("<font color='{}'>{}</font>".format(desc_color, r_desc))
 
 
-
-        # self._sel_res_update_counter = c
-
     def _flip_peptide_bond(self, *_):
         res = self._rebuild_residue
         self.flip_peptide_bond(res)
@@ -2023,52 +2016,6 @@ class Isolde():
         self.iw._validate_rama_main_frame.hide()
         self.iw._validate_rama_stub_frame.show()
 
-
-
-
-    # def _rama_go_live(self, *_):
-    #     if not self.simulation_running:
-    #         print('No simulation running!')
-    #         return
-    #     res = self.sim_manager.sim_construct.mobile_atoms.unique_residues
-    #     rp = self._rama_plot
-    #     rp.set_target_residues(res)
-    #     self._rama_plot_update_handler =\
-    #         self.selected_model.triggers.add_handler('changes',
-    #         rp.update_scatter)
-    #     self.iw._validate_rama_sel_combo_box.setDisabled(True)
-    #     self.iw._validate_rama_go_button.setDisabled(True)
-    #
-    # def _rama_go_static(self, *_):
-    #     # self._update_rama_plot = False
-    #     if hasattr(self, '_rama_plot_update_handler') and \
-    #             self._rama_plot_update_handler is not None:
-    #         self.selected_model.triggers.remove_handler(self._rama_plot_update_handler)
-    #         self._rama_plot_update_handler = None
-    #     self.iw._validate_rama_sel_combo_box.setEnabled(True)
-    #     self.iw._validate_rama_go_button.setEnabled(True)
-    #
-    # def _rama_static_plot(self, *_):
-    #     model = self.selected_model
-    #     rplot = self._rama_plot
-    #     if model is None:
-    #         rplot.set_target_residues(None)
-    #         rplot.update_scatter()
-    #         return
-    #     whole_model = not bool(self.iw._validate_rama_sel_combo_box.currentIndex())
-    #     if whole_model:
-    #         res = model.residues
-    #         rplot.update_scatter(residues = res)
-    #
-    #     else:
-    #         sel = model.atoms.filter(model.atoms.selected)
-    #         residues = sel.unique_residues
-    #         if not len(residues):
-    #             rplot.set_target_residues(None)
-    #             residues = None
-    #         rplot.set_target_residues(residues)
-    #         rplot.update_scatter()
-
     def _show_peptide_validation_frame(self, *_):
         self.iw._validate_pep_stub_frame.hide()
         self.iw._validate_pep_main_frame.show()
@@ -2082,10 +2029,6 @@ class Isolde():
         from .session_extensions import get_proper_dihedral_mgr
         pd_mgr = get_proper_dihedral_mgr(self.session)
         model = self.selected_model
-        # clist = self.iw._validate_pep_cis_list
-        # tlist = self.iw._validate_pep_twisted_list
-        # clist.clear()
-        # tlist.clear()
         table = self.iw._validate_pep_iffy_table
         if self.simulation_running:
             residues = self.sim_manager.sim_construct.mobile_residues
@@ -2280,39 +2223,6 @@ class Isolde():
     def _change_sim_platform(self, *_):
         self.sim_platform = self.iw._sim_platform_combo_box.currentText()
 
-    def _add_or_change_em_map_from_gui(self, *_):
-        pass
-
-    def _remove_em_map_from_gui(self, *_):
-        pass
-
-    def add_map(self, name, vol, cutoff, coupling_constant,
-        is_difference_map = False, style = None, color = None,
-        contour = None, contour_units = None, mask = True, crop = True):
-        pass
-        # if name in self.master_map_list:
-        #     for key in self.master_map_list:
-        #         print(key)
-        #     raise Exception('Each map must have a unique name!')
-        # # Check if this model is a unique volumetric map
-        # if len(vol.models()) !=1 or not hasattr(vol, 'grid_data'):
-        #     raise Exception('vol must be a single volumetric map object')
-        #
-        # from .volumetric import IsoldeMap
-        # new_map = IsoldeMap(self.session, name, vol, cutoff, coupling_constant,
-        # is_difference_map = is_difference_map, style = style,
-        # color = color, contour = contour, contour_units = contour_units,
-        # mask = mask, crop = crop)
-        # self.master_map_list[name] = new_map
-        # self._update_master_map_list_combo_box()
-        # return new_map
-
-
-    def remove_map(self, name):
-        result = self.master_map_list.pop(name, 'Not present')
-        if result == 'Not present':
-            print(name + ' is an unrecognised key.')
-        self._update_master_map_list_combo_box()
 
     ##############################################################
     # Visualisation functions
@@ -2633,20 +2543,9 @@ class Isolde():
         from chimerax.atomic import selected_atoms
         selected_atoms(self.session).selected=False
         selatoms.selected = True
-        # selatoms = selatoms[selatoms.structures == sm]
         if not len(selatoms):
             raise TypeError('You must select at least one atom from the current '
                 'working model prior to starting a simulation!')
-        # us = selatoms.unique_structures
-        # if len(us) != 1:
-        #     print(len(us))
-        #     for m in us:
-        #         print(m.category)
-        #     raise Exception('Selected atoms must all be in the same model!')
-        # if sm != us[0]:
-        #     raise Exception('Selection must be in the model currently chosen for ISOLDE!')
-        # selatoms_by_chain = selatoms.by_chain
-        # selchains = [row[1] for row in selatoms_by_chain]
         all_res = sm.residues
         sel_res = selatoms.unique_residues
         sel_res_indices = all_res.indices(sel_res)
@@ -3103,16 +3002,6 @@ class Isolde():
         from chimerax.core.colors import Color
         set.set(self.session, bg_color=Color([255,255,255,255]))
 
-        # sharp_map = sym_handler.xmapset['2mFo-DFc_smooth_']
-        # sd = sharp_map.mean_sd_rms()[1]
-        # from . import visualisation as v
-        # styleargs= v.map_style_settings[v.map_styles.solid_t20]
-        # from chimerax.map import volumecommand
-        # volumecommand.volume(self.session, [sharp_map], **styleargs)
-        # sharp_map.set_parameters(surface_levels = (2.5*sd,))
-
-        # from chimerax.clipper import crystal
-        # crystal.set_to_default_cartoon(self.session)
         self._change_selected_model(model=model, force=True)
         model.atoms[model.atoms.idatm_types != 'HC'].displays = True
         from . import view
