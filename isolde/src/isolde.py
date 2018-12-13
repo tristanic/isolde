@@ -1279,10 +1279,15 @@ class Isolde():
         if button.text() == show_text:
             if (not hasattr(self, '_xtal_dialog_model_change_handler') or
                     self._xtal_dialog_model_change_handler is None):
+<<<<<<< HEAD
                 self._xtal_dialog_model_change_handler = self.triggers.add_handler(
                     'selected model changed',
                     self._xtal_dialog_model_changed_cb
                 )
+=======
+                self.triggers.add_handler('selected model changed',
+                    self._xtal_dialog_model_changed_cb)
+>>>>>>> 9eaf7008dcfd5fda94662599edad11a62284f616
             self._populate_xtal_map_combo_box()
             frame.show()
             button.setText(hide_text)
