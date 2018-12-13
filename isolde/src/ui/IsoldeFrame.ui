@@ -776,10 +776,10 @@ border: 1px;
                           <item>
                            <widget class="QDoubleSpinBox" name="_sim_basic_xtal_map_weight_spin_box">
                             <property name="decimals">
-                             <number>2</number>
+                             <number>1</number>
                             </property>
                             <property name="maximum">
-                             <double>100.000000000000000</double>
+                             <double>1000.000000000000000</double>
                             </property>
                             <property name="value">
                              <double>1.000000000000000</double>
