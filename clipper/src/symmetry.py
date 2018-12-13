@@ -638,12 +638,10 @@ class Symmetry_Manager(Model):
         original_atoms = self.last_covered_selection = atoms
         atoms = original_atoms.unique_residues.atoms
         asm = self.atomic_symmetry_model
-        main_set = asm.sym_select_within(atoms, include_surrounding_residues)
-        main_coords = symmetry_coords(*main_set[0:3])
-        context_set = asm.sym_select_within(main_set[0], show_context,
-            coords=main_coords)
-        asm._current_focal_set = context_set
-        asm.set_sym_display(context_set[3], *atom_and_bond_sym_transforms_from_sym_atoms(*context_set[0:3]))
+        asm.show_selection_in_context(atoms,
+            include_surrounding_residues=include_surrounding_residues,
+            show_context=show_context
+        )
         self.map_mgr.cover_coords(atoms.coords,
             mask_radius=mask_radius,
             extra_padding=extra_padding)
@@ -868,7 +866,18 @@ class AtomicSymmetryModel(Model):
             self.add_drawing(d)
         return self._spd
 
-
+    def show_selection_in_context(self, atoms, include_surrounding_residues=5,
+            show_context=5):
+        self._last_context_params = (atoms, include_surrounding_residues, show_context)
+        main_set = self.sym_select_within(atoms, include_surrounding_residues)
+        main_coords = symmetry_coords(*main_set[0:3])
+        context_set = self._current_focal_set = self.sym_select_within(
+            main_set[0], show_context, coords=main_coords
+        )
+        self.set_sym_display(context_set[3],
+            *atom_and_bond_sym_transforms_from_sym_atoms(*context_set[0:3])
+        )
+        return context_set
 
     def sym_select_within(self, atoms, cutoff, coords=None, whole_residues = True):
         '''
@@ -1160,12 +1169,11 @@ class AtomicSymmetryModel(Model):
         if not self.visible:
             return
         changes = changes[1]
+        num_atoms_changed = False
         update_needed = False
         ribbon_update_needed = False
-        if len(changes.created_atoms()):
-            update_needed = True
-            ribbon_update_needed = True
-        if changes.num_deleted_atoms() > 0:
+        if len(changes.created_atoms()) or changes.num_deleted_atoms()>0:
+            num_atoms_changed = True
             update_needed = True
             ribbon_update_needed = True
         reasons = changes.atom_reasons()
@@ -1194,7 +1202,11 @@ class AtomicSymmetryModel(Model):
                 self._update_box()
                 self.update_graphics()
             else:
+                if num_atoms_changed:
+                    self.show_selection_in_context(*self._last_context_params)
+
                 self._update_sym_coords()
+
 
     def _update_sym_coords(self):
         focal_set = self._current_focal_set
