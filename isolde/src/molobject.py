@@ -1318,8 +1318,9 @@ class Rota_Mgr:
             # Ugly hack to avoid adding duplicate dict for MSE. TODO: Will need to
             # revisit to work out how to handle all modified amino acids.
             if aa == 'MSE':
-                aa = 'MET'
-            fname = prefix + aa.lower()
+                fname = prefix+'met'
+            else:
+                fname = prefix + aa.lower()
             if not os.path.isfile(fname+'.data') and not os.path.isfile(fname+'.pickle'):
                 # Not a rotameric residue
                 continue
