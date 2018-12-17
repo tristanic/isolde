@@ -1648,6 +1648,18 @@ class MDFF_Mgr(_Restraint_Mgr):
         if 'global k changed' not in self.triggers.trigger_names():
             self.triggers.add_trigger('global k changed')
         self.guess_global_k()
+        self._enabled = True
+
+    @property
+    def enabled(self):
+        '''
+        Turns this potential on/off in simulations
+        '''
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, flag):
+        self._enabled = flag
 
 
     @property

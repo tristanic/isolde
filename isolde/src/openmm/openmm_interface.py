@@ -790,7 +790,7 @@ class Sim_Manager:
             return
         for v in sh.map_mgr.all_maps:
             mgr = sx.get_mdff_mgr(m, v, create=False)
-            if mgr is not None:
+            if mgr is not None and mgr.enabled:
                 mdff_mgr_map[v] = mgr
         sh.isolate_and_cover_selection(self.sim_construct.mobile_atoms,
             include_surrounding_residues = 0,

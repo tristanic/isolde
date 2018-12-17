@@ -1319,24 +1319,42 @@ class Isolde():
     def _populate_xtal_map_params(self, *_):
         cb = self.iw._sim_basic_xtal_settings_map_combo_box
         gb = self.iw._sim_basic_xtal_settings_set_button
+        wf = self.iw._sim_basic_xtal_map_weight_frame
+        eb = self.iw._sim_basic_xtal_settings_enable_mdff_checkbox
         this_map = cb.currentData()
         if cb.currentIndex() == -1 or this_map is None:
             gb.setEnabled(False)
+            wf.setEnabled(False)
+            eb.setEnabled(False)
             return
         gb.setEnabled(True)
         from .session_extensions import get_mdff_mgr
         mgr = get_mdff_mgr(self.selected_model, this_map)
-        wf = self.iw._sim_basic_xtal_map_weight_frame
         if mgr is not None:
             wf.setEnabled(True)
+            eb.setEnabled(True)
+            eb.setChecked(mgr.enabled)
             self.iw._sim_basic_xtal_map_weight_spin_box.setValue(
                 mgr.global_k)
         else:
             wf.setEnabled(False)
+            eb.setEnabled(False)
+            eb.setChecked(False)
+
+    def _enable_or_disable_mdff_potential(self, flag):
+        cb = self.iw._sim_basic_xtal_settings_map_combo_box
+        this_map = cb.currentData()
+        if this_map is None:
+            return
+        from .session_extensions import get_mdff_mgr
+        mgr = get_mdff_mgr(self.selected_model, this_map)
+        mgr.enabled = flag
 
     def _apply_xtal_map_params(self, *_):
         cb = self.iw._sim_basic_xtal_settings_map_combo_box
         this_map = cb.currentData()
+        if this_map is None:
+            return
         from .session_extensions import get_mdff_mgr
         mgr = get_mdff_mgr(self.selected_model, this_map)
         mgr.global_k = self.iw._sim_basic_xtal_map_weight_spin_box.value()
