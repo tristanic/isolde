@@ -664,6 +664,9 @@ class Isolde():
         iw._sim_basic_xtal_settings_map_combo_box.currentIndexChanged.connect(
             self._populate_xtal_map_params
             )
+        iw._sim_basic_xtal_settings_enable_mdff_checkbox.clicked.connect(
+            self._enable_or_disable_mdff_potential
+        )
         iw._sim_basic_xtal_settings_set_button.clicked.connect(
             self._apply_xtal_map_params
             )
@@ -901,6 +904,8 @@ class Isolde():
     ##############################################################
     # Menu control functions to run on key events
     ##############################################################
+    # TODO: This function has become somewhat monolithic and has expanded well
+    #       beyond its original remit. Needs some rethinking.
     def _update_model_list(self, trigger_name, models, force=False):
         from chimerax.core.models import Model
         if isinstance(models, Model):
@@ -908,6 +913,7 @@ class Isolde():
         from chimerax.atomic import AtomicStructure
         from chimerax.map import Volume
         from chimerax.clipper.symmetry import Symmetry_Manager
+        from chimerax.clipper.maps import XmapHandler_Live
         from .restraints import MDFF_Mgr
 
         if force:
@@ -1030,6 +1036,8 @@ class Isolde():
         iw = self.iw
         paused = self.sim_paused
         go_button = iw._sim_go_button
+        mdff_cb = iw._sim_basic_xtal_settings_enable_mdff_checkbox
+        mdff_cb.setEnabled(not running)
         if paused and not running:
             go_button.setChecked(False)
         elif paused:
@@ -1224,18 +1232,24 @@ class Isolde():
             # No maps associated with this model.
             return False
 
+        recalc_frame = self.iw._sim_basic_xtal_settings_live_recalc_frame
+
         from chimerax.clipper.maps import XmapHandler_Live
         from .session_extensions import get_mdff_mgr
         mdff_mgrs = []
+        live_maps = False
         for v in mgr.all_maps:
             # Only XmapHandler_Live objects specifically created to exclude the
             # free set are allowed to act as MDFF potentials
-            if isinstance(v, XmapHandler_Live) and 'MDFF potential' not in v.name:
-                continue
+            if isinstance(v, XmapHandler_Live):
+                live_maps = True
+                if 'MDFF potential' not in v.name:
+                    continue
             # Difference maps are excluded from MDFF by default
             if v.is_difference_map:
                 continue
             mdff_mgrs.append(get_mdff_mgr(model, v, create=True))
+        recalc_frame.setVisible(live_maps)
         if len(mdff_mgrs):
             return True
         return False
@@ -1284,6 +1298,7 @@ class Isolde():
                 )
             self._populate_xtal_map_combo_box()
             frame.show()
+            self._populate_xtal_map_params()
             button.setText(hide_text)
         else:
             frame.hide()

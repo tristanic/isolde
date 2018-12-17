@@ -363,12 +363,12 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>0</y>
+                  <y>-230</y>
                   <width>542</width>
-                  <height>664</height>
+                  <height>653</height>
                  </rect>
                 </property>
-                <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0">
+                <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0">
                  <property name="spacing">
                   <number>1</number>
                  </property>
@@ -720,23 +720,6 @@ border: 1px;
                         <number>0</number>
                        </property>
                        <item>
-                        <layout class="QHBoxLayout" name="horizontalLayout_43">
-                         <property name="topMargin">
-                          <number>20</number>
-                         </property>
-                         <item>
-                          <widget class="QCheckBox" name="_sim_basic_xtal_settings_live_recalc_checkbox">
-                           <property name="text">
-                            <string>Live crystallographic map recalculation</string>
-                           </property>
-                           <property name="checked">
-                            <bool>true</bool>
-                           </property>
-                          </widget>
-                         </item>
-                        </layout>
-                       </item>
-                       <item>
                         <layout class="QHBoxLayout" name="horizontalLayout_35">
                          <item>
                           <widget class="QLabel" name="label_39">
@@ -760,6 +743,16 @@ border: 1px;
                             </size>
                            </property>
                           </spacer>
+                         </item>
+                         <item>
+                          <widget class="QCheckBox" name="_sim_basic_xtal_settings_enable_mdff_checkbox">
+                           <property name="text">
+                            <string>Enable MDFF</string>
+                           </property>
+                           <property name="checked">
+                            <bool>true</bool>
+                           </property>
+                          </widget>
                          </item>
                         </layout>
                        </item>
@@ -929,6 +922,31 @@ border: 1px;
                   </widget>
                  </item>
                  <item>
+                  <widget class="QFrame" name="_sim_basic_xtal_settings_live_recalc_frame">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QHBoxLayout" name="horizontalLayout_43">
+                    <property name="topMargin">
+                     <number>1</number>
+                    </property>
+                    <item>
+                     <widget class="QCheckBox" name="_sim_basic_xtal_settings_live_recalc_checkbox">
+                      <property name="text">
+                       <string>Live crystallographic map recalculation</string>
+                      </property>
+                      <property name="checked">
+                       <bool>true</bool>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QFrame" name="_force_field_selection_frame">
                    <property name="frameShape">
                     <enum>QFrame::StyledPanel</enum>
@@ -1004,6 +1022,7 @@ border: 1px;
                 <zorder>verticalSpacer</zorder>
                 <zorder>_force_field_selection_frame</zorder>
                 <zorder>_sim_platform_frame</zorder>
+                <zorder>_sim_basic_xtal_settings_live_recalc_frame</zorder>
                </widget>
               </widget>
              </item>
@@ -1066,7 +1085,7 @@ border: 1px;
            </widget>
            <widget class="QWidget" name="_sim_restrain_tab">
             <attribute name="title">
-             <string>Custom restraints</string>
+             <string>Restraints</string>
             </attribute>
             <layout class="QVBoxLayout" name="verticalLayout_7">
              <property name="spacing">
@@ -1115,7 +1134,13 @@ border: 1px;
                   <number>1</number>
                  </property>
                  <item>
-                  <widget class="QFrame" name="_restraints_peptide_bond_frame">
+                  <widget class="QFrame" name="frame_15">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>40</height>
+                    </size>
+                   </property>
                    <property name="frameShape">
                     <enum>QFrame::StyledPanel</enum>
                    </property>
