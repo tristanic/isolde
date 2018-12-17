@@ -1823,6 +1823,9 @@ class Isolde():
         rot = self._selected_rotamer
         from . import session_extensions
         rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
+        if not rrm.valid_preview(rot):
+            self.session.logger.warning('No rotamer preview selected! Ignoring command.')
+            return
         rrm.commit_preview(rot)
         if self.simulation_running:
             self.sim_handler.push_coords_to_sim()
@@ -1831,6 +1834,9 @@ class Isolde():
         rot = self._selected_rotamer
         from . import session_extensions
         rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
+        if not rrm.valid_preview(rot):
+            self.session.logger.warning('No rotamer preview selected! Ignoring command.')
+            return
         rrm.set_targets(rot)
         rr = rrm.get_restraint(rot)
         rr.set_spring_constant(self.sim_params.rotamer_spring_constant.value_in_unit(OPENMM_RADIAL_SPRING_UNIT))
