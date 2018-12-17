@@ -966,6 +966,7 @@ class Isolde():
             self._populate_available_volumes_combo_box()
 
         self._change_selected_model(model=current_model)
+        self._initialize_maps(current_model)
         for p in self._ui_panels:
             p.chimerax_models_changed(self.selected_model)
 
@@ -1222,6 +1223,8 @@ class Isolde():
         '''
         from chimerax.map import Volume
         from chimerax.clipper.symmetry import get_map_mgr
+        if model is None:
+            return False
         mgr = get_map_mgr(model)
         if mgr is None:
             # No maps associated with this model.
