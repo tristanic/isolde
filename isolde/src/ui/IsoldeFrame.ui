@@ -1123,116 +1123,55 @@ border: 1px;
                     <enum>QFrame::Raised</enum>
                    </property>
                    <layout class="QHBoxLayout" name="horizontalLayout_18">
+                    <property name="spacing">
+                     <number>2</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>1</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>1</number>
+                    </property>
                     <item>
-                     <widget class="QComboBox" name="_restraints_pep_on_off_combo_box">
-                      <property name="maximumSize">
-                       <size>
-                        <width>80</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="currentIndex">
-                       <number>1</number>
-                      </property>
-                      <item>
-                       <property name="text">
-                        <string>Disable</string>
-                       </property>
-                      </item>
-                      <item>
-                       <property name="text">
-                        <string>Enable</string>
-                       </property>
-                      </item>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QLabel" name="label_19">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>100</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
+                     <widget class="QPushButton" name="_restraints_restrain_small_ligands_button">
                       <property name="text">
-                       <string>peptide bond restraints for</string>
-                      </property>
-                      <property name="wordWrap">
-                       <bool>true</bool>
+                       <string>Restrain small ligands</string>
                       </property>
                      </widget>
                     </item>
                     <item>
-                     <widget class="QComboBox" name="_restraints_pep_all_sel_combo_box">
-                      <property name="maximumSize">
-                       <size>
-                        <width>80</width>
-                        <height>16777215</height>
-                       </size>
+                     <widget class="QDoubleSpinBox" name="_restraints_restrain_small_ligands_cutoff_spinbox">
+                      <property name="minimum">
+                       <double>3.000000000000000</double>
                       </property>
-                      <property name="currentIndex">
-                       <number>1</number>
+                      <property name="maximum">
+                       <double>8.000000000000000</double>
                       </property>
-                      <item>
-                       <property name="text">
-                        <string>all</string>
-                       </property>
-                      </item>
-                      <item>
-                       <property name="text">
-                        <string>selected</string>
-                       </property>
-                      </item>
+                      <property name="singleStep">
+                       <double>0.050000000000000</double>
+                      </property>
+                      <property name="value">
+                       <double>3.500000000000000</double>
+                      </property>
                      </widget>
                     </item>
                     <item>
-                     <widget class="QLabel" name="label_20">
-                      <property name="maximumSize">
-                       <size>
-                        <width>60</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
+                     <widget class="QLabel" name="label_14">
                       <property name="text">
-                       <string>residues</string>
+                       <string>Cutoff (Å)</string>
                       </property>
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="_restraints_pep_go_button">
-                      <property name="maximumSize">
-                       <size>
-                        <width>100</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
+                     <widget class="QCheckBox" name="_restraints_restrain_small_ligands_carbon_checkbox">
                       <property name="text">
-                       <string>Make it so</string>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QFrame" name="_restraints_stub_frame">
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                   <layout class="QHBoxLayout" name="horizontalLayout_19">
-                    <item>
-                     <widget class="QPushButton" name="pushButton">
-                      <property name="text">
-                       <string>PushButton</string>
+                       <string>Include carbons</string>
                       </property>
                      </widget>
                     </item>

@@ -694,12 +694,6 @@ class Isolde():
         iw._vis_spotlight_mode_button.clicked.connect(
             self._xtal_enable_live_scrolling
             )
-        ####
-        # Restraints tab
-        ####
-        iw._restraints_pep_go_button.clicked.connect(
-            self._change_peptide_bond_restraints
-            )
 
 
         ####
@@ -2354,42 +2348,6 @@ class Isolde():
         if self.simulation_running:
             self.sim_handler.smoothing_alpha = alpha
 
-
-
-
-    ##############################################################
-    # Interactive restraints functions
-    ##############################################################
-
-    def _change_peptide_bond_restraints(self, *_):
-        '''
-        Menu-driven function to turn peptide bond restraints on/off
-        for some subset of residues.
-        '''
-        enable = bool(self.iw._restraints_pep_on_off_combo_box.currentIndex())
-        selected = bool(self.iw._restraints_pep_all_sel_combo_box.currentIndex())
-
-        bd = self._mobile_backbone_dihedrals
-
-        if selected:
-            from chimerax.atomic import selected_atoms
-            sel = selected_atoms(self.session)
-        else:
-            sel = self.sim_manager.sim_construct.mobile_atoms
-
-        res = sel.unique_residues
-
-        if enable:
-            k = self.peptide_bond_restraints_k
-        else:
-            k = 0
-
-        omegas = bd.omega.by_residues(res)
-
-        if enable:
-            self.apply_peptide_bond_restraints(omegas)
-        else:
-            self.remove_peptide_bond_restraints(omegas)
 
     ##############################################################
     # Simulation prep
