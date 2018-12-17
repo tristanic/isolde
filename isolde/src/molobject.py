@@ -1544,10 +1544,6 @@ class _Restraint_Mgr(Model):
         session = model.session
         ct = self._change_tracker = _get_restraint_change_tracker(session)
 
-        # Other models dependent on this one. Closing this manager will close
-        # its dependents
-        self._dependents = set()
-
         if c_class_name is None:
             cname = type(self).__name__.lower()
         else:
@@ -1595,14 +1591,7 @@ class _Restraint_Mgr(Model):
             t.add_trigger('changes')
         return self._triggers
 
-    def register_dependent(self, model):
-        self._dependents.add(model)
-
-    def deregister_dependent(self, model):
-        self._dependents.remove(model)
-
     def delete(self):
-        self.session.models.close(list(self._dependents))
         cname = type(self).__name__.lower()
         del_func = cname+'_delete'
         c_function(del_func, args=(ctypes.c_void_p,))(self._c_pointer)
@@ -2990,7 +2979,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         # since the resulting 'model add' trigger fires before this
         # Rotamer_Restraint_Mgr instance is finalised. The net result is that
         # we end up with *two* Rotamer_Restraint_Mgr instances
-        deferred_additions = []
+        deferred_pdrm = False
         pdr_m = None
         for m in model.child_models():
             if isinstance(m, Proper_Dihedral_Restraint_Mgr):
@@ -2998,9 +2987,8 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
                 break
         if pdr_m is None:
             pdr_m = Proper_Dihedral_Restraint_Mgr(model, defer_add=True)
-            deferred_additions.append(pdr_m)
+            deferred_pdrm = True
         self._pdr_m = pdr_m
-        pdr_m.register_dependent(self)
         from . import session_extensions as sx
         rota_m = self._rota_m = sx.get_rotamer_mgr(session)
         if c_pointer is None:
@@ -3016,8 +3004,15 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         self.pickable=False
         self.model = model
         self._preview_model = None
-        deferred_additions.append(self)
-        model.add(deferred_additions)
+        pdr_m.add([self])
+        if deferred_pdrm:
+            model.add([pdr_m])
+
+    def valid_preview(self, rotamer):
+        pm = self._preview_model
+        if pm is None or pm.rotamer != rotamer:
+            return False
+        return True
 
     @property
     def num_restraints(self):
@@ -3188,7 +3183,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
                 - a :py:class:`Rotamer` instance
         '''
         pm = self._preview_model
-        if pm is None or pm.rotamer != rotamer:
+        if not self.valid_preview(rotamer):
             raise TypeError('Current preview is for a different rotamer!')
         # Clear any existing chi restraints
         rr = self.add_restraint(rotamer)
@@ -3215,7 +3210,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         rr = self.add_restraint(rotamer)
         if target_index is None:
             pm = self._preview_model
-            if pm is None or pm.rotamer != rotamer:
+            if not self.valid_preview(rotamer):
                 raise TypeError(
                 'No target index has been chosen and there is no suitable preview '
                +'to choose it from!')
@@ -3225,9 +3220,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         self.remove_preview()
 
     def delete(self):
-        self._pdr_m.deregister_dependent(self)
         super().delete()
-
 
 
     #TODO: Implement preview as drawing, to do away with the need for a dummy model
