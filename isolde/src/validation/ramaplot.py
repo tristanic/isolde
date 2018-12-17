@@ -207,7 +207,9 @@ class RamaPlot:
                 'changes', self._model_changed_cb
             )
         self._current_model=model
-        if self.selection_mode == self.WHOLE_MODEL:
+        if model is None:
+            residues = None
+        elif self.selection_mode == self.WHOLE_MODEL:
             residues = model.residues
         else:
             residues = model.atoms[model.atoms.selected].unique_residues
@@ -223,7 +225,9 @@ class RamaPlot:
         if mode not in self.mode_dict.keys():
             raise TypeError('Unrecognised mode!')
         self._selection_mode = mode
-        if mode == self.WHOLE_MODEL:
+        if self.current_model is None:
+            self.set_target_residues(None)
+        elif mode == self.WHOLE_MODEL:
             self.set_target_residues(self.current_model.residues)
 
         sflag = (mode == self.SELECTED_ONLY)

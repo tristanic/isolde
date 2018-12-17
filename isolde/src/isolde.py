@@ -1312,8 +1312,11 @@ class Isolde():
     def _populate_xtal_map_combo_box(self, *_):
         cb = self.iw._sim_basic_xtal_settings_map_combo_box
         cb.clear()
+        sm = self.selected_model
+        if sm is None:
+            return
         from chimerax.clipper.symmetry import get_map_mgr
-        mgr = get_map_mgr(self.selected_model)
+        mgr = get_map_mgr(sm)
         if mgr is None:
             return
         for v in mgr.all_maps:
@@ -2036,6 +2039,9 @@ class Isolde():
         pd_mgr = get_proper_dihedral_mgr(self.session)
         model = self.selected_model
         table = self.iw._validate_pep_iffy_table
+        table.setRowCount(0)
+        if model is None:
+            return
         if self.simulation_running:
             residues = self.sim_manager.sim_construct.mobile_residues
         else:
@@ -2054,7 +2060,6 @@ class Isolde():
         angles = numpy.degrees(iffy.angles)
         cis_mask = cis_mask[iffy_mask]
 
-        table.setRowCount(0)
         table.setRowCount(len(iffy))
         from PyQt5.QtWidgets import QListWidgetItem
         from PyQt5.Qt import QColor, QBrush
@@ -2107,6 +2112,10 @@ class Isolde():
     def _update_iffy_rota_list(self, *_):
         from .session_extensions import get_rotamer_mgr
         rota_m = get_rotamer_mgr(self.session)
+        table = self.iw._validate_rota_table
+        table.setRowCount(0)
+        if self.selected_model is None:
+            return
         if self.simulation_running:
             residues = self.sim_manager.sim_construct.mobile_residues
         else:
@@ -2114,12 +2123,10 @@ class Isolde():
         rotas = rota_m.get_rotamers(residues)
         iffy, scores = rota_m.non_favored_rotamers(rotas)
         order = numpy.argsort(scores)
-        table = self.iw._validate_rota_table
         outlier_cutoff = rota_m.cutoffs[1]
         from PyQt5.Qt import QColor, QBrush
         from PyQt5.QtCore import Qt
         badColor = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
-        table.setRowCount(0)
         table.setRowCount(len(iffy))
         from PyQt5.QtWidgets import QTableWidgetItem
         for i, index in enumerate(order):
