@@ -1544,6 +1544,10 @@ class _Restraint_Mgr(Model):
         session = model.session
         ct = self._change_tracker = _get_restraint_change_tracker(session)
 
+        # Other models dependent on this one. Closing this manager will close
+        # its dependents
+        self._dependents = set()
+
         if c_class_name is None:
             cname = type(self).__name__.lower()
         else:
@@ -1591,7 +1595,14 @@ class _Restraint_Mgr(Model):
             t.add_trigger('changes')
         return self._triggers
 
+    def register_dependent(self, model):
+        self._dependents.add(model)
+
+    def deregister_dependent(self, model):
+        self._dependents.remove(model)
+
     def delete(self):
+        self.session.models.close(list(self._dependents))
         cname = type(self).__name__.lower()
         del_func = cname+'_delete'
         c_function(del_func, args=(ctypes.c_void_p,))(self._c_pointer)
@@ -1705,8 +1716,6 @@ class MDFF_Mgr(_Restraint_Mgr):
             sh.spotlight_mode = spotlight_mode
 
         self.global_k = scaling_constant/ref_g
-
-
 
     def _get_mdff_atoms(self, atoms, create=False):
         f = c_function('mdff_mgr_get_mdff_atom',
@@ -2521,7 +2530,7 @@ class Chiral_Restraint_Mgr(_Restraint_Mgr):
     .. code:: python
 
         from chimerax.isolde import session_extensions as sx
-        chir_mgr = sx.get_chirality_restraint_mgr(m)
+        chir_mgr = sx.get_chir_restraint_mgr(m)
     '''
     def __init__(self, model, c_pointer = None):
         super().__init__('Chirality Restraints', model, c_pointer)
@@ -2563,7 +2572,7 @@ class Chiral_Restraint_Mgr(_Restraint_Mgr):
                 - a :py:class:`Chiral_Center` instance
         '''
         from .molarray import Chiral_Centers
-        result = self._get_restraints(Dihedrals([dihedral]), create=True)
+        result = self._get_restraints(Dihedrals([chiral]), create=True)
         if len(result):
             return result[0]
         return None
@@ -2580,7 +2589,7 @@ class Chiral_Restraint_Mgr(_Restraint_Mgr):
             * chirals:
                 - a :py:class:`Chiral_Centers` instance.
         '''
-        return self._get_restraints(chirals)
+        return self._get_restraints(chirals, create=False)
 
     def get_restraint(self, chiral):
         '''
@@ -2650,15 +2659,16 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         from chimerax.isolde import session_extensions as sx
         pdr_mgr = sx.get_proper_dihedral_restraint_mgr(m)
     '''
-    def __init__(self, model, c_pointer = None):
+    def __init__(self, model, c_pointer = None, defer_add = False):
         super().__init__('Proper Dihedral Restraints', model, c_pointer)
         self.set_default_colors()
         self._update_needed = True
         self._prepare_drawings()
         self._restraint_changes_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
         self._atom_changes_handler = model.triggers.add_handler('changes', self._model_changes_cb)
-        model.add([self])
-        self.update_graphics()
+        if not defer_add:
+            model.add([self])
+            self.update_graphics()
 
     def delete(self):
         ah = self._atom_changes_handler
@@ -2973,9 +2983,25 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
     def __init__(self, model, c_pointer=None):
         '''Manages rotamer restraints for a single model'''
         session=model.session
+        self._dependents = set()
         ct = self._change_tracker = _get_restraint_change_tracker(session)
+
+        # Can't use the default get_proper_dihedral_restraint_mgr() call here
+        # since the resulting 'model add' trigger fires before this
+        # Rotamer_Restraint_Mgr instance is finalised. The net result is that
+        # we end up with *two* Rotamer_Restraint_Mgr instances
+        deferred_additions = []
+        pdr_m = None
+        for m in model.child_models():
+            if isinstance(m, Proper_Dihedral_Restraint_Mgr):
+                pdr_m = m
+                break
+        if pdr_m is None:
+            pdr_m = Proper_Dihedral_Restraint_Mgr(model, defer_add=True)
+            deferred_additions.append(pdr_m)
+        self._pdr_m = pdr_m
+        pdr_m.register_dependent(self)
         from . import session_extensions as sx
-        pdr_m = self._pdr_m = sx.get_proper_dihedral_restraint_mgr(model)
         rota_m = self._rota_m = sx.get_rotamer_mgr(session)
         if c_pointer is None:
             f = c_function('rotamer_restraint_mgr_new',
@@ -2990,7 +3016,8 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         self.pickable=False
         self.model = model
         self._preview_model = None
-        model.add([self])
+        deferred_additions.append(self)
+        model.add(deferred_additions)
 
     @property
     def num_restraints(self):
@@ -3197,6 +3224,10 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         rr.target_index = target_index
         self.remove_preview()
 
+    def delete(self):
+        self._pdr_m.deregister_dependent(self)
+        super().delete()
+
 
 
     #TODO: Implement preview as drawing, to do away with the need for a dummy model
@@ -3234,7 +3265,8 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
             ma.coords = tf.transform_points(ma.coords)
 
     def remove_preview(self):
-        if self._preview_model is not None and not self._preview_model.deleted:
+        pm = self._preview_model
+        if pm is not None and not pm.deleted and pm.id is not None:
             self.session.models.close([self._preview_model])
             self._preview_model = None
 
