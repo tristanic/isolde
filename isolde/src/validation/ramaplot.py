@@ -63,6 +63,7 @@ class RamaPlot:
             (200),(200), picker = 2.0, s=base_size,
             edgecolors='black', linewidths = 0.5)
         scatter.set_cmap('RdYlGn_r')
+        self._prepare_tooltip()
 
         self.change_case(cenum.GENERAL)
 
@@ -90,13 +91,11 @@ class RamaPlot:
         self._populate_case_menu(case_menu)
         case_menu.currentIndexChanged.connect(self._case_change_cb)
 
-        self.isolde.triggers.add_handler(
-            'simulation started', self._sim_start_cb
-        )
-
-        self.isolde.triggers.add_handler(
-            'simulation terminated', self._sim_end_cb
-        )
+        itr = self.isolde.triggers
+        itr.add_handler('simulation started', self._sim_start_cb)
+        itr.add_handler('simulation terminated', self._sim_end_cb)
+        itr.add_handler('simulation paused', self._sim_pause_cb)
+        itr.add_handler('simulation resumed', self._sim_resume_cb)
 
 
     def _prepare_tooltip(self):
@@ -108,45 +107,56 @@ class RamaPlot:
             bbox=dict(boxstyle='round', fc='w'),
             arrowprops=dict(arrowstyle='->'))
         annot.set_visible(False)
+        self._start_tooltip()
 
-        def _hover(event):
-            sp = self.scatter
-            annot = self._hover_annotation
-            if event.inaxes == ax:
-                cont, ind = sp.contains(event)
-                if cont:
-                    indices = ind['ind']
-                    text = []
-                    ramas = self._case_ramas[indices]
-                    phipsi = numpy.degrees(ramas.phipsis)
-                    x = phipsi[:,0].mean()
-                    y = phipsi[:,1].mean()
-                    for rama in ramas:
-                        res = rama.residue
-                        text.append('{} {}{}'.format(res.name, res.chain_id, res.number))
-                    annot.set_text('\n'.join(text))
-                    annot.xy = x, y
-                    if y > 0:
-                        annot.xyann=(20,-20)
-                    else:
-                        annot.xyann=(20,20)
-                    annot.set_visible(True)
+    def _hover(self, event):
+        sp = self.scatter
+        annot = self._hover_annotation
+        ax = self.axes
+        if event.inaxes == ax:
+            cont, ind = sp.contains(event)
+            if cont:
+                indices = ind['ind']
+                text = []
+                ramas = self._case_ramas[indices]
+                phipsi = numpy.degrees(ramas.phipsis)
+                x = phipsi[:,0].mean()
+                y = phipsi[:,1].mean()
+                for rama in ramas:
+                    res = rama.residue
+                    text.append('{} {}{}'.format(res.name, res.chain_id, res.number))
+                annot.set_text('\n'.join(text))
+                annot.xy = x, y
+                if y > 0:
+                    annot.xyann=(20,-20)
                 else:
-                    annot.set_visible(False)
-                self.canvas.draw()
+                    annot.xyann=(20,20)
+                annot.set_visible(True)
+            else:
+                annot.set_visible(False)
+            self.canvas.draw()
 
-        self.canvas.mpl_connect('motion_notify_event', _hover)
+    def _start_tooltip(self, *_):
+        self._annot_cid = self.canvas.mpl_connect('motion_notify_event', self._hover)
 
-
-
+    def _stop_tooltip(self, *_):
+        self.canvas.mpl_disconnect(self._annot_cid)
 
     def _sim_start_cb(self, *_):
         sc = self.isolde.sim_manager.sim_construct
         self.set_target_residues(sc.mobile_residues)
         self.selection_mode = self.MOBILE_ONLY
+        self._stop_tooltip()
 
     def _sim_end_cb(self, *_):
         self._mode_change_cb()
+        self._start_tooltip()
+
+    def _sim_pause_cb(self, *_):
+        self._start_tooltip()
+
+    def _sim_resume_cb(self, *_):
+        self._stop_tooltip()
 
     def _restrict_sel_cb(self, *_):
         m = self.current_model
@@ -301,9 +311,8 @@ class RamaPlot:
         self.current_case = case_key
         ax = self.axes
         ax.clear()
-        try:
-            contourplots = self.contours[case_key]
-        except KeyError:
+        contourplots = self.contours.get(case_key, None)
+        if contourplots is None:
             self.cache_contour_plots(case_key)
             contourplots = self.contours[case_key]
         for coll in contourplots[0].collections:
@@ -315,7 +324,6 @@ class RamaPlot:
         self.P_limits = [0, -log(contours[0])]
         self.set_target_residues(self._current_residues)
         self.on_resize()
-        self._prepare_tooltip()
 
     def clear(self):
         self.set_target_residues(None)

@@ -149,6 +149,8 @@ class Isolde():
         'selected model changed', # Changed the master model selection
         'simulation started',
         'simulation terminated',
+        'simulation paused',
+        'simulation resumed',
         'isolde closed'
         )
 
@@ -2604,12 +2606,14 @@ class Isolde():
         go_button = self.iw._sim_go_button
         go_button.setChecked(False)
         go_button.setToolTip('Resume')
+        self.triggers.activate_trigger('simulation paused', None)
 
     def _sim_resume_cb(self, *_):
         self._status('Simulation running')
         go_button = self.iw._sim_go_button
         go_button.setChecked(True)
         go_button.setToolTip('Pause')
+        self.triggers.activate_trigger('simulation resumed', None)
 
     def _stop_sim_and_revert_to_checkpoint(self, *_):
         self.discard_sim(revert_to='checkpoint')
