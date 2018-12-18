@@ -32,7 +32,7 @@ def open_mtz(session, path, structure_model = None,
             session.logger.warning(str(e))
             return None, None
 
-def spotlight(session, models=None, enable=True):
+def spotlight(session, models=None, enable=True, radius=None):
     from chimerax.clipper.symmetry import get_symmetry_handler
     if models is None:
         from chimerax.atomic import AtomicStructure
@@ -43,6 +43,10 @@ def spotlight(session, models=None, enable=True):
             m.id_string, enable
         ))
         sh.spotlight_mode=enable
+        if radius is not None:
+            sh.spotlight_radius = radius
+
+
 
 def associate_volumes(session, volumes, to_model=None):
     if to_model is None:
@@ -105,6 +109,9 @@ def register_clipper_cmd(logger):
             ('models', StructuresArg),
             ('enable', BoolArg)
         ],
+        keyword=[
+            ('radius', FloatArg),
+        ],
         synopsis='Switch on/off "Scrolling sphere" visualisation with live atomic symmetry'
     )
     register('clipper spotlight', spot_desc, spotlight, logger=logger)
@@ -114,7 +121,7 @@ def register_clipper_cmd(logger):
             ('volumes', VolumesArg),
         ],
         keyword=[
-            ('to_model', StructureArg)
+            ('to_model', StructureArg),
         ],
         synopsis='Have Clipper take control of the chosen volumes and associate them with the given model'
     )
