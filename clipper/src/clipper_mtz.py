@@ -32,6 +32,8 @@ class ReflectionDataContainer(Model):
         the Cell, Spacegroup and Grid_sampling objects, the Unit_Cell,
         etc.
         '''
+        import os
+        self.filename = os.path.basename(hklfile)
         Model.__init__(self, 'Reflection Data', session)
         hklinfo, free, exp, calc = load_hkl_data(session, hklfile, free_flag_label=free_flag_label)
         self._hklinfo = hklinfo

@@ -123,7 +123,8 @@ class XmapSet(MapSet_Base):
                   and R-free will be reported to the status bar every time maps
                   are recalculated
         '''
-        super().__init__(manager, 'Crystallographic maps')
+        super().__init__(manager, 'Crystallographic maps ({})'.format(
+            crystal_data.filename))
 
         trigger_names = (
             'maps recalculated',
