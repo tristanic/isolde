@@ -1174,15 +1174,20 @@ class Isolde():
             # 2mFo-DFc and mFo-DFc maps are created automatically, but should
             # not be used as MDFF potentials. For that, we need a specific map
             # that we know excludes the free reflections.
-            from chimerax.clipper.maps.xmapset import map_potential_recommended_bsharp
-            mdff_b = map_potential_recommended_bsharp(xmapset.resolution)
-            mdff_p = xmapset.add_live_xmap('MDFF potential', b_sharp=mdff_b,
-                is_difference_map=False,
-                exclude_free_reflections=True,
-                fill_with_fcalc = True,
-                exclude_missing_reflections=True,
-                display=False)
+            # self._add_mdff_potential_to_live_xmapset(xmapset)
         self._change_selected_model(model=m, force=True)
+
+    def _add_mdff_potential_to_live_xmapset(self, xmapset):
+        from chimerax.clipper.maps.xmapset import map_potential_recommended_bsharp
+        mdff_b = map_potential_recommended_bsharp(xmapset.resolution)
+        mdff_p = xmapset.add_live_xmap('MDFF potential', b_sharp=mdff_b,
+            is_difference_map=False,
+            exclude_free_reflections=True,
+            fill_with_fcalc = True,
+            exclude_missing_reflections=True,
+            display=False)
+        return mdff_p
+
 
     def add_real_space_map(self, existing_volume=None, filename=None, to_model=None):
         if to_model is None:
@@ -1238,13 +1243,22 @@ class Isolde():
         from .session_extensions import get_mdff_mgr
         mdff_mgrs = []
         live_maps = False
+        for xmapset in mgr.xmapsets:
+            if xmapset.live_xmap_mgr is not None:
+                # Need to make absolutely sure the MDFF potential map is created.
+                # Handle this case specially.
+                mdff_ps = [v for v in xmapset if isinstance(v, XmapHandler_Live) and 'MDFF potential' in v.name]
+                if not len(mdff_ps):
+                    mdff_ps = [self._add_mdff_potential_to_live_xmapset(xmapset)]
+                for mdff_p in mdff_ps:
+                    mdff_mgrs.append(get_mdff_mgr(model, mdff_p, create=True))
+
         for v in mgr.all_maps:
             # Only XmapHandler_Live objects specifically created to exclude the
             # free set are allowed to act as MDFF potentials
             if isinstance(v, XmapHandler_Live):
                 live_maps = True
-                if 'MDFF potential' not in v.name:
-                    continue
+                continue
             # Difference maps are excluded from MDFF by default
             if v.is_difference_map:
                 continue
@@ -3032,12 +3046,12 @@ class Isolde():
         mdff_b = map_potential_recommended_bsharp(xmapset.resolution)
 
 
-        mdff_p = xmapset.add_live_xmap('MDFF potential', b_sharp=mdff_b,
-            is_difference_map=False,
-            exclude_free_reflections=True,
-            fill_with_fcalc = True,
-            exclude_missing_reflections=True,
-            display=False)
+        # mdff_p = xmapset.add_live_xmap('MDFF potential', b_sharp=mdff_b,
+        #     is_difference_map=False,
+        #     exclude_free_reflections=True,
+        #     fill_with_fcalc = True,
+        #     exclude_missing_reflections=True,
+        #     display=False)
         standard_map = xmapset['(LIVE) 2mFo-DFc']
         sharp_map = xmapset['(LIVE) 2mFo-DFc_sharp_25']
         diff_map = xmapset['(LIVE) mFo-DFc']
