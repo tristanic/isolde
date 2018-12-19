@@ -4,6 +4,9 @@ Manipulating your model
 .. toctree::
    :maxdepth: 2
 
+.. contents::
+   :local:
+
 Overview
 --------
 
@@ -35,10 +38,10 @@ The residue rebuilding toolbar
     |                 | residue number, residue name, peptide bond conformation|
     |                 | (if applicable), rotamer (if applicable). The rotamer  |
     |                 | information provides the name of the nearest named     |
-    |                 | rotamer, its frequency of occurrence in the Top8000    |
-    |                 | database, and an estimated Z score for each *chi* (χ). |
-    |                 | This information updates with every coordinate update, |
-    |                 | and changes colour according to the rotamer            |
+    |                 | rotamer, its frequency of occurrence in the `Top8000   |
+    |                 | database`_, and an estimated Z score for each *chi*    |
+    |                 | (χ) This information updates with every coordinate     |
+    |                 | update, and changes colour according to the rotamer    |
     |                 | probability (favoured=green, allowed=yellow,           |
     |                 | outlier=red).                                          |
     +-----------------+--------------------------------------------------------+
@@ -70,10 +73,10 @@ The residue rebuilding toolbar
     | |rot_d|         | Clear and discard the preview.                         |
     +-----------------+--------------------------------------------------------+
     | |rot_c|         | Commit the rotamer directly (set the atoms to the new  |
-    |                 | coordinates). (**IMPORTANT**: Don't do this if there is|
+    |                 | coordinates). **(IMPORTANT: Don't do this if there is  |
     |                 | any sign of a serious clash between the new coordinates|
-    |                 | and surrounding atoms - this risks serious damage to   |
-    |                 | the structure. Use the following option instead.)      |
+    |                 | and surrounding atoms. Use the following option        |
+    |                 | instead.)**                                            |
     +-----------------+--------------------------------------------------------+
     | |rot_t|         | Push the sidechain towards the desired rotamer using   |
     |                 | restraints on each χ dihedral. This approach avoids any|
@@ -81,12 +84,21 @@ The residue rebuilding toolbar
     |                 | restraint on each dihedral cuts off at two times the   |
     |                 | estimated standard deviation of its angle for the given|
     |                 | target, allowing the residue to relax within its       |
-    |                 | natural range of motion.                               |
+    |                 | natural range of motion. In most cases where your      |
+    |                 | map density is reasonable, you can and should release  |
+    |                 | the restraints once the sidechain has settled to the   |
+    |                 | new configuration.                                     |
     +-----------------+--------------------------------------------------------+
     | |rot_r|         | Release all χ dihedral restraints on this sidechain.   |
     +-----------------+--------------------------------------------------------+
+    | |brb|           | Attempt to auto-fit the sidechain to the density using |
+    |                 | the `backrub algorithm`_. If multiple MDFF potentials  |
+    |                 | are loaded, you can choose which one to use for this   |
+    |                 | using the drop-down menu on the right.                 |
+    +-----------------+--------------------------------------------------------+
 
-
+    .. _Top8000 database: http://kinemage.biochem.duke.edu/databases/top8000.php
+    .. _backrub algorithm: https://academic.oup.com/bioinformatics/article/24/13/i196/233217
     .. |pep_flip| image:: ../images/pep-flip-icon.png
     .. |cis_trans| image:: ../images/cis-trans-icon.png
     .. |rot_i| image:: ../images/rotamer-preview-icon.png
@@ -94,6 +106,7 @@ The residue rebuilding toolbar
     .. |rot_c| image:: ../images/rotamer-commit-icon.png
     .. |rot_t| image:: ../images/rotamer-set-target-icon.png
     .. |rot_r| image:: ../images/rotamer-release-icon.png
+    .. |brb| image:: images/backrub_button.png
 
 All user-applied dihedral restraints (other than the always-on restraints on the
 peptide bonds) are displayed on the model using a ring-and-post motif as shown
@@ -178,9 +191,9 @@ Register Shifter
     The residue shifting tool activated by the above toolbar can help with that.
     Make a selection encompassing the stretch in question, dial up the number of
     residues you wish to move by (where a negative number indicates a shift
-    towards the *N*-terminus), and hit the button on the left. (*NOTE: this is
+    towards the *N*-terminus), and hit the button on the left. *(NOTE: this is
     a rather aggressive change you're about to make. Might be a good idea to hit
-    the checkpoint button first.*)
+    the* :ref:`checkpoint button <general-sim-controls>` *first.)*
 
     The register shifter first releases all existing custom restraints on the
     stretch in question, then applies a set of moving position restraints to the
@@ -189,11 +202,11 @@ Register Shifter
     destination the restraints will remain active until you press the red "X" on
     the right, allowing you to check and perform any necessary small cleanups
     before releasing. Pay particular attention to the bulkier sidechains - these
-    in particular may need a little human help getting past obstacles.
+    often need a little human help getting past obstacles.
 
     While the register shifter is in play, checkpointing is disabled - if you
     decide it was a mistake, clicking the red "X" will re-enable the checkpoint
-    buttons allowing you to revert.
+    buttons allowing you to revert to the last saved checkpoint.
 
     While in principle any length of peptide chain can be shifted by the
     register shifter, in most cases it's preferable to break the task down into

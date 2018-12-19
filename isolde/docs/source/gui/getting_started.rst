@@ -72,7 +72,7 @@ have multiple models open, you can choose the one you want to work on using the
     |   |                                                              |
     |   | The probabilities of finding different (phi, psi)            |
     |   | combinations have been mapped out in high detail for         |
-    |   | various groups of amino acids [MolProbity]_. While ISOLDE    |
+    |   | various groups of amino acids (`MolProbity`__). While ISOLDE |
     |   | also provides a Ramachandran plot, the current probability   |
     |   | score for each protein residue is mapped in real time to the |
     |   | colour of its alpha carbon (CA) atom as shown. Green denotes |
@@ -81,10 +81,14 @@ have multiple models open, you can choose the one you want to work on using the
     |   | needs very strong support to justify it).                    |
     +---+--------------------------------------------------------------+
 
+__ https://doi.org/10.1107/S0907444909042073
+
 *(Note: The rotamer, peptide bond and Ramachandran markups described above
 update automatically whenever the atomic coordinates change. As long as you have
 ISOLDE installed, you can add them to any loaded model using the* ``rama`` *and*
 ``rota`` *commands)*
+
+.. _preparing-a-model:
 
 Preparing a model for simulation
 --------------------------------
@@ -166,6 +170,8 @@ imposes a few requirements:
       problem, since at the resolutions ISOLDE can help the most with altlocs
       aren't generally resolvable in the data anyway!
 
+.. _adding-maps:
+
 Adding maps
 -----------
 
@@ -191,6 +197,7 @@ Real-space maps
 
 Any real-space map format recognised by ChimeraX can be used as a MDFF
 potential by ISOLDE with a few simple steps. Simply load your model, e.g.
+.. [MolProbity] https://doi.org/10.1107/S0907444909042073
 
 ``open 6eyd``
 ``open 3983 from emdb``
@@ -324,13 +331,20 @@ etc. is minimal to non-existent. If the R-factors calculated are more than
 ~5% higher than those calculated by your favourite refinement package, you
 are probably safer sticking with pre-calculated maps for now.)**
 
-If your MTZ file contains experimental amplitudes (F/sigF), then a set of
-live sigma-a weighted crystallographic maps will be generated directly from
-the combination of these with phases calculated from the atomic model.
-Unlike with the pre-calculated maps, any changes to the atomic model
-automatically triggers a recalculation of all live maps. This happens in
-the background, with minimal effect on graphical performance other than a
-slight pause when the visualisation of the new maps is loaded in.
+If your MTZ file contains experimental amplitudes (F/sigF), then a set of live
+sigma-a weighted crystallographic maps will be generated directly from the
+combination of these with phases calculated from the atomic model. Unlike with
+the pre-calculated maps, any changes to the atomic model automatically triggers
+a recalculation of all live maps. This happens in the background, with minimal
+effect on graphical performance other than a slight pause when the visualisation
+of the new maps is loaded in.
+
+*(NOTE: live updating can be toggled  using the "Live crystallographic map
+calculation" checkbox that appears on the "Sim settings" tab when a live dataset
+is associated with the selected model)*
+
+*(NOTE: live map updates do not update the MDFF potential while a simulation is
+running. The potential will only change once the simulation is finished.)*
 
 Working directly with the experimental data has the distinct advantage that
 ISOLDE can know and control exactly what goes into each map. Three maps
@@ -355,8 +369,3 @@ any time.
 
 .. literalinclude:: maps.params
     :language: python
-
-
-
-
-.. [MolProbity] https://doi.org/10.1107/S0907444909042073

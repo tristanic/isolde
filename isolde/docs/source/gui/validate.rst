@@ -2,7 +2,10 @@ Monitoring the quality of your model
 ====================================
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
+
+.. contents::
+    :local:
 
 While ISOLDE's live annotations help you see at a glance where the problems are
 in whatever part of the model you happen to be looking at, it is of course still
@@ -29,7 +32,7 @@ that looks something like this:
     The Ramachandran plot for "general" amino acids
 
 In brief, the Ramachandran plot plots the angle of the *phi* (φ) dihedral
-"entering" the  residue against that of the *psi* (ψ) dihedral "exiting" it.
+"entering" the residue against that of the *psi* (ψ) dihedral "exiting" it.
 
 .. figure:: images/phi_dihedral.png
     :alt: The phi dihedral
@@ -55,8 +58,8 @@ contours are said to be in  "favoured" conformations.
 
 The purple line, meanwhile, represents the boundary of the far more generous
 "allowed" region. The precise value of this contour varies slightly depending on
-the Ramachandran category, but for the general case about 5 in 10,000 residues
-should be found outside it, in what is known as "outlier" space.
+the Ramachandran category, but for the general case only about 5 in 10,000
+residues should be found outside it, in what is known as "outlier" space.
 
 Note that as well as the given cut-off contours, the background is shaded
 according to probability as well. A residue outside the contour but still on a
@@ -73,8 +76,9 @@ you to work on it.
 The drop-down menu below the plot allows you to limit its scope to only the
 residues currently selected in the main *ChimeraX* window. This can be useful
 if, for example, you wish to consider only a single chain. While a simulation is
-running, the plot will be limited to only the mobile residues, and will update
-in real time every time the coordinates change.
+running, the plot will be limited to only the mobile residues. While visible,
+the Ramachandran plot updates automatically whenever the atomic coordinates
+change.
 
 Peptide Bond Geometry validation
 --------------------------------
@@ -127,7 +131,7 @@ functionally interesting.
 
     This, on the other hand, is real.
 
-    This non-proline *cis* bond is found in tissue transglutaminase (TGM2, see
+    This non-proline *cis* bond is found in tissue transglutaminase (*TGM2*, see
     PDB ID 2q3z), and is stabilised by a disulphide bond between directly
     adjacent cysteine residues. It is part of a redox-switching mechanism: under
     certain circumstances the disulphide is reduced by thioredoxin, allowing
@@ -136,8 +140,7 @@ functionally interesting.
 
 If your site in question does not meet the above criteria, then in general
 you should assume it to be *trans* (unless, of course, you have outside
-evidence such as a higher-resolution structure of a closely-related
-protein).
+evidence such as a higher-resolution structure of a closely-related protein).
 
 Proline is a special case. Unlike the other amino acids, proline does not have
 an amide hydrogen - instead the amide nitrogen links to the backbone delta
@@ -161,3 +164,25 @@ Rotamer Validation
 All non-favoured rotamers are listed in the table, ordered from worst to best.
 As for the other validation tools, clicking on an entry will select and take you
 to the offending residue.
+
+Clashes
+-------
+
+The behaviour of this widget is subtly different depending on whether a
+simulation is currently running. Outside of simulations, clashes are determined
+based on simple pairwise distances:
+
+.. figure:: images/clash_table_no_sim.png
+    :alt: clash widget with no simulation running
+
+While a simulation is running, the table is instead populated by a list of atoms
+experiencing large net forces:
+
+.. figure:: images/clash_table_during_sim.png
+    :alt: clash widget during a simulation
+
+In either case, clicking on an entry in the table will focus the view on the
+offending atom(s). In general, during a simulation the clash table will only be
+populated (a) if updated before minimisation is complete; or (b) if the
+minimiser is unable to resolve one or more severe clashes (see
+:ref:`dealing-with-clashes`).

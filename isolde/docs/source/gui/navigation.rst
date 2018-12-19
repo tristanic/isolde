@@ -1,6 +1,9 @@
 Visualisation and Navigation
 ============================
 
+.. toctree::
+    :maxdepth: 2
+
 .. contents::
     :local:
 
@@ -14,10 +17,10 @@ line)*
 General layout
 --------------
 
-After loading a model and map (or clicking "Load demo"), your ChimeraX display
-should look something like the screenshot below (you may need to use the
-ChimeraX atom display controls to set the atom display styles to your liking
-first).
+After loading a model and map (see :ref:`preparing-a-model`) or simply clicking
+"Load demo", your ChimeraX display should look something like the screenshot
+below (you may need to use the standard ChimeraX atom display controls to set
+the atom display styles to your liking first).
 
 .. figure:: images/loaded_model.jpg
     :alt: Model/Map display in ChimeraX window
@@ -26,8 +29,13 @@ first).
     like in this image, but personally I prefer white and will be using it for
     most of this tutorial. You can change background colour to black, white or
     grey using the square buttons near the middle of the ChimeraX display
-    toolbar (top of the ChimeraX window), or *set bgColor <color>* in the
+    toolbar (top of the ChimeraX window), or ``set bgColor <color>`` in the
     ChimeraX command line if you're feeling adventurous.
+
+*(Helpful hint: display of hydrogen atoms can be adjusted to your preference at
+any time using the* ``show`` *and* ``hide`` *commands. For example,*
+``show H`` *will show all hydrogens, and* ``hide HC`` *will hide only non-polar
+hydrogens.)*
 
 First, let's talk about what's changed in the model itself. Perhaps most
 immediately obvious is the change in the appearance of the cartoon: it's now
@@ -36,11 +44,12 @@ doesn't get in the way of seeing the atoms themselves, while still providing
 valuable information about overall topology and secondary structure.
 
 Next (if you're working with a crystal structure) you might notice that your
-model has been joined by one or more darker copies of itself. These are of
-course the symmetry contacts in the crystal lattice. The symmetry atoms are
-non-interactive "ghosts" - while they will update instantly when the "real"
-atoms change, you cannot select or move them. Hovering your mouse over one,
-however, will give you a popup telling you its name and symmetry operator:
+model has been joined by one or more darker copies of itself. These are the
+symmetry contacts in the crystal lattice. The symmetry atoms are non-interactive
+"ghosts" - while they will update instantly when the "real" atoms change, you
+cannot select or move them, and they won't contribute to simulations. Hovering
+your mouse over one, however, will give you a popup telling you its name and
+symmetry operator:
 
 .. figure:: images/symmetry_tooltip.png
     :alt: Symmetry tooltip
@@ -49,9 +58,10 @@ however, will give you a popup telling you its name and symmetry operator:
 
 You'll also note that you can no longer see all of the atoms (nor all of the
 map). By default atom display is restricted to residues approaching within 15Å
-of the central pivot point, while the map is restricted to a 12Å sphere. Other
-display options suited to isolating issues in low-resolution maps will be
-discussed  below.
+of the central pivot point, while the map is restricted to a 12Å sphere. You can
+adjust the display radius at any time (or simply return to this display mode)
+using the ``clipper spotlight`` command. Other display options suited to
+isolating issues in low-resolution maps will be discussed  below.
 
 Zooming and Panning
 -------------------
@@ -59,16 +69,18 @@ Zooming and Panning
 *(NOTE: Some ChimeraX functions may change the behaviour of the centre of
 rotation to a mode incompatible with the behaviour described below. If you
 find things not behaving as they should (e.g. the pivot indicator no longer
-remains in the centre of the screen), type "cofr center showpivot true" in the
-ChimeraX command line or just click the ISOLDE Spotlight Mode button.)*
+remains in the centre of the screen), type ``cofr center showpivot true`` in the
+ChimeraX command line or just click the ISOLDE Spotlight Mode button)*
 
 If you've spent some time using ChimeraX before, you've probably already tried
 to zoom in using the scroll wheel. That won't work in ISOLDE: since model
 building requires regular adjustment of map contours, the scroll wheel is
 co-opted to perform that all-important function. A special zoom mode (designed
 to bring you inside the model while fading out background details) has instead
-been mapped to **shift-right-click-and-drag**. Panning (that is, translating
-the display up-down and left-right) is the ChimeraX standard
+been mapped to **shift-right-click-and-drag**. You can adjust the relative
+thickness of the slab you view (that is, the distance between front and back
+clipping planes) using **shift-scroll**. Panning (that is, translating the
+display up-down and left-right) is the ChimeraX standard
 **middle-click-and-drag**.
 
 Adjusting the maps
@@ -88,33 +100,40 @@ current choice in the GUI window and showing its name in the status bar:
     :alt: Selecting which map is affected by scrolling
 
 The last chosen map will be remembered for contouring purposes until the next
-use of **ctrl-scroll**, but will also stay selected (highlighted) for 5 seconds.
-During this period, buttons on the ChimeraX Density Map Toolbar will only act on
-this map. This can be a quick way to easily switch one map between surface and
-mesh representation, for example. For easier control over the visualisation of
-individual maps, though, click the *Show map settings* button on ISOLDE's
-*Sim settings* tab. That should give you something like this:
+use of **ctrl-scroll**.
+
+Options for visualisation of individual maps are available via the  *Show map
+settings* button on ISOLDE's *Sim settings* tab. That should give you something
+like this:
 
 .. figure:: images/map_settings_dialog.png
     :alt: Map settings dialog
 
     Control panel for individual map settings
 
-    +-----------+--------------------------------------------------------------+
-    | *Top*:    | Drop-down menu to choose the map your changes will apply to  |
-    +-----------+--------------------------------------------------------------+
-    | *Middle*: | How strongly this map "pulls" on atoms. This will be         |
-    |           | important later.                                             |
-    +-----------+--------------------------------------------------------------+
-    | |surf|    | Switch to an opaque surface representation                   |
-    +-----------+--------------------------------------------------------------+
-    | |trans|   | Switch to a transparent surface representation               |
-    +-----------+--------------------------------------------------------------+
-    | |mesh|    | Switch to a mesh representation                              |
-    +-----------+--------------------------------------------------------------+
-    | |color|   | Set (a) custom colour(s) (single colour for standard maps, or|
-    |           | two colours for difference maps)                             |
-    +-----------+--------------------------------------------------------------+
+    +------------+-------------------------------------------------------------+
+    | *Top left* | Drop-down menu to choose the map to adjust                  |
+    +------------+-------------------------------------------------------------+
+    | *Top*      | Choose whether or not this map should behave as a MDFF      |
+    | *right*    | potential (disabled for live x-ray maps)                    |
+    +------------+-------------------------------------------------------------+
+    | *Middle*   | How strongly this map "pulls" on atoms. This will be        |
+    |            | important later.                                            |
+    +------------+-------------------------------------------------------------+
+    | |surf|     | Switch to an opaque surface representation                  |
+    +------------+-------------------------------------------------------------+
+    | |trans|    | Switch to a transparent surface representation              |
+    +------------+-------------------------------------------------------------+
+    | |mesh|     | Switch to a mesh representation                             |
+    +------------+-------------------------------------------------------------+
+    | |color|    | Set (a) custom colour(s) (single colour for standard maps,  |
+    |            | or two colours for difference maps)                         |
+    +------------+-------------------------------------------------------------+
+
+    Personally, I like to display the smoothest of my loaded maps in mesh
+    representation at a low contour, and the sharpest in transparent surface
+    representation at a higher contour - but this is a matter of individual
+    preference.
 
 .. |surf| image:: ../images/mapsurf.png
 .. |trans| image:: ../images/icecube.png
@@ -129,14 +148,14 @@ works. Specifically, only atoms in the currently selected model will be
 selectable. Further, while a simulation is running only the mobile atoms will
 be selectable. Other than that, behaviour is quite similar to standard ChimeraX:
 
-    * **ctrl-click (and drag)**: select a (group of) atoms, discarding any
+    * **ctrl-click (and drag)**: select an atom (group of atoms), discarding any
                                  previous selection. Modifiers:
 
         - **shift** : next selection adds to any existing selection
         - **alt**   : next selection is subtracted from any existing selection.
 
 A very useful built-in ChimeraX feature allows you to grow and shrink your
-selection using the keyboard. With some atoms selected, **up arrow** will epand
+selection using the keyboard. With some atoms selected, **up arrow** will expand
 it first to whole residues, then to whole secondary structure elements, then
 whole chains, then the whole model. **Down arrow** will progressively roll back
 previous **up arrow** presses. I highly recommend familiarising yourself with
@@ -162,7 +181,7 @@ panel becomes useful:
     Useful buttons for map/model visualisation
 
     +---------------+------------------------------------------------------+
-    | **Focus**     | If checked, stepping or masking will re-focus the    |
+    | *Focus*       | If checked, stepping or masking will re-focus the    |
     |               | main view on the atomic selection.                   |
     +---------------+------------------------------------------------------+
     | |stepper|     | Clicking the right (left) arrow button will step     |
@@ -171,7 +190,10 @@ panel becomes useful:
     |               | (plus flanking unstructured loops/turns). At each    |
     |               | step the maps are masked to cover the resulting      |
     |               | selection with some surrounding context, while       |
-    |               | distant atoms are hidden.                            |
+    |               | distant atoms are hidden. If the focus checkbox is   |
+    |               | checked, the view will be re-focused on the first    |
+    |               | residue in the selection (taking into account the    |
+    |               | direction of the step).                              |
     +---------------+------------------------------------------------------+
     | |mask|        | Displays all currently selected atoms plus immediate |
     |               | surrounds and masks the maps to the selection. All   |
@@ -189,5 +211,8 @@ panel becomes useful:
 .. |spot| image:: ../images/spotlight.png
                 :scale: 50 %
 
-Now that you know your way around, it's time to move on to starting your first
-simulation.
+You may also isolate any arbitrary selection of atoms using the ``clipper
+isolate`` command.
+
+Now that you know your way around, it's time to move on to
+:ref:`starting-a-simulation`.
