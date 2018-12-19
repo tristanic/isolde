@@ -1945,43 +1945,30 @@ class Isolde():
         if index != -1:
             cb.setCurrentIndex(index)
 
-    def release_rotamers_by_residues(self, residues):
-        '''
-        Release all chi dihedral restraints on a set of residues.
-
-        Args:
-            * residues:
-                - A :class:'chimerax.Residues' instance
-        '''
-        from . import session_extensions as sx
-        rm = sx.get_rotamer_mgr(self.session)
-        rotamers = rm.get_rotamers(residues)
-        self.release_rotamers(rotamers)
-
-
-    def release_rotamers(self, rotamers):
+    def release_rotamers(self, rotamers_or_residues):
         '''
         Release all chi dihedral restraints on a set of rotamers.
 
         Args:
-            * rotamers:
-                - A :class:`Rotamers` instance
+            * rotamers_or_residues:
+                - Either a :class:`Rotamers` or a :class:`chimerax.Residues`
+                  instance
         '''
-        from . import session_extensions
-        rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
-        rrs = rrm.get_restraints(rotamers)
+        from . import session_extensions as sx
+        rrm = sx.get_rotamer_restraint_mgr(self.selected_model)
+        rrs = rrm.get_restraints(rotamers_or_residues)
         rrs.enableds = False
 
-    def release_rotamer(self, rotamer):
+    def release_rotamer(self, rotamer_or_residue):
         '''
         Release all chi dihedral restraints on a single rotamer.
 
         Args:
-            * rotamer:
-                - A :class:`Rotamer` instance
+            * rotamer_or_residue:
+                - A :class:`Rotamer` or a :class:`chimerax.Residue` instance
         '''
-        from . import session_extensions
-        rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
+        from . import session_extensions as sx
+        rrm = sx.get_rotamer_restraint_mgr(self.selected_model)
         rr = rrm.get_restraint(rotamer)
         if rr is not None:
             rr.enabled = False

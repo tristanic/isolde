@@ -184,7 +184,7 @@ class Protein_Register_Shifter:
 
         # clear any rotamer, backbone and distance restraints on
         # extended selection
-        isolde.release_rotamers_by_residues(xr)
+        isolde.release_rotamers(xr)
         isolde.clear_secondary_structure_restraints_for_selection(residues = xr)
         isolde.release_xyz_restraints_on_selected_atoms(sel = xr.atoms)
 

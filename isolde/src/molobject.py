@@ -3064,7 +3064,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         '''
         from chimerax.atomic import Residues
         if isinstance(rotamers_or_residues, Residues):
-            rota_mgr = _get_rotamer_manager(session)
+            rota_mgr = get_rotamer_manager(session)
             rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
         else:
             rotamers = rotamers_or_residues
@@ -3082,10 +3082,12 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         '''
         from chimerax.atomic import Residues
         if isinstance(rotamers_or_residues, Residues):
-            rota_mgr = _get_rotamer_manager(session)
+            rota_mgr = get_rotamer_manager(self.session)
             rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
-        else:
+        elif isinstance(rotamers_or_residues, Rotamers):
             rotamers = rotamers_or_residues
+        else:
+            raise TypeError('Argument must be either a Rotamers or a Residues object!')
         return self._get_restraints(rotamers, False)
 
     def add_restraint(self, rotamer_or_residue):
@@ -3102,7 +3104,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         '''
         from chimerax.atomic import Residue, Residues
         if isinstance(rotamer_or_residue, Residue):
-            rota_mgr = _get_rotamer_manager(session)
+            rota_mgr = get_rotamer_manager(session)
             r = rota_mgr.get_rotamer(r)
         else:
             r = rotamer_or_residue
@@ -3126,10 +3128,12 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         '''
         from chimerax.atomic import Residue, Residues
         if isinstance(rotamer_or_residue, Residue):
-            rota_mgr = _get_rotamer_manager(session)
+            rota_mgr = get_rotamer_manager(self.session)
             r = rota_mgr.get_rotamer(r)
-        else:
+        elif isinstance(rotamer_or_residue, Rotamer):
             r = rotamer_or_residue
+        else:
+            raise TypeError('Argument must be either a Rotamer or a Residue object!')
         if r is None:
             return None
         rr = self._get_restraints(_rotamers([r]), False)
