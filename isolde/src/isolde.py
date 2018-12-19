@@ -157,11 +157,11 @@ class Isolde():
     def __init__(self, gui=None):
         '''
         Initialises the ISOLDE object and adds it to the ChimeraX session as
-        session.isolde.
+        ``session.isolde``.
 
         Args:
             * gui (default=None):
-                - Used by the Isolde BundleAPI to prepare the ISOLDE GUI
+                - Used by the ISOLDE BundleAPI to prepare the ISOLDE GUI
                   interface (i.e. when running from Tools/General/ISOLDE in the
                   ChimeraX GUI menu).
         '''
@@ -312,7 +312,7 @@ class Isolde():
             # Close the splash after 2 seconds
             QtCore.QTimer.singleShot(2000, splash.close)
 
-            self.start_gui(gui)
+            self._start_gui(gui)
 
         session.isolde = self
 
@@ -327,10 +327,11 @@ class Isolde():
     @property
     def ignored_residues(self):
         '''
-        Residues in this list will be retained in the model and used for map
-        calculations, but will not be included in simulations. In most cases,
-        this should only be populated with residues that have not been
-        parameterised for MD.
+        A :class:`chimerax.Residues` object defining residues to be ignored for
+        simulation purposes. Residues in this list will be retained in the model
+        and used for map calculations, but will not be included in simulations.
+        In most cases, this should only be populated with residues that have not
+        been parameterised for MD.
         '''
         m = self.selected_model
         if m is None:
@@ -379,7 +380,8 @@ class Isolde():
     def simulation_mode(self):
         '''
         Returns 'equil' or 'min' depending on the state of the simulation,
-        or None if no simulation is defined. Read only.
+        or None if no simulation is defined. Read only. To switch modes, use
+        :func:`isolde.minimize` and :func@`isolde.equilibrate`.
         '''
         sh = self.sim_handler
         if sh is None:
@@ -408,10 +410,10 @@ class Isolde():
     # GUI related functions
     ###################################################################
 
-    def start_gui(self, gui):
-        ####
-        # Connect and initialise ISOLDE widget
-        ####
+    def _start_gui(self, gui):
+        '''
+        Connect and initialise ISOLDE widget
+        '''
 
         self.gui = gui
         iw = self.iw = gui.iw
@@ -1159,6 +1161,21 @@ class Isolde():
             self.add_xtal_data(filename)
 
     def add_xtal_data(self, filename, model=None):
+        '''
+        Add a set of maps derived from a crystal dataset (in MTZ format) to the
+        target model. Cell dimensions and space group must match. If the file
+        contains experimental measurements (F/sigF), a set of "live" maps will
+        be generated and will be recalculated whenever the model coordinates
+        change. If it contains precalculated map data (F/phi), one static map
+        will be generated for each F/phi pair found.
+
+        Args:
+            * filename:
+                - a file in .mtz format
+            * model (default None):
+                - A :class:`chimerax.AtomicStructure` or None. If None, the
+                  model currently selected by ISOLDE will be used as the target.
+        '''
         if model is None:
             model = self.selected_model
         if model is None:
@@ -1189,7 +1206,24 @@ class Isolde():
         return mdff_p
 
 
-    def add_real_space_map(self, existing_volume=None, filename=None, to_model=None):
+    def add_real_space_map(self,
+            existing_volume=None, filename=None, to_model=None):
+        '''
+        Associate a real-space map with the given model. The input map will be
+        "slaved" to the target model to behave similarly to a crystallographic
+        map. Exactly one of `existing_volume` or `filename` should be given.
+
+        Args:
+            * existing_volume (default None):
+                - A :class:`chimerax.Volume` object or None. If not None, the
+                  chosen :class:`Volume` will be removed from the model tree,
+                  and replaced with a :class:`clipper.maps.NXmapHandler` object.
+            * filename (default None):
+                - A map file of any format recognised by ChimeraX.
+            * to_model (default None):
+                - A :class:`chimerax.AtomicStructure` or None. If None, the
+                  model currently selected by ISOLDE will be used as the target.
+        '''
         if to_model is None:
             to_model = self.selected_model
         if to_model is None:
@@ -1212,6 +1246,10 @@ class Isolde():
 
     @property
     def selected_model_has_maps(self):
+        '''
+        Returns True if the selected model has at least one map associated with
+        it, otherwise False. Read only.
+        '''
         m = self.selected_model
         if m is None:
             return False
@@ -1636,10 +1674,10 @@ class Isolde():
 
         Args:
             * atoms:
-                - a :class:`Atoms` instance defining the selection. Any residue
-                  with at least one atom in the selection will be restrained.
-                  No distance restraints involving residues outside the
-                  selection will be applied.
+                - a :class:`chimerax.Atoms` instance defining the selection. Any
+                  residue with at least one atom in the selection will be
+                  restrained. No distance restraints involving residues outside
+                  the selection will be applied.
             * target:
                 - a string selected from the following:
                     . 'Helix'
@@ -2199,6 +2237,10 @@ class Isolde():
         including preparing any maps associated with the model for simulation.
         While ISOLDE is running, only atoms from the selected model will be
         selectable using the mouse.
+
+        Args:
+            * model:
+                - a :class:`chimerax.AtomicStructure` instance.
         '''
         if self.gui_mode:
             self._change_selected_model(self, model=model, force=True)
@@ -2637,6 +2679,10 @@ class Isolde():
         Args:
             * revert_to (default: 'checkpoint'):
                 - Either 'checkpoint' or 'start'
+            * warn (default: True):
+                - if warn is `True` and checkpoint=='start', a warning dialog
+                  will be raised allowing the user to back out before discarding
+                  the simulation coordinates.
         '''
         if not revert_to in ('checkpoint', 'start'):
             raise TypeError('Unrecognised option! Argument should be '\
@@ -2785,7 +2831,7 @@ class Isolde():
                 +'following scripts and will be re-enabled when they '\
                 +'terminate: \n{}'.format(
                     '\n'.join([r for r in self.checkpoint_disabled_reasons.values()]))
-            raise TypeError(err_str)
+            self.session.logger.warning(err_str)
 
     def revert_to_checkpoint(self, *_):
         '''
@@ -2801,7 +2847,16 @@ class Isolde():
                     '\n'.join([r for r in self.checkpoint_disabled_reasons.values()]))
             self._log.warning(err_str)
 
-    def set_smoothing(self, flag):
+
+    @property
+    def smoothing(self):
+        '''
+        Turn smoothing of the simulation trajectory visualisation on or off.
+        '''
+        return self.sim_params.trajectory_smoothing
+
+    @smoothing.setter
+    def smoothing(self, flag):
         if self.gui_mode:
             # then just let the GUI controls handle it
             self.iw._smoothing_button.setChecked(flag)
@@ -2809,7 +2864,19 @@ class Isolde():
         if self.simulation_running:
             self.sim_handler.smoothing = flag
 
-    def set_smoothing_alpha(self, alpha):
+    @property
+    def smoothing_alpha(self):
+        '''
+        Get/set the value of the constant defining how heavily smoothed the
+        trajectory visualisation is. Value must be greater than zero and less
+        than or equal to one. A value of 1 indicates no smoothing, while a
+        value of 0.01 indicates that a given frame contributes only 1% to the
+        displayed moving average.
+        '''
+        return self.sim_params.smoothing_alpha
+
+    @smoothing_alpha.setter
+    def smoothing_alpha(self, alpha):
         if self.gui_mode:
             # then just let the GUI controls handle it
             slider = self.iw._smoothing_amount_dial
@@ -2837,7 +2904,7 @@ class Isolde():
 
         Args:
             * res:
-                - A ChimeraX :class:`residue` instance
+                - A ChimeraX :class:`Residue` instance
         '''
         from .manipulations.peptide_flip import Peptide_Bond_Flipper
         pf = Peptide_Bond_Flipper(self, res)
@@ -2941,6 +3008,9 @@ class Isolde():
     ##############################################
 
     def show_master_help_in_browser(self, *_):
+        '''
+        Open the ISOLDE help documentation.
+        '''
         from chimerax.help_viewer import show_url
         fname = os.path.join(self._root_dir, 'doc', 'index.html')
         show_url(self.session, 'file://' + os.path.realpath(fname))
@@ -2949,9 +3019,19 @@ class Isolde():
     # Demo
     ##############################################
 
-    def load_model_and_data(self, pdbfile, mtzfile):
+    def load_model_and_data(self, model_file, mtzfile):
+        '''
+        Load a model and MTZ file ready for simulation
+
+        Args:
+            * model_file:
+                - a PDB or mmCIF file
+            * mtzfile:
+                - a MTZ file containing experimental F/sigF and/or precalculated
+                  F/phi columns.
+        '''
         from chimerax.core.commands import open
-        model = open.open(self.session, pdbfile)[0]
+        model = open.open(self.session, model_file)[0]
         from chimerax.std_commands import color
         color.color(self.session, model, color='bychain', target='ac')
         color.color(self.session, model, color='byhetero', target='a')
@@ -2995,14 +3075,6 @@ class Isolde():
             oversampling_rate = self.params.map_shannon_rate)
         from chimerax.clipper.maps.xmapset import map_potential_recommended_bsharp
         mdff_b = map_potential_recommended_bsharp(xmapset.resolution)
-
-
-        # mdff_p = xmapset.add_live_xmap('MDFF potential', b_sharp=mdff_b,
-        #     is_difference_map=False,
-        #     exclude_free_reflections=True,
-        #     fill_with_fcalc = True,
-        #     exclude_missing_reflections=True,
-        #     display=False)
         standard_map = xmapset['(LIVE) 2mFo-DFc']
         sharp_map = xmapset['(LIVE) 2mFo-DFc_sharp_25']
         diff_map = xmapset['(LIVE) mFo-DFc']
