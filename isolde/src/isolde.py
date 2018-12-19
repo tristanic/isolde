@@ -858,42 +858,42 @@ class Isolde():
         mm = self.session.tools.find_by_class(MouseModePanel)[0]
         mm.buttons.setEnabled(state)
 
-    def initialize_haptics(self):
-        '''
-        If the HapticHandler plugin is installed, start it and create
-        a HapticTugger object for each connected haptic device.
-        '''
-        if hasattr(self.session, 'HapticHandler'):
-            self._status('Initialising haptic interface(s)')
-            hh = self.session.HapticHandler
-            hh.startHaptics()
-            n = self._num_haptic_devices = hh.getNumDevices()
-            if n == 0:
-                print('No haptic devices found. Stopping haptic driver.')
-                hh.stopHaptics()
-                self._use_haptics = False
-                return
-
-            d = self._haptic_devices = [None] * n
-            self._haptic_tug_atom = [None] * n
-            self._haptic_tug_index = [-1] * n
-            self._haptic_highlight_nearest_atom = [True] * n
-            self._haptic_current_nearest_atom = [None] * n
-            self._haptic_current_nearest_atom_color = [None] * n
-            self._haptic_current_nearest_atom_draw_mode = [None] * n
-            from . import tugging
-            for i in range(n):
-                d[i] = tugging.HapticTugger(self.session, i)
-            self._use_haptics = True
-            self._status('')
-            self._isolde_events.add_event_handler('Enable haptics during simulation',
-                                                   'simulation started',
-                                                   self._start_sim_haptics)
-            self._isolde_events.add_event_handler('Disable haptics on sim end',
-                                                  'simulation terminated',
-                                                  self._stop_sim_haptics)
-        else:
-            self._use_haptics = False
+    # def initialize_haptics(self):
+    #     '''
+    #     If the HapticHandler plugin is installed, start it and create
+    #     a HapticTugger object for each connected haptic device.
+    #     '''
+    #     if hasattr(self.session, 'HapticHandler'):
+    #         self._status('Initialising haptic interface(s)')
+    #         hh = self.session.HapticHandler
+    #         hh.startHaptics()
+    #         n = self._num_haptic_devices = hh.getNumDevices()
+    #         if n == 0:
+    #             print('No haptic devices found. Stopping haptic driver.')
+    #             hh.stopHaptics()
+    #             self._use_haptics = False
+    #             return
+    #
+    #         d = self._haptic_devices = [None] * n
+    #         self._haptic_tug_atom = [None] * n
+    #         self._haptic_tug_index = [-1] * n
+    #         self._haptic_highlight_nearest_atom = [True] * n
+    #         self._haptic_current_nearest_atom = [None] * n
+    #         self._haptic_current_nearest_atom_color = [None] * n
+    #         self._haptic_current_nearest_atom_draw_mode = [None] * n
+    #         from . import tugging
+    #         for i in range(n):
+    #             d[i] = tugging.HapticTugger(self.session, i)
+    #         self._use_haptics = True
+    #         self._status('')
+    #         self._isolde_events.add_event_handler('Enable haptics during simulation',
+    #                                                'simulation started',
+    #                                                self._start_sim_haptics)
+    #         self._isolde_events.add_event_handler('Disable haptics on sim end',
+    #                                               'simulation terminated',
+    #                                               self._stop_sim_haptics)
+    #     else:
+    #         self._use_haptics = False
 
     def _update_sim_temperature(self):
         t = self.iw._sim_temp_spin_box.value()
@@ -2435,50 +2435,50 @@ class Isolde():
         self._event_handler.remove_event_handler('sim haptic update')
 
     #TODO: Remove all haptics code from isolde.py
-    def _update_haptics(self, *_):
-        hh = self.session.HapticHandler
-        si = self._sim_interface
-        from . import picking
-        for d in self._haptic_devices:
-            i = d.index
-            pointer_pos = hh.getPosition(i, scene_coords = True)
-            if self._haptic_highlight_nearest_atom[i] and not d.tugging:
-                cur_a = self._haptic_current_nearest_atom[i]
-                new_a = self._haptic_current_nearest_atom[i] = picking.pick_closest_to_point(
-                        self.session, pointer_pos, self.sim_manager.sim_construct.mobile_atoms, 3.0,
-                        displayed_only = True, hydrogens = self.tug_hydrogens)
-                if new_a != cur_a:
-                    if cur_a is not None and not cur_a.deleted:
-                        # set the previously picked atom back to standard
-                        cur_a.draw_mode = self._haptic_current_nearest_atom_draw_mode[i]
-                        cur_a.color = self._haptic_current_nearest_atom_color[i]
-                    if new_a is not None:
-                        self._haptic_current_nearest_atom_draw_mode[i] = new_a.draw_mode
-                        new_a.draw_mode = 1
-                        self._haptic_current_nearest_atom_color[i] = new_a.color
-                        new_a.color = [0, 255, 255, 255] # bright cyan
-
-
-            b = hh.getButtonStates(i)
-            # Button 0 controls tugging
-            if b[0]:
-                if not d.tugging:
-                    a = self._haptic_tug_atom[i] = cur_a
-                    if a is not None:
-                        d.start_tugging(a)
-                        target = hh.getPosition(i, scene_coords = True)
-                        si.tug_atom_to(a, target)
-
-                else:
-                    d.update_target()
-                    a = self._haptic_tug_atom[i]
-                    si.tug_atom_to(a, hh.getPosition(i, scene_coords = True))
-            else:
-                if d.tugging:
-                    d.stop_tugging()
-                    a = self._haptic_tug_atom[i]
-                    si.release_tugged_atom(a)
-                    self._haptic_tug_atom[i] = None
+    # def _update_haptics(self, *_):
+    #     hh = self.session.HapticHandler
+    #     si = self._sim_interface
+    #     from . import picking
+    #     for d in self._haptic_devices:
+    #         i = d.index
+    #         pointer_pos = hh.getPosition(i, scene_coords = True)
+    #         if self._haptic_highlight_nearest_atom[i] and not d.tugging:
+    #             cur_a = self._haptic_current_nearest_atom[i]
+    #             new_a = self._haptic_current_nearest_atom[i] = picking.pick_closest_to_point(
+    #                     self.session, pointer_pos, self.sim_manager.sim_construct.mobile_atoms, 3.0,
+    #                     displayed_only = True, hydrogens = self.tug_hydrogens)
+    #             if new_a != cur_a:
+    #                 if cur_a is not None and not cur_a.deleted:
+    #                     # set the previously picked atom back to standard
+    #                     cur_a.draw_mode = self._haptic_current_nearest_atom_draw_mode[i]
+    #                     cur_a.color = self._haptic_current_nearest_atom_color[i]
+    #                 if new_a is not None:
+    #                     self._haptic_current_nearest_atom_draw_mode[i] = new_a.draw_mode
+    #                     new_a.draw_mode = 1
+    #                     self._haptic_current_nearest_atom_color[i] = new_a.color
+    #                     new_a.color = [0, 255, 255, 255] # bright cyan
+    #
+    #
+    #         b = hh.getButtonStates(i)
+    #         # Button 0 controls tugging
+    #         if b[0]:
+    #             if not d.tugging:
+    #                 a = self._haptic_tug_atom[i] = cur_a
+    #                 if a is not None:
+    #                     d.start_tugging(a)
+    #                     target = hh.getPosition(i, scene_coords = True)
+    #                     si.tug_atom_to(a, target)
+    #
+    #             else:
+    #                 d.update_target()
+    #                 a = self._haptic_tug_atom[i]
+    #                 si.tug_atom_to(a, hh.getPosition(i, scene_coords = True))
+    #         else:
+    #             if d.tugging:
+    #                 d.stop_tugging()
+    #                 a = self._haptic_tug_atom[i]
+    #                 si.release_tugged_atom(a)
+    #                 self._haptic_tug_atom[i] = None
 
     def _handle_bad_template(self, residue):
         '''
