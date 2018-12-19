@@ -2910,42 +2910,6 @@ class Isolde():
             omega.target = 0
         omega.enabled = True
 
-
-    #############################################
-    # Main simulation functions to be run once per coordinate update
-    #############################################
-
-
-    def _rezone_maps_if_required(self, *_):
-        self._map_rezone_counter += 1
-        self._map_rezone_counter %= self.params.rounds_per_map_remask
-        if self._map_rezone_counter == 0 and self.params.remask_maps_during_sim:
-            self.rezone_maps()
-
-    def rezone_maps(self):
-        from chimerax.surface.sop import surface_zone
-        for key, m in self.master_map_list.items():
-            v = m.get_source_map()
-            cutoff = m.get_mask_cutoff()
-            surface_zone(self.session, v.surface_drawings,
-                near_atoms = self.sim_manager.sim_construct.mobile_atoms, range = cutoff)
-
-
-
-    #############
-    # Commands for script/command-line control
-    #############
-
-    def set_sim_selection_mode(self, mode):
-        try:
-            self._sim_selection_mode = self._sim_selection_modes[mode]
-        except KeyError:
-            e = "mode must be one of 'from_picked_atoms', 'chain', 'whole_model', \
-                    'custom', or 'script'"
-            raise KeyError(e)
-
-
-
     #############################################
     # Final cleanup
     #############################################
