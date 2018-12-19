@@ -202,7 +202,7 @@ class SelectVolumeToContour(MouseMode):
             pv = self._picked_volume
             if pv is None:
                 pv = self._picked_volume = vol_list[self._last_picked_index]
-            elif pv.deleted or not pv.visible:
+            elif pv not in vol_list or not pv.visible:
                 pv = self._picked_volume = vol_list[0]
                 self._last_picked_index = 0
         except IndexError:
