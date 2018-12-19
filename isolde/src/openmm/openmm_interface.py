@@ -1459,6 +1459,9 @@ class Sim_Handler:
             if not self._startup:
                 if self._unstable_counter >= self._params.maximum_unstable_rounds:
                     self._unstable_counter = 0
+                    self._pause=True
+                    self.session.triggers.add_handler('frame drawn',
+                        self._fire_sim_paused_trigger)
                     self.triggers.activate_trigger('clash detected', self.find_clashing_atoms())
                     return
             self._unstable_counter += 1
