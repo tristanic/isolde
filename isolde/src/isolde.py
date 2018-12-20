@@ -3012,8 +3012,9 @@ class Isolde():
         Open the ISOLDE help documentation.
         '''
         from chimerax.help_viewer import show_url
+        import pathlib
         fname = os.path.join(self._root_dir, 'doc', 'index.html')
-        show_url(self.session, 'file://' + os.path.realpath(fname))
+        show_url(self.session, pathlib.Path(os.path.abspath(fname)).as_uri())
 
     ##############################################
     # Demo
