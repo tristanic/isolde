@@ -20,10 +20,18 @@ from time import time
 package_directory = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(package_directory, 'molprobity_data')
 
+from chimerax import app_dirs
+user_data_dir = os.path.join(app_dirs.user_data_dir, 'isolde_data')
+if not os.path.exists(user_data_dir):
+    os.makedirs(user_data_dir)
+
 def get_molprobity_data_dir():
     return DATA_DIR
 
-def generate_scipy_interpolator(file_prefix, wrap_axes = True):
+def get_molprobity_cache_dir():
+    return user_data_dir
+
+def generate_scipy_interpolator(data_dir, cache_dir, file_prefix, wrap_axes = True):
     '''
     (Deprecated - use generate_interpolator() instead)
     Load a MolProbity data set and return a SciPy RegularGridInterpolator
@@ -34,7 +42,7 @@ def generate_scipy_interpolator(file_prefix, wrap_axes = True):
     infile = None
     # First try to load from a pickle file
     try:
-        infile = open(file_prefix+'.pickle', 'rb')
+        infile = open(os.path.join(cache_dir, file_prefix+'.pickle'), 'rb')
         axis, full_grid = pickle.load(infile)
         infile.close()
         infile = None
@@ -43,7 +51,7 @@ def generate_scipy_interpolator(file_prefix, wrap_axes = True):
         # text, then regenerate the pickle file at the end.
         if infile is not None:
             infile.close()
-        infile = open(file_prefix+'.data', 'rt', encoding='utf-8')
+        infile = open(os.path.join(data_dir, file_prefix+'.data'), 'rt', encoding='utf-8')
         # Throw away the first line - we don't need it
         infile.readline()
         # Get number of dimensions
@@ -131,39 +139,30 @@ def generate_scipy_interpolator(file_prefix, wrap_axes = True):
         # Pickle a tuple containing the axes and grid for fast loading in
         # future runs
 
-        outfile = open(file_prefix+'.pickle', 'w+b')
+        outfile = open(os.path.join(cache_dir, file_prefix+'.pickle'), 'w+b')
         pickle.dump((axis, full_grid), outfile)
         outfile.close()
 
     return RegularGridInterpolator(axis, full_grid, bounds_error = True)
 
 
-def generate_interpolator(file_prefix, wrap_axes = True):
+def generate_interpolator(data_dir, cache_dir, file_prefix, wrap_axes = True):
     from .interpolation.interp import RegularGridInterpolator
-    ndim, axis_lengths, min_vals, max_vals, grid_data = generate_interpolator_data(file_prefix, wrap_axes)
+    ndim, axis_lengths, min_vals, max_vals, grid_data = \
+        generate_interpolator_data(data_dir, cache_dir, file_prefix, wrap_axes)
     return RegularGridInterpolator(ndim, axis_lengths, min_vals, max_vals, grid_data)
 
-def generate_interpolator_data(file_prefix, wrap_axes = True, regenerate = None):
+def generate_interpolator_data(data_dir, cache_dir, file_prefix, wrap_axes = True):
     '''
     Load a MolProbity data set and format it into a form ready for generation of
     a RegularGridInterpolator object for later fast interpolation of values.
     '''
     import numpy, pickle
     infile = None
-    if regenerate is None:
-        with open(os.path.join(DATA_DIR, 'regenerate'), 'rt') as f:
-            regenerate = int(f.readline()[0])
-
-    if regenerate:
-        print('Regenerating contour pickle files')
-        import glob
-        [os.remove(f) for f in glob.glob(os.path.join(DATA_DIR, '*.pickle'))]
-        with open(os.path.join(DATA_DIR, 'regenerate'), 'wt') as f:
-            f.write('0')
 
     # First try to load from a pickle file
     try:
-        infile = open(file_prefix+'.pickle', 'r+b')
+        infile = open(os.path.join(cache_dir, file_prefix+'.pickle'), 'r+b')
         ndim, axis_lengths, min_vals, max_vals, grid_data = pickle.load(infile)
         infile.close()
         infile = None
@@ -172,7 +171,8 @@ def generate_interpolator_data(file_prefix, wrap_axes = True, regenerate = None)
         # text, then regenerate the pickle file at the end.
         if infile is not None:
             infile.close()
-        infile = open(file_prefix+'.data', 'r')
+        full_path = os.path.join(data_dir, file_prefix+'.data')
+        infile = open(full_path, 'r+t')
         # Throw away the first line - we don't need it
         infile.readline()
         # Get number of dimensions
@@ -213,7 +213,7 @@ def generate_interpolator_data(file_prefix, wrap_axes = True, regenerate = None)
         grid_data = numpy.zeros(axis_lengths)
 
         # Slurp in the actual numerical data as a numpy array
-        data = numpy.loadtxt(file_prefix+'.data')
+        data = numpy.loadtxt(full_path)
 
         # Convert each coordinate to an integral number of steps along each
         # axis
@@ -228,7 +228,7 @@ def generate_interpolator_data(file_prefix, wrap_axes = True, regenerate = None)
             axis_vals = data[:,i]
             axes[i]=(((axis_vals - ss/2 - lb) / ss).astype(int))
 
-        grid_data[axes] = data[:,ndim]
+        grid_data[tuple(axes)] = data[:,ndim]
 
         '''
         At this point we should have the full n-dimensional matrix, with
@@ -259,7 +259,7 @@ def generate_interpolator_data(file_prefix, wrap_axes = True, regenerate = None)
         # Pickle a tuple containing the axes and grid for fast loading in
         # future runs
 
-        outfile = open(file_prefix+'.pickle', 'w+b')
+        outfile = open(os.path.join(cache_dir, file_prefix+'.pickle'), 'w+b')
         axis_lengths = numpy.array(axis_lengths, numpy.int)
 
 

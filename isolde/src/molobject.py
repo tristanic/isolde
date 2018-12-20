@@ -623,12 +623,13 @@ class Rama_Mgr:
 
     def _prepare_all_validators(self):
         from .validation import validation
+        cache_dir = validation.get_molprobity_cache_dir()
         data_dir = validation.get_molprobity_data_dir()
+
         for case, details in self.RAMA_CASE_DETAILS.items():
             file_prefix = details['file_prefix']
             if file_prefix is not None:
-                file_prefix = os.path.join(data_dir, file_prefix)
-                i_data = validation.generate_interpolator_data(file_prefix, True)
+                i_data = validation.generate_interpolator_data(data_dir, cache_dir, file_prefix, True)
                 self._add_interpolator(case, *i_data)
 
     def __init__(self, session, c_pointer=None):
@@ -1313,7 +1314,8 @@ class Rota_Mgr:
         from .validation import validation
         dmgr = self._dihedral_mgr
         data_dir = validation.get_molprobity_data_dir()
-        prefix = os.path.join(data_dir, 'rota8000-')
+        cache_dir = validation.get_molprobity_cache_dir()
+        prefix = 'rota8000-'
         for aa in dmgr.dihedral_dict['aminoacids']:
             # Ugly hack to avoid adding duplicate dict for MSE. TODO: Will need to
             # revisit to work out how to handle all modified amino acids.
@@ -1321,10 +1323,11 @@ class Rota_Mgr:
                 fname = prefix+'met'
             else:
                 fname = prefix + aa.lower()
-            if not os.path.isfile(fname+'.data') and not os.path.isfile(fname+'.pickle'):
+            if (not os.path.isfile(os.path.join(data_dir, fname+'.data'))
+                and not os.path.isfile(os.path.join(cache_dir, fname+'.pickle'))):
                 # Not a rotameric residue
                 continue
-            idata = validation.generate_interpolator_data(fname, True)
+            idata = validation.generate_interpolator_data(data_dir, cache_dir, fname, True)
             self._add_interpolator(aa, *idata)
 
     def _add_interpolator(self, resname, ndim, axis_lengths, min_vals, max_vals, data):
