@@ -15,6 +15,16 @@ class CheckPoint:
     molecule in ChimeraX back to a given state.
     '''
     def __init__(self, isolde):
+        '''
+        Save a snapshot of ISOLDE's currently running simulation. Raises a
+        :class:`TypeError` if no simulation is running. The :class:`CheckPoint`
+        only covers the atoms that are mobile in the current simulation, so
+        becomes invalid once a new simulation is started.
+
+        Args:
+            * isolde
+                - the top-level :class:`Isolde` instance
+        '''
         if not isolde.simulation_running:
             raise TypeError('Checkpointing is only available when a '\
                         +'simulation is running!')
@@ -79,10 +89,12 @@ class CheckPoint:
         #     props['coupling_constants'] = matoms.coupling_constants
         #     props['enableds'] = matoms.enableds
 
-    def revert(self, update_sim = True):
+    def revert(self):
         '''
         Revert the master construct and simulation (if applicable) to
-        the saved checkpoint state.
+        the saved checkpoint state. Can be called after the simulation the
+        :class:`CheckPoint` was created in is stopped, but will raise a
+        :class:`TypeError` if called after a new simulation is started.
         '''
         sm = self.isolde.sim_manager
         if sm is not None and sm != self.sim_manager:
@@ -130,5 +142,5 @@ class CheckPoint:
 
 
         self.sim_construct.all_atoms.coords = self.saved_coords
-        if update_sim:
+        if sm is not None and sm.sim_running:
             sm.sim_handler.push_coords_to_sim(self.saved_coords)

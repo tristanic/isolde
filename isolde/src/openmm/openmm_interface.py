@@ -592,6 +592,13 @@ class Sim_Manager:
         self._initialize_restraints(uh)
         self._initialize_mdff(uh)
 
+    @property
+    def sim_running(self):
+        '''
+        Returns True if the simulation is running, otherwise False. Read only.
+        '''
+        return self.sim_handler.sim_running
+
     def _parse_auto_template_error(self, e):
         err_text = str(e)
         if not err_text.startswith('No template found'):
@@ -958,10 +965,10 @@ class Sim_Manager:
         else:
             rt = self._revert_to
         if rt == 'checkpoint':
-            self._current_checkpoint.revert(update_sim=False)
+            self._current_checkpoint.revert()
         elif rt == 'start':
             print('reverting to start')
-            self._starting_checkpoint.revert(update_sim=False)
+            self._starting_checkpoint.revert()
         self.sim_construct.revert_visualisation()
         if reason == 'coord length mismatch':
             msg = ('Mismatch between number of simulated atoms and the model. '
