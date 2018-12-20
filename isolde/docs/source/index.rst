@@ -10,7 +10,7 @@ Interactive Structure Optimisation by Local Direct Exploration
 --------------------------------------------------------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    Home <self>
    intro

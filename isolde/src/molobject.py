@@ -1456,11 +1456,12 @@ class Rota_Mgr:
 class Restraint_Change_Tracker:
     '''
     A per-session singleton tracking changes in ISOLDE restraints, and firing
-    triggers as necessary. It should very rarely be necessary to work with
-    this class directly. Each individual :class:`_Restraint_Mgr` subclass
-    instance has its own :class:`TriggerSet`, and :class:`Restraint_Change_Tracker`
-    will fire the 'changes' trigger in the appropriate instances whenever
-    necessary.
+    triggers as necessary. It should very rarely be necessary to work with this
+    class directly. Each individual :class:`_Restraint_Mgr` subclass instance
+    has its own :class:`TriggerSet`, and :class:`Restraint_Change_Tracker` will
+    fire the 'changes' trigger in the appropriate instances whenever necessary.
+    If you wish to create a new type of restraint class, it will need to
+    register itself with the :class:`Restraint_Change_Tracker` at the C++ level.
     '''
     _mgr_name_to_class_functions = {
         'Chiral_Restraint_Mgr': (_chiral_restraint_mgr, _chiral_restraints),

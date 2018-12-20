@@ -1144,16 +1144,16 @@ class Sim_Handler:
         '''
         Prepares the simulation topology parameters and construct, and
         initialises the necessary Force objects to handle restraints. Most
-        restraint forces must be populated using e.g. add_dihedral_restraints()
-        before initialising the context and beginning the simulation. While it
-        is possible to add new restraints *after* the simulation has started,
-        in general this is only advisable in situations where it is impossible
-        or impractical to define all possible restraints in advance (since each
-        addition requires a costly reinitialisation of the simulation context).
-        For example, the performance penalty to having all possible position
-        restraints pre-defined (and mostly disabled) is minimal, but it is
-        not practical to pre-define distance restraints between all possible
-        atom pairs.
+        restraint forces must be populated using e.g.
+        :func:`add_dihedral_restraints` before initialising the context and
+        beginning the simulation. While it is possible to add new restraints
+        *after* the simulation has started, in general this is only advisable in
+        situations where it is impossible or impractical to define all possible
+        restraints in advance (since each addition requires a costly
+        reinitialisation of the simulation context). For example, the
+        performance penalty to having all possible position restraints
+        pre-defined (and mostly disabled) is minimal, but it is not practical to
+        pre-define distance restraints between all possible atom pairs.
 
         Args:
             * session:

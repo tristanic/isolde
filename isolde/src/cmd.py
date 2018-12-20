@@ -85,6 +85,8 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         isolde.pause_sim_toggle()
 
     elif cmd == 'checkpoint':
+        if not isolde.sim_running:
+            log.warning('Checkpointing is only available while a simulation is running!')
         isolde.checkpoint()
 
     elif cmd == 'revert':

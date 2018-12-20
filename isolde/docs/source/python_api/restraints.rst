@@ -20,6 +20,14 @@ appear as a child model to the main :py:class:`chimerax.AtomicStructure`.
 
 .. automodule:: chimerax.isolde.restraints
 
+General Utilities
+-----------------
+    ..automethod:: restrain_torsions_to_template
+
+    ..automethod:: restrain_ca_distances_to_template
+
+    ..automethod:: restrain_small_ligands
+
 Change Tracking
 ---------------
 

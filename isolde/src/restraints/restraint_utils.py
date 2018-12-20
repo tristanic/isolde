@@ -3,6 +3,41 @@ import numpy
 def restrain_torsions_to_template(template_residues, restrained_residues,
     restrain_backbone=True, restrain_rotamers=True,
     angle_cutoff=radians(10), spring_constant = 500):
+    '''
+    (EXPERIMENTAL)
+
+    Restrain all phi, psi, omega and/or chi dihedrals in `restrained_residues`
+    to  match their counterparts (if present) in template_residues. There must
+    be a 1:1 correspondence between the residues in the two arrays. Note that
+    this algorithm is still quite simplistic and doesn't yet attempt to handle
+    "gotchas" when the restrained and template residues are different (e.g.
+    restraining a VAL to be isosteric with a THR requires rotating the chi1
+    torsion by 120 degrees).
+
+    Args:
+        * template_residues:
+            - a :class:`chimerax.atomic.Residues` instance. All residues must be
+              from a single model, but need no be contiguous
+        * restrained_residues:
+            - a :class:`chimerax.atomic.Residues` instance. All residues must be
+              from a single model (which may or may not be the same model as for
+              `template_residues`). May be the same array as `template_residues`
+              (which will just restrain all torsions to their current angles).
+        * restrain_backbone (default = `True`):
+            - if `True`, all phi, psi and omega dihedrals in
+              `restrained_residues` that  exist in both `restrained_residues`
+              and `template_residues` will be restrained to the angles in
+              `template_residues`
+        * restrain_rotamers (default = `True`):
+            - if `True`, all chi dihedrals in `restrained_residues` that  exist
+              in both `restrained_residues` and `template_residues` will be
+              restrained to the angles in `template_residues`
+        * angle_cutoff (default = pi/18 (10 degrees)):
+            - the deviation from the target angle in radians below which no
+              restraining force will be applied to a given torsion.
+        * spring_constant (default = 500):
+            - strength of each restraint, in :math:`kJ mol^{-1} rad^{-2}`
+    '''
     #from .. import session_extensions as sx
     from chimerax.isolde import session_extensions as sx
     if len(template_residues) != len(restrained_residues):
@@ -30,6 +65,27 @@ def restrain_torsions_to_template(template_residues, restrained_residues,
 
 def restrain_ca_distances_to_template(template_residues, restrained_residues,
     distance_cutoff=8, spring_constant = 500):
+    '''
+    Creates a "web" of distance restraints between nearby CA atoms, restraining
+    one set of residues to the same spatial organisation as another.
+
+    Args:
+        * template_residues:
+            - a :class:`chimerax.atomic.Residues` instance. All residues must be
+              from a single model, but need no be contiguous
+        * restrained_residues:
+            - a :class:`chimerax.atomic.Residues` instance. All residues must be
+              from a single model (which may or may not be the same model as for
+              `template_residues`). May be the same array as `template_residues`
+              (which will just restrain all distances to their current values).
+        * distance_cutoff (default = 8):
+            - for each CA atom in `restrained_residues`, a distance restraint
+              will be created between it and every other CA atom where the
+              equivalent atom in `template_residues` is within `distance_cutoff`
+              of its template equivalent.
+        * spring_constant (default = 500):
+            - the strength of each restraint, in :math:`kJ mol^{-1} nm^{-2}`
+    '''
     from chimerax.isolde import session_extensions as sx
     if len(template_residues) != len(restrained_residues):
         raise TypeError('Template and restrained residue arrays must be the same length!')
@@ -63,6 +119,22 @@ def restrain_small_ligands(model, distance_cutoff=3.5, heavy_atom_limit=3, sprin
     unrestrained, since if knocked out of density they tend to simply keep
     going. It is best to restrain them with distance restraints to suitable
     surrounding atoms or, failing that, to their starting positions.
+
+    Args:
+        * model:
+            - a :class:`chimerax.atomic.AtomicStructure` instance
+        * distance_cutoff (default = 3.5):
+            - radius in Angstroms to look for candidate heavy atoms for distance
+              restraints. If no candidates are found, a position restraint will
+              be applied instead.
+        * heavy_atom_limit (default = 3):
+            - Only residues with a number of heavy atoms less than or equal to
+              `heavy_atom_limit` will be restrained
+        * spring_constant (default = 500):
+            - strength of each restraint, in :math:`kJ mol^{-1} nm^{-2}`
+        * bond_to_carbon (default = `False`):
+            - if `True`, only non-carbon heavy atoms will be restrained using
+              distance restraints.
     '''
     from chimerax.atomic import Residue, Residues
     residues = model.residues

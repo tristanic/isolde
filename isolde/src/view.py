@@ -7,6 +7,22 @@
 # @Copyright: 2017-2018 Tristan Croll
 
 def focus_on_coord(session, center, radius = 5.0, clip=True):
+    '''
+    Focus the main view on a coordinate, maintaining the current center of
+    rotation method and optionally updating the near and far clipping planes.
+
+    Args:
+        * session:
+            - the top-level ChimeraX `session` instance
+        * center:
+            - (x,y,z) coordinates as a Numpy array
+        * radius (default=5.0):
+            - the zoom level, camera position and (optionally) clipping planes
+              will be adjusted to ensure that everything within at least this
+              distance from the center is shown.
+        * clip (default=True):
+            - if `True`, updates the near and far clipping planes.
+    '''
     v = session.view
     import numpy
     from chimerax.core.geometry import Bounds
@@ -26,6 +42,23 @@ def focus_on_coord(session, center, radius = 5.0, clip=True):
 
 
 def focus_on_selection(session, atoms, pad=5.0, clip = True):
+    '''
+    Focus the main view on a selecton of atoms, maintaining the current center
+    of rotation method and optionally updating the near and far clipping
+    planes.
+
+    Args:
+        * session:
+            - the top-level ChimeraX `session` instance
+        * atoms:
+            - a :class:`chimerax.Atoms` instance
+        * pad (default=5.0):
+            - the zoom level, camera position and (optionally) clipping planes
+              will be adjusted to ensure that everything within at least this
+              distance from the selection is shown.
+        * clip (default=True):
+            - if `True`, updates the near and far clipping planes.
+    '''
     bounds = atoms.scene_bounds
     focus_on_coord(session, bounds.center(), bounds.radius()+pad)
     session.selection.clear()

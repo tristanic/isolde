@@ -5,6 +5,27 @@ class Backrub:
     Backrub algorithm (Davis et al. 2006, Structure 14: 265-274)
     '''
     def __init__(self, residue, density_map, clash_weight = 0.1, map_weight=1):
+        '''
+        Prepare an amino acid residue for rotamer refitting, performing some
+        basic sanity checks along the way. When fitting, each pose will be
+        scored for both clashes with surrounding atoms and fit to density, with
+        user-adjustable weights.
+
+        Args:
+
+            * residue:
+                - a :class:`chimerax.atomic.Residue` instance. Will raise a
+                  :class:`TypeError` if not a complete, rotameric amino acid
+                  residue
+            * density_map:
+                - a :class:`chimerax.map.Volume` instance. If the residue does
+                  not fall completely within the extent of the map, a
+                  :class:`RuntimeError` will be raised.
+            * clash_weight (default=0.1):
+                - weight to apply to the clash term when scoring poses
+            * map_weight (default=1):
+                - weight to apply to the density fit term when scoring poses
+        '''
         self.session = residue.session
         dm = self._density_map = density_map
         self._clash_weight = clash_weight
@@ -85,6 +106,9 @@ class Backrub:
     def auto_fit(self):
         '''
         Attempt to automatically find the rotamer that best fits the density.
+        Will set the coordinates of the residue to the best solution it finds.
+        If you wish to be able to revert to the original coordinates, it's up to
+        you to save them first.
         '''
         dm = self._density_map
         # map_range = dm.stats.max - dm.stats.min
@@ -99,22 +123,22 @@ class Backrub:
         moving_atoms = self._all_movable_atoms
         check_atoms = res_atoms[numpy.in1d(res_atoms.names, ['CA', 'CB'])]
         original_coords = moving_atoms.coords
-        #self.rotate_and_check_fit([0], self.primary_axis, self._primary_axis_center, moving_atoms, original_coords, check_atoms)
-        minimize_scalar(self.rotate_and_check_fit, bounds=[-20,20],
+        #self._rotate_and_check_fit([0], self.primary_axis, self._primary_axis_center, moving_atoms, original_coords, check_atoms)
+        minimize_scalar(self._rotate_and_check_fit, bounds=[-20,20],
             args=(self.primary_axis, self._primary_axis_center, moving_atoms, original_coords, check_atoms, self._clash_weight),
             )
 
         moving_atoms = self._prev_pep
         check_atoms = self._prev_pep
         original_coords = moving_atoms.coords
-        minimize_scalar(self.rotate_and_check_fit, bounds=[-20,20],
+        minimize_scalar(self._rotate_and_check_fit, bounds=[-20,20],
             args=(self.prev_pep_axis, self._prev_pep_axis_center, moving_atoms, original_coords, check_atoms, self._clash_weight),
             )
 
         moving_atoms = self._next_pep
         check_atoms = self._next_pep
         original_coords = moving_atoms.coords
-        minimize_scalar(self.rotate_and_check_fit, bounds=[-20,20],
+        minimize_scalar(self._rotate_and_check_fit, bounds=[-20,20],
             args=(self.next_pep_axis, self._next_pep_axis_center, moving_atoms, original_coords, check_atoms, self._clash_weight),
             )
 
@@ -150,10 +174,10 @@ class Backrub:
                     for j in range(i):
                         c = rotamer.chi_dihedrals[j]
                         ma = rotamer.moving_atoms(j)
-                        self.rotate_chi_to(c, ma, t['Angles'][j])
+                        self._rotate_chi_to(c, ma, t['Angles'][j])
 
 
-                    results.append(self.rotate_chi_and_check_fit(
+                    results.append(self._rotate_chi_and_check_fit(
                         chi, moving_atoms, t['Angles'][i],
                         self._clash_weight, self._map_weight, check_atoms
                     ))
@@ -192,19 +216,19 @@ class Backrub:
             # print('Target angles: {}'.format(t_angles))
             # print('Bounds: {}'.format(bounds))
             final_results.append(
-                minimize(self.fine_tune_rotamer, t_angles,
+                minimize(self._fine_tune_rotamer, t_angles,
                 args=(rotamer, self._clash_weight, self._map_weight), bounds=bounds, method='L-BFGS-B',
                 options={'eps':radians(1)} ))
         #print(len(final_results))
         scores = numpy.array([r.fun for r in final_results])
         # print("Scores: {}".format(scores))
         best = final_results[numpy.argmin(scores)].x
-        self.fine_tune_rotamer(best, rotamer, self._clash_weight, self._map_weight)
+        self._fine_tune_rotamer(best, rotamer, self._clash_weight, self._map_weight)
 
 
 
 
-    def rotate_chi_to(self, chi_dihedral, moving_atoms, target_angle):
+    def _rotate_chi_to(self, chi_dihedral, moving_atoms, target_angle):
         ma = moving_atoms
         from math import degrees
         coords = chi_dihedral.atoms.coords
@@ -215,7 +239,7 @@ class Backrub:
         tf = rotation(axis, degrees(target_angle-chi_dihedral.angle), center)
         ma.coords = tf.transform_points(ma.coords)
 
-    def rotate_chi_and_check_fit(self, chi_dihedral, moving_atoms, target_angle,
+    def _rotate_chi_and_check_fit(self, chi_dihedral, moving_atoms, target_angle,
             clash_weight, map_weight, check_atoms = None):
         '''
         Returns the negative weighted mean of density values at the centre of
@@ -225,7 +249,7 @@ class Backrub:
         if check_atoms is None:
             check_atoms = moving_atoms
         atom_weights = check_atoms.elements.numbers
-        self.rotate_chi_to(chi_dihedral, moving_atoms, target_angle)
+        self._rotate_chi_to(chi_dihedral, moving_atoms, target_angle)
         result = -map_weight*sum(
             self._density_map.interpolated_values(
                 check_atoms.coords)*atom_weights)/sum(atom_weights)
@@ -233,7 +257,7 @@ class Backrub:
             self.session, moving_atoms, self._potential_clashes)
         return result
 
-    def rotate_and_check_fit(self, angle, axis, center, moving_atoms,
+    def _rotate_and_check_fit(self, angle, axis, center, moving_atoms,
         original_coords, check_atoms, clash_weight):
         '''
         Returns the negative weighted mean of density values at the centre of
@@ -259,7 +283,7 @@ class Backrub:
         #return -sum(dvals)
 
 
-    def fine_tune_rotamer(self, angles, rotamer, clash_weight, map_weight):
+    def _fine_tune_rotamer(self, angles, rotamer, clash_weight, map_weight):
         check_atoms = rotamer.residue.atoms
         nchi = rotamer.num_chi_dihedrals
         import numpy

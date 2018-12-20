@@ -83,6 +83,7 @@ class _Dihedrals(Collection):
 
 class Chiral_Centers(_Dihedrals):
 
+
     def __init__(self, c_pointers = None):
         super().__init__(c_pointers, Chiral_Center, Chiral_Centers)
 
@@ -182,7 +183,7 @@ class Ramas(Collection):
         '''
         Returns a :class:`Proper_Dihedrals` instance pointing to the psi
         dihedral for each residue. Note that some residues will not have psi
-        dihedrals, so the output array may be shorter  than the :class:`Ramas`
+        dihedrals, so the output array may be shorter than the :class:`Ramas`
         instance.
         '''
         f = c_function('rama_psi',

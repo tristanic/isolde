@@ -1,6 +1,9 @@
 Core Dihedral Classes
 =====================
 
+.. toctree::
+   :maxdepth: 2
+
 .. contents::
     :local:
 

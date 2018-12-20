@@ -11,23 +11,47 @@
 def delayed_reaction(triggerset, trigger_name, initiator_func, initiator_args, ready_test_func,
     final_func, final_func_args):
     '''
-    Designed to work together with threaded (Python or C++) objects, to
-    start a long-running threaded task and then automatically apply the
-    result (in a later GUI update) when done. Can also be used to simply
-    conveniently call the desired callback once on the next firing of the
-    trigger, by setting ready_test_func to None.
+    Designed to work together with threaded (Python or C++) objects, to start a
+    long-running threaded task and then automatically apply the result (in a
+    later GUI update) when done. Can also be used to simply conveniently call
+    the desired callback once on the next firing of the trigger, by setting
+    ready_test_func to None.
+
     Args:
-        triggerset: the triggerset providing the trigger (e.g. session.triggers)
-        trigger_name: the name of the trigger (e.g. 'new frame')
-        initiator_func: A handle to the function that kicks off the threaded
-            process. Should not return anything.
-        initiator_args: A tuple of arguments to be applied to initiator_func
-        ready_test_func: Should return True when the threaded task is done,
-            false otherwise. Set it to None to just run on the next firing
-            of the trigger.
-        final_func: Task to run once the thread is done.
-        final_func_args: A tuple of arguments to be applied to final_func
-            (e.g. to tell it what to do with the result)
+
+        * triggerset:
+            - the :class:`chimerax.core.triggers.TriggerSet` (or other class
+              with similar functionality) providing the trigger
+              (e.g. `session.triggers`)
+        * trigger_name:
+            - the name of the trigger (e.g. 'new frame')
+        * initiator_func:
+            - A handle to the function that kicks off the threaded process.
+              Any return value will be ignored.
+        * initiator_args:
+            - A tuple of arguments to be applied to `initiator_func`
+        * ready_test_func:
+            - Should return `True` when the threaded task is done, `False`
+              otherwise. Set it to `None` to just run on the next firing of the
+              trigger.
+        * final_func:
+            - Task to run once the thread is done.
+        * final_func_args:
+            - A tuple of arguments to be applied to `final_func` (e.g. to tell
+              it what to do with the thread result)
+
+    A simple example using the :class:`Delayed_Reaction_Tester` below to print
+    some output to the ChimeraX log after a delay of 100 frames (assuming
+    the code is run from the ChimeraX Shell or some other environment where
+    `session` is already defined):
+
+    .. code-block:: python
+
+        dt = Delayed_Reaction_Tester()
+        delayed_reaction(session.triggers, 'new frame', dt.initiator_func,
+            (100,), dt.ready_test_func, dt.final_func, ('Finished!,'))
+
+
     '''
     initiator_func(*initiator_args)
     class _cb:
@@ -44,12 +68,12 @@ def delayed_reaction(triggerset, trigger_name, initiator_func, initiator_args, r
     cb = _cb(triggerset, trigger_name, ready_test_func, final_func, final_func_args)
 
 class Delayed_Reaction_Tester:
-    def __init__(self, frame_delay):
-        self._counter = 0
-        self._frame_delay = frame_delay
-
-    def initiator_func(self):
+    def __init__(self):
         pass
+
+    def initiator_func(self, frame_delay):
+        self._frame_delay = frame_delay
+        self._counter = 0
 
     def ready_test_func(self):
         self._counter += 1

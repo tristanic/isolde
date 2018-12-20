@@ -61,19 +61,19 @@ class Param_Mgr:
     initialisation is not allowed. Once initialised, parameter values may be
     changed by either (for example):
 
-        obj.set_param(name, new_value)
+    `obj.set_param(name, new_value)`
 
     or
 
-        obj.name = new_value
+    `obj.name = new_value`
 
     Values are retrievable either by:
 
-        val = obj.name
+    `val = obj.name`
 
     or
 
-        val = obj[name]
+    `val = obj[name]`
     '''
     # In the derived class, fill _default_params with entries of the form:
     #    'parameter_name': (default_value, units)
@@ -112,16 +112,17 @@ class Param_Mgr:
         '''
         Set the value of a parameter. If the parameter is a numerical
         quantity with a unit, you may choose to set it directly as a
-        number, or in an equivalent openmm.unit.Unit. For example:
-        set_param('dihedral_restraint_cutoff_angle', pi/6)
+        number, or in an equivalent :class:`simtk.unit.Unit`. For example:
+
+        `set_param('dihedral_restraint_cutoff_angle', pi/6)`
 
         and
 
-        set_param('dihedral_restraint_cutoff_angle', 30 * unit.degrees)
+        `set_param('dihedral_restraint_cutoff_angle', 30 * unit.degrees)`
 
         will yield the same result, but
 
-        set_param('dihedral_restraint_cutoff_angle', 30 * unit.nanometer)
+        `set_param('dihedral_restraint_cutoff_angle', 30 * unit.nanometer)`
 
         will fail.
         '''

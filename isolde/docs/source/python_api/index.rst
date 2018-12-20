@@ -2,7 +2,7 @@ ISOLDE Python API
 =================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    gui_control
    core_objects
@@ -11,3 +11,4 @@ ISOLDE Python API
    restraints
    scripted_manipulations
    sim_management
+   utils

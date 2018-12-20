@@ -18,7 +18,10 @@ NPY_BOOL = ctypes.c_uint8
 # Fully pythonic version.
 def get_dihedral(p0, p1, p2, p3):
     '''
-     Get the dihedral angle between the vectors p0-p1 and p2-p3 about the
+    (Deprecated and long-since replaced by pure C++ code, but maintained here
+     to illustrate the algorithm used)
+
+    Get the dihedral angle between the vectors p0-p1 and p2-p3 about the
     p1-p2 axis. p0, p1, p2 and p3 should be (x,y,z) coordinates as numpy
     arrays.
     '''
@@ -49,6 +52,11 @@ _get_dihedral.argtypes = [COORTYPE, COORTYPE, COORTYPE, COORTYPE]
 _get_dihedral.restype = ctypes.c_double
 
 def get_dihedral(p0, p1, p2, p3):
+    '''
+    (Deprecated) Get the dihedral angle (in radians) between the vectors p0-p1
+    and p2-p3 about the p1-p2 axis. p0, p1, p2 and p3 should be (x,y,z)
+    coordinates as numpy arrays.
+    '''
     return _get_dihedral(p0.ctypes.data_as(COORTYPE),
                     p1.ctypes.data_as(COORTYPE),
                     p2.ctypes.data_as(COORTYPE),
@@ -59,6 +67,20 @@ def get_dihedral(p0, p1, p2, p3):
 _get_dihedrals = _geometry.get_dihedrals
 
 def get_dihedrals(coords, n):
+    '''
+    (Deprecated) Returns the dihedral angles (in radians) defined by the given
+    coordinates.
+
+    Args:
+        * coords:
+            - The coordinates defining the dihedrals, as a single ((n*4)*3) or
+              (n*4*3) Numpy double array.
+        * n:
+            - The number of dihedrals
+
+    Returns:
+        * a length-n Numpy double array
+    '''
     full_len = n*4*3
     INTYPE = ctypes.POINTER(ctypes.c_double*full_len)
     ret = numpy.empty(n, numpy.double)
