@@ -2007,7 +2007,7 @@ class Isolde():
         '''
         from . import session_extensions as sx
         rrm = sx.get_rotamer_restraint_mgr(self.selected_model)
-        rr = rrm.get_restraint(rotamer)
+        rr = rrm.get_restraint(rotamer_or_residue)
         if rr is not None:
             rr.enabled = False
 
