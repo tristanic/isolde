@@ -7,7 +7,7 @@ experimental information alone is insufficient to precisely place individual
 atoms. Historically this has been an exceedingly challenging task, for a
 number of reasons:
 
-    (a) our understanding of how real atoms and molecules was limited;
+    (a) our understanding of how real atoms and molecules behave was limited;
     (b) we didn't have the computational resources to realistically model them
         at useful speeds anyway; and
     (c) computer graphics were not up to the task of providing intelligible
@@ -44,4 +44,4 @@ down to 1-2 milliseconds for a 500-residue structure. This allows these core
 validation metrics to be evaluated in real time every time the model coordinates
 change, with visualisations showing you at a glance exactly which residues are
 problematic at any moment in time. Expect to see further live validation
-features appearing as ISOLDE grows. 
+features appearing as ISOLDE grows.
