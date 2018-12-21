@@ -99,13 +99,13 @@ The residue rebuilding toolbar
 
     .. _Top8000 database: http://kinemage.biochem.duke.edu/databases/top8000.php
     .. _backrub algorithm: https://academic.oup.com/bioinformatics/article/24/13/i196/233217
-    .. |pep_flip| image:: ../images/pep-flip-icon.png
-    .. |cis_trans| image:: ../images/cis-trans-icon.png
-    .. |rot_i| image:: ../images/rotamer-preview-icon.png
-    .. |rot_d| image:: ../images/rotamer-clear-icon.png
-    .. |rot_c| image:: ../images/rotamer-commit-icon.png
-    .. |rot_t| image:: ../images/rotamer-set-target-icon.png
-    .. |rot_r| image:: ../images/rotamer-release-icon.png
+    .. |pep_flip| image:: ../../../src/resources/pep-flip-icon.png
+    .. |cis_trans| image:: ../../../src/resources/cis-trans-icon.png
+    .. |rot_i| image:: ../../../src/resources/rotamer-preview-icon.png
+    .. |rot_d| image:: ../../../src/resources/rotamer-clear-icon.png
+    .. |rot_c| image:: ../../../src/resources/rotamer-commit-icon.png
+    .. |rot_t| image:: ../../../src/resources/rotamer-set-target-icon.png
+    .. |rot_r| image:: ../../../src/resources/rotamer-release-icon.png
     .. |brb| image:: images/backrub_button.png
 
 All user-applied dihedral restraints (other than the always-on restraints on the
@@ -160,10 +160,10 @@ Secondary Structure Toolbar
     | |red_x|         | Clear secondary structure restraints for the selection.|
     +-----------------+--------------------------------------------------------+
 
-    .. |sec_helix| image:: ../images/helix-icon.png
-    .. |sec_anti| image:: ../images/antiparallel-beta-icon.png
-    .. |sec_par| image:: ../images/parallel-beta-icon.png
-    .. |red_x| image:: ../images/red-x-icon.png
+    .. |sec_helix| image:: ../../../src/resources/helix-icon.png
+    .. |sec_anti| image:: ../../../src/resources/antiparallel-beta-icon.png
+    .. |sec_par| image:: ../../../src/resources/parallel-beta-icon.png
+    .. |red_x| image:: ../../../src/resources/red-x-icon.png
 
 When applied, secondary structure restraints appear similar to the example
 below (for an α-helix).
@@ -241,8 +241,8 @@ Position Restraint Toolbar
     +--------------+-----------------------------------------------------------+
 
 
-    .. |pr_cur| image:: ../images/pin-to-current-icon.png
-    .. |pr_cen| image:: ../images/pin-to-pivot-icon.png
+    .. |pr_cur| image:: ../../../src/resources/pin-to-current-icon.png
+    .. |pr_cen| image:: ../../../src/resources/pin-to-pivot-icon.png
 
 Distance Restraint Toolbar
 --------------------------
@@ -270,9 +270,9 @@ Distance Restraint Toolbar
     +---------------+----------------------------------------------------------+
 
 
-    .. |dr_set| image:: ../images/distance-restraint-icon.png
-    .. |dr_dist| image:: ../images/diagonal-arrows.png
-    .. |multi_x| image:: ../images/multi-x.png
+    .. |dr_set| image:: ../../../src/resources/distance-restraint-icon.png
+    .. |dr_dist| image:: ../../../src/resources/diagonal-arrows.png
+    .. |multi_x| image:: ../../../src/resources/multi-x.png
 
 Distance restraints appear in the model as double-ended pistons:
 

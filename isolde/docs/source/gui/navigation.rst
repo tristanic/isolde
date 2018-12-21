@@ -135,10 +135,10 @@ like this:
     representation at a higher contour - but this is a matter of individual
     preference.
 
-.. |surf| image:: ../images/mapsurf.png
-.. |trans| image:: ../images/icecube.png
-.. |mesh| image:: ../images/mesh.png
-.. |color| image:: ../images/rainbow.png
+.. |surf| image:: ../../../src/resources/mapsurf.png
+.. |trans| image:: ../../../src/resources/icecube.png
+.. |mesh| image:: ../../../src/resources/mesh.png
+.. |color| image:: ../../../src/resources/rainbow.png
 
 Selecting atoms
 ---------------
@@ -202,13 +202,13 @@ panel becomes useful:
     | |spot|        | Returns to spotlight (scrolling sphere) mode.        |
     +---------------+------------------------------------------------------+
 
-.. |stepper| image:: ../images/stepper.png
+.. |stepper| image:: ../../../src/resources/stepper.png
                 :scale: 75 %
 
-.. |mask| image:: ../images/mask_to_sel.png
+.. |mask| image:: ../../../src/resources/mask_to_sel.png
                 :scale: 50 %
 
-.. |spot| image:: ../images/spotlight.png
+.. |spot| image:: ../../../src/resources/spotlight.png
                 :scale: 50 %
 
 You may also isolate any arbitrary selection of atoms using the ``clipper

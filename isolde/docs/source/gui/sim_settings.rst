@@ -203,14 +203,14 @@ play button, and let's go through the rest of the buttons in this toolbar:
     |                | raise an "are you sure?" warning).                      |
     +----------------+---------------------------------------------------------+
 
-.. |play| image:: ../images/play_icon.png
-.. |pause| image:: ../images/pause_icon.png
-.. |temp| image:: ../images/thermometer.png
-.. |cpg| image:: ../images/checkpoint_green.png
-.. |cpr| image:: ../images/checkpoint_red.png
-.. |stopg| image:: ../images/stop_sign_green.png
-.. |cps| image:: ../images/checkpoint_stop_red.png
-.. |stopr| image:: ../images/stop_sign_red.png
+.. |play| image:: ../../../src/resources/play_icon.png
+.. |pause| image:: ../../../src/resources/pause_icon.png
+.. |temp| image:: ../../../src/resources/thermometer.png
+.. |cpg| image:: ../../../src/resources/checkpoint_green.png
+.. |cpr| image:: ../../../src/resources/checkpoint_red.png
+.. |stopg| image:: ../../../src/resources/stop_sign_green.png
+.. |cps| image:: ../../../src/resources/checkpoint_stop_red.png
+.. |stopr| image:: ../../../src/resources/stop_sign_red.png
 
 Basic interaction
 -----------------
@@ -245,8 +245,8 @@ modes toolbar (at the bottom left of the ISOLDE panel):
     |             | atoms in proportion to their mass.                         |
     +-------------+------------------------------------------------------------+
 
-.. |tuga| image:: ../images/tug_atom.png
-.. |tugr| image:: ../images/tug_residue.png
+.. |tuga| image:: ../../../src/resources/tug_atom.png
+.. |tugr| image:: ../../../src/resources/tug_residue.png
 
 Adjusting map weightings
 ------------------------

@@ -20,6 +20,7 @@ resources_rc.py
 
 # Distribution / packaging
 bin/
+doc/
 build/
 develop-eggs/
 dist/
