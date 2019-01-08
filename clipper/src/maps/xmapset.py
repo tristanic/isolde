@@ -544,7 +544,7 @@ class XmapSet(MapSet_Base):
 
     def delete(self):
         self.live_update = False
-        self._stop_showing_r_factors
+        self.stop_showing_r_factors
         super().delete()
 
     # Callbacks
