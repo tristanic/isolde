@@ -1070,6 +1070,14 @@ class Isolde():
         # Update the status of the Go button
         self._selection_changed()
 
+    def _model_changes_cb(self, trigger_name, changes):
+        if changes is not None:
+            changes = changes[1]
+            added = len(changes.created_atoms())
+            deleted = changes.num_deleted_atoms()
+            if added or deleted:
+                self._update_iffy_rota_list()
+                self._update_iffy_peptide_lists()
 
     ####
     # General
@@ -2251,7 +2259,18 @@ class Isolde():
             self._initialize_maps(m)
 
     def _change_selected_model(self, *_, model = None, force = False):
+        if not hasattr(self, '_model_changes_handler'):
+            self._model_changes_handler = None
+        sm = self._selected_model
+        if sm is not None:
+            if self._model_changes_handler is not None:
+                sm.triggers.remove_handler(self._model_changes_handler)
+                self._model_changes_handler = None
+
         if len(self._available_models) == 0:
+            self._selected_model = None
+            self._update_iffy_rota_list()
+            self._update_iffy_peptide_lists()
             return
         if self.simulation_running:
             return
@@ -2259,6 +2278,8 @@ class Isolde():
         mmcb = iw._master_model_combo_box
         if not mmcb.count():
             self._selected_model = None
+            self._update_iffy_rota_list()
+            self._update_iffy_peptide_lists()
             return
         old_index = mmcb.currentIndex()
         if model is not None:
@@ -2279,6 +2300,8 @@ class Isolde():
             from chimerax.clipper.symmetry import get_symmetry_handler
             get_symmetry_handler(m, create=True)
             self._selected_model = m
+            self._model_changes_handler = m.triggers.add_handler('changes',
+                self._model_changes_cb)
             self.session.selection.clear()
             m.selected = True
             has_maps = self._initialize_maps(m)
@@ -2293,6 +2316,8 @@ class Isolde():
             sx.get_rama_annotator(m)
             self._populate_rot_mdff_target_combo_box()
             self.triggers.activate_trigger('selected model changed', data=m)
+            self._update_iffy_rota_list()
+            self._update_iffy_peptide_lists()
         self._status('')
 
     def _change_b_and_a_padding(self, *_):
