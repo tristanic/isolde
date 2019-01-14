@@ -544,6 +544,7 @@ class XmapSet(MapSet_Base):
 
     def delete(self):
         self.live_update = False
+        self.stop_showing_r_factors
         super().delete()
 
     # Callbacks
@@ -564,6 +565,39 @@ class XmapSet(MapSet_Base):
         bp.origin_grid, bp.origin_xyz = _find_box_corner(center, self.cell,
             self.grid, radius=self.display_radius)
         self.triggers.activate_trigger('map box moved', None)
+
+    def start_showing_r_factors(self):
+        if not self.live_xmap_mgr:
+            self.session.logger.warning('Attempted to start live R-factor display, '
+                'but no live crystallographic maps are loaded. Command ignored.')
+            return
+        if not hasattr(self, '_r_factor_label') or self._r_factor_label is None:
+            from chimerax.label import Label
+            self._r_factor_label = Label(self.session, self.name+'_r_factors',
+                text='', xpos=0.025, ypos=0.025, bold=True, size=30)
+            self._r_factor_label_handler = self.triggers.add_handler(
+                'maps recalculated', self._update_r_factor_text
+            )
+        self._update_r_factor_text()
+
+    def _update_r_factor_text(self, *_):
+        lb = self._r_factor_label
+        lxm = self.live_xmap_mgr
+        if not lxm:
+            self._r_factor_label_handler = None
+            from chimerax.core.triggerset import DEREGISTER
+            return DEREGISTER
+        lb.text = 'Rwork: {:0.3f} Rfree: {:0.3f}  '.format(self.rwork, self.rfree)
+        lb.update_drawing()
+
+    def stop_showing_r_factors(self, *_):
+        if hasattr(self, '_r_factor_label_handler') and self._r_factor_label_handler is not None:
+            self.triggers.remove_handler(self._r_factor_label_handler)
+            self._r_factor_label_handler = None
+        if hasattr(self, '_r_factor_label' and self._r_factor_label is not None):
+            self._r_factor_label.delete()
+            self._r_factor_label = None
+
 
 
 from .map_handler_base import XmapHandler_Base
