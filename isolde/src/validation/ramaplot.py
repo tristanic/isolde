@@ -21,6 +21,7 @@ class RamaPlot:
     }
     def __init__(self, session, isolde, container, mode_menu, case_menu,
             restrict_button):
+        self._debug=False
         import numpy
         self.session = session
         from chimerax.isolde import session_extensions as sx
@@ -63,7 +64,6 @@ class RamaPlot:
             (200),(200), picker = 2.0, s=base_size,
             edgecolors='black', linewidths = 0.5)
         scatter.set_cmap('RdYlGn_r')
-        self._prepare_tooltip()
 
         self.change_case(cenum.GENERAL)
 
@@ -107,15 +107,21 @@ class RamaPlot:
             bbox=dict(boxstyle='round', fc='w'),
             arrowprops=dict(arrowstyle='->'))
         annot.set_visible(False)
-        self._start_tooltip()
+        self._annot_cid = None
+        if (not self.isolde.simulation_running) or self.isolde.sim_paused:
+            self._start_tooltip()
 
     def _hover(self, event):
         sp = self.scatter
         annot = self._hover_annotation
         ax = self.axes
         if event.inaxes == ax:
+            if self._debug:
+                print('In axes')
             cont, ind = sp.contains(event)
             if cont:
+                if self._debug:
+                    print('In scatter')
                 indices = ind['ind']
                 text = []
                 ramas = self._case_ramas[indices]
@@ -125,6 +131,8 @@ class RamaPlot:
                 for rama in ramas:
                     res = rama.residue
                     text.append('{} {}{}'.format(res.name, res.chain_id, res.number))
+                if self._debug:
+                    print('Annot text: {}'.format('\n'.join(text)))
                 annot.set_text('\n'.join(text))
                 annot.xy = x, y
                 if y > 0:
@@ -137,10 +145,13 @@ class RamaPlot:
             self.canvas.draw()
 
     def _start_tooltip(self, *_):
+        if self._annot_cid is not None:
+            self._stop_tooltip()
         self._annot_cid = self.canvas.mpl_connect('motion_notify_event', self._hover)
 
     def _stop_tooltip(self, *_):
         self.canvas.mpl_disconnect(self._annot_cid)
+        self._annot_cid = None
 
     def _sim_start_cb(self, *_):
         sc = self.isolde.sim_manager.sim_construct
@@ -190,6 +201,7 @@ class RamaPlot:
     def _case_change_cb(self, *_):
         case_key = self._case_menu.currentData()
         self.change_case(case_key)
+
 
     @property
     def current_model(self):
@@ -327,6 +339,7 @@ class RamaPlot:
         contours = mgr.RAMA_CASE_DETAILS[case_key]['cutoffs']
         self.P_limits = [0, -log(contours[0])]
         self.set_target_residues(self._current_residues)
+        self._prepare_tooltip()
         self.on_resize()
 
     def clear(self):
