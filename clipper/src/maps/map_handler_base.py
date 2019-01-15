@@ -9,6 +9,7 @@ class MapHandler_Base(Volume):
     pickable=False
     def __init__(self, mapset, name, data, is_difference_map=False):
         session = mapset.session
+        data.change_callbacks.clear()
         super().__init__(session, data)
         self.name = name
         ms = self._mapset = mapset
@@ -26,6 +27,21 @@ class MapHandler_Base(Volume):
             (ms,
             ms.triggers.add_handler('map box moved', self._box_moved_cb) )
         )
+
+        # Cache the mean, sigma and RMS, since it's used all the time in contouring
+        self._mean_sd_rms = self._full_mean_sd_rms()
+        self.data.add_change_callback(self._update_mean_sd_rms_cb)
+
+    def _full_mean_sd_rms(self):
+        from chimerax.map.volume import mean_sd_rms
+        return mean_sd_rms(self.data.matrix())
+
+    def mean_sd_rms(self):
+        return self._mean_sd_rms
+
+    def _update_mean_sd_rms_cb(self, reason):
+        if reason == 'values changed':
+            self._mean_sd_rms = self._full_mean_sd_rms()
 
     @property
     def mapset(self):
@@ -64,6 +80,17 @@ class MapHandler_Base(Volume):
             except:
                 continue
         super().delete()
+
+    def add_surface(self, level, rgba=None):
+        ses = self.session
+        s = FastVolumeSurface(self, level, rgba)
+        self._surfaces.append(s)
+        if self.id is None:
+            self.add([s])
+        else:
+            ses.models.add([s], parent=self)
+        return s
+
 
 from chimerax.map.volume import VolumeSurface
 class FastVolumeSurface(VolumeSurface):
@@ -138,7 +165,7 @@ class FastVolumeSurface(VolumeSurface):
         from ..contour_thread import Contour_Thread_Mgr
         sct = self._surf_calc_thread = Contour_Thread_Mgr()
         delayed_reaction(self.volume.session.triggers, 'new frame',
-            sct.start_compute, (v.matrix(), level, det, vertex_transform.matrix, normal_transform.matrix, False, True),
+            sct.start_compute, (numpy.asfortranarray(v.matrix()), level, det, vertex_transform.matrix, normal_transform.matrix, False, True),
             sct.ready,
             self._use_fast_thread_result, (show_mesh, rendering_options))
 

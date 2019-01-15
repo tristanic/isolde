@@ -103,15 +103,11 @@ class NXmapHandler(MapHandler_Base):
 
     @property
     def stats(self):
-        return self.full_mean_sd_rms()
+        return self.mean_sd_rms()
 
     @property
     def sigma(self):
-        return self.full_mean_sd_rms()[1]
-
-    def full_mean_sd_rms(self):
-        from chimerax.map.volume import mean_sd_rms
-        return mean_sd_rms(self.data.matrix())
+        return self.mean_sd_rms()[1]
 
     def update_mask(self):
         if not self.display:
