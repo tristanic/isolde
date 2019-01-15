@@ -27,21 +27,15 @@ Combining the above allows the model-building task to be re-imagined as a truly
 interactive experience in which, rather than carefully adjusting individual
 atoms and dihedral angles, the user instead helps to guide a "living", explicitly
 physical model into the experimental map. In this way, many of the unlikely or
-impossible atomic arrangements that plague traditional model-building methods
-are prevented from ever occurring in the first place, and many other errors
-simply fix themselves.
+impossible atomic arrangements that used to plague model builders are prevented
+from ever occurring in the first place, and many other errors simply fix
+themselves.
 
 Alongside the above, a core component of ISOLDE's design philosophy is the
-need for real-time, continuous feedback. In a traditional crystallographic
-model building workflow, the practitioner would typically work through a list
-or table of geometric outliers arising from their previous round of refinement,
-and generate an updated list after re-refining their edited coordinates. While
-workable for small, high-resolution structures, this becomes painfully slow as
-the model grows and the resolution degrades. In ISOLDE I have carefully
-optimised and streamlined the process of rotamer, Ramachandran and peptide
-plane validation, bringing the combined time required for these three tasks
-down to 1-2 milliseconds for a 500-residue structure. This allows these core
-validation metrics to be evaluated in real time every time the model coordinates
-change, with visualisations showing you at a glance exactly which residues are
-problematic at any moment in time. Expect to see further live validation
-features appearing as ISOLDE grows.
+need for real-time, continuous feedback. In ISOLDE the process of rotamer,
+Ramachandran and peptide plane validation have been streamlined to bring their
+combined time  down to 1-2 milliseconds for a 500-residue structure. This allows
+these core validation metrics to be evaluated in real time every time the model
+coordinates change, with visualisations showing you at a glance exactly which
+residues are problematic at any moment in time. Expect to see further live
+validation features appearing as ISOLDE grows.
