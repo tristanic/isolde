@@ -350,7 +350,7 @@
   <Classifiers>
     <!-- Development Status should be compatible with bundle version number -->
     <PythonClassifier>Development Status :: 2 - Pre-Alpha</PythonClassifier>
-    <PythonClassifier>License :: Free for non-commercial use.</PythonClassifier>
+    <PythonClassifier>License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)</PythonClassifier>
 ]
     <ChimeraXClassifier>ChimeraX :: DataFormat :: MTZ reflection file :: mtz :: Reflection data :: .mtz :: :: :: :: :: Crystallographic reflection file</ChimeraXClassifier>
     <ChimeraXClassifier>ChimeraX :: Open :: MTZ reflection file :: mtz :: true :: structure_model:Structure, over_sampling:Float</ChimeraXClassifier>
