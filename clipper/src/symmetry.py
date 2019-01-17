@@ -821,8 +821,16 @@ class AtomicSymmetryModel(Model):
         self._model_changes_handler = atomic_structure.triggers.add_handler(
                                         'changes', self._model_changed_cb)
         self.live_scrolling = live
-        from .crystal import set_to_default_cartoon
-        set_to_default_cartoon(session)
+        # Have to delay setting the drawing settings until after the frame is
+        # drawn, otherwise they get overridden by ChimeraX
+        self.session.triggers.add_handler('frame drawn', self._set_default_cartoon_cb)
+
+    def _set_default_cartoon_cb(self, *_):
+        from .util import set_to_default_cartoon
+        set_to_default_cartoon(self.session, model = self.structure)
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
 
     @property
     def unit_cell(self):
