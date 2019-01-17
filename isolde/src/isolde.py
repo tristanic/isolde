@@ -1963,6 +1963,9 @@ class Isolde():
         res = self._selected_rotamer.residue
         from.refine.backrub_rotamer import apply_backrub
         mdff_mgr = self.iw._rebuild_sel_res_rot_backrub_map_combo_box.currentData()
+        if mdff_mgr is None:
+            self._populate_rot_mdff_target_combo_box()
+            mdff_mgr = self.iw._rebuild_sel_res_rot_backrub_map_combo_box.currentData()
         if mdff_mgr is not None:
             apply_backrub(self, mdff_mgr, res)
         if trigger_name == 'sim paused':
