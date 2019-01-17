@@ -1138,7 +1138,10 @@ class Isolde():
 
     def _choose_mtz_file(self, *_):
         options = QFileDialog.Options()
-        #options |= QFileDialog.DontUseNativeDialog
+        import platform
+        if platform.system() == 'Windows':
+            # Workaround since otherwise MTZ files don't show up
+            options |= QFileDialog.DontUseNativeDialog
         caption = 'Choose a file containing map structure factors'
         filetypes = 'MTZ files (*.mtz)'
         filename, _ = QFileDialog.getOpenFileName(None, caption, filetypes, filetypes, options = options)
