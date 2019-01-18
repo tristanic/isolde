@@ -29,7 +29,7 @@ def set_to_default_cartoon(session, model = None):
             models = None
             atoms = model.atoms
             atoms.displays=False
-            atoms[atoms.idatm_types!='H'].displays=True
+            atoms[atoms.idatm_types!='HC'].displays=True
             arg = atomspec.AtomSpecArg('thearg')
             aspec= arg.parse('#' + model.id_string, session)[0]
         cartoon.cartoon(session, atoms = aspec, suppress_backbone_display=False)
