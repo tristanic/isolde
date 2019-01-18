@@ -1138,15 +1138,20 @@ class Isolde():
 
     def _choose_mtz_file(self, *_):
         options = QFileDialog.Options()
-        import platform
-        if platform.system() == 'Windows':
-            # Workaround since otherwise MTZ files don't show up
-            options |= QFileDialog.DontUseNativeDialog
         caption = 'Choose a file containing map structure factors'
         filetypes = 'MTZ files (*.mtz)'
-        filename, _ = QFileDialog.getOpenFileName(None, caption, filetypes, filetypes, options = options)
-        self.iw._sim_basic_xtal_init_reflections_file_name.setText(filename)
-        self._check_for_valid_xtal_init()
+        dlg = QFileDialog()
+        dlg.setAcceptMode(QFileDialog.AcceptOpen)
+        dlg.setNameFilter(filetypes)
+        dlg.setFileMode(QFileDialog.ExistingFile)
+        import os
+        dlg.setDirectory(os.getcwd())
+
+        #filename, _ = QFileDialog.getOpenFileName(None, caption, '', filetypes, options = options)
+        if dlg.exec():
+            return dlg.selectedFiles()[0]
+        # self.iw._sim_basic_xtal_init_reflections_file_name.setText(filename)
+        # self._check_for_valid_xtal_init()
 
     def _initialize_xtal_structure(self, *_):
         fname = self.iw._sim_basic_xtal_init_reflections_file_name.text()
@@ -1163,12 +1168,14 @@ class Isolde():
         self._update_sim_control_button_states()
 
     def _choose_reflections_file(self, *_):
-        options = QFileDialog.Options()
-        caption = ('Choose a file containing amplitudes/phases or F/sigF/free flags')
-        filetypes = 'MTZ files (*.mtz)'
-        filename, _ = QFileDialog.getOpenFileName(None, caption, filetypes, filetypes, options=options)
-        import os
-        if os.path.isfile(filename):
+        # options = QFileDialog.Options()
+        # caption = ('Choose a file containing amplitudes/phases or F/sigF/free flags')
+        # filetypes = 'MTZ files (*.mtz)'
+        # filename, _ = QFileDialog.getOpenFileName(None, caption, filetypes, filetypes, options=options)
+        filename = self._choose_mtz_file()
+        #import os
+        #if os.path.isfile(filename):
+        if filename is not None:
             self.add_xtal_data(filename)
 
     def add_xtal_data(self, filename, model=None):
