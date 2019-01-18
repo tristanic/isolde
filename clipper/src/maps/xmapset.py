@@ -594,7 +594,7 @@ class XmapSet(MapSet_Base):
         if hasattr(self, '_r_factor_label_handler') and self._r_factor_label_handler is not None:
             self.triggers.remove_handler(self._r_factor_label_handler)
             self._r_factor_label_handler = None
-        if hasattr(self, '_r_factor_label' and self._r_factor_label is not None):
+        if hasattr(self, '_r_factor_label') and self._r_factor_label is not None:
             self._r_factor_label.delete()
             self._r_factor_label = None
 
