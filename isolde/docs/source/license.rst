@@ -18,4 +18,4 @@ Email: software@enterprise.cam.ac.uk
 
 
 .. raw:: html
-    :file: license.html
+    :file: _static/license_base.html
