@@ -52,8 +52,10 @@ void OpenMM_Thread_Handler::_step_threaded(size_t steps, bool smooth)
             integrator().step(these_steps);
             steps_done += these_steps;
             auto state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
-            if (overly_fast_atoms(state.getVelocities()).size() >0)
+            auto fast = overly_fast_atoms(state.getVelocities());
+            if (fast.size() >0)
             {
+                std::cerr << fast.size() << " atoms are moving too fast!" << std::endl;
                 _unstable = true;
                 break;
             }
@@ -91,6 +93,7 @@ void OpenMM_Thread_Handler::_apply_smoothing(const OpenMM::State& state)
 
 void OpenMM_Thread_Handler::_minimize_threaded(const double &tolerance, int max_iterations)
 {
+    // std::cout << "Starting minimization with tolerance of " << tolerance << " and max iterations per round of " << max_iterations << std::endl;
     try
     {
         _thread_except = nullptr;
@@ -101,10 +104,14 @@ void OpenMM_Thread_Handler::_minimize_threaded(const double &tolerance, int max_
         _thread_finished = false;
         _starting_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Energy);
         _unstable = true;
-        for (size_t i=0; i<20; ++i) {
-            OpenMM::LocalEnergyMinimizer::minimize(*_context, tolerance*_natoms, max_iterations);
+        double tol = tolerance * _natoms;
+        // std::cout << "Initial energy: " << _starting_state.getPotentialEnergy() << " kJ/mol" << std::endl;
+        for (size_t i=0; i<1; ++i) {
+            // std::cout << "Round " << i << ": " <<std::flush;
+            OpenMM::LocalEnergyMinimizer::minimize(*_context, tol, max_iterations);
             _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Forces + OpenMM::State::Energy);
-            if (_starting_state.getPotentialEnergy() - _final_state.getPotentialEnergy() < MIN_TOLERANCE) {
+            std::cout << _final_state.getPotentialEnergy() << " kJ/mol" << std::endl << std::flush;
+            if (_starting_state.getPotentialEnergy() - _final_state.getPotentialEnergy() < tol) {
                 _unstable = false;
                 break;
             }
@@ -116,6 +123,7 @@ void OpenMM_Thread_Handler::_minimize_threaded(const double &tolerance, int max_
         if (loop_time < _min_time_per_loop)
             std::this_thread::sleep_for(_min_time_per_loop-loop_time);
         _thread_finished = true;
+        // std::cout << "Finished minimization round" << std::endl;
     } catch (...)
     {
         _thread_except = std::current_exception();
