@@ -17,7 +17,7 @@ from simtk.unit.quantity import Quantity
 from simtk.openmm import app
 from simtk.openmm.openmm import CustomBondForce, CustomExternalForce, \
                                 CustomCompoundBondForce, CustomTorsionForce, \
-                                NonbondedForce, CMAPTorsionForce
+                                CMAPTorsionForce, CustomNonbondedForce
 from simtk.openmm.openmm import Continuous1DFunction, Continuous3DFunction, \
                                 Discrete3DFunction
 from simtk.openmm.app.internal import customgbforces
@@ -1149,6 +1149,25 @@ class TorsionNCSForce(CustomCompoundBondForce):
         for k in k_params:
             self._k_indices.append(self.addPerBondParameter(k))
         self.addGlobalParameter('global_k', 1.0)
+
+
+class NonbondedSoftcoreForce(CustomNonbondedForce):
+    '''
+    Defines a soft-core Lennard-Jones potential to replace the default version,
+    to reduce the generation of out-of-gamut forces during energy minimisation.
+    '''
+    def __init__(self, nb_lambda=0.99):
+        energy_function = ('nb_lambda*4*epsilon*x*(x-1.0); '
+            'x = (sigma/reff_sterics)^6;'
+            'reff_sterics = sigma*(0.5*(1.0-nb_lambda) + (r/sigma)^6)^(1/6);'
+            'sigma = 0.5*(sigma1+sigma2);'
+            'epsilon = sqrt(epsilon1*epsilon2);'
+            )
+        super().__init__(energy_function)
+        self.addGlobalParameter('nb_lambda', nb_lambda)
+        self.addPerParticleParameter('sigma')
+        self.addPerParticleParameter('epsilon')
+
 
 
 

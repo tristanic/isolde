@@ -1289,9 +1289,28 @@ class Sim_Handler:
             'ignoreExternalBonds':  True,
             'residueTemplates':     residue_templates,
         }
-        return forcefield.createSystem(top, **system_params)
+        sys = forcefield.createSystem(top, **system_params)
+        # self._convert_to_soft_core_potentials(sys)
+        return sys
 
-
+    def _convert_to_soft_core_potentials(self, system):
+        from simtk.openmm.openmm import NonbondedForce
+        for f in system.getForces():
+            if type(f) == NonbondedForce:
+                break
+        from .custom_forces import NonbondedSoftcoreForce
+        sf = NonbondedSoftcoreForce()
+        sf.setNonbondedMethod(f.getNonbondedMethod())
+        sf.setCutoffDistance(f.getCutoffDistance())
+        sf.setSwitchingDistance(f.getSwitchingDistance())
+        for i in range(system.getNumParticles()):
+            charge, sigma, epsilon = f.getParticleParameters(i)
+            sf.addParticle([sigma, epsilon])
+            f.setParticleParameters(i, charge, sigma, 0)
+        for i in range(f.getNumExceptions()):
+            p1, p2, cp, sig, eps = f.getExceptionParameters(i)
+            sf.addExclusion(p1, p2)
+        system.addForce(sf)
 
 
     def initialize_restraint_forces(self, amber_cmap=True, tugging=True, position_restraints=True,
