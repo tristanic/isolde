@@ -10,7 +10,7 @@
 
 
 
-<BundleInfo name="ChimeraX-ISOLDE" version="1.0b2" package="chimerax.isolde"
+<BundleInfo name="ChimeraX-ISOLDE" version="1.0b2.1" package="chimerax.isolde"
   	    minSessionVersion="1" maxSessionVersion="1">
 
   <!-- Additional information about bundle source -->
@@ -73,7 +73,7 @@ with the surroundings.
       <Library>pyinstance</Library>
       <CompileArgument platform="mac">-mmacosx-version-min=10.12</CompileArgument>
       <IncludeDir platform="mac">$HOME/anaconda3/pkgs/openmm-7.2.2-py36_1/include</IncludeDir>
-      <IncludeDir platform="linux">$HOME/anaconda3/pkgs/openmm-7.2.2-py36_1/include</IncludeDir>
+      <IncludeDir platform="linux">/home/tic20/anaconda3/envs/openmm73/include</IncludeDir>
       <IncludeDir platform="windows">"C:\Users\tic20\Anaconda3\pkgs\openmm-7.2.2-py36_1\include"</IncludeDir>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
       <SourceFile>src/openmm/custom_forces.cpp</SourceFile>
@@ -82,7 +82,7 @@ with the surroundings.
 
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>
-    <Dependency name="ChimeraX-Core" version="==0.8"/>
+    <Dependency name="ChimeraX-Core" version="==0.9"/>
     <Dependency name="ChimeraX-Atomic" version=">=0.7"/>
     <Dependency name="ChimeraX-Clipper" version=">=0.3"/>
   </Dependencies>

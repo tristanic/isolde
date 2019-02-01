@@ -60,7 +60,7 @@ class _Defaults:
         'OPENMM_NONBONDED_CUTOFF':    1.7, #* unit.nanometers,
         'OPENMM_FRICTION':            5.0, #/ unit.picoseconds,
         'OPENMM_VAR_INTEGRATOR_TOL':  1e-4,
-        'OPENMM_CONSTRAINT_TOL':      1e-4,
+        'OPENMM_CONSTRAINT_TOL':      1e-5,
         'OPENMM_FIXED_INTEGRATOR_TS': 0.001, #* unit.picoseconds,
         'SIM_STEPS_PER_GUI_UPDATE':   50,
         'SIM_STARTUP_ROUNDS':         10,
@@ -77,8 +77,8 @@ class _Defaults:
         'RIGID_BONDS':                HBonds,
         'RIGID_WATER':                True,
         'REMOVE_C_OF_M_MOTION':       False,
-        'MIN_CONVERGENCE_TOL_START':  1e-7, # *unit.kilojoule_per_mole
-        'MIN_CONVERGENCE_TOL_END':    1e-9,
+        'MIN_CONVERGENCE_TOL_START':  1e-5, # * kJ mol-1 atom-1
+        'MIN_CONVERGENCE_TOL_END':    1e-5, # * kJ mol-1 atom-1
         'MAX_MIN_ITERATIONS':         1000,
         'SIM_TIMEOUT':                120.0, # seconds
         'TARGET_LOOP_PERIOD':         0.1, # seconds

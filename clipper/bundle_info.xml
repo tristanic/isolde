@@ -10,7 +10,7 @@
 
 
 
-<BundleInfo name="ChimeraX_Clipper" version="0.3" package="chimerax.clipper"
+<BundleInfo name="ChimeraX_Clipper" version="0.3.1" package="chimerax.clipper"
   	    minSessionVersion="1" maxSessionVersion="1">
 
   <!-- Additional information about bundle source -->
@@ -31,10 +31,16 @@
   </Categories>
 
   <CModule name="contour_thread" usesNumpy="true">
-    <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-    <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-    <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
-    <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <CompileArgument platform="linux">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="linux">-fvisibility-inlines-hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument platform="linux">-fvisibility=hidden</LinkArgument>
+      <LinkArgument platform="linux">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="linux">-s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="mac">-s</LinkArgument>
     <IncludeDir platform="windows">C:\include</IncludeDir>
       <!-- <LinkArgument>-s</LinkArgument> -->
         <!-- <Library>stdc++</Library> -->
@@ -48,10 +54,16 @@
        Source files are listed in one or more SourceFile elements -->
   <CLibrary name="mmdb2">
       <Define>MMDB_EXPORT</Define>
-      <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <CompileArgument platform="linux">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="linux">-fvisibility-inlines-hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument platform="linux">-fvisibility=hidden</LinkArgument>
+      <LinkArgument platform="linux">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="linux">-s</LinkArgument>
       <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="mac">-s</LinkArgument>
       <!-- <Library>stdc++</Library> -->
       <SourceFile>src/deps/mmdb2/mmdb2/hybrid_36.cpp</SourceFile>
       <SourceFile>src/deps/mmdb2/mmdb2/mmdb_io_stream.cpp</SourceFile>
@@ -90,10 +102,16 @@
   <CLibrary name="ccp4">
       <Define>CCP4_EXPORT</Define>
       <Define platform="windows">NOMINMAX</Define>
-      <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <CompileArgument platform="linux">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="linux">-fvisibility-inlines-hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument platform="linux">-fvisibility=hidden</LinkArgument>
+      <LinkArgument platform="linux">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="linux">-s</LinkArgument>
       <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="mac">-s</LinkArgument>
       <LinkArgument platform="windows">AdvAPI32.Lib</LinkArgument>
       <!-- <Library>stdc++</Library> -->
       <SourceFile>src/deps/libccp4/ccp4/ccp4_array.c</SourceFile>
@@ -122,10 +140,16 @@
       <Define>CLIPPER_EXPORTS</Define>
       <Define platform="windows">NOMINMAX</Define>
       <Define>FFTW_MKL</Define>
-      <!-- <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument> -->
-      <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <!-- <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument> -->
+      <CompileArgument platform="linux">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="linux">-fvisibility-inlines-hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument platform="linux">-fvisibility=hidden</LinkArgument>
+      <LinkArgument platform="linux">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="linux">-s</LinkArgument>
       <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="mac">-s</LinkArgument>
       <IncludeDir>src/deps/libccp4</IncludeDir>
       <IncludeDir>src/deps/mmdb2</IncludeDir>
       <IncludeDir>src/deps/clipper</IncludeDir>
@@ -219,10 +243,16 @@
   <CLibrary name="clipper_cx" usesNumpy="true">
       <Define>CLIPPER_CX_EXPORTS</Define>
       <Define platform="windows">NOMINMAX</Define>
-      <!-- <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument> -->
-      <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <!-- <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument> -->
+      <CompileArgument platform="linux">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="linux">-fvisibility-inlines-hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument platform="linux">-fvisibility=hidden</LinkArgument>
+      <LinkArgument platform="linux">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="linux">-s</LinkArgument>
       <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="mac">-s</LinkArgument>
       <LinkArgument platform="windows">/FORCE:MULTIPLE</LinkArgument>
 
       <IncludeDir>src/deps</IncludeDir>
@@ -244,10 +274,16 @@
   </CLibrary> -->
 
   <CModule name="clipper_python" usesNumpy="true">
-    <!-- <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument> -->
-    <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-    <!-- <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument> -->
-    <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <CompileArgument platform="linux">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="linux">-fvisibility-inlines-hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument platform="linux">-fvisibility=hidden</LinkArgument>
+      <LinkArgument platform="linux">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="linux">-s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="mac">-s</LinkArgument>
       <IncludeDir platform="windows">C:\include</IncludeDir>
       <IncludeDir>src/deps</IncludeDir>
       <IncludeDir>src/deps/libccp4</IncludeDir>
@@ -304,10 +340,16 @@
 
   <CLibrary name = "_symmetry" usesNumpy="true">
       <SourceFile>src/symmetry_cpp/symmetry.cpp</SourceFile>
-      <CompileArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <CompileArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden</CompileArgument>
-      <LinkArgument platform="linux">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <CompileArgument platform="linux">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="linux">-fvisibility-inlines-hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility=hidden</CompileArgument>
+      <CompileArgument platform="mac">-fvisibility-inlines-hidden</CompileArgument>
+      <LinkArgument platform="linux">-fvisibility=hidden</LinkArgument>
+      <LinkArgument platform="linux">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="linux">-s</LinkArgument>
       <LinkArgument platform="mac">-fvisibility=hidden -fvisibility-inlines-hidden -s</LinkArgument>
+      <LinkArgument platform="mac">-fvisibility-inlines-hidden</LinkArgument>
+      <LinkArgument platform="mac">-s</LinkArgument>
       <Library>atomstruct</Library>
       <Library>arrays</Library>
       <!-- <Library>stdc++</Library> -->
@@ -315,7 +357,7 @@
 
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>
-    <Dependency name="ChimeraX-Core" version="==0.8"/>
+    <Dependency name="ChimeraX-Core" version="==0.9"/>
     <Dependency name="ChimeraX-Atomic" version=">=1.0"/>
     <!-- <Dependency name="Clipper-Python" version=">=0.1.1"/> -->
   </Dependencies>
