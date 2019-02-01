@@ -68,14 +68,17 @@ Xtal_mgr_base::guess_free_flag_value(const HKL_data<Flag>& flags)
         std::unordered_map<int, float> val_fracs;
         // Convert to fractions of total reflections
         for (const auto v: flag_vals)
+        {
+            std::cout << "Candidate R-free flag value: " << v << " Count: " << val_counts[v] << std::endl;
             val_fracs[v] = ((float)val_counts[v]) / flags.hkl_info().num_reflections();
+        }
 
         // Weed out those that don't fit the criteria
         std::set<int> candidates;
         int last_candidate=-10;
         for (auto v: flag_vals)
         {
-            if (val_fracs[v] > 0.005 && val_fracs[v] < 0.1)
+            if (val_fracs[v] > 0.005 && val_fracs[v] < 0.15)
             {
                 candidates.insert(v);
                 last_candidate = v;
