@@ -115,6 +115,7 @@ public:
     bool thread_finished() const { return _thread_finished; }
     bool thread_running() const { return _thread_running; }
     bool unstable() const { return _unstable; }
+    bool converged() const { return _min_converged; }
     size_t natoms() const { return _natoms; }
     bool clash_detected() const { return _clash; }
 
@@ -131,6 +132,7 @@ private:
     std::exception_ptr _thread_except;
     size_t _natoms;
     bool _clash = false;
+    bool _min_converged = false;
     bool _thread_running = false;
     bool _thread_finished = true;
     bool _unstable = false;

@@ -197,6 +197,13 @@ class OpenMM_Thread_Handler:
             ret=ctypes.c_bool)
         return f(self._c_pointer)
 
+    @property
+    def minimization_converged(self):
+        f = c_function('openmm_thread_handler_converged',
+            args=(ctypes.c_void_p,),
+            ret=ctypes.c_bool)
+        return f(self._c_pointer)
+
     def reinitialize_velocities(self):
         '''
         Set the atomic velocities to random values consistent with the current
@@ -1444,7 +1451,7 @@ class Sim_Handler:
             f = self._reinitialize_context
             f_args = []
             final_args = []
-        elif th.unstable() or self._unstable:
+        elif th.unstable() or self._unstable or not th.minimization_converged:
             f = th.minimize
             f_args = []
             final_args = [True]

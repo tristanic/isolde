@@ -14,6 +14,7 @@
 #include <iostream>
 #include "../molc.h"
 #include "openmm_interface.h"
+#include "minimize.h"
 #include <pyinstance/PythonInstance.instantiate.h>
 
 template class pyinstance::PythonInstance<isolde::OpenMM_Thread_Handler>;
@@ -103,20 +104,29 @@ void OpenMM_Thread_Handler::_minimize_threaded(const double &tolerance, int max_
         _thread_running = true;
         _thread_finished = false;
         _starting_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Energy);
-        _unstable = true;
+        _min_converged = false;
         double tol = tolerance * _natoms;
         // std::cout << "Initial energy: " << _starting_state.getPotentialEnergy() << " kJ/mol" << std::endl;
-        for (size_t i=0; i<1; ++i) {
-            // std::cout << "Round " << i << ": " <<std::flush;
-            OpenMM::LocalEnergyMinimizer::minimize(*_context, tol, max_iterations);
+        auto result = isolde::LocalEnergyMinimizer::minimize(*_context, tol, max_iterations);
+        if (result == isolde::LocalEnergyMinimizer::SUCCESS)
+        {
+            // Minimisation has converged to within the desired tolerance,
+            // and all constraints are satisfied.
             _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Forces + OpenMM::State::Energy);
-            std::cout << _final_state.getPotentialEnergy() << " kJ/mol" << std::endl << std::flush;
-            if (_starting_state.getPotentialEnergy() - _final_state.getPotentialEnergy() < tol) {
-                _unstable = false;
-                break;
-            }
+            _min_converged = true;
+            _unstable = false;
+        } else if (result == isolde::LocalEnergyMinimizer::DID_NOT_CONVERGE) {
+            // Minimisation ongoing. Just leave _min_converged = false, but
+            // let ISOLDE have the new coordinates.
+
+        } else if (result < 0)
+        {
+            // Minimisation failed. Revert the model to its initial state
+            // and let ISOLDE point out problem areas to the user.
+            _clash = true;
+            _final_state = _starting_state;
         }
-        if (max_force(_final_state.getForces()) > MAX_FORCE)
+        if (_min_converged && max_force(_final_state.getForces()) > MAX_FORCE)
             _clash = true;
         auto end = std::chrono::steady_clock::now();
         auto loop_time = end-start;
@@ -370,6 +380,19 @@ openmm_thread_handler_unstable(void *handler)
         return false;
     }
 }
+
+extern "C" EXPORT npy_bool
+openmm_thread_handler_converged(void *handler)
+{
+    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
+    try {
+        return h->converged();
+    } catch(...) {
+        molc_error();
+        return false;
+    }
+}
+
 
 extern "C" EXPORT npy_bool
 openmm_thread_handler_clashing(void *handler)
