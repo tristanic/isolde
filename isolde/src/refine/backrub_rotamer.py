@@ -1,4 +1,15 @@
 
+from math import radians
+_lbfgs_opts = {
+    'eps': radians(2),
+    'ftol': 1e-4,
+    'maxiter': 1000,
+}
+_min_scalar_opts = {
+    'maxiter': 100,
+    'xatol': 1e-3,
+}
+
 class Backrub:
     '''
     Automatically fit a protein sidechain into density using the
@@ -126,6 +137,7 @@ class Backrub:
         #self._rotate_and_check_fit([0], self.primary_axis, self._primary_axis_center, moving_atoms, original_coords, check_atoms)
         minimize_scalar(self._rotate_and_check_fit, bounds=[-20,20],
             args=(self.primary_axis, self._primary_axis_center, moving_atoms, original_coords, check_atoms, self._clash_weight),
+            options=_min_scalar_opts
             )
 
         moving_atoms = self._prev_pep
@@ -133,6 +145,7 @@ class Backrub:
         original_coords = moving_atoms.coords
         minimize_scalar(self._rotate_and_check_fit, bounds=[-20,20],
             args=(self.prev_pep_axis, self._prev_pep_axis_center, moving_atoms, original_coords, check_atoms, self._clash_weight),
+            options=_min_scalar_opts
             )
 
         moving_atoms = self._next_pep
@@ -140,6 +153,7 @@ class Backrub:
         original_coords = moving_atoms.coords
         minimize_scalar(self._rotate_and_check_fit, bounds=[-20,20],
             args=(self.next_pep_axis, self._next_pep_axis_center, moving_atoms, original_coords, check_atoms, self._clash_weight),
+            options=_min_scalar_opts
             )
 
         rotamer = self.rotamer
@@ -182,7 +196,6 @@ class Backrub:
                         self._clash_weight, self._map_weight, check_atoms
                     ))
                 results = numpy.array(results)
-                # print("Results for chi {}: {}".format(i, results))
                 # If there is a wide range of values, select out the top few.
                 # Otherwise, keep them all
                 if max(results) - min(results) > dm.sigma/2:
@@ -218,7 +231,7 @@ class Backrub:
             final_results.append(
                 minimize(self._fine_tune_rotamer, t_angles,
                 args=(rotamer, self._clash_weight, self._map_weight), bounds=bounds, method='L-BFGS-B',
-                options={'eps':radians(1)} ))
+                options=_lbfgs_opts ))
         #print(len(final_results))
         scores = numpy.array([r.fun for r in final_results])
         # print("Scores: {}".format(scores))
@@ -250,9 +263,10 @@ class Backrub:
             check_atoms = moving_atoms
         atom_weights = check_atoms.elements.numbers
         self._rotate_chi_to(chi_dihedral, moving_atoms, target_angle)
+        dm = self._density_map
         result = -map_weight*sum(
-            self._density_map.interpolated_values(
-                check_atoms.coords)*atom_weights)/sum(atom_weights)
+            dm.interpolated_values(
+                check_atoms.coords)*atom_weights/dm.sigma)/sum(atom_weights)
         result += clash_weight*clash_score(
             self.session, moving_atoms, self._potential_clashes)
         return result
@@ -269,13 +283,14 @@ class Backrub:
         weights = check_atoms.elements.numbers
         tf = rotation(axis, angle, center)
         moving_atoms.coords = tf.transform_points(original_coords)
-        dvals, outside = self._density_map.interpolated_values(
+        dm = self._density_map
+        dvals, outside = dm.interpolated_values(
             check_atoms.coords, out_of_bounds_list=True)
         if len(outside):
             raise RuntimeError('At least one atom is currently projecting past'
                 ' the edge of the displayed map box. Re-center the map on the'
                 ' residue before trying again')
-        result = -sum(dvals*weights)/sum(weights)
+        result = -sum(dvals*weights)/sum(weights)/dm.sigma
         result += clash_weight*clash_score(
             self.session, check_atoms, self._potential_clashes)
         # print("Result for angle {}: {}".format(angle, result))
@@ -300,13 +315,14 @@ class Backrub:
             center = matrix.project_to_axis(coords[3], axis, coords[1])
             tf = rotation(axis, rot_angles[i], center)
             ma.coords = tf.transform_points(ma.coords)
-        dvals, outside = self._density_map.interpolated_values(check_atoms.coords,
+        dm = self._density_map
+        dvals, outside = dm.interpolated_values(check_atoms.coords,
             out_of_bounds_list = True)
         if len(outside):
             raise RuntimeError('At least one atom is currently projecting past'
                 ' the edge of the displayed map box. Re-center the map on the'
                 ' residue before trying again')
-        result = -map_weight*sum(dvals*weights)/sum(weights)
+        result = -map_weight/dm.sigma*sum(dvals*weights)/sum(weights)
         clashscore = clash_weight*clash_score(
             self.session, check_atoms, self._potential_clashes)
         # print("Density score: {}   Clash score: {}".format(result, clashscore))
