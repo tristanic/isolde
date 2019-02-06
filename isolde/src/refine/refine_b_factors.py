@@ -15,10 +15,10 @@ class B_Factor_Direct_Iso:
 
         from copy import deepcopy
         self._original_sim_params = deepcopy(isolde.sim_params)
-        isolde.sim_params.temperature = 300
+        isolde.sim_params.temperature = 100
         import numpy
 
-        m.atoms.aniso_u6 = numpy.nan
+        m.atoms.aniso_u6 = None
 
 
         self._count = 0
@@ -133,7 +133,7 @@ class B_Factor_Direct_Aniso:
 
         from copy import deepcopy
         self._original_sim_params = deepcopy(isolde.sim_params)
-        isolde.sim_params.temperature = 300
+        isolde.sim_params.temperature = 100
 
         import numpy
         # Prepare a container to hold the sampled coordinates
@@ -189,10 +189,10 @@ class B_Factor_Direct_Aniso:
         anisou[:,5] = covariances[:,1,2]
         # Convert from B to U
         from math import pi
-        anisou = numpy.sqrt(anisou/(8*pi**2))
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sh = get_symmetry_handler(self.model)
-        xmapset = self._xmapset = sh.xmapset
+        anisou[:] = numpy.sqrt(anisou/(8*pi**2))
+        from chimerax.clipper.symmetry import get_map_mgr
+        map_mgr = get_map_mgr(self.model)
+        xmapset = self._xmapset = map_mgr.xmapsets[0]
         xmapset.triggers.add_handler('maps recalculated', self._map_update_cb)
         self._map_update_cb()
 
