@@ -6,8 +6,8 @@ _lbfgs_opts = {
     'maxiter': 1000,
 }
 _min_scalar_opts = {
-    'maxiter': 100,
-    'xatol': 1e-3,
+    'maxiter': 200,
+    'xtol': 1e-4,
 }
 
 class Backrub:
