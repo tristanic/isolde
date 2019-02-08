@@ -9,6 +9,7 @@ _blacklist = (
 'NH3', # Incorrectly protonated as NH4
 'PI', '2HP', # Should be HPO4(2-), H2PO4(-), both PO4(3-)
 'SOH', # Should be HSO4-, modelled as SO42-
+'DTU', 'DTV', # enantiomers of DTT that somehow get missed by ParmED
 )
 
 _obsolete = (
@@ -32,7 +33,7 @@ _obsolete = (
 # Annotated as obsolete on ligand expo
 '267', 'AC4', 'IPS', 'ANE', 'BDN', 'CM', 'CBM', 'CYL', 'EGL', 'CBX', 'GUR',
 'FIB', 'ICI', 'KGR', 'LAU', 'BUT', 'OLI', '119', 'HPG', 'PGC', 'PGQ', 'RAW',
-'SCP', 'NAN', 'SPG', 'SUL', 'TFH', 'TMN', 'SOM',
+'SCP', 'NAN', 'SPG', 'SUL', 'TFH', 'TMN', 'SOM', 'CRY',
 )
 
 def make_combined_forcefield(dirname, output_xml):
