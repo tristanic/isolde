@@ -5,9 +5,6 @@
   <Reference>Maier, J.A., Martinez, C., Kasavajhala, K., Wickstrom, L., Hauser, K.E., and Simmerling, C. (2015). ff14SB: Improving the Accuracy of Protein Side Chain and Backbone Parameters from ff99SB. J. Chem. Theory Comput. 11, 3696-3713.</Reference>
  </Info>
  <AtomTypes>
-  <!-- CUSTOM ATOMS -->
-  <Type name="O3" class="O3" element="O" mass="16.00"/>
-  <!-- END CUSTOM ATOMS -->
   <Type name="C" class="C" element="C" mass="12.01"/>
   <Type name="CA" class="CA" element="C" mass="12.01"/>
   <Type name="CB" class="CB" element="C" mass="12.01"/>
@@ -57,99 +54,6 @@
   <Type name="C8" class="C8" element="C" mass="12.01"/>
  </AtomTypes>
  <Residues>
-  <!-- CUSTOM RESIDUES -->
-  <Residue name="ATP">
-      <Atom name="O1G" type="O3" charge="-0.9526"/>
-      <Atom name="PG" type="P" charge="1.2650"/>
-      <Atom name="O2G" type="O3" charge="-0.9526"/>
-      <Atom name="O3G" type="O3" charge="-0.9526"/>
-      <Atom name="O3B" type="OS" charge="-0.5322"/>
-      <Atom name="PB" type="P" charge="1.3852"/>
-      <Atom name="O1B" type="O2" charge="-0.8894"/>
-      <Atom name="O2B" type="O2" charge="-0.8894"/>
-      <Atom name="O3A" type="OS" charge="-0.5689"/>
-      <Atom name="PA" type="P" charge="1.2532"/>
-      <Atom name="O1A" type="O2" charge="-0.8799"/>
-      <Atom name="O2A" type="O2" charge="-0.8799"/>
-      <Atom name="O5'" type="OS" charge="-0.4989"/>
-      <Atom name="C5'" type="CI" charge="0.0558"/>
-      <Atom name="H5'" type="H1" charge="0.0679"/>
-      <Atom name="H5''" type="H1" charge="0.0679"/>
-      <Atom name="C4'" type="CT" charge="0.1065"/>
-      <Atom name="H4'" type="H1" charge="0.1174"/>
-      <Atom name="O4'" type="OS" charge="-0.3548"/>
-      <Atom name="C1'" type="CT" charge="0.0394"/>
-      <Atom name="H1'" type="H2" charge="0.2007"/>
-      <Atom name="N9" type="N*" charge="-0.0251"/>
-      <Atom name="C8" type="C5" charge="0.2006"/>
-      <Atom name="H8" type="H5" charge="0.1553"/>
-      <Atom name="N7" type="NB" charge="-0.6073"/>
-      <Atom name="C5" type="CB" charge="0.0515"/>
-      <Atom name="C6" type="CA" charge="0.7009"/>
-      <Atom name="N6" type="N2" charge="-0.9019"/>
-      <Atom name="HN61" type="H" charge="0.4115"/>
-      <Atom name="HN62" type="H" charge="0.4115"/>
-      <Atom name="N1" type="NC" charge="-0.7615"/>
-      <Atom name="C2" type="CQ" charge="0.5875"/>
-      <Atom name="H2" type="H5" charge="0.0473"/>
-      <Atom name="N3" type="NC" charge="-0.6997"/>
-      <Atom name="C4" type="CB" charge="0.3053"/>
-      <Atom name="C3'" type="CT" charge="0.2022"/>
-      <Atom name="H3'" type="H1" charge="0.0615"/>
-      <Atom name="O3'" type="OH" charge="-0.6541"/>
-      <Atom name="HO3'" type="HO" charge="0.4376"/>
-      <Atom name="C2'" type="CT" charge="0.067"/>
-      <Atom name="H2'" type="H1" charge="0.0972"/>
-      <Atom name="O2'" type="OH" charge="-0.6139"/>
-      <Atom name="HO2'" type="HO" charge="0.4186"/>
-      <Bond atomName1="H5''" atomName2="C5'"/>
-      <Bond atomName1="PA" atomName2="O5'"/>
-      <Bond atomName1="PA" atomName2="O1A"/>
-      <Bond atomName1="PA" atomName2="O2A"/>
-      <Bond atomName1="PA" atomName2="O3A"/>
-      <Bond atomName1="PB" atomName2="O1B"/>
-      <Bond atomName1="PB" atomName2="O2B"/>
-      <Bond atomName1="PB" atomName2="O3A"/>
-      <Bond atomName1="PB" atomName2="O3B"/>
-      <Bond atomName1="PG" atomName2="O1G"/>
-      <Bond atomName1="PG" atomName2="O2G"/>
-      <Bond atomName1="PG" atomName2="O3B"/>
-      <Bond atomName1="PG" atomName2="O3G"/>
-      <Bond atomName1="C5'" atomName2="O5'"/>
-      <Bond atomName1="C5'" atomName2="C4'"/>
-      <Bond atomName1="C4'" atomName2="O4'"/>
-      <Bond atomName1="C4'" atomName2="C3'"/>
-      <Bond atomName1="O4'" atomName2="C1'"/>
-      <Bond atomName1="C3'" atomName2="O3'"/>
-      <Bond atomName1="C3'" atomName2="C2'"/>
-      <Bond atomName1="C2'" atomName2="O2'"/>
-      <Bond atomName1="C2'" atomName2="C1'"/>
-      <Bond atomName1="C1'" atomName2="N9"/>
-      <Bond atomName1="N1" atomName2="C2"/>
-      <Bond atomName1="N1" atomName2="C6"/>
-      <Bond atomName1="C2" atomName2="N3"/>
-      <Bond atomName1="N3" atomName2="C4"/>
-      <Bond atomName1="C4" atomName2="C5"/>
-      <Bond atomName1="C4" atomName2="N9"/>
-      <Bond atomName1="C5" atomName2="C6"/>
-      <Bond atomName1="C5" atomName2="N7"/>
-      <Bond atomName1="C6" atomName2="N6"/>
-      <Bond atomName1="N7" atomName2="C8"/>
-      <Bond atomName1="C8" atomName2="N9"/>
-      <Bond atomName1="H5'" atomName2="C5'"/>
-      <Bond atomName1="H4'" atomName2="C4'"/>
-      <Bond atomName1="H3'" atomName2="C3'"/>
-      <Bond atomName1="HO3'" atomName2="O3'"/>
-      <Bond atomName1="H2'" atomName2="C2'"/>
-      <Bond atomName1="HO2'" atomName2="O2'"/>
-      <Bond atomName1="H1'" atomName2="C1'"/>
-      <Bond atomName1="H2" atomName2="C2"/>
-      <Bond atomName1="HN61" atomName2="N6"/>
-      <Bond atomName1="HN62" atomName2="N6"/>
-      <Bond atomName1="H8" atomName2="C8"/>
-  </Residue>
- <!-- END CUSTOM RESIDUES -->
-
   <Residue name="ALA">
    <Atom name="N" type="N" charge="-0.4157"/>
    <Atom name="H" type="H" charge="0.2719"/>

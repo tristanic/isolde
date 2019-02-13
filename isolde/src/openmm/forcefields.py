@@ -11,10 +11,73 @@
 import os
 
 cwd = os.path.dirname(os.path.abspath(__file__))
-forcefields = {
+_forcefield_files = {
     'amber14':  [os.path.join(cwd, 'amberff', f) for f in
         ['amberff14SB.xml', 'tip3p_standard.xml', 'tip3p_HFE_multivalent.xml',
-        'tip3p_IOD_multivalent.xml', 'gaff2.xml', 'combined_ccd.xml']],
+        'tip3p_IOD_multivalent.xml', 'gaff2.xml', 'glycam_all.xml', 'combined_ccd.xml', 'ATP.xml']],
 
     'charmm36': ['charmm36.xml', 'charmm36/water.xml',]
 }
+
+default_forcefields = list(_forcefield_files.keys())
+
+def _define_forcefield(ff_files):
+    from simtk.openmm.app import ForceField
+    ff = ForceField(*[f for f in ff_files if f is not None])
+    return ff
+
+class Forcefield_Mgr:
+    def __init__(self):
+        self._ff_dict = {}
+        self._task = None
+
+    def _complete_task(self):
+        from time import sleep
+        if self._task:
+            while not self._task.done():
+                sleep(0.01)
+        self._task = None
+
+    def __getitem__(self, key):
+        self._complete_task()
+        ffd = self._ff_dict
+        if key in ffd.keys():
+            return ffd[key]
+        else:
+            try:
+                ff_files = _forcefield_files[key]
+            except KeyError:
+                raise KeyError('No forcefield with that name has been defined! '
+                    'Known forcefields are: {}'.format(
+                        ', '.join(set(ffd.keys()).union(_forcefield_files.keys()))
+                    ))
+            ffd[key] = ff = _define_forcefield(ff_files)
+            return ff
+
+    @property
+    def available_forcefields(self):
+        return list(set(self._ff_dict.keys()).union(_forcefield_files.keys()))
+
+    def define_custom_forcefield(self, name, ff_files):
+        '''
+        Define a custom forcefield from a set of OpenMM ffXML files.
+        '''
+        self._complete_task()
+        self._ff_dict[name] = _define_forcefield(ff_files)
+
+
+    def _background_load_ff(self, name, ff_files):
+        ff = _define_forcefield(ff_files)
+        self._ff_dict[name] = ff
+
+    def background_load_ff(self, name, ff_files = None):
+        '''
+        Prepare a forcefield in a separate thread to reduce disruption to the
+        gui.
+        '''
+        self._complete_task()
+        if ff_files is None:
+            ff_files = _forcefield_files[name]
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            self._task = executor.submit(self._background_load_ff, name, ff_files)

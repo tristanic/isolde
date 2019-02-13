@@ -4,37 +4,66 @@ any dud entries. Requires parmed.
 '''
 
 # Incorrectly-parameterised residues
-_blacklist = (
+_blacklist = set((
 'HOH', 'DIS', 'MTO', 'DOD', # Water
 'NH3', # Incorrectly protonated as NH4
 'PI', '2HP', # Should be HPO4(2-), H2PO4(-), both PO4(3-)
 'SOH', # Should be HSO4-, modelled as SO42-
-'DTU', 'DTV', # enantiomers of DTT that somehow get missed by ParmED
-)
+))
 
-_obsolete = (
-# Annotated as obsolete in components.cif
-'0A3', '0A5', '0AZ', '0EZ', '0P0', '0SN', '0UH', '0ZO', '102',
-'191', '2AB', '2AO', '2EP', '2MB', '39N', '3B7', '3IH', '3MU', '45H', '4EX',
-'5AX', '6JZ', '7BO', '9HE', '9ZT', 'A1P', 'A9D', 'AB5', 'ABG', 'ACL', 'AKL',
-'ALM', 'ASK', 'ATG', 'ATI', 'ATW', 'AYG', 'B4M', 'B51', 'B7D', 'BA4', 'BAC',
-'BCC', 'BGG', 'BH1', 'BOP', 'BUG', 'CB2', 'CFS', 'CGL', 'CH2', 'CHA', 'CL1',
-'CLE', 'CPP', 'CRW', 'CSE', 'CSW', 'CSY', 'CY7', 'DGC', 'DMR', 'DPH', 'EGG',
-'EHN', 'EKE', 'EOM', 'EYS', 'FDC', 'FMR', 'FPC', 'FRF', 'FRO', 'FU4', 'G25',
-'GLH', 'GLM', 'GLQ', 'GMY', 'GRP', 'GSW', 'GTT', 'GUD', 'HEQ', 'HII', 'I42',
-'ILG', 'IP3', 'IP4', 'IT1', 'ITM', 'K00', 'KOL', 'KTH', 'L0H', 'L0H', 'LA4',
-'LA5', 'LAA', 'LEM', 'LEP', 'LOL', 'LT4', 'LYM', 'LYW', 'M4C', 'MAD', 'MAI',
-'MAI', 'MC1', 'MCL', 'MJQ', 'MM4', 'MMR', 'MNV', 'MPN', 'MT7', 'NAM', 'NYC',
-'OPH', 'OWL', 'PA3', 'PBK', 'PCZ', 'PHC', 'PHM', 'PI1', 'PKR', 'PLE', 'PO0',
-'PPL', 'PPP', 'PR0', 'PS0', 'PSS', 'PTC', 'PTF', 'PY2', 'PYH', 'QB4', 'QND',
-'RNY', 'SAP', 'SCC', 'SOH', 'SOY', 'SPY', 'SRI', 'SRI', 'T0M', 'TBM', 'TF6',
-'TGU', 'THL', 'TNP', 'TOS', 'TZO', 'U2N', 'UPR', 'URY', 'VAF', 'VAS', 'WRR',
-'WRS', 'WSQ', 'XBO', 'YAP', 'YJC',
-# Annotated as obsolete on ligand expo
-'267', 'AC4', 'IPS', 'ANE', 'BDN', 'CM', 'CBM', 'CYL', 'EGL', 'CBX', 'GUR',
-'FIB', 'ICI', 'KGR', 'LAU', 'BUT', 'OLI', '119', 'HPG', 'PGC', 'PGQ', 'RAW',
-'SCP', 'NAN', 'SPG', 'SUL', 'TFH', 'TMN', 'SOM', 'CRY',
-)
+_obsolete = set((
+"CL2", "PS0", "FS4", "NMO", "MEP", "BFP", "2LU", "GTT", "NA6", "PHC", "HSZ",
+"RIC", "XL1", "MH3", "MPS", "OME", "BA4", "GS4", "PHM", "ILG", "PLY", "OC1",
+"OCM", "N2B", "HAP", "PAS", "1NI", "CYP", "THL", "CRC", "4RR", "CD3", "MT7",
+"LIN", "GSA", "PYH", "T", "IP4", "DHO", "PNL", "577", "BDN", "OC6", "7MQ",
+"148", "CS0", "QEH", "T36", "MDG", "LT4", "MO6", "ATW", "NAC", "ACL", "HQ",
+"MW2", "OTB", "BGG", "1CU", "GLB", "ASQ", "DCG", "CPP", "PVL", "MO3", "TFH",
+"IDT", "0AT", "T37", "SPY", "CD5", "MGY", "INT", "SBU", "ETH", "EOX", "BTA",
+"NAN", "FPC", "MEO", "PLE", "395", "GTE", "BOP", "MBA", "OCO", "FLH", "NC",
+"NH", "2EP", "FIB", "5AX", "543", "GMY", "0EZ", "CLO", "LAU", "MTY", "CPG",
+"MFA", "0SN", "HMP", "6MC", "CRW", "PR5", "PGC", "ZN2", "PPL", "ATI", "4EX",
+"FAT", "RAW", "PKR", "CM", "HP3", "KO4", "NED", "IU6", "BRO", "NAH", "PSS",
+"9ZT", "HYD", "6CT", "9HE", "TTH", "NA5", "6JZ", "ASK", "13H", "DML", "F22",
+"KGR", "LA4", "M4C", "AA3", "OC4", "ABK", "LCH", "0AU", "MGA", "TBM", "FDC",
+"NIV", "GCL", "HDP", "MAM", "OCN", "1NA", "TIB", "EYS", "HGC", "QB4", "QND",
+"CRY", "OXO", "R51", "MB0", "IOX", "TRB", "2OF", "B1P", "BUT", "I5C", "NOZ",
+"MP3", "DGH", "NFB", "NEV", "SEO", "FLO", "G32", "DG0", "PA3", "OLE", "CAY",
+"DSP", "GTN", "MM4", "SAP", "ZN3", "CO5", "0SP", "AFL", "SI2", "PTP", "TY3",
+"FRF", "TZO", "191", "VAF", "OIP", "CB2", "RT", "2PL", "7BO", "MCL", "MIP",
+"TS", "BTC", "TOS", "G33", "BAC", "RDP", "CD1", "CEC", "SEU", "MJQ", "PR0",
+"ZH3", "INY", "QTR", "CSW", "IP3", "NYC", "PY2", "6MT", "ISB", "AYG", "H",
+"EHN", "OF2", "PGQ", "SOH", "EHP", "GCM", "Q72", "DDB", "GLW", "O4M", "OBS",
+"GSD", "DHN", "T31", "TMN", "CL1", "BOX", "OC8", "CMN", "HSR", "SEA", "CGL",
+"OWL", "S", "FA", "ADG", "IT1", "BRM", "CEA", "CBM", "GLQ", "OCL", "S4U", "CSE",
+"LG", "TNP", "GUR", "GSW", "COE", "GTO", "GLI", "NI3", "A1P", "DIS", "LC",
+"EGL", "T0M", "OF3", "TML", "PDL", "LLA", "HII", "ITS", "OTE", "OC3", "MCB",
+"NAM", "DFG", "ASI", "CYO", "LAA", "OLI", "4SR", "PCC", "SPG", "KOL", "WRS",
+"CH2", "BH4", "0ZO", "HAA", "ATG", "CQR", "TGU", "OMB", "AMA", "TSO", "DXN",
+"PO0", "DGC", "BP", "B51", "DHU", "HHP", "3IH", "DRT", "CHA", "NGL", "MAI",
+"39N", "YAP", "RAA", "638", "D1P", "1ZD", "OC7", "DLA", "UBR", "SUL", "0A5",
+"STY", "FRO", "LOL", "UIC", "NNS", "U18", "ACU", "OXA", "PF", "0AV", "EOM",
+"ICI", "XPP", "B1F", "HNP", "DOH", "2AB", "CSY", "C25", "A34", "0AM", "STO",
+"PA4", "GRP", "CYA", "A39", "1ZT", "HPB", "MHM", "TS3", "OET", "AGC", "GLM",
+"A35", "ANE", "A9D", "DGM", "EGG", "OF1", "MAD", "SAA", "SFN", "MMR", "2SI",
+"DMR", "LYM", "NCP", "PTC", "IOH", "TMB", "MNV", "BUG", "2PI", "PC2", "CBZ",
+"VAS", "CLE", "HAC", "DOX", "GUD", "450", "DDM", "U2N", "3MU", "WRR", "NGN",
+"119", "PCZ", "0AA", "BH1", "BPC", "MC1", "MO4", "MOL", "LCX", "LTR", "2OG",
+"EKE", "DUM", "POC", "SCP", "THQ", "LA5", "PGY", "ETD", "CH3", "L0H", "UPR",
+"BCC", "3MD", "ABG", "BAR", "PPM", "TPH", "CY7", "LYW", "OR5", "LP2", "ITM",
+"XBO", "C32", "FS3", "TRG", "0AL", "PI1", "THB", "F2O", "KTH", "E4N", "NI2",
+"NEM", "SRI", "MN6", "WSQ", "BRI", "PEI", "PTF", "3B7", "ALM", "YJC", "1PY",
+"O2", "NWB", "3OF", "45H", "FMR", "P2K", "B4M", "NC2", "345", "RNY", "HBL",
+"GLH", "MH1", "0P0", "IPS", "0AZ", "OX", "MO5", "MW3", "AC4", "OC5", "LEM",
+"CN", "DNJ", "IDO", "CBX", "AKL", "NA2", "PBK", "SOM", "NAW", "NEW", "ZO3",
+"3DB", "MN5", "NI1", "SOY", "2AO", "TF6", "CYL", "MPN", "ROB", "HPG", "OC2",
+"0AC", "6AB", "CFS", "CYM", "G42", "HV5", "MO2", "MW1", "ETO", "DFC", "K00",
+"NIK", "SCC", "BOT", "RON", "2OA", "ZNO", "PAG", "CUC", "HSU", "102", "PPP",
+"5IT", "AB7", "OPH", "PIG", "FCY", "URY", "NTY", "LHU", "PG7", "53P", "2MB",
+"NAO", "I42", "MO1", "YF1", "0UH", "LOF", "QX", "U25", "GDB", "267", "DPH",
+"2SP", "3KV", "B7D", "5SA", "FU4", "MTO", "G25", "OHE", "DSX", "SEG", "BZO",
+"0A3", "5HP", "MCE", "HPC", "HAD", "CNM", "YH", "AHA", "HEQ", "AB5", "LEP"
+))
+
 
 def make_combined_forcefield(dirname, output_xml):
     import os

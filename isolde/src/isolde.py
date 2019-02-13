@@ -176,17 +176,20 @@ class Isolde():
         self._log = Logger('isolde.log')
         self.checkpoint_disabled_reasons = {}
 
-        self.params = IsoldeParams()
         '''
         A :class:`IsoldeParams` instance containing basic parameters controlling
         how the interactive simulation selection is defined and displayed.
         '''
+        self.params = IsoldeParams()
 
-        self.sim_params = SimParams()
         '''
         Parameters controlling the initialisation and behaviour of the
         simulation.
         '''
+        sp = self.sim_params = SimParams()
+
+        from .openmm.forcefields import Forcefield_Mgr
+        ffmgr = self._ff_mgr = Forcefield_Mgr()
 
         self._status = self.session.logger.status
 
@@ -323,6 +326,10 @@ class Isolde():
         cofr.cofr(session, 'centerOfView', show_pivot=True)
         camera.camera(session, 'ortho')
         self._mouse_modes.register_all_isolde_modes()
+
+    @property
+    def forcefield_mgr(self):
+        return self._ff_mgr
 
     @property
     def ignored_residues(self):
@@ -485,8 +492,8 @@ class Isolde():
         # Populate force field combo box with available forcefields
         cb = iw._sim_force_field_combo_box
         cb.clear()
-        from .openmm.forcefields import forcefields
-        cb.addItems(forcefields.keys())
+        cb.addItems(self.forcefield_mgr.available_forcefields)
+        cb.setCurrentIndex(cb.findText(self.sim_params.forcefield))
 
         # Populate OpenMM platform combo box with available platforms
         cb = iw._sim_platform_combo_box
@@ -2247,8 +2254,6 @@ class Isolde():
 
     def _change_force_field(self):
         ff_key = self.iw._sim_force_field_combo_box.currentText()
-        from .openmm.forcefields import forcefields
-
         self.sim_params.forcefield = ff_key
 
     def change_selected_model(self, model):

@@ -385,7 +385,6 @@ class Sim_Construct:
         self._fixed_atoms = model_atoms[numpy.sort(fixed_i)]
         self._excluded_atoms = excluded_atoms
 
-        self.residue_templates = find_residue_templates(all_atoms.unique_residues)
         self.store_original_visualisation()
         self.surroundings = model_atoms.subtract(all_atoms)
         if excluded_atoms is not None:
@@ -574,7 +573,8 @@ class Sim_Manager:
         sh = self.sim_handler = None
         uh = self._update_handlers = []
         try:
-            sh = self.sim_handler = Sim_Handler(session, sim_params, sc)
+            sh = self.sim_handler = Sim_Handler(session, sim_params, sc,
+                isolde.forcefield_mgr)
         except Exception as e:
             self._sim_end_cb(None, None)
             if isinstance(e, ValueError):
@@ -1147,7 +1147,7 @@ class Sim_Handler:
     :py:class:`OpenMM_Thread_Handler`, and generally handling all the OpenMM
     side of simulation management.
     '''
-    def __init__(self, session, sim_params, sim_construct):
+    def __init__(self, session, sim_params, sim_construct, forcefield_mgr):
         '''
         Prepares the simulation topology parameters and construct, and
         initialises the necessary Force objects to handle restraints. Most
@@ -1169,6 +1169,9 @@ class Sim_Handler:
                 - a :py:class:`SimParams` instance
             * sim_construct:
                 - a :py:class:`Sim_Construct` instance
+            *forcefield_mgr:
+                - a class that behaves as a
+                  {name: :py:class:`OpenMM::ForceField`} dict.
         '''
         self.session = session
         self._params = sim_params
@@ -1183,8 +1186,9 @@ class Sim_Handler:
 
         atoms = self._atoms = sim_construct.all_atoms
         # Forcefield used in this simulation
-        from .forcefields import forcefields
-        ff = self._forcefield = self.define_forcefield(forcefields[sim_params.forcefield])
+#        from .forcefields import forcefields
+        ff = forcefield_mgr[sim_params.forcefield]
+#        ff = self._forcefield = self.define_forcefield(forcefields[sim_params.forcefield])
 
         # All custom forces in the simulation
         self.all_forces = []
@@ -1194,7 +1198,8 @@ class Sim_Handler:
 
 
         # Overall simulation topology
-        top, residue_templates = self.create_openmm_topology(atoms, sim_construct.residue_templates)
+        template_dict = find_residue_templates(sim_construct.all_residues, ff._templates.keys())
+        top, residue_templates = self.create_openmm_topology(atoms, template_dict)
         self._topology = top
 
         self._temperature = sim_params.temperature
@@ -2369,13 +2374,52 @@ class Sim_Handler:
         #self.all_forces.append(gbforce)
 
 
-def find_residue_templates(residues):
+def find_residue_templates(residues, template_names):
+    '''
+    Works out the template name applicable to cysteine residues (since OpenMM
+    can't work this out for itself when ignoreExternalBonds is True), and
+    looks up the template name for all known parameterised ligands from the
+    CCD.
+    '''
+    import numpy
     templates = {}
     cys_indices = numpy.where(residues.names == 'CYS')[0]
     for c_i in cys_indices:
         rtype = cys_type(residues[c_i])
         if rtype is not None:
             templates[c_i] = rtype
+
+    from chimerax.atomic import Residue
+    ligands = residues[residues.polymer_types == Residue.PT_NONE]
+    names = numpy.unique(ligands.names)
+    from .amberff.glycam import find_glycan_template_name, known_sugars
+    for name in names:
+        if name in known_sugars:
+            sugars = ligands[ligands.names == name]
+            for sugar in sugars:
+                tname = find_glycan_template_name(sugar)
+                print("Template for sugar {}{} {}: {}".format(
+                    sugar.chain_id, sugar.number, sugar.name, tname
+                ))
+                if tname in template_names:
+                    templates[residues.index(sugar)] = tname
+        ccd_name = 'CCD_{}'.format(name)
+        if ccd_name in template_names:
+            indices = numpy.where(residues.names == name)[0]
+            for i in indices:
+                templates[i] = ccd_name
+
+    from chimerax.atomic import Element
+    metals = [n.upper() for n in Element.names if Element.get_element(n).is_metal]
+    atoms = residues.atoms
+    metal_atoms = atoms[numpy.in1d(atoms.names, metals)]
+    for a in metal_atoms:
+        r = a.residue
+        if len(r.atoms) != 1:
+            continue
+        templates[residues.index(r)] = r.name
+
+
     return templates
 
 def cys_type(residue):
