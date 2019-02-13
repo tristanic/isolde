@@ -1,0 +1,192 @@
+<!-- Artificial residue "stubs" to handle truncations to CA, CB or CG. Not for
+    use in production equilibrium simulations!
+ -->
+
+<ForceField>
+    <Info>
+        <DateGenerated>2019-02-13</DateGenerated>
+    </Info>
+    <Residues>
+        <Residue name="TRUNC_CA">
+            <!-- Truncated to C-alpha, with no hydrogens on stub. Hydrogen charges
+                 rolled into CA charge. -->
+             <Atom name="N" type="N" charge="-0.4157"/>
+             <Atom name="H" type="H" charge="0.2719"/>
+             <Atom name="CA" type="CX" charge="0.1144"/>
+             <Atom name="C" type="C" charge="0.5973"/>
+             <Atom name="O" type="O" charge="-0.5679"/>
+             <Bond atomName1="N" atomName2="H"/>
+             <Bond atomName1="N" atomName2="CA"/>
+             <Bond atomName1="CA" atomName2="C"/>
+             <Bond atomName1="C" atomName2="O"/>
+             <ExternalBond atomName="N"/>
+             <ExternalBond atomName="C"/>
+        </Residue>
+        <Residue name="NTRUNC_CA">
+             <Atom name="N" type="N3" charge="0.2943"/>
+             <Atom name="H1" type="H" charge="0.1642"/>
+             <Atom name="H2" type="H" charge="0.1642"/>
+             <Atom name="H3" type="H" charge="0.1642"/>
+             <Atom name="CA" type="CX" charge="-0.1690"/>
+             <Atom name="C" type="C" charge="0.6163"/>
+             <Atom name="O" type="O" charge="-0.5722"/>
+             <Bond atomName1="N" atomName2="H1"/>
+             <Bond atomName1="N" atomName2="H2"/>
+             <Bond atomName1="N" atomName2="H3"/>
+             <Bond atomName1="N" atomName2="CA"/>
+             <Bond atomName1="CA" atomName2="C"/>
+             <Bond atomName1="C" atomName2="O"/>
+             <ExternalBond atomName="C"/>
+        </Residue>
+        <Residue name="CTRUNC_CA">
+             <Atom name="N" type="N" charge="-0.3821"/>
+             <Atom name="H" type="H" charge="0.2681"/>
+             <Atom name="CA" type="CX" charge="-0.0381"/>
+             <Atom name="C" type="C" charge="0.7231"/>
+             <Atom name="O" type="O2" charge="-0.7855"/>
+             <Atom name="OXT" type="O2" charge="-0.7855"/>
+             <Bond atomName1="N" atomName2="H"/>
+             <Bond atomName1="N" atomName2="CA"/>
+             <Bond atomName1="CA" atomName2="C"/>
+             <Bond atomName1="C" atomName2="O"/>
+             <Bond atomName1="C" atomName2="OXT"/>
+             <ExternalBond atomName="N"/>
+        </Residue>
+        <Residue name="TRUNC_CB">
+             <!-- Truncated to C-beta, with no hydrogens on stub. Hydrogen charges
+                  rolled into CB charge. -->
+             <Atom name="N" type="N" charge="-0.4157"/>
+             <Atom name="H" type="H" charge="0.2719"/>
+             <Atom name="CA" type="CX" charge="0.0337"/>
+             <Atom name="HA" type="H1" charge="0.0823"/>
+             <Atom name="CB" type="CT" charge="-0.0016"/>
+             <Atom name="C" type="C" charge="0.5973"/>
+             <Atom name="O" type="O" charge="-0.5679"/>
+             <Bond atomName1="N" atomName2="H"/>
+             <Bond atomName1="N" atomName2="CA"/>
+             <Bond atomName1="CA" atomName2="HA"/>
+             <Bond atomName1="CA" atomName2="CB"/>
+             <Bond atomName1="CA" atomName2="C"/>
+             <Bond atomName1="C" atomName2="O"/>
+             <ExternalBond atomName="N"/>
+             <ExternalBond atomName="C"/>
+        </Residue>
+        <Residue name="NTRUNC_CB">
+             <Atom name="N" type="N3" charge="0.1414"/>
+             <Atom name="H1" type="H" charge="0.1997"/>
+             <Atom name="H2" type="H" charge="0.1997"/>
+             <Atom name="H3" type="H" charge="0.1997"/>
+             <Atom name="CA" type="CX" charge="0.0962"/>
+             <Atom name="HA" type="HP" charge="0.0889"/>
+             <Atom name="CB" type="CT" charge="0.303"/>
+             <Atom name="C" type="C" charge="0.6163"/>
+             <Atom name="O" type="O" charge="-0.5722"/>
+             <Bond atomName1="N" atomName2="H1"/>
+             <Bond atomName1="N" atomName2="H2"/>
+             <Bond atomName1="N" atomName2="H3"/>
+             <Bond atomName1="N" atomName2="CA"/>
+             <Bond atomName1="CA" atomName2="HA"/>
+             <Bond atomName1="CA" atomName2="CB"/>
+             <Bond atomName1="CA" atomName2="C"/>
+             <Bond atomName1="C" atomName2="O"/>
+             <ExternalBond atomName="C"/>
+        </Residue>
+        <Residue name="CTRUNC_CB">
+             <Atom name="N" type="N" charge="-0.3821"/>
+             <Atom name="H" type="H" charge="0.2681"/>
+             <Atom name="CA" type="CX" charge="-0.1747"/>
+             <Atom name="HA" type="H1" charge="0.1067"/>
+             <Atom name="CB" type="CT" charge="0.0199"/>
+             <Atom name="C" type="C" charge="0.7731"/>
+             <Atom name="O" type="O2" charge="-0.8055"/>
+             <Atom name="OXT" type="O2" charge="-0.8055"/>
+             <Bond atomName1="N" atomName2="H"/>
+             <Bond atomName1="N" atomName2="CA"/>
+             <Bond atomName1="CA" atomName2="HA"/>
+             <Bond atomName1="CA" atomName2="CB"/>
+             <Bond atomName1="CA" atomName2="C"/>
+             <Bond atomName1="C" atomName2="O"/>
+             <Bond atomName1="C" atomName2="OXT"/>
+             <ExternalBond atomName="N"/>
+        </Residue>
+        <Residue name="TRUNC_CG">
+            <!-- Truncated to C-gamma, with no hydrogens on stub. Truncated from
+                 lysine, with CG charge adjusted to make residue overall neutral
+            -->
+             <Atom name="N" type="N" charge="-0.3479"/>
+             <Atom name="H" type="H" charge="0.2747"/>
+             <Atom name="CA" type="CX" charge="-0.24"/>
+             <Atom name="HA" type="H1" charge="0.1426"/>
+             <Atom name="CB" type="C8" charge="-0.0094"/>
+             <Atom name="HB2" type="HC" charge="0.0362"/>
+             <Atom name="HB3" type="HC" charge="0.0362"/>
+             <Atom name="CG" type="C8" charge="-0.0371"/>
+             <Atom name="C" type="C" charge="0.7341"/>
+             <Atom name="O" type="O" charge="-0.5894"/>
+             <Bond atomName1="N" atomName2="H"/>
+             <Bond atomName1="N" atomName2="CA"/>
+             <Bond atomName1="CA" atomName2="HA"/>
+             <Bond atomName1="CA" atomName2="CB"/>
+             <Bond atomName1="CA" atomName2="C"/>
+             <Bond atomName1="CB" atomName2="HB2"/>
+             <Bond atomName1="CB" atomName2="HB3"/>
+             <Bond atomName1="CB" atomName2="CG"/>
+             <Bond atomName1="C" atomName2="O"/>
+             <ExternalBond atomName="N"/>
+             <ExternalBond atomName="C"/>
+        </Residue>
+        <Residue name="NTRUNC_CG">
+             <Atom name="N" type="N3" charge="0.0966"/>
+             <Atom name="H1" type="H" charge="0.2165"/>
+             <Atom name="H2" type="H" charge="0.2165"/>
+             <Atom name="H3" type="H" charge="0.2165"/>
+             <Atom name="CA" type="CX" charge="-0.0015"/>
+             <Atom name="HA" type="HP" charge="0.118"/>
+             <Atom name="CB" type="C8" charge="0.0212"/>
+             <Atom name="HB2" type="HC" charge="0.0283"/>
+             <Atom name="HB3" type="HC" charge="0.0283"/>
+             <Atom name="CG" type="C8" charge="-0.0605"/>
+             <Atom name="C" type="C" charge="0.7214"/>
+             <Atom name="O" type="O" charge="-0.6013"/>
+             <Bond atomName1="N" atomName2="H1"/>
+             <Bond atomName1="N" atomName2="H2"/>
+             <Bond atomName1="N" atomName2="H3"/>
+             <Bond atomName1="N" atomName2="CA"/>
+             <Bond atomName1="CA" atomName2="HA"/>
+             <Bond atomName1="CA" atomName2="CB"/>
+             <Bond atomName1="CA" atomName2="C"/>
+             <Bond atomName1="CB" atomName2="HB2"/>
+             <Bond atomName1="CB" atomName2="HB3"/>
+             <Bond atomName1="CB" atomName2="CG"/>
+             <Bond atomName1="C" atomName2="O"/>
+             <ExternalBond atomName="C"/>
+        </Residue>
+        <Residue name="CTRUNC_CG">
+             <Atom name="N" type="N" charge="-0.3481"/>
+             <Atom name="H" type="H" charge="0.2764"/>
+             <Atom name="CA" type="CX" charge="-0.2903"/>
+             <Atom name="HA" type="H1" charge="0.1438"/>
+             <Atom name="CB" type="C8" charge="-0.0538"/>
+             <Atom name="HB2" type="HC" charge="0.0482"/>
+             <Atom name="HB3" type="HC" charge="0.0482"/>
+             <Atom name="CG" type="C8" charge="-0.0228"/>
+             <Atom name="C" type="C" charge="0.8488"/>
+             <Atom name="O" type="O2" charge="-0.8252"/>
+             <Atom name="OXT" type="O2" charge="-0.8252"/>
+             <Bond atomName1="N" atomName2="H"/>
+             <Bond atomName1="N" atomName2="CA"/>
+             <Bond atomName1="CA" atomName2="HA"/>
+             <Bond atomName1="CA" atomName2="CB"/>
+             <Bond atomName1="CA" atomName2="C"/>
+             <Bond atomName1="CB" atomName2="HB2"/>
+             <Bond atomName1="CB" atomName2="HB3"/>
+             <Bond atomName1="CB" atomName2="CG"/>
+             <Bond atomName1="C" atomName2="O"/>
+             <Bond atomName1="C" atomName2="OXT"/>
+             <ExternalBond atomName="N"/>
+        </Residue>
+
+
+    </Residues>
+
+</ForceField>

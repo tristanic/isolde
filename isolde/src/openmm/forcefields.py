@@ -13,8 +13,17 @@ import os
 cwd = os.path.dirname(os.path.abspath(__file__))
 _forcefield_files = {
     'amber14':  [os.path.join(cwd, 'amberff', f) for f in
-        ['amberff14SB.xml', 'tip3p_standard.xml', 'tip3p_HFE_multivalent.xml',
-        'tip3p_IOD_multivalent.xml', 'gaff2.xml', 'glycam_all.xml', 'combined_ccd.xml', 'ATP.xml']],
+        ['amberff14SB.xml',     # Standard AMBER14 protein/nucleic acid
+        'tip3p_standard.xml',   # TIP3P water
+        'tip3p_HFE_multivalent.xml', # Metal ions
+        'tip3p_IOD_multivalent.xml', # Metal ions
+        'gaff2.xml',                 # General AMBER force field
+        'glycam_all.xml',            # GLYCAM06 force field
+        'combined_ccd.xml',          # General ligands (Nigel Moriarty / Dave Case)
+        'ATP.xml',
+        'ptms.xml',                  # Post-translational modifications from ares.tamu.ed/FFPTM DOI: 10.1021/ct400556v
+        'truncated_aa.xml',          # Artifical amino acid "stubs" to support common truncations used in model building
+        ]],
 
     'charmm36': ['charmm36.xml', 'charmm36/water.xml',]
 }
