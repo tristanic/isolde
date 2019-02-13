@@ -577,6 +577,7 @@ class Sim_Manager:
                 isolde.forcefield_mgr)
         except Exception as e:
             self._sim_end_cb(None, None)
+            raise e
             if isinstance(e, ValueError):
                 # If it's an error in template handling, parse out the offending
                 # residue and tell ISOLDE about it
@@ -2302,6 +2303,7 @@ class Sim_Handler:
         enames   = atoms.element_names
         rnames   = atoms.residues.names
         rnums    = atoms.residues.numbers
+        insertion_codes = atoms.residues.insertion_codes
         cids    = atoms.chain_ids
         bonds = atoms.intra_bonds
         bond_is = [atoms.indices(alist) for alist in bonds.atoms]
@@ -2314,11 +2316,11 @@ class Sim_Handler:
         rmap = {}
         atoms = {}
         rcount = 0
-        for i, (aname, ename, rname, rnum, cid) in enumerate(
-                zip(anames, enames, rnames, rnums, cids)):
+        for i, (aname, ename, rname, rnum, icode, cid) in enumerate(
+                zip(anames, enames, rnames, rnums, insertion_codes, cids)):
             if not cid in cmap:
                 cmap[cid] = top.addChain()   # OpenMM chains have no name
-            rid = (rname, rnum, cid)
+            rid = (rname, rnum, icode, cid)
             if not rid in rmap:
                 res = rmap[rid] = top.addResidue(rname, cmap[cid])
                 if rcount in residue_templates.keys():
@@ -2398,9 +2400,6 @@ def find_residue_templates(residues, template_names):
             sugars = ligands[ligands.names == name]
             for sugar in sugars:
                 tname = find_glycan_template_name(sugar)
-                print("Template for sugar {}{} {}: {}".format(
-                    sugar.chain_id, sugar.number, sugar.name, tname
-                ))
                 if tname in template_names:
                     templates[residues.index(sugar)] = tname
         ccd_name = 'CCD_{}'.format(name)
