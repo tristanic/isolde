@@ -185,6 +185,98 @@
              <Bond atomName1="C" atomName2="OXT"/>
              <ExternalBond atomName="N"/>
         </Residue>
+        <Residue name="TRUNC_CD">
+            <!-- Truncated to C-delta  -->
+             <Atom name="N" type="N" charge="-0.3479"/>
+             <Atom name="H" type="H" charge="0.2747"/>
+             <Atom name="CA" type="CX" charge="-0.24"/>
+             <Atom name="HA" type="H1" charge="0.1426"/>
+             <Atom name="CB" type="C8" charge="-0.0094"/>
+             <Atom name="HB2" type="HC" charge="0.0362"/>
+             <Atom name="HB3" type="HC" charge="0.0362"/>
+             <Atom name="CG" type="C8" charge="0.0187"/>
+             <Atom name="HG2" type="HC" charge="0.0103"/>
+             <Atom name="HG3" type="HC" charge="0.0103"/>
+             <Atom name="CD" type="C8" charge="-0.0764"/>
+             <Atom name="C" type="C" charge="0.7341"/>
+             <Atom name="O" type="O" charge="-0.5894"/>
+             <Bond atomName1="N" atomName2="H"/>
+             <Bond atomName1="N" atomName2="CA"/>
+             <Bond atomName1="CA" atomName2="HA"/>
+             <Bond atomName1="CA" atomName2="CB"/>
+             <Bond atomName1="CA" atomName2="C"/>
+             <Bond atomName1="CB" atomName2="HB2"/>
+             <Bond atomName1="CB" atomName2="HB3"/>
+             <Bond atomName1="CB" atomName2="CG"/>
+             <Bond atomName1="CG" atomName2="HG2"/>
+             <Bond atomName1="CG" atomName2="HG3"/>
+             <Bond atomName1="CG" atomName2="CD"/>
+             <Bond atomName1="C" atomName2="O"/>
+             <ExternalBond atomName="N"/>
+             <ExternalBond atomName="C"/>
+        </Residue>
+        <Residue name="NTRUNC_CD">
+             <Atom name="N" type="N3" charge="0.0966"/>
+             <Atom name="H1" type="H" charge="0.2165"/>
+             <Atom name="H2" type="H" charge="0.2165"/>
+             <Atom name="H3" type="H" charge="0.2165"/>
+             <Atom name="CA" type="CX" charge="-0.0015"/>
+             <Atom name="HA" type="HP" charge="0.118"/>
+             <Atom name="CB" type="C8" charge="0.0212"/>
+             <Atom name="HB2" type="HC" charge="0.0283"/>
+             <Atom name="HB3" type="HC" charge="0.0283"/>
+             <Atom name="CG" type="C8" charge="-0.0048"/>
+             <Atom name="HG2" type="HC" charge="0.0121"/>
+             <Atom name="HG3" type="HC" charge="0.0121"/>
+             <Atom name="CD" type="C8" charge="-0.0799"/>
+             <Atom name="C" type="C" charge="0.7214"/>
+             <Atom name="O" type="O" charge="-0.6013"/>
+             <Bond atomName1="N" atomName2="H1"/>
+             <Bond atomName1="N" atomName2="H2"/>
+             <Bond atomName1="N" atomName2="H3"/>
+             <Bond atomName1="N" atomName2="CA"/>
+             <Bond atomName1="CA" atomName2="HA"/>
+             <Bond atomName1="CA" atomName2="CB"/>
+             <Bond atomName1="CA" atomName2="C"/>
+             <Bond atomName1="CB" atomName2="HB2"/>
+             <Bond atomName1="CB" atomName2="HB3"/>
+             <Bond atomName1="CB" atomName2="CG"/>
+             <Bond atomName1="CG" atomName2="HG2"/>
+             <Bond atomName1="CG" atomName2="HG3"/>
+             <Bond atomName1="CG" atomName2="CD"/>
+             <Bond atomName1="C" atomName2="O"/>
+             <ExternalBond atomName="C"/>
+        </Residue>
+        <Residue name="CTRUNC_CD">
+             <Atom name="N" type="N" charge="-0.3481"/>
+             <Atom name="H" type="H" charge="0.2764"/>
+             <Atom name="CA" type="CX" charge="-0.2903"/>
+             <Atom name="HA" type="H1" charge="0.1438"/>
+             <Atom name="CB" type="C8" charge="-0.0538"/>
+             <Atom name="HB2" type="HC" charge="0.0482"/>
+             <Atom name="HB3" type="HC" charge="0.0482"/>
+             <Atom name="CG" type="C8" charge="0.0227"/>
+             <Atom name="HG2" type="HC" charge="0.0134"/>
+             <Atom name="HG3" type="HC" charge="0.0134"/>
+             <Atom name="CD" type="C8" charge="-0.0723"/>
+             <Atom name="C" type="C" charge="0.8488"/>
+             <Atom name="O" type="O2" charge="-0.8252"/>
+             <Atom name="OXT" type="O2" charge="-0.8252"/>
+             <Bond atomName1="N" atomName2="H"/>
+             <Bond atomName1="N" atomName2="CA"/>
+             <Bond atomName1="CA" atomName2="HA"/>
+             <Bond atomName1="CA" atomName2="CB"/>
+             <Bond atomName1="CA" atomName2="C"/>
+             <Bond atomName1="CB" atomName2="HB2"/>
+             <Bond atomName1="CB" atomName2="HB3"/>
+             <Bond atomName1="CB" atomName2="CG"/>
+             <Bond atomName1="CG" atomName2="HG2"/>
+             <Bond atomName1="CG" atomName2="HG3"/>
+             <Bond atomName1="CG" atomName2="CD"/>
+             <Bond atomName1="C" atomName2="O"/>
+             <Bond atomName1="C" atomName2="OXT"/>
+             <ExternalBond atomName="N"/>
+        </Residue>
 
 
     </Residues>

@@ -90,17 +90,9 @@ _glycam_prefix = {
 
 }
 
-missing_in_privateer= ['ALL', 'AFL', 'WOO', 'HSY', 'XYP', 'SHD', 'GIV', '4N2',
-    'T6T', 'G6D', ]
-# GLA appears twice in list
-
-
-
 def find_glycan_template_name(residue):
     bonded_atoms = []
     neighbors = residue.neighbors
-    if not len(neighbors):
-        return "CCD_"+residue.name
     core_name = _residue_name_to_glycam_code[residue.name]
     for n in neighbors:
         bonds = residue.bonds_between(n)
@@ -114,3 +106,55 @@ def find_glycan_template_name(residue):
     if not len(bonded_atom_numbers):
         bonded_atom_numbers = (0,)
     return 'GLYCAM_'+_glycam_prefix[bonded_atom_numbers]+core_name
+
+def is_sugar_template(residue_template):
+    '''
+    Work through a GLYCAM template to decide if it's a sugar or not. For our
+    purposes, it's enough to determine that it contains a 5- or 6-membered ring
+    with 4 or 5 carbons and one oxygen.
+    '''
+    h_atoms = [atom for atom in residue_template.atoms if not atom.name.startswith('H')]
+    kept_atoms = []
+    current_atom = h_atoms[0]
+    def find_ring(atom, traversed_atoms=[]):
+        # if len(traversed_atoms):
+            # print('Branching from: {}, traversed {}'.format(traversed_atoms[-1].name,
+            #     [a.name for a in traversed_atoms]))
+        while True:
+            # print(atom.name)
+            bonds = atom.bonds
+            if len(traversed_atoms):
+                last_atom = traversed_atoms[-1]
+            else:
+                last_atom = None
+            traversed_atoms.append(atom)
+            next_atoms = [a for b in bonds for a in (b.atom1, b.atom2) if not a.name.startswith('H') and a not in (atom, last_atom) ]
+            # print("Next atoms: {}".format([a.name for a in next_atoms]))
+            if len(set(next_atoms).intersection(set(traversed_atoms))):
+                for i, t in enumerate(traversed_atoms):
+                    if t in next_atoms:
+                        break
+                ring_atoms = traversed_atoms[i:]
+                # print("Found ring: {}".format([a.name for a in ring_atoms]))
+                if len(ring_atoms) in (5,6):
+                    c_count = 0
+                    o_count = 0
+                    for a in ring_atoms:
+                        if 'C' in a.name:
+                            c_count += 1
+                        elif 'O' in a.name:
+                            o_count += 1
+                    if c_count in (4, 5) and o_count == 1:
+                        return True
+                else:
+                    # avoid getting stuck in an infinite loop
+                    next_atoms = [a for a in next_atoms if a not in traversed_atoms]
+            if len(next_atoms) == 0:
+                return False
+            while len(next_atoms) > 1:
+                ta = traversed_atoms.copy()
+                result = find_ring(next_atoms.pop(-1), ta)
+                if result:
+                    return result
+            atom = next_atoms[0]
+    return find_ring(current_atom)

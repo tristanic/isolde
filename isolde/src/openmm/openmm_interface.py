@@ -577,7 +577,6 @@ class Sim_Manager:
                 isolde.forcefield_mgr)
         except Exception as e:
             self._sim_end_cb(None, None)
-            raise e
             if isinstance(e, ValueError):
                 # If it's an error in template handling, parse out the offending
                 # residue and tell ISOLDE about it

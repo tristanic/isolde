@@ -65,10 +65,34 @@ _obsolete = set((
 ))
 
 
+_leap_files = {
+'FF14SB':   'leaprc.ff14sb.redq',
+# 'WATER':    'leaprc.water.tip3p',
+'GAFF2':    'leaprc.gaff2',
+# 'DNA':      'leaprc.DNA.bsc1',
+# 'RNA':      'leaprc.RNA.OL3',
+'MODRNA08': 'leaprc.modrna08',
+'PHOSAA10': 'leaprc.phosaa10',
+'GLYCAM06': 'leaprc.GLYCAM_06j-1'
+}
+
 def make_combined_forcefield(dirname, output_xml):
+    '''
+    Combine all parameters and residue topologies into a single file.
+    '''
     import os
     import parmed as pmd
     from glob import glob
+
+    # BASE_DIR = os.path.abspath(__file__)
+    #
+    # _moriarty_lib_dir = os.path.join(BASE_DIR, 'src', 'moriarty_lib')
+    #
+    # AMBERHOME = os.environ['AMBERHOME']
+    #
+    #
+    # LEAP_DIR = os.path.join(AMBERHOME, 'dat', 'leap', 'cmd')
+
 
     cwd = os.path.abspath(os.curdir)
     os.chdir(dirname)
@@ -98,6 +122,7 @@ def make_combined_forcefield(dirname, output_xml):
 
     for name in fails:
         del file_dict[name]
+
 
     ff = pmd.openmm.OpenMMParameterSet.from_parameterset(
         pmd.amber.AmberParameterSet([fp[1] for fp in file_dict.values()])

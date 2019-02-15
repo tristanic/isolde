@@ -1,0 +1,257 @@
+
+
+ANGLE
+CN-CA-OH   71.640     122.070   same as c2-c2-oh
+
+DIHE
+CN-CA-OH-HO 1 0.958 176.09 -1	fittedGK
+CN-CA-OH-HO 1 0.824 178.125  -2	fittedGK
+CN-CA-OH-HO 1 0.176 1.23795  3	fittedGK
+
+
+BOND
+CT-N2  320.60   1.470       same as c3-n3
+N2-CM  449.00   1.364       same as cc-nh
+
+ANGLE
+CT-N2-CM   64.702     117.790   Calculated with empirical approach
+N2-CM-N2   72.930     115.960   same as nh-cc-nh
+H -N2-CM   49.110     119.380   same as c2-n3-hn
+
+DIHE
+N2-CM-N2-H    1    0.300       180.000           2.000      same as X -c2-n3-X
+CT-N2-CM-N2   1    0.300       180.000           2.000      same as X -c2-n3-X
+
+
+
+
+
+
+ANGLE
+C -CT-C    64.060     111.610   same as c -c3-c 
+
+
+
+
+
+BOND
+S -OH  265.60   1.682       same as oh-ss
+
+ANGLE
+CT-S -OH   40.850      98.280   same as c3-ss-oh
+S -OH-HO   54.540     107.060   same as ho-oh-ss
+
+DIHE
+CT-S -OH-HO   1    2.400         0.000           2.000      same as X -oh-ss-X 
+CT-CT-S-OH 1 2.255 172.80  -1.0 fitted, GK13
+CT-CT-S-OH 1 2.093 148.25  -2.0 fitted, GK13
+CT-CT-S-OH 1 1.403 -95.47  -3.0 fitted, GK13
+CT-CT-S-OH 1 1.178 -81.75  4.0 fitted, GK13
+
+IMPROPER
+
+
+
+BOND
+S -P   167.00   2.104       same as p4-ss
+
+ANGLE
+S -P -OH   80.640     100.060   Calculated with empirical approach
+OH-P -OH   72.990      95.710   same as oh-p4-oh
+CT-S -P    38.030      98.160   same as c3-ss-p4
+S -P -O2   75.800     116.140   same as o -p4-ss
+
+
+DIHE
+CT-S -P -O2   1    0.42884 -6.1956          -1.000      fitted, GK13
+CT-S -P -O2   1    1.099 -144.4657           -2.000      fitted, GK13
+CT-S -P -O2   1    0.894 -0.54663           -3.000      fitted, GK13
+CT-S -P -O2   1    0.574 145.56          4.000      fitted, GK13
+CT-S -P -OH   2    0.600       180.000           2.000      same as X -p4-ss-X
+
+
+
+
+BOND
+S -SH  155.80   2.067       same as sh-ss
+
+ANGLE
+CT-S -SH   47.800     101.930   same as c3-ss-sh
+S -SH-HS   33.730      99.170   same as hs-sh-ss
+
+DIHE
+CT-S -SH-HS   1    1.623        140.097           -1.000   fitted, GK13 
+CT-S -SH-HS   1    3.652        -6.4855          2.000   fitted, GK13
+CT-CT-S-SH  1 7.362 170.865 -1  fitted, GK13
+CT-CT-S-SH  1 5.361 139.062 -2  fitted, GK13
+CT-CT-S-SH  1 4.914 118.59 -3   fitted, GK13
+CT-CT-S-SH  1 4.319 78.606 -4   fitted, GK13
+CT-CT-S-SH  1 3.673 43.020 -5   fitted, GK13
+CT-CT-S-SH  1 2.847 10.87 -6    fitted, GK13
+CT-CT-S-SH  1 2.0516 -18.906 -7  fitted, GK13
+CT-CT-S-SH  1 1.365 -48.47 -8  fitted, GK13
+CT-CT-S-SH  1 0.8598 -76.77 -9  fitted, GK13
+CT-CT-S-SH  1 0.5347 -104.95 10  fitted, GK13
+
+
+BOND
+N2-CM  449.00   1.364       same as cc-nh
+
+ANGLE
+N2-CM-N2   72.930     115.960   same as nh-cc-nh
+CT-N2-CM   64.702     117.790   Calculated with empirical approach
+H -N2-CM   49.110     119.380   same as c2-n3-hn
+
+DIHE
+N2-CM-N2-H    1    0.300       180.000           2.000      same as X -c2-n3-X
+CT-N2-CM-N2   1    0.300       180.000           2.000      same as X -c2-n3-X
+
+
+
+BOND
+N2-CM  449.00   1.364       same as cc-nh
+
+ANGLE
+N2-CM-N2   72.930     115.960   same as nh-cc-nh
+CT-N2-CM   64.702     117.790   Calculated with empirical approach
+H -N2-CM   49.110     119.380   same as c2-n3-hn
+CT-N2-CT   64.010     110.900   same as c3-n3-c3
+
+DIHE
+CT-N2-CM-N2   4    0.4566       2.705           -1.000     fitted, GK13
+CT-N2-CM-N2   4    12.726       -175.79           -2.000     fitted, GK13
+CT-N2-CM-N2   4     0.283      -173.945           -3.000     fitted, GK13
+CT-N2-CM-N2   4    0.1875      -161.375           4.000     fitted, GK13
+N2-CM-N2-H    1    0.300       180.000           2.000      same as X -c2-n3-X
+
+
+
+
+ANGLE
+CT-CM-CT   62.700     116.520   same as c3-c2-c3
+S -CT-CM   80.520     104.970   same as c2-c3-ss
+
+
+
+ANGLE
+S -CT-CM   80.520     104.970   same as c2-c3-ss
+CT-CM-CT   62.700     116.520   same as c3-c2-c3
+
+
+
+ANGLE
+C -N -C    65.330     127.140   SOURCE4 514 2.011 same as c -n -c GAFF
+
+
+BOND
+CA-OS  392.60   1.357       same as c2-os
+OS-P   525.0   1.610
+OH-P   525.0   1.610
+
+ANGLE
+CA-OS-P    100.0   120.50 
+OS-P -OH   140.0   108.23 
+OS-P -O2   140.0   108.23
+OH-P -O2   140.0   108.23
+OH-P -OH   140.0   108.23
+HO-OH-P    140.0   108.50
+CA-CA-OS   71.040  121.890   same as c2-c2-os
+
+DIHE
+CA-CA-OS-P  1 1.050  180.000           2.000      same as X -c2-os-X
+CA-OS-P-O2  1 1.1295 10.51 -1 fitted, GK
+CA-OS-P-O2  1 0.2271 -15.788 -2 fitted, GK
+CA-OS-P-O2  1 0.5013 -93.029 -3 fitted, GK
+CA-OS-P-O2  1 0.2058 157.172 4 fitted, GK
+
+BOND
+CA-OS  392.60   1.357       same as c2-os
+OS-P   525.0   1.610
+
+ANGLE
+CA-OS-P    100.0   120.50 
+OS-P -O2   140.0   108.23
+CA-CA-OS   71.040  121.890   same as c2-c2-os
+
+DIHE
+CA-CA-OS-P    1    1.050       180.000           2.000      same as X -c2-os-X
+CA-OS-P-O2 3 0.4659 179.937 -1 fitted, GK13
+CA-OS-P-O2 3 0.30383 121.386 -2 fitted, GK13
+CA-OS-P-O2 3 0.6954 -18.001 -3 fitted, GK13
+CA-OS-P-O2 3 0.1536 -32.4026 4 fitted, GK13
+
+
+
+
+ANGLE
+N*-CM-CT   64.950     122.540   same as c3-c2-na
+N*-CM-HA   49.730     119.100   same as hc-c2-na
+C -CT-N*   66.810     111.370   same as c -c3-na
+
+BOND
+OH-P   525.0   1.610
+OS-P   525.0   1.610
+
+ANGLE
+CT-OS-P  100.0   120.50
+O2-P-OH  140.0   108.23
+HO-OH-P  140.0   108.50
+OH-P-OH   72.990      95.710   same as oh-p4-oh
+ 
+DIHE
+CT-OS-P-O2 1  1.004 -20.493 -1 fittedGK13
+CT-OS-P-O2 1  0.664 3.177 -2 fittedGK13
+CT-OS-P-O2 1  0.141 170.368 -3 fittedGK13
+CT-OS-P-O2 1  0.032 101.830 4 fittedGK13
+
+BOND
+P-OS   525.0   1.610	STICHT
+
+ANGLE
+CT-OS-P  100.0   120.50	STICHT
+
+DIHE
+CT-OS-P-O2 3 0.623 -63.530 -1 fittedGK13
+CT-OS-P-O2 3 0.213 -145.686 -2 fittedGK13 
+CT-OS-P-O2 3 2.246 -56.664 -3 fittedGK13
+CT-OS-P-O2 3 0.176 148.989 -4 fittedGK13
+CT-OS-P-O2 3 0.051 30.301 -5 fittedGK13
+CT-OS-P-O2 3 0.188 -137.385 6 fittedGK13
+
+
+
+BOND
+S -C   261.90   1.762       same as c -ss
+
+ANGLE
+S -C -O    81.780     122.290   same as o -c -ss
+S -C -CT   78.990     114.320   same as c3-c -ss
+CT-S -C    38.470     100.290   same as c -ss-c3
+
+DIHE
+CT-S -C -O    1    3.100       180.000           2.000      same as X -c -ss-X
+CT-S -C -CT   1    3.100       180.000           2.000      same as X -c -ss-X
+BOND
+P-OH   525.0   1.610	STICHT
+P-OS   525.0   1.610	STICHT
+
+ANGLE
+OH-P-OH  140.0   108.23	STICHT
+CT-OS-P  100.0   120.50	STICHT
+O2-P-OH  140.0   108.23	STICHT
+HO-OH-P  140.0   108.50	STICHT
+
+BOND
+P-OS   525.0   1.610	STICHT
+
+ANGLE
+CT-OS-P  100.0   120.50	STICHT
+
+DIHE
+CT-OS-P-O2 3 0.623 -63.530 -1 fittedGK13
+CT-OS-P-O2 3 0.213 -145.686 -2 fittedGK13
+CT-OS-P-O2 3 2.246 -56.664 -3 fittedGK13
+CT-OS-P-O2 3 0.176 148.989 -4 fittedGK13
+CT-OS-P-O2 3 0.051 30.301 -5 fittedGK13 
+CT-OS-P-O2 3 0.188 -137.385 6 fittedGK13
+
