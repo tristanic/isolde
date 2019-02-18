@@ -309,15 +309,18 @@ class Isolde():
             splash.setMask(splash_pix.mask())
             splash.show()
             # Make sure the splash screen is actually shown
+            from time import sleep
             for i in range(5):
                 self.session.ui.processEvents()
+                sleep(0.01)
             from PyQt5 import QtCore
-            # Close the splash after 2 seconds
-            QtCore.QTimer.singleShot(2000, splash.close)
+            # Close the splash after 5 seconds
+            QtCore.QTimer.singleShot(5000, splash.close)
 
             self._start_gui(gui)
 
         session.isolde = self
+        ffmgr.background_load_ff(sp.forcefield)
 
 
     def _prepare_environment(self):

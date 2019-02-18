@@ -36,6 +36,12 @@ def _define_forcefield(ff_files):
     ff = ForceField(*[f for f in ff_files if f is not None])
     return ff
 
+def _background_load_ff(name, ff_files):
+    ff = _define_forcefield(ff_files)
+    print('Done loading forcefield')
+    return {name: ff}
+
+
 class Forcefield_Mgr:
     def __init__(self):
         self._ff_dict = {}
@@ -46,6 +52,9 @@ class Forcefield_Mgr:
         if self._task:
             while not self._task.done():
                 sleep(0.01)
+            result = self._task.result()
+            if isinstance(result, dict):
+                self._ff_dict.update(result)
         self._task = None
 
     def __getitem__(self, key):
@@ -66,7 +75,13 @@ class Forcefield_Mgr:
 
     @property
     def available_forcefields(self):
+        self._complete_task()
         return list(set(self._ff_dict.keys()).union(_forcefield_files.keys()))
+
+    @property
+    def loaded_forcefields(self):
+        self._complete_task()
+        return list(self._ff_dict.keys())
 
     def define_custom_forcefield(self, name, ff_files):
         '''
@@ -74,11 +89,6 @@ class Forcefield_Mgr:
         '''
         self._complete_task()
         self._ff_dict[name] = _define_forcefield(ff_files)
-
-
-    def _background_load_ff(self, name, ff_files):
-        ff = _define_forcefield(ff_files)
-        self._ff_dict[name] = ff
 
     def background_load_ff(self, name, ff_files = None):
         '''
@@ -89,5 +99,6 @@ class Forcefield_Mgr:
         if ff_files is None:
             ff_files = _forcefield_files[name]
         from concurrent.futures import ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            self._task = executor.submit(self._background_load_ff, name, ff_files)
+        executor = ThreadPoolExecutor(max_workers=1)
+        self._task = executor.submit(_background_load_ff, name, ff_files)
+        executor.shutdown(wait=False)
