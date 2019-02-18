@@ -76,7 +76,81 @@ _leap_files = {
 'GLYCAM06': 'leaprc.GLYCAM_06j-1'
 }
 
-def make_combined_forcefield(dirname, output_xml):
+def _find_mol2_frcmod_pairs(input_dir, blacklist=set()):
+    import os
+    from glob import glob
+
+    file_dict = {}
+    mol2files = glob(os.path.join(input_dir, '**/*.mol2'), recursive = True)
+    for m in mol2files:
+        name = os.path.splitext(os.path.basename(m))[0].upper()
+        if name in blacklist:
+            continue
+        f = os.path.splitext(m)[0]+'.frcmod'
+        if os.path.isfile(f):
+            file_dict[name] = (m,f)
+
+    return file_dict
+
+def amber_to_xml_individual(input_dir, output_dir, resname_prefix=None,
+        dict_filename = None, compress_to = None):
+    '''
+    Convert all .mol2/.frcmod pairs found under input_dir into OpenMM XML files
+    in output_dir. If resname_prefix is given, it will be prepended to all
+    residue names in the xml files.
+    '''
+    import os
+    import parmed as pmd
+    from glob import glob
+
+    file_dict = _find_mol2_frcmod_pairs(input_dir, blacklist=_blacklist.union(_obsolete))
+
+    resname_to_ff = {}
+    xmlfiles = []
+    fails = []
+    with open(os.path.join(output_dir, 'failures.log'), 'wt') as logfile:
+
+        for key, (m2f, frcmod) in file_dict.items():
+            try:
+                mol2 = pmd.load_file(m2f)
+                if resname_prefix is not None:
+                    mol2.name = resname_prefix+key
+                else:
+                    mol2.name = key
+            except:
+                print('Failed to open {}.'.format(m2f))
+                logfile.write(m2f+'\n')
+                fails.append(key)
+                continue
+            ff = pmd.openmm.OpenMMParameterSet.from_parameterset(
+                pmd.amber.AmberParameterSet(frcmod)
+            )
+            resname_to_ff[key] = mol2.name
+            ff.residues[mol2.name] = mol2
+            xml_name = key+'.xml'
+            xmlfiles.append(xml_name)
+            ff.write(os.path.join(output_dir, xml_name))
+
+    for f in fails:
+        del file_dict[f]
+
+    if dict_filename is not None:
+        import json
+        if os.path.splitext(dict_filename)[1] != 'json':
+            dict_filename+='.json'
+        with open(dict_filename, 'wt') as jfile:
+            json.dump(resname_to_ff, jfile)
+
+    if compress_to is not None:
+        import zipfile
+        if os.path.splitext(compress_to)[1] != 'zip':
+            compress_to += '.zip'
+        with zipfile.ZipFile(compress_to, 'w', zipfile.ZIP_DEFLATED) as z:
+            for xf in xmlfiles:
+                z.write(xf, os.path.basename(xf))
+
+
+def make_combined_forcefield(dirname, output_xml, resname_prefix=None):
     '''
     Combine all parameters and residue topologies into a single file.
     '''
@@ -84,30 +158,7 @@ def make_combined_forcefield(dirname, output_xml):
     import parmed as pmd
     from glob import glob
 
-    # BASE_DIR = os.path.abspath(__file__)
-    #
-    # _moriarty_lib_dir = os.path.join(BASE_DIR, 'src', 'moriarty_lib')
-    #
-    # AMBERHOME = os.environ['AMBERHOME']
-    #
-    #
-    # LEAP_DIR = os.path.join(AMBERHOME, 'dat', 'leap', 'cmd')
-
-
-    cwd = os.path.abspath(os.curdir)
-    os.chdir(dirname)
-
-    file_dict = {}
-
-    mol2files = glob('**/*.mol2', recursive = True)
-    for m in mol2files:
-        name = os.path.splitext(os.path.basename(m))[0].upper()
-        if name in _blacklist or name in _obsolete:
-            continue
-        name = 'CCD_'+name
-        f = os.path.splitext(m)[0]+'.frcmod'
-        if os.path.isfile(f):
-            file_dict[name] = (m,f)
+    file_dict = _find_mol2_frcmod_pairs(dirname, blacklist=_blacklist.union(_obsolete))
 
     rdict = {}
 
@@ -115,8 +166,11 @@ def make_combined_forcefield(dirname, output_xml):
     for key, (m2f, _) in file_dict.items():
         try:
             mol2 = pmd.load_file(m2f)
-            mol2.name = key
-            rdict[key] = mol2
+            if resname_prefix is not None:
+                mol2.name = resname_prefix+key
+            else:
+                mol2.name = key
+            rdict[mol2.name] = mol2
         except:
             fails.append(key)
 
@@ -128,10 +182,10 @@ def make_combined_forcefield(dirname, output_xml):
         pmd.amber.AmberParameterSet([fp[1] for fp in file_dict.values()])
     )
     ff.residues = rdict
+    ff.condense()
 
-    ff.write(output_xml)
-    os.chdir(cwd)
+    ff.write(output_xml, skip_duplicates=False)
 
-if __name__ == "__main__":
-    import sys
-    make_combined_forcefield(*sys.argv[1:])
+# if __name__ == "__main__":
+#     import sys
+#     make_combined_forcefield(*sys.argv[1:])
