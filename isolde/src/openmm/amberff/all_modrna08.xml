@@ -9422,7 +9422,8 @@
     <Proper k1="2.615" periodicity1="2" phase1="3.141592653589793" type1="H" type2="N*" type3="CA" type4="CM"/>
     <Proper k1="2.615" periodicity1="2" phase1="3.141592653589793" type1="H" type2="N*" type3="CA" type4="NC"/>
     <Proper k1="1.2552" periodicity1="2" phase1="3.141592653589793" type1="H" type2="N2" type3="CA" type4="CM"/>
-    <Proper k1="1.2552" periodicity1="2" phase1="3.141592653589793" type1="H" type2="N2" type3="CA" type4="N2"/>
+    <!-- Conflicts with Arginine sidechain  -->
+    <!-- <Proper k1="1.2552" periodicity1="2" phase1="3.141592653589793" type1="H" type2="N2" type3="CA" type4="N2"/> -->
     <Proper k1="1.2552" periodicity1="2" phase1="3.141592653589793" type1="H" type2="N2" type3="CA" type4="NC"/>
     <Proper k1="1.2552" periodicity1="2" phase1="3.141592653589793" type1="H" type2="N2" type3="CM" type4="CM"/>
     <Proper k1="1.2552" periodicity1="2" phase1="3.141592653589793" type1="H" type2="N2" type3="CM" type4="CT"/>
