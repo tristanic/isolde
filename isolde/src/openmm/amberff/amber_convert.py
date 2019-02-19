@@ -186,6 +186,41 @@ def make_combined_forcefield(dirname, output_xml, resname_prefix=None):
 
     ff.write(output_xml, skip_duplicates=False)
 
+def convert_bryce_parms(dirname, output_xml, resname_prefix='BRYCE_'):
+    '''
+    Convert the AMBER parameterisations found at
+    http://research.bmh.manchester.ac.uk/bryce/amber/
+    '''
+    files = {
+    ('ATP', 'ADP', 'GTP', 'GDP'):   ('phos.lib', 'frcmod.phos'), # Nucleotide di/triphosphates
+    ('FAD',):                       ('FADH-.lib', 'FADH-.frcfld'), # FAD-
+    ('FMN',):                       ('fmn.off', 'fmn.frcfld'), # Flavin mononucleotide
+    ('NAD', 'NAH', 'NP2', 'NP3',
+        'NPD', 'NPH'):              ('nad_variants.lib', 'nad.frcmod'),
+    ('H1D',):                       ('H1D.off', 'frcmod_h1d'), # Phosphohistidine (ND1, 1-)
+    ('H1E',):                       ('H1E.off', 'frcmod_h1d'), # Phosphohistidine (NE2, 1-)
+    ('H2D',):                       ('H2D.off', 'frcmod_h2d'), # Phosphohistidine (ND1, 2-)
+    ('H2E',):                       ('H2E.off', 'frcmod_h2e'), # Phosphohistidine (NE2, 2-)
+    ('HEM',):                       ('hem.off', 'frcmod.hemall'), # Heme
+    }
+    import parmed as pmd
+    import os
+    aff = pmd.amber.AmberParameterSet()
+    from collections import OrderedDict
+    residues = OrderedDict()
+    for resnames, (template_file, param_file) in files.items():
+        aff.load_parameters(os.path.join(dirname, param_file))
+        inres = pmd.load_file(os.path.join(dirname, template_file))
+        for r, res in inres.items():
+            res.name = resname_prefix+res.name
+            residues[res.name] = res
+    off = pmd.openmm.OpenMMParameterSet.from_parameterset(aff)
+    off.residues = residues
+    off.condense()
+    off.write(output_xml, skip_duplicates=False)
+
+
+
 # if __name__ == "__main__":
 #     import sys
 #     make_combined_forcefield(*sys.argv[1:])

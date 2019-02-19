@@ -21,7 +21,7 @@ _forcefield_files = {
         'all_modrna08.xml',          # Naturally occurring modified RNA bases. DOI: 10.1021/ct600329w
         'glycam_all.xml',            # GLYCAM06 force field
         'combined_ccd.xml',          # General ligands (Nigel Moriarty / Dave Case)
-        'ATP.xml',
+        'bryce_set.xml',             # A small collection of ligands and PTMs (most notably ATP/GDP/NAD(P)(H)/FAD(H)) from http://research.bmh.manchester.ac.uk/bryce/amber
         'ptms.xml',                  # Post-translational modifications from ares.tamu.ed/FFPTM DOI: 10.1021/ct400556v
         'truncated_aa.xml',          # Artifical amino acid "stubs" to support common truncations used in model building
         ]],
