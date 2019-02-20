@@ -136,7 +136,7 @@
                 "val_nchi": 3,
                 "symm":     0,
                 "chi1":     [["N","CA","CB","CG"], ["HB2", "HB3", "CG", "HG2", "HG3", "SE", "CE", "HE1", "HE2", "HE3"]],
-                "chi2":     [["CA","CB","CG","SE"], ["HG2", "HG3", "SD", "CE", "HE1", "HE2", "HE3"]],
+                "chi2":     [["CA","CB","CG","SE"], ["HG2", "HG3", "SE", "CE", "HE1", "HE2", "HE3"]],
                 "chi3":     [["CB","CG","SE","CE"], ["CE", "HE1", "HE2", "HE3"]]
             },
             "LYS": {

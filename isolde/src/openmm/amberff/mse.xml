@@ -1,0 +1,148 @@
+<ForceField>
+  <Info>
+    <DateGenerated>2019-02-20</DateGenerated>
+  </Info>
+  <AtomTypes>
+    <Type class="SE" element="Se" mass="78.96" name="SE"/>
+  </AtomTypes>
+  <Residues>
+      <Residue name="MSE">
+       <Atom name="N" type="N" charge="-0.4157"/>
+       <Atom name="H" type="H" charge="0.2719"/>
+       <Atom name="CA" type="CX" charge="-0.0237"/>
+       <Atom name="HA" type="H1" charge="0.088"/>
+       <Atom name="CB" type="2C" charge="0.0342"/>
+       <Atom name="HB2" type="HC" charge="0.0241"/>
+       <Atom name="HB3" type="HC" charge="0.0241"/>
+       <Atom name="CG" type="2C" charge="0.0018"/>
+       <Atom name="HG2" type="H1" charge="0.044"/>
+       <Atom name="HG3" type="H1" charge="0.044"/>
+       <Atom name="SE" type="SE" charge="-0.2737"/>
+       <Atom name="CE" type="CT" charge="-0.0536"/>
+       <Atom name="HE1" type="H1" charge="0.0684"/>
+       <Atom name="HE2" type="H1" charge="0.0684"/>
+       <Atom name="HE3" type="H1" charge="0.0684"/>
+       <Atom name="C" type="C" charge="0.5973"/>
+       <Atom name="O" type="O" charge="-0.5679"/>
+       <Bond atomName1="N" atomName2="H"/>
+       <Bond atomName1="N" atomName2="CA"/>
+       <Bond atomName1="CA" atomName2="HA"/>
+       <Bond atomName1="CA" atomName2="CB"/>
+       <Bond atomName1="CA" atomName2="C"/>
+       <Bond atomName1="CB" atomName2="HB2"/>
+       <Bond atomName1="CB" atomName2="HB3"/>
+       <Bond atomName1="CB" atomName2="CG"/>
+       <Bond atomName1="CG" atomName2="HG2"/>
+       <Bond atomName1="CG" atomName2="HG3"/>
+       <Bond atomName1="CG" atomName2="SE"/>
+       <Bond atomName1="SE" atomName2="CE"/>
+       <Bond atomName1="CE" atomName2="HE1"/>
+       <Bond atomName1="CE" atomName2="HE2"/>
+       <Bond atomName1="CE" atomName2="HE3"/>
+       <Bond atomName1="C" atomName2="O"/>
+       <ExternalBond atomName="N"/>
+       <ExternalBond atomName="C"/>
+      </Residue>
+      <Residue name="CMSE">
+       <Atom name="N" type="N" charge="-0.3821"/>
+       <Atom name="H" type="H" charge="0.2681"/>
+       <Atom name="CA" type="CX" charge="-0.2597"/>
+       <Atom name="HA" type="H1" charge="0.1277"/>
+       <Atom name="CB" type="2C" charge="-0.0236"/>
+       <Atom name="HB2" type="HC" charge="0.048"/>
+       <Atom name="HB3" type="HC" charge="0.048"/>
+       <Atom name="CG" type="2C" charge="0.0492"/>
+       <Atom name="HG2" type="H1" charge="0.0317"/>
+       <Atom name="HG3" type="H1" charge="0.0317"/>
+       <Atom name="SE" type="SE" charge="-0.2692"/>
+       <Atom name="CE" type="CT" charge="-0.0376"/>
+       <Atom name="HE1" type="H1" charge="0.0625"/>
+       <Atom name="HE2" type="H1" charge="0.0625"/>
+       <Atom name="HE3" type="H1" charge="0.0625"/>
+       <Atom name="C" type="C" charge="0.8013"/>
+       <Atom name="O" type="O2" charge="-0.8105"/>
+       <Atom name="OXT" type="O2" charge="-0.8105"/>
+       <Bond atomName1="N" atomName2="H"/>
+       <Bond atomName1="N" atomName2="CA"/>
+       <Bond atomName1="CA" atomName2="HA"/>
+       <Bond atomName1="CA" atomName2="CB"/>
+       <Bond atomName1="CA" atomName2="C"/>
+       <Bond atomName1="CB" atomName2="HB2"/>
+       <Bond atomName1="CB" atomName2="HB3"/>
+       <Bond atomName1="CB" atomName2="CG"/>
+       <Bond atomName1="CG" atomName2="HG2"/>
+       <Bond atomName1="CG" atomName2="HG3"/>
+       <Bond atomName1="CG" atomName2="SE"/>
+       <Bond atomName1="SE" atomName2="CE"/>
+       <Bond atomName1="CE" atomName2="HE1"/>
+       <Bond atomName1="CE" atomName2="HE2"/>
+       <Bond atomName1="CE" atomName2="HE3"/>
+       <Bond atomName1="C" atomName2="O"/>
+       <Bond atomName1="C" atomName2="OXT"/>
+       <ExternalBond atomName="N"/>
+      </Residue>
+      <Residue name="NMSE">
+       <Atom name="N" type="N3" charge="0.1592"/>
+       <Atom name="H1" type="H" charge="0.1984"/>
+       <Atom name="H2" type="H" charge="0.1984"/>
+       <Atom name="H3" type="H" charge="0.1984"/>
+       <Atom name="CA" type="CX" charge="0.0221"/>
+       <Atom name="HA" type="HP" charge="0.1116"/>
+       <Atom name="CB" type="2C" charge="0.0865"/>
+       <Atom name="HB2" type="HC" charge="0.0125"/>
+       <Atom name="HB3" type="HC" charge="0.0125"/>
+       <Atom name="CG" type="2C" charge="0.0334"/>
+       <Atom name="HG2" type="H1" charge="0.0292"/>
+       <Atom name="HG3" type="H1" charge="0.0292"/>
+       <Atom name="SE" type="SE" charge="-0.2774"/>
+       <Atom name="CE" type="CT" charge="-0.0341"/>
+       <Atom name="HE1" type="H1" charge="0.0597"/>
+       <Atom name="HE2" type="H1" charge="0.0597"/>
+       <Atom name="HE3" type="H1" charge="0.0597"/>
+       <Atom name="C" type="C" charge="0.6123"/>
+       <Atom name="O" type="O" charge="-0.5713"/>
+       <Bond atomName1="N" atomName2="H1"/>
+       <Bond atomName1="N" atomName2="H2"/>
+       <Bond atomName1="N" atomName2="H3"/>
+       <Bond atomName1="N" atomName2="CA"/>
+       <Bond atomName1="CA" atomName2="HA"/>
+       <Bond atomName1="CA" atomName2="CB"/>
+       <Bond atomName1="CA" atomName2="C"/>
+       <Bond atomName1="CB" atomName2="HB2"/>
+       <Bond atomName1="CB" atomName2="HB3"/>
+       <Bond atomName1="CB" atomName2="CG"/>
+       <Bond atomName1="CG" atomName2="HG2"/>
+       <Bond atomName1="CG" atomName2="HG3"/>
+       <Bond atomName1="CG" atomName2="SE"/>
+       <Bond atomName1="SE" atomName2="CE"/>
+       <Bond atomName1="CE" atomName2="HE1"/>
+       <Bond atomName1="CE" atomName2="HE2"/>
+       <Bond atomName1="CE" atomName2="HE3"/>
+       <Bond atomName1="C" atomName2="O"/>
+       <ExternalBond atomName="C"/>
+      </Residue>
+
+  </Residues>
+
+
+  <HarmonicBondForce>
+    <Bond k="189953.59999999998" length="0.195" type1="SE" type2="2C"/>
+    <Bond k="189953.59999999998" length="0.195" type1="SE" type2="CT"/>
+  </HarmonicBondForce>
+  <HarmonicAngleForce>
+    <Angle angle="1.726130630222392" k="518.816" type1="CT" type2="SE" type3="2C"/>
+    <Angle angle="1.911135530933791" k="418.40000000000003" type1="H1" type2="CT" type3="SE"/>
+    <Angle angle="1.911135530933791" k="418.40000000000003" type1="H1" type2="2C" type3="SE"/>
+    <Angle angle="2.0018926520374962" k="418.40000000000003" type1="SE" type2="2C" type3="2C"/>
+  </HarmonicAngleForce>
+  <PeriodicTorsionForce>
+    <Proper k1="1.3946666666666667" periodicity1="3" phase1="0.0" type1="H1" type2="CT" type3="SE" type4="2C"/>
+    <Proper k1="1.3946666666666667" periodicity1="3" phase1="0.0" type1="H1" type2="2C" type3="SE" type4="CT"/>
+    <Proper k1="0.117152" k2="0.066944" k3="1.02508" k4="1.744728" periodicity1="4" periodicity2="3" periodicity3="2" periodicity4="1" phase1="0.0" phase2="0.0" phase3="0.0" phase4="0.0" type1="CX" type2="2C" type3="2C" type4="SE"/>
+    <Proper k1="0.238488" k2="1.732176" k3="1.849328" k4="1.033448" periodicity1="4" periodicity2="3" periodicity3="2" periodicity4="1" phase1="0.0" phase2="0.0" phase3="0.0" phase4="3.141592653589793" type1="2C" type2="2C" type3="SE" type4="CT"/>
+  </PeriodicTorsionForce>
+  <NonbondedForce coulomb14scale="0.8333333333333334" lj14scale="0.5">
+    <UseAttributeFromResidue name="charge"/>
+    <Atom epsilon="0.456056" sigma="0.3577849252051603" type="SE"/>
+  </NonbondedForce>
+</ForceField>

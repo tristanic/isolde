@@ -18,7 +18,8 @@ _forcefield_files = {
         'tip3p_HFE_multivalent.xml', # Metal ions
         'tip3p_IOD_multivalent.xml', # Metal ions
         'gaff2.xml',                 # General AMBER force field
-        'all_modrna08.xml',          # Naturally occurring modified RNA bases. DOI: 10.1021/ct600329w
+        # 'all_modrna08.xml',          # <BUGGY/BROKEN> Naturally occurring modified RNA bases. DOI: 10.1021/ct600329w
+        'mse.xml',
         'glycam_all.xml',            # GLYCAM06 force field
         'combined_ccd.xml',          # General ligands (Nigel Moriarty / Dave Case)
         'bryce_set.xml',             # A small collection of ligands and PTMs (most notably ATP/GDP/NAD(P)(H)/FAD(H)) from http://research.bmh.manchester.ac.uk/bryce/amber

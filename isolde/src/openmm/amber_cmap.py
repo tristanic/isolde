@@ -35,6 +35,7 @@ class CMAPLoader:
         'LYS': 3,
         'LYN': 3,
         'MET': 3,
+        'MSE': 3,
         'ASN': 3,
         'GLN': 3,
         'SER': 3,

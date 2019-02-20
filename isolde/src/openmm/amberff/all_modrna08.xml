@@ -8750,7 +8750,8 @@
     <Bond k="288110.23999999993" length="0.1069" type1="CA" type2="H4"/>
     <Bond k="288110.23999999993" length="0.1073" type1="CA" type2="H5"/>
     <Bond k="344008.48" length="0.13770000000000002" type1="CA" type2="N*"/>
-    <Bond k="375723.19999999995" length="0.1363" type1="CA" type2="N2"/>
+    <!-- Dangerous override of ff14sb arginine parameters -->
+    <!-- <Bond k="375723.19999999995" length="0.1363" type1="CA" type2="N2"/> -->
     <Bond k="344008.48" length="0.1361" type1="CA" type2="NA"/>
     <Bond k="412458.7199999999" length="0.12960000000000002" type1="CA" type2="NC"/>
     <Bond k="234303.99999999994" length="0.1688" type1="CA" type2="SS"/>
@@ -8876,7 +8877,7 @@
     <Angle angle="1.9759745126453803" k="553.9616000000001" type1="CA" type2="N2" type3="CB"/>
     <Angle angle="2.1082879232390703" k="553.9616000000001" type1="CA" type2="N2" type3="CM"/>
     <Angle angle="2.1216571453093467" k="525.67776" type1="CA" type2="N2" type3="CT"/>
-    <Angle angle="2.046311281500752" k="410.8688" type1="CA" type2="N2" type3="H"/>
+    <!-- <Angle angle="2.046311281500752" k="410.8688" type1="CA" type2="N2" type3="H"/> -->
     <Angle angle="2.0682500701983204" k="398.3168" type1="CA" type2="NA" type3="H"/>
     <Angle angle="2.1220585710373054" k="591.6176" type1="CA" type2="NC" type3="CA"/>
     <Angle angle="1.9775104023871353" k="580.7392000000001" type1="CA" type2="NC" type3="CB"/>
@@ -9023,7 +9024,7 @@
     <Angle angle="1.763358503167431" k="485.344" type1="N*" type2="CZ" type3="CM"/>
     <Angle angle="2.086052428568663" k="574.0448" type1="N2" type2="CA" type3="CM"/>
     <Angle angle="2.003254008854052" k="438.4832" type1="N2" type2="CA" type3="H5"/>
-    <Angle angle="2.1465455404427862" k="597.4752000000001" type1="N2" type2="CA" type3="N2"/>
+    <!-- <Angle angle="2.1465455404427862" k="597.4752000000001" type1="N2" type2="CA" type3="N2"/> -->
     <Angle angle="2.048667475990944" k="609.1904" type1="N2" type2="CA" type3="NC"/>
     <Angle angle="1.9450472783000405" k="574.0448" type1="N2" type2="CB" type3="CB"/>
     <Angle angle="2.2581418928153036" k="610.0272000000001" type1="N2" type2="CB" type3="N2"/>
@@ -9814,7 +9815,7 @@
     <Atom epsilon="0.7112800000000001" sigma="0.3000012343465779" type="OS"/>
     <Atom epsilon="0.8368000000000001" sigma="0.37417746161894255" type="P"/>
     <Atom epsilon="1.046" sigma="0.35635948725613575" type="S"/>
-    <Atom epsilon="0.0" sigma="1.0" type="Se"/>
+    <!-- <Atom epsilon="0.0" sigma="1.0" type="Se"/> -->
     <Atom epsilon="1.046" sigma="0.35635948725613575" type="SO"/>
     <Atom epsilon="1.046" sigma="0.35635948725613575" type="SS"/>
   </NonbondedForce>
