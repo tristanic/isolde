@@ -23,10 +23,10 @@ def set_to_default_cartoon(session, model = None):
     from chimerax.atomic import AtomicStructures
     try:
         if model is None:
-            atoms = None
-            models = AtomicStructures([model])
-        else:
+            aspec = None
             models = None
+        else:
+            models = AtomicStructures([model])
             atoms = model.atoms
             atoms.displays=False
             atoms[atoms.idatm_types!='HC'].displays=True
