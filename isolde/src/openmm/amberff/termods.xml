@@ -1,0 +1,735 @@
+<!-- Various modified terminal residues not found in the standard forcefield.
+Residue names match the CCD, but atom names may not. Parameterisations should
+be sufficient for map fitting, but in general these are NOT FOR USE IN
+PRODUCTION EQUILIBRIUM SIMULATIONS. -->
+<ForceField>
+  <Info>
+    <DateGenerated>2019-02-21</DateGenerated>
+  </Info>
+  <Residues>
+    <!-- <Residue name="PRELIM_FME">
+      <Atom charge="-0.6139" name="N" type="ns"/>
+      <Atom charge="0.6669" name="CN" type="c"/>
+      <Atom charge="-0.5691" name="O1" type="o"/>
+      <Atom charge="0.0077" name="CA" type="c3"/>
+      <Atom charge="-0.0604" name="CB" type="c3"/>
+      <Atom charge="0.0447" name="CG" type="c3"/>
+      <Atom charge="-0.4122" name="SD" type="ss"/>
+      <Atom charge="0.01" name="CE" type="c3"/>
+      <Atom charge="0.8956" name="C" type="c"/>
+      <Atom charge="-0.8368" name="O" type="o"/>
+      <Atom charge="-0.8368" name="OXT" type="o"/>
+      <Atom charge="0.2915" name="H" type="hn"/>
+      <Atom charge="-0.0098" name="HCN" type="h5"/>
+      <Atom charge="0.0497" name="HA" type="h1"/>
+      <Atom charge="0.0542" name="HB2" type="hc"/>
+      <Atom charge="0.0542" name="HB3" type="hc"/>
+      <Atom charge="0.0592" name="HG2" type="h1"/>
+      <Atom charge="0.0592" name="HG3" type="h1"/>
+      <Atom charge="0.049033" name="HE1" type="h1"/>
+      <Atom charge="0.049033" name="HE2" type="h1"/>
+      <Atom charge="0.049033" name="HE3" type="h1"/>
+      <Bond atomName1="N" atomName2="CN"/>
+      <Bond atomName1="N" atomName2="CA"/>
+      <Bond atomName1="N" atomName2="H"/>
+      <Bond atomName1="CN" atomName2="O1"/>
+      <Bond atomName1="CN" atomName2="HCN"/>
+      <Bond atomName1="CA" atomName2="CB"/>
+      <Bond atomName1="CA" atomName2="C"/>
+      <Bond atomName1="CA" atomName2="HA"/>
+      <Bond atomName1="CB" atomName2="CG"/>
+      <Bond atomName1="CB" atomName2="HB2"/>
+      <Bond atomName1="CB" atomName2="HB3"/>
+      <Bond atomName1="CG" atomName2="SD"/>
+      <Bond atomName1="CG" atomName2="HG2"/>
+      <Bond atomName1="CG" atomName2="HG3"/>
+      <Bond atomName1="SD" atomName2="CE"/>
+      <Bond atomName1="CE" atomName2="HE1"/>
+      <Bond atomName1="CE" atomName2="HE2"/>
+      <Bond atomName1="CE" atomName2="HE3"/>
+      <Bond atomName1="C" atomName2="O"/>
+      <Bond atomName1="C" atomName2="OXT"/>
+    </Residue> -->
+    <Residue name="AYA">
+        <!-- N-acetylalanine, by combining ff14sb ALA and ACE -->
+        <Atom name="HM1" type="HC" charge="0.1123"/>
+        <Atom name="CM" type="CT" charge="-0.3662"/>
+        <Atom name="HM2" type="HC" charge="0.1123"/>
+        <Atom name="HM3" type="HC" charge="0.1123"/>
+        <Atom name="CT" type="C" charge="0.5972"/>
+        <Atom name="OT" type="O" charge="-0.5679"/>
+
+         <Atom name="N" type="N" charge="-0.4157"/>
+         <Atom name="H" type="H" charge="0.2719"/>
+         <Atom name="CA" type="CX" charge="0.0337"/>
+         <Atom name="HA" type="H1" charge="0.0823"/>
+         <Atom name="CB" type="CT" charge="-0.1825"/>
+         <Atom name="HB1" type="HC" charge="0.0603"/>
+         <Atom name="HB2" type="HC" charge="0.0603"/>
+         <Atom name="HB3" type="HC" charge="0.0603"/>
+         <Atom name="C" type="C" charge="0.5973"/>
+         <Atom name="O" type="O" charge="-0.5679"/>
+         <Bond atomName1="HM1" atomName2="CM"/>
+         <Bond atomName1="CM" atomName2="HM2"/>
+         <Bond atomName1="CM" atomName2="HM3"/>
+         <Bond atomName1="CM" atomName2="CT"/>
+         <Bond atomName1="CT" atomName2="OT"/>
+         <Bond atomName1="CT" atomName2="N"/>
+         <Bond atomName1="N" atomName2="H"/>
+         <Bond atomName1="N" atomName2="CA"/>
+         <Bond atomName1="CA" atomName2="HA"/>
+         <Bond atomName1="CA" atomName2="CB"/>
+         <Bond atomName1="CA" atomName2="C"/>
+         <Bond atomName1="CB" atomName2="HB1"/>
+         <Bond atomName1="CB" atomName2="HB2"/>
+         <Bond atomName1="CB" atomName2="HB3"/>
+         <Bond atomName1="C" atomName2="O"/>
+         <ExternalBond atomName="C"/>
+    </Residue>
+    <Residue name="AAG">
+        <!-- N-acetylarginine, by combining ff14sb ARG and ACE.  -->
+        <Atom name="HM1" type="HC" charge="0.1123"/>
+        <Atom name="CM" type="CT" charge="-0.3662"/>
+        <Atom name="HM2" type="HC" charge="0.1123"/>
+        <Atom name="HM3" type="HC" charge="0.1123"/>
+        <Atom name="CT" type="C" charge="0.5972"/>
+        <Atom name="OT" type="O" charge="-0.5679"/>
+
+        <Bond atomName1="HM1" atomName2="CM"/>
+        <Bond atomName1="CM" atomName2="HM2"/>
+        <Bond atomName1="CM" atomName2="HM3"/>
+        <Bond atomName1="CM" atomName2="CT"/>
+        <Bond atomName1="CT" atomName2="OT"/>
+        <Bond atomName1="CT" atomName2="N"/>
+
+
+     <Atom name="N" type="N" charge="-0.3479"/>
+     <Atom name="H" type="H" charge="0.2747"/>
+     <Atom name="CA" type="CX" charge="-0.2637"/>
+     <Atom name="HA" type="H1" charge="0.156"/>
+     <Atom name="CB" type="C8" charge="-0.0007"/>
+     <Atom name="HB2" type="HC" charge="0.0327"/>
+     <Atom name="HB3" type="HC" charge="0.0327"/>
+     <Atom name="CG" type="C8" charge="0.039"/>
+     <Atom name="HG2" type="HC" charge="0.0285"/>
+     <Atom name="HG3" type="HC" charge="0.0285"/>
+     <Atom name="CD" type="C8" charge="0.0486"/>
+     <Atom name="HD2" type="H1" charge="0.0687"/>
+     <Atom name="HD3" type="H1" charge="0.0687"/>
+     <Atom name="NE" type="N2" charge="-0.5295"/>
+     <Atom name="HE" type="H" charge="0.3456"/>
+     <Atom name="CZ" type="CA" charge="0.8076"/>
+     <Atom name="NH1" type="N2" charge="-0.8627"/>
+     <Atom name="HH11" type="H" charge="0.4478"/>
+     <Atom name="HH12" type="H" charge="0.4478"/>
+     <Atom name="NH2" type="N2" charge="-0.8627"/>
+     <Atom name="HH21" type="H" charge="0.4478"/>
+     <Atom name="HH22" type="H" charge="0.4478"/>
+     <Atom name="C" type="C" charge="0.7341"/>
+     <Atom name="O" type="O" charge="-0.5894"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="CB"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="CB" atomName2="HB2"/>
+     <Bond atomName1="CB" atomName2="HB3"/>
+     <Bond atomName1="CB" atomName2="CG"/>
+     <Bond atomName1="CG" atomName2="HG2"/>
+     <Bond atomName1="CG" atomName2="HG3"/>
+     <Bond atomName1="CG" atomName2="CD"/>
+     <Bond atomName1="CD" atomName2="HD2"/>
+     <Bond atomName1="CD" atomName2="HD3"/>
+     <Bond atomName1="CD" atomName2="NE"/>
+     <Bond atomName1="NE" atomName2="HE"/>
+     <Bond atomName1="NE" atomName2="CZ"/>
+     <Bond atomName1="CZ" atomName2="NH1"/>
+     <Bond atomName1="CZ" atomName2="NH2"/>
+     <Bond atomName1="NH1" atomName2="HH11"/>
+     <Bond atomName1="NH1" atomName2="HH12"/>
+     <Bond atomName1="NH2" atomName2="HH21"/>
+     <Bond atomName1="NH2" atomName2="HH22"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
+    <Residue name="SC2">
+        <!-- N-acetylcysteine -->
+        <Atom name="HM1" type="HC" charge="0.1123"/>
+        <Atom name="CM" type="CT" charge="-0.3662"/>
+        <Atom name="HM2" type="HC" charge="0.1123"/>
+        <Atom name="HM3" type="HC" charge="0.1123"/>
+        <Atom name="CT" type="C" charge="0.5972"/>
+        <Atom name="OT" type="O" charge="-0.5679"/>
+
+        <Bond atomName1="HM1" atomName2="CM"/>
+        <Bond atomName1="CM" atomName2="HM2"/>
+        <Bond atomName1="CM" atomName2="HM3"/>
+        <Bond atomName1="CM" atomName2="CT"/>
+        <Bond atomName1="CT" atomName2="OT"/>
+        <Bond atomName1="CT" atomName2="N"/>
+
+     <Atom name="N" type="N" charge="-0.4157"/>
+     <Atom name="H" type="H" charge="0.2719"/>
+     <Atom name="CA" type="CX" charge="0.0213"/>
+     <Atom name="HA" type="H1" charge="0.1124"/>
+     <Atom name="CB" type="2C" charge="-0.1231"/>
+     <Atom name="HB2" type="H1" charge="0.1112"/>
+     <Atom name="HB3" type="H1" charge="0.1112"/>
+     <Atom name="SG" type="SH" charge="-0.3119"/>
+     <Atom name="HG" type="HS" charge="0.1933"/>
+     <Atom name="C" type="C" charge="0.5973"/>
+     <Atom name="O" type="O" charge="-0.5679"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="CB"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="CB" atomName2="HB2"/>
+     <Bond atomName1="CB" atomName2="HB3"/>
+     <Bond atomName1="CB" atomName2="SG"/>
+     <Bond atomName1="SG" atomName2="HG"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
+
+    <Residue name="NLQ">
+        <!-- N-acetylglutamine -->
+        <Atom name="HM1" type="HC" charge="0.1123"/>
+        <Atom name="CM" type="CT" charge="-0.3662"/>
+        <Atom name="HM2" type="HC" charge="0.1123"/>
+        <Atom name="HM3" type="HC" charge="0.1123"/>
+        <Atom name="CT" type="C" charge="0.5972"/>
+        <Atom name="OT" type="O" charge="-0.5679"/>
+
+        <Bond atomName1="HM1" atomName2="CM"/>
+        <Bond atomName1="CM" atomName2="HM2"/>
+        <Bond atomName1="CM" atomName2="HM3"/>
+        <Bond atomName1="CM" atomName2="CT"/>
+        <Bond atomName1="CT" atomName2="OT"/>
+        <Bond atomName1="CT" atomName2="N"/>
+     <Atom name="N" type="N" charge="-0.4157"/>
+     <Atom name="H" type="H" charge="0.2719"/>
+     <Atom name="CA" type="CX" charge="-0.0031"/>
+     <Atom name="HA" type="H1" charge="0.085"/>
+     <Atom name="CB" type="2C" charge="-0.0036"/>
+     <Atom name="HB2" type="HC" charge="0.0171"/>
+     <Atom name="HB3" type="HC" charge="0.0171"/>
+     <Atom name="CG" type="2C" charge="-0.0645"/>
+     <Atom name="HG2" type="HC" charge="0.0352"/>
+     <Atom name="HG3" type="HC" charge="0.0352"/>
+     <Atom name="CD" type="C" charge="0.6951"/>
+     <Atom name="OE1" type="O" charge="-0.6086"/>
+     <Atom name="NE2" type="N" charge="-0.9407"/>
+     <Atom name="HE21" type="H" charge="0.4251"/>
+     <Atom name="HE22" type="H" charge="0.4251"/>
+     <Atom name="C" type="C" charge="0.5973"/>
+     <Atom name="O" type="O" charge="-0.5679"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="CB"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="CB" atomName2="HB2"/>
+     <Bond atomName1="CB" atomName2="HB3"/>
+     <Bond atomName1="CB" atomName2="CG"/>
+     <Bond atomName1="CG" atomName2="HG2"/>
+     <Bond atomName1="CG" atomName2="HG3"/>
+     <Bond atomName1="CG" atomName2="CD"/>
+     <Bond atomName1="CD" atomName2="OE1"/>
+     <Bond atomName1="CD" atomName2="NE2"/>
+     <Bond atomName1="NE2" atomName2="HE21"/>
+     <Bond atomName1="NE2" atomName2="HE22"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
+    <Residue name="NLG">
+        <!-- N-acetylglutamic acid -->
+        <Atom name="HM1" type="HC" charge="0.1123"/>
+        <Atom name="CM" type="CT" charge="-0.3662"/>
+        <Atom name="HM2" type="HC" charge="0.1123"/>
+        <Atom name="HM3" type="HC" charge="0.1123"/>
+        <Atom name="CT" type="C" charge="0.5972"/>
+        <Atom name="OT" type="O" charge="-0.5679"/>
+
+        <Bond atomName1="HM1" atomName2="CM"/>
+        <Bond atomName1="CM" atomName2="HM2"/>
+        <Bond atomName1="CM" atomName2="HM3"/>
+        <Bond atomName1="CM" atomName2="CT"/>
+        <Bond atomName1="CT" atomName2="OT"/>
+        <Bond atomName1="CT" atomName2="N"/>
+     <Atom name="N" type="N" charge="-0.5163"/>
+     <Atom name="H" type="H" charge="0.2936"/>
+     <Atom name="CA" type="CX" charge="0.0397"/>
+     <Atom name="HA" type="H1" charge="0.1105"/>
+     <Atom name="CB" type="2C" charge="0.056"/>
+     <Atom name="HB2" type="HC" charge="-0.0173"/>
+     <Atom name="HB3" type="HC" charge="-0.0173"/>
+     <Atom name="CG" type="2C" charge="0.0136"/>
+     <Atom name="HG2" type="HC" charge="-0.0425"/>
+     <Atom name="HG3" type="HC" charge="-0.0425"/>
+     <Atom name="CD" type="CO" charge="0.8054"/>
+     <Atom name="OE1" type="O2" charge="-0.8188"/>
+     <Atom name="OE2" type="O2" charge="-0.8188"/>
+     <Atom name="C" type="C" charge="0.5366"/>
+     <Atom name="O" type="O" charge="-0.5819"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="CB"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="CB" atomName2="HB2"/>
+     <Bond atomName1="CB" atomName2="HB3"/>
+     <Bond atomName1="CB" atomName2="CG"/>
+     <Bond atomName1="CG" atomName2="HG2"/>
+     <Bond atomName1="CG" atomName2="HG3"/>
+     <Bond atomName1="CG" atomName2="CD"/>
+     <Bond atomName1="CD" atomName2="OE1"/>
+     <Bond atomName1="CD" atomName2="OE2"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
+
+    <Residue name="AAC">
+        <!-- N-acetylglycine -->
+        <Atom name="HM1" type="HC" charge="0.1123"/>
+        <Atom name="CM" type="CT" charge="-0.3662"/>
+        <Atom name="HM2" type="HC" charge="0.1123"/>
+        <Atom name="HM3" type="HC" charge="0.1123"/>
+        <Atom name="CT" type="C" charge="0.5972"/>
+        <Atom name="OT" type="O" charge="-0.5679"/>
+
+        <Bond atomName1="HM1" atomName2="CM"/>
+        <Bond atomName1="CM" atomName2="HM2"/>
+        <Bond atomName1="CM" atomName2="HM3"/>
+        <Bond atomName1="CM" atomName2="CT"/>
+        <Bond atomName1="CT" atomName2="OT"/>
+        <Bond atomName1="CT" atomName2="N"/>
+
+     <Atom name="N" type="N" charge="-0.4157"/>
+     <Atom name="H" type="H" charge="0.2719"/>
+     <Atom name="CA" type="CX" charge="-0.0252"/>
+     <Atom name="HA2" type="H1" charge="0.0698"/>
+     <Atom name="HA3" type="H1" charge="0.0698"/>
+     <Atom name="C" type="C" charge="0.5973"/>
+     <Atom name="O" type="O" charge="-0.5679"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA2"/>
+     <Bond atomName1="CA" atomName2="HA3"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
+    <Residue name="LAY">
+        <!-- N-acetyl-leucine -->
+        <Atom name="HM1" type="HC" charge="0.1123"/>
+        <Atom name="CM" type="CT" charge="-0.3662"/>
+        <Atom name="HM2" type="HC" charge="0.1123"/>
+        <Atom name="HM3" type="HC" charge="0.1123"/>
+        <Atom name="CT" type="C" charge="0.5972"/>
+        <Atom name="OT" type="O" charge="-0.5679"/>
+
+        <Bond atomName1="HM1" atomName2="CM"/>
+        <Bond atomName1="CM" atomName2="HM2"/>
+        <Bond atomName1="CM" atomName2="HM3"/>
+        <Bond atomName1="CM" atomName2="CT"/>
+        <Bond atomName1="CT" atomName2="OT"/>
+        <Bond atomName1="CT" atomName2="N"/>
+     <Atom name="N" type="N" charge="-0.4157"/>
+     <Atom name="H" type="H" charge="0.2719"/>
+     <Atom name="CA" type="CX" charge="-0.0518"/>
+     <Atom name="HA" type="H1" charge="0.0922"/>
+     <Atom name="CB" type="2C" charge="-0.1102"/>
+     <Atom name="HB2" type="HC" charge="0.0457"/>
+     <Atom name="HB3" type="HC" charge="0.0457"/>
+     <Atom name="CG" type="3C" charge="0.3531"/>
+     <Atom name="HG" type="HC" charge="-0.0361"/>
+     <Atom name="CD1" type="CT" charge="-0.4121"/>
+     <Atom name="HD11" type="HC" charge="0.1"/>
+     <Atom name="HD12" type="HC" charge="0.1"/>
+     <Atom name="HD13" type="HC" charge="0.1"/>
+     <Atom name="CD2" type="CT" charge="-0.4121"/>
+     <Atom name="HD21" type="HC" charge="0.1"/>
+     <Atom name="HD22" type="HC" charge="0.1"/>
+     <Atom name="HD23" type="HC" charge="0.1"/>
+     <Atom name="C" type="C" charge="0.5973"/>
+     <Atom name="O" type="O" charge="-0.5679"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="CB"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="CB" atomName2="HB2"/>
+     <Bond atomName1="CB" atomName2="HB3"/>
+     <Bond atomName1="CB" atomName2="CG"/>
+     <Bond atomName1="CG" atomName2="HG"/>
+     <Bond atomName1="CG" atomName2="CD1"/>
+     <Bond atomName1="CG" atomName2="CD2"/>
+     <Bond atomName1="CD1" atomName2="HD11"/>
+     <Bond atomName1="CD1" atomName2="HD12"/>
+     <Bond atomName1="CD1" atomName2="HD13"/>
+     <Bond atomName1="CD2" atomName2="HD21"/>
+     <Bond atomName1="CD2" atomName2="HD22"/>
+     <Bond atomName1="CD2" atomName2="HD23"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
+    <Residue name="AME">
+        <!-- N-acetylmethionine -->
+        <Atom name="HM1" type="HC" charge="0.1123"/>
+        <Atom name="CM" type="CT" charge="-0.3662"/>
+        <Atom name="HM2" type="HC" charge="0.1123"/>
+        <Atom name="HM3" type="HC" charge="0.1123"/>
+        <Atom name="CT" type="C" charge="0.5972"/>
+        <Atom name="OT" type="O" charge="-0.5679"/>
+
+        <Bond atomName1="HM1" atomName2="CM"/>
+        <Bond atomName1="CM" atomName2="HM2"/>
+        <Bond atomName1="CM" atomName2="HM3"/>
+        <Bond atomName1="CM" atomName2="CT"/>
+        <Bond atomName1="CT" atomName2="OT"/>
+        <Bond atomName1="CT" atomName2="N"/>
+     <Atom name="N" type="N" charge="-0.4157"/>
+     <Atom name="H" type="H" charge="0.2719"/>
+     <Atom name="CA" type="CX" charge="-0.0237"/>
+     <Atom name="HA" type="H1" charge="0.088"/>
+     <Atom name="CB" type="2C" charge="0.0342"/>
+     <Atom name="HB2" type="HC" charge="0.0241"/>
+     <Atom name="HB3" type="HC" charge="0.0241"/>
+     <Atom name="CG" type="2C" charge="0.0018"/>
+     <Atom name="HG2" type="H1" charge="0.044"/>
+     <Atom name="HG3" type="H1" charge="0.044"/>
+     <Atom name="SD" type="S" charge="-0.2737"/>
+     <Atom name="CE" type="CT" charge="-0.0536"/>
+     <Atom name="HE1" type="H1" charge="0.0684"/>
+     <Atom name="HE2" type="H1" charge="0.0684"/>
+     <Atom name="HE3" type="H1" charge="0.0684"/>
+     <Atom name="C" type="C" charge="0.5973"/>
+     <Atom name="O" type="O" charge="-0.5679"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="CB"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="CB" atomName2="HB2"/>
+     <Bond atomName1="CB" atomName2="HB3"/>
+     <Bond atomName1="CB" atomName2="CG"/>
+     <Bond atomName1="CG" atomName2="HG2"/>
+     <Bond atomName1="CG" atomName2="HG3"/>
+     <Bond atomName1="CG" atomName2="SD"/>
+     <Bond atomName1="SD" atomName2="CE"/>
+     <Bond atomName1="CE" atomName2="HE1"/>
+     <Bond atomName1="CE" atomName2="HE2"/>
+     <Bond atomName1="CE" atomName2="HE3"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
+    <Residue name="5CR">
+        <!-- N-acetylphenylalanine -->
+        <Atom name="HM1" type="HC" charge="0.1123"/>
+        <Atom name="CM" type="CT" charge="-0.3662"/>
+        <Atom name="HM2" type="HC" charge="0.1123"/>
+        <Atom name="HM3" type="HC" charge="0.1123"/>
+        <Atom name="CT" type="C" charge="0.5972"/>
+        <Atom name="OT" type="O" charge="-0.5679"/>
+
+        <Bond atomName1="HM1" atomName2="CM"/>
+        <Bond atomName1="CM" atomName2="HM2"/>
+        <Bond atomName1="CM" atomName2="HM3"/>
+        <Bond atomName1="CM" atomName2="CT"/>
+        <Bond atomName1="CT" atomName2="OT"/>
+        <Bond atomName1="CT" atomName2="N"/>
+     <Atom name="N" type="N" charge="-0.4157"/>
+     <Atom name="H" type="H" charge="0.2719"/>
+     <Atom name="CA" type="CX" charge="-0.0024"/>
+     <Atom name="HA" type="H1" charge="0.0978"/>
+     <Atom name="CB" type="CT" charge="-0.0343"/>
+     <Atom name="HB2" type="HC" charge="0.0295"/>
+     <Atom name="HB3" type="HC" charge="0.0295"/>
+     <Atom name="CG" type="CA" charge="0.0118"/>
+     <Atom name="CD1" type="CA" charge="-0.1256"/>
+     <Atom name="HD1" type="HA" charge="0.133"/>
+     <Atom name="CE1" type="CA" charge="-0.1704"/>
+     <Atom name="HE1" type="HA" charge="0.143"/>
+     <Atom name="CZ" type="CA" charge="-0.1072"/>
+     <Atom name="HZ" type="HA" charge="0.1297"/>
+     <Atom name="CE2" type="CA" charge="-0.1704"/>
+     <Atom name="HE2" type="HA" charge="0.143"/>
+     <Atom name="CD2" type="CA" charge="-0.1256"/>
+     <Atom name="HD2" type="HA" charge="0.133"/>
+     <Atom name="C" type="C" charge="0.5973"/>
+     <Atom name="O" type="O" charge="-0.5679"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="CB"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="CB" atomName2="HB2"/>
+     <Bond atomName1="CB" atomName2="HB3"/>
+     <Bond atomName1="CB" atomName2="CG"/>
+     <Bond atomName1="CG" atomName2="CD1"/>
+     <Bond atomName1="CG" atomName2="CD2"/>
+     <Bond atomName1="CD1" atomName2="HD1"/>
+     <Bond atomName1="CD1" atomName2="CE1"/>
+     <Bond atomName1="CE1" atomName2="HE1"/>
+     <Bond atomName1="CE1" atomName2="CZ"/>
+     <Bond atomName1="CZ" atomName2="HZ"/>
+     <Bond atomName1="CZ" atomName2="CE2"/>
+     <Bond atomName1="CE2" atomName2="HE2"/>
+     <Bond atomName1="CE2" atomName2="CD2"/>
+     <Bond atomName1="CD2" atomName2="HD2"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
+    <Residue name="N7P">
+        <!-- N-acetylproline -->
+        <Atom name="HM1" type="HC" charge="0.1123"/>
+        <Atom name="CM" type="CT" charge="-0.3662"/>
+        <Atom name="HM2" type="HC" charge="0.1123"/>
+        <Atom name="HM3" type="HC" charge="0.1123"/>
+        <Atom name="CT" type="C" charge="0.5972"/>
+        <Atom name="OT" type="O" charge="-0.5679"/>
+
+        <Bond atomName1="HM1" atomName2="CM"/>
+        <Bond atomName1="CM" atomName2="HM2"/>
+        <Bond atomName1="CM" atomName2="HM3"/>
+        <Bond atomName1="CM" atomName2="CT"/>
+        <Bond atomName1="CT" atomName2="OT"/>
+        <Bond atomName1="CT" atomName2="N"/>
+     <Atom name="N" type="N" charge="-0.2548"/>
+     <Atom name="CD" type="CT" charge="0.0192"/>
+     <Atom name="HD2" type="H1" charge="0.0391"/>
+     <Atom name="HD3" type="H1" charge="0.0391"/>
+     <Atom name="CG" type="CT" charge="0.0189"/>
+     <Atom name="HG2" type="HC" charge="0.0213"/>
+     <Atom name="HG3" type="HC" charge="0.0213"/>
+     <Atom name="CB" type="CT" charge="-0.007"/>
+     <Atom name="HB2" type="HC" charge="0.0253"/>
+     <Atom name="HB3" type="HC" charge="0.0253"/>
+     <Atom name="CA" type="CX" charge="-0.0266"/>
+     <Atom name="HA" type="H1" charge="0.0641"/>
+     <Atom name="C" type="C" charge="0.5896"/>
+     <Atom name="O" type="O" charge="-0.5748"/>
+     <Bond atomName1="N" atomName2="CD"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CD" atomName2="HD2"/>
+     <Bond atomName1="CD" atomName2="HD3"/>
+     <Bond atomName1="CD" atomName2="CG"/>
+     <Bond atomName1="CG" atomName2="HG2"/>
+     <Bond atomName1="CG" atomName2="HG3"/>
+     <Bond atomName1="CG" atomName2="CB"/>
+     <Bond atomName1="CB" atomName2="HB2"/>
+     <Bond atomName1="CB" atomName2="HB3"/>
+     <Bond atomName1="CB" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
+    <Residue name="SAC">
+        <!-- N-acetylserine, by combining ff14sb SER and ACE -->
+        <Atom name="HM1" type="HC" charge="0.1123"/>
+        <Atom name="CM" type="CT" charge="-0.3662"/>
+        <Atom name="HM2" type="HC" charge="0.1123"/>
+        <Atom name="HM3" type="HC" charge="0.1123"/>
+        <Atom name="CT" type="C" charge="0.5972"/>
+        <Atom name="OT" type="O" charge="-0.5679"/>
+         <Atom name="N" type="N" charge="-0.4157"/>
+         <Atom name="H" type="H" charge="0.2719"/>
+         <Atom name="CA" type="CX" charge="-0.0249"/>
+         <Atom name="HA" type="H1" charge="0.0843"/>
+         <Atom name="CB" type="2C" charge="0.2117"/>
+         <Atom name="HB2" type="H1" charge="0.0352"/>
+         <Atom name="HB3" type="H1" charge="0.0352"/>
+         <Atom name="OG" type="OH" charge="-0.6546"/>
+         <Atom name="HG" type="HO" charge="0.4275"/>
+         <Atom name="C" type="C" charge="0.5973"/>
+         <Atom name="O" type="O" charge="-0.5679"/>
+         <Bond atomName1="HM1" atomName2="CM"/>
+         <Bond atomName1="CM" atomName2="HM2"/>
+         <Bond atomName1="CM" atomName2="HM3"/>
+         <Bond atomName1="CM" atomName2="CT"/>
+         <Bond atomName1="CT" atomName2="OT"/>
+         <Bond atomName1="CT" atomName2="N"/>
+         <Bond atomName1="N" atomName2="H"/>
+         <Bond atomName1="N" atomName2="CA"/>
+         <Bond atomName1="CA" atomName2="HA"/>
+         <Bond atomName1="CA" atomName2="CB"/>
+         <Bond atomName1="CA" atomName2="C"/>
+         <Bond atomName1="CB" atomName2="HB2"/>
+         <Bond atomName1="CB" atomName2="HB3"/>
+         <Bond atomName1="CB" atomName2="OG"/>
+         <Bond atomName1="OG" atomName2="HG"/>
+         <Bond atomName1="C" atomName2="O"/>
+         <ExternalBond atomName="C"/>
+    </Residue>
+    <Residue name="THC">
+        <!-- Not what you're thinking. It's N-acetylthreonine -->
+        <Atom name="HM1" type="HC" charge="0.1123"/>
+        <Atom name="CM" type="CT" charge="-0.3662"/>
+        <Atom name="HM2" type="HC" charge="0.1123"/>
+        <Atom name="HM3" type="HC" charge="0.1123"/>
+        <Atom name="CT" type="C" charge="0.5972"/>
+        <Atom name="OT" type="O" charge="-0.5679"/>
+
+        <Bond atomName1="HM1" atomName2="CM"/>
+        <Bond atomName1="CM" atomName2="HM2"/>
+        <Bond atomName1="CM" atomName2="HM3"/>
+        <Bond atomName1="CM" atomName2="CT"/>
+        <Bond atomName1="CT" atomName2="OT"/>
+        <Bond atomName1="CT" atomName2="N"/>
+     <Atom name="N" type="N" charge="-0.4157"/>
+     <Atom name="H" type="H" charge="0.2719"/>
+     <Atom name="CA" type="CX" charge="-0.0389"/>
+     <Atom name="HA" type="H1" charge="0.1007"/>
+     <Atom name="CB" type="3C" charge="0.3654"/>
+     <Atom name="HB" type="H1" charge="0.0043"/>
+     <Atom name="CG2" type="CT" charge="-0.2438"/>
+     <Atom name="HG21" type="HC" charge="0.0642"/>
+     <Atom name="HG22" type="HC" charge="0.0642"/>
+     <Atom name="HG23" type="HC" charge="0.0642"/>
+     <Atom name="OG1" type="OH" charge="-0.6761"/>
+     <Atom name="HG1" type="HO" charge="0.4102"/>
+     <Atom name="C" type="C" charge="0.5973"/>
+     <Atom name="O" type="O" charge="-0.5679"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="CB"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="CB" atomName2="HB"/>
+     <Bond atomName1="CB" atomName2="CG2"/>
+     <Bond atomName1="CB" atomName2="OG1"/>
+     <Bond atomName1="CG2" atomName2="HG21"/>
+     <Bond atomName1="CG2" atomName2="HG22"/>
+     <Bond atomName1="CG2" atomName2="HG23"/>
+     <Bond atomName1="OG1" atomName2="HG1"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
+    <Residue name="3NF">
+        <!-- N-acetyltyrosine -->
+        <Atom name="HM1" type="HC" charge="0.1123"/>
+        <Atom name="CM" type="CT" charge="-0.3662"/>
+        <Atom name="HM2" type="HC" charge="0.1123"/>
+        <Atom name="HM3" type="HC" charge="0.1123"/>
+        <Atom name="CT" type="C" charge="0.5972"/>
+        <Atom name="OT" type="O" charge="-0.5679"/>
+
+        <Bond atomName1="HM1" atomName2="CM"/>
+        <Bond atomName1="CM" atomName2="HM2"/>
+        <Bond atomName1="CM" atomName2="HM3"/>
+        <Bond atomName1="CM" atomName2="CT"/>
+        <Bond atomName1="CT" atomName2="OT"/>
+        <Bond atomName1="CT" atomName2="N"/>
+     <Atom name="N" type="N" charge="-0.4157"/>
+     <Atom name="H" type="H" charge="0.2719"/>
+     <Atom name="CA" type="CX" charge="-0.0014"/>
+     <Atom name="HA" type="H1" charge="0.0876"/>
+     <Atom name="CB" type="CT" charge="-0.0152"/>
+     <Atom name="HB2" type="HC" charge="0.0295"/>
+     <Atom name="HB3" type="HC" charge="0.0295"/>
+     <Atom name="CG" type="CA" charge="-0.0011"/>
+     <Atom name="CD1" type="CA" charge="-0.1906"/>
+     <Atom name="HD1" type="HA" charge="0.1699"/>
+     <Atom name="CE1" type="CA" charge="-0.2341"/>
+     <Atom name="HE1" type="HA" charge="0.1656"/>
+     <Atom name="CZ" type="C" charge="0.3226"/>
+     <Atom name="OH" type="OH" charge="-0.5579"/>
+     <Atom name="HH" type="HO" charge="0.3992"/>
+     <Atom name="CE2" type="CA" charge="-0.2341"/>
+     <Atom name="HE2" type="HA" charge="0.1656"/>
+     <Atom name="CD2" type="CA" charge="-0.1906"/>
+     <Atom name="HD2" type="HA" charge="0.1699"/>
+     <Atom name="C" type="C" charge="0.5973"/>
+     <Atom name="O" type="O" charge="-0.5679"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="CB"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="CB" atomName2="HB2"/>
+     <Bond atomName1="CB" atomName2="HB3"/>
+     <Bond atomName1="CB" atomName2="CG"/>
+     <Bond atomName1="CG" atomName2="CD1"/>
+     <Bond atomName1="CG" atomName2="CD2"/>
+     <Bond atomName1="CD1" atomName2="HD1"/>
+     <Bond atomName1="CD1" atomName2="CE1"/>
+     <Bond atomName1="CE1" atomName2="HE1"/>
+     <Bond atomName1="CE1" atomName2="CZ"/>
+     <Bond atomName1="CZ" atomName2="OH"/>
+     <Bond atomName1="CZ" atomName2="CE2"/>
+     <Bond atomName1="OH" atomName2="HH"/>
+     <Bond atomName1="CE2" atomName2="HE2"/>
+     <Bond atomName1="CE2" atomName2="CD2"/>
+     <Bond atomName1="CD2" atomName2="HD2"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
+    <Residue name="PRELIM_FME">
+        <!-- Formylmethionine, hacked from combination of ff14sb MET and
+             Antechamber parameterisation of free FME -->
+        <Atom charge="0.6669" name="CN" type="c"/>
+        <Atom charge="-0.5691" name="O1" type="o"/>
+        <Atom charge="-0.0098" name="HCN" type="h5"/>
+     <Atom name="N" type="N" charge="-0.5037"/>
+     <Atom name="H" type="H" charge="0.2719"/>
+     <Atom name="CA" type="CX" charge="-0.0237"/>
+     <Atom name="HA" type="H1" charge="0.088"/>
+     <Atom name="CB" type="2C" charge="0.0342"/>
+     <Atom name="HB2" type="HC" charge="0.0241"/>
+     <Atom name="HB3" type="HC" charge="0.0241"/>
+     <Atom name="CG" type="2C" charge="0.0018"/>
+     <Atom name="HG2" type="H1" charge="0.044"/>
+     <Atom name="HG3" type="H1" charge="0.044"/>
+     <Atom name="SD" type="S" charge="-0.2737"/>
+     <Atom name="CE" type="CT" charge="-0.0536"/>
+     <Atom name="HE1" type="H1" charge="0.0684"/>
+     <Atom name="HE2" type="H1" charge="0.0684"/>
+     <Atom name="HE3" type="H1" charge="0.0684"/>
+     <Atom name="C" type="C" charge="0.5973"/>
+     <Atom name="O" type="O" charge="-0.5679"/>
+     <Bond atomName1="N" atomName2="CN"/>
+     <Bond atomName1="CN" atomName2="O1"/>
+     <Bond atomName1="CN" atomName2="HCN"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="CB"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="CB" atomName2="HB2"/>
+     <Bond atomName1="CB" atomName2="HB3"/>
+     <Bond atomName1="CB" atomName2="CG"/>
+     <Bond atomName1="CG" atomName2="HG2"/>
+     <Bond atomName1="CG" atomName2="HG3"/>
+     <Bond atomName1="CG" atomName2="SD"/>
+     <Bond atomName1="SD" atomName2="CE"/>
+     <Bond atomName1="CE" atomName2="HE1"/>
+     <Bond atomName1="CE" atomName2="HE2"/>
+     <Bond atomName1="CE" atomName2="HE3"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
+
+  </Residues>
+  <HarmonicBondForce>
+    <Bond k="298068.1599999999" length="0.1379" type1="c" type2="N"/>
+  </HarmonicBondForce>
+  <HarmonicAngleForce>
+    <Angle angle="2.1476276445790226" k="952.2784" type1="N" type2="c" type3="o"/>
+    <Angle angle="1.95756128903684" k="531.368" type1="h5" type2="c" type3="N"/>
+    <Angle angle="2.1064378742319563" k="546.4304" type1="c" type2="N" type3="CX"/>
+    <Angle angle="2.051634535719334" k="407.52160000000003" type1="c" type2="N" type3="H"/>
+  </HarmonicAngleForce>
+  <PeriodicTorsionForce>
+    <Proper k1="0.41840000000000005" k2="0.7112800000000001" k3="4.26768" periodicity1="4" periodicity2="3" periodicity3="1" phase1="3.141592653589793" phase2="0.0" phase3="3.141592653589793" type1="2C" type2="CX" type3="N" type4="c"/>
+    <Proper k1="1.63176" k2="2.67776" periodicity1="2" periodicity2="1" phase1="3.141592653589793" phase2="0.0" type1="C" type2="CX" type3="N" type4="c"/>
+    <Proper k1="0.0" periodicity1="2" phase1="3.141592653589793" type1="H1" type2="CX" type3="N" type4="c"/>
+    <Proper k1="10.46" periodicity1="2" phase1="3.141592653589793" type1="o" type2="c" type3="N" type4="CX"/>
+    <Proper k1="10.46" k2="8.368" periodicity1="2" periodicity2="1" phase1="3.141592653589793" phase2="0.0" type1="o" type2="c" type3="N" type4="H"/>
+    <Proper k1="10.46" periodicity1="2" phase1="3.141592653589793" type1="h5" type2="c" type3="N" type4="CX"/>
+    <Proper k1="10.46" periodicity1="2" phase1="3.141592653589793" type1="h5" type2="c" type3="N" type4="H"/>
+    <Improper k1="4.6024" periodicity1="2" phase1="3.141592653589793" type1="N" type2="c" type3="CX" type4="H"/>
+    <Improper k1="43.932" periodicity1="2" phase1="3.141592653589793" type1="c" type2="h5" type3="N" type4="o"/>
+  </PeriodicTorsionForce>
+</ForceField>
