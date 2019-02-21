@@ -1,0 +1,16 @@
+<!-- Hand-approximation based on SF4 from Moriarty & Case parameterisations -->
+
+<ForceField>
+    <Residues>
+        <Residue name="CCD_FES">
+          <Atom charge="0.429" name="FE1" type="FT"/>
+          <Atom charge="0.429" name="FE2" type="FT"/>
+          <Atom charge="-0.429" name="S1" type="ST"/>
+          <Atom charge="-0.429" name="S2" type="ST"/>
+          <Bond atomName1="FE1" atomName2="S1"/>
+          <Bond atomName1="FE1" atomName2="S2"/>
+          <Bond atomName1="FE2" atomName2="S2"/>
+          <Bond atomName1="FE2" atomName2="S1"/>
+        </Residue>
+    </Residues>
+</ForceField>
