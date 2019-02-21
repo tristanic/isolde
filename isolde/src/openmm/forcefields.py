@@ -18,10 +18,13 @@ _forcefield_files = {
         'tip3p_HFE_multivalent.xml', # Metal ions
         'tip3p_IOD_multivalent.xml', # Metal ions
         'gaff2.xml',                 # General AMBER force field
+        'lipid17.xml',               # common lipids
         # 'all_modrna08.xml',          # <BUGGY/BROKEN> Naturally occurring modified RNA bases. DOI: 10.1021/ct600329w
-        'mse.xml',
+        'mse.xml',                   # Approximation (same charges as MET)
+        'termods.xml',                   # Various chain-terminal residue modifications
         'glycam_all.xml',            # GLYCAM06 force field
         'combined_ccd.xml',          # General ligands (Nigel Moriarty / Dave Case)
+        'FES.xml',                   # based on SF4 from Moriarty/Case set
         'bryce_set.xml',             # A small collection of ligands and PTMs (most notably ATP/GDP/NAD(P)(H)/FAD(H)) from http://research.bmh.manchester.ac.uk/bryce/amber
         'ptms.xml',                  # Post-translational modifications from ares.tamu.ed/FFPTM DOI: 10.1021/ct400556v
         'truncated_aa.xml',          # Artifical amino acid "stubs" to support common truncations used in model building
