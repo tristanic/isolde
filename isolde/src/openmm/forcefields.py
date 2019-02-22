@@ -18,6 +18,7 @@ _forcefield_files = {
         'tip3p_HFE_multivalent.xml', # Metal ions
         'tip3p_IOD_multivalent.xml', # Metal ions
         'gaff2.xml',                 # General AMBER force field
+        'CDL.xml',                   # Cardiolipin
         'lipid17.xml',               # common lipids
         # 'all_modrna08.xml',          # <BUGGY/BROKEN> Naturally occurring modified RNA bases. DOI: 10.1021/ct600329w
         'mse.xml',                   # Approximation (same charges as MET)
