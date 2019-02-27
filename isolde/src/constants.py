@@ -48,6 +48,7 @@ class _Defaults:
         'OPENMM_TIME_UNIT':           unit.picoseconds,
         'OPENMM_DIPOLE_UNIT':         unit.debye,
         'OPENMM_TEMPERATURE_UNIT':    unit.kelvin,
+        'OPENMM_CHARGE_UNIT':         unit.elementary_charge,
 
         ###
         # Simulation parameters
