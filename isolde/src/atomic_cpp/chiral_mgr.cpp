@@ -72,8 +72,19 @@ Chiral_Center* Chiral_Mgr::get_chiral(Atom* center, bool create)
 Chiral_Center* Chiral_Mgr::_new_chiral(Atom* center)
 {
     std::array<Atom*, 3> substituents;
+
+    const auto rit = _defs.find(center->residue()->name());
+    if ( rit == _defs.end() )
+        return nullptr;
+    const auto ait = rit->second.find(std::string(center->name()));
+    if ( ait == rit->second.end() )
+        return nullptr;
+
+    const auto& def = ait->second;
+
+
     const auto& neighbors = center->neighbors();
-    const auto& def = get_chiral_def(center->residue()->name(), center->name());
+    //const auto& def = get_chiral_def(center->residue()->name(), center->name());
 
     const auto& subnames = def.substituents;
     size_t i = 0;
