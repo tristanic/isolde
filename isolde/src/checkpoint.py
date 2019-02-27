@@ -34,6 +34,7 @@ class CheckPoint:
         sm = self.sim_manager = isolde.sim_manager
         sc = self.sim_construct = sm.sim_construct
         atoms = self.mobile_atoms = sc.mobile_atoms
+        heavy_atoms = self.mobile_heavy_atoms = sc.mobile_heavy_atoms
         from . import session_extensions as sx
 
         pr_m = self.position_restraint_mgr = sx.get_position_restraint_mgr(structure)
@@ -56,7 +57,7 @@ class CheckPoint:
             'enableds':             prs.enableds
         }
 
-        chirals = self.saved_chirals = cr_m.get_restraints_by_atoms(atoms)
+        chirals = self.saved_chirals = cr_m.get_restraints_by_atoms(heavy_atoms)
         self.saved_cr_properties = {
             'spring_constants':     chirals.spring_constants,
             'enableds':             chirals.enableds,
@@ -107,6 +108,7 @@ class CheckPoint:
         # just disable all restraints, then re-enable only those that were
         # enabled at the checkpoint.
         atoms = self.mobile_atoms
+        heavy_atoms = self.mobile_heavy_atoms
 
         pr_m = self.position_restraint_mgr
         saved_prs = self.saved_prs
@@ -117,7 +119,7 @@ class CheckPoint:
 
         cr_m = self.chiral_restraint_mgr
         saved_chirals = self.saved_chirals
-        all_chirals = cr_m.get_restraints_by_atoms(atoms)
+        all_chirals = cr_m.get_restraints_by_atoms(heavy_atoms)
         all_chirals.enableds = False
         for prop, val in self.saved_cr_properties.items():
             setattr(saved_chirals, prop, val)

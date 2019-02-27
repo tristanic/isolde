@@ -400,6 +400,17 @@ class Sim_Construct:
         return self._mobile_atoms
 
     @property
+    def mobile_heavy_atoms(self):
+        '''
+        A :py:class:`chimerax.Atoms` instance containing the non-hydrogen mobile
+        atoms, sorted in the same order as :attr:`model.residues.atoms`
+        '''
+        if not hasattr(self, '_mobile_heavy_atoms'):
+            ma = self.mobile_atoms
+            self._mobile_heavy_atoms = ma[ma.element_names != 'H']
+        return self._mobile_heavy_atoms
+
+    @property
     def mobile_residues(self):
         '''
         A :py:class:`chimerax.Residues` instance containing the mobile residues.
@@ -745,7 +756,7 @@ class Sim_Manager:
             sh.add_amber_cmap_torsions(ramas)
 
         cr_m = self.chiral_restraint_mgr
-        crs = cr_m.add_restraints_by_atoms(sc.mobile_atoms)
+        crs = cr_m.add_restraints_by_atoms(sc.mobile_heavy_atoms)
         # crs = crs.restrict_to_sel(sc.all_atoms)
         sh.add_dihedral_restraints(crs)
         uh.append((cr_m, cr_m.triggers.add_handler('changes', self._dihe_r_changed_cb)))
