@@ -2,6 +2,19 @@
 General tools for working with and manipulating OpenMM forcefields.
 '''
 
+class Template_Mgr:
+    def __init__(self):
+        from collections import defaultdict
+        self._model_to_templates = defaultdict(dict)
+
+    def assign_template_to_residue(self, residue, template_name):
+        s = r.structure
+        self._model_to_template[s][r] = template_name
+
+    def template_dict(self, model):
+        return self._model_to_template[model]
+
+
 def delete_extraneous_hydrogens(residue, template):
     '''
     Addition of hydrogens to a model is still something of a black art,
@@ -13,19 +26,19 @@ def delete_extraneous_hydrogens(residue, template):
     '''
     if len(residue.atoms) == len(template.atoms):
         return
-    import networkx
-    rn = nx.Graph()
-    rn.add_nodes_from(residue.atoms)
-    rn.add_edges_from([b.atoms for b in residue.atoms.intra_bonds])
+    rn = residue_graph(residue)
+    tn = template_graph(template)
 
-    tn = nx.Graph()
-    tatoms = template.atoms
-    tn.add_nodes_from([a.name for a in tatoms])
-    tn.add_edges_from([(tatoms[a1].name, tatoms[a2].name) for (a1, a2) in template.bonds])
-
+    import networkx as nx
     gm = nx.isomorphism.GraphMatcher(rn, tn)
+    sg = None
     for sg in gm.subgraph_isomorphisms_iter():
         break
+
+    if not sg:
+        raise TypeError('Template {} does not appear to match residue {}'.format(
+            template.name, residue.name
+        ))
 
     remainder = set(residue.atoms).difference(set(sg.keys()))
     for a in remainder:
@@ -51,12 +64,15 @@ def make_truncated_residue_template(residue, full_template):
         - the names of all heavy atoms in the residue must match their
           counterparts in the template
     '''
-    if not is_single_fragment(residue):
+    rn = residue_graph(residue)
+    tn = template_graph(full_template)
+
+    if not is_single_fragment(rn):
         raise TypeError('Partial residue must be a single fragment!')
     if not heavy_atom_names_match(residue, full_template):
         raise TypeError('To model a partial residue, the names of all heavy '
             'atoms must match their counterparts in the template!')
-    if any_incomplete_rings(residue, full_template):
+    if any_incomplete_rings(residue, tn):
         raise TypeError('Cannot model a partial ring!')
 
     keep_heavy_atom_names = set(residue.atoms[residue.atoms.element_names != 'H'].names)
@@ -81,10 +97,33 @@ def make_truncated_residue_template(residue, full_template):
         if names.issubset(new_template_atom_names):
             new_template.addBondByName(*names)
 
-    # AddH will almost invariably add extra hydrogens to the truncation point in 
+    # AddH will almost invariably add extra hydrogens to the truncation point in
     # truncated residues, so may as well delete those here
     delete_extraneous_hydrogens(residue, new_template)
     return new_template
+
+def residue_graph(residue):
+    '''
+    Make a :class:`networkx.Graph` representing the connectivity of a residue's
+    atoms.
+    '''
+    import networkx as nx
+    rn = nx.Graph()
+    rn.add_nodes_from(residue.atoms)
+    rn.add_edges_from([b.atoms for b in residue.atoms.intra_bonds])
+    return rn
+
+def template_graph(template):
+    '''
+    Make a :class:`networkx.Graph` representing the connectivity of an OpenMM
+    template.
+    '''
+    import networkx as nx
+    tn = nx.Graph()
+    tatoms = template.atoms
+    tn.add_nodes_from([a.name for a in tatoms])
+    tn.add_edges_from([(tatoms[a1].name, tatoms[a2].name) for (a1, a2) in template.bonds])
+    return tn
 
 def is_valid_partial_fragment(residue, template):
     '''
@@ -94,9 +133,9 @@ def is_valid_partial_fragment(residue, template):
     return (is_single_fragment(residue) and heavy_atoms_match(residue, template)
         and not any_incomplete_rings(residue, template))
 
-def any_incomplete_rings(residue, template):
+def any_incomplete_rings(residue, template_graph):
     atom_names = set(residue.atoms.names)
-    rings = find_cycles(template)
+    rings = find_cycles(template_graph)
     for ring in rings:
         ratoms = atom_names.intersection(ring)
         if len(ratoms) and not ratoms == ring:
@@ -104,13 +143,9 @@ def any_incomplete_rings(residue, template):
     return False
 
 
-def find_cycles(template):
+def find_cycles(template_graph):
     import networkx as nx
-    g = nx.Graph()
-    atoms = template.atoms
-    g.add_nodes_from([a.name for a in atoms])
-    g.add_edges_from([(atoms[a1].name, atoms[a2].name) for (a1, a2) in template.bonds])
-    return [set(alist) for alist in nx.cycle_basis(g)]
+    return [set(alist) for alist in nx.cycle_basis(template_graph)]
 
 # def find_cycles(residue):
 #     import networkx as nx
@@ -125,18 +160,23 @@ def heavy_atom_names_match(residue, template):
     return (residue_names.issubset(template_names))
 
 
-def is_single_fragment(residue):
-    all_atoms = set(residue.atoms)
-    traversed_atoms = set()
-    _traverse_residue(residue.atoms[0], all_atoms, traversed_atoms)
-    # return (traversed_atoms == all_atoms)
-    if traversed_atoms != all_atoms:
-        return False
-    return True
+def is_single_fragment(residue_graph):
+    import nx
+    num_subgraphs = len(list(nx.connected_components(residue_graph)))
+    return (num_subgraphs == 1)
 
-def _traverse_residue(atom, all_atoms, traversed_atoms):
-    traversed_atoms.add(atom)
-    for a in atom.neighbors:
-        if a not in all_atoms or a in traversed_atoms:
-            continue
-        _traverse_residue(a, all_atoms, traversed_atoms)
+    #
+    # all_atoms = set(residue.atoms)
+    # traversed_atoms = set()
+    # _traverse_residue(residue.atoms[0], all_atoms, traversed_atoms)
+    # # return (traversed_atoms == all_atoms)
+    # if traversed_atoms != all_atoms:
+    #     return False
+    # return True
+
+# def _traverse_residue(atom, all_atoms, traversed_atoms):
+#     traversed_atoms.add(atom)
+#     for a in atom.neighbors:
+#         if a not in all_atoms or a in traversed_atoms:
+#             continue
+#         _traverse_residue(a, all_atoms, traversed_atoms)
