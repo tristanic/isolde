@@ -7,49 +7,6 @@ PRODUCTION EQUILIBRIUM SIMULATIONS. -->
     <DateGenerated>2019-02-21</DateGenerated>
   </Info>
   <Residues>
-    <!-- <Residue name="PRELIM_FME">
-      <Atom charge="-0.6139" name="N" type="ns"/>
-      <Atom charge="0.6669" name="CN" type="c"/>
-      <Atom charge="-0.5691" name="O1" type="o"/>
-      <Atom charge="0.0077" name="CA" type="c3"/>
-      <Atom charge="-0.0604" name="CB" type="c3"/>
-      <Atom charge="0.0447" name="CG" type="c3"/>
-      <Atom charge="-0.4122" name="SD" type="ss"/>
-      <Atom charge="0.01" name="CE" type="c3"/>
-      <Atom charge="0.8956" name="C" type="c"/>
-      <Atom charge="-0.8368" name="O" type="o"/>
-      <Atom charge="-0.8368" name="OXT" type="o"/>
-      <Atom charge="0.2915" name="H" type="hn"/>
-      <Atom charge="-0.0098" name="HCN" type="h5"/>
-      <Atom charge="0.0497" name="HA" type="h1"/>
-      <Atom charge="0.0542" name="HB2" type="hc"/>
-      <Atom charge="0.0542" name="HB3" type="hc"/>
-      <Atom charge="0.0592" name="HG2" type="h1"/>
-      <Atom charge="0.0592" name="HG3" type="h1"/>
-      <Atom charge="0.049033" name="HE1" type="h1"/>
-      <Atom charge="0.049033" name="HE2" type="h1"/>
-      <Atom charge="0.049033" name="HE3" type="h1"/>
-      <Bond atomName1="N" atomName2="CN"/>
-      <Bond atomName1="N" atomName2="CA"/>
-      <Bond atomName1="N" atomName2="H"/>
-      <Bond atomName1="CN" atomName2="O1"/>
-      <Bond atomName1="CN" atomName2="HCN"/>
-      <Bond atomName1="CA" atomName2="CB"/>
-      <Bond atomName1="CA" atomName2="C"/>
-      <Bond atomName1="CA" atomName2="HA"/>
-      <Bond atomName1="CB" atomName2="CG"/>
-      <Bond atomName1="CB" atomName2="HB2"/>
-      <Bond atomName1="CB" atomName2="HB3"/>
-      <Bond atomName1="CG" atomName2="SD"/>
-      <Bond atomName1="CG" atomName2="HG2"/>
-      <Bond atomName1="CG" atomName2="HG3"/>
-      <Bond atomName1="SD" atomName2="CE"/>
-      <Bond atomName1="CE" atomName2="HE1"/>
-      <Bond atomName1="CE" atomName2="HE2"/>
-      <Bond atomName1="CE" atomName2="HE3"/>
-      <Bond atomName1="C" atomName2="O"/>
-      <Bond atomName1="C" atomName2="OXT"/>
-    </Residue> -->
     <Residue name="AYA">
         <!-- N-acetylalanine, by combining ff14sb ALA and ACE -->
         <Atom name="HM1" type="HC" charge="0.1123"/>
@@ -666,7 +623,7 @@ PRODUCTION EQUILIBRIUM SIMULATIONS. -->
      <Bond atomName1="C" atomName2="O"/>
      <ExternalBond atomName="C"/>
     </Residue>
-    <Residue name="PRELIM_FME">
+    <Residue name="FME">
         <!-- Formylmethionine, hacked from combination of ff14sb MET and
              Antechamber parameterisation of free FME -->
         <Atom charge="0.6669" name="CN" type="c"/>
