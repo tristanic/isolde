@@ -6,7 +6,7 @@ any dud entries. Requires parmed.
 # Incorrectly-parameterised residues
 _blacklist = set((
 'HOH', 'DIS', 'MTO', 'DOD', # Water
-'NH3', # Incorrectly protonated as NH4
+# 'NH3', # Incorrectly protonated as NH4
 'PI', '2HP', # Should be HPO4(2-), H2PO4(-), both PO4(3-)
 'SOH', # Should be HSO4-, modelled as SO42-
 ))
@@ -64,6 +64,7 @@ _obsolete = set((
 "0A3", "5HP", "MCE", "HPC", "HAD", "CNM", "YH", "AHA", "HEQ", "AB5", "LEP"
 ))
 
+_iron_sulfur = set(("SF4", "CYF"))
 
 _leap_files = {
 'FF14SB':   'leaprc.ff14sb.redq',
@@ -71,7 +72,7 @@ _leap_files = {
 'GAFF2':    'leaprc.gaff2',
 # 'DNA':      'leaprc.DNA.bsc1',
 # 'RNA':      'leaprc.RNA.OL3',
-'MODRNA08': 'leaprc.modrna08',
+# 'MODRNA08': 'leaprc.modrna08',
 'PHOSAA10': 'leaprc.phosaa10',
 'GLYCAM06': 'leaprc.GLYCAM_06j-1'
 }
@@ -177,10 +178,22 @@ def make_combined_forcefield(dirname, output_xml, resname_prefix=None):
     for name in fails:
         del file_dict[name]
 
+    aff = pmd.amber.AmberParameterSet()
+    for fp in file_dict.values():
+        frcmod = fp[1]
+        name = os.path.splitext(os.path.basename(frcmod))[0].upper()
+        try:
+            aff.load_parameters(frcmod)
+        except pmd.exceptions.ParameterError:
+            print('WARNING: Could not load parameters for {}. Removing this entry'
+                ' from the residue dictionary'.format(name))
+            del rdict[resname_prefix+name]
+    ff = pmd.openmm.OpenMMParameterSet.from_parameterset(aff)
 
-    ff = pmd.openmm.OpenMMParameterSet.from_parameterset(
-        pmd.amber.AmberParameterSet([fp[1] for fp in file_dict.values()])
-    )
+
+    # ff = pmd.openmm.OpenMMParameterSet.from_parameterset(
+    #     pmd.amber.AmberParameterSet([fp[1] for fp in file_dict.values()])
+    # )
     ff.residues = rdict
     ff.condense()
 

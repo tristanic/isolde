@@ -24,7 +24,8 @@ _forcefield_files = {
         'mse.xml',                   # Approximation (same charges as MET)
         'termods.xml',                   # Various chain-terminal residue modifications
         'glycam_all.xml',            # GLYCAM06 force field
-        'combined_ccd.xml',          # General ligands (Nigel Moriarty / Dave Case)
+        #'combined_ccd.xml',          # General ligands (Nigel Moriarty / Dave Case)
+        'moriarty_and_case.xml',     # General ligands (Nigel Moriarty / Dave Case)
         'FES.xml',                   # based on SF4 from Moriarty/Case set
         'bryce_set.xml',             # A small collection of ligands and PTMs (most notably ATP/GDP/NAD(P)(H)/FAD(H)) from http://research.bmh.manchester.ac.uk/bryce/amber
         'ptms.xml',                  # Post-translational modifications from ares.tamu.ed/FFPTM DOI: 10.1021/ct400556v

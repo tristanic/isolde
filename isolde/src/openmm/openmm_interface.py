@@ -2412,7 +2412,7 @@ def find_residue_templates(residues, template_names):
                 tname = find_glycan_template_name(sugar)
                 if tname in template_names:
                     templates[residues.index(sugar)] = tname
-        ccd_name = 'CCD_{}'.format(name)
+        ccd_name = 'MC_{}'.format(name)
         if ccd_name in template_names:
             indices = numpy.where(residues.names == name)[0]
             for i in indices:
