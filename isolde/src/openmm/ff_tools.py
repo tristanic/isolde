@@ -9,10 +9,22 @@ class Template_Mgr:
 
     def assign_template_to_residue(self, residue, template_name):
         s = r.structure
-        self._model_to_template[s][r] = template_name
+        self.template_dict(s)[r] = template_name
 
     def template_dict(self, model):
         return self._model_to_template[model]
+
+    def find_template(self, model, residue, forcefield):
+        td = self.template_dict(model)
+        tmpl = td.get(r, None)
+        if tmpl is not None:
+            # Double-check that it still matches. Set it to None if it doesn't.
+            pass
+        if tmpl is None:
+            # Find the matching template in the forcefield definition
+            pass
+
+
 
 
 def delete_extraneous_hydrogens(residue, template):
@@ -29,16 +41,7 @@ def delete_extraneous_hydrogens(residue, template):
     rn = residue_graph(residue)
     tn = template_graph(template)
 
-    import networkx as nx
-    gm = nx.isomorphism.GraphMatcher(rn, tn)
-    sg = None
-    for sg in gm.subgraph_isomorphisms_iter():
-        break
-
-    if not sg:
-        raise TypeError('Template {} does not appear to match residue {}'.format(
-            template.name, residue.name
-        ))
+    _, sg = find_maximal_isomorphous_fragment(rn, tn)
 
     remainder = set(residue.atoms).difference(set(sg.keys()))
     for a in remainder:
@@ -47,6 +50,63 @@ def delete_extraneous_hydrogens(residue, template):
     for a in remainder:
         a.delete()
 
+def find_maximal_isomorphous_fragment(residue_graph, template_graph):
+    '''
+    When a residue doesn't quite match its template, there can be various
+    explanations:
+
+    - the residue is incomplete (e.g. lacking hydrogens, or actually truncated)
+    - the hydrogen addition has misfired, adding too many or too few hydrogens
+    - this isn't actually the correct template for the residue
+
+    This method compares the graph representations of residue and template to
+    find the maximal overlap, returning a dict mapping nodes in the larger
+    to their equivalent in the smaller.
+
+    Args:
+        * residue_graph
+            - a :class:`networkx.Graph` object representing the residue atoms
+              present in the model (e.g. as built by :func:`residue_graph`)
+        * template_graph
+            - a :class:`networkx.Graph` object representing the residue atoms
+              present in the template (e.g. as built by :func:`template_graph`)
+
+    Returns:
+        * bool
+            - True if the residue is larger than or equal to the template,
+              False otherwise
+        * dict
+            - mapping of nodes in the larger graph (or the residue graph if the
+              sizes are equal) to their equivalent in the smaller
+    '''
+    from networkx import isomorphism as iso
+    if len(residue_graph) >= len(template_graph):
+        lg = residue_graph
+        sg = template_graph
+        residue_larger = True
+    else:
+        lg = template_graph
+        sg = residue_graph
+        residue_larger = False
+
+    gm = iso.GraphMatcher(lg, sg,
+            node_match=iso.categorical_node_match('element', None))
+    subgraph = None
+    # GraphMatcher will typically find multiple maximal subgraphs since we're
+    # filtering by element only, not by strict atom name. Since CCD and AMBER
+    # don't always agree on atom nomenclature (and ChimeraX hydrogen names may
+    # not necessarily match either) there is not much more we can do. Should be
+    # safe to just take the first.
+    for subgraph in gm.subgraph_isomorphisms_iter():
+        break
+
+    if (subgraph is None
+        or len(subgraph) <2
+        or len(subgraph)/len(lg) < 0.1
+        ):
+        raise TypeError('Residue does not appear to match template!')
+
+    return residue_larger, subgraph
 
 def make_truncated_residue_template(residue, full_template):
     '''
@@ -109,8 +169,10 @@ def residue_graph(residue):
     '''
     import networkx as nx
     rn = nx.Graph()
-    rn.add_nodes_from(residue.atoms)
-    rn.add_edges_from([b.atoms for b in residue.atoms.intra_bonds])
+    atoms = residue.atoms
+    rn.add_nodes_from(atoms)
+    nx.set_node_attributes(rn, {a: {'element': e} for a, e in zip(atoms, atoms.element_names)})
+    rn.add_edges_from([b.atoms for b in atoms.intra_bonds])
     return rn
 
 def template_graph(template):
@@ -122,6 +184,7 @@ def template_graph(template):
     tn = nx.Graph()
     tatoms = template.atoms
     tn.add_nodes_from([a.name for a in tatoms])
+    nx.set_node_attributes(tn, {a.name: {'element': a.element.symbol} for a in tatoms})
     tn.add_edges_from([(tatoms[a1].name, tatoms[a2].name) for (a1, a2) in template.bonds])
     return tn
 
@@ -142,41 +205,16 @@ def any_incomplete_rings(residue, template_graph):
             return True
     return False
 
-
 def find_cycles(template_graph):
     import networkx as nx
     return [set(alist) for alist in nx.cycle_basis(template_graph)]
-
-# def find_cycles(residue):
-#     import networkx as nx
-#     g = nx.Graph()
-#     g.add_nodes_from(residue.atoms)
-#     g.add_edges_from([b.atoms for b in residue.atoms.intra_bonds])
-#     return [set(alist) for alist in nx.cycle_basis(g)]
 
 def heavy_atom_names_match(residue, template):
     residue_names = set(residue.atoms[residue.atoms.element_names!='H'].names)
     template_names = set(a.name for a in template.atoms if a.element.symbol != 'H')
     return (residue_names.issubset(template_names))
 
-
 def is_single_fragment(residue_graph):
     import nx
     num_subgraphs = len(list(nx.connected_components(residue_graph)))
     return (num_subgraphs == 1)
-
-    #
-    # all_atoms = set(residue.atoms)
-    # traversed_atoms = set()
-    # _traverse_residue(residue.atoms[0], all_atoms, traversed_atoms)
-    # # return (traversed_atoms == all_atoms)
-    # if traversed_atoms != all_atoms:
-    #     return False
-    # return True
-
-# def _traverse_residue(atom, all_atoms, traversed_atoms):
-#     traversed_atoms.add(atom)
-#     for a in atom.neighbors:
-#         if a not in all_atoms or a in traversed_atoms:
-#             continue
-#         _traverse_residue(a, all_atoms, traversed_atoms)
