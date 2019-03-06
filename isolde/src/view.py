@@ -6,7 +6,7 @@
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
-def focus_on_coord(session, center, radius = 5.0, clip=True):
+def focus_on_coord(session, center, radius = 1.0, clip=True):
     '''
     Focus the main view on a coordinate, maintaining the current center of
     rotation method and optionally updating the near and far clipping planes.
@@ -41,7 +41,7 @@ def focus_on_coord(session, center, radius = 5.0, clip=True):
         cp.set_clip_position('far', center + radius*vd, cam)
 
 
-def focus_on_selection(session, atoms, pad=5.0, clip = True):
+def focus_on_selection(session, atoms, pad=1.0, clip = True):
     '''
     Focus the main view on a selecton of atoms, maintaining the current center
     of rotation method and optionally updating the near and far clipping
