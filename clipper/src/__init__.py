@@ -45,18 +45,20 @@ from .clipper_python.data32 import (
     F_sigF_float as F_sigF,
     F_sigF_ano_float as F_sigF_ano,
     I_sigI_float as I_sigI,
+    I_sigI_ano_float as I_sigI_ano,
     Phi_fom_float as Phi_fom,
     )
 
 # Array forms of HKL data
 from .clipper_python import HKL_data_Flag, HKL_data_Flag_bool
 from .clipper_python.data32 import (
-    HKL_data_ABCD_float as HKL_data_F_ABCD,
+    HKL_data_ABCD_float as HKL_data_ABCD,
     HKL_data_E_sigE_float as HKL_data_E_sigE,
     HKL_data_F_phi_float as HKL_data_F_phi,
     HKL_data_F_sigF_float as HKL_data_F_sigF,
     HKL_data_F_sigF_ano_float as HKL_data_F_sigF_ano,
     HKL_data_I_sigI_float as HKL_data_I_sigI,
+    HKL_data_I_sigI_ano_float as HKL_data_I_sigI_ano,
     HKL_data_Phi_fom_float as HKL_data_Phi_fom,
     )
 
