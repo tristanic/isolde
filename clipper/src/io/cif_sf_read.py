@@ -43,6 +43,9 @@ from .. import (
 _data_columns_to_data_types = {
     ('F_meas_au', 'F_meas_sigma_au'):                   (float, HKL_data_F_sigF),
     ('F_meas', 'F_meas_sigma'):                         (float, HKL_data_F_sigF),
+    ('pdbx_F_plus', 'pdbx_F_minus',
+     'pdbx_F_plus_sigma', 'pdbx_F_minus_sigma'):        (float, HKL_data_F_sigF_ano),
+
     ('pdbx_anom_difference',
      'pdbx_anom_difference_sigma'):                     (float, HKL_data_F_sigF),
     ('pdbx_anomalous_diff',
@@ -50,8 +53,8 @@ _data_columns_to_data_types = {
 
     ('intensity_meas', 'intensity_sigma'):              (float, HKL_data_I_sigI),
 
-    ('pdbx_I_minus', 'pdbx_I_minus_sigma',
-     'pdbx_I_plus', 'pdbx_I_plus_sigma'):               (float, HKL_data_I_sigI_ano),
+    ('pdbx_I_plus', 'pdbx_I_minus',
+     'pdbx_I_plus_sigma', 'pdbx_I_minus_sigma'):        (float, HKL_data_I_sigI_ano),
 
     ('pdbx_HL_A_iso', 'pdbx_HL_B_iso',
      'pdbx_HL_C_iso', 'pdbx_HL_D_iso'):                 (float, HKL_data_ABCD),
@@ -74,24 +77,18 @@ _data_columns_to_data_types = {
 
 }
 
-_refln_status_flags = {
-    'systematically_absent':    '-',    # Doesn't exist in the given space group
-    'unobserved':               '<',    # Too low to measure, but not systematically absent
-    'free':                     'f',    # Include in the R-free set
-    'cut_high':                 'h',    # Measured, but above the decided high resolution cutoff
-    'cut_low':                  'l',    # Measured, but below the decided low resolution cutoff
-    'unreliable':               'x',    # Unreliable measurement. Do not use.
-    'default':                  'o'     # Normal
-}
-
+_anomalous_data_columns = (
+    ('pdbx_F_plus', 'pdbx_F_minus', 'pdbx_F_plus_sigma', 'pdbx_F_minus_sigma'),
+    ('pdbx_I_plus', 'pdbx_I_minus', 'pdbx_I_plus_sigma', 'pdbx_I_minus_sigma')
+)
 
 
 def load_cif_sf(filename):
     '''
     Load a set of structure factors from a .cif file.
     '''
-    from chimerax.atomic.mmcif import get_mmcif_tables
-    table_list = get_mmcif_tables(filename, _cif_sf_table_names)
+    from chimerax.atomic.mmcif import get_cif_tables
+    table_list = get_cif_tables(filename, _cif_sf_table_names)
 
     tables = dict(zip(_cif_sf_table_names, table_list))
     metadata = {l: tables[l] for l in _metadata_tables}
@@ -123,7 +120,7 @@ def load_cif_sf(filename):
     # surprisingly small minority of structure factor cif files, but it's nice when
     # we can get it.
     if refln_info.has_field('d_resolution_high'):
-        res = float(refln_info.fields(('d_resolution_high',))[0])
+        res = float(refln_info.fields(('d_resolution_high',))[0][0])
     else:
         # If this turns out to be too slow, it could fairly easily be pushed
         # back to C++
@@ -138,7 +135,7 @@ def load_cif_sf(filename):
     hkl_info = HKL_info(spacegroup, cell, resolution, True)
 
     # OK, now we have all our vital information. Time to find all the data
-    data = {}
+    data = _parse_status(refln_table, hkl_info, cell, hkls)
     for column_names, type_spec in _data_columns_to_data_types.items():
         result = _cif_columns_to_clipper(refln_table, hkl_info, cell, hkls, column_names, type_spec)
         if result is not None:
@@ -153,9 +150,6 @@ def _get_miller_indices(table):
     hkls = numpy.array([[int(i) for i in row] for row in table.fields(headers)],
                         dtype=numpy.int32)
     return hkls
-
-
-
 
 def _cif_columns_to_clipper(table, hkl_info, cell, hkls, field_names, type_spec):
     import numpy
@@ -173,6 +167,61 @@ def _cif_columns_to_clipper(table, hkl_info, cell, hkls, field_names, type_spec)
             [[int(d) for d in row] for row in table.fields(field_names)],
             numpy.double
         )
+    if field_names in _anomalous_data_columns:
+        # Clipper's anomalous data types have a fifth covariance column, but
+        # this is not provided in the .cif file. Just set it to zero.
+        padded_data = numpy.empty((len(data), 5), numpy.double)
+        padded_data[:,:4] = data
+        padded_data[:,4] = 0
+        data = padded_data
     clipper_data = array_type(hkl_info, cell)
-    clipper_data.set_data(hkls, data)
+    try:
+        clipper_data.set_data(hkls, data)
+    except RuntimeError as e:
+        err_string = " Field names: {}; HKL array shape: {}; Data array shape: {}".format(
+            field_names, hkls.shape, data.shape
+        )
+        raise RuntimeError(str(e)+err_string)
     return clipper_data
+
+_refln_status_flags = {
+    'systematically_absent':    '-',    # Doesn't exist in the given space group
+    'unobserved':               '<',    # Too low to measure, but not systematically absent
+    'free':                     'f',    # Include in the R-free set
+    'cut_high':                 'h',    # Measured, but above the decided high resolution cutoff
+    'cut_low':                  'l',    # Measured, but below the decided low resolution cutoff
+    'unreliable':               'x',    # Unreliable measurement. Do not use.
+    'default':                  'o'     # Normal
+}
+
+
+
+def _parse_status(table, hkl_info, cell, hkls):
+    import numpy
+    status = table.fields(('status',))
+    n = len(hkls)
+    # Due to a quirk of Clipper's template instantiation, all HKL_data types
+    # import/export as double regardless of their actual data type.
+    free = numpy.zeros((n,1), numpy.double)
+    unreliable = numpy.zeros((n,1), numpy.double)
+    systematic_absences = numpy.zeros((n,1), numpy.double)
+    for i, s in enumerate(status):
+        s = s[0]
+        if s == 'o':
+            continue
+        elif s == '-':
+            systematic_absences[i] = 1
+        elif s == 'f':
+            free[i] = 1
+        elif s == 'x':
+            unreliable[i] = 1
+    c_free = HKL_data_Flag(hkl_info, cell)
+    c_unreliable = HKL_data_Flag_bool(hkl_info, cell)
+    c_systematic_absences = HKL_data_Flag_bool(hkl_info, cell)
+    c_free.set_data(hkls, free)
+    c_unreliable.set_data(hkls, unreliable)
+    c_systematic_absences.set_data(hkls, systematic_absences)
+    return {"Free set":     c_free,
+            "Unreliable":   c_unreliable,
+            "Systematic absences":  c_systematic_absences
+            }
