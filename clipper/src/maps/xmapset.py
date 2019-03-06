@@ -450,7 +450,7 @@ class XmapSet(MapSet_Base):
             ret = list(fsigfs.items())[0]
             return ret
         else:
-            choice = _f_sigf_chooser(list(fsigfs.keys()))
+            choice = self._f_sigf_chooser(list(fsigfs.keys()))
             if choice is None:
                 return None
             return (choice, fsigfs[choice])
