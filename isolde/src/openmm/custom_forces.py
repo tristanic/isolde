@@ -1222,3 +1222,38 @@ class GBSAForce(customgbforces.GBSAGBn2Force):
 
         self.setNonbondedMethod(nonbonded_method)
         self.update_needed = False
+
+    def addParticles(self, params):
+        """
+        TEMPORARY - REMOVE ONCE NEW OPENMM BUILD ADDED TO CHIMERAX
+        Add a set of particles to the force
+
+        Particles are added in order. The total number of particles added to the
+        force must match the number of particles in the system.
+
+        Parameters
+        ----------
+        params : list or numpy array
+            A (natoms * npar) dimensional array of parameters to add to the
+            force. The meaning of the parameters depends on the model. All
+            parameters should be simple floating-point values in OpenMM's
+            default units.
+
+        Returns
+        -------
+        None
+        """
+        if isinstance(params, list):
+            params = numpy.array(params)
+        else:
+            params = copy.deepcopy(params)
+
+        if _have_numpy:
+            params[:,self.RADIUS_ARG_POSITION] -= self.OFFSET
+            params[:,self.SCREEN_POSITION] *= params[:,self.RADIUS_ARG_POSITION]
+            self.parameters.extend(params.tolist())
+        else:
+            for p in params:
+                p[self.RADIUS_ARG_POSITION] -= self.OFFSET
+                p[self.SCREEN_POSITION] *= p[self.RADIUS_ARG_POSITION]
+            self.parameters.extend(params)

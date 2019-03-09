@@ -2354,9 +2354,6 @@ class Sim_Handler:
             * params:
                 - a :py:class:`SimParams` instance
         '''
-        # Somewhat annoyingly, OpenMM doesn't store atomic charges in a
-        # nice accessible format. So, we have to pull it back out of the
-        # NonbondedForce term.
 
         gbsa_params = {
             'solventDielectric':    params.gbsa_solvent_dielectric,
@@ -2373,18 +2370,40 @@ class Sim_Handler:
         for f in system.getForces():
             if isinstance(f, NonbondedForce):
                 break
-        charges = []
+        n = f.getNumParticles()
+        params = numpy.empty((n, 6))
+
         for i in range(f.getNumParticles()):
-            charges.append(f.getParticleParameters(i)[0])
-            from .custom_forces import GBSAForce
+            params[i,0] = f.getParticleParameters(i)[0].value_in_unit(
+                defaults.OPENMM_CHARGE_UNIT
+            )
+        from .custom_forces import GBSAForce
         gbforce = self._gbsa_force = GBSAForce(**gbsa_params)
-        params = gbforce.getStandardParameters(top)
-        for charge, param in zip(charges, params):
-            gbforce.addParticle([charge, *param])
+        params[:,1:] = gbforce.getStandardParameters(top)
+        gbforce.addParticles(params)
         gbforce.finalize()
         system.addForce(gbforce)
-        #self.all_forces.append(gbforce)
 
+class Sim_Performance_Tracker:
+    c = 0
+    def __init__(self, sim_handler, report_interval=50):
+        self._ri = report_interval
+        self._sh = sim_handler
+    def start(self):
+        from time import time
+        self._start_time = time()
+        self._h = self._sh.triggers.add_handler('coord update', self._update)
+    def _update(self, *_):
+        self.c = (self.c+1)%self._ri
+        if self.c == 0:
+            from time import time
+            interval = (time()-self._start_time)/self._ri
+            print('Average time per coord update: {:.2f} ms ({:.2f} updates/s)'.format(interval*1000, 1/interval))
+            self._start_time = time()
+    def stop(self):
+        if self._h is not None:
+            self._sh.triggers.remove_handler(self._h)
+            self._h=None
 
 def find_residue_templates(residues, template_names):
     '''
