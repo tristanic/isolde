@@ -74,7 +74,7 @@ with the surroundings.
       <Library>atomstruct</Library>
       <Library>pyinstance</Library>
       <CompileArgument platform="mac">-mmacosx-version-min=10.12</CompileArgument>
-      <IncludeDir platform="mac">/home/tic20/anaconda3/pkgs/openmm-7.2.2-py36_1/include</IncludeDir>
+      <IncludeDir platform="mac">/Users/tic20/anaconda3/envs/openmm73/include</IncludeDir>
       <IncludeDir platform="linux">/home/tic20/anaconda3/envs/openmm73/include</IncludeDir>
       <IncludeDir platform="windows">C:\Users\tic20\Anaconda3\envs\openmm73\include</IncludeDir>
       <IncludeDir>src/deps/liblbfgs/include</IncludeDir>
