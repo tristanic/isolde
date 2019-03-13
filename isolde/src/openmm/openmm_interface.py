@@ -1257,7 +1257,7 @@ class Sim_Handler:
         ''' Get/set the simulation temperature in Kelvin. '''
         if not self.sim_running:
             return self._temperature
-        t = self.sim_handler._simulation.integrator.getTemperature()
+        t = self._simulation.integrator.getTemperature()
         return t.value_in_unit(defaults.OPENMM_TEMPERATURE_UNIT)
 
     @temperature.setter
@@ -2130,6 +2130,7 @@ class Sim_Handler:
         # interfere with other instances of the same force.
         suffix = str(len(self.mdff_forces)+1)
         f = Map_Force(data, region_tf.matrix, suffix, units='angstroms')
+        f.setForceGroup(1)
         self.all_forces.append(f)
         self._system.addForce(f)
         self.mdff_forces[v] = f
@@ -2196,6 +2197,29 @@ class Sim_Handler:
             f.set_global_k(k, context = context)
         else:
             f.set_global_k(k)
+            self.context_reinit_needed()
+
+    def set_mdff_scale_factor(self, volume, scale_factor):
+        '''
+        Adjust the dimensions of the mdff map in the simulation. This is
+        typically used to optimize the scaling in the course of a single
+        simulation. The final scale should be applied back to the original map,
+        so that in future simulations the scale factor is 1.0.
+
+        Args:
+            * volume:
+                - the :py:class:`chimerax.Volume` instance that was used to
+                  create the target force
+            * scale_factor:
+                - the new scale factor (dimensionless). Changing the scale
+                  factor by more than 1-2% in a single go is dangerous!
+        '''
+        f = self.mdff_forces[volume]
+        if self.sim_running:
+            context = self.thread_handler.context
+            f.set_map_scale_factor(scale_factor, context=context)
+        else:
+            f.set_map_scale_factor(scale_factor)
             self.context_reinit_needed()
 
     def update_mdff_atoms(self, mdff_atoms, volume):
@@ -2383,6 +2407,149 @@ class Sim_Handler:
         gbforce.addParticles(params)
         gbforce.finalize()
         system.addForce(gbforce)
+
+class Map_Scale_Optimizer:
+    def __init__(self, sim_manager):
+        import numpy
+        sm = self.sim_manager = sim_manager
+        self.isolde = sm.isolde
+        sh = self.sim_handler = sm.sim_handler
+        context = self.context = sh._context
+        volumes = self._volumes = list(sh.mdff_forces.keys())
+        self._original_scales = {v: numpy.array(v.data.step) for v in volumes}
+
+    def optimize_map_scales(self, tolerance=0.05):
+        '''
+        Optimise the dimensional scaling of the MDFF map(s), by minimising the
+        conformational energy as a function of scaling.
+        '''
+        import numpy
+        self.tolerance = tolerance
+        sm = self.sim_manager
+        sh = self.sim_handler
+        self.context = sh._context
+        self._original_temperature = sh.temperature
+        self._original_minimize = sh.minimize
+
+        self._search_index = 0
+        self._line_search_down = numpy.linspace(1,0.9,num=11)
+        self._line_search_up = numpy.linspace(1,1.1,num=11)
+        self._search_down_vals = []
+        self._search_up_vals = []
+        e = self._last_energy = self.get_current_energy()
+
+        from ..delayed_reaction import delayed_reaction
+        delayed_reaction(sh.triggers, 'coord update', self._start, [], self._energy_converged,
+            self._initial_min_and_start, [])
+
+    def _start(self):
+        sh = self.sim_handler
+        sh.minimize=False
+        sh.temperature = 0
+        sh.thread_handler.minimize(1e-4, max_iterations=10000)
+        sh.pause=False
+
+    def _revert_sim_conditions(self):
+        sh = self.sim_handler
+        sh.minimize = self._original_minimize
+        sh.temperature = self._original_temperature
+
+    def get_current_energy(self):
+        from simtk.openmm import unit
+        state = self.context.getState(getEnergy=True, groups=set([0]))
+        return state.getPotentialEnergy().value_in_unit(unit.kilojoule_per_mole)
+
+    def _energy_converged(self):
+        current_e = self.get_current_energy()
+        if abs(self._last_energy - current_e) < self.tolerance:
+            return True
+        self._last_energy = current_e
+        return False
+
+    def _initial_min_and_start(self):
+        from ..checkpoint import CheckPoint
+        self._reference_checkpoint = CheckPoint(self.sim_manager.isolde)
+        self._line_search('down', self._search_index)
+
+    def _update_all_scales(self, scale):
+        sh = self.sim_handler
+        for v in self._volumes:
+            v.data.set_step(self._original_scales[v]*scale)
+            v.update_drawings()
+            sh.set_mdff_scale_factor(v, scale)
+
+
+    def _line_search(self, direction, index):
+        if direction=='down':
+            search_vals = self._line_search_down
+            e_vals = self._search_down_vals
+        else:
+            search_vals = self._line_search_up
+            e_vals = self._search_up_vals
+        if index >=len(search_vals):
+            if direction=='down':
+                self._reference_checkpoint.revert()
+                self._update_all_scales(1)
+                self._line_search('up', 0)
+                return
+            else:
+                self._finalize()
+                return
+        e_vals.append(self.get_current_energy())
+        scale = search_vals[index]
+        sh = self.sim_handler
+        from ..delayed_reaction import delayed_reaction
+        delayed_reaction(sh.triggers, 'coord update',
+            self._update_all_scales, [scale],
+            self._energy_converged,
+            self._line_search, [direction, index+1])
+
+    def _go_smoothly_to_scale(self, current_scale, target_scale):
+        from ..delayed_reaction import delayed_reaction
+        sh = self.sim_handler
+        diff = current_scale-target_scale
+        if abs(diff) < 0.01:
+            delayed_reaction(sh.triggers, 'coord update',
+                self._update_all_scales, [target_scale],
+                self._energy_converged,
+                self._revert_sim_conditions, [])
+            return
+        else:
+            if diff <0:
+                new_scale = current_scale + 0.01
+            else:
+                new_scale = current_scale - 0.01
+            delayed_reaction(sh.triggers, 'coord update',
+                self._update_all_scales, [new_scale],
+                self._energy_converged,
+                self._go_smoothly_to_scale, [new_scale, target_scale])
+
+
+    def _finalize(self):
+        import numpy
+        x_vals = self._final_scales = list(self._line_search_down[::-1])+list(self._line_search_up[1:])
+        y_vals = self._final_energies = numpy.array(self._search_down_vals[::-1]+self._search_up_vals[1:])
+        # from scipy.interpolate import UnivariateSpline
+        # spline = self.spline = UnivariateSpline(x_vals, y_vals)
+        # from scipy.optimize import minimize
+        # final_scale = minimize(spline, 1, bounds=[[min(x_vals), max(x_vals)]]).x[0]
+        min_index = numpy.argmin(y_vals)
+        final_scale = x_vals[min_index]
+        from ..delayed_reaction import delayed_reaction
+        self._update_all_scales(1.0)
+        self._reference_checkpoint.revert()
+        print("Final map scale factor: {}".format(final_scale))
+        self._go_smoothly_to_scale(1.0, final_scale)
+        # self._update_all_scales(final_scale)
+        # self._revert_sim_conditions()
+
+
+
+
+
+
+
+
 
 class Sim_Performance_Tracker:
     c = 0

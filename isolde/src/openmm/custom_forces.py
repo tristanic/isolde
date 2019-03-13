@@ -164,12 +164,16 @@ class _Map_Force_Base(CustomCompoundBondForce):
         map_func = self._openmm_3D_function_from_volume(data)
 
         global_k_name = self._global_k_name = 'mdff_global_k_{}'.format(suffix)
+        scale_factor_name = self._map_scale_factor_name = 'mdff_scale_factor_{}'.format(suffix)
 
         energy_func = self._set_energy_function(suffix)
         self.setEnergyFunction(energy_func)
         #super().__init__(1, energy_func)
         self._map_potential_index = self.addTabulatedFunction(
             name = 'map_potential', function = map_func)
+        self._map_scale_factor_index = self.addGlobalParameter(
+            name=scale_factor_name, defaultValue=1.0
+        )
         self._global_k_index = self.addGlobalParameter(
             name = global_k_name, defaultValue = 1.0)
         self._individual_k_index = self.addPerBondParameter(
@@ -181,6 +185,10 @@ class _Map_Force_Base(CustomCompoundBondForce):
     @property
     def global_k_name(self):
         return self._global_k_name
+
+    @property
+    def map_scale_factor_name(self):
+        return self._map_scale_factor_name
 
     def _process_transform(self, tf, units):
         if type(tf) == Quantity:
@@ -229,6 +237,18 @@ class _Map_Force_Base(CustomCompoundBondForce):
         else:
             self.setGlobalParameterDefaultValue(self._global_k_index, k)
             self.update_needed = True
+
+    def set_map_scale_factor(self, scale_factor, context=None):
+        '''
+        Re-scale the map dimensions. Value of scale_factor should typically be
+        very close to 1.0.
+        '''
+        if context is not None:
+            context.setParameter(self._map_scale_factor_name, scale_factor)
+        else:
+            self.setGlobalParameterDefaultValue(self,_map_scale_factor_index, scale_factor)
+            self.update_needed = True
+
 
     def update_transform(self, transform, units):
         self._process_transform(transform, units)
@@ -364,7 +384,8 @@ class CubicInterpMapForce(_Map_Force_Base):
     def _set_energy_function(self, suffix):
         tf = self._transform
         # Transform xyz to ijk
-        tf_strings = ['i = ', 'j = ', 'k = ']
+        scale_str = ') / mdff_scale_factor_{}'.format(suffix)
+        tf_strings = ['i = (', 'j = (', 'k = (']
         entries = ('x1 * {}','y1 * {}','z1 * {}','{}')
         for i in range(3):
             vals = tf[i]
@@ -379,7 +400,9 @@ class CubicInterpMapForce(_Map_Force_Base):
                     if j<3:
                         tf_strings[i] += spacer + entry.format('mdff_rot{}{}_{}'.format(i,j, suffix))
                     else:
-                        tf_strings[i] += spacer + entry.format('mdff_trn{}_{}'.format(i, suffix))
+                        tf_strings[i] += scale_str + spacer + entry.format('mdff_trn{}_{}'.format(i, suffix))
+                elif j==3:
+                    tf_strings[i] += scale_str
 
         funcs = ';'.join(tf_strings)
         enabled_eqn = 'step(enabled-0.5)'
@@ -429,7 +452,8 @@ class CubicInterpMapForce_Low_Memory(_Map_Force_Base):
     def _set_energy_function(self, suffix):
         tf = self._transform
         # Transform xyz to ijk
-        tf_strings = ['i = ', 'j = ', 'k = ']
+        scale_str = ') / mdff_scale_factor_{}'.format(suffix)
+        tf_strings = ['i = (', 'j = (', 'k = (']
         entries = ('x1 * {}','y1 * {}','z1 * {}','{}')
         for i in range(3):
             vals = tf[i]
@@ -444,7 +468,9 @@ class CubicInterpMapForce_Low_Memory(_Map_Force_Base):
                     if j<3:
                         tf_strings[i] += spacer + entry.format('mdff_rot{}{}_{}'.format(i,j, suffix))
                     else:
-                        tf_strings[i] += spacer + entry.format('mdff_trn{}_{}'.format(i, suffix))
+                        tf_strings[i] += scale_str + spacer + entry.format('mdff_trn{}_{}'.format(i, suffix))
+                elif j==3:
+                    tf_strings[i] += scale_str
 
         i_str, j_str, k_str = tf_strings
 
@@ -549,7 +575,8 @@ class LinearInterpMapForce(_Map_Force_Base):
     def _set_energy_function(self, suffix):
         tf = self._transform
         # Transform xyz to ijk
-        tf_strings = ['i = ', 'j = ', 'k = ']
+        scale_str = ') / mdff_scale_factor_{}'.format(suffix)
+        tf_strings = ['i = (', 'j = (', 'k = (']
         entries = ('x1 * {}','y1 * {}','z1 * {}','{}')
         for i in range(3):
             vals = tf[i]
@@ -564,7 +591,9 @@ class LinearInterpMapForce(_Map_Force_Base):
                     if j<3:
                         tf_strings[i] += spacer + entry.format('mdff_rot{}{}_{}'.format(i,j, suffix))
                     else:
-                        tf_strings[i] += spacer + entry.format('mdff_trn{}_{}'.format(i, suffix))
+                        tf_strings[i] += scale_str + spacer + entry.format('mdff_trn{}_{}'.format(i, suffix))
+                elif j==3:
+                    tf_strings[i] += scale_str
 
         i_str, j_str, k_str = tf_strings
 
@@ -1246,14 +1275,9 @@ class GBSAForce(customgbforces.GBSAGBn2Force):
         if isinstance(params, list):
             params = numpy.array(params)
         else:
-            params = copy.deepcopy(params)
+            from copy import deepcopy
+            params = deepcopy(params)
 
-        if _have_numpy:
-            params[:,self.RADIUS_ARG_POSITION] -= self.OFFSET
-            params[:,self.SCREEN_POSITION] *= params[:,self.RADIUS_ARG_POSITION]
-            self.parameters.extend(params.tolist())
-        else:
-            for p in params:
-                p[self.RADIUS_ARG_POSITION] -= self.OFFSET
-                p[self.SCREEN_POSITION] *= p[self.RADIUS_ARG_POSITION]
-            self.parameters.extend(params)
+        params[:,self.RADIUS_ARG_POSITION] -= self.OFFSET
+        params[:,self.SCREEN_POSITION] *= params[:,self.RADIUS_ARG_POSITION]
+        self.parameters.extend(params.tolist())
