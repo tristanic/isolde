@@ -249,15 +249,30 @@ class _Map_Force_Base(CustomCompoundBondForce):
             self.setGlobalParameterDefaultValue(self,_map_scale_factor_index, scale_factor)
             self.update_needed = True
 
-
-    def update_transform(self, transform, units):
-        self._process_transform(transform, units)
+    def update_transform(self, transform, context=None, units='angstroms'):
+        '''
+        Update the complete map transform.
+        '''
+        self._process_transform(transform, units=units)
         tf = self._transform
-        tfi = self._tf_term_indices
-        for i in range(3):
-            for j in range(4):
-                self.setGlobalParameterDefaultValue(tfi[i][j], tf[i][j])
-        self.update_needed = True
+        for i, row in enumerate(tf):
+            for j, val in enumerate(row):
+                index = self._tf_term_indices[i,j]
+                if context is not None:
+                    name = self.getGlobalParameterName(int(index))
+                    context.setParameter(name, float(val))
+                else:
+                    self.setGlobalParameterDefaultValue(int(index), float(val))
+                    self.update_needed=True
+
+    # def update_transform(self, transform, units):
+    #     self._process_transform(transform, units)
+    #     tf = self._transform
+    #     tfi = self._tf_term_indices
+    #     for i in range(3):
+    #         for j in range(4):
+    #             self.setGlobalParameterDefaultValue(tfi[i][j], tf[i][j])
+    #     self.update_needed = True
 
     def add_atoms(self, indices, ks, enableds):
         '''
@@ -400,7 +415,7 @@ class CubicInterpMapForce(_Map_Force_Base):
                     if j<3:
                         tf_strings[i] += spacer + entry.format('mdff_rot{}{}_{}'.format(i,j, suffix))
                     else:
-                        tf_strings[i] += scale_str + spacer + entry.format('mdff_trn{}_{}'.format(i, suffix))
+                        tf_strings[i] += spacer + entry.format('mdff_trn{}_{}'.format(i, suffix) + scale_str)
                 elif j==3:
                     tf_strings[i] += scale_str
 
@@ -468,7 +483,7 @@ class CubicInterpMapForce_Low_Memory(_Map_Force_Base):
                     if j<3:
                         tf_strings[i] += spacer + entry.format('mdff_rot{}{}_{}'.format(i,j, suffix))
                     else:
-                        tf_strings[i] += scale_str + spacer + entry.format('mdff_trn{}_{}'.format(i, suffix))
+                        tf_strings[i] += spacer + entry.format('mdff_trn{}_{}'.format(i, suffix) + scale_str)
                 elif j==3:
                     tf_strings[i] += scale_str
 
@@ -591,7 +606,7 @@ class LinearInterpMapForce(_Map_Force_Base):
                     if j<3:
                         tf_strings[i] += spacer + entry.format('mdff_rot{}{}_{}'.format(i,j, suffix))
                     else:
-                        tf_strings[i] += scale_str + spacer + entry.format('mdff_trn{}_{}'.format(i, suffix))
+                        tf_strings[i] += spacer + entry.format('mdff_trn{}_{}'.format(i, suffix) + scale_str )
                 elif j==3:
                     tf_strings[i] += scale_str
 

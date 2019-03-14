@@ -2199,6 +2199,19 @@ class Sim_Handler:
             f.set_global_k(k)
             self.context_reinit_needed()
 
+    def update_mdff_transform(self, volume):
+        f = self.mdff_forces[volume]
+        region = volume.region
+        tf = volume.data.xyz_to_ijk_transform
+        from chimerax.core.geometry import Place
+        region_tf = Place(axes=tf.axes(), origin = tf.origin() -
+            volume.data.xyz_to_ijk(volume.region_origin_and_step(region)[0]))
+
+        if self.sim_running:
+            context = self.thread_handler.context
+            f.update_transform(region_tf.matrix, context=context)
+
+
     def set_mdff_scale_factor(self, volume, scale_factor):
         '''
         Adjust the dimensions of the mdff map in the simulation. This is
@@ -2409,31 +2422,53 @@ class Sim_Handler:
         system.addForce(gbforce)
 
 class Map_Scale_Optimizer:
-    def __init__(self, sim_manager):
+    '''
+    Tool to optimise the magnification of the map(s) used for MDFF, by finding
+    the magnification factor that minimises the conformational energy of the
+    atomic model after settling. The reference point for scaling (that is, the
+    coordinate that models and map shrink towards or grow away from) will be
+    the origin of the *largest* map.
+    '''
+    def __init__(self, sim_manager, save_timepoints=False):
         import numpy
+        self._save = save_timepoints
         sm = self.sim_manager = sim_manager
         self.isolde = sm.isolde
         sh = self.sim_handler = sm.sim_handler
         context = self.context = sh._context
         volumes = self._volumes = list(sh.mdff_forces.keys())
         self._original_scales = {v: numpy.array(v.data.step) for v in volumes}
+        self._original_origins = {v: numpy.array(v.data.origin) for v in volumes}
+        largest_volume = sorted(volumes, key=lambda v: sum(v.data.size))[-1]
+        self._reference_coord = numpy.array(largest_volume.data.origin)
 
-    def optimize_map_scales(self, tolerance=0.05):
+    def optimize_map_scales(self, tolerance=0.001, step_size=0.01, num_steps = 11):
         '''
         Optimise the dimensional scaling of the MDFF map(s), by minimising the
         conformational energy as a function of scaling.
+
+        Args:
+            * tolerance:
+                - convergence tolerance at each step (kJ/mol/atom)
+            * step_size:
+                - fractional change in magnification at each step
+            * num_steps:
+                - number of steps in the line search *in each direction*
         '''
         import numpy
-        self.tolerance = tolerance
+        self.step_size=step_size
         sm = self.sim_manager
         sh = self.sim_handler
+        s = self.structure = sm.isolde.selected_model
+        self.tolerance = tolerance * len(s.atoms)
+
         self.context = sh._context
         self._original_temperature = sh.temperature
         self._original_minimize = sh.minimize
 
         self._search_index = 0
-        self._line_search_down = numpy.linspace(1,0.9,num=11)
-        self._line_search_up = numpy.linspace(1,1.1,num=11)
+        self._line_search_down = numpy.linspace(1,1-(num_steps-1)*step_size,num=num_steps)
+        self._line_search_up = numpy.linspace(1,1+(num_steps-1)*step_size, num=num_steps)
         self._search_down_vals = []
         self._search_up_vals = []
         e = self._last_energy = self.get_current_energy()
@@ -2444,9 +2479,11 @@ class Map_Scale_Optimizer:
 
     def _start(self):
         sh = self.sim_handler
-        sh.minimize=False
-        sh.temperature = 0
-        sh.thread_handler.minimize(1e-4, max_iterations=10000)
+        sh.minimize=True
+        # sh.temperature = 0
+        # First do a *really* thorough minimisation at the starting magnification
+        # to set a good reference point.
+        sh.thread_handler.minimize(1e-4, max_iterations=100000)
         sh.pause=False
 
     def _revert_sim_conditions(self):
@@ -2461,7 +2498,7 @@ class Map_Scale_Optimizer:
 
     def _energy_converged(self):
         current_e = self.get_current_energy()
-        if abs(self._last_energy - current_e) < self.tolerance:
+        if self._last_energy - current_e < self.tolerance:
             return True
         self._last_energy = current_e
         return False
@@ -2469,14 +2506,26 @@ class Map_Scale_Optimizer:
     def _initial_min_and_start(self):
         from ..checkpoint import CheckPoint
         self._reference_checkpoint = CheckPoint(self.sim_manager.isolde)
+        self._initial_model_center = self.structure.atoms.coords.mean(axis=0)
         self._line_search('down', self._search_index)
 
     def _update_all_scales(self, scale):
+        import numpy
         sh = self.sim_handler
+        rc = self._reference_coord
         for v in self._volumes:
             v.data.set_step(self._original_scales[v]*scale)
+            o = self._original_origins[v]
+            v.data.set_origin(rc + scale*(o-rc))
             v.update_drawings()
-            sh.set_mdff_scale_factor(v, scale)
+            sh.update_mdff_transform(v)
+            # sh.set_mdff_scale_factor(v, scale)
+        s = self.structure
+        c = s.atoms.coords.mean(axis=0)
+        oc = self._initial_model_center
+        nc = rc+scale*(oc-rc)
+        s.atoms.coords += (nc-c)
+        self.sim_handler.thread_handler.coords = s.atoms.coords
 
 
     def _line_search(self, direction, index):
@@ -2497,6 +2546,10 @@ class Map_Scale_Optimizer:
                 return
         e_vals.append(self.get_current_energy())
         scale = search_vals[index]
+        if self._save:
+            from chimerax.core.commands import save
+            filename = 'map_scale_optimize_{:.2f}.pdb'.format(scale)
+            save.save(self.sim_manager.isolde.session, filename, [self.sim_manager.isolde.selected_model])
         sh = self.sim_handler
         from ..delayed_reaction import delayed_reaction
         delayed_reaction(sh.triggers, 'coord update',
@@ -2516,9 +2569,9 @@ class Map_Scale_Optimizer:
             return
         else:
             if diff <0:
-                new_scale = current_scale + 0.01
+                new_scale = current_scale + self.step_size
             else:
-                new_scale = current_scale - 0.01
+                new_scale = current_scale - self.step_size
             delayed_reaction(sh.triggers, 'coord update',
                 self._update_all_scales, [new_scale],
                 self._energy_converged,
@@ -2534,7 +2587,10 @@ class Map_Scale_Optimizer:
         # from scipy.optimize import minimize
         # final_scale = minimize(spline, 1, bounds=[[min(x_vals), max(x_vals)]]).x[0]
         min_index = numpy.argmin(y_vals)
-        final_scale = x_vals[min_index]
+        # Fit a quadratic to the data, and select its minimum as the optimum scale
+        coeffs = self.quadratic_coeffs = numpy.polyfit(x_vals, y_vals, 2)
+        final_scale = -coeffs[1]/(2*coeffs[0])
+        # final_scale = x_vals[min_index]
         from ..delayed_reaction import delayed_reaction
         self._update_all_scales(1.0)
         self._reference_checkpoint.revert()
