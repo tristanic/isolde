@@ -68,13 +68,15 @@ with the surroundings.
     <Library>pyinstance</Library>
   </CLibrary>
   <CLibrary name="openmm" usesNumpy="true">
-      <Library>OpenMM</Library>
+      <Library platform="mac">OpenMM</Library>
+      <Library platform="linux">OpenMM</Library>
+      <Library platform="windows">OpenMM.lib</Library>
       <Library>atomstruct</Library>
       <Library>pyinstance</Library>
       <CompileArgument platform="mac">-mmacosx-version-min=10.12</CompileArgument>
-      <IncludeDir platform="mac">$HOME/anaconda3/pkgs/openmm-7.2.2-py36_1/include</IncludeDir>
+      <IncludeDir platform="mac">/Users/tic20/anaconda3/envs/openmm73/include</IncludeDir>
       <IncludeDir platform="linux">/home/tic20/anaconda3/envs/openmm73/include</IncludeDir>
-      <IncludeDir platform="windows">"C:\Users\tic20\Anaconda3\pkgs\openmm-7.2.2-py36_1\include"</IncludeDir>
+      <IncludeDir platform="windows">C:\Users\tic20\Anaconda3\envs\openmm73\include</IncludeDir>
       <IncludeDir>src/deps/liblbfgs/include</IncludeDir>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
       <SourceFile>src/openmm/custom_forces.cpp</SourceFile>
