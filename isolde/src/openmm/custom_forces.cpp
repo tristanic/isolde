@@ -205,5 +205,24 @@ customtorsionforce_update_torsion_parameters(void *force, size_t n, int *indices
     }
 }
 
+EXPORT void
+customgbforce_add_particles(void *force, size_t n, double* params)
+{
+    OpenMM::CustomGBForce *f = static_cast<OpenMM::CustomGBForce *>(force);
+    try
+    {
+        int n_params = f->getNumPerParticleParameters();
+        std::vector<double> param_vec(n_params);
+        for (size_t i=0; i<n; ++i) {
+            for (int j=0; j<n_params; ++j) {
+                param_vec[j] = *params++;
+            }
+            f->addParticle(param_vec);
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
 
 } // extern "C"
