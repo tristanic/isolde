@@ -947,10 +947,10 @@ class AtomicSymmetryModel(Model):
             from chimerax.atomic import concatenate
             found_atoms = concatenate(found_atoms)
             sym_indices = numpy.concatenate(sym_indices)
-        # elif len(found_atoms) == 0:
-        #     from chimerax.atomic import Atoms
-        #     found_atoms = Atoms()
-        #     sym_indices = numpy.array(sym_indices, numpy.int32)
+        elif len(found_atoms) == 0:
+            from chimerax.atomic import Atoms
+            found_atoms = Atoms()
+            sym_indices = sym_indices[0]
         else:
             found_atoms = found_atoms[0]
             sym_indices = sym_indices[0]
