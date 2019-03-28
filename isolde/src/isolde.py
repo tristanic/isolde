@@ -521,7 +521,7 @@ class Isolde():
         iw._sim_basic_mobile_b_and_a_spinbox.setValue(params.num_selection_padding_residues)
         iw._sim_basic_mobile_sel_within_spinbox.setValue(params.soft_shell_cutoff_distance)
 
-        iw._sim_basic_xtal_map_weight_spin_box.setValue(params.difference_map_mask_cutoff)
+        # iw._sim_basic_xtal_map_weight_spin_box.setValue(params.difference_map_mask_cutoff)
         ####
         # Rebuild tab
         ####
@@ -661,6 +661,10 @@ class Isolde():
         iw._sim_basic_xtal_init_go_button.clicked.connect(
             self._initialize_xtal_structure
             )
+        iw._sim_basic_xtal_map_weight_spin_box.valueChanged.connect(
+            self._update_map_weight_box_settings
+        )
+
 
         # Live maps direct from structure factors
         iw._sim_basic_xtal_init_exp_data_button.clicked.connect(
@@ -1411,6 +1415,22 @@ class Isolde():
         for v in mgr.all_maps:
             cb.addItem(v.name, v)
 
+    def _displayed_decimal_places_and_step(self, number, sig_figs=3):
+        from math import log, ceil, floor
+        if number <= 0:
+            return 2, 0.1
+        places = max(ceil(-log(number, 10)+sig_figs-1), 0)
+        step = 10**(floor(log(number, 10)-1))
+        return places, step
+
+    def _update_map_weight_box_settings(self, *_):
+        sb = self.iw._sim_basic_xtal_map_weight_spin_box
+        v = sb.value()
+        dps, step = self._displayed_decimal_places_and_step(v)
+        sb.setDecimals(dps)
+        sb.setSingleStep(step)
+
+
     def _populate_xtal_map_params(self, *_):
         cb = self.iw._sim_basic_xtal_settings_map_combo_box
         gb = self.iw._sim_basic_xtal_settings_set_button
@@ -1429,8 +1449,9 @@ class Isolde():
             wf.setEnabled(True)
             eb.setEnabled(True)
             eb.setChecked(mgr.enabled)
-            self.iw._sim_basic_xtal_map_weight_spin_box.setValue(
-                mgr.global_k)
+            gk = mgr.global_k
+            sb = self.iw._sim_basic_xtal_map_weight_spin_box
+            sb.setValue(gk)
         else:
             wf.setEnabled(False)
             eb.setEnabled(False)

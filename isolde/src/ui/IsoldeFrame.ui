@@ -363,9 +363,9 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-230</y>
+                  <y>-54</y>
                   <width>542</width>
-                  <height>653</height>
+                  <height>658</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0">
@@ -768,11 +768,20 @@ border: 1px;
                           </item>
                           <item>
                            <widget class="QDoubleSpinBox" name="_sim_basic_xtal_map_weight_spin_box">
+                            <property name="maximumSize">
+                             <size>
+                              <width>80</width>
+                              <height>16777215</height>
+                             </size>
+                            </property>
                             <property name="decimals">
-                             <number>1</number>
+                             <number>3</number>
                             </property>
                             <property name="maximum">
-                             <double>1000.000000000000000</double>
+                             <double>10000.000000000000000</double>
+                            </property>
+                            <property name="singleStep">
+                             <double>0.100000000000000</double>
                             </property>
                             <property name="value">
                              <double>1.000000000000000</double>
@@ -782,7 +791,7 @@ border: 1px;
                           <item>
                            <widget class="QLabel" name="label_9">
                             <property name="text">
-                             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;x 1000 kJ mol&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt; (map density units)&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt; Å&lt;span style=&quot; vertical-align:super;&quot;&gt;3&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;x 1000 kJ mol&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt; (map units)&lt;span style=&quot; vertical-align:super;&quot;&gt;-1&lt;/span&gt; Å&lt;span style=&quot; vertical-align:super;&quot;&gt;3&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                             </property>
                             <property name="textFormat">
                              <enum>Qt::RichText</enum>
