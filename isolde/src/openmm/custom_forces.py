@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 28-Mar-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -24,6 +24,11 @@ from simtk.openmm.app.internal import customgbforces
 from . import amber_cmap
 from ..constants import defaults
 
+
+def _strip_units(x):
+    if unit.is_quantity(x):
+        return x.value_in_unit_system(unit.md_unit_system)
+    return x
 
 import os, sys, glob
 import ctypes
@@ -544,18 +549,12 @@ class CubicInterpMapForce_Low_Memory(_Map_Force_Base):
         return Discrete3DFunction(*dim, data_1d)
 
 
-
-
-
-
-
-
-
-
-
-
 class LinearInterpMapForce(_Map_Force_Base):
     '''
+    NOTE: This class is deprecated, since there is almost no situation in which
+    it is superior to either :class:`CubicInterpMapForce` or
+    :class:`CubicInterpMapForce_Low_Memory`.
+
     Converts a map of (i,j,k) data and a (x,y,z)->(i,j,k) transformation
     matrix to a potential energy field, with trilinear interpolation of values.
     '''
@@ -650,6 +649,261 @@ class LinearInterpMapForce(_Map_Force_Base):
         dim = data.shape[::-1]
         data_1d = numpy.ravel(data, order = 'C')
         return Discrete3DFunction(*dim, data_1d)
+
+class AdaptiveDistanceRestraintForce(CustomBondForce):
+    r'''
+    A :py:class:`openmm.CustomBondForce` subclass using the generalised adaptive
+    loss function described by Jonathan Barron
+    (https://arxiv.org/pdf/1701.03077.pdf).
+
+    There are many situations in which collections of distance restraints may
+    be approximate, or may contain some subset of restraints that are simply
+    incorrect. A simple example is a distance restraint network created based on
+    a reference model of your protein (e.g. a non-crystallographic symmetry copy
+    or an independent experimental model of the same protein or close
+    homologue). In this case the majority of restraints are likely to be
+    correct, but any bulk conformational change between reference model and
+    target will lead to some subset being wildly incorrect. In such cases it is
+    advantageous to use an energy function which flattens out (that is, yields
+    low-to-zero net force) not only at the target distance, but also once the
+    distance deviates sufficiently from the target. In other words, restraints
+    that are close to satisfied will be enforced, but restraints that are
+    incompatible with the data will gracefully release.
+
+    Various loss functions meeting these criteria have been proposed and used in
+    the past, each with its own specific characteristics. The function applied
+    here is a generalisation of the Cauchy/Lorentzian, Geman-McClure,
+    Welsch/Leclerc, generalised Charbonnier, Charbonnier/pseudo-Huber/L1-L2 and
+    L2 loss functions, using a single "robustness" parameter to tune the rate of
+    fall-off of restraint force with distance. This has been further adapted to
+    optionally allow for an arbitrary amount of "lee-way" - that is, a range in
+    which no bias is applied - either side of the target distance. The complete
+    functional form is:
+
+
+    .. math::
+
+        E = k *
+        \begin{cases}
+            0, & \text{if}\ enabled < 0.5 \text{ or}\ |r-r_0| < \tau \\
+            1/2 (\frac{r-\rho}{c})^2, & \text{if}\ \alpha = 2 \\
+            ln(\frac{1}{2} (\frac{r-\rho}{c})^2 + 1), & \text{if}\ \alpha = 0 \\
+            \frac{|2-\alpha|}{\alpha} ((\frac{ (\frac{r-\rho}{c})^2 }{|2-\alpha|} + 1)^\frac{\alpha}{2} - 1), & \text{otherwise}
+        \end{cases}
+
+    where
+
+    .. math::
+        \rho =
+        \begin{cases}
+            r-\tau, & \text{if}\ (r-r_0) < -\tau \\
+            r+\tau, & \text{if}\ (r-r_0) > \tau
+        \end{cases}
+
+    :param:`c` sets the width of the energy well and the distance at which the
+    function switches from quadratic.
+
+    :param:`k` adjusts the depth of the well (that is, the absolute magnitude of
+    the applied force). Within the central "well" of the function,
+    :math:`\frac{k}{c^2}` is equivalent to the spring constant in a standard
+    harmonic restraint.
+
+    :math:`\tau` sets the tolerance around the target distance. If
+    :math:`|r-r_0| < \tau` no restraining force will be applied.
+
+    :math:`\alpha` is the master parameter setting the "robustness" of the
+    restraint. For all values of :math:`alpha`, the shape of the function within
+    the range :math:`-c < r-\rho < c` is essentially parabolic. Outside of this
+    region, increasing positive values increase the steepness of the "walls"
+    of the restraint (NOTE: since this force does not currently obey the
+    :param:`max_force` imposed on ISOLDE's other custom forces, use this with
+    care to avoid instability). Values larger than 2 are inadvisable. A value
+    of :math:`\alpha = 2` yields a standard harmonic (quadratic) restraint.
+    When :math:`\alpha = 1`, the restraining force transitions from harmonic to
+    essentially constant (i.e. linear) between :math:`c < |r-\rho| < 2c`. When
+    :math:`\alpha = 0`, the force at large distances is proportional to
+    :math:`\frac{1}{|r-\rho|}`. For increasing negative values of :math:`\alpha`
+    the applied force falls off faster with distance. When :math:`\alpha = -2`,
+    the force falls to 10% of the maximum at approx. :math:`|r-\rho| = 7c`; when
+    :math:`\alpha = -10` the force at this point is approx. 0.1% of maximum. For
+    very large negative values of :math:`alpha` (beyond about -50) the
+    function converges to a form where the applied force is negligible for
+    :math:`|r-rho| > 6c`.
+
+    All parameters are settable at the individual restraint level.
+
+    '''
+    def __init__(self):
+
+        # Loss functions
+        alpha_2_eqn = '1/2 * delta_r_on_c_sq'
+        alpha_0_eqn = 'log(1/2*delta_r_on_c_sq + 1)'
+        general_eqn = 'abs(2-alpha)/alpha * ((delta_r_on_c_sq/abs(2-alpha) + 1)^(alpha/2) - 1)'
+
+
+        # Switching functions
+        alpha_2_sw = 'delta(alpha-2)'
+        alpha_0_sw = 'delta(alpha)'
+        enabled_sw = 'step(enabled-0.5)'
+        tol_sw = 'abs(delta_r)-tau'
+
+        # Intermediate variable definitions
+        delta_r_on_c_sq_def = 'delta_r_on_c_sq = ((r-rho)/c)^2'
+        rho_def = 'rho = select(delta_r-tau, r+tau, r-tau)'
+        delta_r_def = 'delta_r = r-r0'
+
+        energy_fn = ('energy = k * select(alpha_2_sw, alpha_2_eqn, '
+                        'select(alpha_0_sw, alpha_0_eqn, general_eqn))'
+                    )
+
+        final_str = 'select({},select({}, energy, 0));{};{};{};{}'.format(
+            enabled_sw, tol_sw,
+            energy_fn, delta_r_on_c_sq_def, rho_def, delta_r_def
+        )
+        super().__init__(energy_str)
+        self.enabled_index = self.addPerBondParameter('enabled')
+        self.k_index = self.addPerBondParameter('k')
+        self.c_index = self.addPerBondParameter('c')
+        self.r0_index = self.addPerBondParameter('r0')
+        self.tau_index = self.addPerBondParameter('tau')
+        self.alpha_index = self.addPerBondParameter('alpha')
+
+    def add_bonds(self, atom_indices, enableds, ks, cs, targets, tolerances, alphas):
+        '''
+        Add a set of bonds to the simulation, using a fast C++ function. Fastest
+        if all parameters are supplied as NumPy arrays.
+
+        Args:
+            * atom_indices:
+                - a 2-tuple of integer arrays giving the indices of the bonded
+                  atoms in the simulation construct
+            * enableds:
+                - a Boolean array defining which restraints are to be active
+            * ks:
+                - a float array of energy scaling constants in
+                  :math:`kJ mol^{-1}`. For a given restraint,
+                  :math:`\frac{k}{c^2}` is equivalent to a harmonic spring
+                  constant when the distance is close to the target.
+            * cs:
+                - a float array setting the "width" of the energy well for each
+                  restraint in nanometres. A restraint behaves like a normal
+                  harmonic restraint when the current distance is less than
+                  :param:`c` from the target distance.
+            * targets:
+                - a float array of target distances in nanometres
+            * tolerances:
+                - a float array in nanometres. When :math:`|r-r_0|` is less than
+                  the tolerance, no force will be applied.
+            * alphas:
+                - a float array of terms setting the "steepness" of each
+                  restraint outside of the central well. Values less than one
+                  cause the applied force to fall off with increasing distance.
+        '''
+        f = c_function('custombondforce_add_bonds',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
+                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
+        n = len(targets)
+        ind = numpy.empty((n,2), int32)
+        for i, ai in enumerate(atom_indices):
+            ind[:,i] = ai
+        params = numpy.empty((n,6), float64)
+        params[:,0] = enableds
+        params[:,1] = ks
+        params[:,2] = cs
+        params[:,3] = targets
+        params[:,4] = tolerances
+        params[:,5] = alphas
+        ret = numpy.empty(n, int32)
+        f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
+        return ret
+
+    def update_target(self, index, enabled=None, k=None, c=None,
+            target=None, tolerance=None, alpha=None):
+        '''
+        Update the parameters for an existing restraint in the simulation.
+        Mostly superseded by :func:`update_targets`.
+
+        Args:
+            * index:
+                - the index of this restraint in the OpenMM force object
+            * enabled:
+                - Boolean flag defining whether the restraint is to be enabled.
+                  None = keep current value.
+            * k:
+                - Energy scaling constant (as a :class:`simtk.Quantity` or in
+                  units of :math:`kJ mol^{-1}`). When the distance is
+                  close to the target, :math:`\frac{k}{c^2}` is equivalent to
+                  a harmonic spring constant. None = keep current value.
+            * c:
+                - A distance (in nanometres) defining the width of the central
+                  "well" of the energy function. None = keep current value.
+            * target:
+                - the new target distance (as a :class:`simtk.Quantity` or in
+                  nanometres). None = keep current value.
+            * tolerance:
+                - Distance (in nanometres) around the target distance below
+                  which no biasing force will be applied. None = keep current
+                  value.
+            * alpha:
+                - Dimensionless value dictating how quickly the energy grows or
+                  levels out for large deviations from the target distance.
+                  Values less than one cause the applied force to fall off with
+                  increasing distance. None = keep current value.
+        '''
+        current_params = self.getBondParameters(int(index))
+        atom1, atom2 = current_params[0:2]
+        new_params = list(current_params[2])
+        for i, p in enumerate((enabled, k, c, target, tolerance, alpha)):
+            if p is not None:
+                new_params[i] = float(_strip_units(p))
+        self.setBondParameters(int(index), atom1, atom2, new_params)
+        self.update_needed = True
+
+    def update_targets(self, indices, enableds, ks, cs, targets, tolerances, alphas):
+        '''
+        Update a set of targets all at once using fast C++ code. Fastest if
+        the arguments are provided as Numpy arrays, but any iterable will work.
+
+        Args:
+            * indices:
+                - the indices of the restraints in the OpenMM force object
+            * enableds:
+                - a Boolean array defining which restraints are to be active
+            * ks:
+                - a float array of energy scaling constants in
+                  :math:`kJ mol^{-1}`. For a given restraint,
+                  :math:`\frac{k}{c^2}` is equivalent to a harmonic spring
+                  constant when the distance is close to the target.
+            * cs:
+                - a float array setting the "width" of the energy well for each
+                  restraint in nanometres. A restraint behaves like a normal
+                  harmonic restraint when the current distance is less than
+                  :param:`c` from the target distance.
+            * targets:
+                - a float array of target distances in nanometres
+            * tolerances:
+                - a float array in nanometres. When :math:`|r-r_0|` is less than
+                  the tolerance, no force will be applied.
+            * alphas:
+                - a float array of terms setting the "steepness" of each
+                  restraint outside of the central well. Values less than one
+                  cause the applied force to fall off with increasing distance.
+        '''
+        f = c_function('custombondforce_update_bond_parameters',
+            args=(ctypes.c_void_p, ctypes.c_size_t,
+            ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_double)))
+        n = len(indices)
+        ind = convert_and_sanitize_numpy_array(indices, int32)
+        params = numpy.empty((n,6), float64)
+        params[:,0] = enableds
+        params[:,1] = ks
+        params[:,2] = cs
+        params[:,3] = targets
+        params[:,4] = tolerances
+        params[:,5] = alphas
+        f(int(self.this), n, pointer(ind), pointer(params))
+        self.update_needed = True
+
 
 
 class TopOutBondForce(CustomBondForce):
