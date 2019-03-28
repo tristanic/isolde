@@ -296,7 +296,7 @@ def symmetry_from_model_metadata_pdb(model):
     # If this is the case, just put the model into a big P1 box.
 
     import numpy
-    if 'P 1  ' in symstr and numpy.allclose(abc, 1.0) and numpy.allclose(angles, 90):
+    if symstr.strip() == 'P 1' and numpy.allclose(abc, 1.0) and numpy.allclose(angles, 90):
         return simple_p1_box(model, resolution=res)
 
     from .clipper_python import Cell_descr, Cell, Spgr_descr, Spacegroup, Resolution, Grid_sampling
