@@ -1180,9 +1180,10 @@ class Sim_Handler:
                 - a :py:class:`SimParams` instance
             * sim_construct:
                 - a :py:class:`Sim_Construct` instance
-            *forcefield_mgr:
+            * forcefield_mgr:
                 - a class that behaves as a
                   {name: :py:class:`OpenMM::ForceField`} dict.
+
         '''
         self.session = session
         self._params = sim_params
@@ -2442,7 +2443,8 @@ class Map_Scale_Optimizer:
         largest_volume = sorted(volumes, key=lambda v: sum(v.data.size))[-1]
         self._reference_coord = numpy.array(largest_volume.data.origin)
 
-    def optimize_map_scales(self, tolerance=0.001, step_size=0.01, num_steps = 11):
+    def optimize_map_scales(self, tolerance=1e-4, step_size=0.01, num_steps=11,
+            loops=1):
         '''
         Optimise the dimensional scaling of the MDFF map(s), by minimising the
         conformational energy as a function of scaling.
@@ -2454,6 +2456,10 @@ class Map_Scale_Optimizer:
                 - fractional change in magnification at each step
             * num_steps:
                 - number of steps in the line search *in each direction*
+            * loops:
+                - number of times to loop over the full search. In general this
+                  should be left to 1, and only increased if you wish to check
+                  reproducibility of the energies.
         '''
         import numpy
         self.step_size=step_size
@@ -2467,20 +2473,41 @@ class Map_Scale_Optimizer:
         self._original_minimize = sh.minimize
 
         self._search_index = 0
-        self._line_search_down = numpy.linspace(1,1-(num_steps-1)*step_size,num=num_steps)
-        self._line_search_up = numpy.linspace(1,1+(num_steps-1)*step_size, num=num_steps)
-        self._search_down_vals = []
-        self._search_up_vals = []
+        self._define_search_strategy(step_size, num_steps, loops)
+        # self._line_search_down = numpy.linspace(1,1-(num_steps-1)*step_size,num=num_steps)
+        # self._line_search_up = numpy.linspace(1,1+(num_steps-1)*step_size, num=num_steps)
+        # self._search_down_vals = []
+        # self._search_up_vals = []
         e = self._last_energy = self.get_current_energy()
 
         from ..delayed_reaction import delayed_reaction
         delayed_reaction(sh.triggers, 'coord update', self._start, [], self._energy_converged,
             self._initial_min_and_start, [])
 
+    def _define_search_strategy(self, step_size, num_steps, loops=1):
+        '''
+        Starting from the initial coordinates and magnification, a "loop" is
+        defined as a stepwise line search:
+
+            * increasing magnification (num_steps steps of step_size)
+            * decreasing magnification (2*num_steps steps of -step_size)
+            * increasing magnification back to the original
+              (num_steps steps of step_size)
+        '''
+        import numpy
+        max_mag = 1+(num_steps-1)*step_size
+        min_mag = 1-(num_steps-1)*step_size
+        steps_up = numpy.linspace(1, max_mag, num=num_steps)
+        steps_down = numpy.linspace(max_mag-step_size, min_mag, num=num_steps*2)
+        steps_ret = numpy.linspace(min_mag+step_size, 1, num=num_steps-1)
+        sv = self._search_vals = numpy.concatenate((steps_up, steps_down, steps_ret))
+        sv = self._search_vals = numpy.concatenate([sv]*loops)
+        self._energies = numpy.ones(sv.shape, numpy.double)*numpy.nan
+
     def _start(self):
         sh = self.sim_handler
-        sh.minimize=True
-        # sh.temperature = 0
+        sh.minimize=False
+        sh.temperature = 0
         # First do a *really* thorough minimisation at the starting magnification
         # to set a good reference point.
         sh.thread_handler.minimize(1e-4, max_iterations=100000)
@@ -2498,7 +2525,8 @@ class Map_Scale_Optimizer:
 
     def _energy_converged(self):
         current_e = self.get_current_energy()
-        if self._last_energy - current_e < self.tolerance:
+        if abs(self._last_energy - current_e) < self.tolerance:
+            self._last_energy = current_e
             return True
         self._last_energy = current_e
         return False
@@ -2507,7 +2535,7 @@ class Map_Scale_Optimizer:
         from ..checkpoint import CheckPoint
         self._reference_checkpoint = CheckPoint(self.sim_manager.isolde)
         self._initial_model_center = self.structure.atoms.coords.mean(axis=0)
-        self._line_search('down', self._search_index)
+        self._line_search(self._search_index)
 
     def _update_all_scales(self, scale):
         import numpy
@@ -2520,31 +2548,21 @@ class Map_Scale_Optimizer:
             v.update_drawings()
             sh.update_mdff_transform(v)
             # sh.set_mdff_scale_factor(v, scale)
-        s = self.structure
-        c = s.atoms.coords.mean(axis=0)
+        atoms = self.sim_manager.sim_construct.all_atoms
+        c = atoms.coords.mean(axis=0)
         oc = self._initial_model_center
         nc = rc+scale*(oc-rc)
-        s.atoms.coords += (nc-c)
-        self.sim_handler.thread_handler.coords = s.atoms.coords
+        atoms.coords += (nc-c)
+        self.sim_handler.thread_handler.coords = atoms.coords
 
 
-    def _line_search(self, direction, index):
-        if direction=='down':
-            search_vals = self._line_search_down
-            e_vals = self._search_down_vals
-        else:
-            search_vals = self._line_search_up
-            e_vals = self._search_up_vals
+    def _line_search(self, index):
+        search_vals = self._search_vals
+        energies = self._energies
         if index >=len(search_vals):
-            if direction=='down':
-                self._reference_checkpoint.revert()
-                self._update_all_scales(1)
-                self._line_search('up', 0)
-                return
-            else:
-                self._finalize()
-                return
-        e_vals.append(self.get_current_energy())
+            self._finalize()
+            return
+        energies[index] = self.get_current_energy()
         scale = search_vals[index]
         if self._save:
             from chimerax.core.commands import save
@@ -2555,7 +2573,7 @@ class Map_Scale_Optimizer:
         delayed_reaction(sh.triggers, 'coord update',
             self._update_all_scales, [scale],
             self._energy_converged,
-            self._line_search, [direction, index+1])
+            self._line_search, [index+1])
 
     def _go_smoothly_to_scale(self, current_scale, target_scale):
         from ..delayed_reaction import delayed_reaction
@@ -2580,13 +2598,15 @@ class Map_Scale_Optimizer:
 
     def _finalize(self):
         import numpy
-        x_vals = self._final_scales = list(self._line_search_down[::-1])+list(self._line_search_up[1:])
-        y_vals = self._final_energies = numpy.array(self._search_down_vals[::-1]+self._search_up_vals[1:])
+        x_vals = self._final_scales = self._search_vals
+        y_vals = self._final_energies = self._energies
+        # x_vals = self._final_scales = list(self._line_search_down[::-1])+list(self._line_search_up[1:])
+        # y_vals = self._final_energies = numpy.array(self._search_down_vals[::-1]+self._search_up_vals[1:])
         # from scipy.interpolate import UnivariateSpline
         # spline = self.spline = UnivariateSpline(x_vals, y_vals)
         # from scipy.optimize import minimize
         # final_scale = minimize(spline, 1, bounds=[[min(x_vals), max(x_vals)]]).x[0]
-        min_index = numpy.argmin(y_vals)
+        # min_index = numpy.argmin(y_vals)
         # Fit a quadratic to the data, and select its minimum as the optimum scale
         coeffs = self.quadratic_coeffs = numpy.polyfit(x_vals, y_vals, 2)
         final_scale = -coeffs[1]/(2*coeffs[0])
