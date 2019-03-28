@@ -61,11 +61,22 @@ interactive restraints are listed below.
 
 MDFF Potentials
 ~~~~~~~~~~~~~~~
+    .. autoclass:: CubicInterpMapForce
+        :members:
+
+    .. autoclass:: CubicInterpMapForce_Low_Memory
+        :members:
+
     .. autoclass:: LinearInterpMapForce
         :members:
 
+
+
 Distance Restraints
 ~~~~~~~~~~~~~~~~~~~
+    .. autoclass:: AdaptiveDistanceRestraintForce
+        :members:
+
     .. autoclass:: TopOutBondForce
         :members:
 
