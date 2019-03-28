@@ -3,14 +3,14 @@
 @Date:   18-Apr-2018
 @Email:  tic20@cam.ac.uk
 @Last modified by:   tic20
-@Last modified time: 27-Apr-2018
+@Last modified time: 28-Mar-2019
 @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 @Copyright: Copyright 2017-2018 Tristan Croll
 -->
 
 
 
-<BundleInfo name="ChimeraX-ISOLDE" version="1.0b3" package="chimerax.isolde"
+<BundleInfo name="ChimeraX-ISOLDE" version="1.0b2.dev1" package="chimerax.isolde"
   	    minSessionVersion="1" maxSessionVersion="1">
 
   <!-- Additional information about bundle source -->
@@ -57,6 +57,7 @@ with the surroundings.
     <SourceFile>src/validation/rota.cpp</SourceFile>
     <SourceFile>src/restraints_cpp/changetracker.cpp</SourceFile>
     <SourceFile>src/restraints_cpp/distance_restraints.cpp</SourceFile>
+    <SourceFile>src/restraints_cpp/adaptive_distance_restraints.cpp</SourceFile>
     <SourceFile>src/restraints_cpp/dihedral_restraints.cpp</SourceFile>
     <SourceFile>src/restraints_cpp/position_restraints.cpp</SourceFile>
     <SourceFile>src/restraints_cpp/rotamer_restraints.cpp</SourceFile>
@@ -89,7 +90,7 @@ with the surroundings.
   <Dependencies>
     <Dependency name="ChimeraX-Core" version="==0.9"/>
     <Dependency name="ChimeraX-Atomic" version=">=0.7"/>
-    <Dependency name="ChimeraX-Clipper" version=">=0.3"/>
+    <Dependency name="ChimeraX-Clipper" version=">=0.4"/>
   </Dependencies>
 
   <!-- Python and ChimeraX-specific classifiers
