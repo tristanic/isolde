@@ -3,7 +3,7 @@
  * @Date:   18-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 26-Apr-2018
+ * @Last modified time: 28-Mar-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -185,7 +185,8 @@ distance_restraint_mgr_get_ss_restraints(void *mgr, void *residues, size_t n, bo
             Atom* cca = cr->find_atom("CA");
             Atom* co = cr->find_atom("O");
             if (cca==nullptr || co==nullptr) {
-                throw std::logic_error("Missing backbone atoms detected!");
+                continue;
+                //throw std::logic_error("Missing backbone atoms detected!");
             }
             Residue* rp1 = *r;
             if (!(cr->connects_to(rp1)) || !(rp1->polymer_type()==PT_AMINO)) {
