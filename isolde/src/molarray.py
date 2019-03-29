@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 27-Apr-2018
+# @Last modified time: 29-Mar-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -27,9 +27,11 @@ Collection = ma.Collection
 from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
-from .molobject import Chiral_Center, Proper_Dihedral, Rotamer, Rama,\
-        Position_Restraint, Tuggable_Atom, MDFF_Atom, Distance_Restraint,\
-        Chiral_Restraint, Proper_Dihedral_Restraint, Rotamer_Restraint
+from .molobject import (
+    Chiral_Center, Proper_Dihedral, Rotamer, Rama, Position_Restraint,
+    Tuggable_Atom, MDFF_Atom, Distance_Restraint, Adaptive_Distance_Restraint,
+    Chiral_Restraint, Proper_Dihedral_Restraint, Rotamer_Restraint
+)
 import ctypes
 
 from chimerax.atomic import Atom, Atoms, Residue, Residues
@@ -51,6 +53,8 @@ def _proper_dihedrals_or_nones(p):
     return [Proper_Dihedral.c_ptr_to_py_inst(ptr) if ptr else None for ptr in p]
 def _distance_restraints(p):
     return Distance_Restraints(p)
+def _adaptive_distance_restraints(p):
+    return Adaptive_Distance_Restraints(p)
 def _non_null_proper_dihedrals(p):
     return Proper_Dihedrals(p[p!=0])
 def _atoms_pair(p):
@@ -64,8 +68,6 @@ def _proper_dihedral_restraints(p):
 def _rotamer_restraints(p):
     return Rotamer_Restraints(p)
 
-
-
 class _Dihedrals(Collection):
     '''
     Base class for Proper_Dihedrals and Improper_Dihedrals. Do not
@@ -78,8 +80,6 @@ class _Dihedrals(Collection):
     @property
     def _natoms(self):
         return 4
-    #TODO: remove this hack once ChimeraX c_array_property bug is fixed
-
 
 class Chiral_Centers(_Dihedrals):
 
@@ -360,6 +360,69 @@ class Distance_Restraints(Collection):
         indices equal to -1. Can be set, but only if you know what you are
         doing.
          ''')
+
+class Adaptive_Distance_Restraints(Collection):
+    def __init__(self, c_pointers=None):
+        super().__init__(c_pointers, Adaptive_Distance_Restraint,
+            Adaptive_Distance_Restraints)
+
+    @property
+    def _bond_cylinder_transforms(self):
+        '''Transforms mapping a unit cylinder onto the restraint bonds. Read only.'''
+        from chimerax.core.geometry import Places
+        f = c_function('adaptive_distance_restraint_bond_transform',
+            args = (ctypes.c_void_p, ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_float)))
+        n = len(self)
+        transforms = empty((n,4,4), float32)
+        f(self._c_pointers, n, pointer(transforms))
+        return Places(opengl_array=transforms)
+
+    @property
+    def _target_transforms(self):
+        from chimerax.core.geometry import Places
+        f = c_function('adaptive_distance_restraint_target_transform',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_float)))
+        n = len(self)
+        transforms=empty((n,4,4), float32)
+        f(self._c_pointers, n, pointer(transforms))
+        return Places(opengl_array=transforms)
+
+    def clear_sim_indices(self):
+        '''
+        Run at the end of a simulation to reset sim indices to -1
+        '''
+        f = c_function('distance_restraint_clear_sim_index',
+            args = (ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointers, len(self))
+
+
+    enableds =cvec_property('adaptive_distance_restraint_enabled', npy_bool,
+            doc = 'Enable/disable these restraints or get their current states.')
+    visibles = cvec_property('adaptive_distance_restraint_visible', npy_bool, read_only = True,
+            doc = 'Each restraint will be visible if it is enabled and both atoms are visible.')
+    atoms = cvec_property('adaptive_distance_restraint_atoms', cptr, 2, astype=_atoms_pair, read_only=True,
+            doc = 'Returns a 2-tuple of :class:`Atoms` containing the restrained atoms. Read only.' )
+    targets = cvec_property('adaptive_distance_restraint_target', float64,
+            doc = 'Target distances in Angstroms')
+    tolerances = cvec_property('adaptive_distance_restraint_tolerance', float64,
+            doc = 'Half-widths of potential well flat bottoms in Angstroms')
+    kappas = cvec_property('adaptive_distance_restraint_kappa', float64,
+            doc = 'Parameter setting depth of energy well, in kJ/mol')
+    cs = cvec_property('adaptive_distance_restraint_c', float64,
+            doc = 'Parameter setting width of quadratic portion of energy well, in Angstroms')
+    alphas = cvec_property('adaptive_distance_restraint_alpha', float64,
+            doc = 'Parameter setting rate of energy growth/flattening outside well')
+    distances = cvec_property('adaptive_distance_restraint_distance', float64, read_only=True,
+            doc = 'Current distances between restrained atoms in Angstroms. Read only.')
+    sim_indices = cvec_property('adaptive_distance_restraint_sim_index', int32,
+        doc='''
+        Index of each restraint in the relevant MDFF Force in a running
+        simulation. Restraints which are not currently in a simulation have
+        indices equal to -1. Can be set, but only if you know what you are
+        doing.
+         ''')
+
 
 class Chiral_Restraints(Collection):
     def __init__(self, c_pointers=None):

@@ -2,11 +2,9 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 29-Mar-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
-
-
 
 def get_proper_dihedral_mgr(session):
     '''
@@ -140,6 +138,21 @@ def get_distance_restraint_mgr(model):
         if isinstance(m, Distance_Restraint_Mgr):
             return m
     return Distance_Restraint_Mgr(model)
+
+def get_adaptive_distance_restraint_mgr(model):
+    '''
+    Get the :class:`Distance_Restraint_Mgr` for the given model, creating it if
+    it doesn't yet exist.
+
+    Args;
+        * model:
+            - a :class:`chimerax.AtomicStructure`
+    '''
+    from .molobject import Adaptive_Distance_Restraint_Mgr
+    for m in model.child_models():
+        if isinstance(m, Adaptive_Distance_Restraint_Mgr):
+            return m
+    return Adaptive_Distance_Restraint_Mgr(model)
 
 def get_tuggable_atoms_mgr(model):
     '''

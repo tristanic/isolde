@@ -3,7 +3,7 @@
  * @Date:   27-Mar-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 28-Mar-2019
+ * @Last modified time: 29-Mar-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2019 Tristan Croll
  */
@@ -55,7 +55,7 @@ public:
     // Construct a restraint with specified target and parameters.
     Adaptive_Distance_Restraint(Atom *a1, Atom *a2,
             Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint> *mgr,
-            const double &target, const double &tolerance, const double &k,
+            const double &target, const double &tolerance, const double &kappa,
             const double &c, const double &alpha);
 
     // Get/update parameters
@@ -63,13 +63,13 @@ public:
     void set_target(const double &target);
     double get_tolerance() const { return _tolerance; }
     void set_tolerance(const double &tol);
-    double get_k() const { return _k; }
-    void set_k(const double &k);
+    double get_kappa() const { return _kappa; }
+    void set_kappa(const double &kappa);
     double get_c() const { return _c; }
     void set_c(const double &c);
     double get_alpha() const { return _alpha; }
     void set_alpha (const double &alpha);
-    double effective_spring_constant () { return _k / pow(_c,2); }
+    double effective_spring_constant () { return _kappa / pow(_c,2); }
     bool enabled() const { return _enabled; }
     void set_enabled(bool flag);
 
@@ -93,13 +93,13 @@ private:
     // calculations to special functions
     double EPS = 1e-4;
     double MIN_C = 1e-2;
-    double SCALING_MAX_FORCE = 5e3;
+    double SCALING_MAX_FORCE = 500.0;
     void _bond_transform(float *rot44, float radius, float length_scale) const;
     Atoms _atoms;
     Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint> *_mgr;
     double _target = 0;
     double _tolerance = 0;
-    double _k = 0;
+    double _kappa = 0;
     double _c = MIN_C;
     double _alpha = -2;
     bool _enabled=false;

@@ -2,16 +2,15 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 27-Apr-2018
+# @Last modified time: 29-Mar-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
-
-
+from enum import IntEnum
 import os, sys, glob
 import numpy
 import ctypes
-from enum import IntEnum
+
 
 from chimerax.core.state import State
 from chimerax.atomic import molc
@@ -75,9 +74,14 @@ def _bond_or_none(p):
     return Bond.c_ptr_to_py_inst(p) if p else None
 def _distance_restraint_or_none(p):
     return Distance_Restraint.c_ptr_to_py_inst(p) if p else None
+def _adaptive_distance_restraint_or_none(p):
+    return Adaptive_Distance_Restraint.c_ptr_to_py_inst(p) if p else None
 def _distance_restraints(p):
     from .molarray import Distance_Restraints
     return Distance_Restraints(p)
+def _adaptive_distance_restraints(p):
+    from .molarray import Adaptive_Distance_Restraints
+    return Adaptive_Distance_Restraints(p)
 def _position_restraint_or_none(p):
     return Position_Restraint.c_ptr_to_py_inst(p) if p else None
 def _position_restraints(p):
@@ -117,6 +121,8 @@ def _proper_dihedral_restraint_mgr(p):
     return Proper_Dihedral_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
 def _distance_restraint_mgr(p):
     return Distance_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+def _adaptive_distance_restraint_mgr(p):
+    return Adaptive_Distance_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
 def _position_restraint_mgr(p):
     return Position_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
 def _tuggable_atoms_mgr(p):
@@ -125,6 +131,8 @@ def _mdff_mgr(p):
     return MDFF_Mgr.c_ptr_to_existing_py_inst(p) if p else None
 def _rotamer_restraint_mgr(p):
     return Rotamer_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+
+
 
 def get_chiral_mgr(session):
     if hasattr(session, 'chiral_mgr') and not session.chiral_mgr.deleted:
@@ -1471,6 +1479,7 @@ class Restraint_Change_Tracker:
         'Proper_Dihedral_Restraint_Mgr': (_proper_dihedral_restraint_mgr, _proper_dihedral_restraints),
         'Position_Restraint_Mgr': (_position_restraint_mgr, _position_restraints),
         'Distance_Restraint_Mgr': (_distance_restraint_mgr, _distance_restraints),
+        'Adaptive_Distance_Restraint_Mgr': (_adaptive_distance_restraint_mgr, _adaptive_distance_restraints),
         'Tuggable_Atoms_Mgr': (_tuggable_atoms_mgr, _tuggable_atoms),
         'MDFF_Mgr': (_mdff_mgr, _mdff_atoms),
         'Rotamer_Restraint_Mgr': (_rotamer_restraint_mgr, _rotamer_restraints),
@@ -2219,41 +2228,35 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
             args=(ctypes.c_void_p,), ret=ctypes.py_object)
         return _tuggable_atoms(f(self._c_pointer))
 
-class Distance_Restraint_Mgr(_Restraint_Mgr):
+class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
     '''
-    Manages distance restraints (Atom pairs with distances and spring constants)
-    and their visualisations for a single atomic structure. Appears as a child
-    :py:class:`chimerax.Model` under the :py:class:`chimerax.AtomicStructure`
-    it manages.
-
-    The preferred way to create/retrieve the distance restraint manager for a
-    given :py:class:`AtomicStructure` instance m is:
-
-    .. code:: python
-
-        from chimerax.isolde import session_extensions as sx
-        dr_mgr = sx.get_distance_restraint_mgr(m)
-
+    Base class for distance restraint managers. Do not instantiate directly.
     '''
     _DEFAULT_BOND_COLOR = [168, 255, 230, 255]
     _DEFAULT_TARGET_COLOR = [128, 215, 190, 255]
-    def __init__(self, model, c_pointer=None):
+    def __init__(self, model, class_name, c_function_prefix,
+            singular_restraint_getter, plural_restraint_getter,
+            c_pointer=None):
         '''
         Prepare a distance restraint manager for a given atomic model.
         '''
 
+        self._c_function_prefix = c_function_prefix
+        self._singular_restraint_getter = singular_restraint_getter
+        self._plural_restraint_getter = plural_restraint_getter
         session = model.session
         if not hasattr(session, 'isolde_changes') or session.isolde_changes.deleted:
             ct = self._change_tracker = Restraint_Change_Tracker(session)
         else:
             ct = self._change_tracker = session.isolde_changes
 
+        new_fn_name = c_function_prefix + '_mgr_new'
         if c_pointer is None:
-            f = c_function('distance_restraint_mgr_new',
+            f = c_function(new_fn_name,
                 args=(ctypes.c_void_p, ctypes.c_void_p,),
                 ret=ctypes.c_void_p)
             c_pointer =(f(model._c_pointer, ct._c_pointer))
-        super().__init__('Distance Restraints', model, c_pointer)
+        super().__init__(class_name, model, c_pointer)
         self._prepare_drawing()
         self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
         self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
@@ -2300,18 +2303,15 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
 
     def _target_geometry(self):
         '''
-        Length is scaled to the target distance. Radius scales according to
-        spring constant.
+        Must be defined in derived class.
         '''
-        from chimerax import surface
-        return surface.cylinder_geometry(radius=1.0, height=1.0)
+        raise RuntimeError('Target geometry function must be defined in the derived class!')
 
     def _pseudobond_geometry(self):
         '''
-        Connects the two restrained atoms. Radius is fixed.
+        Must be defined in derived class
         '''
-        from chimerax import surface
-        return surface.cylinder_geometry(radius = 0.025, height=1.0, caps=False)
+        raise RuntimeError('Pseudobond geometry function must be defined in the derived class!')
 
     def _restraint_changes_cb(self, trigger_name, changes):
         mgr, changes = changes
@@ -2360,13 +2360,19 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
     def _update_target_drawing(self, td, visibles, n):
         td.positions = visibles._target_transforms
 
+    def _get_restraint_c_func(self):
+        if not hasattr(self, '_c_func_get_restraint'):
+            self._c_func_get_restraint = c_function(
+                self._c_function_prefix+'_mgr_get_restraint',
+                args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool),
+                ret = ctypes.c_void_p)
+        return self._c_func_get_restraint
+
     def _get_restraint(self, atom1, atom2, create=False):
-        f = c_function('distance_restraint_mgr_get_restraint',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool),
-            ret = ctypes.c_void_p)
+        f = self._get_restraint_c_func()
         from chimerax.atomic import Atoms
         atoms = Atoms([atom1, atom2])
-        return _distance_restraint_or_none(f(self._c_pointer, atoms._c_pointers, create))
+        return self._singular_restraint_getter(f(self._c_pointer, atoms._c_pointers, create))
 
     def add_restraint(self, atom1, atom2):
         '''
@@ -2398,6 +2404,14 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         '''
         return self._get_restraint(atom1, atom2, False)
 
+    def _atom_restraints_c_func(self):
+        if not hasattr(self, '_c_func_atom_restraints'):
+            self._c_func_atom_restraints = c_function(
+                self._c_function_prefix+'_mgr_atom_restraints',
+                args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
+                ret=ctypes.py_object)
+        return self._c_func_atom_restraints
+
     def atom_restraints(self, atom):
         '''
         Returns a :py:class:`Distance_Restraints` instance encompassing all
@@ -2409,10 +2423,8 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
                   :py:class:`chimerax.AtomicStructure` belonging to this
                   manager.
         '''
-        f = c_function('distance_restraint_mgr_atom_restraints',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
-            ret=ctypes.py_object)
-        return _distance_restraints(f(self._c_pointer, atom._c_pointer_ref, 1))
+        f = self._atom_restraints_c_func()
+        return self._plural_restraint_getter(f(self._c_pointer, atom._c_pointer_ref, 1))
 
     def atoms_restraints(self, atoms):
         '''
@@ -2427,10 +2439,16 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
                   of the :py:class:`chimerax.AtomicStructure` belonging to this
                   manager.
         '''
-        f = c_function('distance_restraint_mgr_atom_restraints',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
-            ret=ctypes.py_object)
-        return _distance_restraints(f(self._c_pointer, atoms._c_pointers, len(atoms)))
+        f = self._atom_restraints_c_func()
+        return self._plural_restraint_getter(f(self._c_pointer, atoms._c_pointers, len(atoms)))
+
+    def _intra_restraints_c_func(self):
+        if not hasattr(self, '_c_func_intra_restraints'):
+            self._c_func_intra_restraints = c_function(
+                self._c_function_prefix+'_mgr_intra_restraints',
+                args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
+                ret = ctypes.py_object)
+        return self._c_func_intra_restraints
 
     def intra_restraints(self, atoms):
         '''
@@ -2444,10 +2462,89 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
                   manager.
         '''
         n = len(atoms)
-        f = c_function('distance_restraint_mgr_intra_restraints',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t),
-            ret = ctypes.py_object)
-        return _distance_restraints(f(self._c_pointer, atoms._c_pointers, n))
+        f = self._intra_restraints_c_func()
+        return self._plural_restraint_getter(f(self._c_pointer, atoms._c_pointers, n))
+
+    def _visible_restraints_c_func(self):
+        if not hasattr(self, '_c_func_visible_restraints'):
+            self._c_func_visible_restraints = c_function(
+                self._c_function_prefix+'_mgr_visible_restraints',
+                args=(ctypes.c_void_p,),
+                ret = ctypes.py_object)
+        return self._c_func_visible_restraints
+
+    @property
+    def visible_restraints(self):
+        '''
+        Returns a :py:class:`Distance_Restraints` instance encompassing all
+        currently visible restraints owned by this manager. A restraint will be
+        visible if it is enabled and both its atoms are visible.
+        '''
+        f = self._visible_restraints_c_func()
+        return self._plural_restraint_getter(f(self._c_pointer))
+
+    def _all_restraints_c_func(self):
+        if not hasattr(self, '_c_func_all_restraints'):
+            self._c_func_all_restraints = c_function(
+                self._c_function_prefix+'_mgr_all_restraints',
+                args=(ctypes.c_void_p,),
+                ret = ctypes.py_object)
+        return self._c_func_all_restraints
+
+    @property
+    def all_restraints(self):
+        '''
+        Returns a :py:class:`Distance_Restraints` instance encompassing all
+        restraints owned by this manager.
+        '''
+        f = self._all_restraints_c_func()
+        return self._plural_restraint_getter(f(self._c_pointer))
+
+
+class Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
+    '''
+    Manages distance restraints (Atom pairs with distances and spring constants)
+    and their visualisations for a single atomic structure. Appears as a child
+    :py:class:`chimerax.Model` under the :py:class:`chimerax.AtomicStructure`
+    it manages.
+
+    The preferred way to create/retrieve the distance restraint manager for a
+    given :py:class:`AtomicStructure` instance m is:
+
+    .. code:: python
+
+        from chimerax.isolde import session_extensions as sx
+        dr_mgr = sx.get_distance_restraint_mgr(m)
+
+    '''
+    _DEFAULT_BOND_COLOR = [168, 255, 230, 255]
+    _DEFAULT_TARGET_COLOR = [128, 215, 190, 255]
+    def __init__(self, model, c_pointer=None):
+        '''
+        Prepare a distance restraint manager for a given atomic model.
+        '''
+        class_name = 'Distance Restraints'
+        c_function_prefix = 'distance_restraint'
+        singular_getter = _distance_restraint_or_none
+        plural_getter = _distance_restraints
+
+        super().__init__(model, class_name, c_function_prefix,
+            singular_getter, plural_getter, c_pointer=c_pointer)
+
+    def _target_geometry(self):
+        '''
+        Length is scaled to the target distance. Radius scales according to
+        spring constant.
+        '''
+        from chimerax import surface
+        return surface.cylinder_geometry(radius=1.0, height=1.0)
+
+    def _pseudobond_geometry(self):
+        '''
+        Connects the two restrained atoms. Radius is fixed.
+        '''
+        from chimerax import surface
+        return surface.cylinder_geometry(radius = 0.025, height=1.0, caps=False)
 
     def _get_ss_restraints(self, residues, create=False):
         '''
@@ -2495,28 +2592,51 @@ class Distance_Restraint_Mgr(_Restraint_Mgr):
         '''
         return self._get_ss_restraints(residues, create=False)
 
-    @property
-    def visible_restraints(self):
-        '''
-        Returns a :py:class:`Distance_Restraints` instance encompassing all
-        currently visible restraints owned by this manager. A restraint will be
-        visible if it is enabled and both its atoms are visible.
-        '''
-        f = c_function('distance_restraint_mgr_visible_restraints',
-            args=(ctypes.c_void_p,),
-            ret = ctypes.py_object)
-        return _distance_restraints(f(self._c_pointer))
+class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
+    '''
+    Manages "adaptive" distance restraints between atoms and their
+    visualisations for a single atomic structure. Appears as a child
+    :py:class:`chimerax.Model` under the :py:class:`chimerax.AtomicStructure` it
+    manages.
 
-    @property
-    def all_restraints(self):
+    The preferred way to create/retrieve the adaptive distance restraint manager
+    for a given :py:class:`AtomicStructure` instance m is:
+
+    .. code:: python
+
+        from chimerax.isolde import session_extensions as sx
+        adr_mgr = sx.get_adaptive_distance_restraint_mgr(m)
+
+    '''
+    _DEFAULT_BOND_COLOR = [96, 255, 96, 255]
+    _DEFAULT_TARGET_COLOR = [0, 200, 0, 255]
+    def __init__(self, model, c_pointer=None):
         '''
-        Returns a :py:class:`Distance_Restraints` instance encompassing all
-        restraints owned by this manager.
+        Prepare an adaptive distance restraint manager for a given atomic model.
         '''
-        f = c_function('distance_restraint_mgr_all_restraints',
-            args=(ctypes.c_void_p,),
-            ret = ctypes.py_object)
-        return _distance_restraints(f(self._c_pointer))
+        class_name = 'Adaptive Distance Restraints'
+        c_function_prefix = 'adaptive_distance_restraint'
+        singular_getter = _adaptive_distance_restraint_or_none
+        plural_getter = _adaptive_distance_restraints
+
+        super().__init__(model, class_name, c_function_prefix,
+            singular_getter, plural_getter, c_pointer=c_pointer)
+
+    def _target_geometry(self):
+        '''
+        Length is scaled to the target distance. Radius scales according to
+        currently-applied force.
+        '''
+        from chimerax import surface
+        return surface.cylinder_geometry(radius=1.0, height=1.0)
+
+    def _pseudobond_geometry(self):
+        '''
+        Connects the two restrained atoms. Radius is fixed.
+        '''
+        from chimerax import surface
+        return surface.cylinder_geometry(radius = 0.025, height=1.0, caps=False)
+
 
 class Chiral_Restraint_Mgr(_Restraint_Mgr):
     '''
@@ -3690,6 +3810,81 @@ class Distance_Restraint(State):
         simulation. Can be set, but only if you know what you are doing.
         ''')
 
+class Adaptive_Distance_Restraint(State):
+    '''
+    Defines an "adaptive robustness" distance restraint especially suited to
+    large collections of fuzzy/unsure restraints (e.g. homology-based reference
+    model restraints, evolutionary couplings, NMR NOESY spectra etc.). It
+    differs from a simple harmonic restraint in two ways:
+
+        1. Provides an optional flat bottom (that is, a tolerance either side of
+           the target within which no biasing force will be applied); and
+
+        2. Outside of the central energy "well" (the width of which is
+           controlled by :param:`c`) the potential can be tuned to "flatten out"
+           (or, indeed, increase even faster than quadratic) with a rate
+           controlled by :param:`alpha`.
+
+    If :param:`tolerance`==0 and :param:`alpha`==2, the restraint will behave
+    identically to a traditional harmonic restraint with spring constant
+    :math:`k=\frac{\kappa}{c^2}`. Increasing :param:`alpha` makes the "walls" of
+    the well steeper than quadratic (not generally recommended);
+    :param:`alpha`=1 makes them linear, and smaller/negative values cause the
+    energy to flatten at increasing rates. The value of :param:`alpha` is
+    open-ended, but values below about -50 yield essentially no further changes
+    to the energy profile.
+    '''
+    def __init__(self, c_pointer):
+        set_c_pointer(self, c_pointer)
+
+    @property
+    def cpp_pointer(self):
+        '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
+        return self._c_pointer.value
+
+    @property
+    def deleted(self):
+        '''Has the C++ side been deleted?'''
+        return not hasattr(self, '_c_pointer')
+
+    def __str__(self):
+        return "Not implemented"
+
+    def reset_state(self):
+        pass
+
+    def clear_sim_index(self):
+        f = c_function('adaptive_distance_restraint_clear_sim_index',
+            args = (ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointer_ref, 1)
+
+    enabled =c_property('adaptive_distance_restraint_enabled', npy_bool,
+            doc = 'Enable/disable this restraint or get its current state.')
+    visible = c_property('adaptive_distance_restraint_visible', npy_bool, read_only = True,
+            doc = 'Restraint will be visible if it is enabled and both atoms are visible.')
+    atoms = c_property('adaptive_distance_restraint_atoms', cptr, 2, astype=convert.atom_pair, read_only=True,
+            doc = 'Returns a tuple of :py:class:`chimerax.Atoms` pointing to the pair of restrained atoms. Read only.' )
+    target = c_property('adaptive_distance_restraint_target', float64,
+            doc = 'Target distance in Angstroms')
+    tolerance = c_property('adaptive_distance_restraint_tolerance', float64,
+            doc = 'Half-width of potential well flat bottom in Angstroms')
+    kappa = c_property('adaptive_distance_restraint_kappa', float64,
+            doc = 'Parameter setting depth of energy well, in kJ/mol')
+    c = c_property('adaptive_distance_restraint_c', float64,
+            doc = 'Parameter setting width of quadratic portion of energy well, in Angstroms')
+    alpha = c_property('adaptive_distance_restraint_alpha', float64,
+            doc = 'Parameter setting rate of energy growth/flattening outside well')
+    distance = c_property('adaptive_distance_restraint_distance', float64, read_only=True,
+            doc = 'Current distance between restrained atoms in Angstroms. Read only.')
+    sim_index = c_property('adaptive_distance_restraint_sim_index', int32,
+        doc='''
+        Index of this restraint in the relevant MDFF Force in a running
+        simulation. Returns -1 if the restraint is not currently in a
+        simulation. Can be set, but only if you know what you are doing.
+        ''')
+
+
+
 class Chiral_Restraint(State):
     '''
     Handles the restraint of a single chiral centre in simulations. Unlike other
@@ -3878,13 +4073,13 @@ class Rotamer_Restraint(State):
 
 
 
-
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance
 # from the pointer (needed by Collections)
 for class_obj in (Chiral_Center, Proper_Dihedral, Rama, Rotamer,
         Position_Restraint, Tuggable_Atom, MDFF_Atom, Distance_Restraint,
-        Chiral_Restraint, Proper_Dihedral_Restraint, Rotamer_Restraint):
+        Adaptive_Distance_Restraint, Chiral_Restraint,
+        Proper_Dihedral_Restraint, Rotamer_Restraint):
     if hasattr(class_obj, '_c_class_name'):
         cname = class_obj._c_class_name
     else:
@@ -3902,8 +4097,9 @@ for class_obj in (Chiral_Center, Proper_Dihedral, Rama, Rotamer,
 
 for class_obj in (Proper_Dihedral_Mgr, Chiral_Mgr, Rama_Mgr, Rota_Mgr,
             Position_Restraint_Mgr, Tuggable_Atoms_Mgr, MDFF_Mgr,
-            Distance_Restraint_Mgr, Chiral_Restraint_Mgr,
-            Proper_Dihedral_Restraint_Mgr, Rotamer_Restraint_Mgr):
+            Distance_Restraint_Mgr, Adaptive_Distance_Restraint_Mgr,
+            Chiral_Restraint_Mgr, Proper_Dihedral_Restraint_Mgr,
+            Rotamer_Restraint_Mgr):
     cname = class_obj.__name__.lower()
     func_name = cname + '_py_inst'
     class_obj.c_ptr_to_py_inst = lambda ptr, fname=func_name: c_function(fname,

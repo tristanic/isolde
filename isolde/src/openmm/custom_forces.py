@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 28-Mar-2019
+# @Last modified time: 29-Mar-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -683,7 +683,7 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
 
     .. math::
 
-        E = k *
+        E = \kappa *
         \begin{cases}
             0, & \text{if}\ enabled < 0.5 \text{ or}\ |r-r_0| < \tau \\
             1/2 (\frac{r-\rho}{c})^2, & \text{if}\ \alpha = 2 \\
@@ -703,10 +703,10 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
     :param:`c` sets the width of the energy well and the distance at which the
     function switches from quadratic.
 
-    :param:`k` adjusts the depth of the well (that is, the absolute magnitude of
-    the applied force). Within the central "well" of the function,
-    :math:`\frac{k}{c^2}` is equivalent to the spring constant in a standard
-    harmonic restraint.
+    :math:`\kappa` adjusts the depth of the well (that is, the absolute
+    magnitude of the applied force). Within the central "well" of the function,
+    :math:`\frac{\kappa}{c^2}` is equivalent to the spring constant in a
+    standard harmonic restraint.
 
     :math:`\tau` sets the tolerance around the target distance. If
     :math:`|r-r_0| < \tau` no restraining force will be applied.
@@ -752,7 +752,7 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
         rho_def = 'rho = select(delta_r-tau, r+tau, r-tau)'
         delta_r_def = 'delta_r = r-r0'
 
-        energy_fn = ('energy = k * select(alpha_2_sw, alpha_2_eqn, '
+        energy_fn = ('energy = kappa * select(alpha_2_sw, alpha_2_eqn, '
                         'select(alpha_0_sw, alpha_0_eqn, general_eqn))'
                     )
 
@@ -762,13 +762,13 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
         )
         super().__init__(energy_str)
         self.enabled_index = self.addPerBondParameter('enabled')
-        self.k_index = self.addPerBondParameter('k')
+        self.kappa_index = self.addPerBondParameter('kappa')
         self.c_index = self.addPerBondParameter('c')
         self.r0_index = self.addPerBondParameter('r0')
         self.tau_index = self.addPerBondParameter('tau')
         self.alpha_index = self.addPerBondParameter('alpha')
 
-    def add_bonds(self, atom_indices, enableds, ks, cs, targets, tolerances, alphas):
+    def add_bonds(self, atom_indices, enableds, kappas, cs, targets, tolerances, alphas):
         '''
         Add a set of bonds to the simulation, using a fast C++ function. Fastest
         if all parameters are supplied as NumPy arrays.
@@ -779,10 +779,10 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
                   atoms in the simulation construct
             * enableds:
                 - a Boolean array defining which restraints are to be active
-            * ks:
+            * kappas:
                 - a float array of energy scaling constants in
                   :math:`kJ mol^{-1}`. For a given restraint,
-                  :math:`\frac{k}{c^2}` is equivalent to a harmonic spring
+                  :math:`\frac{\kappa}{c^2}` is equivalent to a harmonic spring
                   constant when the distance is close to the target.
             * cs:
                 - a float array setting the "width" of the energy well for each
@@ -808,7 +808,7 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
             ind[:,i] = ai
         params = numpy.empty((n,6), float64)
         params[:,0] = enableds
-        params[:,1] = ks
+        params[:,1] = kappas
         params[:,2] = cs
         params[:,3] = targets
         params[:,4] = tolerances
@@ -817,7 +817,7 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
         f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
         return ret
 
-    def update_target(self, index, enabled=None, k=None, c=None,
+    def update_target(self, index, enabled=None, kappa=None, c=None,
             target=None, tolerance=None, alpha=None):
         '''
         Update the parameters for an existing restraint in the simulation.
@@ -829,11 +829,11 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
             * enabled:
                 - Boolean flag defining whether the restraint is to be enabled.
                   None = keep current value.
-            * k:
+            * kappa:
                 - Energy scaling constant (as a :class:`simtk.Quantity` or in
-                  units of :math:`kJ mol^{-1}`). When the distance is
-                  close to the target, :math:`\frac{k}{c^2}` is equivalent to
-                  a harmonic spring constant. None = keep current value.
+                  units of :math:`kJ mol^{-1}`). When the distance is close to
+                  the target, :math:`\frac{\kappa}{c^2}` is equivalent to a
+                  harmonic spring constant. None = keep current value.
             * c:
                 - A distance (in nanometres) defining the width of the central
                   "well" of the energy function. None = keep current value.
@@ -853,13 +853,13 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
         current_params = self.getBondParameters(int(index))
         atom1, atom2 = current_params[0:2]
         new_params = list(current_params[2])
-        for i, p in enumerate((enabled, k, c, target, tolerance, alpha)):
+        for i, p in enumerate((enabled, kappa, c, target, tolerance, alpha)):
             if p is not None:
                 new_params[i] = float(_strip_units(p))
         self.setBondParameters(int(index), atom1, atom2, new_params)
         self.update_needed = True
 
-    def update_targets(self, indices, enableds, ks, cs, targets, tolerances, alphas):
+    def update_targets(self, indices, enableds, kappas, cs, targets, tolerances, alphas):
         '''
         Update a set of targets all at once using fast C++ code. Fastest if
         the arguments are provided as Numpy arrays, but any iterable will work.
@@ -869,10 +869,10 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
                 - the indices of the restraints in the OpenMM force object
             * enableds:
                 - a Boolean array defining which restraints are to be active
-            * ks:
+            * kappas:
                 - a float array of energy scaling constants in
                   :math:`kJ mol^{-1}`. For a given restraint,
-                  :math:`\frac{k}{c^2}` is equivalent to a harmonic spring
+                  :math:`\frac{\kappa}{c^2}` is equivalent to a harmonic spring
                   constant when the distance is close to the target.
             * cs:
                 - a float array setting the "width" of the energy well for each
@@ -896,7 +896,7 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
         ind = convert_and_sanitize_numpy_array(indices, int32)
         params = numpy.empty((n,6), float64)
         params[:,0] = enableds
-        params[:,1] = ks
+        params[:,1] = kappas
         params[:,2] = cs
         params[:,3] = targets
         params[:,4] = tolerances

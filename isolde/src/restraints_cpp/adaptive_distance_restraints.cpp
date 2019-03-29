@@ -3,7 +3,7 @@
  * @Date:   23-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 28-Mar-2019
+ * @Last modified time: 29-Mar-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -36,13 +36,13 @@ Adaptive_Distance_Restraint::Adaptive_Distance_Restraint(Atom *a1, Atom *a2,
 
 Adaptive_Distance_Restraint::Adaptive_Distance_Restraint(Atom *a1, Atom *a2,
     Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint> *mgr,
-    const double &target, const double &tolerance, const double &k,
+    const double &target, const double &tolerance, const double &kappa,
     const double &c, const double &alpha)
     : Adaptive_Distance_Restraint(a1, a2, mgr)
 {
     set_target(target);
     set_tolerance(tolerance);
-    set_k(k);
+    set_kappa(kappa);
     set_c(c);
     set_alpha(alpha);
     set_enabled(false);
@@ -65,9 +65,9 @@ void Adaptive_Distance_Restraint::set_tolerance(const double &tolerance)
     _mgr->track_change(this, change_tracker()->REASON_CUTOFF_CHANGED);
 }
 
-void Adaptive_Distance_Restraint::set_k(const double &k)
+void Adaptive_Distance_Restraint::set_kappa(const double &kappa)
 {
-    _k = k<0 ? 0.0 : k;
+    _kappa = kappa<0 ? 0.0 : kappa;
     _mgr->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
 }
 
@@ -118,23 +118,23 @@ double Adaptive_Distance_Restraint::force_magnitude() const
 {
     double r = distance();
     double r_m_r0 = r-_target;
-    if (!_enabled || std::abs(r_m_r0) < _tolerance || _k == 0)
+    if (!_enabled || std::abs(r_m_r0) < _tolerance || _kappa == 0)
         return 0;
     double rho;
     if (r_m_r0 < -_tolerance)
-        rho = r - _tolerance;
+        rho = _target - _tolerance;
     else
-        rho = r + _tolerance;
+        rho = _target + _tolerance;
     double r_m_rho = r-rho;
     double c_sq = pow(_c,2);
     double r_m_rho_on_c_squared = (r_m_rho/c_sq);
     if (std::abs(_alpha - 2.0 < EPS ))
-        return _k * r_m_rho_on_c_squared;
+        return _kappa * r_m_rho_on_c_squared;
     else if (std::abs(_alpha) < EPS )
-        return _k * 2*r_m_rho / ( 2*c_sq + pow(r_m_rho,2));
+        return _kappa * 2*r_m_rho / ( 2*c_sq + pow(r_m_rho,2));
     else {
         return
-            _k * pow(r_m_rho*(pow(r_m_rho,2)/(c_sq*std::abs(2-_alpha)) +1), (_alpha/2-1))/c_sq;
+            _kappa * pow(r_m_rho*(pow(r_m_rho,2)/(c_sq*std::abs(2-_alpha)) +1), (_alpha/2-1))/c_sq;
     }
 } // force_magnitude
 

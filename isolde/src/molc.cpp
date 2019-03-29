@@ -3,7 +3,7 @@
  * @Date:   24-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 30-Apr-2018
+ * @Last modified time: 28-Mar-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -39,5 +39,6 @@
 #include "restraints_cpp/mdff_ext.h"
 #include "restraints_cpp/position_restraints_ext.h"
 #include "restraints_cpp/distance_restraints_ext.h"
+#include "restraints_cpp/adaptive_distance_restraints_ext.h"
 #include "restraints_cpp/dihedral_restraints_ext.h"
 #include "restraints_cpp/rotamer_restraints_ext.h"
