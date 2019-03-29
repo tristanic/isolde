@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 29-Mar-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -10,9 +10,9 @@
 
 import os
 
-cwd = os.path.dirname(os.path.abspath(__file__))
+ff_dir = os.path.dirname(os.path.abspath(__file__))
 _forcefield_files = {
-    'amber14':  [os.path.join(cwd, 'amberff', f) for f in
+    'amber14':  [os.path.join(ff_dir, 'amberff', f) for f in
         ['amberff14SB.xml',     # Standard AMBER14 protein/nucleic acid
         'tip3p_standard.xml',   # TIP3P water
         'tip3p_HFE_multivalent.xml', # Metal ions
@@ -46,7 +46,6 @@ def _background_load_ff(name, ff_files):
     ff = _define_forcefield(ff_files)
     print('Done loading forcefield')
     return {name: ff}
-
 
 class Forcefield_Mgr:
     def __init__(self):

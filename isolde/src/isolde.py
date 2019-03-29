@@ -2,7 +2,7 @@
 # @Date:   25-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 30-Apr-2018
+# @Last modified time: 29-Mar-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -651,20 +651,24 @@ class Isolde():
         ####
         iw._sim_basic_xtal_init_open_button.clicked.connect(
             self._show_xtal_init_frame
-            )
+        )
         iw._sim_basic_xtal_init_done_button.clicked.connect(
             self._hide_xtal_init_frame
-            )
+        )
         iw._sim_basic_xtal_init_reflections_file_button.clicked.connect(
             self._choose_mtz_file
-            )
+        )
         iw._sim_basic_xtal_init_go_button.clicked.connect(
             self._initialize_xtal_structure
-            )
+        )
         iw._sim_basic_xtal_map_weight_spin_box.valueChanged.connect(
             self._update_map_weight_box_settings
         )
 
+        # Load custom forcefield file(s)
+        iw._sim_basic_ff_file_load_button.clicked.connect(
+            self._add_ff_files_gui
+        )
 
         # Live maps direct from structure factors
         iw._sim_basic_xtal_init_exp_data_button.clicked.connect(
@@ -1150,11 +1154,40 @@ class Isolde():
             self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
             self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
 
+    def _add_ff_files_gui(self, *_):
+        files = self._choose_ff_files(self)
+        if files is not None and len(files):
+            ff = self.forcefield_mgr[self.sim_params.forcefield]
+            self.add_ffxml_files(ff, files)
+
+    def _choose_ff_files(self, *_):
+        options = QFileDialog.Options()
+        caption = 'Choose one or more ffXML files'
+        filetypes = 'ffXML files (*.xml)'
+        dlg = QFileDialog(caption=caption)
+        dlg.setAcceptMode(QFileDialog.AcceptOpen)
+        dlg.setNameFilter(filetypes)
+        dlg.setFileMode(QFileDialog.ExistingFile)
+        import os
+        dlg.setDirectory(os.getcwd())
+        if dlg.exec():
+            return dlg.selectedFiles()
+
+    def add_ffxml_files(self, forcefield, file_list):
+        log = self.session.logger
+        for f in file_list:
+            try:
+                forcefield.loadFile(f)
+            except ValueError as e:
+                log.warning('Failed to add {}: {}'.format(f, str(e)))
+            except:
+                raise
+
     def _choose_mtz_file(self, *_):
         options = QFileDialog.Options()
         caption = 'Choose a file containing map structure factors'
         filetypes = 'MTZ files (*.mtz)'
-        dlg = QFileDialog()
+        dlg = QFileDialog(caption=caption)
         dlg.setAcceptMode(QFileDialog.AcceptOpen)
         dlg.setNameFilter(filetypes)
         dlg.setFileMode(QFileDialog.ExistingFile)

@@ -363,9 +363,9 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-54</y>
+                  <y>0</y>
                   <width>542</width>
-                  <height>658</height>
+                  <height>695</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0">
@@ -679,6 +679,13 @@ border: 1px;
                       </property>
                       <property name="text">
                        <string>Load crystallographic dataset</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="_sim_basic_ff_file_load_button">
+                      <property name="text">
+                       <string>Load custom residue definition(s)</string>
                       </property>
                      </widget>
                     </item>
@@ -1122,8 +1129,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>556</width>
-                  <height>476</height>
+                  <width>439</width>
+                  <height>45</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1807,8 +1814,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>556</width>
-                  <height>334</height>
+                  <width>459</width>
+                  <height>215</height>
                  </rect>
                 </property>
                 <property name="sizePolicy">
@@ -3049,7 +3056,7 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>542</width>
+                  <width>414</width>
                   <height>1262</height>
                  </rect>
                 </property>
