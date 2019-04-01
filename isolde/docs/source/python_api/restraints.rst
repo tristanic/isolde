@@ -115,6 +115,22 @@ Distance_Restraints
 ~~~~~~~~~~~~~~~~~~~
     .. autoclass:: Distance_Restraints
 
+Adaptive_Distance_Restraint_Mgr
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    .. autoclass:: Adaptive_Distance_Restraint_Mgr
+        :members:
+        :inherited-members:
+
+Adaptive_Distance_Restraint
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    .. autoclass:: Adaptive_Distance_Restraint
+        :members:
+
+Adaptive_Distance_Restraints
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    .. autoclass:: Adaptive_Distance_Restraints
+        :members:
+
 Proper Dihedral Restraints
 --------------------------
 

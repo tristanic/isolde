@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 29-Mar-2019
+# @Last modified time: 01-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -3811,7 +3811,7 @@ class Distance_Restraint(State):
         ''')
 
 class Adaptive_Distance_Restraint(State):
-    '''
+    r'''
     Defines an "adaptive robustness" distance restraint especially suited to
     large collections of fuzzy/unsure restraints (e.g. homology-based reference
     model restraints, evolutionary couplings, NMR NOESY spectra etc.). It
@@ -3821,16 +3821,16 @@ class Adaptive_Distance_Restraint(State):
            the target within which no biasing force will be applied); and
 
         2. Outside of the central energy "well" (the width of which is
-           controlled by :param:`c`) the potential can be tuned to "flatten out"
+           controlled by :attr:`c`) the potential can be tuned to "flatten out"
            (or, indeed, increase even faster than quadratic) with a rate
-           controlled by :param:`alpha`.
+           controlled by :attr:`alpha`
 
-    If :param:`tolerance`==0 and :param:`alpha`==2, the restraint will behave
+    If :attr:`tolerance` = 0 and :attr:`alpha` = 2, the restraint will behave
     identically to a traditional harmonic restraint with spring constant
-    :math:`k=\frac{\kappa}{c^2}`. Increasing :param:`alpha` makes the "walls" of
+    :math:`k=\frac{\kappa}{c^2}`. Increasing :attr:`alpha` makes the "walls" of
     the well steeper than quadratic (not generally recommended);
-    :param:`alpha`=1 makes them linear, and smaller/negative values cause the
-    energy to flatten at increasing rates. The value of :param:`alpha` is
+    :attr:`alpha` = 1 makes them linear, and smaller/negative values cause the
+    energy to flatten at increasing rates. The value of :attr:`alpha` is
     open-ended, but values below about -50 yield essentially no further changes
     to the energy profile.
     '''
@@ -3872,6 +3872,12 @@ class Adaptive_Distance_Restraint(State):
             doc = 'Parameter setting depth of energy well, in kJ/mol')
     c = c_property('adaptive_distance_restraint_c', float64,
             doc = 'Parameter setting width of quadratic portion of energy well, in Angstroms')
+    effective_spring_constant = c_property('adaptive_distance_restraint_effective_k', float64,
+            doc = (r'Effective harmonic spring constant when '
+                   r':attr:`distance` < :attr:`c`, in :math:`kJ mol^{-1} nm^{-2}`. '
+                   r'The effective spring constant is :math:`k=\kappa/c^2`. '
+                   r'Setting this parameter adjusts :math:`\kappa` for the '
+                   r'current :attr:`c`.'))
     alpha = c_property('adaptive_distance_restraint_alpha', float64,
             doc = 'Parameter setting rate of energy growth/flattening outside well')
     distance = c_property('adaptive_distance_restraint_distance', float64, read_only=True,

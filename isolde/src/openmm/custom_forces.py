@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 29-Mar-2019
+# @Last modified time: 01-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -682,7 +682,6 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
 
 
     .. math::
-
         E = \kappa *
         \begin{cases}
             0, & \text{if}\ enabled < 0.5 \text{ or}\ |r-r_0| < \tau \\
@@ -700,7 +699,7 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
             r+\tau, & \text{if}\ (r-r_0) > \tau
         \end{cases}
 
-    :param:`c` sets the width of the energy well and the distance at which the
+    :attr:`c` sets the width of the energy well and the distance at which the
     function switches from quadratic.
 
     :math:`\kappa` adjusts the depth of the well (that is, the absolute
@@ -716,7 +715,7 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
     the range :math:`-c < r-\rho < c` is essentially parabolic. Outside of this
     region, increasing positive values increase the steepness of the "walls"
     of the restraint (NOTE: since this force does not currently obey the
-    :param:`max_force` imposed on ISOLDE's other custom forces, use this with
+    :attr:`max_force` imposed on ISOLDE's other custom forces, use this with
     care to avoid instability). Values larger than 2 are inadvisable. A value
     of :math:`\alpha = 2` yields a standard harmonic (quadratic) restraint.
     When :math:`\alpha = 1`, the restraining force transitions from harmonic to
@@ -745,22 +744,22 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
         alpha_2_sw = 'delta(alpha-2)'
         alpha_0_sw = 'delta(alpha)'
         enabled_sw = 'step(enabled-0.5)'
-        tol_sw = 'abs(delta_r)-tau'
+        tol_sw = 'step(abs(delta_r)-tau)'
 
         # Intermediate variable definitions
         delta_r_on_c_sq_def = 'delta_r_on_c_sq = ((r-rho)/c)^2'
-        rho_def = 'rho = select(delta_r-tau, r+tau, r-tau)'
+        rho_def = 'rho = select(delta_r-tau, r0+tau, r0-tau)'
         delta_r_def = 'delta_r = r-r0'
 
-        energy_fn = ('energy = kappa * select(alpha_2_sw, alpha_2_eqn, '
-                        'select(alpha_0_sw, alpha_0_eqn, general_eqn))'
-                    )
+        energy_fn = 'energy = kappa * select({}, {}, select({}, {}, {}))'.format(
+            alpha_2_sw, alpha_2_eqn, alpha_0_sw, alpha_0_eqn, general_eqn
+        )
 
-        final_str = 'select({},select({}, energy, 0));{};{};{};{}'.format(
+        final_str = 'select({},select({}, energy, 0), 0);{};{};{};{}'.format(
             enabled_sw, tol_sw,
             energy_fn, delta_r_on_c_sq_def, rho_def, delta_r_def
         )
-        super().__init__(energy_str)
+        super().__init__(final_str)
         self.enabled_index = self.addPerBondParameter('enabled')
         self.kappa_index = self.addPerBondParameter('kappa')
         self.c_index = self.addPerBondParameter('c')
@@ -768,12 +767,15 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
         self.tau_index = self.addPerBondParameter('tau')
         self.alpha_index = self.addPerBondParameter('alpha')
 
+        self.update_needed = False
+
     def add_bonds(self, atom_indices, enableds, kappas, cs, targets, tolerances, alphas):
-        '''
+        r'''
         Add a set of bonds to the simulation, using a fast C++ function. Fastest
         if all parameters are supplied as NumPy arrays.
 
         Args:
+
             * atom_indices:
                 - a 2-tuple of integer arrays giving the indices of the bonded
                   atoms in the simulation construct
@@ -788,7 +790,7 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
                 - a float array setting the "width" of the energy well for each
                   restraint in nanometres. A restraint behaves like a normal
                   harmonic restraint when the current distance is less than
-                  :param:`c` from the target distance.
+                  :attr:`c` from the target distance.
             * targets:
                 - a float array of target distances in nanometres
             * tolerances:
@@ -819,11 +821,12 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
 
     def update_target(self, index, enabled=None, kappa=None, c=None,
             target=None, tolerance=None, alpha=None):
-        '''
+        r'''
         Update the parameters for an existing restraint in the simulation.
         Mostly superseded by :func:`update_targets`.
 
         Args:
+
             * index:
                 - the index of this restraint in the OpenMM force object
             * enabled:
@@ -860,11 +863,12 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
         self.update_needed = True
 
     def update_targets(self, indices, enableds, kappas, cs, targets, tolerances, alphas):
-        '''
+        r'''
         Update a set of targets all at once using fast C++ code. Fastest if
         the arguments are provided as Numpy arrays, but any iterable will work.
 
         Args:
+
             * indices:
                 - the indices of the restraints in the OpenMM force object
             * enableds:
@@ -878,7 +882,7 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
                 - a float array setting the "width" of the energy well for each
                   restraint in nanometres. A restraint behaves like a normal
                   harmonic restraint when the current distance is less than
-                  :param:`c` from the target distance.
+                  :attr:`c` from the target distance.
             * targets:
                 - a float array of target distances in nanometres
             * tolerances:

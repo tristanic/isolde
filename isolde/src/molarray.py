@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 29-Mar-2019
+# @Last modified time: 01-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -411,6 +411,12 @@ class Adaptive_Distance_Restraints(Collection):
             doc = 'Parameter setting depth of energy well, in kJ/mol')
     cs = cvec_property('adaptive_distance_restraint_c', float64,
             doc = 'Parameter setting width of quadratic portion of energy well, in Angstroms')
+    effective_spring_constants = cvec_property('adaptive_distance_restraint_effective_k', float64,
+            doc = (r'Effective harmonic spring constants when '
+                   r':attr:`distance` < :attr:`c`, in :math:`kJ mol^{-1} nm^{-2}`. '
+                   r'The effective spring constant is :math:`k=\kappa/c^2`. '
+                   r'Setting this parameter adjusts :math:`\kappa` for the '
+                   r'current :attr:`c`.'))
     alphas = cvec_property('adaptive_distance_restraint_alpha', float64,
             doc = 'Parameter setting rate of energy growth/flattening outside well')
     distances = cvec_property('adaptive_distance_restraint_distance', float64, read_only=True,

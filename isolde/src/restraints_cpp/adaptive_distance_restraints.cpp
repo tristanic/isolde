@@ -3,7 +3,7 @@
  * @Date:   23-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 29-Mar-2019
+ * @Last modified time: 01-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -128,7 +128,7 @@ double Adaptive_Distance_Restraint::force_magnitude() const
     double r_m_rho = r-rho;
     double c_sq = pow(_c,2);
     double r_m_rho_on_c_squared = (r_m_rho/c_sq);
-    if (std::abs(_alpha - 2.0 < EPS ))
+    if (std::abs(_alpha - 2.0) < EPS )
         return _kappa * r_m_rho_on_c_squared;
     else if (std::abs(_alpha) < EPS )
         return _kappa * 2*r_m_rho / ( 2*c_sq + pow(r_m_rho,2));

@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 27-Apr-2018
+# @Last modified time: 01-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -16,6 +16,7 @@ from ..molobject import (
     Position_Restraint_Mgr,
     Tuggable_Atoms_Mgr,
     Distance_Restraint_Mgr,
+    Adaptive_Distance_Restraint_Mgr,
     Proper_Dihedral_Restraint_Mgr,
     Rotamer_Restraint_Mgr,
     Chiral_Restraint_Mgr
@@ -26,6 +27,7 @@ from ..molobject import (
     Position_Restraint,
     Tuggable_Atom,
     Distance_Restraint,
+    Adaptive_Distance_Restraint,
     Proper_Dihedral_Restraint,
     Rotamer_Restraint,
     Chiral_Restraint
@@ -36,6 +38,7 @@ from ..molarray import (
     Position_Restraints,
     Tuggable_Atoms,
     Distance_Restraints,
+    Adaptive_Distance_Restraints,
     Proper_Dihedral_Restraints,
     Rotamer_Restraints,
     Chiral_Restraints

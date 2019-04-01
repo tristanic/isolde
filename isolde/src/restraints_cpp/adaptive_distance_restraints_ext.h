@@ -3,7 +3,7 @@
  * @Date:   18-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 29-Mar-2019
+ * @Last modified time: 01-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -224,6 +224,27 @@ adaptive_distance_restraint_c(void *restraint, size_t n, double *c)
 {
     Adaptive_Distance_Restraint **d = static_cast<Adaptive_Distance_Restraint **>(restraint);
     error_wrap_array_get<Adaptive_Distance_Restraint, double, double>(d, n, &Adaptive_Distance_Restraint::get_c, c);
+}
+
+extern "C" EXPORT void
+set_adaptive_distance_restraint_effective_k(void *restraint, size_t n, double *k)
+{
+    Adaptive_Distance_Restraint **d = static_cast<Adaptive_Distance_Restraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            auto dd = *d++;
+            dd->set_kappa(*k++ * pow(dd->get_c(), 2));
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+adaptive_distance_restraint_effective_k(void *restraint, size_t n, double *k)
+{
+    Adaptive_Distance_Restraint **d = static_cast<Adaptive_Distance_Restraint **>(restraint);
+    error_wrap_array_get<Adaptive_Distance_Restraint, double, double>(d, n, &Adaptive_Distance_Restraint::effective_spring_constant, k);
 }
 
 extern "C" EXPORT void

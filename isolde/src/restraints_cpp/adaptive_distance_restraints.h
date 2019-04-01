@@ -3,7 +3,7 @@
  * @Date:   27-Mar-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 29-Mar-2019
+ * @Last modified time: 01-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2019 Tristan Croll
  */
@@ -69,7 +69,7 @@ public:
     void set_c(const double &c);
     double get_alpha() const { return _alpha; }
     void set_alpha (const double &alpha);
-    double effective_spring_constant () { return _kappa / pow(_c,2); }
+    double effective_spring_constant () const { return _kappa / pow(_c,2); }
     bool enabled() const { return _enabled; }
     void set_enabled(bool flag);
 
@@ -93,7 +93,7 @@ private:
     // calculations to special functions
     double EPS = 1e-4;
     double MIN_C = 1e-2;
-    double SCALING_MAX_FORCE = 500.0;
+    double SCALING_MAX_FORCE = 5000.0;
     void _bond_transform(float *rot44, float radius, float length_scale) const;
     Atoms _atoms;
     Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint> *_mgr;

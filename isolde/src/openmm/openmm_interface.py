@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 01-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -736,6 +736,7 @@ class Sim_Manager:
         self.position_restraint_mgr = sx.get_position_restraint_mgr(m)
         self.tuggable_atoms_mgr = sx.get_tuggable_atoms_mgr(m)
         self.distance_restraint_mgr = sx.get_distance_restraint_mgr(m)
+        self.adaptive_distance_restraint_mgr = sx.get_adaptive_distance_restraint_mgr(m)
 
     def _initialize_restraints(self, update_handlers):
         sh = self.sim_handler
@@ -787,6 +788,11 @@ class Sim_Manager:
         drs = dr_m.atoms_restraints(sc.mobile_atoms)
         sh.add_distance_restraints(drs)
         uh.append((dr_m, dr_m.triggers.add_handler('changes', self._dr_changed_cb)))
+
+        adr_m = self.adaptive_distance_restraint_mgr
+        adrs = adr_m.atoms_restraints(sc.mobile_atoms)
+        sh.add_adaptive_distance_restraints(adrs)
+        uh.append((adr_m, adr_m.triggers.add_handler('changes', self._adr_changed_cb)))
 
         pr_m = self.position_restraint_mgr
         prs = pr_m.add_restraints(sc.mobile_atoms)
@@ -973,6 +979,7 @@ class Sim_Manager:
         self._update_handlers = []
         self._pr_sim_end_cb()
         self._dr_sim_end_cb()
+        self._adr_sim_end_cb()
         self._dihe_r_sim_end_cb()
         self._tug_sim_end_cb()
         self._rama_a_sim_end_cb()
@@ -1045,20 +1052,47 @@ class Sim_Manager:
             created = created[numpy.all(indices != -1, axis=0)]
             self.sim_handler.add_distance_restraints(created)
         changeds = []
-        if 'target changed' in change_types:
-            changeds.append(changes['target changed'])
-        if 'enabled/disabled' in change_types:
-            changeds.append(changes['enabled/disabled'])
-        if 'spring constant changed' in change_types:
-            changeds.append(changes['spring constant changed'])
+        for reason in ('target changed', 'enabled/disabled', 'spring constant changed'):
+            if reason in change_types:
+                changeds.append(changes[reason])
         if len(changeds):
             all_changeds = concatenate(changeds, remove_duplicates=True)
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
             self.sim_handler.update_distance_restraints(all_changeds)
 
-
     def _dr_sim_end_cb(self, *_):
         restraints = self.distance_restraint_mgr.intra_restraints(self.sim_construct.all_atoms)
+        restraints.clear_sim_indices()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+    def _adr_changed_cb(self, trigger_name, changes):
+        mgr, changes = changes
+        change_types = list(changes.keys())
+        from chimerax.atomic import concatenate
+        if 'created' in change_types:
+            created = changes['created']
+            created = created[created.sim_indices == -1]
+            # add only restraints with both atoms in the sim
+            all_atoms = self.sim_construct.all_atoms
+            indices = numpy.array([all_atoms.indices(atoms for atoms in created.atoms)])
+            created = created[numpy.all(indices != -1, axis=0)]
+            self.sim_handler.add_adaptive_distance_restraints(created)
+        changeds = []
+        for reason in (
+            'target changed', 'enabled/disabled',
+            'adaptive restraint constant changed',
+            'cutoff changed'
+            ):
+            if reason in change_types:
+                changeds.append(changes[reason])
+        if len(changeds):
+            all_changeds = concatenate(changeds, remove_duplicates=True)
+            all_changeds = all_changeds[all_changeds.sim_indices != 1]
+            self.sim_handler.update_adaptive_distance_restraints(all_changeds)
+
+    def _adr_sim_end_cb(self, *_):
+        restraints = self.adaptive_distance_restraint_mgr.intra_restraints(self.sim_construct.all_atoms)
         restraints.clear_sim_indices()
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
@@ -1338,7 +1372,8 @@ class Sim_Handler:
 
 
     def initialize_restraint_forces(self, amber_cmap=True, tugging=True, position_restraints=True,
-        distance_restraints=True, dihedral_restraints=True):
+        distance_restraints=True, dihedral_restraints=True,
+        adaptive_distance_restraints=True):
         '''
         Create the selected Force objects, and add them to the System. No
         restraints are added at this stage - these should be added using
@@ -1374,6 +1409,8 @@ class Sim_Handler:
             self.initialize_distance_restraints_force(params.restraint_max_force)
         if dihedral_restraints:
             self.initialize_dihedral_restraint_force()
+        if adaptive_distance_restraints:
+            self.initialize_adaptive_distance_restraints_force()
 
     def initialize_mdff_forces(self, volumes):
         '''
@@ -1899,6 +1936,107 @@ class Sim_Handler:
         force.update_target(restraint.sim_index,
             restraint.enabled, k=restraint.spring_constant, target=restraint.target/10)
         self.force_update_needed()
+
+    ####
+    # Adaptive Distance Restraints
+    ####
+
+        ##
+        # Before simulation starts
+        ##
+
+    def initialize_adaptive_distance_restraints_force(self):
+        '''
+        Just initialise the force. Unlike ISOLDE's other custom forces, this
+        does not take a max_force argument. Given that the forces applied by
+        this method should be quite weak under almost all circumstances, this
+        should not be a problem.
+        '''
+        from .custom_forces import AdaptiveDistanceRestraintForce
+        f = self._adaptive_distance_restraints_force = AdaptiveDistanceRestraintForce()
+        self._system.addForce(f)
+        self.all_forces.append(f)
+        return f
+
+    def add_adaptive_distance_restraints(self, restraints):
+        '''
+        Add a set of adaptive distance restraints to the simulation. Sets
+        :attr:`sim_index` for each restraint so it knows its place in the
+        simulation. Automatically calls :func:`context_reinit_needed`.
+
+        Args:
+            * restraints:
+                - a :py:class:`Adaptive_Distance_Restraints` instance
+        '''
+        force = self._adaptive_distance_restraints_force
+        all_atoms = self._atoms
+        dr_atoms = restraints.atoms
+        indices = numpy.array([all_atoms.indices(atoms) for atoms in dr_atoms])
+        ifilter = numpy.all(indices!=-1, axis=0)
+        indices = [i[ifilter] for i in indices]
+        restraints = restraints[ifilter]
+        restraints.sim_indices = force.add_bonds(indices,
+            restraints.enableds, restraints.kappas, restraints.cs/10,
+            restraints.targets/10, restraints.tolerances/10, restraints.alphas
+        )
+        self.context_reinit_needed()
+
+    def add_adaptive_distance_restraint(self, restraint):
+        '''
+        Add a single adaptive distance restraint to the simulation. Sets
+        :attr:`sim_index` for the restraint so it knows its place in the
+        simulation. Automatically calls :func:`context_reinit_needed`
+
+        Args:
+            * restraint:
+                - a :py:class:`Adaptive_Distance_Restraint` instance
+        '''
+        force = self._adaptive_distance_restraints_force
+        all_atoms = self._atoms
+        dr_atoms = restraint.atoms
+        indices = [all_atoms.index(atom) for atom in dr_atoms]
+        if -1 in indices:
+            raise TypeError('At least one atom in this restraint is not in the simulation!')
+        restraint.sim_index = force.addBond(*indices,
+            (float(restraint.enabled), restraint.kappa, restraint.c/10,
+            restraint.target/10, restraint.tolerance/10, restraint.alpha))
+        self.context_reinit_needed()
+
+        ##
+        # During simulation
+        ##
+
+    def update_adaptive_distance_restraints(self, restraints):
+        '''
+        Update the simulation to reflect the current parameters of the given
+        restraints.
+
+        Args:
+            * restraints:
+                - a :py:class:`Adaptive_Distance_Restraints` instance
+        '''
+        force = self._adaptive_distance_restraints_force
+        force.update_targets(restraints.sim_indices,
+            restraints.enableds, restraints.kappas, restraints.cs/10,
+            restraints.targets/10, restraints.tolerances/10, restraints.alphas)
+        self.force_update_needed()
+
+    def update_adaptive_distance_restraint(self, restraint):
+        '''
+        Update the simulation to reflect the current parameters of the given
+        restraint.
+
+        Args:
+            * restraint:
+                - a :py:class:`Distance_Restraint` instance
+        '''
+        force = self._adaptive_distance_restraints_force
+        force.update_target(restraint.sim_index,
+            restraint.enabled, restraint.kappa, restraint.c/10,
+            restraint.target/10, restraint.tolerance/10, restraint.alpha)
+        self.force_update_needed()
+
+
 
     ####
     # Positional Restraints
