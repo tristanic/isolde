@@ -3,7 +3,7 @@
  * @Date:   27-Mar-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 01-Apr-2019
+ * @Last modified time: 02-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2019 Tristan Croll
  */
@@ -73,11 +73,13 @@ public:
     bool enabled() const { return _enabled; }
     void set_enabled(bool flag);
 
+    colors::variable_colormap* colormap() const;
+    void color(uint8_t *color) const;
+
     // Visualisation functions
     double radius() const;
-    void target_transform(float *rot44) const;
-    // void tolerance_transforms(float *rot44p, float *rot44m) const;
-    void bond_cylinder_transform(float *rot44) const;
+    //! Transforms for a tripartite bond representation
+    void bond_transforms(float *rot44_e1, float *rot44_m, float *rot44_e2) const;
     bool visible() const;
 
     // General monitoring
@@ -91,13 +93,13 @@ public:
 private:
     // to avoid numerical instability, define a large epsilon when switching force
     // calculations to special functions
-    double EPS = 1e-4;
-    double MIN_C = 1e-2;
-    double SCALING_MAX_FORCE = 5000.0;
-    void _bond_transform(float *rot44, float radius, float length_scale) const;
+    double _thresholds[4];
+    const double EPS = 1e-4;
+    const double MIN_C = 1e-2;
+    const double SCALING_MAX_FORCE = 100.0;
     Atoms _atoms;
     Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint> *_mgr;
-    double _target = 0;
+    double _target = 0.1;
     double _tolerance = 0;
     double _kappa = 0;
     double _c = MIN_C;
@@ -105,7 +107,13 @@ private:
     bool _enabled=false;
     const char* err_msg_bonded()
     { return "Can't create a distance restraint between bonded atoms!";}
-
+    void _update_thresholds()
+    {
+        _thresholds[0] = _target - _tolerance - 5*_c;
+        _thresholds[1] = _target - _tolerance;
+        _thresholds[2] = _target + _tolerance;
+        _thresholds[3] = _target + _tolerance + 5*_c;
+    }
 
 }; // class Distance_Restraint
 
@@ -120,8 +128,23 @@ public:
         "Adaptive_Distance_Restraint_Mgr", "Adaptive_Distance_Restraints"
     )
     {}
+    inline void set_colors(uint8_t *maxc, uint8_t *midc, uint8_t *minc)
+    {
+        colors::color thecolors[4];
+        for (size_t i=0; i<4; ++i)
+        {
+            thecolors[0][i] = ((double) *(minc++)) / 255.0;
+            thecolors[1][i] = ((double) *(midc)) / 255.0;
+            thecolors[2][i] = ((double) *(midc++)) / 255.0;
+            thecolors[3][i] = ((double) *(maxc++)) / 255.0;
+        }
+        _colormap = colors::variable_colormap(thecolors, 4);
+    }
+    colors::variable_colormap* colormap() { return &_colormap; }
+
 private:
     std::type_index _mgr_type = std::type_index(typeid(this));
+    colors::variable_colormap _colormap;
 };
 
 

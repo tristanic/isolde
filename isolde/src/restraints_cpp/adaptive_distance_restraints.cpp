@@ -3,7 +3,7 @@
  * @Date:   23-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 01-Apr-2019
+ * @Last modified time: 02-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -57,12 +57,14 @@ void Adaptive_Distance_Restraint::set_target(const double &target)
 {
     _target = target < MIN_DISTANCE_RESTRAINT_TARGET ? MIN_DISTANCE_RESTRAINT_TARGET : target;
     _mgr->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
+    _update_thresholds();
 }
 
 void Adaptive_Distance_Restraint::set_tolerance(const double &tolerance)
 {
     _tolerance = tolerance < 0 ? 0 : tolerance;
     _mgr->track_change(this, change_tracker()->REASON_CUTOFF_CHANGED);
+    _update_thresholds();
 }
 
 void Adaptive_Distance_Restraint::set_kappa(const double &kappa)
@@ -81,6 +83,7 @@ void Adaptive_Distance_Restraint::set_c(const double &c)
 {
     _c = c<MIN_C ? MIN_C : c;
     _mgr->track_change(this, change_tracker()->REASON_ADAPTIVE_C_CHANGED);
+    _update_thresholds();
 }
 
 void Adaptive_Distance_Restraint::set_enabled(bool flag)
@@ -103,16 +106,6 @@ double Adaptive_Distance_Restraint::radius() const
         * (LINEAR_RESTRAINT_MAX_RADIUS-LINEAR_RESTRAINT_MIN_RADIUS) + LINEAR_RESTRAINT_MIN_RADIUS;
 }
 
-void Adaptive_Distance_Restraint::target_transform(float *rot44) const
-{
-    float scale = get_target() / distance();
-    _bond_transform(rot44, radius(), scale);
-}
-
-void Adaptive_Distance_Restraint::bond_cylinder_transform(float *rot44) const
-{
-    _bond_transform(rot44, 1.0, 1.0);
-}
 
 double Adaptive_Distance_Restraint::force_magnitude() const
 {
@@ -130,25 +123,42 @@ double Adaptive_Distance_Restraint::force_magnitude() const
     double r_m_rho_on_c_squared = (r_m_rho/c_sq);
     if (std::abs(_alpha - 2.0) < EPS )
         return _kappa * r_m_rho_on_c_squared;
-    else if (std::abs(_alpha) < EPS )
+    if (std::abs(_alpha) < EPS )
         return _kappa * 2*r_m_rho / ( 2*c_sq + pow(r_m_rho,2));
-    else {
-        return
-            _kappa * pow(r_m_rho*(pow(r_m_rho,2)/(c_sq*std::abs(2-_alpha)) +1), (_alpha/2-1))/c_sq;
-    }
+    return
+        _kappa*r_m_rho/c_sq * pow( ( pow(r_m_rho,2) / (c_sq*std::abs(2-_alpha)) +1), (_alpha/2-1));
 } // force_magnitude
 
-void Adaptive_Distance_Restraint::_bond_transform(float *rot44, float radius, float length_scale) const
+colors::variable_colormap*
+Adaptive_Distance_Restraint::colormap() const
+{ return dynamic_cast<Adaptive_Distance_Restraint_Mgr*>(_mgr)->colormap();}
+
+void Adaptive_Distance_Restraint::color(uint8_t *color) const
 {
+    colors::color thecolor;
+    colormap()->interpolate(distance(), _thresholds, thecolor);
+    for (size_t j=0; j<4; ++j) {
+        *(color++) = (uint8_t)(thecolor[j]*255.0);
+    }
+}
+
+void
+Adaptive_Distance_Restraint::bond_transforms(float *rot44_e1, float *rot44_m, float *rot44_e2) const
+{
+    auto r = radius();
     const Coord &c0 = atoms()[0]->coord();
     const Coord &c1 = atoms()[1]->coord();
-    float xyz0[3], xyz1[3];
-    for (size_t i=0; i<3; ++i)
-    {
-        xyz0[i] = c0[i];
-        xyz1[i] = c1[i];
-    }
-    geometry::bond_cylinder_transform_gl<float>(xyz0, xyz1, radius, length_scale, rot44);
+
+    float d = distance();
+
+    auto vec = c1-c0;
+    auto end_frac = (d-get_target())/(2*d);
+    auto end_offset = vec*end_frac;
+    auto t1 = c0 + end_offset;
+    geometry::bond_cylinder_transform_gl<Coord, float>(t1, c0, r*0.99, 1.0, rot44_e1);
+    auto t2 = c1 - end_offset;
+    geometry::bond_cylinder_transform_gl<Coord, float>(t1, t2, r, 1.0, rot44_m);
+    geometry::bond_cylinder_transform_gl<Coord, float>(t2, c1, r*0.99, 1.0, rot44_e2);
 }
 
 template class Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint>;

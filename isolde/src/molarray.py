@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 01-Apr-2019
+# @Last modified time: 02-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -367,26 +367,22 @@ class Adaptive_Distance_Restraints(Collection):
             Adaptive_Distance_Restraints)
 
     @property
-    def _bond_cylinder_transforms(self):
-        '''Transforms mapping a unit cylinder onto the restraint bonds. Read only.'''
+    def _bond_transforms(self):
+        '''
+        Transforms mapping a tripartite bond onto the restraint vectors. Read only.
+        '''
         from chimerax.core.geometry import Places
-        f = c_function('adaptive_distance_restraint_bond_transform',
-            args = (ctypes.c_void_p, ctypes.c_size_t,
-                ctypes.POINTER(ctypes.c_float)))
+        f = c_function('adaptive_distance_restraint_bond_transforms',
+            args= (ctypes.c_void_p, ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_float),
+                ctypes.POINTER(ctypes.c_float),
+            )
+        )
         n = len(self)
-        transforms = empty((n,4,4), float32)
-        f(self._c_pointers, n, pointer(transforms))
-        return Places(opengl_array=transforms)
-
-    @property
-    def _target_transforms(self):
-        from chimerax.core.geometry import Places
-        f = c_function('adaptive_distance_restraint_target_transform',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_float)))
-        n = len(self)
-        transforms=empty((n,4,4), float32)
-        f(self._c_pointers, n, pointer(transforms))
-        return Places(opengl_array=transforms)
+        tf_ends = empty((n*2,4,4), float32)
+        tf_m = empty((n,4,4), float32)
+        f(self._c_pointers, n, pointer(tf_ends), pointer(tf_m))
+        return tuple(Places(opengl_array=tf) for tf in (tf_ends, tf_m))
 
     def clear_sim_indices(self):
         '''
@@ -421,6 +417,8 @@ class Adaptive_Distance_Restraints(Collection):
             doc = 'Parameter setting rate of energy growth/flattening outside well')
     distances = cvec_property('adaptive_distance_restraint_distance', float64, read_only=True,
             doc = 'Current distances between restrained atoms in Angstroms. Read only.')
+    applied_forces = cvec_property('adaptive_distance_restraint_force_magnitude', float64, read_only=True,
+            doc = 'Total force currently being applied to each restraint. Read only.')
     sim_indices = cvec_property('adaptive_distance_restraint_sim_index', int32,
         doc='''
         Index of each restraint in the relevant MDFF Force in a running
@@ -428,7 +426,8 @@ class Adaptive_Distance_Restraints(Collection):
         indices equal to -1. Can be set, but only if you know what you are
         doing.
          ''')
-
+    colors = cvec_property('adaptive_distance_restraint_color', uint8, 4, read_only=True,
+            doc = 'Color of each restraint. Automatically set based on ratio of current distance to target. Read only.')
 
 class Chiral_Restraints(Collection):
     def __init__(self, c_pointers=None):

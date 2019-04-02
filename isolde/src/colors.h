@@ -3,7 +3,7 @@
  * @Date:   18-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 26-Apr-2018
+ * @Last modified time: 02-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -90,7 +90,7 @@ public:
     }
     const std::vector<std::array<double, 4>>& mapped_colors() const { return _colors; }
 
-    void interpolate(double value, double *cutoffs, color &rgba)
+    void interpolate(double value, const double *cutoffs, color &rgba)
     {
         if (value <= cutoffs[0])
             copy_color(_colors[0], rgba);

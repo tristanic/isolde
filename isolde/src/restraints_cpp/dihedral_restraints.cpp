@@ -3,7 +3,7 @@
  * @Date:   26-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 26-Apr-2018
+ * @Last modified time: 02-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -157,15 +157,15 @@ void Proper_Dihedral_Restraint::get_annotation_transform(float *tf)
     auto b = get_dihedral()->axial_bond();
     const auto &c0 = b->atoms()[0]->coord();
     const auto &c1 = b->atoms()[1]->coord();
-    float xyz0[3], xyz1[3];
-    for (size_t i=0; i<3; ++i)
-    {
-        xyz0[i]=c0[i];
-        xyz1[i]=c1[i];
-    }
+    // float xyz0[3], xyz1[3];
+    // for (size_t i=0; i<3; ++i)
+    // {
+    //     xyz0[i]=c0[i];
+    //     xyz1[i]=c1[i];
+    // }
 
     // get the transformation mapping to the bond position
-    geometry::bond_cylinder_transform_gl<float>(xyz0, xyz1, 1.0, width, tf2);
+    geometry::bond_cylinder_transform_gl<Coord, float>(c0, c1, 1.0, width, tf2);
     // apply the bond transformation to the rotational component
     float temp[16];
     geometry::multiply_transforms_gl<float>(tf1, tf2, temp);

@@ -3,7 +3,7 @@
  * @Date:   18-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 01-Apr-2019
+ * @Last modified time: 02-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -162,6 +162,21 @@ adaptive_distance_restraint_mgr_all_restraints(void *mgr)
     }
 }
 
+extern "C" EXPORT void
+set_adaptive_distance_restraint_mgr_colors(void *mgr, uint8_t *colors)
+{
+    Adaptive_Distance_Restraint_Mgr *d = static_cast<Adaptive_Distance_Restraint_Mgr *>(mgr);
+    try {
+        auto maxc = colors;
+        auto midc = colors+4;
+        auto minc = colors+8;
+        
+        d->set_colors(maxc, midc, minc);
+    } catch (...) {
+        molc_error();
+    }
+}
+
 /***************************************************************
  *
  * Adaptive_Distance_Restraint functions
@@ -315,6 +330,13 @@ adaptive_distance_restraint_atoms(void *restraint, size_t n, pyobject_t *atoms)
 }
 
 extern "C" EXPORT void
+adaptive_distance_restraint_force_magnitude(void *restraint, size_t n, double *force)
+{
+    Adaptive_Distance_Restraint **d = static_cast<Adaptive_Distance_Restraint **>(restraint);
+    error_wrap_array_get<Adaptive_Distance_Restraint, double, double>(d, n, &Adaptive_Distance_Restraint::force_magnitude, force);
+}
+
+extern "C" EXPORT void
 adaptive_distance_restraint_distance(void *restraint, size_t n, double *distance)
 {
     Adaptive_Distance_Restraint **d = static_cast<Adaptive_Distance_Restraint **>(restraint);
@@ -343,13 +365,13 @@ adaptive_distance_restraint_visible(void *restraint, size_t n, npy_bool *flag)
 }
 
 extern "C" EXPORT void
-adaptive_distance_restraint_bond_transform(void *restraint, size_t n, float *rot44)
+adaptive_distance_restraint_bond_transforms(void *restraint, size_t n, float *rot44_ends, float *rot44_m)
 {
     Adaptive_Distance_Restraint **d = static_cast<Adaptive_Distance_Restraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
-            (*d++)->bond_cylinder_transform(rot44);
-            rot44+=16;
+            (*d++)->bond_transforms(rot44_ends, rot44_m, rot44_ends+16);
+            rot44_ends += 32; rot44_m += 16;
         }
     } catch (...) {
         molc_error();
@@ -357,15 +379,16 @@ adaptive_distance_restraint_bond_transform(void *restraint, size_t n, float *rot
 }
 
 extern "C" EXPORT void
-adaptive_distance_restraint_target_transform(void *restraint, size_t n, float *rot44)
+adaptive_distance_restraint_color(void *restraint, size_t n, uint8_t *color)
 {
     Adaptive_Distance_Restraint **d = static_cast<Adaptive_Distance_Restraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
-            (*d++)->target_transform(rot44);
-            rot44+=16;
+            auto dd = *d++;
+            dd->color(color);
+            color += 4;
         }
-    } catch (...) {
+    } catch(...) {
         molc_error();
     }
 }

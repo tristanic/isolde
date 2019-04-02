@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 01-Apr-2019
+# @Last modified time: 02-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -2335,30 +2335,9 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
 
     def update_graphics(self):
         '''
-        Update the restraints drawing. Happens automatically every time
-        restraints or coordinates change. It should rarely/never be necessary to
-        call this manually.
+        Override in derived class.
         '''
-        if not self.visible:
-            return
-        bd = self._bond_drawing
-        td = self._target_drawing
-        visibles = self.visible_restraints
-        n = len(visibles)
-        if n==0:
-            bd.display = False
-            td.display = False
-            return
-        bd.display = self._show_bd
-        td.display = self._show_td
-        self._update_bond_drawing(bd, visibles, n)
-        self._update_target_drawing(td, visibles, n)
-
-    def _update_bond_drawing(self, bd, visibles, n):
-        bd.positions = visibles._bond_cylinder_transforms
-
-    def _update_target_drawing(self, td, visibles, n):
-        td.positions = visibles._target_transforms
+        raise RuntimeError('update_graphics() must be defined in the derived class!')
 
     def _get_restraint_c_func(self):
         if not hasattr(self, '_c_func_get_restraint'):
@@ -2592,6 +2571,35 @@ class Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
         '''
         return self._get_ss_restraints(residues, create=False)
 
+    def update_graphics(self):
+        '''
+        Update the restraints drawing. Happens automatically every time
+        restraints or coordinates change. It should rarely/never be necessary to
+        call this manually.
+        '''
+        if not self.visible:
+            return
+        bd = self._bond_drawing
+        td = self._target_drawing
+        visibles = self.visible_restraints
+        n = len(visibles)
+        if n==0:
+            bd.display = False
+            td.display = False
+            return
+        bd.display = self._show_bd
+        td.display = self._show_td
+        self._update_bond_drawing(bd, visibles, n)
+        self._update_target_drawing(td, visibles, n)
+
+    def _update_bond_drawing(self, bd, visibles, n):
+        bd.positions = visibles._bond_cylinder_transforms
+
+    def _update_target_drawing(self, td, visibles, n):
+        td.positions = visibles._target_transforms
+
+
+
 class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
     '''
     Manages "adaptive" distance restraints between atoms and their
@@ -2608,8 +2616,11 @@ class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
         adr_mgr = sx.get_adaptive_distance_restraint_mgr(m)
 
     '''
-    _DEFAULT_BOND_COLOR = [96, 255, 96, 255]
-    _DEFAULT_TARGET_COLOR = [0, 200, 0, 255]
+    _DEFAULT_BOND_COLOR = [0, 255, 0, 255]
+    _DEFAULT_TARGET_COLOR = [0, 255, 0, 255]
+
+    _DEFAULT_MIN_COLOR = [204, 204, 0, 255]
+    _DEFAULT_MAX_COLOR = [102, 0, 204, 255]
     def __init__(self, model, c_pointer=None):
         '''
         Prepare an adaptive distance restraint manager for a given atomic model.
@@ -2621,6 +2632,33 @@ class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
 
         super().__init__(model, class_name, c_function_prefix,
             singular_getter, plural_getter, c_pointer=c_pointer)
+        self.set_colormap(self._DEFAULT_MIN_COLOR, self._DEFAULT_TARGET_COLOR, self._DEFAULT_MAX_COLOR)
+
+
+    def set_colormap(self, min_color, mid_color, max_color):
+        '''
+        Set the color scale for automatically colouring the restraint
+        pseudobonds. Colors will be interpolated from min_color to mid_color
+        when (r0-tolerance-3*c) < r < (r0-tolerance), and from
+        mid_color to max_color when (r0+tolerance < r < r0+tolerance+3*c).
+
+        Args:
+            * min_color:
+                - an [rgba] array of four integers in the range 0-255
+            * mid_color:
+                - an [rgba] array of four integers in the range 0-255
+            * max_color:
+                - an [rgba] array of four integers in the range 0-255
+        '''
+        cf = c_function('set_adaptive_distance_restraint_mgr_colors',
+            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8))
+            )
+        colors = numpy.empty((3, 4), uint8)
+        colors[0,:] = max_color
+        colors[1,:] = mid_color
+        colors[2,:] = min_color
+        cf(self._c_pointer, pointer(colors))
+
 
     def _target_geometry(self):
         '''
@@ -2632,10 +2670,41 @@ class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
 
     def _pseudobond_geometry(self):
         '''
-        Connects the two restrained atoms. Radius is fixed.
+        Cones connecting each restrained atom to the target cylinder. Radius
+        scales according to currently-applied force.
         '''
         from chimerax import surface
-        return surface.cylinder_geometry(radius = 0.025, height=1.0, caps=False)
+        return surface.cone_geometry(radius = 1.0, height=1.0, caps=True)
+
+    def update_graphics(self):
+        '''
+        Update the restraints drawing. Happens automatically every time
+        restraints or coordinates change. It should rarely/never be necessary to
+        call this manually.
+        '''
+        if not self.visible:
+            return
+        bd = self._bond_drawing
+        td = self._target_drawing
+        visibles = self.visible_restraints
+        n = len(visibles)
+        if n==0:
+            bd.display = False
+            td.display = False
+            return
+        bd.display = self._show_bd
+        td.display = self._show_td
+        end_pos, mid_pos = visibles._bond_transforms;
+        colors = visibles.colors
+        bond_colors = numpy.empty((n*2, 4), uint8)
+        bond_colors[0::2] = colors
+        bond_colors[1::2] = colors
+        bd.positions = end_pos
+        bd.colors = bond_colors
+        td.positions = mid_pos
+        td.colors = colors
+
+
 
 
 class Chiral_Restraint_Mgr(_Restraint_Mgr):
@@ -3882,6 +3951,8 @@ class Adaptive_Distance_Restraint(State):
             doc = 'Parameter setting rate of energy growth/flattening outside well')
     distance = c_property('adaptive_distance_restraint_distance', float64, read_only=True,
             doc = 'Current distance between restrained atoms in Angstroms. Read only.')
+    applied_force = c_property('adaptive_distance_restraint_force_magnitude', float64, read_only=True,
+            doc = 'Total force currently being applied to this restraint. Read only.')
     sim_index = c_property('adaptive_distance_restraint_sim_index', int32,
         doc='''
         Index of this restraint in the relevant MDFF Force in a running

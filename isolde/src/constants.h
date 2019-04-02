@@ -3,7 +3,7 @@
  * @Date:   26-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 26-Apr-2018
+ * @Last modified time: 02-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -36,7 +36,7 @@ const double DEFAULT_CHIRAL_RESTRAINT_CUTOFF = 15.0/180*M_PI;
 const double DIHEDRAL_RESTRAINT_MAX_WIDTH = 3.0;
 const double DIHEDRAL_RESTRAINT_MIN_WIDTH = 0.5;
 const float Z_AXIS[3] = {0.0, 0.0, 1.0};
-const double MIN_DISTANCE_RESTRAINT_TARGET = 1.0; //Angstroms
+const double MIN_DISTANCE_RESTRAINT_TARGET = 0.01; //Angstroms
 
 }
 

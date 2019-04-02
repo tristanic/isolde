@@ -3,7 +3,7 @@
  * @Date:   18-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 26-Apr-2018
+ * @Last modified time: 02-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -236,8 +236,8 @@ void flip_on_x_gl(T *mat44)
 }
 
 
-template <typename T>
-void bond_cylinder_transform_gl(T xyz0[3], T xyz1[3], T r, T length_scale, T *rot44)
+template <class C, typename T>
+void bond_cylinder_transform_gl(C xyz0, C xyz1, T r, T length_scale, T *rot44)
 {
     T bvec[3];
     for (size_t i=0; i<3; i++) {

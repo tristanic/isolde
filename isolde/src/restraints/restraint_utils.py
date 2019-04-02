@@ -1,3 +1,13 @@
+# @Author: Tristan Croll <tic20>
+# @Date:   20-Dec-2018
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   tic20
+# @Last modified time: 02-Apr-2019
+# @License: Free for non-commercial use (see license.pdf)
+# @Copyright: 2017-2018 Tristan Croll
+
+
+
 from math import radians
 import numpy
 def restrain_torsions_to_template(template_residues, restrained_residues,
@@ -183,3 +193,66 @@ def restrain_small_ligands(model, distance_cutoff=3.5, heavy_atom_limit=3, sprin
             prs.targets = prs.atoms.coords
             prs.spring_constants = spring_constant
             prs.enableds = True
+
+
+def restrain_atom_distances_to_template(template_residues, restrained_residues,
+    atom_names = ['CA'], distance_cutoff=8, spring_constant = 50, tolerance = 0.1):
+    '''
+    Creates a "web" of adaptive distance restraints between nearby atoms,
+    restraining one set of residues to the same spatial organisation as another.
+
+    Args:
+        * template_residues:
+            - a :class:`chimerax.atomic.Residues` instance. All residues must be
+              from a single model, but need no be contiguous
+        * restrained_residues:
+            - a :class:`chimerax.atomic.Residues` instance. All residues must be
+              from a single model (which may or may not be the same model as for
+              `template_residues`). May be the same array as `template_residues`
+              (which will just restrain all distances to their current values).
+        * distance_cutoff (default = 8):
+            - for each CA atom in `restrained_residues`, a distance restraint
+              will be created between it and every other CA atom where the
+              equivalent atom in `template_residues` is within `distance_cutoff`
+              of its template equivalent.
+        * spring_constant (default = 50):
+            - the strength of each restraint, in :math:`kJ mol^{-1} nm^{-2}`
+    '''
+    from chimerax.isolde import session_extensions as sx
+    if atom_names is None or not len(atom_names):
+        raise TypeError('Atom names must be provided!')
+    if len(template_residues) != len(restrained_residues):
+        raise TypeError('Template and restrained residue arrays must be the same length!')
+    template_us = template_residues.unique_structures
+    if len(template_us) != 1:
+        raise TypeError('Template residues must be from a single model!')
+    restrained_us = restrained_residues.unique_structures
+    if len(restrained_us) != 1:
+        raise TypeError('Restrained residues must be from a single model!')
+    restrained_model = restrained_us[0]
+    adrm = sx.get_adaptive_distance_restraint_mgr(restrained_model)
+    from chimerax.core.geometry import find_close_points, distance
+
+    import numpy
+    atom_names = numpy.array(atom_names)
+
+    template_as = template_residues.atoms[numpy.in1d(template_residues.atoms.names, atom_names)]
+    restrained_as = restrained_residues.atoms[numpy.in1d(restrained_residues.atoms.names, atom_names)]
+    template_coords = template_as.coords
+    for i, ra1 in enumerate(restrained_as):
+        query_coord = numpy.array([template_coords[i]])
+        indices = find_close_points(query_coord, template_coords, distance_cutoff)[1]
+        indices = indices[indices !=i]
+        for ind in indices:
+            ra2 = restrained_as[ind]
+            try:
+                dr = adrm.add_restraint(ra1, ra2)
+            except ValueError:
+                continue
+            dr.tolerance = tolerance
+            dist = distance(query_coord[0], template_coords[ind])
+            dr.target = dist
+            dr.c = max(dist/5, 0.5)
+            dr.effective_spring_constant = spring_constant
+            dr.alpha = -4
+            dr.enabled = True

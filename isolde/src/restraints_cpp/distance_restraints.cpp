@@ -3,7 +3,7 @@
  * @Date:   23-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 28-Mar-2019
+ * @Last modified time: 02-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -91,13 +91,13 @@ void Distance_Restraint::_bond_transform(float *rot44, float radius, float lengt
 {
     const Coord &c0 = atoms()[0]->coord();
     const Coord &c1 = atoms()[1]->coord();
-    float xyz0[3], xyz1[3];
-    for (size_t i=0; i<3; ++i)
-    {
-        xyz0[i] = c0[i];
-        xyz1[i] = c1[i];
-    }
-    geometry::bond_cylinder_transform_gl<float>(xyz0, xyz1, radius, length_scale, rot44);
+    // float xyz0[3], xyz1[3];
+    // for (size_t i=0; i<3; ++i)
+    // {
+    //     xyz0[i] = c0[i];
+    //     xyz1[i] = c1[i];
+    // }
+    geometry::bond_cylinder_transform_gl<Coord, float>(c0, c1, radius, length_scale, rot44);
 }
 
 template class Distance_Restraint_Mgr_Tmpl<Distance_Restraint>;

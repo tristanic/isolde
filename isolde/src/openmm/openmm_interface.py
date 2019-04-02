@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 01-Apr-2019
+# @Last modified time: 02-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -1014,17 +1014,17 @@ class Sim_Manager:
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
+    _pr_update_reasons = frozenset((
+        'target changed', 'enabled/disabled', 'spring constant changed'
+    ))
+
     def _pr_changed_cb(self, trigger_name, changes):
         mgr, changes = changes
-        change_types = list(changes.keys())
+        change_types = set(changes.keys())
         from chimerax.atomic import concatenate
         changeds = []
-        if 'target changed' in change_types:
-            changeds.append(changes['target changed'])
-        if 'enabled/disabled' in change_types:
-            changeds.append(changes['enabled/disabled'])
-        if 'spring constant changed' in change_types:
-            changeds.append(changes['spring constant changed'])
+        for reason in self._pr_update_reasons.intersection(change_types):
+            changeds.append(changes[reason])
         if len(changeds):
             all_changeds = concatenate(changeds, remove_duplicates=True)
             # limit to restraints that are actually in the simulation
@@ -1038,9 +1038,11 @@ class Sim_Manager:
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
+    _dr_update_reasons = frozenset(('target changed', 'enabled/disabled', 'spring constant changed'))
+
     def _dr_changed_cb(self, trigger_name, changes):
         mgr, changes = changes
-        change_types = list(changes.keys())
+        change_types = set(changes.keys())
         from chimerax.atomic import concatenate
         if 'created' in change_types:
             # avoid double counting
@@ -1052,9 +1054,8 @@ class Sim_Manager:
             created = created[numpy.all(indices != -1, axis=0)]
             self.sim_handler.add_distance_restraints(created)
         changeds = []
-        for reason in ('target changed', 'enabled/disabled', 'spring constant changed'):
-            if reason in change_types:
-                changeds.append(changes[reason])
+        for reason in self._dr_update_reasons.intersection(change_types):
+            changeds.append(changes[reason])
         if len(changeds):
             all_changeds = concatenate(changeds, remove_duplicates=True)
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
@@ -1066,9 +1067,15 @@ class Sim_Manager:
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
+    _adr_update_reasons = frozenset((
+        'target changed', 'enabled/disabled',
+        'adaptive restraint constant changed',
+        'cutoff changed', 'spring constant changed'
+    ))
+
     def _adr_changed_cb(self, trigger_name, changes):
         mgr, changes = changes
-        change_types = list(changes.keys())
+        change_types = set(changes.keys())
         from chimerax.atomic import concatenate
         if 'created' in change_types:
             created = changes['created']
@@ -1079,13 +1086,8 @@ class Sim_Manager:
             created = created[numpy.all(indices != -1, axis=0)]
             self.sim_handler.add_adaptive_distance_restraints(created)
         changeds = []
-        for reason in (
-            'target changed', 'enabled/disabled',
-            'adaptive restraint constant changed',
-            'cutoff changed'
-            ):
-            if reason in change_types:
-                changeds.append(changes[reason])
+        for reason in self._adr_update_reasons.intersection(change_types):
+            changeds.append(changes[reason])
         if len(changeds):
             all_changeds = concatenate(changeds, remove_duplicates=True)
             all_changeds = all_changeds[all_changeds.sim_indices != 1]
