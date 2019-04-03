@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 02-Apr-2019
+# @Last modified time: 03-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -196,8 +196,10 @@ def restrain_small_ligands(model, distance_cutoff=3.5, heavy_atom_limit=3, sprin
 
 
 def restrain_atom_distances_to_template(template_residues, restrained_residues,
-    atom_names = ['CA'], distance_cutoff=8, spring_constant = 50, tolerance = 0.1):
-    '''
+    protein=True, nucleic=True, custom_atom_names=[],
+    distance_cutoff=8, restrained_range = 0.2,
+    spring_constant = 50, tolerance = 0.05, fall_off = 2):
+    r'''
     Creates a "web" of adaptive distance restraints between nearby atoms,
     restraining one set of residues to the same spatial organisation as another.
 
@@ -210,17 +212,48 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
               from a single model (which may or may not be the same model as for
               `template_residues`). May be the same array as `template_residues`
               (which will just restrain all distances to their current values).
+        * protein (default = True):
+            - Restrain protein conformation? If True, a pre-defined set of
+              useful "control" atoms (CA plus the first two heavy atoms along
+              each sidechain) will be added to the restraint network.
+        * nucleic (default = True):
+            - Restrain nucleic acid conformation? If True, key atoms defining
+              the nucleic acid backbone and base pairing will be added to the
+              restraint network.
+        * custom_atom_names(default = empty list):
+            - Provide the names of any other atoms you wish to restrain (e.g.
+              ligand atoms) here.
         * distance_cutoff (default = 8):
             - for each CA atom in `restrained_residues`, a distance restraint
               will be created between it and every other CA atom where the
               equivalent atom in `template_residues` is within `distance_cutoff`
               of its template equivalent.
+        * restrained_range (default = 0.2):
+            - distance range (as a fraction of the target distance) within which
+              the restraint will behave like a normal harmonic restraint.
+              The applied force will gradually taper off for any restraint
+              deviating from (target + tolerance) by more than this amount.
         * spring_constant (default = 50):
-            - the strength of each restraint, in :math:`kJ mol^{-1} nm^{-2}`
+            - the strength of each restraint when the current distance is
+              within :attr:`restrained_range` of the target +/-
+              :attr:`tolerance`, in :math:`kJ mol^{-1} nm^{-2}`.
+        * tolerance (default = 0.05):
+            - half-width (as a fraction of the target distance) of the "flat
+              bottom" of the restraint profile. If
+              :math:`abs(distance-target) < tolerance * target`,
+              no restraining force will be applied.
+        * fall_off (default = 2):
+            - Sets the rate at which the energy function will fall off when the
+              distance deviates strongly from the target, as a function of the
+              target distance. The exponent on the energy term at large
+              deviations from the target distance will be set as
+              :math:`\alpha = -2 -\text{fall\_off} ln(\text{target})`. In other
+              words, long-distance restraints are treated as less confident than
+              short-distance ones.
     '''
     from chimerax.isolde import session_extensions as sx
-    if atom_names is None or not len(atom_names):
-        raise TypeError('Atom names must be provided!')
+    if not protein and not nucleic and not len(custom_atom_names):
+        raise TypeError('Nothing to restrain!')
     if len(template_residues) != len(restrained_residues):
         raise TypeError('Template and restrained residue arrays must be the same length!')
     template_us = template_residues.unique_structures
@@ -232,6 +265,13 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
     restrained_model = restrained_us[0]
     adrm = sx.get_adaptive_distance_restraint_mgr(restrained_model)
     from chimerax.core.geometry import find_close_points, distance
+
+    atom_names = []
+    if protein:
+        atom_names.extend(['CA', 'CB', 'CD', 'CD1', 'CG1', 'OG'])
+    if nucleic:
+        atom_names.extend(["OP1", "OP2", "C4'", "C2'", "O2", "O4", "N4", "N2", "O6", "N1", "N6"])
+    atom_names.extend(custom_atom_names)
 
     import numpy
     atom_names = numpy.array(atom_names)
@@ -245,14 +285,17 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
         indices = indices[indices !=i]
         for ind in indices:
             ra2 = restrained_as[ind]
+            if ra1.residue == ra2.residue:
+                continue
             try:
                 dr = adrm.add_restraint(ra1, ra2)
             except ValueError:
                 continue
-            dr.tolerance = tolerance
             dist = distance(query_coord[0], template_coords[ind])
+            dr.tolerance = tolerance * dist
             dr.target = dist
-            dr.c = max(dist/5, 0.5)
+            dr.c = max(dist*restrained_range, 0.25)
             dr.effective_spring_constant = spring_constant
-            dr.alpha = -4
+            from math import log
+            dr.alpha = -2 - fall_off * log(dist)
             dr.enabled = True
