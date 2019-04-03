@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 02-Apr-2019
+# @Last modified time: 03-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -1082,7 +1082,7 @@ class Sim_Manager:
             created = created[created.sim_indices == -1]
             # add only restraints with both atoms in the sim
             all_atoms = self.sim_construct.all_atoms
-            indices = numpy.array([all_atoms.indices(atoms for atoms in created.atoms)])
+            indices = numpy.array([all_atoms.indices(atoms) for atoms in created.atoms])
             created = created[numpy.all(indices != -1, axis=0)]
             self.sim_handler.add_adaptive_distance_restraints(created)
         changeds = []
