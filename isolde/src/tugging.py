@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 03-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -18,7 +18,7 @@ class TugAtomsMode(MouseMode):
     name = 'tug'
     #icon_file = 'tug.png'
 
-    _modes = ('atom', 'residue')
+    _modes = ('atom', 'residue', 'selection')
 
     def __init__(self, session, tug_mgr, atoms, spring_constant = None,
         mode = 'atom'):
@@ -41,6 +41,7 @@ class TugAtomsMode(MouseMode):
             from .constants import defaults
             spring_constant = defaults.MOUSE_TUG_SPRING_CONSTANT
         self.spring_constant = spring_constant
+        self.structure = atoms.unique_structures[0]
 
         # Variables to be set by the caller
         self.last_tugged_atom = None
@@ -91,23 +92,37 @@ class TugAtomsMode(MouseMode):
         x,y = event.position()
         self._xy = (x,y)
         view = self.session.main_view
-        from . import picking
-        pick = picking.pick_closest_to_line(self.session, x, y, self._atoms, 0.5)
-        if pick is not None:
-            a = self._focal_atom = pick
-            if self.tug_mode == "atom":
-                pa = Atoms([a])
-            else:
-                pa = a.residue.atoms
+        pa = None
+        tm = self.tug_mode
+        if tm == 'selection':
+            pa = self._atoms[self._atoms.selecteds]
+            v = self.session.view
+            self._reference_point = v.clip_plane_points(x,y)[0]
+        else:
+            from . import picking
+            pick = picking.pick_closest_to_line(self.session, x, y, self._atoms, 0.5)
+            if pick is not None:
+                a = self._focal_atom = pick
+                if tm == "atom":
+                    pa = Atoms([a])
+                else:
+                    pa = a.residue.atoms
+        if pa is not None and len(pa):
             tugs = self._picked_tuggables = self._tug_mgr.get_tuggables(pa)
             pa = self._picked_atoms = tugs.atoms
-            pull_vector = self._pull_direction(a, x, y)
+            if self.tug_mode == 'selection':
+                pull_vector = self._ref_pull_direction(self._reference_point, x, y)
+            else:
+                pull_vector = self._atom_pull_direction(self._focal_atom, x, y)
             tugs.targets = tugs.atoms.coords + pull_vector
             # Scale the tugging force by atom masses and number of atoms
             n = len(tugs)
+            # Scale spring constants as the inverse square root of atom count - we want
+            # to be able to tug groups more strongly than single atoms, but not
+            # *too* strongly.
             tugs.spring_constants = ((
                 self.spring_constant * pa.elements.masses.astype(numpy.double)
-                /_CARBON_MASS)/ n).reshape((n,1))
+                /_CARBON_MASS)/ n**(1/2)).reshape((n,1))
             tugs.enableds = True
 
             self.tugging = True
@@ -116,7 +131,10 @@ class TugAtomsMode(MouseMode):
         if not self.tugging:
             return
         self._xy = x,y = event.position()
-        pull_vector = self._pull_direction(self._focal_atom, x, y)
+        if self.tug_mode == 'selection':
+            pull_vector = self._ref_pull_direction(self._reference_point, x, y)
+        else:
+            pull_vector = self._atom_pull_direction(self._focal_atom, x, y)
         tugs = self._picked_tuggables
         tugs.targets = self._picked_atoms.coords + pull_vector
 
@@ -124,19 +142,24 @@ class TugAtomsMode(MouseMode):
         MouseMode.mouse_up(self, event)
         self.tugging = False
 
-    def _pull_direction(self, atom, x, y):
+    def _ref_pull_direction(self, ref, x, y):
+        return self._offset_vector(x, y, ref)
+
+    def _atom_pull_direction(self, atom, x, y):
+        return self._offset_vector(x, y, atom.scene_coord)
+
+    def _offset_vector(self, x, y, starting_coord):
         v = self.session.view
         x0,x1 = v.clip_plane_points(x, y)
-        axyz = atom.scene_coord
+        axyz = starting_coord
         # Project atom onto view ray to get displacement.
         dir = x1 - x0
         da = axyz - x0
         from chimerax.core.geometry import inner_product
-        offset = atom.structure.scene_position.inverse(is_orthonormal=True).transform_vectors(
+        offset = self.structure.scene_position.inverse(is_orthonormal=True).transform_vectors(
             da - (inner_product(da, dir)/inner_product(dir,dir)) * dir
         )
         return -offset
-
 
 
 
