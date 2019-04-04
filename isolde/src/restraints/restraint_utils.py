@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 03-Apr-2019
+# @Last modified time: 04-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -195,10 +195,56 @@ def restrain_small_ligands(model, distance_cutoff=3.5, heavy_atom_limit=3, sprin
             prs.enableds = True
 
 
+def _get_template_alignment(template_residues, restrained_residues,
+        cutoff_distance=5, overlay_template=False, always_raise_errors=False):
+    ts = template_residues.unique_structures
+    if len(ts) != 1:
+        raise TypeError('Template residues must come from a single model!')
+    ts = ts[0]
+    ms = restrained_residues.unique_structures
+    if len(ms) != 1:
+        raise TypeError('Residues to restrain must come from a single model!')
+    ms = ms[0]
+    same_model = False
+    if ts == ms:
+        # Matchmaker requires the two chains to be in separate models. Create a
+        # temporary model here.
+        same_model = True
+        saved_ts = ts
+        saved_trs = template_residues
+        from chimerax.std_commands.split import molecule_from_atoms
+        ts = molecule_from_atoms(ts, template_residues.atoms)
+        template_residues = ts.residues
+
+
+
+
+    from chimerax.match_maker.match import match, defaults
+    result = match(ms.session, defaults['chain_pairing'], (ms, [ts]),
+        defaults['matrix'], defaults['alignment_algorithm'],
+        defaults['gap_open'], defaults['gap_extend'],
+        cutoff_distance = cutoff_distance,
+        domain_residues=(restrained_residues, template_residues),
+        always_raise_errors=always_raise_errors)[0]
+    if not overlay_template:
+        # Return the template model to its original position
+        ts.position = result[-1].inverse()*ts.position
+    tr = result[0].residues
+    rr = result[1].residues
+    if same_model:
+        # template_residues are in the temporary model. Need to find their
+        # equivalents in the main model, and make sure they're in the right
+        # order
+        tr = saved_trs[template_residues.indices(tr)]
+        ts.delete()
+    return tr, rr
+
+
+
 def restrain_atom_distances_to_template(template_residues, restrained_residues,
     protein=True, nucleic=True, custom_atom_names=[],
-    distance_cutoff=8, restrained_range = 0.2,
-    spring_constant = 50, tolerance = 0.05, fall_off = 2):
+    distance_cutoff=8, well_half_width = 0.1,
+    spring_constant = 50, tolerance = 0.05, fall_off = 6):
     r'''
     Creates a "web" of adaptive distance restraints between nearby atoms,
     restraining one set of residues to the same spatial organisation as another.
@@ -228,21 +274,21 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
               will be created between it and every other CA atom where the
               equivalent atom in `template_residues` is within `distance_cutoff`
               of its template equivalent.
-        * restrained_range (default = 0.2):
+        * well_half_width (default = 0.1):
             - distance range (as a fraction of the target distance) within which
               the restraint will behave like a normal harmonic restraint.
               The applied force will gradually taper off for any restraint
               deviating from (target + tolerance) by more than this amount.
         * spring_constant (default = 50):
             - the strength of each restraint when the current distance is
-              within :attr:`restrained_range` of the target +/-
+              within :attr:`well_half_width` of the target +/-
               :attr:`tolerance`, in :math:`kJ mol^{-1} nm^{-2}`.
         * tolerance (default = 0.05):
             - half-width (as a fraction of the target distance) of the "flat
               bottom" of the restraint profile. If
               :math:`abs(distance-target) < tolerance * target`,
               no restraining force will be applied.
-        * fall_off (default = 2):
+        * fall_off (default = 6):
             - Sets the rate at which the energy function will fall off when the
               distance deviates strongly from the target, as a function of the
               target distance. The exponent on the energy term at large
@@ -254,8 +300,8 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
     from chimerax.isolde import session_extensions as sx
     if not protein and not nucleic and not len(custom_atom_names):
         raise TypeError('Nothing to restrain!')
-    if len(template_residues) != len(restrained_residues):
-        raise TypeError('Template and restrained residue arrays must be the same length!')
+    # if len(template_residues) != len(restrained_residues):
+    #     raise TypeError('Template and restrained residue arrays must be the same length!')
     template_us = template_residues.unique_structures
     if len(template_us) != 1:
         raise TypeError('Template residues must be from a single model!')
@@ -263,21 +309,41 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
     if len(restrained_us) != 1:
         raise TypeError('Restrained residues must be from a single model!')
     restrained_model = restrained_us[0]
+
+    # If we're not simply restraining the model to itself, we need to do an
+    # alignment to get a matching pair of residue sequences
+    if template_residues != restrained_residues:
+        template_residues, restrained_residues = _get_template_alignment(
+            template_residues, restrained_residues, overlay_template=False
+        )
+
     adrm = sx.get_adaptive_distance_restraint_mgr(restrained_model)
     from chimerax.core.geometry import find_close_points, distance
 
     atom_names = []
     if protein:
-        atom_names.extend(['CA', 'CB', 'CD', 'CD1', 'CG1', 'OG'])
+        atom_names.extend(['CA', 'CB', 'CG', 'CG1', 'OG', 'OG1'])
     if nucleic:
         atom_names.extend(["OP1", "OP2", "C4'", "C2'", "O2", "O4", "N4", "N2", "O6", "N1", "N6"])
     atom_names.extend(custom_atom_names)
 
     import numpy
-    atom_names = numpy.array(atom_names)
+    atom_names = set(atom_names)
 
-    template_as = template_residues.atoms[numpy.in1d(template_residues.atoms.names, atom_names)]
-    restrained_as = restrained_residues.atoms[numpy.in1d(restrained_residues.atoms.names, atom_names)]
+    template_as = []
+    restrained_as = []
+    for tr, rr in zip(template_residues, restrained_residues):
+        ta_names = set(tr.atoms.names).intersection(atom_names)
+        ra_names = set(rr.atoms.names).intersection(atom_names)
+        common_names = list(ta_names.intersection(ra_names))
+        template_as.extend([tr.find_atom(name) for name in common_names])
+        restrained_as.extend([rr.find_atom(name) for name in common_names])
+        # template_as.append(tr.atoms[numpy.in1d(tr.atoms.names, common_names)])
+        # restrained_as.append(rr.atoms[numpy.in1d(rr.atoms.names, common_names)])
+    from chimerax.atomic import Atoms
+    template_as = Atoms(template_as)
+    restrained_as = Atoms(restrained_as)
+
     template_coords = template_as.coords
     for i, ra1 in enumerate(restrained_as):
         query_coord = numpy.array([template_coords[i]])
@@ -294,7 +360,7 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
             dist = distance(query_coord[0], template_coords[ind])
             dr.tolerance = tolerance * dist
             dr.target = dist
-            dr.c = max(dist*restrained_range, 0.25)
+            dr.c = max(dist*well_half_width, 0.2)
             dr.effective_spring_constant = spring_constant
             from math import log
             dr.alpha = -2 - fall_off * log(dist)
