@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>580</width>
+    <width>715</width>
     <height>830</height>
    </rect>
   </property>
@@ -261,7 +261,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>566</width>
+        <width>701</width>
         <height>644</height>
        </rect>
       </property>
@@ -364,7 +364,7 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>542</width>
+                  <width>677</width>
                   <height>695</height>
                  </rect>
                 </property>
@@ -1129,8 +1129,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>439</width>
-                  <height>45</height>
+                  <width>691</width>
+                  <height>476</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1814,8 +1814,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>459</width>
-                  <height>215</height>
+                  <width>691</width>
+                  <height>334</height>
                  </rect>
                 </property>
                 <property name="sizePolicy">
@@ -3056,7 +3056,7 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>414</width>
+                  <width>677</width>
                   <height>1262</height>
                  </rect>
                 </property>
@@ -4295,6 +4295,26 @@ background-color: rgb(5, 200, 0);
                  </property>
                 </widget>
                </item>
+               <item>
+                <widget class="QToolButton" name="_right_mouse_tug_selection_button">
+                 <property name="toolTip">
+                  <string>Tug the currently-selected atoms</string>
+                 </property>
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../resources/resources.qrc">
+                   <normaloff>:/icons/tug_selection.png</normaloff>:/icons/tug_selection.png</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>36</width>
+                   <height>36</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
             </item>
@@ -4525,7 +4545,7 @@ background-color: rgb(5, 200, 0);
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,0">
+     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,0,0">
       <property name="spacing">
        <number>3</number>
       </property>
@@ -4541,6 +4561,19 @@ background-color: rgb(5, 200, 0);
       <property name="bottomMargin">
        <number>3</number>
       </property>
+      <item>
+       <spacer name="horizontalSpacer_33">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
       <item>
        <widget class="QLabel" name="_experience_level_label">
         <property name="text">
@@ -4573,7 +4606,6 @@ background-color: rgb(5, 200, 0);
   </layout>
  </widget>
  <resources>
-  <include location="../resources/resources.qrc"/>
   <include location="../resources/resources.qrc"/>
  </resources>
  <connections/>

@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 03-Apr-2019
+# @Last modified time: 04-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -117,12 +117,12 @@ class TugAtomsMode(MouseMode):
             tugs.targets = tugs.atoms.coords + pull_vector
             # Scale the tugging force by atom masses and number of atoms
             n = len(tugs)
-            # Scale spring constants as the inverse square root of atom count - we want
+            # Scale spring constants down with atom count - we want
             # to be able to tug groups more strongly than single atoms, but not
             # *too* strongly.
             tugs.spring_constants = ((
                 self.spring_constant * pa.elements.masses.astype(numpy.double)
-                /_CARBON_MASS)/ n**(1/2)).reshape((n,1))
+                /_CARBON_MASS)/ n**(0.7)).reshape((n,1))
             tugs.enableds = True
 
             self.tugging = True

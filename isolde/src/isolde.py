@@ -2,7 +2,7 @@
 # @Date:   25-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 29-Mar-2019
+# @Last modified time: 04-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -574,6 +574,9 @@ class Isolde():
         )
         iw._right_mouse_tug_residue_button.clicked.connect(
             self._set_right_mouse_mode_tug_residue
+        )
+        iw._right_mouse_tug_selection_button.clicked.connect(
+            self._set_right_mouse_mode_tug_selection
         )
         ####
         # Simulation global parameters (can only be set before running)
@@ -1167,7 +1170,7 @@ class Isolde():
         dlg = QFileDialog(caption=caption)
         dlg.setAcceptMode(QFileDialog.AcceptOpen)
         dlg.setNameFilter(filetypes)
-        dlg.setFileMode(QFileDialog.ExistingFile)
+        dlg.setFileMode(QFileDialog.ExistingFiles)
         import os
         dlg.setDirectory(os.getcwd())
         if dlg.exec():
@@ -1533,6 +1536,8 @@ class Isolde():
     def _set_right_mouse_mode_tug_residue(self, *_):
         self._set_right_mouse_tug_mode('residue')
 
+    def _set_right_mouse_mode_tug_selection(self, *_):
+        self._set_right_mouse_tug_mode('selection')
 
 
 
