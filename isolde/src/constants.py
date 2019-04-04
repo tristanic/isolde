@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 04-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -96,7 +96,7 @@ class _Defaults:
         'CLASH_FORCE':                          1e5,     # * unit.kilojoule_per_mole/unit.nanometer,
         'MAX_RESTRAINT_FORCE':                  25000.0, # * unit.kilojoule_per_mole/unit.nanometer,
         'HAPTIC_SPRING_CONSTANT':                2500.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
-        'MOUSE_TUG_SPRING_CONSTANT':            10000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
+        'MOUSE_TUG_SPRING_CONSTANT':            50000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
         'MAX_TUG_FORCE':                        10000.0, # * unit.kilojoule_per_mole/unit.nanometer,
         'DISTANCE_RESTRAINT_SPRING_CONSTANT':    5000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
         'POSITION_RESTRAINT_SPRING_CONSTANT':    5000.0, # * unit.kilojoule_per_mole/unit.nanometer**2,
