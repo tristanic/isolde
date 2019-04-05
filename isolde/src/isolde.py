@@ -2,7 +2,7 @@
 # @Date:   25-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 04-Apr-2019
+# @Last modified time: 05-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -521,6 +521,7 @@ class Isolde():
         iw._sim_basic_mobile_b_and_a_spinbox.setValue(params.num_selection_padding_residues)
         iw._sim_basic_mobile_sel_within_spinbox.setValue(params.soft_shell_cutoff_distance)
 
+        iw._sim_basic_xtal_settings_mask_radius_spinbox.setValue(params.standard_map_mask_cutoff)
         # iw._sim_basic_xtal_map_weight_spin_box.setValue(params.difference_map_mask_cutoff)
         ####
         # Rebuild tab
@@ -596,7 +597,12 @@ class Isolde():
         iw._sim_platform_combo_box.currentIndexChanged.connect(
             self._change_sim_platform
             )
-
+        iw._sim_basic_xtal_settings_mask_radius_spinbox.valueChanged.connect(
+            self._change_mask_radius
+        )
+        iw._sim_basic_xtal_settings_spotlight_radius_spinbox.valueChanged.connect(
+            self._change_spotlight_radius
+        )
         # Run all connected functions once to initialise
         self._change_force_field()
         self._change_selected_model(force=True)
@@ -1210,9 +1216,11 @@ class Isolde():
             errstring = 'Please select a valid MTZ file!'
             generic_warning(errstring)
         m = self.selected_model
+        spotlight_radius = self.iw._sim_basic_xtal_settings_spotlight_radius_spinbox.value()
         from chimerax.clipper import symmetry
         sym_handler = symmetry.Symmetry_Manager(m, fname,
-            map_oversampling = self.params.map_shannon_rate)
+            map_oversampling=self.params.map_shannon_rate,
+            spotlight_radius=spotlight_radius)
         self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
         self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
         self._update_sim_control_button_states()
@@ -1260,6 +1268,7 @@ class Isolde():
             # not be used as MDFF potentials. For that, we need a specific map
             # that we know excludes the free reflections.
             # self._add_mdff_potential_to_live_xmapset(xmapset)
+        map_mgr.spotlight_radius = self.iw._sim_basic_xtal_settings_spotlight_radius_spinbox.value()
         self._change_selected_model(model=m, force=True)
 
     def _add_mdff_potential_to_live_xmapset(self, xmapset):
@@ -1343,7 +1352,7 @@ class Isolde():
             # No maps associated with this model.
             return False
 
-        recalc_frame = self.iw._sim_basic_xtal_settings_live_recalc_frame
+        recalc_cb = self.iw._sim_basic_xtal_settings_live_recalc_checkbox
 
         from chimerax.clipper.maps import XmapHandler_Live
         from .session_extensions import get_mdff_mgr
@@ -1369,7 +1378,7 @@ class Isolde():
             if v.is_difference_map:
                 continue
             mdff_mgrs.append(get_mdff_mgr(model, v, create=True))
-        recalc_frame.setVisible(live_maps)
+        recalc_cb.setVisible(live_maps)
         if len(mdff_mgrs):
             return True
         return False
@@ -2411,6 +2420,14 @@ class Isolde():
     def _change_sim_platform(self, *_):
         self.sim_platform = self.iw._sim_platform_combo_box.currentText()
 
+    def _change_mask_radius(self, *_):
+        self.params.standard_map_mask_cutoff = self.iw._sim_basic_xtal_settings_mask_radius_spinbox.value()
+
+    def _change_spotlight_radius(self, *_):
+        from chimerax.core.commands import run
+        radius = self.iw._sim_basic_xtal_settings_spotlight_radius_spinbox.value()
+        run(self.session, 'clipper spotlight radius {:.2f}'.format(radius))
+
 
     ##############################################################
     # Visualisation functions
@@ -3177,6 +3194,7 @@ class Isolde():
         color.color(self.session, before_struct, color='byhetero', target='a')
         from chimerax.clipper import symmetry
         sym_handler = symmetry.get_symmetry_handler(before_struct, create=True)
+        sym_handler.spotlight_radius = self.iw._sim_basic_xtal_settings_spotlight_radius_spinbox.value()
         xmapset = sym_handler.map_mgr.add_xmapset_from_mtz(os.path.join(data_dir, '3io0-sf.mtz'),
             oversampling_rate = self.params.map_shannon_rate)
         from chimerax.clipper.maps.xmapset import map_potential_recommended_bsharp

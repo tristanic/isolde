@@ -363,9 +363,9 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>0</y>
+                  <y>-316</y>
                   <width>677</width>
-                  <height>695</height>
+                  <height>739</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0">
@@ -938,14 +938,14 @@ border: 1px;
                   </widget>
                  </item>
                  <item>
-                  <widget class="QFrame" name="_sim_basic_xtal_settings_live_recalc_frame">
+                  <widget class="QFrame" name="_sim_basic_xtal_settings_general_settings_frame">
                    <property name="frameShape">
                     <enum>QFrame::StyledPanel</enum>
                    </property>
                    <property name="frameShadow">
                     <enum>QFrame::Raised</enum>
                    </property>
-                   <layout class="QHBoxLayout" name="horizontalLayout_43">
+                   <layout class="QVBoxLayout" name="verticalLayout_23">
                     <property name="topMargin">
                      <number>1</number>
                     </property>
@@ -958,6 +958,66 @@ border: 1px;
                        <bool>true</bool>
                       </property>
                      </widget>
+                    </item>
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_8">
+                      <property name="topMargin">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <widget class="QDoubleSpinBox" name="_sim_basic_xtal_settings_mask_radius_spinbox">
+                        <property name="decimals">
+                         <number>1</number>
+                        </property>
+                        <property name="value">
+                         <double>4.000000000000000</double>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QLabel" name="label_15">
+                        <property name="text">
+                         <string>Mask radius (Å)</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <spacer name="horizontalSpacer_34">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                      <item>
+                       <widget class="QDoubleSpinBox" name="_sim_basic_xtal_settings_spotlight_radius_spinbox">
+                        <property name="decimals">
+                         <number>1</number>
+                        </property>
+                        <property name="minimum">
+                         <double>5.000000000000000</double>
+                        </property>
+                        <property name="maximum">
+                         <double>1000.000000000000000</double>
+                        </property>
+                        <property name="value">
+                         <double>12.000000000000000</double>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QLabel" name="label_16">
+                        <property name="text">
+                         <string>Spotlight radius</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
                     </item>
                    </layout>
                   </widget>
@@ -1038,7 +1098,7 @@ border: 1px;
                 <zorder>verticalSpacer</zorder>
                 <zorder>_force_field_selection_frame</zorder>
                 <zorder>_sim_platform_frame</zorder>
-                <zorder>_sim_basic_xtal_settings_live_recalc_frame</zorder>
+                <zorder>_sim_basic_xtal_settings_general_settings_frame</zorder>
                </widget>
               </widget>
              </item>
