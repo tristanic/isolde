@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 04-Apr-2019
+# @Last modified time: 05-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -243,8 +243,8 @@ def _get_template_alignment(template_residues, restrained_residues,
 
 def restrain_atom_distances_to_template(template_residues, restrained_residues,
     protein=True, nucleic=True, custom_atom_names=[],
-    distance_cutoff=8, well_half_width = 0.1,
-    spring_constant = 50, tolerance = 0.05, fall_off = 6):
+    distance_cutoff=8, alignment_cutoff=5, well_half_width = 0.05,
+    kappa = 5, tolerance = 0.025, fall_off = 6):
     r'''
     Creates a "web" of adaptive distance restraints between nearby atoms,
     restraining one set of residues to the same spatial organisation as another.
@@ -274,16 +274,22 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
               will be created between it and every other CA atom where the
               equivalent atom in `template_residues` is within `distance_cutoff`
               of its template equivalent.
-        * well_half_width (default = 0.1):
+        * alignment_cutoff (default = 5):
+            - distance cutoff (in Angstroms) for rigid-body alignment of model
+              against  template. Residues with a CA RMSD greater than this
+              value after alignment will not be restrained.
+        * well_half_width (default = 0.05):
             - distance range (as a fraction of the target distance) within which
               the restraint will behave like a normal harmonic restraint.
               The applied force will gradually taper off for any restraint
               deviating from (target + tolerance) by more than this amount.
-        * spring_constant (default = 50):
-            - the strength of each restraint when the current distance is
-              within :attr:`well_half_width` of the target +/-
-              :attr:`tolerance`, in :math:`kJ mol^{-1} nm^{-2}`.
-        * tolerance (default = 0.05):
+        * kappa (default = 5):
+            - defines the strength of each restraint when the current distance
+              is within :attr:`well_half_width` of the target +/-
+              :attr:`tolerance`. The effective spring constant is
+              :math:`k=\frac{\kappa}{(\text{well\_half\_width}*\text{target distance})^2}`
+              in :math:`kJ mol^{-1} nm^{-2}`.
+        * tolerance (default = 0.025):
             - half-width (as a fraction of the target distance) of the "flat
               bottom" of the restraint profile. If
               :math:`abs(distance-target) < tolerance * target`,
@@ -314,7 +320,8 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
     # alignment to get a matching pair of residue sequences
     if template_residues != restrained_residues:
         template_residues, restrained_residues = _get_template_alignment(
-            template_residues, restrained_residues, overlay_template=False
+            template_residues, restrained_residues,
+            cutoff_distance = alignment_cutoff, overlay_template=False
         )
 
     adrm = sx.get_adaptive_distance_restraint_mgr(restrained_model)
@@ -360,8 +367,9 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
             dist = distance(query_coord[0], template_coords[ind])
             dr.tolerance = tolerance * dist
             dr.target = dist
-            dr.c = max(dist*well_half_width, 0.2)
-            dr.effective_spring_constant = spring_constant
+            dr.c = max(dist*well_half_width, 0.1)
+            #dr.effective_spring_constant = spring_constant
+            dr.kappa = kappa
             from math import log
             dr.alpha = -2 - fall_off * log(dist)
             dr.enabled = True
