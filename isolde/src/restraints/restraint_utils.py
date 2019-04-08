@@ -371,5 +371,8 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
             #dr.effective_spring_constant = spring_constant
             dr.kappa = kappa
             from math import log
-            dr.alpha = -2 - fall_off * log(dist)
+            if dist < 1:
+                dr.alpha = -2
+            else:
+                dr.alpha = -2 - fall_off * log(dist)
             dr.enabled = True

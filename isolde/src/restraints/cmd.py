@@ -41,6 +41,35 @@ def release_adaptive_distance_restraints(session, atoms,
                 non_zeros = adrs[adrs.targets-adrs.tolerances > 0]
                 non_zeros[non_zeros.distances/(non_zeros.targets-non_zeros.tolerances)<compression_limit].enableds = False
 
+def adjust_adaptive_distance_restraints(session, atoms,
+        intra_only=False, kappa=None, well_half_width=None,
+        tolerance=None, fall_off=None):
+    log = session.logger
+    from chimerax.isolde import session_extensions as sx
+    for m in atoms.unique_structures:
+        adrm = sx.get_adaptive_distance_restraint_mgr(m)
+        if intra_only:
+            adrs = adrm.intra_restraints(atoms)
+        else:
+            adrs = adrm.atoms_restraints(atoms)
+        if kappa:
+            adrs.kappas = kappa
+        targets = adrs.targets
+        if well_half_width:
+            adrs.cs = well_half_width * targets
+        if tolerance:
+            adrs.tolerances = tolerance*targets
+        if fall_off:
+            from math import log
+            import numpy
+            alphas = numpy.empty(targets.shape, numpy.double)
+            dmask = (targets < 1)
+            alphas[mask] = -2
+            dmask = numpy.logical_not(dmask)
+            alphas[dmask] = -2-fall_off*log(targets[dmask])
+            adrs.alphas = alphas
+
+
 
 def register_isolde_restrain(logger):
     from chimerax.core.commands import (
@@ -83,5 +112,19 @@ def register_isolde_restrain(logger):
             ]
         )
         register('isolde release distances', desc, release_adaptive_distance_restraints, logger=logger)
+    def register_isolde_adjust_distances():
+        desc = CmdDesc(
+            synopsis = 'Adjust the behaviour of existing adaptive distance restraints',
+            required = [('atoms', AtomsArg)],
+            keyword = [
+                ('intra_only', BoolArg),
+                ('kappa', FloatArg),
+                ('well_half_width', FloatArg),
+                ('tolerance', FloatArg),
+                ('fall_off', FloatArg)
+            ]
+        )
+        register('isolde adjust distances', desc, adjust_adaptive_distance_restraints, logger=logger)
     register_isolde_restrain_distances()
     register_isolde_release_distances()
+    register_isolde_adjust_distances()
