@@ -2,9 +2,11 @@
 # @Date:   05-Apr-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 05-Apr-2019
+# @Last modified time: 08-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
+
+from chimerax.core.errors import UserError
 
 def restrain_distances(session, atoms, template_atoms=None, **kwargs):
     valid_args = set((
@@ -15,21 +17,39 @@ def restrain_distances(session, atoms, template_atoms=None, **kwargs):
 
     from . import restraint_utils
 
-    model_residues = atoms.unique_residues
+    if template_atoms is not None and len(atoms) != len(template_atoms):
+        log.warning('You must provide one template selection for each restrained selection!')
+        return
+
+    model_residues = [mas.unique_residues for mas in atoms]
     if template_atoms is None:
         template_residues = model_residues
     else:
-        template_residues = template_atoms.unique_residues
+        template_residues = [tas.unique_residues for tas in template_atoms]
+        for mr, tr in zip(model_residues, template_residues):
+            if len(mr.unique_chains) != 1 or len(tr.unique_chains) != 1:
+                raise UserError('Each atom selection should be from a single chain!')
+
     args = {kw: arg for kw, arg in kwargs.items() if kw in valid_args and arg is not None}
     restraint_utils.restrain_atom_distances_to_template(template_residues,
         model_residues, **kwargs)
 
 def release_adaptive_distance_restraints(session, atoms,
-        longer_than=None, strained_only=False, stretch_limit=1.5, compression_limit=0.5):
+        internal_only=False, external_only=False,
+        longer_than=None, strained_only=False,
+        stretch_limit=1.5, compression_limit=0.5):
+    if internal_only and external_only:
+        log.warning('Cannot specify both internal only and external only!')
+        return
     from chimerax.isolde import session_extensions as sx
     for m in atoms.unique_structures:
         adrm = sx.get_adaptive_distance_restraint_mgr(m)
-        adrs = adrm.atoms_restraints(atoms)
+        if internal_only:
+            adrs = adrm.intra_restraints(atoms)
+        elif external_only:
+            adrs = adrm.atoms_restraints(atoms).subtract(adrm.intra_restraints(atoms))
+        else:
+            adrs = adrm.atoms_restraints(atoms)
         if longer_than:
             adrs = adrs[adrs.distances > longer_than]
         if not strained_only:
@@ -42,14 +62,19 @@ def release_adaptive_distance_restraints(session, atoms,
                 non_zeros[non_zeros.distances/(non_zeros.targets-non_zeros.tolerances)<compression_limit].enableds = False
 
 def adjust_adaptive_distance_restraints(session, atoms,
-        intra_only=False, kappa=None, well_half_width=None,
+        internal_only=False, external_only=False, kappa=None, well_half_width=None,
         tolerance=None, fall_off=None):
     log = session.logger
+    if internal_only and external_only:
+        log.warning('Cannot specify both internal only and external only!')
+        return
     from chimerax.isolde import session_extensions as sx
     for m in atoms.unique_structures:
         adrm = sx.get_adaptive_distance_restraint_mgr(m)
-        if intra_only:
+        if internal_only:
             adrs = adrm.intra_restraints(atoms)
+        elif external_only:
+            adrs = adrm.atoms_restraints(atoms).subtract(adrm.intra_restraints(atoms))
         else:
             adrs = adrm.atoms_restraints(atoms)
         if kappa:
@@ -60,13 +85,12 @@ def adjust_adaptive_distance_restraints(session, atoms,
         if tolerance:
             adrs.tolerances = tolerance*targets
         if fall_off:
-            from math import log
             import numpy
             alphas = numpy.empty(targets.shape, numpy.double)
             dmask = (targets < 1)
-            alphas[mask] = -2
+            alphas[dmask] = -2
             dmask = numpy.logical_not(dmask)
-            alphas[dmask] = -2-fall_off*log(targets[dmask])
+            alphas[dmask] = -2-fall_off*numpy.log(targets[dmask])
             adrs.alphas = alphas
 
 
@@ -84,10 +108,10 @@ def register_isolde_restrain(logger):
         desc = CmdDesc(
             synopsis = 'Restrain interatomic distances to current values or a template.',
             required = [
-                ('atoms', AtomsArg),
+                ('atoms', ListOf(AtomsArg)),
             ],
             keyword = [
-                ('template_atoms', AtomsArg),
+                ('template_atoms', ListOf(AtomsArg)),
                 ('protein', BoolArg),
                 ('nucleic', BoolArg),
                 ('custom_atom_names', ListOf(StringArg)),
@@ -105,6 +129,8 @@ def register_isolde_restrain(logger):
             synopsis = 'Release overly-strained adaptive distance restraints',
             required = [('atoms', AtomsArg)],
             keyword = [
+                ('internal_only', BoolArg),
+                ('external_only', BoolArg),
                 ('longer_than', FloatArg),
                 ('strained_only', BoolArg),
                 ('stretch_limit', FloatArg),
@@ -117,7 +143,8 @@ def register_isolde_restrain(logger):
             synopsis = 'Adjust the behaviour of existing adaptive distance restraints',
             required = [('atoms', AtomsArg)],
             keyword = [
-                ('intra_only', BoolArg),
+                ('internal_only', BoolArg),
+                ('external_only', BoolArg),
                 ('kappa', FloatArg),
                 ('well_half_width', FloatArg),
                 ('tolerance', FloatArg),

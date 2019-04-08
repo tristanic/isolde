@@ -199,7 +199,8 @@ def _get_template_alignment(template_residues, restrained_residues,
         cutoff_distance=5, overlay_template=False, always_raise_errors=False):
     ts = template_residues.unique_structures
     if len(ts) != 1:
-        raise TypeError('Template residues must come from a single model!')
+            raise TypeError('Template residues must be from a single model! '
+                'Residues are {} in {}'.format(template_residues.numbers, ','.join(s.id_string for s in template_residues.structures)))
     ts = ts[0]
     ms = restrained_residues.unique_structures
     if len(ms) != 1:
@@ -239,25 +240,26 @@ def _get_template_alignment(template_residues, restrained_residues,
         ts.delete()
     return tr, rr
 
-
-
 def restrain_atom_distances_to_template(template_residues, restrained_residues,
     protein=True, nucleic=True, custom_atom_names=[],
     distance_cutoff=8, alignment_cutoff=5, well_half_width = 0.05,
-    kappa = 5, tolerance = 0.025, fall_off = 6):
+    kappa = 5, tolerance = 0.025, fall_off = 4):
     r'''
     Creates a "web" of adaptive distance restraints between nearby atoms,
     restraining one set of residues to the same spatial organisation as another.
 
     Args:
         * template_residues:
-            - a :class:`chimerax.atomic.Residues` instance. All residues must be
-              from a single model, but need no be contiguous
+            - a list of :class:`chimerax.atomic.Residues` instances. If
+              :attr:`restrained_residues` is not identical to
+              :attr:`template_residues`, then each :class:`Residues` should be
+              from a single chain. Residues need not be contiguous.
         * restrained_residues:
-            - a :class:`chimerax.atomic.Residues` instance. All residues must be
-              from a single model (which may or may not be the same model as for
-              `template_residues`). May be the same array as `template_residues`
-              (which will just restrain all distances to their current values).
+            - a list of :class:`chimerax.atomic.Residues` instances. Must be
+              the same length as :attr:`template_residues`, with a 1:1
+              correspondence between chains. Chains will be aligned individually
+              to get the subset of matching residues, but original coordinates
+              will be used for the purposes of assigning restraints.
         * protein (default = True):
             - Restrain protein conformation? If True, a pre-defined set of
               useful "control" atoms (CA plus the first two heavy atoms along
@@ -303,29 +305,27 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
               words, long-distance restraints are treated as less confident than
               short-distance ones.
     '''
+    from chimerax.std_commands.align import IterationError
     from chimerax.isolde import session_extensions as sx
     if not protein and not nucleic and not len(custom_atom_names):
         raise TypeError('Nothing to restrain!')
     # if len(template_residues) != len(restrained_residues):
     #     raise TypeError('Template and restrained residue arrays must be the same length!')
-    template_us = template_residues.unique_structures
-    if len(template_us) != 1:
-        raise TypeError('Template residues must be from a single model!')
-    restrained_us = restrained_residues.unique_structures
-    if len(restrained_us) != 1:
-        raise TypeError('Restrained residues must be from a single model!')
+    for trs in template_residues:
+        template_us = trs.unique_structures
+        if len(template_us) != 1:
+            raise TypeError('Template residues must be from a single model! '
+                'Residues are {} in {}'.format(trs.numbers, ','.join(s.id_string for s in trs.structures)))
+    for rrs in restrained_residues:
+        restrained_us = rrs.unique_structures
+        if len(restrained_us) != 1:
+            raise TypeError('Restrained residues must be from a single model!')
     restrained_model = restrained_us[0]
-
-    # If we're not simply restraining the model to itself, we need to do an
-    # alignment to get a matching pair of residue sequences
-    if template_residues != restrained_residues:
-        template_residues, restrained_residues = _get_template_alignment(
-            template_residues, restrained_residues,
-            cutoff_distance = alignment_cutoff, overlay_template=False
-        )
+    log = restrained_model.session.logger
 
     adrm = sx.get_adaptive_distance_restraint_mgr(restrained_model)
     from chimerax.core.geometry import find_close_points, distance
+    from chimerax.atomic import concatenate
 
     atom_names = []
     if protein:
@@ -337,42 +337,83 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
     import numpy
     atom_names = set(atom_names)
 
-    template_as = []
-    restrained_as = []
-    for tr, rr in zip(template_residues, restrained_residues):
-        ta_names = set(tr.atoms.names).intersection(atom_names)
-        ra_names = set(rr.atoms.names).intersection(atom_names)
-        common_names = list(ta_names.intersection(ra_names))
-        template_as.extend([tr.find_atom(name) for name in common_names])
-        restrained_as.extend([rr.find_atom(name) for name in common_names])
-        # template_as.append(tr.atoms[numpy.in1d(tr.atoms.names, common_names)])
-        # restrained_as.append(rr.atoms[numpy.in1d(rr.atoms.names, common_names)])
-    from chimerax.atomic import Atoms
-    template_as = Atoms(template_as)
-    restrained_as = Atoms(restrained_as)
+    def apply_restraints(trs, rrs):
+        template_as = []
+        restrained_as = []
+        for tr, rr in zip(trs, rrs):
+            ta_names = set(tr.atoms.names).intersection(atom_names)
+            ra_names = set(rr.atoms.names).intersection(atom_names)
+            common_names = list(ta_names.intersection(ra_names))
+            template_as.extend([tr.find_atom(name) for name in common_names])
+            restrained_as.extend([rr.find_atom(name) for name in common_names])
+            # template_as.append(tr.atoms[numpy.in1d(tr.atoms.names, common_names)])
+            # restrained_as.append(rr.atoms[numpy.in1d(rr.atoms.names, common_names)])
+        from chimerax.atomic import Atoms
+        template_as = Atoms(template_as)
+        restrained_as = Atoms(restrained_as)
 
-    template_coords = template_as.coords
-    for i, ra1 in enumerate(restrained_as):
-        query_coord = numpy.array([template_coords[i]])
-        indices = find_close_points(query_coord, template_coords, distance_cutoff)[1]
-        indices = indices[indices !=i]
-        for ind in indices:
-            ra2 = restrained_as[ind]
-            if ra1.residue == ra2.residue:
-                continue
-            try:
-                dr = adrm.add_restraint(ra1, ra2)
-            except ValueError:
-                continue
-            dist = distance(query_coord[0], template_coords[ind])
-            dr.tolerance = tolerance * dist
-            dr.target = dist
-            dr.c = max(dist*well_half_width, 0.1)
-            #dr.effective_spring_constant = spring_constant
-            dr.kappa = kappa
-            from math import log
-            if dist < 1:
-                dr.alpha = -2
-            else:
-                dr.alpha = -2 - fall_off * log(dist)
-            dr.enabled = True
+        template_coords = template_as.coords
+        for i, ra1 in enumerate(restrained_as):
+            query_coord = numpy.array([template_coords[i]])
+            indices = find_close_points(query_coord, template_coords, distance_cutoff)[1]
+            indices = indices[indices !=i]
+            for ind in indices:
+                ra2 = restrained_as[ind]
+                if ra1.residue == ra2.residue:
+                    continue
+                try:
+                    dr = adrm.add_restraint(ra1, ra2)
+                except ValueError:
+                    continue
+                dist = distance(query_coord[0], template_coords[ind])
+                dr.tolerance = tolerance * dist
+                dr.target = dist
+                dr.c = max(dist*well_half_width, 0.1)
+                #dr.effective_spring_constant = spring_constant
+                dr.kappa = kappa
+                from math import log
+                if dist < 1:
+                    dr.alpha = -2
+                else:
+                    dr.alpha = -2 - fall_off * log(dist)
+                dr.enabled = True
+
+
+    if all(trs == rrs for trs, rrs in zip(template_residues, restrained_residues)):
+        # If the template is identical to the model, we can just go ahead and restrain
+
+        [apply_restraints(trs, rrs) for trs, rrs in zip(template_residues, restrained_residues)]
+    else:
+        # If we're not simply restraining the model to itself, we need to do an
+        # alignment to get a matching pair of residue sequences
+        while len(template_residues) != 0 and len(restrained_residues) != 0:
+            found_trs = []
+            found_rrs = []
+            remain_trs = []
+            remain_rrs = []
+            for trs, rrs in zip(template_residues, restrained_residues):
+                try:
+                    ftrs, frrs = _get_template_alignment(
+                        trs, rrs, cutoff_distance = alignment_cutoff,
+                        overlay_template = False, always_raise_errors = True
+                    )
+                except IterationError:
+                    log.info(("No sufficient alignment found for {} residues "
+                        "in template chain {} and {} residues in restrained "
+                        "model chain {}").format(len(trs), trs.chain_ids[0],
+                        len(rrs), rrs.chain_ids[0]))
+                    continue
+                found_trs.append(ftrs)
+                found_rrs.append(frrs)
+                rtrs = trs.subtract(ftrs)
+                rrrs = rrs.subtract(frrs)
+                if len(rtrs) > 3 and len(rrrs) > 3:
+                    remain_trs.append(rtrs)
+                    remain_rrs.append(rrrs)
+            template_residues = remain_trs
+            restrained_residues = remain_rrs
+
+            if len(found_trs):
+                trs = concatenate(found_trs)
+                rrs = concatenate(found_rrs)
+                apply_restraints(trs, rrs)
