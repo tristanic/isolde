@@ -426,10 +426,29 @@ class Symmetry_Manager(Model):
         initialize_clipper_mouse_modes(session)
         id = model.id
         #session.models.remove([model])
-        self.add([model])
+        self.initialized=False
+        self._transplant_model(model)
+        #self.add([model])
         session.models.add([self])
+        self.initialized=True
         if len(id) == 1:
             session.models.assign_id(self, id)
+
+    def _transplant_model(self, model):
+        mlist = model.all_models()
+        mlist.sort(key=lambda m: len(m.id), reverse=True)
+        from collections import defaultdict
+        parent_to_models = defaultdict(list)
+        for m in mlist:
+            if m.parent in mlist:
+                parent_to_models[m.parent].append(m)
+        self.session.models.remove([model])
+        self.add([model])
+        def recursively_add_children(m):
+            for child in parent_to_models[m]:
+                m.add([child])
+                recursively_add_children(child)
+        recursively_add_children(model)
 
 
     @property
