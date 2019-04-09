@@ -3,7 +3,7 @@
  * @Date:   27-Mar-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 02-Apr-2019
+ * @Last modified time: 09-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2019 Tristan Croll
  */
@@ -80,6 +80,7 @@ public:
     double radius() const;
     //! Transforms for a tripartite bond representation
     void bond_transforms(float *rot44_e1, float *rot44_m, float *rot44_e2) const;
+    double display_threshold() const;
     bool visible() const;
 
     // General monitoring
@@ -142,9 +143,15 @@ public:
     }
     colors::variable_colormap* colormap() { return &_colormap; }
 
+    double display_threshold() const { return _display_threshold; }
+    void set_display_threshold(const double &t) {
+        _display_threshold = t > 0 ? t : 0;
+    }
+
 private:
     std::type_index _mgr_type = std::type_index(typeid(this));
     colors::variable_colormap _colormap;
+    double _display_threshold = 0;
 };
 
 

@@ -38,6 +38,7 @@ def release_adaptive_distance_restraints(session, atoms,
         internal_only=False, external_only=False,
         longer_than=None, strained_only=False,
         stretch_limit=1.5, compression_limit=0.5):
+    log = session.logger
     if internal_only and external_only:
         log.warning('Cannot specify both internal only and external only!')
         return
@@ -63,7 +64,7 @@ def release_adaptive_distance_restraints(session, atoms,
 
 def adjust_adaptive_distance_restraints(session, atoms,
         internal_only=False, external_only=False, kappa=None, well_half_width=None,
-        tolerance=None, fall_off=None):
+        tolerance=None, fall_off=None, display_threshold=None):
     log = session.logger
     if internal_only and external_only:
         log.warning('Cannot specify both internal only and external only!')
@@ -77,14 +78,14 @@ def adjust_adaptive_distance_restraints(session, atoms,
             adrs = adrm.atoms_restraints(atoms).subtract(adrm.intra_restraints(atoms))
         else:
             adrs = adrm.atoms_restraints(atoms)
-        if kappa:
+        if kappa is not None:
             adrs.kappas = kappa
         targets = adrs.targets
-        if well_half_width:
+        if well_half_width is not None:
             adrs.cs = well_half_width * targets
-        if tolerance:
+        if tolerance is not None:
             adrs.tolerances = tolerance*targets
-        if fall_off:
+        if fall_off is not None:
             import numpy
             alphas = numpy.empty(targets.shape, numpy.double)
             dmask = (targets < 1)
@@ -92,6 +93,8 @@ def adjust_adaptive_distance_restraints(session, atoms,
             dmask = numpy.logical_not(dmask)
             alphas[dmask] = -2-fall_off*numpy.log(targets[dmask])
             adrs.alphas = alphas
+        if display_threshold is not None:
+            adrm.display_threshold = display_threshold
 
 def restrain_single_distance(session, atoms, min_dist, max_dist,
         strength=5, well_half_width=None, confidence=-2):
@@ -179,7 +182,8 @@ def register_isolde_restrain(logger):
                 ('kappa', FloatArg),
                 ('well_half_width', FloatArg),
                 ('tolerance', FloatArg),
-                ('fall_off', FloatArg)
+                ('fall_off', FloatArg),
+                ('display_threshold', FloatArg)
             ]
         )
         register('isolde adjust distances', desc, adjust_adaptive_distance_restraints, logger=logger)

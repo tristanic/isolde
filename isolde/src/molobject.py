@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 02-Apr-2019
+# @Last modified time: 09-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -2675,6 +2675,28 @@ class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
         '''
         from chimerax import surface
         return surface.cone_geometry(radius = 1.0, height=1.0, caps=True)
+
+    @property
+    def display_threshold(self):
+        '''
+        Cutoff deviation from (target +/- tolerance) as a fraction of :param:`c`
+        below which distance restraints will be hidden. If
+        :attr:`display_threshold`==0 (default), all active restraints will be
+        shown.
+        '''
+        f = c_function('adaptive_distance_restraint_mgr_display_threshold',
+            args=(ctypes.c_void_p,),
+            ret=ctypes.c_double
+        )
+        return f(self._c_pointer)
+
+    @display_threshold.setter
+    def display_threshold(self, value):
+        f = c_function('set_adaptive_distance_restraint_mgr_display_threshold',
+            args=(ctypes.c_void_p, ctypes.c_double)
+        )
+        f(self._c_pointer, value)
+        self.update_graphics()
 
     def update_graphics(self):
         '''

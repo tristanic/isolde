@@ -97,9 +97,24 @@ void Adaptive_Distance_Restraint::set_enabled(bool flag)
     }
 }
 
+double Adaptive_Distance_Restraint::display_threshold() const
+{
+    return static_cast<Adaptive_Distance_Restraint_Mgr *>(_mgr)->display_threshold();
+}
+
 bool Adaptive_Distance_Restraint::visible() const
 {
-    return atoms()[0]->visible() && atoms()[1]->visible() && _enabled;
+    bool display_threshold_trigger;
+    if (display_threshold() == 0.0)
+        display_threshold_trigger = true;
+    else if ((std::abs(distance()-_target)-_tolerance)/_c >= display_threshold())
+        display_threshold_trigger = true;
+    else
+        display_threshold_trigger = false;
+
+    return atoms()[0]->visible() && atoms()[1]->visible()
+        && _enabled
+        && display_threshold_trigger;
 }
 
 double Adaptive_Distance_Restraint::radius() const
@@ -134,7 +149,7 @@ double Adaptive_Distance_Restraint::force_magnitude() const
 
 colors::variable_colormap*
 Adaptive_Distance_Restraint::colormap() const
-{ return dynamic_cast<Adaptive_Distance_Restraint_Mgr*>(_mgr)->colormap();}
+{ return static_cast<Adaptive_Distance_Restraint_Mgr*>(_mgr)->colormap();}
 
 void Adaptive_Distance_Restraint::color(uint8_t *color) const
 {

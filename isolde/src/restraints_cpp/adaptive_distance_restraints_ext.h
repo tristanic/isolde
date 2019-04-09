@@ -3,7 +3,7 @@
  * @Date:   18-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 02-Apr-2019
+ * @Last modified time: 09-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -123,6 +123,27 @@ adaptive_distance_restraint_mgr_intra_restraints(void *mgr, void *atoms, size_t 
     }
 }
 
+extern "C" EXPORT double
+adaptive_distance_restraint_mgr_display_threshold(void *mgr) {
+    Adaptive_Distance_Restraint_Mgr *d = static_cast<Adaptive_Distance_Restraint_Mgr *>(mgr);
+    try {
+        return d->display_threshold();
+    } catch (...) {
+        molc_error();
+        return std::nan("");
+    }
+}
+
+extern "C" EXPORT void
+set_adaptive_distance_restraint_mgr_display_threshold(void *mgr, double t) {
+    Adaptive_Distance_Restraint_Mgr *d = static_cast<Adaptive_Distance_Restraint_Mgr *>(mgr);
+    try {
+        d->set_display_threshold(t);
+    } catch (...) {
+        molc_error();
+    }
+}
+
 extern "C" EXPORT PyObject*
 adaptive_distance_restraint_mgr_visible_restraints(void *mgr)
 {
@@ -170,7 +191,7 @@ set_adaptive_distance_restraint_mgr_colors(void *mgr, uint8_t *colors)
         auto maxc = colors;
         auto midc = colors+4;
         auto minc = colors+8;
-        
+
         d->set_colors(maxc, midc, minc);
     } catch (...) {
         molc_error();
