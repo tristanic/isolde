@@ -2,7 +2,7 @@
 # @Date:   05-Apr-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 08-Apr-2019
+# @Last modified time: 09-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -93,6 +93,22 @@ def adjust_adaptive_distance_restraints(session, atoms,
             alphas[dmask] = -2-fall_off*numpy.log(targets[dmask])
             adrs.alphas = alphas
 
+def restrain_single_distance(session, atoms, min_dist, max_dist,
+        strength=5, well_half_width=None, confidence=-2):
+    if len(atoms)!=2:
+        raise UserError('Selection must specify exactly two atoms!')
+    atom1, atom2 = atoms
+    if not atom1.structure == atom2.structure:
+        raise UserError('Both atoms must be from the same model!')
+    target = (min_dist + max_dist) / 2
+    tolerance = (max_dist - min_dist) / 2
+    if well_half_width is None:
+        well_half_width = min(target/5, 2.0)
+    from .restraint_utils import restrain_atom_pair_adaptive_distance
+    restrain_atom_pair_adaptive_distance(atom1, atom2, target, tolerance,
+        strength, well_half_width, confidence)
+
+
 
 
 def register_isolde_restrain(logger):
@@ -124,6 +140,21 @@ def register_isolde_restrain(logger):
             ]
         )
         register('isolde restrain distances', desc, restrain_distances, logger=logger)
+    def register_isolde_restrain_single_distance():
+        desc = CmdDesc(
+            synopsis = 'Create a single adaptive distance restraint',
+            required = [
+                ('atoms', AtomsArg),
+                ('min_dist', FloatArg),
+                ('max_dist', FloatArg),
+            ],
+            keyword = [
+                ('strength', FloatArg),
+                ('well_half_width', FloatArg),
+                ('confidence', FloatArg),
+            ]
+        )
+        register('isolde restrain single distance', desc, restrain_single_distance, logger=logger)
     def register_isolde_release_distances():
         desc = CmdDesc(
             synopsis = 'Release overly-strained adaptive distance restraints',
@@ -153,5 +184,6 @@ def register_isolde_restrain(logger):
         )
         register('isolde adjust distances', desc, adjust_adaptive_distance_restraints, logger=logger)
     register_isolde_restrain_distances()
+    register_isolde_restrain_single_distance()
     register_isolde_release_distances()
     register_isolde_adjust_distances()

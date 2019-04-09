@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 05-Apr-2019
+# @Last modified time: 09-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -10,8 +10,15 @@
 
 from math import radians
 import numpy
+_torsion_adjustments_chi1 = {
+    'THR': radians(-120),
+}
+_torsion_adjustments_chi2 = {
+    'TRP': radians(180),
+}
+
 def restrain_torsions_to_template(template_residues, restrained_residues,
-    restrain_backbone=True, restrain_rotamers=True,
+    alignment_cutoff = 10, restrain_backbone=True, restrain_rotamers=True,
     angle_cutoff=radians(10), spring_constant = 500):
     '''
     (EXPERIMENTAL)
@@ -33,6 +40,10 @@ def restrain_torsions_to_template(template_residues, restrained_residues,
               from a single model (which may or may not be the same model as for
               `template_residues`). May be the same array as `template_residues`
               (which will just restrain all torsions to their current angles).
+        * alignment_cutoff (default = 5):
+            - distance cutoff (in Angstroms) for rigid-body alignment of model
+              against  template. Residues with a CA RMSD greater than this
+              value after alignment will not be restrained.
         * restrain_backbone (default = `True`):
             - if `True`, all phi, psi and omega dihedrals in
               `restrained_residues` that  exist in both `restrained_residues`
@@ -50,8 +61,8 @@ def restrain_torsions_to_template(template_residues, restrained_residues,
     '''
     #from .. import session_extensions as sx
     from chimerax.isolde import session_extensions as sx
-    if len(template_residues) != len(restrained_residues):
-        raise TypeError('Template and restrained residue arrays must be the same length!')
+    # if len(template_residues) != len(restrained_residues):
+    #     raise TypeError('Template and restrained residue arrays must be the same length!')
     template_us = template_residues.unique_structures
     if len(template_us) != 1:
         raise TypeError('Template residues must be from a single model!')
@@ -60,6 +71,14 @@ def restrain_torsions_to_template(template_residues, restrained_residues,
     if len(restrained_us) != 1:
         raise TypeError('Restrained residues must be from a single model!')
     restrained_model = restrained_us[0]
+
+    if template_residues != restrained_residues:
+        template_residues, restrained_residues = _get_template_alignment(
+            template_residues, restrained_residues,
+            cutoff_distance=alignment_cutoff,
+            overlay_template=False
+        )
+
     tdm = sx.get_proper_dihedral_mgr(template_model)
     rdrm = sx.get_proper_dihedral_restraint_mgr(restrained_model)
     names = ('phi','psi','omega','chi1','chi2','chi3','chi4')
@@ -68,7 +87,17 @@ def restrain_torsions_to_template(template_residues, restrained_residues,
             td = tdm.get_dihedral(tr, name)
             rdr = rdrm.add_restraint_by_residue_and_name(rr, name)
             if td and rdr:
-                rdr.target = td.angle
+                # Due to naming conventions, some sidechain torsions need to be
+                # rotated for best match to other residues
+                if name == 'chi1':
+                    target = (td.angle + _torsion_adjustments_chi1.get(tr.name, 0)
+                        - _torsion_adjustments_chi1.get(rr.name, 0))
+                elif name == 'chi2':
+                    target = (td.angle + _torsion_adjustments_chi2.get(tr.name, 0)
+                        - _torsion_adjustments_chi2.get(rr.name, 0))
+                else:
+                    target = td.angle
+                rdr.target = target
                 rdr.spring_constant = spring_constant
                 rdr.cutoff = angle_cutoff
                 rdr.enabled = True
@@ -417,3 +446,16 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
                 trs = concatenate(found_trs)
                 rrs = concatenate(found_rrs)
                 apply_restraints(trs, rrs)
+
+def restrain_atom_pair_adaptive_distance(atom1, atom2, target, tolerance, kappa, c, alpha=-2):
+    if not atom1.structure == atom2.structure:
+        raise UserError('Both atoms must belong to the same model!')
+    from chimerax.isolde import session_extensions as sx
+    adrm = sx.get_adaptive_distance_restraint_mgr(atom1.structure)
+    adr = adrm.add_restraint(atom1, atom2)
+    adr.target = target
+    adr.tolerance = tolerance
+    adr.kappa = kappa
+    adr.c = c
+    adr.alpha = alpha
+    adr.enabled = True
