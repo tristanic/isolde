@@ -3,7 +3,7 @@
  * @Date:   23-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 02-Apr-2019
+ * @Last modified time: 09-Apr-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -56,6 +56,8 @@ Change_Tracker* Adaptive_Distance_Restraint::change_tracker() const
 void Adaptive_Distance_Restraint::set_target(const double &target)
 {
     _target = target < MIN_DISTANCE_RESTRAINT_TARGET ? MIN_DISTANCE_RESTRAINT_TARGET : target;
+    if (_tolerance > _target/2)
+        set_tolerance(_target/2);
     _mgr->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
     _update_thresholds();
 }
@@ -63,6 +65,7 @@ void Adaptive_Distance_Restraint::set_target(const double &target)
 void Adaptive_Distance_Restraint::set_tolerance(const double &tolerance)
 {
     _tolerance = tolerance < 0 ? 0 : tolerance;
+    _tolerance = _tolerance > _target/2 ? _target/2 : _tolerance;
     _mgr->track_change(this, change_tracker()->REASON_CUTOFF_CHANGED);
     _update_thresholds();
 }
@@ -152,7 +155,7 @@ Adaptive_Distance_Restraint::bond_transforms(float *rot44_e1, float *rot44_m, fl
     float d = distance();
 
     auto vec = c1-c0;
-    auto end_frac = (d-get_target())/(2*d);
+    auto end_frac = (d-get_target()-get_tolerance())/(2*d);
     auto end_offset = vec*end_frac;
     auto t1 = c0 + end_offset;
     geometry::bond_cylinder_transform_gl<Coord, float>(t1, c0, r*0.99, 1.0, rot44_e1);
