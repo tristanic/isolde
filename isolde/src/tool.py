@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 05-Apr-2019
+# @Last modified time: 09-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -16,11 +16,20 @@
 #
 from chimerax.core.tools import ToolInstance
 
+def _find_help():
+    import os, pathlib
+    fname = os.path.join(os.path.dirname(__file__), 'doc', 'index.html')
+    return pathlib.Path(os.path.abspath(fname)).as_uri()
+
 
 class ISOLDE_ToolUI(ToolInstance):
 
     SESSION_ENDURING = False
     # if SESSION_ENDURING is True, tool instance not deleted at session closure
+
+    help = _find_help()
+
+
 
     def __init__(self, session, tool_name):
         ToolInstance.__init__(self, session, tool_name)
