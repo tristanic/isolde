@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 29-Apr-2018
+# @Last modified time: 09-Apr-2019
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -425,7 +425,7 @@ class Symmetry_Manager(Model):
         from .mousemodes import initialize_clipper_mouse_modes
         initialize_clipper_mouse_modes(session)
         id = model.id
-        session.models.remove([model])
+        #session.models.remove([model])
         self.add([model])
         session.models.add([self])
         if len(id) == 1:
