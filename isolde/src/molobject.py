@@ -2679,9 +2679,9 @@ class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
     @property
     def display_threshold(self):
         '''
-        Cutoff deviation from (target +/- tolerance) as a fraction of :param:`c`
+        Cutoff deviation from (target +/- tolerance) as a fraction of :attr:`c`
         below which distance restraints will be hidden. If
-        :attr:`display_threshold`==0 (default), all active restraints will be
+        :attr:`display_threshold` == 0 (default), all active restraints will be
         shown.
         '''
         f = c_function('adaptive_distance_restraint_mgr_display_threshold',

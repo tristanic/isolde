@@ -115,6 +115,9 @@ Distance_Restraints
 ~~~~~~~~~~~~~~~~~~~
     .. autoclass:: Distance_Restraints
 
+Adaptive Distance Restraints
+----------------------------
+
 Adaptive_Distance_Restraint_Mgr
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     .. autoclass:: Adaptive_Distance_Restraint_Mgr

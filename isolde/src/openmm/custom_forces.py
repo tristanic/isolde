@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 01-Apr-2019
+# @Last modified time: 09-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -711,7 +711,7 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
     :math:`|r-r_0| < \tau` no restraining force will be applied.
 
     :math:`\alpha` is the master parameter setting the "robustness" of the
-    restraint. For all values of :math:`alpha`, the shape of the function within
+    restraint. For all values of :math:`\alpha`, the shape of the function within
     the range :math:`-c < r-\rho < c` is essentially parabolic. Outside of this
     region, increasing positive values increase the steepness of the "walls"
     of the restraint (NOTE: since this force does not currently obey the
