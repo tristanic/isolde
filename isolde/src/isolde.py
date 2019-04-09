@@ -2,7 +2,7 @@
 # @Date:   25-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 05-Apr-2019
+# @Last modified time: 09-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -1000,6 +1000,8 @@ class Isolde():
             p.chimerax_models_changed(self.selected_model)
 
     def _selection_changed(self, *_):
+        if not self.gui_mode:
+            return
         from chimerax.atomic import selected_atoms
         from .util import is_continuous_protein_chain
         sel = selected_atoms(self.session)
@@ -1061,38 +1063,39 @@ class Isolde():
     def _update_sim_control_button_states(self, *_):
         # Set enabled/disabled states of main simulation control panel
         # based on whether a simulation is currently running
-        running = self.simulation_running
-        iw = self.iw
-        paused = self.sim_paused
-        go_button = iw._sim_go_button
-        mdff_cb = iw._sim_basic_xtal_settings_enable_mdff_checkbox
-        mdff_cb.setEnabled(not running)
-        if paused and not running:
-            go_button.setChecked(False)
-        elif paused:
-            go_button.setChecked(False)
-            go_button.setToolTip('Resume')
-        elif running:
-            go_button.setChecked(True)
-            go_button.setToolTip('Pause')
-        if not running:
-            go_button.setChecked(False)
-            go_button.setToolTip('Start a simulation')
+        if self.gui_mode:
+            running = self.simulation_running
+            iw = self.iw
+            paused = self.sim_paused
+            go_button = iw._sim_go_button
+            mdff_cb = iw._sim_basic_xtal_settings_enable_mdff_checkbox
+            mdff_cb.setEnabled(not running)
+            if paused and not running:
+                go_button.setChecked(False)
+            elif paused:
+                go_button.setChecked(False)
+                go_button.setToolTip('Resume')
+            elif running:
+                go_button.setChecked(True)
+                go_button.setToolTip('Pause')
+            if not running:
+                go_button.setChecked(False)
+                go_button.setToolTip('Start a simulation')
 
-        iw._map_masking_frame.setDisabled(
-            running
-                or not self.selected_model_has_maps
-                or self.selected_model is None)
-        iw._right_mouse_modes_frame.setEnabled(running)
-        iw._sim_save_checkpoint_button.setEnabled(running)
-        iw._sim_revert_to_checkpoint_button.setEnabled(running)
-        iw._sim_commit_button.setEnabled(running)
-        iw._sim_stop_and_revert_to_checkpoint_button.setEnabled(running)
-        iw._sim_stop_and_discard_button.setEnabled(running)
-        if self.simulation_mode == 'equil':
-            iw._sim_equil_button.setChecked(True)
-        else:
-            iw._sim_min_button.setChecked(True)
+            iw._map_masking_frame.setDisabled(
+                running
+                    or not self.selected_model_has_maps
+                    or self.selected_model is None)
+            iw._right_mouse_modes_frame.setEnabled(running)
+            iw._sim_save_checkpoint_button.setEnabled(running)
+            iw._sim_revert_to_checkpoint_button.setEnabled(running)
+            iw._sim_commit_button.setEnabled(running)
+            iw._sim_stop_and_revert_to_checkpoint_button.setEnabled(running)
+            iw._sim_stop_and_discard_button.setEnabled(running)
+            if self.simulation_mode == 'equil':
+                iw._sim_equil_button.setChecked(True)
+            else:
+                iw._sim_min_button.setChecked(True)
 
         # Update the status of the Go button
         self._selection_changed()
@@ -3103,8 +3106,8 @@ class Isolde():
     # Final cleanup
     #############################################
     def _on_close(self, *_):
+        self.gui_mode = False
         self.session.logger.status('Closing ISOLDE and cleaning up')
-        self.triggers.activate_trigger('isolde closed', None)
 
         for p in self._ui_panels:
             p.remove_trigger_handlers()
@@ -3119,6 +3122,10 @@ class Isolde():
         # Revert mouse modes
         # self._set_chimerax_mouse_mode_panel_enabled(True)
         self._mouse_modes.remove_all_modes()
+        self.triggers.activate_trigger('isolde closed', None)
+
+
+
 
     ##############################################
     # General housekeeping

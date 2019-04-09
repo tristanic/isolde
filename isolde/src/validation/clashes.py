@@ -1,3 +1,12 @@
+# @Author: Tristan Croll <tic20>
+# @Date:   24-Oct-2018
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   tic20
+# @Last modified time: 09-Apr-2019
+# @License: Free for non-commercial use (see license.pdf)
+# @Copyright: 2017-2018 Tristan Croll
+
+
 
 class Clash_Table_Mgr:
 
@@ -74,10 +83,11 @@ class Clash_Table_Mgr:
         )
 
     def _sim_end_cb(self, *_):
-        if self._main_frame.isVisible():
-            # re-running _show_clash_frame() will select and populate the correct
-            # table
-            self._show_clash_frame()
+        if self.isolde.gui_mode:
+            if self._main_frame.isVisible():
+                # re-running _show_clash_frame() will select and populate the correct
+                # table
+                self._show_clash_frame()
 
     def _severe_clash_cb(self, *_):
         self.isolde.sim_manager.pause=True

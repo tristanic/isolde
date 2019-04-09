@@ -2,7 +2,7 @@
 # @Date:   20-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 09-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -275,7 +275,7 @@ class MouseModeRegistry():
 
     def register_all_isolde_modes(self):
         # Button, modifier(s), name, class, args
-        from chimerax.clipper.mousemodes import ZoomMouseMode, ClipPlaneAdjuster
+        # from chimerax.clipper.mousemodes import ZoomMouseMode, ClipPlaneAdjuster
         session = self.session
         isolde = self._isolde
         standard_modes = (
@@ -286,8 +286,8 @@ class MouseModeRegistry():
         for m in standard_modes:
             self.register_mode(m[2], m[3](*m[4]), m[0], m[1])
 
-        zoom_mode = self.register_mode('zoom', ZoomMouseMode(session), 'right', ['shift'])
-        self.register_mode('adjust clip', ClipPlaneAdjuster(session, zoom_mode), 'wheel', ['shift'])
+        # zoom_mode = self.register_mode('zoom', ZoomMouseMode(session), 'right', ['shift'])
+        # self.register_mode('adjust clip', ClipPlaneAdjuster(session, zoom_mode), 'wheel', ['shift'])
 
 
     def remove_mode(self, name):
