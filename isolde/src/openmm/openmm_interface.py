@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 03-Apr-2019
+# @Last modified time: 11-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -1821,6 +1821,7 @@ class Sim_Handler:
                   be ignored.
         '''
         force = self._dihedral_restraint_force
+        restraints = restraints[restraints.sim_indices != -1]
         force.update_targets(restraints.sim_indices,
             restraints.enableds, restraints.spring_constants, restraints.targets, restraints.cutoffs)
         self.force_update_needed()
@@ -1920,6 +1921,7 @@ class Sim_Handler:
                 - a :py:class:`Distance_Restraints` instance
         '''
         force = self._distance_restraints_force
+        restraints = restraints[restraints.sim_indices != -1]
         force.update_targets(restraints.sim_indices,
             restraints.enableds, restraints.spring_constants, restraints.targets/10)
         self.force_update_needed()
@@ -2018,6 +2020,7 @@ class Sim_Handler:
                 - a :py:class:`Adaptive_Distance_Restraints` instance
         '''
         force = self._adaptive_distance_restraints_force
+        restraints = restraints[restraints.sim_indices != -1]
         force.update_targets(restraints.sim_indices,
             restraints.enableds, restraints.kappas, restraints.cs/10,
             restraints.targets/10, restraints.tolerances/10, restraints.alphas)
@@ -2112,6 +2115,7 @@ class Sim_Handler:
                 - a :py:class:`Position_Restraints` instance
         '''
         force = self._position_restraints_force
+        restraints = restraints[restraints.sim_indices != -1]
         force.update_targets(restraints.sim_indices,
             restraints.enableds, restraints.spring_constants, restraints.targets/10)
         self.force_update_needed()
@@ -2202,6 +2206,7 @@ class Sim_Handler:
                 - a :py:class:`Tuggable_Atoms` instance
         '''
         force = self._tugging_force
+        tuggables = tuggables[tuggables.sim_indices !=-1]
         force.update_targets(tuggables.sim_indices,
             tuggables.enableds, tuggables.spring_constants, tuggables.targets/10)
         self.force_update_needed()
@@ -2390,6 +2395,7 @@ class Sim_Handler:
                   create the target force.
         '''
         f = self.mdff_forces[volume]
+        mdff_atoms = mdff_atoms[mdff_atoms.sim_indices != -1]
         f.update_atoms(mdff_atoms.sim_indices,
             mdff_atoms.coupling_constants, mdff_atoms.enableds)
         self.force_update_needed()
