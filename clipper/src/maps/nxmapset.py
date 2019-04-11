@@ -1,3 +1,13 @@
+# @Author: Tristan Croll <tic20>
+# @Date:   15-Jan-2019
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   tic20
+# @Last modified time: 11-Apr-2019
+# @License: Free for non-commercial use (see license.pdf)
+# @Copyright: 2017-2018 Tristan Croll
+
+
+
 import numpy
 from .mapset_base import MapSet_Base
 
@@ -33,6 +43,7 @@ class NXmapSet(MapSet_Base):
             h.expand_to_cover_coords(corners, 15)
         self.add([h])
         self.set_nxmap_display_style(h)
+        self.crystal_mgr.normalize_scene_positions()
         self.master_map_mgr._reapply_zone()
         return h
 

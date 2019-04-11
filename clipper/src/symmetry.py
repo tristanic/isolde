@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 09-Apr-2019
+# @Last modified time: 11-Apr-2019
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -309,6 +309,19 @@ def symmetry_from_model_metadata_pdb(model):
     grid_sampling = Grid_sampling(spacegroup, cell, resolution)
     return cell, spacegroup, grid_sampling, True
 
+def apply_scene_positions(model):
+    '''
+    If a model has a non-identity transform, apply it to the atomic coordinates
+    and reset the transform to identity.
+    '''
+    p = model.scene_position
+    if not p.is_identity():
+        model.atoms.coords = p*model.atoms.coords
+        from chimerax.core.geometry import Place
+        model.position = Place()
+        if isinstance(model.parent, Symmetry_Manager):
+            model.parent.position = Place()
+
 
 
 class Unit_Cell(clipper_python.Unit_Cell):
@@ -430,9 +443,22 @@ class Symmetry_Manager(Model):
         self._transplant_model(model)
         #self.add([model])
         session.models.add([self])
+        apply_scene_positions(model)
         self.initialized=True
         if len(id) == 1:
             session.models.assign_id(self, id)
+
+    @property
+    def position(self):
+        return Model.position.fget(self)
+
+    @position.setter
+    def position(self, pos):
+        Model.position.fset(self, pos)
+        self.normalize_scene_positions()
+
+    def normalize_scene_positions(self):
+        apply_scene_positions(self.structure)
 
     def _transplant_model(self, model):
         mlist = model.all_models()
