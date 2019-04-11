@@ -2,7 +2,7 @@
 # @Date:   25-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 09-Apr-2019
+# @Last modified time: 11-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -998,6 +998,7 @@ class Isolde():
         self._initialize_maps(current_model)
         for p in self._ui_panels:
             p.chimerax_models_changed(self.selected_model)
+        self._update_sim_control_button_states()
 
     def _selection_changed(self, *_):
         if not self.gui_mode:
