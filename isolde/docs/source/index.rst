@@ -16,6 +16,7 @@ Interactive Structure Optimisation by Local Direct Exploration
    intro
    requirements
    gui/index
+   tutorials/index
    python_api/index
    license
    citing

@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 05-Apr-2019
+# @Last modified time: 11-Apr-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -98,6 +98,15 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         else:
             isolde.discard_sim(revert_to=discard_to, warn=False)
 
+def isolde_tutorial(session):
+    from chimerax.help_viewer import show_url
+    import pathlib
+    import os
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    fname = os.path.join(root_dir, 'doc', 'tutorials', 'index.html')
+    show_url(session, pathlib.Path(fname).as_uri())
+
+
 def register_isolde(logger):
     from chimerax.core.commands import (
         register, CmdDesc,
@@ -121,8 +130,15 @@ def register_isolde(logger):
             )
         register('isolde sim', desc, isolde_sim, logger=logger)
 
+    def register_isolde_tutorial():
+        desc = CmdDesc(
+            synopsis='Load a help page with worked examples using ISOLDE'
+        )
+        register('isolde tutorial', desc, isolde_tutorial, logger=logger)
+
     register_isolde_start()
     register_isolde_sim()
+    register_isolde_tutorial()
     from chimerax.isolde.remote_control.xmlrpc import remotecmd
     remotecmd.register_remote_control_command(logger)
     from chimerax.isolde.restraints.cmd import register_isolde_restrain
