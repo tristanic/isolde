@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Apr-2019
+# @Last modified time: 08-May-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -2846,11 +2846,8 @@ def cys_type(residue):
     try:
         sulfur_atom = atoms[names == 'SG'][0]
     except:
-        # Assume it's been truncated to ALA if CA present, otherwise GLY
-        if 'CA' in names:
-            return 'ALA'
-        else:
-            return 'GLY'
+        # Assume it's been truncated. Let the standard machinery handle it.
+        return None
     bonds = Bonds(sulfur_atom.bonds)
     if len(bonds) == 1:
         # Deprotonated
