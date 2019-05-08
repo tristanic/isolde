@@ -260,10 +260,17 @@ def symmetry_from_model_metadata_pdb(model):
     Generate Cell, Spacegroup and a default Grid_Sampling from the PDB
     CRYST1 card.
     '''
-    cryst1 = model.metadata['CRYST1'][0]
-    abc = [float(cryst1[7:16]), float(cryst1[16:25]), float(cryst1[25:34])]
-    angles = [float(cryst1[34:41]), float(cryst1[41:48]), float(cryst1[48:55])]
-    symstr = cryst1[55:67]
+    logger = model.session.logger
+    try:
+        cryst1 = model.metadata['CRYST1'][0]
+        abc = [float(cryst1[7:16]), float(cryst1[16:25]), float(cryst1[25:34])]
+        angles = [float(cryst1[34:41]), float(cryst1[41:48]), float(cryst1[48:55])]
+        symstr = cryst1[55:67]
+    except KeyError:
+        logger.warning('Missing or corrupted CRYST1 card found in the PDB file. '
+            'This model will be treated as a cryo-EM model until associated '
+            'with an MTZ file containing symmetry information.')
+        return simple_p1_box(model)
     # zval = int(cryst1[67:71])
 
     res = 3.0
@@ -298,6 +305,18 @@ def symmetry_from_model_metadata_pdb(model):
     import numpy
     if symstr.strip() == 'P 1' and numpy.allclose(abc, 1.0) and numpy.allclose(angles, 90):
         return simple_p1_box(model, resolution=res)
+
+    # It turns out that at least one cryo-EM package writes the cell dimensions
+    # as 0.000    0.000    0.000, leading to a divide-by-zero hard crash in
+    # Clipper. Let's do a sanity check for absurdly short cell lengths here.
+
+    if numpy.any(abc < 1):
+        warn_str = ('CRYST1 reports physically impossible cell dimensions of '
+            '({})Å³. Symmetry information in PDB file will be ignored.').format(
+                ' x '.join('{:.2f}'.format(l) for l in abc)
+                )
+        logger.warning(warn_str)
+        return simple_p1_box(model)
 
     from .clipper_python import Cell_descr, Cell, Spgr_descr, Spacegroup, Resolution, Grid_sampling
 
