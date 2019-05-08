@@ -1,3 +1,12 @@
+# @Author: Tristan Croll <tic20>
+# @Date:   15-Jan-2019
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   tic20
+# @Last modified time: 07-May-2019
+# @License: Free for non-commercial use (see license.pdf)
+# @Copyright: 2017-2018 Tristan Croll
+
+
 
 from chimerax.map import Volume
 import numpy
@@ -15,7 +24,7 @@ class MapHandler_Base(Volume):
         ms = self._mapset = mapset
 
         self._is_difference_map = is_difference_map
-        self.initialize_thresholds()
+        #self.initialize_thresholds()
 
         self.show()
         mh = self._mgr_handlers = []
@@ -133,22 +142,22 @@ class FastVolumeSurface(VolumeSurface):
         # Transforms and normalization done in thread
         return varray, narray, tarray, hidden_edges
 
-    def _use_fast_thread_result(self, show_mesh, rendering_options):
+    def _use_fast_thread_result(self, rendering_options):
         sct = self._surf_calc_thread
         if sct is not None:
             va, ta, na = sct.get_result()
             va, na, ta, hidden_edges = self._postprocess(va, na, ta, self.volume.rendering_options, self.level)
             self._set_surface(va, na, ta, hidden_edges)
-            self._set_appearance(show_mesh, rendering_options)
+            self._set_appearance(rendering_options)
             self._surf_calc_thread = None
             if self._update_needed:
                 # surface properties were changed while the thread was working
-                self.update_surface(show_mesh, rendering_options)
+                self.update_surface(rendering_options)
             self._update_needed = False
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
-    def update_surface(self, show_mesh, rendering_options):
+    def update_surface(self, rendering_options):
         sct = self._surf_calc_thread
         if sct is not None and not sct.ready():
             self._update_needed = True
@@ -167,7 +176,7 @@ class FastVolumeSurface(VolumeSurface):
         delayed_reaction(self.volume.session.triggers, 'new frame',
             sct.start_compute, (numpy.asfortranarray(v.matrix()), level, det, vertex_transform.matrix, normal_transform.matrix, False, True),
             sct.ready,
-            self._use_fast_thread_result, (show_mesh, rendering_options))
+            self._use_fast_thread_result, (rendering_options,))
 
 class XmapHandler_Base(MapHandler_Base):
     '''

@@ -2,7 +2,7 @@
 # @Date:   15-Jan-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Apr-2019
+# @Last modified time: 08-May-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -73,12 +73,12 @@ class NXmapSet(MapSet_Base):
                 contour = numpy.array([-pcontour, pcontour])
             else:
                 contour = numpy.array([guess_suitable_contour(nxmap_handler, self.structure)])
-        nxmap_handler.set_representation(style)
         nxmap_handler.set_parameters(**{'cap_faces': False,
                                   'surface_levels': contour,
                                   'show_outline_box': False,
                                   'surface_colors': color,
                                   'square_mesh': False})
+        nxmap_handler.set_display_style(style)
 
 
 

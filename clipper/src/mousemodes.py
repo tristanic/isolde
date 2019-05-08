@@ -1,8 +1,8 @@
 # @Author: Tristan Croll
 # @Date:   22-Mar-2018
 # @Email:  tic20@cam.ac.uk
-# @Last modified by:   Tristan Croll
-# @Last modified time: 18-Apr-2018
+# @Last modified by:   tic20
+# @Last modified time: 08-May-2019
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -271,11 +271,12 @@ class ContourSelectedVolume(MouseMode):
 
 
 def adjust_threshold_level(m, step, sym):
-    if m.representation == 'solid':
+    if m.surfaces_in_style('solid'):
         new_levels = [(l+step,b) for l,b in m.solid_levels]
         l,b = new_levels[-1]
         new_levels[-1] = (max(l,1.01*ms.maximum),b)
         m.set_parameters(solid_levels = new_levels)
+        return ('solid', new_levels)
     else:
         #if sym and len(m.surface_levels) > 1:
         if sym and len(m.surfaces) > 1:
@@ -298,4 +299,4 @@ def adjust_threshold_level(m, step, sym):
             #new_levels = tuple(l+step for l in m.surface_levels)
             new_levels = tuple(l+step for l in old_levels)
         m.set_parameters(surface_levels = new_levels)
-    return(m.representation, new_levels)
+    return (None, new_levels)
