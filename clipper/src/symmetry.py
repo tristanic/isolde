@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Apr-2019
+# @Last modified time: 08-May-2019
 # @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 # @Copyright: Copyright 2017-2018 Tristan Croll
 
@@ -310,7 +310,7 @@ def symmetry_from_model_metadata_pdb(model):
     # as 0.000    0.000    0.000, leading to a divide-by-zero hard crash in
     # Clipper. Let's do a sanity check for absurdly short cell lengths here.
 
-    if numpy.any(abc < 1):
+    if any(l < 1 for l in abc):
         warn_str = ('CRYST1 reports physically impossible cell dimensions of '
             '({})Å³. Symmetry information in PDB file will be ignored.').format(
                 ' x '.join('{:.2f}'.format(l) for l in abc)
