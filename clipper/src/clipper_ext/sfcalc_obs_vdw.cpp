@@ -1,3 +1,15 @@
+/**
+ * @Author: Tristan Croll <tic20>
+ * @Date:   05-Feb-2019
+ * @Email:  tic20@cam.ac.uk
+ * @Last modified by:   tic20
+ * @Last modified time: 09-May-2019
+ * @License: Free for non-commercial use (see license.pdf)
+ * @Copyright: 2017-2018 Tristan Croll
+ */
+
+#include <chrono>
+
 #include "sfcalc_obs_vdw.h"
 #include "edcalc_ext.h"
 
@@ -10,6 +22,7 @@ namespace clipper_cx
 template<class T>
 bool SFcalc_obs_bulk_vdw<T>::operator() ( HKL_data<datatypes::F_phi<T> >& fphi, const HKL_data<datatypes::F_sigF<T> >& fsig, const Atom_list& atoms )
 {
+  // std::cout << "Starting bulk solvent calculation..." << std::endl << std::flush;
   // set U value constants
   double u_atom = Util::b2u( 20.0 );
   double u_mask = Util::b2u( 50.0 );
@@ -33,17 +46,32 @@ bool SFcalc_obs_bulk_vdw<T>::operator() ( HKL_data<datatypes::F_phi<T> >& fphi, 
   Xmap<float> xmap( spgr, cell, grid );
 
   // do ed calc from atomu
-  EDcalc_aniso<ftype32> edcalc;
-  edcalc( xmap, atomu );
+  // EDcalc_aniso<ftype32> edcalc;
+  // auto start = std::chrono::system_clock::now();
+  EDcalc_aniso_thread<ftype32> edcalc(2.5, nthreads);
+  // std::cout << "Number locked before: " << xmap.count_locked() << std::endl;
+  edcalc( xmap, atomu);
+  // std::cout << "Number locked after: " << xmap.count_locked() << std::endl;
+  // if (!xmap.all_unlocked())
+    // std::cerr << "ERROR: not all grid points are unlocked!" << std::endl;
+  // auto end = std::chrono::system_clock::now();
+
+  // std::chrono::duration<double> elapsed = end-start;
+  // std::cout << "EDcalc with " << nthreads << " threads took " << elapsed.count() << " seconds." << std::endl;
   xmap.fft_to( fphi_atom );
   fphi_atom.compute( fphi_atom, datatypes::Compute_scale_u_iso<datatypes::F_phi<T> >( 1.0, u_atom ) );
 
   // do density calc from mask
+
+  // start = std::chrono::system_clock::now();
   EDcalc_mask_vdw<ftype32> emcalc;
   emcalc( xmap, atomu );
   for ( Xmap<ftype32>::Map_reference_index ix = xmap.first();
         !ix.last(); ix.next() )
     xmap[ix] = 1.0 - xmap[ix];
+  // end = std::chrono::system_clock::now();
+  // elapsed = end-start;
+  // std::cout << "Single-threaded mask calc took " << elapsed.count() << " seconds." << std::endl;
   xmap.fft_to( fphi_mask );
   fphi_mask.compute( fphi_mask, datatypes::Compute_scale_u_iso<datatypes::F_phi<T> >( 1.0, -u_mask ) );
 

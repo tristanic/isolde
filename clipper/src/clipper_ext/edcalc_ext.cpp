@@ -1,4 +1,17 @@
+/**
+ * @Author: Tristan Croll <tic20>
+ * @Date:   31-Aug-2018
+ * @Email:  tic20@cam.ac.uk
+ * @Last modified by:   tic20
+ * @Last modified time: 09-May-2019
+ * @License: Free for non-commercial use (see license.pdf)
+ * @Copyright: 2017-2018 Tristan Croll
+ */
+
+ #include <future>
+
 #include "edcalc_ext.h"
+#include <clipper/core/atomsf.h>
 
 using namespace clipper;
 using namespace clipper::datatypes;
@@ -82,8 +95,92 @@ bool EDcalc_mask_vdw<T>::operator() (NXmap<T>& nxmap, const Atom_list& atoms) co
     return false;
 }
 
+template<class T>
+bool EDcalc_aniso_thread<T>::operator() (Xmap<T>& xmap, const Atom_list& atoms) const
+{
+    xmap = 0.0;
+    std::vector<std::future<bool>> results(n_threads_);
+    size_t atoms_per_thread = atoms.size() / n_threads_;
+    size_t start=0, end;
+    for (size_t i=0; i<n_threads_; ++i)
+    {
+        if (i<n_threads_-1)
+            end = start+atoms_per_thread;
+        else
+            end = atoms.size();
+        results[i] = std::async(std::launch::async,
+            &EDcalc_aniso_thread<T>::edcalc_xmap_thread_, this,
+            std::ref(xmap), atoms, start, end);
+        start += atoms_per_thread;
+    }
+    // Wait for all threads to finish
+    for (auto&r: results)
+        r.get();
+
+    // Due to the way indexing works, this last loop over all grid points would
+    // be very hard to parallelise
+    for (auto ix = xmap.first(); !ix.last(); ix.next())
+        xmap[ix] *= xmap.multiplicity( ix.coord() );
+
+    return true;
+}
+
+template <class T>
+bool EDcalc_aniso_thread<T>::edcalc_xmap_thread_(Xmap<T>& xmap,
+    const Atom_list& atoms, size_t start, size_t end) const
+{
+    const Cell& cell = xmap.cell();
+    const Grid_sampling& grid = xmap.grid_sampling();
+
+    Coord_orth xyz;
+    Coord_grid g0, g1;
+    Grid_range gd( cell, grid, radius_ );
+    typename Xmap<T>::Map_reference_coord i0, iu, iv, iw;
+    std::vector<typename Xmap<T>::Map_reference_coord> grid_ref_coords, remaining_coords;
+    for (size_t i=start; i<end; ++i)
+    {
+        const Atom& a = atoms[i];
+        if (a.is_null())
+            continue;
+        grid_ref_coords.clear();
+        remaining_coords.clear();
+        U_aniso_orth u (a.u_aniso_orth());
+        if ( u.is_null() ) u = U_aniso_orth(a.u_iso());
+        AtomShapeFn sf (a.coord_orth(), a.element(), u, a.occupancy());
+        auto cg = xmap.coord_map(a.coord_orth()).coord_grid();
+        g0 = cg+gd.min();
+        g1 = cg+gd.max();
+        i0 = typename Xmap<T>::Map_reference_coord(xmap, g0);
+        for (iu = i0; iu.coord().u() <= g1.u(); iu.next_u())
+            for (iv=iu; iv.coord().v() <= g1.v(); iv.next_v())
+                for (iw=iv; iw.coord().w() <= g1.w(); iw.next_w())
+                    remaining_coords.push_back(iw);
+        while (!remaining_coords.empty())
+        {
+            grid_ref_coords = remaining_coords;
+            remaining_coords.clear();
+            for (auto ix: grid_ref_coords)
+            {
+                auto avail = xmap.lock_element(ix);
+                if (!avail)
+                {
+                    remaining_coords.push_back(ix);
+                    continue;
+                }
+                xmap[ix] += sf.rho( ix.coord_orth() );
+                xmap.unlock_element(ix);
+            }
+        }
+    }
+    return true;
+}
+
+
 template class CLIPPER_CX_IMEX EDcalc_mask_vdw<ftype32>;
 template class CLIPPER_CX_IMEX EDcalc_mask_vdw<ftype64>;
+
+template class CLIPPER_CX_IMEX EDcalc_aniso_thread<ftype32>;
+template class CLIPPER_CX_IMEX EDcalc_aniso_thread<ftype64>;
 
 
 } // namespace clipper_cx

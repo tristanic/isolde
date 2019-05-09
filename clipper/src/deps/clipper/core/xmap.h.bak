@@ -1,15 +1,3 @@
-/**
- * @Author: Tristan Croll <tic20>
- * @Date:   20-Jul-2018
- * @Email:  tic20@cam.ac.uk
- * @Last modified by:   tic20
- * @Last modified time: 09-May-2019
- * @License: Free for non-commercial use (see license.pdf)
- * @Copyright: 2017-2018 Tristan Croll
- */
-
-
-
 /*! \file lib/xmap.h
     Header file for crystal maps
 */
@@ -57,8 +45,6 @@
 #ifndef CLIPPER_XMAP
 #define CLIPPER_XMAP
 
-#include <memory>
-#include <atomic>
 
 #include "fftmap.h"
 #include "fftmap_sparse.h"
@@ -380,17 +366,7 @@ private:
     //! constructor: from spacegroup, cell, and grid
     Xmap( const Spacegroup& spacegroup, const Cell& cell, const Grid_sampling& grid_sam ) { init( spacegroup, cell, grid_sam ); }
     //! initialiser: from spacegroup, cell, and grid
-    //! copy constructor
-    Xmap(const Xmap<T>& other)
-        {
-            init( other.spacegroup(), other.cell(), other.grid_sampling() );
-            Xmap_base::Map_reference_index ix;
-            for (ix=first(); !ix.last(); ix.next()) {
-                list[ix.index()] = other[ix];
-            }
-        }
-
-    void init( const Spacegroup& spacegroup, const Cell& cell, const Grid_sampling& grid_sam );
+    void init( const Spacegroup& spacegroup, const Cell& cell, const Grid_sampling& grid_sam ) { Xmap_base::init( spacegroup, cell, grid_sam ); list.resize( cacheref.data().asu.size() ); }
 
     //! get data by Map_reference_index
     inline const T& operator[] (const Xmap_base::Map_reference_index& ix) const
@@ -452,14 +428,7 @@ private:
     //! subtract another map from this one
     const Xmap<T>& operator -=( const Xmap<T>& other );
 
-    // Thread safety
-
-    // returns true if the element is already locked, otherwise locks it and returns false
-    bool lock_element(const Xmap_base::Map_reference_coord& ix) { return gridlock[ix.index()].exchange(true); }
-    void unlock_element(const Xmap_base::Map_reference_coord& ix) { gridlock[ix.index()].exchange(false); }
-
   private:
-    std::unique_ptr<std::atomic<bool>[]> gridlock;
     std::vector<T> list;
   };
 
@@ -494,15 +463,6 @@ private:
     return;
   }
 
-  template<class T> void Xmap<T>::init(const Spacegroup& spacegroup, const Cell& cell, const Grid_sampling& grid_sam)
-  {
-      Xmap_base::init( spacegroup, cell, grid_sam );
-      auto n = cacheref.data().asu.size();
-      list.resize( n );
-      gridlock = std::unique_ptr<std::atomic<bool>[]>(new std::atomic<bool>[n]);
-      for (size_t i=0; i<n; ++i)
-        gridlock[i]=false;
-  }
 
   /*! Accessing the data by coordinate, rather than by
     Map_reference_index or Map_reference_coord, involves a symmetry
