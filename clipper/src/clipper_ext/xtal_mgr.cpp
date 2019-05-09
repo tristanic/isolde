@@ -400,7 +400,9 @@ Xtal_thread_mgr::Xtal_thread_mgr(const HKL_info& hklinfo, const HKL_data<Flag>& 
     const Grid_sampling& grid_sampling, const HKL_data<F_sigF<ftype32>>& fobs,
     const size_t num_threads)
     : mgr_(hklinfo, free_flags, grid_sampling, fobs), num_threads_(num_threads)
-    {}
+    {
+        mgr_.bulk_solvent_calculator_.set_n_threads(num_threads);
+    }
 
 void
 Xtal_thread_mgr::recalculate_all(const Atom_list& atoms)

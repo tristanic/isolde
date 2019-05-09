@@ -9,6 +9,7 @@
  */
 
  #include <future>
+ #include <chrono>
 
 #include "edcalc_ext.h"
 #include <clipper/core/atomsf.h>
@@ -119,10 +120,37 @@ bool EDcalc_aniso_thread<T>::operator() (Xmap<T>& xmap, const Atom_list& atoms) 
 
     // Due to the way indexing works, this last loop over all grid points would
     // be very hard to parallelise
+    // auto start_time = std::chrono::system_clock::now();
+    // const auto& asu_grid = xmap.grid_asu();
+    // auto asu_size = asu_grid.index(asu_grid.max());
+    // size_t grid_points_per_thread = asu_size / n_threads_;
+    // start=0;
+    // results.clear();
+    // for (size_t i=0; i<n_threads_; ++i)
+    // {
+    //     if (i<n_threads_-1)
+    //         end = start+grid_points_per_thread;
+    //     else
+    //         end = asu_size;
+    //     results.push_back(std::async(std::launch::async,
+    //         [](Xmap<T>& xmap, size_t start, size_t end)
+    //         {
+    //             auto ix = xmap.first();
+    //             for(;ix.index()<start;ix.next());
+    //             for(;ix.index()<end; ix.next())
+    //                 xmap[ix] *= xmap.multiplicity( ix.coord() );
+    //             return true;
+    //         }, std::ref(xmap), start, end));
+    //     start += grid_points_per_thread;
+    // }
+    // for (auto&r: results)
+    //     r.get();
     for (auto ix = xmap.first(); !ix.last(); ix.next())
         xmap[ix] *= xmap.multiplicity( ix.coord() );
-
-    return true;
+    // auto end_time = std::chrono::system_clock::now();
+    // std::chrono::duration<double> elapsed = end_time-start_time;
+    // std::cout << "Applying multiplicity took " << elapsed.count() << " seconds." << std::endl;
+    // return true;
 }
 
 template <class T>

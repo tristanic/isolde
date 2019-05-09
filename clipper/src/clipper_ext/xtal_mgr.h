@@ -1,3 +1,15 @@
+/**
+ * @Author: Tristan Croll <tic20>
+ * @Date:   21-Sep-2018
+ * @Email:  tic20@cam.ac.uk
+ * @Last modified by:   tic20
+ * @Last modified time: 09-May-2019
+ * @License: Free for non-commercial use (see license.pdf)
+ * @Copyright: 2017-2018 Tristan Croll
+ */
+
+
+
 #pragma once
 //#include <string>
 
@@ -304,7 +316,11 @@ public:
         const size_t num_threads = 1);
 
     inline size_t num_threads() const { return num_threads_; }
-    inline void set_num_threads(size_t n) { num_threads_=std::max(n, size_t(1)); }
+    inline void set_num_threads(size_t n)
+    {
+        num_threads_=std::max(n, size_t(1));
+        mgr_.bulk_solvent_calculator_.set_n_threads(num_threads_);
+    }
 
     bool thread_running() const { return master_thread_result_.valid(); }
     bool ready() const { return ready_; }

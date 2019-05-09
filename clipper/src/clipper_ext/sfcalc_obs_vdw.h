@@ -38,6 +38,8 @@ public:
             const HKL_data<datatypes::F_sigF<T> >& fsig, const Atom_list& atoms );
     const ftype& bulk_frac() { return bulkfrc; }
     const ftype& bulk_scale() { return bulkscl; }
+    const size_t& n_threads() const { return nthreads; }
+    void set_n_threads(size_t n) { nthreads=n; }
 private:
     int nparams;
     size_t nthreads;
