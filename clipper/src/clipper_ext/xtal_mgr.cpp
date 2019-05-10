@@ -3,7 +3,7 @@
  * @Date:   28-Jan-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 09-May-2019
+ * @Last modified time: 10-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -90,7 +90,8 @@ Xtal_mgr_base::guess_free_flag_value(const HKL_data<Flag>& flags)
         int last_candidate=-10;
         for (auto v: flag_vals)
         {
-            if (val_fracs[v] > 0.005 && val_fracs[v] < 0.15)
+            if ((val_fracs[v] > 0.005 && val_fracs[v] < 0.15)
+            || (val_fracs[v] < 0.15 && val_counts[v] > 2000)) 
             {
                 candidates.insert(v);
                 last_candidate = v;

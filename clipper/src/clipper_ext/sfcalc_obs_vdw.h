@@ -3,7 +3,7 @@
  * @Date:   05-Feb-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 09-May-2019
+ * @Last modified time: 10-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -11,6 +11,8 @@
 
 
 #pragma once
+
+#include <unordered_map>
 
 #include <clipper/clipper.h>
 #include <clipper/clipper-contrib.h>
@@ -44,7 +46,6 @@ private:
     int nparams;
     size_t nthreads;
     double bulkfrc, bulkscl;
-
 }; // class SFcalc_obs_bulk_vdw
 
 

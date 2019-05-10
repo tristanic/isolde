@@ -1,3 +1,15 @@
+/**
+ * @Author: Tristan Croll <tic20>
+ * @Date:   30-Aug-2018
+ * @Email:  tic20@cam.ac.uk
+ * @Last modified by:   tic20
+ * @Last modified time: 10-May-2019
+ * @License: Free for non-commercial use (see license.pdf)
+ * @Copyright: 2017-2018 Tristan Croll
+ */
+
+
+
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include <pybind11/numpy.h>
@@ -34,7 +46,10 @@ void declare_xmap_base(py::module& m)
         .def("coord_orth", &Xmap_base::coord_orth)
         .def("coord_map", &Xmap_base::coord_map)
         //.def("in_map", [](const Derived& self, const Coord_grid& cg) { return self.in_map(cg); })
-        .def("multiplicity", &Xmap_base::multiplicity)
+        .def("multiplicity", [](const Xmap_base& self, const Coord_grid& pos)
+        {
+            return self.multiplicity(pos);
+        })
         .def_property_readonly("first", &Xmap_base::first)
         .def_property_readonly("first_coord", &Xmap_base::first_coord)
         // Let Xmap take control of creation of Map_reference... types

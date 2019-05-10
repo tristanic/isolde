@@ -3,7 +3,7 @@
  * @Date:   20-Jul-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 09-May-2019
+ * @Last modified time: 10-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -59,6 +59,7 @@
 
 #include <memory>
 #include <atomic>
+#include <map>
 
 #include "fftmap.h"
 #include "fftmap_sparse.h"
@@ -95,6 +96,7 @@ namespace clipper
     std::vector<unsigned char> asu;  //!< ASU flag array
     std::vector<Isymop> isymop;      //!< Integerised symops
     std::vector<int> du, dv, dw;     //!< symmetry grid shifts to index
+    std::map<int, int> spos; //!< special positions
     Array2d<unsigned char> symperm;  //!< Perumtation matrix of symops
     Mat33<> mat_grid_orth;           //!< for backward compatibility
     static Mutex mutex;              //!< thread safety
@@ -102,6 +104,8 @@ private:
     void find_asu_sym_(const Coord_grid& begin, const Coord_grid& end);
     void find_map_sym_(const Coord_grid& begin, const Coord_grid& end);
     int loops_per_thread_ = 2.5e6;
+
+    void find_special_positions();
 
   };
 
@@ -172,7 +176,9 @@ private:
 
     //! get multiplicity of a map grid point
     int multiplicity( const Coord_grid& pos ) const;
+    int multiplicity( const int& index ) const;
 
+    const std::map<int, int>& special_positions() const { return cacheref.data().spos; }
     //! Map reference base class
     /*! This is a reference to an Map. It forms a base class for
       index-like and coordinate-like Map references. If you write a
@@ -316,6 +322,9 @@ private:
       void edge();
     };
 
+    int multiplicity( const Map_reference_base& ix) const;
+    //int multiplicity( const Map_reference_coord& ic) const;
+
     //! return a Map_reference_index for this map
     Map_reference_index first() const { return Map_reference_index( *this ); }
     //! return a Map_reference_coord for this map
@@ -455,11 +464,11 @@ private:
     // Thread safety
 
     // returns true if the element is already locked, otherwise locks it and returns false
-    bool lock_element(const Xmap_base::Map_reference_coord& ix) { return gridlock[ix.index()].exchange(true); }
-    void unlock_element(const Xmap_base::Map_reference_coord& ix) { gridlock[ix.index()].exchange(false); }
+    bool lock_element(const Xmap_base::Map_reference_coord& ix) { return gridlock[ix.index()].test_and_set(); }
+    void unlock_element(const Xmap_base::Map_reference_coord& ix) { gridlock[ix.index()].clear(); }
 
   private:
-    std::unique_ptr<std::atomic<bool>[]> gridlock;
+    std::unique_ptr<std::atomic_flag[]> gridlock;
     std::vector<T> list;
   };
 
@@ -499,9 +508,9 @@ private:
       Xmap_base::init( spacegroup, cell, grid_sam );
       auto n = cacheref.data().asu.size();
       list.resize( n );
-      gridlock = std::unique_ptr<std::atomic<bool>[]>(new std::atomic<bool>[n]);
+      gridlock = std::unique_ptr<std::atomic_flag[]>(new std::atomic_flag[n]);
       for (size_t i=0; i<n; ++i)
-        gridlock[i]=false;
+        gridlock[i].clear();
   }
 
   /*! Accessing the data by coordinate, rather than by

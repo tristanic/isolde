@@ -3,7 +3,7 @@
  * @Date:   31-Aug-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 09-May-2019
+ * @Last modified time: 10-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -111,7 +111,7 @@ bool EDcalc_aniso_thread<T>::operator() (Xmap<T>& xmap, const Atom_list& atoms) 
             end = atoms.size();
         results[i] = std::async(std::launch::async,
             &EDcalc_aniso_thread<T>::edcalc_xmap_thread_, this,
-            std::ref(xmap), atoms, start, end);
+            std::ref(xmap), std::cref(atoms), start, end);
         start += atoms_per_thread;
     }
     // Wait for all threads to finish
@@ -145,8 +145,19 @@ bool EDcalc_aniso_thread<T>::operator() (Xmap<T>& xmap, const Atom_list& atoms) 
     // }
     // for (auto&r: results)
     //     r.get();
-    for (auto ix = xmap.first(); !ix.last(); ix.next())
-        xmap[ix] *= xmap.multiplicity( ix.coord() );
+    for (const auto& spos: xmap.special_positions()) {
+        xmap.set_data(spos.first, spos.second*xmap.get_data(spos.first));
+    }
+
+    // for (auto ix = xmap.first(); !ix.last(); ix.next())
+    // {
+    //     // auto m1 = xmap.multiplicity(ix.coord());
+    //     // auto m2 = xmap.multiplicity(ix);
+    //     // if (m1 != m2)
+    //     //     std::cerr << "Multiplicity mismatch! Old version: " << m1
+    //     //         << " New version: " << m2 << " for coordinate " << ix.coord().format() << std::endl;
+    //     xmap[ix] *= xmap.multiplicity( ix );
+    // }
     // auto end_time = std::chrono::system_clock::now();
     // std::chrono::duration<double> elapsed = end_time-start_time;
     // std::cout << "Applying multiplicity took " << elapsed.count() << " seconds." << std::endl;
@@ -195,7 +206,7 @@ bool EDcalc_aniso_thread<T>::edcalc_xmap_thread_(Xmap<T>& xmap,
                     remaining_coords.push_back(ix);
                     continue;
                 }
-                xmap[ix] += sf.rho( ix.coord_orth() );
+                xmap[ix] += sf.rho( ix.coord_orth());
                 xmap.unlock_element(ix);
             }
         }

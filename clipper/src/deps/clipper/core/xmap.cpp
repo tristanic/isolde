@@ -110,7 +110,7 @@ Xmap_cacheobj::Xmap_cacheobj( const Key& xmap_cachekey ) :
   //     }
   //     asu[ map_grid.index( base ) ] = sym + 1;
   //   }
-
+  find_special_positions();
 }
 
 
@@ -169,6 +169,23 @@ void Xmap_cacheobj::find_map_sym_(const Coord_grid& begin,
 
     }
 }
+
+void Xmap_cacheobj::find_special_positions()
+{
+    for (int index=0; index < map_grid.size(); index++)
+    {
+        if (asu[index] != 0)
+            continue;
+        Coord_grid coord = map_grid.deindex(index);
+        int mult=0;
+        for (const auto& sym: isymop)
+            if (coord.transform(sym).unit(xtl_grid) == coord)
+                mult++;
+        if (mult>1)
+            spos[index] = mult;
+    }
+}
+
 
 bool Xmap_cacheobj::matches( const Key& xmap_cachekey ) const
 {
@@ -272,11 +289,27 @@ bool Xmap_base::is_null() const
 */
 int Xmap_base::multiplicity( const Coord_grid& pos ) const
 {
-  int mult = 1;
-  Coord_grid base = pos.unit(grid_sam_);
-  for ( int sym = 1; sym < cacheref.data().nsym; sym++ )
-    if ( base.transform(isymop[sym]).unit(grid_sam_) == base ) mult++;
-  return mult;
+  return multiplicity(Map_reference_index(*this, pos));
+  // int mult = 1;
+  // Coord_grid base = pos.unit(grid_sam_);
+  // for ( int sym = 1; sym < cacheref.data().nsym; sym++ )
+  //   if ( base.transform(isymop[sym]).unit(grid_sam_) == base ) mult++;
+  // return mult;
+}
+
+int Xmap_base::multiplicity(const Xmap_base::Map_reference_base& ix) const
+{
+    return multiplicity(ix.index());
+}
+
+int Xmap_base::multiplicity(const int& index) const
+{
+    const auto& spos = cacheref.data().spos;
+    auto result = spos.find(index);
+    if (result==spos.end())
+        return 1;
+    return result->second;
+
 }
 
 void Xmap_base::asu_error( const Coord_grid& pos ) const
