@@ -3,7 +3,7 @@
  * @Date:   05-Feb-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 10-May-2019
+ * @Last modified time: 13-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -42,10 +42,14 @@ public:
     const ftype& bulk_scale() { return bulkscl; }
     const size_t& n_threads() const { return nthreads; }
     void set_n_threads(size_t n) { nthreads=n; }
+    //! If called, then the bulk solvent scale and B-factor will be re-optimised on the next run.
+    void set_bulk_solvent_optimization_needed() { bulk_solvent_optimization_needed_ = true; }
 private:
+    bool bulk_solvent_optimization_needed_ = true;
     int nparams;
     size_t nthreads;
-    double bulkfrc, bulkscl;
+    T bulkfrc, bulkscl;
+    T bulk_u;
 }; // class SFcalc_obs_bulk_vdw
 
 
