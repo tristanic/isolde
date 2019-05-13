@@ -3,7 +3,7 @@
  * @Date:   31-Aug-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 10-May-2019
+ * @Last modified time: 13-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -173,7 +173,7 @@ bool EDcalc_aniso_thread<T>::edcalc_xmap_thread_(Xmap<T>& xmap,
 
     Coord_orth xyz;
     Coord_grid g0, g1;
-    Grid_range gd( cell, grid, radius_ );
+    Grid_range gd; // ( cell, grid, radius_ );
     typename Xmap<T>::Map_reference_coord i0, iu, iv, iw;
     std::vector<typename Xmap<T>::Map_reference_coord> grid_ref_coords, remaining_coords;
     for (size_t i=start; i<end; ++i)
@@ -181,6 +181,7 @@ bool EDcalc_aniso_thread<T>::edcalc_xmap_thread_(Xmap<T>& xmap,
         const Atom& a = atoms[i];
         if (a.is_null())
             continue;
+        gd = Grid_range(cell, grid, cutoff_radius(a));
         grid_ref_coords.clear();
         remaining_coords.clear();
         U_aniso_orth u (a.u_aniso_orth());

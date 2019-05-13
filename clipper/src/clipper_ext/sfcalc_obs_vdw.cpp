@@ -48,7 +48,7 @@ bool SFcalc_obs_bulk_vdw<T>::operator() ( HKL_data<datatypes::F_phi<T> >& fphi, 
   // do ed calc from atomu
   // EDcalc_aniso<ftype32> edcalc;
   auto start = std::chrono::system_clock::now();
-  EDcalc_aniso_thread<ftype32> edcalc(2.5, nthreads);
+  EDcalc_aniso_thread<ftype32> edcalc(nthreads);
   // std::cout << "Number locked before: " << xmap.count_locked() << std::endl;
   edcalc( xmap, atomu);
   // std::cout << "Number locked after: " << xmap.count_locked() << std::endl;

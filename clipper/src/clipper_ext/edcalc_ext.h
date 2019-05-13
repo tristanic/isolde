@@ -3,7 +3,7 @@
  * @Date:   13-Aug-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 09-May-2019
+ * @Last modified time: 13-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -44,14 +44,20 @@ private:
 
 template<class T> class EDcalc_aniso_thread : public EDcalc_base<T> {
 public:
-    EDcalc_aniso_thread( const ftype radius = 2.5, const size_t n_threads = 2 ) : radius_(radius), n_threads_(n_threads) {}
+    EDcalc_aniso_thread( const size_t n_threads = 2 ) : n_threads_(n_threads) {}
     bool operator() (Xmap<T>& xmap, const Atom_list& atoms) const;
     bool operator() ( NXmap<T>& nxmap, const Atom_list& atoms) const {return false;}
 private:
-    const ftype radius_;
     const size_t n_threads_;
     bool edcalc_xmap_thread_(Xmap<T>& xmap, const Atom_list& atoms, size_t start, size_t end) const;
     bool edcalc_nxmap_thread_(NXmap<T>& nxmap, const Atom_list& atoms, size_t start, size_t end) const {return false;}
+    // Super-simple heuristic, giving the radius at which the density value should
+    // be less than 1% of its maximum.
+    T cutoff_radius( const Atom& a) const
+    {
+        T atom_radius = data::vdw_radii.at(a.element().c_str());
+        return std::max(atom_radius * (0.4 + 1.5 * pow(a.u_iso(), 0.5)), 1.5);
+    }
 };
 
 } // namespace clipper_cx
