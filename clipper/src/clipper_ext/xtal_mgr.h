@@ -3,7 +3,7 @@
  * @Date:   21-Sep-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 09-May-2019
+ * @Last modified time: 13-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -12,17 +12,17 @@
 
 #pragma once
 //#include <string>
-
-#include "imex.h"
-#include <clipper/clipper.h>
-#include <clipper/clipper-contrib.h>
-#include "sfcalc_obs_vdw.h"
-
 #include <unordered_map>
 #include <future>
 #include <memory>
 #include <chrono>
 
+
+#include <clipper/clipper.h>
+#include <clipper/clipper-contrib.h>
+#include "imex.h"
+#include "sfcalc_obs_vdw.h"
+#include "chimerax_bridge.h"
 
 namespace clipper_cx { // ChimeraX extensions to clipper
 
@@ -328,7 +328,9 @@ public:
     // Recalculate all maps in a separate thread (which will in turn spawn
     // worker threads up to the num_threads() limit). New maps will be stored
     // in xmap_thread_results_ until pushed to the manager by apply_new_maps();
-    void recalculate_all(const Atom_list& atoms);
+
+    void recalculate_all(std::vector<uintptr_t> cxatoms);
+    //void recalculate_all(const Atom_list& atoms);
     // Swap newly-created maps into the manager seen by Python. This will return
     // an error if recalculate_all() wasn't called first, or block until the
     // threads are finished. For best performance, wait until ready() returns
@@ -376,7 +378,7 @@ public:
     // Finalise thread and return a copy
     HKL_data<Phi_fom<ftype32>> weights();
 
-    void init(const Atom_list& atoms);
+    void init(std::vector<uintptr_t> cxatoms);
 
     void add_xmap(const std::string& name,
         const ftype& bsharp, bool is_difference_map=false,
@@ -395,6 +397,8 @@ public:
 
 
 private:
+    Atom_list atoms_; // Temporary Clipper atoms created from ChimeraX atoms
+                      // at each iteration
     Xtal_mgr_base mgr_;
     size_t num_threads_;
     // std::future does not (yet) have an is_ready() function, so just have the
@@ -408,6 +412,9 @@ private:
     bool recalculate_all_(const Atom_list& atoms);
     // Inner threads called by recalculate_all_();
     bool recalculate_inner_(const std::vector<std::string>& names, size_t i_min, size_t i_max);
+
+    void init_(const Atom_list& atoms);
+
 }; // Xtal_thread_mgr
 
 

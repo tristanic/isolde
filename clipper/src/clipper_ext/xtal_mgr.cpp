@@ -3,7 +3,7 @@
  * @Date:   28-Jan-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 10-May-2019
+ * @Last modified time: 13-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -91,7 +91,7 @@ Xtal_mgr_base::guess_free_flag_value(const HKL_data<Flag>& flags)
         for (auto v: flag_vals)
         {
             if ((val_fracs[v] > 0.005 && val_fracs[v] < 0.15)
-            || (val_fracs[v] < 0.15 && val_counts[v] > 2000)) 
+            || (val_fracs[v] < 0.15 && val_counts[v] > 2000))
             {
                 candidates.insert(v);
                 last_candidate = v;
@@ -406,13 +406,19 @@ Xtal_thread_mgr::Xtal_thread_mgr(const HKL_info& hklinfo, const HKL_data<Flag>& 
     }
 
 void
-Xtal_thread_mgr::recalculate_all(const Atom_list& atoms)
+// Xtal_thread_mgr::recalculate_all(const Atom_list& atoms)
+Xtal_thread_mgr::recalculate_all(std::vector<uintptr_t> cxatoms)
 {
+    auto cxa = std::vector<atomstruct::Atom*>();
+    for (const auto& ptr: cxatoms)
+        cxa.push_back(reinterpret_cast<atomstruct::Atom*>(ptr));
+    //auto cxa = static_cast<atomstruct::Atom**>(cxatoms);
+    atoms_ = bridge::clipper_atoms_from_cx_atoms(cxa.data(), cxa.size());
     if (thread_running())
         throw std::runtime_error("Map recalculation already in progress! Run "
         "apply_new_maps() first.");
     master_thread_result_ = std::async(std::launch::async,
-        &Xtal_thread_mgr::recalculate_all_, this, atoms);
+        &Xtal_thread_mgr::recalculate_all_, this, atoms_);
 } // recalculate_all
 
 bool
@@ -521,7 +527,18 @@ Xtal_thread_mgr::weights()
 }
 
 void
-Xtal_thread_mgr::init(const Atom_list& atoms)
+Xtal_thread_mgr::init(std::vector<uintptr_t> cxatoms)
+{
+    auto cxa = std::vector<atomstruct::Atom*>();
+    for (const auto& ptr: cxatoms)
+        cxa.push_back(reinterpret_cast<atomstruct::Atom*>(ptr));
+    // auto cxa = static_cast<atomstruct::Atom**>(cxatoms);
+    atoms_ = bridge::clipper_atoms_from_cx_atoms(cxa.data(), cxa.size());
+    init_(atoms_);
+}
+
+void
+Xtal_thread_mgr::init_(const Atom_list& atoms)
 {
     finalize_threads_if_necessary();
     mgr_.init(atoms);

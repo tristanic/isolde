@@ -3,7 +3,7 @@
 @Date:   26-Feb-2018
 @Email:  tic20@cam.ac.uk
 @Last modified by:   tic20
-@Last modified time: 30-Apr-2018
+@Last modified time: 13-May-2019
 @License: Creative Commons BY-NC-SA 3.0, https://creativecommons.org/licenses/by-nc-sa/3.0/.
 @Copyright: Copyright 2017-2018 Tristan Croll
 -->
@@ -258,6 +258,7 @@
       <IncludeDir>src/deps</IncludeDir>
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
+      <Library>atomstruct</Library>
       <!-- <Library>stdc++</Library> -->
       <SourceFile>src/clipper_ext/xtal_mgr.cpp</SourceFile>
       <SourceFile>src/clipper_ext/edcalc_ext.cpp</SourceFile>
@@ -293,6 +294,7 @@
       <LibraryDir>src</LibraryDir>
       <Library>clipper</Library>
       <Library>clipper_cx</Library>
+
       <Define platform="windows">NOMINMAX</Define>
       <LinkArgument platform="windows">/FORCE:MULTIPLE</LinkArgument>
       <!-- <Library>stdc++</Library> -->

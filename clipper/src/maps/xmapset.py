@@ -2,7 +2,7 @@
 # @Date:   06-Mar-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 10-May-2019
+# @Last modified time: 13-May-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -326,9 +326,10 @@ class XmapSet(MapSet_Base):
         xm = self._live_xmap_mgr = Xtal_thread_mgr(self.hklinfo,
             crystal_data.free_flags.data, self.grid, f_sigf.data,
             num_threads=available_cores())
-        from ..util import atom_list_from_sel
-        ca = self._clipper_atoms = atom_list_from_sel(self.structure.atoms)
-        xm.init(ca)
+        # from ..util import atom_list_from_sel
+        # ca = self._clipper_atoms = atom_list_from_sel(self.structure.atoms)
+        atoms = self.structure.atoms
+        xm.init(atoms.pointers)
 
     def _prepare_standard_live_maps(self, exclude_free_reflections,
         fill_with_fcalc, exclude_missing_reflections, map_params):
@@ -530,12 +531,13 @@ class XmapSet(MapSet_Base):
                 self._delayed_recalc_handler = None
 
     def recalculate_all_maps(self, atoms):
-        from .. import atom_list_from_sel
+        import ctypes
+        # from .. import atom_list_from_sel
         from ..delayed_reaction import delayed_reaction
         xm = self.live_xmap_mgr
-        ca = self._clipper_atoms = atom_list_from_sel(atoms)
+        # ca = self._clipper_atoms = atom_list_from_sel(atoms)
         delayed_reaction(self.session.triggers, 'new frame',
-            xm.recalculate_all_maps, [ca],
+            xm.recalculate_all_maps, [atoms.pointers,],
             xm.ready,
             self._apply_new_maps, []
             )
