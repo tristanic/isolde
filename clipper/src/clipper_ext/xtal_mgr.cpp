@@ -413,7 +413,7 @@ Xtal_thread_mgr::recalculate_all(std::vector<uintptr_t> cxatoms)
     for (const auto& ptr: cxatoms)
         cxa.push_back(reinterpret_cast<atomstruct::Atom*>(ptr));
     //auto cxa = static_cast<atomstruct::Atom**>(cxatoms);
-    atoms_ = bridge::clipper_atoms_from_cx_atoms(cxa.data(), cxa.size());
+    atoms_ = bridge::clipper_atoms_from_cx_atoms_threaded(cxa.data(), cxa.size(), num_threads());
     if (thread_running())
         throw std::runtime_error("Map recalculation already in progress! Run "
         "apply_new_maps() first.");
@@ -533,7 +533,7 @@ Xtal_thread_mgr::init(std::vector<uintptr_t> cxatoms)
     for (const auto& ptr: cxatoms)
         cxa.push_back(reinterpret_cast<atomstruct::Atom*>(ptr));
     // auto cxa = static_cast<atomstruct::Atom**>(cxatoms);
-    atoms_ = bridge::clipper_atoms_from_cx_atoms(cxa.data(), cxa.size());
+    atoms_ = bridge::clipper_atoms_from_cx_atoms_threaded(cxa.data(), cxa.size(), num_threads());
     init_(atoms_);
 }
 
