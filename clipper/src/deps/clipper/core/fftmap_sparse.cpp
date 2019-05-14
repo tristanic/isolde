@@ -1,3 +1,15 @@
+/**
+ * @Author: Tristan Croll <tic20>
+ * @Date:   14-May-2019
+ * @Email:  tic20@cam.ac.uk
+ * @Last modified by:   tic20
+ * @Last modified time: 14-May-2019
+ * @License: Free for non-commercial use (see license.pdf)
+ * @Copyright: 2017-2018 Tristan Croll
+ */
+
+
+
 /* fftmap_sparse.cpp: implementation file for P1 fft map */
 //C Copyright (C) 2000-2006 Kevin Cowtan and University of York
 //L
@@ -50,6 +62,9 @@
 #else
 # include <rfftw.h>
 #endif
+
+#include <future>
+// #include <chrono>
 
 
 
@@ -161,8 +176,6 @@ void FFTmap_sparse_p1_hx::fft_h_to_x( const ftype& scale )
   // prep fftw
   const int nmax =
     Util::max(Util::max(grid_real_.nu(),grid_real_.nv()),grid_real_.nw());
-  ffttype zero_real = 0.0;
-  std::complex<ffttype> zero( zero_real, zero_real );
   std::vector<std::complex<ffttype> > in(nmax+1), out(nmax+1);
   fftw_plan planu, planv;
 #ifdef FFTW_MKL
@@ -181,8 +194,10 @@ void FFTmap_sparse_p1_hx::fft_h_to_x( const ftype& scale )
     ( FFTW_USE_WISDOM | FFTW_ESTIMATE );
 
   // make ul map
-  std::vector<bool> map_l( grid_reci_.nw(), false );
-  std::vector<bool> row_u( grid_real_.nu(), false );
+  map_l.clear(); map_l.resize(grid_reci_.nw(), false);
+  row_u.clear(); row_u.resize(grid_real_.nu(), false);
+  // std::vector<bool> map_l( grid_reci_.nw(), false );
+  // std::vector<bool> row_u( grid_real_.nu(), false );
   for ( w = 0; w < grid_reci_.nw(); w++ )
     for ( v = 0; v < grid_reci_.nv(); v++ )
       if ( row_kl( v, w ) != NULL ) map_l[w] = true;
@@ -192,71 +207,69 @@ void FFTmap_sparse_p1_hx::fft_h_to_x( const ftype& scale )
 
   mutex.lock();
   planu = fftw_create_plan_specific( grid_real_.nu(), FFTW_FORWARD,
-				     flags | FFTW_IN_PLACE,
-				     (fftw_complex*)&in[0], 1,
-				     (fftw_complex*)&out[0], 1 );
+                     flags | FFTW_IN_PLACE,
+                     (fftw_complex*)&in[0], 1,
+                     (fftw_complex*)&out[0], 1 );
 
   planv = fftw_create_plan_specific( grid_real_.nv(), FFTW_FORWARD,
-				     flags | FFTW_OUT_OF_PLACE,
-				     (fftw_complex*)&in[0], 1,
-				     (fftw_complex*)&out[0], 1 );
+                     flags | FFTW_OUT_OF_PLACE,
+                     (fftw_complex*)&in[0], 1,
+                     (fftw_complex*)&out[0], 1 );
 #ifdef FFTW_MKL
   planw = rfftwnd_create_plan_specific(1, &grid_real_.nw(), FFTW_COMPLEX_TO_REAL,
-					  flags | FFTW_IN_PLACE,
-					  (fftw_real*)&in[0], 1,
-					  (fftw_real*)&out[0], 1);
+                      flags | FFTW_IN_PLACE,
+                      (fftw_real*)&in[0], 1,
+                      (fftw_real*)&out[0], 1);
 
 #else
   planw = rfftw_create_plan_specific( grid_real_.nw(), FFTW_COMPLEX_TO_REAL,
-				      flags | FFTW_IN_PLACE,
-				      (fftw_real*)&in[0], 1,
-				      (fftw_real*)&out[0], 1 );
+                      flags | FFTW_IN_PLACE,
+                      (fftw_real*)&in[0], 1,
+                      (fftw_real*)&out[0], 1 );
 #endif
   mutex.unlock();
 
   // transform along h->u
-  for ( w = 0; w < grid_reci_.nw(); w++ )
-    for ( v = 0; v < grid_reci_.nv(); v++ ) {
-      ptr = row_kl( v, w );
-      if ( ptr != NULL )
-        fftw_one( planu, (fftw_complex*)ptr, (fftw_complex*)&out[0] );
-    }
+  std::vector<std::future<void>> thread_results;
+  int layers_per_thread = grid_reci_.nw()/num_threads_ + 1;
+  int start=0, end;
+  for (int i=0; i<num_threads_; ++i)
+  {
+      end = std::min(start+layers_per_thread, grid_reci_.nw());
+      thread_results.push_back(std::async(std::launch::async,
+          &FFTmap_sparse_p1_hx::transform_along_hu_, this, (void*)planu, start, end));
+      start += layers_per_thread;
+  }
+  for (auto& r: thread_results)
+      r.get();
+  thread_results.clear();
 
   // copy, transform along k->v, and copy
-  for ( w = 0; w < grid_reci_.nw(); w++ ) if ( map_l[w] )
-    for ( u = 0; u < grid_real_.nu(); u++ ) if ( row_u[u] ) {
-      for ( v = 0; v < grid_real_.nv(); v++ ) {
-	ptr = row_kl( v, w );
-	if ( ptr != NULL ) in[v] = s * ptr[u];
-	else               in[v] = zero;
-      }
-      fftw_one( planv, (fftw_complex*)&in[0], (fftw_complex*)&out[0] );
-      for ( v = 0; v < grid_real_.nv(); v++ ) {
-	rptr = row_uv( u, v );
-	if ( rptr != NULL ) {
-#ifdef FFTW_MKL
-		rptr[w * 2] = out[v].real();
-        rptr[w * 2 + 1] = -out[v].imag();
-#else
-	  rptr[w] = out[v].real();
-	  if ( w != 0 && w != hw ) rptr[grid_real_.nw()-w] = -out[v].imag();
-#endif
-	}
-      }
-    }
+  start=0;
+  for (int i=0; i<num_threads_; ++i)
+  {
+      end = std::min(start+layers_per_thread, grid_reci_.nw());
+      thread_results.push_back(std::async(std::launch::async,
+        &FFTmap_sparse_p1_hx::transform_along_kv_, this, (void*)planv, start, end, scale, nmax));
+      start += layers_per_thread;
+  }
+  for (auto& r: thread_results)
+      r.get();
+  thread_results.clear();
 
   // transform along l->w
-  for ( v = 0; v < grid_real_.nv(); v++ )
-    for ( u = 0; u < grid_real_.nu(); u++ ) {
-      rptr = row_uv( u, v );
-	  if (rptr != NULL) {
-#ifdef FFTW_MKL
-	rfftwnd_one_complex_to_real(planw, (fftw_complex*)rptr, (fftw_real*)&out[0]);
-#else
-	rfftw_one( planw, (fftw_real*)rptr, (fftw_real*)&out[0] );
-#endif
-    }
-    }
+  layers_per_thread = grid_real_.nv()/num_threads_ + 1;
+  start = 0;
+  for (int i=0; i<num_threads_; ++i)
+  {
+      end = std::min(start+layers_per_thread, grid_real_.nv());
+      thread_results.push_back(std::async(std::launch::async,
+        &FFTmap_sparse_p1_hx::transform_along_lw_, this, (void*)planw, start, end));
+      start += layers_per_thread;
+  }
+  for (auto& r: thread_results)
+      r.get();
+  thread_results.clear();
 
   mutex.lock();
   fftw_destroy_plan( planu );
@@ -267,6 +280,82 @@ void FFTmap_sparse_p1_hx::fft_h_to_x( const ftype& scale )
   rfftw_destroy_plan( planw );
 #endif
   mutex.unlock();
+}
+
+void FFTmap_sparse_p1_hx::transform_along_hu_(void* planu_ptr, const int& start, const int& end)
+{
+    std::complex<ffttype>* ptr;
+    int u,v,w;
+    fftw_plan planu = static_cast<fftw_plan>(planu_ptr);
+    for ( w = start; w < end; w++ ) {
+        for ( v = 0; v < grid_reci_.nv(); v++ ) {
+            ptr = row_kl( v, w );
+            if ( ptr != NULL )
+            fftw_one( planu, (fftw_complex*)ptr, (fftw_complex*)nullptr );
+        }
+    }
+}
+
+void FFTmap_sparse_p1_hx::transform_along_kv_(void* planv_ptr, const int& start, const int& end,
+     const ffttype& s, const int& nmax)
+{
+    ffttype zero_real = 0.0;
+    std::complex<ffttype> zero( zero_real, zero_real );
+    std::complex<ffttype>* ptr; ffttype* rptr;
+    int u,v,w;
+    fftw_plan planv = static_cast<fftw_plan>(planv_ptr);
+    std::vector<std::complex<ffttype> > in(nmax+1), out(nmax+1);
+    for ( w = start; w < end; w++ ) if ( map_l[w] ) {
+        for ( u = 0; u < grid_real_.nu(); u++ ) if ( row_u[u] ) {
+            for ( v = 0; v < grid_real_.nv(); v++ ) {
+                ptr = row_kl( v, w );
+                if ( ptr != NULL )
+                    in[v] = s * ptr[u];
+                else
+                    in[v] = zero;
+            }
+            fftw_one( planv, (fftw_complex*)&in[0], (fftw_complex*)&out[0] );
+            for ( v = 0; v < grid_real_.nv(); v++ ) {
+                rptr = row_uv( u, v );
+                if ( rptr != NULL ) {
+#ifdef FFTW_MKL
+                    rptr[w * 2] = out[v].real();
+                    rptr[w * 2 + 1] = -out[v].imag();
+#else
+                    rptr[w] = out[v].real();
+                    if ( w != 0 && w != hw )
+                        rptr[grid_real_.nw()-w] = -out[v].imag();
+#endif
+                }
+            }
+        }
+    }
+}
+
+void FFTmap_sparse_p1_hx::transform_along_lw_(void* planw_ptr, const int& start, const int& end)
+{
+    std::complex<ffttype>* ptr; ffttype* rptr;
+    int u,v,w;
+#ifdef FFTW_MKL
+    rfftwnd_plan planw = static_cast<rfftwnd_plan>(planw_ptr);
+#else
+    rfftw_plan planw = static_cast<rfftw_plan>(planw_ptr);
+#endif
+    if (true)
+    {
+        for ( v = start; v < end; v++ ) {
+            for ( u = 0; u < grid_real_.nu(); u++ ) {
+                rptr = row_uv( u, v );
+                if (rptr != NULL) {
+#ifdef FFTW_MKL
+                    rfftwnd_one_complex_to_real(planw, (fftw_complex*)rptr, (fftw_real*)nullptr);
+#else
+                    rfftw_one( planw, (fftw_real*)rptr, (fftw_real*)nullptr );
+#endif
+                }
+            }
+        }
+    }
 }
 
 
@@ -290,7 +379,7 @@ void FFTmap_sparse_p1_xh::require_hkl( const HKL& hkl )
     map_kl( c.v(), c.w() );
   else
     map_kl( ( grid_real_.nv() - c.v() ) % grid_real_.nv(),
-	    ( grid_real_.nw() - c.w() ) % grid_real_.nw() );
+        ( grid_real_.nw() - c.w() ) % grid_real_.nw() );
 }
 
 /*! Friedel opposites are handled correctly
@@ -302,8 +391,8 @@ const std::complex<ffttype> FFTmap_sparse_p1_xh::get_hkl( const HKL& hkl ) const
     return row_kl( c.v(), c.w() )[ c.u() ];
   else
     return std::conj( row_kl( ( grid_real_.nv() - c.v() ) % grid_real_.nv(),
-			      ( grid_real_.nw() - c.w() ) % grid_real_.nw() )
-		            [ ( grid_real_.nu() - c.u() ) % grid_real_.nu() ] );
+                  ( grid_real_.nw() - c.w() ) % grid_real_.nw() )
+                    [ ( grid_real_.nu() - c.u() ) % grid_real_.nu() ] );
 }
 
 /*! \fn void FFTmap_sparse_p1_xh::require_cplx_data( const Coord_grid& hkl )
@@ -324,10 +413,12 @@ const std::complex<ffttype> FFTmap_sparse_p1_xh::get_hkl( const HKL& hkl ) const
   inferred automatically). */
 void FFTmap_sparse_p1_xh::fft_x_to_h( const ftype& scale )
 {
+
+    // auto start_time = std::chrono::steady_clock  ::now();
   // prep fftw
   const int nmax =
     Util::max(Util::max(grid_real_.nu(),grid_real_.nv()),grid_real_.nw());
-  std::vector<std::complex<ffttype> > in(nmax), out(nmax);
+  std::vector<std::complex<ffttype> > in(nmax+1), out(nmax+1);
   ffttype zero_real = 0.0;
   std::complex<ffttype> zero( zero_real, zero_real );
   fftw_plan planu, planv;
@@ -346,8 +437,10 @@ void FFTmap_sparse_p1_xh::fft_x_to_h( const ftype& scale )
     ( FFTW_USE_WISDOM | FFTW_ESTIMATE );
 
   // make ul map
-  std::vector<bool> map_l( grid_reci_.nw(), false );
-  std::vector<bool> row_u( grid_real_.nu(), false );
+  // std::vector<bool> map_l( grid_reci_.nw(), false );
+  // std::vector<bool> row_u( grid_real_.nu(), false );
+  map_l.clear(); map_l.resize(grid_reci_.nw(), false);
+  row_u.clear(); row_u.resize(grid_real_.nu(), false);
   for ( w = 0; w < grid_reci_.nw(); w++ )
     for ( v = 0; v < grid_reci_.nv(); v++ )
       if ( row_kl( v, w ) != NULL ) map_l[w] = true;
@@ -357,74 +450,138 @@ void FFTmap_sparse_p1_xh::fft_x_to_h( const ftype& scale )
 
   mutex.lock();
   planu = fftw_create_plan_specific( grid_real_.nu(), FFTW_BACKWARD,
-				     flags | FFTW_IN_PLACE,
-				     (fftw_complex*)&in[0], 1,
-				     (fftw_complex*)&out[0], 1 );
+                     flags | FFTW_IN_PLACE,
+                     (fftw_complex*)&in[0], 1,
+                     (fftw_complex*)&out[0], 1 );
   planv = fftw_create_plan_specific( grid_real_.nv(), FFTW_BACKWARD,
-				     flags | FFTW_OUT_OF_PLACE,
-				     (fftw_complex*)&in[0], 1,
-				     (fftw_complex*)&out[0], 1 );
+                     flags | FFTW_OUT_OF_PLACE,
+                     (fftw_complex*)&in[0], 1,
+                     (fftw_complex*)&out[0], 1 );
 #ifdef FFTW_MKL
   planw = rfftwnd_create_plan_specific(1, &grid_real_.nw(), FFTW_REAL_TO_COMPLEX,
-	  flags | FFTW_IN_PLACE,
-	  (fftw_real*)&in[0], 1,
-	  (fftw_real*)&out[0], 1);
+      flags | FFTW_IN_PLACE,
+      (fftw_real*)&in[0], 1,
+      (fftw_real*)&out[0], 1);
 
 #else
   planw = rfftw_create_plan_specific( grid_real_.nw(), FFTW_REAL_TO_COMPLEX,
-				      flags | FFTW_IN_PLACE,
-				      (fftw_real*)&in[0], 1,
-				      (fftw_real*)&out[0], 1 );
+                      flags | FFTW_IN_PLACE,
+                      (fftw_real*)&in[0], 1,
+                      (fftw_real*)&out[0], 1 );
 #endif
   mutex.unlock();
 
-  // transform along l->w
-  for ( v = 0; v < grid_real_.nv(); v++ )
-    for ( u = 0; u < grid_real_.nu(); u++ ) {
-      rptr = row_uv( u, v );
-      if ( rptr != NULL )
-#ifdef FFTW_MKL
-	rfftwnd_one_real_to_complex(planw, (fftw_real*)rptr, (fftw_complex*)&out[0]);
+  // auto end_time = std::chrono::steady_clock  ::now();
+  // std::chrono::duration<double> elapsed = end_time-start_time;
+  // std::cout << "<FFT-x-to-h> preliminaries took " << elapsed.count() << " seconds." << std::endl;
+  // start_time = std::chrono::steady_clock  ::now();
 
-#else
-	rfftw_one( planw, (fftw_real*)rptr, (fftw_real*)&out[0] );
-#endif
-	}
+  std::vector<std::future<void>> thread_results;
+  int layers_per_thread = grid_real_.nv() / num_threads_ + 1;
+  int start=0, end;
+
+  for (int i=0; i<num_threads_; ++i)
+  {
+      end = std::min(start+layers_per_thread, grid_real_.nv());
+      thread_results.push_back(std::async(std::launch::async,
+        &FFTmap_sparse_p1_xh::transform_along_lw_, this,
+        (void*)planw, start, end, nmax));
+      start += layers_per_thread;
+  }
+  for (auto& r: thread_results)
+      r.get();
+  thread_results.clear();
+
+  // end_time = std::chrono::steady_clock  ::now();
+  // elapsed = end_time-start_time;
+  // std::cout << "<FFT-x-to-h> transform along l-W took " << elapsed.count() << " seconds." << std::endl;
+  // start_time = std::chrono::steady_clock  ::now();
+
+//   // transform along l->w
+//   for ( v = 0; v < grid_real_.nv(); v++ )
+//     for ( u = 0; u < grid_real_.nu(); u++ ) {
+//       rptr = row_uv( u, v );
+//       if ( rptr != NULL )
+// #ifdef FFTW_MKL
+//     rfftwnd_one_real_to_complex(planw, (fftw_real*)rptr, (fftw_complex*)&out[0]);
+//
+// #else
+//     rfftw_one( planw, (fftw_real*)rptr, (fftw_real*)&out[0] );
+// #endif
+//     }
+
+  start=0;
+  layers_per_thread = grid_reci_.nw() / num_threads_ + 1;
+  for (int i=0; i<num_threads_; ++i)
+  {
+      end = std::min(start+layers_per_thread, grid_reci_.nw());
+      thread_results.push_back(std::async(std::launch::async,
+        &FFTmap_sparse_p1_xh::transform_along_kv_, this,
+        (void*)planv, start, end, s, nmax));
+      start += layers_per_thread;
+  }
+  for (auto& r: thread_results)
+    r.get();
+  thread_results.clear();
+
+  // end_time = std::chrono::steady_clock  ::now();
+  // elapsed = end_time-start_time;
+  // std::cout << "<FFT-x-to-h> transform along k-v took " << elapsed.count() << " seconds." << std::endl;
+  // start_time = std::chrono::steady_clock  ::now();
+
+
+  // transform_along_kv_((void*)planv, 0, grid_reci_.nw(), scale, nmax);
 
   // copy, transform along k->v, and copy
-  for ( w = 0; w < grid_reci_.nw(); w++ ) if ( map_l[w] )
-    for ( u = 0; u < grid_real_.nu(); u++ ) if ( row_u[u] ) {
-      for ( v = 0; v < grid_real_.nv(); v++ ) {
-	rptr = row_uv( u, v );
-	if ( rptr != NULL ) {
-#ifdef FFTW_MKL
-    if (w != hw) in[v] = std::complex<ffttype>(rptr[w * 2], -rptr[w * 2 + 1]);
-    else
-      in[v] = std::complex<ffttype>(rptr[w * 2], zero_real);
-#else
-	  if ( w != 0 && w != hw )
-	    in[v] = std::complex<ffttype>( rptr[w], -rptr[grid_real_.nw()-w] );
-          else
-	    in[v] = std::complex<ffttype>( rptr[w], zero_real );
-#endif
-	} else {
-	  in[v] = zero;
-	}
-      }
-      fftw_one( planv, (fftw_complex*)&in[0], (fftw_complex*)&out[0] );
-      for ( v = 0; v < grid_real_.nv(); v++ ) {
-	ptr = row_kl( v, w );
-	if ( ptr != NULL ) ptr[u] = s * out[v];
-      }
-    }
+//   for ( w = 0; w < grid_reci_.nw(); w++ ) if ( map_l[w] )
+//     for ( u = 0; u < grid_real_.nu(); u++ ) if ( row_u[u] ) {
+//       for ( v = 0; v < grid_real_.nv(); v++ ) {
+//     rptr = row_uv( u, v );
+//     if ( rptr != NULL ) {
+// #ifdef FFTW_MKL
+//     if (w != hw) in[v] = std::complex<ffttype>(rptr[w * 2], -rptr[w * 2 + 1]);
+//     else
+//       in[v] = std::complex<ffttype>(rptr[w * 2], zero_real);
+// #else
+//       if ( w != 0 && w != hw )
+//         in[v] = std::complex<ffttype>( rptr[w], -rptr[grid_real_.nw()-w] );
+//           else
+//         in[v] = std::complex<ffttype>( rptr[w], zero_real );
+// #endif
+//     } else {
+//       in[v] = zero;
+//     }
+//       }
+//       fftw_one( planv, (fftw_complex*)&in[0], (fftw_complex*)&out[0] );
+//       for ( v = 0; v < grid_real_.nv(); v++ ) {
+//     ptr = row_kl( v, w );
+//     if ( ptr != NULL ) ptr[u] = s * out[v];
+//       }
+//     }
+
+  start = 0;
+  for (int i=0; i<num_threads_; ++i)
+  {
+      end = std::min(start+layers_per_thread, grid_reci_.nw());
+      thread_results.push_back(std::async(std::launch::async,
+          &FFTmap_sparse_p1_xh::transform_along_hu_, this, (void*)planu, start, end, nmax));
+      start += layers_per_thread;
+  }
+  for (auto& r: thread_results)
+    r.get();
+
+    // end_time = std::chrono::steady_clock  ::now();
+    // elapsed = end_time-start_time;
+    // std::cout << "<FFT-x-to-h> transform along h-u took " << elapsed.count() << " seconds." << std::endl;
+    // start_time = std::chrono::steady_clock  ::now();
 
   // transform along h->u
-  for ( w = 0; w < grid_reci_.nw(); w++ )
-    for ( v = 0; v < grid_reci_.nv(); v++ ) {
-      ptr = row_kl( v, w );
-      if ( ptr != NULL )
-        fftw_one( planu, (fftw_complex*)ptr, (fftw_complex*)&out[0] );
-    }
+  // for ( w = 0; w < grid_reci_.nw(); w++ )
+  //   for ( v = 0; v < grid_reci_.nv(); v++ ) {
+  //     ptr = row_kl( v, w );
+  //     if ( ptr != NULL )
+  //       fftw_one( planu, (fftw_complex*)ptr, (fftw_complex*)&out[0] );
+  //   }
 
   mutex.lock();
   fftw_destroy_plan( planu );
@@ -437,5 +594,91 @@ void FFTmap_sparse_p1_xh::fft_x_to_h( const ftype& scale )
   mutex.unlock();
 }
 
+void FFTmap_sparse_p1_xh::transform_along_lw_(void* planw_ptr,
+    const int& start, const int& end, const int& nmax)
+{
+    ffttype* rptr;
+    int u,v,w;
+    std::vector<std::complex<ffttype> > out(nmax+1);
+#ifdef FFTW_MKL
+    rfftwnd_plan planw = static_cast<rfftwnd_plan>(planw_ptr);
+#else
+    rfftw_plan planw = static_cast<rfftw_plan>(planw_ptr);
+#endif
+
+
+    for ( v = start; v < end; v++ ) {
+        for ( u = 0; u < grid_real_.nu(); u++ ) {
+            rptr = row_uv( u, v );
+            if ( rptr != NULL )
+#ifdef FFTW_MKL
+                rfftwnd_one_real_to_complex(planw, (fftw_real*)rptr, (fftw_complex*)&out[0]);
+
+#else
+                rfftw_one( planw, (fftw_real*)rptr, (fftw_real*)&out[0] );
+#endif
+        }
+    }
+}
+
+void FFTmap_sparse_p1_xh::transform_along_kv_(void* planv_ptr,
+    const int& start, const int& end,
+    const ffttype& s, const int& nmax)
+{
+    std::complex<ffttype>* ptr; ffttype* rptr;
+    int u,v,w;
+    int hw = grid_real_.nw()/2;
+
+    ffttype zero_real = 0.0;
+    std::complex<ffttype> zero(zero_real, zero_real);
+    fftw_plan planv = static_cast<fftw_plan>(planv_ptr);
+    std::vector<std::complex<ffttype> > in(nmax), out(nmax);
+
+    for ( w = start; w < end; w++ ) if ( map_l[w] ) {
+        for ( u = 0; u < grid_real_.nu(); u++ ) if ( row_u[u] ) {
+            for ( v = 0; v < grid_real_.nv(); v++ ) {
+                rptr = row_uv( u, v );
+                if ( rptr != NULL ) {
+  #ifdef FFTW_MKL
+                    if (w != hw)
+                        in[v] = std::complex<ffttype>(rptr[w * 2], -rptr[w * 2 + 1]);
+                    else
+                        in[v] = std::complex<ffttype>(rptr[w * 2], zero_real);
+  #else
+                    if ( w != 0 && w != hw )
+                        in[v] = std::complex<ffttype>( rptr[w], -rptr[grid_real_.nw()-w] );
+                    else
+                        in[v] = std::complex<ffttype>( rptr[w], zero_real );
+  #endif
+                } else {
+                    in[v] = zero;
+                }
+            }
+            fftw_one( planv, (fftw_complex*)&in[0], (fftw_complex*)&out[0] );
+            for ( v = 0; v < grid_real_.nv(); v++ ) {
+                ptr = row_kl( v, w );
+                if ( ptr != NULL ) ptr[u] = s * out[v];
+            }
+        }
+    }
+
+}
+
+void FFTmap_sparse_p1_xh::transform_along_hu_(void* planu_ptr,
+    const int& start, const int& end, const int& nmax)
+{
+    std::complex<ffttype>* ptr;
+    std::vector<std::complex<ffttype> > out(nmax+1);
+    int u,v,w;
+    fftw_plan planu = static_cast<fftw_plan>(planu_ptr);
+    for ( w = start; w < end; w++ ) {
+        for ( v = 0; v < grid_reci_.nv(); v++ ) {
+            ptr = row_kl( v, w );
+            if ( ptr != NULL )
+                fftw_one( planu, (fftw_complex*)ptr, (fftw_complex*)&out[0] );
+        }
+    }
+
+}
 
 } // namespace clipper

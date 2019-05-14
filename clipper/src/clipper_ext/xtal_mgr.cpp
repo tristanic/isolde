@@ -3,7 +3,7 @@
  * @Date:   28-Jan-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 13-May-2019
+ * @Last modified time: 14-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -127,7 +127,11 @@ Xtal_mgr_base::set_freeflag(int f)
 void
 Xtal_mgr_base::generate_fcalc(const Atom_list& atoms)
 {
+    // auto start_time = std::chrono::system_clock::now();
     bulk_solvent_calculator_(fcalc_, fobs_, atoms);
+    // auto end_time = std::chrono::system_clock::now();
+    // std::chrono::duration<double> elapsed = end_time-start_time;
+    // std::cout << "Complete Fcalc generation took " << elapsed.count() << " seconds." << std::endl;
     fcalc_initialized_ = true;
     calculate_r_factors();
 } // generate_fcalc
@@ -284,6 +288,7 @@ Xtal_mgr_base::add_xmap(const std::string& name,
     else
         maps_.emplace(name, Xmap_details(hklinfo_, &base_2fofc_, bsharp, grid_sampling_, is_difference_map,
                             exclude_missing_reflections, exclude_free_reflections, fill_with_fcalc));
+    // Create a copy for thread-safe calculations
 
     recalculate_map(name);
 } // add_xmap
@@ -432,9 +437,10 @@ Xtal_thread_mgr::recalculate_all_(const Atom_list& atoms)
     size_t maps_per_thread = (size_t) ceil(( (float)mgr_.n_maps()) /num_threads_);
     // Make copies of all maps to work on. Expensive, but necessary for thread
     // safety.
-    xmap_thread_results_.clear();
-    for (const auto& name: map_names)
-        xmap_thread_results_.emplace(name, mgr_.maps_[name]);
+    // xmap_thread_results_.clear();
+    // for (const auto& name: map_names)
+    //     xmap_thread_results_.emplace(name, mgr_.maps_[name]);
+    // auto start_time = std::chrono::system_clock::now();
     size_t n=0;
     std::vector<std::future<bool>> results;
     while (n<nmaps)
@@ -448,6 +454,10 @@ Xtal_thread_mgr::recalculate_all_(const Atom_list& atoms)
     // Wait for all threads to finish
     for (auto& r: results)
         r.get();
+    // auto end_time = std::chrono::system_clock::now();
+    // std::chrono::duration<double> elapsed = end_time-start_time;
+    // std::cout << "FFTs took " << elapsed.count() << " seconds." << std::endl;
+
     ready_ = true;
     return true;
 } // recalculate_all_
@@ -480,7 +490,7 @@ Xtal_thread_mgr::apply_new_maps()
     }
     // for (const auto& it: xmap_thread_results_)
     //     mgr_.maps_.at(it.first).xmap() = it.second.xmap();
-    xmap_thread_results_.clear();
+    // xmap_thread_results_.clear();
     ready_ = false;
 } // apply_new_maps
 
@@ -553,6 +563,8 @@ Xtal_thread_mgr::add_xmap(const std::string& name,
     finalize_threads_if_necessary();
     mgr_.add_xmap(name, bsharp, is_difference_map,
         exclude_missing_reflections, exclude_free_reflections, fill_with_fcalc);
+    xmap_thread_results_.emplace(name, mgr_.maps_[name]);
+
 }
 
 void
@@ -560,6 +572,7 @@ Xtal_thread_mgr::delete_xmap(const std::string& name)
 {
     finalize_threads_if_necessary();
     mgr_.delete_xmap(name);
+    xmap_thread_results_.erase(name);
 }
 
 

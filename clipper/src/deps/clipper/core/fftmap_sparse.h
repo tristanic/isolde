@@ -1,3 +1,15 @@
+/**
+ * @Author: Tristan Croll <tic20>
+ * @Date:   14-May-2019
+ * @Email:  tic20@cam.ac.uk
+ * @Last modified by:   tic20
+ * @Last modified time: 14-May-2019
+ * @License: Free for non-commercial use (see license.pdf)
+ * @Copyright: 2017-2018 Tristan Croll
+ */
+
+
+
 /*! \file lib/fftmap_sparse.h
     Header file for P1 fft map
 */
@@ -113,6 +125,15 @@ namespace clipper
 
     //! Transform to real space
     void fft_h_to_x( const ftype& scale );
+
+private:
+    void transform_along_hu_(void* planu_ptr, const int& start, const int& end);
+    void transform_along_kv_(void* planv_ptr, const int& start, const int& end,
+        const ffttype& s, const int& nmax);
+    void transform_along_lw_(void* planw_ptr, const int& start, const int& end);
+    int num_threads_ = 2;
+    std::vector<bool> map_l;
+    std::vector<bool> row_u;
   };
 
   //! FFTmap_sparse_p1_xh: low level sparse P1 map used for calculating FFTs
@@ -148,6 +169,15 @@ namespace clipper
 
     //! Transform to real space
     void fft_x_to_h( const ftype& scale );
+
+private:
+    int num_threads_ = 2;
+    void transform_along_lw_(void* planw_ptr, const int& start, const int& end, const int& nmax);
+    void transform_along_kv_(void* planv_ptr, const int& start, const int& end,
+        const ffttype& s, const int& nmax);
+    void transform_along_hu_(void* planu_ptr, const int& start, const int& end, const int& nmax);
+    std::vector<bool> map_l;
+    std::vector<bool> row_u;
   };
 
 

@@ -3,7 +3,7 @@
  * @Date:   20-Jul-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 10-May-2019
+ * @Last modified time: 14-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -59,6 +59,7 @@
 
 #include <memory>
 #include <atomic>
+#include <future>
 #include <map>
 
 #include "fftmap.h"
@@ -76,7 +77,7 @@ namespace clipper
     {
     public:
       Key( const Spgr_descr& spgr_descr, const Grid_sampling& grid ) :
-	spgr_descr_(spgr_descr), grid_sampling_(grid) {}
+    spgr_descr_(spgr_descr), grid_sampling_(grid) {}
       const Spgr_descr& spgr_descr() const { return spgr_descr_; }
       const Grid_sampling& grid_sampling() const { return grid_sampling_; }
     private:
@@ -145,8 +146,8 @@ private:
       \return The index, or -1 if it does not exist. */
     inline int index_of( const Coord_grid& coord ) const {
       if ( cacheref.data().asu_grid.in_grid( coord ) ) {
-	const int i = cacheref.data().map_grid.index( coord );
-	if ( asu[ i ] == 0 ) return i;
+    const int i = cacheref.data().map_grid.index( coord );
+    if ( asu[ i ] == 0 ) return i;
       }
       return -1;
     }
@@ -219,32 +220,32 @@ private:
       Map_reference_index() {}
       //! Constructor: takes parent map
       explicit Map_reference_index( const Xmap_base& map )
-	{ map_ = &map; index_=0; next(); }
+    { map_ = &map; index_=0; next(); }
       //! Constructor: takes parent map and coord
       Map_reference_index( const Xmap_base& map, const Coord_grid& pos ) { map_ = &map; int sym; map_->find_sym( pos, index_, sym ); }
       //! Get current grid coordinate
       inline Coord_grid coord() const
-	{ return map_->map_grid.deindex(index_); }
+    { return map_->map_grid.deindex(index_); }
       //! Get current value of orthogonal coordinate
       inline const Coord_orth coord_orth() const
-	{ return Coord_orth( map_->rt_grid_orth.rot() * coord().coord_map() ); }
+    { return Coord_orth( map_->rt_grid_orth.rot() * coord().coord_map() ); }
       //! Set current value of coordinate - optimised for nearby coords
       inline Map_reference_index& set_coord( const Coord_grid& pos )
-	{ int sym; map_->find_sym( pos, index_, sym ); return *this; }
+    { int sym; map_->find_sym( pos, index_, sym ); return *this; }
       //! Simple increment
       inline Map_reference_index& next() {
-	do {
-	  index_++; if ( last() ) break;
-	} while ( map_->asu[index_] != 0 );
-	return *this;
+    do {
+      index_++; if ( last() ) break;
+    } while ( map_->asu[index_] != 0 );
+    return *this;
       }
       //! Index of neighbouring point
       /* Use for e.g. peak search. Valid for -1 <= du/dv/dw <= 1 only.
-	 \param du/dv/dw Coordinate offset. \return Map index. */
+     \param du/dv/dw Coordinate offset. \return Map index. */
       inline int index_offset(const int& du,const int& dv,const int& dw) const {
-	int i = index_ + du*map_->du[0] + dv*map_->dv[0] + dw*map_->dw[0];
-	if ( map_->asu[i] != 0 ) { i = map_->map_grid.index( map_->to_map_unit( map_->map_grid.deindex(i).transform( map_->isymop[map_->asu[i]-1] ) ) ); }
-	return i;
+    int i = index_ + du*map_->du[0] + dv*map_->dv[0] + dw*map_->dw[0];
+    if ( map_->asu[i] != 0 ) { i = map_->map_grid.index( map_->to_map_unit( map_->map_grid.deindex(i).transform( map_->isymop[map_->asu[i]-1] ) ) ); }
+    return i;
       }
       // inherited functions listed for documentation purposes
       //-- const Xmap_base& base_xmap() const;
@@ -271,18 +272,18 @@ private:
       Map_reference_coord() {}
       //! Constructor: takes parent map
       explicit Map_reference_coord( const Xmap_base& map )
-	{ map_ = &map; index_ = 0; next(); }
+    { map_ = &map; index_ = 0; next(); }
       //! Constructor: takes parent map and coord
       Map_reference_coord( const Xmap_base& map, const Coord_grid& pos ) {
-	map_ = &map;
-	pos_ = pos;
-	map_->find_sym( pos_, index_, sym_ );
+    map_ = &map;
+    pos_ = pos;
+    map_->find_sym( pos_, index_, sym_ );
       }
       //! Get current value of coordinate
       inline const Coord_grid& coord() const { return pos_; }
       //! Get current value of orthogonal coordinate
       inline const Coord_orth coord_orth() const
-	{ return Coord_orth( map_->rt_grid_orth.rot() * coord().coord_map() ); }
+    { return Coord_orth( map_->rt_grid_orth.rot() * coord().coord_map() ); }
       //! Get current symmetry operator
       inline const int& sym() const { return sym_; }
       //! Set current value of coordinate - optimised for nearby coords
@@ -290,12 +291,12 @@ private:
       //! Simple increment
       /*! Use of this function resets the stored coordinate and sym */
       inline Map_reference_coord& next() {
-	sym_ = 0;
-	do {
-	  index_++; if ( last() ) break;
-	} while ( map_->asu[index_] != 0 );
-	pos_ = map_->map_grid.deindex(index_);
-	return *this;
+    sym_ = 0;
+    do {
+      index_++; if ( last() ) break;
+    } while ( map_->asu[index_] != 0 );
+    pos_ = map_->map_grid.deindex(index_);
+    return *this;
       }
       // Increment u,v,w
       inline Map_reference_coord& next_u() { pos_.u()++; index_ += map_->du[sym_]; if (map_->asu[index_] != 0) edge(); return *this; }  //!< increment u
@@ -306,7 +307,7 @@ private:
       inline Map_reference_coord& prev_w() { pos_.w()--; index_ -= map_->dw[sym_]; if (map_->asu[index_] != 0) edge(); return *this; }  //!< decrement w
       //! Assignment operator from a coord
       inline Map_reference_coord& operator =( const Coord_grid& pos )
-	{ return set_coord( pos ); }
+    { return set_coord( pos ); }
       // inherited functions listed for documentation purposes
       //-- const Xmap_base& base_xmap() const;
       //-- const int& index() const;
@@ -483,19 +484,19 @@ private:
     if ( asu_grid.in_grid( rot ) ) {
       index = map_grid.index( rot );
       if ( asu[ index ] == 0 ) {
-	sym = 0;
+    sym = 0;
       } else {
-	sym = asu[ index ] - 1;
-	index = map_grid.index( to_map_unit( base.transform(isymop[sym]) ) );
+    sym = asu[ index ] - 1;
+    index = map_grid.index( to_map_unit( base.transform(isymop[sym]) ) );
       }
     } else {
       // now deal with other symops
       for ( sym = 1; sym < nsym; sym++ ) {
-	rot = to_map_unit( base.transform( isymop[sym] ) );
-	if ( asu_grid.in_grid( rot ) ) {
-	  index = map_grid.index( rot );
-	  if ( asu[ index ] == 0 ) return;
-	}
+    rot = to_map_unit( base.transform( isymop[sym] ) );
+    if ( asu_grid.in_grid( rot ) ) {
+      index = map_grid.index( rot );
+      if ( asu[ index ] == 0 ) return;
+    }
       }
       index = 0;  // redundent, to avoid compiler warnings
       asu_error( base );
@@ -555,8 +556,8 @@ private:
   {
     if ( index >= 0 && index < list.size() )
       if ( asu[index] == 0 ) {
-	list[index] = val;
-	return true;
+    list[index] = val;
+    return true;
       }
     return false;
   }
@@ -665,28 +666,55 @@ private:
       typename H::HKL_reference_index ih;
       ffttype f, phi0, phi1;
       int sym;
-      for ( ih = fphidata.first_data(); !ih.last(); fphidata.next_data( ih ) ) {
-	f = fphidata[ih].f();
-	if ( f != 0.0 ) {
-	  phi0 = fphidata[ih].phi();
-	  const HKL& hkl = ih.hkl();
-	  fftmap.set_hkl( hkl,
-			  std::complex<ffttype>( f*cos(phi0), f*sin(phi0) ) );
-	  for ( sym = 1; sym < spacegroup_.num_primops(); sym++ ) {
-	    phi1 = phi0 + hkl.sym_phase_shift( spacegroup_.symop(sym) );
-	    fftmap.set_hkl( hkl.transform( isymop[sym] ),
-			    std::complex<ffttype>( f*cos(phi1), f*sin(phi1) ) );
-	  }
-	}
+      std::vector<std::future<void>> thread_results;
+      for (sym=0; sym < spacegroup_.num_primops(); sym++) {
+          thread_results.push_back(std::async(std::launch::async,
+              [sym](const Spacegroup& sg, FFTmap_sparse_p1_hx& fftmap, const H& fphidata, const Isymop* isymop)
+              {
+                  ffttype f, phi0, phi1;
+                  for (auto ih=fphidata.first_data(); !ih.last(); fphidata.next_data(ih))
+                  {
+                      const auto& fphi = fphidata[ih];
+                      f = fphi.f();
+                      if (std::abs(f) < std::numeric_limits<float>::epsilon()) continue;
+                      phi0 = fphi.phi();
+                      const HKL& hkl = ih.hkl();
+                      if (sym==0)
+                          fftmap.set_hkl( hkl, std::complex<ffttype> ( f*cos(phi0), f*sin(phi0)));
+                      else {
+                          phi1 = phi0 + hkl.sym_phase_shift(sg.symop(sym));
+                          fftmap.set_hkl( hkl.transform( isymop[sym]),
+                            std::complex<ffttype>( f*cos(phi1), f*sin(phi1)));
+                      }
+                  }
+              },
+          std::cref(spacegroup_), std::ref(fftmap), std::cref(fphidata), isymop));
       }
+      for (auto& r: thread_results)
+        r.get();
+
+      // for ( ih = fphidata.first_data(); !ih.last(); fphidata.next_data( ih ) ) {
+      //     f = fphidata[ih].f();
+      //     if ( f != 0.0 ) {
+      //         phi0 = fphidata[ih].phi();
+      //         const HKL& hkl = ih.hkl();
+      //         fftmap.set_hkl( hkl,
+      //             std::complex<ffttype>( f*cos(phi0), f*sin(phi0) ) );
+      //         for ( sym = 1; sym < spacegroup_.num_primops(); sym++ ) {
+      //             phi1 = phi0 + hkl.sym_phase_shift( spacegroup_.symop(sym) );
+      //             fftmap.set_hkl( hkl.transform( isymop[sym] ),
+      //                 std::complex<ffttype>( f*cos(phi1), f*sin(phi1) ) );
+      //         }
+      //     }
+      // }
       // require output ASU coords
       for ( Map_reference_index ix = first(); !ix.last(); ix.next() )
-	fftmap.require_real_data( ix.coord() );
+    fftmap.require_real_data( ix.coord() );
       // do fft
       fftmap.fft_h_to_x(1.0/cell().volume());
       // fill map ASU
       for ( Map_reference_index ix = first(); !ix.last(); ix.next()) {
-	         (*this)[ix] = fftmap.real_data( ix.coord() );
+             (*this)[ix] = fftmap.real_data( ix.coord() );
       }
 
     } else {
@@ -697,24 +725,24 @@ private:
       ffttype f, phi0, phi1;
       int sym;
       for ( ih = fphidata.first_data(); !ih.last(); fphidata.next_data( ih ) ) {
-	f = fphidata[ih].f();
-	if ( f != 0.0 ) {
-	  phi0 = fphidata[ih].phi();
-	  const HKL& hkl = ih.hkl();
-	  fftmap.set_hkl( hkl,
-			  std::complex<ffttype>( f*cos(phi0), f*sin(phi0) ) );
-	  for ( sym = 1; sym < spacegroup_.num_primops(); sym++ ) {
-	    phi1 = phi0 + hkl.sym_phase_shift( spacegroup_.symop(sym) );
-	    fftmap.set_hkl( hkl.transform( isymop[sym] ),
-			    std::complex<ffttype>( f*cos(phi1), f*sin(phi1) ) );
-	  }
-	}
+    f = fphidata[ih].f();
+    if ( f != 0.0 ) {
+      phi0 = fphidata[ih].phi();
+      const HKL& hkl = ih.hkl();
+      fftmap.set_hkl( hkl,
+              std::complex<ffttype>( f*cos(phi0), f*sin(phi0) ) );
+      for ( sym = 1; sym < spacegroup_.num_primops(); sym++ ) {
+        phi1 = phi0 + hkl.sym_phase_shift( spacegroup_.symop(sym) );
+        fftmap.set_hkl( hkl.transform( isymop[sym] ),
+                std::complex<ffttype>( f*cos(phi1), f*sin(phi1) ) );
+      }
+    }
       }
       // do fft
       fftmap.fft_h_to_x(1.0/cell().volume());
       // fill map ASU
       for ( Map_reference_index ix = first(); !ix.last(); ix.next() )
-	(*this)[ix] = fftmap.real_data( ix.coord() );
+    (*this)[ix] = fftmap.real_data( ix.coord() );
     }
   }
 
@@ -735,26 +763,49 @@ private:
       // copy from map data
       ffttype f;
       int sym;
-      for ( Map_reference_index ix = first(); !ix.last(); ix.next() ) {
-	f = (*this)[ix];
-	if ( f != 0.0 ) {
-	  fftmap.real_data( ix.coord() ) = f;
-	  for ( sym = 1; sym < cacheref.data().nsym; sym++ )
-	    fftmap.real_data(
-              ix.coord().transform( isymop[sym] ).unit( grid_sam_ ) ) = f;
-	}
+      std::vector<std::future<void>> thread_results;
+      for (sym=0; sym < cacheref.data().nsym; sym++ )
+      {
+          thread_results.push_back(std::async(std::launch::async,
+              [sym](const Xmap<T>& self, FFTmap_sparse_p1_xh& fftmap, const Isymop* isymop)
+              {
+                  for ( Xmap_base::Map_reference_index ix = self.first(); !ix.last(); ix.next())
+                  {
+                      ffttype f=self[ix];
+                      if (std::abs(f) < std::numeric_limits<float>::epsilon()) continue;
+                      if (sym==0)
+                          fftmap.real_data(ix.coord()) = f;
+                      else
+                          fftmap.real_data(
+                              ix.coord().transform(isymop[sym]).unit(self.grid_sampling()) ) = f;
+                  }
+              },
+          std::cref(*this), std::ref(fftmap), isymop
+      ));
       }
+      for (auto& r: thread_results)
+          r.get();
+
+      // for ( Map_reference_index ix = first(); !ix.last(); ix.next() ) {
+      //     f = (*this)[ix];
+      //     if ( f != 0.0 ) {
+      //         fftmap.real_data( ix.coord() ) = f;
+      //         for ( sym = 1; sym < cacheref.data().nsym; sym++ )
+      //             fftmap.real_data(
+      //                 ix.coord().transform( isymop[sym] ).unit( grid_sam_ ) ) = f;
+      //     }
+      // }
       // require output ASU coords
       typename H::HKL_reference_index ih;
       for ( ih = fphidata.first(); !ih.last(); ih.next() )
-	fftmap.require_hkl( ih.hkl() );
+    fftmap.require_hkl( ih.hkl() );
       // do fft
       fftmap.fft_x_to_h(cell().volume());
       // fill data ASU
       for ( ih = fphidata.first(); !ih.last(); ih.next() ) {
-	std::complex<ffttype> c = fftmap.get_hkl( ih.hkl() );
-	fphidata[ih].f() = std::abs(c);
-	fphidata[ih].phi() = std::arg(c);
+    std::complex<ffttype> c = fftmap.get_hkl( ih.hkl() );
+    fphidata[ih].f() = std::abs(c);
+    fphidata[ih].phi() = std::arg(c);
       }
     } else {
       // make a normal fftmap
@@ -763,22 +814,22 @@ private:
       ffttype f;
       int sym;
       for ( Map_reference_index ix = first(); !ix.last(); ix.next() ) {
-	f = (*this)[ix];
-	if ( f != 0.0 ) {
-	  fftmap.real_data( ix.coord() ) = f;
-	  for ( sym = 1; sym < cacheref.data().nsym; sym++ )
-	    fftmap.real_data(
+    f = (*this)[ix];
+    if ( f != 0.0 ) {
+      fftmap.real_data( ix.coord() ) = f;
+      for ( sym = 1; sym < cacheref.data().nsym; sym++ )
+        fftmap.real_data(
               ix.coord().transform( isymop[sym] ).unit( grid_sam_ ) ) = f;
-	}
+    }
       }
       // do fft
       fftmap.fft_x_to_h(cell().volume());
       // fill data ASU
       typename H::HKL_reference_index ih;
       for ( ih = fphidata.first(); !ih.last(); ih.next() ) {
-	std::complex<ffttype> c = fftmap.get_hkl( ih.hkl() );
-	fphidata[ih].f() = std::abs(c);
-	fphidata[ih].phi() = std::arg(c);
+    std::complex<ffttype> c = fftmap.get_hkl( ih.hkl() );
+    fphidata[ih].f() = std::abs(c);
+    fphidata[ih].phi() = std::arg(c);
       }
     }
   }
@@ -799,7 +850,7 @@ private:
   template<class T> const Xmap<T>& Xmap<T>::operator +=( const Xmap<T>& other )
   {
     if ( spacegroup().hash() != other.spacegroup().hash() ||
-	 grid_sampling() != other.grid_sampling() )
+     grid_sampling() != other.grid_sampling() )
       Message::message( Message_fatal( "Xmap: map mismatch in +=" ) );
     for ( Map_reference_index im = first(); !im.last(); im.next() )
       list[im.index()] += other[im];
@@ -810,7 +861,7 @@ private:
   template<class T> const Xmap<T>& Xmap<T>::operator -=( const Xmap<T>& other )
   {
     if ( spacegroup().hash() != other.spacegroup().hash() ||
-	 grid_sampling() != other.grid_sampling() )
+     grid_sampling() != other.grid_sampling() )
       Message::message( Message_fatal( "Xmap: map mismatch in -=" ) );
     for ( Map_reference_index im = first(); !im.last(); im.next() )
       list[im.index()] -= other[im];

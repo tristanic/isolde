@@ -3,12 +3,12 @@
  * @Date:   05-Feb-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 13-May-2019
+ * @Last modified time: 14-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
 
-#include <chrono>
+// #include <chrono>
 
 #include "sfcalc_obs_vdw.h"
 #include "edcalc_ext.h"
@@ -48,32 +48,39 @@ bool SFcalc_obs_bulk_vdw<T>::operator() ( HKL_data<datatypes::F_phi<T> >& fphi,
 
   // do ed calc from atomu
   // EDcalc_aniso<ftype32> edcalc;
-  auto start = std::chrono::system_clock::now();
+  // auto start = std::chrono::steady_clock  ::now();
   EDcalc_aniso_thread<ftype32> edcalc(nthreads);
   // std::cout << "Number locked before: " << xmap.count_locked() << std::endl;
   edcalc( xmap, atomu);
   // std::cout << "Number locked after: " << xmap.count_locked() << std::endl;
   // if (!xmap.all_unlocked())
     // std::cerr << "ERROR: not all grid points are unlocked!" << std::endl;
-  auto end = std::chrono::system_clock::now();
+  // auto end = std::chrono::steady_clock  ::now();
 
-  std::chrono::duration<double> elapsed = end-start;
-  std::cout << "EDcalc with " << nthreads << " threads took " << elapsed.count() << " seconds." << std::endl;
+  // std::chrono::duration<double> elapsed = end-start;
+  // std::cout << "EDcalc with " << nthreads << " threads took " << elapsed.count() << " seconds." << std::endl;
+  // start = std::chrono::steady_clock  ::now();
   xmap.fft_to( fphi_atom );
+  // end = std::chrono::steady_clock  ::now();
+  // elapsed = end-start;
+  // std::cout << "Single x-to-h FFT took " << elapsed.count() << " seconds." << std::endl;
+
   fphi_atom.compute( fphi_atom, datatypes::Compute_scale_u_iso<datatypes::F_phi<T> >( 1.0, u_atom ) );
 
   // do density calc from mask
 
-  // start = std::chrono::system_clock::now();
+  // start = std::chrono::steady_clock  ::now();
   EDcalc_mask_vdw<ftype32> emcalc;
   emcalc( xmap, atomu );
   for ( Xmap<ftype32>::Map_reference_index ix = xmap.first();
         !ix.last(); ix.next() )
     xmap[ix] = 1.0 - xmap[ix];
-  // end = std::chrono::system_clock::now();
-  // elapsed = end-start;
-  // std::cout << "Single-threaded mask calc took " << elapsed.count() << " seconds." << std::endl;
   xmap.fft_to( fphi_mask );
+
+  // end = std::chrono::steady_clock  ::now();
+  // elapsed = end-start;
+  // std::cout << "Single-threaded bulk solvent mask + FFT took " << elapsed.count() << " seconds." << std::endl;
+
 
   HKL_data<F_phi<T> > fphi_mask_final (hkls, cell);
 
@@ -85,7 +92,7 @@ bool SFcalc_obs_bulk_vdw<T>::operator() ( HKL_data<datatypes::F_phi<T> >& fphi,
   if (bulk_solvent_optimization_needed_)
   {
 
-
+      std::cout << "Recalculating bulk solvent B-factor and scale..." << std::endl;
       // try some different scale factors
       std::vector<double> params( nparams, 1.0 );
       BasisFn_spline basisfn( hkls, nparams, 1.0 );
@@ -168,6 +175,9 @@ bool SFcalc_obs_bulk_vdw<T>::operator() ( HKL_data<datatypes::F_phi<T> >& fphi,
         !ih.last(); ih.next() )
     fphi[ih] = std::complex<T>(fphi_atom[ih]) +
           bulkscl * std::complex<T>(fphi_mask_final[ih]);
+  // end = std::chrono::steady_clock  ::now();
+  // elapsed = end-start;
+  // std::cout << "Complete single-threaded bulk solvent calc took " << elapsed.count() << " seconds." << std::endl;
 
   // store stats
   ftype64 w, s0 = 0.0, s1 = 0.0;
