@@ -3,7 +3,7 @@
  * @Date:   14-May-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 14-May-2019
+ * @Last modified time: 15-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -111,6 +111,7 @@ FFTmap_sparse_p1_base::~FFTmap_sparse_p1_base()
 
 ffttype* FFTmap_sparse_p1_base::map_uv( const int& u, const int& v )
 {
+  row_uv.lock(u,v);
   ffttype* ptr = row_uv( u, v );
   if ( ptr == NULL ) {
     ptr = new ffttype[ grid_real_.nw()+2 ]; // padding for in-place FFT
@@ -118,11 +119,13 @@ ffttype* FFTmap_sparse_p1_base::map_uv( const int& u, const int& v )
     for ( int w = 0; w < grid_real_.nw()+2; w++ ) ptr[w] = zero;
     row_uv( u, v ) = ptr;
   }
+  row_uv.unlock(u,v);
   return ptr;
 }
 
 std::complex<ffttype>* FFTmap_sparse_p1_base::map_kl( const int& k, const int& l )
 {
+  row_kl.lock(k,l);
   std::complex<ffttype>* ptr = row_kl( k, l );
   if ( ptr == NULL ) {
     ptr = new std::complex<ffttype>[ grid_reci_.nu() ];
@@ -130,6 +133,7 @@ std::complex<ffttype>* FFTmap_sparse_p1_base::map_kl( const int& k, const int& l
     for ( int u = 0; u < grid_reci_.nu(); u++ ) ptr[u] = zero;
     row_kl( k, l ) = ptr;
   }
+  row_kl.unlock(k,l);
   return ptr;
 }
 

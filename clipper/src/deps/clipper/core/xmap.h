@@ -3,7 +3,7 @@
  * @Date:   20-Jul-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 14-May-2019
+ * @Last modified time: 15-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -690,6 +690,7 @@ private:
               },
           std::cref(spacegroup_), std::ref(fftmap), std::cref(fphidata), isymop));
       }
+
       for (auto& r: thread_results)
         r.get();
 
@@ -709,7 +710,7 @@ private:
       // }
       // require output ASU coords
       for ( Map_reference_index ix = first(); !ix.last(); ix.next() )
-    fftmap.require_real_data( ix.coord() );
+        fftmap.require_real_data( ix.coord() );
       // do fft
       fftmap.fft_h_to_x(1.0/cell().volume());
       // fill map ASU
@@ -798,7 +799,7 @@ private:
       // require output ASU coords
       typename H::HKL_reference_index ih;
       for ( ih = fphidata.first(); !ih.last(); ih.next() )
-    fftmap.require_hkl( ih.hkl() );
+        fftmap.require_hkl( ih.hkl() );
       // do fft
       fftmap.fft_x_to_h(cell().volume());
       // fill data ASU

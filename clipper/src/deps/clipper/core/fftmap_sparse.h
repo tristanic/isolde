@@ -3,7 +3,7 @@
  * @Date:   14-May-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 14-May-2019
+ * @Last modified time: 15-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -88,8 +88,8 @@ namespace clipper
     Grid grid_reci_;                    //!< reciprocal space grid
     FFTtype type_;                      //!< optimisation options
 
-    Array2d<std::complex<ffttype>*> row_kl; //!< section map
-    Array2d<ffttype*> row_uv;               //!< section map
+    Array2d_threadsafe<std::complex<ffttype>*> row_kl; //!< section map
+    Array2d_threadsafe<ffttype*> row_uv;               //!< section map
 
     static FFTtype default_type_;       //!< default optimisation options
   };
@@ -120,8 +120,14 @@ namespace clipper
     void require_real_data( const Coord_grid& uvw )
       { map_uv( uvw.u(), uvw.v() ); }
     //! get real space data ( uvw must be in grid_real() )
-    const ffttype& real_data( const Coord_grid& uvw ) const
-      { return row_uv( uvw.u(), uvw.v() )[ uvw.w() ]; }
+    ffttype real_data( const Coord_grid& uvw )
+      {
+          int u=uvw.u(), v=uvw.v(), w=uvw.w();
+          row_uv.lock(u,v);
+          ffttype ret=row_uv(u,v)[w];
+          row_uv.unlock(u,v);
+          return ret;
+      }
 
     //! Transform to real space
     void fft_h_to_x( const ftype& scale );
@@ -164,8 +170,14 @@ private:
     void require_cplx_data( const Coord_grid& hkl )
       { map_kl( hkl.v(), hkl.w() ); }
     //! get reciprocal space data (internal use)
-    const std::complex<ffttype>& cplx_data( const Coord_grid& hkl ) const
-      { return row_kl( hkl.v(), hkl.w() )[ hkl.u() ]; }
+    std::complex<ffttype> cplx_data( const Coord_grid& hkl )
+      {
+          int u=hkl.u(), v=hkl.v(), w=hkl.w();
+          row_kl.lock(v,w);
+          std::complex<ffttype> ret = row_kl(v,w)[u];
+          row_kl.unlock(v,w);
+          return ret;
+      }
 
     //! Transform to real space
     void fft_x_to_h( const ftype& scale );
