@@ -3,7 +3,7 @@
  * @Date:   13-May-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 14-May-2019
+ * @Last modified time: 15-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -12,6 +12,7 @@
 
 #include <atomstruct/Atom.h>
 #include <clipper/clipper.h>
+#include <chrono>
 #include <memory>
 #include <atomic>
 
@@ -19,11 +20,40 @@ namespace clipper_cx {
 
 namespace bridge {
 
+// template <class ... Types> clipper::Atom cl_atom_from_cx_atom(atomstruct::Atom* cxatom, Types ... args)
+// {
+//     clipper::String element = cxatom->element().name();
+//     const auto& cxcoord = cxatom->coord(args...);
+//     auto coord = clipper::Coord_orth(cxcoord[0], cxcoord[1], cxcoord[2]);
+//     auto occ = cxatom->occupancy(args...);
+//     auto u_iso = clipper::Util::b2u(cxatom->bfactor(args...));
+//     clipper::U_aniso_orth uani;
+//     if (cxatom->has_aniso_u(args...))
+//     {
+//         const auto& cxau = *(cxatom->aniso_u(args...));
+//         // ChimeraX C++ layer stores aniso_u in row-major order`
+//         uani = clipper::U_aniso_orth(cxau[0],cxau[3],cxau[5],cxau[1],cxau[2],cxau[4]);
+//     } else {
+//         uani = clipper::U_aniso_orth(clipper::U_aniso_orth::null());
+//     }
+//     auto clatom = clipper::Atom();
+//     clatom.set_element(element);
+//     clatom.set_coord_orth(coord);
+//     clatom.set_occupancy(occ);
+//     clatom.set_u_iso(u_iso);
+//     clatom.set_u_aniso_orth(uani);
+//     return clatom;
+// }
+
 template <class ... Types> clipper::Atom cl_atom_from_cx_atom(atomstruct::Atom* cxatom, Types ... args)
 {
-    clipper::String element = cxatom->element().name();
+    clipper::Atom clatom;
+    clatom.set_element(cxatom->element().name());
     const auto& cxcoord = cxatom->coord(args...);
-    auto coord = clipper::Coord_orth(cxcoord[0], cxcoord[1], cxcoord[2]);
+    clatom.set_coord_orth(clipper::Coord_orth(cxcoord[0], cxcoord[1], cxcoord[2]));
+    clatom.set_occupancy(cxatom->occupancy(args...));
+    clatom.set_u_iso(clipper::Util::b2u(cxatom->bfactor(args...)));
+
     auto occ = cxatom->occupancy(args...);
     auto u_iso = clipper::Util::b2u(cxatom->bfactor(args...));
     clipper::U_aniso_orth uani;
@@ -35,17 +65,14 @@ template <class ... Types> clipper::Atom cl_atom_from_cx_atom(atomstruct::Atom* 
     } else {
         uani = clipper::U_aniso_orth(clipper::U_aniso_orth::null());
     }
-    auto clatom = clipper::Atom();
-    clatom.set_element(element);
-    clatom.set_coord_orth(coord);
-    clatom.set_occupancy(occ);
-    clatom.set_u_iso(u_iso);
     clatom.set_u_aniso_orth(uani);
     return clatom;
 }
 
+
 clipper::Atom_list clipper_atoms_from_cx_atoms(atomstruct::Atom** cxatoms, size_t n)
 {
+    // auto start_time = std::chrono::steady_clock::now();
     auto al = clipper::Atom_list();
     for (size_t i=0; i<n; ++i)
     {
@@ -59,13 +86,17 @@ clipper::Atom_list clipper_atoms_from_cx_atoms(atomstruct::Atom** cxatoms, size_
             al.push_back(cl_atom_from_cx_atom<>(cxa));
         }
     }
+    // auto end_time = std::chrono::steady_clock::now();
+    // std::chrono::duration<double> elapsed = end_time-start_time;
+    // std::cout<<"Copying " << n << " atoms from ChimeraX to Clipper took " << elapsed.count() << " seconds." << std::endl;
     return al;
 }
 
 clipper::Atom_list clipper_atoms_from_cx_atoms_threaded(atomstruct::Atom** cxatoms, size_t n, size_t n_threads)
 {
-    const size_t min_threaded_size = 20000;
-    const size_t min_atoms_per_thread = 15000;
+    // auto start_time = std::chrono::steady_clock::now();
+    const size_t min_threaded_size = 10000;
+    const size_t min_atoms_per_thread = 4000;
     if (n < min_threaded_size)
         return clipper_atoms_from_cx_atoms(cxatoms, n);
 
@@ -117,8 +148,13 @@ clipper::Atom_list clipper_atoms_from_cx_atoms_threaded(atomstruct::Atom** cxato
     // for (auto& r: results)
     {
         auto al = it->get();
-        final_al.insert(final_al.end(), al.begin(), al.end());
+        // final_al.reserve(final_al.size() + al.size());
+        std::move(std::begin(al), std::end(al), std::back_inserter(final_al));
+        //final_al.insert(final_al.end(), al.begin(), al.end());
     }
+    // auto end_time = std::chrono::steady_clock::now();
+    // std::chrono::duration<double> elapsed = end_time-start_time;
+    // std::cout<<"Copying " << n << " atoms from ChimeraX to Clipper using " << actual_num_threads << " threads took " << elapsed.count() << " seconds." << std::endl;
     return final_al;
 }
 
