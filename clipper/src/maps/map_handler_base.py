@@ -2,7 +2,7 @@
 # @Date:   15-Jan-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 07-May-2019
+# @Last modified time: 15-May-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -159,7 +159,7 @@ class FastVolumeSurface(VolumeSurface):
 
     def update_surface(self, rendering_options):
         sct = self._surf_calc_thread
-        if sct is not None and not sct.ready():
+        if sct is not None: # and not sct.ready():
             self._update_needed = True
             return
 
