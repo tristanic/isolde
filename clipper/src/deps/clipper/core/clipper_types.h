@@ -1,3 +1,15 @@
+/**
+ * @Author: Tristan Croll <tic20>
+ * @Date:   21-Sep-2018
+ * @Email:  tic20@cam.ac.uk
+ * @Last modified by:   tic20
+ * @Last modified time: 15-May-2019
+ * @License: Free for non-commercial use (see license.pdf)
+ * @Copyright: 2017-2018 Tristan Croll
+ */
+
+
+
 /*! \file lib/clipper_types.h
     Header file for clipper basic types
 */
@@ -45,6 +57,8 @@
 #ifndef CLIPPER_TYPES
 #define CLIPPER_TYPES
 
+#include <atomic>
+#include <memory>
 
 #include "clipper_util.h"
 #include "clipper_memory.h"
@@ -395,6 +409,49 @@ namespace clipper
     int d1_, d2_;
   };
 
+  template<class T = ftype> class Array2d_threadsafe
+    : public Array2d<T>
+  {
+  public:
+      //! NOTE: resizing after creation is NOT thread-safe!
+      inline void resize( const int& d1, const int& d2 )
+      {
+          Array2d<T>::resize(d1, d2);
+          update_gridlock_size();
+      }
+      inline void resize(const int& d1, const int& d2, T val)
+      {
+          Array2d<T>::resize(d1, d2, val);
+          update_gridlock_size();
+      }
+      inline Array2d_threadsafe() : Array2d<T>() {}
+      inline Array2d_threadsafe(const int& d1, const int& d2) : Array2d<T>(d1,d2)
+      {
+          update_gridlock_size();
+      }
+      inline Array2d_threadsafe(const int& d1, const int& d2, T val) : Array2d<T>(d1,d2,val)
+      {
+          update_gridlock_size();
+      }
+      inline void lock(const int& i1, const int& i2)
+      {
+          auto& flag = gridlock[i1*this->d2_ + i2];
+          while (flag.test_and_set());
+      }
+      inline void unlock(const int& i1, const int& i2)
+      {
+          gridlock[i1*this->d2_ + i2].clear();
+      }
+  protected:
+      std::unique_ptr<std::atomic_flag[]> gridlock;
+  private:
+      inline void update_gridlock_size()
+      {
+          gridlock = std::unique_ptr<std::atomic_flag[]>(new std::atomic_flag[this->size()]);
+          for (int i=0; i<this->size(); ++i)
+              gridlock[i].clear();
+      }
+  };
 
   //! General matrix class: like Array2d but with numerical methods
   template<class T = ftype> class Matrix : public Array2d<T>
