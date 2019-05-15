@@ -1,9 +1,23 @@
+/**
+ * @Author: Tristan Croll <tic20>
+ * @Date:   05-Sep-2018
+ * @Email:  tic20@cam.ac.uk
+ * @Last modified by:   tic20
+ * @Last modified time: 15-May-2019
+ * @License: Free for non-commercial use (see license.pdf)
+ * @Copyright: 2017-2018 Tristan Croll
+ */
+
+
+
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 
 #include <memory>
 #include <future>
 #include <iostream>
+
+// #include "bindings/numpy_helper.h"
 
 #include "contour.h"
 
@@ -13,18 +27,24 @@ namespace py=pybind11;
 struct Contour_Geometry
 {
 public:
-    float* vertex_xyz;
-    float* normals;
-    int* tv_indices;
+    std::vector<float>* vertex_xyz;
+    std::vector<float>* normals;
+    std::vector<int>* tv_indices;
+    // float* vertex_xyz;
+    // float* normals;
+    // int* tv_indices;
     int vertex_count=0;
     int triangle_count=0;
     Contour_Geometry() {}
     Contour_Geometry(int vc, int tc)
         : vertex_count(vc), triangle_count(tc)
     {
-        vertex_xyz = new float[vc*3];
-        normals = new float[vc*3];
-        tv_indices = new int[tc*3];
+        vertex_xyz = new std::vector<float>(vc*3);
+        normals = new std::vector<float>(vc*3);
+        tv_indices = new std::vector<int>(tc*3);
+        // vertex_xyz = new float[vc*3];
+        // normals = new float[vc*3];
+        // tv_indices = new int[tc*3];
     }
 };
 
@@ -111,7 +131,7 @@ public:
     bool return_normals() const { return return_normals_; }
     Contour_Geometry get_result();
 private:
-    std::unique_ptr<float> data_;
+    std::unique_ptr<float[]> data_;
     float threshold_;
     bool flip_triangles_; // if det < 0
     float vertex_transform_[3][4]; // Transform mapping vertices into model coordinates
@@ -124,7 +144,7 @@ private:
     bool ready_=false;
     bool return_normals_=false;
     void copy_3d_array(py::array_t<float> source);
-    Contour_Geometry contour_surface_thread_(float* data, float threshold, bool cap_faces);
+    Contour_Geometry contour_surface_thread_(float data[], float threshold, bool cap_faces);
 };
 
 void Contour_Thread_Mgr::start_compute(py::array_t<float> data, float threshold,
@@ -153,7 +173,7 @@ void Contour_Thread_Mgr::start_compute(py::array_t<float> data, float threshold,
 
 void Contour_Thread_Mgr::copy_3d_array(py::array_t<float> source)
 {
-    data_ = std::unique_ptr<float>(new float[source.shape(0)*source.shape(1)*source.shape(2)]);
+    data_ = std::unique_ptr<float[]>(new float[source.shape(0)*source.shape(1)*source.shape(2)]);
     int stride_size = sizeof(float);
     // stride and size are stored reversed since ChimeraX keeps volume data in
     // z,y,x order while contour code requires x,y,z
@@ -179,19 +199,19 @@ Contour_Geometry Contour_Thread_Mgr::contour_surface_thread_(float* data, float 
     int vc = cptr->vertex_count();
     int tc = cptr->triangle_count();
     Contour_Geometry geom(vc, tc);
-    cptr->geometry(geom.vertex_xyz, reinterpret_cast<Index *>(geom.tv_indices));
+    cptr->geometry(geom.vertex_xyz->data(), reinterpret_cast<Index *>(geom.tv_indices->data()));
     if (return_normals_)
-        cptr->normals(geom.normals);
+        cptr->normals(geom.normals->data());
     if (flip_triangles_)
-        reverse_triangle_vertex_order(geom.tv_indices, tc);
+        reverse_triangle_vertex_order(geom.tv_indices->data(), tc);
 
     // Transform coords and normals to model coordinates
-    transform_coords(vertex_transform_, geom.vertex_xyz, vc);
+    transform_coords(vertex_transform_, geom.vertex_xyz->data(), vc);
     if (return_normals_)
     {
-        transform_coords(normal_transform_, geom.normals, vc);
+        transform_coords(normal_transform_, geom.normals->data(), vc);
         // Set all normals to unit length;
-        normalize_3d_vectors(geom.normals, vc);
+        normalize_3d_vectors(geom.normals->data(), vc);
 
     }
     ready_=true;
@@ -210,8 +230,8 @@ Contour_Thread_Mgr::get_result()
 template<typename T>
 void delete_when_done(void *data)
 {
-    T* d = reinterpret_cast<T *>(data);
-    delete[] d;
+    std::vector<T>* d = reinterpret_cast<std::vector<T> *>(data);
+    delete d;
 }
 
 
@@ -237,17 +257,17 @@ PYBIND11_MODULE(contour_thread, m) {
             const auto& tc = geom.triangle_count;
             py::array_t<float> va({vc, 3}, // shape
                  {3*4, 4}, // C-style contiguous strides for n*3 float
-                 geom.vertex_xyz,
+                 geom.vertex_xyz->data(),
                  py::capsule(geom.vertex_xyz, &delete_when_done<float>));
             py::array_t<int> ta({tc, 3}, // shape
                 {3*4, 4}, // C-style contiguous strides for n*3 int32
-                geom.tv_indices,
+                geom.tv_indices->data(),
                 py::capsule(geom.tv_indices, &delete_when_done<int>));
             if (!self.return_normals())
                 return py::make_tuple(va, ta);
             py::array_t<float> na({vc, 3}, // shape
                 {3*4, 4}, // C-style contiguous strides for n*3 float
-                geom.normals,
+                geom.normals->data(),
                 py::capsule(geom.normals, &delete_when_done<float>));
             return py::make_tuple(va, ta, na);
         })
