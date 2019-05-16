@@ -3,7 +3,7 @@
  * @Date:   21-Sep-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 14-May-2019
+ * @Last modified time: 16-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -219,10 +219,10 @@ public:
     // Recalculate map coefficients and real-space map for one previously-stored
     // set of parameters (will throw std::out_of_range if nothing has been stored
     // under the given name)
-    void recalculate_map(const std::string& name);
+    void recalculate_map(const std::string& name, size_t num_threads=1);
 
     // Recalculate a map in-place
-    void recalculate_map(Xmap_details& xmd);
+    void recalculate_map(Xmap_details& xmd, size_t num_threads=1);
 
     // Generate fresh Fcalc, and regenerate all existing maps
     void recalculate_all(const Atom_list& atoms);
@@ -411,7 +411,7 @@ private:
     // Master thread function called by recalculate_all();
     bool recalculate_all_(const Atom_list& atoms);
     // Inner threads called by recalculate_all_();
-    bool recalculate_inner_(const std::vector<std::string>& names, size_t i_min, size_t i_max);
+    bool recalculate_inner_(const std::vector<std::string>& names, size_t i_min, size_t i_max, size_t threads=1);
 
     void init_(const Atom_list& atoms);
 

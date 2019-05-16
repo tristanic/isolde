@@ -3,7 +3,7 @@
  * @Date:   05-Feb-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 14-May-2019
+ * @Last modified time: 16-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -60,7 +60,7 @@ bool SFcalc_obs_bulk_vdw<T>::operator() ( HKL_data<datatypes::F_phi<T> >& fphi,
   // std::chrono::duration<double> elapsed = end-start;
   // std::cout << "EDcalc with " << nthreads << " threads took " << elapsed.count() << " seconds." << std::endl;
   // start = std::chrono::steady_clock  ::now();
-  xmap.fft_to( fphi_atom );
+  xmap.fft_to( fphi_atom, nthreads );
   // end = std::chrono::steady_clock  ::now();
   // elapsed = end-start;
   // std::cout << "Single x-to-h FFT took " << elapsed.count() << " seconds." << std::endl;
@@ -75,7 +75,7 @@ bool SFcalc_obs_bulk_vdw<T>::operator() ( HKL_data<datatypes::F_phi<T> >& fphi,
   for ( Xmap<ftype32>::Map_reference_index ix = xmap.first();
         !ix.last(); ix.next() )
     xmap[ix] = 1.0 - xmap[ix];
-  xmap.fft_to( fphi_mask );
+  xmap.fft_to( fphi_mask, nthreads );
 
   // end = std::chrono::steady_clock  ::now();
   // elapsed = end-start;

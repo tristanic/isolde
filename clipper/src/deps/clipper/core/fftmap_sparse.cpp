@@ -3,7 +3,7 @@
  * @Date:   14-May-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 15-May-2019
+ * @Last modified time: 16-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -63,8 +63,9 @@
 # include <rfftw.h>
 #endif
 
+#include <thread>
 #include <future>
-// #include <chrono>
+#include <chrono>
 
 
 
@@ -82,8 +83,9 @@ FFTmap_base::FFTtype FFTmap_sparse_p1_base::default_type_ = FFTmap_base::Estimat
   \param grid_sam The grid sampling of the unit cell.
   \param type Can be FFTmap_sparse_base::Measure, ::Estimate.
   Measure performs slow precalculation (first time only) to get faster FFT. */
-void FFTmap_sparse_p1_base::init( const Grid_sampling& grid_sam, const FFTtype type )
+void FFTmap_sparse_p1_base::init( const Grid_sampling& grid_sam, const int num_threads, const FFTtype type )
 {
+  num_threads_ = num_threads;
   type_ = type;
   if ( type_ == Default ) type_ = default_type();
 
@@ -145,8 +147,8 @@ FFTmap_sparse_p1_hx::FFTmap_sparse_p1_hx()
   \param grid_sam The grid sampling of the unit cell.
   \param type Can be FFTmap_sparse_base::Measure, ::Estimate.
   Measure performs slow precalculation (first time only) to get faster FFT. */
-FFTmap_sparse_p1_hx::FFTmap_sparse_p1_hx( const Grid_sampling& grid_sam, const FFTtype type )
-{ init( grid_sam, type ); }
+FFTmap_sparse_p1_hx::FFTmap_sparse_p1_hx( const Grid_sampling& grid_sam, const int num_threads, const FFTtype type )
+{ init( grid_sam, num_threads, type ); }
 
 /*! \fn void FFTmap_sparse_p1_hx::require_real_data( const Coord_grid& uvw )
   The given Coord_grid will be required in the final map. ( uvw must
@@ -194,8 +196,8 @@ void FFTmap_sparse_p1_hx::fft_h_to_x( const ftype& scale )
   ffttype s = ffttype( scale );
 
   int flags = ( type_ == Measure ) ?
-    ( FFTW_USE_WISDOM | FFTW_MEASURE ) :
-    ( FFTW_USE_WISDOM | FFTW_ESTIMATE );
+    ( FFTW_USE_WISDOM | FFTW_MEASURE | FFTW_THREADSAFE) :
+    ( FFTW_USE_WISDOM | FFTW_ESTIMATE | FFTW_THREADSAFE);
 
   // make ul map
   map_l.clear(); map_l.resize(grid_reci_.nw(), false);
@@ -233,47 +235,67 @@ void FFTmap_sparse_p1_hx::fft_h_to_x( const ftype& scale )
 #endif
   mutex.unlock();
 
-  // transform along h->u
-  std::vector<std::future<void>> thread_results;
-  int layers_per_thread = grid_reci_.nw()/num_threads_ + 1;
-  int start=0, end;
-  for (int i=0; i<num_threads_; ++i)
-  {
-      end = std::min(start+layers_per_thread, grid_reci_.nw());
-      thread_results.push_back(std::async(std::launch::async,
-          &FFTmap_sparse_p1_hx::transform_along_hu_, this, (void*)planu, start, end));
-      start += layers_per_thread;
-  }
-  for (auto& r: thread_results)
-      r.get();
-  thread_results.clear();
+  hu_checkpoints = std::unique_ptr<std::atomic_bool[]>(new std::atomic_bool[num_threads_]);
+  kv_checkpoints = std::unique_ptr<std::atomic_bool[]>(new std::atomic_bool[num_threads_]);
 
-  // copy, transform along k->v, and copy
-  start=0;
-  for (int i=0; i<num_threads_; ++i)
-  {
-      end = std::min(start+layers_per_thread, grid_reci_.nw());
-      thread_results.push_back(std::async(std::launch::async,
-        &FFTmap_sparse_p1_hx::transform_along_kv_, this, (void*)planv, start, end, scale, nmax));
-      start += layers_per_thread;
-  }
-  for (auto& r: thread_results)
-      r.get();
-  thread_results.clear();
+  // hu_checkpoints.resize(num_threads_, false);
+  // kv_checkpoints.resize(num_threads_, false);
 
-  // transform along l->w
-  layers_per_thread = grid_real_.nv()/num_threads_ + 1;
-  start = 0;
-  for (int i=0; i<num_threads_; ++i)
+  std::vector<std::thread> threads;
+  for (size_t i=0; i<num_threads_; ++i)
   {
-      end = std::min(start+layers_per_thread, grid_real_.nv());
-      thread_results.push_back(std::async(std::launch::async,
-        &FFTmap_sparse_p1_hx::transform_along_lw_, this, (void*)planw, start, end));
-      start += layers_per_thread;
+      hu_checkpoints[i].store(false);
+      kv_checkpoints[i].store(false);
+      threads.push_back(
+            std::thread(&FFTmap_sparse_p1_hx::thread_kernel_,
+                this, i, planu, planv, planw, nmax, s
+            )
+      );
   }
-  for (auto& r: thread_results)
-      r.get();
-  thread_results.clear();
+  for (auto& t: threads)
+    t.join();
+
+  // // transform along h->u
+  // std::vector<std::future<void>> thread_results;
+  // int layers_per_thread = grid_reci_.nw()/num_threads_ + 1;
+  // int start=0, end;
+  // for (int i=0; i<num_threads_; ++i)
+  // {
+  //     end = std::min(start+layers_per_thread, grid_reci_.nw());
+  //     thread_results.push_back(std::async(std::launch::async,
+  //         &FFTmap_sparse_p1_hx::transform_along_hu_, this, (void*)planu, start, end));
+  //     start += layers_per_thread;
+  // }
+  // for (auto& r: thread_results)
+  //     r.get();
+  // thread_results.clear();
+  //
+  // // copy, transform along k->v, and copy
+  // start=0;
+  // for (int i=0; i<num_threads_; ++i)
+  // {
+  //     end = std::min(start+layers_per_thread, grid_reci_.nw());
+  //     thread_results.push_back(std::async(std::launch::async,
+  //       &FFTmap_sparse_p1_hx::transform_along_kv_, this, (void*)planv, start, end, scale, nmax));
+  //     start += layers_per_thread;
+  // }
+  // for (auto& r: thread_results)
+  //     r.get();
+  // thread_results.clear();
+  //
+  // // transform along l->w
+  // layers_per_thread = grid_real_.nv()/num_threads_ + 1;
+  // start = 0;
+  // for (int i=0; i<num_threads_; ++i)
+  // {
+  //     end = std::min(start+layers_per_thread, grid_real_.nv());
+  //     thread_results.push_back(std::async(std::launch::async,
+  //       &FFTmap_sparse_p1_hx::transform_along_lw_, this, (void*)planw, start, end));
+  //     start += layers_per_thread;
+  // }
+  // for (auto& r: thread_results)
+  //     r.get();
+  // thread_results.clear();
 
   mutex.lock();
   fftw_destroy_plan( planu );
@@ -285,6 +307,49 @@ void FFTmap_sparse_p1_hx::fft_h_to_x( const ftype& scale )
 #endif
   mutex.unlock();
 }
+
+void FFTmap_sparse_p1_hx::thread_kernel_(size_t thread_num,
+    void* planu_ptr, void* planv_ptr, void* planw_ptr, int nmax, ffttype s)
+{
+    int start, end;
+    int layers_per_thread = grid_reci_.nw() / num_threads_ + 1;
+    start = layers_per_thread * thread_num;
+    end = std::min(start+layers_per_thread, grid_reci_.nw());
+    transform_along_hu_(planu_ptr, start, end);
+    hu_checkpoints[thread_num].exchange(true);
+    // Wait for other threads
+    bool ready=false;
+    while (!ready)
+    {
+        ready=true;
+        for (size_t i=0; i<num_threads_; ++i)
+            if (!hu_checkpoints[i].load()) { ready=false; std::this_thread::sleep_for(std::chrono::microseconds(1)); break; }
+    }
+
+    // for (const auto& flag: lw_checkpoints) while (!flag) {}
+    // layers_per_thread = grid_reci_.nw() / num_threads_ + 1;
+    // start = layers_per_thread * thread_num;
+    // end = std::min(start+layers_per_thread, grid_reci_.nw());
+    transform_along_kv_(planv_ptr, start, end, s, nmax);
+    kv_checkpoints[thread_num].exchange(true);
+    // Wait for other threads
+    ready=false;
+    while (!ready)
+    {
+        ready=true;
+        for (size_t i=0; i<num_threads_; ++i)
+            if (!kv_checkpoints[i].load()) { ready=false; std::this_thread::sleep_for(std::chrono::microseconds(1)); break; }
+    }
+
+    // for (const auto& flag: lw_checkpoints) while (!flag) {}
+    layers_per_thread = grid_real_.nv()/num_threads_ + 1;
+    start = layers_per_thread * thread_num;
+    end = std::min(start+layers_per_thread, grid_real_.nv());
+    transform_along_lw_(planw_ptr, start, end);
+}
+
+
+
 
 void FFTmap_sparse_p1_hx::transform_along_hu_(void* planu_ptr, const int& start, const int& end)
 {
@@ -371,8 +436,8 @@ FFTmap_sparse_p1_xh::FFTmap_sparse_p1_xh()
   \param grid_sam The grid sampling of the unit cell.
   \param type Can be FFTmap_sparse_base::Measure, ::Estimate.
   Measure performs slow precalculation (first time only) to get faster FFT. */
-FFTmap_sparse_p1_xh::FFTmap_sparse_p1_xh( const Grid_sampling& grid_sam, const FFTtype type )
-{ init( grid_sam, type ); }
+FFTmap_sparse_p1_xh::FFTmap_sparse_p1_xh( const Grid_sampling& grid_sam, const int num_threads, const FFTtype type )
+{ init( grid_sam, num_threads, type ); }
 
 /*! Friedel opposites are handled correctly
   \param hkl The HKL required. */
@@ -436,6 +501,7 @@ void FFTmap_sparse_p1_xh::fft_x_to_h( const ftype& scale )
   int hw = grid_real_.nw()/2;
   ffttype s = ffttype( scale ) / grid_real_.size();
 
+
   int flags = ( type_ == Measure ) ?
     ( FFTW_USE_WISDOM | FFTW_MEASURE ) :
     ( FFTW_USE_WISDOM | FFTW_ESTIMATE );
@@ -480,21 +546,43 @@ void FFTmap_sparse_p1_xh::fft_x_to_h( const ftype& scale )
   // std::cout << "<FFT-x-to-h> preliminaries took " << elapsed.count() << " seconds." << std::endl;
   // start_time = std::chrono::steady_clock  ::now();
 
-  std::vector<std::future<void>> thread_results;
-  int layers_per_thread = grid_real_.nv() / num_threads_ + 1;
-  int start=0, end;
+  // lw_checkpoints.resize(num_threads_, false);
+  // kv_checkpoints.resize(num_threads_, false);
 
-  for (int i=0; i<num_threads_; ++i)
+  lw_checkpoints = std::unique_ptr<std::atomic_bool[]>(new std::atomic_bool[num_threads_]);
+  kv_checkpoints = std::unique_ptr<std::atomic_bool[]>(new std::atomic_bool[num_threads_]);
+
+  std::vector<std::thread> threads;
+  // std::vector<bool> hu_checkpoints(num_threads_, false);
+  for (size_t i=0; i<num_threads_; ++i)
   {
-      end = std::min(start+layers_per_thread, grid_real_.nv());
-      thread_results.push_back(std::async(std::launch::async,
-        &FFTmap_sparse_p1_xh::transform_along_lw_, this,
-        (void*)planw, start, end, nmax));
-      start += layers_per_thread;
+      threads.push_back(
+          std::thread(&FFTmap_sparse_p1_xh::thread_kernel_,
+              this, i, planu, planv, planw, nmax, s
+          )
+      );
   }
-  for (auto& r: thread_results)
-      r.get();
-  thread_results.clear();
+  for (auto& t: threads)
+    t.join();
+
+
+
+
+  // std::vector<std::future<void>> thread_results;
+  // int layers_per_thread = grid_real_.nv() / num_threads_ + 1;
+  // int start=0, end;
+  //
+  // for (int i=0; i<num_threads_; ++i)
+  // {
+  //     end = std::min(start+layers_per_thread, grid_real_.nv());
+  //     thread_results.push_back(std::async(std::launch::async,
+  //       &FFTmap_sparse_p1_xh::transform_along_lw_, this,
+  //       (void*)planw, start, end, nmax));
+  //     start += layers_per_thread;
+  // }
+  // for (auto& r: thread_results)
+  //     r.get();
+  // thread_results.clear();
 
   // end_time = std::chrono::steady_clock  ::now();
   // elapsed = end_time-start_time;
@@ -514,19 +602,19 @@ void FFTmap_sparse_p1_xh::fft_x_to_h( const ftype& scale )
 // #endif
 //     }
 
-  start=0;
-  layers_per_thread = grid_reci_.nw() / num_threads_ + 1;
-  for (int i=0; i<num_threads_; ++i)
-  {
-      end = std::min(start+layers_per_thread, grid_reci_.nw());
-      thread_results.push_back(std::async(std::launch::async,
-        &FFTmap_sparse_p1_xh::transform_along_kv_, this,
-        (void*)planv, start, end, s, nmax));
-      start += layers_per_thread;
-  }
-  for (auto& r: thread_results)
-    r.get();
-  thread_results.clear();
+  // start=0;
+  // layers_per_thread = grid_reci_.nw() / num_threads_ + 1;
+  // for (int i=0; i<num_threads_; ++i)
+  // {
+  //     end = std::min(start+layers_per_thread, grid_reci_.nw());
+  //     thread_results.push_back(std::async(std::launch::async,
+  //       &FFTmap_sparse_p1_xh::transform_along_kv_, this,
+  //       (void*)planv, start, end, s, nmax));
+  //     start += layers_per_thread;
+  // }
+  // for (auto& r: thread_results)
+  //   r.get();
+  // thread_results.clear();
 
   // end_time = std::chrono::steady_clock  ::now();
   // elapsed = end_time-start_time;
@@ -563,20 +651,20 @@ void FFTmap_sparse_p1_xh::fft_x_to_h( const ftype& scale )
 //       }
 //     }
 
-  start = 0;
-  for (int i=0; i<num_threads_; ++i)
-  {
-      end = std::min(start+layers_per_thread, grid_reci_.nw());
-      thread_results.push_back(std::async(std::launch::async,
-          &FFTmap_sparse_p1_xh::transform_along_hu_, this, (void*)planu, start, end, nmax));
-      start += layers_per_thread;
-  }
-  for (auto& r: thread_results)
-    r.get();
+  // start = 0;
+  // for (int i=0; i<num_threads_; ++i)
+  // {
+  //     end = std::min(start+layers_per_thread, grid_reci_.nw());
+  //     thread_results.push_back(std::async(std::launch::async,
+  //         &FFTmap_sparse_p1_xh::transform_along_hu_, this, (void*)planu, start, end, nmax));
+  //     start += layers_per_thread;
+  // }
+  // for (auto& r: thread_results)
+  //   r.get();
 
-    // end_time = std::chrono::steady_clock  ::now();
-    // elapsed = end_time-start_time;
-    // std::cout << "<FFT-x-to-h> transform along h-u took " << elapsed.count() << " seconds." << std::endl;
+    // auto end_time = std::chrono::steady_clock  ::now();
+    // std::chrono::duration<double> elapsed = end_time-start_time;
+    // std::cout << "<FFT-x-to-h> with " << num_threads_ << " threads took " << elapsed.count() << " seconds." << std::endl;
     // start_time = std::chrono::steady_clock  ::now();
 
   // transform along h->u
@@ -596,6 +684,44 @@ void FFTmap_sparse_p1_xh::fft_x_to_h( const ftype& scale )
   fftw_destroy_plan( planw );
 #endif
   mutex.unlock();
+}
+
+void FFTmap_sparse_p1_xh::thread_kernel_(size_t thread_num,
+    void* planu_ptr, void* planv_ptr, void* planw_ptr, int nmax, ffttype s)
+{
+    int start, end;
+    int layers_per_thread = grid_real_.nv() / num_threads_ + 1;
+    start = layers_per_thread * thread_num;
+    end = std::min(start+layers_per_thread, grid_real_.nv());
+    transform_along_lw_(planw_ptr, start, end, nmax);
+    lw_checkpoints[thread_num].exchange(true);
+    // Wait for other threads
+    bool ready=false;
+    while (!ready)
+    {
+        ready=true;
+        for (size_t i=0; i<num_threads_; ++i)
+            if (!lw_checkpoints[i].load()) { ready=false; std::this_thread::sleep_for(std::chrono::microseconds(1)); break; }
+    }
+
+    // for (const auto& flag: lw_checkpoints) while (!flag) {}
+    layers_per_thread = grid_reci_.nw() / num_threads_ + 1;
+    start = layers_per_thread * thread_num;
+    end = std::min(start+layers_per_thread, grid_reci_.nw());
+    transform_along_kv_(planv_ptr, start, end, s, nmax);
+    kv_checkpoints[thread_num].exchange(true);
+    // Wait for other threads
+    ready=false;
+    while (!ready)
+    {
+        ready=true;
+        for (size_t i=0; i<num_threads_; ++i)
+            if (!kv_checkpoints[i].load()) { ready=false; std::this_thread::sleep_for(std::chrono::microseconds(1)); break; }
+    }
+
+    // for (const auto& flag: lw_checkpoints) while (!flag) {}
+    // Final step uses grid_reci_.nw() again
+    transform_along_hu_(planu_ptr, start, end, nmax);
 }
 
 void FFTmap_sparse_p1_xh::transform_along_lw_(void* planw_ptr,

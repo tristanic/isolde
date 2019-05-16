@@ -3,7 +3,7 @@
  * @Date:   20-Jul-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 15-May-2019
+ * @Last modified time: 16-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -61,6 +61,7 @@
 #include <atomic>
 #include <future>
 #include <map>
+#include <chrono>
 
 #include "fftmap.h"
 #include "fftmap_sparse.h"
@@ -439,9 +440,9 @@ private:
     template<class I> void interp_curv( const Coord_map& pos, T& val, Grad_map<T>& grad, Curv_map<T>& curv ) const;
 
     //! FFT from reflection list to map
-    template<class H> void fft_from( const H& fphidata, const FFTtype type = Default );
+    template<class H> void fft_from( const H& fphidata, const int num_threads=1, const FFTtype type = Default );
     //! FFT from map to reflection list
-    template<class H> void fft_to  ( H& fphidata, const FFTtype type = Default ) const;
+    template<class H> void fft_to  ( H& fphidata, const int num_threads=1, const FFTtype type = Default ) const;
 
     // inherited functions listed for documentation purposes
     //-- const Cell& cell() const;
@@ -656,12 +657,14 @@ private:
     F_phi, and used to fill this map. The reflection list is unchanged.
     \param fphidata The reflection data list to use
   */
-  template<class T> template<class H> void Xmap<T>::fft_from( const H& fphidata, const FFTtype type )
+  template<class T> template<class H> void Xmap<T>::fft_from( const H& fphidata, const int num_threads, const FFTtype type )
   {
     if ( type == Sparse || ( type == Default && default_type() == Sparse ) ) {
+      // auto start_time = std::chrono::steady_clock::now();
+
     //if ( false ) {
       // make a sparse fftmap
-      FFTmap_sparse_p1_hx fftmap( grid_sampling() );
+      FFTmap_sparse_p1_hx fftmap( grid_sampling(), num_threads );
       // copy from reflection data
       typename H::HKL_reference_index ih;
       ffttype f, phi0, phi1;
@@ -717,6 +720,9 @@ private:
       for ( Map_reference_index ix = first(); !ix.last(); ix.next()) {
              (*this)[ix] = fftmap.real_data( ix.coord() );
       }
+      // auto end_time = std::chrono::steady_clock::now();
+      // std::chrono::duration<double> elapsed = end_time-start_time;
+      // std::cout << "FFT from structure factors with " << num_threads << " threads took " << elapsed.count() << " seconds." << std::endl;
 
     } else {
       // make a normal fftmap
@@ -756,11 +762,12 @@ private:
     simpler and imposes less demands on the compiler.
     \param fphidata The reflection data list to set.
   */
-  template<class T> template<class H> void Xmap<T>::fft_to  ( H& fphidata, const FFTtype type ) const
+  template<class T> template<class H> void Xmap<T>::fft_to  ( H& fphidata, const int num_threads, const FFTtype type ) const
   {
     if ( type == Sparse || ( type == Default && default_type() == Sparse ) ) {
+      // auto start_time = std::chrono::steady_clock::now();
       // make a sparse fftmap
-      FFTmap_sparse_p1_xh fftmap( grid_sampling() );
+      FFTmap_sparse_p1_xh fftmap( grid_sampling(), num_threads );
       // copy from map data
       ffttype f;
       int sym;
@@ -808,6 +815,10 @@ private:
     fphidata[ih].f() = std::abs(c);
     fphidata[ih].phi() = std::arg(c);
       }
+      // auto end_time = std::chrono::steady_clock::now();
+      // std::chrono::duration<double> elapsed = end_time-start_time;
+      // std::cout << "FFT to structure factors with " << num_threads << " threads took " << elapsed.count() << " seconds." << std::endl;
+
     } else {
       // make a normal fftmap
       FFTmap_p1 fftmap( grid_sampling() );

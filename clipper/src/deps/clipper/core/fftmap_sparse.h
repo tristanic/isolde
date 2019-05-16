@@ -3,7 +3,7 @@
  * @Date:   14-May-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 15-May-2019
+ * @Last modified time: 16-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -57,9 +57,12 @@
 #ifndef CLIPPER_FFTMAP_SPARSE
 #define CLIPPER_FFTMAP_SPARSE
 
+#include <atomic>
+#include <memory>
 
 #include "fftmap.h"
 #include "../imex.h"
+
 
 namespace clipper
 {
@@ -68,7 +71,7 @@ namespace clipper
   class CLIPPER_IMEX FFTmap_sparse_p1_base : public FFTmap_base {
   public:
     //! initialiser: takes grid
-    void init( const Grid_sampling& grid_sam, const FFTtype type = Default );
+    void init( const Grid_sampling& grid_sam, const int num_threads=1, const FFTtype type = Default );
     //! Destructor
     ~FFTmap_sparse_p1_base();
     //! get real grid sampling
@@ -79,6 +82,7 @@ namespace clipper
     //! set/get default optimisation type
     static FFTtype& default_type() { return default_type_; }
   protected:
+    size_t num_threads_;
     //! return/create row
     ffttype* map_uv( const int& u, const int& v );
     //! return/create row
@@ -106,7 +110,7 @@ namespace clipper
     //! Null constuctor
     FFTmap_sparse_p1_hx();
     //! Constructor: takes grid
-    FFTmap_sparse_p1_hx( const Grid_sampling& grid_sam, const FFTtype type = Default );
+    FFTmap_sparse_p1_hx( const Grid_sampling& grid_sam, const int num_threads=1, const FFTtype type = Default );
     //-- void init( const Grid_sampling& grid_sam, const FFTtype type = Default );
     //-- const Grid_sampling& grid_real() const;
     //-- const Grid& grid_reci() const;
@@ -133,11 +137,18 @@ namespace clipper
     void fft_h_to_x( const ftype& scale );
 
 private:
+    void thread_kernel_(size_t thread_num, void* planu_ptr, void* planv_ptr, void* planw_ptr,
+        int nmax, ffttype s);
     void transform_along_hu_(void* planu_ptr, const int& start, const int& end);
     void transform_along_kv_(void* planv_ptr, const int& start, const int& end,
         const ffttype& s, const int& nmax);
     void transform_along_lw_(void* planw_ptr, const int& start, const int& end);
-    int num_threads_ = 2;
+
+    std::unique_ptr<std::atomic_bool[]> hu_checkpoints;
+    std::unique_ptr<std::atomic_bool[]> kv_checkpoints;
+    // std::vector<bool> hu_checkpoints;
+    // std::vector<bool> kv_checkpoints;
+
     std::vector<bool> map_l;
     std::vector<bool> row_u;
   };
@@ -154,7 +165,7 @@ private:
     //! Null constuctor
     FFTmap_sparse_p1_xh();
     //! Constructor: takes grid
-    FFTmap_sparse_p1_xh( const Grid_sampling& grid_sam, const FFTtype type = Default );
+    FFTmap_sparse_p1_xh( const Grid_sampling& grid_sam, const int num_threads=1, const FFTtype type = Default );
     //-- void init( const Grid_sampling& grid_sam, const FFTtype type = Default );
     //-- const Grid_sampling& grid_real() const;
     //-- const Grid& grid_reci() const;
@@ -183,11 +194,18 @@ private:
     void fft_x_to_h( const ftype& scale );
 
 private:
-    int num_threads_ = 2;
+    void thread_kernel_(size_t thread_num, void* planu_ptr, void* planv_ptr, void* planw_ptr,
+        int nmax, ffttype s);
     void transform_along_lw_(void* planw_ptr, const int& start, const int& end, const int& nmax);
     void transform_along_kv_(void* planv_ptr, const int& start, const int& end,
         const ffttype& s, const int& nmax);
     void transform_along_hu_(void* planu_ptr, const int& start, const int& end, const int& nmax);
+    std::unique_ptr<std::atomic_bool[]> lw_checkpoints;
+    std::unique_ptr<std::atomic_bool[]> kv_checkpoints;
+
+    // std::vector<bool> lw_checkpoints;
+    // std::vector<bool> kv_checkpoints;
+
     std::vector<bool> map_l;
     std::vector<bool> row_u;
   };

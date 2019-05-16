@@ -3,7 +3,7 @@
  * @Date:   28-Jan-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 14-May-2019
+ * @Last modified time: 16-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -294,13 +294,13 @@ Xtal_mgr_base::add_xmap(const std::string& name,
 } // add_xmap
 
 void
-Xtal_mgr_base::recalculate_map(const std::string& name)
+Xtal_mgr_base::recalculate_map(const std::string& name, size_t num_threads)
 {
-    recalculate_map(maps_.at(name));
+    recalculate_map(maps_.at(name), num_threads);
 } // recalculate_map
 
 void
-Xtal_mgr_base::recalculate_map(Xmap_details& xmd)
+Xtal_mgr_base::recalculate_map(Xmap_details& xmd, size_t num_threads)
 {
     if (xmd.exclude_free_reflections()) {
         if (xmd.fill_with_fcalc() && !xmd.is_difference_map())
@@ -314,7 +314,7 @@ Xtal_mgr_base::recalculate_map(Xmap_details& xmd)
         remove_missing_reflections_from_map_coeffs(xmd.coeffs(), fobs_);
     if (xmd.b_sharp() != 0.0)
         apply_b_factor_sharpening(xmd.coeffs(), xmd.b_sharp());
-    xmd.xmap().fft_from(xmd.coeffs());
+    xmd.xmap().fft_from(xmd.coeffs(), num_threads);
     xmd.map_stats() = Map_stats(xmd.xmap());
 } // recalculate_map
 
@@ -435,6 +435,7 @@ Xtal_thread_mgr::recalculate_all_(const Atom_list& atoms)
     auto map_names = mgr_.map_names();
     auto nmaps = map_names.size();
     size_t maps_per_thread = (size_t) ceil(( (float)mgr_.n_maps()) /num_threads_);
+    size_t threads_per_map = std::max(num_threads_ / nmaps * maps_per_thread, size_t(1));
     // Make copies of all maps to work on. Expensive, but necessary for thread
     // safety.
     // xmap_thread_results_.clear();
@@ -448,7 +449,7 @@ Xtal_thread_mgr::recalculate_all_(const Atom_list& atoms)
         //std::cerr << "Recalculating maps " << n << " to " << std::min(n+maps_per_thread, nmaps)-1 << std::endl;
         results.push_back(std::async(std::launch::async,
             &Xtal_thread_mgr::recalculate_inner_, this, map_names,
-            n, std::min(n+maps_per_thread, nmaps)));
+            n, std::min(n+maps_per_thread, nmaps), threads_per_map));
         n+=maps_per_thread;
     }
     // Wait for all threads to finish
@@ -464,12 +465,12 @@ Xtal_thread_mgr::recalculate_all_(const Atom_list& atoms)
 
 bool
 Xtal_thread_mgr::recalculate_inner_(const std::vector<std::string>& names,
-    size_t i_min, size_t i_max)
+    size_t i_min, size_t i_max, size_t threads)
 {
     for (size_t i= i_min; i<i_max; ++i)
     {
         // std::cerr << "Recalculating map " << i << std::endl;
-        mgr_.recalculate_map(xmap_thread_results_[names[i]]);
+        mgr_.recalculate_map(xmap_thread_results_[names[i]], threads);
     }
     return true;
 } // recalculate_inner_

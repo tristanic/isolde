@@ -1,3 +1,15 @@
+/**
+ * @Author: Tristan Croll <tic20>
+ * @Date:   14-Sep-2018
+ * @Email:  tic20@cam.ac.uk
+ * @Last modified by:   tic20
+ * @Last modified time: 16-May-2019
+ * @License: Free for non-commercial use (see license.pdf)
+ * @Copyright: 2017-2018 Tristan Croll
+ */
+
+
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -56,7 +68,8 @@ void declare_xtal_mgr(py::module& m)
             py::arg("exclude_missing_reflections")=false,
             py::arg("exclude_free_reflections")=true,
             py::arg("fill_with_fcalc")=true)
-        .def("recalculate_map", (void (Class::*)(const std::string&)) &Class::recalculate_map)
+        .def("recalculate_map", (void (Class::*)(const std::string&, size_t)) &Class::recalculate_map,
+            py::arg("name"), py::arg("num_threads")=1)
         // Get a reference to the managed xmap of a given name
         .def("get_xmap_ref", &Class::get_xmap, py::return_value_policy::reference_internal)
         .def("get_xmap_copy", &Class::get_xmap)
