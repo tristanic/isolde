@@ -1,3 +1,15 @@
+/**
+ * @Author: Tristan Croll <tic20>
+ * @Date:   10-May-2019
+ * @Email:  tic20@cam.ac.uk
+ * @Last modified by:   tic20
+ * @Last modified time: 17-May-2019
+ * @License: Free for non-commercial use (see license.pdf)
+ * @Copyright: 2017-2018 Tristan Croll
+ */
+
+
+
 /* xmap.cpp: implementation file for crystal maps */
 //C Copyright (C) 2000-2006 Kevin Cowtan and University of York
 //L
@@ -110,6 +122,11 @@ Xmap_cacheobj::Xmap_cacheobj( const Key& xmap_cachekey ) :
   //     }
   //     asu[ map_grid.index( base ) ] = sym + 1;
   //   }
+
+  // Record the number of unique positions to aid in threading
+  for (auto& a: asu)
+    if (a==0)
+        num_unique++;
   find_special_positions();
 }
 

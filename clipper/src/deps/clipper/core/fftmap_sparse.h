@@ -3,7 +3,7 @@
  * @Date:   14-May-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 16-May-2019
+ * @Last modified time: 17-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -59,6 +59,8 @@
 
 #include <atomic>
 #include <memory>
+#include <thread>
+#include <chrono>
 
 #include "fftmap.h"
 #include "../imex.h"
@@ -124,23 +126,21 @@ namespace clipper
     void require_real_data( const Coord_grid& uvw )
       { map_uv( uvw.u(), uvw.v() ); }
     //! get real space data ( uvw must be in grid_real() )
-    ffttype real_data( const Coord_grid& uvw )
+    const ffttype& real_data( const Coord_grid& uvw ) const
       {
-          int u=uvw.u(), v=uvw.v(), w=uvw.w();
-          row_uv.lock(u,v);
-          ffttype ret=row_uv(u,v)[w];
-          row_uv.unlock(u,v);
-          return ret;
+          return row_uv( uvw.u() ,uvw.v() )[ uvw.w() ];
       }
 
     //! Transform to real space
     void fft_h_to_x( const ftype& scale );
 
 private:
-    void thread_kernel_(size_t thread_num, void* planu_ptr, void* planv_ptr, void* planw_ptr,
-        int nmax, ffttype s);
+    void thread_kernel_(size_t thread_num, int nmax, ffttype s);
     void transform_along_hu_(void* planu_ptr, const int& start, const int& end);
-    void transform_along_kv_(void* planv_ptr, const int& start, const int& end,
+    void transform_along_kv_(void* planv_ptr,
+        std::vector<std::complex<ffttype> >& in,
+        std::vector<std::complex<ffttype> >& out,
+        const int& start, const int& end,
         const ffttype& s, const int& nmax);
     void transform_along_lw_(void* planw_ptr, const int& start, const int& end);
 
@@ -181,23 +181,21 @@ private:
     void require_cplx_data( const Coord_grid& hkl )
       { map_kl( hkl.v(), hkl.w() ); }
     //! get reciprocal space data (internal use)
-    std::complex<ffttype> cplx_data( const Coord_grid& hkl )
+    const std::complex<ffttype>& cplx_data( const Coord_grid& hkl ) const
       {
-          int u=hkl.u(), v=hkl.v(), w=hkl.w();
-          row_kl.lock(v,w);
-          std::complex<ffttype> ret = row_kl(v,w)[u];
-          row_kl.unlock(v,w);
-          return ret;
+          return row_kl( hkl.v(), hkl.w() )[ hkl.u() ];
       }
 
     //! Transform to real space
     void fft_x_to_h( const ftype& scale );
 
 private:
-    void thread_kernel_(size_t thread_num, void* planu_ptr, void* planv_ptr, void* planw_ptr,
-        int nmax, ffttype s);
+    void thread_kernel_(size_t thread_num, int nmax, ffttype s);
     void transform_along_lw_(void* planw_ptr, const int& start, const int& end, const int& nmax);
-    void transform_along_kv_(void* planv_ptr, const int& start, const int& end,
+    void transform_along_kv_(void* planv_ptr,
+        std::vector<std::complex<ffttype> >& in,
+        std::vector<std::complex<ffttype> >& out,
+        const int& start, const int& end,
         const ffttype& s, const int& nmax);
     void transform_along_hu_(void* planu_ptr, const int& start, const int& end, const int& nmax);
     std::unique_ptr<std::atomic_bool[]> lw_checkpoints;

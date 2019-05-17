@@ -3,7 +3,7 @@
  * @Date:   21-Sep-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 15-May-2019
+ * @Last modified time: 17-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -433,7 +433,11 @@ namespace clipper
       {
           update_gridlock_size();
       }
-      inline void lock(const int& i1, const int& i2)
+      inline bool try_lock(const int& i1, const int& i2)
+      {
+          return gridlock[i1*this->d2_ + i2].test_and_set();
+      }
+      inline void wait_lock(const int& i1, const int& i2)
       {
           auto& flag = gridlock[i1*this->d2_ + i2];
           while (flag.test_and_set());

@@ -3,7 +3,7 @@
  * @Date:   20-Jul-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 16-May-2019
+ * @Last modified time: 17-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -94,8 +94,9 @@ namespace clipper
     Grid_sampling xtl_grid;          //!< grid for the cell
     Grid_range asu_grid;             //!< grid for the ASU
     Grid_range map_grid;             //!< grid for the ASU, plus border
-    int nsym;                        // number of symops
+    int nsym;                        //!< number of symops
     std::vector<unsigned char> asu;  //!< ASU flag array
+    int num_unique=0;                //!< number of unique points in the ASU
     std::vector<Isymop> isymop;      //!< Integerised symops
     std::vector<int> du, dv, dw;     //!< symmetry grid shifts to index
     std::map<int, int> spos; //!< special positions
@@ -657,7 +658,7 @@ private:
     F_phi, and used to fill this map. The reflection list is unchanged.
     \param fphidata The reflection data list to use
   */
-  template<class T> template<class H> void Xmap<T>::fft_from( const H& fphidata, const int num_threads, const FFTtype type )
+  template<class T> template<class H> void Xmap<T>::fft_from( const H& fphidata, int num_threads, const FFTtype type )
   {
     if ( type == Sparse || ( type == Default && default_type() == Sparse ) ) {
       // auto start_time = std::chrono::steady_clock::now();
@@ -669,48 +670,48 @@ private:
       typename H::HKL_reference_index ih;
       ffttype f, phi0, phi1;
       int sym;
-      std::vector<std::future<void>> thread_results;
-      for (sym=0; sym < spacegroup_.num_primops(); sym++) {
-          thread_results.push_back(std::async(std::launch::async,
-              [sym](const Spacegroup& sg, FFTmap_sparse_p1_hx& fftmap, const H& fphidata, const Isymop* isymop)
-              {
-                  ffttype f, phi0, phi1;
-                  for (auto ih=fphidata.first_data(); !ih.last(); fphidata.next_data(ih))
-                  {
-                      const auto& fphi = fphidata[ih];
-                      f = fphi.f();
-                      if (std::abs(f) < std::numeric_limits<float>::epsilon()) continue;
-                      phi0 = fphi.phi();
-                      const HKL& hkl = ih.hkl();
-                      if (sym==0)
-                          fftmap.set_hkl( hkl, std::complex<ffttype> ( f*cos(phi0), f*sin(phi0)));
-                      else {
-                          phi1 = phi0 + hkl.sym_phase_shift(sg.symop(sym));
-                          fftmap.set_hkl( hkl.transform( isymop[sym]),
-                            std::complex<ffttype>( f*cos(phi1), f*sin(phi1)));
-                      }
-                  }
-              },
-          std::cref(spacegroup_), std::ref(fftmap), std::cref(fphidata), isymop));
-      }
-
-      for (auto& r: thread_results)
-        r.get();
-
-      // for ( ih = fphidata.first_data(); !ih.last(); fphidata.next_data( ih ) ) {
-      //     f = fphidata[ih].f();
-      //     if ( f != 0.0 ) {
-      //         phi0 = fphidata[ih].phi();
-      //         const HKL& hkl = ih.hkl();
-      //         fftmap.set_hkl( hkl,
-      //             std::complex<ffttype>( f*cos(phi0), f*sin(phi0) ) );
-      //         for ( sym = 1; sym < spacegroup_.num_primops(); sym++ ) {
-      //             phi1 = phi0 + hkl.sym_phase_shift( spacegroup_.symop(sym) );
-      //             fftmap.set_hkl( hkl.transform( isymop[sym] ),
-      //                 std::complex<ffttype>( f*cos(phi1), f*sin(phi1) ) );
-      //         }
-      //     }
+      // std::vector<std::future<void>> thread_results;
+      // for (sym=0; sym < spacegroup_.num_primops(); sym++) {
+      //     thread_results.push_back(std::async(std::launch::async,
+      //         [sym](const Spacegroup& sg, FFTmap_sparse_p1_hx& fftmap, const H& fphidata, const Isymop* isymop)
+      //         {
+      //             ffttype f, phi0, phi1;
+      //             for (auto ih=fphidata.first_data(); !ih.last(); fphidata.next_data(ih))
+      //             {
+      //                 const auto& fphi = fphidata[ih];
+      //                 f = fphi.f();
+      //                 if (std::abs(f) < std::numeric_limits<float>::epsilon()) continue;
+      //                 phi0 = fphi.phi();
+      //                 const HKL& hkl = ih.hkl();
+      //                 if (sym==0)
+      //                     fftmap.set_hkl( hkl, std::complex<ffttype> ( f*cos(phi0), f*sin(phi0)));
+      //                 else {
+      //                     phi1 = phi0 + hkl.sym_phase_shift(sg.symop(sym));
+      //                     fftmap.set_hkl( hkl.transform( isymop[sym]),
+      //                       std::complex<ffttype>( f*cos(phi1), f*sin(phi1)));
+      //                 }
+      //             }
+      //         },
+      //     std::cref(spacegroup_), std::ref(fftmap), std::cref(fphidata), isymop));
       // }
+
+      // for (auto& r: thread_results)
+      //   r.get();
+
+      for ( ih = fphidata.first_data(); !ih.last(); fphidata.next_data( ih ) ) {
+          f = fphidata[ih].f();
+          if ( f != 0.0 ) {
+              phi0 = fphidata[ih].phi();
+              const HKL& hkl = ih.hkl();
+              fftmap.set_hkl( hkl,
+                  std::complex<ffttype>( f*cos(phi0), f*sin(phi0) ) );
+              for ( sym = 1; sym < spacegroup_.num_primops(); sym++ ) {
+                  phi1 = phi0 + hkl.sym_phase_shift( spacegroup_.symop(sym) );
+                  fftmap.set_hkl( hkl.transform( isymop[sym] ),
+                      std::complex<ffttype>( f*cos(phi1), f*sin(phi1) ) );
+              }
+          }
+      }
       // require output ASU coords
       for ( Map_reference_index ix = first(); !ix.last(); ix.next() )
         fftmap.require_real_data( ix.coord() );
@@ -762,13 +763,48 @@ private:
     simpler and imposes less demands on the compiler.
     \param fphidata The reflection data list to set.
   */
-  template<class T> template<class H> void Xmap<T>::fft_to  ( H& fphidata, const int num_threads, const FFTtype type ) const
+  template<class T> template<class H> void Xmap<T>::fft_to  ( H& fphidata, int num_threads, const FFTtype type ) const
   {
     if ( type == Sparse || ( type == Default && default_type() == Sparse ) ) {
-      // auto start_time = std::chrono::steady_clock::now();
+      auto start_time = std::chrono::steady_clock::now();
       // make a sparse fftmap
       FFTmap_sparse_p1_xh fftmap( grid_sampling(), num_threads );
       // copy from map data
+      std::vector<std::future<void>> thread_results;
+      Xmap_base::Map_reference_index ix = first();
+      int nsym = cacheref.data().nsym;
+      int points_per_thread = cacheref.data().num_unique / num_threads + 1;
+      int start=0;
+      for (size_t i=0; i<num_threads; ++i)
+      {
+          thread_results.push_back(std::async(std::launch::async,
+              [start, nsym, points_per_thread](const Xmap<T>& self, FFTmap_sparse_p1_xh& fftmap, const Isymop* isymop)
+              {
+                  ffttype f;
+                  Xmap_base::Map_reference_index ix = self.first();
+                  for (size_t j=0; j<start; ++j) ix.next();
+                  for (size_t j=0; j<points_per_thread && !ix.last(); ix.next())
+                  {
+                      j++;
+                      f = self[ix];
+                      if (std::abs(f) < std::numeric_limits<float>::epsilon()) continue;
+                      fftmap.real_data( ix.coord() ) = f;
+                      for (int sym =1 ; sym < nsym; sym++)
+                            fftmap.real_data(
+                                ix.coord().transform(isymop[sym]).unit(self.grid_sampling()) ) = f;
+                  }
+              },
+              std::cref(*this), std::ref(fftmap), isymop
+          ));
+          start += points_per_thread;
+          // std::this_thread::sleep_for(std::chrono::microseconds(100));
+      }
+      for (auto& r: thread_results)
+        r.get();
+
+      /******* PARALLELISED OVER ALL SYMOPS
+
+
       ffttype f;
       int sym;
       std::vector<std::future<void>> thread_results;
@@ -789,11 +825,15 @@ private:
                   }
               },
           std::cref(*this), std::ref(fftmap), isymop
-      ));
+          ));
       }
       for (auto& r: thread_results)
           r.get();
 
+      // END PARALLELISED OVER ALL SYMOPS */
+
+      // ffttype f;
+      // int sym;
       // for ( Map_reference_index ix = first(); !ix.last(); ix.next() ) {
       //     f = (*this)[ix];
       //     if ( f != 0.0 ) {
@@ -804,20 +844,64 @@ private:
       //     }
       // }
       // require output ASU coords
+      int num_reflections = fphidata.hkl_info().num_reflections();
+      int reflections_per_thread = num_reflections/num_threads+1;
+      start = 0;
+      thread_results.clear();
+      // for (size_t i=0; i< num_threads; ++i)
+      // {
+      //     thread_results.push_back(std::async(std::launch::async,
+      //         [start, reflections_per_thread](const H& fphidata, FFTmap_sparse_p1_xh& fftmap)
+      //         {
+      //             auto ih = typename H::HKL_reference_index(fphidata.hkl_info(), start);
+      //             for (int j=0; j<reflections_per_thread && !ih.last(); ih.next())
+      //             {
+      //                 j++;
+      //                 fftmap.require_hkl(ih.hkl());
+      //             }
+      //         },
+      //         std::cref(fphidata), std::ref(fftmap)
+      //     ));
+      //     start += reflections_per_thread;
+      // }
+      // for (auto& r: thread_results)
+      //     r.get();
+
       typename H::HKL_reference_index ih;
       for ( ih = fphidata.first(); !ih.last(); ih.next() )
         fftmap.require_hkl( ih.hkl() );
       // do fft
       fftmap.fft_x_to_h(cell().volume());
       // fill data ASU
-      for ( ih = fphidata.first(); !ih.last(); ih.next() ) {
-    std::complex<ffttype> c = fftmap.get_hkl( ih.hkl() );
-    fphidata[ih].f() = std::abs(c);
-    fphidata[ih].phi() = std::arg(c);
+      for (int i=0; i<num_threads; ++i)
+      {
+          thread_results.push_back(std::async(std::launch::async,
+              [start, reflections_per_thread](H& fphidata, const FFTmap_sparse_p1_xh& fftmap)
+              {
+                  auto ih = typename H::HKL_reference_index(fphidata.hkl_info(), start);
+                  for (int j=0; j<reflections_per_thread && !ih.last(); ih.next())
+                  {
+                      j++;
+                      std::complex<ffttype> c=fftmap.get_hkl(ih.hkl());
+                      fphidata[ih].f() = std::abs(c);
+                      fphidata[ih].phi() = std::arg(c);
+                  }
+              },
+              std::ref(fphidata), std::cref(fftmap)
+          ));
+          start += reflections_per_thread;
       }
-      // auto end_time = std::chrono::steady_clock::now();
-      // std::chrono::duration<double> elapsed = end_time-start_time;
-      // std::cout << "FFT to structure factors with " << num_threads << " threads took " << elapsed.count() << " seconds." << std::endl;
+      for (auto& r: thread_results)
+        r.get();
+
+    //   for ( ih = fphidata.first(); !ih.last(); ih.next() ) {
+    // std::complex<ffttype> c = fftmap.get_hkl( ih.hkl() );
+    // fphidata[ih].f() = std::abs(c);
+    // fphidata[ih].phi() = std::arg(c);
+    //   }
+      auto end_time = std::chrono::steady_clock::now();
+      std::chrono::duration<double> elapsed = end_time-start_time;
+      std::cout << "FFT to structure factors with " << num_threads << " threads took " << elapsed.count() << " seconds." << std::endl;
 
     } else {
       // make a normal fftmap
