@@ -3,7 +3,7 @@
  * @Date:   13-May-2019
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 15-May-2019
+ * @Last modified time: 17-May-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2017-2018 Tristan Croll
  */
@@ -97,7 +97,7 @@ clipper::Atom_list clipper_atoms_from_cx_atoms_threaded(atomstruct::Atom** cxato
     // auto start_time = std::chrono::steady_clock::now();
     const size_t min_threaded_size = 10000;
     const size_t min_atoms_per_thread = 4000;
-    if (n < min_threaded_size)
+    if (n_threads==1 || n < min_threaded_size)
         return clipper_atoms_from_cx_atoms(cxatoms, n);
 
     size_t atoms_per_thread = std::max(min_atoms_per_thread, n/n_threads+1);
