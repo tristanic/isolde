@@ -2,7 +2,7 @@
 # @Date:   15-Jan-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 15-May-2019
+# @Last modified time: 20-May-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -109,6 +109,8 @@ class FastVolumeSurface(VolumeSurface):
     ChimeraX itself.
     '''
     def __init__(self, volume, level, rgba=(1.0, 1.0, 1.0, 1.0)):
+        if rgba is None:
+            rgba = (1.0,1.0,1.0,1.0)
         super().__init__(volume, level, rgba)
         self._update_needed = False
 
