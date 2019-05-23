@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 08-May-2019
+# @Last modified time: 23-May-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -2812,14 +2812,21 @@ def find_residue_templates(residues, template_names):
     from chimerax.atomic import Residue
     ligands = residues[residues.polymer_types == Residue.PT_NONE]
     names = numpy.unique(ligands.names)
-    from .amberff.glycam import find_glycan_template_name, known_sugars
+    from .amberff.glycam import (
+        find_glycan_template_name_and_link,
+        find_glycan_anchor_name,
+        known_sugars
+        )
     for name in names:
         if name in known_sugars:
             sugars = ligands[ligands.names == name]
             for sugar in sugars:
-                tname = find_glycan_template_name(sugar)
+                tname, prot_res = find_glycan_template_name_and_link(sugar)
                 if tname in template_names:
                     templates[residues.index(sugar)] = tname
+                if prot_res is not None:
+                    templates[residues.index(prot_res)] = find_glycan_anchor_name(prot_res)
+
         ccd_name = 'MC_{}'.format(name)
         if ccd_name in template_names:
             indices = numpy.where(residues.names == name)[0]

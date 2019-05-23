@@ -1,3 +1,15 @@
+<!--
+@Author: Tristan Croll <tic20>
+@Date:   13-Feb-2019
+@Email:  tic20@cam.ac.uk
+@Last modified by:   tic20
+@Last modified time: 23-May-2019
+@License: Free for non-commercial use (see license.pdf)
+@Copyright: 2017-2018 Tristan Croll
+-->
+
+
+
 <ForceField>
   <Info>
     <DateGenerated>2019-02-13</DateGenerated>
@@ -41,8 +53,8 @@
       <Atom charge="0.0143" name="CA" type="CT"/>
       <Atom charge="0.1048" name="HA" type="H1"/>
       <Atom charge="-0.2041" name="CB" type="CT"/>
-      <Atom charge="0.0797" name="HB2" type="Hc"/>
-      <Atom charge="0.0797" name="HB3" type="Hc"/>
+      <Atom charge="0.0797" name="HB2" type="HC"/>
+      <Atom charge="0.0797" name="HB3" type="HC"/>
       <Atom charge="0.713" name="Cg" type="C"/>
       <Atom charge="-0.5931" name="OD1" type="O"/>
       <Atom charge="-0.6935" name="ND2" type="Ng"/>

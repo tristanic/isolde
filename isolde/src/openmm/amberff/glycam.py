@@ -1,3 +1,13 @@
+# @Author: Tristan Croll <tic20>
+# @Date:   15-Feb-2019
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   tic20
+# @Last modified time: 23-May-2019
+# @License: Free for non-commercial use (see license.pdf)
+# @Copyright: 2017-2018 Tristan Croll
+
+
+
 _residue_name_to_glycam_code = {
     '64K':  'AA',    # alpha-D-arabinopyranose
     'ARA':  'aA',    # alpha-L-arabinopyranose
@@ -68,6 +78,13 @@ _residue_name_to_glycam_code = {
 
 }
 
+_anchor_name_map = {
+    'ASN'   : 'NLN',
+    'SER'   : 'OLS',
+    'THR'   : 'OLT',
+    'HYP'   : 'OLP',
+}
+
 known_sugars = set(_residue_name_to_glycam_code.keys())
 
 _glycam_prefix = {
@@ -90,11 +107,19 @@ _glycam_prefix = {
 
 }
 
-def find_glycan_template_name(residue):
+def find_glycan_template_name_and_link(residue):
+    '''
+    Work out the template name for a sugar residue, and return this with (if
+    applicable) the amino acid residue it's bonded to.
+    '''
     bonded_atoms = []
+    link_res = None
     neighbors = residue.neighbors
+    from chimerax.atomic import Residue
     core_name = _residue_name_to_glycam_code[residue.name]
     for n in neighbors:
+        if n.polymer_type==Residue.PT_AMINO:
+            link_res = n
         bonds = residue.bonds_between(n)
         assert len(bonds) == 1
         for atom in bonds[0].atoms:
@@ -105,7 +130,33 @@ def find_glycan_template_name(residue):
     ))
     if not len(bonded_atom_numbers):
         bonded_atom_numbers = (0,)
-    return 'GLYCAM_'+_glycam_prefix[bonded_atom_numbers]+core_name
+    return ('GLYCAM_'+_glycam_prefix[bonded_atom_numbers]+core_name, link_res)
+
+def find_glycan_anchor_name(residue):
+    base_name = _anchor_name_map.get(residue.name, None)
+    if base_name is None:
+        raise RuntimeError('Residue {} {}{} is linked to a glycan, but no '
+            'parameters are available for this type of linkage.'.format(
+            residue.name, residue.chain_id, residue.number
+            ))
+    n_term=True
+    c_term=True
+    N = residue.find_atom('N')
+    for na in N.neighbors:
+        if na.residue != residue:
+            n_term=False
+    C = residue.find_atom('C')
+    for ca in C.neighbors:
+        if ca.residue != residue:
+            c_term = False
+    if n_term:
+        prefix='N'
+    elif c_term:
+        prefix='C'
+    else:
+        prefix=''
+    return 'GLYCAM_'+prefix+base_name
+
 
 def is_sugar_template(residue_template):
     '''
