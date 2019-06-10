@@ -1264,7 +1264,7 @@ class Isolde():
                 "before loading reflection data!")
         m = model
         from chimerax.clipper.symmetry import get_map_mgr
-        map_mgr = get_map_mgr(m, create=True)
+        map_mgr = get_map_mgr(m, create=True, auto_add_to_session=True)
         xmapset = map_mgr.add_xmapset_from_mtz(filename, self.params.map_shannon_rate)
         if xmapset.live_xmap_mgr is not None:
             xmapset.live_update = self.iw._sim_basic_xtal_settings_live_recalc_checkbox.checkState()
@@ -1317,7 +1317,7 @@ class Isolde():
         if existing_volume and filename:
             raise TypeError('Cannot provide both existing_volume and filename!')
         from chimerax.clipper.symmetry import get_map_mgr
-        map_mgr = get_map_mgr(m, create=True)
+        map_mgr = get_map_mgr(m, create=True, auto_add_to_session=True)
         if existing_volume:
             nxmap = map_mgr.nxmapset.add_nxmap_handler_from_volume(existing_volume)
         else:
