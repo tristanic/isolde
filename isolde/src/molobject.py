@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 28-May-2019
+# @Last modified time: 10-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -1574,6 +1574,9 @@ class _Restraint_Mgr(Model):
         f = c_function('set_'+cname+'_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
         super().__init__(name, session)
+        if not hasattr(self, 'triggers'):
+            from chimerax.core.triggerset import TriggerSet
+            self.triggers = TriggerSet()
         self.triggers.add_trigger('changes')
         self.pickable = False
         self.model = model
@@ -3202,6 +3205,9 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         f = c_function('set_rotamer_restraint_mgr_py_instance', args=(ctypes.c_void_p, ctypes.py_object))
         f(self._c_pointer, self)
         Model.__init__(self, 'Rotamer Restraints', session)
+        if not hasattr(self, 'triggers'):
+            from chimerax.core.triggerset import TriggerSet
+            self.triggers = TriggerSet()
         self.triggers.add_trigger('changes')
         self.pickable=False
         self.model = model
