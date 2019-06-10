@@ -2,7 +2,7 @@
 # @Date:   25-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Apr-2019
+# @Last modified time: 10-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -2391,7 +2391,7 @@ class Isolde():
         m = mmcb.currentData()
         if force or (self._selected_model != m and m is not None):
             from chimerax.clipper.symmetry import get_symmetry_handler
-            get_symmetry_handler(m, create=True)
+            sh = get_symmetry_handler(m, create=True, auto_add_to_session=True)
             self._selected_model = m
             self._model_changes_handler = m.triggers.add_handler('changes',
                 self._model_changes_cb)
@@ -3201,14 +3201,17 @@ class Isolde():
         color.color(self.session, before_struct, color='bychain', target='ac')
         color.color(self.session, before_struct, color='byhetero', target='a')
         from chimerax.clipper import symmetry
-        sym_handler = symmetry.get_symmetry_handler(before_struct, create=True)
+        sym_handler = symmetry.get_symmetry_handler(before_struct, create=True,
+            auto_add_to_session=True)
         sym_handler.spotlight_radius = self.iw._sim_basic_xtal_settings_spotlight_radius_spinbox.value()
         xmapset = sym_handler.map_mgr.add_xmapset_from_mtz(os.path.join(data_dir, '3io0-sf.mtz'),
             oversampling_rate = self.params.map_shannon_rate)
-        from chimerax.clipper.maps.xmapset import map_potential_recommended_bsharp
+        from chimerax.clipper.maps.xmapset import (map_potential_recommended_bsharp,
+            viewing_recommended_bsharp)
         mdff_b = map_potential_recommended_bsharp(xmapset.resolution)
+        view_b = viewing_recommended_bsharp(xmapset.resolution)
         standard_map = xmapset['(LIVE) 2mFo-DFc']
-        sharp_map = xmapset['(LIVE) 2mFo-DFc_sharp_25']
+        sharp_map = xmapset['(LIVE) 2mFo-DFc_sharp_{:.0f}'.format(view_b)]
         diff_map = xmapset['(LIVE) mFo-DFc']
         from . import visualisation as v
         styleargs= v.map_style_settings[v.map_styles.solid_t20]
@@ -3216,9 +3219,9 @@ class Isolde():
         volumecommand.volume(self.session, [sharp_map], **styleargs)
         styleargs = v.map_style_settings[v.map_styles.solid_t40]
         volumecommand.volume(self.session, [diff_map], **styleargs)
-        standard_map.set_parameters(surface_levels = (2.5*standard_map.mean_sd_rms()[1],))
-        sharp_map.set_parameters(surface_levels = (3.0*sharp_map.mean_sd_rms()[1],))
-        diff_map.set_parameters(surface_levels = (-0.05, 0.05))
+        # standard_map.set_parameters(surface_levels = (2.5*standard_map.sigma,))
+        # sharp_map.set_parameters(surface_levels = (3.0*sharp_map.sigma,))
+        # diff_map.set_parameters(surface_levels = (-3.0*diff_map.sigma, 3.0*diff_map.sigma))
         from chimerax.std_commands import set
         from chimerax.core.colors import Color
         set.set(self.session, bg_color=Color([255,255,255,255]))
