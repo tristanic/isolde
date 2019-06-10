@@ -3221,7 +3221,7 @@ class Isolde():
         volumecommand.volume(self.session, [diff_map], **styleargs)
         # standard_map.set_parameters(surface_levels = (2.5*standard_map.sigma,))
         # sharp_map.set_parameters(surface_levels = (3.0*sharp_map.sigma,))
-        # diff_map.set_parameters(surface_levels = (-3.0*diff_map.sigma, 3.0*diff_map.sigma))
+        diff_map.set_parameters(surface_levels = (-4.0*diff_map.sigma, 4.0*diff_map.sigma))
         from chimerax.std_commands import set
         from chimerax.core.colors import Color
         set.set(self.session, bg_color=Color([255,255,255,255]))
