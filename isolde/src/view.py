@@ -4,7 +4,7 @@
 # @Last modified by:   tic20
 # @Last modified time: 26-Apr-2018
 # @License: Free for non-commercial use (see license.pdf)
-# @Copyright: 2017-2018 Tristan Croll
+# @Copyright:2016-2019 Tristan Croll
 
 def focus_on_coord(session, center, radius = 1.0, clip=True):
     '''

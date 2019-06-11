@@ -1,13 +1,12 @@
-# === UCSF ChimeraX Copyright ===
-# Copyright 2016 Regents of the University of California.
-# All rights reserved.  This software provided pursuant to a
-# license agreement containing restrictions on its disclosure,
-# duplication and use.  For details see:
-# http://www.rbvi.ucsf.edu/chimerax/docs/licensing.html
-# This notice must be embedded in or attached to all copies,
-# including partial copies, of the software or any revisions
-# or derivations thereof.
-# === UCSF ChimeraX Copyright ===
+# @Author: Tristan Croll <tic20>
+# @Date:   11-Jun-2019
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   tic20
+# @Last modified time: 11-Jun-2019
+# @License: Free for non-commercial use (see license.pdf)
+# @Copyright: 2016-2019 Tristan Croll
+
+
 
 def register_remote_control_command(logger):
 
