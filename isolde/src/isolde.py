@@ -2589,6 +2589,36 @@ class Isolde():
 
     def _start_sim_or_toggle_pause(self, *_):
         if not self.simulation_running:
+            from .session_extensions import get_mdff_mgr
+            from chimerax.clipper import get_map_mgr
+            m = self.selected_model
+            mmgr = get_map_mgr(m)
+            num_disabled_potentials = 0
+            num_enabled_potentials = 0
+            for v in mmgr.all_maps:
+                mgr = get_mdff_mgr(m, v)
+                if mgr is not None:
+                    if mgr.enabled:
+                        num_enabled_potentials += 1
+                    else:
+                        num_disabled_potentials += 1
+            if not num_enabled_potentials:
+                from .dialog import choice_warning
+                warning = ('You are about to start a simulation without any '
+                'MDFF potentials! While you are welcome to go ahead if you '
+                'wish, please note that this is not what ISOLDE was designed '
+                'for and you should not expect the results to be equivalent '
+                'to a production, explicit-solvent simulation. ')
+                if num_disabled_potentials:
+                    warn_ext = ('You have {} maps loaded that are currently '
+                    'disabled as potentials. If you wish to enable one or '
+                    'more of these, please cancel now and use the tools under '
+                    '"Show map settings dialogue" to do so.').format(num_disabled_potentials)
+                    warning += warn_ext
+                choice = choice_warning(warning)
+                if not choice:
+                    self._update_menu_after_sim()
+                    return
             self.start_sim()
         else:
             self.pause_sim_toggle()
