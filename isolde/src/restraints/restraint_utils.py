@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Apr-2019
+# @Last modified time: 12-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -207,6 +207,7 @@ def restrain_small_ligands(model, distance_cutoff=3.5, heavy_atom_limit=3, sprin
         for ra, ri, rc in zip(r_heavy_atoms, r_indices, r_coords):
             _, found_i = find_close_points([rc], all_heavy_coords, distance_cutoff)
             found_i = found_i[found_i!=ri]
+            num_drs = 0
             for fi in found_i:
                 if fi in r_indices:
                     continue
@@ -214,10 +215,13 @@ def restrain_small_ligands(model, distance_cutoff=3.5, heavy_atom_limit=3, sprin
                 dr.spring_constant = spring_constant
                 dr.target=distance(rc, all_heavy_coords[fi])
                 dr.enabled = True
-                applied_drs = True
-        if not applied_drs:
-            # Ligand is too far from the model for distance restraints. Use
-            # position restraionts
+                num_drs += 1
+                # applied_drs = True
+        if num_drs < 3:
+            # Really need at least 3 distance restraints (probably 4, actually,
+            # but we don't want to be *too* restrictive) to be stable in 3D
+            # space. If we have fewer than that, add position restraints to be
+            # sure. 
             prs = prm.add_restraints(r_heavy_atoms)
             prs.targets = prs.atoms.coords
             prs.spring_constants = spring_constant
