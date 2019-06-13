@@ -151,7 +151,7 @@ def restrain_ca_distances_to_template(template_residues, restrained_residues,
             dr.target = distance(query_coord[0], template_coords[ind])
             dr.enabled = True
 
-def restrain_small_ligands(model, distance_cutoff=3.5, heavy_atom_limit=3, spring_constant=500,
+def restrain_small_ligands(model, distance_cutoff=4, heavy_atom_limit=3, spring_constant=5000,
     bond_to_carbon=False):
     '''
     Residues with a small number of heavy atoms can be problematic in MDFF if
