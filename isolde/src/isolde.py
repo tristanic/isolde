@@ -1356,7 +1356,7 @@ class Isolde():
 
         recalc_cb = self.iw._sim_basic_xtal_settings_live_recalc_checkbox
 
-        from chimerax.clipper.maps import XmapHandler_Live
+        from chimerax.clipper.maps import XmapHandler_Live, XmapHandler_Static
         from .session_extensions import get_mdff_mgr
         mdff_mgrs = []
         live_maps = False
@@ -1379,7 +1379,19 @@ class Isolde():
             # Difference maps are excluded from MDFF by default
             if v.is_difference_map:
                 continue
-            mdff_mgrs.append(get_mdff_mgr(model, v, create=True))
+            new_mgr = False
+            mgr = get_mdff_mgr(model, v)
+            if mgr is None:
+                new_mgr = True
+                mgr = get_mdff_mgr(model, v, create=True)
+            if isinstance(v, XmapHandler_Static) and new_mgr:
+                # Since we don't know the provenance of static maps, it would be
+                # a bad idea to simply enable them. But we want people to be
+                # able to use them if they really want to. So, we create the
+                # manager but leave it disabled by default so the user has to
+                # explicitly enable it.
+                mgr.enabled = False
+            mdff_mgrs.append(mgr)
         recalc_cb.setVisible(live_maps)
         if len(mdff_mgrs):
             return True
@@ -1509,6 +1521,19 @@ class Isolde():
         this_map = cb.currentData()
         if this_map is None:
             return
+        from chimerax.clipper.maps import XmapHandler_Static
+        if flag and isinstance(this_map, XmapHandler_Static):
+            from .dialog import choice_warning
+            warn_str = ('Since this map was generated from precalculated '
+                'amplitudes and phases, ISOLDE has no way of determining '
+                'whether it is suitable for fitting simulations. If generated '
+                'from crystallographic data, you should ensure that it is a'
+                '2Fo-Fc (or similar) map calculated with the free reflections '
+                'excluded. Are you sure you want to continue?')
+            choice = choice_warning(warn_str)
+            if not choice:
+                self.iw._sim_basic_xtal_settings_enable_mdff_checkbox.setChecked(False)
+                return
         from .session_extensions import get_mdff_mgr
         mgr = get_mdff_mgr(self.selected_model, this_map)
         mgr.enabled = flag
