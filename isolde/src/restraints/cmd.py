@@ -2,7 +2,7 @@
 # @Date:   05-Apr-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Apr-2019
+# @Last modified time: 12-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -111,6 +111,16 @@ def restrain_single_distance(session, atoms, min_dist, max_dist,
     restrain_atom_pair_adaptive_distance(atom1, atom2, target, tolerance,
         strength, well_half_width, confidence)
 
+def restrain_ligands(session, models, distance_cutoff=4, max_heavy_atoms=3,
+        spring_constant=5000, bond_to_carbon=False):
+    if not models:
+        raise UserError('Must specify at least one atomic structure!')
+    from chimerax.isolde.restraints.restraint_utils import restrain_small_ligands
+    for m in models:
+        restrain_small_ligands(m, distance_cutoff=distance_cutoff,
+            heavy_atom_limit=max_heavy_atoms, spring_constant=spring_constant,
+            bond_to_carbon=bond_to_carbon)
+
 
 
 
@@ -121,7 +131,7 @@ def register_isolde_restrain(logger):
         FloatArg, IntArg, BoolArg, StringArg, NoArg,
         ListOf, EnumOf, RepeatOf
     )
-    from chimerax.atomic import AtomsArg
+    from chimerax.atomic import AtomsArg, AtomicStructuresArg
 
     def register_isolde_restrain_distances():
         desc = CmdDesc(
@@ -187,7 +197,27 @@ def register_isolde_restrain(logger):
             ]
         )
         register('isolde adjust distances', desc, adjust_adaptive_distance_restraints, logger=logger)
+    def register_isolde_restrain_ligands():
+        desc = CmdDesc(
+            synopsis = ('Restrain small ligands to their surroundings and/or '
+                'current positions. If less than four distance restraints can '
+                'be made for a given residue, they will be supplemented with '
+                'position restraints.'),
+            required = [
+                ('models', AtomicStructuresArg),
+            ],
+            keyword = [
+                ('distance_cutoff', FloatArg),
+                ('max_heavy_atoms', IntArg),
+                ('spring_constant', FloatArg),
+                ('bond_to_carbon', BoolArg),
+            ]
+        )
+        register('isolde restrain ligands', desc, restrain_ligands, logger=logger)
+
+
     register_isolde_restrain_distances()
     register_isolde_restrain_single_distance()
     register_isolde_release_distances()
     register_isolde_adjust_distances()
+    register_isolde_restrain_ligands()
