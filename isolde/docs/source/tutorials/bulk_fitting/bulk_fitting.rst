@@ -2,17 +2,14 @@ Bulk Flexible Fitting
 =====================
 
 **(NOTE: Most links on this page will only work correctly when the page is
-loaded in ChimeraX's help viewer)**
+loaded in ChimeraX's help viewer. You will also need to be connected to the
+Internet. Please close any open models before starting this tutorial.)**
 
 Tutorial: Fitting 6mhz into emd_9118
 ------------------------------------
 
 .. toctree::
     :maxdepth: 2
-
-.. contents::
-    :local:
-    :depth: 3
 
 The *E. coli* LptB2FGC complex is responsible for extracting lipopolysaccharide
 (LPS) out of the inner membrane, as part of the transport chain bringing it to
@@ -26,7 +23,8 @@ representative of a fairly common challenge in cryo-EM: you've captured a
 structure in multiple conformations, and would like to be able to refit the one
 model into each state with minimal fuss. In this tutorial, we'll be using
 ISOLDE's adaptive distance restraints to maintain the local geometry of the
-model from 6mhz as we interactively re-fit it into the map from 6mhu.
+model from 6mhz as we interactively re-fit it into the map from 6mhu. **(NOTE:
+this tutorial should be run BEFORE starting ISOLDE)**
 
  .. _6mhz: https://www.rcsb.org/structure/6mhz
  .. _EMD-1924: https://www.emdataresource.org/EMD-9124
@@ -63,8 +61,8 @@ you know your map well, using the command line:
 __ help:user/tools/volumeviewer.html
 __ cxcmd:volume\ \#2\ level\ 0.1
 
-At this point, if you've followed all the above instructions your view should
-look something like this:
+At this point, if you've followed all the above instructions you should be able
+to rotate your view to look something like this:
 
 .. figure:: images/6mhz_9118_before_rigid_fit.jpg
 
@@ -109,7 +107,7 @@ __ cxcmd:fitmap\ \#1/A,G\ inMap\ \#2
 
 .. figure:: images/rigid_fit.jpg
 
-If you haven't already done so, start isolde:
+Now, go ahead and start isolde:
 
 `isolde start`__
 
@@ -123,12 +121,11 @@ on the ISOLDE GUI, or the command:
 
 __ cxcmd:clipper\ assoc\ \#2\ to\ \#1
 
-At this stage you'll want to start showing atoms again, and probably turn the
-silhouettes off:
+At this stage you'll probably want to turn the silhouettes off:
 
-`show; set silhouettes false`__
+`set silhouettes false`__
 
-__ cxcmd:show;\ set\ silhouettes\ false
+__ cxcmd:set\ silhouettes\ false
 
 I generally prefer to set the map to a transparent surface using the buttons
 under ISOLDE's "Show map settings dialog":
@@ -273,18 +270,18 @@ __ cxcmd:select\ \#1;\ isolde\ sim\ start\ sel
 
 Remember, you can use the pause/resume button on the ISOLDE panel any time to
 take stock of the situation. Before going ahead with any interactive fitting,
-just watch for a little while and observe how things behave. In particular,
-watch chain A near its interface with chain B - you should see something like
-this start to happen:
+just watch for a little while and observe how things behave. In places where the
+starting conformation disagrees substantially with the map, you should see
+something like this start to happen:
 
 .. figure:: images/strained_restraints.jpg
 
 For each displayed restraint, the radius of the depiction scales with applied
 force, while the colour changes according to how stretched or compressed it is.
 The thin, purple bonds here have been stretched to the point where they are
-applying almost no force - if you hit the red "chequered flag" icon on the
-ISOLDE panel to revert to the starting coordinates you'll see this is quite
-sensible - this helix clearly needs to make a large conformational change.
+applying almost no force - they have "given way" to the conformational change
+imposed by the map - but importantly, the local conformation is still imposed
+by the restraints coloured in green.
 
 If you find this display to be overwhelming, you can limit drawing to only those
 restraints strained beyond a threshold, e.g.
@@ -340,6 +337,10 @@ like mine you'll see that the helices at the interface of chains F and G
 (approx. residues 23-55 of chain F and 298-354 of chain G) are still quite
 badly out:
 
+`view /F:23-55|/G:298-354 cofr false`__
+
+__ cxcmd:view\ /F:23-55|/G:298-354\ cofr\ false
+
 .. figure:: images/F_G_helices_out.jpg
 
 Particularly if you're on a slower machine, this would be a good time to stop
@@ -363,18 +364,18 @@ restraints.
 
 The *isolde release distances* command offers a range of flexible options here.
 First up, the restraints on residues 298-304 clearly make no real sense at all,
-so let's release them entirely:
+so let's release them entirely (with an extra residue padding either side):
 
-`isolde release distances /G:298-304`__
+`select /G:297-305; view sel cofr false; isolde release distances sel`__
 
-__ cxcmd:isolde\ release\ distances\ /G:298-304
+__ cxcmd:select\ /G:297-305;view\ sel\ cofr\ false;isolde\ release\ distances\ sel
 
-Then, for residues 305-354, we'll keep all restraints between atoms in these
+Then, for residues 306-354, we'll keep all restraints between atoms in these
 residues but release all restraints to their surroundings:
 
-`isolde release distances /G:305-354 externalOnly true`__
+`isolde release distances /G:306-354 externalOnly true`__
 
-__ cxcmd:isolde\ release\ distances\ /G:305-354\ externalOnly\ true
+__ cxcmd:isolde\ release\ distances\ /G:306-354\ externalOnly\ true
 
 **(NOTE: restraints may also be added, adjusted and released during simulations,
 but adding will incur a short delay)**
@@ -390,6 +391,10 @@ starting this fresh simulation - but it's pretty clear that the Phe319 is badly
 placed, pointing to the wrong side of the facing helix and generally getting in
 the way (from the distance restraints, it looks like this may be an error in the
 original coordinates):
+
+`view /G:319 cofr false`__
+
+__ cxcmd:view\ /G:319\ cofr\ false
 
 .. figure:: images/phe319_misplaced.jpg
 
@@ -414,13 +419,15 @@ we're dealing with:
 
 __ cxcmd:isolde\ adjust\ distances\ \#1\ displayThreshold\ 0
 
-Looking at the fit of residues 303-317 to the density, it's fairly clear that
+`Looking at the fit of residues 303-321 to the density`__, it's fairly clear that
 something is wrong - it looks like these residues need to shift one step in
 register towards the C-terminus. This is quite straightforward:
 
-`select /G:303-317`__
+__ cxcmd:view\ /G:303-321\ cofr\ false
 
-__ cxcmd:select\ /G:303-317
+`select /G:303-321`__
+
+__ cxcmd:select\ /G:303-321
 
 `isolde release distances selAtoms`__
 
@@ -441,8 +448,13 @@ Watch the register shifter work its magic:
 
 .. figure:: images/register_shift.jpg
 
-... then click its red 'X' button to release its restraints. While the helix now
+... then click its red 'X' button to release its restraints (you may find you
+need to manually adjust some of the bulkier sidechains). While the helix now
 looks good, the 298-304 loop still needs a little work:
+
+`view /G:297-303 cofr false`__
+
+__ cxcmd:view\ /G:297-303\ cofr\ false
 
 .. figure:: images/G298-304_misfit_helix.jpg
 

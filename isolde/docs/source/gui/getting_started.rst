@@ -72,7 +72,7 @@ have multiple models open, you can choose the one you want to work on using the
     |   |                                                              |
     |   | The probabilities of finding different (phi, psi)            |
     |   | combinations have been mapped out in high detail for         |
-    |   | various groups of amino acids (`MolProbity`__). While ISOLDE |
+    |   | various groups of amino acids (MolProbity_). While ISOLDE |
     |   | also provides a Ramachandran plot, the current probability   |
     |   | score for each protein residue is mapped in real time to the |
     |   | colour of its alpha carbon (CA) atom as shown. Green denotes |
@@ -81,7 +81,8 @@ have multiple models open, you can choose the one you want to work on using the
     |   | needs very strong support to justify it).                    |
     +---+--------------------------------------------------------------+
 
-__ https://doi.org/10.1107/S0907444909042073
+.. _MolProbity: https://doi.org/10.1107/S0907444909042073
+
 
 *(Note: The rotamer, peptide bond and Ramachandran markups described above
 update automatically whenever the atomic coordinates change. As long as you have
@@ -197,7 +198,6 @@ Real-space maps
 
 Any real-space map format recognised by ChimeraX can be used as a MDFF
 potential by ISOLDE with a few simple steps. Simply load your model, e.g.
-.. [MolProbity] https://doi.org/10.1107/S0907444909042073
 
 ``open 6eyd``
 ``open 3983 from emdb``
