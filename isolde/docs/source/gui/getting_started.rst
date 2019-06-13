@@ -72,7 +72,7 @@ have multiple models open, you can choose the one you want to work on using the
     |   |                                                              |
     |   | The probabilities of finding different (phi, psi)            |
     |   | combinations have been mapped out in high detail for         |
-    |   | various groups of amino acids (MolProbity_). While ISOLDE |
+    |   | various groups of amino acids (MolProbity_). While ISOLDE    |
     |   | also provides a Ramachandran plot, the current probability   |
     |   | score for each protein residue is mapped in real time to the |
     |   | colour of its alpha carbon (CA) atom as shown. Green denotes |
@@ -106,11 +106,24 @@ imposes a few requirements:
 
       That is, each residue must have a corresponding definition in the MD
       *forcefield* dictating all the details of bond lengths, angles, charges,
-      atomic radii etc. At present, simulations are limited to what is provided
-      in the built-in AMBER14 forcefield packaged with OpenMM (basically
-      protein, nucleic acids, water and metal ions). Support for a wider range
-      of species will be added in a future release, along with the ability
-      to add your own definitions for novel compounds.
+      atomic radii etc. As of version 1.0b3, ISOLDE supports protein, nucleic
+      acid, most common sugars, water, metal ions, and approx. 13,000 of the
+      more common ligands in the Chemical Components Dictionary. If your ligand
+      is not recognised, you will need to provide AMBER-compatible parameters in
+      the `OpenMM ffXML format`__.
+
+      __ http://docs.openmm.org/7.0.0/userguide/application.html#creating-force-fields
+
+      These can be conveniently converted from AMBER .mol2 and .frcmod files
+      using ParmEd_. One convenient option for preparing the .mol2 and .frcmod
+      files themselves is Phenix AmberPrep_.
+
+.. _ParmEd: https://parmed.github.io/ParmEd/html/index.html
+
+.. _AmberPrep: https://www.phenix-online.org/documentation/reference/amber.html
+
+      An integrated ligand paramterisation framework is planned for a future
+      release.
 
   2.  Each individual residue must be complete, including all hydrogens
 
@@ -132,6 +145,9 @@ imposes a few requirements:
 
         \.. as is this dangling C-terminus
 
+      Additionally, for all protein residues other than proline, sidechain
+      truncations to CA, CB, CG or CD are allowed.
+
       The most convenient way to add hydrogens (in a manner that follows the
       above rules) is by using the ChimeraX `addh`` command. Type ``usage addh``
       in the ChimeraX command line for complete instructions, but in most cases
@@ -142,34 +158,28 @@ imposes a few requirements:
       nitrogens. If you run into this issue try adding the argument*
       ``metalDist 1.0`` *to your* ``addh`` *command.)*
 
-      Residues that are truncated to Ala or Gly will be treated by ``addh`` and
-      ISOLDE as if they were true Ala or Gly residues.
-
-      *(Note: models with hydrogens added to truncated sidechains will be
-      rejected by* ``phenix.refine`` *and - most likely - other refinement
-      packages. If you have truncated sidechains I recommend removing hydrogens
-      prior to saving your coordinates.)*
-
       In general, I recommend adding sidechains wherever possible - even if
       there is minimal density to support them, in the MD environment the
       contributions from each sidechain generally help in maintaining the
-      geometry of surrounding residues. The `swapaa` mouse mode provided by
-      ChimeraX and found near the bottom of the button panel to the left of the
-      main GUI:
+      geometry of surrounding residues. Sidechains can be conveniently rebuilt
+      using the `swapaa` mouse mode provided by ChimeraX and found in the "Right
+      Mouse" tab in the menu ribbon above the  main GUI:
 
       .. figure:: images/swapaa.png
         :alt: SwapAA mouse mode icon
 
-      ... can help with this. Right-clicking on a protein atom and dragging
-      up/down will iterate through building all standard amino acid residues.
-      Using this tool to simply "mutate" the residue to its own identity will
-      give you a complete sidechain. **(IMPORTANT NOTE: Never perform edits that
-      add or remove atoms while a simulation is running)**
+      Right-clicking on a protein atom and dragging up/down will iterate through
+      building all standard amino acid residues. Using this tool to simply
+      "mutate" the residue to its own identity will give you a complete
+      sidechain.
+
+      **(IMPORTANT NOTE: Never perform edits that add or remove atoms
+      while a simulation is running)**
 
   3.  Alternative conformations (altlocs - that is, the same atom in two or more
       different places) are not currently supported. This is usually not a
-      problem, since at the resolutions ISOLDE can help the most with altlocs
-      aren't generally resolvable in the data anyway!
+      problem, since at the resolutions ISOLDE can help the most altlocs aren't
+      generally resolvable in the data anyway!
 
 .. _adding-maps:
 
@@ -292,26 +302,17 @@ Static (pre-calculated) crystallographic maps
 **(WARNING: in many refinement packages (including PHENIX) the default
 behaviour is to include the free reflections when generating maps for
 visualisation and manual model building. By Parseval's theorem this is
-equivalent in effect to including these reflections when refining in
-reciprocal space. While this may be OK when changing only a small fraction
-of the model, a typical MDFF session re-fits every atom to the map. While
-there is still some argument as to the final effect of this, using maps
-including the free set WILL render Rfree and Rfree-Rwork unreliable as
-measures of the quality of fit. Unfortunately there is no way to determine
-whether an arbitrary set of amplitudes and phases includes the free set or
-not, so it is up to you to ensure that free reflections are NOT included. A
-template for a suitable phenix.maps input file is provided below.)**
-
-Pre-calculated maps should be provided in the MTZ file as paired F/Phi
-columns, with the requirement that the name of the Phi column must match
-the name of the F column plus either a prefix or suffix (e.g. "F"/"phiF",
-"2MFOFCWT"/"PH2MFOFCWT" or "MFOFCWT"/"MFOFCWTPHI" are all legal
-combinations). In general, MTZ files generated by PHENIX should open
-without problems, but success is not yet guaranteed for the default output
-from other common packages. The ability to directly choose amplitude/phase
-combinations will be added in a future release. In the meantime, column
-names in an MTZ file can be edited using tools such as the reflection file
-editor available in the PHENIX GUI.
+equivalent in effect to including these reflections when refining in reciprocal
+space. While this may be OK when changing only a small fraction of the model, a
+typical MDFF session re-fits every atom to the map. While there is still some
+argument as to the final effect of this, using maps including the free set WILL
+render Rfree and Rfree-Rwork unreliable as measures of the quality of fit.
+Unfortunately there is no way to determine whether an arbitrary set of
+amplitudes and phases includes the free set or not, so it is up to you to ensure
+that free reflections are NOT included. A template for a suitable phenix.maps
+input file is provided below. For the above reasons, all static maps will be
+disabled as MDFF potentials by default, and must be explicitly enabled for
+simulation using the controls under the "Show map settings dialogue" button.)**
 
 The Clipper plugin uses a very simple heuristic to decide if a given set of
 amplitudes and phases should be treated as a standard map or a difference
@@ -329,15 +330,15 @@ development. While it works well given good-quality data, its handling of
 outliers and pathologies such as ice rings, beam-stop shadows, anisotropy
 etc. is minimal to non-existent. If the R-factors calculated are more than
 ~5% higher than those calculated by your favourite refinement package, you
-are probably safer sticking with pre-calculated maps for now.)**
+may be safer sticking with pre-calculated maps for now.)**
 
-If your MTZ file contains experimental amplitudes (F/sigF), then a set of live
-sigma-a weighted crystallographic maps will be generated directly from the
-combination of these with phases calculated from the atomic model. Unlike with
-the pre-calculated maps, any changes to the atomic model automatically triggers
-a recalculation of all live maps. This happens in the background, with minimal
-effect on graphical performance other than a slight pause when the visualisation
-of the new maps is loaded in.
+If your MTZ file contains experimental intensities (I/sigI) or amplitudes
+(F/sigF), then a set of live sigma-a weighted crystallographic maps will be
+generated directly from the combination of these with phases calculated from the
+atomic model. Unlike with the pre-calculated maps, any changes to the atomic
+model automatically triggers a recalculation of all live maps. This happens in
+the background, with minimal effect on graphical performance other than a slight
+pause when the visualisation of the new maps is loaded in.
 
 *(NOTE: live updating can be toggled  using the "Live crystallographic map
 calculation" checkbox that appears on the "Sim settings" tab when a live dataset

@@ -32,7 +32,7 @@ this tutorial should be run BEFORE starting ISOLDE)**
  .. _EMD-9118: https://www.emdataresource.org/EMD-9118
 
 Preliminaries
--------------
+~~~~~~~~~~~~~
 
 Open the model and map:
 
@@ -106,6 +106,9 @@ __ cxcmd:fitmap\ \#1/A,G\ inMap\ \#2
 ... which should yield a fit looking something like this:
 
 .. figure:: images/rigid_fit.jpg
+
+Restrained flexible fitting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Now, go ahead and start isolde:
 
