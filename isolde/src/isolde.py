@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Jun-2019
+# @Last modified time: 13-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -1525,6 +1525,7 @@ class Isolde():
 
     # Update button states after a simulation has finished
     def _update_menu_after_sim(self):
+        self.iw._master_model_combo_box.setEnabled(True)
         self._update_sim_control_button_states()
 
     ####
@@ -2350,6 +2351,8 @@ class Isolde():
             self._initialize_maps(m)
 
     def _change_selected_model(self, *_, model = None, force = False):
+        if self.simulation_running:
+            return
         if not hasattr(self, '_model_changes_handler'):
             self._model_changes_handler = None
         sm = self._selected_model
@@ -2362,8 +2365,6 @@ class Isolde():
             self._selected_model = None
             self._update_iffy_rota_list()
             self._update_iffy_peptide_lists()
-            return
-        if self.simulation_running:
             return
         iw = self.iw
         mmcb = iw._master_model_combo_box
@@ -2683,6 +2684,7 @@ class Isolde():
         Register all event handlers etc. that have to be running during the
         simulation.
         '''
+        self.iw._master_model_combo_box.setEnabled(False)
         self._update_sim_control_button_states()
         self._set_right_mouse_mode_tug_atom()
         self.triggers.activate_trigger('simulation started', None)
