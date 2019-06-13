@@ -116,12 +116,7 @@ with the surroundings.
     <DataDir>demo_data/3io0</DataDir>
     <DataDir>dictionaries</DataDir>
     <DataFile>tests/1pmx_1.pdb</DataFile>
-    <DataDir>doc</DataDir>
-    <DataDir>doc/python_api</DataDir>
-    <DataDir>doc/gui</DataDir>
-    <DataDir>doc/_images</DataDir>
-    <DataDir>doc/_images/math</DataDir>
-    <DataDir>doc/_static</DataDir>
+    <DataDir>docs</DataDir>
     <DataDir>ui</DataDir>
 
 

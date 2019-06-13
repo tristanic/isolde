@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Apr-2019
+# @Last modified time: 13-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -103,7 +103,7 @@ def isolde_tutorial(session):
     import pathlib
     import os
     root_dir = os.path.dirname(os.path.abspath(__file__))
-    fname = os.path.join(root_dir, 'doc', 'tutorials', 'index.html')
+    fname = os.path.join(root_dir, 'docs', 'isolde', 'tutorials', 'index.html')
     show_url(session, pathlib.Path(fname).as_uri())
 
 

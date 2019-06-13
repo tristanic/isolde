@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 09-Apr-2019
+# @Last modified time: 13-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -17,10 +17,10 @@
 from chimerax.core.tools import ToolInstance
 
 def _find_help():
-    import os, pathlib
-    fname = os.path.join(os.path.dirname(__file__), 'doc', 'index.html')
-    return pathlib.Path(os.path.abspath(fname)).as_uri()
-
+    # import os, pathlib
+    # fname = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'doc', 'index.html')
+    # return pathlib.Path(os.path.abspath(fname)).as_uri()
+    return 'help:isolde/index.html'
 
 class ISOLDE_ToolUI(ToolInstance):
 
