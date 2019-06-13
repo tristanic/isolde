@@ -22,7 +22,7 @@ def add_hydrogen_to_atom(atom, coord, name = None):
     else:
         existing_names = [a.name for a in atom.neighbors if a.element.name == 'H']
         if len(existing_names):
-            last_digits = [int(n[-1]) for n in names if n[-1].isdigit()]
+            last_digits = [int(n[-1]) for n in existing_names if n[-1].isdigit()]
             if len(last_digits):
                 num = max(last_digits)+1
             else:
