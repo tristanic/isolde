@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 10-Jun-2019
+# @Last modified time: 11-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -1659,7 +1659,7 @@ class MDFF_Mgr(_Restraint_Mgr):
         '''
         return self._volume
 
-    def guess_global_k(self, distance_cutoff=3, percentile=80, scaling_constant=1):
+    def guess_global_k(self, distance_cutoff=3, percentile=80, scaling_constant=5):
         '''
         Guesses a reasonable value for the global coupling constant defining
         how strongly the map "pulls" on atoms, based on the steepness of the
