@@ -526,7 +526,7 @@ class Isolde():
         ####
 
         ## Info for a single selected residue
-        iw._rebuild_sel_residue_info.setText('(Select a mobile residue)')
+        iw._rebuild_sel_residue_info.setText('(Select a single amino acid residue)')
         iw._rebuild_sel_res_pep_info.setText('')
         iw._rebuild_sel_res_rot_info.setText('')
 
@@ -1629,7 +1629,7 @@ class Isolde():
         if hasattr(self, '_res_info_update_handler') and self._res_info_update_handler is not None:
             self.selected_model.triggers.remove_handler(self._res_info_update_handler)
             self._res_info_update_handler = None
-        self.iw._rebuild_sel_residue_info.setText('(Select a mobile residue)')
+        self.iw._rebuild_sel_residue_info.setText('(Select a single amino acid residue)')
         self.iw._rebuild_sel_res_pep_info.setText('')
         self.iw._rebuild_sel_res_rot_info.setText('')
         self.iw._rebuild_sel_res_rot_target_button.setText('Set target')
