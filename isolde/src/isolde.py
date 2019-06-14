@@ -668,9 +668,10 @@ class Isolde():
         iw._sim_basic_xtal_init_go_button.clicked.connect(
             self._initialize_xtal_structure
         )
-        iw._sim_basic_xtal_map_weight_spin_box.valueChanged.connect(
+        iw._sim_basic_xtal_map_weight_spin_box.editingFinished.connect(
             self._update_map_weight_box_settings
         )
+        self._update_map_weight_box_settings()
 
         # Load custom forcefield file(s)
         iw._sim_basic_ff_file_load_button.clicked.connect(
@@ -2763,8 +2764,8 @@ class Isolde():
         self.triggers.activate_trigger('simulation started', None)
         sh = self.sim_handler
         sh.triggers.add_handler('sim terminated', self._sim_end_cb)
-        sh.triggers.add_handler('sim paused', self._update_sim_control_button_states)
-        sh.triggers.add_handler('sim resumed', self._update_sim_control_button_states)
+        sh.triggers.add_handler('sim paused', self._sim_pause_cb)
+        sh.triggers.add_handler('sim resumed', self._sim_resume_cb)
 
     def _sim_end_cb(self, *_):
         self._update_menu_after_sim()
@@ -2853,17 +2854,11 @@ class Isolde():
         return True
 
     def _sim_pause_cb(self, *_):
-        self._status('Simulation paused')
-        go_button = self.iw._sim_go_button
-        go_button.setChecked(False)
-        go_button.setToolTip('Resume')
+        self._update_sim_control_button_states()
         self.triggers.activate_trigger('simulation paused', None)
 
     def _sim_resume_cb(self, *_):
-        self._status('Simulation running')
-        go_button = self.iw._sim_go_button
-        go_button.setChecked(True)
-        go_button.setToolTip('Pause')
+        self._update_sim_control_button_states()
         self.triggers.activate_trigger('simulation resumed', None)
 
     def _stop_sim_and_revert_to_checkpoint(self, *_):
