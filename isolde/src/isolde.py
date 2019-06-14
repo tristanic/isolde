@@ -2638,7 +2638,11 @@ class Isolde():
         atoms.
         '''
         if self.simulation_running:
-            raise TypeError('Simulation already running!')
+            from chimerax.core.errors import UserError
+            raise UserError('Simulation already running!')
+        self.session.logger.status(
+            'Initialising simulation. Please be patient...',
+            color='red')
         self.sim_params.platform = self.iw._sim_platform_combo_box.currentText()
         from .openmm.openmm_interface import Sim_Manager
         main_sel = self._last_main_sel = self._get_main_sim_selection()
@@ -2751,6 +2755,7 @@ class Isolde():
         Register all event handlers etc. that have to be running during the
         simulation.
         '''
+        self.session.logger.status('')
         self.iw._master_model_combo_box.setEnabled(False)
         self.iw._sim_running_indicator.setVisible(True)
         self._update_sim_control_button_states()
