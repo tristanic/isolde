@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 14-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -238,6 +238,8 @@ class Rama_Annotator(Model):
             rd.highlighted_positions = selecteds
 
             rd.display = True
+        else:
+            rd.display = False
 
         v, n, t, c = mgr._draw_cis_and_twisted_omegas(ramas)
         if len(v):
