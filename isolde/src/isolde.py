@@ -1051,7 +1051,8 @@ class Isolde():
         iw = self.iw
         if not self.simulation_running:
             self._disable_register_shift_frame()
-            self._disable_peptide_bond_manipulation_frame()
+            # self._disable_peptide_bond_manipulation_frame()
+            self._enable_peptide_bond_manipulation_frame()
             flag = not(self.session.selection.empty())
             iw._sim_go_button.setEnabled(flag)
         else:
@@ -2187,10 +2188,14 @@ class Isolde():
 
 
     def _flip_peptide_bond(self, *_):
+        if not self.simulation_running:
+            self.start_sim()
         res = self._rebuild_residue
         self.flip_peptide_bond(res)
 
     def _flip_cis_trans(self, *_):
+        if not self.simulation_running:
+            self.start_sim()
         res = self._rebuild_residue
         self.flip_peptide_omega(res)
 
