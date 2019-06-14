@@ -2,7 +2,7 @@
 # @Date:   20-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 09-Apr-2019
+# @Last modified time: 14-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -189,8 +189,9 @@ class AtomPicker(MouseMode):
                     else:
                         if hasattr(p, 'atoms'):
                             p.atoms.selected = False
+                            p.atoms.intra_bonds.selected=False
                         else:
-                            p.residues.selected = False
+                            p.residues.atoms.selected = False
             else:
                 import numpy
                 if hasattr(p, 'atoms'):
@@ -198,15 +199,19 @@ class AtomPicker(MouseMode):
                     if len(patoms):
                         if not mode == 'subtract':
                             patoms.selected = True
+                            patoms.intra_bonds.selected = True
                         else:
                             patoms.selected = False
+                            patoms.intra_bonds.selected = False
                 elif hasattr(p, 'residues'):
                     presidues = p.residues.filter(self.atoms.unique_residues.indices(p.residues) != -1)
                     if len(presidues):
                         if not mode == 'subtract':
                             presidues.atoms.selected = True
+                            presidues.atoms.intra_bonds.selected = True
                         else:
                             presidues.atoms.selected = False
+                            presidues.atoms.intra_bonds.selected = False
 
 
     def _mouse_select(self, event):
@@ -232,6 +237,8 @@ class AtomPicker(MouseMode):
             picked_atom.selected = True
         else:
             picked_atom.selected = False
+            for b in picked_atom.bonds:
+                b.selected = False
 
 
 class AtomPickAdd(AtomPicker):

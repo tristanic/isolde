@@ -2,7 +2,7 @@
 # @Date:   24-Oct-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 09-Apr-2019
+# @Last modified time: 14-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -216,5 +216,5 @@ class Clash_Table_Mgr:
         from .. import view
         session = self.session
         view.focus_on_selection(session, atoms)
-        session.selection.clear()
-        atoms.selected = True
+        # session.selection.clear()
+        # atoms.selected = True

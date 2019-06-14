@@ -1746,12 +1746,16 @@ class Isolde():
             i0 = indices[0]
             if i0 > 0:
                 first = p[i0-1]
-                first.atoms.selected = True
+                atoms = first.atoms
+                atoms.selected=True
+                atoms.intra_bonds.selected=True
         else:
             iend = indices[-1]
             if iend < len(p) - 1:
                 last = p[iend+1]
-                last.atoms.selected = True
+                atoms = last.atoms
+                atoms.selected=True
+                atoms.intra_bonds.selected=True
 
     def _shrink_selection_by_one_res(self, direction):
         '''
@@ -2290,8 +2294,6 @@ class Isolde():
         res = item.data
         from . import view
         view.focus_on_selection(self.session, res.atoms)
-        self.session.selection.clear()
-        res.atoms.selected = True
 
     def _show_rota_validation_frame(self, *_):
         self.iw._validate_rota_stub_frame.hide()
@@ -2344,8 +2346,6 @@ class Isolde():
         res = item.data
         from . import view
         view.focus_on_selection(self.session, res.atoms)
-        self.session.selection.clear()
-        res.atoms.selected = True
 
     ##############################################################
     # Simulation global settings functions
@@ -2467,12 +2467,14 @@ class Isolde():
         sh = get_symmetry_handler(m)
         focus = self.iw._vis_focus_on_sel_checkbox.checkState()
         m.atoms.selected = False
+        m.bonds.selected = False
         sel = sh.stepper.step_forward()
         self._xtal_mask_to_atoms(sel, focus=False)
         if focus:
             from .view import focus_on_selection
             focus_on_selection(self.session, sel[0].residue.atoms)
         sel.selected = True
+        sel.intra_bonds.selected = True
 
 
     def _xtal_step_backward(self, *_):
@@ -2481,12 +2483,14 @@ class Isolde():
         sh = get_symmetry_handler(m)
         focus = self.iw._vis_focus_on_sel_checkbox.checkState()
         m.atoms.selected = False
+        m.bonds.selected = False
         sel = sh.stepper.step_backward()
         self._xtal_mask_to_atoms(sel, focus=False)
         if focus:
             from .view import focus_on_selection
             focus_on_selection(self.session, sel[-1].residue.atoms)
         sel.selected = True
+        sel.intra_bonds.selected = True
 
     def _xtal_mask_to_selection(self, *_):
         atoms = self.selected_model.atoms
@@ -2707,8 +2711,11 @@ class Isolde():
         Called if OpenMM encounters a residue it doesn't recognise while
         attempting to prepare a simulation.
         '''
-        self.selected_model.atoms.selected = False
+        m = self.selected_model
+        m.atoms.selected = False
+        m.bonds.selected = False
         residue.atoms.selected = True
+        residue.atoms.intra_bonds.selected = True
         from .view import focus_on_selection
         focus_on_selection(self.session, residue.atoms)
         from .dialog import failed_template_warning

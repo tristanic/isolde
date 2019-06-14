@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 14-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -63,3 +63,4 @@ def focus_on_selection(session, atoms, pad=1.0, clip = True):
     focus_on_coord(session, bounds.center(), bounds.radius()+pad)
     session.selection.clear()
     atoms.selected=True
+    atoms.intra_bonds.selected = True
