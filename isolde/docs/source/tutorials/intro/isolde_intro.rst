@@ -5,6 +5,13 @@ Introduction to ISOLDE
 loaded in ChimeraX's help viewer. You will also need to be connected to the
 Internet. Please close any open models before starting this tutorial.)**
 
+**(The instructions in the tutorial below assume you are using a wired mouse
+with a scroll wheel doubling as the middle mouse button. While everything
+should also work well on touchpads in Windows and Linux, support for Apple's
+multi-touch touchpad is a work in progress. Known issues with the latter are
+that clipping planes will not update when zooming, and recontouring of maps is
+not possible.)**
+
 Tutorial: Diagnosing and rebuilding errors in a 3Å crystal structure
 --------------------------------------------------------------------
 
@@ -40,19 +47,20 @@ a fresh MTZ file incorporating these:
 
 __ https://www.nature.com/articles/355472a0
 
-`save 1a0m.mtz #1`__
+`save ~/Desktop/1a0m.mtz #1`__
 
-__ cxcmd:save\ 1a0m.mtz\ #1
+__ cxcmd:save\ ~/Desktop/1a0m.mtz\ #1
 
-**(OPTIONAL: personally I prefer to work with a white background. If you're
+*(OPTIONAL: personally I prefer to work with a white background. If you're
 the same, you can change it using ChimeraX's icons in the "Home" tab at top,
-or with the following command)**
+or with the following command)*
 
 `set bgColor white`__
 
 __ cxcmd:set\ bgColor\ white
 
-Now, let's go ahead and look at the model you just opened.
+Now, zoom in by **scrolling** the mouse, and let's go ahead and look at the
+model you just opened.
 
 .. figure:: images/1a0m_sample.jpg
 
@@ -69,8 +77,8 @@ play with while learning the controls.
 Getting around
 ~~~~~~~~~~~~~~
 
-First up, try zooming by **scrolling** the mouse. As you get closer in, you'll
-notice a small set of axes displayed in the middle of the screen:
+While zoomed in, you'll notice a small set of axes displayed in the middle of
+the screen:
 
 .. figure:: images/pivot_indicator.jpg
 
@@ -82,8 +90,10 @@ When you zoom, the distance between the near and far clipping planes
 automatically grows and shrinks to provide depth cueing and reduce distracting
 clutter. If you need to adjust this, you can do so with **shift-scroll**.
 
-Now, scroll out to a comfortable distance, and try panning (**click and drag with
-the middle mouse button**). You'll hopefully notice a few things:
+Now, scroll out to a comfortable distance, and try panning. You have two options
+here: if you are using a wired mouse, just **click and drag with the middle
+mouse button**. For touchpad users without a middle-button equivalent, use
+**shift-left-click-and-drag**. You'll hopefully notice a few things:
 
 1. Wherever you go, you're surrounded by a sphere of density and displayed
    atoms. This is the default navigation mode in ISOLDE. The radius of the
@@ -92,18 +102,20 @@ the middle mouse button**). You'll hopefully notice a few things:
 
 __ cxcmd:clipper\ spotlight\ radius\ 15
 
-2. If you pan far enough, you'll see a single cartoon standing apart from the
-   rest:
+2. Zoom out until you have a clear border all around the displayed atoms, then
+   pan to the right. As you go, you'll see a single cartoon start to stand out
+   from the rest:
 
    .. figure:: images/separate_asu.jpg
 
-   This is the **actual** model - everything else is "ghost" drawings of the
-   symmetry atoms (identifiable by their darker colour relative to the primary
-   model). While you can't interact directly with these, hovering over any
-   symmetry atom will bring up a tool-tip giving its identity and symmetry
-   operator. Note: if you ever get so lost that you can't find your true model
-   any more, just type `view #1.3; cofr center`__ in the command line, where
-   #1.3 is the model number of the atomic model in the model panel:
+   This is the **actual** model, which is always displayed in this mode -
+   everything else is "ghost" drawings of the symmetry atoms (identifiable by
+   their darker colour relative to the primary model). While you can't interact
+   directly with these, hovering over any symmetry atom will bring up a tool-tip
+   giving its identity and symmetry operator. Note: if you ever get so lost that
+   you can't find your true model any more, just type `view #1.3; cofr center`__
+   in the command line, where #1.3 is the model number of the atomic model in
+   the model panel:
 
    .. figure:: images/model_panel.png
 
@@ -118,7 +130,12 @@ maps: a standard 2mFo-DFc map; a second 2mFo-DFc map with either sharpening or
 smoothing applied depending on resolution (maps better than 2.5Å are smoothed,
 lower resolutions are sharpened); and a mFo-DFc map. The sharpest of the
 2mFo-DFc maps is displayed as a transparent cyan surface, and the other as cyan
-wireframe. The difference map is shown as green and red wireframes for the
+wireframe. The sharper map gives the best detail in the well-resolved portions of
+the model, while the smoother one is better at revealing connectivity in poorly-
+resolved regions where sharp maps are often dominated by noise and difficult to
+interpret.
+
+The difference map is shown as green and red wireframes for the
 positive and negative contours respectively.
 
 On loading, contour levels are automatically chosen that are generally good for
@@ -139,8 +156,13 @@ __ cxcmd:clipper\ isolate\ #1/A&protein
 
 .. figure:: images/isolate_A.jpg
 
+More specific selections can be specified using ChimeraX's very powerful
+`atomspec`__ syntax.
+
+__ help:user/commands/atomspec.html
+
 You can further tweak the results using various optional arguments. To see the
-available options, use `usage clipper isolate`__.
+available options, use `usage clipper isolate`__ and check the Log window.
 
 __ cxcmd:usage\ clipper\ isolate
 
@@ -156,8 +178,8 @@ Let's go ahead and start ISOLDE. You can do this from the menu
 
 __ cxcmd:isolde\ start
 
-Perhaps the first thing you might notice is that all the C-alpha atoms in the
-model have suddenly turned into green spheres:
+You will notice is that all the C-alpha atoms in the model have suddenly turned
+into green spheres:
 
 .. figure:: images/rama_markup.jpg
 
@@ -166,6 +188,30 @@ residue's Ramachandran score (that is, the prior probability of the backbone
 "twist"  around that residue). You can read more about this `here`__.
 
 __ ../../gui/getting_started.html
+
+If for any reason you wish to turn off display of any of ISOLDE's validation
+or restraint markup, you can do so via the Models panel:
+
+.. figure:: images/model_panel_with_validation.png
+
+Just expand the drop-down list under the atomic model, and click the relevant
+checkbox under the eye icon. I would recommend against this in most cases,
+though: the information provided by the validation markup becomes very useful in
+guiding rebuilding, and there is nothing quite as frustrating as fighting
+against what turns out to be a restraint that you've hidden! If you wish, you
+can tell ISOLDE to show Ramachandran C-alpha markup for only non-favoured
+residues using the command:
+
+`rama showFavored false`__
+
+__ cxcmd:rama\ showFavored\ false
+
+... but personally, I prefer to keep them present. If you're the same, put them
+back with:
+
+`rama showFavored true`__
+
+__ cxcmd:rama\ showFavored\ true
 
 Before we actually get things moving, it's worth considering some of the
 strengths and pitfalls of molecular dynamics methods. Unlike minimisation using
@@ -186,6 +232,9 @@ __ cxcmd:isolde\ restrain\ ligands\ #1
 
 .. figure::images/restrain_ligands.jpg
 
+**(NOTE: Validation and restraint markups are only drawn for real atoms, not
+their symmetry ghosts.)**
+
 By default, polar ligand atoms will receive distance restraints (represented by
 a cyan bar) to all other polar atoms within 4Å, and ligand residues with fewer
 than four distance restraints will be supplemented with position restraints
@@ -198,11 +247,12 @@ restraints can also be added, adjusted or removed using tools on ISOLDE's
 There is one more task we need to do before starting our first simulation:
 adding hydrogens. Like most molecular dynamics methods, ISOLDE requires residues
 to be chemically complete (with a few exceptions: "bare" N- and C-termini and
-sidechain truncations are permitted). Just run:
+sidechain truncations are permitted). ChimeraX's *AddH* command typically does a
+great job of adding hydrogens. Just run:
 
-`addh hbond true`__
+`addh`__
 
-__ cxcmd:addh\ hbond\ true
+__ cxcmd:addh
 
 To reduce clutter in the display, I prefer to hide the non-polar hydrogens:
 
@@ -282,9 +332,14 @@ bottom right.
 Interacting with the model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Now, try tugging on an atom using the right mouse button.
+Now, try tugging on a non-hydrogen atom using the right mouse button.
 
 .. figure:: images/tugging.jpg
+
+*(Hydrogen atoms are not tuggable in ISOLDE. It turns out that they are so
+light and mobile that making them tuggable is more trouble than it's worth:
+large tugging forces on a hydrogen can cause dramatic instabilities, while
+forces weak enough to avoid the problem are too weak to do much of anything.)*
 
 This should result in something like the above. There are a few things to note
 here:
@@ -371,10 +426,10 @@ and green, and the R-factors shoot up into the 0.4-0.6 range:
 
   Whoops.
 
-Click the red  chequered flag to put everything back as it was. This is
-designed for the  not-uncommon situation where the solution to a particular
-problem isn't clear, allowing you to try out various hypotheses without the
-risk of permanent  damage to the model.
+Click the red chequered flag to put everything back as it was. This is designed
+for the not-uncommon situation where the solution to a particular problem isn't
+clear, allowing you to try out various hypotheses without the risk of permanent
+damage to the model.
 
 To the right of the chequered flag you'll find three different "STOP" buttons.
 The first of these (the green one) you've already used - it stops the simulation
@@ -382,7 +437,8 @@ and keeps the current state. The next (a red stop button under a red chequered
 flag) discards the current state and instead commits the last saved checkpoint
 (reverting to the state before the simulation started if no checkpoint was
 saved). The big red stop button discards the simulation entirely (after bringing
-up a warning dialogue asking if you're sure).
+up a warning dialogue asking if you're sure), returning the model to the state
+it was in at the moment the play button was pressed.
 
 Rebuilding
 ~~~~~~~~~~
@@ -501,31 +557,44 @@ smaller selection. The remainder of the tutorial will assume you're taking the
 latter approach - if you are lucky enough to be working with a fast GPU, just
 omit the stop/start steps.
 
-Once your model is moving, go ahead and click the green stop button. Now, let's
-take care of those *cis* bonds - since these are the most "unusual"
-conformations in the model, they seem like a sensible place to start. If you
-re-open the "Peptide bond geometry" widget and scroll to the bottom, you'll see
-that the twisted peptides have taken care of themselves during the energy
-minimisation - ISOLDE assumes that any peptide bond twisted more than 30 degrees
-from *cis* should probably actually be *trans*, and restrains it as such.
+Once your model is moving, take another look at the Clashes table - it should
+now be reassuringly empty. Hide it, and go ahead and click the green stop
+button. Now, let's take care of those *cis* bonds - since these are the most
+"unusual" conformations in the model, they seem like a sensible place to start.
+If you re-open the "Peptide bond geometry" widget and scroll to the bottom,
+you'll see that the twisted peptides have taken care of themselves during the
+energy minimisation - ISOLDE assumes that any peptide bond twisted more than 30
+degrees from *cis* should probably actually be *trans*, and restrains it as
+such.
 
-Click on the top entry in the table, then click play to begin a local
-simulation. Now switch to the "Rebuild" tab. **ctrl-click** on any atom in
-Thr84 **(HINT: if you pause the simulation, then hovering over any atom will
-give you a tooltip with its identification)**. You should see various buttons on
-the Rebuild tab light up:
+Click on the top entry in the table, and switch to the "Rebuild" tab. You
+should see that all the buttons in the top panel have now lighted up:
 
 .. figure:: images/Thr84_remodel_options.png
 
-The one we're interested in right now is the *cis*<-->*trans* button (second
-button in the top row). If you've paused the simulation, resume it, then click
-that.
+The top two buttons provide the two possible types of peptide bond flip: a
+simple 180 degree rotation (left), or a flip from *cis* to *trans* or *vice
+versa* (right). We're currently interested in the latter.
+
+**(NOTE: the buttons in this panel, like the others in the Rebuild tab, will
+only be enabled when it is possible to use them. These two buttons, for example,
+are only available when your selected atoms are from a single amino acid
+residue with a peptide bond N-terminal to it. Similarly, the rotamer selection
+buttons directly below them are only available when you have selected a
+non-truncated amino acid residue with at least one sidechain chi angle.)**
+
+Since we're not currently running a simulation, clicking either of these buttons
+will automatically start a small localised simulation to perform the flip. Make
+sure the text beside "Selected residue:" reads "A 84 THR" (if not, go back to
+the Peptide bond geometry widget and click in the table again), then go ahead
+and click the *cis<-->trans* button. After a few seconds initialisation time,
+you should see something like this:
 
 .. figure:: images/Thr84_pep_corrected.jpg
 
 Voila! Not only is the *cis* peptide bond gone, but we've also corrected the
-Ramachandran outlier into the bargain. On the other hand, now the sidechain
-is showing up as a severe rotamer outlier. Not to worry.
+Ramachandran outlier that was here into the bargain. On the other hand, now the
+sidechain is showing up as a severe rotamer outlier. Not to worry.
 
 If you've deselected the residue, **ctrl-click** on an atom to select it again.
 Now, the second-top row of buttons are the rotamer adjustment tools. The left
@@ -560,19 +629,27 @@ are two ways to go about this:
    secondary structure elements (helices, strands or unstructured stretches).
    Pressing the down arrow will reverse the process. In this case, after
    clicking on the entry in the Peptide bond geometry table the offending
-   residue is selected. Pressing up once will give you the whole loop with all
-   six *cis* bonds.
+   residue is selected. Make sure the focus is on the main GUI window by left-
+   clicking anywhere on the molecule, then press up once to select the whole
+   loop with all six *cis* bonds.
 
 Once your selection is to your satisfaction, go ahead and click play to correct
-them. If you prefer, you can queue up all the flips with the simulation paused -
-a handy way to remember which peptide bond will flip is to keep in mind that if
-you've selected an alpha carbon, the flip will be applied to the nitrogen
-directly bonded to it. You will also most likely find that you need to adjust
-the sidechains of Thr150 and Lys151 (although in some cases these correct
+them. You may choose to do this while everything is moving - or, if you prefer,
+you can queue up all the flips with the simulation paused. Just **ctrl-click**
+on a C-alpha C-terminal to a *cis* bond, click the *cis<-->trans* button, and
+move on to the next. A handy way to remember which peptide bond will flip is to
+keep in mind that if you've selected an alpha carbon, the flip will be applied
+to the nitrogen directly bonded to it. You will not see a visual indicator that
+a flip of this type is pending, but you'll see the results once you resume the
+simulation by pressing the play button. If you accidentally flip one you didn't
+mean to, it's typically no big deal - just flip it right back.
+
+Once these flips are done, You will also most likely find that you need to
+adjust the sidechains of Thr150 and Lys151 (although in some cases these correct
 themselves once the *cis* bonds are fixed). Also keep in mind that the peptide
-oxygen of Gly153 should end up pointing at the Arg148 sidechain - if this
-isn't the case in your simulation, try using the "flip peptide bond" button
-to the left of the *cis*<-->*trans* button.
+oxygen of Gly153 should end up pointing at the Arg148 sidechain - if this isn't
+the case in your simulation, try using the "flip peptide bond" button (remember,
+it's to the left of the *cis<-->trans* button).
 
 Once you're done, the loop should look something like this:
 
@@ -586,14 +663,14 @@ the carbonyl oxygens and two nearby arginine residues (Arg148 in the same chain
 and Arg148 in the (y,z,x) symmetry copy), while the Asp149 sidechain is
 salt-bridged to Arg120 and further stabilised by two hydrogen bonds. This is
 what a Ramachandran outlier *should* look like: lots of energetically-favourable
-interactions overcoming the energy penalty  associated with the unusual backbone
+interactions overcoming the energy penalty associated with the unusual backbone
 twist.
 
 You may have noticed some positive (green) difference density in the channel to
-the right of this loop, as well. This seems quite persistent throughout
-refinement, and may represent some long-occupancy ligand carried through during
-purification. At this resolution, though, it seems impossible to identify
-without further experimental knowledge.
+the right of this loop (when oriented like the image above), as well. This seems
+quite persistent throughout refinement, and may represent some low-occupancy
+ligand carried through during purification. At this resolution, though, it seems
+impossible to identify without further experimental knowledge.
 
 Anyway, once you stop the simulation and switch back to the "Validate" tab,
 you'll find after clicking "Update list" that this has taken care of the last
@@ -612,6 +689,12 @@ The buttons at the far bottom right of the ISOLDE panel can help make this easy:
 
 .. figure:: ../../gui/images/map_masking_toolbar.png
 
+**(NOTE: these buttons are only available outside of simulations (that is, after
+you've pressed a stop - not pause - button). During simulations the display is
+set so that what you see matches exactly to what is simulated - while nothing
+prevents you changing this via the command line, I'd strongly recommend against
+it.)**
+
 In particular, the left and right arrow buttons allow you to "step through" the
 model in overlapping bite-sized chunks (specifically, two secondary structure
 elements and their flanking loops), masking the map to the selection for easier
@@ -628,12 +711,13 @@ also find this:
 .. figure:: images/pep_flip_needed.jpg
 
 This is a perfect example of why it's important to visually inspect the model.
-Here we have no sidechain nor Ramachandran outliers, yet the conformation is
-unquestionably wrong. Perhaps more concerning, in the original coordinates
-before energy minimisation in ISOLDE there was not even any sign of trouble in
-the difference density, and only a practised eye would notice the
-chemically-infeasible juxtaposition of the peptide hydrogen with those of Arg120
-and Val121:
+Here we have no sidechain nor Ramachandran outliers, yet the telltale paired
+red and green difference density blobs associated with the peptide oxygen and
+nitrogen say that this conformation is unquestionably wrong. Perhaps more
+concerning, in the original coordinates before energy minimisation in ISOLDE
+there was not even any sign of trouble in the difference density, and only a
+practised eye would notice the chemically-infeasible juxtaposition of the
+peptide hydrogen with those of Arg120 and Val121:
 
 .. figure:: images/pep_flip_needed_original_coords.jpg
 
@@ -645,25 +729,41 @@ repulsion between these positively charged groups pushes the incorrectly
 modelled peptide bond out of density, creating a clear red flag indicating
 something is wrong. In this case, the remedy is clear: a simple peptide flip
 creates two nice hydrogen bonds with the adjacent sidechain (visualised here
-using the "H-bonds" tool on ChimeraX's "Molecule Display" tab - don't forget
-to hide these when you're done!), places the backbone back in density, and
-as a bonus converts the slightly-marginal Ramachandran case at Asp88 into a
-favoured one.
+using ChimeraX's H-bonds tool:
+
+`hbonds #1`__
+
+__ cxcmd:hbonds\ #1
 
 .. figure:: images/pep_flipped.jpg
+
+In addition, it places the backbone back in density (no more difference blobs),
+and as a bonus converts the slightly-marginal Ramachandran case at Asp88 into a
+favoured one. Don't forget to hide the H-bonds display:
+
+`~hbonds`__
+
+__ cxcmd:~hbonds
+
 
 This covers most of the "workhorse" tools you're likely to use for day-to-day
 work with models in medium-low resolution density with ISOLDE. Continue on
 through the rest of the model at your leisure. After some practice, I've found
 that I can improve this model to a MolProbity score below 1.0 in under 20
-minutes. If you want to refine and/or check your work using another package,
-remember you can save the model and structure factors at any time using the
-following commands:
+minutes (you can check for yourself using the MolProbity server_ or, if you have
+it installed, *phenix.molprobity*). If you want to refine and/or check your work
+using another package (recommended for any serious work: for a start, ISOLDE
+currently does not attempt to refine atomic B-factors), remember you can save
+the model and structure factors at any time using the following commands. As
+mentioned at the start of the tutorial, these specific commands will need to be
+typed out manually in the command line.
 
-`save isolde_tutorial.pdb #1`__
+.. _server: http://molprobity.biochem.duke.edu/
 
-__ cxcmd:save\ isolde_tutorial.pdb\ #1
+`save ~/Desktop/isolde_tutorial.pdb #1`__
 
-`save isolde_tutorial.mtz #1`__
+__ cxcmd:save\ ~/Desktop/isolde_tutorial.pdb\ #1
 
-__ cxcmd:save\ isolde_tutorial.mtz\ #1
+`save ~/Desktop/isolde_tutorial.mtz #1`__
+
+__ cxcmd:save\ ~/Desktop/isolde_tutorial.mtz\ #1
