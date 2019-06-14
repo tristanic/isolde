@@ -2214,8 +2214,8 @@ class Isolde():
         mode_menu = iw._validate_rama_sel_combo_box
         case_menu = iw._validate_rama_case_combo_box
         restrict_button = iw._validate_rama_go_button
-        self._rama_plot = RamaPlot(self.session, self, container, mode_menu,
-            case_menu, restrict_button)
+        self._rama_plot = RamaPlot(self.session, self, iw._sim_tab_widget,
+            container, mode_menu, case_menu, restrict_button)
 
     def _show_rama_plot(self, *_):
         self.iw._validate_rama_stub_frame.hide()

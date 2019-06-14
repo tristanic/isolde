@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 14-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -19,9 +19,10 @@ class RamaPlot:
         SELECTED_ONLY: 'Selection',
         MOBILE_ONLY: 'Mobile atoms only'
     }
-    def __init__(self, session, isolde, container, mode_menu, case_menu,
+    def __init__(self, session, isolde, tab_widget, container, mode_menu, case_menu,
             restrict_button):
         self._debug=False
+        self._tab_widget = tab_widget
         import numpy
         self.session = session
         from chimerax.isolde import session_extensions as sx
@@ -96,6 +97,8 @@ class RamaPlot:
         itr.add_handler('simulation terminated', self._sim_end_cb)
         itr.add_handler('simulation paused', self._sim_pause_cb)
         itr.add_handler('simulation resumed', self._sim_resume_cb)
+
+        tab_widget.currentChanged.connect(self._tab_change_cb)
 
 
     def _prepare_tooltip(self):
@@ -250,6 +253,8 @@ class RamaPlot:
 
         self.update_scatter()
 
+    def _tab_change_cb(self, *_):
+        self.update_scatter()
 
     def _isolde_switch_model_cb(self, trigger_name, model):
         self.current_model = model
