@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 13-Jun-2019
+# @Last modified time: 14-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -111,8 +111,8 @@ class ISOLDE_ToolUI(ToolInstance):
             iw._sim_basic_xtal_settings_live_recalc_checkbox,
             iw._sim_basic_xtal_map_settings_frame,
             iw._real_space_map_from_volume_frame,
-            #iw._real_space_map_from_volume_show_button, # Not yet working correctly
             iw._live_map_control_frame,
+            iw._sim_running_indicator,
             ]
 
         for f in self._hidden_at_start:

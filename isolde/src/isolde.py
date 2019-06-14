@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 13-Jun-2019
+# @Last modified time: 14-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -2740,6 +2740,7 @@ class Isolde():
         simulation.
         '''
         self.iw._master_model_combo_box.setEnabled(False)
+        self.iw._sim_running_indicator.setVisible(True)
         self._update_sim_control_button_states()
         self._set_right_mouse_mode_tug_atom()
         self.triggers.activate_trigger('simulation started', None)
@@ -2755,6 +2756,8 @@ class Isolde():
         from chimerax.mouse_modes import TranslateMouseMode
         self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
         self.triggers.activate_trigger('simulation terminated', None)
+        self.iw._sim_running_indicator.setVisible(False)
+
 
     def _get_main_sim_selection(self):
         '''

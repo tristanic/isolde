@@ -363,7 +363,7 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-316</y>
+                  <y>-263</y>
                   <width>677</width>
                   <height>739</height>
                  </rect>
@@ -4605,7 +4605,7 @@ background-color: rgb(5, 200, 0);
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,0,0">
+     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,0,0,0">
       <property name="spacing">
        <number>3</number>
       </property>
@@ -4621,6 +4621,112 @@ background-color: rgb(5, 200, 0);
       <property name="bottomMargin">
        <number>3</number>
       </property>
+      <item>
+       <widget class="QLabel" name="_sim_running_indicator">
+        <property name="palette">
+         <palette>
+          <active>
+           <colorrole role="WindowText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>239</red>
+              <green>41</green>
+              <blue>41</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Text">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>239</red>
+              <green>41</green>
+              <blue>41</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="ButtonText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>239</red>
+              <green>41</green>
+              <blue>41</blue>
+             </color>
+            </brush>
+           </colorrole>
+          </active>
+          <inactive>
+           <colorrole role="WindowText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>239</red>
+              <green>41</green>
+              <blue>41</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Text">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>239</red>
+              <green>41</green>
+              <blue>41</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="ButtonText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>239</red>
+              <green>41</green>
+              <blue>41</blue>
+             </color>
+            </brush>
+           </colorrole>
+          </inactive>
+          <disabled>
+           <colorrole role="WindowText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>141</red>
+              <green>144</green>
+              <blue>145</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="Text">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>141</red>
+              <green>144</green>
+              <blue>145</blue>
+             </color>
+            </brush>
+           </colorrole>
+           <colorrole role="ButtonText">
+            <brush brushstyle="SolidPattern">
+             <color alpha="255">
+              <red>141</red>
+              <green>144</green>
+              <blue>145</blue>
+             </color>
+            </brush>
+           </colorrole>
+          </disabled>
+         </palette>
+        </property>
+        <property name="font">
+         <font>
+          <family>Carlito</family>
+          <pointsize>14</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>SIMULATION RUNNING</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <spacer name="horizontalSpacer_33">
         <property name="orientation">
