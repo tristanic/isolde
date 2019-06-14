@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Jun-2019
+# @Last modified time: 14-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -46,7 +46,7 @@ def unrota(session, structures=None):
         if ra is not None:
             session.models.close([ra])
 
-def rama(session, structures=None, report=False):
+def rama(session, structures=None, show_favored=True, report=False):
     '''
     Add a live Ramachandran validator to each of the given structures, and
     optionally report a summary of current outliers and cis/twisted peptide
@@ -57,7 +57,8 @@ def rama(session, structures=None, report=False):
         from chimerax.atomic import AtomicStructure
         structures = [m for m in session.models.list() if type(m)==AtomicStructure]
     for structure in structures:
-        sx.get_rama_annotator(structure)
+        ra = sx.get_rama_annotator(structure)
+        ra.hide_favored = not show_favored
     if report:
         from chimerax.atomic import Residues, concatenate
         residues = concatenate([m.residues for m in structures])
@@ -124,6 +125,7 @@ def register_rama(logger):
     desc = CmdDesc(
         optional=[
             ('structures', StructuresArg),
+            ('show_favored', BoolArg),
             ('report', BoolArg)
             ],
         synopsis='Add Ramachandran validator markup to models and optionally report current outliers'
