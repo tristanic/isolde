@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Jun-2019
+# @Last modified time: 14-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -1637,7 +1637,18 @@ class MDFF_Mgr(_Restraint_Mgr):
         self.volume.add([self])
         if 'global k changed' not in self.triggers.trigger_names():
             self.triggers.add_trigger('global k changed')
-        self.guess_global_k()
+
+        # Cryo-EM maps tend to have *much* steeper contours than
+        # crystallographic ones at the same resolution, so scaling constants
+        # that work well for the latter tend to be too strong for the former.
+        from chimerax.clipper.maps import NXmapHandler
+        if isinstance(volume, NXmapHandler):
+            default_scaling_constant = 2.5
+        else:
+            default_scaling_constant = 5
+
+
+        self.guess_global_k(scaling_constant = default_scaling_constant)
         self._enabled = True
 
     @property
