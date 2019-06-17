@@ -363,7 +363,7 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-263</y>
+                  <y>0</y>
                   <width>677</width>
                   <height>739</height>
                  </rect>
@@ -4751,7 +4751,7 @@ background-color: rgb(5, 200, 0);
        <widget class="QComboBox" name="_experience_level_combo_box">
         <item>
          <property name="text">
-          <string>Beginner</string>
+          <string>Default</string>
          </property>
         </item>
         <item>
