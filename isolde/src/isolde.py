@@ -510,6 +510,15 @@ class Isolde():
         platform_names = get_available_platforms()
         cb.addItems(platform_names)
 
+        if "CUDA" not in platform_names and "OpenCL" not in platform_names:
+            self.session.logger.warning('WARNING: no OpenCL or compatible CUDA '
+                'drivers detected! While it is theoretically possible to run '
+                'ISOLDE using CPU only, in practice it is prohibitively slow. '
+                'If you have a suitable GPU in your machine, please check that you '
+                'have the recommended drivers from the manufacturer installed. '
+                'The current required CUDA version is 9.2 - if installed, please '
+                'make sure this is on your library path before starting ChimeraX.')
+
         # Set to the preferred or, failing that, the fastest available platform
         if sim_params.platform in platform_names:
             cb.setCurrentIndex(cb.findText(sim_params.platform))
