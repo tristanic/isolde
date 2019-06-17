@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 23-May-2019
+# @Last modified time: 17-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -1432,9 +1432,19 @@ class Sim_Handler:
             self.initialize_implicit_solvent(params)
         integrator = self._prepare_integrator(params)
         platform = openmm.Platform.getPlatformByName(params.platform)
+
+        # Thank you to Andreas Schenck for this little snippet
+        properties = {}
+        device_index = os.environ.get('ISOLDE_DEVICE_INDEX', None)
+        if device_index is not None:
+            if params.platform=="CUDA":
+                properties['CudaDeviceIndex']=device_index
+            elif params.platform=='OpenCL':
+                properties['OpenCLDeviceIndex']=device_index
+                
         from simtk.openmm import app
         s = self._simulation = app.Simulation(self._topology, self._system,
-            integrator, platform)
+            integrator, platform, properties)
         c = self._context = s.context
         c.setPositions(0.1*self._atoms.coords)
         c.setVelocitiesToTemperature(self.temperature)
