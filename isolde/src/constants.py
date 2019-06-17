@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 04-Apr-2019
+# @Last modified time: 17-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -173,6 +173,11 @@ class _Defaults:
         ###
         'CARBON_MASS':                  14.006699562072754,
         'CARBON_ATOMIC_NUMBER':         6,
+
+        ###
+        # Visualisation
+        ###
+        'SELECTION_OUTLINE_WIDTH':      4,
     }
 
 @_constant_properties

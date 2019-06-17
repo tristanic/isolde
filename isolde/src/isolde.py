@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 14-Jun-2019
+# @Last modified time: 17-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -97,6 +97,8 @@ class IsoldeParams(Param_Mgr):
         'difference_map_mask_cutoff':           (defaults.DIFFERENCE_MAP_MASK_RADIUS, None),
             # Use multiprocessing instead of threads (only available on Linux)
         'map_shannon_rate':                     (defaults.MAP_SHANNON_RATE, None),
+            # Width of the green outline surrounding a selection
+        'selection_outline_width':              (defaults.SELECTION_OUTLINE_WIDTH, None),
 
     }
 
@@ -327,6 +329,10 @@ class Isolde():
         cofr.cofr(session, 'centerOfView', show_pivot=True)
         camera.camera(session, 'ortho')
         self._mouse_modes.register_all_isolde_modes()
+
+        # Increase the visibility of the selection outline
+        from chimerax.core.commands import run
+        run(session, 'set selectionWidth {}'.format(self.params.selection_outline_width))
 
     @property
     def forcefield_mgr(self):
