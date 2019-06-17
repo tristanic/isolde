@@ -22,12 +22,14 @@ in at least the past 5 years), with the manufacturer's drivers installed.
 
 ISOLDE is designed to provide optimum performance on consumer-level "gaming"
 hardware. My regular test machine is an `Asus ROG Strix GL502VS`_ (not an ad -
-there are many similar laptops available) equipped with an Nvidia GTX1070 GPU,
-which allows me to work on >5,000-residue models and achieve interactive speeds
-with simulations of up to 1,000 residues at a time. On the other end of the
-scale, my 13" MacBook Air is a little trooper, achieving usable performance for
-a few dozen residues at a time (enough to tweak a problematic loop or fix
-local rotamer/backbone errors).
+there are many similar laptops available) equipped with an Nvidia GTX1070 GPU.
+On this machine, "interactive" speeds (that is, better than about 10 fps) are
+possible with over 1,000 residues mobile. For non-interactive "settling" of big
+models, ISOLDE successfully simulates 4v9o: four (!) ribosomes in the
+asymmetric unit of a 2.9Å crystal - 991,533 atoms including hydrogens. On the
+other end of the scale, my 13" MacBook Air is a little trooper, achieving usable
+performance for a few dozen residues at a time (enough to tweak a problematic
+loop or fix local rotamer/backbone errors).
 
 
 

@@ -1,3 +1,5 @@
+.. _bulk_fitting_tutorial:
+
 Bulk Flexible Fitting
 =====================
 
@@ -263,6 +265,17 @@ somewhat brave assumption when its resolution is 4.1 Angstroms!) - but as you'll
 see, it doesn't need to be perfect. Nevertheless, if you have a high-resolution
 template (of the same or a homologous structure), the *isolde restrain* command
 can cater to that.
+
+Before we start things moving, we have one more job to do. On associating a
+map to a model, ISOLDE automatically applies a weighting to it (that is, a
+constant specifying how strongly it "pulls" on the atoms). The automatic
+weighting is set at a value that is generally good for a model that is already
+reasonably well-fitted to its map. Since that clearly isn't the case here, we're
+going to need to dial it down quite a bit. We can always turn it back up later.
+Head back over to the map settings dialogue (where we set the map visualisation
+earlier), drop the weight down from its current value (which should be about
+47.7) to 15, and click Set.
+
 
 Anyway, let's go ahead and fire up our simulation (unless you're running on a
 workstation with a strong GPU, I'm afraid this will be a little slow):

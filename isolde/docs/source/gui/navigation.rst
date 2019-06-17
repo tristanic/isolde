@@ -7,6 +7,10 @@ Visualisation and Navigation
 .. contents::
     :local:
 
+**(NEW in 1.0b3: if you're viewing this from within ChimeraX, you may prefer
+using the interactive :ref:`isolde_intro_tutorial` tutorial to acquaint yourself
+with ISOLDE's controls.)**
+
 *(General note: if you open a large model in ChimeraX it will often
 automatically switch to its high-quality rendering mode with full shadows and
 ambient occlusion. While beautiful, this is sadly too slow to work with ISOLDE.

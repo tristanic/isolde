@@ -1,5 +1,8 @@
+.. _isolde_intro_tutorial:
+
 Introduction to ISOLDE
 ======================
+
 
 **(NOTE: Most links on this page will only work correctly when the page is
 loaded in ChimeraX's help viewer. You will also need to be connected to the
@@ -754,9 +757,7 @@ minutes (you can check for yourself using the MolProbity server_ or, if you have
 it installed, *phenix.molprobity*). If you want to refine and/or check your work
 using another package (recommended for any serious work: for a start, ISOLDE
 currently does not attempt to refine atomic B-factors), remember you can save
-the model and structure factors at any time using the following commands. As
-mentioned at the start of the tutorial, these specific commands will need to be
-typed out manually in the command line.
+the model and structure factors at any time using the following commands. 
 
 .. _server: http://molprobity.biochem.duke.edu/
 

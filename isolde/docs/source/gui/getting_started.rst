@@ -9,6 +9,10 @@ Getting Started
     :local:
     :depth: 3
 
+**(NEW in 1.0b3: if you are reading this from within the ChimeraX Help browser,
+you may prefer trying out the :ref:`isolde_intro_tutorial` interactive
+tutorial.)**
+
 Starting ISOLDE
 ---------------
 
@@ -206,17 +210,16 @@ memory permitting) of these map types.
 Real-space maps
 ~~~~~~~~~~~~~~~
 
+**(NOTE: within ChimeraX, you may prefer to familiarise yourself with the
+use of real-space maps in the interactive :ref:`bulk_fitting_tutorial` tutorial.)**
+
 Any real-space map format recognised by ChimeraX can be used as a MDFF
 potential by ISOLDE with a few simple steps. Simply load your model, e.g.
 
-``open 6eyd``
-``open 3983 from emdb``
+``open 6eyd; open 3983 from emdb``
 
 If the model and map are not perfectly aligned, you can easily obtain an
-optimised rigid-body fit using ChimeraX's ``fitmap`` command. **(IMPORTANT
-NOTE: at present ISOLDE requires both model and map to be in the same scene
-coordinate system. In practice this means that the** ``moveWholeMolecules false``
-**argument to** ``fitmap`` **MUST be used even when moving the entire model.)**
+optimised rigid-body fit using ChimeraX's ``fitmap`` command.
 
 ``fitmap #1 inMap #2 moveWholeMolecules false``
 
@@ -225,6 +228,9 @@ Once aligned, the map may be associated with the model either by using the
 settings" tab, or
 
 ``clipper associate #2 toModel #1``
+
+**(IMPORTANT NOTE: rigid-body fitting of the model into the map must be done
+BEFORE running "clipper associate".)**
 
 This should change your view of the model and map from something like this:
 
@@ -236,12 +242,12 @@ to a visualisation mode similar to the traditional crystallographic view:
 .. figure:: images/6eyd_with_map_clipper.png
     :alt: View after registering map with Clipper
 
-Default Clipper/ISOLDE "spotlight" model/map view. The map appears as a
-sphere of density around the centre of rotation. Residues with atoms within
-the spotlight radius have their atoms shown; the remainder of the molecule
-is shown as a cartoon. You can adjust the spotlight radius using the command
-``clipper spotlight radius <radius>`` - but keep in mind that radii much larger
-than about 20Å will cause noticeable lag in navigation.
+    Default Clipper/ISOLDE "spotlight" model/map view. The map appears as a
+    sphere of density around the centre of rotation. Residues with atoms within
+    the spotlight radius have their atoms shown; the remainder of the molecule
+    is shown as a cartoon. You can adjust the spotlight radius using the command
+    ``clipper spotlight radius <radius>`` - but keep in mind that radii much larger
+    than about 20Å will cause noticeable lag in navigation.
 
 Upon registration, ISOLDE automatically registers the map as a MDFF potential.
 The coupling constant (defining how strongly the map "pulls" on atoms) is
@@ -268,10 +274,10 @@ necessary, building of as much of the model as possible using tools like
 *phenix.autobuild* should already have happened before you load your model
 into ISOLDE. At this point, you have two choices:
 
-* Use "static" maps derived from pre-calculated amplitudes and phases
-  (e.g. as output from *phenix.refine* or *phenix.maps*)
 * Use "live" maps calculated directly from your model and the experimental
-  amplitudes
+  amplitudes (preferred); or
+* Use "static" maps derived from pre-calculated amplitudes and phases
+  (e.g. as output from *phenix.refine* or *phenix.maps*).
 
 Both options have their own pros and cons, and are described in detail below.
 In either case, the input is an MTZ file. ISOLDE will automatically generate
@@ -290,11 +296,11 @@ safely closed via ChimeraX's model panel:
 .. figure:: images/model_panel_complex_dataset.png
     :alt: A rather over-complicated map arrangement
 
-The ChimeraX model panel showing six crystallographic maps and one non-
-crystallographic map associated with an atomic model. The unwanted maps may
-be closed by selecting their entry in the tree then clicking the "Close"
-button at top right. You can close an entire crystallographic dataset by
-selecting the corresponding entry with name starting "Crystallographic maps".
+    The ChimeraX model panel showing six crystallographic maps and one non-
+    crystallographic map associated with an atomic model. The unwanted maps may
+    be closed by selecting their entry in the tree then clicking the "Close"
+    button at top right. You can close an entire crystallographic dataset by
+    selecting the corresponding entry with name starting "Crystallographic maps".
 
 Static (pre-calculated) crystallographic maps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -306,7 +312,7 @@ equivalent in effect to including these reflections when refining in reciprocal
 space. While this may be OK when changing only a small fraction of the model, a
 typical MDFF session re-fits every atom to the map. While there is still some
 argument as to the final effect of this, using maps including the free set WILL
-render Rfree and Rfree-Rwork unreliable as measures of the quality of fit.
+render R_free and R_free-R_work unreliable as measures of the quality of fit.
 Unfortunately there is no way to determine whether an arbitrary set of
 amplitudes and phases includes the free set or not, so it is up to you to ensure
 that free reflections are NOT included. A template for a suitable phenix.maps
@@ -314,13 +320,15 @@ input file is provided below. For the above reasons, all static maps will be
 disabled as MDFF potentials by default, and must be explicitly enabled for
 simulation using the controls under the "Show map settings dialogue" button.)**
 
-The Clipper plugin uses a very simple heuristic to decide if a given set of
-amplitudes and phases should be treated as a standard map or a difference
-map. In brief, if the name of the amplitude column is "F" or "FWT" or
-contains a 2, the resulting map will be treated as standard map (that is,
-displayed with a single positive contour and used as a MDFF potential). Any
-column name not matching the above criteria will result in a difference map
-(equal positive and negative displayed contours, not used for MDFF).
+The Clipper plugin uses some very simple heuristics to decide on the treatment
+of a given set of amplitudes and phases. In brief, if the name of the amplitude
+column is "F" or "FWT" or contains a 2, the resulting map will be treated as
+standard map (that is, displayed with a single positive contour and used as a
+MDFF potential). Any map  for which the amplitude column name is "FC" or
+contains "CALC" (case-insensitive) will be treated as an Fcalc map and hidden by
+default. Any column name not matching the above criteria will result in a
+difference map (equal positive and negative displayed contours, not used for
+MDFF).
 
 Live crystallographic maps **(EXPERIMENTAL)**
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -340,7 +348,7 @@ model automatically triggers a recalculation of all live maps. This happens in
 the background, with minimal effect on graphical performance other than a slight
 pause when the visualisation of the new maps is loaded in.
 
-*(NOTE: live updating can be toggled  using the "Live crystallographic map
+*(NOTE: live updating can be toggled using the "Live crystallographic map
 calculation" checkbox that appears on the "Sim settings" tab when a live dataset
 is associated with the selected model)*
 
