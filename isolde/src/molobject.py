@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 14-Jun-2019
+# @Last modified time: 18-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -1808,6 +1808,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
     def __init__(self, model, c_pointer=None):
         super().__init__('Position Restraints', model, c_pointer=c_pointer)
         self._prepare_drawings()
+        self._last_visibles = None
         self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
         self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
         model.add([self])
@@ -1864,18 +1865,22 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         mgr, changes = changes
         update_bonds = True
         update_targets = False
+        update_visibility = False
         change_types = list(changes.keys())
         if 'target changed' in change_types:
             update_targets = True
         if 'enabled/disabled' in change_types:
             update_targets = True
+            update_visibility = True
         if 'display changed' in change_types:
             update_targets = True
-        self.update_graphics(update_bonds, update_targets)
+            update_visibility = True
+        self.update_graphics(update_bonds, update_targets, update_visibility)
 
     def _model_changes_cb(self, trigger_name, changes):
         update_bonds = False
         update_targets = False
+        update_visibility = False
         changes = changes[1]
         if changes.num_deleted_atoms() > 0:
             update_bonds = True
@@ -1884,14 +1889,16 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         if 'display changed' in atom_reasons or 'hide changed' in atom_reasons:
             update_bonds = True
             update_targets = True
+            update_visibility = True
         if 'coord changed' in atom_reasons:
             update_bonds = True
-        self.update_graphics(update_bonds, update_targets)
+        self.update_graphics(update_bonds, update_targets, update_visibility)
 
     _show_pd = True
     _show_bd = True
 
-    def update_graphics(self, update_bonds=True, update_targets=True):
+    def update_graphics(self, update_bonds=True, update_targets=True,
+            update_visibility=False):
         '''
         Update the restraints drawing. Happens automatically every time
         restraints or coordinates change. It should rarely/never be necessary to
@@ -1901,7 +1908,11 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
             return
         pd = self._pin_drawing
         bd = self._bond_drawing
-        visibles = self.visible_restraints
+        # For very large models working out what is and isn't visible is
+        # expensive, so we only update when necessary
+        if update_visibility or self._last_visibles is None:
+            self._last_visibles = self.visible_restraints
+        visibles = self._last_visibles
         n = len(visibles)
         if n==0:
             pd.display = False
@@ -2048,6 +2059,7 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
     def __init__(self, model, c_pointer=None):
         super().__init__('Tuggable atoms', model, c_pointer=c_pointer)
         self._prepare_drawings()
+        self._last_visibles = None
         self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
         self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
         # self._show_nearest_atoms = False
@@ -2085,22 +2097,28 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
 
     def _restraint_changes_cb(self, trigger_name, changes):
         mgr, changes = changes
+        update_visibility = False
+        change_types = list(changes.keys())
+        if 'enabled/disabled' in change_types:
+            update_visibility=True
         self.update_graphics()
 
     def _model_changes_cb(self, trigger_name, changes):
         update_needed = False
+        update_visibility = False
         changes = changes[1]
         if changes.num_deleted_atoms() > 0:
             update_needed = True
         atom_reasons = changes.atom_reasons()
         if 'display changed' in atom_reasons or 'hide changed' in atom_reasons:
             update_needed = True
+            update_visibility = True
         if 'coord changed' in atom_reasons:
             update_needed = True
         if update_needed:
-            self.update_graphics()
+            self.update_graphics(update_visibility)
 
-    def update_graphics(self):
+    def update_graphics(self, update_visibility = False):
         '''
         Update the force vector drawing. Happens automatically every time
         restraints or coordinates change. It should rarely/never be necessary to
@@ -2109,7 +2127,9 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
         if not self.visible:
             return
         ad = self._arrow_drawing
-        visibles = self.visibles
+        if update_visibility or self._last_visibles is None:
+            self._last_visibles = self.visibles
+        visibles = self._last_visibles
         n = len(visibles)
         if n==0:
             ad.display = False
@@ -2246,6 +2266,7 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
             c_pointer =(f(model._c_pointer, ct._c_pointer))
         super().__init__(class_name, model, c_pointer)
         self._prepare_drawing()
+        self._last_visibles = None
         self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
         self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
         model.add([self])
@@ -2303,25 +2324,33 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
 
     def _restraint_changes_cb(self, trigger_name, changes):
         mgr, changes = changes
-        self.update_graphics()
+        update_visibility=False
+        change_types = list(changes.keys())
+        if 'enabled/disabled' in change_types:
+            update_visibility=True
+        if 'display changed' in change_types:
+            update_visibility=True
+        self.update_graphics(update_visibility)
 
     def _model_changes_cb(self, trigger_name, changes):
         update_needed = False
+        update_visibility = False
         changes = changes[1]
         if changes.num_deleted_atoms():
             update_needed = True
         atom_reasons = changes.atom_reasons()
         if 'display changed' in atom_reasons or 'hide changed' in atom_reasons:
             update_needed = True
+            update_visibility = True
         if 'coord changed' in atom_reasons:
             update_needed = True
         if update_needed:
-            self.update_graphics()
+            self.update_graphics(update_visibility)
 
     _show_bd = True
     _show_td = True
 
-    def update_graphics(self):
+    def update_graphics(self, update_visibility=False):
         '''
         Override in derived class.
         '''
@@ -2559,7 +2588,7 @@ class Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
         '''
         return self._get_ss_restraints(residues, create=False)
 
-    def update_graphics(self):
+    def update_graphics(self, update_visibility=False):
         '''
         Update the restraints drawing. Happens automatically every time
         restraints or coordinates change. It should rarely/never be necessary to
@@ -2569,7 +2598,9 @@ class Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
             return
         bd = self._bond_drawing
         td = self._target_drawing
-        visibles = self.visible_restraints
+        if update_visibility or self._last_visibles is None:
+            self._last_visibles = self.visible_restraints
+        visibles = self._last_visibles
         n = len(visibles)
         if n==0:
             bd.display = False
@@ -2686,7 +2717,7 @@ class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
         f(self._c_pointer, value)
         self.update_graphics()
 
-    def update_graphics(self):
+    def update_graphics(self, update_visibility=False):
         '''
         Update the restraints drawing. Happens automatically every time
         restraints or coordinates change. It should rarely/never be necessary to
@@ -2696,7 +2727,9 @@ class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
             return
         bd = self._bond_drawing
         td = self._target_drawing
-        visibles = self.visible_restraints
+        if update_visibility or self._last_visibles is None:
+            self._last_visibles = self.visible_restraints
+        visibles = self._last_visibles
         n = len(visibles)
         if n==0:
             bd.display = False
@@ -2868,6 +2901,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         self.set_default_colors()
         self._update_needed = True
         self._prepare_drawings()
+        self._last_visibles = None
         self._restraint_changes_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
         self._atom_changes_handler = model.triggers.add_handler('changes', self._model_changes_cb)
         if not defer_add:
@@ -3127,23 +3161,31 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
 
     def _model_changes_cb(self, trigger_name, changes):
         update_needed = False
+        update_visibility = False
         changes = changes[1]
         if changes.num_deleted_atoms():
             update_needed = True
         atom_reasons = changes.atom_reasons()
         if 'display changed' in atom_reasons or 'hide changed' in atom_reasons:
             update_needed = True
+            update_visibility = True
         if 'coord changed' in atom_reasons:
             update_needed = True
         if update_needed:
-            self.update_graphics()
+            self.update_graphics(update_visibility)
 
     def _restraint_changes_cb(self, trigger_name, changes):
         mgr, changes = changes
+        change_types = list(changes.keys())
+        update_visibility = False
+        if 'enabled/disabled' in change_types:
+            update_visibility = True
+        if 'display changed' in change_types:
+            update_visibility = True
         # For the time being, just update on any trigger
-        self.update_graphics()
+        self.update_graphics(update_visibility)
 
-    def update_graphics(self):
+    def update_graphics(self, update_visibility=False):
         '''
         Update the restraints drawing. Happens automatically every time
         restraints or coordinates change. It should rarely/never be necessary to
@@ -3153,7 +3195,9 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
             return
         ring_d = self._ring_drawing
         post_d = self._post_drawing
-        visibles = self.visible_restraints
+        if update_visibility or self._last_visibles is None:
+            self._last_visibles = self.visible_restraints
+        visibles = self._last_visibles
         if not len(visibles):
             ring_d.display = False
             post_d.display = False
