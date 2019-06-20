@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 20-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -172,7 +172,7 @@ def generate_interpolator_data(data_dir, cache_dir, file_prefix, wrap_axes = Tru
         if infile is not None:
             infile.close()
         full_path = os.path.join(data_dir, file_prefix+'.data')
-        infile = open(full_path, 'r+t')
+        infile = open(full_path, 'rt')
         # Throw away the first line - we don't need it
         infile.readline()
         # Get number of dimensions
