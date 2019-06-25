@@ -143,3 +143,5 @@ def register_isolde(logger):
     remotecmd.register_remote_control_command(logger)
     from chimerax.isolde.restraints.cmd import register_isolde_restrain
     register_isolde_restrain(logger)
+    from chimerax.isolde.manipulations.cmd import register_manip_commands
+    register_manip_commands(logger)
