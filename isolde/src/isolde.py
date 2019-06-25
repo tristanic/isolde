@@ -3162,7 +3162,7 @@ class Isolde():
         '''
         from . import session_extensions as sx
         pdr_m = sx.get_proper_dihedral_restraint_mgr(self.selected_model)
-        omega = pdr_m.get_restraint_by_residue_and_name(res, 'omega')
+        omega = pdr_m.add_restraint_by_residue_and_name(res, 'omega')
         if omega is None:
             raise TypeError('This residue has no N-terminal peptide bond!')
         if omega.sim_index == -1:
