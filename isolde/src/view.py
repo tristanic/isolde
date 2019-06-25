@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 14-Jun-2019
+# @Last modified time: 25-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -37,8 +37,8 @@ def focus_on_coord(session, center, radius = 1.0, clip=True):
     vd = cam.view_direction()
     if clip:
         cp = v.clip_planes
-        cp.set_clip_position('near', center - radius*vd, cam)
-        cp.set_clip_position('far', center + radius*vd, cam)
+        cp.set_clip_position('near', center - radius*vd, v)
+        cp.set_clip_position('far', center + radius*vd, v)
 
 
 def focus_on_selection(session, atoms, pad=1.0, clip = True):
