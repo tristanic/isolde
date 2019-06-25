@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Jun-2019
+# @Last modified time: 21-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -19,12 +19,18 @@ def _get_metals():
 
 _metals = _get_metals()
 
-def place_metal_at_coord(model, chain_id, residue_number, residue_name, atom_name, element, coord):
+def place_metal_at_coord(model, chain_id, residue_number, residue_name, atom_name, element, coord, bfactor=20):
     '''
     Create a new residue encompassing a single metal ion in the current model,
     and place it at the given coordinate.
     '''
-    pass
+    from chimerax.atomic import Element
+    e = Element.get_element(atom_name)
+    r = model.new_residue(residue_name, chain_id, residue_number)
+    a = model.new_atom(atom_name, e)
+    a.coord = coord
+    a.bfactor=bfactor
+    r.add_atom(a)
 
 def find_nearest_chain(model, coord):
     '''
