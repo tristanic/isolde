@@ -639,13 +639,18 @@ are two ways to go about this:
 Once your selection is to your satisfaction, go ahead and click play to correct
 them. You may choose to do this while everything is moving - or, if you prefer,
 you can queue up all the flips with the simulation paused. Just **ctrl-click**
-on a C-alpha C-terminal to a *cis* bond, click the *cis<-->trans* button, and
-move on to the next. A handy way to remember which peptide bond will flip is to
-keep in mind that if you've selected an alpha carbon, the flip will be applied
-to the nitrogen directly bonded to it. You will not see a visual indicator that
-a flip of this type is pending, but you'll see the results once you resume the
-simulation by pressing the play button. If you accidentally flip one you didn't
-mean to, it's typically no big deal - just flip it right back.
+on a C-alpha C-terminal to a *cis* bond, then **ctrl-shift-click** on the
+C-alphas for the other *cis* bonds you see. A handy way to remember which
+peptide bond will flip is to keep in mind that if you've selected an alpha
+carbon, the flip will be applied to the nitrogen directly bonded to it.
+Now, type the command `isolde cisflip sel`__ in the command line. You will
+not see a visual indicator that a flip of this type is pending, but you'll see
+the results once you resume the simulation by pressing the play button. If you
+accidentally flip one you didn't mean to, it's typically no big deal - just flip
+it right back.
+
+__ cxcmd:isolde\ cisflip\ sel
+
 
 Once these flips are done, You will also most likely find that you need to
 adjust the sidechains of Thr150 and Lys151 (although in some cases these correct
@@ -653,6 +658,11 @@ themselves once the *cis* bonds are fixed). Also keep in mind that the peptide
 oxygen of Gly153 should end up pointing at the Arg148 sidechain - if this isn't
 the case in your simulation, try using the "flip peptide bond" button (remember,
 it's to the left of the *cis<-->trans* button).
+
+**(NOTE: this form of peptide bond flip can also be applied using the command
+"isolde pepflip sel". Both "isolde pepflip" and "isolde cisflip" should be used
+with caution: while flipping every peptide bond in your model can certainly be
+entertaining, it's not so much fun if you do so by accident.)**
 
 Once you're done, the loop should look something like this:
 
@@ -757,7 +767,7 @@ minutes (you can check for yourself using the MolProbity server_ or, if you have
 it installed, *phenix.molprobity*). If you want to refine and/or check your work
 using another package (recommended for any serious work: for a start, ISOLDE
 currently does not attempt to refine atomic B-factors), remember you can save
-the model and structure factors at any time using the following commands. 
+the model and structure factors at any time using the following commands.
 
 .. _server: http://molprobity.biochem.duke.edu/
 
