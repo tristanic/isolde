@@ -267,11 +267,11 @@ int isolde::LocalEnergyMinimizer::minimize(Context& context, double tolerance,
         return UNSPECIFIED_ERROR;
     }
     lbfgs_free(x);
-    return ret;
 
     // If necessary, do a final constraint projection to make sure they are satisfied
     // to the full precision requested by the user.
 
     if (constraintTol < workingConstraintTol)
         context.applyConstraints(workingConstraintTol);
+    return ret;
 }
