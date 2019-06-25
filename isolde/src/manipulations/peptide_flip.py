@@ -47,10 +47,10 @@ class Peptide_Bond_Flipper:
         structure = self.structure = residue.structure
         from ..session_extensions import get_proper_dihedral_restraint_mgr
         pdr_m = self.pdr_m = get_proper_dihedral_restraint_mgr(structure)
-        phi = self.phi = pdr_m.get_restraint_by_residue_and_name(residue, 'phi')
+        phi = self.phi = pdr_m.add_restraint_by_residue_and_name(residue, 'phi')
         if phi is None:
             raise TypeError('Residue does not have an N-terminal peptide bond!')
-        psi = self.psi = pdr_m.get_restraint_by_residue_and_name(
+        psi = self.psi = pdr_m.add_restraint_by_residue_and_name(
             phi.dihedral.atoms[0].residue, 'psi'
         )
         from math import pi
