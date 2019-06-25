@@ -11,7 +11,7 @@
 
 
 <BundleInfo name="ChimeraX-ISOLDE" version="1.0b3.dev0" package="chimerax.isolde"
-  	    minSessionVersion="1" maxSessionVersion="1">
+  	    customInit="true" minSessionVersion="1" maxSessionVersion="1">
 
   <!-- Additional information about bundle source -->
   <Author>Tristan Croll</Author>
