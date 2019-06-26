@@ -1,0 +1,61 @@
+<!-- Alternate protonation states not found in the standard AMBER force
+field. Parameterisations should be sufficient for map fitting, but in
+general these are NOT FOR USE IN PRODUCTION EQUILIBRIUM SIMULATIONS.
+-->
+<ForceField>
+  <Info>
+    <DateGenerated>2019-02-21</DateGenerated>
+  </Info>
+  <Residues>
+  <Residue name="ARG0">
+   <Atom name="N" type="N" charge="-0.3479"/>
+   <Atom name="H" type="H" charge="0.2747"/>
+   <Atom name="CA" type="CX" charge="-0.2637"/>
+   <Atom name="HA" type="H1" charge="0.156"/>
+   <Atom name="CB" type="C8" charge="-0.0007"/>
+   <Atom name="HB2" type="HC" charge="0.0327"/>
+   <Atom name="HB3" type="HC" charge="0.0327"/>
+   <Atom name="CG" type="C8" charge="0.040"/>
+   <Atom name="HG2" type="HC" charge="0.0364"/>
+   <Atom name="HG3" type="HC" charge="0.0364"/>
+   <Atom name="CD" type="C8" charge="0.0654"/>
+   <Atom name="HD2" type="H1" charge="0.0264"/>
+   <Atom name="HD3" type="H1" charge="0.0264"/>
+   <Atom name="NE" type="N2" charge="-0.7214"/>
+   <Atom name="HE" type="H" charge="0.3344"/>
+   <Atom name="CZ" type="CA" charge="0.7182"/>
+   <Atom name="NH1" type="N2" charge="-0.7284"/>
+   <Atom name="HH11" type="H" charge="0.3221"/>
+   <Atom name="HH12" type="H" charge="0.3221"/>
+   <Atom name="NH2" type="N2" charge="-0.8294"/>
+   <Atom name="HH21" type="H" charge="0.3229"/>
+   <Atom name="C" type="C" charge="0.7341"/>
+   <Atom name="O" type="O" charge="-0.5894"/>
+   <Bond atomName1="N" atomName2="H"/>
+   <Bond atomName1="N" atomName2="CA"/>
+   <Bond atomName1="CA" atomName2="HA"/>
+   <Bond atomName1="CA" atomName2="CB"/>
+   <Bond atomName1="CA" atomName2="C"/>
+   <Bond atomName1="CB" atomName2="HB2"/>
+   <Bond atomName1="CB" atomName2="HB3"/>
+   <Bond atomName1="CB" atomName2="CG"/>
+   <Bond atomName1="CG" atomName2="HG2"/>
+   <Bond atomName1="CG" atomName2="HG3"/>
+   <Bond atomName1="CG" atomName2="CD"/>
+   <Bond atomName1="CD" atomName2="HD2"/>
+   <Bond atomName1="CD" atomName2="HD3"/>
+   <Bond atomName1="CD" atomName2="NE"/>
+   <Bond atomName1="NE" atomName2="HE"/>
+   <Bond atomName1="NE" atomName2="CZ"/>
+   <Bond atomName1="CZ" atomName2="NH1"/>
+   <Bond atomName1="CZ" atomName2="NH2"/>
+   <Bond atomName1="NH1" atomName2="HH11"/>
+   <Bond atomName1="NH1" atomName2="HH12"/>
+   <Bond atomName1="NH2" atomName2="HH21"/>
+   <Bond atomName1="C" atomName2="O"/>
+   <ExternalBond atomName="N"/>
+   <ExternalBond atomName="C"/>
+  </Residue>
+
+  </Residues>
+</ForceField>

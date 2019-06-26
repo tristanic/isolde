@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 29-Mar-2019
+# @Last modified time: 20-Jun-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -15,6 +15,7 @@ _forcefield_files = {
     'amber14':  [os.path.join(ff_dir, 'amberff', f) for f in
         ['amberff14SB.xml',     # Standard AMBER14 protein/nucleic acid
         'tip3p_standard.xml',   # TIP3P water
+        'protonation_states.xml',    # Residues with unusual alternate protonation states
         'tip3p_HFE_multivalent.xml', # Metal ions
         'tip3p_IOD_multivalent.xml', # Metal ions
         'gaff2.xml',                 # General AMBER force field
