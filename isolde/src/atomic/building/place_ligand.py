@@ -19,13 +19,15 @@ def _get_metals():
 
 _metals = _get_metals()
 
-def place_metal_at_coord(model, chain_id, residue_number, residue_name, atom_name, element, coord, bfactor=20):
+def place_metal_at_coord(model, chain_id, residue_number, residue_name, atom_name, coord, element_name=None, bfactor=20):
     '''
     Create a new residue encompassing a single metal ion in the current model,
     and place it at the given coordinate.
     '''
+    if element_name is None:
+        element_name = atom_name.title()
     from chimerax.atomic import Element
-    e = Element.get_element(atom_name)
+    e = Element.get_element(element_name)
     r = model.new_residue(residue_name, chain_id, residue_number)
     a = model.new_atom(atom_name, e)
     a.coord = coord
