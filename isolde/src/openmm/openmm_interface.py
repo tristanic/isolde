@@ -1441,7 +1441,7 @@ class Sim_Handler:
                 properties['CudaDeviceIndex']=device_index
             elif params.platform=='OpenCL':
                 properties['OpenCLDeviceIndex']=device_index
-                
+
         from simtk.openmm import app
         s = self._simulation = app.Simulation(self._topology, self._system,
             integrator, platform, properties)
@@ -2843,6 +2843,7 @@ def find_residue_templates(residues, template_names):
             for i in indices:
                 templates[i] = ccd_name
 
+    from .amberff.metal_name_map import metal_name_map
     from chimerax.atomic import Element
     metals = [n.upper() for n in Element.names if Element.get_element(n).is_metal]
     atoms = residues.atoms
@@ -2851,7 +2852,9 @@ def find_residue_templates(residues, template_names):
         r = a.residue
         if len(r.atoms) != 1:
             continue
-        templates[residues.index(r)] = r.name
+        template_name = metal_name_map.get(r.name, None)
+        if template_name is not None:
+            templates[residues.index(r)] = template_name
 
 
     return templates
