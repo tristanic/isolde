@@ -17,7 +17,7 @@ _forcefield_files = {
         'tip3p_standard.xml',   # TIP3P water
         'protonation_states.xml',    # Residues with unusual alternate protonation states
         'tip3p_HFE_multivalent.xml', # Metal ions
-        'tip3p_IOD_multivalent.xml', # Metal ions
+        # 'tip3p_IOD_multivalent.xml', # Metal ions
         'gaff2.xml',                 # General AMBER force field
         'CDL.xml',                   # Cardiolipin
         'lipid17.xml',               # common lipids
