@@ -24,7 +24,7 @@ using namespace isolde;
 OpenMM_Thread_Handler::OpenMM_Thread_Handler(OpenMM::Context* context)
     : _context(context)
 {
-    _starting_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
+    _starting_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Velocities);
     _natoms = _starting_state.getPositions().size();
 }
 
@@ -52,7 +52,7 @@ void OpenMM_Thread_Handler::_step_threaded(size_t steps, bool smooth)
             }
             integrator().step(these_steps);
             steps_done += these_steps;
-            auto state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
+            auto state = _context->getState(OpenMM::State::Positions | OpenMM::State::Velocities);
             auto fast = overly_fast_atoms(state.getVelocities());
             if (fast.size() >0)
             {
@@ -63,7 +63,7 @@ void OpenMM_Thread_Handler::_step_threaded(size_t steps, bool smooth)
             if (smooth)
                 _apply_smoothing(state);
         }
-        _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
+        _final_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Velocities);
         auto end = std::chrono::steady_clock::now();
         auto loop_time = end-start;
         if (loop_time < _min_time_per_loop)
@@ -103,7 +103,7 @@ void OpenMM_Thread_Handler::_minimize_threaded(const double &tolerance, int max_
         _smoothed_coords.clear();
         _thread_running = true;
         _thread_finished = false;
-        _starting_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Energy);
+        _starting_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Energy);
         _min_converged = false;
         double tol = tolerance * _natoms;
         // std::cout << "Initial energy: " << _starting_state.getPotentialEnergy() << " kJ/mol" << std::endl;
@@ -112,14 +112,14 @@ void OpenMM_Thread_Handler::_minimize_threaded(const double &tolerance, int max_
         {
             // Minimisation has converged to within the desired tolerance,
             // and all constraints are satisfied.
-            _final_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Forces + OpenMM::State::Energy);
+            _final_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Forces | OpenMM::State::Energy);
             _min_converged = true;
             _unstable = false;
         } else if (result == isolde::LocalEnergyMinimizer::DID_NOT_CONVERGE) {
             // Minimisation ongoing. Just leave _min_converged = false, but
             // let ISOLDE have the new coordinates.
 
-        } else if (result < 0)
+        } else // if (result < 0)
         {
             // Minimisation failed. Revert the model to its initial state
             // and let ISOLDE point out problem areas to the user.
@@ -148,7 +148,7 @@ void OpenMM_Thread_Handler::_reinitialize_context_threaded()
         _thread_except = nullptr;
         _thread_running = true;
         _thread_finished = false;
-        OpenMM::State current_state = _context->getState(OpenMM::State::Positions + OpenMM::State::Velocities);
+        OpenMM::State current_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Velocities);
         _context->reinitialize();
         _context->setPositions(current_state.getPositions());
         _context->setVelocities(current_state.getVelocities());
