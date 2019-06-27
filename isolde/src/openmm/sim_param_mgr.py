@@ -49,12 +49,6 @@ def error_cb(e):
 
 FLOAT_TYPE = defaults.FLOAT_TYPE
 
-_amber14 = ['amberff14SB.xml','tip3p_standard.xml',
-            'tip3p_HFE_multivalent.xml', 'tip3p_IOD_multivalent.xml']
-
-cwd = os.path.dirname(os.path.abspath(__file__))
-amber14 = [os.path.join(cwd,'amberff',f) for f in _amber14]
-
 @param_properties
 @autodoc
 class SimParams(Param_Mgr):
