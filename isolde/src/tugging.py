@@ -96,7 +96,7 @@ class TugAtomsMode(MouseMode):
         tm = self.tug_mode
         if tm == 'selection':
             pa = self._atoms[self._atoms.selecteds]
-            v = self.session.view
+            v = self.session.main_view
             self._reference_point = v.clip_plane_points(x,y)[0]
         else:
             from . import picking
@@ -149,7 +149,7 @@ class TugAtomsMode(MouseMode):
         return self._offset_vector(x, y, atom.scene_coord)
 
     def _offset_vector(self, x, y, starting_coord):
-        v = self.session.view
+        v = self.session.main_view
         x0,x1 = v.clip_plane_points(x, y)
         axyz = starting_coord
         # Project atom onto view ray to get displacement.

@@ -23,7 +23,7 @@ def focus_on_coord(session, center, radius = 1.0, clip=True):
         * clip (default=True):
             - if `True`, updates the near and far clipping planes.
     '''
-    v = session.view
+    v = session.main_view
     import numpy
     from chimerax.core.geometry import Bounds
     xyz_min = center-radius

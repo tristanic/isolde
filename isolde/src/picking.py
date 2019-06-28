@@ -19,7 +19,7 @@ def pick_closest_to_line(session, mx, my, atoms, cutoff, displayed_only = True, 
     closest = None
     if atoms is None:
         return None
-    xyz1, xyz2 = session.view.clip_plane_points(mx, my)
+    xyz1, xyz2 = session.main_view.clip_plane_points(mx, my)
     import numpy
     # Create an array of coordinates with spacing cutoff/2
     length = numpy.linalg.norm(xyz2-xyz1)
