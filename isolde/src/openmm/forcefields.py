@@ -10,6 +10,14 @@
 
 import os
 
+def get_forcefield_cache_dir():
+    from chimerax import app_dirs
+    user_data_dir = os.path.join(app_dirs.user_data_dir, 'isolde_data', 'openmm')
+    if not os.path.exists(user_data_dir):
+        os.makedirs(user_data_dir)
+    return user_data_dir
+
+
 ff_dir = os.path.dirname(os.path.abspath(__file__))
 _forcefield_files = {
     'amber14':  [os.path.join(ff_dir, 'amberff', f) for f in
@@ -43,15 +51,32 @@ def _define_forcefield(ff_files):
     ff = ForceField(*[f for f in ff_files if f is not None])
     return ff
 
-def _background_load_ff(name, ff_files):
-    ff = _define_forcefield(ff_files)
-    print('Done loading forcefield')
-    return {name: ff}
+def _background_load_ff(name, ff_files, version):
+    cache_dir = get_forcefield_cache_dir()
+    pickle_file = os.path.join(cache_dir,'ff_{}.pickle'.format(name))
+    try:
+        import pickle
+        infile = open(pickle_file, 'rb')
+        forcefield, cached_version = pickle.load(infile)
+        if cached_version != version:
+            raise RuntimeError('Cached forcefield version does not match OpenMM version')
+        print('Done loading forcefield')
+        return {name: forcefield}
+    except:
+        print('Forcefield cache not found or out of date. Regenerating from ffXML files. This is normal if running ISOLDE for the first time, or after upgrading OpenMM.')
+        ff = _define_forcefield(ff_files)
+        outfile = open(pickle_file, 'wb')
+        pickle.dump((ff, version), outfile)
+        outfile.close()
+        print('Done loading forcefield')
+        return {name: ff}
 
 class Forcefield_Mgr:
     def __init__(self):
         self._ff_dict = {}
         self._task = None
+        from simtk.openmm import version
+        self._openmm_version = version.version
 
     def _complete_task(self):
         from time import sleep
@@ -106,5 +131,5 @@ class Forcefield_Mgr:
             ff_files = _forcefield_files[name]
         from concurrent.futures import ThreadPoolExecutor
         executor = ThreadPoolExecutor(max_workers=1)
-        self._task = executor.submit(_background_load_ff, name, ff_files)
+        self._task = executor.submit(_background_load_ff, name, ff_files, self._openmm_version)
         executor.shutdown(wait=False)
