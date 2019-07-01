@@ -113,9 +113,9 @@ class Isolde():
 
     # Master switch to set the level of control the user has over the simulation.
     class _experience_levels(IntEnum):
-        beginner        = 0
-        intermediate    = 1
-        expert          = 2
+        default        = 0
+        advanced       = 1
+        developer      = 2
 
     class _sim_selection_modes(IntEnum):
         from_picked_atoms       = 0
