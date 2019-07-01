@@ -4622,7 +4622,7 @@ background-color: rgb(5, 200, 0);
        <number>3</number>
       </property>
       <item>
-       <widget class="QLabel" name="_sim_running_indicator">
+       <widget class="QLabel" name="_sim_status_indicator">
         <property name="palette">
          <palette>
           <active>
