@@ -734,7 +734,7 @@ class Sim_Manager:
         self.chiral_restraint_mgr = sx.get_chiral_restraint_mgr(m)
         self.proper_dihedral_restraint_mgr = sx.get_proper_dihedral_restraint_mgr(m)
         self.position_restraint_mgr = sx.get_position_restraint_mgr(m)
-        self.tuggable_atoms_mgr = sx.get_tuggable_atoms_mgr(m)
+        self.tuggable_atoms_mgr = sx.get_tuggable_atoms_mgr(m, allow_hydrogens=self.sim_params.tug_hydrogens)
         self.distance_restraint_mgr = sx.get_distance_restraint_mgr(m)
         self.adaptive_distance_restraint_mgr = sx.get_adaptive_distance_restraint_mgr(m)
 

@@ -2967,7 +2967,7 @@ class Isolde():
         if not self.simulation_running:
             return
         from . import session_extensions as sx
-        tugm = sx.get_tuggable_atoms_mgr(self.selected_model)
+        tugm = sx.get_tuggable_atoms_mgr(self.selected_model, allow_hydrogens=self.sim_params.tug_hydrogens)
         t_atom = tugm.get_tuggable(atom)
         t_atom.target = target
         if spring_constant is None:
@@ -2993,7 +2993,7 @@ class Isolde():
         else:
             raise TypeError('Not an Atom or Atoms instance!')
         from . import session_extensions as sx
-        tugm = sx.get_tuggable_atoms_mgr(self.selected_model)
+        tugm = sx.get_tuggable_atoms_mgr(self.selected_model, allow_hydrogens=self.sim_params.tug_hydrogens)
         t_atoms = tugm.get_tuggables(atoms)
         t_atoms.enableds = False
 

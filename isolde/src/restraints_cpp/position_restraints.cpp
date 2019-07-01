@@ -85,9 +85,9 @@ Position_Restraint* Position_Restraint_Mgr_Base::_new_restraint(Atom *atom, cons
     if (atom->structure() != _atomic_model) {
         throw std::logic_error(error_different_mol());
     }
-    if (atom->element().number() == 1) {
-        throw std::logic_error(error_hydrogen());
-    }
+    // if (atom->element().number() == 1) {
+    //     throw std::logic_error(error_hydrogen());
+    // }
     Position_Restraint* restraint = new Position_Restraint(atom, target, this);
     _atom_to_restraint[atom] = restraint;
     track_created(restraint);

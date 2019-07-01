@@ -110,9 +110,9 @@ private:
     const char* error_different_mol() const {
         return "This atom is in the wrong structure!";
     }
-    const char* error_hydrogen() const {
-        return "Restraints on hydrogen atoms are not allowed!";
-    }
+    // const char* error_hydrogen() const {
+    //     return "Restraints on hydrogen atoms are not allowed!";
+    // }
     void _delete_restraints(const std::set<Position_Restraint *>& to_delete);
 
 

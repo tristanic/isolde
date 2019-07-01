@@ -100,7 +100,7 @@ class TugAtomsMode(MouseMode):
             self._reference_point = v.clip_plane_points(x,y)[0]
         else:
             from . import picking
-            pick = picking.pick_closest_to_line(self.session, x, y, self._atoms, 0.5)
+            pick = picking.pick_closest_to_line(self.session, x, y, self._atoms, 0.5, hydrogens=True)
             if pick is not None:
                 a = self._focal_atom = pick
                 if tm == "atom":

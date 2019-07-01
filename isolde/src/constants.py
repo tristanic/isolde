@@ -84,7 +84,7 @@ class _Defaults:
         'SIM_TIMEOUT':                120.0, # seconds
         'TARGET_LOOP_PERIOD':         0.1, # seconds
         'HYDROGENS_FEEL_MAPS':        True,
-        'TUGGABLE_HYDROGENS':         False,
+        'TUGGABLE_HYDROGENS':         'polar',
         'RESTRAIN_PEPTIDE_OMEGA':     True,
         'DISPLAY_OMEGA_RESTRAINTS':   False,
         'MAX_CUBIC_MAP_SIZE':         5e6, # Switch to linear interpolation above this size
