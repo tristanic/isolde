@@ -1515,6 +1515,7 @@ class Isolde():
             gk = mgr.global_k
             sb = self.iw._sim_basic_xtal_map_weight_spin_box
             sb.setValue(gk)
+            self._update_map_weight_box_settings()
         else:
             wf.setEnabled(False)
             eb.setEnabled(False)
