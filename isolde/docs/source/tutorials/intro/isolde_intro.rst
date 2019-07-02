@@ -335,14 +335,15 @@ bottom right.
 Interacting with the model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Now, try tugging on a non-hydrogen atom using the right mouse button.
+Now, try tugging on an atom using the right mouse button.
 
 .. figure:: images/tugging.jpg
 
-*(Hydrogen atoms are not tuggable in ISOLDE. It turns out that they are so
-light and mobile that making them tuggable is more trouble than it's worth:
-large tugging forces on a hydrogen can cause dramatic instabilities, while
-forces weak enough to avoid the problem are too weak to do much of anything.)*
+*(NOTE: Non-polar hydrogens are not tuggable in ISOLDE. Polar hydrogens may be
+tugged, but in order to avoid instability the applied force will be much weaker
+than that applied to heavy atoms. While tugging on a hydrogen can be useful for
+adjusting the H-bonding of a hydroxyl group or water (for example), to make any
+larger changes you should choose a heavier atom to pull.)*
 
 This should result in something like the above. There are a few things to note
 here:
