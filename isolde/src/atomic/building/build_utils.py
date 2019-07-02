@@ -50,18 +50,21 @@ def current_and_possible_disulfides(model, cutoff_distance=3.0):
     tree = AtomSearchTree(cys_s)
     current_disulfides = set()
     possible_disulfides = set()
+    ambiguous = set()
     for s in cys_s:
         nearby = tree.search(s.coord, cutoff_distance)
         # Search will always find the input atom, so want results with at least
         # (hopefully only!) two atoms.
         if len(nearby) > 1:
+            if len(nearby) > 2:
+                ambiguous.add(frozenset([a.residue for a in nearby]))
             others = [a for a in nearby if a != s]
             for a in others:
                 if a in s.neighbors:
                     current_disulfides.add(frozenset((s.residue,a.residue)))
                 else:
                     possible_disulfides.add(frozenset((s.residue,a.residue)))
-    return current_disulfides, possible_disulfides
+    return current_disulfides, possible_disulfides, ambiguous
 
 def create_disulfide(cys1, cys2):
     from chimerax.core.errors import UserError

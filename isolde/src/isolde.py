@@ -113,9 +113,9 @@ class Isolde():
 
     # Master switch to set the level of control the user has over the simulation.
     class _experience_levels(IntEnum):
-        beginner        = 0
-        intermediate    = 1
-        expert          = 2
+        default        = 0
+        advanced       = 1
+        developer      = 2
 
     class _sim_selection_modes(IntEnum):
         from_picked_atoms       = 0
@@ -1515,6 +1515,7 @@ class Isolde():
             gk = mgr.global_k
             sb = self.iw._sim_basic_xtal_map_weight_spin_box
             sb.setValue(gk)
+            self._update_map_weight_box_settings()
         else:
             wf.setEnabled(False)
             eb.setEnabled(False)
@@ -2760,7 +2761,8 @@ class Isolde():
         '''
         self.session.logger.status('')
         self.iw._master_model_combo_box.setEnabled(False)
-        self.iw._sim_running_indicator.setVisible(True)
+        # self.iw._sim_running_indicator.setVisible(True)
+        self._update_sim_status_indicator()
         self._update_sim_control_button_states()
         self._set_right_mouse_mode_tug_atom()
         self.triggers.activate_trigger('simulation started', None)
@@ -2776,7 +2778,20 @@ class Isolde():
         from chimerax.mouse_modes import TranslateMouseMode
         self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
         self.triggers.activate_trigger('simulation terminated', None)
-        self.iw._sim_running_indicator.setVisible(False)
+        self._update_sim_status_indicator()
+        # self.iw._sim_running_indicator.setVisible(False)
+
+    def _update_sim_status_indicator(self):
+        indicator = self.iw._sim_status_indicator
+        if not self.simulation_running:
+            indicator.setVisible(False)
+            return
+        sm = self.sim_manager
+        if sm.pause:
+            indicator.setText("<font color='blue'>SIMULATION PAUSED</font>")
+        else:
+            indicator.setText("<font color='red'>SIMULATION RUNNING</font>")
+        indicator.setVisible(True)
 
 
     def _get_main_sim_selection(self):
@@ -2857,10 +2872,12 @@ class Isolde():
 
     def _sim_pause_cb(self, *_):
         self._update_sim_control_button_states()
+        self._update_sim_status_indicator()
         self.triggers.activate_trigger('simulation paused', None)
 
     def _sim_resume_cb(self, *_):
         self._update_sim_control_button_states()
+        self._update_sim_status_indicator()
         self.triggers.activate_trigger('simulation resumed', None)
 
     def _stop_sim_and_revert_to_checkpoint(self, *_):
@@ -2951,7 +2968,7 @@ class Isolde():
         if not self.simulation_running:
             return
         from . import session_extensions as sx
-        tugm = sx.get_tuggable_atoms_mgr(self.selected_model)
+        tugm = sx.get_tuggable_atoms_mgr(self.selected_model, allow_hydrogens=self.sim_params.tug_hydrogens)
         t_atom = tugm.get_tuggable(atom)
         t_atom.target = target
         if spring_constant is None:
@@ -2977,7 +2994,7 @@ class Isolde():
         else:
             raise TypeError('Not an Atom or Atoms instance!')
         from . import session_extensions as sx
-        tugm = sx.get_tuggable_atoms_mgr(self.selected_model)
+        tugm = sx.get_tuggable_atoms_mgr(self.selected_model, allow_hydrogens=self.sim_params.tug_hydrogens)
         t_atoms = tugm.get_tuggables(atoms)
         t_atoms.enableds = False
 

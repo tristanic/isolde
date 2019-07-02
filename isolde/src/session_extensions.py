@@ -154,7 +154,7 @@ def get_adaptive_distance_restraint_mgr(model):
             return m
     return Adaptive_Distance_Restraint_Mgr(model)
 
-def get_tuggable_atoms_mgr(model):
+def get_tuggable_atoms_mgr(model, allow_hydrogens=None):
     '''
     Get the :class:`Tuggable_Atoms_Mgr` for the given model, creating it if it
     doesn't yet exist.
@@ -166,8 +166,12 @@ def get_tuggable_atoms_mgr(model):
     from .molobject import Tuggable_Atoms_Mgr
     for m in model.child_models():
         if isinstance(m, Tuggable_Atoms_Mgr):
+            if allow_hydrogens is not None:
+                m.allow_hydrogens = allow_hydrogens
             return m
-    return Tuggable_Atoms_Mgr(model)
+    if allow_hydrogens is None:
+        allow_hydrogens = 'polar'
+    return Tuggable_Atoms_Mgr(model, allow_hydrogens=allow_hydrogens)
 
 def get_mdff_mgr(model, volume, create=False):
     '''

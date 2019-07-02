@@ -1557,7 +1557,8 @@ class Restraint_Change_Tracker:
 
 class _Restraint_Mgr(Model):
     '''Base class. Do not instantiate directly.'''
-    def __init__(self, name, model, c_pointer=None, c_class_name = None):
+    def __init__(self, name, model, c_pointer=None, c_class_name = None,
+        allow_hydrogens='no'):
         session = model.session
         ct = self._change_tracker = _get_restraint_change_tracker(session)
 
@@ -1580,6 +1581,25 @@ class _Restraint_Mgr(Model):
         self.triggers.add_trigger('changes')
         self.pickable = False
         self.model = model
+        self.allow_hydrogens = allow_hydrogens
+
+    @property
+    def allow_hydrogens(self):
+        '''
+        Choose whether to allow all hydrogens ("all"), only polar hydrogens
+        ("polar"), or no hydrogens ("no") to be restrained/tugged. For position
+        restraints the default is "no"; for interactive tugging the default is
+        "polar".
+        '''
+        if not hasattr(self, '_allow_hydrogens'):
+            self._allow_hydrogens=False
+        return self._allow_hydrogens
+
+    @allow_hydrogens.setter
+    def allow_hydrogens(self, mode):
+        if not isinstance(mode, str) or mode.lower() not in ("all", "polar", "no"):
+            raise TypeError('"allow_hydrogens" must be one of "all", "polar" or "no"!')
+        self._allow_hydrogens = mode.lower()
 
     def delete(self):
         cname = type(self).__name__.lower()
@@ -1806,7 +1826,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
     _DEFAULT_PIN_COLOR = [255,215,0,255]
 
     def __init__(self, model, c_pointer=None):
-        super().__init__('Position Restraints', model, c_pointer=c_pointer)
+        super().__init__('Position Restraints', model, c_pointer=c_pointer, allow_hydrogens='no')
         self._prepare_drawings()
         self._last_visibles = None
         self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
@@ -1945,7 +1965,11 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool, ctypes.c_size_t,
                 ctypes.c_void_p),
             ret=ctypes.c_size_t)
-        atoms = atoms[atoms.element_names != 'H']
+        allow_h = self.allow_hydrogens
+        if allow_h == 'no':
+            atoms = atoms[atoms.element_names != 'H']
+        elif allow_h == 'polar':
+            atoms = atoms[atoms.idatm_types != 'HC']
         n = len(atoms)
         ret = numpy.empty(n, cptr)
         num = f(self._c_pointer, atoms._c_pointers, create, n, pointer(ret))
@@ -2056,8 +2080,8 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
     '''
     _DEFAULT_ARROW_COLOR = [100, 255, 100, 255]
     # _NEAR_ATOMS_COLOR = [0,255,255,255]
-    def __init__(self, model, c_pointer=None):
-        super().__init__('Tuggable atoms', model, c_pointer=c_pointer)
+    def __init__(self, model, c_pointer=None, allow_hydrogens='polar only'):
+        super().__init__('Tuggable atoms', model, c_pointer=c_pointer, allow_hydrogens=allow_hydrogens)
         self._prepare_drawings()
         self._last_visibles = None
         self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
@@ -2146,7 +2170,11 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool, ctypes.c_size_t,
                 ctypes.c_void_p),
             ret=ctypes.c_size_t)
-        atoms = atoms[atoms.element_names != 'H']
+        allow_h = self.allow_hydrogens
+        if allow_h == 'no':
+            atoms = atoms[atoms.element_names != 'H']
+        elif allow_h == 'polar':
+            atoms = atoms[atoms.idatm_types != 'HC']
         n = len(atoms)
         ret = numpy.empty(n, cptr)
         num = f(self._c_pointer, atoms._c_pointers, create, n, pointer(ret))

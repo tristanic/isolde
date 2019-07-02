@@ -169,6 +169,7 @@ def generate_interpolator_data(data_dir, cache_dir, file_prefix, wrap_axes = Tru
     except:
         # If pickle load fails for any reason, fall back to loading from
         # text, then regenerate the pickle file at the end.
+        print('Cached {} data not found. Regenerating from text file. This is normal if running ISOLDE for the first time'.format(file_prefix))
         if infile is not None:
             infile.close()
         full_path = os.path.join(data_dir, file_prefix+'.data')

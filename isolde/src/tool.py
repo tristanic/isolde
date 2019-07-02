@@ -112,7 +112,7 @@ class ISOLDE_ToolUI(ToolInstance):
             iw._sim_basic_xtal_map_settings_frame,
             iw._real_space_map_from_volume_frame,
             iw._live_map_control_frame,
-            iw._sim_running_indicator,
+            iw._sim_status_indicator,
             ]
 
         for f in self._hidden_at_start:
