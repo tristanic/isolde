@@ -134,7 +134,7 @@ private:
     bool _clash = false;
     bool _min_converged = false;
     bool _thread_running = false;
-    bool _thread_finished = true;
+    bool _thread_finished = false;
     bool _unstable = false;
 
     // Exponential smoothing
