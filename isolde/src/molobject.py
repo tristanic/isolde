@@ -2586,11 +2586,15 @@ class Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
             raise TypeError('All residues must be from the model attached to this handler!')
         residues = m.residues[numpy.sort(indices)].unique()
         n = len(residues)
-        f = c_function('distance_restraint_mgr_get_ss_restraints',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_bool),
-            ret=ctypes.py_object)
-        ptrs = f(self._c_pointer, residues._c_pointers, n, create)
-        return tuple((_distance_restraints(ptrs[0]), _distance_restraints(ptrs[1])))
+        try:
+            f = c_function('distance_restraint_mgr_get_ss_restraints',
+                args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_bool),
+                ret=ctypes.py_object)
+            ptrs = f(self._c_pointer, residues._c_pointers, n, create)
+            return tuple((_distance_restraints(ptrs[0]), _distance_restraints(ptrs[1])))
+        except ValueError:
+            from .molarray import Distance_Restraints
+            return tuple((Distance_Restraints(), Distance_Restraints()))
 
     def add_ss_restraints(self, residues):
         '''
