@@ -85,6 +85,16 @@ class TugAtomsMode(MouseMode):
                 self._picked_tuggables.enableds = False
                 self._picked_tuggables = None
 
+    def _pick_exclude(self, d):
+        from chimerax.core.models import Model
+        if isinstance(d, Model):
+            if self.structure in d.all_models():
+                return False
+            return True
+        if self.structure in d.drawing_lineage:
+            return False
+        return True
+
     def mouse_down(self, event):
         import numpy
         from chimerax.atomic import Atoms
@@ -94,30 +104,49 @@ class TugAtomsMode(MouseMode):
         view = self.session.main_view
         pa = None
         tm = self.tug_mode
+        v = self.session.main_view
         if tm == 'selection':
             pa = self._atoms[self._atoms.selecteds]
-            v = self.session.main_view
             self._reference_point = v.clip_plane_points(x,y)[0]
         else:
-            from . import picking
-            pick = picking.pick_closest_to_line(self.session, x, y, self._atoms, 0.5, hydrogens=True)
+            # from . import picking
+            # pick = picking.pick_closest_to_line(self.session, x, y, self._atoms, 0.5, hydrogens=True)
+            pick = v.first_intercept(x, y, self._pick_exclude)
             if pick is not None:
-                a = pick
-                if a.element.name=='H':
-                    h_mode = self._tug_mgr.allow_hydrogens
-                    if h_mode == 'no':
-                        self.session.logger.warning('Tugging of hydrogens is not enabled. '
-                            'Applying tug to the nearest bonded heavy atom.')
-                        a = a.neighbors[0]
-                    elif h_mode == 'polar' and a.idatm_type == 'HC':
-                        self.session.logger.warning('Tugging of non-polar hydrogens is not enabled. '
-                            'Applying tug to the nearest bonded heavy atom.')
-                        a = a.neighbors[0]
-                self._focal_atom = a #a = self._focal_atom = pick
-                if tm == "atom":
+                a = None
+                r = None
+                if hasattr(pick, 'atom'):
+                    a = pick.atom
+                    r = a.residue
+                elif hasattr(pick, 'bond'):
+                    b = pick.bond
+                    coords = [a.coord for a in b.atoms]
+                    from chimerax.core.geometry import distance
+                    distances = [distance(c, pick.position) for c in coords]
+                    a = b.atoms[distances.index(min(distances))]
+                    r = a.residue
+                elif hasattr(pick, 'residue'):
+                    r = pick.residue
+                if a:
+                    if a.element.name=='H':
+                        h_mode = self._tug_mgr.allow_hydrogens
+                        if h_mode == 'no':
+                            self.session.logger.warning('Tugging of hydrogens is not enabled. '
+                                'Applying tug to the nearest bonded heavy atom.')
+                            a = a.neighbors[0]
+                        elif h_mode == 'polar' and a.idatm_type == 'HC':
+                            self.session.logger.warning('Tugging of non-polar hydrogens is not enabled. '
+                                'Applying tug to the nearest bonded heavy atom.')
+                            a = a.neighbors[0]
+                    self._focal_atom = a #a = self._focal_atom = pick
+                if tm == "atom" and a:
                     pa = Atoms([a])
-                else:
-                    pa = a.residue.atoms
+                elif tm == "residue" and r:
+                    pa = r.atoms
+                    if a is not None:
+                        self._focal_atom = a
+                    else:
+                        self._focal_atom = r.principal_atom
         if pa is not None and len(pa):
             tugs = self._picked_tuggables = self._tug_mgr.get_tuggables(pa)
             pa = self._picked_atoms = tugs.atoms
