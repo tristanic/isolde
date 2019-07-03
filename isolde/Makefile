@@ -39,7 +39,8 @@ CHIMERAX_APP = "/c/Program Files/ChimeraX"
 endif
 ifeq ($(OS),Darwin)
 # Mac
-CHIMERAX_APP = /Applications/ChimeraX.app
+#CHIMERAX_APP = /Applications/ChimeraX.app
+CHIMERAX_APP = /Applications/ChimeraX_Daily.app
 endif
 ifeq ($(OS),Linux)
 CHIMERAX_APP = /opt/UCSF/ChimeraX-daily
