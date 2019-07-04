@@ -86,6 +86,9 @@ class TugAtomsMode(MouseMode):
                 self._picked_tuggables = None
 
     def _pick_exclude(self, d):
+        if not getattr(d, 'pickable', True):
+            return True
+
         from chimerax.core.models import Model
         if isinstance(d, Model):
             if self.structure in d.all_models():
@@ -150,8 +153,10 @@ class TugAtomsMode(MouseMode):
         if pa is not None and len(pa):
             tugs = self._picked_tuggables = self._tug_mgr.get_tuggables(pa)
             pa = self._picked_atoms = tugs.atoms
+            coords = pa.coords
             if self.tug_mode == 'selection':
                 pull_vector = self._ref_pull_direction(self._reference_point, x, y)
+                self._last_picked_atom_center = coords.mean(axis=0)
             else:
                 pull_vector = self._atom_pull_direction(self._focal_atom, x, y)
             tugs.targets = tugs.atoms.coords + pull_vector
@@ -172,6 +177,9 @@ class TugAtomsMode(MouseMode):
             return
         self._xy = x,y = event.position()
         if self.tug_mode == 'selection':
+            new_atom_center = self._picked_atoms.coords.mean(axis=0)
+            self._reference_point += (new_atom_center - self._last_picked_atom_center)
+            self._last_picked_atom_center = new_atom_center
             pull_vector = self._ref_pull_direction(self._reference_point, x, y)
         else:
             pull_vector = self._atom_pull_direction(self._focal_atom, x, y)
