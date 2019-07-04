@@ -56,6 +56,9 @@ public:
             throw std::logic_error("The last round had atoms moving dangerously fast. Fix the issues and minimise first.");
         if (_clash)
             throw std::logic_error("You still have clashing atoms! Fix these and minimise first.");
+          _thread_finished=false;
+          _thread_running=true;
+          _thread_except = nullptr;
         _thread = std::thread(&OpenMM_Thread_Handler::_step_threaded, this, steps, average);
     }
 
@@ -90,6 +93,9 @@ public:
     {
         //_thread_safety_check();
         finalize_thread();
+        _thread_except = nullptr;
+        _thread_running = true;
+        _thread_finished = false;
         _thread = std::thread(&OpenMM_Thread_Handler::_minimize_threaded, this, tolerance, max_iterations);
     }
 

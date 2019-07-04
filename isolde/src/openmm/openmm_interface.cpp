@@ -32,10 +32,10 @@ void OpenMM_Thread_Handler::_step_threaded(size_t steps, bool smooth)
 {
     try
     {
-        _thread_except = nullptr;
+        // _thread_except = nullptr;
         auto start = std::chrono::steady_clock::now();
-        _thread_running = true;
-        _thread_finished = false;
+        // _thread_running = true;
+        // _thread_finished = false;
         size_t steps_done = 0;
         _starting_state = _final_state;
         _smoothing = smooth;
@@ -97,12 +97,12 @@ void OpenMM_Thread_Handler::_minimize_threaded(const double &tolerance, int max_
     // std::cout << "Starting minimization with tolerance of " << tolerance << " and max iterations per round of " << max_iterations << std::endl;
     try
     {
-        _thread_except = nullptr;
+        // _thread_except = nullptr;
         auto start = std::chrono::steady_clock::now();
         _clash = false;
         _smoothed_coords.clear();
-        _thread_running = true;
-        _thread_finished = false;
+        // _thread_running = true;
+        // _thread_finished = false;
         _starting_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Energy);
         _min_converged = false;
         double tol = tolerance * _natoms;
