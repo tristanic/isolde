@@ -10,11 +10,132 @@
 
 # Useful mouse modes for working with ISOLDE
 
-from chimerax.mouse_modes import MouseMode
+from chimerax.mouse_modes import MouseMode, SelectMouseMode
 
 from .tugging import TugAtomsMode
 
-class AtomPicker(MouseMode):
+class AtomPicker(SelectMouseMode):
+
+    def __init__(self, session, isolde):
+        super().__init__(session)
+        self.isolde = isolde
+
+    def _pick_exclude(self, d):
+        restrict_model = self._restriction_model
+        if not getattr(d, 'pickable', True):
+            return True
+        if restrict_model is None:
+            return False
+        from chimerax.core.models import Model
+        if isinstance(d, Model):
+            if restrict_model in d.all_models():
+                return False
+            return True
+        if restrict_model in d.drawing_lineage:
+            return False
+        return True
+
+    def _find_restrictions(self):
+        isolde = self.isolde
+        restrict_model = isolde.selected_model
+        if isolde.simulation_running:
+            restrict_atoms = isolde.sim_manager.sim_construct.mobile_atoms
+        else:
+            restrict_atoms = None
+        return restrict_model, restrict_atoms
+
+    def mouse_up(self, event):
+        self._undraw_drag_rectangle()
+        mode = self.mode
+        # if event.shift_down() and mode == 'replace':
+        #     mode = 'add'
+        # elif event.alt_down() and mode == 'replace':
+        #     mode = 'subtract'
+
+        if self._is_drag(event):
+            # Select objects in rectangle
+            self.mouse_drag_select(self.mouse_down_position, event, mode, self.session, self.view)
+        elif not self.double_click:
+            # Select object under pointer
+            self.mouse_select(event, mode, self.session, self.view)
+        MouseMode.mouse_up(self, event)
+
+    def mouse_select(self, event, mode, session, view):
+        x,y = event.position()
+        rm, ra = self._find_restrictions()
+        self._restriction_model = rm
+        pick = view.first_intercept(x, y, self._pick_exclude)
+        if ra is not None:
+            if hasattr(pick, 'atom'):
+                if pick.atom not in ra:
+                    pick = None
+                    # delattr(pick, 'atom')
+            if hasattr(pick, 'residue') and pick.residue is not None:
+                if not any([a in ra for a in pick.residue.atoms]):
+                    pick = None
+                    # delattr(pick, 'residue')
+            if hasattr(pick, 'bond'):
+                b = pick.bond
+                if not any([a in ra for a in b.atoms]):
+                    pick = None
+                else:
+                    distance = pick.distance
+                    pick = [pick]
+                    from chimerax.atomic import PickedAtom
+                    pick.extend([PickedAtom(a, distance) for a in b.atoms if a in ra])
+                    # delattr(pick, 'bond')
+        select_pick(session, pick, mode)
+
+    def mouse_drag_select(self, start_xy, event, mode, session, view):
+        from chimerax.atomic import Atoms, Bonds, Residues
+        rm, ra = self._find_restrictions()
+        self._restriction_model = rm
+        sx, sy = start_xy
+        x, y = event.position()
+        pick = view.rectangle_intercept(sx, sy, x, y, exclude=self._pick_exclude)
+        if ra is not None:
+            rr = ra.unique_residues
+            rb = ra.intra_bonds
+            for p in reversed(pick):
+                if hasattr(p, 'atoms'):
+                    p.atoms = p.atoms.intersect(ra)
+                if hasattr(p, 'bonds'):
+                    p.bonds = p.bonds.intersect(rb)
+                if hasattr(p, 'residues'):
+                    p.residues = p.residues.intersect(rr)
+        select_pick(session, pick, mode)
+
+    def cleanup(self):
+        pass
+
+
+
+def select_pick(session, pick, mode = 'replace'):
+    sel = session.selection
+    from chimerax.core.undo import UndoState
+    undo_state = UndoState("select")
+    sel.undo_add_selected(undo_state, False)
+    if pick is None:
+        if mode == 'replace':
+            from chimerax.core.commands import run
+            run(session, 'select clear')
+            session.logger.status('cleared selection')
+    else:
+        if mode == 'replace':
+            sel.clear()
+            mode = 'add'
+        if isinstance(pick, list):
+            for p in pick:
+                p.select(mode)
+        else:
+            pick.select(mode)
+    sel.clear_promotion_history()
+    sel.undo_add_selected(undo_state, True, old_state=False)
+    session.undo.register(undo_state)
+
+
+
+class AtomPicker_Old(MouseMode):
     name = 'select'
     '''
     Pick atom(s) only using the mouse, ignoring other objects. Select
