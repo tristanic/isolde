@@ -1190,9 +1190,14 @@ class Isolde():
 
     def add_ffxml_files(self, forcefield, file_list):
         log = self.session.logger
+        # from simtk.openmm.app import ForceField
+        # temp_ff = ForceField(tuple(file_list))
+        # for tname, template in temp_ff._templates.items():
+        #
+        #
         for f in file_list:
             try:
-                forcefield.loadFile(f)
+                forcefield.loadFile(f, prefix="USER_")
             except ValueError as e:
                 log.warning('Failed to add {}: {}'.format(f, str(e)))
             except:

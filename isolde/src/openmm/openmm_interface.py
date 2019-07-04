@@ -2861,6 +2861,13 @@ def find_residue_templates(residues, template_names):
         known_sugars
         )
     for name in names:
+        user_name = 'USER_{}'.format(name)
+        if user_name in template_names:
+            indices = numpy.where(residues.names == name)[0]
+            for i in indices:
+                templates[i] = user_name
+            continue
+
         if name in known_sugars:
             sugars = ligands[ligands.names == name]
             for sugar in sugars:
@@ -2869,12 +2876,14 @@ def find_residue_templates(residues, template_names):
                     templates[residues.index(sugar)] = tname
                 if prot_res is not None:
                     templates[residues.index(prot_res)] = find_glycan_anchor_name(prot_res)
+            continue
 
         ccd_name = 'MC_{}'.format(name)
         if ccd_name in template_names:
             indices = numpy.where(residues.names == name)[0]
             for i in indices:
                 templates[i] = ccd_name
+            continue
 
     from .amberff.metal_name_map import metal_name_map
     from chimerax.atomic import Element
