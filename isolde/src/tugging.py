@@ -165,6 +165,10 @@ class TugAtomsMode(MouseMode):
             # Scale spring constants down with atom count - we want
             # to be able to tug groups more strongly than single atoms, but not
             # *too* strongly.
+            if n == 0:
+                self.tugging = False
+                return
+                
             tugs.spring_constants = ((
                 self.spring_constant * pa.elements.masses.astype(numpy.double)
                 /_CARBON_MASS)/ n**(0.7)).reshape((n,1))
