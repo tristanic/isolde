@@ -47,7 +47,7 @@ def find_incorrect_residues(session, model, heavy_atoms_only = True):
             ta_names = set([a.name for a in tmpl.atoms if a.element.name != 'H'])
         else:
             ra_names = set(r.atoms.names)
-            ta_names = set([a.name for a in t.atoms])
+            ta_names = set([a.name for a in tmpl.atoms])
         ra_residuals = ra_names.difference(ta_names)
         ta_residuals = ta_names.difference(ra_names)
         if len(ta_residuals):
