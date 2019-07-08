@@ -78,12 +78,17 @@ class AtomPicker(SelectMouseMode):
                 b = pick.bond
                 if not any([a in ra for a in b.atoms]):
                     pick = None
-                else:
-                    distance = pick.distance
-                    pick = [pick]
-                    from chimerax.atomic import PickedAtom
+        if hasattr(pick, 'bond') and pick.bond is not None:
+            distance = pick.distance
+            b = pick.bond
+            pick = [pick]
+            from chimerax.atomic import PickedAtom
+            if b.atoms is not None:
+                if ra is not None:
                     pick.extend([PickedAtom(a, distance) for a in b.atoms if a in ra])
-                    # delattr(pick, 'bond')
+                else:
+                    pick.extend([PickedAtom(a, distance) for a in b.atoms])
+
         select_pick(session, pick, mode)
 
     def mouse_drag_select(self, start_xy, event, mode, session, view):
