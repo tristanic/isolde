@@ -33,15 +33,21 @@ _forcefield_files = {
         'mse.xml',                   # Approximation (same charges as MET)
         'termods.xml',                   # Various chain-terminal residue modifications
         'glycam_all.xml',            # GLYCAM06 force field
+        'iron_sulfur.xml',
         #'combined_ccd.xml',          # General ligands (Nigel Moriarty / Dave Case)
-        'moriarty_and_case.xml',     # General ligands (Nigel Moriarty / Dave Case)
-        'FES.xml',                   # based on SF4 from Moriarty/Case set
+        #'moriarty_and_case.xml',     # General ligands (Nigel Moriarty / Dave Case)
+        #'FES.xml',                   # based on SF4 from Moriarty/Case set
         'bryce_set.xml',             # A small collection of ligands and PTMs (most notably ATP/GDP/NAD(P)(H)/FAD(H)) from http://research.bmh.manchester.ac.uk/bryce/amber
         'ptms.xml',                  # Post-translational modifications from ares.tamu.ed/FFPTM DOI: 10.1021/ct400556v
         'truncated_aa.xml',          # Artifical amino acid "stubs" to support common truncations used in model building
         ]],
 
     'charmm36': ['charmm36.xml', 'charmm36/water.xml',]
+}
+
+_ligand_files = {
+    'amber14': os.path.join(ff_dir, 'amberff', 'moriarty_and_case.zip'),
+    'charmm36': None
 }
 
 default_forcefields = list(_forcefield_files.keys())
@@ -51,32 +57,35 @@ def _define_forcefield(ff_files):
     ff = ForceField(*[f for f in ff_files if f is not None])
     return ff
 
-def _background_load_ff(name, ff_files, version):
+def _background_load_ff(name, ff_files, openmm_version, isolde_version):
     cache_dir = get_forcefield_cache_dir()
     pickle_file = os.path.join(cache_dir,'ff_{}.pickle'.format(name))
     try:
         import pickle
         infile = open(pickle_file, 'rb')
-        forcefield, cached_version = pickle.load(infile)
-        if cached_version != version:
-            raise RuntimeError('Cached forcefield version does not match OpenMM version')
+        forcefield, cached_openmm_version, cached_isolde_version = pickle.load(infile)
+        if cached_openmm_version != openmm_version or cached_isolde_version != isolde_version:
+            raise RuntimeError('Cached forcefield is out of date.')
         print('Done loading forcefield')
         return {name: forcefield}
     except:
         print('Forcefield cache not found or out of date. Regenerating from ffXML files. This is normal if running ISOLDE for the first time, or after upgrading OpenMM.')
         ff = _define_forcefield(ff_files)
         outfile = open(pickle_file, 'wb')
-        pickle.dump((ff, version), outfile)
+        pickle.dump((ff, openmm_version, isolde_version), outfile)
         outfile.close()
         print('Done loading forcefield')
         return {name: ff}
 
 class Forcefield_Mgr:
-    def __init__(self):
+    def __init__(self, session):
+        self.session=session
         self._ff_dict = {}
         self._task = None
         from simtk.openmm import version
         self._openmm_version = version.version
+        from chimerax.isolde import version
+        self._isolde_version = version.version(session)
 
     def _complete_task(self):
         from time import sleep
@@ -103,6 +112,9 @@ class Forcefield_Mgr:
                     ))
             ffd[key] = ff = _define_forcefield(ff_files)
             return ff
+
+    def ligand_db(self, key):
+        return _ligand_files[key]
 
     @property
     def available_forcefields(self):
@@ -131,5 +143,5 @@ class Forcefield_Mgr:
             ff_files = _forcefield_files[name]
         from concurrent.futures import ThreadPoolExecutor
         executor = ThreadPoolExecutor(max_workers=1)
-        self._task = executor.submit(_background_load_ff, name, ff_files, self._openmm_version)
+        self._task = executor.submit(_background_load_ff, name, ff_files, self._openmm_version, self._isolde_version)
         executor.shutdown(wait=False)

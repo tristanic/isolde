@@ -1,0 +1,121 @@
+<ForceField>
+  <Info>
+    <DateGenerated>2019-07-05</DateGenerated>
+  </Info>
+  <AtomTypes>
+    <Type class="FT" element="Fe" mass="55.845" name="FT"/>
+    <Type class="FS" element="Fe" mass="55.845" name="FS"/>
+    <Type class="FB" element="Fe" mass="55.845" name="FB"/>
+    <Type class="SB" element="S" mass="32.066" name="SB"/>
+    <Type class="ST" element="S" mass="32.066" name="ST"/>
+    <Type class="SM" element="S" mass="32.066" name="SM"/>
+  </AtomTypes>
+  <Residues>
+    <Residue name="MC_CYF">
+      <Atom charge="-0.4157" name="N" type="N"/>
+      <Atom charge="0.2719" name="HN" type="H"/>
+      <Atom charge="-0.0351" name="CA" type="CT"/>
+      <Atom charge="0.0508" name="HA" type="H1"/>
+      <Atom charge="0.0405" name="CB" type="CT"/>
+      <Atom charge="0.0581" name="HB3" type="H1"/>
+      <Atom charge="0.0581" name="HB2" type="H1"/>
+      <Atom charge="-0.621" name="SG" type="SM"/>
+      <Atom charge="0.5973" name="C" type="C"/>
+      <Atom charge="-0.5679" name="O" type="O"/>
+      <Bond atomName1="C" atomName2="O"/>
+      <Bond atomName1="CB" atomName2="HB3"/>
+      <Bond atomName1="CB" atomName2="HB2"/>
+      <Bond atomName1="CB" atomName2="SG"/>
+      <Bond atomName1="CA" atomName2="HA"/>
+      <Bond atomName1="CA" atomName2="CB"/>
+      <Bond atomName1="CA" atomName2="C"/>
+      <Bond atomName1="N" atomName2="HN"/>
+      <Bond atomName1="N" atomName2="CA"/>
+      <ExternalBond atomName="N"/>
+      <ExternalBond atomName="C"/>
+    </Residue>
+    <Residue name="MC_SF4">
+      <Atom charge="0.635" name="FE1" type="FT"/>
+      <Atom charge="0.635" name="FE2" type="FT"/>
+      <Atom charge="0.635" name="FE3" type="FB"/>
+      <Atom charge="0.635" name="FE4" type="FB"/>
+      <Atom charge="-0.572" name="S1" type="ST"/>
+      <Atom charge="-0.572" name="S2" type="ST"/>
+      <Atom charge="-0.572" name="S3" type="SB"/>
+      <Atom charge="-0.572" name="S4" type="SB"/>
+      <Bond atomName1="FE1" atomName2="S1"/>
+      <Bond atomName1="FE1" atomName2="S2"/>
+      <Bond atomName1="FE1" atomName2="S3"/>
+      <Bond atomName1="FE2" atomName2="S2"/>
+      <Bond atomName1="FE2" atomName2="S1"/>
+      <Bond atomName1="FE2" atomName2="S4"/>
+      <Bond atomName1="FE3" atomName2="S2"/>
+      <Bond atomName1="FE3" atomName2="S3"/>
+      <Bond atomName1="FE3" atomName2="S4"/>
+      <Bond atomName1="FE4" atomName2="S1"/>
+      <Bond atomName1="FE4" atomName2="S3"/>
+      <Bond atomName1="FE4" atomName2="S4"/>
+    </Residue>
+    <Residue name="MC_FES">
+      <Atom charge="0.429" name="FE1" type="FT"/>
+      <Atom charge="0.429" name="FE2" type="FT"/>
+      <Atom charge="-0.429" name="S1" type="ST"/>
+      <Atom charge="-0.429" name="S2" type="ST"/>
+      <Bond atomName1="FE1" atomName2="S1"/>
+      <Bond atomName1="FE1" atomName2="S2"/>
+      <Bond atomName1="FE2" atomName2="S2"/>
+      <Bond atomName1="FE2" atomName2="S1"/>
+    </Residue>
+
+  </Residues>
+  <HarmonicBondForce>
+    <Bond k="48437.33119999999" length="0.23500000000000001" type1="FT" type2="ST"/>
+    <Bond k="48437.33119999999" length="0.23500000000000001" type1="FB" type2="SB"/>
+    <Bond k="50806.31199999999" length="0.22400000000000003" type1="FT" type2="SB"/>
+    <Bond k="50806.31199999999" length="0.22400000000000003" type1="FB" type2="ST"/>
+    <Bond k="70310.44639999999" length="0.229" type1="FT" type2="SM"/>
+    <Bond k="70310.44639999999" length="0.229" type1="FB" type2="SM"/>
+    <Bond k="103893.74079999999" length="0.18400000000000002" type1="CT" type2="SM"/>
+  </HarmonicBondForce>
+  <HarmonicAngleForce>
+    <Angle angle="1.361356816555577" k="429.688432" type1="FT" type2="ST" type3="FT"/>
+    <Angle angle="1.361356816555577" k="429.688432" type1="FB" type2="SB" type3="FB"/>
+    <Angle angle="1.361356816555577" k="533.468368" type1="FB" type2="ST" type3="FT"/>
+    <Angle angle="1.361356816555577" k="533.468368" type1="FT" type2="SB" type3="FB"/>
+    <Angle angle="1.9024088846738192" k="77.161328" type1="SB" type2="FB" type3="SB"/>
+    <Angle angle="1.9024088846738192" k="77.161328" type1="ST" type2="FT" type3="ST"/>
+    <Angle angle="1.8849555921538759" k="186.556192" type1="SB" type2="FT" type3="ST"/>
+    <Angle angle="1.8849555921538759" k="186.556192" type1="ST" type2="FB" type3="SB"/>
+    <Angle angle="1.7802358370342162" k="250.989792" type1="FT" type2="SM" type3="CT"/>
+    <Angle angle="1.7802358370342162" k="250.989792" type1="FB" type2="SM" type3="CT"/>
+    <Angle angle="1.7802358370342162" k="316.034256" type1="SM" type2="FB" type3="SB"/>
+    <Angle angle="1.7802358370342162" k="316.034256" type1="SM" type2="FT" type3="ST"/>
+    <Angle angle="1.7802358370342162" k="232.387728" type1="SM" type2="FB" type3="ST"/>
+    <Angle angle="1.7802358370342162" k="232.387728" type1="SM" type2="FT" type3="SB"/>
+    <!-- For FES, by analogy to ST-FT-ST (consistent with angles in 3wcq)-->
+    <Angle angle="1.9024088846738192" k="77.161328" type1="SM" type2="FT" type3="SM"/>
+    <Angle angle="1.911135530933791" k="502.97537600000004" type1="SM" type2="CT" type3="H1"/>
+    <Angle angle="1.8954275676658419" k="502.97537600000004" type1="SM" type2="CT" type3="CT"/>
+  </HarmonicAngleForce>
+  <PeriodicTorsionForce>
+    <Proper k1="0.4184" periodicity1="3" phase1="0.0" type1="" type2="CT" type3="SM" type4=""/>
+    <Proper k1="0.6508444444444444" periodicity1="3" phase1="0.0" type1="" type2="CT" type3="CT" type4=""/>
+    <Proper k1="0.0" periodicity1="2" phase1="3.141592653589793" type1="" type2="FT" type3="SM" type4=""/>
+    <Proper k1="0.0" periodicity1="2" phase1="3.141592653589793" type1="" type2="FB" type3="SM" type4=""/>
+    <Proper k1="0.0" periodicity1="2" phase1="3.141592653589793" type1="" type2="FT" type3="SB" type4=""/>
+    <Proper k1="0.0" periodicity1="2" phase1="3.141592653589793" type1="" type2="FB" type3="SB" type4=""/>
+    <Proper k1="0.0" periodicity1="2" phase1="3.141592653589793" type1="" type2="FT" type3="ST" type4=""/>
+    <Proper k1="0.0" periodicity1="2" phase1="3.141592653589793" type1="" type2="FB" type3="ST" type4=""/>
+    <Proper k1="7.5312" periodicity1="2" phase1="3.141592653589793" type1="SB" type2="FT" type3="SM" type4="CT"/>
+    <Proper k1="7.5312" periodicity1="2" phase1="3.141592653589793" type1="ST" type2="FB" type3="SM" type4="CT"/>
+  </PeriodicTorsionForce>
+  <NonbondedForce coulomb14scale="0.8333333333333334" lj14scale="0.5">
+    <UseAttributeFromResidue name="charge"/>
+    <Atom epsilon="0.052300000000000006" sigma="0.19599771799087468" type="FT"/>
+    <Atom epsilon="0.0" sigma="1.0" type="FS"/>
+    <Atom epsilon="0.052300000000000006" sigma="0.19599771799087468" type="FB"/>
+    <Atom epsilon="1.046" sigma="0.4098134103445561" type="SB"/>
+    <Atom epsilon="1.046" sigma="0.4098134103445561" type="ST"/>
+    <Atom epsilon="1.046" sigma="0.4098134103445561" type="SM"/>
+  </NonbondedForce>
+</ForceField>

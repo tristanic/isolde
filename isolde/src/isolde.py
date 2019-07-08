@@ -176,7 +176,7 @@ class Isolde():
         sp = self.sim_params = SimParams()
 
         from .openmm.forcefields import Forcefield_Mgr
-        ffmgr = self._ff_mgr = Forcefield_Mgr()
+        ffmgr = self._ff_mgr = Forcefield_Mgr(self.session)
 
         self._status = self.session.logger.status
 

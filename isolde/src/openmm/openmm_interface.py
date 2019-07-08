@@ -1250,6 +1250,7 @@ class Sim_Handler:
         # Forcefield used in this simulation
 #        from .forcefields import forcefields
         ff = forcefield_mgr[sim_params.forcefield]
+        ligand_db = forcefield_mgr.ligand_db(sim_params.forcefield)
 #        ff = self._forcefield = self.define_forcefield(forcefields[sim_params.forcefield])
 
         # All custom forces in the simulation
@@ -1261,7 +1262,7 @@ class Sim_Handler:
         logger = self.session.logger
         # Overall simulation topology
         logger.status('Preparing simulation topology...')
-        template_dict = find_residue_templates(sim_construct.all_residues, ff._templates.keys())
+        template_dict = find_residue_templates(sim_construct.all_residues, ff, ligand_db=ligand_db, logger=session.logger)
         top, residue_templates = self.create_openmm_topology(atoms, template_dict)
         self._topology = top
 
@@ -2837,13 +2838,14 @@ class Sim_Performance_Tracker:
             self._sh.triggers.remove_handler(self._h)
             self._h=None
 
-def find_residue_templates(residues, template_names):
+def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
     '''
     Works out the template name applicable to cysteine residues (since OpenMM
     can't work this out for itself when ignoreExternalBonds is True), and
     looks up the template name for all known parameterised ligands from the
     CCD.
     '''
+    template_names = forcefield._templates.keys()
     import numpy
     templates = {}
     cys_indices = numpy.where(residues.names == 'CYS')[0]
@@ -2885,6 +2887,24 @@ def find_residue_templates(residues, template_names):
                 templates[i] = ccd_name
             continue
 
+        if ligand_db is not None:
+            from zipfile import ZipFile
+            with ZipFile(ligand_db) as zf:
+                xname = name+'.xml'
+                if xname in zf.namelist():
+                    logger.info('Loading residue template for {} from internal database'.format(name))
+                    with zf.open(xname) as xf:
+                        forcefield.loadFile(xf)
+                    indices = numpy.where(residues.names == name)[0]
+                    for i in indices:
+                        templates[i] = 'MC_{}'.format(name)
+            continue
+
+        warn_str = ('No template with name {} found in the molecular dynamics '
+            'forcefield. Attempting to match by topology. You may need to '
+            'provide a custom ligand definition.')
+        logger.warning(warn_str.format(name))
+
     from .amberff.metal_name_map import metal_name_map
     from chimerax.atomic import Element
     metals = [n.upper() for n in Element.names if Element.get_element(n).is_metal]
@@ -2905,11 +2925,14 @@ def cys_type(residue):
     from chimerax.atomic import Bonds, concatenate
     atoms = residue.atoms
     names = atoms.names
-    try:
-        sulfur_atom = atoms[names == 'SG'][0]
-    except:
-        # Assume it's been truncated. Let the standard machinery handle it.
+    rneighbors = residue.neighbors
+    sulfur_atom = residue.find_atom('SG')
+    if sulfur_atom is None:
         return None
+    for r in rneighbors:
+        if r.name in ('SF4', 'FES'):
+            print('Found iron-sulfur cysteine')
+            return 'MC_CYF'
     bonds = Bonds(sulfur_atom.bonds)
     if len(bonds) == 1:
         # Deprotonated
