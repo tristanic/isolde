@@ -118,7 +118,7 @@ void OpenMM_Thread_Handler::_minimize_threaded(const double &tolerance, int max_
         } else if (result == isolde::LocalEnergyMinimizer::DID_NOT_CONVERGE) {
             // Minimisation ongoing. Just leave _min_converged = false, but
             // let ISOLDE have the new coordinates.
-
+            _final_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Forces | OpenMM::State::Energy);
         } else // if (result < 0)
         {
             // Minimisation failed. Revert the model to its initial state
@@ -146,8 +146,8 @@ void OpenMM_Thread_Handler::_reinitialize_context_threaded()
     try
     {
         _thread_except = nullptr;
-        _thread_running = true;
-        _thread_finished = false;
+        // _thread_running = true;
+        // _thread_finished = false;
         OpenMM::State current_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Velocities);
         _context->reinitialize();
         _context->setPositions(current_state.getPositions());

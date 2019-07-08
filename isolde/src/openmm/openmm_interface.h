@@ -76,6 +76,8 @@ public:
     {
         //_thread_safety_check();
         finalize_thread();
+        _thread_running = true;
+        _thread_finished = false;
         _thread = std::thread(&OpenMM_Thread_Handler::_reinitialize_context_threaded, this);
     }
 
