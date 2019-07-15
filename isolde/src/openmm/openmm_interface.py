@@ -2940,11 +2940,14 @@ def cys_type(residue):
     bonded_atoms = concatenate(bonds.atoms)
     for a in bonded_atoms:
         if a.residue != residue:
-            if 'OXT' in names:
-                return 'CCYX'
-            if 'H1' in names:
-                return 'NCYX'
-            return 'CYX'
+            if a.name == "SG":
+                if 'OXT' in names:
+                    return 'CCYX'
+                if 'H1' in names:
+                    return 'NCYX'
+                return 'CYX'
+            # Assume metal binding - will eventually need to do something better here
+            return 'CYM'
         if a.name == 'HG':
             if 'OXT' in names:
                 return 'CCYS'
