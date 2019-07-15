@@ -154,7 +154,7 @@ def amber_to_xml_individual(input_dir, output_dir, resname_prefix=None,
 
     if compress_to is not None:
         import zipfile
-        if os.path.splitext(compress_to)[1] != 'zip':
+        if os.path.splitext(compress_to)[1].lower() != '.zip':
             compress_to += '.zip'
         with zipfile.ZipFile(compress_to, 'w', zipfile.ZIP_DEFLATED) as z:
             for xf in xmlfiles:
@@ -241,6 +241,77 @@ def convert_bryce_parms(dirname, output_xml, resname_prefix='BRYCE_'):
     off.residues = residues
     off.condense()
     off.write(output_xml, skip_duplicates=False)
+
+def find_duplicate_definitions(dirname):
+    import parmed as pmd
+    from glob import glob
+    import os
+    from collections import defaultdict
+    known_angles = defaultdict(lambda: list())
+    known_bonds = defaultdict(lambda: list())
+    known_propers = defaultdict(lambda: list())
+    known_impropers = defaultdict(lambda: list())
+    import numpy
+
+    file_dict = _find_mol2_frcmod_pairs(dirname, blacklist=_blacklist.union(_obsolete))
+    for key, (m2f, frcmod) in file_dict.items():
+        ff = pmd.openmm.OpenMMParameterSet.from_parameterset(
+            pmd.amber.AmberParameterSet(frcmod)
+        )
+        for batoms, bdef in ff.bond_types.items():
+            sba = frozenset(batoms)
+            params = numpy.array((bdef.k, bdef.req))
+            kbl = known_bonds[sba]
+            if not len(kbl):
+                kbl.append(params)
+                continue
+            for kb in kbl:
+                if all(numpy.isclose(params, kb)):
+                    break
+            else:
+                kbl.append(params)
+
+        for aatoms, adef in ff.angle_types.items():
+            saa = frozenset((aatoms, aatoms[::-1]))
+            params = numpy.array((adef.k, adef.theteq))
+            kal = known_angles[saa]
+            if not len(kal):
+                kal.append(params)
+                continue
+            for ka in kal:
+                if all(numpy.isclose(params, ka)):
+                    break
+            else:
+                kal.append(params)
+
+        for datoms, ddeflist in ff.dihedral_types.items():
+            sda = frozenset((datoms, datoms[::-1]))
+            for ddef in ddeflist:
+                params = numpy.array((ddef.phi_k, ddef.per, ddef.phase, ddef.scee, ddef.scnb))
+                kpl = known_propers[sda]
+                if not len(kpl):
+                    kpl.append(params)
+                    continue
+                for kp in kpl:
+                    if all(numpy.isclose(params, kp)):
+                        break
+                else:
+                    kpl.append(params)
+
+        for iatoms, idef in ff.improper_periodic_types.items():
+            params = numpy.array((idef.phi_k, idef.per, idef.phase, idef.scee, idef.scnb))
+            kil = known_impropers[iatoms]
+            if not len(kil):
+                kil.append(params)
+                continue
+            for ki in kil:
+                if all(numpy.isclose(params, ki)):
+                    break
+            else:
+                kil.append(params)
+    return known_bonds, known_angles, known_propers, known_impropers
+
+
 
 
 
