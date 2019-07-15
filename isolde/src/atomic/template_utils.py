@@ -167,6 +167,17 @@ def find_maximal_isomorphous_fragment(residue_graph, template_graph):
 
     return residue_larger, subgraph
 
+def add_metal_bonds_from_template(residue, template):
+    m = residue.structure
+    metal_atoms = [a for a in template.atoms if a.element.is_metal]
+    for met in metal_atoms:
+        rmet = residue.find_atom(met.name)
+        if rmet is None:
+            raise TypeError('Residue does not have the required metal ion! Use fix_residue_from_template() instead.')
+        for n in met.neighbors:
+            rn = residue.find_atom(n.name)
+            if not rn in rmet.neighbors:
+                m.new_bond(rmet, rn)
 
 def fix_residue_from_template(residue, template):
     m = residue.structure
@@ -276,6 +287,6 @@ def build_next_atom_from(next_atom_name, stub_atom_name, residue, template):
     dist = distance(tnext.coord, tstub.coord)
     ang = angle(tnext.coord, tstub.coord, a2.coord)
     dihe = dihedral(tnext.coord, tstub.coord, a2.coord, a3.coord)
-    print('{}: {} {} {}'.format(next_atom_name, dist, ang, dihe))
+    # print('{}: {} {} {}'.format(next_atom_name, dist, ang, dihe))
     a = struct_edit.add_dihedral_atom(next_atom_name, tnext.element, n1, n2, n3, dist, ang, dihe)
     return a
