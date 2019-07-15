@@ -67884,10 +67884,10 @@
   <NonbondedForce coulomb14scale="0.8333333333333334" lj14scale="0.5">
     <UseAttributeFromResidue name="charge"/>
     <Atom epsilon="0.4577296" sigma="0.3399669508423535" type="Cg"/>
-    <Atom epsilon="0.0" sigma="1.0" type="CT"/>
+    <!-- <Atom epsilon="0.0" sigma="1.0" type="CT"/>
     <Atom epsilon="0.0" sigma="1.0" type="2C"/>
     <Atom epsilon="0.0" sigma="1.0" type="3C"/>
-    <Atom epsilon="0.0" sigma="1.0" type="CX"/>
+    <Atom epsilon="0.0" sigma="1.0" type="CX"/> -->
     <Atom epsilon="0.4577296" sigma="0.3399669508423535" type="Cy"/>
     <Atom epsilon="0.359824" sigma="0.3399669508423535" type="C"/>
     <Atom epsilon="0.4577296" sigma="0.3399669508423535" type="Cp"/>
