@@ -17,6 +17,7 @@ class IsoldeRESTServer(Task):
         self._server_methods = {}
         self.standard_functions = {
             'run':  run_chimerax_command,
+            'test': test_command
         }
 
         for fname, func in self.standard_functions.items():
@@ -86,21 +87,21 @@ class IsoldeRESTServer(Task):
             func_dict = ret_dict[func_name]
             func_dict['docstring'] = inspect.getdoc(func)
             arg_dict = func_dict['args'] = dict()
+            kwarg_dict = func_dict['kwargs'] = dict()
             sig = inspect.signature(func)
             for arg_name, ap in sig.parameters.items():
                 if arg_name != 'session':
-                    arg_props = arg_dict[arg_name] = dict()
+                    default = ap.default
+                    if default != ap.empty:
+                        arg_props = kwarg_dict[arg_name] = dict()
+                        arg_props['default'] = default
+                    else:
+                        arg_props = arg_dict[arg_name] = dict()
                     annot = ap.annotation
                     if annot == ap.empty:
-                        arg_props['type'] = None
+                        arg_props['type'] = 'unspecified'
                     else:
                         arg_props['type'] = annot
-                    default = ap.default
-                    if default == ap.empty:
-                        arg_props['required'] = True
-                    else:
-                        arg_props['required'] = False
-                        arg_props['default'] = default
         return ret_dict
 
 def run_chimerax_command(session, commands:'list of strings'):
@@ -137,6 +138,14 @@ def run_chimerax_command(session, commands:'list of strings'):
     ret['log'] = data
     return ret
 
+def test_command(session, arg1:'whatever', arg2:'you', kwarg1:'like'=None):
+    '''
+    Will simply echo back a dict of the provided arguments.
+    '''
+    from queue import Queue
+    q = Queue()
+    ret = {'arg1': arg1, 'arg2':arg2, 'kwarg1': kwarg1}
+    return ret
 
 class RESTHandler(BaseHTTPRequestHandler):
     '''Process one REST request.'''

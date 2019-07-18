@@ -62,12 +62,12 @@ def f(self, {}):
     return result
 '''.format(
         ', '.join((
-            ', '.join(args),
-            ', '.join(['{}={}'.format(kw, val) for kw, val in kwargs.items()])
+            ', '.join("{}:'{}'".format(arg, argtype['type']) for arg, argtype in args.items()),
+            ', '.join(["{}:'{}'={}".format(kw, val['type'], val['default']) for kw, val in kwargs.items()])
             )),
         func_def['docstring'],
         ', '.join(args),
-        "dict( {} )".format(', '.join('"{}": {}'.format(kw, val) for kw, val in kwargs.items())),
+        "dict( [{}] )".format(', '.join('("{}", {})'.format(kw, kw) for kw in kwargs.keys())),
         fname,
         )
                 # print(f_str)
