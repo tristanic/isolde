@@ -8,10 +8,19 @@ class IsoldeRESTServer(Task):
     Listen for HTTP/REST requests, and return machine-friendly
     JSON descriptors of results.
     '''
+
+
+
     def __init__(self, *args, **kw):
         self.httpd = None
         super().__init__(*args, **kw)
         self._server_methods = {}
+        self.standard_functions = {
+            'run':  run_chimerax_command,
+        }
+
+        for fname, func in self.standard_functions.items():
+            self.register_server_method(fname, func)
 
     SESSION_SAVE = False
 
@@ -70,7 +79,6 @@ class IsoldeRESTServer(Task):
         return self._server_methods
 
     def list_server_methods(self):
-        import json
         import inspect
         from collections import defaultdict
         ret_dict = defaultdict(lambda: dict())
@@ -79,7 +87,7 @@ class IsoldeRESTServer(Task):
             func_dict['docstring'] = inspect.getdoc(func)
             arg_dict = func_dict['args'] = dict()
             sig = inspect.signature(func)
-            for arg_name, ap in zip(sig.parameters.items()):
+            for arg_name, ap in sig.parameters.items():
                 if arg_name != 'session':
                     arg_props = arg_dict[arg_name] = dict()
                     annot = ap.annotation
@@ -95,16 +103,39 @@ class IsoldeRESTServer(Task):
                         arg_props['default'] = default
         return ret_dict
 
+def run_chimerax_command(session, commands:'list of strings'):
+    '''
+    Run one or more ChimeraX command-line commands, and receive the resulting
+    log messages.
 
+    Args:
 
+        commands: a list of strings, where each string is a complete, executable
+            ChimeraX command, e.g.:
 
-
-
-
-
-
-
-
+        ["color #1 bychain","color #1 byhetero","cofr center showPivot true"]
+    '''
+    from queue import Queue
+    from chimerax.core.errors import NotABug
+    from chimerax.core.logger import StringPlainTextLog
+    q = Queue()
+    ret = {}
+    def f(commands=commands, session=session, q=q):
+        logger = session.logger
+        with StringPlainTextLog(logger) as rest_log:
+            from chimerax.core.commands import run
+            try:
+                for cmd in commands:
+                    if isinstance(cmd, bytes):
+                        cmd = cmd.decode('utf-8')
+                    run(session, cmd, log=False)
+            except NotABug as e:
+                logger.info(str(e))
+            q.put(rest_log.getvalue())
+    session.ui.thread_safe(f)
+    data = q.get()
+    ret['log'] = data
+    return ret
 
 
 class RESTHandler(BaseHTTPRequestHandler):
@@ -122,17 +153,18 @@ class RESTHandler(BaseHTTPRequestHandler):
         '''
         Return a JSON dict listing all available methods
         '''
-        pass
+        self._list_methods()
 
     def _list_methods(self):
         mgr = self.server.manager
         self._set_headers()
-        self.wfile.write(json.dumps(mgr.list_server_methods()))
+        msg = json.dumps(mgr.list_server_methods())
+        self.wfile.write(msg.encode('utf-8'))
 
 
     def do_POST(self):
         from cgi import parse_header
-        ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
+        ctype, pdict = parse_header(self.headers.get('content-type'))
 
         # refuse to receive non-json requests
         if ctype != 'application/json':
@@ -140,8 +172,9 @@ class RESTHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        l = int(self.headers.getheader('content-length'))
-        request = json.loads(self.rfile.read(l))
+        l = int(self.headers.get('content-length'))
+        request = json.loads(self.rfile.read(l).decode('utf-8'))
+        return_dict = {}
         try:
             return_dict = self._run_post_job(request)
         except Exception as e:
@@ -150,12 +183,25 @@ class RESTHandler(BaseHTTPRequestHandler):
                 'traceback': traceback.format_exc()
                 }
             self._set_headers(400)
-            self.wfile.write(json.dumps(err_dict))
+            self.wfile.write(json.dumps(err_dict).encode('utf-8'))
+            return
         self._set_headers()
-        self.wfile.write(json.dumps(return_dict))
+        self.wfile.write(json.dumps(return_dict).encode('utf-8'))
 
 
 
 
     def _run_post_job(self, request_dict):
-        pass
+        try:
+            func_name = request_dict['cmd']
+        except KeyError:
+            err_dict = {'error': 'You must provide a command name with the key "cmd"!'}
+            return err_dict
+        mgr = self.server.manager
+        f = mgr.server_methods.get(func_name, None)
+        if f is None:
+            err_dict = {'error': 'No registered server method with the name {}'.format(func_name)}
+            return err_dict
+        args = request_dict.get('args', [])
+        kwargs = request_dict.get('kwargs', {})
+        return f(mgr.session, *args, **kwargs)
