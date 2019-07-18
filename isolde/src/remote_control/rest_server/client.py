@@ -58,7 +58,7 @@ def f(self, {}):
     self._connection.request('POST', '', json.dumps(send_dict).encode('utf-8'), self._headers)
     result = self._get_result()
     if 'error' in result.keys():
-        raise RuntimeError(result['error'] + '; Server traceback: \n' + result.get('traceback', 'None provided'))
+        raise RuntimeError(result['error'] + '; Server traceback: \\n' + result.get('traceback', 'None provided'))
     return result
 '''.format(
         ', '.join((
