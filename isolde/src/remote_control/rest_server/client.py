@@ -12,7 +12,7 @@ class IsoldeRESTClient:
     available method names, required/optional arguments and docstrings can be
     obtained with get_available_methods().
     '''
-    def __init__(self, address, port, timeout=5):
+    def __init__(self, address, port, timeout=20):
         self._address = address
         self._port = port
         self._timeout = timeout
