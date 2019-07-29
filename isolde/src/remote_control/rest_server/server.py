@@ -45,7 +45,11 @@ class IsoldeRESTServer(Task):
             'run':  run_chimerax_command,
             'test': test_command,
             'load_model': load_model,
+            'close_models': close_models,
             'load_structure_factors': load_structure_factors,
+            'load_map': load_map,
+            'center_on_coord': center_on_coord,
+            'spotlight_radius': spotlight_radius,
         }
 
         for fname, func in self.standard_functions.items():
@@ -132,6 +136,8 @@ class IsoldeRESTServer(Task):
                         arg_props['type'] = annot
         return ret_dict
 
+def _model_id_as_tuple(model_id):
+    return tuple(int(id) for id in model_id.split('.'))
 
 def run_chimerax_command(session, commands:'list of strings'):
     '''
@@ -258,6 +264,150 @@ def load_structure_factors(session, file_path:'string', model_id:'string'):
         'mapset':   xmapset.id_string,
         'maps': {x.name: x.id_string for x in xmapset},
     }
+
+def load_map(session, file_path:'string', model_id:'string'):
+    '''
+    Load a real-space map in any format that ChimeraX recognises. In ISOLDE,
+    each map must be associated with a Clipper data manager object.
+
+    Args:
+
+        file_path: the full or relative path to the map file to open
+        model_id: may be the id for an atomic model, a map_mgr or a top-level
+            Clipper data manager object
+
+    Returns:
+
+        {
+            'manager':  the top-level Clipper manager id,
+            'map_mgr':  the id of the map manager for this model,
+            'map':      the id of the newly-opened map
+        }
+    '''
+    m = session.models.list(model_id = _model_id_as_tuple(model_id))
+    if not len(m):
+        raise RuntimeError('No model with ID {} found!'.format(model_id))
+    m = m[0]
+    from chimerax.atomic import AtomicStructure
+    from chimerax.clipper.symmetry import Symmetry_Manager
+    from chimerax.clipper.maps import Map_Mgr
+    if isinstance(m, AtomicStructure):
+        from chimerax.atomic import get_map_mgr
+        mmgr = get_map_mgr(m)
+    elif isinstance(m, Symmetry_Manager):
+        mmgr = m.map_mgr
+    elif isinstance(m, Map_Mgr):
+        mmgr = m
+    else:
+        raise RuntimeError('Model ID {} has unrecognised type {}. Should be one of [{}]'.format(
+            model_id, str(type(m)), ', '.join(('AtomicStructure', 'Symmetry_Manager', 'Map_Mgr'))
+        ))
+    nxmapset = mmgr.nxmapset
+    new_map = nxmapset.add_nxmap_handler_from_file(file_path)
+    return {
+        'manager': mmgr.crystal_mgr.id_string,
+        'map_mgr': mmgr.id_string,
+        'map':     new_map.id_string
+    }
+
+
+
+def center_on_coord(session, coord:'list', radius:'float' = 5.0,
+        spotlight:'bool' = True):
+    '''
+    Focus the view on an (x,y,z) coordinate and set the zoom so that a circle
+    of the given radius is visible.
+
+    Args:
+
+        coord: a list of three floats in Angstroms
+        radius: a floating-point value in Angstroms
+        spotlight: if True, return view to Clipper's Spotlight mode if not
+                   already set. If False, don't change the current setting.
+
+    Returns:
+        empty dict
+    '''
+    if spotlight:
+        from chimerax.core.commands import run
+        run(session, 'clipper spotlight enable true', log=False)
+    from chimerax.isolde.view import focus_on_coord
+    focus_on_coord(session, coord, radius, True)
+    return {}
+
+def spotlight_radius(session, radius:'float', managers:'list'=[]):
+    '''
+    Adjust the radius of the "spotlight" (the sphere of density around the
+    centre of rotation).
+
+    Args:
+
+        radius: the desired radius in Angstroms
+        managers: a list of the IDs corresponding to the Clipper top-level
+                  managers for the models for which the radius is to be updated.
+                  To update the radius for all currently-loaded models/maps,
+                  either omit the argument or provide an empty list.
+
+    Returs:
+        empty dict
+    '''
+    from chimerax.core.commands import run
+    if len(managers):
+        mgr_string = '#{}'.format(','.join(managers))
+    else:
+        mgr_string = ''
+
+    run(session, 'clipper spotlight {} radius {}'.format(mgr_string, radius), log=False)
+    return {}
+
+def close_models(session, models:'string or list'):
+    '''
+    Close one or more models and/or maps. Behaviour varies depending on the
+    types of models specified. If the model is an atomic structure or a Clipper
+    top-level manager, the manager and all maps associated with the model will
+    be deleted. If a map, just that map will be deleted. If a map manager, all
+    maps handled by that manager will be deleted.
+
+    Args:
+
+        models: a single model ID or a list of model IDs.
+    '''
+    from chimerax.atomic import AtomicStructure
+    if not isinstance(models, list):
+        models = [models]
+    to_close = []
+    not_found = []
+    for mid in models:
+        t_mid = _model_id_as_tuple(mid)
+        mlist = session.models.list(model_id = t_mid)
+        if not mlist:
+            session.logger.warning('Model ID {} not found!'.format(mid))
+            not_found.append(mid)
+            continue
+        m = mlist[0]
+        if isinstance(m, AtomicStructure):
+            from chimerax.clipper import get_symmetry_handler
+            m = get_symmetry_handler(m)
+        to_close.append(m)
+    ret = {'closed': [m.id_string for m in to_close],
+           'not_found': not_found,
+           }
+    session.models.close(to_close)
+    return ret
+
+def map_style(session, map_id:'string', style:'string or None'=None, color:'list or None'=None):
+    '''
+    Set the display style and colour(s) for a map.
+
+    Args:
+        map_id: the model ID for the map to be adjusted
+        style: either 'mesh' or 'surface', or None to keep current setting
+        color: if the map has a single contour, this should be a list of four
+               floats defining [red, green, blue, opacity] in the range 0..1.
+               For a map with two contours (i.e. a difference map) provide two
+               lists: [[r,g,b,a]]
+    '''
+    pass
 
 
 class RESTHandler(BaseHTTPRequestHandler):

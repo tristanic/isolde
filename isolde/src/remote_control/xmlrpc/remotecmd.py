@@ -8,7 +8,7 @@
 
 
 
-def register_remote_control_command(logger):
+def register_isolde_xmlrpc_server(logger):
 
     from chimerax.core.commands import (
         CmdDesc, register,
@@ -21,7 +21,7 @@ def register_remote_control_command(logger):
                    ('port', IntArg),
                    ('timeout', FloatArg)],
         synopsis = 'Allow other processes to send XMLRPC commands to ISOLDE')
-    register('isolde xmlrpc', desc, remote_control, logger=logger)
+    register('isolde remote xmlrpc', desc, remote_control, logger=logger)
 
 def remote_control(session, cmd, address = '127.0.0.1', port = 42184, timeout = 0.01):
     '''

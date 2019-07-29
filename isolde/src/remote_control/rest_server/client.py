@@ -42,7 +42,7 @@ class IsoldeRESTClient:
                 args = func_def.get('args', [])
                 kwargs = func_def.get('kwargs', {})
                 f_str = '''
-def f(self, {}):
+def server_method(self, {}):
     """
     {}
     """
@@ -72,7 +72,7 @@ def f(self, {}):
         )
                 # print(f_str)
                 exec(f_str, globals())
-                setattr(cls, fname, f)
+                setattr(cls, fname, server_method)
 
 
 
