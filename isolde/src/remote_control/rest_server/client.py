@@ -42,7 +42,7 @@ class IsoldeRESTClient:
                 args = func_def.get('args', [])
                 kwargs = func_def.get('kwargs', {})
                 f_str = '''
-def server_method(self, {}):
+def server_method(self{}):
     """
     {}
     """
@@ -60,16 +60,26 @@ def server_method(self, {}):
     if 'error' in result.keys():
         raise RuntimeError(result['error'] + '; Server traceback: \\n' + result.get('traceback', 'None provided'))
     return result
-'''.format(
-        ', '.join((
-            ', '.join("{}:'{}'".format(arg, argtype['type']) for arg, argtype in args.items()),
-            ', '.join(["{}:'{}'={}".format(kw, val['type'], val['default']) for kw, val in kwargs.items()])
-            )),
-        func_def['docstring'],
-        ', '.join(args),
-        "dict( [{}] )".format(', '.join('("{}", {})'.format(kw, kw) for kw in kwargs.keys())),
-        fname,
-        )
+'''
+                if args and kwargs:
+                    arg_format = ', '.join((
+                        ', '.join("{}:'{}'".format(arg, argtype['type']) for arg, argtype in args.items()),
+                        ', '.join(["{}:'{}'={}".format(kw, val['type'], val['default']) for kw, val in kwargs.items()])
+                        ))
+                elif args:
+                    arg_format = ', '+', '.join("{}:'{}'".format(arg, argtype['type']) for arg, argtype in args.items())
+                elif kwargs:
+                    arg_format = ', '+', '.join(["{}:'{}'={}".format(kw, val['type'], val['default']) for kw, val in kwargs.items()])
+                else:
+                    arg_format = ''
+
+                f_str = f_str.format(
+                    arg_format,
+                    func_def['docstring'],
+                    ', '.join(args),
+                    "dict( [{}] )".format(', '.join('("{}", {})'.format(kw, kw) for kw in kwargs.keys())),
+                    fname,
+                )
                 # print(f_str)
                 exec(f_str, globals())
                 setattr(cls, fname, server_method)

@@ -44,6 +44,7 @@ class IsoldeRESTServer(Task):
         self.standard_functions = {
             'run':  run_chimerax_command,
             'test': test_command,
+            'next_model_id': next_id,
             'load_model': load_model,
             'close_models': close_models,
             'load_structure_factors': load_structure_factors,
@@ -54,8 +55,41 @@ class IsoldeRESTServer(Task):
 
         for fname, func in self.standard_functions.items():
             self.register_server_method(fname, thread_safe(func))
+        self._server_methods['batch'] = self.batch_run
+
 
     SESSION_SAVE = False
+
+    def batch_run(self, session, batch_commands):
+        '''
+        Run a series of commands in a single call, to avoid communication delays
+        and redrawing between calls.
+
+        Args:
+
+            batch_commands: a list, where each entry in the list is:
+                ['func_name', [args], {kwargs}]
+        '''
+        session = self.session
+        from queue import Queue
+        from chimerax.core.logger import StringPlainTextLog
+        q = Queue()
+        def f(session, batch_commands, q=q):
+            ret_dict = {}
+            for cmd in batch_commands:
+                with StringPlainTextLog(session.logger) as rest_log:
+                    fname, args, kwargs = cmd
+                    f_dict = ret_dict[fname] = {}
+                    func = self.standard_functions.get(fname, None)
+                    if func is None:
+                        err_msg = 'Unrecognised function name: {}'.format(fname)
+                        ret_dict['error'] = err_msg
+                        break
+                    f_dict.update(func(session, *args, **kwargs))
+                    f_dict['log'] = rest_log.getvalue()
+            q.put(ret_dict)
+        session.ui.thread_safe(f, session, batch_commands)
+        return q.get()
 
     def take_snapshot(self, session, flags):
         pass
@@ -122,7 +156,7 @@ class IsoldeRESTServer(Task):
             kwarg_dict = func_dict['kwargs'] = dict()
             sig = inspect.signature(func)
             for arg_name, ap in sig.parameters.items():
-                if arg_name not in ('session', 'queue'):
+                if arg_name not in ('self', 'session'):
                     default = ap.default
                     if default != ap.empty:
                         arg_props = kwarg_dict[arg_name] = dict()
@@ -139,18 +173,20 @@ class IsoldeRESTServer(Task):
 def _model_id_as_tuple(model_id):
     return tuple(int(id) for id in model_id.split('.'))
 
-def run_chimerax_command(session, commands:'list of strings'):
+def run_chimerax_command(session, commands:'string or list of strings'):
     '''
     Run one or more ChimeraX command-line commands, and receive the resulting
     log messages.
 
     Args:
 
-        commands: a list of strings, where each string is a complete, executable
-            ChimeraX command, e.g.:
+        commands: either a single string or a list of strings, where each string
+        is a complete, executable ChimeraX command, e.g.:
 
         ["color #1 bychain","color #1 byhetero","cofr center showPivot true"]
     '''
+    if not isinstance(commands, list):
+        commands = [commands]
     from chimerax.core.commands import run
     try:
         for cmd in commands:
@@ -165,6 +201,27 @@ def test_command(session, arg1:'whatever', arg2:'you', kwarg1:'like'=None):
     Will simply echo back a dict of the provided arguments.
     '''
     return {'arg1': arg1, 'arg2':arg2, 'kwarg1': kwarg1}
+
+def next_id(session, parent=None):
+    '''
+    Get the next ID number that will be applied to a model added to the given
+    parent.
+
+    Args:
+
+        parent: the ID of an existing model, or None. If None, the return value
+                will be the ID of the next independent model to be added (e.g.
+                '1', '2', '3', ...). Otherwise it will be the next available
+                submodel specifier (e.g. '1.1.1.3').
+    '''
+    if parent is not None:
+        m = session.models.list(model_id=_model_id_as_tuple(parent))
+        if not m:
+            raise TypeError('No model with ID {} found!'.format(parent))
+        m = m[0]
+    else:
+        m = None
+    return {'next id': '.'.join([str(i) for i in session.models.next_id(parent=m)])}
 
 def load_model(session, file_path:'string'):
     '''
