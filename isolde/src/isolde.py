@@ -2386,7 +2386,7 @@ class Isolde():
         else:
             self._selected_model = m
             self.session.selection.clear()
-            self._selected_model.selected = True
+            # self._selected_model.selected = True
             self._initialize_maps(m)
 
     def _change_selected_model(self, *_, model = None, force = False):
@@ -2434,7 +2434,7 @@ class Isolde():
             self._model_changes_handler = m.triggers.add_handler('changes',
                 self._model_changes_cb)
             self.session.selection.clear()
-            m.selected = True
+            # m.selected = True
             has_maps = self._initialize_maps(m)
             if has_maps:
                 iw._map_masking_frame.setEnabled(True)
