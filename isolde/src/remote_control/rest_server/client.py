@@ -42,7 +42,7 @@ class IsoldeRESTClient:
                 args = func_def.get('args', [])
                 kwargs = func_def.get('kwargs', {})
                 f_str = '''
-def server_method(self{}):
+def {}_server_method(self{}):
     """
     {}
     """
@@ -62,27 +62,28 @@ def server_method(self{}):
     return result
 '''
                 if args and kwargs:
-                    arg_format = ', '.join((
-                        ', '.join("{}:'{}'".format(arg, argtype['type']) for arg, argtype in args.items()),
+                    arg_format = ', '+', '.join((
+                        ', '.join("{}:'{}'".format(arg, argtype) for (arg, argtype) in args),
                         ', '.join(["{}:'{}'={}".format(kw, val['type'], val['default']) for kw, val in kwargs.items()])
                         ))
                 elif args:
-                    arg_format = ', '+', '.join("{}:'{}'".format(arg, argtype['type']) for arg, argtype in args.items())
+                    arg_format = ', '+', '.join("{}:'{}'".format(arg, argtype) for (arg, argtype) in args)
                 elif kwargs:
                     arg_format = ', '+', '.join(["{}:'{}'={}".format(kw, val['type'], val['default']) for kw, val in kwargs.items()])
                 else:
                     arg_format = ''
 
                 f_str = f_str.format(
+                    fname,
                     arg_format,
                     func_def['docstring'],
-                    ', '.join(args),
+                    ', '.join([arg_desc[0] for arg_desc in args]),
                     "dict( [{}] )".format(', '.join('("{}", {})'.format(kw, kw) for kw in kwargs.keys())),
                     fname,
                 )
                 # print(f_str)
                 exec(f_str, globals())
-                setattr(cls, fname, server_method)
+                eval('setattr(cls, fname, {}_server_method)'.format(fname), globals(), locals())
 
 
 
