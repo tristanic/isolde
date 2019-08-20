@@ -1663,9 +1663,9 @@ class MDFF_Mgr(_Restraint_Mgr):
         # that work well for the latter tend to be too strong for the former.
         from chimerax.clipper.maps import NXmapHandler
         if isinstance(volume, NXmapHandler):
-            default_scaling_constant = 2.5
+            default_scaling_constant = 1
         else:
-            default_scaling_constant = 5
+            default_scaling_constant = 2
 
 
         self.guess_global_k(scaling_constant = default_scaling_constant)
@@ -1690,7 +1690,7 @@ class MDFF_Mgr(_Restraint_Mgr):
         '''
         return self._volume
 
-    def guess_global_k(self, distance_cutoff=3, percentile=80, scaling_constant=5):
+    def guess_global_k(self, distance_cutoff=3, percentile=90, scaling_constant=2):
         '''
         Guesses a reasonable value for the global coupling constant defining
         how strongly the map "pulls" on atoms, based on the steepness of the
