@@ -8,6 +8,17 @@
 
 from . import set_new_atom_style
 
+_valid_chain_id_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
+def next_chain_id(model, prefix=''):
+    current_chain_ids = model.chains.chain_ids
+    for id_char in _valid_chain_id_chars:
+        if prefix+id_char not in current_chain_ids:
+            return prefix+id_char
+    if prefix=='':
+        return next_chain_id(model, prefix='A')
+    index = _valid_chain_id_chars.find(prefix)
+    return next_chain_id(model, prefix= _valid_chain_id_chars[index+1])
+
 def add_hydrogen_to_atom(atom, coord, name = None):
     '''
     Add a single hydrogen atom to the given heavy atom, at the given coordinate.
