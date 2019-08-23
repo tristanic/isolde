@@ -197,11 +197,16 @@ class Rama_Annotator(Model):
             Need to update the set of ramas if atoms are added. Deletions will
             take care of themselves.
             '''
-            if len(changes.created_atoms()):
-                # Trigger rebuild of rama array and graphics update
-                self.track_whole_model = True
-                # self._prepare_ca_display()
-                return
+            created = changes.created_atoms()
+            if len(created):
+                from chimerax.atomic import Residue
+                # Only need to update if the additions are non-hydrogen protein atoms
+                ur = created[created.element_names !='H'].unique_residues
+                if sum(ur.polymer_types == Residue.PT_AMINO):
+                    # Trigger rebuild of rama array and graphics update
+                    self.track_whole_model = True
+                    # self._prepare_ca_display()
+                    return
         reasons = changes.atom_reasons()
         if 'coord changed' in reasons:
             update_needed = True

@@ -163,10 +163,15 @@ class Rotamer_Annotator(Model):
             Need to update the set of rotamers if atoms are added. Deletions will
             take care of themselves.
             '''
-            if len(changes.created_atoms()):
-                r = self._selected_residues = self._atomic_structure.residues
-                self._selected_rotamers = self._mgr.get_rotamers(r)
-                update_needed = True
+            created = changes.created_atoms()
+            if len(created):
+                # Only need to update if we've added new non-hydrogen protein atoms
+                from chimerax.atomic import Residue
+                ur = created[created.element_names!='H'].unique_residues
+                if sum(ur.polymer_types==Residue.PT_AMINO):
+                    r = self._selected_residues = self._atomic_structure.residues
+                    self._selected_rotamers = self._mgr.get_rotamers(r)
+                    update_needed = True
         if changes.num_deleted_atoms():
             update_needed = True
         reasons = changes.atom_reasons()
