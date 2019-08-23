@@ -25,7 +25,13 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         - transform: a Place or None. If provided, the atoms will be placed at
             the transformed coordinates.
     '''
+    us = residues.unique_structures
+    if len(us) != 1:
+        raise TypeError('All residues to be copied must be from the same model!')
+    fm = us[0]
+    fpbg = fm.pseudobond_group('missing structure')
     m = target_model
+    tpbg = m.pseudobond_group('missing structure')
     if (chain_id or anchor_n or anchor_c or (renumber_from is not None)) \
             and len(residues.unique_chain_ids) != 1:
         raise TypeError('If reassigning chain ID, renumbering or specifying '
@@ -90,5 +96,10 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
             elif a.name == 'H1':
                 a.name = 'H'
         m.new_bond(anchor_atom, link_atom)
+    f_pbonds = fpbg.pseudobonds
+    for pb in f_pbonds:
+        pb_atoms = [atom_map.get(a) for a in pb.atoms]
+        if None not in pb_atoms:
+            tpbg.new_pseudobond(*pb_atoms)
     set_new_atom_style(m.session, new_atoms)
     return new_atoms
