@@ -344,7 +344,13 @@ class Isolde():
 
     @ignored_residues.setter
     def ignored_residues(self, residues):
-        self.selected_model._isolde_ignored_residues = residues
+        m = self.selected_model
+        if m is None:
+            return
+        if residues is None:
+            from chimerax.atomic import Residues
+            residues = Residues()
+        self.selected_model._isolde_ignored_residues = m.residues.intersect(residues)
 
     @property
     def sim_handler(self):
