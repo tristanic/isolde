@@ -98,6 +98,36 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         else:
             isolde.discard_sim(revert_to=discard_to, warn=False)
 
+def isolde_ignore(session, residues=None, ignore=True):
+    isolde_start(session)
+    if session.isolde.simulation_running:
+        session.logger.warning('Changes to the set of ignored residues will not'
+            'be applied until you stop the current simulation.')
+    if not residues and not ignore:
+        # Stop ignoring all residues in the selected model
+        m = session.isolde.selected_model
+        if m is None:
+            return
+        session.isolde.ignored_residues = None
+    if residues:
+        for m in residues.unique_structures:
+            mres = m.residues.intersect(residues)
+            if not hasattr(m, '_isolde_ignored_residues'):
+                from chimerax.atomic import Residues
+                m._isolde_ignored_residues = Residues()
+            ir = m._isolde_ignored_residues
+            if ignore:
+                m._isolde_ignored_residues = ir.merge(residues)
+            else:
+                m._isolde_ignored_residues = ir.subtract(residues)
+            session.logger.info('Currently ignoring {} residues in model {}'.format(
+                len(m._isolde_ignored_residues), m.id_string)
+            )
+
+def isolde_stop_ignoring(session, residues=None):
+    isolde_ignore(session, residues, ignore=False)
+
+
 def isolde_tutorial(session):
     from chimerax.help_viewer import show_url
     import pathlib
@@ -113,7 +143,7 @@ def register_isolde(logger):
         AtomSpecArg, ModelArg,
         FloatArg, IntArg, BoolArg, StringArg, NoArg,
         ListOf, EnumOf, RepeatOf)
-    from chimerax.atomic import AtomsArg
+    from chimerax.atomic import AtomsArg, ResiduesArg
 
     def register_isolde_start():
         desc = CmdDesc(
@@ -130,6 +160,23 @@ def register_isolde(logger):
             )
         register('isolde sim', desc, isolde_sim, logger=logger)
 
+    def register_isolde_ignore():
+        desc = CmdDesc(
+            optional=[('residues', ResiduesArg),],
+            synopsis=('Tell ISOLDE to ignore a selection of residues during '
+                'simulations. To reinstate them, use "isolde ~ignore"')
+        )
+        register('isolde ignore', desc, isolde_ignore, logger=logger)
+
+    def register_isolde_stop_ignore():
+        desc = CmdDesc(
+            optional=[('residues', ResiduesArg),],
+            synopsis=('Tell ISOLDE to stop ignoring a set of residues during '
+                'simulations.')
+        )
+        register('isolde ~ignore', desc, isolde_stop_ignoring, logger=logger)
+
+
     def register_isolde_tutorial():
         desc = CmdDesc(
             synopsis='Load a help page with worked examples using ISOLDE'
@@ -138,6 +185,8 @@ def register_isolde(logger):
 
     register_isolde_start()
     register_isolde_sim()
+    register_isolde_ignore()
+    register_isolde_stop_ignore()
     register_isolde_tutorial()
     from chimerax.isolde.remote_control import register_remote_commands
     register_remote_commands(logger)
