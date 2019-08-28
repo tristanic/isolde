@@ -1535,8 +1535,13 @@ class Sim_Handler:
         sort_i = numpy.argsort(force_mags)[::-1]
         sorted_forces = numpy.sort(force_mags)[::-1]
         fmask = (sorted_forces > max_force)
-        clashes = sort_i[fmask]
-        return clashes, sorted_forces[fmask]
+        sc = self._sim_construct
+        mmask = numpy.zeros(fmask.shape, numpy.bool)
+        mmask[sc.all_atoms.indices(sc.mobile_atoms)] = True
+
+        mask = numpy.logical_and(fmask, mmask[sort_i])
+        clashes = sort_i[mask]
+        return clashes, sorted_forces[mask]
 
 
     def _minimize_and_go(self):
