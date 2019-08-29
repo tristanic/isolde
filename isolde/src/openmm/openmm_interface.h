@@ -116,6 +116,7 @@ public:
     }
 
     double max_force(const std::vector<OpenMM::Vec3>& forces) const;
+    double max_force(const OpenMM::System& system, const OpenMM::State& state) const;
 
     const OpenMM::State& initial_state() const { _thread_finished_check(); return _starting_state; }
     const OpenMM::State& final_state() const { _thread_finished_check(); return _final_state; }

@@ -126,7 +126,8 @@ void OpenMM_Thread_Handler::_minimize_threaded(const double &tolerance, int max_
             _clash = true;
             _final_state = _starting_state;
         }
-        if (_min_converged && max_force(_final_state.getForces()) > MAX_FORCE)
+        //if (_min_converged && max_force(_final_state.getForces()) > MAX_FORCE)
+        if (_min_converged && max_force(_context->getSystem(), _final_state) > MAX_FORCE)
             _clash = true;
         auto end = std::chrono::steady_clock::now();
         auto loop_time = end-start;
@@ -246,6 +247,25 @@ double OpenMM_Thread_Handler::max_force(const std::vector<OpenMM::Vec3>& forces)
     }
     return max_force;
 }
+
+// get maximum force, ignoring massless (fixed) particles
+double OpenMM_Thread_Handler::max_force(const OpenMM::System& system, const OpenMM::State& state) const
+{
+    double max_force = 0;
+    auto forces = state.getForces();
+    for (size_t i=0; i<system.getNumParticles(); ++i)
+    {
+        const auto& f = forces[i];
+        double f_mag = 0;
+        for (size_t i=0; i<3; ++i)
+            f_mag += f[i]*f[i];
+        f_mag = sqrt(f_mag);
+        if (f_mag > max_force && system.getParticleMass(i) > 0.0)
+            max_force = f_mag;
+    }
+    return max_force;
+}
+
 
 void OpenMM_Thread_Handler::set_smoothing_alpha(const double &alpha)
 {
