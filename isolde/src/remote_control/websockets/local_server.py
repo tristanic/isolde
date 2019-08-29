@@ -1,5 +1,9 @@
 import asyncio
-import websockets
+try:
+    import websockets
+except ImportError:
+    print('This module requires websockets, which is not installed. Run '
+        'ChimeraX -m pip install websockets to enable it.')
 from chimerax.core.tasks import Task
 
 
