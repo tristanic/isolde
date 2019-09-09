@@ -116,8 +116,17 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
             'number and center must be provided!')
     if prev_res and next_res:
         raise TypeError('Cannot specify both previous and next residues!')
+    missing_structure_pbg = model.pseudobond_group('missing structure', create_type=None)
+    if missing_structure_pbg:
+        pbonds = missing_structure_pbg.pseudobonds
+    else:
+        pbonds = None
+    pb = None
+    other_atom = None
+
     if prev_res:
-        for n in prev_res.find_atom('C').neighbors:
+        catom = prev_res.find_atom('C')
+        for n in catom.neighbors:
             if n.residue != prev_res:
                 raise TypeError('This residue already has another bonded to its '
                     'C terminus!')
@@ -125,8 +134,16 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
         oxt = prev_res.find_atom('OXT')
         if oxt is not None:
             oxt.delete()
+        if pbonds:
+            for pb in pbonds:
+                if catom in pb.atoms:
+                    other_atom = [a for a in pb.atoms if a != catom][0]
+                    break
+            else:
+                pb = None
     elif next_res:
-        for n in next_res.find_atom('N').neighbors:
+        natom = next_res.find_atom('N')
+        for n in natom.neighbors:
             if n.residue != next_res:
                 raise TypeError('This residue already has another bonded to its '
                     'N terminus!')
@@ -142,6 +159,13 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
                 h = next_res.find_atom('H')
                 if h:
                     h.delete()
+        if pbonds:
+            for pb in pbonds:
+                if natom in pb.atoms:
+                    other_atom = [a for a in pb.atoms if a != natom][0]
+                    break
+            else:
+                pb = None
     if number is None:
         if prev_res:
             number = prev_res.number + 1
@@ -183,6 +207,15 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
         fix_amino_acid_protonation_state(r)
     if r.name == 'PRO':
         r.atoms[r.atoms.names=='H'].delete()
+
+    if pb:
+        pb.delete()
+        if prev_res:
+            tether = r.find_atom('C')
+        elif next_res:
+            tether = r.find_atom('N')
+        missing_structure_pbg.new_pseudobond(tether, other_atom)
+
     r.atoms.bfactors = b_factor
     r.atoms.occupancies = occupancy
 
