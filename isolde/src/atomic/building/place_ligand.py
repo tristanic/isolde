@@ -40,7 +40,7 @@ def new_residue_from_template(model, template, chain_id, center, residue_number=
     Create a new residue based on a template, and add it to the model.
     '''
     if residue_number is None:
-        if chain_id in m.residues.chain_ids:
+        if chain_id in model.residues.chain_ids:
             residue_number = suggest_new_residue_number_for_ligand(model, chain_id)
         else:
             residue_number = 0
