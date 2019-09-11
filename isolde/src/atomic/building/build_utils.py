@@ -123,8 +123,12 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
         pbonds = None
     pb = None
     other_atom = None
+    insertion_point = None
 
     if prev_res:
+        pri = model.residues.index(prev_res)
+        if pri > 0 and pri < len(model.residues)-1:
+            insertion_point = model.residues[pri+1]
         catom = prev_res.find_atom('C')
         for n in catom.neighbors:
             if n.residue != prev_res:
@@ -142,6 +146,7 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
             else:
                 pb = None
     elif next_res:
+        insertion_point = next_res
         natom = next_res.find_atom('N')
         for n in natom.neighbors:
             if n.residue != next_res:
@@ -178,7 +183,7 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
     import numpy
     # delete extraneous atoms
     r = new_residue_from_template(model, tmpl, chain_id, [0,0,0], number,
-            insert_code=insertion_code, b_factor=b_factor)
+            insert_code=insertion_code, b_factor=b_factor, precedes=insertion_point)
     r.atoms[numpy.in1d(r.atoms.names, ['OXT', 'HXT', 'H2'])].delete()
 
     # Translate and rotate residue to (roughly) match the desired position

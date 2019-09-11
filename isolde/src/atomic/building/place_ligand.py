@@ -35,7 +35,8 @@ def place_metal_at_coord(model, chain_id, residue_number, residue_name, atom_nam
     a.bfactor=bfactor
     r.add_atom(a)
 
-def new_residue_from_template(model, template, chain_id, center, residue_number=None, insert_code = ' ', b_factor = 50):
+def new_residue_from_template(model, template, chain_id, center,
+        residue_number=None, insert_code=' ', b_factor=50, precedes=None):
     '''
     Create a new residue based on a template, and add it to the model.
     '''
@@ -50,7 +51,8 @@ def new_residue_from_template(model, template, chain_id, center, residue_number=
     t_center = t_coords.mean(axis=0)
     t_coords += numpy.array(center) - t_center
     tatom_to_atom = {}
-    r = model.new_residue(template.name, chain_id, residue_number, insert=insert_code)
+    r = model.new_residue(template.name, chain_id, residue_number,
+        insert=insert_code, precedes=precedes)
     for i, ta in enumerate(template.atoms):
         a = tatom_to_atom[ta] = model.new_atom(ta.name, ta.element)
         a.coord = t_coords[i]
