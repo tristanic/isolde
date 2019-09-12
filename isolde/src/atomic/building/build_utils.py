@@ -105,7 +105,7 @@ def set_his_protonation_state(residue, position='ND'):
         ne2 = hd1_dihedral_atoms[-1]
         atom.bfactor = ne2.bfactor
         atom.occupancy = ne2.occupancy
-    set_new_atom_style(session, residue.atoms)
+    set_new_atom_style(residue.session, residue.atoms)
 
 def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
         chain_id=None, number=None, center=None, insertion_code=' ', b_factor=50,
