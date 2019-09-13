@@ -968,11 +968,14 @@ class Isolde():
                 if structures_need_update and volumes_need_update:
                     break
         mmcb = self.iw._master_model_combo_box
-        current_model = mmcb.currentData()
+        current_model = self.selected_model
+        if current_model is not None and current_model not in self.session.models.list():
+            current_model = None
+            structures_need_update = True
+
 
         if structures_need_update:
-            mmcb = self.iw._master_model_combo_box
-            current_model = mmcb.currentData()
+            mmcb.blockSignals(True)
             mmcb.clear()
 
             _models = self.session.models.list()
@@ -997,6 +1000,7 @@ class Isolde():
                 id_str = '{}. {}'.format(m.id_string, m.name)
                 mmcb.addItem(id_str, m)
                 self._available_models[id_str] = m
+            mmcb.blockSignals(False)
 
         if volumes_need_update:
             self._populate_available_volumes_combo_box()
