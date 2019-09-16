@@ -225,6 +225,6 @@ def heavy_atom_names_match(residue, template):
     return (residue_names.issubset(template_names))
 
 def is_single_fragment(residue_graph):
-    import nx
+    import networkx as nx
     num_subgraphs = len(list(nx.connected_components(residue_graph)))
     return (num_subgraphs == 1)
