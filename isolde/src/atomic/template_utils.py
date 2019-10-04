@@ -191,19 +191,40 @@ def fix_residue_from_template(residue, template):
         residue.find_atom(wn).delete()
         rnames.remove(wn)
 
+    # Add missing bonds between atoms already in the residue
+    for ta in template.atoms:
+        ra = residue.find_atom(ta.name)
+        if ra is not None:
+            for tn in ta.neighbors:
+                rn = residue.find_atom(tn.name)
+                if rn is not None and rn not in ra.neighbors:
+                    m.new_bond(ra, rn)
+
     rg = residue_graph(residue)
     tg = template_graph(template)
-    _, matched_nodes = find_maximal_isomorphous_fragment(rg, tg)
+    residue_larger, matched_nodes = find_maximal_isomorphous_fragment(rg, tg)
 
     if len(matched_nodes) < 3:
         raise TypeError('Need at least 3 contiguous atoms to complete residue!')
 
     # Delete any isolated atoms and rebuild from template
     from chimerax.atomic import Atoms
-    conn_ratoms = Atoms(matched_nodes.values())
+    if residue_larger:
+        conn_ratoms = Atoms(matched_nodes.keys())
+    else:
+        conn_ratoms = Atoms(matched_nodes.values())
     residue.atoms.subtract(conn_ratoms).delete()
     built = set(conn_ratoms)
+    all_tatom_names = set([a.name for a in template.atoms])
     while len(residue.atoms) < len(template.atoms):
+        tnames = [a.name for a in matched_nodes.keys()]
+        rnames = [a.name for a in matched_nodes.values()]
+        print('Atom numbers: Residue {}, Template {}'.format(
+            len(rnames), len(tnames)
+        ))
+        m.session.logger.status('Still missing: {}'.format(
+            ','.join(all_tatom_names.difference(set(rnames)))
+        ))
         new_atoms = {}
         for ta, ra in matched_nodes.items():
             for tn in ta.neighbors:
@@ -261,6 +282,7 @@ def build_next_atom_from(next_atom_name, stub_atom_name, residue, template):
         n2, n3 = r_direct_neighbors[:2]
     else:
         a2 = t_direct_neighbors[0]
+        n2 = r_direct_neighbors[0]
     if not n2:
         raise TypeError('No n2 found - Not enough connected atoms to form a dihedral!')
     if not n3:
