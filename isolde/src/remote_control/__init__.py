@@ -21,7 +21,6 @@ def thread_safe(func):
         from queue import Queue
         q = Queue()
         def inner_func(session, *args, q=q, **kwargs):
-            from chimerax.core.errors import NotABug
             from chimerax.core.logger import StringPlainTextLog
             with StringPlainTextLog(session.logger) as rest_log:
                 ret = {}
