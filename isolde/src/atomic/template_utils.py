@@ -82,7 +82,7 @@ def residue_graph(residue):
     rn = nx.Graph()
     atoms = residue.atoms
     rn.add_nodes_from(atoms)
-    nx.set_node_attributes(rn, {a: {'element': e} for a, e in zip(atoms, atoms.element_names)})
+    nx.set_node_attributes(rn, {a: {'element': e, 'name': n} for a, e, n in zip(atoms, atoms.element_names, atoms.names)})
     rn.add_edges_from([b.atoms for b in atoms.intra_bonds])
     return rn
 
@@ -95,14 +95,14 @@ def template_graph(template):
     tn = nx.Graph()
     atoms = template.atoms
     tn.add_nodes_from(atoms)
-    nx.set_node_attributes(tn, {a: {'element': e} for a, e in zip(atoms, [aa.element.name for aa in atoms])})
+    nx.set_node_attributes(tn, {a: {'element': e, 'name': n} for a, e, n in zip(atoms, [aa.element.name for aa in atoms], [aa.name for aa in atoms])})
     bonds = set()
     for a in atoms:
         bonds.update(set(a.bonds))
     tn.add_edges_from([b.atoms for b in bonds])
     return tn
 
-def find_maximal_isomorphous_fragment(residue_graph, template_graph):
+def find_maximal_isomorphous_fragment(residue_graph, template_graph, match_by='name'):
     '''
     When a residue doesn't quite match its template, there can be various
     explanations:
@@ -122,6 +122,8 @@ def find_maximal_isomorphous_fragment(residue_graph, template_graph):
         * template_graph
             - a :class:`networkx.Graph` object representing the residue atoms
               present in the template (e.g. as built by :func:`template_graph`)
+        * match_by (default: 'name')
+            - atomic property to match nodes by (one of 'element' or 'name')
 
     Returns:
         * bool
@@ -149,7 +151,7 @@ def find_maximal_isomorphous_fragment(residue_graph, template_graph):
             max_nodes = len(cg)
             largest_sg = sg.subgraph(cg)
     gm = iso.GraphMatcher(lg, largest_sg,
-            node_match=iso.categorical_node_match('element', None))
+            node_match=iso.categorical_node_match(match_by, None))
     subgraph = None
     # GraphMatcher will typically find multiple maximal subgraphs since we're
     # filtering by element only, not by strict atom name. Since CCD and AMBER
@@ -164,6 +166,9 @@ def find_maximal_isomorphous_fragment(residue_graph, template_graph):
         or len(subgraph)/len(lg) < 0.1
         ):
         raise TypeError('Residue does not appear to match template!')
+
+    if residue_larger:
+        subgraph = {v:k for k,v in subgraph.items()}
 
     return residue_larger, subgraph
 
@@ -181,15 +186,16 @@ def add_metal_bonds_from_template(residue, template):
 
 def fix_residue_from_template(residue, template):
     m = residue.structure
+    session = m.session
     from chimerax.atomic.struct_edit import add_dihedral_atom
     from chimerax.core.geometry import distance, angle, dihedral
     residue.atoms[residue.atoms.element_names=='H'].delete()
     rnames = set(residue.atoms.names)
     tnames = set([a.name for a in template.atoms])
-    wrong_names = rnames.difference(tnames)
-    for wn in wrong_names:
-        residue.find_atom(wn).delete()
-        rnames.remove(wn)
+    # wrong_names = rnames.difference(tnames)
+    # for wn in wrong_names:
+    #     residue.find_atom(wn).delete()
+    #     rnames.remove(wn)
 
     # Add missing bonds between atoms already in the residue
     for ta in template.atoms:
@@ -202,28 +208,46 @@ def fix_residue_from_template(residue, template):
 
     rg = residue_graph(residue)
     tg = template_graph(template)
-    residue_larger, matched_nodes = find_maximal_isomorphous_fragment(rg, tg)
+    residue_larger, matched_nodes = find_maximal_isomorphous_fragment(rg, tg, match_by='element')
 
     if len(matched_nodes) < 3:
         raise TypeError('Need at least 3 contiguous atoms to complete residue!')
 
     # Delete any isolated atoms and rebuild from template
     from chimerax.atomic import Atoms
-    if residue_larger:
-        conn_ratoms = Atoms(matched_nodes.keys())
-    else:
-        conn_ratoms = Atoms(matched_nodes.values())
+    # if residue_larger:
+    #     conn_ratoms = Atoms(matched_nodes.keys())
+    # else:
+    #     conn_ratoms = Atoms(matched_nodes.values())
+    conn_ratoms = Atoms(matched_nodes.values())
     residue.atoms.subtract(conn_ratoms).delete()
+    renamed_atoms = []
+    for tatom, ratom in matched_nodes.items():
+        if ratom.name != tatom.name:
+            renamed_atoms.append((ratom.name, tatom.name))
+            ratom.name = tatom.name
+    if len(renamed_atoms):
+        warn_str = '{} atoms were automatically renamed to match the template: '.format(len(renamed_atoms))
+        warn_str += ', '.join(['->'.join(apair) for apair in renamed_atoms])
+        session.logger.warning(warn_str)        
+
     built = set(conn_ratoms)
     all_tatom_names = set([a.name for a in template.atoms])
+    last_len = len(residue.atoms)-1
     while len(residue.atoms) < len(template.atoms):
         tnames = [a.name for a in matched_nodes.keys()]
         rnames = [a.name for a in matched_nodes.values()]
-        print('Atom numbers: Residue {}, Template {}'.format(
-            len(rnames), len(tnames)
-        ))
+        still_missing = all_tatom_names.difference(set(residue.atoms.names))
+        if not len(residue.atoms) > last_len:
+            raise RuntimeError('Failed to add atoms on last iteration for residue {}. Still missing: {}'.format(
+                '{}{}'.format(residue.chain_id, residue.number), ','.join(still_missing)
+            ))
+        last_len = len(residue.atoms)
+        # print('Atom numbers: Residue {}, Template {}'.format(
+        #     len(rnames), len(tnames)
+        # ))
         m.session.logger.status('Still missing: {}'.format(
-            ','.join(all_tatom_names.difference(set(rnames)))
+            ','.join(still_missing)
         ))
         new_atoms = {}
         for ta, ra in matched_nodes.items():
@@ -232,6 +256,7 @@ def fix_residue_from_template(residue, template):
                     a = build_next_atom_from(tn.name, ta.name, residue, template)
                     new_atoms[tn] = a
         matched_nodes = new_atoms
+        # print('New atoms added: {}'.format(','.join([a.name for a in new_atoms.values()])))
     bonds = set()
     for a in template.atoms:
         bonds.update(set(a.bonds))
@@ -312,3 +337,56 @@ def build_next_atom_from(next_atom_name, stub_atom_name, residue, template):
     # print('{}: {} {} {}'.format(next_atom_name, dist, ang, dihe))
     a = struct_edit.add_dihedral_atom(next_atom_name, tnext.element, n1, n2, n3, dist, ang, dihe)
     return a
+
+
+def copy_ideal_coords_to_exp(ciffile):
+    '''
+    A temporary measure: ChimeraX currently uses the experimental rather than
+    ideal coordinates when loading a template from the CCD. This is problematic
+    because the experimental coordinates may be undefined for some atoms. This
+    script overwrites the experimental coordinates with the ideal ones for a
+    CIF file containing a single residue definition, writing the result as
+    {original name}_ideal.cif.
+    '''
+    import os
+    name = os.path.splitext(ciffile)[0]
+    with open(ciffile, 'rt') as infile, open(name+'_ideal.cif', 'wt') as outfile:
+        lines = infile.read().split('\n')
+        count = 0
+        line = infile.readline()
+        for i, line in enumerate(lines):
+            if line.startswith('_chem_comp_atom'):
+                break
+            if line.startswith('_chem_comp.id'):
+                resid = line.split()[-1]
+            outfile.write(line+'\n')
+        count += i
+        exp_indices = [-1,-1,-1]
+        ideal_indices=[-1,-1,-1]
+        for i, line in enumerate(lines[count:]):
+            if not line.startswith('_chem_comp_atom'):
+                break
+            outfile.write(line+'\n')
+            if 'model_Cartn_' in line:
+                if not 'ideal' in line:
+                    target = exp_indices
+                else:
+                    target = ideal_indices
+                if '_x' in line:
+                    target[0] = i
+                elif '_y' in line:
+                    target[1] = i
+                elif '_z' in line:
+                    target[2] = i
+        print('Ideal indices: {}, experimental indices: {}'.format(ideal_indices, exp_indices))
+        count += i
+        for i, line in enumerate(lines[count:]):
+            if not line.startswith(resid):
+                break
+            split_line = line.split()
+            for i in range(3):
+                split_line[exp_indices[i]] = split_line[ideal_indices[i]]
+            outfile.write(' '.join(split_line)+'\n')
+        count += i
+        for line in lines[count:]:
+            outfile.write(line+'\n')
