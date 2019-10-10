@@ -3,10 +3,14 @@
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
-SPHINXBUILD   = sphinx-build
+SPHINXBUILD   = chimerax-daily -m sphinx
 SPHINXPROJ    = ISOLDE
 SOURCEDIR     = source
-BUILDDIR      = build
+BUILDDIR      = ../src/docs/isolde
+
+docs:
+	@$(SPHINXBUILD) "$(SOURCEDIR)" "$(BUILDDIR)"
+
 
 # Put it first so that "make" without argument is like "make help".
 help:
