@@ -39,7 +39,7 @@ norovirus capsid protein VP1. Looking at the `PDB entry`__ for this model you
 might be forgiven for thinking that there's nothing more to be done here - that
 the model is effectively perfect:
 
--- https://www.rcsb.org/structure/6out
+__ https://www.rcsb.org/structure/6out
 
 .. figure:: images/6out_multipercentile_validation.png
 
@@ -377,13 +377,13 @@ clashing with Pro210 we now have a lovely hydrogen bond, and as a bonus the
 flip has allowed the Asn sidechain to move up to associate with Arg108.
 
 Click the green stop button, and let's move on. *(NOTE: as an exercise you might
-consider applying the same correction to chain C. As it turns out, the
-equivalent site in chain B was already correctly modelled.)*
+consider applying the same correction to chains B and C.)*
 
 For another simple problem with a simple fix, hide the Ramachandran plot and
 show the Rotamers table. While before the simulation started there were no
 outliers listed here, now you should see at least a dozen. Scroll down until you
-find Trp A375. Click on that row to take a closer look.
+find Trp A375 *(Since MD simulation involves some randomness, this may be some
+way down the list)*. Click on that row to take a closer look.
 
 .. figure:: images/trp_a375.jpg
 
@@ -426,6 +426,7 @@ Asp344:
 
 .. figure:: images/his_329.jpg
 
+
 Note that in its existing conformation it's not an outlier (ISOLDE identifies it
 as the *m90* rotamer with a prevalence of around 13% in high-resolution
 structures), but nevertheless it looks wrong. Flip it so the sidechain NH points
@@ -433,6 +434,9 @@ towards Asp344 - you can do this using the rotamer tool or simply dragging with
 the mouse. After flipping you should find that not only do you now have the
 H-bond, but the sidechain ring is nicely parallel to the Trp and the
 conformation is now the most common of all histidine rotamers (*m-70*, 31.73%).
+
+.. figure:: images/his_a329_flipped.jpg
+
 Cases like this (not an outlier by any standard metric, yet still wrong) are
 some of the hardest modelling issues to catch, often only being found by manual
 inspection and a practised eye.
@@ -457,13 +461,16 @@ __ cxcmd:clipper\ spotlight;view\ \/B:383;cofr\ center
 The density here is rather weak and patchy, but good enough as it stands to show
 that this loop is probably mis-threaded (remember, you can adjust your contours
 with *alt-scroll*). While it *is* possible to remodel using just this map, this
-provides us with the opportunity to try out a neat trick that works well with
-cryo-EM maps. Many such maps are either somewhat over-sharpened or sharpened to
-optimise the well-resolved regions at the expense of sites like this (although
-examples do exist of badly *under*-sharpened maps as well). If you wish you can
-use external tools like *phenix.auto_sharpen* or *LocScale* to optimise the map
-sharpening, but ChimeraX provides a tool to generate a smoothed map that is
-better at showing the connectivity in regions like this one:
+provides us with the opportunity to try out a neat trick that often works well
+with cryo-EM maps. Many such maps are either somewhat over-sharpened or
+sharpened to optimise the well-resolved regions at the expense of sites like
+this (although examples do exist of badly *under*-sharpened maps as well). 
+Maps with a judicious amount of smoothing (or "blurring", if you prefer) are
+often better at showing the connectivity in weakly-resolved regions, where
+strongly sharpened maps break down into uninterpretable noise. If
+you wish you can use external tools like *phenix.auto_sharpen* or *LocScale* to
+optimise the map sharpening, but ChimeraX provides a tool to generate a smoothed
+map that is often good enough for the job:
 
 `volume gaussian #1 sDev 0.5`__
 
@@ -553,12 +560,52 @@ are making a perfect fit to the density. Feel free to repeat on the other two
 chains to confirm the result for yourself (with a little practice, this can be
 done in well under a minute per chain).
 
+Don't stop your simulation just yet. Before we conclude the scripted portion of
+this tutorial, let's look at one more handy feature designed to let you "play"
+with tricky parts of the model without fear of causing irrevocable damage. Have
+a closer look at the simulation  control bar (the one with the play button):
+
+.. figure:: ../../../gui/images/simulation_controls.png
+
+We know what the play and (green) stop button do, but what are the others for?
+Well, the "Min/Equil" buttons switch between molecular dynamics and energy-
+minimisation modes (as it turns out, there are very few situations in which you
+actually need to touch these). The thermometer icon sets the simulation
+temperature - dial it down to zero if you want the atoms to settle to their
+local minimum then only move when disturbed; turn it up if you want the model
+to more actively explore conformational space (this is particularly useful
+early on when your model is fairly poor). However, the buttons we're most
+interested in are the green and red chequered flags.  Click the green one now.
+This saves a *checkpoint* - an instantaneous snapshot of the current simulation
+as it is right now, including the states of any interactively-applied
+restraints. Now, do something horrible to your model - just grab an atom with
+the right mouse button, and tug it hard out into empty space like this:
+
+.. figure:: images/gratuitous_violence.jpg
+
+Now, click the red flag to put everything back into order. When dealing with
+poorer-quality density in particular, you will inevitably come across regions
+where the solution to a problem is not immediately obvious, and the only real
+option is to start testing alternative hypotheses. These buttons give you a
+convenient way to do so - just save a checkpoint, try an adjustment, and if it
+doesn't work out, come back and try something else. *(NOTES: a checkpoint is
+automatically saved upon starting a simulation. Checkpoints are only valid for
+the duration of the simulation they are created in.)*
+
+The two alternative red stop buttons are also related to the checkpointing
+function. The stop button pictured under a red chequered flag, as you might have
+guessed, stops the simulation and reverts to the last saved checkpoint. The
+plain red stop button, on the other hand, throws away everything that has
+happened in this simulation, returning the model to exactly the state it was
+before you pressed the play button. Pressing this will bring up a dialogue box
+asking you for confirmation before discarding your work.
+
 This concludes the scripted portion of this tutorial, covering the basic tools
 you'll find yourself using most in ISOLDE. There are others (in particular the
 secondary structure restraint and register shifting tools), but these only
 typically come into play when your map is much lower resolution and/or your
 model is much more preliminary then this one. The scenario in the
-_bulk_fitting_tutorial_ tutorial is a good example where these are useful.
+`_bulk_fitting_tutorial`_ tutorial is a good example where these are useful.
 
 There are still various other small issues worth addressing in this model, but
 why not have a browse through (either via the validation tab, or following
