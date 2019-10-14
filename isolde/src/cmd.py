@@ -136,6 +136,24 @@ def isolde_tutorial(session):
     fname = os.path.join(root_dir, 'docs', 'isolde', 'tutorials', 'index.html')
     show_url(session, pathlib.Path(fname).as_uri())
 
+_available_demos = {
+    'crystal': ('load_crystal_demo', 'crystallographic demo: PDB ID 3io0'),
+    'cryo_em': ('load_cryo_em_demo', 'cryo-EM demo: PDB ID 6out, EMDB ID 20205'),
+}
+def isolde_demo(session, demo_name = None, model_only=False, start_isolde=True):
+    if start_isolde:
+        isolde_start(session)
+    if demo_name=='crystal' and model_only:
+        session.logger.warning("modelOnly argument is only applicable to cryo-EM data. Ignoring.")
+    if demo_name=='crystal':
+        kwargs={}
+    else:
+        kwargs={'model_only': model_only}
+    demo_info = _available_demos[demo_name]
+    from . import isolde
+    load_fn = getattr(isolde, demo_info[0])
+    load_fn(session, **kwargs)
+    session.logger.info("Loaded " + demo_info[1])
 
 def register_isolde(logger):
     from chimerax.core.commands import (
@@ -183,11 +201,21 @@ def register_isolde(logger):
         )
         register('isolde tutorial', desc, isolde_tutorial, logger=logger)
 
+    def register_isolde_demo():
+        desc = CmdDesc(
+            synopsis='Load a small crystallographic or cryo-EM model for use in interactive tutorials',
+            required=[('demo_name', EnumOf(list(_available_demos.keys())))],
+            keyword=[('model_only', BoolArg),
+                      ('start_isolde', BoolArg)]
+        )
+        register('isolde demo', desc, isolde_demo, logger=logger)
+
     register_isolde_start()
     register_isolde_sim()
     register_isolde_ignore()
     register_isolde_stop_ignore()
     register_isolde_tutorial()
+    register_isolde_demo()
     from chimerax.isolde.remote_control import register_remote_commands
     register_remote_commands(logger)
     from chimerax.isolde.restraints.cmd import register_isolde_restrain
