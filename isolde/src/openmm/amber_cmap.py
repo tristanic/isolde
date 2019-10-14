@@ -48,7 +48,7 @@ class CMAPLoader:
     }
     _map_names = ('gly', 'pro', 'ala', 'gen')
 
-    def __init__(self, alpha_bias = 1.0, beta_bias = 1.0):
+    def __init__(self, alpha_bias = 1.0, beta_bias = 0.5):
         '''
         Loads and prepares the CMAP information necessary for correction
         of backbone behaviour of AMBER protein atoms in implicit solvent.
