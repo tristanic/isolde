@@ -79,11 +79,15 @@ dynamics forcefield used for interactive simulations, and the statistical
 understanding of thousands of very-high-resolution protein structures captured
 in the live Ramachandran and rotamer validation.
 
-Anyway, let's go ahead and get started. First, fetch the model from the PDB:
+Anyway, let's go ahead and get started. While we *could* fetch the model direct
+from the PDB using the command "open 6out", it is likely that the deposited
+coordinates will be updated in future. Instead, we'll open a locally cached
+version of the model as it was at the time of writing this tutorial. We won't
+start ISOLDE itself just yet.
 
-`open 6out`__
+`isolde demo cryo_em modelOnly true startIsolde false`__
 
-__ cxcmd:open\ 6out
+__ cxcmd:isolde\ demo\ cryo_em\ modelOnly\ true\ startIsolde\ false
 
 ... and fetch the map from the EMDB:
 
@@ -118,11 +122,11 @@ To get a feel for this mode, try scrolling in using the mouse scroll wheel:
 
 .. figure:: images/zoomed_in.jpg
 
-The crossed arrows at the centre of your screen is the pivot indicator, marking
-the current centre of rotation and additionally indicating the x, y and z axes
-(as red, green and blue respectively). As well as a handy visual reference
-point, this will become important later when it comes to adding position
-targets to atoms.
+The crossed arrows at the centre of your screen form the pivot indicator,
+marking the current centre of rotation and additionally indicating the x, y and
+z axes (as red, green and blue respectively). As well as a handy visual
+reference point, this will become important later when it comes to adding
+position targets to atoms.
 
 Now, try panning around by clicking and dragging with the *middle mouse button*
 (if you are using a two-button mouse or touchpad, you can also use *shift-left
