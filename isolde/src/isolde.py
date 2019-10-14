@@ -88,7 +88,7 @@ class IsoldeParams(Param_Mgr):
         'selection_outline_width':              (defaults.SELECTION_OUTLINE_WIDTH, None),
 
     }
-
+_root_dir = os.path.dirname(os.path.abspath(__file__))
 class Isolde():
     '''
     The master ISOLDE class, primarily designed to be used by the ISOLDE GUI as
@@ -563,7 +563,7 @@ class Isolde():
         self.gui._change_experience_level()
 
 
-        iw._demo_load_button.clicked.connect(self.load_demo_data)
+        iw._demo_load_button.clicked.connect(self.load_crystal_demo)
 
         ####
         # Help
@@ -2793,6 +2793,15 @@ class Isolde():
         from chimerax.mouse_modes import TranslateMouseMode
         self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
         self.triggers.activate_trigger('simulation terminated', None)
+        from chimerax.clipper import get_map_mgr
+        m = self.selected_model
+        mmgr = get_map_mgr(m)
+        if mmgr is not None:
+            for xmapset in mmgr.xmapsets:
+                if hasattr(xmapset, 'live_xmap_mgr'):
+                    self.session.logger.info('Updating bulk solvent parameters...')
+                    xmapset.live_xmap_mgr.bulk_solvent_optimization_needed()
+                    xmapset.recalc_needed()
         self._update_sim_status_indicator()
         # self.iw._sim_running_indicator.setVisible(False)
 
@@ -3293,47 +3302,63 @@ class Isolde():
         from . import view
         view.focus_on_selection(self.session, model.atoms)
 
+    def load_crystal_demo(self):
+        load_crystal_demo(self.session)
 
-    def load_demo_data(self):
-        '''
-        Load a small protein model with crystallographic maps to explore.
-        '''
-        from chimerax.core.commands import open
-        data_dir = os.path.join(self._root_dir, 'demo_data', '3io0')
-        before_struct = open.open(self.session, os.path.join(data_dir, 'before.pdb'))[0]
-        from chimerax.std_commands import color
-        color.color(self.session, before_struct, color='bychain', target='ac')
-        color.color(self.session, before_struct, color='byhetero', target='a')
-        from chimerax.clipper import symmetry
-        sym_handler = symmetry.get_symmetry_handler(before_struct, create=True,
-            auto_add_to_session=True)
-        sym_handler.spotlight_radius = self.iw._sim_basic_xtal_settings_spotlight_radius_spinbox.value()
-        xmapset = sym_handler.map_mgr.add_xmapset_from_mtz(os.path.join(data_dir, '3io0-sf.mtz'),
-            oversampling_rate = self.params.map_shannon_rate)
-        from chimerax.clipper.maps.xmapset import (map_potential_recommended_bsharp,
-            viewing_recommended_bsharp)
-        mdff_b = map_potential_recommended_bsharp(xmapset.resolution)
-        view_b = viewing_recommended_bsharp(xmapset.resolution)
-        standard_map = xmapset['(LIVE) 2mFo-DFc']
-        sharp_map = xmapset['(LIVE) 2mFo-DFc_sharp_{:.0f}'.format(view_b)]
-        diff_map = xmapset['(LIVE) mFo-DFc']
-        from . import visualisation as v
-        styleargs= v.map_style_settings[v.map_styles.solid_t20]
-        from chimerax.map import volumecommand
-        volumecommand.volume(self.session, [sharp_map], **styleargs)
-        styleargs = v.map_style_settings[v.map_styles.solid_t40]
-        volumecommand.volume(self.session, [diff_map], **styleargs)
-        # standard_map.set_parameters(surface_levels = (2.5*standard_map.sigma,))
-        # sharp_map.set_parameters(surface_levels = (3.0*sharp_map.sigma,))
-        diff_map.set_parameters(surface_levels = (-4.0*diff_map.sigma, 4.0*diff_map.sigma))
-        from chimerax.std_commands import set
-        from chimerax.core.colors import Color
-        set.set(self.session, bg_color=Color([255,255,255,255]))
+def load_crystal_demo(session):
+    '''
+    Load a small protein model with crystallographic maps to explore.
+    '''
+    from chimerax.core.commands import open
+    data_dir = os.path.join(_root_dir, 'demo_data', '3io0')
+    before_struct = open.open(session, os.path.join(data_dir, 'before.pdb'))[0]
+    from chimerax.std_commands import color
+    color.color(session, before_struct, color='bychain', target='ac')
+    color.color(session, before_struct, color='byhetero', target='a')
+    from chimerax.clipper import symmetry
+    sym_handler = symmetry.get_symmetry_handler(before_struct, create=True,
+        auto_add_to_session=True)
+    xmapset = sym_handler.map_mgr.add_xmapset_from_mtz(os.path.join(data_dir, '3io0-sf.mtz'))
+    from chimerax.clipper.maps.xmapset import (map_potential_recommended_bsharp,
+        viewing_recommended_bsharp)
+    mdff_b = map_potential_recommended_bsharp(xmapset.resolution)
+    view_b = viewing_recommended_bsharp(xmapset.resolution)
+    standard_map = xmapset['(LIVE) 2mFo-DFc']
+    sharp_map = xmapset['(LIVE) 2mFo-DFc_sharp_{:.0f}'.format(view_b)]
+    diff_map = xmapset['(LIVE) mFo-DFc']
+    from . import visualisation as v
+    styleargs= v.map_style_settings[v.map_styles.solid_t20]
+    from chimerax.map import volumecommand
+    volumecommand.volume(session, [sharp_map], **styleargs)
+    styleargs = v.map_style_settings[v.map_styles.solid_t40]
+    volumecommand.volume(session, [diff_map], **styleargs)
+    # standard_map.set_parameters(surface_levels = (2.5*standard_map.sigma,))
+    # sharp_map.set_parameters(surface_levels = (3.0*sharp_map.sigma,))
+    diff_map.set_parameters(surface_levels = (-4.0*diff_map.sigma, 4.0*diff_map.sigma))
+    from chimerax.std_commands import set
+    from chimerax.core.colors import Color
+    set.set(session, bg_color=Color([255,255,255,255]))
 
-        self._change_selected_model(model=before_struct, force=True)
-        before_struct.atoms[before_struct.atoms.idatm_types != 'HC'].displays = True
-        from . import view
-        view.focus_on_selection(self.session, before_struct.atoms)
+    if hasattr(session, 'isolde'):
+        session.isolde._change_selected_model(model=before_struct, force=True)
+    before_struct.atoms[before_struct.atoms.idatm_types != 'HC'].displays = True
+    from . import view
+    view.focus_on_selection(session, before_struct.atoms)
+
+def load_cryo_em_demo(session, model_only=True):
+    '''
+    Load a high-resolution cryo-EM model and map.
+    '''
+    from chimerax.core.commands import open as cxopen
+    data_dir = os.path.join(_root_dir, 'demo_data', '6out')
+    m = cxopen.open(session, os.path.join(data_dir, '6out.pdb'))[0]
+    if not model_only:
+        mmap = cxopen.open(session, '20205', from_database='emdb')[0]
+        from chimerax.clipper import get_symmetry_handler
+        sh = get_symmetry_handler(m, create=True)
+        sh.map_mgr.nxmapset.add_nxmap_handler_from_volume(mmap)
+        session.models.add([sh])
+
 
 
 class Logger:
