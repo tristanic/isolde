@@ -32,7 +32,7 @@ previously intractable to crystallisation. Perhaps the biggest feature setting
 cryo-EM apart from crystallography is that cryo-EM maps are independent of the
 atomic model, making model-building and refinement somewhat more
 straightforward. Nevertheless, even in the highest-resolution cryo-EM maps there
-remain pitfalls for the unwary.
+remain challenges and pitfalls.
 
 For this tutorial, we'll be looking at 6out, the 2.6Å structure of a human
 norovirus capsid protein VP1. Looking at the `PDB entry`__ for this model you
@@ -51,7 +51,33 @@ consequences: faced with an outlier, they tend to push the conformation into
 the *nearest* "favoured" region, rather than searching for the *correct* one
 (a computationally **much** more demanding task). This can lead to models which
 *look* great by Ramachandran and sidechain metrics, but in fact still contain
-various serious errors which can bias downstream analyses.
+various errors which can bias downstream analyses.
+
+Most of the errors in this model are not particularly serious in the grand
+scheme of things - but it is important to keep in mind that the "seriousness" of
+any given error is strongly dependent upon what you want to use the model *for*.
+When analysing the static structure (i.e. elucidation of the catalytic centre of
+an enzyme, defining a potential drug-binding pocket or resolving a bound ligand)
+then one might argue that everything outside the site of interest is essentially
+irrelevant. On the other hand, if your goal is to study the *dynamics* of a
+protein, then essentially *everything* matters - with the possible exception of
+highly flexible loops, every mistake both removes one or more natural
+interactions and adds *unnatural* ones, adding subtle biases causing model's
+behaviour to diverge from that of the real-world molecule.
+
+In addition to the above, I would also like to add the disclaimer that the
+analysis below should not be construed as any form of critique of the *authors*
+of this model. At the time of writing, 6out is in fact among the best models in
+the world for its resolution range (whether crystallographic or cryo-EM),
+produced by a highly-experienced team using state-of-the-art methods. In fact,
+using the same tools and techniques as  the authors of this model I am quite
+certain that I could not have done a  better job!Rather,  the key take-home
+message is one that those experienced in the field already know well: as the
+resolution of a map gets worse, the amount of prior information needed steadily
+increases. In ISOLDE's case, this information is encoded in the AMBER molecular
+dynamics forcefield used for interactive simulations, and the statistical
+understanding of thousands of very-high-resolution protein structures captured
+in the live Ramachandran and rotamer validation.
 
 Anyway, let's go ahead and get started. First, fetch the model from the PDB:
 
@@ -188,7 +214,7 @@ All real-space (i.e. non-crystallographic) maps are enabled for MDFF by default,
 and ISOLDE chooses a reasonable weight based on the map gradients in the
 vicinity of the model atoms. You may wish to adjust this in some cases (e.g. if
 your starting model conformation is a long way from matching the map - see
-_bulk_fitting_tutorial_ for a more advanced tutorial on this topic - or you
+:ref:`bulk_fitting_tutorial` for a more advanced tutorial on this topic - or you
 choose to have multiple maps pulling on your atoms at once). For now, we'll just
 leave the weight at the default value.
 
@@ -241,8 +267,8 @@ __ cxcmd:isolde\ restrain\ ligands\ #1
 
 .. figure:: images/restrained_waters.jpg
 
-For each ligand with three or fewer  heavy atoms, distance restraints will be
-added to surrounding heavy polar atoms  within 3Å. If fewer than three distance
+For each ligand with three or fewer heavy atoms, distance restraints will be
+added to surrounding heavy polar atoms within 3Å. If fewer than three distance
 restraints are created, the ligand will additionally be pinned to its current
 position with a distance restraint. These restraints are quite "soft" - just
 enough to prevent the ligand from flying  away, while still allowing substantial
@@ -387,14 +413,13 @@ way down the list)*. Click on that row to take a closer look.
 
 .. figure:: images/trp_a375.jpg
 
-Oops. This is a classic and surprisingly easy-to-make mistake with tryptophan
-residues, and a great example of the truism that you should always make sure to
-inspect each residue in context with its density at least once. This residue has
-been fitted with its sidechain approximately 90 degrees away from its true
-conformation. Note the pink marker adjacent to the CA-CB bond. This (an
-exclamation mark surrounded by a spiral when viewed side-on) is your visual
-indicator on the model that this is indeed a rotamer outlier. Like the
-Ramachandran indicators, it will change in real time as the model is adjusted.
+This is a classic and surprisingly easy-to-make mistake with tryptophan
+residues. This residue has been fitted with its sidechain approximately 90
+degrees away from its true conformation. Note the pink marker adjacent to the
+CA-CB bond. This (an exclamation mark surrounded by a spiral when viewed
+side-on) is your visual indicator on the model that this is indeed a rotamer
+outlier. Like the Ramachandran indicators, it will change in real time as the
+model is adjusted.
 
 With this residue selected, go ahead and click play. Now, switch to the Rebuild
 tab and *ctrl-click* on any atom in the residue. To fix this, we want to use the
@@ -427,19 +452,26 @@ Asp344:
 .. figure:: images/his_329.jpg
 
 
-Note that in its existing conformation it's not an outlier (ISOLDE identifies it
-as the *m90* rotamer with a prevalence of around 13% in high-resolution
-structures), but nevertheless it looks wrong. Flip it so the sidechain NH points
-towards Asp344 - you can do this using the rotamer tool or simply dragging with
-the mouse. After flipping you should find that not only do you now have the
-H-bond, but the sidechain ring is nicely parallel to the Trp and the
-conformation is now the most common of all histidine rotamers (*m-70*, 31.73%).
+In the original model this sidechain was placed with the delta nitrogen
+H-bonding to the backbone oxygen of Asp327 - a seemingly-reasonable conformation
+consistent with the density, but the AMBER forcefield says it's not stable that
+way. Note that in its existing conformation it's not an outlier (ISOLDE
+identifies it as the *m90* rotamer with a prevalence of around 13% in
+high-resolution structures), but nevertheless it looks wrong. Flip it so the
+sidechain NH points towards Asp344 - you can do this using the rotamer tool or
+simply dragging with the mouse. After flipping you should find that not only do
+you now have the H-bond, but the sidechain ring is nicely parallel to the Trp
+and the conformation is now the most common of all histidine rotamers (*m-70*,
+31.73%).
 
 .. figure:: images/his_a329_flipped.jpg
 
 Cases like this (not an outlier by any standard metric, yet still wrong) are
 some of the hardest modelling issues to catch, often only being found by manual
-inspection and a practised eye.
+inspection and a practised eye: while one can get a long way by simply working
+through the current list of outliers, ultimately there is still no substitute
+for careful inspection of each residue in context with its density and
+surroundings.
 
 Before we move on, don't forget to take a look at the equivalent residues on
 chains B and C!
@@ -458,13 +490,17 @@ strongest, so let's focus on that one:
 
 __ cxcmd:clipper\ spotlight;view\ \/B:383;cofr\ center
 
+*(Note: in some subsequent run-throughs of this tutorial scenario, by the time
+I got to here the simulation had already rattled Ser383 in to place on its own.
+Don't be surprised if your model doesn't look exactly like the above)*
+
 The density here is rather weak and patchy, but good enough as it stands to show
 that this loop is probably mis-threaded (remember, you can adjust your contours
 with *alt-scroll*). While it *is* possible to remodel using just this map, this
 provides us with the opportunity to try out a neat trick that often works well
 with cryo-EM maps. Many such maps are either somewhat over-sharpened or
 sharpened to optimise the well-resolved regions at the expense of sites like
-this (although examples do exist of badly *under*-sharpened maps as well). 
+this (although examples do exist of badly *under*-sharpened maps as well).
 Maps with a judicious amount of smoothing (or "blurring", if you prefer) are
 often better at showing the connectivity in weakly-resolved regions, where
 strongly sharpened maps break down into uninterpretable noise. If
@@ -555,7 +591,7 @@ tugging of atoms if you like, but in my case it was unnecessary), and...
 
 .. figure:: images/pro382_cis.jpg
 
-Voila! Not only are we now free of outliers here, but backbone and sidechains
+Voilá! Not only are we now free of outliers here, but backbone and sidechains
 are making a perfect fit to the density. Feel free to repeat on the other two
 chains to confirm the result for yourself (with a little practice, this can be
 done in well under a minute per chain).
@@ -605,7 +641,7 @@ you'll find yourself using most in ISOLDE. There are others (in particular the
 secondary structure restraint and register shifting tools), but these only
 typically come into play when your map is much lower resolution and/or your
 model is much more preliminary then this one. The scenario in the
-`_bulk_fitting_tutorial`_ tutorial is a good example where these are useful.
+:ref:`bulk_fitting_tutorial` tutorial is a good example where these are useful.
 
 There are still various other small issues worth addressing in this model, but
 why not have a browse through (either via the validation tab, or following
