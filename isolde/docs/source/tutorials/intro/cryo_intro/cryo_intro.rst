@@ -6,7 +6,8 @@ Introduction to cryo-EM model rebuilding in ISOLDE
 
 **(NOTE: Most links on this page will only work correctly when the page is
 loaded in ChimeraX's help viewer. You will also need to be connected to the
-Internet. Please close any open models before starting this tutorial.)**
+Internet. Please close ISOLDE and any open models before starting this
+tutorial.)**
 
 **(The instructions in the tutorial below assume you are using a wired mouse
 with a scroll wheel doubling as the middle mouse button. While everything

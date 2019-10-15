@@ -5,7 +5,15 @@ Bulk Flexible Fitting
 
 **(NOTE: Most links on this page will only work correctly when the page is
 loaded in ChimeraX's help viewer. You will also need to be connected to the
-Internet. Please close any open models before starting this tutorial.)**
+Internet. Please close ISOLDE and any open models before starting this
+tutorial.)**
+
+**(The instructions in the tutorial below assume you are using a wired mouse
+with a scroll wheel doubling as the middle mouse button. While everything
+should also work well on touchpads in Windows and Linux, support for Apple's
+multi-touch touchpad is a work in progress. Known issues with the latter are
+that clipping planes will not update when zooming, and recontouring of maps is
+not possible.)**
 
 Tutorial: Fitting 6mhz into emd_9118
 ------------------------------------
@@ -25,8 +33,7 @@ representative of a fairly common challenge in cryo-EM: you've captured a
 structure in multiple conformations, and would like to be able to refit the one
 model into each state with minimal fuss. In this tutorial, we'll be using
 ISOLDE's adaptive distance restraints to maintain the local geometry of the
-model from 6mhz as we interactively re-fit it into the map from 6mhu. **(NOTE:
-this tutorial should be run BEFORE starting ISOLDE)**
+model from 6mhz as we interactively re-fit it into the map from 6mhu.
 
  .. _6mhz: https://www.rcsb.org/structure/6mhz
  .. _EMD-1924: https://www.emdataresource.org/EMD-9124
