@@ -510,17 +510,24 @@ Maps with a judicious amount of smoothing (or "blurring", if you prefer) are
 often better at showing the connectivity in weakly-resolved regions, where
 strongly sharpened maps break down into uninterpretable noise. If
 you wish you can use external tools like *phenix.auto_sharpen* or *LocScale* to
-optimise the map sharpening, but ChimeraX provides a tool to generate a smoothed
-map that is often good enough for the job:
+optimise the map sharpening, but ChimeraX provides a tool to smooth or sharpen
+the map to your specification:
 
-`volume gaussian #1 sDev 0.5`__
+`volume gaussian #1 sDev 0.75`__
 
-__ cxcmd:volume\ gaussian\ #1\ sDev\ 0.5
+__ cxcmd:volume\ gaussian\ #1\ sDev\ 0.75
 
 ... will generate a new map based on the convolution of this one with a Gaussian
-with a standard deviation of 0.5 Angstroms. It will also automatically hide the
-existing map. Show it again by clicking the "closed-eye" icon in the top left of
-the Volume Viewer:
+with a standard deviation of 0.75 Angstroms. Map sharpening and smoothing is
+often reported in terms of an applied *B-factor*, which is related to the
+standard deviation of the Gaussian as: :math:`B=8*pi^2*sDev^2`. If you find the
+need to sharpen a map (apply a negative B-factor), you can do this by adding
+the argument "invert true" to the above command. The smoothing we just applied
+is equivalent to applying a positive B-factor of about 44.5 square Angstroms.
+
+You'll find that this command has also automatically hidden the existing map.
+Show it again by clicking the "closed-eye" icon in the top left of the Volume
+Viewer:
 
 .. figure:: images/volume_hidden.png
 
