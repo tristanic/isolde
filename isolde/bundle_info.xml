@@ -90,7 +90,7 @@ with the surroundings.
   <Dependencies>
     <Dependency name="ChimeraX-Core" version="==0.91"/>
     <Dependency name="ChimeraX-Atomic" version=">=1.0"/>
-    <Dependency name="ChimeraX-Clipper" version=">=0.9.9"/>
+    <Dependency name="ChimeraX-Clipper" version=">=0.9.10"/>
     <!-- <Dependency name="websockets" version=">=8.0.1"/> -->
     <!-- <Dependency name="versioneer" version=">=0.18"/> -->
     <!-- <Dependency name="ParmEd" version=">=3.1"/> -->
