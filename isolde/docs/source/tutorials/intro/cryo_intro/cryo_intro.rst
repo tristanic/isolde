@@ -589,12 +589,13 @@ the density.
 Now, while peptide bonds to non-proline residues are found in *cis* (that is,
 with the oxygen pointing in the same direction as the hydrogen) only vanishingly
 rarely, about 5% of proline residues are found in this conformation (that is,
-with the C=O bond pointing in the same direction as the N-CD bond). While they
-are less energetically favourable than the *trans* conformation and thus require
-some stabilisation from their local environment, this can be quite subtle. Let's
-go ahead and see if the *cis* conformation works better here. *Ctrl-click* to
-select the proline CA atom, then click the second button from top-left on the
-Selected residue panel:
+with the C=O bond pointing in the same direction as the bond between the peptide
+nitrogen and the sidechain CD atom). While they are slightly less energetically
+favourable than the *trans* conformation and thus require some stabilisation
+from their local environment, this can be quite subtle. Let's go ahead and see
+if the *cis* conformation works better here. *Ctrl-click* to select the proline
+CA atom, then click the second button from top-left on the Selected residue
+panel:
 
 .. figure:: images/selected_residue_panel.png
 
