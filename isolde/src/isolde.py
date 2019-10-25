@@ -1020,7 +1020,7 @@ class Isolde():
         selres = sel.unique_residues
         if self.selected_model is not None: # self.simulation_running:
             natoms = len(sel)
-            if natoms == 1:
+            if natoms == 1 and sel[0].element.name != 'H':
                 self._enable_atom_position_restraints_frame()
             else:
                 self._disable_atom_position_restraints_frame()
@@ -1033,14 +1033,12 @@ class Isolde():
                 self._disable_secondary_structure_restraints_clear_button()
                 self._disable_distance_restraints_frame()
 
-            if natoms == 2:
-                self._enable_distance_restraint_apply_button()
-                self._enable_distance_restraint_set_distance_to_current_button()
-                self._enable_distance_restraint_remove_single_button()
+            # A distance restraint is only allowed between two non-hydrogen
+            # atoms that aren't already bonded to each other.
+            if natoms == 2 and 'H' not in sel.element_names and not len(sel.intra_bonds):
+                self._enable_distance_restraints_buttons()
             else:
-                self._disable_distance_restraint_apply_button()
-                self._disable_distance_restraint_set_distance_to_current_button()
-                self._disable_distance_restraint_remove_single_button()
+                self._disable_distance_restraints_buttons()
 
             if len(selres) == 1:
                 r = selres[0]
@@ -1662,12 +1660,14 @@ class Isolde():
     def _enable_atom_position_restraints_frame(self):
         self.iw._rebuild_pin_atom_to_current_pos_button.setEnabled(True)
         self.iw._rebuild_pin_atom_to_pivot_button.setEnabled(True)
+        self.iw._position_restraints_hint_label.hide()
 
         #~ self.iw._rebuild_pin_atom_container.setEnabled(True)
 
     def _disable_atom_position_restraints_frame(self):
         self.iw._rebuild_pin_atom_to_current_pos_button.setEnabled(False)
         self.iw._rebuild_pin_atom_to_pivot_button.setEnabled(False)
+        self.iw._position_restraints_hint_label.show()
         #self.iw._rebuild_pin_atom_container.setEnabled(False)
 
     def _enable_position_restraints_clear_button(self):
@@ -1718,23 +1718,18 @@ class Isolde():
     def _disable_distance_restraints_frame(self, *_):
         self.iw._rebuild_dist_restraint_container.setEnabled(False)
 
-    def _enable_distance_restraint_apply_button(self, *_):
+    def _enable_distance_restraints_buttons(self, *_):
         self.iw._rebuild_dist_restraint_apply_button.setEnabled(True)
-
-    def _disable_distance_restraint_apply_button(self, *_):
-        self.iw._rebuild_dist_restraint_apply_button.setEnabled(False)
-
-    def _enable_distance_restraint_set_distance_to_current_button(self, *_):
         self.iw._rebuild_dist_restraint_set_target_to_current_distance_button.setEnabled(True)
-
-    def _disable_distance_restraint_set_distance_to_current_button(self, *_):
-        self.iw._rebuild_dist_restraint_set_target_to_current_distance_button.setEnabled(False)
-
-    def _enable_distance_restraint_remove_single_button(self, *_):
         self.iw._rebuild_remove_distance_restraint_button.setEnabled(True)
+        self.iw._distance_restraints_hint_label.hide()
 
-    def _disable_distance_restraint_remove_single_button(self, *_):
+    def _disable_distance_restraints_buttons(self, *_):
+        self.iw._rebuild_dist_restraint_apply_button.setEnabled(False)
+        self.iw._rebuild_dist_restraint_set_target_to_current_distance_button.setEnabled(False)
         self.iw._rebuild_remove_distance_restraint_button.setEnabled(False)
+        self.iw._distance_restraints_hint_label.show()
+
 
 
     def _extend_selection_by_one_res(self, direction):
@@ -2798,7 +2793,7 @@ class Isolde():
         mmgr = get_map_mgr(m)
         if mmgr is not None:
             for xmapset in mmgr.xmapsets:
-                if hasattr(xmapset, 'live_xmap_mgr'):
+                if hasattr(xmapset, 'live_xmap_mgr') and xmapset.live_xmap_mgr is not None:
                     self.session.logger.info('Updating bulk solvent parameters...')
                     xmapset.live_xmap_mgr.bulk_solvent_optimization_needed()
                     xmapset.recalc_needed()
