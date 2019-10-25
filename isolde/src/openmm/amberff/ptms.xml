@@ -809,6 +809,51 @@
       <ExternalBond atomName="N"/>
       <ExternalBond atomName="C"/>
     </Residue>
+    <Residue name="PTM_HIC">
+        <!-- 4-methylhistidine. Charges by analogy, not fully optimised -->
+     <Atom name="N" type="N" charge="-0.4157"/>
+     <Atom name="H" type="H" charge="0.2719"/>
+     <Atom name="CA" type="CX" charge="-0.0581"/>
+     <Atom name="HA" type="H1" charge="0.136"/>
+     <Atom name="CB" type="CT" charge="-0.0074"/>
+     <Atom name="HB2" type="HC" charge="0.0367"/>
+     <Atom name="HB3" type="HC" charge="0.0367"/>
+     <Atom name="CG" type="CC" charge="0.1868"/>
+     <Atom name="ND1" type="NB" charge="-0.5432"/>
+     <Atom name="CE1" type="CR" charge="0.1635"/>
+     <Atom name="HE1" type="H5" charge="0.1435"/>
+     <Atom name="NE2" type="NA" charge="-0.1999"/>
+     <Atom name="CZ" type="CT" charge="0.0199"/>
+     <Atom name="HZ1" type="H1" charge="0.0199"/>
+     <Atom name="HZ2" type="H1" charge="0.0199"/>
+     <Atom name="HZ3" type="H1" charge="0.0199"/>
+     <Atom name="CD2" type="CW" charge="-0.2207"/>
+     <Atom name="HD2" type="H4" charge="0.1862"/>
+     <Atom name="C" type="C" charge="0.5973"/>
+     <Atom name="O" type="O" charge="-0.5679"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="CB"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="CB" atomName2="HB2"/>
+     <Bond atomName1="CB" atomName2="HB3"/>
+     <Bond atomName1="CB" atomName2="CG"/>
+     <Bond atomName1="CG" atomName2="ND1"/>
+     <Bond atomName1="CG" atomName2="CD2"/>
+     <Bond atomName1="ND1" atomName2="CE1"/>
+     <Bond atomName1="CE1" atomName2="HE1"/>
+     <Bond atomName1="CE1" atomName2="NE2"/>
+     <Bond atomName1="NE2" atomName2="CZ"/>
+     <Bond atomName1="CZ" atomName2="HZ1"/>
+     <Bond atomName1="CZ" atomName2="HZ2"/>
+     <Bond atomName1="CZ" atomName2="HZ3"/>
+     <Bond atomName1="NE2" atomName2="CD2"/>
+     <Bond atomName1="CD2" atomName2="HD2"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="N"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
     <Residue name="PTM_HTR">
       <Atom charge="-0.379724" name="N" type="N"/>
       <Atom charge="0.256809" name="H" type="H"/>
@@ -1748,6 +1793,7 @@
     <Bond k="439319.99999999994" length="0.16100000000000003" type1="OS" type2="P"/>
     <Bond k="439319.99999999994" length="0.16100000000000003" type1="OH" type2="P"/>
     <Bond k="219157.91999999993" length="0.17620000000000002" type1="S" type2="C"/>
+    <Bond type1="CT" type2="NA" length="0.1463" k="282001.6"/>
   </HarmonicBondForce>
   <HarmonicAngleForce>
     <Angle angle="2.130523417909478" k="599.48352" type1="CN" type2="CA" type3="OH"/>
@@ -1780,6 +1826,9 @@
     <Angle angle="2.1343631422638656" k="684.33504" type1="S" type2="C" type3="O"/>
     <Angle angle="1.9952604008799175" k="660.9883199999999" type1="S" type2="C" type3="CT"/>
     <Angle angle="1.7503907068251132" k="321.91696" type1="CT" type2="S" type3="C"/>
+    <Angle type1="CR" type2="NA" type3="CT" angle="2.20609617452" k="585.76"/>
+    <Angle type1="CW" type2="NA" type3="CT" angle="2.20609617452" k="585.76"/>
+    <Angle type1="H1" type2="CT" type3="NA" angle="1.91113553093" k="418.4"/>
   </HarmonicAngleForce>
   <PeriodicTorsionForce>
     <Proper k1="4.008272" k2="3.447616" k3="0.736384" periodicity1="1" periodicity2="2" periodicity3="3" phase1="3.073350279836815" phase2="3.1088677301148997" phase3="0.021606303475063805" type1="CN" type2="CA" type3="OH" type4="HO"/>
