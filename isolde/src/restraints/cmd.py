@@ -37,7 +37,7 @@ def restrain_distances(session, atoms, template_atoms=None, **kwargs):
 def release_adaptive_distance_restraints(session, atoms,
         internal_only=False, external_only=False,
         longer_than=None, strained_only=False,
-        stretch_limit=1.5, compression_limit=0.5):
+        stretch_limit=1.2, compression_limit=0.8):
     log = session.logger
     if internal_only and external_only:
         log.warning('Cannot specify both internal only and external only!')
@@ -97,7 +97,7 @@ def adjust_adaptive_distance_restraints(session, atoms,
             adrm.display_threshold = display_threshold
 
 def restrain_single_distance(session, atoms, min_dist, max_dist,
-        strength=5, well_half_width=None, confidence=-2):
+        strength=20, well_half_width=None, confidence=-2):
     if len(atoms)!=2:
         raise UserError('Selection must specify exactly two atoms!')
     atom1, atom2 = atoms
@@ -170,7 +170,7 @@ def register_isolde_restrain(logger):
         register('isolde restrain single distance', desc, restrain_single_distance, logger=logger)
     def register_isolde_release_distances():
         desc = CmdDesc(
-            synopsis = 'Release overly-strained adaptive distance restraints',
+            synopsis = 'Release selected adaptive distance restraints',
             required = [('atoms', AtomsArg)],
             keyword = [
                 ('internal_only', BoolArg),
