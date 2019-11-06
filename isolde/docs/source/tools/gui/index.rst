@@ -1,5 +1,5 @@
-The ISOLDE GUI
-==============
+GUI Details
+===========
 
 .. toctree::
     :maxdepth: 2

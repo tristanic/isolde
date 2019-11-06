@@ -13,14 +13,12 @@ Interactive Structure Optimisation by Local Direct Exploration
    :maxdepth: 3
 
    Home <self>
-   intro
-   requirements
-   gui/index
-   tutorials/index
-   python_api/index
-   license
-   citing
-   contact
+   tools/isolde
+   commands/isolde
+   api/isolde
+   tools/license
+   tools/citing
+   tools/contact
 
 Indices and tables
 ==================

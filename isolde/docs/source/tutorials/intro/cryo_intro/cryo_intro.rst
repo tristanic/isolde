@@ -614,7 +614,7 @@ this tutorial, let's look at one more handy feature designed to let you "play"
 with tricky parts of the model without fear of causing irrevocable damage. Have
 a closer look at the simulation  control bar (the one with the play button):
 
-.. figure:: ../../../gui/images/simulation_controls.png
+.. figure:: ../../../tools/gui/images/simulation_controls.png
 
 We know what the play and (green) stop button do, but what are the others for?
 Well, the "Min/Equil" buttons switch between molecular dynamics and energy-

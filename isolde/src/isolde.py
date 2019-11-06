@@ -3251,7 +3251,7 @@ class Isolde():
         '''
         from chimerax.help_viewer import show_url
         import pathlib
-        fname = os.path.join(self._root_dir, 'docs', 'isolde', 'index.html')
+        fname = os.path.join(self._root_dir, 'docs', 'user', 'isolde.html')
         show_url(self.session, pathlib.Path(os.path.abspath(fname)).as_uri())
 
     ##############################################

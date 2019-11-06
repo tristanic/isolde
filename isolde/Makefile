@@ -81,8 +81,8 @@ install app-install:	$(WHEEL)
 uninstall app-uninstall:	$(WHEEL)
 	$(CHIMERAX_EXE) --nogui --cmd "toolshed uninstall $(BUNDLE_BASE_NAME) ; exit"
 
-docs: 
-	$(CHIMERAX_EXE) -m sphinx docs/source src/docs/isolde
+docs:
+	$(CHIMERAX_EXE) -m sphinx docs/source src/docs/user
 
 test:
 	$(CHIMERAX_EXE)

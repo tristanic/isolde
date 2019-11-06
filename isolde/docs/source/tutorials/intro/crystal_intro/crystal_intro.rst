@@ -702,7 +702,7 @@ but is nevertheless wrong.
 
 The buttons at the far bottom right of the ISOLDE panel can help make this easy:
 
-.. figure:: ../../../gui/images/map_masking_toolbar.png
+.. figure:: ../../../tools/gui/images/map_masking_toolbar.png
 
 **(NOTE: these buttons are only available outside of simulations (that is, after
 you've pressed a stop - not pause - button). During simulations the display is

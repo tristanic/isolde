@@ -133,7 +133,7 @@ def isolde_tutorial(session):
     import pathlib
     import os
     root_dir = os.path.dirname(os.path.abspath(__file__))
-    fname = os.path.join(root_dir, 'docs', 'isolde', 'tutorials', 'index.html')
+    fname = os.path.join(root_dir, 'docs', 'user', 'tutorials', 'isolde.html')
     show_url(session, pathlib.Path(fname).as_uri())
 
 _available_demos = {

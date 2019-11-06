@@ -8,14 +8,14 @@
 
 Peptide_Bond_Flipper
 ~~~~~~~~~~~~~~~~~~~~
-    .. image:: ../../../src/resources/pep-flip-icon.png
+    .. image:: ../tools/gui/images/pep-flip-icon.png
 
     .. autoclass:: Peptide_Bond_Flipper
         :members:
 
 Protein_Register_Shifter
 ~~~~~~~~~~~~~~~~~~~~~~~~
-    .. image:: ../../../src/resources/registershift-icon.png
+    .. image:: ../tools/gui/images/registershift-icon.png
 
     .. autoclass:: Protein_Register_Shifter
         :members:
