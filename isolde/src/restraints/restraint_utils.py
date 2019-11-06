@@ -221,11 +221,66 @@ def restrain_small_ligands(model, distance_cutoff=4, heavy_atom_limit=3, spring_
             # Really need at least 3 distance restraints (probably 4, actually,
             # but we don't want to be *too* restrictive) to be stable in 3D
             # space. If we have fewer than that, add position restraints to be
-            # sure. 
+            # sure.
             prs = prm.add_restraints(r_heavy_atoms)
             prs.targets = prs.atoms.coords
             prs.spring_constants = spring_constant
             prs.enableds = True
+
+
+def sequence_align_all_residues(session, residues_a, residues_b):
+    '''
+    Peform a sequence alignment on each pair of chains, and concatenate the
+    aligned residues into a single "super-alignment" (a pair of Residues
+    objects with 1:1 correspondence between residues at each index). Each
+    :class:`Residues` object in the arguments should contain residues from a
+    single chain, and the chains in :param:`residues_a` and `residues_b` should
+    be matched.
+
+    Arguments:
+
+        * session:
+            - the ChimeraX session object
+        * residues_a:
+            - a list of ChimeraX :class:`Residues` objects
+        * residues_b:
+            - a list of ChimeraX :class:`Residues` objects
+    '''
+    from chimerax.match_maker.match import defaults, align, check_domain_matching
+    alignments = ([],[])
+    dssp_cache=set()
+    for ra, rb in zip(residues_a, residues_b):
+        uca = ra.unique_chains
+        ucb = rb.unique_chains
+        if not (len(uca)==1 and len(ucb)==1):
+            raise TypeError('Each residue selection must be from a single chain!')
+        match, ref = [check_domain_matching([ch],dr)[0] for ch, dr in
+            ((uca[0], ra), (ucb[0], rb))]
+        score, s1, s2 = align(
+            session, match, ref, defaults['matrix'],
+            'nw', defaults['gap_open'],
+            defaults['gap_extend'], dssp_cache
+        )
+        for i, (mr, rr) in enumerate(zip(s1, s2)):
+            if mr=='.' or rr=='.':
+                continue
+            ref_res = s1.residues[s1.gapped_to_ungapped(i)]
+            match_res = s2.residues[s2.gapped_to_ungapped(i)]
+            if not ref_res or not match_res:
+                continue
+            alignments[0].append(ref_res)
+            alignments[1].append(match_res)
+    from chimerax.atomic import Residues
+    return [Residues(a) for a in alignments]
+
+def paired_principal_atoms(aligned_residues):
+    from chimerax.atomic import Atoms
+    return [Atoms(aa) for aa in zip(*((a1, a2) for a1, a2 in zip(
+        aligned_residues[0].principal_atoms, aligned_residues[1].principal_atoms
+    ) if a1 is not None and a2 is not None
+    ))]
+
+
 
 
 def _get_template_alignment(template_residues, restrained_residues,
@@ -338,6 +393,7 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
               words, long-distance restraints are treated as less confident than
               short-distance ones.
     '''
+    session = template_residues[0][0].session
     from chimerax.std_commands.align import IterationError
     from chimerax.isolde import session_extensions as sx
     if not protein and not nucleic and not len(custom_atom_names):
@@ -419,37 +475,56 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
     else:
         # If we're not simply restraining the model to itself, we need to do an
         # alignment to get a matching pair of residue sequences
-        while len(template_residues) != 0 and len(restrained_residues) != 0:
-            found_trs = []
-            found_rrs = []
-            remain_trs = []
-            remain_rrs = []
-            for trs, rrs in zip(template_residues, restrained_residues):
-                try:
-                    ftrs, frrs = _get_template_alignment(
-                        trs, rrs, cutoff_distance = alignment_cutoff,
-                        overlay_template = False, always_raise_errors = True
-                    )
-                except IterationError:
-                    log.info(("No sufficient alignment found for {} residues "
-                        "in template chain {} and {} residues in restrained "
-                        "model chain {}").format(len(trs), trs.chain_ids[0],
-                        len(rrs), rrs.chain_ids[0]))
-                    continue
-                found_trs.append(ftrs)
-                found_rrs.append(frrs)
-                rtrs = trs.subtract(ftrs)
-                rrrs = rrs.subtract(frrs)
-                if len(rtrs) > 3 and len(rrrs) > 3:
-                    remain_trs.append(rtrs)
-                    remain_rrs.append(rrrs)
-            template_residues = remain_trs
-            restrained_residues = remain_rrs
+        tpa, rpa = paired_principal_atoms(sequence_align_all_residues(
+            session, template_residues, restrained_residues
+        ))
+        from chimerax.std_commands import align
+        from chimerax.atomic import Residues
+        while len(tpa) >3 and len(rpa) >3:
+            try:
+                ta, ra, *_ = align.align(session, tpa, rpa, move=False,
+                    cutoff_distance=alignment_cutoff)
+            except IterationError:
+                log.info(('No further alignments of 3 or more residues found.'))
+                break
+            tr, rr = [ta.residues, ra.residues]
+            apply_restraints(tr, rr)
+            tpa = tpa.subtract(ta)
+            rpa = rpa.subtract(ra)
 
-            if len(found_trs):
-                trs = concatenate(found_trs)
-                rrs = concatenate(found_rrs)
-                apply_restraints(trs, rrs)
+
+
+        # while len(template_residues) != 0 and len(restrained_residues) != 0:
+        #     found_trs = []
+        #     found_rrs = []
+        #     remain_trs = []
+        #     remain_rrs = []
+        #     for trs, rrs in zip(template_residues, restrained_residues):
+        #         try:
+        #             ftrs, frrs = _get_template_alignment(
+        #                 trs, rrs, cutoff_distance = alignment_cutoff,
+        #                 overlay_template = False, always_raise_errors = True
+        #             )
+        #         except IterationError:
+        #             log.info(("No sufficient alignment found for {} residues "
+        #                 "in template chain {} and {} residues in restrained "
+        #                 "model chain {}").format(len(trs), trs.chain_ids[0],
+        #                 len(rrs), rrs.chain_ids[0]))
+        #             continue
+        #         found_trs.append(ftrs)
+        #         found_rrs.append(frrs)
+        #         rtrs = trs.subtract(ftrs)
+        #         rrrs = rrs.subtract(frrs)
+        #         if len(rtrs) > 3 and len(rrrs) > 3:
+        #             remain_trs.append(rtrs)
+        #             remain_rrs.append(rrrs)
+        #     template_residues = remain_trs
+        #     restrained_residues = remain_rrs
+        #
+        #     if len(found_trs):
+        #         trs = concatenate(found_trs)
+        #         rrs = concatenate(found_rrs)
+        #         apply_restraints(trs, rrs)
 
 def restrain_atom_pair_adaptive_distance(atom1, atom2, target, tolerance, kappa, c, alpha=-2):
     if not atom1.structure == atom2.structure:
