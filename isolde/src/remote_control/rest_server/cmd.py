@@ -15,7 +15,7 @@ def start_server(session, port=None):
     global _server
     server = _get_server()
     if server is not None:
-        session.logger.error('ISOLDE REST server is already running')
+        session.logger.warning('ISOLDE REST server is already running')
     else:
         from .server import IsoldeRESTServer
         _server = IsoldeRESTServer(session)
