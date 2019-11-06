@@ -316,7 +316,7 @@ def close_models(session, models:'string or list'):
 
 def map_style(session, map_id:'string', style:'string or None'=None, color:'list or None'=None):
     '''
-    Set the display style and colour(s) for a map.
+    (NOT YET IMPLEMENTED) Set the display style and colour(s) for a map.
 
     Args:
         map_id: the model ID for the map to be adjusted
@@ -326,4 +326,4 @@ def map_style(session, map_id:'string', style:'string or None'=None, color:'list
                For a map with two contours (i.e. a difference map) provide two
                lists: [[r,g,b,a]]
     '''
-    pass
+    raise RuntimeError('This method is not yet implemented')
