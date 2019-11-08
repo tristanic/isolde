@@ -14,19 +14,19 @@
 #
 import os
 import sys
-sys.path.insert(0, '/Users/tic20/Library/Application\ Support/ChimeraX/0.5/site-packages/chimerax/isolde')
+#sys.path.insert(0, '/Users/tic20/Library/Application\ Support/ChimeraX/0.5/site-packages/chimerax/isolde')
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'ISOLDE'
-copyright = '2018, Tristan Croll'
+copyright = '2016, Tristan Croll'
 author = 'Tristan Croll'
 
 # The short X.Y version
 version = '1.0'
 # The full version, including alpha/beta/rc tags
-release = '1.0b3'
+release = '1.0b3.dev7'
 
 
 # -- General configuration ---------------------------------------------------

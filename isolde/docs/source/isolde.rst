@@ -10,7 +10,7 @@ Interactive Structure Optimisation by Local Direct Exploration
 --------------------------------------------------------------
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    Home <self>
    tools/ISOLDE
