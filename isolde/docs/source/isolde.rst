@@ -13,7 +13,7 @@ Interactive Structure Optimisation by Local Direct Exploration
    :maxdepth: 3
 
    Home <self>
-   tools/isolde
+   tools/ISOLDE
    commands/isolde
    api/isolde
    tools/license
