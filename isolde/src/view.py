@@ -6,7 +6,7 @@
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
-def focus_on_coord(session, center, radius = 5.0, clip=True):
+def focus_on_coord(session, center, radius = 5.0, clip=True, rescale=True):
     '''
     Focus the main view on a coordinate, maintaining the current center of
     rotation method and optionally updating the near and far clipping planes.
@@ -31,11 +31,18 @@ def focus_on_coord(session, center, radius = 5.0, clip=True):
     xyz_max = center+radius
     bounds = Bounds(xyz_min, xyz_max)
     cofr_method = v.center_of_rotation_method
-    v.view_all(bounds)
-    v.center_of_rotation = center
-    v.center_of_rotation_method = cofr_method
     cam = v.camera
     vd = cam.view_direction()
+    if rescale:
+        v.view_all(bounds)
+    else:
+        # Keep the view direction and scale, and just move the camera
+        camera_to_cofr = cam.position.origin() - v.center_of_rotation
+        from chimerax.core.geometry import Place
+        cam.position = Place(axes=cam.position.axes(), origin=center+camera_to_cofr)
+
+    v.center_of_rotation = center
+    v.center_of_rotation_method = cofr_method
     if clip:
         cp = v.clip_planes
         cp.set_clip_position('near', center - radius*vd, v)
