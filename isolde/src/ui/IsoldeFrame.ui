@@ -129,10 +129,15 @@
             <number>0</number>
            </property>
            <item>
-            <widget class="QPushButton" name="_demo_load_button">
-             <property name="text">
-              <string>Load demo</string>
+            <widget class="QComboBox" name="_tutorials_combo_box">
+             <property name="toolTip">
+              <string>Start an interactive tutorial</string>
              </property>
+             <item>
+              <property name="text">
+               <string>Tutorials</string>
+              </property>
+             </item>
             </widget>
            </item>
            <item>

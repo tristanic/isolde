@@ -522,6 +522,8 @@ class Isolde():
                     sim_params.platform = p
                     break
 
+        from .tutorials import populate_tutorial_combo_box
+        populate_tutorial_combo_box(iw._tutorials_combo_box)
 
         # Basic settings for defining the mobile selection
         iw._sim_basic_mobile_b_and_a_spinbox.setValue(params.num_selection_padding_residues)
@@ -563,14 +565,15 @@ class Isolde():
         self.gui._change_experience_level()
 
 
-        iw._demo_load_button.clicked.connect(self.load_crystal_demo)
-
         ####
         # Help
         ####
 
         iw._main_help_button.clicked.connect(
             self.show_master_help_in_browser
+        )
+        iw._tutorials_combo_box.currentIndexChanged.connect(
+            self._show_tutorial
         )
 
         ####
@@ -3253,6 +3256,15 @@ class Isolde():
         import pathlib
         fname = os.path.join(self._root_dir, 'docs', 'user', 'isolde.html')
         show_url(self.session, pathlib.Path(os.path.abspath(fname)).as_uri())
+
+    def _show_tutorial(self, *_):
+        cb = self.iw._tutorials_combo_box
+        tpath = cb.currentData()
+        from .tutorials import show_tutorial
+        show_tutorial(self.session, tpath)
+        cb.blockSignals(True)
+        cb.setCurrentIndex(0)
+        cb.blockSignals(False)
 
     ##############################################
     # Demo
