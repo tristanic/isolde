@@ -1007,6 +1007,7 @@ class Isolde():
 
         if volumes_need_update:
             self._populate_available_volumes_combo_box()
+            self._populate_rot_mdff_target_combo_box()
 
         self._change_selected_model(model=current_model)
         self._initialize_maps(current_model)
