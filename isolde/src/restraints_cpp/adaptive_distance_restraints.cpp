@@ -56,8 +56,8 @@ Change_Tracker* Adaptive_Distance_Restraint::change_tracker() const
 void Adaptive_Distance_Restraint::set_target(const double &target)
 {
     _target = target < MIN_DISTANCE_RESTRAINT_TARGET ? MIN_DISTANCE_RESTRAINT_TARGET : target;
-    if (_tolerance > _target/2)
-        set_tolerance(_target/2);
+    if (_tolerance > _target)
+        set_tolerance(_target);
     _mgr->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
     _update_thresholds();
 }
@@ -65,7 +65,7 @@ void Adaptive_Distance_Restraint::set_target(const double &target)
 void Adaptive_Distance_Restraint::set_tolerance(const double &tolerance)
 {
     _tolerance = tolerance < 0 ? 0 : tolerance;
-    _tolerance = _tolerance > _target/2 ? _target/2 : _tolerance;
+    _tolerance = _tolerance > _target ? _target : _tolerance;
     _mgr->track_change(this, change_tracker()->REASON_CUTOFF_CHANGED);
     _update_thresholds();
 }
