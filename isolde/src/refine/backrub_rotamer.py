@@ -348,7 +348,7 @@ def clash_score(session, atoms, surrounds):
     Returns the sum of overlap distances for clashing atoms
     '''
     from chimerax.atomic.clashes import clashes
-    clash_dict = clashes.find_clashes(session, atoms, test=surrounds)
+    clash_dict = clashes.find_clashes(session, atoms, restrict=surrounds)
     # Make list of unique clashing atom pairs and their distances
     seen = set()
     clash_sum = 0
