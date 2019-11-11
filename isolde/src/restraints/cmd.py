@@ -8,7 +8,7 @@
 
 from chimerax.core.errors import UserError
 
-def restrain_distances(session, atoms, template_atoms=None, **kwargs):
+def restrain_distances(session, atoms, template_atoms=None, per_chain=False, **kwargs):
     valid_args = set((
         'protein', 'nucleic', 'custom_atom_names', 'distance_cutoff',
         'alignment_cutoff', 'well_half_width', 'kappa', 'tolerance', 'fall_off'
@@ -21,7 +21,19 @@ def restrain_distances(session, atoms, template_atoms=None, **kwargs):
         log.warning('You must provide one template selection for each restrained selection!')
         return
 
+    if per_chain and (template_atoms is not None):
+        log.warning('perChain argument is only valid when restraining atoms to '
+            'their initial conformation, not when restraining to a template.')
+        return
+
     model_residues = [mas.unique_residues for mas in atoms]
+    if per_chain:
+        split_residues=[]
+        for residues in model_residues:
+            chain_ids = residues.unique_chain_ids
+            for cid in chain_ids:
+                split_residues.append(residues[residues.chain_ids==cid])
+        model_residues = split_residues
     if template_atoms is None:
         template_residues = model_residues
     else:
@@ -144,6 +156,7 @@ def register_isolde_restrain(logger):
                 ('protein', BoolArg),
                 ('nucleic', BoolArg),
                 ('custom_atom_names', ListOf(StringArg)),
+                ('per_chain', BoolArg),
                 ('distance_cutoff', FloatArg),
                 ('alignment_cutoff', FloatArg),
                 ('well_half_width', FloatArg),
