@@ -2354,9 +2354,11 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
         mgr, changes = changes
         update_visibility=False
         change_types = list(changes.keys())
-        if 'enabled/disabled' in change_types:
+        if self.__class__ == Adaptive_Distance_Restraint_Mgr:
             update_visibility=True
-        if 'display changed' in change_types:
+        elif 'enabled/disabled' in change_types:
+            update_visibility=True
+        elif 'display changed' in change_types:
             update_visibility=True
         self.update_graphics(update_visibility)
 
@@ -2372,6 +2374,8 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
             update_visibility = True
         if 'coord changed' in atom_reasons:
             update_needed = True
+        if self.__class__ == Adaptive_Distance_Restraint_Mgr:
+            update_visibility = True
         if update_needed:
             self.update_graphics(update_visibility)
 
@@ -2672,7 +2676,7 @@ class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
 
     _DEFAULT_MIN_COLOR = [204, 204, 0, 255]
     _DEFAULT_MAX_COLOR = [102, 0, 204, 255]
-    def __init__(self, model, c_pointer=None):
+    def __init__(self, model, c_pointer=None, name = 'Adaptive Distance Restraints'):
         '''
         Prepare an adaptive distance restraint manager for a given atomic model.
         '''
@@ -2683,6 +2687,7 @@ class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
 
         super().__init__(model, class_name, c_function_prefix,
             singular_getter, plural_getter, c_pointer=c_pointer)
+        self.name = name
         self.set_colormap(self._DEFAULT_MIN_COLOR, self._DEFAULT_TARGET_COLOR, self._DEFAULT_MAX_COLOR)
 
 
@@ -2749,7 +2754,7 @@ class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
         f(self._c_pointer, value)
         self.update_graphics()
 
-    def update_graphics(self, update_visibility=False):
+    def update_graphics(self, update_visibility=True):
         '''
         Update the restraints drawing. Happens automatically every time
         restraints or coordinates change. It should rarely/never be necessary to

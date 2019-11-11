@@ -741,7 +741,10 @@ class Sim_Manager:
         self.position_restraint_mgr = sx.get_position_restraint_mgr(m)
         self.tuggable_atoms_mgr = sx.get_tuggable_atoms_mgr(m, allow_hydrogens=self.sim_params.tug_hydrogens)
         self.distance_restraint_mgr = sx.get_distance_restraint_mgr(m)
-        self.adaptive_distance_restraint_mgr = sx.get_adaptive_distance_restraint_mgr(m)
+        adrms = self.adaptive_distance_restraint_mgrs = sx.get_all_adaptive_distance_restraint_mgrs(m)
+        if not len(adrms):
+            # Always maintain at least the default manager
+            self.adaptive_distance_restraint_mgrs = [sx.get_adaptive_distance_restraint_mgr(m)]
 
     def _initialize_restraints(self, update_handlers):
         sh = self.sim_handler
@@ -800,10 +803,10 @@ class Sim_Manager:
         uh.append((dr_m, dr_m.triggers.add_handler('changes', self._dr_changed_cb)))
 
         logger.status('Applying adaptive distance restraints')
-        adr_m = self.adaptive_distance_restraint_mgr
-        adrs = adr_m.atoms_restraints(sc.mobile_atoms)
-        sh.add_adaptive_distance_restraints(adrs)
-        uh.append((adr_m, adr_m.triggers.add_handler('changes', self._adr_changed_cb)))
+        for adr_m in self.adaptive_distance_restraint_mgrs:
+            adrs = adr_m.atoms_restraints(sc.mobile_atoms)
+            sh.add_adaptive_distance_restraints(adrs)
+            uh.append((adr_m, adr_m.triggers.add_handler('changes', self._adr_changed_cb)))
 
         logger.status('Applying position restraints')
         pr_m = self.position_restraint_mgr
@@ -1108,8 +1111,9 @@ class Sim_Manager:
             self.sim_handler.update_adaptive_distance_restraints(all_changeds)
 
     def _adr_sim_end_cb(self, *_):
-        restraints = self.adaptive_distance_restraint_mgr.intra_restraints(self.sim_construct.all_atoms)
-        restraints.clear_sim_indices()
+        for adrm in self.adaptive_distance_restraint_mgrs:
+            restraints = adrm.intra_restraints(self.sim_construct.all_atoms)
+            restraints.clear_sim_indices()
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 

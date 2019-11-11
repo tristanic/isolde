@@ -11,7 +11,7 @@ def get_proper_dihedral_mgr(session):
     Get the session-level :class:`Proper_Dihedral_Mgr` singleton, creating it if
     it doesn't yet exist.
 
-    Args;
+    Args:
         * session:
             - the top-level ChimeraX session instance
     '''
@@ -25,7 +25,7 @@ def get_chiral_mgr(session):
     Get the session-level :class:`Chiral_Mgr` singleton, creating it if it
     doesn't yet exist.
 
-    Args;
+    Args:
         * session:
             - the top-level ChimeraX session instance
     '''
@@ -39,7 +39,7 @@ def get_ramachandran_mgr(session):
     Get the session-level :class:`Rama_Mgr` singleton, creating it if it doesn't
     yet exist.
 
-    Args;
+    Args:
         * session:
             - the top-level ChimeraX session instance
     '''
@@ -53,7 +53,7 @@ def get_rotamer_mgr(session):
     Get the session-level :class:`Rota_Mgr` singleton, creating it if it doesn't
     yet exist.
 
-    Args;
+    Args:
         * session:
             - the top-level ChimeraX session instance
     '''
@@ -67,7 +67,7 @@ def get_chiral_restraint_mgr(model):
     Get the :class:`Chiral_Restraint_Mgr` for the given model, creating it if it
     doesn't yet exist.
 
-    Args;
+    Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
@@ -82,7 +82,7 @@ def get_proper_dihedral_restraint_mgr(model):
     Get the :class:`Proper_Dihedral_Restraint_Mgr` for the given model, creating
     it if it doesn't yet exist.
 
-    Args;
+    Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
@@ -97,7 +97,7 @@ def get_rotamer_restraint_mgr(model):
     Get the :class:`Rotamer_Restraint_Mgr` for the given model, creating it if
     it doesn't yet exist.
 
-    Args;
+    Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
@@ -114,7 +114,7 @@ def get_position_restraint_mgr(model):
     Get the :class:`Position_Restraint_Mgr` for the given model, creating it if
     it doesn't yet exist.
 
-    Args;
+    Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
@@ -129,7 +129,7 @@ def get_distance_restraint_mgr(model):
     Get the :class:`Distance_Restraint_Mgr` for the given model, creating it if
     it doesn't yet exist.
 
-    Args;
+    Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
@@ -139,27 +139,42 @@ def get_distance_restraint_mgr(model):
             return m
     return Distance_Restraint_Mgr(model)
 
-def get_adaptive_distance_restraint_mgr(model):
+def get_adaptive_distance_restraint_mgr(model, name='Adaptive Distance Restraints'):
     '''
-    Get the :class:`Distance_Restraint_Mgr` for the given model, creating it if
-    it doesn't yet exist.
+    Get a :class:`Adaptive_Distance_Restraint_Mgr` for the given model, creating
+    it if it doesn't yet exist.
 
-    Args;
+    Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
     from .molobject import Adaptive_Distance_Restraint_Mgr
     for m in model.child_models():
-        if isinstance(m, Adaptive_Distance_Restraint_Mgr):
+        if isinstance(m, Adaptive_Distance_Restraint_Mgr) and m.name == name:
             return m
-    return Adaptive_Distance_Restraint_Mgr(model)
+    return Adaptive_Distance_Restraint_Mgr(model, name=name)
+
+def get_all_adaptive_distance_restraint_mgrs(model):
+    '''
+    Returns a list of all current adaptive distance restraint managers.
+
+    Args:
+        * model:
+            - a :class:`chimerax.AtomicStructure`
+    '''
+    ret = []
+    from .molobject import Adaptive_Distance_Restraint_Mgr
+    for m in model.child_models():
+        if isinstance (m, Adaptive_Distance_Restraint_Mgr):
+            ret.append(m)
+    return ret
 
 def get_tuggable_atoms_mgr(model, allow_hydrogens=None):
     '''
     Get the :class:`Tuggable_Atoms_Mgr` for the given model, creating it if it
     doesn't yet exist.
 
-    Args;
+    Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
@@ -178,7 +193,7 @@ def get_mdff_mgr(model, volume, create=False):
     Get the :class:`MDFF_Mgr` for the given model and volume, optionally
     creating it if it doesn't yet exist.
 
-    Args;
+    Args:
         * model:
             - a :class:`chimerax.AtomicStructure` instance
         * volume:
@@ -208,7 +223,7 @@ def get_rota_annotator(model, create=True):
     Get the :class:`Rotamer_Annotator` for the given model, optionally creating
     it if it doesn't yet exist.
 
-    Args;
+    Args:
         * model:
             - a :class:`chimerax.AtomicStructure` instance
         * create (default=True):
@@ -227,7 +242,7 @@ def get_rama_annotator(model, create=True):
     Get the :class:`Rama_Annotator` for the given model, optionally creating it
     if it doesn't yet exist.
 
-    Args;
+    Args:
         * model:
             - a :class:`chimerax.AtomicStructure` instance
         * create (default=True):
