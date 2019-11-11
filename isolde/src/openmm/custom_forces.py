@@ -134,8 +134,8 @@ class AmberCMAPForce(CMAPTorsionForce):
 
 class _Map_Force_Base(CustomCompoundBondForce):
     '''
-    Base class for :class:`LinearInterpMapForce` and
-    :class:`CubicInterpMapForce`.
+    Base class for :class:`LinearInterpMapForce`,
+    :class:`CubicInterpMapForce` and :class:`CubicInterpMapForce_Low_Memory`.
     '''
     def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms'):
         '''
