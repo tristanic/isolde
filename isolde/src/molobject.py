@@ -2125,7 +2125,7 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
         change_types = list(changes.keys())
         if 'enabled/disabled' in change_types:
             update_visibility=True
-        self.update_graphics()
+        self.update_graphics(update_visibility)
 
     def _model_changes_cb(self, trigger_name, changes):
         update_needed = False
