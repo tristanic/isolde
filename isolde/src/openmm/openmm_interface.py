@@ -582,7 +582,7 @@ class Sim_Manager:
         sc = self.sim_construct = Sim_Construct(model, mobile_atoms, fixed_atoms, excluded_atoms)
         self.prepare_sim_visualisation()
 
-        logger.status('Preparing MDFF managers')
+        logger.status('Preparing simulation handler')
         self._prepare_mdff_managers()
         sh = self.sim_handler = None
         uh = self._update_handlers = []
@@ -611,9 +611,7 @@ class Sim_Manager:
         sh.triggers.add_handler('sim resumed', self._sim_resume_cb)
 
         self._initialize_restraints(uh)
-        logger.status('Applying MDFF maps')
         self._initialize_mdff(uh)
-        logger.status('')
 
     @property
     def sim_running(self):
@@ -750,6 +748,7 @@ class Sim_Manager:
         sh = self.sim_handler
         sc = self.sim_construct
         logger = self.session.logger
+        logger.status('Initialising restraints...')
         sim_params = self.sim_params
         uh = update_handlers
         mobile_res = sc.mobile_atoms.unique_residues
@@ -758,7 +757,6 @@ class Sim_Manager:
             amber_cmap = True
         sh.initialize_restraint_forces(amber_cmap)
         if (amber_cmap):
-            logger.status('Applying CMAP torsion corrections')
             from .. import session_extensions as sx
             rama_mgr = sx.get_ramachandran_mgr(self.session)
             ramas = rama_mgr.get_ramas(mobile_res)
@@ -766,14 +764,12 @@ class Sim_Manager:
             # ramas = ramas.restrict_to_sel(self.sim_construct.all_atoms)
             sh.add_amber_cmap_torsions(ramas)
 
-        logger.status('Applying chirality restraints')
         cr_m = self.chiral_restraint_mgr
         crs = cr_m.add_restraints_by_atoms(sc.mobile_heavy_atoms)
         # crs = crs.restrict_to_sel(sc.all_atoms)
         sh.add_dihedral_restraints(crs)
         uh.append((cr_m, cr_m.triggers.add_handler('changes', self._dihe_r_changed_cb)))
 
-        logger.status('Applying proper dihedral restraints')
         pdr_m = self.proper_dihedral_restraint_mgr
         pdrs = pdr_m.add_all_defined_restraints_for_residues(mobile_res)
         if sim_params.restrain_peptide_omegas:
@@ -794,7 +790,6 @@ class Sim_Manager:
         sh.add_dihedral_restraints(pdrs)
         uh.append((pdr_m, pdr_m.triggers.add_handler('changes', self._dihe_r_changed_cb)))
 
-        logger.status('Applying simple distance restraints')
         dr_m = self.distance_restraint_mgr
         # Pre-create all restraints necessary for secondary structure manipulation
         dr_m.add_ss_restraints(sc.all_atoms.unique_residues)
@@ -802,24 +797,20 @@ class Sim_Manager:
         sh.add_distance_restraints(drs)
         uh.append((dr_m, dr_m.triggers.add_handler('changes', self._dr_changed_cb)))
 
-        logger.status('Applying adaptive distance restraints')
         for adr_m in self.adaptive_distance_restraint_mgrs:
             adrs = adr_m.atoms_restraints(sc.mobile_atoms)
             sh.add_adaptive_distance_restraints(adrs)
             uh.append((adr_m, adr_m.triggers.add_handler('changes', self._adr_changed_cb)))
 
-        logger.status('Applying position restraints')
         pr_m = self.position_restraint_mgr
         prs = pr_m.add_restraints(sc.mobile_atoms)
         sh.add_position_restraints(prs)
         uh.append((pr_m, pr_m.triggers.add_handler('changes', self._pr_changed_cb)))
 
-        logger.status('Preparing tuggable atoms')
         ta_m = self.tuggable_atoms_mgr
         tuggables = ta_m.add_tuggables(sc.mobile_atoms)
         uh.append((ta_m, ta_m.triggers.add_handler('changes', self._tug_changed_cb)))
         sh.add_tuggables(tuggables)
-        logger.status('')
 
     def _prepare_mdff_managers(self):
         '''
@@ -846,8 +837,7 @@ class Sim_Manager:
             mask_radius = isolde_params.standard_map_mask_cutoff,
             extra_padding = 5,
             hide_surrounds = isolde_params.hide_surroundings_during_sim,
-            focus = False,
-            include_symmetry = True)
+            focus = False)
 
 
     def _initialize_mdff(self, update_handlers):
@@ -1265,7 +1255,6 @@ class Sim_Handler:
 
         logger = self.session.logger
         # Overall simulation topology
-        logger.status('Preparing simulation topology...')
         template_dict = find_residue_templates(sim_construct.all_residues, ff, ligand_db=ligand_db, logger=session.logger)
         top, residue_templates = self.create_openmm_topology(atoms, template_dict)
         self._topology = top
@@ -1273,14 +1262,11 @@ class Sim_Handler:
 
         self._temperature = sim_params.temperature
 
-        logger.status('Creating OpenMM system...')
         system = self._system = self._create_openmm_system(ff, top,
             sim_params, residue_templates)
 
-        logger.status('Setting fixed atoms...')
         self.set_fixed_atoms(sim_construct.fixed_atoms)
         self._thread_handler = None
-        logger.status('')
         # CustomExternalForce handling mouse and haptic interactions
         self._tugging_force = None
 
@@ -1426,25 +1412,19 @@ class Sim_Handler:
         '''
         logger = self.session.logger
         params = self._params
+        logger.status('Initialising forces...')
         if amber_cmap:
-            logger.status('Initialising CMAP corrections')
             self.initialize_amber_cmap_force()
         if tugging:
-            logger.status('Initialising interactive tugging force')
             self.initialize_tugging_force(params.restraint_max_force)
         if position_restraints:
-            logger.status('Initialising position restraints force')
             self.initialize_position_restraints_force(params.restraint_max_force)
         if distance_restraints:
-            logger.status('Initialising distance restraints force')
             self.initialize_distance_restraints_force(params.restraint_max_force)
         if dihedral_restraints:
-            logger.status('Initialising dihedral restraints force')
             self.initialize_dihedral_restraint_force()
         if adaptive_distance_restraints:
-            logger.status('Initialising adaptive distance restraints force')
             self.initialize_adaptive_distance_restraints_force()
-        logger.status('')
 
     def initialize_mdff_forces(self, volumes):
         '''
@@ -1462,9 +1442,7 @@ class Sim_Handler:
         logger = self.session.logger
         params = self._params
         if params.use_gbsa:
-            logger.status('Finalising implicit solvent')
             self.initialize_implicit_solvent(params)
-        logger.status('Preparing integrator')
         integrator = self._prepare_integrator(params)
         platform = openmm.Platform.getPlatformByName(params.platform)
 
@@ -1484,7 +1462,6 @@ class Sim_Handler:
         c = self._context = s.context
         c.setPositions(0.1*self._atoms.coords)
         c.setVelocitiesToTemperature(self.temperature)
-        logger.status('Launching simulation thread manager')
         self._thread_handler = OpenMM_Thread_Handler(c, params)
         self.smoothing = params.trajectory_smoothing
         self.smoothing_alpha = params.smoothing_alpha
