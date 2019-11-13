@@ -81,6 +81,7 @@ class Forcefield_Mgr:
     def __init__(self, session):
         self.session=session
         self._ff_dict = {}
+        self._ligand_dict = {}
         self._task = None
         from simtk.openmm import version
         self._openmm_version = version.version
@@ -114,7 +115,27 @@ class Forcefield_Mgr:
             return ff
 
     def ligand_db(self, key):
-        return _ligand_files[key]
+        db = self._ligand_dict.get(key, None)
+        if db is None:
+            ligand_zip = _ligand_files[key]
+            if ligand_zip is not None:
+                db = (ligand_zip, self._ligand_db_from_zip(ligand_zip))
+                self._ligand_dict[key] = db
+        return db
+
+    def _ligand_db_from_zip(self, ligand_zip):
+        from zipfile import ZipFile
+        import os
+        namelist = []
+        with ZipFile(ligand_zip) as zf:
+            for fname in zf.namelist():
+                name, ext = os.path.splitext(fname)
+                if ext.lower() == '.xml':
+                    namelist.append(fname)
+        return namelist
+
+
+
 
     @property
     def available_forcefields(self):

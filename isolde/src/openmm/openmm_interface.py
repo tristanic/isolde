@@ -2842,6 +2842,7 @@ def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
 
     from chimerax.atomic import Residue
     ligands = residues[residues.polymer_types == Residue.PT_NONE]
+    ligands = ligands[ligands.names != 'HOH']
     names = numpy.unique(ligands.names)
     from .amberff.glycam import (
         find_glycan_template_name_and_link,
@@ -2874,17 +2875,17 @@ def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
             continue
 
         if ligand_db is not None:
-            from zipfile import ZipFile
-            with ZipFile(ligand_db) as zf:
-                xname = name+'.xml'
-                if xname in zf.namelist():
-                    logger.info('Loading residue template for {} from internal database'.format(name))
-                    with zf.open(xname) as xf:
+            zip, namelist = ligand_db
+            if name in namelist:
+                from zipfile import ZipFile
+                logger.info('Loading residue template for {} from internal database'.format(name))
+                with ZipFile(zip) as zf:
+                    with zf.open(name+'.xml') as xf:
                         forcefield.loadFile(xf)
-                    indices = numpy.where(residues.names == name)[0]
-                    for i in indices:
-                        templates[i] = 'MC_{}'.format(name)
-            continue
+                indices = numpy.where(residues.names==name)[0]
+                for i in indices:
+                    templates[i] = 'MC_{}'.format(name)
+                continue
 
         warn_str = ('No template with name {} found in the molecular dynamics '
             'forcefield. Attempting to match by topology. You may need to '
