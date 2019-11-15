@@ -7,6 +7,13 @@ The ISOLDE Command Line
     isolde_restrain
     isolde_remote
 
+While the primary mode of control of ISOLDE is via :ref:`isolde_gui`, if you
+prefer you can also perform many tasks via the command line, such as launching
+the GUI (:ref:`start`), starting, stopping and pausing simulations (:ref:`sim`),
+and performing basic manipulations (:ref:`pepflip` and :ref:`cisflip`). Some
+functions are currently available *only* through the command line - in
+particular, :ref:`adaptive_distance_restraints_cmd`.
+
 
 .. _tutorial:
 
