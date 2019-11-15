@@ -131,8 +131,10 @@ with the surroundings.
 ]
     <ChimeraXClassifier>ChimeraX :: Tool :: ISOLDE :: General :: Interactive Molecular Dynamics Flexible Fitting (iMDFF)</ChimeraXClassifier>
     <ChimeraXClassifier>ChimeraX :: Command :: isolde :: General :: Command-line control of ISOLDE simulations</ChimeraXClassifier>
-    <ChimeraXClassifier>ChimeraX :: Command :: rama :: General :: Live Ramachadran validation of models</ChimeraXClassifier>
+    <ChimeraXClassifier>ChimeraX :: Command :: rama :: General :: Live Ramachandran validation of models</ChimeraXClassifier>
     <ChimeraXClassifier>ChimeraX :: Command :: rota :: General :: Live rotamer validation of models</ChimeraXClassifier>
+    <ChimeraXClassifier>ChimeraX :: Command :: ~rama :: General :: Turn off live Ramachandran validation of models</ChimeraXClassifier>
+    <ChimeraXClassifier>ChimeraX :: Command :: ~rota :: General :: Turn off live rotamer validation of models</ChimeraXClassifier>
 ]
   </Classifiers>
 
