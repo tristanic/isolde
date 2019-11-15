@@ -104,8 +104,10 @@ def register_rota(logger):
     desc = CmdDesc(
         optional=[
             ('structures', StructuresArg),
-            ('report', BoolArg)
             ],
+        keyword=[
+            ('report', BoolArg),
+        ],
         synopsis='Add rotamer validator markup to models and optionally report current outliers'
     )
     register('rota', desc, rota, logger=logger)
@@ -125,9 +127,11 @@ def register_rama(logger):
     desc = CmdDesc(
         optional=[
             ('structures', StructuresArg),
-            ('show_favored', BoolArg),
-            ('report', BoolArg)
             ],
+        keyword=[
+            ('show_favored', BoolArg),
+            ('report', BoolArg),
+        ],
         synopsis='Add Ramachandran validator markup to models and optionally report current outliers'
     )
     register('rama', desc, rama, logger=logger)
