@@ -2472,7 +2472,18 @@ class Isolde():
         self.sim_platform = self.iw._sim_platform_combo_box.currentText()
 
     def _change_mask_radius(self, *_):
-        self.params.standard_map_mask_cutoff = self.iw._sim_basic_xtal_settings_mask_radius_spinbox.value()
+        rad = self.iw._sim_basic_xtal_settings_mask_radius_spinbox.value()
+        self.params.standard_map_mask_cutoff = rad
+        if self.selected_model is not None:
+            from chimerax.clipper import get_map_mgr
+            mmgr = get_map_mgr(self.selected_model)
+            if mmgr is not None and not mmgr.spotlight_mode:
+                mmgr.zone_mgr.radius = rad
+            if self.simulation_running:
+                mmgr.zone_mgr.update_needed(resize_box=False)
+
+
+
 
     def _change_spotlight_radius(self, *_):
         from chimerax.core.commands import run
