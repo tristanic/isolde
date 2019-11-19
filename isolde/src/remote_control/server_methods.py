@@ -211,17 +211,17 @@ def load_map(session, file_path:'string', model_id:'string'):
     m = _model_from_id(model_id)
     from chimerax.atomic import AtomicStructure
     from chimerax.clipper.symmetry import SymmetryManager
-    from chimerax.clipper.maps import Map_Mgr
+    from chimerax.clipper.maps import MapMgr
     if isinstance(m, AtomicStructure):
         from chimerax.atomic import get_map_mgr
         mmgr = get_map_mgr(m)
     elif isinstance(m, SymmetryManager):
         mmgr = m.map_mgr
-    elif isinstance(m, Map_Mgr):
+    elif isinstance(m, MapMgr):
         mmgr = m
     else:
         raise RuntimeError('Model ID {} has unrecognised type {}. Should be one of [{}]'.format(
-            model_id, str(type(m)), ', '.join(('AtomicStructure', 'SymmetryManager', 'Map_Mgr'))
+            model_id, str(type(m)), ', '.join(('AtomicStructure', 'SymmetryManager', 'MapMgr'))
         ))
     nxmapset = mmgr.nxmapset
     new_map = nxmapset.add_nxmap_handler_from_file(file_path)

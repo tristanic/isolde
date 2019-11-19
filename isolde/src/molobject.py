@@ -1731,8 +1731,8 @@ class MDFFMgr(_RestraintMgr):
         m = self.model
         v = self.volume
 
-        from chimerax.clipper.maps.map_handler_base import XmapHandler_Base
-        is_xmap = isinstance(v, XmapHandler_Base)
+        from chimerax.clipper.maps.map_handler_base import XmapHandlerBase
+        is_xmap = isinstance(v, XmapHandlerBase)
         if is_xmap:
             sh = v.crystal_mgr
 
