@@ -19,7 +19,7 @@ from chimerax.core.geometry import translation, rotation, Places
 from ..geometry import exclamation_mark, spiral, bond_cylinder_placements
 from ..geometry import scale_transforms
 
-class Rotamer_Annotator(Model):
+class RotamerAnnotator(Model):
     '''
     Handles the task of real-time validation of rotamers for a single
     :py:class:`chimerax.AtomicStructure` and drawing of 3D indicators of their
@@ -27,9 +27,9 @@ class Rotamer_Annotator(Model):
 
     .. code-block:: python
 
-        ra = Rotamer_Annotator(atomic_structure)
+        ra = RotamerAnnotator(atomic_structure)
 
-    adds the :py:class`Rotamer_Annotator` as a child model to `atomic_structure`
+    adds the :py:class`RotamerAnnotator` as a child model to `atomic_structure`
     and will update its validation drawing every time the coordinates change.
     Alternatively:
 
@@ -38,18 +38,18 @@ class Rotamer_Annotator(Model):
         from chimerax.isolde import session_extensions as sx
         ra = sx.get_rota_annotator(atomic_model)
 
-    creates the :py:class:`Rotamer_Annotator` if it doesn't exist, or returns
+    creates the :py:class:`RotamerAnnotator` if it doesn't exist, or returns
     the existing one if it does.
 
     Each rotamer score visualised as a 3D exclamation mark surrounded by a
     spiral, which changes colour and grows with outlier severity. By default
     only non-favoured rotamers are flagged.
 
-    Turning off the display of the :py:class:`Rotamer_Annotator` model (e.g.
+    Turning off the display of the :py:class:`RotamerAnnotator` model (e.g.
     via the `ChimeraX` Model Panel) temporarily turns off automatic validation,
     which will restart when display is turned back on.
     '''
-
+    SESSION_SAVE=False
     pickable = False
 
     def __init__(self, atomic_structure):

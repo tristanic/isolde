@@ -22,11 +22,11 @@ using namespace isolde;
 
 /***************************************************************
  *
- * Chiral_Restraint_Mgr functions
+ * ChiralRestraintMgr functions
  *
  ***************************************************************/
-SET_PYTHON_INSTANCE(chiral_restraint_mgr, Chiral_Restraint_Mgr)
-GET_PYTHON_INSTANCES(chiral_restraint_mgr, Chiral_Restraint_Mgr)
+SET_PYTHON_INSTANCE(chiral_restraint_mgr, ChiralRestraintMgr)
+GET_PYTHON_INSTANCES(chiral_restraint_mgr, ChiralRestraintMgr)
 
 extern "C" EXPORT void*
 chiral_restraint_mgr_new(void *structure, void *change_tracker)
@@ -34,7 +34,7 @@ chiral_restraint_mgr_new(void *structure, void *change_tracker)
     Structure *s = static_cast<Structure *>(structure);
     isolde::Change_Tracker *ct = static_cast<isolde::Change_Tracker *>(change_tracker);
     try {
-        Chiral_Restraint_Mgr *mgr = new Chiral_Restraint_Mgr(s, ct);
+        ChiralRestraintMgr *mgr = new ChiralRestraintMgr(s, ct);
         return mgr;
     } catch (...) {
         molc_error();
@@ -45,7 +45,7 @@ chiral_restraint_mgr_new(void *structure, void *change_tracker)
 extern "C" EXPORT void
 chiral_restraint_mgr_delete(void *mgr)
 {
-    Chiral_Restraint_Mgr *m = static_cast<Chiral_Restraint_Mgr *>(mgr);
+    ChiralRestraintMgr *m = static_cast<ChiralRestraintMgr *>(mgr);
     try {
         delete m;
     } catch (...) {
@@ -56,7 +56,7 @@ chiral_restraint_mgr_delete(void *mgr)
 extern "C" EXPORT size_t
 chiral_restraint_mgr_num_restraints(void *mgr)
 {
-    Chiral_Restraint_Mgr *m = static_cast<Chiral_Restraint_Mgr *>(mgr);
+    ChiralRestraintMgr *m = static_cast<ChiralRestraintMgr *>(mgr);
     try {
         return m->num_restraints();
     } catch (...) {
@@ -69,8 +69,8 @@ extern "C" EXPORT size_t
 chiral_restraint_mgr_get_restraint(void *mgr, void *chiral,
         npy_bool create, size_t n, pyobject_t *restraint)
 {
-    Chiral_Restraint_Mgr *m = static_cast<Chiral_Restraint_Mgr *>(mgr);
-    Chiral_Center **c = static_cast<Chiral_Center **>(chiral);
+    ChiralRestraintMgr *m = static_cast<ChiralRestraintMgr *>(mgr);
+    ChiralCenter **c = static_cast<ChiralCenter **>(chiral);
     try {
         size_t found = 0;
         for (size_t i=0; i<n; ++i) {
@@ -90,10 +90,10 @@ chiral_restraint_mgr_get_restraint(void *mgr, void *chiral,
 extern "C" EXPORT void
 chiral_restraint_mgr_delete_restraint(void *mgr, void *restraint, size_t n)
 {
-    Chiral_Restraint_Mgr *m = static_cast<Chiral_Restraint_Mgr *>(mgr);
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraintMgr *m = static_cast<ChiralRestraintMgr *>(mgr);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     try {
-        std::set<Chiral_Restraint *> to_delete;
+        std::set<ChiralRestraint *> to_delete;
         for (size_t i=0; i<n; ++i) {
             to_delete.insert(*r++);
         }
@@ -106,11 +106,11 @@ chiral_restraint_mgr_delete_restraint(void *mgr, void *restraint, size_t n)
 
 /***************************************************************
  *
- * Proper_Dihedral_Restraint_Mgr functions
+ * ProperDihedralRestraintMgr functions
  *
  ***************************************************************/
-SET_PYTHON_INSTANCE(proper_dihedral_restraint_mgr, Proper_Dihedral_Restraint_Mgr)
-GET_PYTHON_INSTANCES(proper_dihedral_restraint_mgr, Proper_Dihedral_Restraint_Mgr)
+SET_PYTHON_INSTANCE(proper_dihedral_restraint_mgr, ProperDihedralRestraintMgr)
+GET_PYTHON_INSTANCES(proper_dihedral_restraint_mgr, ProperDihedralRestraintMgr)
 
 extern "C" EXPORT void*
 proper_dihedral_restraint_mgr_new(void *structure, void *change_tracker)
@@ -118,7 +118,7 @@ proper_dihedral_restraint_mgr_new(void *structure, void *change_tracker)
     Structure *s = static_cast<Structure *>(structure);
     isolde::Change_Tracker *ct = static_cast<isolde::Change_Tracker *>(change_tracker);
     try {
-        Proper_Dihedral_Restraint_Mgr *mgr = new Proper_Dihedral_Restraint_Mgr(s, ct);
+        ProperDihedralRestraintMgr *mgr = new ProperDihedralRestraintMgr(s, ct);
         return mgr;
     } catch (...) {
         molc_error();
@@ -129,7 +129,7 @@ proper_dihedral_restraint_mgr_new(void *structure, void *change_tracker)
 extern "C" EXPORT void
 proper_dihedral_restraint_mgr_delete(void *mgr)
 {
-    Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
+    ProperDihedralRestraintMgr *m = static_cast<ProperDihedralRestraintMgr *>(mgr);
     try {
         delete m;
     } catch (...) {
@@ -140,7 +140,7 @@ proper_dihedral_restraint_mgr_delete(void *mgr)
 extern "C" EXPORT void
 proper_dihedral_restraint_mgr_set_colors(void *mgr, uint8_t *maxc, uint8_t *midc, uint8_t *minc)
 {
-    Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
+    ProperDihedralRestraintMgr *m = static_cast<ProperDihedralRestraintMgr *>(mgr);
     try {
         m->set_colors(maxc, midc, minc);
     } catch (...) {
@@ -151,7 +151,7 @@ proper_dihedral_restraint_mgr_set_colors(void *mgr, uint8_t *maxc, uint8_t *midc
 extern "C" EXPORT size_t
 proper_dihedral_restraint_mgr_num_restraints(void *mgr)
 {
-    Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
+    ProperDihedralRestraintMgr *m = static_cast<ProperDihedralRestraintMgr *>(mgr);
     try {
         return m->num_restraints();
     } catch (...) {
@@ -164,8 +164,8 @@ extern "C" EXPORT size_t
 proper_dihedral_restraint_mgr_get_restraint(void *mgr, void *dihedral,
         npy_bool create, size_t n, pyobject_t *restraint)
 {
-    Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
-    Proper_Dihedral **d = static_cast<Proper_Dihedral **>(dihedral);
+    ProperDihedralRestraintMgr *m = static_cast<ProperDihedralRestraintMgr *>(mgr);
+    ProperDihedral **d = static_cast<ProperDihedral **>(dihedral);
     try {
         size_t found = 0;
         for (size_t i=0; i<n; ++i) {
@@ -185,7 +185,7 @@ proper_dihedral_restraint_mgr_get_restraint(void *mgr, void *dihedral,
 extern "C" EXPORT PyObject*
 proper_dihedral_restraint_mgr_visible_restraints(void *mgr)
 {
-    Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
+    ProperDihedralRestraintMgr *m = static_cast<ProperDihedralRestraintMgr *>(mgr);
     try {
         auto vis = m->visible_restraints();
         void **rptr;
@@ -203,10 +203,10 @@ proper_dihedral_restraint_mgr_visible_restraints(void *mgr)
 extern "C" EXPORT void
 proper_dihedral_restraint_mgr_delete_restraint(void *mgr, void *restraint, size_t n)
 {
-    Proper_Dihedral_Restraint_Mgr *m = static_cast<Proper_Dihedral_Restraint_Mgr *>(mgr);
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraintMgr *m = static_cast<ProperDihedralRestraintMgr *>(mgr);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
-        std::set<Proper_Dihedral_Restraint *> to_delete;
+        std::set<ProperDihedralRestraint *> to_delete;
         for (size_t i=0; i<n; ++i) {
             to_delete.insert(*r++);
         }
@@ -218,17 +218,17 @@ proper_dihedral_restraint_mgr_delete_restraint(void *mgr, void *restraint, size_
 
 /***************************************************************
  *
- * Chiral_Restraint functions
+ * ChiralRestraint functions
  *
  ***************************************************************/
 
-SET_PYTHON_CLASS(chiral_restraint, Chiral_Restraint)
-GET_PYTHON_INSTANCES(chiral_restraint, Chiral_Restraint)
+SET_PYTHON_CLASS(chiral_restraint, ChiralRestraint)
+GET_PYTHON_INSTANCES(chiral_restraint, ChiralRestraint)
 
 extern "C" EXPORT void
 chiral_restraint_target(void *restraint, size_t n, double *target)
 {
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *(target++) = (*r++)->get_target();
@@ -241,7 +241,7 @@ chiral_restraint_target(void *restraint, size_t n, double *target)
 extern "C" EXPORT void
 chiral_restraint_chiral_center(void *restraint, size_t n, pyobject_t *center)
 {
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *center++ = (*r++)->get_dihedral();
@@ -254,7 +254,7 @@ chiral_restraint_chiral_center(void *restraint, size_t n, pyobject_t *center)
 extern "C" EXPORT void
 chiral_restraint_offset(void *restraint, size_t n, double *offset)
 {
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*offset++) = (*r++)->offset();
@@ -267,7 +267,7 @@ chiral_restraint_offset(void *restraint, size_t n, double *offset)
 extern "C" EXPORT void
 chiral_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
 {
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *(flag++) = (*r++)->is_enabled();
@@ -280,7 +280,7 @@ chiral_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
 extern "C" EXPORT void
 set_chiral_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
 {
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*r++)->set_enabled(*(flag++));
@@ -293,7 +293,7 @@ set_chiral_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
 extern "C" EXPORT void
 chiral_restraint_k(void *restraint, size_t n, double *spring_constant)
 {
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *(spring_constant++) = (*r++)->get_spring_constant();
@@ -306,7 +306,7 @@ chiral_restraint_k(void *restraint, size_t n, double *spring_constant)
 extern "C" EXPORT void
 set_chiral_restraint_k(void *restraint, size_t n, double *spring_constant)
 {
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*r++)->set_spring_constant(*(spring_constant++));
@@ -319,7 +319,7 @@ set_chiral_restraint_k(void *restraint, size_t n, double *spring_constant)
 extern "C" EXPORT void
 chiral_restraint_sim_index(void *restraint, size_t n, int *index)
 {
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i)
             *(index++) = (*r++)->get_sim_index();
@@ -331,7 +331,7 @@ chiral_restraint_sim_index(void *restraint, size_t n, int *index)
 extern "C" EXPORT void
 set_chiral_restraint_sim_index(void *restraint, size_t n, int *index)
 {
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i)
             (*r++)->set_sim_index(*(index++));
@@ -343,7 +343,7 @@ set_chiral_restraint_sim_index(void *restraint, size_t n, int *index)
 extern "C" EXPORT void
 chiral_restraint_clear_sim_index(void *restraint, size_t n)
 {
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i)
             (*r++)->clear_sim_index();
@@ -355,7 +355,7 @@ chiral_restraint_clear_sim_index(void *restraint, size_t n)
 extern "C" EXPORT void
 chiral_restraint_cutoff(void *restraint, size_t n, double *cutoff)
 {
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *(cutoff++) = (*r++)->get_cutoff();
@@ -367,7 +367,7 @@ chiral_restraint_cutoff(void *restraint, size_t n, double *cutoff)
 extern "C" EXPORT void
 set_chiral_restraint_cutoff(void *restraint, size_t n, double *cutoff)
 {
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*r++)->set_cutoff(*(cutoff++));
@@ -380,13 +380,13 @@ set_chiral_restraint_cutoff(void *restraint, size_t n, double *cutoff)
 extern "C" EXPORT PyObject*
 chiral_all_atoms_in_sel(void* restraint, size_t nr, void* atom, size_t na)
 {
-    Chiral_Restraint **r = static_cast<Chiral_Restraint **>(restraint);
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
     Atom **a = static_cast<Atom **>(atom);
     try {
         std::set<Atom *> search_atoms;
         for (size_t i=0; i<na; ++i)
             search_atoms.insert(*(a++));
-        std::vector<Chiral_Restraint *> ret;
+        std::vector<ChiralRestraint *> ret;
         for (size_t i=0; i<nr; ++i)
         {
             const auto& atoms = (*r)->get_dihedral()->atoms();
@@ -417,17 +417,17 @@ chiral_all_atoms_in_sel(void* restraint, size_t nr, void* atom, size_t na)
 
 /***************************************************************
  *
- * Proper_Dihedral_Restraint functions
+ * ProperDihedralRestraint functions
  *
  ***************************************************************/
 
-SET_PYTHON_CLASS(proper_dihedral_restraint, Proper_Dihedral_Restraint)
-GET_PYTHON_INSTANCES(proper_dihedral_restraint, Proper_Dihedral_Restraint)
+SET_PYTHON_CLASS(proper_dihedral_restraint, ProperDihedralRestraint)
+GET_PYTHON_INSTANCES(proper_dihedral_restraint, ProperDihedralRestraint)
 
 extern "C" EXPORT void
 proper_dihedral_restraint_target(void *restraint, size_t n, double *target)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *(target++) = (*r++)->get_target();
@@ -440,7 +440,7 @@ proper_dihedral_restraint_target(void *restraint, size_t n, double *target)
 extern "C" EXPORT void
 set_proper_dihedral_restraint_target(void *restraint, size_t n, double *target)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*r++)->set_target(*(target++));
@@ -453,7 +453,7 @@ set_proper_dihedral_restraint_target(void *restraint, size_t n, double *target)
 extern "C" EXPORT void
 proper_dihedral_restraint_dihedral(void *restraint, size_t n, pyobject_t *dihedral)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *dihedral++ = (*r++)->get_dihedral();
@@ -466,7 +466,7 @@ proper_dihedral_restraint_dihedral(void *restraint, size_t n, pyobject_t *dihedr
 extern "C" EXPORT void
 proper_dihedral_restraint_offset(void *restraint, size_t n, double *offset)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*offset++) = (*r++)->offset();
@@ -479,7 +479,7 @@ proper_dihedral_restraint_offset(void *restraint, size_t n, double *offset)
 extern "C" EXPORT void
 proper_dihedral_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *(flag++) = (*r++)->is_enabled();
@@ -492,7 +492,7 @@ proper_dihedral_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
 extern "C" EXPORT void
 set_proper_dihedral_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*r++)->set_enabled(*(flag++));
@@ -505,7 +505,7 @@ set_proper_dihedral_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
 extern "C" EXPORT void
 proper_dihedral_restraint_display(void *restraint, size_t n, npy_bool *flag)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *(flag++) = (*r++)->get_display();
@@ -518,7 +518,7 @@ proper_dihedral_restraint_display(void *restraint, size_t n, npy_bool *flag)
 extern "C" EXPORT void
 set_proper_dihedral_restraint_display(void *restraint, size_t n, npy_bool *flag)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*r++)->set_display(*(flag++));
@@ -531,7 +531,7 @@ set_proper_dihedral_restraint_display(void *restraint, size_t n, npy_bool *flag)
 extern "C" EXPORT void
 proper_dihedral_restraint_visible(void *restraint, size_t n, npy_bool *flag)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *(flag++) = (*r++)->visible();
@@ -544,7 +544,7 @@ proper_dihedral_restraint_visible(void *restraint, size_t n, npy_bool *flag)
 extern "C" EXPORT void
 proper_dihedral_restraint_k(void *restraint, size_t n, double *spring_constant)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *(spring_constant++) = (*r++)->get_spring_constant();
@@ -557,7 +557,7 @@ proper_dihedral_restraint_k(void *restraint, size_t n, double *spring_constant)
 extern "C" EXPORT void
 set_proper_dihedral_restraint_k(void *restraint, size_t n, double *spring_constant)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*r++)->set_spring_constant(*(spring_constant++));
@@ -570,7 +570,7 @@ set_proper_dihedral_restraint_k(void *restraint, size_t n, double *spring_consta
 extern "C" EXPORT void
 proper_dihedral_restraint_sim_index(void *restraint, size_t n, int *index)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i)
             *(index++) = (*r++)->get_sim_index();
@@ -582,7 +582,7 @@ proper_dihedral_restraint_sim_index(void *restraint, size_t n, int *index)
 extern "C" EXPORT void
 set_proper_dihedral_restraint_sim_index(void *restraint, size_t n, int *index)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i)
             (*r++)->set_sim_index(*(index++));
@@ -594,7 +594,7 @@ set_proper_dihedral_restraint_sim_index(void *restraint, size_t n, int *index)
 extern "C" EXPORT void
 proper_dihedral_restraint_clear_sim_index(void *restraint, size_t n)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i)
             (*r++)->clear_sim_index();
@@ -606,7 +606,7 @@ proper_dihedral_restraint_clear_sim_index(void *restraint, size_t n)
 extern "C" EXPORT void
 proper_dihedral_restraint_cutoff(void *restraint, size_t n, double *cutoff)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *(cutoff++) = (*r++)->get_cutoff();
@@ -618,7 +618,7 @@ proper_dihedral_restraint_cutoff(void *restraint, size_t n, double *cutoff)
 extern "C" EXPORT void
 set_proper_dihedral_restraint_cutoff(void *restraint, size_t n, double *cutoff)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*r++)->set_cutoff(*(cutoff++));
@@ -632,7 +632,7 @@ set_proper_dihedral_restraint_cutoff(void *restraint, size_t n, double *cutoff)
 extern "C" EXPORT void
 proper_dihedral_restraint_annotation_transform(void *restraint, size_t n, float *tf1, float *tf2)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         float transforms[32];
         for (size_t i=0; i<n; ++i) {
@@ -651,7 +651,7 @@ proper_dihedral_restraint_annotation_transform(void *restraint, size_t n, float 
 extern "C" EXPORT void
 proper_dihedral_restraint_annotation_color(void *restraint, size_t n, uint8_t *color)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*r++)->get_annotation_color(color);
@@ -665,13 +665,13 @@ proper_dihedral_restraint_annotation_color(void *restraint, size_t n, uint8_t *c
 extern "C" EXPORT PyObject*
 proper_dihedral_restraint_all_atoms_in_sel(void* restraint, size_t nr, void* atom, size_t na)
 {
-    Proper_Dihedral_Restraint **r = static_cast<Proper_Dihedral_Restraint **>(restraint);
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
     Atom **a = static_cast<Atom **>(atom);
     try {
         std::set<Atom *> search_atoms;
         for (size_t i=0; i<na; ++i)
             search_atoms.insert(*(a++));
-        std::vector<Proper_Dihedral_Restraint *> ret;
+        std::vector<ProperDihedralRestraint *> ret;
         for (size_t i=0; i<nr; ++i)
         {
             const auto& atoms = (*r)->get_dihedral()->atoms();

@@ -19,12 +19,12 @@ manipulations are making things better or worse.
 
 .. automodule:: chimerax.isolde.validation
 
-    Rama_Annotator
+    RamaAnnotator
     ~~~~~~~~~~~~~~
-    .. autoclass:: Rama_Annotator
+    .. autoclass:: RamaAnnotator
         :members:
 
-    Rotamer_Annotator
+    RotamerAnnotator
     ~~~~~~~~~~~~~~~~~
-    .. autoclass:: Rotamer_Annotator
+    .. autoclass:: RotamerAnnotator
         :members:

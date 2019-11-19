@@ -19,27 +19,27 @@ Each of the groups below are arranged in essentially the same way, so I will
 explain the layout using proper dihedrals as an example. There are three key
 Python classes:
 
-    * :py:class:`Proper_Dihedral_Mgr` exists as a single instance per session
+    * :py:class:`ProperDihedralMgr` exists as a single instance per session
       and is responsible for creation, deletion and retrieval of C++
-      :cpp:class:`Proper_Dihedral` objects. The preferred way to find the
+      :cpp:class:`ProperDihedral` objects. The preferred way to find the
       manager instance is to use
       :func:`session_extensions.get_proper_dihedral_manager`. This will create
       the manager if it doesn't yet exist, or simply retrieve it if it does.
-    * :py:class:`Proper_Dihedral` is built on the :py:class:`chimerax.State`
+    * :py:class:`ProperDihedral` is built on the :py:class:`chimerax.State`
       framework and behaves similarly to e.g. :py:class:`chimerax.Atom`.
-    * :py:class:`Proper_Dihedrals` is built on the
+    * :py:class:`ProperDihedrals` is built on the
       :py:class:`chimerax.Collection` framework and behaves similarly to
       e.g. :py:class:`chimerax.Atoms`.
 
 Some general key points:
-    * In general, the C++ :cpp:class:`Proper_Dihedral` objects are only created
-      when needed. :py:func:`Proper_Dihedral_Mgr.get_dihedral` by default will
+    * In general, the C++ :cpp:class:`ProperDihedral` objects are only created
+      when needed. :py:func:`ProperDihedralMgr.get_dihedral` by default will
       work through the input list of residues, returning dihedrals that already
       exist and attempting to create those that don't.
-    * If any constituent atom in a C++ :cpp:class:`Proper_Dihedral` is deleted,
+    * If any constituent atom in a C++ :cpp:class:`ProperDihedral` is deleted,
       the dihedral will be deleted and automatically removed from any
-      :py:class:`Proper_Dihedrals` instances. Any corresponding Python
-      :py:class:`Proper_Dihedral` instances will become invalid, raising an
+      :py:class:`ProperDihedrals` instances. Any corresponding Python
+      :py:class:`ProperDihedral` instances will become invalid, raising an
       exception if an attempt is made to use them. Similarly,
       :class:`Rotamer` objects will be cleaned up if any constituent
       dihedral is deleted. The exception to this rule is :class:`Rama`, where
@@ -51,7 +51,7 @@ Some general key points:
       part should "just work", with the user or developer rarely if ever needing
       to worry about object creation/deletion. If, for example, a residue is
       mutated from lysine to arginine, the old rotamer will disappear and the
-      next call to :py:func:`Rota_Mgr.get_rotamers` will have the new one in
+      next call to :py:func:`RotaMgr.get_rotamers` will have the new one in
       the expected position.
     * For best performance, you should try to do most tasks using the plural
       :py:class:`chimerax.Collection` calls, which loop over their constituent
@@ -71,57 +71,57 @@ Some general key points:
                 angles.append(d.angle)
 
       is very slow, since it involves creating and deleting a
-      :py:class:`Proper_Dihedral` for every iteration of the loop.
+      :py:class:`ProperDihedral` for every iteration of the loop.
 
 .. automodule:: chimerax.isolde.atomic
 
 Proper Dihedrals
 ----------------
 
-Proper_Dihedral_Mgr
+ProperDihedralMgr
 ~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Proper_Dihedral_Mgr
+    .. autoclass:: ProperDihedralMgr
         :members:
 
 
-Proper_Dihedral
+ProperDihedral
 ~~~~~~~~~~~~~~~
-    .. autoclass:: Proper_Dihedral
+    .. autoclass:: ProperDihedral
         :members:
         :inherited-members:
 
-Proper_Dihedrals
+ProperDihedrals
 ~~~~~~~~~~~~~~~~
-    .. autoclass:: Proper_Dihedrals
+    .. autoclass:: ProperDihedrals
         :members:
         :inherited-members:
 
 Chiral Centres
 --------------
 
-Chiral_Mgr
+ChiralMgr
 ~~~~~~~~~~
-    .. autoclass:: Chiral_Mgr
+    .. autoclass:: ChiralMgr
         :members:
 
-Chiral_Center
+ChiralCenter
 ~~~~~~~~~~~~~
-    .. autoclass:: Chiral_Center
+    .. autoclass:: ChiralCenter
         :members:
         :inherited-members:
 
-Chiral_Centers
+ChiralCenters
 ~~~~~~~~~~~~~~
-    .. autoclass:: Chiral_Centers
+    .. autoclass:: ChiralCenters
         :members:
         :inherited-members:
 
 Ramachandran validation
 -----------------------
 
-Rama_Mgr
+RamaMgr
 ~~~~~~~~
-    .. autoclass:: Rama_Mgr
+    .. autoclass:: RamaMgr
         :members:
 
 Rama
@@ -138,9 +138,9 @@ Ramas
 Amino acid rotamers
 -------------------
 
-Rota_Mgr
+RotaMgr
 ~~~~~~~~
-    .. autoclass:: Rota_Mgr
+    .. autoclass:: RotaMgr
         :members:
 
 Rotamer

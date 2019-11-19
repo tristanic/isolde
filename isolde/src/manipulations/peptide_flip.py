@@ -54,8 +54,8 @@ class Peptide_Bond_Flipper:
             phi.dihedral.atoms[0].residue, 'psi'
         )
         from math import pi
-        from ..molarray import Proper_Dihedral_Restraints
-        phipsi = self.phipsi = Proper_Dihedral_Restraints([phi, psi])
+        from ..molarray import ProperDihedralRestraints
+        phipsi = self.phipsi = ProperDihedralRestraints([phi, psi])
         import numpy
         if numpy.any(phipsi.sim_indices == -1):
             raise TypeError('Peptide bond must be mobile in the simulation!')

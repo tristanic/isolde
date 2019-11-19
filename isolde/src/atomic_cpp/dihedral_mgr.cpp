@@ -17,7 +17,7 @@
 
 
 
-template class pyinstance::PythonInstance<isolde::Dihedral_Mgr<isolde::Proper_Dihedral>>;
+template class pyinstance::PythonInstance<isolde::Dihedral_Mgr<isolde::ProperDihedral>>;
 
 namespace isolde
 {
@@ -250,8 +250,8 @@ void Dihedral_Mgr<DType>::destructors_done(const std::set<void*>& destroyed)
     _delete_dihedrals(to_delete);
 } //destructors_done
 
-template class Dihedral_Mgr<Proper_Dihedral>;
-//template class Dihedral_Mgr<Chiral_Center>;
+template class Dihedral_Mgr<ProperDihedral>;
+//template class Dihedral_Mgr<ChiralCenter>;
 
 
 } //namespace isolde

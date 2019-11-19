@@ -14,7 +14,7 @@ it's easy to forget it's there!
 
 While not all of the manager classes described below, each is implemented as a
 :py:class:`chimerax.Model` subclass for simplicity and easy housekeeping. With
-the exception of :py:class:`MDFF_Mgr` (which is placed below the
+the exception of :py:class:`MDFFMgr` (which is placed below the
 :py:class:`chimerax.Volume` holding the map it manages), each manager will
 appear as a child model to the main :py:class:`chimerax.AtomicStructure`.
 
@@ -31,163 +31,163 @@ General Utilities
 Change Tracking
 ---------------
 
-Restraint_Change_Tracker
+RestraintChangeTracker
 ~~~~~~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Restraint_Change_Tracker
+    .. autoclass:: RestraintChangeTracker
         :members:
 
 Map Steering Forces
 -------------------
 
-MDFF_Mgr
+MDFFMgr
 ~~~~~~~~
-    .. autoclass:: MDFF_Mgr
+    .. autoclass:: MDFFMgr
         :members:
         :inherited-members:
 
-MDFF_Atom
+MDFFAtom
 ~~~~~~~~~
-    .. autoclass:: MDFF_Atom
+    .. autoclass:: MDFFAtom
         :members:
 
-MDFF_Atoms
+MDFFAtoms
 ~~~~~~~~~~
-    .. autoclass:: MDFF_Atoms
+    .. autoclass:: MDFFAtoms
         :members:
 
 
 Position Restraints
 -------------------
 
-Position_Restraint_Mgr
+PositionRestraintMgr
 ~~~~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Position_Restraint_Mgr
+    .. autoclass:: PositionRestraintMgr
         :members:
         :inherited-members:
 
-Position_Restraint
+PositionRestraint
 ~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Position_Restraint
+    .. autoclass:: PositionRestraint
         :members:
 
-Position_Restraints
+PositionRestraints
 ~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Position_Restraints
+    .. autoclass:: PositionRestraints
         :members:
 
 Interactive Tugging Forces
 --------------------------
 
-NOTE: The classes :py:class:`Tuggable_Atom` and :py:class:`Tuggable_Atoms`
-are simply wrappers over :py:class:`Position_Restraint` and
-:py:class:`Position_Restraints` respectively, with no API changes.
+NOTE: The classes :py:class:`TuggableAtom` and :py:class:`TuggableAtoms`
+are simply wrappers over :py:class:`PositionRestraint` and
+:py:class:`PositionRestraints` respectively, with no API changes.
 
-Tuggable_Atoms_Mgr
+TuggableAtomsMgr
 ~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Tuggable_Atoms_Mgr
+    .. autoclass:: TuggableAtomsMgr
         :members:
         :inherited-members:
 
-Tuggable_Atom
+TuggableAtom
 ~~~~~~~~~~~~~
     See :py:class:`Positon_Restraint`
 
-Tuggable_Atoms
+TuggableAtoms
 ~~~~~~~~~~~~~~
-    See :py:class:`Position_Restraints`
+    See :py:class:`PositionRestraints`
 
 
 Distance Restraints
 -------------------
 
-Distance_Restraint_Mgr
+DistanceRestraintMgr
 ~~~~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Distance_Restraint_Mgr
+    .. autoclass:: DistanceRestraintMgr
         :members:
         :inherited-members:
 
-Distance_Restraint
+DistanceRestraint
 ~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Distance_Restraint
+    .. autoclass:: DistanceRestraint
         :members:
 
-Distance_Restraints
+DistanceRestraints
 ~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Distance_Restraints
+    .. autoclass:: DistanceRestraints
 
 Adaptive Distance Restraints
 ----------------------------
 
-Adaptive_Distance_Restraint_Mgr
+AdaptiveDistanceRestraintMgr
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Adaptive_Distance_Restraint_Mgr
+    .. autoclass:: AdaptiveDistanceRestraintMgr
         :members:
         :inherited-members:
 
-Adaptive_Distance_Restraint
+AdaptiveDistanceRestraint
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Adaptive_Distance_Restraint
+    .. autoclass:: AdaptiveDistanceRestraint
         :members:
 
-Adaptive_Distance_Restraints
+AdaptiveDistanceRestraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Adaptive_Distance_Restraints
+    .. autoclass:: AdaptiveDistanceRestraints
         :members:
 
 Proper Dihedral Restraints
 --------------------------
 
-Proper_Dihedral_Restraint_Mgr
+ProperDihedralRestraintMgr
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Proper_Dihedral_Restraint_Mgr
+    .. autoclass:: ProperDihedralRestraintMgr
         :members:
         :inherited-members:
 
-Proper_Dihedral_Restraint
+ProperDihedralRestraint
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Proper_Dihedral_Restraint
+    .. autoclass:: ProperDihedralRestraint
         :members:
 
-Proper_Dihedral_Restraints
+ProperDihedralRestraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Proper_Dihedral_Restraints
+    .. autoclass:: ProperDihedralRestraints
         :members:
 
 Chirality Restraints
 --------------------
 
-Chiral_Restraint_Mgr
+ChiralRestraintMgr
 ~~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Chiral_Restraint_Mgr
+    .. autoclass:: ChiralRestraintMgr
         :members:
         :inherited-members:
 
-Chiral_Restraint
+ChiralRestraint
 ~~~~~~~~~~~~~~~~
-    .. autoclass:: Chiral_Restraint
+    .. autoclass:: ChiralRestraint
         :members:
 
-Chiral_Restraints
+ChiralRestraints
 ~~~~~~~~~~~~~~~~~
-    .. autoclass:: Chiral_Restraints
+    .. autoclass:: ChiralRestraints
         :members:
 
 
 Rotamer Restraints
 ------------------
 
-Rotamer_Restraint_Mgr
+RotamerRestraintMgr
 ~~~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Rotamer_Restraint_Mgr
+    .. autoclass:: RotamerRestraintMgr
         :members:
         :inherited-members:
 
-Rotamer_Restraint
+RotamerRestraint
 ~~~~~~~~~~~~~~~~~
-    .. autoclass:: Rotamer_Restraint
+    .. autoclass:: RotamerRestraint
         :members:
 
-Rotamer_Restraints
+RotamerRestraints
 ~~~~~~~~~~~~~~~~~~
-    .. autoclass:: Rotamer_Restraints
+    .. autoclass:: RotamerRestraints
         :members:

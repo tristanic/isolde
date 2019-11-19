@@ -21,18 +21,18 @@ using namespace isolde;
 
 /*************************************
  *
- * Proper_Dihedral_Mgr functions
+ * ProperDihedralMgr functions
  *
  *************************************/
 
-SET_PYTHON_INSTANCE(proper_dihedral_mgr, Proper_Dihedral_Mgr)
-GET_PYTHON_INSTANCES(proper_dihedral_mgr, Proper_Dihedral_Mgr)
+SET_PYTHON_INSTANCE(proper_dihedral_mgr, ProperDihedralMgr)
+GET_PYTHON_INSTANCES(proper_dihedral_mgr, ProperDihedralMgr)
 
 extern "C" EXPORT void*
 proper_dihedral_mgr_new()
 {
    try {
-       Proper_Dihedral_Mgr *mgr = new Proper_Dihedral_Mgr();
+       ProperDihedralMgr *mgr = new ProperDihedralMgr();
        return mgr;
 
    } catch (...) {
@@ -44,7 +44,7 @@ proper_dihedral_mgr_new()
 extern "C" EXPORT void
 proper_dihedral_mgr_delete(void *mgr)
 {
-   Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+   ProperDihedralMgr *m = static_cast<ProperDihedralMgr *>(mgr);
    try {
        delete m;
    } catch (...) {
@@ -55,10 +55,10 @@ proper_dihedral_mgr_delete(void *mgr)
 extern "C" EXPORT void
 proper_dihedral_mgr_delete_dihedral(void *mgr, size_t n, void *dihedrals)
 {
-   Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
-   Proper_Dihedral **d = static_cast<Proper_Dihedral **>(dihedrals);
+   ProperDihedralMgr *m = static_cast<ProperDihedralMgr *>(mgr);
+   ProperDihedral **d = static_cast<ProperDihedral **>(dihedrals);
    try {
-       std::set<Proper_Dihedral *> delete_list;
+       std::set<ProperDihedral *> delete_list;
        for (size_t i=0; i<n; ++i) {
            delete_list.insert(d[i]);
        }
@@ -72,7 +72,7 @@ extern "C" EXPORT void
 proper_dihedral_mgr_add_dihedral_def(void *mgr, pyobject_t *rname,
    pyobject_t *dname, pyobject_t *anames, npy_bool *externals)
 {
-   Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+   ProperDihedralMgr *m = static_cast<ProperDihedralMgr *>(mgr);
    try {
        std::string resname(PyUnicode_AsUTF8(static_cast<PyObject *>(rname[0])));
        std::string dihe_name(PyUnicode_AsUTF8(static_cast<PyObject *>(dname[0])));
@@ -91,7 +91,7 @@ proper_dihedral_mgr_add_dihedral_def(void *mgr, pyobject_t *rname,
 extern "C" EXPORT void
 proper_dihedral_mgr_reserve_map(void *mgr, size_t n)
 {
-   Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+   ProperDihedralMgr *m = static_cast<ProperDihedralMgr *>(mgr);
    try {
        m->reserve(n);
    } catch (...) {
@@ -102,7 +102,7 @@ proper_dihedral_mgr_reserve_map(void *mgr, size_t n)
 extern "C" EXPORT void
 proper_dihedral_mgr_new_dihedral(void *mgr, void*residues, size_t n, pyobject_t *name)
 {
-   Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+   ProperDihedralMgr *m = static_cast<ProperDihedralMgr *>(mgr);
    Residue **r = static_cast<Residue **>(residues);
    try {
        std::string sname = std::string(PyUnicode_AsUTF8(static_cast<PyObject *>(name[0])));
@@ -118,14 +118,14 @@ proper_dihedral_mgr_new_dihedral(void *mgr, void*residues, size_t n, pyobject_t 
 extern "C" EXPORT PyObject*
 proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *name, size_t n, npy_bool create)
 {
-   Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+   ProperDihedralMgr *m = static_cast<ProperDihedralMgr *>(mgr);
    Residue **r = static_cast<Residue **>(residues);
    try {
-       std::vector<Proper_Dihedral *> dvec;
+       std::vector<ProperDihedral *> dvec;
        std::string dname(PyUnicode_AsUTF8(static_cast<PyObject *>(name[0])));
        for (size_t i=0; i<n; ++i) {
            try {
-               Proper_Dihedral *d = m->get_dihedral(r[i], dname, (bool)create);
+               ProperDihedral *d = m->get_dihedral(r[i], dname, (bool)create);
                if (d != nullptr)
                    dvec.push_back(d);
            } catch (std::out_of_range) {continue;}
@@ -145,10 +145,10 @@ proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *name, s
 extern "C" EXPORT PyObject*
 proper_dihedral_mgr_get_residue_dihedrals(void *mgr, void *residues, size_t n)
 {
-   Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+   ProperDihedralMgr *m = static_cast<ProperDihedralMgr *>(mgr);
    Residue **r = static_cast<Residue **>(residues);
    try {
-       std::vector<Proper_Dihedral *> dvec;
+       std::vector<ProperDihedral *> dvec;
        for (size_t i=0; i<n; ++i) {
            auto r_dvec = m->get_dihedrals(*r++);
            for (auto d: r_dvec)
@@ -168,7 +168,7 @@ proper_dihedral_mgr_get_residue_dihedrals(void *mgr, void *residues, size_t n)
 extern "C" EXPORT int
 proper_dihedral_mgr_num_mapped_dihedrals(void *mgr)
 {
-   Proper_Dihedral_Mgr *m = static_cast<Proper_Dihedral_Mgr *>(mgr);
+   ProperDihedralMgr *m = static_cast<ProperDihedralMgr *>(mgr);
    try {
        return m->num_mapped_dihedrals();
    } catch (...) {

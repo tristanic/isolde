@@ -38,7 +38,53 @@ class _MyAPI(BundleAPI):
         if class_name == 'ISOLDE_ToolUI':
             from . import tool
             return tool.ISOLDE_ToolUI
-        return None
+        from .validation import RamaAnnotator, RotamerAnnotator
+        from .molobject import (
+            _RestraintMgr, MDFFMgr, PositionRestraintMgr,
+            TuggableAtomsMgr, _DistanceRestraintMgrBase,
+            DistanceRestraintMgr, AdaptiveDistanceRestraintMgr,
+            ChiralRestraintMgr, ProperDihedralRestraintMgr,
+            _RotamerPreview, RotamerRestraintMgr,
+            _Dihedral, ChiralCenter, ProperDihedral,
+            Rama, Rotamer, PositionRestraint,
+            TuggableAtom, MDFFAtom, DistanceRestraint,
+            AdaptiveDistanceRestraint, ChiralRestraint,
+            ProperDihedralRestraint, RotamerRestraint,
+
+
+
+
+
+        )
+        ct = {
+            'RamaAnnotator':        RamaAnnotator,
+            'RotamerAnnotator':     RotamerAnnotator,
+            '_RestraintMgr':        _RestraintMgr,
+            'MDFFMgr':              MDFFMgr,
+            'PositionRestraintMgr': PositionRestraintMgr,
+            'TuggableAtomsMgr':     TuggableAtomsMgr,
+            '_DistanceRestraintMgrBase':    _DistanceRestraintMgrBase,
+            'DistanceRestraintMgr': DistanceRestraintMgr,
+            'AdaptiveDistanceRestraintMgr': AdaptiveDistanceRestraintMgr,
+            'ChiralRestraintMgr':   ChiralRestraintMgr,
+            'ProperDihedralRestraintMgr':   ProperDihedralRestraintMgr,
+            '_RotamerPreview':      _RotamerPreview,
+            'RotamerRestraintMgr':  RotamerRestraintMgr,
+            '_Dihedral':            Dihedral,
+            'ChiralCenter':         ChiralCenter,
+            'ProperDihedral':       ProperDihedral,
+            'Rama':                 Rama,
+            'Rotamer':              Rotamer,
+            'PositionRestraint':    PositionRestraint,
+            'TuggableAtom':         TuggableAtom,
+            'MDFFAtom':             MDFFAtom,
+            'DistanceRestraint':    DistanceRestraint,
+            'AdaptiveDistanceRestraint':    AdaptiveDistanceRestraint,
+            'ChiralRestraint':      ChiralRestraint,
+            'ProperDihedralRestraint':  ProperDihedralRestraint,
+            'RotamerRestraint':     RotamerRestraint,
+        }
+        return ct.get(class_name)
 
     @staticmethod
     def start_tool(session, tool_name):

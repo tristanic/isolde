@@ -16,14 +16,14 @@
 #include <pyinstance/PythonInstance.instantiate.h>
 
 
-template class pyinstance::PythonInstance<isolde::Rotamer_Restraint_Mgr>;
-template class pyinstance::PythonInstance<isolde::Rotamer_Restraint>;
+template class pyinstance::PythonInstance<isolde::RotamerRestraintMgr>;
+template class pyinstance::PythonInstance<isolde::RotamerRestraint>;
 
 namespace isolde
 {
 
 
-Rotamer_Restraint::Rotamer_Restraint( Rotamer *rotamer, Rotamer_Restraint_Mgr *mgr )
+RotamerRestraint::RotamerRestraint( Rotamer *rotamer, RotamerRestraintMgr *mgr )
     : _rotamer(rotamer), _mgr(mgr)
 {
     const auto& chi_dihedrals = rotamer->dihedrals();
@@ -33,22 +33,22 @@ Rotamer_Restraint::Rotamer_Restraint( Rotamer *rotamer, Rotamer_Restraint_Mgr *m
     }
 }
 
-Proper_Dihedral_Restraint_Mgr* Rotamer_Restraint::dihedral_restraint_mgr() const
+ProperDihedralRestraintMgr* RotamerRestraint::dihedral_restraint_mgr() const
 {
     return _mgr->dihedral_restraint_mgr();
 }
 
-void Rotamer_Restraint::set_spring_constant(double k) {
+void RotamerRestraint::set_spring_constant(double k) {
     for (auto r: _chi_restraints)
         r->set_spring_constant(k);
 }
 
-void Rotamer_Restraint::set_enabled(bool flag) {
+void RotamerRestraint::set_enabled(bool flag) {
     for (auto r: _chi_restraints)
         r->set_enabled(flag);
 }
 
-void Rotamer_Restraint::set_target_index(int t_index) {
+void RotamerRestraint::set_target_index(int t_index) {
     _current_target_def = rotamer()->get_target_def(t_index);
     _current_target_index = t_index;
     const auto& angles = _current_target_def->angles;
@@ -62,7 +62,7 @@ void Rotamer_Restraint::set_target_index(int t_index) {
     }
 }
 
-bool Rotamer_Restraint::enabled() const {
+bool RotamerRestraint::enabled() const {
     for (auto r: _chi_restraints) {
         if (!r->is_enabled()) return false;
     }
@@ -70,14 +70,14 @@ bool Rotamer_Restraint::enabled() const {
 }
 
 
-Rotamer_Restraint_Mgr::~Rotamer_Restraint_Mgr()
+RotamerRestraintMgr::~RotamerRestraintMgr()
 {
     auto du = DestructionUser(this);
     delete_restraints(all_restraints());
     _restraint_map.clear();
 }
 
-Rotamer_Restraint* Rotamer_Restraint_Mgr::new_restraint(Rotamer *rot)
+RotamerRestraint* RotamerRestraintMgr::new_restraint(Rotamer *rot)
 {
     auto it = _restraint_map.find(rot);
     if (it != _restraint_map.end()) {
@@ -91,15 +91,15 @@ Rotamer_Restraint* Rotamer_Restraint_Mgr::new_restraint(Rotamer *rot)
     return _new_restraint(rot);
 }
 
-Rotamer_Restraint* Rotamer_Restraint_Mgr::_new_restraint(Rotamer *rot)
+RotamerRestraint* RotamerRestraintMgr::_new_restraint(Rotamer *rot)
 {
-    Rotamer_Restraint *r = new Rotamer_Restraint(rot, this);
+    RotamerRestraint *r = new RotamerRestraint(rot, this);
     _restraint_map[rot] = r;
     track_created(r);
     return r;
 }
 
-Rotamer_Restraint* Rotamer_Restraint_Mgr::get_restraint(Rotamer *rot, bool create)
+RotamerRestraint* RotamerRestraintMgr::get_restraint(Rotamer *rot, bool create)
 {
     auto it = _restraint_map.find(rot);
     if (it != _restraint_map.end())
@@ -110,21 +110,21 @@ Rotamer_Restraint* Rotamer_Restraint_Mgr::get_restraint(Rotamer *rot, bool creat
     return nullptr;
 }
 
-std::set<Rotamer_Restraint *> Rotamer_Restraint_Mgr::all_restraints() const
+std::set<RotamerRestraint *> RotamerRestraintMgr::all_restraints() const
 {
-    std::set<Rotamer_Restraint *> ret;
+    std::set<RotamerRestraint *> ret;
     for (const auto &it: _restraint_map)
         ret.insert(it.second);
     return ret;
 }
 
-void Rotamer_Restraint_Mgr::delete_restraints(const std::set<Rotamer_Restraint *>& delete_list)
+void RotamerRestraintMgr::delete_restraints(const std::set<RotamerRestraint *>& delete_list)
 {
     auto db = DestructionBatcher(this);
     _delete_restraints(delete_list);
 }
 
-void Rotamer_Restraint_Mgr::_delete_restraints(const std::set<Rotamer_Restraint *>& delete_list)
+void RotamerRestraintMgr::_delete_restraints(const std::set<RotamerRestraint *>& delete_list)
 {
     for (auto d: delete_list)
     {
@@ -134,10 +134,10 @@ void Rotamer_Restraint_Mgr::_delete_restraints(const std::set<Rotamer_Restraint 
     }
 }
 
-void Rotamer_Restraint_Mgr::destructors_done(const std::set<void *>& destroyed)
+void RotamerRestraintMgr::destructors_done(const std::set<void *>& destroyed)
 {
     auto db = DestructionBatcher(this);
-    std::set<Rotamer_Restraint *> to_delete;
+    std::set<RotamerRestraint *> to_delete;
     for (auto it=_restraint_map.begin(); it != _restraint_map.end();) {
         auto r = it->first;
         if (destroyed.find(static_cast<void *>(r)) != destroyed.end()) {

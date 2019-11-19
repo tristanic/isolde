@@ -9,14 +9,14 @@
 
 
 # Managers
-from ..molobject import Chiral_Mgr, Proper_Dihedral_Mgr, Rama_Mgr, Rota_Mgr
+from ..molobject import ChiralMgr, ProperDihedralMgr, RamaMgr, RotaMgr
 
 # Manager get functions
 from ..session_extensions import get_proper_dihedral_mgr, get_ramachandran_mgr, \
                                  get_rotamer_mgr
 
 # Singular objects
-from ..molobject import Chiral_Center, Proper_Dihedral, Rama, Rotamer
+from ..molobject import ChiralCenter, ProperDihedral, Rama, Rotamer
 
 # Collections
-from ..molarray import Chiral_Centers, Proper_Dihedrals, Ramas, Rotamers
+from ..molarray import ChiralCenters, ProperDihedrals, Ramas, Rotamers

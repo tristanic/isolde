@@ -56,22 +56,22 @@ struct Chiral_Def
 //! Top-level manager for handling chiral centres
 /*!
  * Chirals are too much of a specialisation of Dihedral to use
- * Dihedral_Mgr<Chiral_Center>
+ * Dihedral_Mgr<ChiralCenter>
  */
-class Chiral_Mgr: public DestructionObserver, public pyinstance::PythonInstance<Chiral_Mgr>
+class ChiralMgr: public DestructionObserver, public pyinstance::PythonInstance<ChiralMgr>
 {
 
 public:
-    // maps central atom to its Chiral_Center instance
-    typedef std::unordered_map<Atom*, Chiral_Center *> Amap;
+    // maps central atom to its ChiralCenter instance
+    typedef std::unordered_map<Atom*, ChiralCenter *> Amap;
 
     // Definitions are stored as (Residue name):(Atom name):(Expected angle)
     typedef std::unordered_map< std::string, Chiral_Def > Aname_Map;
     typedef std::unordered_map< std::string, Aname_Map > Rname_Map;
 
 
-    Chiral_Mgr() {} // constructor
-    ~Chiral_Mgr(); // destructor, deletes all managed Chiral_Center objects
+    ChiralMgr() {} // constructor
+    ~ChiralMgr(); // destructor, deletes all managed ChiralCenter objects
 
     void add_chiral_def(const std::string& resname, const std::string& atom_name,
         const std::vector<std::string>& s1,
@@ -82,13 +82,13 @@ public:
     const Chiral_Def& get_chiral_def(const std::string& resname, const std::string& atom_name);
     const Chiral_Def& get_chiral_def(const ResName& resname, const AtomName& atom_name);
 
-    //! Retrieve or create a Chiral_Center (if possible) for the given atom
-    /*! A Chiral_Center will only be created if a definition exists for the
+    //! Retrieve or create a ChiralCenter (if possible) for the given atom
+    /*! A ChiralCenter will only be created if a definition exists for the
      *  given atom, and at least three non-hydrogen substituents are present.
      */
-    Chiral_Center* get_chiral(Atom* center, bool create=true);
+    ChiralCenter* get_chiral(Atom* center, bool create=true);
 
-    void delete_chirals(const std::set<Chiral_Center *>& delete_list);
+    void delete_chirals(const std::set<ChiralCenter *>& delete_list);
 
     size_t num_chirals() const { return _atom_to_chiral.size(); }
     virtual void destructors_done(const std::set<void*>& destroyed);
@@ -96,16 +96,16 @@ public:
 private:
     Rname_Map _defs;
     Amap _atom_to_chiral;
-    Chiral_Center* _new_chiral(Atom* center);
-    void _add_chiral(Chiral_Center* c);
+    ChiralCenter* _new_chiral(Atom* center);
+    void _add_chiral(ChiralCenter* c);
 
-    void _delete_chirals(const std::set<Chiral_Center *>& delete_list);
-
-
+    void _delete_chirals(const std::set<ChiralCenter *>& delete_list);
 
 
 
-}; // class Chiral_Mgr
+
+
+}; // class ChiralMgr
 
 }
 

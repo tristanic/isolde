@@ -286,17 +286,37 @@ def find_duplicate_definitions(dirname):
 
         for datoms, ddeflist in ff.dihedral_types.items():
             sda = frozenset((datoms, datoms[::-1]))
-            for ddef in ddeflist:
-                params = numpy.array((ddef.phi_k, ddef.per, ddef.phase, ddef.scee, ddef.scnb))
-                kpl = known_propers[sda]
-                if not len(kpl):
-                    kpl.append(params)
-                    continue
-                for kp in kpl:
-                    if all(numpy.isclose(params, kp)):
+            kpl = known_propers[sda]
+            ddeflist = [numpy.array((ddef.phi_k, ddef.per, ddef.phase, ddef.scee, ddef.scnb)) for ddef in ddeflist]
+            if not len(kpl):
+                kpl.append(ddeflist)
+                continue
+            any_match = False
+            for kpd in kpl:
+                if len(kpd) == len(ddeflist):
+                    match = True
+                    for kp, ddef in zip(kpd, ddeflist):
+                        if not all(numpy.isclose(kp, ddef)):
+                            match = False
+                            break
+                    if match:
+                        any_match = True
                         break
-                else:
-                    kpl.append(params)
+            if not any_match:
+                kpl.append(ddeflist)
+
+
+            # for ddef in ddeflist:
+            #     params = numpy.array((ddef.phi_k, ddef.per, ddef.phase, ddef.scee, ddef.scnb))
+            #     kpl = known_propers[sda]
+            #     if not len(kpl):
+            #         kpl.append(params)
+            #         continue
+            #     for kp in kpl:
+            #         if all(numpy.isclose(params, kp)):
+            #             break
+            #     else:
+            #         kpl.append(params)
 
         for iatoms, idef in ff.improper_periodic_types.items():
             params = numpy.array((idef.phi_k, idef.per, idef.phase, idef.scee, idef.scnb))

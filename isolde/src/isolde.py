@@ -509,7 +509,7 @@ class Isolde():
                 'ISOLDE using CPU only, in practice it is prohibitively slow. '
                 'If you have a suitable GPU in your machine, please check that you '
                 'have the recommended drivers from the manufacturer installed. '
-                'The current required CUDA version is 9.2 - if installed, please '
+                'The current required CUDA version is 10.1 - if installed, please '
                 'make sure this is on your library path before starting ChimeraX.')
 
         # Set to the preferred or, failing that, the fastest available platform
@@ -951,9 +951,9 @@ class Isolde():
             models = [models]
         from chimerax.atomic import AtomicStructure
         from chimerax.map import Volume
-        from chimerax.clipper.symmetry import Symmetry_Manager
+        from chimerax.clipper.symmetry import SymmetryManager
         from chimerax.clipper.maps import XmapHandler_Live
-        from .restraints import MDFF_Mgr
+        from .restraints import MDFFMgr
 
         if force:
             structures_need_update=True
@@ -966,7 +966,7 @@ class Isolde():
             for m in models:
                 if type(m) == AtomicStructure:
                     structures_need_update = True
-                if isinstance(m, Volume) or isinstance(m, MDFF_Mgr):
+                if isinstance(m, Volume) or isinstance(m, MDFFMgr):
                     volumes_need_update = True
                 if structures_need_update and volumes_need_update:
                     break
@@ -1168,9 +1168,9 @@ class Isolde():
             if not os.path.isfile(self.iw._sim_basic_xtal_init_reflections_file_name.text()):
                 valid = False
             if valid:
-                from chimerax.clipper.symmetry import Symmetry_Manager
+                from chimerax.clipper.symmetry import SymmetryManager
                 for m in sm.all_models():
-                    if isinstance(m, Symmetry_Manager):
+                    if isinstance(m, SymmetryManager):
                         valid = False
                         break
         else:
@@ -1241,7 +1241,7 @@ class Isolde():
         m = self.selected_model
         spotlight_radius = self.iw._sim_basic_xtal_settings_spotlight_radius_spinbox.value()
         from chimerax.clipper import symmetry
-        sym_handler = symmetry.Symmetry_Manager(m, fname,
+        sym_handler = symmetry.SymmetryManager(m, fname,
             map_oversampling=self.params.map_shannon_rate,
             spotlight_radius=spotlight_radius)
         self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
@@ -2453,7 +2453,7 @@ class Isolde():
             # Load/create validation managers
             from . import session_extensions as sx
             sx.get_rota_annotator(m)
-            sx.get_rama_annotator(m)
+            sx.get_RamaAnnotator(m)
             self._populate_rot_mdff_target_combo_box()
             self.triggers.activate_trigger('selected model changed', data=m)
             self._update_iffy_rota_list()
@@ -3299,7 +3299,7 @@ class Isolde():
         color.color(self.session, model, color='bychain', target='ac')
         color.color(self.session, model, color='byhetero', target='a')
         from chimerax.clipper import symmetry
-        sym_handler = symmetry.Symmetry_Manager(model,
+        sym_handler = symmetry.SymmetryManager(model,
             #mtzfile=os.path.join(data_dir, 'before_maps.mtz'),
             mtzfile=mtzfile,
             map_oversampling = self.params.map_shannon_rate)

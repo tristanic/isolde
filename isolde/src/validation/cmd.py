@@ -57,7 +57,7 @@ def rama(session, structures=None, show_favored=True, report=False):
         from chimerax.atomic import AtomicStructure
         structures = [m for m in session.models.list() if type(m)==AtomicStructure]
     for structure in structures:
-        ra = sx.get_rama_annotator(structure)
+        ra = sx.get_RamaAnnotator(structure)
         ra.hide_favored = not show_favored
     if report:
         from chimerax.atomic import Residues, concatenate
@@ -92,7 +92,7 @@ def unrama(session, structures=None):
         structures = [m for m in session.models.list() if type(m)==AtomicStructure]
     from chimerax.isolde import session_extensions as sx
     for structure in structures:
-        ra = sx.get_rama_annotator(structure, create=False)
+        ra = sx.get_RamaAnnotator(structure, create=False)
         if ra is not None:
             session.models.close([ra])
 

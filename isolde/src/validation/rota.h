@@ -31,7 +31,7 @@ using namespace atomstruct;
 namespace isolde
 {
 
-class Rota_Mgr;
+class RotaMgr;
 
 struct Rota_Target
 {
@@ -96,9 +96,9 @@ class Rotamer:  public pyinstance::PythonInstance<Rotamer>
 public:
     Rotamer() {} // null constructor
     ~Rotamer() { auto du = DestructionUser(this); }
-    Rotamer(Residue *res, Rota_Mgr *mgr);
+    Rotamer(Residue *res, RotaMgr *mgr);
 
-    const std::vector<Proper_Dihedral *> &dihedrals() {return _chi_dihedrals; }
+    const std::vector<ProperDihedral *> &dihedrals() {return _chi_dihedrals; }
     size_t n_chi() const { return _def->n_chi(); }
     void angles(std::vector<double> &angles) const;
     void angles(double *angles) const;
@@ -116,22 +116,22 @@ public:
 
 private:
     Residue* _residue;
-    Rota_Mgr* _mgr;
-    std::vector<Proper_Dihedral *> _chi_dihedrals;
+    RotaMgr* _mgr;
+    std::vector<ProperDihedral *> _chi_dihedrals;
     Rota_Def *_def;
     // size_t _n_chi;
     // bool _symmetric = false;
 
 }; // class Rotamer
 
-class Rota_Mgr: public DestructionObserver, public pyinstance::PythonInstance<Rota_Mgr>
+class RotaMgr: public DestructionObserver, public pyinstance::PythonInstance<RotaMgr>
 {
 
 public:
     enum Rota_Bins {FAVORED=0, ALLOWED=1, OUTLIER=2, BIN_NA=-1};
-    Rota_Mgr() {} // null constructor
-    Rota_Mgr(Proper_Dihedral_Mgr *dmgr): _dmgr(dmgr) {};
-    ~Rota_Mgr();
+    RotaMgr() {} // null constructor
+    RotaMgr(ProperDihedralMgr *dmgr): _dmgr(dmgr) {};
+    ~RotaMgr();
 
     struct cutoffs
     {
@@ -166,7 +166,7 @@ public:
     // {
     //     return &(_interpolators.at(std::string(resname)));
     // }
-    Proper_Dihedral_Mgr* dihedral_mgr() { return _dmgr; }
+    ProperDihedralMgr* dihedral_mgr() { return _dmgr; }
     void validate(Rotamer** rotamers, size_t n, double* scores);
     void validate(Residue** residues, size_t n, double* scores);
 
@@ -183,7 +183,7 @@ public:
     virtual void destructors_done(const std::set<void*>& destroyed);
 
 private:
-    Proper_Dihedral_Mgr* _dmgr;
+    ProperDihedralMgr* _dmgr;
     std::unordered_map<Residue*, Rotamer*> _residue_to_rotamer;
     std::unordered_map<std::string, Rota_Def> _resname_to_rota_def;
     std::unordered_map<std::string, RegularGridInterpolator<double>> _interpolators;
@@ -199,7 +199,7 @@ private:
     /*********END TESTING********/
 
 
-}; // class Rota_Mgr
+}; // class RotaMgr
 } //namespace isolde
 
 #endif //ISOLDE_ROTA

@@ -36,7 +36,7 @@ namespace isolde
 
 //! Top-level manager for handling all dihedrals of a given type for a model.
 /*!
- * Implemented for Proper_Dihedral class.
+ * Implemented for ProperDihedral class.
  */
 template<class DType>
 class Dihedral_Mgr: public DestructionObserver, public pyinstance::PythonInstance<Dihedral_Mgr<DType>>
@@ -123,7 +123,7 @@ private:
 
 }; //class Dihedral_Mgr;
 
-typedef Dihedral_Mgr<Proper_Dihedral> Proper_Dihedral_Mgr;
+typedef Dihedral_Mgr<ProperDihedral> ProperDihedralMgr;
 
 } //namespace isolde
 

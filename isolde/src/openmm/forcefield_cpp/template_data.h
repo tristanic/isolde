@@ -20,10 +20,10 @@
 namespace OpenMM_FF
 {
 
-class TemplateData
+class ResidueTemplate
 {
 public:
-    TemplateData(const std::string& name )
+    ResidueTemplate(const std::string& name )
         : name_(name);
 
 private:

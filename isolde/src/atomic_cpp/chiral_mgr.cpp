@@ -16,21 +16,21 @@
 #include <set>
 #include <pyinstance/PythonInstance.instantiate.h>
 
-template class pyinstance::PythonInstance<isolde::Chiral_Mgr>;
+template class pyinstance::PythonInstance<isolde::ChiralMgr>;
 
 namespace isolde
 {
 
-Chiral_Mgr::~Chiral_Mgr()
+ChiralMgr::~ChiralMgr()
 {
     auto du = DestructionUser(this);
     for (auto &a: _atom_to_chiral) {
         delete a.second;
     }
     _atom_to_chiral.clear();
-} //~Chiral_Mgr
+} //~ChiralMgr
 
-void Chiral_Mgr::add_chiral_def(const std::string& resname,
+void ChiralMgr::add_chiral_def(const std::string& resname,
     const std::string& atom_name,
     const std::vector<std::string>& s1,
     const std::vector<std::string>& s2,
@@ -40,7 +40,7 @@ void Chiral_Mgr::add_chiral_def(const std::string& resname,
     _defs[resname][atom_name] = Chiral_Def(s1, s2, s3, expected_angle);
 }
 
-const Chiral_Def& Chiral_Mgr::get_chiral_def(
+const Chiral_Def& ChiralMgr::get_chiral_def(
     const std::string& resname, const std::string& atom_name)
 {
     try {
@@ -50,13 +50,13 @@ const Chiral_Def& Chiral_Mgr::get_chiral_def(
     }
 }
 
-const Chiral_Def& Chiral_Mgr::get_chiral_def(const ResName& resname, const AtomName& atom_name)
+const Chiral_Def& ChiralMgr::get_chiral_def(const ResName& resname, const AtomName& atom_name)
 {
     return get_chiral_def(std::string(resname), std::string(atom_name));
 }
 
 
-Chiral_Center* Chiral_Mgr::get_chiral(Atom* center, bool create)
+ChiralCenter* ChiralMgr::get_chiral(Atom* center, bool create)
 {
     // Only atoms with 3 or more non-hydrogen substituents can be chiral centres
     if (center->bonds().size() < 3)
@@ -69,7 +69,7 @@ Chiral_Center* Chiral_Mgr::get_chiral(Atom* center, bool create)
     return nullptr;
 }
 
-Chiral_Center* Chiral_Mgr::_new_chiral(Atom* center)
+ChiralCenter* ChiralMgr::_new_chiral(Atom* center)
 {
     std::array<Atom*, 3> substituents;
 
@@ -106,25 +106,25 @@ Chiral_Center* Chiral_Mgr::_new_chiral(Atom* center)
             return nullptr;
         }
     }
-    Chiral_Center* c = new Chiral_Center(
+    ChiralCenter* c = new ChiralCenter(
         center, substituents[0], substituents[1], substituents[2], def.expected_angle);
     _add_chiral(c);
     return c;
 
 }
 
-void Chiral_Mgr::_add_chiral(Chiral_Center *c)
+void ChiralMgr::_add_chiral(ChiralCenter *c)
 {
     _atom_to_chiral[c->chiral_atom()] = c;
 }
 
-void Chiral_Mgr::delete_chirals(const std::set<Chiral_Center *>& delete_list)
+void ChiralMgr::delete_chirals(const std::set<ChiralCenter *>& delete_list)
 {
     auto db = DestructionBatcher(this);
     _delete_chirals(delete_list);
 }
 
-void Chiral_Mgr::_delete_chirals(const std::set<Chiral_Center *>& delete_list)
+void ChiralMgr::_delete_chirals(const std::set<ChiralCenter *>& delete_list)
 {
     for (auto c: delete_list) {
         _atom_to_chiral.erase(c->chiral_atom());
@@ -132,10 +132,10 @@ void Chiral_Mgr::_delete_chirals(const std::set<Chiral_Center *>& delete_list)
     }
 }
 
-void Chiral_Mgr::destructors_done(const std::set<void *>& destroyed)
+void ChiralMgr::destructors_done(const std::set<void *>& destroyed)
 {
     auto db = DestructionBatcher(this);
-    std::set<Chiral_Center *> to_delete;
+    std::set<ChiralCenter *> to_delete;
     for (const auto &it: _atom_to_chiral)
     {
         auto c = it.second;

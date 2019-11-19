@@ -79,7 +79,7 @@ public:
         throw std::invalid_argument("Base class Dihedral does not support bonds!");
     }
     virtual Bond* axial_bond() const {
-        throw std::invalid_argument("Axial bond is only defined for a Proper_Dihedral!");
+        throw std::invalid_argument("Axial bond is only defined for a ProperDihedral!");
     }
 
     //! Returns true only if all four atoms are visible.
@@ -101,13 +101,13 @@ public:
  * Atoms must be provided in order and must all be bonded in strict
  * order atom1--atom2--atom3--atom4.
  */
-class Proper_Dihedral: public Dihedral, public pyinstance::PythonInstance<Proper_Dihedral>
+class ProperDihedral: public Dihedral, public pyinstance::PythonInstance<ProperDihedral>
 {
 
 public:
     typedef Bond* Bonds[3];
-    Proper_Dihedral() {} // null constructor
-    Proper_Dihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4, Residue* owner, std::string name);
+    ProperDihedral() {} // null constructor
+    ProperDihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4, Residue* owner, std::string name);
     const Bonds& bonds() const { return _bonds; }
     Bond* axial_bond() const { return bonds()[1]; }
     //! Returns true if both axial bond atoms are visible.
@@ -121,7 +121,7 @@ private:
     const char* err_msg_not_bonded() const
         {return "Atoms must be bonded a1--a2--a3--a4";}
 
-}; // class Proper_Dihedral
+}; // class ProperDihedral
 
 } // namespace isolde
 

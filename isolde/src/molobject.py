@@ -44,17 +44,30 @@ cvec_property = _c_functions.cvec_property
 c_function = _c_functions.c_function
 c_array_function = _c_functions.c_array_function
 
+class _CamelCaseConverter:
+    import re
+    first_cap_re = re.compile('(.)([A-Z][a-z]+)')
+    all_cap_re = re.compile('([a-z0-9])([A-Z])')
+
+    @classmethod
+    def to_snake_case(cls, name):
+        s1 = cls.first_cap_re.sub(r'\1_\2', name)
+        return cls.all_cap_re.sub(r'\1_\2', s1).lower()
+
+def _as_snake_case(name):
+    return _CamelCaseConverter.to_snake_case(name)
+
 def _asptr(arr, dtype):
     return arr.ctypes.data_as(pointer(dtype))
 
 def _chiral_center_or_none(p):
-    return Chiral_Center.c_ptr_to_py_inst(p) if p else None
+    return ChiralCenter.c_ptr_to_py_inst(p) if p else None
 def _chiral_centers(p):
-    from .molarray import Chiral_Centers
-    return Chiral_Centers(p)
+    from .molarray import ChiralCenters
+    return ChiralCenters(p)
 def _proper_dihedrals(p):
-    from .molarray import Proper_Dihedrals
-    return Proper_Dihedrals(p)
+    from .molarray import ProperDihedrals
+    return ProperDihedrals(p)
 def _ramas(p):
     from .molarray import Ramas
     return Ramas(p)
@@ -66,98 +79,98 @@ def _rotamers(p):
 def _rotamer_or_none(p):
     return Rotamer.c_ptr_to_py_inst(p) if p else None
 def _proper_dihedral_or_none(p):
-    return Proper_Dihedral.c_ptr_to_py_inst(p) if p else None
+    return ProperDihedral.c_ptr_to_py_inst(p) if p else None
 def _rotamer_or_none(p):
     return Rotamer.c_ptr_to_py_inst(p) if p else None
 def _bond_or_none(p):
     from chimerax.atomic import Bond
     return Bond.c_ptr_to_py_inst(p) if p else None
 def _distance_restraint_or_none(p):
-    return Distance_Restraint.c_ptr_to_py_inst(p) if p else None
+    return DistanceRestraint.c_ptr_to_py_inst(p) if p else None
 def _adaptive_distance_restraint_or_none(p):
-    return Adaptive_Distance_Restraint.c_ptr_to_py_inst(p) if p else None
+    return AdaptiveDistanceRestraint.c_ptr_to_py_inst(p) if p else None
 def _distance_restraints(p):
-    from .molarray import Distance_Restraints
-    return Distance_Restraints(p)
+    from .molarray import DistanceRestraints
+    return DistanceRestraints(p)
 def _adaptive_distance_restraints(p):
-    from .molarray import Adaptive_Distance_Restraints
-    return Adaptive_Distance_Restraints(p)
+    from .molarray import AdaptiveDistanceRestraints
+    return AdaptiveDistanceRestraints(p)
 def _position_restraint_or_none(p):
-    return Position_Restraint.c_ptr_to_py_inst(p) if p else None
+    return PositionRestraint.c_ptr_to_py_inst(p) if p else None
 def _position_restraints(p):
-    from .molarray import Position_Restraints
-    return Position_Restraints(p)
+    from .molarray import PositionRestraints
+    return PositionRestraints(p)
 def _tuggable_atom_or_none(p):
-    return Tuggable_Atom.c_ptr_to_py_inst(p) if p else None
+    return TuggableAtom.c_ptr_to_py_inst(p) if p else None
 def _tuggable_atoms(p):
-    from .molarray import Tuggable_Atoms
-    return Tuggable_Atoms(p)
+    from .molarray import TuggableAtoms
+    return TuggableAtoms(p)
 def _mdff_atom_or_none(p):
-    return MDFF_Atom.c_ptr_to_py_inst(p) if p else None
+    return MDFFAtom.c_ptr_to_py_inst(p) if p else None
 def _mdff_atoms(p):
-    from .molarray import MDFF_Atoms
-    return MDFF_Atoms(p)
+    from .molarray import MDFFAtoms
+    return MDFFAtoms(p)
 def _rotamer_restraint_or_none(p):
-    return Rotamer_Restraint.c_ptr_to_py_inst(p) if p else None
+    return RotamerRestraint.c_ptr_to_py_inst(p) if p else None
 def _rotamer_restraints(p):
-    from .molarray import Rotamer_Restraints
-    return Rotamer_Restraints(p)
+    from .molarray import RotamerRestraints
+    return RotamerRestraints(p)
 def _pseudobond_or_none(p):
     from chimerax.atomic import Pseudobond
     return Pseudobond.c_ptr_to_py_inst(p) if p else None
 def _chiral_restraint_or_none(p):
-    return Chiral_Restraint.c_ptr_to_py_inst(p) if p else None
+    return ChiralRestraint.c_ptr_to_py_inst(p) if p else None
 def _chiral_restraints(p):
-    from .molarray import Chiral_Restraints
-    return Chiral_Restraints(p)
+    from .molarray import ChiralRestraints
+    return ChiralRestraints(p)
 def _chiral_restraint_mgr(p):
-    return Chiral_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+    return ChiralRestraintMgr.c_ptr_to_existing_py_inst(p) if p else None
 def _proper_dihedral_restraint_or_none(p):
-    return Proper_Dihedral_Restraint.c_ptr_to_py_inst(p) if p else None
+    return ProperDihedralRestraint.c_ptr_to_py_inst(p) if p else None
 def _proper_dihedral_restraints(p):
-    from .molarray import Proper_Dihedral_Restraints
-    return Proper_Dihedral_Restraints(p)
+    from .molarray import ProperDihedralRestraints
+    return ProperDihedralRestraints(p)
 def _proper_dihedral_restraint_mgr(p):
-    return Proper_Dihedral_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+    return ProperDihedralRestraintMgr.c_ptr_to_existing_py_inst(p) if p else None
 def _distance_restraint_mgr(p):
-    return Distance_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+    return DistanceRestraintMgr.c_ptr_to_existing_py_inst(p) if p else None
 def _adaptive_distance_restraint_mgr(p):
-    return Adaptive_Distance_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+    return AdaptiveDistanceRestraintMgr.c_ptr_to_existing_py_inst(p) if p else None
 def _position_restraint_mgr(p):
-    return Position_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+    return PositionRestraintMgr.c_ptr_to_existing_py_inst(p) if p else None
 def _tuggable_atoms_mgr(p):
-    return Tuggable_Atoms_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+    return TuggableAtomsMgr.c_ptr_to_existing_py_inst(p) if p else None
 def _mdff_mgr(p):
-    return MDFF_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+    return MDFFMgr.c_ptr_to_existing_py_inst(p) if p else None
 def _rotamer_restraint_mgr(p):
-    return Rotamer_Restraint_Mgr.c_ptr_to_existing_py_inst(p) if p else None
+    return RotamerRestraintMgr.c_ptr_to_existing_py_inst(p) if p else None
 
 
 
 def get_chiral_mgr(session):
     if hasattr(session, 'chiral_mgr') and not session.chiral_mgr.deleted:
         return session.chiral_mgr
-    return Chiral_Mgr(session)
+    return ChiralMgr(session)
 
 def get_proper_dihedral_manager(session):
     if hasattr(session, 'proper_dihedral_mgr') and not session.proper_dihedral_mgr.deleted:
         return session.proper_dihedral_mgr
-    return Proper_Dihedral_Mgr(session)
+    return ProperDihedralMgr(session)
 
 def get_ramachandran_manager(session):
     if hasattr(session, 'rama_mgr') and not session.rama_mgr.deleted:
         return session.rama_mgr
-    return Rama_Mgr(session)
+    return RamaMgr(session)
 
 def get_rotamer_manager(session):
     if hasattr(session, 'rota_mgr') and not session.rota_mgr.deleted:
         return session.rota_mgr
-    return Rota_Mgr(session)
+    return RotaMgr(session)
 
 def _get_restraint_change_tracker(session):
     if hasattr(session, 'isolde_changes') and not session.isolde_changes.deleted:
         return session.isolde_changes
-    return Restraint_Change_Tracker(session)
+    return RestraintChangeTracker(session)
 
 
 # Useful utilities not available in ChimeraX main API
@@ -170,10 +183,10 @@ def residue_bonded_neighbors(residue):
 
 
 
-class _Dihedral_Mgr:
+class _DihedralMgr:
     '''Base class. Do not instantiate directly.'''
     def __init__(self, session, c_pointer=None):
-        cname = type(self).__name__.lower()
+        cname = _as_snake_case(type(self).__name__)
         if c_pointer is None:
             new_func = cname + '_new'
             c_pointer = c_function(new_func, ret=ctypes.c_void_p)()
@@ -199,7 +212,7 @@ class _Dihedral_Mgr:
         '''Has the C++ side been deleted?'''
         return not hasattr(self, '_c_pointer')
 
-class Chiral_Mgr(_Dihedral_Mgr):
+class ChiralMgr(_DihedralMgr):
     '''
     A session-level singleton managing all chiral centres. Rather than
     instantiating directly, it is best created/retrieved using
@@ -300,7 +313,7 @@ class Chiral_Mgr(_Dihedral_Mgr):
 
     def get_chiral(self, atom, create=True):
         '''
-        Returns a :class:`Chiral_Center` for the given atom if it is a known
+        Returns a :class:`ChiralCenter` for the given atom if it is a known
         chiral atom. Returns None if the atom is achiral, no definition exists
         for the chiral centre, required substituent atoms are missing, or
         create is False and the c++ object has not previously been created.
@@ -321,7 +334,7 @@ class Chiral_Mgr(_Dihedral_Mgr):
 
     def get_chirals(self, atoms, create=True):
         '''
-        Returns a :class:`Chiral_Centers` containing all known chiral centres in
+        Returns a :class:`ChiralCenters` containing all known chiral centres in
         the given atoms.
 
         Args:
@@ -329,7 +342,7 @@ class Chiral_Mgr(_Dihedral_Mgr):
                 - a :class:`chimerax.Atoms` instance.
             * create:
                 - if True, for every atom where a chiral definition exists but
-                  no :cpp:class:`Chiral_Center` has been created, an attempt
+                  no :cpp:class:`ChiralCenter` has been created, an attempt
                   will be made to create it. Otherwise, only previously-created
                   chirals will be returned.
         '''
@@ -352,7 +365,7 @@ class Chiral_Mgr(_Dihedral_Mgr):
 
     def delete_chirals(self, chirals):
         '''
-        Delete the C++ objects for the given :class:`Chiral_Centers`. Note that
+        Delete the C++ objects for the given :class:`ChiralCenters`. Note that
         this only deletes the chirality information, not any atoms/bonds. In
         general it should not be necessary to use this method - creation and
         deletion is fully automatic.
@@ -368,7 +381,7 @@ class Chiral_Mgr(_Dihedral_Mgr):
 
 
 
-class Proper_Dihedral_Mgr(_Dihedral_Mgr):
+class ProperDihedralMgr(_DihedralMgr):
     '''
     A session-level singleton managing all proper dihedrals (phi, psi, chi etc.).
     Rather than instantiating directly, it is best created/retrieved using
@@ -388,7 +401,7 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
 
     def delete_dihedrals(self, dihedrals):
         '''
-        Delete all dihedrals in a :class:`Proper_Dihedrals`. Note that
+        Delete all dihedrals in a :class:`ProperDihedrals`. Note that
         this will not affect the constituent atoms in any way, and
         should not actually be necessary in most cases. Dihedrals are
         automatically deleted at the C++ level when their manager or
@@ -487,7 +500,7 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
 
     def get_dihedral(self, residue, name, create=True):
         '''
-        Retrieve a :class:`Proper_Dihedral` for the given residue and name,
+        Retrieve a :class:`ProperDihedral` for the given residue and name,
         or None if no such dihedral exists.
 
         Args:
@@ -509,7 +522,7 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
 
     def get_dihedrals(self, residues, name, create = True):
         '''
-        Returns a :class:`Proper_Dihedrals` providing the named dihedral
+        Returns a :class:`ProperDihedrals` providing the named dihedral
         (where it exists) for every residue in residues. The resulting
         array will be in the same order as residues, but may be shorter.
 
@@ -534,7 +547,7 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
 
     def get_all_dihedrals(self, residues):
         '''
-        Returns a :class:`Proper_Dihedrals` containing all dihedrals that have
+        Returns a :class:`ProperDihedrals` containing all dihedrals that have
         been defined for the given residues. Any standard dihedrals (e.g.
         phi, psi, omega) will be created.
 
@@ -559,13 +572,13 @@ class Proper_Dihedral_Mgr(_Dihedral_Mgr):
     def __len__(self):
         return self.num_mapped_dihedrals
 
-class Rama_Mgr:
+class RamaMgr:
     '''
     Session-level singleton managing the Ramachandran scoring of protein
     residues. Rather than instantiating directly, it is best created/retrieved
     using :func:`session_extensions.get_ramachandran_mgr`.
     '''
-    class Rama_Case(IntEnum):
+    class RamaCase(IntEnum):
         '''
         Enumerators for the different Ramachandran cases. These match
         an enumerator in the C++ layer, so don't change them unless you
@@ -579,7 +592,7 @@ class Rama_Mgr:
         ILEVAL=5
         GENERAL=6
 
-    class Rama_Bin(IntEnum):
+    class RamaBin(IntEnum):
         '''
         Enumerator for validation bins. Values match an enumerator in the C++
         layer, so don't change them unless you know *exactly* what you're doing.
@@ -592,37 +605,37 @@ class Rama_Mgr:
     from .validation.constants import validation_defaults as val_defaults
 
     RAMA_CASE_DETAILS = {
-        Rama_Case.NONE: {
+        RamaCase.NONE: {
             'name': 'Not applicable',
             'file_prefix': None,
             'cutoffs': None
         },
-        Rama_Case.CISPRO: {
+        RamaCase.CISPRO: {
             'name': 'Cis-proline residues',
             'file_prefix': 'rama8000-cispro',
             'cutoffs': [val_defaults.CISPRO_OUTLIER, val_defaults.CISPRO_ALLOWED]
         },
-        Rama_Case.TRANSPRO: {
+        RamaCase.TRANSPRO: {
             'name': 'Trans-proline residues',
             'file_prefix': 'rama8000-transpro',
             'cutoffs': [val_defaults.TRANSPRO_OUTLIER, val_defaults.TRANSPRO_ALLOWED]
         },
-        Rama_Case.GLYCINE: {
+        RamaCase.GLYCINE: {
             'name': 'Glycine residues',
             'file_prefix': 'rama8000-gly-sym',
             'cutoffs': [val_defaults.GLYCINE_OUTLIER,val_defaults.GLYCINE_ALLOWED]
         },
-        Rama_Case.PREPRO: {
+        RamaCase.PREPRO: {
             'name': 'Residues preceding proline',
             'file_prefix': 'rama8000-prepro-noGP',
             'cutoffs': [val_defaults.PREPRO_OUTLIER, val_defaults.PREPRO_ALLOWED]
         },
-        Rama_Case.ILEVAL: {
+        RamaCase.ILEVAL: {
             'name': 'Isoleucine or valine residues',
             'file_prefix': 'rama8000-ileval-nopreP',
             'cutoffs': [val_defaults.ILEVAL_OUTLIER, val_defaults.ILEVAL_ALLOWED]
         },
-        Rama_Case.GENERAL: {
+        RamaCase.GENERAL: {
             'name': 'General amino acid residues',
             'file_prefix': 'rama8000-general-noGPIVpreP',
             'cutoffs': [val_defaults.GENERAL_OUTLIER, val_defaults.GENERAL_ALLOWED]
@@ -645,7 +658,7 @@ class Rama_Mgr:
             raise RuntimeError('Session already has a Ramachandran manager!')
         dmgr = self._dihedral_mgr = get_proper_dihedral_manager(session)
         self.session = session
-        cname = type(self).__name__.lower()
+        cname = _as_snake_case(type(self).__name__)
         if c_pointer is None:
             new_func = cname + '_new'
             c_pointer = c_function(new_func, args=(ctypes.c_void_p,), ret=ctypes.c_void_p)(dmgr._c_pointer)
@@ -695,8 +708,8 @@ class Rama_Mgr:
         f = c_function('rama_mgr_cutoffs',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
         cdict = {}
-        for case in self.Rama_Case:
-            if case != Rama_Case.NONE:
+        for case in self.RamaCase:
+            if case != RamaCase.NONE:
                 cutoffs = numpy.empty(2, numpy.double)
                 f(self._c_pointer, case, pointer(cutoffs))
                 cdict[case] = cutoffs
@@ -760,7 +773,7 @@ class Rama_Mgr:
     @property
     def dihedral_manager(self):
         '''
-        Returns the session :class:`Proper_Dihedral_Mgr` singleton.
+        Returns the session :class:`ProperDihedralMgr` singleton.
         '''
         return self._dihedral_mgr
 
@@ -771,7 +784,7 @@ class Rama_Mgr:
         Args:
             * rama_case:
                 - An integer corresponding to the Ramachandran case
-                  (see Rama_Mgr.Rama_Case for valid values)
+                  (see RamaMgr.RamaCase for valid values)
             * axis_lengths:
                 - A numpy int array giving the number of points along each axis
             * min_vals:
@@ -792,7 +805,7 @@ class Rama_Mgr:
     def rama_cases(self, residues):
         '''
         Returns an array of integer values corresponding to the Ramachandran
-        case enumerator :class:`Rama_Mgr.Rama_Cases`.
+        case enumerator :class:`RamaMgr.RamaCases`.
 
         Args:
             * residues:
@@ -809,7 +822,7 @@ class Rama_Mgr:
     def bin_scores(self, scores, cases):
         '''
         Returns an array of integer values corresponding to the enumerator
-        :class:`Rama_Mgr.Rama_Bin` to bin the given Ramachandran scores into
+        :class:`RamaMgr.RamaBin` to bin the given Ramachandran scores into
         favoured, allowed, outlier and N/A. The input arrays are the product
         of :func:`validate`.
 
@@ -843,7 +856,7 @@ class Rama_Mgr:
         residues = residues[residues.polymer_types==Residue.PT_AMINO]
         scores, cases = self.validate(residues)
         bins = self.bin_scores(scores, cases)
-        return residues[bins==self.Rama_Bin.OUTLIER]
+        return residues[bins==self.RamaBin.OUTLIER]
 
     def cis(self, residues):
         '''
@@ -899,7 +912,7 @@ class Rama_Mgr:
         and Ramachandran cases for each residue. Non-Ramachandran
         (N- and C-terminal peptide and non-protein) residues will
         receive scores of -1. Case definitions are found in
-        :class:`Rama_Mgr`.Rama_Case.
+        :class:`RamaMgr`.RamaCase.
         '''
         f = c_function('rama_mgr_validate_by_residue',
             args=(ctypes.c_void_p, ctypes.c_void_p,ctypes.c_size_t,
@@ -1036,7 +1049,7 @@ class Rama_Mgr:
 
         Args:
             * rama_case:
-                - integer value corresponding to the :class:`Rama_Cases` enum
+                - integer value corresponding to the :class:`RamaCases` enum
         '''
         f = c_function('rama_mgr_interpolator_dim',
             args=(ctypes.c_void_p, ctypes.c_size_t),
@@ -1050,7 +1063,7 @@ class Rama_Mgr:
 
         Args:
             * rama_case:
-                - integer value corresponding to the :class:`Rama_Cases` enum
+                - integer value corresponding to the :class:`RamaCases` enum
         '''
         dim = self.interpolator_dim(rama_case)
         f = c_function('rama_mgr_interpolator_axis_lengths',
@@ -1067,7 +1080,7 @@ class Rama_Mgr:
 
         Args:
             * rama_case:
-                - integer value corresponding to the :class:`Rama_Cases` enum
+                - integer value corresponding to the :class:`RamaCases` enum
         '''
         dim = self.interpolator_dim(rama_case)
         f = c_function('rama_mgr_interpolator_minmax',
@@ -1085,7 +1098,7 @@ class Rama_Mgr:
 
         Args:
             * rama_case:
-                - integer value corresponding to the :class:`Rama_Cases` enum
+                - integer value corresponding to the :class:`RamaCases` enum
         '''
         shape = self.interpolator_axis_lengths(rama_case)
         f = c_function('rama_mgr_interpolator_values',
@@ -1103,20 +1116,20 @@ class Rama_Mgr:
 
         Args:
             * rama_case:
-                - integer value corresponding to the :class:`Rama_Cases` enum
+                - integer value corresponding to the :class:`RamaCases` enum
         '''
         lengths = self.interpolator_axis_lengths(rama_case)
         minmax = self.interpolator_limits(rama_case)
         axes = [numpy.linspace(minmax[0][i], minmax[1][i], lengths[i]) for i in range(len(lengths))]
         return tuple(axes)
 
-class Rota_Mgr:
+class RotaMgr:
     '''
     Session-level singleton managing rotamers and their scoring. Rather than
     instantiating directly, it is best created/retrieved using
     :func:`session_extensions.get_rotamer_mgr`.
     '''
-    class Rota_Bin(IntEnum):
+    class RotaBin(IntEnum):
         '''
         Enumerator for validation bins. Values match an enumerator in the C++
         layer, so don't change them unless you know *exactly* what you're doing.
@@ -1140,7 +1153,7 @@ class Rota_Mgr:
         if hasattr(session, 'rota_mgr'):
             raise RuntimeError('Session already has a Rotamer manager!')
         self._dihedral_mgr = get_proper_dihedral_manager(session)
-        cname = type(self).__name__.lower()
+        cname = _as_snake_case(type(self).__name__)
         if c_pointer is None:
             new_func = cname + '_new'
             c_pointer = c_function(new_func, args=(ctypes.c_void_p,), ret=ctypes.c_void_p)(self._dihedral_mgr._c_pointer)
@@ -1431,7 +1444,7 @@ class Rota_Mgr:
 
     def validate_scale_and_color_rotamers(self, rotamers, max_scale = 2.0, non_favored_only = True, visible_only = True):
         '''
-        Used by :class:`Rotamer_Annotator` for visualising rotamer validation.
+        Used by :class:`RotamerAnnotator` for visualising rotamer validation.
 
         Args:
             * rotamers:
@@ -1464,25 +1477,25 @@ class Rota_Mgr:
         return (_rotamers(rot_out[0:count]), scale_out[0:count], color_out[0:count])
 
 
-class Restraint_Change_Tracker:
+class RestraintChangeTracker:
     '''
     A per-session singleton tracking changes in ISOLDE restraints, and firing
     triggers as necessary. It should very rarely be necessary to work with this
-    class directly. Each individual :class:`_Restraint_Mgr` subclass instance
-    has its own :class:`TriggerSet`, and :class:`Restraint_Change_Tracker` will
+    class directly. Each individual :class:`_RestraintMgr` subclass instance
+    has its own :class:`TriggerSet`, and :class:`RestraintChangeTracker` will
     fire the 'changes' trigger in the appropriate instances whenever necessary.
     If you wish to create a new type of restraint class, it will need to
-    register itself with the :class:`Restraint_Change_Tracker` at the C++ level.
+    register itself with the :class:`RestraintChangeTracker` at the C++ level.
     '''
     _mgr_name_to_class_functions = {
-        'Chiral_Restraint_Mgr': (_chiral_restraint_mgr, _chiral_restraints),
-        'Proper_Dihedral_Restraint_Mgr': (_proper_dihedral_restraint_mgr, _proper_dihedral_restraints),
-        'Position_Restraint_Mgr': (_position_restraint_mgr, _position_restraints),
-        'Distance_Restraint_Mgr': (_distance_restraint_mgr, _distance_restraints),
-        'Adaptive_Distance_Restraint_Mgr': (_adaptive_distance_restraint_mgr, _adaptive_distance_restraints),
-        'Tuggable_Atoms_Mgr': (_tuggable_atoms_mgr, _tuggable_atoms),
-        'MDFF_Mgr': (_mdff_mgr, _mdff_atoms),
-        'Rotamer_Restraint_Mgr': (_rotamer_restraint_mgr, _rotamer_restraints),
+        'ChiralRestraintMgr': (_chiral_restraint_mgr, _chiral_restraints),
+        'ProperDihedralRestraintMgr': (_proper_dihedral_restraint_mgr, _proper_dihedral_restraints),
+        'PositionRestraintMgr': (_position_restraint_mgr, _position_restraints),
+        'DistanceRestraintMgr': (_distance_restraint_mgr, _distance_restraints),
+        'AdaptiveDistanceRestraintMgr': (_adaptive_distance_restraint_mgr, _adaptive_distance_restraints),
+        'TuggableAtomsMgr': (_tuggable_atoms_mgr, _tuggable_atoms),
+        'MDFFMgr': (_mdff_mgr, _mdff_atoms),
+        'RotamerRestraintMgr': (_rotamer_restraint_mgr, _rotamer_restraints),
     }
     def __init__(self, session, c_pointer=None):
         cname = 'change_tracker'
@@ -1555,15 +1568,16 @@ class Restraint_Change_Tracker:
             ret = ctypes.py_object)
         return f(self._c_pointer)
 
-class _Restraint_Mgr(Model):
+class _RestraintMgr(Model):
     '''Base class. Do not instantiate directly.'''
+    SESSION_SAVE=False
     def __init__(self, name, model, c_pointer=None, c_class_name = None,
         allow_hydrogens='no'):
         session = model.session
         ct = self._change_tracker = _get_restraint_change_tracker(session)
 
         if c_class_name is None:
-            cname = type(self).__name__.lower()
+            cname = _as_snake_case(type(self).__name__)
         else:
             cname = c_class_name
         if c_pointer is None:
@@ -1602,7 +1616,7 @@ class _Restraint_Mgr(Model):
         self._allow_hydrogens = mode.lower()
 
     def delete(self):
-        cname = type(self).__name__.lower()
+        cname = _as_snake_case(type(self).__name__)
         del_func = cname+'_delete'
         c_function(del_func, args=(ctypes.c_void_p,))(self._c_pointer)
         super().delete()
@@ -1632,7 +1646,7 @@ class _Restraint_Mgr(Model):
         ''' Should be overridden in derived classes. '''
         pass
 
-class MDFF_Mgr(_Restraint_Mgr):
+class MDFFMgr(_RestraintMgr):
     '''
     Manages the molecular dynamics flexible fitting (MDFF) steering forces for
     one map. Appears as a Model to provide a consistent API to all the other
@@ -1648,6 +1662,7 @@ class MDFF_Mgr(_Restraint_Mgr):
         from chimerax.isolde import session_extensions as sx
         mdff_mgr = sx.get_mdff_mgr(m, v)
     '''
+    SESSION_SAVE=False
     def __init__(self, model, volume, c_pointer=None):
         name = 'MDFF - ' + volume.name
         self._volume = volume
@@ -1751,8 +1766,8 @@ class MDFF_Mgr(_Restraint_Mgr):
 
     def add_mdff_atoms(self, atoms, hydrogens=False):
         '''
-        Returns a :py:class:`MDFF_Atoms` instance covering the atoms in the
-        input. Only one :cpp:class:`MDFF_Atom` will ever be created for a given
+        Returns a :py:class:`MDFFAtoms` instance covering the atoms in the
+        input. Only one :cpp:class:`MDFFAtom` will ever be created for a given
         atom, so it is safe to use this repeatedly on the same set of atoms.
         Use this method when you want to ensure that all atoms in the input will
         be properly coupled to the map in simulations.
@@ -1771,8 +1786,8 @@ class MDFF_Mgr(_Restraint_Mgr):
 
     def get_mdff_atoms(self, atoms):
         '''
-        Returns a :py:class:`MDFF_Atoms` instance covering the atoms in the
-        input. Unlike :func:`add_mdff_atoms`, no new :cpp:class:`MDFF_Atom` will
+        Returns a :py:class:`MDFFAtoms` instance covering the atoms in the
+        input. Unlike :func:`add_mdff_atoms`, no new :cpp:class:`MDFFAtom` will
         be created. Use this method when you've already coupled all the atoms
         you want to this map, and don't want to accidentally add more.
 
@@ -1808,7 +1823,7 @@ class MDFF_Mgr(_Restraint_Mgr):
     global_k = property(_get_global_k, _set_global_k)
 
 
-class Position_Restraint_Mgr(_Restraint_Mgr):
+class PositionRestraintMgr(_RestraintMgr):
     '''
     Manages creation, deletion, mapping and drawing of position restraints for
     a single atomic structure. Appears as a child :py:class:`chimeraX.Model`
@@ -1822,6 +1837,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         from chimerax.isolde import session_extensions as sx
         pr_mgr = sx.get_position_restraint_mgr(m)
     '''
+    SESSION_SAVE=False
     _DEFAULT_BOND_COLOR = [200, 250, 120, 255]
     _DEFAULT_PIN_COLOR = [255,215,0,255]
 
@@ -1977,10 +1993,10 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
 
     def add_restraints(self, atoms):
         '''
-        Returns a :py:class:`Position_Restraints` instance covering the
+        Returns a :py:class:`PositionRestraints` instance covering the
         non-hydrogen atoms in the input. Hydrogen atoms are unrestrainable by
         design, since their low mass can easily cause instability with strong
-        restraints. Only one :cpp:class:`Position_Restraint` will ever be
+        restraints. Only one :cpp:class:`PositionRestraint` will ever be
         created for a given atom, so it is safe to use this repeatedly on the
         same set of atoms. Use this method when you want to ensure that all
         atoms in the input will be restrainable in simulations.
@@ -1994,7 +2010,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
     def add_restraint(self, atom):
         '''
         Singular form of :func:`add_restraints`, returning a
-        :py:class:`Position_Restraint` instance (or None if the atom is not
+        :py:class:`PositionRestraint` instance (or None if the atom is not
         restrainable).
 
         Args:
@@ -2009,9 +2025,9 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
 
     def get_restraints(self, atoms):
         '''
-        Returns a :py:class:`Position_Restraints` instance covering the atoms in
+        Returns a :py:class:`PositionRestraints` instance covering the atoms in
         the input. Unlike :func:`add_restraints`, no new
-        :cpp:class:`Position_Restraint` will be created. Use this method when
+        :cpp:class:`PositionRestraint` will be created. Use this method when
         you've already defined all the restraints you need, and don't want to
         accidentally add more.
 
@@ -2024,7 +2040,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
     def get_restraint(self, atom):
         '''
         Singular form of :func:`get_restraints`, returning a
-        :py:class:`Position_Restraint` instance (or None if no restraint exists
+        :py:class:`PositionRestraint` instance (or None if no restraint exists
         for this atom).
 
         Args:
@@ -2050,7 +2066,7 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
     @property
     def visible_restraints(self):
         '''
-        Returns a :py:class:`Position_Restraints` instance containing only the
+        Returns a :py:class:`PositionRestraints` instance containing only the
         currently visible restraints. A restraint will be visible if it is
         enabled and its atom is visible. Note that it is not possible to hide an
         enabled restraint independent of its atom, other than by hiding the
@@ -2063,9 +2079,9 @@ class Position_Restraint_Mgr(_Restraint_Mgr):
         return _position_restraints(f(self._c_pointer))
 
 
-class Tuggable_Atoms_Mgr(_Restraint_Mgr):
+class TuggableAtomsMgr(_RestraintMgr):
     '''
-    Manages creation, deletion and mapping of :cpp:class:`Position_Restraint`
+    Manages creation, deletion and mapping of :cpp:class:`PositionRestraint`
     objects to act as interactive tugging forces, and drawing of the applied
     force vectors. Appears as a child :py:class:`chimeraX.Model` under the
     :py:class:`chimerax.AtomicStructure` it manages.
@@ -2078,6 +2094,7 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
         from chimerax.isolde import session_extensions as sx
         ta_mgr = sx.get_tuggable_atoms_mgr(m)
     '''
+    SESSION_SAVE=False
     _DEFAULT_ARROW_COLOR = [100, 255, 100, 255]
     # _NEAR_ATOMS_COLOR = [0,255,255,255]
     def __init__(self, model, c_pointer=None, allow_hydrogens='polar only'):
@@ -2182,10 +2199,10 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
 
     def add_tuggables(self, atoms):
         '''
-        Returns a :py:class:`Tuggable_Atoms` instance covering the non-hydrogen
+        Returns a :py:class:`TuggableAtoms` instance covering the non-hydrogen
         atoms in the input. Hydrogen atoms cannot be tugged by design, since
         their low mass can easily cause instability with strong forces. Only one
-        :cpp:class:`Position_Restraint` will ever be created for a given atom,
+        :cpp:class:`PositionRestraint` will ever be created for a given atom,
         so it is safe to use this repeatedly on the same set of atoms. Use this
         method when you want to ensure that all atoms in the input will be
         tuggable in simulations.
@@ -2199,7 +2216,7 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
     def add_tuggable(self, atom):
         '''
         Singular form of :func:`add_tuggable`, returning a
-        :py:class:`Tuggable_Atom` instance (or None if the atom is not
+        :py:class:`TuggableAtom` instance (or None if the atom is not
         tuggable).
 
         Args:
@@ -2214,9 +2231,9 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
 
     def get_tuggables(self, atoms):
         '''
-        Returns a :py:class:`Tuggable_Atoms` instance covering the atoms in the
+        Returns a :py:class:`TuggableAtoms` instance covering the atoms in the
         input. Unlike :func:`add_tuggables`, no new
-        :cpp:class:`Position_Restraint` will be created.
+        :cpp:class:`PositionRestraint` will be created.
 
         Args:
             * atoms:
@@ -2227,7 +2244,7 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
     def add_tuggable(self, atom):
         '''
         Singular form of :func:`get_tuggable`, returning a
-        :py:class:`Tuggable_Atom` instance (or None if the atom is not
+        :py:class:`TuggableAtom` instance (or None if the atom is not
         tuggable).
 
         Args:
@@ -2255,7 +2272,7 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
     @property
     def visibles(self):
         '''
-        Returns a :py:class:`Tuggable_Atoms` instance containing only those
+        Returns a :py:class:`TuggableAtoms` instance containing only those
         tuggables with currently-visible force vectors. A vector will be visible
         if and only if the  its associated atom is both visible and currently
         being tugged.
@@ -2264,10 +2281,11 @@ class Tuggable_Atoms_Mgr(_Restraint_Mgr):
             args=(ctypes.c_void_p,), ret=ctypes.py_object)
         return _tuggable_atoms(f(self._c_pointer))
 
-class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
+class _DistanceRestraintMgrBase(_RestraintMgr):
     '''
     Base class for distance restraint managers. Do not instantiate directly.
     '''
+    SESSION_SAVE=False
     _DEFAULT_BOND_COLOR = [168, 255, 230, 255]
     _DEFAULT_TARGET_COLOR = [128, 215, 190, 255]
     def __init__(self, model, class_name, c_function_prefix,
@@ -2282,7 +2300,7 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
         self._plural_restraint_getter = plural_restraint_getter
         session = model.session
         if not hasattr(session, 'isolde_changes') or session.isolde_changes.deleted:
-            ct = self._change_tracker = Restraint_Change_Tracker(session)
+            ct = self._change_tracker = RestraintChangeTracker(session)
         else:
             ct = self._change_tracker = session.isolde_changes
 
@@ -2354,7 +2372,7 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
         mgr, changes = changes
         update_visibility=False
         change_types = list(changes.keys())
-        if self.__class__ == Adaptive_Distance_Restraint_Mgr:
+        if self.__class__ == AdaptiveDistanceRestraintMgr:
             update_visibility=True
         elif 'enabled/disabled' in change_types:
             update_visibility=True
@@ -2374,7 +2392,7 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
             update_visibility = True
         if 'coord changed' in atom_reasons:
             update_needed = True
-        if self.__class__ == Adaptive_Distance_Restraint_Mgr:
+        if self.__class__ == AdaptiveDistanceRestraintMgr:
             update_visibility = True
         if update_needed:
             self.update_graphics(update_visibility)
@@ -2404,7 +2422,7 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
 
     def add_restraint(self, atom1, atom2):
         '''
-        Creates and returns a :py:class:`Distance_Restraint` between the given
+        Creates and returns a :py:class:`DistanceRestraint` between the given
         atoms if possible, or returns the existing one if it already exists.
         Note that distance restraints can be added to a running simulation, but
         will trigger an expensive (a few seconds) reinitialisation of the
@@ -2421,7 +2439,7 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
 
     def get_restraint(self, atom1, atom2):
         '''
-        Returns the :py:class:`Distance_Restraint` between the given atoms if it
+        Returns the :py:class:`DistanceRestraint` between the given atoms if it
         exists, otherwise None.
 
         Args:
@@ -2442,7 +2460,7 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
 
     def atom_restraints(self, atom):
         '''
-        Returns a :py:class:`Distance_Restraints` instance encompassing all
+        Returns a :py:class:`DistanceRestraints` instance encompassing all
         distance restraints involving the given atom.
 
         Args:
@@ -2456,7 +2474,7 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
 
     def atoms_restraints(self, atoms):
         '''
-        Returns a :py:class:`Distance_Restraints` instance encompassing all
+        Returns a :py:class:`DistanceRestraints` instance encompassing all
         distance restraints involving at least one of the atoms. If you want
         only restraints where both atoms are in the set, use
         :func:`intra_restraints` instead.
@@ -2480,7 +2498,7 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
 
     def intra_restraints(self, atoms):
         '''
-        Returns a :py:class:`Distance_Restraints` instance encompassing all
+        Returns a :py:class:`DistanceRestraints` instance encompassing all
         distance restraints for which both atoms are in the input set.
 
         Args:
@@ -2504,7 +2522,7 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
     @property
     def visible_restraints(self):
         '''
-        Returns a :py:class:`Distance_Restraints` instance encompassing all
+        Returns a :py:class:`DistanceRestraints` instance encompassing all
         currently visible restraints owned by this manager. A restraint will be
         visible if it is enabled and both its atoms are visible.
         '''
@@ -2522,14 +2540,14 @@ class _Distance_Restraint_Mgr_Base(_Restraint_Mgr):
     @property
     def all_restraints(self):
         '''
-        Returns a :py:class:`Distance_Restraints` instance encompassing all
+        Returns a :py:class:`DistanceRestraints` instance encompassing all
         restraints owned by this manager.
         '''
         f = self._all_restraints_c_func()
         return self._plural_restraint_getter(f(self._c_pointer))
 
 
-class Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
+class DistanceRestraintMgr(_DistanceRestraintMgrBase):
     '''
     Manages distance restraints (Atom pairs with distances and spring constants)
     and their visualisations for a single atomic structure. Appears as a child
@@ -2545,6 +2563,7 @@ class Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
         dr_mgr = sx.get_distance_restraint_mgr(m)
 
     '''
+    SESSION_SAVE=False
     _DEFAULT_BOND_COLOR = [168, 255, 230, 255]
     _DEFAULT_TARGET_COLOR = [128, 215, 190, 255]
     def __init__(self, model, c_pointer=None):
@@ -2577,7 +2596,7 @@ class Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
     def _get_ss_restraints(self, residues, create=False):
         '''
         Returns (optionally creating) distance restraints suitable for restraining
-        secondary structure. Result is a tuple of two Distance_Restraints
+        secondary structure. Result is a tuple of two DistanceRestraints
         objects: O(n)-N(n+4) and CA(n)-CA(n+2).
         '''
         from chimerax.atomic import Residue
@@ -2597,12 +2616,12 @@ class Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
             ptrs = f(self._c_pointer, residues._c_pointers, n, create)
             return tuple((_distance_restraints(ptrs[0]), _distance_restraints(ptrs[1])))
         except ValueError:
-            from .molarray import Distance_Restraints
-            return tuple((Distance_Restraints(), Distance_Restraints()))
+            from .molarray import DistanceRestraints
+            return tuple((DistanceRestraints(), DistanceRestraints()))
 
     def add_ss_restraints(self, residues):
         '''
-        Creates and returns a tuple of two :py:class:`Distance_Restraints`
+        Creates and returns a tuple of two :py:class:`DistanceRestraints`
         instances containing restraints suitable for restraining secondary
         structure. The first, O(n) - N(n+4) defines the classic alpha
         helical H-bonds. The second, CA(n) - CA^(n+2) is useful for
@@ -2655,7 +2674,7 @@ class Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
 
 
 
-class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
+class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
     '''
     Manages "adaptive" distance restraints between atoms and their
     visualisations for a single atomic structure. Appears as a child
@@ -2671,6 +2690,7 @@ class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
         adr_mgr = sx.get_adaptive_distance_restraint_mgr(m)
 
     '''
+    SESSION_SAVE=False
     _DEFAULT_BOND_COLOR = [0, 255, 0, 255]
     _DEFAULT_TARGET_COLOR = [0, 255, 0, 255]
 
@@ -2787,7 +2807,7 @@ class Adaptive_Distance_Restraint_Mgr(_Distance_Restraint_Mgr_Base):
 
 
 
-class Chiral_Restraint_Mgr(_Restraint_Mgr):
+class ChiralRestraintMgr(_RestraintMgr):
     '''
     Manages creation, deletion and mapping of chiral restraints for a single
     atomic structure. Appears as a :py:class:`chimerax.Model` under the
@@ -2806,6 +2826,7 @@ class Chiral_Restraint_Mgr(_Restraint_Mgr):
         from chimerax.isolde import session_extensions as sx
         chir_mgr = sx.get_chir_restraint_mgr(m)
     '''
+    SESSION_SAVE=False
     def __init__(self, model, c_pointer = None):
         super().__init__('Chirality Restraints', model, c_pointer)
         model.add([self])
@@ -2822,30 +2843,30 @@ class Chiral_Restraint_Mgr(_Restraint_Mgr):
 
     def add_restraints(self, chirals):
         '''
-        Returns a :py:class:`Chiral_Restraints` instance covering the
+        Returns a :py:class:`ChiralRestraints` instance covering the
         :py:class:`Chiral_Centres` in the input. Only one
-        :cpp:class:`Chiral_Restraint` will ever be created for a given chiral
+        :cpp:class:`ChiralRestraint` will ever be created for a given chiral
         centre, so it is safe to use this repeatedly on the same set of centres.
         Use this method when you want to ensure that all chiral centres in the
         input will be restrainable in simulations.
 
         Args:
             * chirals:
-                - a :py:class:`Chiral_Centers` instance.
+                - a :py:class:`ChiralCenters` instance.
         '''
         return self._get_restraints(chirals, create=True)
 
     def add_restraint(self, chiral):
         '''
         Singular form of :func:`add_restraints`, returning a
-        :py:class:`Chiral_Restraint` instance (or None if things go
+        :py:class:`ChiralRestraint` instance (or None if things go
         wrong).
 
         Args:
             * dihedral:
-                - a :py:class:`Chiral_Center` instance
+                - a :py:class:`ChiralCenter` instance
         '''
-        from .molarray import Chiral_Centers
+        from .molarray import ChiralCenters
         result = self._get_restraints(Dihedrals([chiral]), create=True)
         if len(result):
             return result[0]
@@ -2853,27 +2874,27 @@ class Chiral_Restraint_Mgr(_Restraint_Mgr):
 
     def get_restraints(self, chirals):
         '''
-        Returns a :py:class:`Chiral_Restraints` instance covering the
-        :class:`Chiral_Centers` in the input. Unlike :func:`add_restraints`, no
-        new :cpp:class:`Chiral_Restraint` will be created. Use this method when
+        Returns a :py:class:`ChiralRestraints` instance covering the
+        :class:`ChiralCenters` in the input. Unlike :func:`add_restraints`, no
+        new :cpp:class:`ChiralRestraint` will be created. Use this method when
         you've already defined all the restraints you need, and don't want to
         accidentally add more.
 
         Args:
             * chirals:
-                - a :py:class:`Chiral_Centers` instance.
+                - a :py:class:`ChiralCenters` instance.
         '''
         return self._get_restraints(chirals, create=False)
 
     def get_restraint(self, chiral):
         '''
         Singular form of :func:`get_restraints`, returning a
-        :py:class:`Chiral_Restraint` instance (or None if no restraint
+        :py:class:`ChiralRestraint` instance (or None if no restraint
         exists for this chiral centre).
 
         Args:
             * chiral:
-                - a :py:class:`Chiral_Center` instance
+                - a :py:class:`ChiralCenter` instance
         '''
         from .molarray import Chirals
         r = self._get_restraints(Chirals([chiral]), create=False)
@@ -2888,7 +2909,7 @@ class Chiral_Restraint_Mgr(_Restraint_Mgr):
 
     def add_restraints_by_atoms(self, atoms):
         '''
-        Returns a :py:class:`Chiral_Restraints` covering all chiral centers in
+        Returns a :py:class:`ChiralRestraints` covering all chiral centers in
         the given atoms.
 
         Args:
@@ -2899,7 +2920,7 @@ class Chiral_Restraint_Mgr(_Restraint_Mgr):
 
     def get_restraints_by_atoms(self, atoms):
         '''
-        Returns a :py:class:`Chiral_Restraints` covering only those chiral
+        Returns a :py:class:`ChiralRestraints` covering only those chiral
         centers in  the given atoms for which a restraint has already been
         defined.
 
@@ -2918,7 +2939,7 @@ class Chiral_Restraint_Mgr(_Restraint_Mgr):
         return f(self._c_pointer)
 
 
-class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
+class ProperDihedralRestraintMgr(_RestraintMgr):
     '''
     Manages creation, deletion, mapping and drawing of proper dihedral
     restraints for a single atomic structure. Appears as a child
@@ -2933,6 +2954,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         from chimerax.isolde import session_extensions as sx
         pdr_mgr = sx.get_proper_dihedral_restraint_mgr(m)
     '''
+    SESSION_SAVE=False
     def __init__(self, model, c_pointer = None, defer_add = False):
         super().__init__('Proper Dihedral Restraints', model, c_pointer)
         self.set_default_colors()
@@ -2980,8 +3002,8 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
 
     def add_restraints(self, dihedrals):
         '''
-        Returns a :py:class:`Proper_Dihedral_Restraints` instance covering the
-        dihedrals in the input. Only one :cpp:class:`Proper_Dihedral_Restraint`
+        Returns a :py:class:`ProperDihedralRestraints` instance covering the
+        dihedrals in the input. Only one :cpp:class:`ProperDihedralRestraint`
         will ever be created for a given dihedral, so it is safe to use this
         repeatedly on the same set of dihedrals. Use this method when you want
         to ensure that all dihedrals in the input will be restrainable in
@@ -2989,19 +3011,19 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
 
         Args:
             * dihedrals:
-                - a :py:class:`Proper_Dihedrals` instance.
+                - a :py:class:`ProperDihedrals` instance.
         '''
         return self._get_restraints(dihedrals, create=True)
 
     def add_restraint(self, dihedral):
         '''
         Singular form of :func:`add_restraints`, returning a
-        :py:class:`Proper_Dihedral_Restraint` instance (or None if things go
+        :py:class:`ProperDihedralRestraint` instance (or None if things go
         wrong).
 
         Args:
             * dihedral:
-                - a :py:class:`Proper_Dihedral` instance
+                - a :py:class:`ProperDihedral` instance
         '''
         from .molarray import Dihedrals
         r = self._get_restraints(Dihedrals([dihedral]), create=True)
@@ -3011,27 +3033,27 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
 
     def get_restraints(self, dihedrals):
         '''
-        Returns a :py:class:`Proper_Dihedral_Restraints` instance covering the
+        Returns a :py:class:`ProperDihedralRestraints` instance covering the
         dihedrals in the input. Unlike :func:`add_restraints`, no new
-        :cpp:class:`Proper_Dihedral_Restraint` will be created. Use this method
+        :cpp:class:`ProperDihedralRestraint` will be created. Use this method
         when you've already defined all the restraints you need, and don't want
         to accidentally add more.
 
         Args:
             * dihedrals:
-                - a :py:class:`Proper_Dihedrals` instance.
+                - a :py:class:`ProperDihedrals` instance.
         '''
         return self._get_restraints(dihedrals)
 
     def get_restraint(self, dihedral):
         '''
         Singular form of :func:`get_restraints`, returning a
-        :py:class:`Proper_Dihedral_Restraint` instance (or None if no restraint
+        :py:class:`ProperDihedralRestraint` instance (or None if no restraint
         exists for this dihedral).
 
         Args:
             * dihedral:
-                - a :py:class:`Proper_Dihedral` instance
+                - a :py:class:`ProperDihedral` instance
         '''
         from .molarray import Dihedrals
         r = self._get_restraints(Dihedrals([dihedral]), create=False)
@@ -3047,7 +3069,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
     def get_restraints_by_residues_and_name(self, residues, name):
         '''
         Convenience function wrapping :func:`get_restraints`. Returns a
-        :py:class:`Proper_Dihedral_Restraints` instance containing all existing
+        :py:class:`ProperDihedralRestraints` instance containing all existing
         restraints for the dihedrals with the given name in residues.
 
         Args:
@@ -3061,7 +3083,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
     def add_restraints_by_residues_and_name(self, residues, name):
         '''
         Convenience function wrapping :func:`add_restraints`. Returns a
-        :py:class:`Proper_Dihedral_Restraints` instance covering all dihedrals
+        :py:class:`ProperDihedralRestraints` instance covering all dihedrals
         with the given name in residues.
 
         Args:
@@ -3075,7 +3097,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
     def get_restraint_by_residue_and_name(self, residue, name):
         '''
         Singular form of :func:`get_restraints_by_residues_and_name`. Returns a
-        :py:class:`Proper_Dihedral_Restraint` instance for the dihedral with
+        :py:class:`ProperDihedralRestraint` instance for the dihedral with
         the given name in the given residue if it exists, else None.
 
         Args:
@@ -3093,7 +3115,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
     def add_restraint_by_residue_and_name(self, residue, name):
         '''
         Singular form of :func:`add_restraints_by_residues_and_name`. Returns a
-        :py:class:`Proper_Dihedral_Restraint` instance for the dihedral with
+        :py:class:`ProperDihedralRestraint` instance for the dihedral with
         the given name in the given residue if it exists or can be created,
         else None.
 
@@ -3116,7 +3138,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
 
     def get_all_restraints_for_residues(self, residues):
         '''
-        Returns a :py:class:`Proper_Dihedral_Restraints` containing all existing
+        Returns a :py:class:`ProperDihedralRestraints` containing all existing
         dihedral restraints belonging to the given residues.
 
         Args:
@@ -3129,7 +3151,7 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         '''
         Creates and returns all possible dihedral restraints for all named
         proper dihedrals in the given residues as a
-        :py:class:`Proper_Dihedral_Restraints` instance.
+        :py:class:`ProperDihedralRestraints` instance.
 
         Args:
             * residues:
@@ -3148,9 +3170,9 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
     @property
     def visible_restraints(self):
         '''
-        Returns a :py:class:`Proper_Dihedral_Restraints` instance containing
+        Returns a :py:class:`ProperDihedralRestraints` instance containing
         all currently visible restraints. A restraint is visible if it is
-        enabled, at least the axial bond of its :class:`Proper_Dihedral` is
+        enabled, at least the axial bond of its :class:`ProperDihedral` is
         visible, and its :attr:`display` propery is True. Unlike other restraint
         classes the visibility of active restraints *is* controllable, primarily
         because certain restraints (particularly the peptide omega dihedral) are
@@ -3248,23 +3270,24 @@ class Proper_Dihedral_Restraint_Mgr(_Restraint_Mgr):
         ring_d.colors = post_d.colors = colors
 
 from chimerax.atomic import AtomicStructure
-class _Rotamer_Preview(AtomicStructure):
+class _RotamerPreview(AtomicStructure):
     '''
     Since ISOLDE maintains a trigger checking all added/removed `AtomicStructure`
     instances to decide whether to rebuild its menu, we want to differentiate
     the preview model to avoid downstream complexities.
     '''
-    pass
+    SESSION_SAVE=False
 
 
-class Rotamer_Restraint_Mgr(_Restraint_Mgr):
+class RotamerRestraintMgr(_RestraintMgr):
     '''
     Rotamer restraints are a little special in that they primarily exist as
     convenience wrappers around sets of dihedral restraints. As such,
-    :py:class:`Rotamer_Restraint_Mgr` does not handle drawing of restraints,
+    :py:class:`RotamerRestraintMgr` does not handle drawing of restraints,
     but it *does* handle drawing of previews when scrolling through alternate
     target rotamer conformations for a given sidechain.
     '''
+    SESSION_SAVE=False
     def __init__(self, model, c_pointer=None):
         '''Manages rotamer restraints for a single model'''
         session=model.session
@@ -3273,16 +3296,16 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
 
         # Can't use the default get_proper_dihedral_restraint_mgr() call here
         # since the resulting 'model add' trigger fires before this
-        # Rotamer_Restraint_Mgr instance is finalised. The net result is that
-        # we end up with *two* Rotamer_Restraint_Mgr instances
+        # RotamerRestraintMgr instance is finalised. The net result is that
+        # we end up with *two* RotamerRestraintMgr instances
         deferred_pdrm = False
         pdr_m = None
         for m in model.child_models():
-            if isinstance(m, Proper_Dihedral_Restraint_Mgr):
+            if isinstance(m, ProperDihedralRestraintMgr):
                 pdr_m = m
                 break
         if pdr_m is None:
-            pdr_m = Proper_Dihedral_Restraint_Mgr(model, defer_add=True)
+            pdr_m = ProperDihedralRestraintMgr(model, defer_add=True)
             deferred_pdrm = True
         self._pdr_m = pdr_m
         from . import session_extensions as sx
@@ -3317,7 +3340,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
     @property
     def num_restraints(self):
         '''
-        Number of :cpp:class:`Rotamer_Restraint` objects maintained by this
+        Number of :cpp:class:`RotamerRestraint` objects maintained by this
         manager.
         '''
         f=c_function('rotamer_restraint_mgr_num_restraints',
@@ -3342,7 +3365,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
 
     def add_restraints(self, rotamers_or_residues):
         '''
-        Returns a :py:class:`Rotamer_Restraints` instance covering all rotamers
+        Returns a :py:class:`RotamerRestraints` instance covering all rotamers
         in the input, creating those that don't yet exist.
 
         Args:
@@ -3360,7 +3383,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
 
     def get_restraints(self, rotamers_or_residues):
         '''
-        Returns a :py:class:`Rotamer_Restraints` instance containing all
+        Returns a :py:class:`RotamerRestraints` instance containing all
         previously-created restraints in the input.
 
         Args:
@@ -3380,7 +3403,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
 
     def add_restraint(self, rotamer_or_residue):
         '''
-        Returns a :py:class:`Rotamer_Restraint` instance for the given rotamer
+        Returns a :py:class:`RotamerRestraint` instance for the given rotamer
         or residue, attempting to create it if it doesn't already exist. If
         creation is impossible (e.g. the residue is non-rotameric or
         incomplete), returns None.
@@ -3405,7 +3428,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
 
     def get_restraint(self, rotamer_or_residue):
         '''
-        Returns a :py:class:`Rotamer_Restraint` instance for the given rotamer
+        Returns a :py:class:`RotamerRestraint` instance for the given rotamer
         or residue if the restraint has previously been created, otherwise
         None.
 
@@ -3535,7 +3558,7 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
         if self._preview_model is None:
             from chimerax.std_commands.split import molecule_from_atoms
             pm = self._preview_model = molecule_from_atoms(self.model, rotamer.residue.atoms)
-            pm.__class__ = _Rotamer_Preview
+            pm.__class__ = _RotamerPreview
             pm.bonds.radii = 0.1
             from chimerax.atomic import Atom
             pm.atoms.draw_modes = Atom.STICK_STYLE
@@ -3571,9 +3594,10 @@ class Rotamer_Restraint_Mgr(_Restraint_Mgr):
 
 class _Dihedral(State):
     '''
-    Base class for Proper_Dihedral and Improper_Dihedral classes. Do not
+    Base class for ProperDihedral and Improper_Dihedral classes. Do not
     instantiate directly.
     '''
+    SESSION_SAVE=False
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -3599,21 +3623,21 @@ class _Dihedral(State):
     #TODO: remove this hack once ChimeraX c_array_property bug is fixed
 
 
-class Chiral_Center(_Dihedral):
+class ChiralCenter(_Dihedral):
     '''
     A chiral centre is an atom with four chemically distinct substituents, such
     that it cannot be overlaid with its mirror image by rotation and
     translation. Within ISOLDE, chiral centres are treated as improper dihedrals
     (that is, dihedrals for which the axis isn't a real bond). Atom ordering
-    within a :class:`Chiral_Center` is defined with the central atom first,
+    within a :class:`ChiralCenter` is defined with the central atom first,
     followed by  the first three substituents in order of decreasing priority by
     standard Cahn-Ingold-Prelog rules. Typical tetrahedral centres will have
     dihedral angles in the vicinity of +/-35 degrees - S positive, R negative.
 
-    :class:`Chiral_Center` instances are not created directly - they are
-    generated as  needed by :class:`Chiral_Mgr` based on dictionary definitions.
+    :class:`ChiralCenter` instances are not created directly - they are
+    generated as  needed by :class:`ChiralMgr` based on dictionary definitions.
     '''
-
+    SESSION_SAVE=False
     atoms = c_property('chiral_atoms', cptr, '_natoms', astype=convert.atoms, read_only=True,
         doc = 'Atoms making up this chiral centre. Read only.')
 
@@ -3629,11 +3653,12 @@ class Chiral_Center(_Dihedral):
     chiral_atom = c_property('chiral_center_chiral_atom', cptr, astype=convert.atom_or_none, read_only=True,
         doc='The chiral atom. Read only.')
 
-class Proper_Dihedral(_Dihedral):
+class ProperDihedral(_Dihedral):
     '''
-    A Proper_Dihedral is defined as a dihedral in which the four atoms are
+    A ProperDihedral is defined as a dihedral in which the four atoms are
     strictly bonded a1-a2-a3-a4.
     '''
+    SESSION_SAVE=False
     angle = c_property('proper_dihedral_angle', float64, read_only=True,
         doc = 'Angle in radians. Read only.')
     name = c_property('proper_dihedral_name', string, read_only = True,
@@ -3647,6 +3672,7 @@ class Proper_Dihedral(_Dihedral):
         doc='Bond forming the axis of this dihedral. Read-only')
 
 class Rama(State):
+    SESSION_SAVE=False
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -3669,7 +3695,7 @@ class Rama(State):
     @property
     def omega_dihedral(self):
         '''
-        Returns a :class:`Proper_Dihedral` instance pointing to the omega
+        Returns a :class:`ProperDihedral` instance pointing to the omega
         (peptide bond) dihedral for this residue, or None if there is no
         preceding residue.
         '''
@@ -3685,7 +3711,7 @@ class Rama(State):
     @property
     def phi_dihedral(self):
         '''
-        Returns a :class:`Proper_Dihedral` instance pointing to the phi dihedral
+        Returns a :class:`ProperDihedral` instance pointing to the phi dihedral
         for this residue, or None if there is no preceding residue.
         '''
         f = c_function('rama_phi',
@@ -3700,7 +3726,7 @@ class Rama(State):
     @property
     def psi_dihedral(self):
         '''
-        Returns a :class:`Proper_Dihedral` instance pointing to the psi dihedral
+        Returns a :class:`ProperDihedral` instance pointing to the psi dihedral
         for this residue, or None if there is no following residue.
         '''
         f = c_function('rama_psi',
@@ -3730,9 +3756,10 @@ class Rama(State):
             doc = 'The omega, phi and psi angles for this residue in radians. Read only.')
     case = c_property('rama_case', uint8, read_only=True,
             doc = '''A value representing the Ramachandran case for this residue,
-                matching the case definitions in :class:`Rama_Mgr.Rama_Case`. Read only.''')
+                matching the case definitions in :class:`RamaMgr.RamaCase`. Read only.''')
 
 class Rotamer(State):
+    SESSION_SAVE=False
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -3766,7 +3793,7 @@ class Rotamer(State):
 
     def get_target(self, index):
         '''
-        For each rotamer type, :class:`Rota_Mgr` stores a set of ideal rotamer
+        For each rotamer type, :class:`RotaMgr` stores a set of ideal rotamer
         targets, based upon the Ultimate Rotamer Library [Hintze et al]_. These
         are indexed in decreasing order of expected frequency. The number of
         available target definitions is available from :py:attr:`num_targets`.
@@ -3806,7 +3833,7 @@ class Rotamer(State):
     @property
     def chi_dihedrals(self):
         '''
-        Returns a :class:`Proper_Dihedrals` giving the chi dihedrals for this
+        Returns a :class:`ProperDihedrals` giving the chi dihedrals for this
         rotamer, in order (chi1, chi2, ...)
         '''
         f = c_function('rotamer_chi_dihedrals',
@@ -3829,11 +3856,12 @@ class Rotamer(State):
     visible = c_property('rotamer_visible', npy_bool, read_only=True,
                 doc='True if the CA-CB bond of the rotamer is visible. Read only.')
 
-class Position_Restraint(State):
+class PositionRestraint(State):
     '''
     Defines a user-adjustable and -switchable harmonic spring connecting an
     atom to a fixed point in space.
     '''
+    SESSION_SAVE=False
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -3877,15 +3905,17 @@ class Position_Restraint(State):
         Can be set, but only if you know what you are doing.
         ''')
 
-class Tuggable_Atom(Position_Restraint):
+class TuggableAtom(PositionRestraint):
     _c_class_name = 'position_restraint'
 
-class MDFF_Atom(State):
+
+class MDFFAtom(State):
     '''
     A thin wrapper around a :class:`chimerax.Atom` to handle its coupling
     to a molecular dynamics flexible fitting potential derived from a volumetric
     map.
     '''
+    SESSION_SAVE=False
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -3927,10 +3957,11 @@ class MDFF_Atom(State):
         only if you know what you are doing.
         ''')
 
-class Distance_Restraint(State):
+class DistanceRestraint(State):
     '''
     Defines a harmonic spring restraining the distance between a pair of atoms.
     '''
+    SESSION_SAVE=False
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -3974,7 +4005,7 @@ class Distance_Restraint(State):
         simulation. Can be set, but only if you know what you are doing.
         ''')
 
-class Adaptive_Distance_Restraint(State):
+class AdaptiveDistanceRestraint(State):
     r'''
     Defines an "adaptive robustness" distance restraint especially suited to
     large collections of fuzzy/unsure restraints (e.g. homology-based reference
@@ -3998,6 +4029,7 @@ class Adaptive_Distance_Restraint(State):
     open-ended, but values below about -50 yield essentially no further changes
     to the energy profile.
     '''
+    SESSION_SAVE=False
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -4057,14 +4089,15 @@ class Adaptive_Distance_Restraint(State):
 
 
 
-class Chiral_Restraint(State):
+class ChiralRestraint(State):
     '''
     Handles the restraint of a single chiral centre in simulations. Unlike other
-    restraints, :class:`Chiral_Restraint` instances are enabled by default. In
+    restraints, :class:`ChiralRestraint` instances are enabled by default. In
     addition, :attr:`target` is immutable, and set to the equilibrium angle of
     the chiral improper dihedral (defined in `dictionaries/chirals.json` and
-    viewable via :attr:`Chiral_Mgr.chiral_center_dict`).
+    viewable via :attr:`ChiralMgr.chiral_center_dict`).
     '''
+    SESSION_SAVE=False
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -4100,7 +4133,7 @@ class Chiral_Restraint(State):
     target = c_property('chiral_restraint_target', float64, read_only = True,
         doc = 'Target angle for this restraint in radians. Read only.')
     dihedral = c_property('chiral_restraint_chiral_center', cptr, astype=_chiral_center_or_none, read_only=True,
-        doc = 'The restrained :py:class:`Chiral_Center`. Read only.')
+        doc = 'The restrained :py:class:`ChiralCenter`. Read only.')
     offset = c_property('chiral_restraint_offset', float64, read_only = True,
         doc = 'Difference between current and target angle in radians. Read only.')
     cutoff = c_property('chiral_restraint_cutoff', float64,
@@ -4117,7 +4150,8 @@ class Chiral_Restraint(State):
         ''')
 
 
-class Proper_Dihedral_Restraint(State):
+class ProperDihedralRestraint(State):
+    SESSION_SAVE=False
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -4149,7 +4183,7 @@ class Proper_Dihedral_Restraint(State):
     target = c_property('proper_dihedral_restraint_target', float64,
         doc = 'Target angle for this restraint in radians. Can be written.')
     dihedral = c_property('proper_dihedral_restraint_dihedral', cptr, astype=_proper_dihedral_or_none, read_only=True,
-        doc = 'The restrained :py:class:`Proper_Dihedral`. Read only.')
+        doc = 'The restrained :py:class:`ProperDihedral`. Read only.')
     offset = c_property('proper_dihedral_restraint_offset', float64, read_only = True,
         doc = 'Difference between current and target angle in radians. Read only.')
     cutoff = c_property('proper_dihedral_restraint_cutoff', float64,
@@ -4171,14 +4205,15 @@ class Proper_Dihedral_Restraint(State):
         set, but only if you know what you are doing.
         ''')
 
-class Rotamer_Restraint(State):
+class RotamerRestraint(State):
     '''
     Rotamer restraints are special in that they only exist as wrappers around
-    combinations of :cpp:class:`Proper_Dihedral_Restraint` objects. As such,
+    combinations of :cpp:class:`ProperDihedralRestraint` objects. As such,
     they have no independent presence in simulations. The chi dihedral
     restraints may still be addressed and controlled independently if
     necessary.
     '''
+    SESSION_SAVE=False
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -4217,7 +4252,7 @@ class Rotamer_Restraint(State):
     @property
     def chi_restraints(self):
         '''
-        Returns a :py:class:`Proper_Dihedral_Restraints` covering the chi
+        Returns a :py:class:`ProperDihedralRestraints` covering the chi
         dihedrals in this rotamer.
         '''
         f = c_function('rotamer_restraint_chi_restraints',
@@ -4248,14 +4283,14 @@ class Rotamer_Restraint(State):
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance
 # from the pointer (needed by Collections)
-for class_obj in (Chiral_Center, Proper_Dihedral, Rama, Rotamer,
-        Position_Restraint, Tuggable_Atom, MDFF_Atom, Distance_Restraint,
-        Adaptive_Distance_Restraint, Chiral_Restraint,
-        Proper_Dihedral_Restraint, Rotamer_Restraint):
+for class_obj in (ChiralCenter, ProperDihedral, Rama, Rotamer,
+        PositionRestraint, TuggableAtom, MDFFAtom, DistanceRestraint,
+        AdaptiveDistanceRestraint, ChiralRestraint,
+        ProperDihedralRestraint, RotamerRestraint):
     if hasattr(class_obj, '_c_class_name'):
         cname = class_obj._c_class_name
     else:
-        cname = class_obj.__name__.lower()
+        cname = _as_snake_case(class_obj.__name__)
     func_name = 'set_' + cname + '_pyclass'
     f = c_function(func_name, args = (ctypes.py_object,))
     f(class_obj)
@@ -4267,12 +4302,12 @@ for class_obj in (Chiral_Center, Proper_Dihedral, Rama, Rotamer,
     class_obj.c_ptr_to_existing_py_inst = lambda ptr, fname=func_name: c_function(fname,
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))
 
-for class_obj in (Proper_Dihedral_Mgr, Chiral_Mgr, Rama_Mgr, Rota_Mgr,
-            Position_Restraint_Mgr, Tuggable_Atoms_Mgr, MDFF_Mgr,
-            Distance_Restraint_Mgr, Adaptive_Distance_Restraint_Mgr,
-            Chiral_Restraint_Mgr, Proper_Dihedral_Restraint_Mgr,
-            Rotamer_Restraint_Mgr):
-    cname = class_obj.__name__.lower()
+for class_obj in (ProperDihedralMgr, ChiralMgr, RamaMgr, RotaMgr,
+            PositionRestraintMgr, TuggableAtomsMgr, MDFFMgr,
+            DistanceRestraintMgr, AdaptiveDistanceRestraintMgr,
+            ChiralRestraintMgr, ProperDihedralRestraintMgr,
+            RotamerRestraintMgr):
+    cname = _as_snake_case(class_obj.__name__)
     func_name = cname + '_py_inst'
     class_obj.c_ptr_to_py_inst = lambda ptr, fname=func_name: c_function(fname,
         args = (ctypes.c_void_p,), ret = ctypes.py_object)(ctypes.c_void_p(int(ptr)))

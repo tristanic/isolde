@@ -8,40 +8,40 @@
 
 
 
-from ..molobject import Restraint_Change_Tracker
+from ..molobject import RestraintChangeTracker
 
 # Manager classes
 from ..molobject import (
-    MDFF_Mgr,
-    Position_Restraint_Mgr,
-    Tuggable_Atoms_Mgr,
-    Distance_Restraint_Mgr,
-    Adaptive_Distance_Restraint_Mgr,
-    Proper_Dihedral_Restraint_Mgr,
-    Rotamer_Restraint_Mgr,
-    Chiral_Restraint_Mgr
+    MDFFMgr,
+    PositionRestraintMgr,
+    TuggableAtomsMgr,
+    DistanceRestraintMgr,
+    AdaptiveDistanceRestraintMgr,
+    ProperDihedralRestraintMgr,
+    RotamerRestraintMgr,
+    ChiralRestraintMgr
     )
 #Singular classes
 from ..molobject import (
-    MDFF_Atom,
-    Position_Restraint,
-    Tuggable_Atom,
-    Distance_Restraint,
-    Adaptive_Distance_Restraint,
-    Proper_Dihedral_Restraint,
-    Rotamer_Restraint,
-    Chiral_Restraint
+    MDFFAtom,
+    PositionRestraint,
+    TuggableAtom,
+    DistanceRestraint,
+    AdaptiveDistanceRestraint,
+    ProperDihedralRestraint,
+    RotamerRestraint,
+    ChiralRestraint
     )
 # Array classes
 from ..molarray import (
-    MDFF_Atoms,
-    Position_Restraints,
-    Tuggable_Atoms,
-    Distance_Restraints,
-    Adaptive_Distance_Restraints,
-    Proper_Dihedral_Restraints,
-    Rotamer_Restraints,
-    Chiral_Restraints
+    MDFFAtoms,
+    PositionRestraints,
+    TuggableAtoms,
+    DistanceRestraints,
+    AdaptiveDistanceRestraints,
+    ProperDihedralRestraints,
+    RotamerRestraints,
+    ChiralRestraints
     )
 # Utility methods
 from .restraint_utils import (

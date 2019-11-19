@@ -28,7 +28,7 @@ class RamaPlot:
         from chimerax.isolde import session_extensions as sx
         mgr = self._rama_mgr = sx.get_ramachandran_mgr(session)
         self.isolde = isolde
-        cenum = self._case_enum = mgr.Rama_Case
+        cenum = self._case_enum = mgr.RamaCase
         self.container = container
         self.current_case = None
         self._selection_mode = self.WHOLE_MODEL
@@ -193,7 +193,7 @@ class RamaPlot:
     def _populate_case_menu(self, menu):
         menu.clear()
         rm = self._rama_mgr
-        keys = list(rm.Rama_Case)[1:]
+        keys = list(rm.RamaCase)[1:]
         for key in reversed(keys):
             menu.addItem(rm.RAMA_CASE_DETAILS[key]['name'], key)
 

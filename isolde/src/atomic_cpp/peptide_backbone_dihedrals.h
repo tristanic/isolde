@@ -54,9 +54,9 @@ private:
     bool _has_omega;
     bool _has_phi;
     bool _has_psi;
-    Proper_Dihedral* _omega;
-    Proper_Dihedral* _phi;
-    Proper_Dihedral* _psi;
+    ProperDihedral* _omega;
+    ProperDihedral* _phi;
+    ProperDihedral* _psi;
 
 }; // class Peptide_Backbone_Dihedrals
 

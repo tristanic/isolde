@@ -17,7 +17,7 @@
 #include <pyinstance/PythonInstance.instantiate.h>
 
 template class pyinstance::PythonInstance<isolde::Rotamer>;
-template class pyinstance::PythonInstance<isolde::Rota_Mgr>;
+template class pyinstance::PythonInstance<isolde::RotaMgr>;
 
 namespace isolde
 {
@@ -34,7 +34,7 @@ void Rota_Def::add_target(const std::string& name, double freq, double* angles, 
     _targets.push_back(target);
 }
 
-Rotamer::Rotamer(Residue *res, Rota_Mgr *mgr): _residue(res), _mgr(mgr)
+Rotamer::Rotamer(Residue *res, RotaMgr *mgr): _residue(res), _mgr(mgr)
 {
     auto rname = res->name();
     _def = mgr->get_rotamer_def(rname);
@@ -89,18 +89,18 @@ double Rotamer::score() const
 
 /************************************************************
  *
- * Rota_Mgr
+ * RotaMgr
  *
  ************************************************************/
 
-Rota_Mgr::~Rota_Mgr()
+RotaMgr::~RotaMgr()
 {
     auto du = DestructionUser(this);
     for (auto &it: _residue_to_rotamer)
         delete it.second;
 }
 
-void Rota_Mgr::add_rotamer_def(const std::string &resname, size_t n_chi, size_t val_nchi,
+void RotaMgr::add_rotamer_def(const std::string &resname, size_t n_chi, size_t val_nchi,
     bool symmetric, const std::vector<std::vector<std::string>>& moving_atom_names)
 {
     if (_resname_to_rota_def.find(resname) == _resname_to_rota_def.end()) {
@@ -111,7 +111,7 @@ void Rota_Mgr::add_rotamer_def(const std::string &resname, size_t n_chi, size_t 
     }
 }
 
-void Rota_Mgr::set_colors(uint8_t *max, uint8_t *mid, uint8_t *min)
+void RotaMgr::set_colors(uint8_t *max, uint8_t *mid, uint8_t *min)
 {
     colors::color thecolors[3];
     for (size_t i=0; i<4; ++i)
@@ -128,23 +128,23 @@ void Rota_Mgr::set_colors(uint8_t *max, uint8_t *mid, uint8_t *min)
     _colors = colors::colormap(these_cutoffs, thecolors, 3);
 }
 
-Rota_Def* Rota_Mgr::get_rotamer_def(const std::string &resname)
+Rota_Def* RotaMgr::get_rotamer_def(const std::string &resname)
 {
     return &(_resname_to_rota_def.at(resname));
 }
 
-// Rota_Def* Rota_Mgr::get_rotamer_def(const ResName &resname)
+// Rota_Def* RotaMgr::get_rotamer_def(const ResName &resname)
 // {
 //     return &(_resname_to_rota_def.at(std::string(resname)));
 // }
 
-void Rota_Mgr::add_interpolator(const std::string &resname, const size_t &dim,
+void RotaMgr::add_interpolator(const std::string &resname, const size_t &dim,
     uint32_t *n, double *min, double *max, double *data)
 {
     _interpolators[resname] = RegularGridInterpolator<double>(dim, n, min, max, data);
 }
 
-Rotamer* Rota_Mgr::new_rotamer(Residue* residue)
+Rotamer* RotaMgr::new_rotamer(Residue* residue)
 {
     try {
         auto r = new Rotamer(residue, this);
@@ -160,7 +160,7 @@ Rotamer* Rota_Mgr::new_rotamer(Residue* residue)
  * If the desired rotamer is not found, an attempt will be made to
  * create it. NOTE: if the attempt fails, nullptr will be returned.
  */
-Rotamer* Rota_Mgr::get_rotamer(Residue* residue)
+Rotamer* RotaMgr::get_rotamer(Residue* residue)
 {
     auto iter = _residue_to_rotamer.find(residue);
     if (iter != _residue_to_rotamer.end()) {
@@ -178,7 +178,7 @@ Rotamer* Rota_Mgr::get_rotamer(Residue* residue)
 }
 
 //! Fast validation of pre-defined rotamers
-void Rota_Mgr::validate(Rotamer** rotamers, size_t n, double* scores)
+void RotaMgr::validate(Rotamer** rotamers, size_t n, double* scores)
 {
     std::map<ResName, std::vector<size_t>> case_indices;
     for (size_t i=0; i<n; ++i) {
@@ -219,7 +219,7 @@ void Rota_Mgr::validate(Rotamer** rotamers, size_t n, double* scores)
 //! Slower, but more robust validation that allows non-rotameric residues.
 /*! Residues for which no valid rotamer is available will get a score of -1.
  */
-void Rota_Mgr::validate(Residue** residues, size_t n, double* scores)
+void RotaMgr::validate(Residue** residues, size_t n, double* scores)
 {
     for (size_t i=0; i<n; ++i) {
         auto res = residues[i];
@@ -234,21 +234,21 @@ void Rota_Mgr::validate(Residue** residues, size_t n, double* scores)
 }
 
 /**********TESTING***********/
-void Rota_Mgr::_validate_from_thread(Rotamer **rotamers, size_t n, double* scores)
+void RotaMgr::_validate_from_thread(Rotamer **rotamers, size_t n, double* scores)
 {
     _thread_running = true;
     _thread_done = false;
     validate(rotamers, n, scores);
     _thread_done = true;
 }
-void Rota_Mgr::validate_threaded(Rotamer **rotamers, size_t n, double* scores)
+void RotaMgr::validate_threaded(Rotamer **rotamers, size_t n, double* scores)
 {
-    _validation_thread = std::thread(&Rota_Mgr::_validate_from_thread, this, rotamers, n, scores);
+    _validation_thread = std::thread(&RotaMgr::_validate_from_thread, this, rotamers, n, scores);
 }
 /******END TESTING***********/
 
 
-void Rota_Mgr::color_by_score(double *score, size_t n, uint8_t *out)
+void RotaMgr::color_by_score(double *score, size_t n, uint8_t *out)
 {
     colors::color this_color;
     auto cmap = get_colors();
@@ -260,7 +260,7 @@ void Rota_Mgr::color_by_score(double *score, size_t n, uint8_t *out)
     }
 }
 
-int32_t Rota_Mgr::bin_score(const double &score)
+int32_t RotaMgr::bin_score(const double &score)
 {
     if (score >= _cutoffs.allowed)
         return FAVORED;
@@ -273,7 +273,7 @@ int32_t Rota_Mgr::bin_score(const double &score)
 } //bin_score
 
 
-void Rota_Mgr::destructors_done(const std::set<void*>& destroyed)
+void RotaMgr::destructors_done(const std::set<void*>& destroyed)
 {
     auto db = DestructionBatcher(this);
     std::set<Rotamer*> to_delete;

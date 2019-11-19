@@ -29,7 +29,7 @@
 
 namespace isolde
 {
-class Rama_Mgr;
+class RamaMgr;
 
 //! Ramachandran dihedrals for a single amino acid residue
 class Rama: public pyinstance::PythonInstance<Rama>
@@ -37,7 +37,7 @@ class Rama: public pyinstance::PythonInstance<Rama>
 public:
     Rama() {}
     ~Rama() { auto du = DestructionUser(this); }
-    Rama(Residue* residue, Proper_Dihedral_Mgr *dmgr, Rama_Mgr *rmgr);
+    Rama(Residue* residue, ProperDihedralMgr *dmgr, RamaMgr *rmgr);
     //! Returns the omega dihedral, or nullptr if it doesn't exist
     Dihedral* omega();
     //! Returns the phi dihedral, or nullptr if it doesn't exist
@@ -67,8 +67,8 @@ private:
     Dihedral* _psi = nullptr;
     Atom* _CA_atom;
     Residue* _residue;
-    Proper_Dihedral_Mgr* _dmgr;
-    Rama_Mgr* _rmgr;
+    ProperDihedralMgr* _dmgr;
+    RamaMgr* _rmgr;
 
     const char* err_msg_not_protein()
     {
@@ -89,14 +89,14 @@ private:
 /*! Provides methods for getting/creating Rama objects for specific residues,
  *  scoring against MolProbity statistics, and colouring according to score.
  */
-class Rama_Mgr: public pyinstance::PythonInstance<Rama_Mgr>, public DestructionObserver
+class RamaMgr: public pyinstance::PythonInstance<RamaMgr>, public DestructionObserver
 {
 public:
-    Rama_Mgr() {}
-    ~Rama_Mgr();
-    Rama_Mgr(Proper_Dihedral_Mgr *mgr): _mgr(mgr) {}
-    enum Rama_Case{CASE_NONE=0, CISPRO=1, TRANSPRO=2, GLYCINE=3, PREPRO=4, ILEVAL=5, GENERAL=6, NUM_RAMA_CASES=7};
-    enum Rama_Bins{FAVORED=0, ALLOWED=1, OUTLIER=2, BIN_NA=-1};
+    RamaMgr() {}
+    ~RamaMgr();
+    RamaMgr(ProperDihedralMgr *mgr): _mgr(mgr) {}
+    enum RamaCase{CASE_NONE=0, CISPRO=1, TRANSPRO=2, GLYCINE=3, PREPRO=4, ILEVAL=5, GENERAL=6, NUM_RAMA_CASES=7};
+    enum RamaBins{FAVORED=0, ALLOWED=1, OUTLIER=2, BIN_NA=-1};
     struct cutoffs
     {
         double allowed;
@@ -157,7 +157,7 @@ public:
     virtual void destructors_done(const std::set<void*>& destroyed);
 
 private:
-    Proper_Dihedral_Mgr* _mgr;
+    ProperDihedralMgr* _mgr;
     std::unordered_map<Residue*, Rama*> _residue_to_rama;
     std::unordered_map<size_t, RegularGridInterpolator<double>> _interpolators;
     std::unordered_map<size_t, cutoffs> _cutoffs;
@@ -169,7 +169,7 @@ private:
 
     void _color_by_score(const double &score, const uint8_t &r_case, colors::color &color);
     void _delete_ramas(const std::set<Rama *> to_delete);
-}; //class Rama_Mgr
+}; //class RamaMgr
 }//namespace isolde
 
 #endif //ISOLDE_RAMA

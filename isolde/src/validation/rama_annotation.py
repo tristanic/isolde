@@ -11,7 +11,7 @@
 from chimerax.core.models import Model, Drawing
 import numpy
 
-class Rama_Annotator(Model):
+class RamaAnnotator(Model):
     '''
     Handles the task of real-time Ramachandran validation for a single
     :py:class:`chimerax.AtomicStructure` and visualisation of the results.
@@ -23,24 +23,25 @@ class Rama_Annotator(Model):
 
     .. code-block:: python
 
-        ra = Rama_Annotator(atomic_structure)
+        ra = RamaAnnotator(atomic_structure)
 
-    adds the :py:class`Rama_Annotator` as a child model to `atomic_structure`
+    adds the :py:class`RamaAnnotator` as a child model to `atomic_structure`
     and will update its validation drawing every time the coordinates change.
     Alternatively:
 
     .. code-block:: python
 
         from chimerax.isolde import session_extensions as sx
-        ra = sx.get_rama_annotator(atomic_model)
+        ra = sx.get_RamaAnnotator(atomic_model)
 
-    creates the :py:class:`Rama_Annotator` if it doesn't exist, or returns
+    creates the :py:class:`RamaAnnotator` if it doesn't exist, or returns
     the existing one if it does.
 
-    Turning off the display of the :py:class:`Rama_Annotator` model (e.g.
+    Turning off the display of the :py:class:`RamaAnnotator` model (e.g.
     via the `ChimeraX` Model Panel) temporarily turns off automatic validation,
     which will restart when display is turned back on.
     '''
+    SESSION_SAVE=False
     pickable = False
 
     def __init__(self, atomic_structure, hide_favored = False,

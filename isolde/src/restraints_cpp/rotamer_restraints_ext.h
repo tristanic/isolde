@@ -21,11 +21,11 @@ using namespace isolde;
 
 /***************************************************************
  *
- * Rotamer_Restraint_Mgr functions
+ * RotamerRestraintMgr functions
  *
  ***************************************************************/
-SET_PYTHON_INSTANCE(rotamer_restraint_mgr, Rotamer_Restraint_Mgr)
-GET_PYTHON_INSTANCES(rotamer_restraint_mgr, Rotamer_Restraint_Mgr)
+SET_PYTHON_INSTANCE(rotamer_restraint_mgr, RotamerRestraintMgr)
+GET_PYTHON_INSTANCES(rotamer_restraint_mgr, RotamerRestraintMgr)
 
 extern "C" EXPORT void*
 rotamer_restraint_mgr_new(void *structure, void *change_tracker,
@@ -33,11 +33,11 @@ rotamer_restraint_mgr_new(void *structure, void *change_tracker,
 {
     Structure *s = static_cast<Structure *>(structure);
     isolde::Change_Tracker *ct = static_cast<isolde::Change_Tracker *>(change_tracker);
-    Proper_Dihedral_Restraint_Mgr *dmgr
-        = static_cast<Proper_Dihedral_Restraint_Mgr *>(proper_dihedral_restraint_mgr);
-    Rota_Mgr *rmgr = static_cast<Rota_Mgr *>(rota_mgr);
+    ProperDihedralRestraintMgr *dmgr
+        = static_cast<ProperDihedralRestraintMgr *>(proper_dihedral_restraint_mgr);
+    RotaMgr *rmgr = static_cast<RotaMgr *>(rota_mgr);
     try {
-        Rotamer_Restraint_Mgr *mgr = new Rotamer_Restraint_Mgr(s, ct, dmgr, rmgr);
+        RotamerRestraintMgr *mgr = new RotamerRestraintMgr(s, ct, dmgr, rmgr);
         return mgr;
     } catch (...) {
         molc_error();
@@ -48,7 +48,7 @@ rotamer_restraint_mgr_new(void *structure, void *change_tracker,
 extern "C" EXPORT void
 rotamer_restraint_mgr_delete(void *mgr)
 {
-    Rotamer_Restraint_Mgr *m = static_cast<Rotamer_Restraint_Mgr *>(mgr);
+    RotamerRestraintMgr *m = static_cast<RotamerRestraintMgr *>(mgr);
     try {
         delete m;
     } catch (...) {
@@ -59,7 +59,7 @@ rotamer_restraint_mgr_delete(void *mgr)
 extern "C" EXPORT size_t
 rotamer_restraint_mgr_num_restraints(void *mgr)
 {
-    Rotamer_Restraint_Mgr *m = static_cast<Rotamer_Restraint_Mgr *>(mgr);
+    RotamerRestraintMgr *m = static_cast<RotamerRestraintMgr *>(mgr);
     try {
         return m->num_restraints();
     } catch (...) {
@@ -71,7 +71,7 @@ rotamer_restraint_mgr_num_restraints(void *mgr)
 extern "C" EXPORT size_t
 rotamer_restraint_mgr_get_restraint(void *mgr, void *rotamer, size_t n, bool create, pyobject_t *restraint)
 {
-    Rotamer_Restraint_Mgr *m = static_cast<Rotamer_Restraint_Mgr *>(mgr);
+    RotamerRestraintMgr *m = static_cast<RotamerRestraintMgr *>(mgr);
     Rotamer** r = static_cast<Rotamer **>(rotamer);
     try {
         size_t count=0;
@@ -92,17 +92,17 @@ rotamer_restraint_mgr_get_restraint(void *mgr, void *rotamer, size_t n, bool cre
 
 /***************************************************************
  *
- * Rotamer_Restraint functions
+ * RotamerRestraint functions
  *
  ***************************************************************/
 
-SET_PYTHON_CLASS(rotamer_restraint, Rotamer_Restraint)
-GET_PYTHON_INSTANCES(rotamer_restraint, Rotamer_Restraint)
+SET_PYTHON_CLASS(rotamer_restraint, RotamerRestraint)
+GET_PYTHON_INSTANCES(rotamer_restraint, RotamerRestraint)
 
 extern "C" EXPORT void
 rotamer_restraint_rotamer(void *restraint, size_t n, pyobject_t *rotamer)
 {
-    Rotamer_Restraint** rr = static_cast<Rotamer_Restraint **>(restraint);
+    RotamerRestraint** rr = static_cast<RotamerRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *rotamer++ = (*rr++)->rotamer();
@@ -115,7 +115,7 @@ rotamer_restraint_rotamer(void *restraint, size_t n, pyobject_t *rotamer)
 extern "C" EXPORT void
 rotamer_restraint_residue(void *restraint, size_t n, pyobject_t *residue)
 {
-    Rotamer_Restraint** rr = static_cast<Rotamer_Restraint **>(restraint);
+    RotamerRestraint** rr = static_cast<RotamerRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             *residue++ = (*rr++)->residue();
@@ -128,7 +128,7 @@ rotamer_restraint_residue(void *restraint, size_t n, pyobject_t *residue)
 extern "C" EXPORT void
 rotamer_restraint_chi_restraints(void *restraint, pyobject_t *chi)
 {
-    Rotamer_Restraint* rr = static_cast<Rotamer_Restraint *>(restraint);
+    RotamerRestraint* rr = static_cast<RotamerRestraint *>(restraint);
     try {
         const auto& chis = rr->chi_restraints();
         for (auto c: chis) {
@@ -142,7 +142,7 @@ rotamer_restraint_chi_restraints(void *restraint, pyobject_t *chi)
 extern "C" EXPORT void
 set_rotamer_restraint_spring_constant(void *restraint, size_t n, double k)
 {
-    Rotamer_Restraint** rr = static_cast<Rotamer_Restraint **>(restraint);
+    RotamerRestraint** rr = static_cast<RotamerRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*rr++)->set_spring_constant(k);
@@ -155,29 +155,29 @@ set_rotamer_restraint_spring_constant(void *restraint, size_t n, double k)
 extern "C" EXPORT void
 rotamer_restraint_enabled(void *restraint, size_t n, npy_bool *enabled)
 {
-    Rotamer_Restraint** rr = static_cast<Rotamer_Restraint **>(restraint);
-    error_wrap_array_get<Rotamer_Restraint, bool, npy_bool>(rr, n, &Rotamer_Restraint::enabled, enabled);
+    RotamerRestraint** rr = static_cast<RotamerRestraint **>(restraint);
+    error_wrap_array_get<RotamerRestraint, bool, npy_bool>(rr, n, &RotamerRestraint::enabled, enabled);
 }
 
 extern "C" EXPORT void
 set_rotamer_restraint_enabled(void *restraint, size_t n, npy_bool *enabled)
 {
-    Rotamer_Restraint** rr = static_cast<Rotamer_Restraint **>(restraint);
-    error_wrap_array_set<Rotamer_Restraint, bool, npy_bool>(rr, n, &Rotamer_Restraint::set_enabled, enabled);
+    RotamerRestraint** rr = static_cast<RotamerRestraint **>(restraint);
+    error_wrap_array_set<RotamerRestraint, bool, npy_bool>(rr, n, &RotamerRestraint::set_enabled, enabled);
 }
 
 extern "C" EXPORT void
 rotamer_restraint_target_index(void *restraint, size_t n, int32_t *index)
 {
-    Rotamer_Restraint** rr = static_cast<Rotamer_Restraint **>(restraint);
-    error_wrap_array_get<Rotamer_Restraint, int, int32_t>(rr, n, &Rotamer_Restraint::target_index, index);
+    RotamerRestraint** rr = static_cast<RotamerRestraint **>(restraint);
+    error_wrap_array_get<RotamerRestraint, int, int32_t>(rr, n, &RotamerRestraint::target_index, index);
 }
 
 extern "C" EXPORT void
 set_rotamer_restraint_target_index(void *restraint, size_t n, int32_t *index)
 {
-    Rotamer_Restraint** rr = static_cast<Rotamer_Restraint **>(restraint);
-    error_wrap_array_set<Rotamer_Restraint, int, int32_t>(rr, n, &Rotamer_Restraint::set_target_index, index);
+    RotamerRestraint** rr = static_cast<RotamerRestraint **>(restraint);
+    error_wrap_array_set<RotamerRestraint, int, int32_t>(rr, n, &RotamerRestraint::set_target_index, index);
 }
 
 

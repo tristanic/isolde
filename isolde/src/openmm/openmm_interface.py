@@ -726,7 +726,7 @@ class Sim_Manager:
         from .. import session_extensions as sx
         m = self.model
         mobile_res = mobile_atoms.unique_residues
-        rama_a = self.rama_annotator = sx.get_rama_annotator(m)
+        rama_a = self.RamaAnnotator = sx.get_RamaAnnotator(m)
         rota_a = self.rota_annotator = sx.get_rota_annotator(m)
         rama_a.restrict_to_selected_residues(mobile_res)
         rota_a.restrict_to_selected_residues(mobile_res)
@@ -1012,7 +1012,7 @@ class Sim_Manager:
             generic_warning(msg)
 
     def _rama_a_sim_end_cb(self, *_):
-        self.rama_annotator.track_whole_model = True
+        self.RamaAnnotator.track_whole_model = True
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
@@ -1802,7 +1802,7 @@ class Sim_Handler:
             * restraints:
                 - Any python restraints :py:class:`chimerax.Collection` instance
                   based on :cpp:class:`Dihedral_Restraint`. At present this is
-                  limited to :py:class:`Proper_Dihedral_Restraints`, but
+                  limited to :py:class:`ProperDihedralRestraints`, but
                   expect others (e.g. chirals) to be added with time.
         '''
         force = self._dihedral_restraint_force
@@ -1824,7 +1824,7 @@ class Sim_Handler:
 
         Args:
             * restraint:
-                - A :py:class:`Proper_Dihedral_Restraint` instance, or any other
+                - A :py:class:`ProperDihedralRestraint` instance, or any other
                   Python restraint class based on :cpp:class:`Dihedral_Restraint`
         '''
         force = self._dihedral_restraint_force
@@ -1846,7 +1846,7 @@ class Sim_Handler:
 
         Args:
             * restraints:
-                - A :py:class:`Proper_Dihedral_Restraints` instance. Any
+                - A :py:class:`ProperDihedralRestraints` instance. Any
                   restraints that are not part of the current simulation will
                   be ignored.
         '''
@@ -1863,7 +1863,7 @@ class Sim_Handler:
 
         Args:
             * restraint:
-                - A :py:class:`Proper_Dihedral_Restraint` instance. If the
+                - A :py:class:`ProperDihedralRestraint` instance. If the
                   restraint is not part of the current simulation it will be
                   ignored.
         '''
@@ -1903,7 +1903,7 @@ class Sim_Handler:
 
         Args:
             * restraints:
-                - a :py:class:`Distance_Restraints` instance
+                - a :py:class:`DistanceRestraints` instance
         '''
         force = self._distance_restraints_force
         all_atoms = self._atoms
@@ -1924,7 +1924,7 @@ class Sim_Handler:
 
         Args:
             * restraint:
-                - a :py:class:`Distance_Restraint` instance
+                - a :py:class:`DistanceRestraint` instance
         '''
         force = self._distance_restraints_force
         all_atoms = self._atoms
@@ -1948,7 +1948,7 @@ class Sim_Handler:
 
         Args:
             * restraints:
-                - a :py:class:`Distance_Restraints` instance
+                - a :py:class:`DistanceRestraints` instance
         '''
         force = self._distance_restraints_force
         restraints = restraints[restraints.sim_indices != -1]
@@ -1964,7 +1964,7 @@ class Sim_Handler:
 
         Args:
             * restraint:
-                - a :py:class:`Distance_Restraint` instance
+                - a :py:class:`DistanceRestraint` instance
         '''
         force = self._distance_restraints_force
         force.update_target(restraint.sim_index,
@@ -2000,7 +2000,7 @@ class Sim_Handler:
 
         Args:
             * restraints:
-                - a :py:class:`Adaptive_Distance_Restraints` instance
+                - a :py:class:`AdaptiveDistanceRestraints` instance
         '''
         force = self._adaptive_distance_restraints_force
         all_atoms = self._atoms
@@ -2023,7 +2023,7 @@ class Sim_Handler:
 
         Args:
             * restraint:
-                - a :py:class:`Adaptive_Distance_Restraint` instance
+                - a :py:class:`AdaptiveDistanceRestraint` instance
         '''
         force = self._adaptive_distance_restraints_force
         all_atoms = self._atoms
@@ -2047,7 +2047,7 @@ class Sim_Handler:
 
         Args:
             * restraints:
-                - a :py:class:`Adaptive_Distance_Restraints` instance
+                - a :py:class:`AdaptiveDistanceRestraints` instance
         '''
         force = self._adaptive_distance_restraints_force
         restraints = restraints[restraints.sim_indices != -1]
@@ -2063,7 +2063,7 @@ class Sim_Handler:
 
         Args:
             * restraint:
-                - a :py:class:`Distance_Restraint` instance
+                - a :py:class:`DistanceRestraint` instance
         '''
         force = self._adaptive_distance_restraints_force
         force.update_target(restraint.sim_index,
@@ -2104,7 +2104,7 @@ class Sim_Handler:
 
         Args:
             * restraints:
-                - a :py:class:`Position_Restraints` instance
+                - a :py:class:`PositionRestraints` instance
         '''
         force = self._position_restraints_force
         all_atoms = self._atoms
@@ -2121,7 +2121,7 @@ class Sim_Handler:
 
         Args:
             * restraint:
-                - a :py:class:`Position_Restraint` instance
+                - a :py:class:`PositionRestraint` instance
         '''
         force = self._position_restraints_force
         index = self._all_atoms.index(restraint.atom)
@@ -2142,7 +2142,7 @@ class Sim_Handler:
 
         Args:
             * restraints:
-                - a :py:class:`Position_Restraints` instance
+                - a :py:class:`PositionRestraints` instance
         '''
         force = self._position_restraints_force
         restraints = restraints[restraints.sim_indices != -1]
@@ -2158,7 +2158,7 @@ class Sim_Handler:
 
         Args:
             * restraint:
-                - a :py:class:`Position_Restraint` instance
+                - a :py:class:`PositionRestraint` instance
         '''
         force = self._position_restraints_force
         force.update_target(restraint.sim_index,
@@ -2195,7 +2195,7 @@ class Sim_Handler:
 
         Args:
             * tuggables:
-                - a :py:class:`Tuggable_Atoms` instance
+                - a :py:class:`TuggableAtoms` instance
         '''
         force = self._tugging_force
         all_atoms = self._atoms
@@ -2212,7 +2212,7 @@ class Sim_Handler:
 
         Args:
             * tuggable:
-                - a :py:class:`Tuggable_Atom` instance
+                - a :py:class:`TuggableAtom` instance
         '''
         force = self._tugging_force
         index = self._all_atoms.index(tuggable.atom)
@@ -2233,7 +2233,7 @@ class Sim_Handler:
 
         Args:
             * tuggables:
-                - a :py:class:`Tuggable_Atoms` instance
+                - a :py:class:`TuggableAtoms` instance
         '''
         force = self._tugging_force
         tuggables = tuggables[tuggables.sim_indices !=-1]
@@ -2249,7 +2249,7 @@ class Sim_Handler:
 
         Args:
             * tuggable:
-                - a :py:class:`Tuggable_Atom` instance
+                - a :py:class:`TuggableAtom` instance
         '''
         force = self._tugging_force
         force.update_target(tuggable.sim_index,
@@ -2318,7 +2318,7 @@ class Sim_Handler:
 
         Args:
             * mdff_atoms:
-                - a :py:class:`MDFF_Atoms` instance
+                - a :py:class:`MDFFAtoms` instance
             * volume:
                 - the :py:class:`chimerax.Volume` instance that was used to
                   create the target force.
@@ -2337,7 +2337,7 @@ class Sim_Handler:
 
         Args:
             * mdff_atom:
-                - a :py:class:`MDFF_Atom` instance
+                - a :py:class:`MDFFAtom` instance
             * volume:
                 - the :py:class:`chimerax.Volume` instance that was used to
                   create the target force.
@@ -2419,7 +2419,7 @@ class Sim_Handler:
 
         Args:
             * mdff_atoms:
-                - a :py:class:`MDFF_Atoms` instance
+                - a :py:class:`MDFFAtoms` instance
             * volume:
                 - the :py:class:`chimerax.Volume` instance that was used to
                   create the target force.
@@ -2438,7 +2438,7 @@ class Sim_Handler:
 
         Args:
             * mdff_atom:
-                - a :py:class:`MDFF_Atom` instance
+                - a :py:class:`MDFFAtom` instance
             * volume:
                 - the :py:class:`chimerax.Volume` instance that was used to
                   create the target force.

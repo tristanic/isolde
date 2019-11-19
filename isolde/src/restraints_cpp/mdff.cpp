@@ -15,29 +15,29 @@
 #include "mdff.h"
 #include <pyinstance/PythonInstance.instantiate.h>
 
-template class pyinstance::PythonInstance<isolde::MDFF_Atom>;
-template class pyinstance::PythonInstance<isolde::MDFF_Mgr>;
+template class pyinstance::PythonInstance<isolde::MDFFAtom>;
+template class pyinstance::PythonInstance<isolde::MDFFMgr>;
 
 namespace isolde
 {
 
-MDFF_Atom::MDFF_Atom(Atom* atom, MDFF_Mgr *mgr) : _atom(atom), _mgr(mgr)
+MDFFAtom::MDFFAtom(Atom* atom, MDFFMgr *mgr) : _atom(atom), _mgr(mgr)
 {
     _coupling_constant = _atom->element().mass();
 }
 
-Change_Tracker* MDFF_Atom::change_tracker() const
+Change_Tracker* MDFFAtom::change_tracker() const
 {
     return mgr()->change_tracker();
 }
 
-void MDFF_Atom::set_coupling_constant(double k)
+void MDFFAtom::set_coupling_constant(double k)
 {
     _coupling_constant = k<0 ? 0.0 : k;
     mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
 }
 
-void MDFF_Atom::set_enabled(bool flag)
+void MDFFAtom::set_enabled(bool flag)
 {
     if (_enabled != flag)
     {
@@ -46,18 +46,18 @@ void MDFF_Atom::set_enabled(bool flag)
     }
 }
 
-MDFF_Atom* MDFF_Mgr::_new_mdff_atom(Atom *atom)
+MDFFAtom* MDFFMgr::_new_mdff_atom(Atom *atom)
 {
     if (atom->structure() != _atomic_model) {
         throw std::logic_error(error_different_mol());
     }
-    MDFF_Atom* mdffa = new MDFF_Atom(atom, this);
+    MDFFAtom* mdffa = new MDFFAtom(atom, this);
     _atom_to_mdff[atom] = mdffa;
     track_created(mdffa);
     return mdffa;
 }
 
-MDFF_Atom* MDFF_Mgr::get_mdff_atom(Atom *atom, bool create)
+MDFFAtom* MDFFMgr::get_mdff_atom(Atom *atom, bool create)
 {
     auto it = _atom_to_mdff.find(atom);
     if (it != _atom_to_mdff.end())
@@ -67,13 +67,13 @@ MDFF_Atom* MDFF_Mgr::get_mdff_atom(Atom *atom, bool create)
     return nullptr;
 }
 
-void MDFF_Mgr::delete_mdff_atoms(const std::set<MDFF_Atom *>& to_delete)
+void MDFFMgr::delete_mdff_atoms(const std::set<MDFFAtom *>& to_delete)
 {
     auto db = DestructionBatcher(this);
     _delete_mdff_atoms(to_delete);
 }
 
-void MDFF_Mgr::_delete_mdff_atoms(const std::set<MDFF_Atom *>& to_delete)
+void MDFFMgr::_delete_mdff_atoms(const std::set<MDFFAtom *>& to_delete)
 {
     for (auto a: to_delete) {
         _atom_to_mdff.erase(a->atom());
@@ -81,10 +81,10 @@ void MDFF_Mgr::_delete_mdff_atoms(const std::set<MDFF_Atom *>& to_delete)
     }
 }
 
-void MDFF_Mgr::destructors_done(const std::set<void *>& destroyed)
+void MDFFMgr::destructors_done(const std::set<void *>& destroyed)
 {
     auto db = DestructionBatcher(this);
-    std::set<MDFF_Atom *> to_delete;
+    std::set<MDFFAtom *> to_delete;
     for (const auto &it: _atom_to_mdff) {
         auto a = it.first;
         if (destroyed.find(static_cast<void *>(a)) != destroyed.end()) {
@@ -94,7 +94,7 @@ void MDFF_Mgr::destructors_done(const std::set<void *>& destroyed)
     _delete_mdff_atoms(to_delete);
 }
 
-MDFF_Mgr::~MDFF_Mgr()
+MDFFMgr::~MDFFMgr()
 {
     auto du = DestructionUser(this);
     for (auto &it: _atom_to_mdff) {

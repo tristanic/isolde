@@ -25,11 +25,11 @@
 
 namespace isolde
 {
-class Position_Restraint_Mgr;
-class Position_Restraint;
-class Distance_Restraint_Mgr;
-class Distance_Restraint;
-class Dihedral_Restraint_Mgr;
+class PositionRestraintMgr;
+class PositionRestraint;
+class DistanceRestraintMgr;
+class DistanceRestraint;
+class DihedralRestraintMgr;
 class Dihedral_Restraint;
 
 

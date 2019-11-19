@@ -8,7 +8,7 @@
 
 def get_proper_dihedral_mgr(session):
     '''
-    Get the session-level :class:`Proper_Dihedral_Mgr` singleton, creating it if
+    Get the session-level :class:`ProperDihedralMgr` singleton, creating it if
     it doesn't yet exist.
 
     Args:
@@ -17,12 +17,12 @@ def get_proper_dihedral_mgr(session):
     '''
     if hasattr(session, 'proper_dihedral_mgr') and not session.proper_dihedral_mgr.deleted:
         return session.proper_dihedral_mgr
-    from .molobject import Proper_Dihedral_Mgr
-    return Proper_Dihedral_Mgr(session)
+    from .molobject import ProperDihedralMgr
+    return ProperDihedralMgr(session)
 
 def get_chiral_mgr(session):
     '''
-    Get the session-level :class:`Chiral_Mgr` singleton, creating it if it
+    Get the session-level :class:`ChiralMgr` singleton, creating it if it
     doesn't yet exist.
 
     Args:
@@ -31,12 +31,12 @@ def get_chiral_mgr(session):
     '''
     if hasattr(session, 'chiral_mgr') and not session.chiral_mgr.deleted:
         return session.chiral_mgr
-    from .molobject import Chiral_Mgr
-    return Chiral_Mgr(session)
+    from .molobject import ChiralMgr
+    return ChiralMgr(session)
 
 def get_ramachandran_mgr(session):
     '''
-    Get the session-level :class:`Rama_Mgr` singleton, creating it if it doesn't
+    Get the session-level :class:`RamaMgr` singleton, creating it if it doesn't
     yet exist.
 
     Args:
@@ -45,12 +45,12 @@ def get_ramachandran_mgr(session):
     '''
     if hasattr(session, 'rama_mgr') and not session.rama_mgr.deleted:
         return session.rama_mgr
-    from .molobject import Rama_Mgr
-    return Rama_Mgr(session)
+    from .molobject import RamaMgr
+    return RamaMgr(session)
 
 def get_rotamer_mgr(session):
     '''
-    Get the session-level :class:`Rota_Mgr` singleton, creating it if it doesn't
+    Get the session-level :class:`RotaMgr` singleton, creating it if it doesn't
     yet exist.
 
     Args:
@@ -59,100 +59,100 @@ def get_rotamer_mgr(session):
     '''
     if hasattr(session, 'rota_mgr') and not session.rota_mgr.deleted:
         return session.rota_mgr
-    from .molobject import Rota_Mgr
-    return Rota_Mgr(session)
+    from .molobject import RotaMgr
+    return RotaMgr(session)
 
 def get_chiral_restraint_mgr(model):
     '''
-    Get the :class:`Chiral_Restraint_Mgr` for the given model, creating it if it
+    Get the :class:`ChiralRestraintMgr` for the given model, creating it if it
     doesn't yet exist.
 
     Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
-    from .molobject import Chiral_Restraint_Mgr
+    from .molobject import ChiralRestraintMgr
     for m in model.child_models():
-        if isinstance(m, Chiral_Restraint_Mgr):
+        if isinstance(m, ChiralRestraintMgr):
             return m
-    return Chiral_Restraint_Mgr(model)
+    return ChiralRestraintMgr(model)
 
 def get_proper_dihedral_restraint_mgr(model):
     '''
-    Get the :class:`Proper_Dihedral_Restraint_Mgr` for the given model, creating
+    Get the :class:`ProperDihedralRestraintMgr` for the given model, creating
     it if it doesn't yet exist.
 
     Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
-    from .molobject import Proper_Dihedral_Restraint_Mgr
+    from .molobject import ProperDihedralRestraintMgr
     for m in model.child_models():
-        if isinstance(m, Proper_Dihedral_Restraint_Mgr):
+        if isinstance(m, ProperDihedralRestraintMgr):
             return m
-    return Proper_Dihedral_Restraint_Mgr(model)
+    return ProperDihedralRestraintMgr(model)
 
 def get_rotamer_restraint_mgr(model):
     '''
-    Get the :class:`Rotamer_Restraint_Mgr` for the given model, creating it if
+    Get the :class:`RotamerRestraintMgr` for the given model, creating it if
     it doesn't yet exist.
 
     Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
-    from .molobject import Rotamer_Restraint_Mgr
-    # Rotamer_Restraint_Mgr is subordinate to Proper_Dihedral_Restraint_Mgr,
+    from .molobject import RotamerRestraintMgr
+    # RotamerRestraintMgr is subordinate to ProperDihedralRestraintMgr,
     # so we need to go deeper than just child_models()
     for m in model.all_models():
-        if isinstance(m, Rotamer_Restraint_Mgr):
+        if isinstance(m, RotamerRestraintMgr):
             return m
-    return Rotamer_Restraint_Mgr(model)
+    return RotamerRestraintMgr(model)
 
 def get_position_restraint_mgr(model):
     '''
-    Get the :class:`Position_Restraint_Mgr` for the given model, creating it if
+    Get the :class:`PositionRestraintMgr` for the given model, creating it if
     it doesn't yet exist.
 
     Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
-    from .molobject import Position_Restraint_Mgr
+    from .molobject import PositionRestraintMgr
     for m in model.child_models():
-        if isinstance(m, Position_Restraint_Mgr):
+        if isinstance(m, PositionRestraintMgr):
             return m
-    return Position_Restraint_Mgr(model)
+    return PositionRestraintMgr(model)
 
 def get_distance_restraint_mgr(model):
     '''
-    Get the :class:`Distance_Restraint_Mgr` for the given model, creating it if
+    Get the :class:`DistanceRestraintMgr` for the given model, creating it if
     it doesn't yet exist.
 
     Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
-    from .molobject import Distance_Restraint_Mgr
+    from .molobject import DistanceRestraintMgr
     for m in model.child_models():
-        if isinstance(m, Distance_Restraint_Mgr):
+        if isinstance(m, DistanceRestraintMgr):
             return m
-    return Distance_Restraint_Mgr(model)
+    return DistanceRestraintMgr(model)
 
 def get_adaptive_distance_restraint_mgr(model, name='Adaptive Distance Restraints'):
     '''
-    Get a :class:`Adaptive_Distance_Restraint_Mgr` for the given model, creating
+    Get a :class:`AdaptiveDistanceRestraintMgr` for the given model, creating
     it if it doesn't yet exist.
 
     Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
-    from .molobject import Adaptive_Distance_Restraint_Mgr
+    from .molobject import AdaptiveDistanceRestraintMgr
     for m in model.child_models():
-        if isinstance(m, Adaptive_Distance_Restraint_Mgr) and m.name == name:
+        if isinstance(m, AdaptiveDistanceRestraintMgr) and m.name == name:
             return m
-    return Adaptive_Distance_Restraint_Mgr(model, name=name)
+    return AdaptiveDistanceRestraintMgr(model, name=name)
 
 def get_all_adaptive_distance_restraint_mgrs(model):
     '''
@@ -163,44 +163,44 @@ def get_all_adaptive_distance_restraint_mgrs(model):
             - a :class:`chimerax.AtomicStructure`
     '''
     ret = []
-    from .molobject import Adaptive_Distance_Restraint_Mgr
+    from .molobject import AdaptiveDistanceRestraintMgr
     for m in model.child_models():
-        if isinstance (m, Adaptive_Distance_Restraint_Mgr):
+        if isinstance (m, AdaptiveDistanceRestraintMgr):
             ret.append(m)
     return ret
 
 def get_tuggable_atoms_mgr(model, allow_hydrogens=None):
     '''
-    Get the :class:`Tuggable_Atoms_Mgr` for the given model, creating it if it
+    Get the :class:`TuggableAtomsMgr` for the given model, creating it if it
     doesn't yet exist.
 
     Args:
         * model:
             - a :class:`chimerax.AtomicStructure`
     '''
-    from .molobject import Tuggable_Atoms_Mgr
+    from .molobject import TuggableAtomsMgr
     for m in model.child_models():
-        if isinstance(m, Tuggable_Atoms_Mgr):
+        if isinstance(m, TuggableAtomsMgr):
             if allow_hydrogens is not None:
                 m.allow_hydrogens = allow_hydrogens
             return m
     if allow_hydrogens is None:
         allow_hydrogens = 'polar'
-    return Tuggable_Atoms_Mgr(model, allow_hydrogens=allow_hydrogens)
+    return TuggableAtomsMgr(model, allow_hydrogens=allow_hydrogens)
 
 def get_mdff_mgr(model, volume, create=False):
     '''
-    Get the :class:`MDFF_Mgr` for the given model and volume, optionally
+    Get the :class:`MDFFMgr` for the given model and volume, optionally
     creating it if it doesn't yet exist.
 
     Args:
         * model:
             - a :class:`chimerax.AtomicStructure` instance
         * volume:
-            - a :class:`chimerax.map.Volume` instance. The :class:`MDFF_Mgr`
+            - a :class:`chimerax.map.Volume` instance. The :class:`MDFFMgr`
               will be added as a submodel to the :class:`Volume`
         * create (default=False):
-            - if True, creates and returns a :class:`MDFF_Mgr` if one doesn't
+            - if True, creates and returns a :class:`MDFFMgr` if one doesn't
               already exist
     '''
     from chimerax.map import Volume
@@ -208,50 +208,50 @@ def get_mdff_mgr(model, volume, create=False):
     if (not isinstance(model, AtomicStructure) or
         not isinstance(volume, Volume)):
         return None
-    from .molobject import MDFF_Mgr
+    from .molobject import MDFFMgr
     for m in volume.all_models():
-        if isinstance(m, MDFF_Mgr):
+        if isinstance(m, MDFFMgr):
             if m.model == model:
                 return m
     if create:
-        return MDFF_Mgr(model, volume)
+        return MDFFMgr(model, volume)
     else:
         return None
 
 def get_rota_annotator(model, create=True):
     '''
-    Get the :class:`Rotamer_Annotator` for the given model, optionally creating
+    Get the :class:`RotamerAnnotator` for the given model, optionally creating
     it if it doesn't yet exist.
 
     Args:
         * model:
             - a :class:`chimerax.AtomicStructure` instance
         * create (default=True):
-            - if True and no :class:`Rotamer_Annotator` already exists for the
+            - if True and no :class:`RotamerAnnotator` already exists for the
               model, one will be created and returned.
     '''
-    from .validation.rota_annotation import Rotamer_Annotator
+    from .validation.rota_annotation import RotamerAnnotator
     for m in model.child_models():
-        if isinstance(m, Rotamer_Annotator):
+        if isinstance(m, RotamerAnnotator):
             return m
     if create:
-        return Rotamer_Annotator(model)
+        return RotamerAnnotator(model)
 
-def get_rama_annotator(model, create=True):
+def get_RamaAnnotator(model, create=True):
     '''
-    Get the :class:`Rama_Annotator` for the given model, optionally creating it
+    Get the :class:`RamaAnnotator` for the given model, optionally creating it
     if it doesn't yet exist.
 
     Args:
         * model:
             - a :class:`chimerax.AtomicStructure` instance
         * create (default=True):
-            - if True and no :class:`Rama_Annotator` already exists for the
+            - if True and no :class:`RamaAnnotator` already exists for the
             - model, one will be created and returned.
     '''
-    from .validation.rama_annotation import Rama_Annotator
+    from .validation.rama_annotation import RamaAnnotator
     for m in model.child_models():
-        if isinstance(m, Rama_Annotator):
+        if isinstance(m, RamaAnnotator):
             return m
     if create:
-        return Rama_Annotator(model)
+        return RamaAnnotator(model)

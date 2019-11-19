@@ -13,10 +13,10 @@ def _model_from_id(model_id, error_if_not_found=True):
 def _get_symmetry_handler(model):
     from chimerax.atomic import AtomicStructure
     from chimerax.clipper import get_symmetry_handler
-    from chimerax.clipper.symmetry import Symmetry_Manager
+    from chimerax.clipper.symmetry import SymmetryManager
     if isinstance(model, AtomicStructure):
         return get_symmetry_handler(model)
-    elif isinstance(model, Symmetry_Manager):
+    elif isinstance(model, SymmetryManager):
         return model
     else:
         err_string = ('The ID {} corresponds to an incompatible model type: {}'.format(model.id_string, type(model)))
@@ -164,17 +164,17 @@ def load_structure_factors(session, file_path:'string', model_id:'string'):
             }
          }
     '''
-    from chimerax.clipper.symmetry import Symmetry_Manager
+    from chimerax.clipper.symmetry import SymmetryManager
     from chimerax.atomic import AtomicStructure
     m = _model_from_id(model_id)
     if isinstance(m, AtomicStructure):
         from chimerax.clipper import get_symmetry_handler
         sh = get_symmetry_handler(m, create=True, auto_add_to_session=True)
-    elif isinstance(m, Symmetry_Manager):
+    elif isinstance(m, SymmetryManager):
         sh = m
     else:
         err_string = ('Model ID {} has unrecognised type: {}. '
-            'Should be one of AtomicStructure or Symmetry_Manager.').format(
+            'Should be one of AtomicStructure or SymmetryManager.').format(
                 model_id, type(m)
             )
         raise TypeError(err_string)
@@ -210,18 +210,18 @@ def load_map(session, file_path:'string', model_id:'string'):
     '''
     m = _model_from_id(model_id)
     from chimerax.atomic import AtomicStructure
-    from chimerax.clipper.symmetry import Symmetry_Manager
+    from chimerax.clipper.symmetry import SymmetryManager
     from chimerax.clipper.maps import Map_Mgr
     if isinstance(m, AtomicStructure):
         from chimerax.atomic import get_map_mgr
         mmgr = get_map_mgr(m)
-    elif isinstance(m, Symmetry_Manager):
+    elif isinstance(m, SymmetryManager):
         mmgr = m.map_mgr
     elif isinstance(m, Map_Mgr):
         mmgr = m
     else:
         raise RuntimeError('Model ID {} has unrecognised type {}. Should be one of [{}]'.format(
-            model_id, str(type(m)), ', '.join(('AtomicStructure', 'Symmetry_Manager', 'Map_Mgr'))
+            model_id, str(type(m)), ', '.join(('AtomicStructure', 'SymmetryManager', 'Map_Mgr'))
         ))
     nxmapset = mmgr.nxmapset
     new_map = nxmapset.add_nxmap_handler_from_file(file_path)

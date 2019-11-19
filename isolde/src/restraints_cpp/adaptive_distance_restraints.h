@@ -31,7 +31,7 @@ using namespace atomstruct;
 namespace isolde
 {
 
-template<class R> class Distance_Restraint_Mgr_Tmpl;
+template<class R> class DistanceRestraintMgr_Tmpl;
 
 /*! ChimeraX-side management of an "adaptive" distance restraint.
  * A tunable restraint with a flat bottom of user-definable width. Acts like a
@@ -41,20 +41,20 @@ template<class R> class Distance_Restraint_Mgr_Tmpl;
  * restraints where some subset may be uncertain or simply wrong. The functional
  * form is described in https://arxiv.org/pdf/1701.03077.pdf
   */
-class Adaptive_Distance_Restraint:
-    public pyinstance::PythonInstance<Adaptive_Distance_Restraint>,
+class AdaptiveDistanceRestraint:
+    public pyinstance::PythonInstance<AdaptiveDistanceRestraint>,
     public Sim_Restraint_Base
 {
 public:
     typedef Atom* Atoms[2];
-    Adaptive_Distance_Restraint() : Sim_Restraint_Base() {}
-    ~Adaptive_Distance_Restraint() { auto du=DestructionUser(this); }
+    AdaptiveDistanceRestraint() : Sim_Restraint_Base() {}
+    ~AdaptiveDistanceRestraint() { auto du=DestructionUser(this); }
     // Construct a restraint with target and spring constant initialised to zero.
-    Adaptive_Distance_Restraint(Atom *a1, Atom *a2,
-            Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint> *mgr);
+    AdaptiveDistanceRestraint(Atom *a1, Atom *a2,
+            DistanceRestraintMgr_Tmpl<AdaptiveDistanceRestraint> *mgr);
     // Construct a restraint with specified target and parameters.
-    Adaptive_Distance_Restraint(Atom *a1, Atom *a2,
-            Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint> *mgr,
+    AdaptiveDistanceRestraint(Atom *a1, Atom *a2,
+            DistanceRestraintMgr_Tmpl<AdaptiveDistanceRestraint> *mgr,
             const double &target, const double &tolerance, const double &kappa,
             const double &c, const double &alpha);
 
@@ -99,7 +99,7 @@ private:
     const double MIN_C = 1e-2;
     const double SCALING_MAX_FORCE = 100.0;
     Atoms _atoms;
-    Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint> *_mgr;
+    DistanceRestraintMgr_Tmpl<AdaptiveDistanceRestraint> *_mgr;
     double _target = 0.1;
     double _tolerance = 0;
     double _kappa = 0;
@@ -116,17 +116,17 @@ private:
         _thresholds[3] = _target + _tolerance + 5*_c;
     }
 
-}; // class Distance_Restraint
+}; // class DistanceRestraint
 
-class Adaptive_Distance_Restraint_Mgr:
-    public Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint>,
-    public pyinstance::PythonInstance<Adaptive_Distance_Restraint_Mgr>
+class AdaptiveDistanceRestraintMgr:
+    public DistanceRestraintMgr_Tmpl<AdaptiveDistanceRestraint>,
+    public pyinstance::PythonInstance<AdaptiveDistanceRestraintMgr>
 {
 public:
-    Adaptive_Distance_Restraint_Mgr(Structure *structure, Change_Tracker *change_tracker)
-    : Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint>(
+    AdaptiveDistanceRestraintMgr(Structure *structure, Change_Tracker *change_tracker)
+    : DistanceRestraintMgr_Tmpl<AdaptiveDistanceRestraint>(
         structure, change_tracker, std::type_index(typeid(this)),
-        "Adaptive_Distance_Restraint_Mgr", "Adaptive_Distance_Restraints"
+        "AdaptiveDistanceRestraintMgr", "AdaptiveDistanceRestraints"
     )
     {}
     inline void set_colors(uint8_t *maxc, uint8_t *midc, uint8_t *minc)

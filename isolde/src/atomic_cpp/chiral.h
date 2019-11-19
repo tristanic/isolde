@@ -36,12 +36,12 @@ namespace isolde {
  * A chiral center is always owned by the residue to which the central atom
  * belongs
  */
-class Chiral_Center: public Dihedral, public pyinstance::PythonInstance<Chiral_Center>
+class ChiralCenter: public Dihedral, public pyinstance::PythonInstance<ChiralCenter>
 {
 
 public:
-    Chiral_Center() {} // null constructor
-    Chiral_Center(Atom* center, Atom* s1, Atom* s2, Atom* s3, double expected_angle);
+    ChiralCenter() {} // null constructor
+    ChiralCenter(Atom* center, Atom* s1, Atom* s2, Atom* s3, double expected_angle);
     // Returns true if the central atom is visible;
     bool visible() const { return _atoms[0]->visible(); }
     double expected_angle() const { return _expected_angle; }
@@ -55,7 +55,7 @@ private:
     // const std::string _r = "R";
     // const std::string _s = "S";
 
-}; // Chiral_Center
+}; // ChiralCenter
 
 
 

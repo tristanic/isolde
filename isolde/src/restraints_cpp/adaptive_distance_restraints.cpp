@@ -14,16 +14,16 @@
 
 #include "adaptive_distance_restraints.h"
 #include <pyinstance/PythonInstance.instantiate.h>
-template class pyinstance::PythonInstance<isolde::Adaptive_Distance_Restraint>;
-template class pyinstance::PythonInstance<isolde::Adaptive_Distance_Restraint_Mgr>;
+template class pyinstance::PythonInstance<isolde::AdaptiveDistanceRestraint>;
+template class pyinstance::PythonInstance<isolde::AdaptiveDistanceRestraintMgr>;
 
 
 namespace isolde {
 
 
 
-Adaptive_Distance_Restraint::Adaptive_Distance_Restraint(Atom *a1, Atom *a2,
-    Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint> *mgr)
+AdaptiveDistanceRestraint::AdaptiveDistanceRestraint(Atom *a1, Atom *a2,
+    DistanceRestraintMgr_Tmpl<AdaptiveDistanceRestraint> *mgr)
     : _mgr(mgr)
 {
     for (auto b: a1->bonds())
@@ -34,11 +34,11 @@ Adaptive_Distance_Restraint::Adaptive_Distance_Restraint(Atom *a1, Atom *a2,
     _atoms[1] = a2;
 }
 
-Adaptive_Distance_Restraint::Adaptive_Distance_Restraint(Atom *a1, Atom *a2,
-    Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint> *mgr,
+AdaptiveDistanceRestraint::AdaptiveDistanceRestraint(Atom *a1, Atom *a2,
+    DistanceRestraintMgr_Tmpl<AdaptiveDistanceRestraint> *mgr,
     const double &target, const double &tolerance, const double &kappa,
     const double &c, const double &alpha)
-    : Adaptive_Distance_Restraint(a1, a2, mgr)
+    : AdaptiveDistanceRestraint(a1, a2, mgr)
 {
     set_target(target);
     set_tolerance(tolerance);
@@ -48,12 +48,12 @@ Adaptive_Distance_Restraint::Adaptive_Distance_Restraint(Atom *a1, Atom *a2,
     set_enabled(false);
 }
 
-Change_Tracker* Adaptive_Distance_Restraint::change_tracker() const
+Change_Tracker* AdaptiveDistanceRestraint::change_tracker() const
 {
     return _mgr->change_tracker();
 }
 
-void Adaptive_Distance_Restraint::set_target(const double &target)
+void AdaptiveDistanceRestraint::set_target(const double &target)
 {
     _target = target < MIN_DISTANCE_RESTRAINT_TARGET ? MIN_DISTANCE_RESTRAINT_TARGET : target;
     if (_tolerance > _target)
@@ -62,7 +62,7 @@ void Adaptive_Distance_Restraint::set_target(const double &target)
     _update_thresholds();
 }
 
-void Adaptive_Distance_Restraint::set_tolerance(const double &tolerance)
+void AdaptiveDistanceRestraint::set_tolerance(const double &tolerance)
 {
     _tolerance = tolerance < 0 ? 0 : tolerance;
     _tolerance = _tolerance > _target ? _target : _tolerance;
@@ -70,26 +70,26 @@ void Adaptive_Distance_Restraint::set_tolerance(const double &tolerance)
     _update_thresholds();
 }
 
-void Adaptive_Distance_Restraint::set_kappa(const double &kappa)
+void AdaptiveDistanceRestraint::set_kappa(const double &kappa)
 {
     _kappa = kappa<0 ? 0.0 : kappa;
     _mgr->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
 }
 
-void Adaptive_Distance_Restraint::set_alpha(const double &alpha)
+void AdaptiveDistanceRestraint::set_alpha(const double &alpha)
 {
     _alpha = alpha;
     _mgr->track_change(this, change_tracker()->REASON_ADAPTIVE_C_CHANGED);
 }
 
-void Adaptive_Distance_Restraint::set_c(const double &c)
+void AdaptiveDistanceRestraint::set_c(const double &c)
 {
     _c = c<MIN_C ? MIN_C : c;
     _mgr->track_change(this, change_tracker()->REASON_ADAPTIVE_C_CHANGED);
     _update_thresholds();
 }
 
-void Adaptive_Distance_Restraint::set_enabled(bool flag)
+void AdaptiveDistanceRestraint::set_enabled(bool flag)
 {
     if (_enabled != flag) {
         _enabled = flag;
@@ -97,12 +97,12 @@ void Adaptive_Distance_Restraint::set_enabled(bool flag)
     }
 }
 
-double Adaptive_Distance_Restraint::display_threshold() const
+double AdaptiveDistanceRestraint::display_threshold() const
 {
-    return static_cast<Adaptive_Distance_Restraint_Mgr *>(_mgr)->display_threshold();
+    return static_cast<AdaptiveDistanceRestraintMgr *>(_mgr)->display_threshold();
 }
 
-bool Adaptive_Distance_Restraint::visible() const
+bool AdaptiveDistanceRestraint::visible() const
 {
     bool display_threshold_trigger;
     if (display_threshold() == 0.0)
@@ -117,7 +117,7 @@ bool Adaptive_Distance_Restraint::visible() const
         && display_threshold_trigger;
 }
 
-double Adaptive_Distance_Restraint::radius() const
+double AdaptiveDistanceRestraint::radius() const
 {
     auto f = std::min(std::abs(force_magnitude()), SCALING_MAX_FORCE);
     return sqrt(f/SCALING_MAX_FORCE)
@@ -125,7 +125,7 @@ double Adaptive_Distance_Restraint::radius() const
 }
 
 
-double Adaptive_Distance_Restraint::force_magnitude() const
+double AdaptiveDistanceRestraint::force_magnitude() const
 {
     double r = distance();
     double r_m_r0 = r-_target;
@@ -148,10 +148,10 @@ double Adaptive_Distance_Restraint::force_magnitude() const
 } // force_magnitude
 
 colors::variable_colormap*
-Adaptive_Distance_Restraint::colormap() const
-{ return static_cast<Adaptive_Distance_Restraint_Mgr*>(_mgr)->colormap();}
+AdaptiveDistanceRestraint::colormap() const
+{ return static_cast<AdaptiveDistanceRestraintMgr*>(_mgr)->colormap();}
 
-void Adaptive_Distance_Restraint::color(uint8_t *color) const
+void AdaptiveDistanceRestraint::color(uint8_t *color) const
 {
     colors::color thecolor;
     colormap()->interpolate(distance(), _thresholds, thecolor);
@@ -161,7 +161,7 @@ void Adaptive_Distance_Restraint::color(uint8_t *color) const
 }
 
 void
-Adaptive_Distance_Restraint::bond_transforms(float *rot44_e1, float *rot44_m, float *rot44_e2) const
+AdaptiveDistanceRestraint::bond_transforms(float *rot44_e1, float *rot44_m, float *rot44_e2) const
 {
     auto r = radius();
     const Coord &c0 = atoms()[0]->coord();
@@ -179,6 +179,6 @@ Adaptive_Distance_Restraint::bond_transforms(float *rot44_e1, float *rot44_m, fl
     geometry::bond_cylinder_transform_gl<Coord, float>(t2, c1, r*0.99, 1.0, rot44_e2);
 }
 
-template class Distance_Restraint_Mgr_Tmpl<Adaptive_Distance_Restraint>;
+template class DistanceRestraintMgr_Tmpl<AdaptiveDistanceRestraint>;
 
 } //namespace isolde;

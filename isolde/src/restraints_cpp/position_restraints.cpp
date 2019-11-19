@@ -15,38 +15,38 @@
 #include "position_restraints.h"
 #include <pyinstance/PythonInstance.instantiate.h>
 
-template class pyinstance::PythonInstance<isolde::Position_Restraint>;
-template class pyinstance::PythonInstance<isolde::Position_Restraint_Mgr>;
-template class pyinstance::PythonInstance<isolde::Tuggable_Atoms_Mgr>;
+template class pyinstance::PythonInstance<isolde::PositionRestraint>;
+template class pyinstance::PythonInstance<isolde::PositionRestraintMgr>;
+template class pyinstance::PythonInstance<isolde::TuggableAtomsMgr>;
 
 namespace isolde
 {
 
-Change_Tracker* Position_Restraint::change_tracker() const
+Change_Tracker* PositionRestraint::change_tracker() const
 {
     return _mgr->change_tracker();
 }
 
-void Position_Restraint::set_target(const Real &x, const Real &y, const Real &z)
+void PositionRestraint::set_target(const Real &x, const Real &y, const Real &z)
 {
     _target[0]=x; _target[1]=y; _target[2]=z;
     mgr()->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
 }
 
-void Position_Restraint::set_target(Real *target)
+void PositionRestraint::set_target(Real *target)
 {
     for (size_t i=0; i<3; ++i)
         _target[i] = *(target++);
     mgr()->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
 }
 
-void Position_Restraint::set_k(double k)
+void PositionRestraint::set_k(double k)
 {
     _spring_constant = k<0 ? 0.0 : ( k > MAX_LINEAR_SPRING_CONSTANT ? MAX_LINEAR_SPRING_CONSTANT : k);
     mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
 }
 
-void Position_Restraint::set_enabled(bool flag)
+void PositionRestraint::set_enabled(bool flag)
 {
     if (_enabled != flag)
     {
@@ -55,19 +55,19 @@ void Position_Restraint::set_enabled(bool flag)
     }
 }
 
-void Position_Restraint::target_vector(double *vector) const
+void PositionRestraint::target_vector(double *vector) const
 {
     for (size_t i=0; i<3; ++i)
         *vector++ = _target[i]-_atom->coord()[i];
 }
 
-double Position_Restraint::radius() const
+double PositionRestraint::radius() const
 {
     return _spring_constant/MAX_LINEAR_SPRING_CONSTANT
         * (LINEAR_RESTRAINT_MAX_RADIUS-LINEAR_RESTRAINT_MIN_RADIUS) + LINEAR_RESTRAINT_MIN_RADIUS;
 }
 
-void Position_Restraint::bond_cylinder_transform(float *rot44) const
+void PositionRestraint::bond_cylinder_transform(float *rot44) const
 {
     const Coord &c0 = atom()->coord();
     const Coord &c1 = get_target();
@@ -80,7 +80,7 @@ void Position_Restraint::bond_cylinder_transform(float *rot44) const
     geometry::bond_cylinder_transform_gl<Coord, float>(c0, c1, radius(), 1.0, rot44);
 }
 
-Position_Restraint* Position_Restraint_Mgr_Base::_new_restraint(Atom *atom, const Coord& target)
+PositionRestraint* PositionRestraintMgr_Base::_new_restraint(Atom *atom, const Coord& target)
 {
     if (atom->structure() != _atomic_model) {
         throw std::logic_error(error_different_mol());
@@ -88,18 +88,18 @@ Position_Restraint* Position_Restraint_Mgr_Base::_new_restraint(Atom *atom, cons
     // if (atom->element().number() == 1) {
     //     throw std::logic_error(error_hydrogen());
     // }
-    Position_Restraint* restraint = new Position_Restraint(atom, target, this);
+    PositionRestraint* restraint = new PositionRestraint(atom, target, this);
     _atom_to_restraint[atom] = restraint;
     track_created(restraint);
     return restraint;
 }
 
-Position_Restraint* Position_Restraint_Mgr_Base::_new_restraint(Atom *atom)
+PositionRestraint* PositionRestraintMgr_Base::_new_restraint(Atom *atom)
 {
     return _new_restraint(atom, atom->coord());
 }
 
-Position_Restraint* Position_Restraint_Mgr_Base::get_restraint(Atom *atom, bool create)
+PositionRestraint* PositionRestraintMgr_Base::get_restraint(Atom *atom, bool create)
 {
     auto it = _atom_to_restraint.find(atom);
     if (it != _atom_to_restraint.end())
@@ -109,9 +109,9 @@ Position_Restraint* Position_Restraint_Mgr_Base::get_restraint(Atom *atom, bool 
     return nullptr;
 }
 
-std::vector<Position_Restraint *> Position_Restraint_Mgr_Base::visible_restraints() const
+std::vector<PositionRestraint *> PositionRestraintMgr_Base::visible_restraints() const
 {
-    std::vector<Position_Restraint *> visibles;
+    std::vector<PositionRestraint *> visibles;
     for (auto &it: _atom_to_restraint)
     {
         auto r = it.second;
@@ -122,13 +122,13 @@ std::vector<Position_Restraint *> Position_Restraint_Mgr_Base::visible_restraint
 }
 
 
-void Position_Restraint_Mgr_Base::delete_restraints(const std::set<Position_Restraint *>& to_delete)
+void PositionRestraintMgr_Base::delete_restraints(const std::set<PositionRestraint *>& to_delete)
 {
     auto db = DestructionBatcher(this);
     _delete_restraints(to_delete);
 }
 
-void Position_Restraint_Mgr_Base::_delete_restraints(const std::set<Position_Restraint *>& to_delete)
+void PositionRestraintMgr_Base::_delete_restraints(const std::set<PositionRestraint *>& to_delete)
 {
     for (auto r: to_delete) {
         _atom_to_restraint.erase(r->atom());
@@ -136,10 +136,10 @@ void Position_Restraint_Mgr_Base::_delete_restraints(const std::set<Position_Res
     }
 }
 
-void Position_Restraint_Mgr_Base::destructors_done(const std::set<void *>& destroyed)
+void PositionRestraintMgr_Base::destructors_done(const std::set<void *>& destroyed)
 {
     auto db = DestructionBatcher(this);
-    std::set<Position_Restraint *> to_delete;
+    std::set<PositionRestraint *> to_delete;
     for (auto &it: _atom_to_restraint) {
         auto r = it.second;
         if (destroyed.find(static_cast<void *>(r->atom())) != destroyed.end()) {
@@ -149,7 +149,7 @@ void Position_Restraint_Mgr_Base::destructors_done(const std::set<void *>& destr
     _delete_restraints(to_delete);
 }
 
-Position_Restraint_Mgr_Base::~Position_Restraint_Mgr_Base()
+PositionRestraintMgr_Base::~PositionRestraintMgr_Base()
 {
     auto du = DestructionUser(this);
     for (auto &it: _atom_to_restraint) {

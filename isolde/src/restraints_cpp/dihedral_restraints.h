@@ -35,9 +35,9 @@ namespace isolde
 {
 
 template <class DType, class RType>
-class Dihedral_Restraint_Mgr_Base;
-class Proper_Dihedral_Restraint_Mgr;
-class Chiral_Restraint_Mgr;
+class DihedralRestraintMgr_Base;
+class ProperDihedralRestraintMgr;
+class ChiralRestraintMgr;
 
 class Dihedral_Restraint_Change_Mgr
 {
@@ -82,7 +82,7 @@ public:
         : _dihedral(dihedral), _mgr(mgr) {}
     DType* get_dihedral() const {return _dihedral;}
 
-    // Chiral_Restraint has a fixed target set by its Chiral_Center
+    // ChiralRestraint has a fixed target set by its ChiralCenter
     virtual double get_target() const {return _target;}
     /* Setters need to be implemented in the derived classes to ensure the
      * correct pointer is handed to the change tracker.
@@ -137,12 +137,12 @@ private:
 
 }; // Dihedral_Restraint_Base
 
-class Chiral_Restraint:
-    public Dihedral_Restraint_Base<Chiral_Center>,
-    public pyinstance::PythonInstance<Chiral_Restraint>
+class ChiralRestraint:
+    public Dihedral_Restraint_Base<ChiralCenter>,
+    public pyinstance::PythonInstance<ChiralRestraint>
 {
 public:
-    Chiral_Restraint(Chiral_Center *chiral, Dihedral_Restraint_Change_Mgr *mgr);
+    ChiralRestraint(ChiralCenter *chiral, Dihedral_Restraint_Change_Mgr *mgr);
     double get_target() const { return _dihedral->expected_angle(); }
     void set_target(double target)
     {
@@ -176,14 +176,14 @@ public:
         _cutoff = cutoff; _cutoffs[1] = cutoff;
         mgr()->track_change(this, change_tracker()->REASON_CUTOFF_CHANGED);
     }
-}; // class Chiral_Restraint
+}; // class ChiralRestraint
 
-class Proper_Dihedral_Restraint:
-    public Dihedral_Restraint_Base<Proper_Dihedral>,
-    public pyinstance::PythonInstance<Proper_Dihedral_Restraint>
+class ProperDihedralRestraint:
+    public Dihedral_Restraint_Base<ProperDihedral>,
+    public pyinstance::PythonInstance<ProperDihedralRestraint>
 {
 public:
-    Proper_Dihedral_Restraint(Proper_Dihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr);
+    ProperDihedralRestraint(ProperDihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr);
     void get_annotation_transform(float *tf);
     virtual void get_annotation_color(uint8_t *color);
     void set_target(double target)
@@ -223,19 +223,19 @@ public:
 
 
 private:
-}; // Proper_Dihedral_Restraint
+}; // ProperDihedralRestraint
 
 
 
 
 template <class DType, class RType>
-class Dihedral_Restraint_Mgr_Base
+class DihedralRestraintMgr_Base
     : public DestructionObserver, public Dihedral_Restraint_Change_Mgr
 {
 public:
-    Dihedral_Restraint_Mgr_Base() {}
-    ~Dihedral_Restraint_Mgr_Base();
-    Dihedral_Restraint_Mgr_Base(Structure *atomic_model, Change_Tracker *change_tracker)
+    DihedralRestraintMgr_Base() {}
+    ~DihedralRestraintMgr_Base();
+    DihedralRestraintMgr_Base(Structure *atomic_model, Change_Tracker *change_tracker)
         : _atomic_model(atomic_model)
     {
         set_change_tracker(change_tracker);
@@ -270,30 +270,30 @@ private:
 
 };
 
-class Chiral_Restraint_Mgr:
-    public Dihedral_Restraint_Mgr_Base<Chiral_Center, Chiral_Restraint>,
-    public pyinstance::PythonInstance<Chiral_Restraint_Mgr>
+class ChiralRestraintMgr:
+    public DihedralRestraintMgr_Base<ChiralCenter, ChiralRestraint>,
+    public pyinstance::PythonInstance<ChiralRestraintMgr>
 {
 public:
-    Chiral_Restraint_Mgr(Structure *s, Change_Tracker *ct)
-        :Dihedral_Restraint_Mgr_Base<Chiral_Center, Chiral_Restraint>(s, ct)
+    ChiralRestraintMgr(Structure *s, Change_Tracker *ct)
+        :DihedralRestraintMgr_Base<ChiralCenter, ChiralRestraint>(s, ct)
     {
         _mgr_type = std::type_index(typeid(this));
         _mgr_pointer = static_cast<void *>(this);
         change_tracker()->register_mgr(_mgr_type, _py_name, _managed_class_py_name);
     }
 private:
-    const std::string _py_name = "Chiral_Restraint_Mgr";
-    const std::string _managed_class_py_name = "Chiral_Restraint";
-}; // class Chiral_Restraint_Mgr
+    const std::string _py_name = "ChiralRestraintMgr";
+    const std::string _managed_class_py_name = "ChiralRestraint";
+}; // class ChiralRestraintMgr
 
-class Proper_Dihedral_Restraint_Mgr:
-    public Dihedral_Restraint_Mgr_Base<Proper_Dihedral, Proper_Dihedral_Restraint>,
-    public pyinstance::PythonInstance<Proper_Dihedral_Restraint_Mgr>
+class ProperDihedralRestraintMgr:
+    public DihedralRestraintMgr_Base<ProperDihedral, ProperDihedralRestraint>,
+    public pyinstance::PythonInstance<ProperDihedralRestraintMgr>
 {
 public:
-    Proper_Dihedral_Restraint_Mgr(Structure *s, Change_Tracker *ct)
-        :Dihedral_Restraint_Mgr_Base<Proper_Dihedral, Proper_Dihedral_Restraint>(s, ct)
+    ProperDihedralRestraintMgr(Structure *s, Change_Tracker *ct)
+        :DihedralRestraintMgr_Base<ProperDihedral, ProperDihedralRestraint>(s, ct)
     {
         _mgr_type = std::type_index(typeid(this));
         _mgr_pointer = static_cast<void *>(this);
@@ -301,9 +301,9 @@ public:
     }
 
 private:
-    const std::string _py_name = "Proper_Dihedral_Restraint_Mgr";
-    const std::string _managed_class_py_name = "Proper_Dihedral_Restraint";
-}; //Proper_Dihedral_Restraint_Mgr
+    const std::string _py_name = "ProperDihedralRestraintMgr";
+    const std::string _managed_class_py_name = "ProperDihedralRestraint";
+}; //ProperDihedralRestraintMgr
 
 }
 #endif //ISOLDE_DIHEDRAL_RESTRAINT

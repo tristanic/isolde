@@ -53,7 +53,7 @@ class _Defaults:
         ###
         # Simulation parameters
         ###
-        'OPENMM_DEFAULT_PLATFORM':    'OpenCL',
+        'OPENMM_DEFAULT_PLATFORM':    'CUDA',
         'OPENMM_PLATFORMS':           ('CUDA', 'OpenCL', 'CPU'), # 'CPU', 'OpenCL' or 'CUDA'
         'OPENMM_FORCEFIELD':          'amber14',
         'OPENMM_INTEGRATOR_TYPE':     VariableLangevinIntegrator,

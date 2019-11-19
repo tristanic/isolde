@@ -31,24 +31,24 @@ using namespace atomstruct;
 namespace isolde
 {
 
-template<class R> class Distance_Restraint_Mgr_Tmpl;
+template<class R> class DistanceRestraintMgr_Tmpl;
 
 /*! ChimeraX-side management of a standard harmonic distance restraint
  * Data management and visualisation of a harmonic distance restraint of the
  * form E = 1/2 * k * (r - r_0)**2.
  */
-class Distance_Restraint:
-    public pyinstance::PythonInstance<Distance_Restraint>,
+class DistanceRestraint:
+    public pyinstance::PythonInstance<DistanceRestraint>,
     public Sim_Restraint_Base
 {
 public:
     typedef Atom* Atoms[2];
-    Distance_Restraint() : Sim_Restraint_Base() {}
-    ~Distance_Restraint() { auto du=DestructionUser(this); }
+    DistanceRestraint() : Sim_Restraint_Base() {}
+    ~DistanceRestraint() { auto du=DestructionUser(this); }
     // Construct a restraint with target and spring constant initialised to zero.
-    Distance_Restraint(Atom *a1, Atom *a2, Distance_Restraint_Mgr_Tmpl<Distance_Restraint> *mgr);
+    DistanceRestraint(Atom *a1, Atom *a2, DistanceRestraintMgr_Tmpl<DistanceRestraint> *mgr);
     // Construct a restraint with specified target and spring constant.
-    Distance_Restraint(Atom *a1, Atom *a2, Distance_Restraint_Mgr_Tmpl<Distance_Restraint> *mgr,
+    DistanceRestraint(Atom *a1, Atom *a2, DistanceRestraintMgr_Tmpl<DistanceRestraint> *mgr,
             const double &target, const double &k);
 
     // Get/update parameters
@@ -74,7 +74,7 @@ public:
 private:
     void _bond_transform(float *rot44, float radius, float length_scale) const;
     Atoms _atoms;
-    Distance_Restraint_Mgr_Tmpl<Distance_Restraint> *_mgr;
+    DistanceRestraintMgr_Tmpl<DistanceRestraint> *_mgr;
     double _target = 0;
     double _spring_constant = 0;
     bool _enabled=false;
@@ -82,17 +82,17 @@ private:
     { return "Can't create a distance restraint between bonded atoms!";}
 
 
-}; // class Distance_Restraint
+}; // class DistanceRestraint
 
 template<class R>
-class Distance_Restraint_Mgr_Tmpl:
-    //public pyinstance::PythonInstance<Distance_Restraint_Mgr_Tmpl<R>>,
+class DistanceRestraintMgr_Tmpl:
+    //public pyinstance::PythonInstance<DistanceRestraintMgr_Tmpl<R>>,
     public DestructionObserver
 {
 public:
-    Distance_Restraint_Mgr_Tmpl<R>() {}
-    ~Distance_Restraint_Mgr_Tmpl<R>();
-    Distance_Restraint_Mgr_Tmpl<R>(Structure *structure, Change_Tracker *change_tracker,
+    DistanceRestraintMgr_Tmpl<R>() {}
+    ~DistanceRestraintMgr_Tmpl<R>();
+    DistanceRestraintMgr_Tmpl<R>(Structure *structure, Change_Tracker *change_tracker,
         std::type_index mgr_type, std::string py_name, std::string managed_class_py_name)
         : _structure(structure), _change_tracker(change_tracker),
           _mgr_type(mgr_type), _py_name(py_name),
@@ -110,7 +110,7 @@ public:
 
     void delete_restraints(const std::set<R *> &delete_list);
 
-    // Atom_Map maps individual atoms to a set of the Distance_Restraints they belong to
+    // Atom_Map maps individual atoms to a set of the DistanceRestraints they belong to
     typedef std::unordered_map<Atom*, std::set<R *> > Atom_Map;
     Structure* structure() const { return _structure; }
     Change_Tracker* change_tracker() const { return _change_tracker; }
@@ -127,8 +127,8 @@ protected:
     std::set<R *> _null_set;
     Atom_Map _atom_to_restraints;
     // std::set<Atom *> _mapped_atoms;
-    std::string _py_name; // = "Distance_Restraint_Mgr";
-    std::string _managed_class_py_name; // = "Distance_Restraints";
+    std::string _py_name; // = "DistanceRestraintMgr";
+    std::string _managed_class_py_name; // = "DistanceRestraints";
     void _delete_restraints(const std::set<R *>& delete_list);
 
     const char* error_same_atom() const {
@@ -143,17 +143,17 @@ protected:
     const char* error_different_mol() const {
         return "All distance restraints must be in the same model!";
     }
-}; // class Distance_Restraint_Mgr
+}; // class DistanceRestraintMgr
 
-class Distance_Restraint_Mgr:
-    public Distance_Restraint_Mgr_Tmpl<Distance_Restraint>,
-    public pyinstance::PythonInstance<Distance_Restraint_Mgr>
+class DistanceRestraintMgr:
+    public DistanceRestraintMgr_Tmpl<DistanceRestraint>,
+    public pyinstance::PythonInstance<DistanceRestraintMgr>
 {
 public:
-    Distance_Restraint_Mgr(Structure *structure, Change_Tracker *change_tracker)
-    : Distance_Restraint_Mgr_Tmpl<Distance_Restraint>(
+    DistanceRestraintMgr(Structure *structure, Change_Tracker *change_tracker)
+    : DistanceRestraintMgr_Tmpl<DistanceRestraint>(
         structure, change_tracker, std::type_index(typeid(this)),
-        "Distance_Restraint_Mgr", "Distance_Restraints"
+        "DistanceRestraintMgr", "DistanceRestraints"
     )
     {}
 private:
@@ -163,7 +163,7 @@ private:
 // TEMPLATE IMPLEMENTATIONS
 
 template <class R>
-R* Distance_Restraint_Mgr_Tmpl<R>::new_restraint(Atom *a1, Atom *a2)
+R* DistanceRestraintMgr_Tmpl<R>::new_restraint(Atom *a1, Atom *a2)
 {
     auto it = _atom_to_restraints.find(a1);
     if (it != _atom_to_restraints.end())
@@ -186,7 +186,7 @@ R* Distance_Restraint_Mgr_Tmpl<R>::new_restraint(Atom *a1, Atom *a2)
 }
 
 template <class R>
-R* Distance_Restraint_Mgr_Tmpl<R>::_new_restraint(Atom *a1, Atom *a2)
+R* DistanceRestraintMgr_Tmpl<R>::_new_restraint(Atom *a1, Atom *a2)
 {
     if (a1->structure()!=_structure || a2->structure()!=_structure)
     {
@@ -207,7 +207,7 @@ R* Distance_Restraint_Mgr_Tmpl<R>::_new_restraint(Atom *a1, Atom *a2)
 }
 
 template <class R>
-R* Distance_Restraint_Mgr_Tmpl<R>::get_restraint(Atom *a1, Atom *a2, bool create)
+R* DistanceRestraintMgr_Tmpl<R>::get_restraint(Atom *a1, Atom *a2, bool create)
 {
     auto it = _atom_to_restraints.find(a1);
     if (it != _atom_to_restraints.end())
@@ -230,7 +230,7 @@ R* Distance_Restraint_Mgr_Tmpl<R>::get_restraint(Atom *a1, Atom *a2, bool create
 }
 
 template <class R>
-const std::set<R *>& Distance_Restraint_Mgr_Tmpl<R>::get_restraints(Atom *a) const
+const std::set<R *>& DistanceRestraintMgr_Tmpl<R>::get_restraints(Atom *a) const
 {
     auto it = _atom_to_restraints.find(a);
     if (it != _atom_to_restraints.end())
@@ -239,7 +239,7 @@ const std::set<R *>& Distance_Restraint_Mgr_Tmpl<R>::get_restraints(Atom *a) con
 }
 
 template <class R>
-Distance_Restraint_Mgr_Tmpl<R>::~Distance_Restraint_Mgr_Tmpl()
+DistanceRestraintMgr_Tmpl<R>::~DistanceRestraintMgr_Tmpl()
 {
     auto du = DestructionUser(this);
     for (auto r: _restraints) {
@@ -249,14 +249,14 @@ Distance_Restraint_Mgr_Tmpl<R>::~Distance_Restraint_Mgr_Tmpl()
 }
 
 template <class R>
-void Distance_Restraint_Mgr_Tmpl<R>::delete_restraints(const std::set<R *> &delete_list)
+void DistanceRestraintMgr_Tmpl<R>::delete_restraints(const std::set<R *> &delete_list)
 {
     auto db = DestructionBatcher(this);
     _delete_restraints(delete_list);
 } //delete_restraints
 
 template <class R>
-void Distance_Restraint_Mgr_Tmpl<R>::_delete_restraints(const std::set<R *> &delete_list )
+void DistanceRestraintMgr_Tmpl<R>::_delete_restraints(const std::set<R *> &delete_list )
 {
     for (auto d: delete_list) {
         _restraints.erase(d);
@@ -274,11 +274,11 @@ void Distance_Restraint_Mgr_Tmpl<R>::_delete_restraints(const std::set<R *> &del
 }
 
 template <class R>
-void Distance_Restraint_Mgr_Tmpl<R>::destructors_done(const std::set<void *>& destroyed)
+void DistanceRestraintMgr_Tmpl<R>::destructors_done(const std::set<void *>& destroyed)
 {
     auto db = DestructionBatcher(this);
     std::set<R *> to_delete;
-    // Need to check for deleted atoms and delete their corresponding Distance_Restraints
+    // Need to check for deleted atoms and delete their corresponding DistanceRestraints
     for (auto it=_atom_to_restraints.begin(); it != _atom_to_restraints.end();) {
         auto a = it->first;
         if (destroyed.find(static_cast<void *>(a)) != destroyed.end()) {

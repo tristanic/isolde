@@ -8,5 +8,5 @@
 
 
 
-from .rama_annotation import Rama_Annotator
-from .rota_annotation import Rotamer_Annotator
+from .rama_annotation import RamaAnnotator
+from .rota_annotation import RotamerAnnotator

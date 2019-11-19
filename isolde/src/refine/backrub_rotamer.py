@@ -380,7 +380,7 @@ def apply_backrub(isolde, mdff_mgr, residue, clash_weight=0.5, focus=False):
         * isolde:
             - pointer to the main ISOLDE session
         * mdff_mgr:
-            - a :class:`MDFF_Mgr` object managing the map into which the
+            - a :class:`MDFFMgr` object managing the map into which the
               sidechain is to be fitted.
         * residue:
             - a :class:`Residue` defining the residue to be fitted.

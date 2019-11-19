@@ -21,18 +21,18 @@ using namespace isolde;
 
 /*************************************
  *
- * Chiral_Mgr functions
+ * ChiralMgr functions
  *
  *************************************/
 
-SET_PYTHON_INSTANCE(chiral_mgr, Chiral_Mgr)
-GET_PYTHON_INSTANCES(chiral_mgr, Chiral_Mgr)
+SET_PYTHON_INSTANCE(chiral_mgr, ChiralMgr)
+GET_PYTHON_INSTANCES(chiral_mgr, ChiralMgr)
 
 extern "C" EXPORT void*
 chiral_mgr_new()
 {
    try {
-       Chiral_Mgr *mgr = new Chiral_Mgr();
+       ChiralMgr *mgr = new ChiralMgr();
        return mgr;
 
    } catch (...) {
@@ -44,7 +44,7 @@ chiral_mgr_new()
 extern "C" EXPORT void
 chiral_mgr_delete(void *mgr)
 {
-   Chiral_Mgr *m = static_cast<Chiral_Mgr *>(mgr);
+   ChiralMgr *m = static_cast<ChiralMgr *>(mgr);
    try {
        delete m;
    } catch (...) {
@@ -55,10 +55,10 @@ chiral_mgr_delete(void *mgr)
 extern "C" EXPORT void
 chiral_mgr_delete_chiral(void *mgr, size_t n, void *chirals)
 {
-   Chiral_Mgr *m = static_cast<Chiral_Mgr *>(mgr);
-   Chiral_Center **c = static_cast<Chiral_Center **>(chirals);
+   ChiralMgr *m = static_cast<ChiralMgr *>(mgr);
+   ChiralCenter **c = static_cast<ChiralCenter **>(chirals);
    try {
-       std::set<Chiral_Center *> delete_list;
+       std::set<ChiralCenter *> delete_list;
        for (size_t i=0; i<n; ++i) {
            delete_list.insert(*c++);
        }
@@ -83,7 +83,7 @@ chiral_mgr_add_chiral_def(void *mgr, pyobject_t *rname, pyobject_t *cname,
     pyobject_t *s1_names, pyobject_t *s2_names, pyobject_t *s3_names,
     size_t ns1, size_t ns2, size_t ns3, double expected_angle)
 {
-    Chiral_Mgr *m = static_cast<Chiral_Mgr *>(mgr);
+    ChiralMgr *m = static_cast<ChiralMgr *>(mgr);
     try {
         std::string resname(PyUnicode_AsUTF8(static_cast<PyObject *>(rname[0])));
         std::string chiral_name(PyUnicode_AsUTF8(static_cast<PyObject *>(cname[0])));
@@ -105,13 +105,13 @@ chiral_mgr_add_chiral_def(void *mgr, pyobject_t *rname, pyobject_t *cname,
 extern "C" EXPORT PyObject*
 chiral_mgr_get_chiral(void *mgr, void *atom, size_t n, npy_bool create)
 {
-    Chiral_Mgr *m = static_cast<Chiral_Mgr *>(mgr);
+    ChiralMgr *m = static_cast<ChiralMgr *>(mgr);
     Atom **a = static_cast<Atom **>(atom);
     try {
-        std::vector<Chiral_Center *> cvec;
+        std::vector<ChiralCenter *> cvec;
         for (size_t i=0; i<n; ++i) {
             try {
-                Chiral_Center *c = m->get_chiral(*a++, create);
+                ChiralCenter *c = m->get_chiral(*a++, create);
                 if (c!=nullptr)
                     cvec.push_back(c);
             } catch(std::out_of_range) { continue; }
@@ -130,7 +130,7 @@ chiral_mgr_get_chiral(void *mgr, void *atom, size_t n, npy_bool create)
 extern "C" EXPORT size_t
 chiral_mgr_num_chirals(void *mgr)
 {
-    Chiral_Mgr *m = static_cast<Chiral_Mgr *>(mgr);
+    ChiralMgr *m = static_cast<ChiralMgr *>(mgr);
     try {
         return m->num_chirals();
     } catch (...) {

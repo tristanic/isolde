@@ -14,17 +14,17 @@
 #include "dihedral_restraints.h"
 #include <pyinstance/PythonInstance.instantiate.h>
 
-template class pyinstance::PythonInstance<isolde::Chiral_Restraint_Mgr>;
-template class pyinstance::PythonInstance<isolde::Chiral_Restraint>;
+template class pyinstance::PythonInstance<isolde::ChiralRestraintMgr>;
+template class pyinstance::PythonInstance<isolde::ChiralRestraint>;
 
-template class pyinstance::PythonInstance<isolde::Proper_Dihedral_Restraint_Mgr>;
-template class pyinstance::PythonInstance<isolde::Proper_Dihedral_Restraint>;
+template class pyinstance::PythonInstance<isolde::ProperDihedralRestraintMgr>;
+template class pyinstance::PythonInstance<isolde::ProperDihedralRestraint>;
 
 namespace isolde
 {
 
 template <class DType, class RType>
-void Dihedral_Restraint_Mgr_Base<DType, RType>::_delete_restraints(const std::set<RType *>& to_delete)
+void DihedralRestraintMgr_Base<DType, RType>::_delete_restraints(const std::set<RType *>& to_delete)
 {
     for (auto r: to_delete) {
         auto d = r->get_dihedral();
@@ -34,14 +34,14 @@ void Dihedral_Restraint_Mgr_Base<DType, RType>::_delete_restraints(const std::se
 }
 
 template <class DType, class RType>
-void Dihedral_Restraint_Mgr_Base<DType, RType>::delete_restraints(const std::set<RType *>& to_delete)
+void DihedralRestraintMgr_Base<DType, RType>::delete_restraints(const std::set<RType *>& to_delete)
 {
     auto db = DestructionBatcher(this);
     _delete_restraints(to_delete);
 }
 
 template <class DType, class RType>
-void Dihedral_Restraint_Mgr_Base<DType, RType>::destructors_done(const std::set<void *>& destroyed)
+void DihedralRestraintMgr_Base<DType, RType>::destructors_done(const std::set<void *>& destroyed)
 {
     auto db = DestructionBatcher(this);
     std::set<RType *> to_delete;
@@ -54,7 +54,7 @@ void Dihedral_Restraint_Mgr_Base<DType, RType>::destructors_done(const std::set<
 }
 
 template <class DType, class RType>
-Dihedral_Restraint_Mgr_Base<DType, RType>::~Dihedral_Restraint_Mgr_Base()
+DihedralRestraintMgr_Base<DType, RType>::~DihedralRestraintMgr_Base()
 {
     auto du = DestructionUser(this);
     for (auto &it: _dihedral_to_restraint)
@@ -63,7 +63,7 @@ Dihedral_Restraint_Mgr_Base<DType, RType>::~Dihedral_Restraint_Mgr_Base()
 }
 
 template <class DType, class RType>
-RType* Dihedral_Restraint_Mgr_Base<DType, RType>::new_restraint(DType *d)
+RType* DihedralRestraintMgr_Base<DType, RType>::new_restraint(DType *d)
 {
     auto it = _dihedral_to_restraint.find(d);
     if (it != _dihedral_to_restraint.end())
@@ -75,7 +75,7 @@ RType* Dihedral_Restraint_Mgr_Base<DType, RType>::new_restraint(DType *d)
 }
 
 template <class DType, class RType>
-RType* Dihedral_Restraint_Mgr_Base<DType, RType>::_new_restraint(DType *d)
+RType* DihedralRestraintMgr_Base<DType, RType>::_new_restraint(DType *d)
 {
     RType *r = new RType(d, static_cast<Dihedral_Restraint_Change_Mgr *>(this));
     _dihedral_to_restraint[d] = r;
@@ -84,7 +84,7 @@ RType* Dihedral_Restraint_Mgr_Base<DType, RType>::_new_restraint(DType *d)
 }
 
 template <class DType, class RType>
-RType* Dihedral_Restraint_Mgr_Base<DType, RType>::get_restraint(DType *d, bool create)
+RType* DihedralRestraintMgr_Base<DType, RType>::get_restraint(DType *d, bool create)
 {
     auto it = _dihedral_to_restraint.find(d);
     if (it != _dihedral_to_restraint.end())
@@ -96,7 +96,7 @@ RType* Dihedral_Restraint_Mgr_Base<DType, RType>::get_restraint(DType *d, bool c
 }
 
 template <class DType, class RType>
-std::vector<RType *> Dihedral_Restraint_Mgr_Base<DType, RType>::visible_restraints() const
+std::vector<RType *> DihedralRestraintMgr_Base<DType, RType>::visible_restraints() const
 {
     std::vector<RType *> visibles;
     for (auto &it: _dihedral_to_restraint)
@@ -114,31 +114,31 @@ std::vector<RType *> Dihedral_Restraint_Mgr_Base<DType, RType>::visible_restrain
  *
  ***************************************************/
 
-Chiral_Restraint::Chiral_Restraint(
-    Chiral_Center *chiral, Dihedral_Restraint_Change_Mgr *mgr)
-    : Dihedral_Restraint_Base<Chiral_Center>(chiral, mgr)
+ChiralRestraint::ChiralRestraint(
+    ChiralCenter *chiral, Dihedral_Restraint_Change_Mgr *mgr)
+    : Dihedral_Restraint_Base<ChiralCenter>(chiral, mgr)
     {
-        // Chiral_Restraint instances are enabled by default.
+        // ChiralRestraint instances are enabled by default.
         _enabled = true;
         _spring_constant = DEFAULT_CHIRAL_RESTRAINT_SPRING_CONSTANT;
         _cutoff = DEFAULT_CHIRAL_RESTRAINT_CUTOFF;
     }
 
 
- Proper_Dihedral_Restraint::Proper_Dihedral_Restraint(
-     Proper_Dihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr)
-     : Dihedral_Restraint_Base<Proper_Dihedral>(dihedral, mgr)
+ ProperDihedralRestraint::ProperDihedralRestraint(
+     ProperDihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr)
+     : Dihedral_Restraint_Base<ProperDihedral>(dihedral, mgr)
      {}
 
 
-//! Provide the transforms for the Proper_Dihedral_Restraint annotation
-/*! The Proper_Dihedral_Restraint annotation requires *two* transforms:
+//! Provide the transforms for the ProperDihedralRestraint annotation
+/*! The ProperDihedralRestraint annotation requires *two* transforms:
  *  one for the rotation of the "ring" relative to the "post", and one to
  *  scale and move the result to the position of the axial bond.
  *  The transform matrices are in 3x4 format where the left-hand-side
  *  3x3 is the rotation and the right-hand-side is the translation.
  */
-void Proper_Dihedral_Restraint::get_annotation_transform(float *tf)
+void ProperDihedralRestraint::get_annotation_transform(float *tf)
 {
     // First the rotational component (rotating the ring relative to the post)
     // Sets the direction the arrow points
@@ -174,7 +174,7 @@ void Proper_Dihedral_Restraint::get_annotation_transform(float *tf)
     }
 } //get_annontation_transform
 
-void Proper_Dihedral_Restraint::get_annotation_color(uint8_t *color)
+void ProperDihedralRestraint::get_annotation_color(uint8_t *color)
 {
     colors::color thecolor;
     colormap()->interpolate(std::abs(offset()), _cutoffs, thecolor);
@@ -184,10 +184,10 @@ void Proper_Dihedral_Restraint::get_annotation_color(uint8_t *color)
 } //get_annotation_color
 
 
-template class Dihedral_Restraint_Base<Chiral_Center>;
-template class Dihedral_Restraint_Mgr_Base<Chiral_Center, Chiral_Restraint>;
+template class Dihedral_Restraint_Base<ChiralCenter>;
+template class DihedralRestraintMgr_Base<ChiralCenter, ChiralRestraint>;
 
-template class Dihedral_Restraint_Base<Proper_Dihedral>;
-template class Dihedral_Restraint_Mgr_Base<Proper_Dihedral, Proper_Dihedral_Restraint>;
+template class Dihedral_Restraint_Base<ProperDihedral>;
+template class DihedralRestraintMgr_Base<ProperDihedral, ProperDihedralRestraint>;
 
 } // namespace isolde

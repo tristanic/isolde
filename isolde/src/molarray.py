@@ -28,9 +28,9 @@ from . import molobject
 from .molobject import c_function, c_array_function, cvec_property
 #from .molobject import object_map
 from .molobject import (
-    Chiral_Center, Proper_Dihedral, Rotamer, Rama, Position_Restraint,
-    Tuggable_Atom, MDFF_Atom, Distance_Restraint, Adaptive_Distance_Restraint,
-    Chiral_Restraint, Proper_Dihedral_Restraint, Rotamer_Restraint
+    ChiralCenter, ProperDihedral, Rotamer, Rama, PositionRestraint,
+    TuggableAtom, MDFFAtom, DistanceRestraint, AdaptiveDistanceRestraint,
+    ChiralRestraint, ProperDihedralRestraint, RotamerRestraint
 )
 import ctypes
 
@@ -44,33 +44,33 @@ from chimerax.atomic import ctypes_support as convert
 #         _atoms_pair, _pseudobond_group_map
 
 def _chiral_centers(p):
-    return Chiral_Centers(p)
+    return ChiralCenters(p)
 def _proper_dihedrals(p):
-    return Proper_Dihedrals(p)
+    return ProperDihedrals(p)
 def _rotamers(p):
     return Rotamers(p)
 def _proper_dihedrals_or_nones(p):
-    return [Proper_Dihedral.c_ptr_to_py_inst(ptr) if ptr else None for ptr in p]
+    return [ProperDihedral.c_ptr_to_py_inst(ptr) if ptr else None for ptr in p]
 def _distance_restraints(p):
-    return Distance_Restraints(p)
+    return DistanceRestraints(p)
 def _adaptive_distance_restraints(p):
-    return Adaptive_Distance_Restraints(p)
+    return AdaptiveDistanceRestraints(p)
 def _non_null_proper_dihedrals(p):
-    return Proper_Dihedrals(p[p!=0])
+    return ProperDihedrals(p[p!=0])
 def _atoms_pair(p):
     return (Atoms(p[:,0].copy()), Atoms(p[:,1].copy()))
 def _atoms_four_tuple(p):
     return tuple((Atoms(p[:,i].copy()) for i in range(4)))
 def _chiral_restraints(p):
-    return Chiral_Restraints(p)
+    return ChiralRestraints(p)
 def _proper_dihedral_restraints(p):
-    return Proper_Dihedral_Restraints(p)
+    return ProperDihedralRestraints(p)
 def _rotamer_restraints(p):
-    return Rotamer_Restraints(p)
+    return RotamerRestraints(p)
 
 class _Dihedrals(Collection):
     '''
-    Base class for Proper_Dihedrals and Improper_Dihedrals. Do not
+    Base class for ProperDihedrals and Improper_Dihedrals. Do not
     instantiate directly.
     '''
 
@@ -81,11 +81,11 @@ class _Dihedrals(Collection):
     def _natoms(self):
         return 4
 
-class Chiral_Centers(_Dihedrals):
+class ChiralCenters(_Dihedrals):
 
 
     def __init__(self, c_pointers = None):
-        super().__init__(c_pointers, Chiral_Center, Chiral_Centers)
+        super().__init__(c_pointers, ChiralCenter, ChiralCenters)
 
     def delete(self):
         err_string = 'Dihedrals are not in charge of their own creation '\
@@ -112,10 +112,10 @@ class Chiral_Centers(_Dihedrals):
         doc='The chiral atoms. Read only.')
 
 
-class Proper_Dihedrals(_Dihedrals):
+class ProperDihedrals(_Dihedrals):
 
     def __init__(self, c_pointers = None):
-        super().__init__(c_pointers, Proper_Dihedral, Proper_Dihedrals)
+        super().__init__(c_pointers, ProperDihedral, ProperDihedrals)
 
     def delete(self):
         err_string = 'Dihedrals are not in charge of their own creation '\
@@ -149,7 +149,7 @@ class Ramas(Collection):
     @property
     def omega_dihedrals(self):
         '''
-        Returns a :class:`Proper_Dihedrals` instance pointing to the omega
+        Returns a :class:`ProperDihedrals` instance pointing to the omega
         (peptide bond) dihedral for each residue. Note that some residues
         will not have omega dihedrals, so the output array may be shorter
         than the :class:`Ramas` instance.
@@ -165,7 +165,7 @@ class Ramas(Collection):
     @property
     def phi_dihedrals(self):
         '''
-        Returns a :class:`Proper_Dihedrals` instance pointing to the phi
+        Returns a :class:`ProperDihedrals` instance pointing to the phi
         dihedral for each residue. Note that some residues will not have phi
         dihedrals, so the output array may be shorter  than the :class:`Ramas`
         instance.
@@ -181,7 +181,7 @@ class Ramas(Collection):
     @property
     def psi_dihedrals(self):
         '''
-        Returns a :class:`Proper_Dihedrals` instance pointing to the psi
+        Returns a :class:`ProperDihedrals` instance pointing to the psi
         dihedral for each residue. Note that some residues will not have psi
         dihedrals, so the output array may be shorter than the :class:`Ramas`
         instance.
@@ -212,7 +212,7 @@ class Ramas(Collection):
             doc = 'The omega, phi and psi angles for each residue in radians. Read only.')
     cases = cvec_property('rama_case', uint8, read_only=True,
             doc = '''Values representing the Ramachandran case for these residues,
-                matching the case definitions in :class:`Rama_Mgr.Rama_Case`. Read only.''')
+                matching the case definitions in :class:`RamaMgr.RamaCase`. Read only.''')
 
 class Rotamers(Collection):
     def __init__(self, c_pointers=None):
@@ -227,12 +227,12 @@ class Rotamers(Collection):
     visibles = cvec_property('rotamer_visible', npy_bool, read_only=True,
                 doc='True for each rotamer whose CA-CB bond is visible')
 
-class Position_Restraints(Collection):
+class PositionRestraints(Collection):
     def __init__(self, c_pointers=None, single_type = None, poly_type = None):
         if single_type is None:
-            single_type = Position_Restraint
+            single_type = PositionRestraint
         if poly_type is None:
-            poly_type = Position_Restraints
+            poly_type = PositionRestraints
         super().__init__(c_pointers, single_type, poly_type)
 
     @property
@@ -273,13 +273,13 @@ class Position_Restraints(Collection):
         -1. Can be set, but only if you know what you are doing.
         ''')
 
-class Tuggable_Atoms(Position_Restraints):
+class TuggableAtoms(PositionRestraints):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, single_type=Tuggable_Atom, poly_type = Tuggable_Atoms)
+        super().__init__(c_pointers, single_type=TuggableAtom, poly_type = TuggableAtoms)
 
-class MDFF_Atoms(Collection):
+class MDFFAtoms(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, MDFF_Atom, MDFF_Atoms)
+        super().__init__(c_pointers, MDFFAtom, MDFFAtoms)
 
     def clear_sim_indices(self):
         '''
@@ -307,9 +307,9 @@ class MDFF_Atoms(Collection):
          ''')
 
 
-class Distance_Restraints(Collection):
+class DistanceRestraints(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, Distance_Restraint, Distance_Restraints)
+        super().__init__(c_pointers, DistanceRestraint, DistanceRestraints)
 
     @property
     def _bond_cylinder_transforms(self):
@@ -361,10 +361,10 @@ class Distance_Restraints(Collection):
         doing.
          ''')
 
-class Adaptive_Distance_Restraints(Collection):
+class AdaptiveDistanceRestraints(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, Adaptive_Distance_Restraint,
-            Adaptive_Distance_Restraints)
+        super().__init__(c_pointers, AdaptiveDistanceRestraint,
+            AdaptiveDistanceRestraints)
 
     @property
     def _bond_transforms(self):
@@ -429,9 +429,9 @@ class Adaptive_Distance_Restraints(Collection):
     colors = cvec_property('adaptive_distance_restraint_color', uint8, 4, read_only=True,
             doc = 'Color of each restraint. Automatically set based on ratio of current distance to target. Read only.')
 
-class Chiral_Restraints(Collection):
+class ChiralRestraints(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, Chiral_Restraint, Chiral_Restraints)
+        super().__init__(c_pointers, ChiralRestraint, ChiralRestraints)
 
     def clear_sim_indices(self):
         f = c_function('chiral_restraint_clear_sim_index',
@@ -448,7 +448,7 @@ class Chiral_Restraints(Collection):
 
     def restrict_to_sel(self, atoms):
         '''
-        Returns a new :py:class:`Chiral_Restraints` containing only the
+        Returns a new :py:class:`ChiralRestraints` containing only the
         restraints for which every atom is in the given selection.
         '''
         f = c_function('chiral_restraint_all_atoms_in_sel',
@@ -460,7 +460,7 @@ class Chiral_Restraints(Collection):
     targets = cvec_property('chiral_restraint_target', float64, read_only = True,
         doc = 'Target angles for each restraint in radians. Read only.')
     dihedrals = cvec_property('chiral_restraint_chiral_center', cptr, astype=_chiral_centers, read_only=True,
-        doc = 'Returns the restrained :py:class:`Chiral_Centers`. Read only.')
+        doc = 'Returns the restrained :py:class:`ChiralCenters`. Read only.')
     offsets = cvec_property('chiral_restraint_offset', float64, read_only = True,
         doc = 'Differences between current and target angles in radians. Read only.')
     cutoffs = cvec_property('chiral_restraint_cutoff', float64,
@@ -476,9 +476,9 @@ class Chiral_Restraints(Collection):
         set, but only if you know what you are doing.
         ''')
 
-class Proper_Dihedral_Restraints(Collection):
+class ProperDihedralRestraints(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, Proper_Dihedral_Restraint, Proper_Dihedral_Restraints)
+        super().__init__(c_pointers, ProperDihedralRestraint, ProperDihedralRestraints)
 
     def _annotation_transforms(self):
         n = len(self)
@@ -501,7 +501,7 @@ class Proper_Dihedral_Restraints(Collection):
 
     def restrict_to_sel(self, atoms):
         '''
-        Returns a new :py:class:`Proper_Dihedral_Restraints` containing only the
+        Returns a new :py:class:`ProperDihedralRestraints` containing only the
         restraints for which every atom is in the given selection.
         '''
         f = c_function('proper_dihedral_restraint_all_atoms_in_sel',
@@ -514,7 +514,7 @@ class Proper_Dihedral_Restraints(Collection):
     targets = cvec_property('proper_dihedral_restraint_target', float64,
         doc = 'Target angles for each restraint in radians. Can be written.')
     dihedrals = cvec_property('proper_dihedral_restraint_dihedral', cptr, astype=_proper_dihedrals, read_only=True,
-        doc = 'The restrained :py:class:`Proper_Dihedrals`. Read only.')
+        doc = 'The restrained :py:class:`ProperDihedrals`. Read only.')
     offsets = cvec_property('proper_dihedral_restraint_offset', float64, read_only = True,
         doc = 'Difference between current and target angles in radians. Read only.')
     cutoffs = cvec_property('proper_dihedral_restraint_cutoff', float64,
@@ -537,9 +537,9 @@ class Proper_Dihedral_Restraints(Collection):
         doing.
          ''')
 
-class Rotamer_Restraints(Collection):
+class RotamerRestraints(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, Rotamer_Restraint, Rotamer_Restraints)
+        super().__init__(c_pointers, RotamerRestraint, RotamerRestraints)
 
     def set_spring_constant(self, k):
         '''

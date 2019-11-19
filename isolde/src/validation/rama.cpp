@@ -16,7 +16,7 @@
 #include <pyinstance/PythonInstance.instantiate.h>
 
 template class pyinstance::PythonInstance<isolde::Rama>;
-template class pyinstance::PythonInstance<isolde::Rama_Mgr>;
+template class pyinstance::PythonInstance<isolde::RamaMgr>;
 
 namespace isolde
 {
@@ -26,7 +26,7 @@ const std::string Rama::PHI_STR  = "phi";
 const std::string Rama::PSI_STR  = "psi";
 const AtomName Rama::CA_NAME = "CA";
 
-Rama::Rama(Residue* residue, Proper_Dihedral_Mgr *dmgr, Rama_Mgr *rmgr)
+Rama::Rama(Residue* residue, ProperDihedralMgr *dmgr, RamaMgr *rmgr)
     : _residue(residue), _dmgr(dmgr), _rmgr(rmgr)
 {
     if (residue->polymer_type() != PT_AMINO)
@@ -141,7 +141,7 @@ bool Rama::check_for_deleted_dihedrals( const std::set<void *> &destroyed)
     return (_omega==nullptr && _phi==nullptr && _psi==nullptr);
 }
 
-Rama_Mgr::~Rama_Mgr()
+RamaMgr::~RamaMgr()
 {
     auto du = DestructionUser(this);
     for (auto &it: _residue_to_rama) {
@@ -149,7 +149,7 @@ Rama_Mgr::~Rama_Mgr()
     }
 }
 
-Rama* Rama_Mgr::get_rama(Residue *res)
+Rama* RamaMgr::get_rama(Residue *res)
 {
     auto it = _residue_to_rama.find(res);
     if (it!=_residue_to_rama.end())
@@ -159,13 +159,13 @@ Rama* Rama_Mgr::get_rama(Residue *res)
     return r;
 }
 
-void Rama_Mgr::add_interpolator(size_t r_case,
+void RamaMgr::add_interpolator(size_t r_case,
     const size_t &dim, uint32_t *n, double *min, double *max, double *data)
 {
     _interpolators[r_case] = RegularGridInterpolator<double>(dim, n, min, max, data);
 }
 
-void Rama_Mgr::set_colors(uint8_t *max, uint8_t *mid, uint8_t *min, uint8_t *na)
+void RamaMgr::set_colors(uint8_t *max, uint8_t *mid, uint8_t *min, uint8_t *na)
 {
     colors::color thecolors[3];
 
@@ -186,12 +186,12 @@ void Rama_Mgr::set_colors(uint8_t *max, uint8_t *mid, uint8_t *min, uint8_t *na)
     }
 }
 
-uint8_t Rama_Mgr::rama_case(Residue *res)
+uint8_t RamaMgr::rama_case(Residue *res)
 {
     return get_rama(res)->rama_case();
 }
 
-double Rama_Mgr::validate(Rama *r)
+double RamaMgr::validate(Rama *r)
 {
     auto rcase = r->rama_case();
     if (rcase==CASE_NONE)
@@ -202,13 +202,13 @@ double Rama_Mgr::validate(Rama *r)
     return interpolator.interpolate(phipsi);
 }
 
-double Rama_Mgr::validate(Residue *r)
+double RamaMgr::validate(Residue *r)
 {
     Rama *rama = get_rama(r);
     return validate(rama);
 }
 
-void Rama_Mgr::validate(Rama **rama, size_t n, double *scores, uint8_t *r_cases)
+void RamaMgr::validate(Rama **rama, size_t n, double *scores, uint8_t *r_cases)
 {
     std::unordered_map<uint8_t, std::pair<std::vector<size_t>, std::vector<double> > > case_map;
     uint8_t this_case;
@@ -253,7 +253,7 @@ void Rama_Mgr::validate(Rama **rama, size_t n, double *scores, uint8_t *r_cases)
     }
 }
 
-void Rama_Mgr::color_by_scores(double *score, uint8_t *r_case, size_t n, uint8_t *out)
+void RamaMgr::color_by_scores(double *score, uint8_t *r_case, size_t n, uint8_t *out)
 {
     colors::intcolor default_color;
     colors::color_as_intcolor(_null_color, default_color);
@@ -266,7 +266,7 @@ void Rama_Mgr::color_by_scores(double *score, uint8_t *r_case, size_t n, uint8_t
     }
 } //color_by_scores
 
-void Rama_Mgr::_color_by_score(const double &score, const uint8_t &r_case, colors::color &color)
+void RamaMgr::_color_by_score(const double &score, const uint8_t &r_case, colors::color &color)
 {
     if (score < 0 || r_case == CASE_NONE)
     {
@@ -278,7 +278,7 @@ void Rama_Mgr::_color_by_score(const double &score, const uint8_t &r_case, color
     cmap->interpolate(log(score), color);
 }
 
-int32_t Rama_Mgr::bin_score(const double &score, uint8_t r_case)
+int32_t RamaMgr::bin_score(const double &score, uint8_t r_case)
 {
     if (r_case == CASE_NONE)
         return BIN_NA;
@@ -293,12 +293,12 @@ int32_t Rama_Mgr::bin_score(const double &score, uint8_t r_case)
     return ALLOWED;
 } //bin_score
 
-void Rama_Mgr::delete_ramas(const std::set<Rama *> to_delete)
+void RamaMgr::delete_ramas(const std::set<Rama *> to_delete)
 {
     auto db = DestructionBatcher(this);
     _delete_ramas(to_delete);
 }
-void Rama_Mgr::_delete_ramas(const std::set<Rama *> to_delete)
+void RamaMgr::_delete_ramas(const std::set<Rama *> to_delete)
 {
     for (auto r: to_delete) {
         _residue_to_rama.erase(r->residue());
@@ -306,7 +306,7 @@ void Rama_Mgr::_delete_ramas(const std::set<Rama *> to_delete)
     }
 }
 
-void Rama_Mgr::destructors_done(const std::set<void *>& destroyed)
+void RamaMgr::destructors_done(const std::set<void *>& destroyed)
 {
     auto db = DestructionBatcher(this);
     if (destroyed.find(static_cast<void *>(_mgr)) != destroyed.end()) {

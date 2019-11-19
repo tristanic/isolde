@@ -18,7 +18,7 @@ class SimTester:
         rama_m = self.rama_mgr = session_extensions.get_ramachandran_mgr(session)
         rota_m = self.rota_mgr = session_extensions.get_rotamer_mgr(session)
 
-        rama_a = self.rama_annotator = session_extensions.get_rama_annotator(model)
+        rama_a = self.RamaAnnotator = session_extensions.get_RamaAnnotator(model)
         rota_a = self.rota_annotator = session_extensions.get_rota_annotator(model)
 
         pdr_m = self.proper_dihedral_restraint_mgr = session_extensions.get_proper_dihedral_restraint_mgr(model)
@@ -65,8 +65,8 @@ class SimTester:
                 distance_restraints.append(d)
             except:
                 continue
-        from ..molarray import Distance_Restraints
-        distance_restraints = Distance_Restraints(distance_restraints)
+        from ..molarray import DistanceRestraints
+        distance_restraints = DistanceRestraints(distance_restraints)
 
 
         from ..openmm import openmm_interface, sim_param_mgr
@@ -119,7 +119,7 @@ class SimTester:
         self.sim_handler.stop()
 
     def _rama_a_sim_end_cb(self, *_):
-        self.rama_annotator.track_whole_model = True
+        self.RamaAnnotator.track_whole_model = True
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 

@@ -27,17 +27,17 @@ using namespace isolde;
 
 /**************************************************************
  *
- * Rota_Mgr functions
+ * RotaMgr functions
  *
  **************************************************************/
-SET_PYTHON_INSTANCE(rota_mgr, Rota_Mgr)
-GET_PYTHON_INSTANCES(rota_mgr, Rota_Mgr)
+SET_PYTHON_INSTANCE(rota_mgr, RotaMgr)
+GET_PYTHON_INSTANCES(rota_mgr, RotaMgr)
 
 extern "C" EXPORT void*
 rota_mgr_new(void *dihedral_mgr)
 {
-    Proper_Dihedral_Mgr *dmgr = static_cast<Proper_Dihedral_Mgr *>(dihedral_mgr);
-    Rota_Mgr *mgr = new Rota_Mgr(dmgr);
+    ProperDihedralMgr *dmgr = static_cast<ProperDihedralMgr *>(dihedral_mgr);
+    RotaMgr *mgr = new RotaMgr(dmgr);
     try {
         return mgr;
     } catch (...) {
@@ -50,7 +50,7 @@ extern "C" EXPORT void
 rota_mgr_add_rotamer_def(void *mgr, pyobject_t *resname, size_t n_chi, size_t val_nchi,
     npy_bool symmetric, uint8_t *moving_counts, pyobject_t *moving_names)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     try {
         std::string rname(PyUnicode_AsUTF8(static_cast<PyObject *>(resname[0])));
         std::vector<std::vector<std::string>> moving_atom_names;
@@ -73,7 +73,7 @@ extern "C" EXPORT void
 rota_mgr_add_target_def(void *mgr, pyobject_t *resname, size_t n,
     pyobject_t *name, double *freq, double *angles, double *esds)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     try {
         std::string rname(PyUnicode_AsUTF8(static_cast<PyObject *>(resname[0])));
         auto def = m->get_rotamer_def(rname);
@@ -95,7 +95,7 @@ extern "C" EXPORT void
 rota_mgr_add_interpolator(void *mgr, pyobject_t *resname, size_t dim,
     uint32_t *n, double *min, double *max, double*data)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     try {
         std::string rname(PyUnicode_AsUTF8(static_cast<PyObject *>(resname[0])));
         m->add_interpolator(rname, dim, n, min, max, data);
@@ -107,7 +107,7 @@ rota_mgr_add_interpolator(void *mgr, pyobject_t *resname, size_t dim,
 extern "C" EXPORT void
 rota_mgr_set_cutoffs(void *mgr, double allowed, double outlier)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     try {
         m->set_cutoffs(allowed, outlier);
     } catch (...) {
@@ -118,7 +118,7 @@ rota_mgr_set_cutoffs(void *mgr, double allowed, double outlier)
 extern "C" EXPORT void
 rota_mgr_get_cutoffs(void *mgr, double* cutoffs)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     try {
         auto c = m->get_cutoffs();
         cutoffs[0] = c->allowed;
@@ -131,7 +131,7 @@ rota_mgr_get_cutoffs(void *mgr, double* cutoffs)
 extern "C" EXPORT void
 set_rota_mgr_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     try {
         m->set_colors(max, mid, min);
     } catch (...) {
@@ -142,7 +142,7 @@ set_rota_mgr_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min)
 extern "C" EXPORT void
 rota_mgr_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     try {
         auto cmap = m->get_colors();
         auto &mapped_colors = cmap->mapped_colors();
@@ -159,7 +159,7 @@ rota_mgr_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min)
 extern "C" EXPORT PyObject*
 rota_mgr_get_rotamer(void *mgr, void *residue, size_t n)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     Residue **r = static_cast<Residue **>(residue);
     std::vector<Rotamer *> found;
     try {
@@ -184,7 +184,7 @@ rota_mgr_get_rotamer(void *mgr, void *residue, size_t n)
 extern "C" EXPORT void
 rota_mgr_validate_rotamer(void *mgr, void *rotamer, size_t n, double *scores)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     Rotamer **r = static_cast<Rotamer **>(rotamer);
     try {
         m->validate(r, n, scores);
@@ -197,7 +197,7 @@ rota_mgr_validate_rotamer(void *mgr, void *rotamer, size_t n, double *scores)
 extern "C" EXPORT void
 rota_mgr_validate_rotamer_threaded(void *mgr, void *rotamer, size_t n, double *scores)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     Rotamer **r = static_cast<Rotamer **>(rotamer);
     try {
         m->validate_threaded(r, n, scores);
@@ -208,7 +208,7 @@ rota_mgr_validate_rotamer_threaded(void *mgr, void *rotamer, size_t n, double *s
 
 extern "C" EXPORT npy_bool
 rota_mgr_thread_running(void *mgr) {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     try {
         return m->thread_running();
     } catch (...) {
@@ -219,7 +219,7 @@ rota_mgr_thread_running(void *mgr) {
 
 extern "C" EXPORT npy_bool
 rota_mgr_thread_done(void *mgr) {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     try {
         return m->thread_done();
     } catch (...) {
@@ -230,7 +230,7 @@ rota_mgr_thread_done(void *mgr) {
 
 extern "C" EXPORT void
 rota_mgr_finalize_thread(void *mgr) {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     try {
         m->finalize_thread();
     } catch (...) {
@@ -245,7 +245,7 @@ rota_mgr_finalize_thread(void *mgr) {
 extern "C" EXPORT void
 rota_mgr_validate_residue(void *mgr, void *residue, size_t n, double *scores)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     Residue **r = static_cast<Residue **>(residue);
     try {
         m->validate(r,n,scores);
@@ -259,7 +259,7 @@ rota_mgr_validate_scale_and_color_rotamers(void *mgr, void *rotamer, size_t n,
     double max_scale, npy_bool non_favored_only,
     npy_bool visible_only, pyobject_t *rot_out, double* scale, uint8_t *color_out)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     Rotamer **r = static_cast<Rotamer **>(rotamer);
     size_t ret =0;
     try {
@@ -301,7 +301,7 @@ rota_mgr_validate_scale_and_color_rotamers(void *mgr, void *rotamer, size_t n,
 extern "C" EXPORT void
 rota_mgr_color_by_score(void *mgr, double *score, size_t n, uint8_t *color)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     try {
         m->color_by_score(score, n, color);
     } catch (...) {
@@ -312,7 +312,7 @@ rota_mgr_color_by_score(void *mgr, double *score, size_t n, uint8_t *color)
 extern "C" EXPORT size_t
 rota_mgr_non_favored(void *mgr, void *rotamer, size_t n, pyobject_t *bad, double *scores)
 {
-    Rota_Mgr *m = static_cast<Rota_Mgr *>(mgr);
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
     Rotamer **r = static_cast<Rotamer **>(rotamer);
     size_t found=0;
     std::vector<double> vscores(n);

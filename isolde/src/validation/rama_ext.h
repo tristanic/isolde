@@ -23,17 +23,17 @@ using namespace isolde;
 
 /**********************************************************************
  *
- * Rama_Mgr
+ * RamaMgr
  *
  **********************************************************************/
-SET_PYTHON_INSTANCE(rama_mgr, Rama_Mgr)
-GET_PYTHON_INSTANCES(rama_mgr, Rama_Mgr)
+SET_PYTHON_INSTANCE(rama_mgr, RamaMgr)
+GET_PYTHON_INSTANCES(rama_mgr, RamaMgr)
 
 extern "C" EXPORT void*
 rama_mgr_new(void *dmgr)
 {
-    Proper_Dihedral_Mgr *d = static_cast<Proper_Dihedral_Mgr *>(dmgr);
-    Rama_Mgr *mgr = new Rama_Mgr(d);
+    ProperDihedralMgr *d = static_cast<ProperDihedralMgr *>(dmgr);
+    RamaMgr *mgr = new RamaMgr(d);
     try {
         return mgr;
     } catch (...) {
@@ -45,7 +45,7 @@ rama_mgr_new(void *dmgr)
 extern "C" EXPORT void
 rama_mgr_delete(void *mgr)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     try {
         delete m;
     } catch (...) {
@@ -56,7 +56,7 @@ rama_mgr_delete(void *mgr)
 extern "C" EXPORT void
 set_rama_mgr_cutoffs(void *mgr, size_t r_case, double outlier, double allowed)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     try {
         m->set_cutoffs(r_case, outlier, allowed);
     } catch (...) {
@@ -67,7 +67,7 @@ set_rama_mgr_cutoffs(void *mgr, size_t r_case, double outlier, double allowed)
 extern "C" EXPORT void
 rama_mgr_cutoffs(void *mgr, size_t r_case, double* cutoffs)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     try {
         auto c = m->get_cutoffs(r_case);
         cutoffs[0] = c->outlier;
@@ -80,7 +80,7 @@ rama_mgr_cutoffs(void *mgr, size_t r_case, double* cutoffs)
 extern "C" EXPORT void
 rama_mgr_set_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min, uint8_t *na)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     try {
         m->set_colors(max, mid, min, na);
     } catch (...) {
@@ -91,7 +91,7 @@ rama_mgr_set_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min, ui
 extern "C" EXPORT void
 rama_mgr_get_color_scale(void *mgr, uint8_t *max, uint8_t *mid, uint8_t *min, uint8_t *na)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     try {
         auto cmap = m->get_colors(1);
         auto &mapped_colors = cmap->mapped_colors();
@@ -112,7 +112,7 @@ extern "C" EXPORT void
 rama_mgr_add_interpolator(void *mgr, size_t r_case, size_t dim,
     uint32_t *n, double *min, double *max, double *data)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     try {
         m->add_interpolator(r_case, dim, n, min, max, data);
     } catch (...) {
@@ -123,7 +123,7 @@ rama_mgr_add_interpolator(void *mgr, size_t r_case, size_t dim,
 extern "C" EXPORT size_t
 rama_mgr_interpolator_dim(void *mgr, size_t r_case)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     try {
         auto it = m->get_interpolator(r_case);
         return it->dim();
@@ -136,7 +136,7 @@ rama_mgr_interpolator_dim(void *mgr, size_t r_case)
 extern "C" EXPORT void
 rama_mgr_interpolator_axis_lengths(void *mgr, size_t r_case, uint32_t *ret)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     try {
         auto it = m->get_interpolator(r_case);
         for (auto l: it->length())
@@ -149,7 +149,7 @@ rama_mgr_interpolator_axis_lengths(void *mgr, size_t r_case, uint32_t *ret)
 extern "C" EXPORT void
 rama_mgr_interpolator_minmax(void *mgr, size_t r_case, double *minvals, double *maxvals)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     try {
         auto it = m->get_interpolator(r_case);
         for (auto m: it->min())
@@ -164,7 +164,7 @@ rama_mgr_interpolator_minmax(void *mgr, size_t r_case, double *minvals, double *
 extern "C" EXPORT void
 rama_mgr_interpolator_values(void *mgr, size_t r_case, double *vals)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     try {
         auto it = m->get_interpolator(r_case);
         for (auto d: it->data())
@@ -177,7 +177,7 @@ rama_mgr_interpolator_values(void *mgr, size_t r_case, double *vals)
 extern "C" EXPORT size_t
 rama_mgr_get_rama(void *mgr, void *residue, size_t n, pyobject_t *ramas)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     Residue **r = static_cast<Residue **>(residue);
     size_t found=0;
     try {
@@ -203,7 +203,7 @@ rama_mgr_get_rama(void *mgr, void *residue, size_t n, pyobject_t *ramas)
 extern "C" EXPORT void
 rama_mgr_rama_case(void *mgr, void *residue, size_t n, uint8_t *rcase)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     Residue **r = static_cast<Residue **>(residue);
     try {
         for (size_t i=0; i<n; ++i) {
@@ -217,7 +217,7 @@ rama_mgr_rama_case(void *mgr, void *residue, size_t n, uint8_t *rcase)
 extern "C" EXPORT void
 rama_mgr_validate_by_residue(void *mgr, void *residue, size_t n, double *score, uint8_t *rcase)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     Residue **r = static_cast<Residue **>(residue);
     try {
         for (size_t i=0; i<n; ++i) {
@@ -232,7 +232,7 @@ rama_mgr_validate_by_residue(void *mgr, void *residue, size_t n, double *score, 
 extern "C" EXPORT void
 rama_mgr_validate(void *mgr, void *rama, size_t n, double *score, uint8_t *rcase)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     Rama **r = static_cast<Rama **>(rama);
     try {
         m->validate(r, n, score, rcase);
@@ -245,7 +245,7 @@ rama_mgr_validate(void *mgr, void *rama, size_t n, double *score, uint8_t *rcase
 extern "C" EXPORT void
 rama_mgr_validate_and_color(void *mgr, void *rama, size_t n, uint8_t *colors)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     Rama **r = static_cast<Rama **>(rama);
     std::vector<double> scores(n);
     std::vector<uint8_t> rcases(n);
@@ -262,7 +262,7 @@ extern "C" EXPORT size_t
 rama_mgr_ca_positions_and_colors(void *mgr, void *rama, size_t n, npy_bool hide_favored,
         double *coord, uint8_t *color, npy_bool *selected)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     Rama **r = static_cast<Rama **>(rama);
     std::vector<double> scores(n);
     std::vector<uint8_t> rcases(n);
@@ -300,7 +300,7 @@ rama_mgr_ca_positions_and_colors(void *mgr, void *rama, size_t n, npy_bool hide_
 extern "C" EXPORT void
 rama_mgr_validate_and_color_cas(void *mgr, void *rama, size_t n, npy_bool hide_favored)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     Rama **r = static_cast<Rama **>(rama);
     std::vector<double> scores(n);
     std::vector<uint8_t> rcases(n);
@@ -357,7 +357,7 @@ extern "C" EXPORT size_t
 rama_mgr_draw_cis_and_twisted_omegas(void *mgr, void *rama, size_t n, double *vertices,
     double *normals, int32_t *triangles, uint8_t *colors)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     Rama **r = static_cast<Rama **>(rama);
     try {
         size_t count=0;
@@ -429,7 +429,7 @@ rama_mgr_draw_cis_and_twisted_omegas(void *mgr, void *rama, size_t n, double *ve
 extern "C" EXPORT void
 rama_mgr_bin_scores(void *mgr, double *score, uint8_t *r_case, size_t n, int32_t *bin)
 {
-    Rama_Mgr *m = static_cast<Rama_Mgr *>(mgr);
+    RamaMgr *m = static_cast<RamaMgr *>(mgr);
     try
     {
         for(size_t i=0; i<n; ++i) {

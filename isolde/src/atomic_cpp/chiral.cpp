@@ -14,12 +14,12 @@
 #include "chiral.h"
 #include <pyinstance/PythonInstance.instantiate.h>
 
-template class pyinstance::PythonInstance<isolde::Chiral_Center>;
+template class pyinstance::PythonInstance<isolde::ChiralCenter>;
 
 namespace isolde
 {
 
-Chiral_Center::Chiral_Center(Atom* center, Atom* s1, Atom* s2, Atom* s3, double expected_angle)
+ChiralCenter::ChiralCenter(Atom* center, Atom* s1, Atom* s2, Atom* s3, double expected_angle)
     : Dihedral(center, s1, s2, s3, center->residue(), std::string("chiral"))
 {
     if (!s1->connects_to(center) || !s2->connects_to(center) || !s3->connects_to(center))

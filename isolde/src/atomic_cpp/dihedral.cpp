@@ -15,7 +15,7 @@
 #include <pyinstance/PythonInstance.instantiate.h>
 
 
-template class pyinstance::PythonInstance<isolde::Proper_Dihedral>;
+template class pyinstance::PythonInstance<isolde::ProperDihedral>;
 
 namespace isolde {
 
@@ -56,7 +56,7 @@ Dihedral::angle() const
 }
 
 
-Proper_Dihedral::Proper_Dihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4, Residue* owner, std::string name)
+ProperDihedral::ProperDihedral(Atom* a1, Atom* a2, Atom* a3, Atom* a4, Residue* owner, std::string name)
 :   Dihedral(a1, a2, a3, a4, owner, name)
 {
     Atom* ba1 = atoms()[0];

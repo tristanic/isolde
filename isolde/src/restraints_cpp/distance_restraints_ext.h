@@ -21,12 +21,12 @@ using namespace isolde;
 
 /*******************************************************
  *
- * Distance_Restraint_Mgr functions
+ * DistanceRestraintMgr functions
  *
  *******************************************************/
 
-SET_PYTHON_INSTANCE(distance_restraint_mgr, Distance_Restraint_Mgr)
-GET_PYTHON_INSTANCES(distance_restraint_mgr, Distance_Restraint_Mgr)
+SET_PYTHON_INSTANCE(distance_restraint_mgr, DistanceRestraintMgr)
+GET_PYTHON_INSTANCES(distance_restraint_mgr, DistanceRestraintMgr)
 
 extern "C" EXPORT void*
 distance_restraint_mgr_new(void *structure, void *change_tracker)
@@ -34,7 +34,7 @@ distance_restraint_mgr_new(void *structure, void *change_tracker)
     Structure *s = static_cast<Structure *>(structure);
     isolde::Change_Tracker *ct = static_cast<isolde::Change_Tracker *>(change_tracker);
     try {
-        Distance_Restraint_Mgr *mgr = new Distance_Restraint_Mgr(s, ct);
+        DistanceRestraintMgr *mgr = new DistanceRestraintMgr(s, ct);
         return mgr;
     } catch (...) {
         molc_error();
@@ -45,7 +45,7 @@ distance_restraint_mgr_new(void *structure, void *change_tracker)
 extern "C" EXPORT void
 distance_restraint_mgr_delete(void *mgr)
 {
-    Distance_Restraint_Mgr *m = static_cast<Distance_Restraint_Mgr *>(mgr);
+    DistanceRestraintMgr *m = static_cast<DistanceRestraintMgr *>(mgr);
     try {
         delete m;
     } catch (...) {
@@ -56,7 +56,7 @@ distance_restraint_mgr_delete(void *mgr)
 extern "C" EXPORT void*
 distance_restraint_mgr_get_restraint(void *mgr, void *atoms, bool create)
 {
-    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    DistanceRestraintMgr *d = static_cast<DistanceRestraintMgr *>(mgr);
     Atom **a = static_cast<Atom **>(atoms);
     bool c = (bool)create;
     try {
@@ -70,10 +70,10 @@ distance_restraint_mgr_get_restraint(void *mgr, void *atoms, bool create)
 extern "C" EXPORT PyObject*
 distance_restraint_mgr_atom_restraints(void *mgr, void *atom, size_t n)
 {
-    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    DistanceRestraintMgr *d = static_cast<DistanceRestraintMgr *>(mgr);
     Atom **a = static_cast<Atom **>(atom);
     try {
-        std::set<Distance_Restraint *> dset;
+        std::set<DistanceRestraint *> dset;
         for (size_t i=0; i<n; ++i) {
             auto &drs = d->get_restraints(*a++);
             dset.insert(drs.begin(), drs.end());
@@ -93,11 +93,11 @@ distance_restraint_mgr_atom_restraints(void *mgr, void *atom, size_t n)
 extern "C" EXPORT PyObject*
 distance_restraint_mgr_intra_restraints(void *mgr, void *atoms, size_t n)
 {
-    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    DistanceRestraintMgr *d = static_cast<DistanceRestraintMgr *>(mgr);
     Atom **a = static_cast<Atom **>(atoms);
     try {
         std::set<Atom *> aset;
-        std::set<Distance_Restraint *> dset;
+        std::set<DistanceRestraint *> dset;
         for (size_t i=0; i<n; ++i)
             aset.insert(*a++);
         for (auto ta: aset)
@@ -127,9 +127,9 @@ distance_restraint_mgr_intra_restraints(void *mgr, void *atoms, size_t n)
 extern "C" EXPORT PyObject*
 distance_restraint_mgr_visible_restraints(void *mgr)
 {
-    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    DistanceRestraintMgr *d = static_cast<DistanceRestraintMgr *>(mgr);
     try {
-        std::vector<Distance_Restraint *> visibles;
+        std::vector<DistanceRestraint *> visibles;
         for (auto r: d->all_restraints()) {
             if (r->visible())
                 visibles.push_back(r);
@@ -148,7 +148,7 @@ distance_restraint_mgr_visible_restraints(void *mgr)
 extern "C" EXPORT PyObject*
 distance_restraint_mgr_all_restraints(void *mgr)
 {
-    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    DistanceRestraintMgr *d = static_cast<DistanceRestraintMgr *>(mgr);
     try {
         const auto &restraints = d->all_restraints();
         size_t n = restraints.size();
@@ -167,15 +167,15 @@ distance_restraint_mgr_all_restraints(void *mgr)
 extern "C" EXPORT PyObject*
 distance_restraint_mgr_get_ss_restraints(void *mgr, void *residues, size_t n, bool create)
 {
-    Distance_Restraint_Mgr *d = static_cast<Distance_Restraint_Mgr *>(mgr);
+    DistanceRestraintMgr *d = static_cast<DistanceRestraintMgr *>(mgr);
     Residue **r = static_cast<Residue **>(residues);
     PyObject* ret = PyTuple_New(2);
     try {
         if (n < 3) {
             throw std::logic_error("Secondary structure restraints require at least three contiguous residues!");
         }
-        std::vector<Distance_Restraint *> o_to_n_plus_four;
-        std::vector<Distance_Restraint *> ca_to_ca_plus_two;
+        std::vector<DistanceRestraint *> o_to_n_plus_four;
+        std::vector<DistanceRestraint *> ca_to_ca_plus_two;
         for (size_t i=0; i<n-2; ++i)
         {
             Residue* cr = *r++;
@@ -198,7 +198,7 @@ distance_restraint_mgr_get_ss_restraints(void *mgr, void *residues, size_t n, bo
             }
             Atom* cap2 = rp2->find_atom("CA");
             if (cap2 != nullptr) {
-                Distance_Restraint* cad = d->get_restraint(cca, cap2, create);
+                DistanceRestraint* cad = d->get_restraint(cca, cap2, create);
                 if (cad != nullptr)
                     ca_to_ca_plus_two.push_back(cad);
             }
@@ -209,7 +209,7 @@ distance_restraint_mgr_get_ss_restraints(void *mgr, void *residues, size_t n, bo
             if (!rp3->connects_to(rp4) || !(rp4->polymer_type()==PT_AMINO)) continue;
             Atom* np4 = rp4->find_atom("N");
             if (np4 != nullptr) {
-                Distance_Restraint* on4 = d->get_restraint(co, np4, create);
+                DistanceRestraint* on4 = d->get_restraint(co, np4, create);
                 if (on4 != nullptr)
                     o_to_n_plus_four.push_back(on4);
             }
@@ -237,44 +237,44 @@ distance_restraint_mgr_get_ss_restraints(void *mgr, void *residues, size_t n, bo
 
 /***************************************************************
  *
- * Distance_Restraint functions
+ * DistanceRestraint functions
  *
  ***************************************************************/
-SET_PYTHON_CLASS(distance_restraint, Distance_Restraint)
-GET_PYTHON_INSTANCES(distance_restraint, Distance_Restraint)
+SET_PYTHON_CLASS(distance_restraint, DistanceRestraint)
+GET_PYTHON_INSTANCES(distance_restraint, DistanceRestraint)
 
 extern "C" EXPORT void
 set_distance_restraint_target(void *restraint, size_t n, double *target)
 {
-    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
-    error_wrap_array_set<Distance_Restraint, double, double>(d, n, &Distance_Restraint::set_target, target);
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
+    error_wrap_array_set<DistanceRestraint, double, double>(d, n, &DistanceRestraint::set_target, target);
 }
 
 extern "C" EXPORT void
 distance_restraint_target(void *restraint, size_t n, double *target)
 {
-    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
-    error_wrap_array_get<Distance_Restraint, double, double>(d, n, &Distance_Restraint::get_target, target);
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
+    error_wrap_array_get<DistanceRestraint, double, double>(d, n, &DistanceRestraint::get_target, target);
 }
 
 extern "C" EXPORT void
 set_distance_restraint_k(void *restraint, size_t n, double *k)
 {
-    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
-    error_wrap_array_set<Distance_Restraint, double, double>(d, n, &Distance_Restraint::set_k, k);
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
+    error_wrap_array_set<DistanceRestraint, double, double>(d, n, &DistanceRestraint::set_k, k);
 }
 
 extern "C" EXPORT void
 distance_restraint_k(void *restraint, size_t n, double *k)
 {
-    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
-    error_wrap_array_get<Distance_Restraint, double, double>(d, n, &Distance_Restraint::get_k, k);
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
+    error_wrap_array_get<DistanceRestraint, double, double>(d, n, &DistanceRestraint::get_k, k);
 }
 
 extern "C" EXPORT void
 distance_restraint_sim_index(void *restraint, size_t n, int *index)
 {
-    Distance_Restraint **r = static_cast<Distance_Restraint **>(restraint);
+    DistanceRestraint **r = static_cast<DistanceRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i)
             *(index++) = (*r++)->get_sim_index();
@@ -286,7 +286,7 @@ distance_restraint_sim_index(void *restraint, size_t n, int *index)
 extern "C" EXPORT void
 set_distance_restraint_sim_index(void *restraint, size_t n, int *index)
 {
-    Distance_Restraint **r = static_cast<Distance_Restraint **>(restraint);
+    DistanceRestraint **r = static_cast<DistanceRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i)
             (*r++)->set_sim_index(*(index++));
@@ -298,7 +298,7 @@ set_distance_restraint_sim_index(void *restraint, size_t n, int *index)
 extern "C" EXPORT void
 distance_restraint_clear_sim_index(void *restraint, size_t n)
 {
-    Distance_Restraint **r = static_cast<Distance_Restraint **>(restraint);
+    DistanceRestraint **r = static_cast<DistanceRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i)
             (*r++)->clear_sim_index();
@@ -310,7 +310,7 @@ distance_restraint_clear_sim_index(void *restraint, size_t n)
 extern "C" EXPORT void
 distance_restraint_atoms(void *restraint, size_t n, pyobject_t *atoms)
 {
-    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i)
         {
@@ -326,35 +326,35 @@ distance_restraint_atoms(void *restraint, size_t n, pyobject_t *atoms)
 extern "C" EXPORT void
 distance_restraint_distance(void *restraint, size_t n, double *distance)
 {
-    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
-    error_wrap_array_get<Distance_Restraint, double, double>(d, n, &Distance_Restraint::distance, distance);
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
+    error_wrap_array_get<DistanceRestraint, double, double>(d, n, &DistanceRestraint::distance, distance);
 }
 
 extern "C" EXPORT void
 distance_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
 {
-    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
-    error_wrap_array_get<Distance_Restraint, bool, npy_bool>(d, n, &Distance_Restraint::enabled, flag);
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
+    error_wrap_array_get<DistanceRestraint, bool, npy_bool>(d, n, &DistanceRestraint::enabled, flag);
 }
 
 extern "C" EXPORT void
 set_distance_restraint_enabled(void *restraint, size_t n, npy_bool *flag)
 {
-    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
-    error_wrap_array_set<Distance_Restraint, bool, npy_bool>(d, n, &Distance_Restraint::set_enabled, flag);
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
+    error_wrap_array_set<DistanceRestraint, bool, npy_bool>(d, n, &DistanceRestraint::set_enabled, flag);
 }
 
 extern "C" EXPORT void
 distance_restraint_visible(void *restraint, size_t n, npy_bool *flag)
 {
-    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
-    error_wrap_array_get<Distance_Restraint, bool, npy_bool>(d, n, &Distance_Restraint::visible, flag);
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
+    error_wrap_array_get<DistanceRestraint, bool, npy_bool>(d, n, &DistanceRestraint::visible, flag);
 }
 
 extern "C" EXPORT void
 distance_restraint_bond_transform(void *restraint, size_t n, float *rot44)
 {
-    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*d++)->bond_cylinder_transform(rot44);
@@ -368,7 +368,7 @@ distance_restraint_bond_transform(void *restraint, size_t n, float *rot44)
 extern "C" EXPORT void
 distance_restraint_target_transform(void *restraint, size_t n, float *rot44)
 {
-    Distance_Restraint **d = static_cast<Distance_Restraint **>(restraint);
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
     try {
         for (size_t i=0; i<n; ++i) {
             (*d++)->target_transform(rot44);

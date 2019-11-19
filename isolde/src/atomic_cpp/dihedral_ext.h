@@ -21,18 +21,18 @@ using namespace isolde;
 
 /**************************************************
  *
- * Proper_Dihedral functions
+ * ProperDihedral functions
  *
  **************************************************/
 
-SET_PYTHON_CLASS(proper_dihedral, Proper_Dihedral)
-GET_PYTHON_INSTANCES(proper_dihedral, Proper_Dihedral)
+SET_PYTHON_CLASS(proper_dihedral, ProperDihedral)
+GET_PYTHON_INSTANCES(proper_dihedral, ProperDihedral)
 
 
 extern "C" EXPORT void
 proper_dihedral_angle(void *dihedrals, size_t n, double *angles)
 {
-    Proper_Dihedral **d = static_cast<Proper_Dihedral **>(dihedrals);
+    ProperDihedral **d = static_cast<ProperDihedral **>(dihedrals);
     Dihedral **dd = reinterpret_cast<Dihedral **>(d);
     error_wrap_array_get(dd, n, &Dihedral::angle, angles);
 }
@@ -40,7 +40,7 @@ proper_dihedral_angle(void *dihedrals, size_t n, double *angles)
 extern "C" EXPORT void
 proper_dihedral_name(void *dihedrals, size_t n, pyobject_t *names)
 {
-    Proper_Dihedral **d = static_cast<Proper_Dihedral **>(dihedrals);
+    ProperDihedral **d = static_cast<ProperDihedral **>(dihedrals);
     try {
         for (size_t i = 0; i<n; ++i)
             names[i] = unicode_from_string(d[i]->name());
@@ -51,7 +51,7 @@ proper_dihedral_name(void *dihedrals, size_t n, pyobject_t *names)
 
 extern "C" EXPORT void proper_dihedral_residue(void *dihedrals, size_t n, pyobject_t *resp)
 {
-    Proper_Dihedral **d = static_cast<Proper_Dihedral **>(dihedrals);
+    ProperDihedral **d = static_cast<ProperDihedral **>(dihedrals);
     Dihedral **dd = reinterpret_cast<Dihedral **>(d);
     error_wrap_array_get(dd, n, &Dihedral::residue, resp);
 }
@@ -59,10 +59,10 @@ extern "C" EXPORT void proper_dihedral_residue(void *dihedrals, size_t n, pyobje
 extern "C" EXPORT void
 proper_dihedral_atoms(void *dihedrals, size_t n, pyobject_t *atoms)
 {
-  Proper_Dihedral **d = static_cast<Proper_Dihedral **>(dihedrals);
+  ProperDihedral **d = static_cast<ProperDihedral **>(dihedrals);
   try {
       for (size_t i=0; i<n; ++i) {
-          const Proper_Dihedral::Atoms &a = d[i]->atoms();
+          const ProperDihedral::Atoms &a = d[i]->atoms();
           for (size_t j=0; j<4; ++j) {
               *atoms++ = a[j];
           }
@@ -76,10 +76,10 @@ proper_dihedral_atoms(void *dihedrals, size_t n, pyobject_t *atoms)
 // extern "C" EXPORT void
 // proper_dihedral_atoms(void *dihedrals, size_t n, pyobject_t *atoms)
 // {
-//   Proper_Dihedral **d = static_cast<Proper_Dihedral **>(dihedrals);
+//   ProperDihedral **d = static_cast<ProperDihedral **>(dihedrals);
 //   try {
 //       for (size_t i=0; i<n; ++i) {
-//           const Proper_Dihedral::Atoms &a = d[i]->atoms();
+//           const ProperDihedral::Atoms &a = d[i]->atoms();
 //           for (auto ta: a) {
 //               *atoms++ = ta;
 //           }
@@ -93,7 +93,7 @@ proper_dihedral_atoms(void *dihedrals, size_t n, pyobject_t *atoms)
 extern "C" EXPORT void
 proper_dihedral_axial_bond(void *dihedrals, size_t n, pyobject_t *bonds)
 {
-    Proper_Dihedral **d = static_cast<Proper_Dihedral **>(dihedrals);
+    ProperDihedral **d = static_cast<ProperDihedral **>(dihedrals);
     Dihedral **dd = reinterpret_cast<Dihedral **>(d);
     error_wrap_array_get(dd, n, &Dihedral::axial_bond, bonds);
 }
