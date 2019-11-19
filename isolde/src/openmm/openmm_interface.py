@@ -2887,10 +2887,10 @@ def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
                     templates[i] = 'MC_{}'.format(name)
                 continue
 
-        warn_str = ('No template with name {} found in the molecular dynamics '
-            'forcefield. Attempting to match by topology. You may need to '
-            'provide a custom ligand definition.')
-        logger.warning(warn_str.format(name))
+        # warn_str = ('No template with name {} found in the molecular dynamics '
+        #     'forcefield. Attempting to match by topology. You may need to '
+        #     'provide a custom ligand definition.')
+        # logger.warning(warn_str.format(name))
 
     from .amberff.metal_name_map import metal_name_map
     from chimerax.atomic import Element
