@@ -185,6 +185,9 @@ def add_metal_bonds_from_template(residue, template):
                 m.new_bond(rmet, rn)
 
 def fix_residue_from_template(residue, template):
+    import numpy
+    if any([numpy.any(numpy.isnan(a.coord)) for a in template.atoms]):
+        raise TypeError('Template is missing one or more atom coordinates!')
     m = residue.structure
     session = m.session
     from chimerax.atomic.struct_edit import add_dihedral_atom
@@ -229,7 +232,7 @@ def fix_residue_from_template(residue, template):
     if len(renamed_atoms):
         warn_str = '{} atoms were automatically renamed to match the template: '.format(len(renamed_atoms))
         warn_str += ', '.join(['->'.join(apair) for apair in renamed_atoms])
-        session.logger.warning(warn_str)        
+        session.logger.warning(warn_str)
 
     built = set(conn_ratoms)
     all_tatom_names = set([a.name for a in template.atoms])
