@@ -309,6 +309,13 @@ class Isolde():
         session.isolde = self
         ffmgr.background_load_ff(sp.forcefield)
 
+        self._event_handler.add_event_handler('session save warning',
+            'begin save session', self._session_save_cb) 
+
+    def _session_save_cb(self, *_):
+        self.session.logger.warning('Session saving is not yet implemented for '
+            'ISOLDE. Custom restraints will not be saved.')
+
 
     def _prepare_environment(self):
         session = self.session
