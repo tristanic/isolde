@@ -137,23 +137,29 @@ def isolde_tutorial(session):
     show_url(session, pathlib.Path(fname).as_uri())
 
 _available_demos = {
-    'crystal': ('load_crystal_demo', 'crystallographic demo: PDB ID 3io0'),
-    'cryo_em': ('load_cryo_em_demo', 'cryo-EM demo: PDB ID 6out, EMDB ID 20205'),
+    'crystal_intro': (
+        'load_crystal_demo',
+        'crystallographic demo: PDB ID 3io0',
+        []),
+    'cryo_em_intro': (
+        'load_cryo_em_demo',
+        'cryo-EM demo: PDB ID 6out, EMDB ID 20205',
+        ('model_only',)),
 }
 def isolde_demo(session, demo_name = None, model_only=False, start_isolde=True):
     if start_isolde:
         isolde_start(session)
-    if demo_name=='crystal' and model_only:
-        session.logger.warning("modelOnly argument is only applicable to cryo-EM data. Ignoring.")
-    if demo_name=='crystal':
-        kwargs={}
-    else:
-        kwargs={'model_only': model_only}
     demo_info = _available_demos[demo_name]
+    load_fn_name, description, kwarg_names = demo_info
+    if model_only and 'model_only' not in kwarg_names:
+        session.logger.warning("modelOnly argument is only applicable to cryo-EM data. Ignoring.")
+    kwargs = {}
+    if 'model_only' in kwarg_names:
+        kwargs['model_only']=model_only
     from . import isolde
-    load_fn = getattr(isolde, demo_info[0])
+    load_fn = getattr(isolde, load_fn_name)
     load_fn(session, **kwargs)
-    session.logger.info("Loaded " + demo_info[1])
+    session.logger.info("Loaded " + description)
 
 def register_isolde(logger):
     from chimerax.core.commands import (
