@@ -72,7 +72,7 @@ of this model. At the time of writing, 6out is in fact among the best models in
 the world for its resolution range (whether crystallographic or cryo-EM),
 produced by a highly-experienced team using state-of-the-art methods. In fact,
 using the same tools and techniques as  the authors of this model I am quite
-certain that I could not have done a  better job!Rather,  the key take-home
+certain that I could not have done a  better job! Rather, the key take-home
 message is one that those experienced in the field already know well: as the
 resolution of a map gets worse, the amount of prior information needed steadily
 increases. In ISOLDE's case, this information is encoded in the AMBER molecular
@@ -81,12 +81,12 @@ understanding of thousands of very-high-resolution protein structures captured
 in the live Ramachandran and rotamer validation.
 
 Anyway, let's go ahead and get started. While we *could* fetch the model direct
-from the PDB using the command "open 6out", it is likely that the deposited
-coordinates will be updated in future. Instead, we'll open a locally cached
-version of the model as it was at the time of writing this tutorial. We won't
+from the PDB using the command "open 6out", we'd find that the coordinates have
+been updated since this tutorial was written. Instead, we'll open a locally
+cached version of the model as it was at the time I first looked at it. We won't
 start ISOLDE itself just yet.
 
-`isolde demo cryo_em modelOnly true startIsolde false`__
+`isolde demo cryo_em_intro modelOnly true startIsolde false`__
 
 __ cxcmd:isolde\ demo\ cryo_em\ modelOnly\ true\ startIsolde\ false
 
@@ -134,7 +134,9 @@ Now, try panning around by clicking and dragging with the *middle mouse button*
 click* for this). You will see that the sphere of density follows you, along with
 a slightly wider sphere of visible atoms. Outside of this sphere, the display
 is reduced to a thin cartoon as an unobtrusive indicator of the overall
-structure.
+structure. You can also move the pivot point in the Z direction (that is,
+towards and away from you) by clicking and dragging with *ctrl-middle mouse
+button*.
 
 If you find yourself having to peer through a "forest" of atoms to see the
 detail you're interested in, you can adjust the width of the clipping slab using
@@ -288,13 +290,13 @@ Validate tab. First, show the Ramachandran plot:
 
 At first glance this looks great, with almost all residues clustered inside the
 "favoured" region of the plot. Appearances can be deceptive, however. Notice how
-in both the beta-strand (top left) and alpha helix (middle left) the clustering
-of residues doesn't really match the distribution suggested by the contours:
-there is an unpopulated vertical strip around phi=-60, and a disproportionate
-number of residues clustering right on the border of the "favoured" region
-cut-off (the yellow line, denoting the 2% probability contour). These are some
-of the artefacts introduced by Ramachandran restraints, which can obscure the
-true picture of the model.
+in both the beta-strand (top left) and alpha helix (middle left) regions the
+clustering of residues doesn't really match the distribution suggested by the
+contours: there is an unpopulated vertical strip around phi=-60, and a
+disproportionate number of residues clustering right on the border of the
+"favoured" region cut-off (the yellow line, denoting the 2% probability
+contour). These are some of the artefacts introduced by Ramachandran restraints,
+which can obscure the true picture of the model.
 
 While we're here, also have a look at the "Rotamers" panel. While there is a
 short list of 32 marginal rotamers, none are flagged as true *outliers* - that
@@ -340,9 +342,13 @@ them will centre the view on one of these two residues, but which one ISOLDE
 chooses will be somewhat random. To specify exactly which residue to view, use
 ChimeraX's command line:
 
-`view /A:57; cofr center`__
+`cview /A:57`__
 
-__ cxcmd:view\ \/A:57;cofr\ center
+__ cxcmd:cview\ \/A:57
+
+*(NOTE: the "cview" command used here is very similar to the standard ChimeraX
+"view" command, except that the latter will leave the centre of rotation fixed
+on the centroid of the selection)*
 
 .. figure:: images/A57_rama_outlier.jpg
 
@@ -419,12 +425,12 @@ way down the list)*. Click on that row to take a closer look.
 .. figure:: images/trp_a375.jpg
 
 This is a classic and surprisingly easy-to-make mistake with tryptophan
-residues. This residue has been fitted with its sidechain approximately 90
-degrees away from its true conformation. Note the pink marker adjacent to the
-CA-CB bond. This (an exclamation mark surrounded by a spiral when viewed
-side-on) is your visual indicator on the model that this is indeed a rotamer
-outlier. Like the Ramachandran indicators, it will change in real time as the
-model is adjusted.
+residues. This residue has been fitted with its sidechain "backward" -
+approximately 180 degrees away from its true conformation. Note the pink marker
+adjacent to the CA-CB bond. This (an exclamation mark surrounded by a spiral
+when viewed side-on) is your visual indicator on the model that this is indeed a
+rotamer outlier. Like the Ramachandran indicators, it will change in real time
+as the model is adjusted.
 
 With this residue selected, go ahead and click play. Now, switch to the Rebuild
 tab and *ctrl-click* on any atom in the residue. To fix this, we want to use the
@@ -491,9 +497,9 @@ This cluster corresponds to a somewhat weakly-resolved loop found on each of the
 three chains in the model. Of the three, the density around chain B seems the
 strongest, so let's focus on that one:
 
-`clipper spotlight; view /B:383; cofr center`__
+`clipper spotlight; cview /B:383`__
 
-__ cxcmd:clipper\ spotlight;view\ \/B:383;cofr\ center
+__ cxcmd:clipper\ spotlight;cview\ \/B:383
 
 *(Note: in some subsequent run-throughs of this tutorial scenario, by the time
 I got to here the simulation had already rattled Ser383 in to place on its own.
@@ -515,15 +521,16 @@ the map to your specification:
 
 `volume gaussian #1 sDev 0.75`__
 
-__ cxcmd:volume\ gaussian\ #1\ sDev\ 0.75
+__ cxcmd:volume\ gaussian\ #1\ bfactor 50
 
-... will generate a new map based on the convolution of this one with a Gaussian
-with a standard deviation of 0.75 Angstroms. Map sharpening and smoothing is
-often reported in terms of an applied *B-factor*, which is related to the
-standard deviation of the Gaussian as: :math:`B=8*pi^2*sDev^2`. If you find the
-need to sharpen a map (apply a negative B-factor), you can do this by adding
-the argument "invert true" to the above command. The smoothing we just applied
-is equivalent to applying a positive B-factor of about 44.5 square Angstroms.
+... will generate a new smoothed map (mathematically, the convolution of the
+existing one with a Gaussian with a standard deviation of about 0.8 Angstroms.
+Specifically, the B-factor  is related to the standard deviation of the Gaussian
+as: :math:`B=8*pi^2*sDev^2` (this is identical to the formalism describing
+atomic B-factors: in real space it describes how "blurred" they are; in
+reciprocal space it describes how  quickly the Fourier amplitudes drop off with
+increasing resolution). Where it makes sense to do so, you can also sharpen maps
+by using a negative value for the bfactor argument.
 
 You'll find that this command has also automatically hidden the existing map.
 Show it again by clicking the "closed-eye" icon in the top left of the Volume

@@ -97,7 +97,10 @@ clutter. If you need to adjust this, you can do so with **shift-scroll**.
 Now, scroll out to a comfortable distance, and try panning. You have two options
 here: if you are using a wired mouse, just **click and drag with the middle
 mouse button**. For touchpad users without a middle-button equivalent, use
-**shift-left-click-and-drag**. You'll hopefully notice a few things:
+**shift-left-click-and-drag**. To move the centre of rotation in the Z direction
+(that is, towards or away from you) use **ctrl-middle-click-and-drag**.
+
+You'll hopefully notice a few things:
 
 1. Wherever you go, you're surrounded by a sphere of density and displayed
    atoms. This is the default navigation mode in ISOLDE. The radius of the
@@ -117,13 +120,18 @@ __ cxcmd:clipper\ spotlight\ radius\ 15
    their darker colour relative to the primary model). While you can't interact
    directly with these, hovering over any symmetry atom will bring up a tool-tip
    giving its identity and symmetry operator. Note: if you ever get so lost that
-   you can't find your true model any more, just type `view #1.3; cofr center`__
+   you can't find your true model any more, just type `cview #1.3`__
    in the command line, where #1.3 is the model number of the atomic model in
    the model panel:
 
    .. figure:: images/model_panel.png
 
-__ cxcmd:view\ #1.3;cofr\ center
+__ cxcmd:cview\ #1.3;
+
+The "cview" command is very similar to ChimeraX's "view" command - the only
+difference is that "view" fixes the centre of rotation on the centroid of
+the specified selection whereas "cview" maintains Clipper's standard mobile
+centre of rotation.
 
 
 Adjusting your maps
@@ -463,21 +471,27 @@ __ cxcmd:isolde\ sim\ stop
 
 __ cxcmd:close\ #1
 
-Now click the "Load demo" button at the top left of the ISOLDE panel. This loads
-up the model and data for 3io0_, a 3Å model of a small bacterial shell protein.
-This is discussed in more detail (including a video covering the whole
-rebuilding process) as a case study `on the ISOLDE website`__.
+
+The model we'll be looking at now is 3io0_, a 3Å model of a small bacterial
+shell protein. This is discussed in more detail (including a video covering the
+whole rebuilding process) as a case study `on the ISOLDE website`__.
 
 __ https://isolde.cimr.cam.ac.uk/case-studies/case-study-3io0/
 
 .. _3io0: https://www.rcsb.org/structure/3io0
 
+To load these coordinates you could use "open 3io0 structureFactors true" as we
+did for 1a0m, but ISOLDE also keeps a locally cached version with hydrogens
+already added and an extraneous water molecule removed. To load it, click `here`__.
+
+__ cxcmd:isolde\ demo\ crystal_intro
+
 First, just have a browse around and compare the general appearance of the
 density to what you saw in 1a0m. For example, look at residue ASN187:
 
-`view /A:187; cofr center`__
+`cview /A:187`__
 
-__ cxcmd:view\ /A:187;cofr\ center
+__ cxcmd:cview\ /A:187
 
 .. figure:: images/3io0_asn.jpg
 
@@ -743,7 +757,7 @@ to "fool you" in ways like this. Upon starting a simulation, the electrostatic
 repulsion between these positively charged groups pushes the incorrectly
 modelled peptide bond out of density, creating a clear red flag indicating
 something is wrong. In this case, the remedy is clear: a simple peptide flip
-creates two nice hydrogen bonds with the adjacent sidechain (visualised here
+creates two nice hydrogen bonds with the adjacent backbone (visualised here
 using ChimeraX's H-bonds tool:
 
 `hbonds #1`__

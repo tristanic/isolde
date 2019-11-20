@@ -360,9 +360,9 @@ like mine you'll see that the helices at the interface of chains F and G
 (approx. residues 23-55 of chain F and 298-354 of chain G) are still quite
 badly out:
 
-`view /F:23-55|/G:298-354 cofr false`__
+`cview /F:23-55|/G:298-354`__
 
-__ cxcmd:view\ /F:23-55|/G:298-354\ cofr\ false
+__ cxcmd:view\ /F:23-55|/G:298-354
 
 .. figure:: images/F_G_helices_out.jpg
 
@@ -389,9 +389,9 @@ The *isolde release distances* command offers a range of flexible options here.
 First up, the restraints on residues 298-304 clearly make no real sense at all,
 so let's release them entirely (with an extra residue padding either side):
 
-`select /G:297-305; view sel cofr false; isolde release distances sel`__
+`select /G:297-305; cview sel; isolde release distances sel`__
 
-__ cxcmd:select\ /G:297-305;view\ sel\ cofr\ false;isolde\ release\ distances\ sel
+__ cxcmd:select\ /G:297-305;cview\ sel;isolde\ release\ distances\ sel
 
 Then, for residues 306-354, we'll keep all restraints between atoms in these
 residues but release all restraints to their surroundings:
@@ -415,9 +415,9 @@ placed, pointing to the wrong side of the facing helix and generally getting in
 the way (from the distance restraints, it looks like this may be an error in the
 original coordinates):
 
-`view /G:319 cofr false`__
+`cview /G:319`__
 
-__ cxcmd:view\ /G:319\ cofr\ false
+__ cxcmd:view\ /G:319
 
 .. figure:: images/phe319_misplaced.jpg
 
@@ -475,9 +475,9 @@ Watch the register shifter work its magic:
 need to manually adjust some of the bulkier sidechains). While the helix now
 looks good, the 298-304 loop still needs a little work:
 
-`view /G:297-303 cofr false`__
+`cview /G:297-303`__
 
-__ cxcmd:view\ /G:297-303\ cofr\ false
+__ cxcmd:cview\ /G:297-303
 
 .. figure:: images/G298-304_misfit_helix.jpg
 
