@@ -46,4 +46,5 @@ Alias: ~rota [*structures*]
 
 Remove any live rotamer validators from the specified structures. If *structures*
 is not specified, all rotamer validators will be removed from the current
-ChimeraX session.
+ChimeraX session. This command is precisely equivalent to simply
+closing the "Rotamer Validation" model in the Models panel.
