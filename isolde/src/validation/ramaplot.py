@@ -115,6 +115,8 @@ class RamaPlot:
             self._start_tooltip()
 
     def _hover(self, event):
+        if self._current_model is None or self._current_model.was_deleted:
+            return
         sp = self.scatter
         annot = self._hover_annotation
         ax = self.axes
