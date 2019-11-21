@@ -21,6 +21,11 @@ Tutorial: Fitting 6mhz into emd_9118
 .. toctree::
     :maxdepth: 2
 
+**NOTE: This tutorial assumes that you are already familiar with the basic
+operation of ISOLDE. If this is your first time using it, it is highly
+recommended that you first work through the** :ref:`_isolde_cryo_intro_tutorial`
+**tutorial before attempting this one.**
+
 The *E. coli* LptB2FGC complex is responsible for extracting lipopolysaccharide
 (LPS) out of the inner membrane, as part of the transport chain bringing it to
 its final location in the outer membrane. What makes it an interesting tutorial
@@ -76,8 +81,12 @@ to rotate your view to look something like this:
 .. figure:: images/6mhz_9118_before_rigid_fit.jpg
 
 Before going further, we're going to do an initial rigid-body fit of chains A
-and G to the map using FitMap_. Since FitMap is designed to optimise an
-already-reasonably-close fit, we're going to need to give it some help first.
+and G to the map. In a real-world scenario you may want to do this externally
+using a tool designed for global docking such as *phenix.dock_in_map*, but in a
+reasonably straightforward case like this we can just do some manual
+rearrangement followed by local optimisation using FitMap_. Since FitMap is
+designed to optimise an already-reasonably-close fit, we're going to need to
+give it some help first.
 
 .. _FitMap: help:user/commands/fitmap.html
 
@@ -170,9 +179,9 @@ __ cxcmd:delete\ ~protein
 
 We'll also need to add hydrogens:
 
-`addh hbond true`__
+`addh`__
 
-__ cxcmd:addh\ hbond\ true
+__ cxcmd:addh
 
 I prefer to hide the non-polar hydrogen atoms to reduce clutter:
 
@@ -264,25 +273,17 @@ Reminder: you can see the full set of options for this command using
 
 __ cxcmd:usage\ isolde\ restrain
 
-... which will print a short synopsis to the ChimeraX Log window.
+... which will print a short synopsis to the ChimeraX Log window, with a link to
+`more extensive documentation`__.
+
+__ help:user/commands/isolde_restrain.html
 
 
 Here we're trusting the starting model to be essentially correct (always a
 somewhat brave assumption when its resolution is 4.1 Angstroms!) - but as you'll
 see, it doesn't need to be perfect. Nevertheless, if you have a high-resolution
 template (of the same or a homologous structure), the *isolde restrain* command
-can cater to that.
-
-Before we start things moving, we have one more job to do. On associating a
-map to a model, ISOLDE automatically applies a weighting to it (that is, a
-constant specifying how strongly it "pulls" on the atoms). The automatic
-weighting is set at a value that is generally good for a model that is already
-reasonably well-fitted to its map. Since that clearly isn't the case here, we're
-going to need to dial it down quite a bit. We can always turn it back up later.
-Head back over to the map settings dialogue (where we set the map visualisation
-earlier), drop the weight down from its current value (which should be about
-47.7) to 15, and click Set.
-
+can also cater to that.
 
 Anyway, let's go ahead and fire up our simulation (unless you're running on a
 workstation with a strong GPU, I'm afraid this will be a little slow):
@@ -389,9 +390,17 @@ The *isolde release distances* command offers a range of flexible options here.
 First up, the restraints on residues 298-304 clearly make no real sense at all,
 so let's release them entirely (with an extra residue padding either side):
 
-`select /G:297-305; cview sel; isolde release distances sel`__
+`select /G:297-305`__
 
-__ cxcmd:select\ /G:297-305;cview\ sel;isolde\ release\ distances\ sel
+__ cxcmd:select\ /G:297-305
+
+`cview sel`__
+
+__ cxcmd:cview\ sel
+
+`isolde release distances sel`__
+
+__ cxcmd:isolde\ release\ distances\ sel
 
 Then, for residues 306-354, we'll keep all restraints between atoms in these
 residues but release all restraints to their surroundings:
@@ -446,7 +455,7 @@ __ cxcmd:isolde\ adjust\ distances\ \#1\ displayThreshold\ 0
 something is wrong - it looks like these residues need to shift one step in
 register towards the C-terminus. This is quite straightforward:
 
-__ cxcmd:view\ /G:303-321\ cofr\ false
+__ cxcmd:cview\ /G:303-321
 
 `select /G:303-321`__
 

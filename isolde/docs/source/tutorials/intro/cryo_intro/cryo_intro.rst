@@ -519,16 +519,16 @@ you wish you can use external tools like *phenix.auto_sharpen* or *LocScale* to
 optimise the map sharpening, but ChimeraX provides a tool to smooth or sharpen
 the map to your specification:
 
-`volume gaussian #1 sDev 0.75`__
+`volume gaussian #1 bfactor 50`__
 
 __ cxcmd:volume\ gaussian\ #1\ bfactor 50
 
 ... will generate a new smoothed map (mathematically, the convolution of the
 existing one with a Gaussian with a standard deviation of about 0.8 Angstroms.
-Specifically, the B-factor  is related to the standard deviation of the Gaussian
-as: :math:`B=8*pi^2*sDev^2` (this is identical to the formalism describing
+Specifically, the B-factor is related to the standard deviation of the Gaussian
+as: :math:`B=8*pi^2*variance` (this is identical to the formalism describing
 atomic B-factors: in real space it describes how "blurred" they are; in
-reciprocal space it describes how  quickly the Fourier amplitudes drop off with
+reciprocal space it describes how quickly the Fourier amplitudes drop off with
 increasing resolution). Where it makes sense to do so, you can also sharpen maps
 by using a negative value for the bfactor argument.
 
