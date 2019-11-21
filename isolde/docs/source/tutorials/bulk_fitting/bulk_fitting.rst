@@ -23,7 +23,7 @@ Tutorial: Fitting 6mhz into emd_9118
 
 **NOTE: This tutorial assumes that you are already familiar with the basic
 operation of ISOLDE. If this is your first time using it, it is highly
-recommended that you first work through the** :ref:`_isolde_cryo_intro_tutorial`
+recommended that you first work through the** :ref:`isolde_cryo_intro_tutorial`
 **tutorial before attempting this one.**
 
 The *E. coli* LptB2FGC complex is responsible for extracting lipopolysaccharide
