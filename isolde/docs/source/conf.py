@@ -18,9 +18,10 @@ import sys
 
 
 # -- Project information -----------------------------------------------------
-
+import datetime
+now = datetime.datetime.now()
 project = 'ISOLDE'
-copyright = '2016, Tristan Croll'
+copyright = '2016-{}, Tristan Croll'.format(now.year)
 author = 'Tristan Croll'
 
 # The short X.Y version
