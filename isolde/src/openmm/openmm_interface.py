@@ -627,7 +627,7 @@ class Sim_Manager:
             return
         tokens = err_text.split()
         res_num = int(tokens[5])
-        print("Bad residue number: {}".format(tokens[5]))
+        #print("Bad residue number: {}".format(tokens[5]))
         # OpenMM residue numbering starts from 1
         residue = self.sim_construct.all_residues[res_num-1]
         self.isolde._handle_bad_template(residue)
@@ -638,7 +638,7 @@ class Sim_Manager:
             return False
         tokens = err_text.split()
         res_num = int(tokens[8])
-        print("Bad residue number: {}".format(tokens[5]))
+        #print("Bad residue number: {}".format(tokens[8]))
         # OpenMM residue numbering starts from 1
         residue = self.sim_construct.all_residues[res_num-1]
         self.isolde._handle_bad_template(residue)

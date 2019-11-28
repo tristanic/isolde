@@ -2764,6 +2764,9 @@ class Isolde():
         residue.atoms.intra_bonds.selected = True
         from .view import focus_on_selection
         focus_on_selection(self.session, residue.atoms)
+        residue.session.logger.warning('No template found for residue {}{} ({})'.format(
+            residue.chain_id, residue.number, residue.name
+        ))
         from .dialog import failed_template_warning
         choice = failed_template_warning(residue)
         if choice == 'addh':
