@@ -310,7 +310,7 @@ class Isolde():
         ffmgr.background_load_ff(sp.forcefield)
 
         self._event_handler.add_event_handler('session save warning',
-            'begin save session', self._session_save_cb) 
+            'begin save session', self._session_save_cb)
 
     def _session_save_cb(self, *_):
         self.session.logger.warning('Session saving is not yet implemented for '
@@ -1291,7 +1291,8 @@ class Isolde():
         m = model
         from chimerax.clipper.symmetry import get_map_mgr
         map_mgr = get_map_mgr(m, create=True, auto_add_to_session=True)
-        xmapset = map_mgr.add_xmapset_from_mtz(filename, self.params.map_shannon_rate)
+        xmapset = map_mgr.add_xmapset_from_mtz(filename, self.params.map_shannon_rate,
+            auto_choose_reflection_data=False)
         if xmapset.live_xmap_mgr is not None:
             xmapset.live_update = self.iw._sim_basic_xtal_settings_live_recalc_checkbox.checkState()
             # 2mFo-DFc and mFo-DFc maps are created automatically, but should
