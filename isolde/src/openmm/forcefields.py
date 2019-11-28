@@ -131,7 +131,7 @@ class Forcefield_Mgr:
             for fname in zf.namelist():
                 name, ext = os.path.splitext(fname)
                 if ext.lower() == '.xml':
-                    namelist.append(fname)
+                    namelist.append(name)
         return namelist
 
 
