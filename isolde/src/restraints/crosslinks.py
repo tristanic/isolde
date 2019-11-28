@@ -41,7 +41,7 @@ def apply_links(session, link_defs, model, strength, well_half_width, alpha,
             upper_distance = d-udc
             mean_distance = (lower_distance + upper_distance)/2
             tolerance = upper_distance-mean_distance
-            c = well_half_width * 2 * tolerance
+            c = well_half_width * 2 * mean_distance
 
             adr = adrm.add_restraint(*atoms)
             adr.target=mean_distance
