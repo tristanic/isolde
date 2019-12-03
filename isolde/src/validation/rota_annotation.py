@@ -49,7 +49,6 @@ class RotamerAnnotator(Model):
     via the `ChimeraX` Model Panel) temporarily turns off automatic validation,
     which will restart when display is turned back on.
     '''
-    SESSION_SAVE=False
     pickable = False
 
     def __init__(self, atomic_structure):
@@ -234,3 +233,21 @@ class RotamerAnnotator(Model):
         d = Drawing('rotamer cb indicator')
         d.set_geometry(v, n, t)
         return d
+
+
+    def take_snapshot(self, session, flags):
+        from chimerax.core.models import Model
+        data = {
+            'model state': Model.take_snapshot(self, session, flags),
+            'structure': self._atomic_structure,
+        }
+        from chimerax.core.state import CORE_STATE_VERSION
+        data['version']=CORE_STATE_VERSION
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        from chimerax.core.models import Model
+        ra = RotamerAnnotator(data['structure'])
+        Model.set_state_from_snapshot(ra, session, data['model state'])
+        return ra
