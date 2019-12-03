@@ -1860,17 +1860,18 @@ class PositionRestraintMgr(_RestraintMgr):
         from chimerax.isolde import session_extensions as sx
         pr_mgr = sx.get_position_restraint_mgr(m)
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     _DEFAULT_BOND_COLOR = [200, 250, 120, 255]
     _DEFAULT_PIN_COLOR = [255,215,0,255]
 
-    def __init__(self, model, c_pointer=None):
+    def __init__(self, model, c_pointer=None, auto_add_to_session=True):
         super().__init__('Position Restraints', model, c_pointer=c_pointer, allow_hydrogens='no')
         self._prepare_drawings()
         self._last_visibles = None
         self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
         self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
-        model.add([self])
+        if auto_add_to_session:
+            model.add([self])
 
     def delete(self):
         self.model.triggers.remove_handler(self._model_update_handler)
@@ -2100,6 +2101,31 @@ class PositionRestraintMgr(_RestraintMgr):
         f = c_function('position_restraint_mgr_visible_restraints',
             args=(ctypes.c_void_p,), ret=ctypes.py_object)
         return _position_restraints(f(self._c_pointer))
+
+    def _session_save_info(self):
+        prs = self.get_restraints(self.model.atoms)
+        save_info = {
+            'atoms':                prs.atoms,
+            'targets':              prs.targets,
+            'spring_constants':     prs.spring_constants,
+            'enableds':             prs.enableds,
+        }
+        return save_info
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        prm = PositionRestraintMgr(data['structure'])
+        prm.set_state_from_snapshot(session, data)
+        return prm
+
+    def set_state_from_snapshot(self, session, data):
+        from chimerax.core.models import Model
+        Model.set_state_from_snapshot(self, session, data['model state'])
+        data = data['restraint info']
+        prs = self.add_restraints(data['atoms'])
+        prs.targets = data['targets']
+        prs.spring_constants = data['spring_constants']
+        prs.enableds = data['enableds']
 
 
 class TuggableAtomsMgr(_RestraintMgr):
