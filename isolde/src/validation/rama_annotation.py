@@ -41,7 +41,6 @@ class RamaAnnotator(Model):
     via the `ChimeraX` Model Panel) temporarily turns off automatic validation,
     which will restart when display is turned back on.
     '''
-    SESSION_SAVE=False
     pickable = False
 
     def __init__(self, atomic_structure, hide_favored = False,
@@ -254,3 +253,22 @@ class RamaAnnotator(Model):
             od.display = True
         else:
             od.display = False
+
+    def take_snapshot(self, session, flags):
+        from chimerax.core.models import Model
+        data = {
+            'model state': Model.take_snapshot(self, session, flags),
+            'structure': self._atomic_structure,
+            'hide favored': self._hide_favored,
+            'ignore ribbon hides': self._ignore_ribbon_hides
+        }
+        from chimerax.core.state import CORE_STATE_VERSION
+        data['version']=CORE_STATE_VERSION
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        from chimerax.core.models import Model
+        ra = RamaAnnotator(data['structure'], data['hide favored'], data['ignore ribbon hides'])
+        Model.set_state_from_snapshot(ra, session, data['model state'])
+        return ra
