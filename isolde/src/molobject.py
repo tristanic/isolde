@@ -2772,7 +2772,7 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
         adr_mgr = sx.get_adaptive_distance_restraint_mgr(m)
 
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     _DEFAULT_BOND_COLOR = [0, 255, 0, 255]
     _DEFAULT_TARGET_COLOR = [0, 255, 0, 255]
 
@@ -2886,6 +2886,45 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
         td.positions = mid_pos
         td.colors = colors
 
+    def _session_save_info(self):
+        drs = self.all_restraints
+        save_info = {
+            'atoms':                drs.atoms,
+            'targets':              drs.targets,
+            'tolerances':           drs.tolerances,
+            'kappas':               drs.kappas,
+            'cs':                   drs.cs,
+            'alphas':               drs.alphas,
+            'enableds':             drs.enableds,
+        }
+        return save_info
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        drm = AdaptiveDistanceRestraintMgr(data['structure'])
+        drm.set_state_from_snapshot(session, data)
+        return drm
+
+    def set_state_from_snapshot(self, session, data):
+        from chimerax.core.models import Model
+        Model.set_state_from_snapshot(self, session, data['model state'])
+        data = data['restraint info']
+        atoms = data['atoms']
+        targets = data['targets']
+        tolerances = data['tolerances']
+        kappas = data['kappas']
+        cs = data['cs']
+        alphas = data['alphas']
+        enableds = data['enableds']
+        for a1, a2, target, tol, kappa, c, alpha, enabled in zip(
+            *atoms, targets, tolerances, kappas, cs, alphas, enableds):
+            dr = self.add_restraint(a1, a2)
+            dr.target = target
+            dr.tolerance=tol
+            dr.kappa = kappa
+            dr.c = c
+            dr.alpha = alpha
+            dr.enabled = enabled
 
 
 
