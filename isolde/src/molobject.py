@@ -2947,7 +2947,7 @@ class ChiralRestraintMgr(_RestraintMgr):
         from chimerax.isolde import session_extensions as sx
         chir_mgr = sx.get_chir_restraint_mgr(m)
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     def __init__(self, model, c_pointer = None):
         super().__init__('Chirality Restraints', model, c_pointer)
         model.add([self])
@@ -3058,6 +3058,35 @@ class ChiralRestraintMgr(_RestraintMgr):
             args=(ctypes.c_void_p,),
             ret=ctypes.c_size_t)
         return f(self._c_pointer)
+
+    def _session_save_info(self):
+        chirals = self.get_restraints_by_atoms(self.model.atoms)
+        save_info = {
+            'atoms':                chirals.chiral_atoms,
+            'cutoffs':              chirals.cutoffs,
+            'spring_constants':     chirals.spring_constants,
+            'enableds':             chirals.enableds,
+        }
+        return save_info
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        crm = ChiralRestraintMgr(data['structure'])
+        crm.set_state_from_snapshot(session, data)
+        return crm
+
+    def set_state_from_snapshot(self, session, data):
+        from chimerax.core.models import Model
+        Model.set_state_from_snapshot(self, session, data['model state'])
+        data = data['restraint info']
+        atoms = data['atoms']
+        spring_constants = data['spring_constants']
+        cutoffs = data['cutoffs']
+        enableds = data['enableds']
+        crs = self.add_restraints_by_atoms(atoms)
+        crs.spring_constants=spring_constants
+        crs.cutoffs = cutoffs
+        crs.enableds=enableds
 
 
 class ProperDihedralRestraintMgr(_RestraintMgr):
