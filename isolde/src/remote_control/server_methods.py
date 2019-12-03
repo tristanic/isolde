@@ -1,13 +1,13 @@
 def _model_id_as_tuple(model_id):
     return tuple(int(id) for id in model_id.split('.'))
 
-def _model_from_id(model_id, error_if_not_found=True):
-        m = session.models.list(model_id=_model_id_as_tuple(parent))
+def _model_from_id(session, model_id, error_if_not_found=True):
+        m = session.models.list(model_id=_model_id_as_tuple(model_id))
         if not m:
             if error_if_not_found:
-                raise TypeError('No model with ID {} found!'.format(parent))
-        else:
-            return None
+                raise TypeError('No model with ID {} found!'.format(model_id))
+            else:
+                return None
         return m[0]
 
 def _get_symmetry_handler(model):
@@ -109,7 +109,7 @@ def update_model_from_file(session, model_id:'string', file_path:'string'):
          'model': model id for the atomic structure itself.
          }
     '''
-    m = _model_from_id(model_id)
+    m = _model_from_id(session, model_id)
     sh = _get_symmetry_handler(m)
     new_m = sh.swap_model_from_file(file_path)
     return {'manager': sh.id_string, 'model id':new_m.id_string}
@@ -166,7 +166,7 @@ def load_structure_factors(session, file_path:'string', model_id:'string'):
     '''
     from chimerax.clipper.symmetry import SymmetryManager
     from chimerax.atomic import AtomicStructure
-    m = _model_from_id(model_id)
+    m = _model_from_id(session, model_id)
     if isinstance(m, AtomicStructure):
         from chimerax.clipper import get_symmetry_handler
         sh = get_symmetry_handler(m, create=True, auto_add_to_session=True)
@@ -208,7 +208,7 @@ def load_map(session, file_path:'string', model_id:'string'):
             'map':      the id of the newly-opened map
         }
     '''
-    m = _model_from_id(model_id)
+    m = _model_from_id(session, model_id)
     from chimerax.atomic import AtomicStructure
     from chimerax.clipper.symmetry import SymmetryManager
     from chimerax.clipper.maps import MapMgr
@@ -251,7 +251,7 @@ def center_on_coord(session, coord:'list', radius:'float' = 5.0,
     '''
     if spotlight:
         from chimerax.core.commands import run
-        run(session, 'clipper spotlight enable true', log=False)
+        run(session, 'clipper spotlight', log=False)
     from chimerax.isolde.view import focus_on_coord
     focus_on_coord(session, coord, radius, True)
     return {}
@@ -299,7 +299,7 @@ def close_models(session, models:'string or list'):
     to_close = []
     not_found = []
     for mid in models:
-        m = _model_from_id(mid, error_if_not_found=False)
+        m = _model_from_id(session, mid, error_if_not_found=False)
         if not m:
             session.logger.warning('Model ID {} not found!'.format(mid))
             not_found.append(mid)
