@@ -2143,6 +2143,9 @@ class TuggableAtomsMgr(_RestraintMgr):
         from chimerax.isolde import session_extensions as sx
         ta_mgr = sx.get_tuggable_atoms_mgr(m)
     '''
+    # No need to save TuggableAtomsMgr - its restraints are solely used for
+    # interactive tugging, and it will be automatically re-created on the first
+    # simulation.
     SESSION_SAVE=False
     _DEFAULT_ARROW_COLOR = [100, 255, 100, 255]
     # _NEAR_ATOMS_COLOR = [0,255,255,255]
@@ -2329,6 +2332,7 @@ class TuggableAtomsMgr(_RestraintMgr):
         f = c_function('tuggable_atoms_mgr_visible_restraints',
             args=(ctypes.c_void_p,), ret=ctypes.py_object)
         return _tuggable_atoms(f(self._c_pointer))
+
 
 class _DistanceRestraintMgrBase(_RestraintMgr):
     '''
@@ -2612,7 +2616,7 @@ class DistanceRestraintMgr(_DistanceRestraintMgrBase):
         dr_mgr = sx.get_distance_restraint_mgr(m)
 
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     _DEFAULT_BOND_COLOR = [168, 255, 230, 255]
     _DEFAULT_TARGET_COLOR = [128, 215, 190, 255]
     def __init__(self, model, c_pointer=None):
