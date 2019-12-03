@@ -1646,6 +1646,29 @@ class _RestraintMgr(Model):
         ''' Should be overridden in derived classes. '''
         pass
 
+    def _session_save_info(self):
+        '''
+        Write a dict containing all information needed to restore this class in
+        a new session.
+        '''
+        pass
+
+    def take_snapshot(self, session, flags):
+        from chimerax.core.models import Model
+        data = {
+            'model state': Model.take_snapshot(self, session, flags),
+            'structure':   self.model,
+        }
+        from chimerax.core.state import CORE_STATE_VERSION
+        data['version']=CORE_STATE_VERSION
+        data['restraint info'] = self._session_save_info()
+        return data
+
+
+
+
+
+
 class MDFFMgr(_RestraintMgr):
     '''
     Manages the molecular dynamics flexible fitting (MDFF) steering forces for
