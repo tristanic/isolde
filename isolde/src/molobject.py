@@ -2725,6 +2725,35 @@ class DistanceRestraintMgr(_DistanceRestraintMgrBase):
     def _update_target_drawing(self, td, visibles, n):
         td.positions = visibles._target_transforms
 
+    def _session_save_info(self):
+        drs = self.all_restraints
+        save_info = {
+            'atoms':                drs.atoms,
+            'targets':              drs.targets,
+            'spring_constants':     drs.spring_constants,
+            'enableds':             drs.enableds,
+        }
+        return save_info
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        drm = DistanceRestraintMgr(data['structure'])
+        drm.set_state_from_snapshot(session, data)
+        return drm
+
+    def set_state_from_snapshot(self, session, data):
+        from chimerax.core.models import Model
+        Model.set_state_from_snapshot(self, session, data['model state'])
+        data = data['restraint info']
+        atoms = data['atoms']
+        targets = data['targets']
+        spring_constants = data['spring_constants']
+        enableds = data['enableds']
+        for a1, a2, target, k, enabled in zip(*atoms, targets, spring_constants, enableds):
+            dr = self.add_restraint(a1, a2)
+            dr.target = target
+            dr.spring_constant = k
+            dr.enabled = enabled
 
 
 class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
