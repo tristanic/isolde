@@ -1685,14 +1685,16 @@ class MDFFMgr(_RestraintMgr):
         from chimerax.isolde import session_extensions as sx
         mdff_mgr = sx.get_mdff_mgr(m, v)
     '''
-    SESSION_SAVE=False
-    def __init__(self, model, volume, c_pointer=None):
+    SESSION_SAVE=True
+    def __init__(self, model, volume, c_pointer=None, guess_global_k=True,
+            auto_add_to_session=True):
         name = 'MDFF - ' + volume.name
         self._volume = volume
         super().__init__(name, model, c_pointer=c_pointer, c_class_name = "mdff_mgr")
         # Place as sub-model to the Volume object so deleting the Volume automatically
         # deletes the MDFF manager
-        self.volume.add([self])
+        if auto_add_to_session:
+            self.volume.add([self])
         if 'global k changed' not in self.triggers.trigger_names():
             self.triggers.add_trigger('global k changed')
 
@@ -1705,8 +1707,8 @@ class MDFFMgr(_RestraintMgr):
         else:
             default_scaling_constant = 2
 
-
-        self.guess_global_k(scaling_constant = default_scaling_constant)
+        if guess_global_k:
+            self.guess_global_k(scaling_constant = default_scaling_constant)
         self._enabled = True
 
     @property
@@ -1845,6 +1847,38 @@ class MDFFMgr(_RestraintMgr):
 
     global_k = property(_get_global_k, _set_global_k)
 
+    def take_snapshot(self, session, flags):
+        data = super().take_snapshot(session, flags)
+        data['volume'] = self._volume
+        return data
+
+    def _session_save_info(self):
+        mdff_atoms = self.get_mdff_atoms(self.model.atoms)
+        save_info = {
+            'enabled':              self.enabled,
+            'volume':               self.volume,
+            'global k':             self.global_k,
+            'atoms':                mdff_atoms.atoms,
+            'enableds':             mdff_atoms.enableds,
+            'coupling constants':   mdff_atoms.coupling_constants,
+        }
+        return save_info
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        mdm = MDFFMgr(data['structure'], data['volume'], guess_global_k=False,
+            auto_add_to_session=False)
+        mdm.set_state_from_snapshot(session, data)
+        return mdm
+
+    def set_state_from_snapshot(self, session, data):
+        from chimerax.core.models import Model
+        Model.set_state_from_snapshot(self, session, data['model state'])
+        data = data['restraint info']
+        self.global_k = data['global k']
+        matoms = self.add_mdff_atoms(data['atoms'])
+        matoms.enableds = data['enableds']
+        matoms.coupling_constants = data['coupling constants']
 
 class PositionRestraintMgr(_RestraintMgr):
     '''
