@@ -2377,7 +2377,7 @@ class _DistanceRestraintMgrBase(_RestraintMgr):
     _DEFAULT_TARGET_COLOR = [128, 215, 190, 255]
     def __init__(self, model, class_name, c_function_prefix,
             singular_restraint_getter, plural_restraint_getter,
-            c_pointer=None):
+            c_pointer=None, auto_add_to_session=True):
         '''
         Prepare a distance restraint manager for a given atomic model.
         '''
@@ -2402,7 +2402,8 @@ class _DistanceRestraintMgrBase(_RestraintMgr):
         self._last_visibles = None
         self._model_update_handler = self.model.triggers.add_handler('changes', self._model_changes_cb)
         self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
-        model.add([self])
+        if auto_add_to_session:
+            model.add([self])
 
     def delete(self):
         self.model.triggers.remove_handler(self._model_update_handler)
@@ -2653,7 +2654,7 @@ class DistanceRestraintMgr(_DistanceRestraintMgrBase):
     SESSION_SAVE=True
     _DEFAULT_BOND_COLOR = [168, 255, 230, 255]
     _DEFAULT_TARGET_COLOR = [128, 215, 190, 255]
-    def __init__(self, model, c_pointer=None):
+    def __init__(self, model, c_pointer=None, auto_add_to_session=True):
         '''
         Prepare a distance restraint manager for a given atomic model.
         '''
@@ -2663,7 +2664,8 @@ class DistanceRestraintMgr(_DistanceRestraintMgrBase):
         plural_getter = _distance_restraints
 
         super().__init__(model, class_name, c_function_prefix,
-            singular_getter, plural_getter, c_pointer=c_pointer)
+            singular_getter, plural_getter, c_pointer=c_pointer,
+            auto_add_to_session=auto_add_to_session)
 
     def _target_geometry(self):
         '''
@@ -2771,7 +2773,7 @@ class DistanceRestraintMgr(_DistanceRestraintMgrBase):
 
     @staticmethod
     def restore_snapshot(session, data):
-        drm = DistanceRestraintMgr(data['structure'])
+        drm = DistanceRestraintMgr(data['structure'], auto_add_to_session=False)
         drm.set_state_from_snapshot(session, data)
         return drm
 
@@ -2812,7 +2814,8 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
 
     _DEFAULT_MIN_COLOR = [204, 204, 0, 255]
     _DEFAULT_MAX_COLOR = [102, 0, 204, 255]
-    def __init__(self, model, c_pointer=None, name = 'Adaptive Distance Restraints'):
+    def __init__(self, model, c_pointer=None, name = 'Adaptive Distance Restraints',
+            auto_add_to_session=True):
         '''
         Prepare an adaptive distance restraint manager for a given atomic model.
         '''
@@ -2822,7 +2825,8 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
         plural_getter = _adaptive_distance_restraints
 
         super().__init__(model, class_name, c_function_prefix,
-            singular_getter, plural_getter, c_pointer=c_pointer)
+            singular_getter, plural_getter, c_pointer=c_pointer,
+            auto_add_to_session=auto_add_to_session)
         self.name = name
         self.set_colormap(self._DEFAULT_MIN_COLOR, self._DEFAULT_TARGET_COLOR, self._DEFAULT_MAX_COLOR)
 
@@ -2935,7 +2939,8 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
 
     @staticmethod
     def restore_snapshot(session, data):
-        drm = AdaptiveDistanceRestraintMgr(data['structure'])
+        drm = AdaptiveDistanceRestraintMgr(data['structure'],
+            auto_add_to_session=False)
         drm.set_state_from_snapshot(session, data)
         return drm
 
@@ -2982,9 +2987,10 @@ class ChiralRestraintMgr(_RestraintMgr):
         chir_mgr = sx.get_chir_restraint_mgr(m)
     '''
     SESSION_SAVE=True
-    def __init__(self, model, c_pointer = None):
+    def __init__(self, model, c_pointer = None, auto_add_to_session=True):
         super().__init__('Chirality Restraints', model, c_pointer)
-        model.add([self])
+        if auto_add_to_session:
+            model.add([self])
 
     def _get_restraints(self, chirals, create=False):
         n = len(chirals)
@@ -3105,7 +3111,8 @@ class ChiralRestraintMgr(_RestraintMgr):
 
     @staticmethod
     def restore_snapshot(session, data):
-        crm = ChiralRestraintMgr(data['structure'])
+        crm = ChiralRestraintMgr(data['structure'],
+            auto_add_to_session=False)
         crm.set_state_from_snapshot(session, data)
         return crm
 
@@ -3139,7 +3146,7 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         pdr_mgr = sx.get_proper_dihedral_restraint_mgr(m)
     '''
     SESSION_SAVE=False
-    def __init__(self, model, c_pointer = None, defer_add = False):
+    def __init__(self, model, c_pointer = None, auto_add_to_session=True):
         super().__init__('Proper Dihedral Restraints', model, c_pointer)
         self.set_default_colors()
         self._update_needed = True
@@ -3147,7 +3154,7 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         self._last_visibles = None
         self._restraint_changes_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
         self._atom_changes_handler = model.triggers.add_handler('changes', self._model_changes_cb)
-        if not defer_add:
+        if auto_add_to_session:
             model.add([self])
             self.update_graphics()
 
@@ -3472,7 +3479,7 @@ class RotamerRestraintMgr(_RestraintMgr):
     target rotamer conformations for a given sidechain.
     '''
     SESSION_SAVE=False
-    def __init__(self, model, c_pointer=None):
+    def __init__(self, model, c_pointer=None, auto_add_to_session=True):
         '''Manages rotamer restraints for a single model'''
         session=model.session
         self._dependents = set()
@@ -3489,7 +3496,7 @@ class RotamerRestraintMgr(_RestraintMgr):
                 pdr_m = m
                 break
         if pdr_m is None:
-            pdr_m = ProperDihedralRestraintMgr(model, defer_add=True)
+            pdr_m = ProperDihedralRestraintMgr(model, auto_add_to_session=False)
             deferred_pdrm = True
         self._pdr_m = pdr_m
         from . import session_extensions as sx
@@ -3512,7 +3519,7 @@ class RotamerRestraintMgr(_RestraintMgr):
         self.model = model
         self._preview_model = None
         pdr_m.add([self])
-        if deferred_pdrm:
+        if deferred_pdrm and auto_add_to_session:
             model.add([pdr_m])
 
     def valid_preview(self, rotamer):
