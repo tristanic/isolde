@@ -24,10 +24,13 @@ project = 'ISOLDE'
 copyright = '2016-{}, Tristan Croll'.format(now.year)
 author = 'Tristan Croll'
 
+from chimerax.isolde import __version__
+from packaging import version
+
 # The short X.Y version
-version = '1.0'
+version = version.parse(__version__).base_version
 # The full version, including alpha/beta/rc tags
-release = '1.0b3.dev7'
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------
