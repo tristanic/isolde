@@ -85,8 +85,8 @@ class Forcefield_Mgr:
         self._task = None
         from simtk.openmm import version
         self._openmm_version = version.version
-        from chimerax.isolde import version
-        self._isolde_version = version.version(session)
+        from chimerax.isolde import __version__
+        self._isolde_version = __version__
 
     def _complete_task(self):
         from time import sleep

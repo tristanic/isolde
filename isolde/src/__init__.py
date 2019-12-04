@@ -21,6 +21,12 @@ def initialize_openmm():
 # initialize_openmm()
 
 
+def _version():
+    import pkg_resources
+    return pkg_resources.require('ChimeraX-ISOLDE')[0].version
+
+__version__ = _version()
+
 from chimerax.core.toolshed import BundleAPI
 from . import geometry
 
