@@ -521,7 +521,7 @@ the map to your specification:
 
 `volume gaussian #1 bfactor 50`__
 
-__ cxcmd:volume\ gaussian\ #1\ bfactor 50
+__ cxcmd:volume\ gaussian\ #1\ bfactor\ 50
 
 ... will generate a new smoothed map (mathematically, the convolution of the
 existing one with a Gaussian with a standard deviation of about 0.8 Angstroms.
