@@ -100,6 +100,13 @@ SET_PYTHON_CLASS(rotamer_restraint, RotamerRestraint)
 GET_PYTHON_INSTANCES(rotamer_restraint, RotamerRestraint)
 
 extern "C" EXPORT void
+rotamer_restraint_get_manager(void *restraint, size_t n, pyobject_t *mgr)
+{
+    RotamerRestraint **r = static_cast<RotamerRestraint **>(restraint);
+    error_wrap_array_get(r, n, &RotamerRestraint::mgr, mgr);
+}
+
+extern "C" EXPORT void
 rotamer_restraint_rotamer(void *restraint, size_t n, pyobject_t *rotamer)
 {
     RotamerRestraint** rr = static_cast<RotamerRestraint **>(restraint);

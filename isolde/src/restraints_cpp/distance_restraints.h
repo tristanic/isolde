@@ -70,6 +70,7 @@ public:
     double distance() const {return _atoms[0]->coord().distance(_atoms[1]->coord());}
     Structure* structure() const {return _atoms[0]->structure();}
     Change_Tracker *change_tracker() const;
+    DistanceRestraintMgr_Tmpl<DistanceRestraint> *mgr() const { return _mgr; }
 
 private:
     void _bond_transform(float *rot44, float radius, float length_scale) const;

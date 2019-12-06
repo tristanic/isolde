@@ -53,19 +53,43 @@ distance_restraint_mgr_delete(void *mgr)
     }
 }
 
-extern "C" EXPORT void*
-distance_restraint_mgr_get_restraint(void *mgr, void *atoms, bool create)
+// extern "C" EXPORT void*
+// distance_restraint_mgr_get_restraint(void *mgr, void *atoms, bool create)
+// {
+//     DistanceRestraintMgr *d = static_cast<DistanceRestraintMgr *>(mgr);
+//     Atom **a = static_cast<Atom **>(atoms);
+//     bool c = (bool)create;
+//     try {
+//         return d->get_restraint(*a, *(a+1), c);
+//     } catch (...) {
+//         molc_error();
+//         return 0;
+//     }
+// }
+
+extern "C" EXPORT size_t
+distance_restraint_mgr_get_restraint(void *mgr, void* atom1, void* atom2, npy_bool create, size_t n, pyobject_t *restraint)
 {
     DistanceRestraintMgr *d = static_cast<DistanceRestraintMgr *>(mgr);
-    Atom **a = static_cast<Atom **>(atoms);
-    bool c = (bool)create;
+    Atom **a1 = static_cast<Atom **>(atom1);
+    Atom **a2 = static_cast<Atom **>(atom2);
+    size_t count=0;
     try {
-        return d->get_restraint(*a, *(a+1), c);
+        for (size_t i=0; i<n; ++i) {
+            DistanceRestraint *r = d->get_restraint(*a1++, *a2++, create);
+            if (r != nullptr) {
+                *restraint++ = r;
+                count++;
+            }
+        }
+        return count;
     } catch (...) {
         molc_error();
         return 0;
     }
 }
+
+
 
 extern "C" EXPORT PyObject*
 distance_restraint_mgr_atom_restraints(void *mgr, void *atom, size_t n)
@@ -242,6 +266,13 @@ distance_restraint_mgr_get_ss_restraints(void *mgr, void *residues, size_t n, bo
  ***************************************************************/
 SET_PYTHON_CLASS(distance_restraint, DistanceRestraint)
 GET_PYTHON_INSTANCES(distance_restraint, DistanceRestraint)
+
+extern "C" EXPORT void
+distance_restraint_get_manager(void *restraint, size_t n, pyobject_t *mgr)
+{
+    DistanceRestraint **r = static_cast<DistanceRestraint **>(restraint);
+    error_wrap_array_get(r, n, &DistanceRestraint::mgr, mgr);
+}
 
 extern "C" EXPORT void
 set_distance_restraint_target(void *restraint, size_t n, double *target)

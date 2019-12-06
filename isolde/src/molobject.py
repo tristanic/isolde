@@ -4109,6 +4109,8 @@ class PositionRestraint(State):
             args = (ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointer_ref, 1)
 
+    mgr = c_property('position_restraint_get_manager', cptr, astype=_position_restraint_mgr, read_only=True,
+        doc=':class:`PositionRestraintMgr` that owns this restraint. Read only.')
     atom = c_property('position_restraint_atom', cptr, astype=convert.atom_or_none, read_only=True,
         doc = 'Returns the restrained :py:class:`chimerax.Atom`. Read-only.')
     target = c_property('position_restraint_target', float64, 3,
@@ -4163,6 +4165,8 @@ class MDFFAtom(State):
             args = (ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointer_ref, 1)
 
+    mgr = c_property('mdff_atom_get_manager', cptr, astype=_mdff_mgr, read_only=True,
+        doc=':class:`MDFFMgr` for this atom and map. Read only.')
     enabled = c_property('mdff_atom_enabled', npy_bool,
         doc='Enable/disable MDFF tugging on this atom or get its current state.')
     atom = c_property('mdff_atom_atom', cptr, astype=convert.atom_or_none, read_only=True,
@@ -4209,6 +4213,8 @@ class DistanceRestraint(State):
             args = (ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointer_ref, 1)
 
+    mgr = c_property('distance_restraint_get_manager', cptr, astype=_distance_restraint_mgr, read_only=True,
+        doc=':class:`DistanceRestraintMgr` for this restraint. Read only.')
     enabled =c_property('distance_restraint_enabled', npy_bool,
             doc = 'Enable/disable this restraint or get its current state.')
     visible = c_property('distance_restraint_visible', npy_bool, read_only = True,
@@ -4277,6 +4283,8 @@ class AdaptiveDistanceRestraint(State):
             args = (ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointer_ref, 1)
 
+    mgr = c_property('adaptive_distance_restraint_get_manager', cptr, astype=_adaptive_distance_restraint_mgr, read_only=True,
+        doc=':class:`AdaptiveDistanceRestraintMgr` for this restraint. Read only.')
     enabled =c_property('adaptive_distance_restraint_enabled', npy_bool,
             doc = 'Enable/disable this restraint or get its current state.')
     visible = c_property('adaptive_distance_restraint_visible', npy_bool, read_only = True,
@@ -4353,6 +4361,8 @@ class ChiralRestraint(State):
     def chiral_atom(self):
         return self.dihedral.chiral_atom
 
+    mgr = c_property('chiral_restraint_get_manager', cptr, astype=_chiral_restraint_mgr, read_only=True,
+        doc=':class:`ChiralRestraintMgr` for this restraint. Read only.')
     target = c_property('chiral_restraint_target', float64, read_only = True,
         doc = 'Target angle for this restraint in radians. Read only.')
     dihedral = c_property('chiral_restraint_chiral_center', cptr, astype=_chiral_center_or_none, read_only=True,
@@ -4403,6 +4413,8 @@ class ProperDihedralRestraint(State):
     def atoms(self):
         return self.dihedral.atoms
 
+    mgr = c_property('proper_dihedral_restraint_get_manager', cptr, astype=_proper_dihedral_restraint_mgr, read_only=True,
+        doc=':class:`ProperDihedralRestraintMgr` for this restraint. Read only.')
     target = c_property('proper_dihedral_restraint_target', float64,
         doc = 'Target angle for this restraint in radians. Can be written.')
     dihedral = c_property('proper_dihedral_restraint_dihedral', cptr, astype=_proper_dihedral_or_none, read_only=True,
@@ -4484,6 +4496,8 @@ class RotamerRestraint(State):
         f(self._c_pointer, pointer(ret))
         return _proper_dihedral_restraints(ret)
 
+    mgr = c_property('rotamer_restraint_get_manager', cptr, astype=_rotamer_restraint_mgr, read_only=True,
+        doc=':class:`RotamerRestraintMgr` for this restraint. Read only.')
     rotamer = c_property('rotamer_restraint_rotamer', cptr, astype=_rotamer_or_none, read_only=True,
         doc = ':py:class:`Rotamer` to be restrained. Read only.')
     residue = c_property('rotamer_restraint_residue', cptr, astype=convert.residue_or_none, read_only=True,

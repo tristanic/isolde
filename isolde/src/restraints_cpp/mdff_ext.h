@@ -118,6 +118,12 @@ set_mdff_mgr_global_k(void *mgr, double k)
 SET_PYTHON_CLASS(mdff_atom, MDFFAtom)
 GET_PYTHON_INSTANCES(mdff_atom, MDFFAtom)
 
+extern "C" EXPORT void
+mdff_atom_get_manager(void *mdffa, size_t n, pyobject_t *mgr)
+{
+    MDFFAtom **a = static_cast<MDFFAtom **>(mdffa);
+    error_wrap_array_get(a, n, &MDFFAtom::mgr, mgr);
+}
 
 extern "C" EXPORT void
 mdff_atom_atom(void *mdffa, size_t n, pyobject_t *atom)

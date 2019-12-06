@@ -201,6 +201,13 @@ SET_PYTHON_CLASS(position_restraint, PositionRestraint)
 GET_PYTHON_INSTANCES(position_restraint, PositionRestraint)
 
 extern "C" EXPORT void
+position_restraint_get_manager(void *restraint, size_t n, pyobject_t *mgr)
+{
+    PositionRestraint **r = static_cast<PositionRestraint **>(restraint);
+    error_wrap_array_get(r, n, &PositionRestraint::mgr, mgr);
+}
+
+extern "C" EXPORT void
 position_restraint_atom(void *restraint, size_t n, pyobject_t *atom)
 {
     PositionRestraint **r = static_cast<PositionRestraint **>(restraint);

@@ -52,19 +52,42 @@ adaptive_distance_restraint_mgr_delete(void *mgr)
     }
 }
 
-extern "C" EXPORT void*
-adaptive_distance_restraint_mgr_get_restraint(void *mgr, void *atoms, bool create)
+// extern "C" EXPORT void*
+// adaptive_distance_restraint_mgr_get_restraint(void *mgr, void *atoms, bool create)
+// {
+//     AdaptiveDistanceRestraintMgr *d = static_cast<AdaptiveDistanceRestraintMgr *>(mgr);
+//     Atom **a = static_cast<Atom **>(atoms);
+//     bool c = (bool)create;
+//     try {
+//         return d->get_restraint(*a, *(a+1), c);
+//     } catch (...) {
+//         molc_error();
+//         return 0;
+//     }
+// }
+
+extern "C" EXPORT size_t
+adaptive_distance_restraint_mgr_get_restraint(void *mgr, void* atom1, void* atom2, npy_bool create, size_t n, pyobject_t *restraint)
 {
     AdaptiveDistanceRestraintMgr *d = static_cast<AdaptiveDistanceRestraintMgr *>(mgr);
-    Atom **a = static_cast<Atom **>(atoms);
-    bool c = (bool)create;
+    Atom **a1 = static_cast<Atom **>(atom1);
+    Atom **a2 = static_cast<Atom **>(atom2);
+    size_t count=0;
     try {
-        return d->get_restraint(*a, *(a+1), c);
+        for (size_t i=0; i<n; ++i) {
+            AdaptiveDistanceRestraint *r = d->get_restraint(*a1++, *a2++, create);
+            if (r != nullptr) {
+                *restraint++ = r;
+                count++;
+            }
+        }
+        return count;
     } catch (...) {
         molc_error();
         return 0;
     }
 }
+
 
 extern "C" EXPORT PyObject*
 adaptive_distance_restraint_mgr_atom_restraints(void *mgr, void *atom, size_t n)
@@ -205,6 +228,13 @@ set_adaptive_distance_restraint_mgr_colors(void *mgr, uint8_t *colors)
  ***************************************************************/
 SET_PYTHON_CLASS(adaptive_distance_restraint, AdaptiveDistanceRestraint)
 GET_PYTHON_INSTANCES(adaptive_distance_restraint, AdaptiveDistanceRestraint)
+
+extern "C" EXPORT void
+adaptive_distance_restraint_get_manager(void *restraint, size_t n, pyobject_t *mgr)
+{
+    AdaptiveDistanceRestraint **r = static_cast<AdaptiveDistanceRestraint **>(restraint);
+    error_wrap_array_get(r, n, &AdaptiveDistanceRestraint::mgr, mgr);
+}
 
 extern "C" EXPORT void
 set_adaptive_distance_restraint_target(void *restraint, size_t n, double *target)

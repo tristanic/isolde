@@ -90,6 +90,7 @@ public:
     double force_magnitude() const;
     Structure* structure() const {return _atoms[0]->structure();}
     Change_Tracker *change_tracker() const;
+    DistanceRestraintMgr_Tmpl<AdaptiveDistanceRestraint> *mgr() const { return _mgr; }
 
 private:
     // to avoid numerical instability, define a large epsilon when switching force

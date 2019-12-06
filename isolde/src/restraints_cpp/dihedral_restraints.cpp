@@ -124,6 +124,9 @@ ChiralRestraint::ChiralRestraint(
         _cutoff = DEFAULT_CHIRAL_RESTRAINT_CUTOFF;
     }
 
+ChiralRestraintMgr* ChiralRestraint::mgr() const { return static_cast<ChiralRestraintMgr*>(base_mgr()); }
+
+
 
  ProperDihedralRestraint::ProperDihedralRestraint(
      ProperDihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr)
@@ -183,6 +186,7 @@ void ProperDihedralRestraint::get_annotation_color(uint8_t *color)
     }
 } //get_annotation_color
 
+ProperDihedralRestraintMgr* ProperDihedralRestraint::mgr() const { return static_cast<ProperDihedralRestraintMgr*>(base_mgr()); }
 
 template class Dihedral_Restraint_Base<ChiralCenter>;
 template class DihedralRestraintMgr_Base<ChiralCenter, ChiralRestraint>;

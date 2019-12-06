@@ -117,7 +117,7 @@ public:
     {
         throw std::logic_error(err_msg_not_implemented());
     }
-    Dihedral_Restraint_Change_Mgr *mgr() const { return _mgr; }
+    Dihedral_Restraint_Change_Mgr *base_mgr() const { return _mgr; }
     isolde::Change_Tracker* change_tracker() const { return _mgr->change_tracker(); }
     colors::variable_colormap* colormap() const { return _mgr->colormap(); }
 
@@ -153,7 +153,7 @@ public:
         if (_enabled != flag)
         {
             _enabled = flag;
-            mgr()->track_change(this, change_tracker()->REASON_ENABLED_CHANGED);
+           base_mgr()->track_change(this, change_tracker()->REASON_ENABLED_CHANGED);
         }
     }
     void set_display(bool flag)
@@ -161,21 +161,24 @@ public:
         if (_display != flag)
         {
             _display = flag;
-            mgr()->track_change(this, change_tracker()->REASON_DISPLAY_CHANGED);
+           base_mgr()->track_change(this, change_tracker()->REASON_DISPLAY_CHANGED);
         }
     }
     void set_spring_constant(const double &k)
     {
         _spring_constant = k<0 ? 0.0 : ( k > MAX_RADIAL_SPRING_CONSTANT ? MAX_RADIAL_SPRING_CONSTANT : k);
-        mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
+       base_mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
     }
 
     // Optional cutoff angle below which no force will be applied
     void set_cutoff(double cutoff)
     {
         _cutoff = cutoff; _cutoffs[1] = cutoff;
-        mgr()->track_change(this, change_tracker()->REASON_CUTOFF_CHANGED);
+       base_mgr()->track_change(this, change_tracker()->REASON_CUTOFF_CHANGED);
     }
+
+    // To make error_wrap_array_get automatic template substitution happy
+    ChiralRestraintMgr *mgr() const;
 }; // class ChiralRestraint
 
 class ProperDihedralRestraint:
@@ -189,14 +192,14 @@ public:
     void set_target(double target)
     {
         _target=util::wrapped_angle(target);
-        mgr()->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
+       base_mgr()->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
     }
     void set_enabled(bool flag)
     {
         if (_enabled != flag)
         {
             _enabled = flag;
-            mgr()->track_change(this, change_tracker()->REASON_ENABLED_CHANGED);
+           base_mgr()->track_change(this, change_tracker()->REASON_ENABLED_CHANGED);
         }
     }
     void set_display(bool flag)
@@ -204,21 +207,24 @@ public:
         if (_display != flag)
         {
             _display = flag;
-            mgr()->track_change(this, change_tracker()->REASON_DISPLAY_CHANGED);
+           base_mgr()->track_change(this, change_tracker()->REASON_DISPLAY_CHANGED);
         }
     }
     void set_spring_constant(const double &k)
     {
         _spring_constant = k<0 ? 0.0 : ( k > MAX_RADIAL_SPRING_CONSTANT ? MAX_RADIAL_SPRING_CONSTANT : k);
-        mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
+       base_mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
     }
 
     // Optional cutoff angle below which no force will be applied
     void set_cutoff(double cutoff)
     {
         _cutoff = cutoff; _cutoffs[1] = cutoff;
-        mgr()->track_change(this, change_tracker()->REASON_CUTOFF_CHANGED);
+       base_mgr()->track_change(this, change_tracker()->REASON_CUTOFF_CHANGED);
     }
+
+    // To make error_wrap_array_get automatic template substitution happy
+    ProperDihedralRestraintMgr *mgr() const;
 
 
 

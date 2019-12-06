@@ -226,6 +226,14 @@ SET_PYTHON_CLASS(chiral_restraint, ChiralRestraint)
 GET_PYTHON_INSTANCES(chiral_restraint, ChiralRestraint)
 
 extern "C" EXPORT void
+chiral_restraint_get_manager(void *restraint, size_t n, pyobject_t *mgr)
+{
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
+    error_wrap_array_get(r, n, &ChiralRestraint::mgr, mgr);
+}
+
+
+extern "C" EXPORT void
 chiral_restraint_target(void *restraint, size_t n, double *target)
 {
     ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
@@ -423,6 +431,13 @@ chiral_all_atoms_in_sel(void* restraint, size_t nr, void* atom, size_t na)
 
 SET_PYTHON_CLASS(proper_dihedral_restraint, ProperDihedralRestraint)
 GET_PYTHON_INSTANCES(proper_dihedral_restraint, ProperDihedralRestraint)
+
+extern "C" EXPORT void
+proper_dihedral_restraint_get_manager(void *restraint, size_t n, pyobject_t *mgr)
+{
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
+    error_wrap_array_get(r, n, &ProperDihedralRestraint::mgr, mgr);
+}
 
 extern "C" EXPORT void
 proper_dihedral_restraint_target(void *restraint, size_t n, double *target)

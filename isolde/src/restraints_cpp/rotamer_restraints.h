@@ -49,6 +49,8 @@ public:
     void set_target_index (int t_index);
     int target_index() const { return _current_target_index; }
 
+    RotamerRestraintMgr *mgr() const { return _mgr; }
+
 private:
     Rotamer* _rotamer;
     RotamerRestraintMgr* _mgr;
