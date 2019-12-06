@@ -79,7 +79,7 @@ class _Dihedrals(Collection):
     Base class for ProperDihedrals and Improper_Dihedrals. Do not
     instantiate directly.
     '''
-
+    SESSION_SAVE=False
     def __init__(self, c_pointers, single_class, array_class):
         super().__init__(c_pointers, single_class, array_class)
 
@@ -117,6 +117,17 @@ class ChiralCenters(_Dihedrals):
     chiral_atoms = cvec_property('chiral_center_chiral_atom', cptr, astype=convert.atoms, read_only=True,
         doc='The chiral atoms. Read only.')
 
+    def take_snapshot(self, session, flags):
+        data = {
+            'atoms':    self.chiral_atoms,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        cm = get_chiral_mgr(session)
+        return cm.get_chirals(data['atoms'])
+
 
 class ProperDihedrals(_Dihedrals):
 
@@ -147,6 +158,20 @@ class ProperDihedrals(_Dihedrals):
 
     axial_bonds = cvec_property('proper_dihedral_axial_bond', cptr, astype=convert.bonds, read_only=True,
         doc='Returns a :class:`Bonds` giving the axial bond for each dihedral. Read-only')
+
+    def take_snapshot(self, session, flags):
+        data = {
+            'residues': self.residues,
+            'names':    list(self.names),
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        pdm = get_proper_dihedral_mgr(session)
+        return ProperDihedrals([pdm.get_dihedral(r, name) for r, name in zip(
+            data['residues'], data['names']
+        )])
 
 class Ramas(Collection):
     def __init__(self, c_pointers=None):
@@ -220,6 +245,17 @@ class Ramas(Collection):
             doc = '''Values representing the Ramachandran case for these residues,
                 matching the case definitions in :class:`RamaMgr.RamaCase`. Read only.''')
 
+    def take_snapshot(self, session, flags):
+        data = {
+            'residues': self.residues,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        rmgr = get_ramachandran_mgr(session)
+        return rmgr.get_ramas(data['residues'])
+
 class Rotamers(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, Rotamer, Rotamers)
@@ -232,6 +268,17 @@ class Rotamers(Collection):
                 doc='The "stem" :py:class:`chimerax.Bond` of this rotamer. Read only.')
     visibles = cvec_property('rotamer_visible', npy_bool, read_only=True,
                 doc='True for each rotamer whose CA-CB bond is visible')
+
+    def take_snapshot(self, session, flags):
+        data = {
+            'residues': self.residues,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        rmgr = get_rotamer_mgr(session)
+        return rmgr.get_rotamers(data['residues'])
 
 class PositionRestraints(Collection):
     def __init__(self, c_pointers=None, single_type = None, poly_type = None):
@@ -279,9 +326,39 @@ class PositionRestraints(Collection):
         -1. Can be set, but only if you know what you are doing.
         ''')
 
+    def take_snapshot(self, session, flags):
+        prms = [r.mgr for r in self]
+        data = {
+            'restraint mgrs': prms,
+            'atoms':          self.atoms,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        prs = PositionRestraints([prm.get_restraint(atom) for prm, atom in zip(
+            data['restraint mgrs'], data['atoms']
+        )])
+
+
 class TuggableAtoms(PositionRestraints):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, single_type=TuggableAtom, poly_type = TuggableAtoms)
+
+    def take_snapshot(self, session, flags):
+        tams = [t.mgr for t in self]
+        data = {
+            'restraint mgrs': tams,
+            'atoms':          self.atoms,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        tas = TuggableAtoms([tam.get_tuggable(atom) for tam, atom in zip(
+            data['restraint mgrs'], data['atoms']
+        )])
+
 
 class MDFFAtoms(Collection):
     def __init__(self, c_pointers=None):
@@ -311,6 +388,21 @@ class MDFFAtoms(Collection):
         Atoms which are not currently in a simulation have indices equal to -1.
         Can be set, but only if you know what you are doing.
          ''')
+
+    def take_snapshot(self, session, flags):
+        mgrs = [a.mgr for a in self]
+        data = {
+            'restraint mgrs':   mgrs,
+            'atoms':            atoms,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        return MDFFAtoms([mgr.get_mdff_atom(a) for mgr, a in zip(
+            data['restraint mgrs'], data['atoms']
+        )])
+
 
 
 class DistanceRestraints(Collection):
@@ -366,6 +458,21 @@ class DistanceRestraints(Collection):
         indices equal to -1. Can be set, but only if you know what you are
         doing.
          ''')
+
+    def take_snapshot(self, session, flags):
+        data = {
+        'restraint mgrs': [r.mgr for r in self],
+        'atoms':    self.atoms
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        rmgrs = data['restraint mgrs']
+        atoms1, atoms2 = data['atoms']
+        return DistanceRestraints([
+            drm.get_restraint(a1, a2) for drm, a1, a2 in zip(rmgrs, atoms1, atoms2)
+        ])
 
 class AdaptiveDistanceRestraints(Collection):
     def __init__(self, c_pointers=None):
@@ -435,6 +542,21 @@ class AdaptiveDistanceRestraints(Collection):
     colors = cvec_property('adaptive_distance_restraint_color', uint8, 4, read_only=True,
             doc = 'Color of each restraint. Automatically set based on ratio of current distance to target. Read only.')
 
+    def take_snapshot(self, session, flags):
+        data = {
+        'restraint mgrs': [r.mgr for r in self],
+        'atoms':    self.atoms
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        rmgrs = data['restraint mgrs']
+        atoms1, atoms2 = data['atoms']
+        return DistanceRestraints([
+            drm.get_restraint(a1, a2) for drm, a1, a2 in zip(rmgrs, atoms1, atoms2)
+        ])
+
 class ChiralRestraints(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, ChiralRestraint, ChiralRestraints)
@@ -481,6 +603,22 @@ class ChiralRestraints(Collection):
         Returns -1 for restraints not currently in a simulation. Can be
         set, but only if you know what you are doing.
         ''')
+
+    def take_snapshot(self, session, flags):
+        data = {
+            'restraint mgrs':   [r.mgr for r in self],
+            'dihedrals':        self.dihedrals,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        return ChiralRestraints([
+            mgr.get_restraint(dihedral) for mgr, dihedral in zip(
+                data['restraint mgrs'], data['dihedrals']
+            )
+        ])
+
 
 class ProperDihedralRestraints(Collection):
     def __init__(self, c_pointers=None):
@@ -543,6 +681,21 @@ class ProperDihedralRestraints(Collection):
         doing.
          ''')
 
+    def take_snapshot(self, session, flags):
+        data = {
+            'restraint mgrs':   [r.mgr for r in self],
+            'dihedrals':        self.dihedrals,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        return ProperDihedralRestraints([
+            mgr.get_restraint(dihedral) for mgr, dihedral in zip(
+                data['restraint mgrs'], data['dihedrals']
+            )
+        ])
+
 class RotamerRestraints(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, RotamerRestraint, RotamerRestraints)
@@ -575,3 +728,17 @@ class RotamerRestraints(Collection):
         restraint that was applied to this rotamer. If no restraint has ever
         been applied, returns -1.
         ''')
+
+    def take_snapshot(self, session, flags):
+        data = {
+            'restraint mgrs': [r.mgr for r in self],
+            'rotamers':       self.rotamers,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        return RotamerRestraints([
+            mgr.get_restraint(rotamer) for mgr, rotamer in zip(
+            data['restraint mgrs'], data['rotamers'])
+        ])

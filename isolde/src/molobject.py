@@ -965,6 +965,13 @@ class RamaMgr:
         f(self._c_pointer, ramas._c_pointers,  n, pointer(scores), pointer(cases))
         return (scores, cases)
 
+    def get_rama(self, residue):
+        from chimerax.atomic import Residues
+        rama = self.get_ramas(Residues([residue]))
+        if len(rama):
+            return rama[0]
+        return None
+
     def get_ramas(self, residues):
         '''
         Returns a :class:`Ramas` with one Rama for each protein residue in the
@@ -1854,6 +1861,13 @@ class MDFFMgr(_RestraintMgr):
         '''
         return self._get_mdff_atoms(atoms, create=False)
 
+    def get_mdff_atom(self, atom):
+        from chimerax.atomic import Atoms
+        mdatom = self.get_mdff_atoms(Atoms([atom]))
+        if len(mdatom):
+            return mdatom[0]
+        return None
+
     def __len__(self):
         f = c_function('mdff_mgr_num_atoms',
             args=(ctypes.c_void_p,),
@@ -1908,7 +1922,7 @@ class MDFFMgr(_RestraintMgr):
         Model.set_state_from_snapshot(self, session, data['model state'])
         data = data['restraint info']
         self.global_k = data['global k']
-        matoms = self.add_mdff_atoms(data['atoms'])
+        matoms = self.add_mdff_atoms(data['atoms'], True)
         matoms.enableds = data['enableds']
         matoms.coupling_constants = data['coupling constants']
 
@@ -2209,10 +2223,6 @@ class TuggableAtomsMgr(_RestraintMgr):
         from chimerax.isolde import session_extensions as sx
         ta_mgr = sx.get_tuggable_atoms_mgr(m)
     '''
-    # No need to save TuggableAtomsMgr - its restraints are solely used for
-    # interactive tugging, and it will be automatically re-created on the first
-    # simulation.
-    SESSION_SAVE=False
     _DEFAULT_ARROW_COLOR = [100, 255, 100, 255]
     # _NEAR_ATOMS_COLOR = [0,255,255,255]
     def __init__(self, model, c_pointer=None, allow_hydrogens='polar only'):
@@ -2399,6 +2409,30 @@ class TuggableAtomsMgr(_RestraintMgr):
             args=(ctypes.c_void_p,), ret=ctypes.py_object)
         return _tuggable_atoms(f(self._c_pointer))
 
+    def _session_save_info(self):
+        tuggables = self.get_tuggables(self.model.atoms)
+        save_info = {
+            'atoms':    tuggables.atoms,
+            'targets':  tuggables.targets,
+            'spring_constants': tuggables.spring_constants,
+        }
+        return save_info
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        tam = TuggableAtomsMgr(data['structure'])
+        tam.set_state_from_snapshot(session, data)
+        return tam
+
+    def set_state_from_snapshot(self, session, data):
+        from chimerax.core.models import Model
+        Model.set_state_from_snapshot(self, session, data['model state'])
+        data = data['restraint info']
+        tas = self.add_tuggables(data['atoms'])
+        tas.targets = data['targets']
+        tas.spring_constants = data['spring_constants']
+        tas.enableds = False
+
 
 class _DistanceRestraintMgrBase(_RestraintMgr):
     '''
@@ -2530,15 +2564,19 @@ class _DistanceRestraintMgrBase(_RestraintMgr):
         if not hasattr(self, '_c_func_get_restraint'):
             self._c_func_get_restraint = c_function(
                 self._c_function_prefix+'_mgr_get_restraint',
-                args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool),
-                ret = ctypes.c_void_p)
+                args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool, ctypes.c_void_p),
+                ret = ctypes.c_size_t)
         return self._c_func_get_restraint
 
-    def _get_restraint(self, atom1, atom2, create=False):
+    def _get_restraints(self, atoms1, atoms2, create=False):
         f = self._get_restraint_c_func()
-        from chimerax.atomic import Atoms
-        atoms = Atoms([atom1, atom2])
-        return self._singular_restraint_getter(f(self._c_pointer, atoms._c_pointers, create))
+        n = len(atoms1)
+        if n != len(atoms2):
+            raise TypeError('Lengths of atoms arrays must match!')
+        ret = numpy.empty(n, cptr)
+        num = f(self._c_pointer, atoms1._c_pointers, atoms2._c_pointers, create, n, pointer(ret))
+        return self._plural_restraint_getter(ret[:num])
+
 
     def add_restraint(self, atom1, atom2):
         '''
@@ -2555,7 +2593,11 @@ class _DistanceRestraintMgrBase(_RestraintMgr):
                   manager, must not be the same atom or directly bonded to each
                   other, and should not be hydrogens.
         '''
-        return self._get_restraint(atom1, atom2, True)
+        from chimerax.atomic import Atoms
+        r = self._get_restraints(Atoms([atom1]), Atoms([atom2]), True)
+        if len(r):
+            return r[0]
+        return None
 
     def get_restraint(self, atom1, atom2):
         '''
@@ -2568,7 +2610,25 @@ class _DistanceRestraintMgrBase(_RestraintMgr):
                   :py:class:`chimerax.AtomicStructure` belonging to this
                   manager.
         '''
-        return self._get_restraint(atom1, atom2, False)
+        from chimerax.atomic import Atoms
+        r = self._get_restraints(Atoms([atom1]), Atoms([atom2]), False)
+        if len(r):
+            return r[0]
+        return None
+
+    def get_restraints(self, atoms1, atoms2):
+        '''
+        Returns the :py:class:`DistanceRestraints` between the given atoms if it
+        exists, otherwise None.
+
+        Args:
+            * atom1, atom2:
+                - :py:class:`chimerax.Atom` instances. Both atoms must be in the
+                  :py:class:`chimerax.AtomicStructure` belonging to this
+                  manager.
+        '''
+        return self._get_restraints(atoms1, atoms2, False)
+
 
     def _atom_restraints_c_func(self):
         if not hasattr(self, '_c_func_atom_restraints'):
@@ -2814,14 +2874,10 @@ class DistanceRestraintMgr(_DistanceRestraintMgrBase):
         Model.set_state_from_snapshot(self, session, data['model state'])
         data = data['restraint info']
         atoms = data['atoms']
-        targets = data['targets']
-        spring_constants = data['spring_constants']
-        enableds = data['enableds']
-        for a1, a2, target, k, enabled in zip(*atoms, targets, spring_constants, enableds):
-            dr = self.add_restraint(a1, a2)
-            dr.target = target
-            dr.spring_constant = k
-            dr.enabled = enabled
+        drs = self._get_restraints(*atoms, True)
+        drs.targets = data['targets']
+        drs.spring_constants = data['spring_constants']
+        drs.enableds = data['enableds']
 
 
 class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
@@ -2981,21 +3037,13 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
         Model.set_state_from_snapshot(self, session, data['model state'])
         data = data['restraint info']
         atoms = data['atoms']
-        targets = data['targets']
-        tolerances = data['tolerances']
-        kappas = data['kappas']
-        cs = data['cs']
-        alphas = data['alphas']
-        enableds = data['enableds']
-        for a1, a2, target, tol, kappa, c, alpha, enabled in zip(
-            *atoms, targets, tolerances, kappas, cs, alphas, enableds):
-            dr = self.add_restraint(a1, a2)
-            dr.target = target
-            dr.tolerance=tol
-            dr.kappa = kappa
-            dr.c = c
-            dr.alpha = alpha
-            dr.enabled = enabled
+        drs = self._get_restraints(*atoms, True)
+        drs.targets=data['targets']
+        drs.tolerances=data['tolerances']
+        drs.kappas=data['kappas']
+        drs.cs = data['cs']
+        drs.alphas=data['alphas']
+        drs.enableds=data['enableds']
 
 
 
@@ -3177,7 +3225,7 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         from chimerax.isolde import session_extensions as sx
         pdr_mgr = sx.get_proper_dihedral_restraint_mgr(m)
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     def __init__(self, model, c_pointer = None, auto_add_to_session=True):
         super().__init__('Proper Dihedral Restraints', model, c_pointer)
         self.set_default_colors()
@@ -3492,6 +3540,33 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         post_d.positions = positions[1]
         ring_d.colors = post_d.colors = colors
 
+    def _session_save_info(self):
+        restraints = self.get_all_restraints_for_residues(self.model.residues)
+        save_info = {
+            'dihedrals': restraints.dihedrals,
+            'targets':   restraints.targets,
+            'cutoffs':   restraints.cutoffs,
+            'enableds':  restraints.enableds,
+            'displays':  restraints.displays,
+            'spring_constants': restraints.spring_constants,
+        }
+        return save_info
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        pdrm = ProperDihedralRestraintMgr(data['structure'], auto_add_to_session=False)
+        pdrm.set_state_from_snapshot(session, data)
+        return pdrm
+
+    def set_state_from_snapshot(self, session, data):
+        from chimerax.core.models import Model
+        Model.set_state_from_snapshot(self, session, data['model state'])
+        data = data['restraint info']
+        restraints = self.add_restraints(data['dihedrals'])
+        for attr in ('targets', 'cutoffs', 'enableds', 'displays', 'spring_constants'):
+            setattr(restraints, attr, data[attr])
+
+
 from chimerax.atomic import AtomicStructure
 class _RotamerPreview(AtomicStructure):
     '''
@@ -3499,7 +3574,7 @@ class _RotamerPreview(AtomicStructure):
     instances to decide whether to rebuild its menu, we want to differentiate
     the preview model to avoid downstream complexities.
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
 
 
 class RotamerRestraintMgr(_RestraintMgr):
@@ -3531,8 +3606,7 @@ class RotamerRestraintMgr(_RestraintMgr):
             pdr_m = ProperDihedralRestraintMgr(model, auto_add_to_session=False)
             deferred_pdrm = True
         self._pdr_m = pdr_m
-        from . import session_extensions as sx
-        rota_m = self._rota_m = sx.get_rotamer_mgr(session)
+        rota_m = self._rota_m = get_rotamer_mgr(session)
         if c_pointer is None:
             f = c_function('rotamer_restraint_mgr_new',
                 args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p),
@@ -3860,7 +3934,7 @@ class ChiralCenter(_Dihedral):
     :class:`ChiralCenter` instances are not created directly - they are
     generated as  needed by :class:`ChiralMgr` based on dictionary definitions.
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     atoms = c_property('chiral_atoms', cptr, '_natoms', astype=convert.atoms, read_only=True,
         doc = 'Atoms making up this chiral centre. Read only.')
 
@@ -3876,12 +3950,23 @@ class ChiralCenter(_Dihedral):
     chiral_atom = c_property('chiral_center_chiral_atom', cptr, astype=convert.atom_or_none, read_only=True,
         doc='The chiral atom. Read only.')
 
+    def take_snapshot(self, session, flags):
+        data = {
+            'atom': self.chiral_atom,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        get_chiral_mgr(session)
+        return cm.get_chiral(data['atom'])
+
 class ProperDihedral(_Dihedral):
     '''
     A ProperDihedral is defined as a dihedral in which the four atoms are
     strictly bonded a1-a2-a3-a4.
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     angle = c_property('proper_dihedral_angle', float64, read_only=True,
         doc = 'Angle in radians. Read only.')
     name = c_property('proper_dihedral_name', string, read_only = True,
@@ -3894,8 +3979,20 @@ class ProperDihedral(_Dihedral):
     axial_bond = c_property('proper_dihedral_axial_bond', cptr, astype=_bond_or_none, read_only=True,
         doc='Bond forming the axis of this dihedral. Read-only')
 
+    def take_snapshot(self, session, flags):
+        data = {
+            'residue':  self.residue,
+            'name':     self.name,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        pdm = get_proper_dihedral_mgr(session)
+        return pdm.get_dihedral(r, name)
+
 class Rama(State):
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -3981,8 +4078,20 @@ class Rama(State):
             doc = '''A value representing the Ramachandran case for this residue,
                 matching the case definitions in :class:`RamaMgr.RamaCase`. Read only.''')
 
+    def take_snapshot(self, session, flags):
+        data = {
+            'residue':  self.residue,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        rmgr = get_ramachandran_mgr(session)
+        return rmgr.get_rama(data['residue'])
+
+
 class Rotamer(State):
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -4079,12 +4188,23 @@ class Rotamer(State):
     visible = c_property('rotamer_visible', npy_bool, read_only=True,
                 doc='True if the CA-CB bond of the rotamer is visible. Read only.')
 
+    def take_snapshot(self, session, flags):
+        data = {
+            'residue':  self.residue,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        rmgr = get_rotamer_mgr(session)
+        return rmgr.get_rotamer(data['residue'])
+
 class PositionRestraint(State):
     '''
     Defines a user-adjustable and -switchable harmonic spring connecting an
     atom to a fixed point in space.
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -4130,8 +4250,37 @@ class PositionRestraint(State):
         Can be set, but only if you know what you are doing.
         ''')
 
+    def take_snapshot(self, session, flags):
+        data = {
+            'restraint mgr':    self.mgr,
+            'atom':             self.atom,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        prm = data['restraint mgr']
+        if prm is None:
+            return None
+        return prm.get_restraint(data['atom'])
+
+
 class TuggableAtom(PositionRestraint):
     _c_class_name = 'position_restraint'
+
+    def take_snapshot(self, session, flags):
+        data = {
+            'restraint mgr':    self.mgr,
+            'atom':             self.atom,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        tam = data['restraint mgr']
+        if tam is None:
+            return None
+        return tam.get_tuggable(data['atom'])
 
 
 class MDFFAtom(State):
@@ -4140,7 +4289,7 @@ class MDFFAtom(State):
     to a molecular dynamics flexible fitting potential derived from a volumetric
     map.
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -4184,11 +4333,23 @@ class MDFFAtom(State):
         only if you know what you are doing.
         ''')
 
+    def take_snapshot(self, session, flags):
+        data = {
+            'restraint mgr':    self.mgr,
+            'atom':             self.atom,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        return data['restraint mgr'].get_mdff_atom(data['atom'])
+
+
 class DistanceRestraint(State):
     '''
     Defines a harmonic spring restraining the distance between a pair of atoms.
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -4234,6 +4395,17 @@ class DistanceRestraint(State):
         simulation. Can be set, but only if you know what you are doing.
         ''')
 
+    def take_snapshot(self, session, flags):
+        data = {
+            'restraint mgr':    self.mgr,
+            'atoms':            self.atoms,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        return data['restraint mgr'].get_restraint(*data['atoms'])
+
 class AdaptiveDistanceRestraint(State):
     r'''
     Defines an "adaptive robustness" distance restraint especially suited to
@@ -4258,7 +4430,7 @@ class AdaptiveDistanceRestraint(State):
     open-ended, but values below about -50 yield essentially no further changes
     to the energy profile.
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -4318,6 +4490,17 @@ class AdaptiveDistanceRestraint(State):
         simulation. Can be set, but only if you know what you are doing.
         ''')
 
+    def take_snapshot(self, session, flags):
+        data = {
+            'restraint mgr':    self.mgr,
+            'atoms':            self.atoms,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        return data['restraint mgr'].get_restraint(*data['atoms'])
+
 
 
 class ChiralRestraint(State):
@@ -4328,7 +4511,7 @@ class ChiralRestraint(State):
     the chiral improper dihedral (defined in `dictionaries/chirals.json` and
     viewable via :attr:`ChiralMgr.chiral_center_dict`).
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -4382,9 +4565,21 @@ class ChiralRestraint(State):
         set, but only if you know what you are doing.
         ''')
 
+    def take_snapshot(self, session, flags):
+        data = {
+        'restraint mgr': self.mgr,
+        'dihedral':    self.dihedral
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        return data['restraint mgr'].get_restraint(data['dihedral'])
+
+
 
 class ProperDihedralRestraint(State):
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -4440,6 +4635,17 @@ class ProperDihedralRestraint(State):
         set, but only if you know what you are doing.
         ''')
 
+    def take_snapshot(self, session, flags):
+        data = {
+        'restraint mgr': self.mgr,
+        'dihedral':    self.dihedral
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        return data['restraint mgr'].get_restraint(data['dihedral'])
+
 class RotamerRestraint(State):
     '''
     Rotamer restraints are special in that they only exist as wrappers around
@@ -4448,7 +4654,7 @@ class RotamerRestraint(State):
     restraints may still be addressed and controlled independently if
     necessary.
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -4515,7 +4721,16 @@ class RotamerRestraint(State):
         standard deviations for the target.
         ''')
 
+    def take_snapshot(self, session, flags):
+        data = {
+            'restraint mgr':    self.mgr,
+            'rotamer':  self.rotamer,
+        }
+        return data
 
+    @staticmethod
+    def restore_snapshot(session, data):
+        return data['restraint mgr'].get_restraint(data['rotamer'])
 
 # tell the C++ layer about class objects whose Python objects can be instantiated directly
 # from C++ with just a pointer, and put functions in those classes for getting the instance

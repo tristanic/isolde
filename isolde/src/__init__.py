@@ -57,6 +57,12 @@ class _MyAPI(BundleAPI):
             AdaptiveDistanceRestraint, ChiralRestraint,
             ProperDihedralRestraint, RotamerRestraint,
         )
+        from .molarray import (
+            ChiralCenters, ProperDihedrals, Ramas, Rotamers, PositionRestraints,
+            TuggableAtoms, MDFFAtoms, DistanceRestraints,
+            AdaptiveDistanceRestraints, ChiralRestraints,
+            ProperDihedralRestraints, RotamerRestraints,
+        )
         ct = {
             'RamaAnnotator':                RamaAnnotator,
             'RotamerAnnotator':             RotamerAnnotator,
@@ -73,17 +79,29 @@ class _MyAPI(BundleAPI):
             'RotamerRestraintMgr':          RotamerRestraintMgr,
             '_Dihedral':                    _Dihedral,
             'ChiralCenter':                 ChiralCenter,
+            'ChiralCenters':                ChiralCenters,
             'ProperDihedral':               ProperDihedral,
+            'ProperDihedrals':              ProperDihedrals,
             'Rama':                         Rama,
+            'Ramas':                        Ramas,
             'Rotamer':                      Rotamer,
+            'Rotamers':                     Rotamers,
             'PositionRestraint':            PositionRestraint,
+            'PositionRestraints':           PositionRestraints,
             'TuggableAtom':                 TuggableAtom,
+            'TuggableAtoms':                TuggableAtoms,
             'MDFFAtom':                     MDFFAtom,
+            'MDFFAtoms':                    MDFFAtoms,
             'DistanceRestraint':            DistanceRestraint,
+            'DistanceRestraints':           DistanceRestraints,
             'AdaptiveDistanceRestraint':    AdaptiveDistanceRestraint,
+            'AdaptiveDistanceRestraints':   AdaptiveDistanceRestraints,
             'ChiralRestraint':              ChiralRestraint,
+            'ChiralRestraints':             ChiralRestraints,
             'ProperDihedralRestraint':      ProperDihedralRestraint,
+            'ProperDihedralRestraints':     ProperDihedralRestraints,
             'RotamerRestraint':             RotamerRestraint,
+            'RotamerRestraints':            RotamerRestraints,
         }
         return ct.get(class_name)
 
