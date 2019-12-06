@@ -32,6 +32,12 @@ from .molobject import (
     TuggableAtom, MDFFAtom, DistanceRestraint, AdaptiveDistanceRestraint,
     ChiralRestraint, ProperDihedralRestraint, RotamerRestraint
 )
+
+from .molobject import (
+    get_chiral_mgr, get_proper_dihedral_mgr, get_ramachandran_mgr,
+    get_rotamer_mgr
+)
+
 import ctypes
 
 from chimerax.atomic import Atom, Atoms, Residue, Residues

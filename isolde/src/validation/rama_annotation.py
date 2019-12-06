@@ -69,7 +69,7 @@ class RamaAnnotator(Model):
         self._ignore_ribbon_hides = ignore_ribbon_hides
         self._hide_favored = hide_favored
         from .. import molobject
-        mgr = self._mgr = molobject.get_ramachandran_manager(session)
+        mgr = self._mgr = molobject.get_ramachandran_mgr(session)
         self._ca_radius = 0.5
         self._prepare_drawings()
         # self._prepare_ca_display()

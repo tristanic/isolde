@@ -6,61 +6,12 @@
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
-def get_proper_dihedral_mgr(session):
-    '''
-    Get the session-level :class:`ProperDihedralMgr` singleton, creating it if
-    it doesn't yet exist.
-
-    Args:
-        * session:
-            - the top-level ChimeraX session instance
-    '''
-    if hasattr(session, 'proper_dihedral_mgr') and not session.proper_dihedral_mgr.deleted:
-        return session.proper_dihedral_mgr
-    from .molobject import ProperDihedralMgr
-    return ProperDihedralMgr(session)
-
-def get_chiral_mgr(session):
-    '''
-    Get the session-level :class:`ChiralMgr` singleton, creating it if it
-    doesn't yet exist.
-
-    Args:
-        * session:
-            - the top-level ChimeraX session instance
-    '''
-    if hasattr(session, 'chiral_mgr') and not session.chiral_mgr.deleted:
-        return session.chiral_mgr
-    from .molobject import ChiralMgr
-    return ChiralMgr(session)
-
-def get_ramachandran_mgr(session):
-    '''
-    Get the session-level :class:`RamaMgr` singleton, creating it if it doesn't
-    yet exist.
-
-    Args:
-        * session:
-            - the top-level ChimeraX session instance
-    '''
-    if hasattr(session, 'rama_mgr') and not session.rama_mgr.deleted:
-        return session.rama_mgr
-    from .molobject import RamaMgr
-    return RamaMgr(session)
-
-def get_rotamer_mgr(session):
-    '''
-    Get the session-level :class:`RotaMgr` singleton, creating it if it doesn't
-    yet exist.
-
-    Args:
-        * session:
-            - the top-level ChimeraX session instance
-    '''
-    if hasattr(session, 'rota_mgr') and not session.rota_mgr.deleted:
-        return session.rota_mgr
-    from .molobject import RotaMgr
-    return RotaMgr(session)
+from .molobject import (
+    get_proper_dihedral_mgr,
+    get_chiral_mgr,
+    get_ramachandran_mgr,
+    get_rotamer_mgr
+)
 
 def get_chiral_restraint_mgr(model):
     '''

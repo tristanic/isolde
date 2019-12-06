@@ -65,7 +65,7 @@ class RotamerAnnotator(Model):
         Model.__init__(self, 'Rotamer Validation', session)
 
         from .. import molobject
-        mgr = self._mgr = molobject.get_rotamer_manager(session)
+        mgr = self._mgr = molobject.get_rotamer_mgr(session)
         self._MAX_SCALE = 2 # maximum scale factor for annotation drawings
         self._hide_favored = True
         d = self._drawing = self._rota_indicator()

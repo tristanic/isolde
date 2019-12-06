@@ -148,21 +148,53 @@ def _rotamer_restraint_mgr(p):
 
 
 def get_chiral_mgr(session):
+    '''
+    Get the session-level :class:`ChiralMgr` singleton, creating it if it
+    doesn't yet exist.
+
+    Args:
+        * session:
+            - the top-level ChimeraX session instance
+    '''
     if hasattr(session, 'chiral_mgr') and not session.chiral_mgr.deleted:
         return session.chiral_mgr
     return ChiralMgr(session)
 
-def get_proper_dihedral_manager(session):
+def get_proper_dihedral_mgr(session):
+    '''
+    Get the session-level :class:`ProperDihedralMgr` singleton, creating it if
+    it doesn't yet exist.
+
+    Args:
+        * session:
+            - the top-level ChimeraX session instance
+    '''
     if hasattr(session, 'proper_dihedral_mgr') and not session.proper_dihedral_mgr.deleted:
         return session.proper_dihedral_mgr
     return ProperDihedralMgr(session)
 
-def get_ramachandran_manager(session):
+def get_ramachandran_mgr(session):
+    '''
+    Get the session-level :class:`RamaMgr` singleton, creating it if it doesn't
+    yet exist.
+
+    Args:
+        * session:
+            - the top-level ChimeraX session instance
+    '''
     if hasattr(session, 'rama_mgr') and not session.rama_mgr.deleted:
         return session.rama_mgr
     return RamaMgr(session)
 
-def get_rotamer_manager(session):
+def get_rotamer_mgr(session):
+    '''
+    Get the session-level :class:`RotaMgr` singleton, creating it if it doesn't
+    yet exist.
+
+    Args:
+        * session:
+            - the top-level ChimeraX session instance
+    '''
     if hasattr(session, 'rota_mgr') and not session.rota_mgr.deleted:
         return session.rota_mgr
     return RotaMgr(session)
@@ -656,7 +688,7 @@ class RamaMgr:
     def __init__(self, session, c_pointer=None):
         if hasattr(session, 'rama_mgr'):
             raise RuntimeError('Session already has a Ramachandran manager!')
-        dmgr = self._dihedral_mgr = get_proper_dihedral_manager(session)
+        dmgr = self._dihedral_mgr = get_proper_dihedral_mgr(session)
         self.session = session
         cname = _as_snake_case(type(self).__name__)
         if c_pointer is None:
@@ -1152,7 +1184,7 @@ class RotaMgr:
     def __init__(self, session, c_pointer=None):
         if hasattr(session, 'rota_mgr'):
             raise RuntimeError('Session already has a Rotamer manager!')
-        self._dihedral_mgr = get_proper_dihedral_manager(session)
+        self._dihedral_mgr = get_proper_dihedral_mgr(session)
         cname = _as_snake_case(type(self).__name__)
         if c_pointer is None:
             new_func = cname + '_new'
@@ -3253,7 +3285,7 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         return None
 
     def _get_restraints_by_residues_and_name(self, residues, name, create):
-        pdm = get_proper_dihedral_manager(self.session)
+        pdm = get_proper_dihedral_mgr(self.session)
         dihedrals = pdm.get_dihedrals(residues, name)
         return self._get_restraints(dihedrals, create=create)
 
@@ -3323,7 +3355,7 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         return None
 
     def _get_all_restraints_for_residues(self, residues, create):
-        pdm = get_proper_dihedral_manager(self.session)
+        pdm = get_proper_dihedral_mgr(self.session)
         dihedrals = pdm.get_all_dihedrals(residues)
         return self._get_restraints(dihedrals, create=create)
 
@@ -3566,7 +3598,7 @@ class RotamerRestraintMgr(_RestraintMgr):
         '''
         from chimerax.atomic import Residues
         if isinstance(rotamers_or_residues, Residues):
-            rota_mgr = get_rotamer_manager(session)
+            rota_mgr = get_rotamer_mgr(session)
             rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
         else:
             rotamers = rotamers_or_residues
@@ -3584,7 +3616,7 @@ class RotamerRestraintMgr(_RestraintMgr):
         '''
         from chimerax.atomic import Residues
         if isinstance(rotamers_or_residues, Residues):
-            rota_mgr = get_rotamer_manager(self.session)
+            rota_mgr = get_rotamer_mgr(self.session)
             rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
         elif isinstance(rotamers_or_residues, Rotamers):
             rotamers = rotamers_or_residues
@@ -3606,7 +3638,7 @@ class RotamerRestraintMgr(_RestraintMgr):
         '''
         from chimerax.atomic import Residue, Residues
         if isinstance(rotamer_or_residue, Residue):
-            rota_mgr = get_rotamer_manager(session)
+            rota_mgr = get_rotamer_mgr(session)
             r = rota_mgr.get_rotamer(r)
         else:
             r = rotamer_or_residue
@@ -3630,7 +3662,7 @@ class RotamerRestraintMgr(_RestraintMgr):
         '''
         from chimerax.atomic import Residue, Residues
         if isinstance(rotamer_or_residue, Residue):
-            rota_mgr = get_rotamer_manager(self.session)
+            rota_mgr = get_rotamer_mgr(self.session)
             r = rota_mgr.get_rotamer(r)
         elif isinstance(rotamer_or_residue, Rotamer):
             r = rotamer_or_residue

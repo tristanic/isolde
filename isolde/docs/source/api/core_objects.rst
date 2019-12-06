@@ -23,7 +23,7 @@ Python classes:
       and is responsible for creation, deletion and retrieval of C++
       :cpp:class:`ProperDihedral` objects. The preferred way to find the
       manager instance is to use
-      :func:`session_extensions.get_proper_dihedral_manager`. This will create
+      :func:`session_extensions.get_proper_dihedral_mgr`. This will create
       the manager if it doesn't yet exist, or simply retrieve it if it does.
     * :py:class:`ProperDihedral` is built on the :py:class:`chimerax.State`
       framework and behaves similarly to e.g. :py:class:`chimerax.Atom`.
