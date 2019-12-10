@@ -63,6 +63,7 @@ class _MyAPI(BundleAPI):
             AdaptiveDistanceRestraints, ChiralRestraints,
             ProperDihedralRestraints, RotamerRestraints,
         )
+        from .remote_control.rest_server import IsoldeRESTServer
         ct = {
             'RamaAnnotator':                RamaAnnotator,
             'RotamerAnnotator':             RotamerAnnotator,
@@ -102,6 +103,7 @@ class _MyAPI(BundleAPI):
             'ProperDihedralRestraints':     ProperDihedralRestraints,
             'RotamerRestraint':             RotamerRestraint,
             'RotamerRestraints':            RotamerRestraints,
+            'IsoldeRESTServer':             IsoldeRESTServer,
         }
         return ct.get(class_name)
 

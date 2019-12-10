@@ -23,7 +23,7 @@ class IsoldeRESTServer(Task):
         self._server_methods['batch'] = self.batch_run
 
 
-    SESSION_SAVE = False
+    SESSION_SAVE = True
 
     def batch_run(self, session, batch_commands):
         '''
@@ -56,18 +56,15 @@ class IsoldeRESTServer(Task):
         session.ui.thread_safe(f, session, batch_commands)
         return q.get()
 
-    def take_snapshot(self, session, flags):
-        pass
-
-    @classmethod
-    def restore_snapshot(cls, session, data):
-        pass
-
     @property
     def server_address(self):
         if self.httpd is not None:
             return self.httpd.server_address
         return None
+
+    @property
+    def port(self):
+        return self.server_address[1]
 
     def run(self, port):
         from http.server import HTTPServer
@@ -83,12 +80,15 @@ class IsoldeRESTServer(Task):
             *httpd.server_address
         )
         self.session.ui.thread_safe(self.session.logger.info, msg)
+        self._restore_handler = self.session.triggers.add_handler('begin restore session', self._session_restore_cb)
         httpd.serve_forever()
 
     def terminate(self):
         if self.httpd is not None:
             self.httpd.shutdown()
             self.httpd = None
+            if hasattr(self, '_restore_handler') and self._restore_handler is not None:
+                self.session.triggers.remove_handler(self._restore_handler)
         super().terminate()
 
     def register_server_method(self, func_name, func):
@@ -136,6 +136,22 @@ class IsoldeRESTServer(Task):
             # Convert args description to tuple to ensure ordering in Python 2.7 clients
             func_dict['args'] = tuple([(arg_name, arg_props['type']) for arg_name, arg_props in func_dict['args'].items()])
         return ret_dict
+
+    def _session_restore_cb(self, *_):
+        from .cmd import stop_server
+        stop_server(self.session)
+
+    def take_snapshot(self, session, flags):
+        data = {
+            'port':     self.port,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        from . import cmd
+        return cmd.start_server(session, port=data['port'])
+
 
 class RESTHandler(BaseHTTPRequestHandler):
     '''Process one REST request.'''

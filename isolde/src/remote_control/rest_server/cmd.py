@@ -6,6 +6,7 @@ def _get_server():
     if _server is None:
         return None
     if _server.httpd is None:
+        print('Server httpd is None!')
         _server = None
     return _server
 
@@ -20,6 +21,7 @@ def start_server(session, port=None):
         from .server import IsoldeRESTServer
         _server = IsoldeRESTServer(session)
         _server.start(port)
+    return server
 
 def report_info(session):
     server=_get_server()
