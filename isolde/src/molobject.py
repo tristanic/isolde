@@ -3585,7 +3585,7 @@ class RotamerRestraintMgr(_RestraintMgr):
     but it *does* handle drawing of previews when scrolling through alternate
     target rotamer conformations for a given sidechain.
     '''
-    SESSION_SAVE=False
+    SESSION_SAVE=True
     def __init__(self, model, c_pointer=None, auto_add_to_session=True):
         '''Manages rotamer restraints for a single model'''
         session=model.session
@@ -3624,9 +3624,10 @@ class RotamerRestraintMgr(_RestraintMgr):
         self.pickable=False
         self.model = model
         self._preview_model = None
-        pdr_m.add([self])
-        if deferred_pdrm and auto_add_to_session:
-            model.add([pdr_m])
+        if auto_add_to_session:
+            pdr_m.add([self])
+            if deferred_pdrm:
+                model.add([pdr_m])
 
     def valid_preview(self, rotamer):
         pm = self._preview_model
@@ -3672,7 +3673,7 @@ class RotamerRestraintMgr(_RestraintMgr):
         '''
         from chimerax.atomic import Residues
         if isinstance(rotamers_or_residues, Residues):
-            rota_mgr = get_rotamer_mgr(session)
+            rota_mgr = get_rotamer_mgr(self.session)
             rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
         else:
             rotamers = rotamers_or_residues
@@ -3887,6 +3888,26 @@ class RotamerRestraintMgr(_RestraintMgr):
             self.session.models.close([self._preview_model])
             self._preview_model = None
 
+    def _session_save_info(self):
+        restraints = self.get_restraints(self.model.residues)
+        # Rotamer restraints are just wrappers around proper dihedral restraints,
+        # so we don't save/restore any numerical information. Just have to let
+        # the manager know which restraints currently exist.
+        save_info = {
+            'rotamers':     restraints.rotamers,
+        }
+        return save_info
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        rrm = RotamerRestraintMgr(data['structure'], auto_add_to_session=False)
+        rrm.set_state_from_snapshot(session, data)
+
+    def set_state_from_snapshot(self, session, data):
+        from chimerax.core.models import Model
+        Model.set_state_from_snapshot(self, session, data['model state'])
+        data = data['restraint info']
+        restraints = self.add_restraints(data['rotamers'])
 
 
 class _Dihedral(State):
