@@ -21,6 +21,12 @@ def initialize_openmm():
 # initialize_openmm()
 
 
+def register_ignored_residues_attr(session):
+    from chimerax.atomic import Residue
+    Residue.register_attr(session, 'isolde_ignore',
+        'isolde', default_value=False, attr_type=bool)
+
+
 def _version():
     import pkg_resources
     return pkg_resources.require('ChimeraX-ISOLDE')[0].version
@@ -36,6 +42,7 @@ class _MyAPI(BundleAPI):
     @staticmethod
     def initialize(session, bundle_info):
         initialize_openmm()
+        register_ignored_residues_attr(session)
 
     @staticmethod
     def get_class(class_name):

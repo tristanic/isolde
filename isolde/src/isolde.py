@@ -332,6 +332,8 @@ class Isolde():
     def forcefield_mgr(self):
         return self._ff_mgr
 
+
+
     @property
     def ignored_residues(self):
         '''
@@ -344,20 +346,20 @@ class Isolde():
         m = self.selected_model
         if m is None:
             return None
-        if not hasattr(m, '_isolde_ignored_residues') or m._isolde_ignored_residues is None:
-            from chimerax.atomic import Residues
-            m._isolde_ignored_residues = Residues()
-        return m._isolde_ignored_residues
+        from chimerax.atomic import Residues
+        return Residues([r for r in m.residues if r.isolde_ignore])
 
     @ignored_residues.setter
     def ignored_residues(self, residues):
         m = self.selected_model
         if m is None:
             return
+        for r in m.residues:
+            r.isolde_ignore=False
         if residues is None:
-            from chimerax.atomic import Residues
-            residues = Residues()
-        self.selected_model._isolde_ignored_residues = m.residues.intersect(residues)
+            return
+        for r in residues:
+            r.isolde_ignore=True
 
     @property
     def sim_handler(self):

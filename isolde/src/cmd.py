@@ -112,17 +112,11 @@ def isolde_ignore(session, residues=None, ignore=True):
     if residues:
         for m in residues.unique_structures:
             mres = m.residues.intersect(residues)
-            if not hasattr(m, '_isolde_ignored_residues'):
-                from chimerax.atomic import Residues
-                m._isolde_ignored_residues = Residues()
-            ir = m._isolde_ignored_residues
-            if ignore:
-                m._isolde_ignored_residues = ir.merge(residues)
-            else:
-                m._isolde_ignored_residues = ir.subtract(residues)
-            session.logger.info('Currently ignoring {} residues in model {}'.format(
-                len(m._isolde_ignored_residues), m.id_string)
-            )
+            for r in mres:
+                r.isolde_ignore = ignore
+            session.logger.info('ISOLDE: currently ignoring {} residues in model {}'.format(
+                len([r for r in m.residues if r.isolde_ignore]), m.id_string
+            ))
 
 def isolde_stop_ignoring(session, residues=None):
     isolde_ignore(session, residues, ignore=False)
