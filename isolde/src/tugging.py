@@ -99,106 +99,106 @@ class TugAtomsMode(MouseMode):
         return True
 
     def mouse_down(self, event):
-        import numpy
-        from chimerax.atomic import Atoms
         MouseMode.mouse_down(self, event)
         x,y = event.position()
         self._xy = (x,y)
-        view = self.session.main_view
-        pa = None
-        tm = self.tug_mode
         v = self.session.main_view
-        if tm == 'selection':
+        if self.tug_mode == 'selection':
             pa = self._atoms[self._atoms.selecteds]
             self._reference_point = v.clip_plane_points(x,y)[0]
         else:
             # from . import picking
             # pick = picking.pick_closest_to_line(self.session, x, y, self._atoms, 0.5, hydrogens=True)
             pick = v.first_intercept(x, y, self._pick_exclude)
-            if pick is not None:
-                a = None
-                r = None
-                if hasattr(pick, 'atom'):
-                    a = pick.atom
-                    r = a.residue
-                elif hasattr(pick, 'bond'):
-                    b = pick.bond
-                    coords = [a.coord for a in b.atoms]
-                    from chimerax.core.geometry import distance
-                    distances = [distance(c, pick.position) for c in coords]
-                    a = b.atoms[distances.index(min(distances))]
-                    r = a.residue
-                elif hasattr(pick, 'residue'):
-                    r = pick.residue
-                if a:
-                    if a.element.name=='H':
-                        h_mode = self._tug_mgr.allow_hydrogens
-                        if h_mode == 'no':
-                            self.session.logger.warning('Tugging of hydrogens is not enabled. '
-                                'Applying tug to the nearest bonded heavy atom.')
-                            a = a.neighbors[0]
-                        elif h_mode == 'polar' and a.idatm_type == 'HC':
-                            self.session.logger.warning('Tugging of non-polar hydrogens is not enabled. '
-                                'Applying tug to the nearest bonded heavy atom.')
-                            a = a.neighbors[0]
-                    self._focal_atom = a #a = self._focal_atom = pick
-                if tm == "atom" and a:
-                    pa = Atoms([a])
-                elif tm == "residue" and r:
-                    pa = r.atoms
-                    if a is not None:
-                        self._focal_atom = a
-                    else:
-                        self._focal_atom = r.principal_atom
-        if pa is not None and len(pa):
-            tugs = self._picked_tuggables = self._tug_mgr.get_tuggables(pa)
-            pa = self._picked_atoms = tugs.atoms
-            coords = pa.coords
-            if self.tug_mode == 'selection':
-                pull_vector = self._ref_pull_direction(self._reference_point, x, y)
-                self._last_picked_atom_center = coords.mean(axis=0)
-            else:
-                pull_vector = self._atom_pull_direction(self._focal_atom, x, y)
-            tugs.targets = tugs.atoms.coords + pull_vector
-            # Scale the tugging force by atom masses and number of atoms
-            n = len(tugs)
-            # Scale spring constants down with atom count - we want
-            # to be able to tug groups more strongly than single atoms, but not
-            # *too* strongly.
-            if n == 0:
-                self.tugging = False
-                return
-                
-            tugs.spring_constants = ((
-                self.spring_constant * pa.elements.masses.astype(numpy.double)
-                /_CARBON_MASS)/ n**(0.7)).reshape((n,1))
-            tugs.enableds = True
+            pa = self._pick_atoms(pick)
 
-            self.tugging = True
+        if pa is not None and len(pa):
+            if self._start_tugging_atoms(pa):
+                self._set_pull_direction(x, y)
+
+    def _pick_atoms(self, pick):
+        if pick is None:
+            return None
+
+        a = None
+        r = None
+        if hasattr(pick, 'atom'):
+            a = pick.atom
+            r = a.residue
+        elif hasattr(pick, 'bond'):
+            b = pick.bond
+            coords = [a.coord for a in b.atoms]
+            from chimerax.core.geometry import distance
+            distances = [distance(c, pick.position) for c in coords]
+            a = b.atoms[distances.index(min(distances))]
+            r = a.residue
+        elif hasattr(pick, 'residue'):
+            r = pick.residue
+
+        # Tug heavy atoms instead of hydrogens
+        if a:
+            if a.element.name=='H':
+                h_mode = self._tug_mgr.allow_hydrogens
+                if h_mode == 'no':
+                    self.session.logger.warning('Tugging of hydrogens is not enabled. '
+                        'Applying tug to the nearest bonded heavy atom.')
+                    a = a.neighbors[0]
+                elif h_mode == 'polar' and a.idatm_type == 'HC':
+                    self.session.logger.warning('Tugging of non-polar hydrogens is not enabled. '
+                        'Applying tug to the nearest bonded heavy atom.')
+                    a = a.neighbors[0]
+            self._focal_atom = a #a = self._focal_atom = pick
+
+        tm = self.tug_mode
+        if tm == "atom" and a:
+            from chimerax.atomic import Atoms
+            pa = Atoms([a])
+        elif tm == "residue" and r:
+            pa = r.atoms
+            if a is not None:
+                self._focal_atom = a
+            else:
+                self._focal_atom = r.principal_atom
+        else:
+            pa = None
+
+        return pa
+
+    def _start_tugging_atoms(self, atoms):
+        tugs = self._picked_tuggables = self._tug_mgr.get_tuggables(atoms)
+        n = len(tugs)
+        if n == 0:
+            self.tugging = False
+            return False
+
+        self._picked_atoms = pa = tugs.atoms
+        tugs.targets = pa.coords
+
+        # Scale the tugging force by atom masses and number of atoms
+                # Scale spring constants down with atom count - we want
+        # to be able to tug groups more strongly than single atoms, but not
+        # *too* strongly.
+        import numpy
+        tugs.spring_constants = ((
+            self.spring_constant * pa.elements.masses.astype(numpy.double)
+            /_CARBON_MASS)/ n**(0.7)).reshape((n,1))
+        tugs.enableds = True
+
+        self.tugging = True
+        return True
 
     def mouse_drag(self, event):
         if not self.tugging:
             return
         self._xy = x,y = event.position()
-        if self.tug_mode == 'selection':
-            new_atom_center = self._picked_atoms.coords.mean(axis=0)
-            self._reference_point += (new_atom_center - self._last_picked_atom_center)
-            self._last_picked_atom_center = new_atom_center
-            pull_vector = self._ref_pull_direction(self._reference_point, x, y)
-        else:
-            pull_vector = self._atom_pull_direction(self._focal_atom, x, y)
+        ref_point = self._pull_reference_point()
+        pull_vector = self._offset_vector(x, y, ref_point)
         tugs = self._picked_tuggables
         tugs.targets = self._picked_atoms.coords + pull_vector
 
     def mouse_up(self, event):
         MouseMode.mouse_up(self, event)
         self.tugging = False
-
-    def _ref_pull_direction(self, ref, x, y):
-        return self._offset_vector(x, y, ref)
-
-    def _atom_pull_direction(self, atom, x, y):
-        return self._offset_vector(x, y, atom.scene_coord)
 
     def _offset_vector(self, x, y, starting_coord):
         v = self.session.main_view
@@ -212,6 +212,55 @@ class TugAtomsMode(MouseMode):
             da - (inner_product(da, dir)/inner_product(dir,dir)) * dir
         )
         return -offset
+
+    def _pull_reference_point(self):
+        if self.tug_mode == 'selection':
+            new_atom_center = self._picked_atoms.coords.mean(axis=0)
+            lc = self._last_picked_atom_center
+            if lc is not None:
+                self._reference_point += (new_atom_center - lc)
+            self._last_picked_atom_center = new_atom_center
+            ref_point = self._reference_point
+        else:
+            ref_point = self._focal_atom.scene_coord
+        return ref_point
+
+    def _set_pull_direction(self, x, y):
+        coords = self._picked_atoms.coords
+        if self.tug_mode == 'selection':
+            ref_point = self._reference_point
+            self._last_picked_atom_center = coords.mean(axis=0)
+        else:
+            ref_point = self._focal_atom.scene_coord
+        pull_vector = self._offset_vector(x, y, ref_point)
+        tugs = self._picked_tuggables
+        tugs.targets = coords + pull_vector
+
+    def vr_press(self, event):
+        # Virtual reality hand controller button press.
+        if self.tug_mode == 'selection':
+            pa = self._atoms[self._atoms.selecteds]
+            self._reference_point = event.tip_position
+            self._last_picked_atom_center = None
+        else:
+            view = self.session.main_view
+            pick = event.picked_object(view)
+            pa = self._pick_atoms(pick)
+
+        if pa is not None and len(pa) > 0:
+            self._start_tugging_atoms(pa)
+
+    def vr_motion(self, event):
+        # Virtual reality hand controller motion.
+        ref_point = self._pull_reference_point()
+        pull_vector = event.tip_position - ref_point
+        tugs = self._picked_tuggables
+        tugs.targets = self._picked_atoms.coords + pull_vector
+        # TODO: Apply torgue if there are multiple atoms.
+
+    def vr_release(self, release):
+        # Virtual reality hand controller button release.
+        self.tugging = False
 
 
 

@@ -591,6 +591,11 @@ class Isolde():
         iw._right_mouse_tug_selection_button.clicked.connect(
             self._set_right_mouse_mode_tug_selection
         )
+        # Enable VR click on buttons to set VR tug mode.
+        iw._right_mouse_tug_atom_button.vr_mode = lambda s=self: s._mouse_tug_mode('atom')
+        iw._right_mouse_tug_residue_button.vr_mode = lambda s=self: s._mouse_tug_mode('residue')
+        iw._right_mouse_tug_selection_button.vr_mode = lambda s=self: s._mouse_tug_mode('selection')
+
         ####
         # Simulation global parameters (can only be set before running)
         ####
@@ -1583,13 +1588,17 @@ class Isolde():
     # Right mouse button modes
     ####
 
-    def _set_right_mouse_tug_mode(self, mode):
+    def _mouse_tug_mode(self, mode):
         from .tugging import TugAtomsMode
         sm = self.sim_manager
         sc = sm.sim_construct
         t = TugAtomsMode(self.session, sm.tuggable_atoms_mgr, sc.mobile_atoms,
                 spring_constant = self.sim_params.mouse_tug_spring_constant,
                 mode=mode)
+        return t
+
+    def _set_right_mouse_tug_mode(self, mode):
+        t = self._mouse_tug_mode(mode)
         mm = self.session.ui.mouse_modes
         mm.bind_mouse_mode('right', [], t)
 
