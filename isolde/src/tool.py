@@ -20,7 +20,7 @@ def _find_help():
     # import os, pathlib
     # fname = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'doc', 'index.html')
     # return pathlib.Path(os.path.abspath(fname)).as_uri()
-    return 'help:isolde/index.html'
+    return 'help:user/tools/ISOLDE.html'
 
 class ISOLDE_ToolUI(ToolInstance):
 
