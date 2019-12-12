@@ -3,7 +3,7 @@
 @Date:   18-Apr-2018
 @Email:  tic20@cam.ac.uk
 @Last modified by:   tic20
-@Last modified time: 25-Jun-2019
+@Last modified time: 12-Dec-2019
 @License: Free for non-commercial use (see license.pdf)
 @Copyright: Copyright 2016-2019 Tristan Croll
 -->
@@ -78,11 +78,11 @@ with the surroundings.
       <IncludeDir platform="mac">/Users/tic20/anaconda3/envs/openmm74/include</IncludeDir>
       <IncludeDir platform="linux">/home/tic20/anaconda3/envs/openmm74/include</IncludeDir>
       <IncludeDir platform="windows">C:\Users\tic20\Anaconda3\envs\openmm74\include</IncludeDir>
-      <IncludeDir>src/deps/liblbfgs/include</IncludeDir>
+      <IncludeDir>src/deps/lbfgs/include</IncludeDir>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
       <SourceFile>src/openmm/custom_forces.cpp</SourceFile>
       <SourceFile>src/openmm/minimize.cpp</SourceFile>
-      <SourceFile>src/deps/liblbfgs/lib/lbfgs.c</SourceFile>
+      <SourceFile>src/deps/lbfgs/lib/lbfgs.c</SourceFile>
   </CLibrary>
 
 
