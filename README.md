@@ -93,7 +93,7 @@ In Windows, the corresponding commands are slighty more complex - an extra layer
 command-line switches to be correctly handled. The following command will clean, build and install ISOLDE:
 
 `C:\Program Files\ChimeraX\bin\python.exe" "c:\Program Files\ChimeraX\bin\Lib\site-packages\ChimeraX_main.py" -m PyQt5.pyrcc_main -o src/resources/resources_rc.py src/resources/resources.qrc`
-`C:\Program Files\ChimeraX\bin\python.exe" "c:\Program Files\ChimeraX\bin\Lib\site-packages\ChimeraX_main.py" --nogui --cmd "devel clean .; devel install .; exit"
+`C:\Program Files\ChimeraX\bin\python.exe" "c:\Program Files\ChimeraX\bin\Lib\site-packages\ChimeraX_main.py" --nogui --cmd "devel clean .; devel install .; exit"`
 
 ## Building the documentation
 
