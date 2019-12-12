@@ -41,6 +41,8 @@ the links to ISOLDE.
 
 ## Compiling from source
 
+**NOTE:** Some large files in this repository are stored using [Git-LFS](https://git-lfs.github.com/). To clone these to your own system you'll need to have the Git-LFS client installed.
+
 ISOLDE uses ChimeraX's [bundle building pipeline](https://www.cgl.ucsf.edu/chimerax/docs/devel/writing_bundles.html), with
 the majority of the build information defined in [bundle_info.xml](https://github.com/tristanic/isolde/blob/master/isolde/bundle_info.xml).
 Dependencies outside of those already present in ChimeraX itself are kept to a minimum. You will need to have a compatible
