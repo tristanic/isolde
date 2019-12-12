@@ -73,6 +73,7 @@ Once the above conditions are met, you can go ahead and build in a Linux or MacO
 - run the following commands:
 
 `/path/to/ChimeraX/bin/ChimeraX -m PyQt5.pyrcc_main -o src/resources/resources_rc.py src/resources/resources.qrc`
+
 `/path/to/ChimeraX/bin/ChimeraX --nogui --cmd "devel build . ; exit"`
 
 - then install with:
@@ -93,6 +94,7 @@ In Windows, the corresponding commands are slighty more complex - an extra layer
 command-line switches to be correctly handled. The following command will clean, build and install ISOLDE:
 
 `C:\Program Files\ChimeraX\bin\python.exe" "c:\Program Files\ChimeraX\bin\Lib\site-packages\ChimeraX_main.py" -m PyQt5.pyrcc_main -o src/resources/resources_rc.py src/resources/resources.qrc`
+
 `C:\Program Files\ChimeraX\bin\python.exe" "c:\Program Files\ChimeraX\bin\Lib\site-packages\ChimeraX_main.py" --nogui --cmd "devel clean .; devel install .; exit"`
 
 ## Building the documentation
