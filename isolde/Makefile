@@ -2,7 +2,7 @@
 # @Date:   28-Jan-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 25-Jun-2019
+# @Last modified time: 12-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -72,10 +72,14 @@ SRCS = $(SOURCE)/*.py $(SOURCE)/*.cpp
 # Actual make dependencies!
 #
 
+
+
 wheel $(WHEEL): bundle_info.xml $(SRCS)
+	$(CHIMERAX_EXE) -m PyQt5.pyrcc_main -o src/resources/resources_rc.py src/resources/resources.qrc; \
 	$(CHIMERAX_EXE) --nogui --cmd "devel build . ; exit"
 
-install app-install:	$(WHEEL)
+install app-install: $(WHEEL)
+	$(CHIMERAX_EXE) -m PyQt5.pyrcc_main -o src/resources/resources_rc.py src/resources/resources.qrc; \
 	$(CHIMERAX_EXE) --nogui --cmd "devel install . ; exit"
 
 uninstall app-uninstall:	$(WHEEL)
