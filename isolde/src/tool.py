@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 14-Jun-2019
+# @Last modified time: 12-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -24,7 +24,7 @@ def _find_help():
 
 class ISOLDE_ToolUI(ToolInstance):
 
-    SESSION_ENDURING = False
+    SESSION_ENDURING = True
     # if SESSION_ENDURING is True, tool instance not deleted at session closure
 
     help = _find_help()
