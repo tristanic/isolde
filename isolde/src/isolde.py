@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 17-Jun-2019
+# @Last modified time: 12-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -155,6 +155,9 @@ class Isolde():
                   ChimeraX GUI menu).
         '''
         self.session = session = gui.session
+        from . import register_ignored_residues_attr
+        register_ignored_residues_attr(session)
+
 
         self.triggers = triggerset.TriggerSet()
         for t in self.trigger_names:

@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 12-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -42,7 +42,7 @@ class _MyAPI(BundleAPI):
     @staticmethod
     def initialize(session, bundle_info):
         initialize_openmm()
-        register_ignored_residues_attr(session)
+        # register_ignored_residues_attr(session)
 
     @staticmethod
     def get_class(class_name):
