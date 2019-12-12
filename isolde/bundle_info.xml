@@ -82,7 +82,7 @@ with the surroundings.
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
       <SourceFile>src/openmm/custom_forces.cpp</SourceFile>
       <SourceFile>src/openmm/minimize.cpp</SourceFile>
-      <SourceFile>src/deps/lbfgs/lib/lbfgs.c</SourceFile>
+      <SourceFile>src/deps/lbfgs/src/lbfgs.c</SourceFile>
   </CLibrary>
 
 
