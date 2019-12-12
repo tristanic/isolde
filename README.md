@@ -86,7 +86,7 @@ For convenience, these are also wrapped in a simple Makefile, allowing the above
 
 `make`, `make install` and `make clean`
 
-respective.
+respectively.
 
 In Windows, the corresponding commands are slighty more complex - an extra layer of indirection is needed for the 
 command-line switches to be correctly handled. The following command will clean, build and install ISOLDE:
