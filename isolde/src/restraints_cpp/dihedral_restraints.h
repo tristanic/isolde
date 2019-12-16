@@ -3,7 +3,7 @@
  * @Date:   26-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 26-Apr-2018
+ * @Last modified time: 16-Dec-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright:2016-2019 Tristan Croll
  */
@@ -38,6 +38,7 @@ template <class DType, class RType>
 class DihedralRestraintMgr_Base;
 class ProperDihedralRestraintMgr;
 class ChiralRestraintMgr;
+class AdaptiveDihedralRestraintMgr;
 
 class Dihedral_Restraint_Change_Mgr
 {
@@ -91,7 +92,9 @@ public:
     virtual void set_enabled(bool flag) {}
     virtual void set_display(bool flag) {}
     virtual void set_spring_constant(const double &k) {}
-    virtual void set_cutoff(double cutoff) {}
+    virtual void set_cutoff(double cutoff) {
+        throw std::runtime_error("This class does not implement a cutoff!");
+    }
 
 
 
@@ -103,7 +106,10 @@ public:
     bool is_enabled() const { return _enabled; }
     //! Set the restraint spring constant in kJ mol-1 rad-1
     double get_spring_constant() const {return _spring_constant;}
-    double get_cutoff() const { return _cutoff; }
+    virtual double get_cutoff() const {
+        throw std::runtime_error("This class does not implement a cutoff!");
+        return 0;
+    }
     //! Returns (current angle) - (target angle) in radians
     double offset() const {return util::wrapped_angle(_dihedral->angle()-get_target());}
     //! Returns (current angle) - (target angle) in degrees
@@ -177,16 +183,19 @@ public:
        base_mgr()->track_change(this, change_tracker()->REASON_CUTOFF_CHANGED);
     }
 
+    double get_cutoff() const { return _cutoff; }
+
     // To make error_wrap_array_get automatic template substitution happy
     ChiralRestraintMgr *mgr() const;
 }; // class ChiralRestraint
 
-class ProperDihedralRestraint:
-    public Dihedral_Restraint_Base<ProperDihedral>,
-    public pyinstance::PythonInstance<ProperDihedralRestraint>
+
+
+class ProperDihedralRestraintBase:
+    public Dihedral_Restraint_Base<ProperDihedral>
 {
 public:
-    ProperDihedralRestraint(ProperDihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr);
+    ProperDihedralRestraintBase(ProperDihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr);
     void get_annotation_transform(float *tf);
     virtual void get_annotation_color(uint8_t *color);
     void set_target(double target)
@@ -216,6 +225,18 @@ public:
        base_mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
     }
 
+protected:
+    using Dihedral_Restraint_Base<ProperDihedral>::_cutoff;
+
+private:
+}; // ProperDihedralRestraintBase
+
+class ProperDihedralRestraint: public ProperDihedralRestraintBase,
+    public pyinstance::PythonInstance<ProperDihedralRestraint>
+{
+public:
+    ProperDihedralRestraint(ProperDihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr);
+
     // Optional cutoff angle below which no force will be applied
     void set_cutoff(double cutoff)
     {
@@ -223,14 +244,46 @@ public:
        base_mgr()->track_change(this, change_tracker()->REASON_CUTOFF_CHANGED);
     }
 
+    double get_cutoff() const { return _cutoff; }
+
     // To make error_wrap_array_get automatic template substitution happy
     ProperDihedralRestraintMgr *mgr() const;
 
-
-
 private:
-}; // ProperDihedralRestraint
 
+}; // class ProperDihedralRestraint
+
+
+
+class AdaptiveDihedralRestraint: public ProperDihedralRestraintBase,
+    public pyinstance::PythonInstance<ProperDihedralRestraint>
+{
+public:
+    AdaptiveDihedralRestraint(ProperDihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr);
+    // Cutoff is not used in this class
+    void set_kappa(double kappa) {
+        _kappa = kappa < 0 ? 0 : kappa;
+        _recalculate_cutoffs(kappa);
+        base_mgr()->track_change(this, change_tracker()->REASON_ADAPTIVE_C_CHANGED);
+    }
+    double kappa() const { return _kappa; }
+    double effective_sdev() const { return sqrt(1/_kappa); }
+
+
+
+    AdaptiveDihedralRestraintMgr *mgr() const;
+private:
+    const double DEFAULT_KAPPA=14.59; // gives a standard deviation of about 15 degrees
+    const double DEFAULT_FMAX_ANGLE = 0.260; // delta-theta giving peak force for kappa=14.59
+    double _kappa; // gives a standard deviation of about 15 degrees
+    void _recalculate_cutoffs(double kappa)
+    {
+        auto fmax_dtheta = atan(sqrt(sqrt(4*kappa*kappa+1)-2*kappa));
+        _cutoffs[1] = fmax_dtheta;
+        _cutoffs[2] = 2*fmax_dtheta;
+    }
+
+}; // class AdaptiveDihedralRestraint
 
 
 
@@ -310,6 +363,26 @@ private:
     const std::string _py_name = "ProperDihedralRestraintMgr";
     const std::string _managed_class_py_name = "ProperDihedralRestraint";
 }; //ProperDihedralRestraintMgr
+
+class AdaptiveDihedralRestraintMgr:
+    public DihedralRestraintMgr_Base<ProperDihedral, AdaptiveDihedralRestraint>,
+    public pyinstance::PythonInstance<AdaptiveDihedralRestraintMgr>
+{
+public:
+    AdaptiveDihedralRestraintMgr(Structure *s, Change_Tracker *ct)
+        :DihedralRestraintMgr_Base<ProperDihedral, AdaptiveDihedralRestraint>(s, ct)
+    {
+        _mgr_type = std::type_index(typeid(this));
+        _mgr_pointer = static_cast<void *>(this);
+        change_tracker()->register_mgr(_mgr_type, _py_name, _managed_class_py_name);
+    }
+
+private:
+    const std::string _py_name = "AdaptiveDihedralRestraintMgr";
+    const std::string _managed_class_py_name = "AdaptiveDihedralRestraint";
+}; //ProperDihedralRestraintMgr
+
+
 
 }
 #endif //ISOLDE_DIHEDRAL_RESTRAINT

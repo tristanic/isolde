@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 12-Jun-2019
+# @Last modified time: 13-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -18,7 +18,7 @@ _torsion_adjustments_chi2 = {
 }
 
 def restrain_torsions_to_template(template_residues, restrained_residues,
-    alignment_cutoff = 10, restrain_backbone=True, restrain_rotamers=True,
+    alignment_cutoff = 10, restrain_backbone=True, restrain_sidechains=True,
     angle_cutoff=radians(10), spring_constant = 500):
     '''
     (EXPERIMENTAL)
@@ -49,7 +49,7 @@ def restrain_torsions_to_template(template_residues, restrained_residues,
               `restrained_residues` that  exist in both `restrained_residues`
               and `template_residues` will be restrained to the angles in
               `template_residues`
-        * restrain_rotamers (default = `True`):
+        * restrain_sidechains (default = `True`):
             - if `True`, all chi dihedrals in `restrained_residues` that  exist
               in both `restrained_residues` and `template_residues` will be
               restrained to the angles in `template_residues`
@@ -81,7 +81,13 @@ def restrain_torsions_to_template(template_residues, restrained_residues,
 
     tdm = sx.get_proper_dihedral_mgr(template_model)
     rdrm = sx.get_proper_dihedral_restraint_mgr(restrained_model)
-    names = ('phi','psi','omega','chi1','chi2','chi3','chi4')
+    backbone_names = ('phi','psi','omega')
+    sidechain_names = ('chi1','chi2','chi3','chi4')
+    names = []
+    if restrain_backbone:
+        names.extend(backbone_names)
+    if restrain_sidechains:
+        names.extend(sidechain_names)
     for name in names:
         for tr, rr in zip(template_residues, restrained_residues):
             td = tdm.get_dihedral(tr, name)

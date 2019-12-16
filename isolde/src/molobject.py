@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 18-Jun-2019
+# @Last modified time: 16-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -3226,8 +3226,9 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         pdr_mgr = sx.get_proper_dihedral_restraint_mgr(m)
     '''
     SESSION_SAVE=True
-    def __init__(self, model, c_pointer = None, auto_add_to_session=True):
-        super().__init__('Proper Dihedral Restraints', model, c_pointer)
+    def __init__(self, model, c_pointer = None, auto_add_to_session=True,
+            display_name='Proper Dihedral Restraints'):
+        super().__init__(display_name, model, c_pointer)
         self.set_default_colors()
         self._update_needed = True
         self._prepare_drawings()
@@ -3565,6 +3566,30 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         restraints = self.add_restraints(data['dihedrals'])
         for attr in ('targets', 'cutoffs', 'enableds', 'displays', 'spring_constants'):
             setattr(restraints, attr, data[attr])
+
+class AdaptiveDihedralRestraintMgr(ProperDihedralRestraintMgr):
+    DEFAULT_MAX_COLOR=[139,0,139] # dark magenta
+    DEFAULT_MID_COLOR=[255,69,0] # orange-red
+    DEFAULT_MIN_COLOR=[0,255,0] # green
+
+
+    def __init__(self, model, c_pointer=None, auto_add_to_session=True):
+        super().__init__(model, c_pointer=c_pointer,
+            auto_add_to_session=auto_add_to_session,
+            display_name = 'Adaptive Dihedral Restraints')
+
+        self._display_offset = (0,0,0.3)
+        self.set_color_scale(self.DEFAULT_MAX_COLOR, self.DEFAULT_MID_COLOR,
+        self.DEFAULT_MIN_COLOR)
+
+    def _prepare_drawings(self):
+        super()._prepare_drawings()
+        from chimerax.core.geometry import translation
+        rd = self._ring_drawing
+        pd = self._post_drawing
+        rd.set_geometry(rd.vertices + self._display_offset, rd.normals, rd.triangles)
+        pd.set_geometry(pd.vertices + self._display_offset, pd.normals, pd.triangles)
+
 
 
 from chimerax.atomic import AtomicStructure
