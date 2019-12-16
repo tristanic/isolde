@@ -19,8 +19,12 @@ class IsoldeRESTClient:
         self._headers = {'Content-type': 'application/json'}
 
     def connect(self):
-        import http.client
-        self._connection = http.client.HTTPConnection('{}:{}'.format(self._address, self._port), timeout=self._timeout)
+        import sys
+        if sys.version_info[0] < 3:
+            import httplib as client
+        else:
+            import http.client as client
+        self._connection = client.HTTPConnection('{}:{}'.format(self._address, self._port), timeout=self._timeout)
         self.get_available_methods()
 
     def _get_available_methods(self):
@@ -36,6 +40,8 @@ class IsoldeRESTClient:
         return method_dict
 
     def _method_factory(self, method_dict):
+        import sys
+        py2 = sys.version_info[0] < 3
         cls = self.__class__
         for fname, func_def in method_dict.items():
             if not hasattr(cls, fname):
@@ -61,17 +67,30 @@ def {}_server_method(self{}):
         raise RuntimeError(result['error'] + '; Server traceback: \\n' + result.get('traceback', 'None provided'))
     return result
 '''
-                if args and kwargs:
-                    arg_format = ', '+', '.join((
-                        ', '.join("{}:'{}'".format(arg, argtype) for (arg, argtype) in args),
-                        ', '.join(["{}:'{}'={}".format(kw, val['type'], val['default']) for kw, val in kwargs.items()])
-                        ))
-                elif args:
-                    arg_format = ', '+', '.join("{}:'{}'".format(arg, argtype) for (arg, argtype) in args)
-                elif kwargs:
-                    arg_format = ', '+', '.join(["{}:'{}'={}".format(kw, val['type'], val['default']) for kw, val in kwargs.items()])
+                if py2:
+                    if args and kwargs:
+                        arg_format = ', '+', '.join((
+                            ', '.join("{}".format(arg) for (arg, _) in args),
+                            ', '.join(["{}={}".format(kw, val['default']) for kw, val in kwargs.items()])
+                            ))
+                    elif args:
+                        arg_format = ', '+', '.join("{}".format(arg) for (arg, _) in args)
+                    elif kwargs:
+                        arg_format = ', '+', '.join(["{}={}".format(kw, val['default']) for kw, val in kwargs.items()])
+                    else:
+                        arg_format = ''
                 else:
-                    arg_format = ''
+                    if args and kwargs:
+                        arg_format = ', '+', '.join((
+                            ', '.join("{}:'{}'".format(arg, argtype) for (arg, argtype) in args),
+                            ', '.join(["{}:'{}'={}".format(kw, val['type'], val['default']) for kw, val in kwargs.items()])
+                            ))
+                    elif args:
+                        arg_format = ', '+', '.join("{}:'{}'".format(arg, argtype) for (arg, argtype) in args)
+                    elif kwargs:
+                        arg_format = ', '+', '.join(["{}:'{}'={}".format(kw, val['type'], val['default']) for kw, val in kwargs.items()])
+                    else:
+                        arg_format = ''
 
                 f_str = f_str.format(
                     fname,
@@ -101,7 +120,8 @@ def {}_server_method(self{}):
     def _get_result(self):
         from cgi import parse_header
         result = self._connection.getresponse()
-        ctype, pdict = parse_header(result.headers.get('content-type'))
+
+        ctype, pdict = parse_header(result.getheader('content-type'))
         if ctype != 'application/json':
             err_string = ('Server returned a non-supported type, "{}". Only "{}" '
                 'is allowed.').format(ctype, 'application/json')
