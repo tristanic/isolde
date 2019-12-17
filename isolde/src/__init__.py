@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 12-Dec-2019
+# @Last modified time: 17-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -57,18 +57,20 @@ class _MyAPI(BundleAPI):
             TuggableAtomsMgr, _DistanceRestraintMgrBase,
             DistanceRestraintMgr, AdaptiveDistanceRestraintMgr,
             ChiralRestraintMgr, ProperDihedralRestraintMgr,
+            AdaptiveDihedralRestraintMgr,
             _RotamerPreview, RotamerRestraintMgr,
             _Dihedral, ChiralCenter, ProperDihedral,
             Rama, Rotamer, PositionRestraint,
             TuggableAtom, MDFFAtom, DistanceRestraint,
             AdaptiveDistanceRestraint, ChiralRestraint,
-            ProperDihedralRestraint, RotamerRestraint,
+            ProperDihedralRestraint, AdaptiveDihedralRestraint,
+            RotamerRestraint,
         )
         from .molarray import (
             ChiralCenters, ProperDihedrals, Ramas, Rotamers, PositionRestraints,
             TuggableAtoms, MDFFAtoms, DistanceRestraints,
             AdaptiveDistanceRestraints, ChiralRestraints,
-            ProperDihedralRestraints, RotamerRestraints,
+            ProperDihedralRestraints, AdaptiveDihedralRestraints, RotamerRestraints,
         )
         from .remote_control.rest_server import IsoldeRESTServer
         ct = {
@@ -83,8 +85,10 @@ class _MyAPI(BundleAPI):
             'AdaptiveDistanceRestraintMgr': AdaptiveDistanceRestraintMgr,
             'ChiralRestraintMgr':           ChiralRestraintMgr,
             'ProperDihedralRestraintMgr':   ProperDihedralRestraintMgr,
+            'AdaptiveDihedralRestraintMgr': AdaptiveDihedralRestraintMgr,
             '_RotamerPreview':              _RotamerPreview,
             'RotamerRestraintMgr':          RotamerRestraintMgr,
+
             '_Dihedral':                    _Dihedral,
             'ChiralCenter':                 ChiralCenter,
             'ChiralCenters':                ChiralCenters,
@@ -108,6 +112,8 @@ class _MyAPI(BundleAPI):
             'ChiralRestraints':             ChiralRestraints,
             'ProperDihedralRestraint':      ProperDihedralRestraint,
             'ProperDihedralRestraints':     ProperDihedralRestraints,
+            'AdaptiveDihedralRestraint':    AdaptiveDihedralRestraint,
+            'AdaptiveDihedralRestraints':   AdaptiveDihedralRestraints,
             'RotamerRestraint':             RotamerRestraint,
             'RotamerRestraints':            RotamerRestraints,
             'IsoldeRESTServer':             IsoldeRESTServer,

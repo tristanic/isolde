@@ -3,7 +3,7 @@
  * @Date:   26-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 16-Dec-2019
+ * @Last modified time: 17-Dec-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright:2016-2019 Tristan Croll
  */
@@ -19,6 +19,9 @@ template class pyinstance::PythonInstance<isolde::ChiralRestraint>;
 
 template class pyinstance::PythonInstance<isolde::ProperDihedralRestraintMgr>;
 template class pyinstance::PythonInstance<isolde::ProperDihedralRestraint>;
+
+template class pyinstance::PythonInstance<isolde::AdaptiveDihedralRestraintMgr>;
+template class pyinstance::PythonInstance<isolde::AdaptiveDihedralRestraint>;
 
 namespace isolde
 {

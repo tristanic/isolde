@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 16-Dec-2019
+# @Last modified time: 17-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -130,8 +130,13 @@ def _proper_dihedral_restraint_or_none(p):
 def _proper_dihedral_restraints(p):
     from .molarray import ProperDihedralRestraints
     return ProperDihedralRestraints(p)
+def _adaptive_dihedral_restraints(p):
+    from .molarray import AdaptiveDihedralRestraints
+    return AdaptiveDihedralRestraints(p)
 def _proper_dihedral_restraint_mgr(p):
     return ProperDihedralRestraintMgr.c_ptr_to_existing_py_inst(p) if p else None
+def _adaptive_dihedral_restraint_mgr(p):
+    return AdaptiveDihedralRestraintMgr.c_ptr_to_existing_py_inst(p) if p else None
 def _distance_restraint_mgr(p):
     return DistanceRestraintMgr.c_ptr_to_existing_py_inst(p) if p else None
 def _adaptive_distance_restraint_mgr(p):
@@ -145,6 +150,12 @@ def _mdff_mgr(p):
 def _rotamer_restraint_mgr(p):
     return RotamerRestraintMgr.c_ptr_to_existing_py_inst(p) if p else None
 
+
+def delayed_class_init(cls):
+    if not hasattr(cls, '_methods_initialized'):
+        cls._init_methods()
+        cls._methods_initialized=True
+    return cls
 
 
 def get_chiral_mgr(session):
@@ -704,12 +715,12 @@ class RamaMgr:
 
     def delete(self):
         c_function('rama_mgr_delete', args=(ctypes.c_void_p,))(self._c_pointer)
+        delattr(self.session, 'rama_mgr')
 
     @property
     def cpp_pointer(self):
         '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
         return self._c_pointer.value
-        delattr(self.session, 'rama_mgr')
 
     @property
     def deleted(self):
@@ -1529,6 +1540,7 @@ class RestraintChangeTracker:
     _mgr_name_to_class_functions = {
         'ChiralRestraintMgr': (_chiral_restraint_mgr, _chiral_restraints),
         'ProperDihedralRestraintMgr': (_proper_dihedral_restraint_mgr, _proper_dihedral_restraints),
+        'AdaptiveDihedralRestraintMgr': (_adaptive_dihedral_restraint_mgr, _adaptive_dihedral_restraints),
         'PositionRestraintMgr': (_position_restraint_mgr, _position_restraints),
         'DistanceRestraintMgr': (_distance_restraint_mgr, _distance_restraints),
         'AdaptiveDistanceRestraintMgr': (_adaptive_distance_restraint_mgr, _adaptive_distance_restraints),
@@ -1555,12 +1567,12 @@ class RestraintChangeTracker:
     def delete(self):
         self.session.triggers.remove_handler(self._update_handler)
         c_function('change_tracker_delete', args=(ctypes.c_void_p,))(self._c_pointer)
+        delattr(self.session, 'isolde_changes')
 
     @property
     def cpp_pointer(self):
         '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
         return self._c_pointer.value
-        delattr(self.session, 'rama_mgr')
 
     @property
     def deleted(self):
@@ -3047,6 +3059,7 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
 
 
 
+
 class ChiralRestraintMgr(_RestraintMgr):
     '''
     Manages creation, deletion and mapping of chiral restraints for a single
@@ -3225,6 +3238,12 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         from chimerax.isolde import session_extensions as sx
         pdr_mgr = sx.get_proper_dihedral_restraint_mgr(m)
     '''
+
+    @classmethod
+    def _ARRAY_GETTER(cls, p):
+        return _proper_dihedral_restraints(p)
+    _C_FUNCTION_PREFIX = 'proper_dihedral_restraint_mgr'
+
     SESSION_SAVE=True
     def __init__(self, model, c_pointer = None, auto_add_to_session=True,
             display_name='Proper Dihedral Restraints'):
@@ -3264,13 +3283,13 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
 
     def _get_restraints(self, dihedrals, create=False):
         n = len(dihedrals)
-        f = c_function('proper_dihedral_restraint_mgr_get_restraint',
+        f = c_function(self._C_FUNCTION_PREFIX+'_get_restraint',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool, ctypes.c_size_t,
                 ctypes.c_void_p),
             ret = ctypes.c_size_t)
         ptrs = numpy.empty(n, cptr)
         found = f(self._c_pointer, dihedrals._c_pointers, create, n, pointer(ptrs))
-        return _proper_dihedral_restraints(ptrs[0:found])
+        return self._ARRAY_GETTER(ptrs[0:found])
 
     def add_restraints(self, dihedrals):
         '''
@@ -3434,7 +3453,7 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
     @property
     def num_restraints(self):
         '''Number of dihedral restrains currently owned by this manager.'''
-        f = c_function('proper_dihedral_restraint_mgr_num_restraints',
+        f = c_function(self._C_FUNCTION_PREFIX+'_num_restraints',
             args=(ctypes.c_void_p,),
             ret=ctypes.c_size_t)
         return f(self._c_pointer)
@@ -3450,10 +3469,10 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         because certain restraints (particularly the peptide omega dihedral) are
         best left always on and would become distracting if visible.
         '''
-        f = c_function('proper_dihedral_restraint_mgr_visible_restraints',
+        f = c_function(self._C_FUNCTION_PREFIX+'_visible_restraints',
             args=(ctypes.c_void_p,),
             ret = ctypes.py_object)
-        return _proper_dihedral_restraints(f(self._c_pointer))
+        return self._ARRAY_GETTER(f(self._c_pointer))
 
     def set_default_colors(self):
         '''
@@ -3479,7 +3498,7 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
                 - The colour applied to outlier rotamers, as an integer
                   (r,g,b,a) array in the range (0..255)
         '''
-        f = c_function('proper_dihedral_restraint_mgr_set_colors',
+        f = c_function(self._C_FUNCTION_PREFIX+'_set_colors',
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
                   ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)))
         maxc = numpy.array(max_c, uint8)
@@ -3511,10 +3530,27 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         update_visibility = False
         if 'enabled/disabled' in change_types:
             update_visibility = True
+            self._disable_mutually_exclusive_restraints(changes['enabled/disabled'])
         if 'display changed' in change_types:
             update_visibility = True
         # For the time being, just update on any trigger
         self.update_graphics(update_visibility)
+
+    def _disable_mutually_exclusive_restraints(self, restraints):
+        '''
+        ProperDihedralRestraints and AdaptiveDihedralRestraints are mutually
+        exclusive by design - the last thing we want is two different restraints
+        fighting over the same dihedral!
+        '''
+        from .session_extensions import get_adaptive_dihedral_restraint_mgr
+        adrm = get_adaptive_dihedral_restraint_mgr(self.model, create=False)
+        if adrm is not None:
+            enableds = restraints[restraints.enableds]
+            if len(enableds):
+                adrs = adrm.get_restraints(enableds.dihedrals)
+                adrs.enableds=False
+                adrm.update_graphics(update_visibility=True)
+
 
     def update_graphics(self, update_visibility=False):
         '''
@@ -3568,27 +3604,66 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
             setattr(restraints, attr, data[attr])
 
 class AdaptiveDihedralRestraintMgr(ProperDihedralRestraintMgr):
-    DEFAULT_MAX_COLOR=[139,0,139] # dark magenta
-    DEFAULT_MID_COLOR=[255,69,0] # orange-red
-    DEFAULT_MIN_COLOR=[0,255,0] # green
+    DEFAULT_MAX_COLOR=[139,0,139,255] # dark magenta
+    DEFAULT_MID_COLOR=[255,69,0,255] # orange-red
+    DEFAULT_MIN_COLOR=[0,191,255,255] # deep sky blue
 
+    @classmethod
+    def _ARRAY_GETTER(cls, p):
+        return _adaptive_dihedral_restraints(p)
+
+    _C_FUNCTION_PREFIX='adaptive_dihedral_restraint_mgr'
 
     def __init__(self, model, c_pointer=None, auto_add_to_session=True):
+        self._display_offset = (0,0,0.3)
         super().__init__(model, c_pointer=c_pointer,
             auto_add_to_session=auto_add_to_session,
             display_name = 'Adaptive Dihedral Restraints')
 
-        self._display_offset = (0,0,0.3)
         self.set_color_scale(self.DEFAULT_MAX_COLOR, self.DEFAULT_MID_COLOR,
         self.DEFAULT_MIN_COLOR)
 
-    def _prepare_drawings(self):
-        super()._prepare_drawings()
-        from chimerax.core.geometry import translation
-        rd = self._ring_drawing
-        pd = self._post_drawing
-        rd.set_geometry(rd.vertices + self._display_offset, rd.normals, rd.triangles)
-        pd.set_geometry(pd.vertices + self._display_offset, pd.normals, pd.triangles)
+    def _disable_mutually_exclusive_restraints(self, restraints):
+        '''
+        ProperDihedralRestraints and AdaptiveDihedralRestraints are mutually
+        exclusive by design - the last thing we want is two different restraints
+        fighting over the same dihedral!
+        '''
+        from .session_extensions import get_proper_dihedral_restraint_mgr
+        pdrm = get_proper_dihedral_restraint_mgr(self.model, create=False)
+        if pdrm is not None:
+            enableds = restraints[restraints.enableds]
+            if len(enableds):
+                pdrs = pdrm.get_restraints(enableds.dihedrals)
+                pdrs.enableds=False
+                pdrm.update_graphics(update_visibility=True)
+
+
+    def _session_save_info(self):
+        restraints = self.get_all_restraints_for_residues(self.model.residues)
+        save_info = {
+            'dihedrals': restraints.dihedrals,
+            'targets':   restraints.targets,
+            'kappas':   restraints.kappas,
+            'enableds':  restraints.enableds,
+            'displays':  restraints.displays,
+            'spring_constants': restraints.spring_constants,
+        }
+        return save_info
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        adrm = AdaptiveDihedralRestraintMgr(data['structure'], auto_add_to_session=False)
+        adrm.set_state_from_snapshot(session, data)
+        return adrm
+
+    def set_state_from_snapshot(self, session, data):
+        from chimerax.core.models import Model
+        Model.set_state_from_snapshot(self, session, data['model state'])
+        data = data['restraint info']
+        restraints = self.add_restraints(data['dihedrals'])
+        for attr in ('targets', 'kappas', 'enableds', 'displays', 'spring_constants'):
+            setattr(restraints, attr, data[attr])
 
 
 
@@ -4622,10 +4697,11 @@ class ChiralRestraint(State):
     def restore_snapshot(session, data):
         return data['restraint mgr'].get_restraint(data['dihedral'])
 
+class _ProperDihedralRestraint_Base(State):
+    SESSION_SAVE=False
+    _MGR_GETTER = None
+    _C_FUNCTION_PREFIX = None
 
-
-class ProperDihedralRestraint(State):
-    SESSION_SAVE=True
     def __init__(self, c_pointer):
         set_c_pointer(self, c_pointer)
 
@@ -4654,32 +4730,34 @@ class ProperDihedralRestraint(State):
     def atoms(self):
         return self.dihedral.atoms
 
-    mgr = c_property('proper_dihedral_restraint_get_manager', cptr, astype=_proper_dihedral_restraint_mgr, read_only=True,
-        doc=':class:`ProperDihedralRestraintMgr` for this restraint. Read only.')
-    target = c_property('proper_dihedral_restraint_target', float64,
-        doc = 'Target angle for this restraint in radians. Can be written.')
-    dihedral = c_property('proper_dihedral_restraint_dihedral', cptr, astype=_proper_dihedral_or_none, read_only=True,
-        doc = 'The restrained :py:class:`ProperDihedral`. Read only.')
-    offset = c_property('proper_dihedral_restraint_offset', float64, read_only = True,
-        doc = 'Difference between current and target angle in radians. Read only.')
-    cutoff = c_property('proper_dihedral_restraint_cutoff', float64,
-        doc = 'Cutoff angle offset below which no restraint will be applied. Can be set.')
-    enabled = c_property('proper_dihedral_restraint_enabled', npy_bool,
-        doc = 'Enable/disable this restraint or get its current state.')
-    display = c_property('proper_dihedral_restraint_display', npy_bool,
-        doc = 'Set whether you want this restraint to be displayed when active.')
-    visible = c_property('proper_dihedral_restraint_visible', npy_bool, read_only=True,
-        doc = 'Is this restraint currently visible? Read-only.')
-    spring_constant = c_property('proper_dihedral_restraint_k', float64,
-        doc = 'Get/set the spring constant for this restraint in :math:`kJ mol^{-1} rad^{-2}`')
-    annotation_color = c_property('proper_dihedral_restraint_annotation_color', uint8, 4, read_only=True,
-        doc = 'Get the color of the annotation for this restraint according to the current colormap. Read only.')
-    sim_index = c_property('proper_dihedral_restraint_sim_index', int32,
-        doc='''
-        Index of this restraint in the relevant Force in a running simulation.
-        Returns -1 if the restraint is not currently in a simulation. Can be
-        set, but only if you know what you are doing.
-        ''')
+
+    @classmethod
+    def _init_methods(cls):
+
+        cls.mgr = c_property(cls._C_FUNCTION_PREFIX+'_get_manager', cptr, astype=cls._MGR_GETTER, read_only=True,
+            doc=':class:`{}Mgr` for this restraint. Read only.'.format(cls.__name__))
+        cls.target = c_property(cls._C_FUNCTION_PREFIX+'_target', float64,
+            doc = 'Target angle for this restraint in radians. Can be written.')
+        cls.dihedral = c_property(cls._C_FUNCTION_PREFIX+'_dihedral', cptr, astype=_proper_dihedral_or_none, read_only=True,
+            doc = 'The restrained :py:class:`{}`. Read only.'.format(cls.__name__))
+        cls.offset = c_property(cls._C_FUNCTION_PREFIX+'_offset', float64, read_only = True,
+            doc = 'Difference between current and target angle in radians. Read only.')
+        cls.enabled = c_property(cls._C_FUNCTION_PREFIX+'_enabled', npy_bool,
+            doc = 'Enable/disable this restraint or get its current state.')
+        cls.display = c_property(cls._C_FUNCTION_PREFIX+'_display', npy_bool,
+            doc = 'Set whether you want this restraint to be displayed when active.')
+        cls.visible = c_property(cls._C_FUNCTION_PREFIX+'_visible', npy_bool, read_only=True,
+            doc = 'Is this restraint currently visible? Read-only.')
+        cls.spring_constant = c_property(cls._C_FUNCTION_PREFIX+'_k', float64,
+            doc = 'Get/set the spring constant for this restraint in :math:`kJ mol^{-1} rad^{-2}`')
+        cls.annotation_color = c_property(cls._C_FUNCTION_PREFIX+'_annotation_color', uint8, 4, read_only=True,
+            doc = 'Get the color of the annotation for this restraint according to the current colormap. Read only.')
+        cls.sim_index = c_property(cls._C_FUNCTION_PREFIX+'_sim_index', int32,
+            doc='''
+            Index of this restraint in the relevant Force in a running simulation.
+            Returns -1 if the restraint is not currently in a simulation. Can be
+            set, but only if you know what you are doing.
+            ''')
 
     def take_snapshot(self, session, flags):
         data = {
@@ -4691,6 +4769,28 @@ class ProperDihedralRestraint(State):
     @staticmethod
     def restore_snapshot(session, data):
         return data['restraint mgr'].get_restraint(data['dihedral'])
+
+@delayed_class_init
+class ProperDihedralRestraint(_ProperDihedralRestraint_Base):
+    _MGR_GETTER = _proper_dihedral_restraint_mgr
+    _C_FUNCTION_PREFIX = 'proper_dihedral_restraint'
+
+    cutoff = c_property('proper_dihedral_restraint_cutoff', float64,
+        doc = 'Cutoff angle offset below which no restraint will be applied. Can be set.')
+
+@delayed_class_init
+class AdaptiveDihedralRestraint(_ProperDihedralRestraint_Base):
+    _MGR_GETTER = _adaptive_dihedral_restraint_mgr
+    _C_FUNCTION_PREFIX = 'adaptive_dihedral_restraint'
+
+    kappa = c_property('adaptive_dihedral_restraint_kappa', float64,
+        doc = (r'Sets the width of the region within which the dihedral will be '
+            r'restrained. For values of kappa greater than about 1, the effective '
+            r'standard deviation is approximately equal to '
+            r':math:`\sqrt{\frac{1}{\kappa}}`. As kappa approaches zero the '
+            r'shape of the energy profile approaches a standard cosine. Values '
+            r'of kappa below zero are not allowed.'))
+
 
 class RotamerRestraint(State):
     '''
@@ -4784,7 +4884,7 @@ class RotamerRestraint(State):
 for class_obj in (ChiralCenter, ProperDihedral, Rama, Rotamer,
         PositionRestraint, TuggableAtom, MDFFAtom, DistanceRestraint,
         AdaptiveDistanceRestraint, ChiralRestraint,
-        ProperDihedralRestraint, RotamerRestraint):
+        ProperDihedralRestraint, AdaptiveDihedralRestraint, RotamerRestraint):
     if hasattr(class_obj, '_c_class_name'):
         cname = class_obj._c_class_name
     else:
@@ -4804,6 +4904,7 @@ for class_obj in (ProperDihedralMgr, ChiralMgr, RamaMgr, RotaMgr,
             PositionRestraintMgr, TuggableAtomsMgr, MDFFMgr,
             DistanceRestraintMgr, AdaptiveDistanceRestraintMgr,
             ChiralRestraintMgr, ProperDihedralRestraintMgr,
+            AdaptiveDihedralRestraintMgr,
             RotamerRestraintMgr):
     cname = _as_snake_case(class_obj.__name__)
     func_name = cname + '_py_inst'
