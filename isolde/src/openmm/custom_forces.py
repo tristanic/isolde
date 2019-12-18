@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 17-Dec-2019
+# @Last modified time: 18-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -1411,7 +1411,7 @@ class TopOutTorsionForce(CustomTorsionForce):
                       '-k * sqrt(2)*exp(-1/2*sqrt(4*kappa^2+1)-kappa+1/2)'
                         '* exp(kappa*(cos(theta-theta0)+1)-1)'
                         '/ sqrt(sqrt(4*kappa^2+1)-1)')
-        limiting_energy_term = 'cos(theta-theta0)'
+        limiting_energy_term = '-k*cos(theta-theta0)'
         energy_switch_term = 'delta(kappa)'
         full_energy_term = 'select({}, {}, {})'.format(
             energy_switch_term, limiting_energy_term, default_energy_term)
