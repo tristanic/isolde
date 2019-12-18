@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 13-Dec-2019
+# @Last modified time: 18-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -19,8 +19,8 @@ _torsion_adjustments_chi2 = {
 
 def restrain_torsions_to_template(template_residues, restrained_residues,
     alignment_cutoff = 10, restrain_backbone=True, restrain_sidechains=True,
-    angle_cutoff=radians(10), spring_constant = 500):
-    '''
+    kappa=10, spring_constant = 100):
+    r'''
     (EXPERIMENTAL)
 
     Restrain all phi, psi, omega and/or chi dihedrals in `restrained_residues`
@@ -40,23 +40,28 @@ def restrain_torsions_to_template(template_residues, restrained_residues,
               from a single model (which may or may not be the same model as for
               `template_residues`). May be the same array as `template_residues`
               (which will just restrain all torsions to their current angles).
-        * alignment_cutoff (default = 5):
+        * alignment_cutoff:
             - distance cutoff (in Angstroms) for rigid-body alignment of model
               against  template. Residues with a CA RMSD greater than this
               value after alignment will not be restrained.
-        * restrain_backbone (default = `True`):
+        * restrain_backbone:
             - if `True`, all phi, psi and omega dihedrals in
               `restrained_residues` that  exist in both `restrained_residues`
               and `template_residues` will be restrained to the angles in
               `template_residues`
-        * restrain_sidechains (default = `True`):
+        * restrain_sidechains:
             - if `True`, all chi dihedrals in `restrained_residues` that  exist
               in both `restrained_residues` and `template_residues` will be
               restrained to the angles in `template_residues`
-        * angle_cutoff (default = pi/18 (10 degrees)):
-            - the deviation from the target angle in radians below which no
-              restraining force will be applied to a given torsion.
-        * spring_constant (default = 500):
+        * kappa:
+            - can be thought of as (approximately) the inverse variance of the
+              well within which the restraint will be felt. For example,
+              kappa=10 corresponds to a standard deviation of
+              :math:`\sqrt{\frac{1}{10}}` = 0.316 radians or about 18 degrees.
+              A torsion restrained with this kappa will begin to "feel" the
+              restraint once it comes within about two standard deviations of
+              the target angle.
+        * spring_constant:
             - strength of each restraint, in :math:`kJ mol^{-1} rad^{-2}`
     '''
     #from .. import session_extensions as sx
@@ -80,7 +85,7 @@ def restrain_torsions_to_template(template_residues, restrained_residues,
         )
 
     tdm = sx.get_proper_dihedral_mgr(template_model)
-    rdrm = sx.get_proper_dihedral_restraint_mgr(restrained_model)
+    rdrm = sx.get_adaptive_dihedral_restraint_mgr(restrained_model)
     backbone_names = ('phi','psi','omega')
     sidechain_names = ('chi1','chi2','chi3','chi4')
     names = []
@@ -105,7 +110,7 @@ def restrain_torsions_to_template(template_residues, restrained_residues,
                     target = td.angle
                 rdr.target = target
                 rdr.spring_constant = spring_constant
-                rdr.cutoff = angle_cutoff
+                rdr.kappa = kappa
                 rdr.enabled = True
 
 def restrain_ca_distances_to_template(template_residues, restrained_residues,
