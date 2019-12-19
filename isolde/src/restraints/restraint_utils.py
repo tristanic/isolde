@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 18-Dec-2019
+# @Last modified time: 19-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -17,19 +17,14 @@ _torsion_adjustments_chi2 = {
     'TRP': radians(180),
 }
 
-def restrain_torsions_to_template(template_residues, restrained_residues,
-    alignment_cutoff = 10, restrain_backbone=True, restrain_sidechains=True,
-    kappa=10, spring_constant = 100):
+def restrain_torsions_to_template(session, template_residues, restrained_residues,
+    restrain_backbone=True, restrain_sidechains=True,
+    kappa=10, spring_constant=100, identical_sidechains_only=True):
     r'''
     (EXPERIMENTAL)
 
     Restrain all phi, psi, omega and/or chi dihedrals in `restrained_residues`
-    to  match their counterparts (if present) in template_residues. There must
-    be a 1:1 correspondence between the residues in the two arrays. Note that
-    this algorithm is still quite simplistic and doesn't yet attempt to handle
-    "gotchas" when the restrained and template residues are different (e.g.
-    restraining a VAL to be isosteric with a THR requires rotating the chi1
-    torsion by 120 degrees).
+    to  match their counterparts (if present) in template_residues.
 
     Args:
         * template_residues:
@@ -40,13 +35,9 @@ def restrain_torsions_to_template(template_residues, restrained_residues,
               from a single model (which may or may not be the same model as for
               `template_residues`). May be the same array as `template_residues`
               (which will just restrain all torsions to their current angles).
-        * alignment_cutoff:
-            - distance cutoff (in Angstroms) for rigid-body alignment of model
-              against  template. Residues with a CA RMSD greater than this
-              value after alignment will not be restrained.
         * restrain_backbone:
             - if `True`, all phi, psi and omega dihedrals in
-              `restrained_residues` that  exist in both `restrained_residues`
+              `restrained_residues` hat  exist in both `restrained_residues`
               and `template_residues` will be restrained to the angles in
               `template_residues`
         * restrain_sidechains:
@@ -63,11 +54,11 @@ def restrain_torsions_to_template(template_residues, restrained_residues,
               the target angle.
         * spring_constant:
             - strength of each restraint, in :math:`kJ mol^{-1} rad^{-2}`
+        * identical_sidechains_only:
+            - if True, restraints will only be applied to a sidechain if it is
+              the same amino acid as the template.
     '''
-    #from .. import session_extensions as sx
     from chimerax.isolde import session_extensions as sx
-    # if len(template_residues) != len(restrained_residues):
-    #     raise TypeError('Template and restrained residue arrays must be the same length!')
     template_us = template_residues.unique_structures
     if len(template_us) != 1:
         raise TypeError('Template residues must be from a single model!')
@@ -77,41 +68,61 @@ def restrain_torsions_to_template(template_residues, restrained_residues,
         raise TypeError('Restrained residues must be from a single model!')
     restrained_model = restrained_us[0]
 
-    if template_residues != restrained_residues:
-        template_residues, restrained_residues = _get_template_alignment(
-            template_residues, restrained_residues,
-            cutoff_distance=alignment_cutoff,
-            overlay_template=False
-        )
 
     tdm = sx.get_proper_dihedral_mgr(template_model)
     rdrm = sx.get_adaptive_dihedral_restraint_mgr(restrained_model)
-    backbone_names = ('phi','psi','omega')
+    pdrm = sx.get_proper_dihedral_restraint_mgr(restrained_model)
+    backbone_names = ('phi','psi')
     sidechain_names = ('chi1','chi2','chi3','chi4')
     names = []
     if restrain_backbone:
         names.extend(backbone_names)
     if restrain_sidechains:
         names.extend(sidechain_names)
-    for name in names:
-        for tr, rr in zip(template_residues, restrained_residues):
-            td = tdm.get_dihedral(tr, name)
-            rdr = rdrm.add_restraint_by_residue_and_name(rr, name)
-            if td and rdr:
-                # Due to naming conventions, some sidechain torsions need to be
-                # rotated for best match to other residues
-                if name == 'chi1':
-                    target = (td.angle + _torsion_adjustments_chi1.get(tr.name, 0)
-                        - _torsion_adjustments_chi1.get(rr.name, 0))
-                elif name == 'chi2':
-                    target = (td.angle + _torsion_adjustments_chi2.get(tr.name, 0)
-                        - _torsion_adjustments_chi2.get(rr.name, 0))
-                else:
-                    target = td.angle
-                rdr.target = target
-                rdr.spring_constant = spring_constant
-                rdr.kappa = kappa
-                rdr.enabled = True
+
+    def apply_restraints(trs, rrs):
+        for name in names:
+            for tr, rr in zip(trs, rrs):
+                if 'chi' in name and identical_sidechains_only and tr.name != rr.name:
+                    continue
+                td = tdm.get_dihedral(tr, name)
+                rdr = rdrm.add_restraint_by_residue_and_name(rr, name)
+                if td and rdr:
+                    # Due to naming conventions, some sidechain torsions need to be
+                    # rotated for best match to other residues
+                    if name == 'chi1':
+                        target = (td.angle + _torsion_adjustments_chi1.get(tr.name, 0)
+                            - _torsion_adjustments_chi1.get(rr.name, 0))
+                    elif name == 'chi2':
+                        target = (td.angle + _torsion_adjustments_chi2.get(tr.name, 0)
+                            - _torsion_adjustments_chi2.get(rr.name, 0))
+                    else:
+                        target = td.angle
+                    rdr.target = target
+                    rdr.spring_constant = spring_constant
+                    rdr.kappa = kappa
+                    rdr.enabled = True
+        if restrain_backbone:
+            # For omega dihedrals we really want to stick with the standard
+            # proper dihedral restraints
+            ors = pdrm.add_restraints_by_residues_and_name(rrs, 'omega')
+            tds = tdm.get_dihedrals(trs, 'omega')
+            ors.targets = tds.angles
+            ors.enableds = True
+
+    if template_residues==restrained_residues:
+        apply_restraints(template_residues, restrained_residues)
+
+    else:
+        # Just do it based on sequence alignment for now.
+        # TODO: work out an improved weighting scheme based on similarity of
+        # environment for each residue.
+        trs, rrs = sequence_align_all_residues(
+            session, [template_residues], [restrained_residues]
+        )
+        apply_restraints(trs, rrs)
+
+
 
 def restrain_ca_distances_to_template(template_residues, restrained_residues,
     distance_cutoff=8, spring_constant = 500):
@@ -342,7 +353,7 @@ def _get_template_alignment(template_residues, restrained_residues,
 def restrain_atom_distances_to_template(template_residues, restrained_residues,
     protein=True, nucleic=True, custom_atom_names=[],
     distance_cutoff=8, alignment_cutoff=5, well_half_width = 0.05,
-    kappa = 5, tolerance = 0.025, fall_off = 4):
+    kappa = 5, tolerance = 0.025, fall_off = 4, display_threshold=0):
     r'''
     Creates a "web" of adaptive distance restraints between nearby atoms,
     restraining one set of residues to the same spatial organisation as another.
@@ -403,6 +414,9 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
               :math:`\alpha = -2 -\text{fall\_off} ln(\text{target})`. In other
               words, long-distance restraints are treated as less confident than
               short-distance ones.
+        * display_threshold (default = 0):
+            - deviation from (target +- tolerance) as a fraction of
+              :attr:`well_half_width` below which restraints will be hidden.
     '''
     session = template_residues[0][0].session
     from chimerax.std_commands.align import IterationError
@@ -424,6 +438,9 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
     log = restrained_model.session.logger
 
     adrm = sx.get_adaptive_distance_restraint_mgr(restrained_model)
+    if display_threshold is None:
+        display_threshold = 0
+    adrm.display_threshold = display_threshold
     from chimerax.core.geometry import find_close_points, distance
     from chimerax.atomic import concatenate
 

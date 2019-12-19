@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 17-Dec-2019
+# @Last modified time: 19-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -3530,13 +3530,13 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         update_visibility = False
         if 'enabled/disabled' in change_types:
             update_visibility = True
-            self._disable_mutually_exclusive_restraints(changes['enabled/disabled'])
+            self.disable_mutually_exclusive_restraints(changes['enabled/disabled'])
         if 'display changed' in change_types:
             update_visibility = True
         # For the time being, just update on any trigger
         self.update_graphics(update_visibility)
 
-    def _disable_mutually_exclusive_restraints(self, restraints):
+    def disable_mutually_exclusive_restraints(self, restraints, enabled_only=True):
         '''
         ProperDihedralRestraints and AdaptiveDihedralRestraints are mutually
         exclusive by design - the last thing we want is two different restraints
@@ -3545,9 +3545,12 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         from .session_extensions import get_adaptive_dihedral_restraint_mgr
         adrm = get_adaptive_dihedral_restraint_mgr(self.model, create=False)
         if adrm is not None:
-            enableds = restraints[restraints.enableds]
-            if len(enableds):
-                adrs = adrm.get_restraints(enableds.dihedrals)
+            if enabled_only:
+                release = restraints[restraints.enableds]
+            else:
+                release = restraints
+            if len(release):
+                adrs = adrm.get_restraints(release.dihedrals)
                 adrs.enableds=False
                 adrm.update_graphics(update_visibility=True)
 
@@ -3623,7 +3626,20 @@ class AdaptiveDihedralRestraintMgr(ProperDihedralRestraintMgr):
         self.set_color_scale(self.DEFAULT_MAX_COLOR, self.DEFAULT_MID_COLOR,
         self.DEFAULT_MIN_COLOR)
 
-    def _disable_mutually_exclusive_restraints(self, restraints):
+    @staticmethod
+    def angle_range_to_kappa(angle_range):
+        '''
+        Returns the kappa value that will limit the restraining force to
+        approximately target +/- angle_range.
+        '''
+        from math import tan
+        quarter_range = angle_range/4
+        kappa = 1/4*(1-tan(quarter_range)**4)*1/tan(quarter_range)**2
+        if kappa < 1e-3:
+            kappa = 0
+        return kappa
+
+    def disable_mutually_exclusive_restraints(self, restraints, enabled_only=True):
         '''
         ProperDihedralRestraints and AdaptiveDihedralRestraints are mutually
         exclusive by design - the last thing we want is two different restraints
@@ -3632,9 +3648,12 @@ class AdaptiveDihedralRestraintMgr(ProperDihedralRestraintMgr):
         from .session_extensions import get_proper_dihedral_restraint_mgr
         pdrm = get_proper_dihedral_restraint_mgr(self.model, create=False)
         if pdrm is not None:
-            enableds = restraints[restraints.enableds]
-            if len(enableds):
-                pdrs = pdrm.get_restraints(enableds.dihedrals)
+            if enabled_only:
+                release = restraints[restraints.enableds]
+            else:
+                release = restraints
+            if len(release):
+                pdrs = pdrm.get_restraints(release.dihedrals)
                 pdrs.enableds=False
                 pdrm.update_graphics(update_visibility=True)
 
@@ -3697,11 +3716,8 @@ class RotamerRestraintMgr(_RestraintMgr):
         # RotamerRestraintMgr instance is finalised. The net result is that
         # we end up with *two* RotamerRestraintMgr instances
         deferred_pdrm = False
-        pdr_m = None
-        for m in model.child_models():
-            if isinstance(m, ProperDihedralRestraintMgr):
-                pdr_m = m
-                break
+        from .session_extensions import get_proper_dihedral_restraint_mgr
+        pdr_m = get_proper_dihedral_restraint_mgr(model, create=False)
         if pdr_m is None:
             pdr_m = ProperDihedralRestraintMgr(model, auto_add_to_session=False)
             deferred_pdrm = True
@@ -3910,8 +3926,10 @@ class RotamerRestraintMgr(_RestraintMgr):
         pm = self._preview_model
         if not self.valid_preview(rotamer):
             raise TypeError('Current preview is for a different rotamer!')
-        # Clear any existing chi restraints
+        # Clear all existing chi restraints
         rr = self.add_restraint(rotamer)
+        chi_restraints = rr.chi_restraints
+        self._pdr_m.disable_mutually_exclusive_restraints(chi_restraints, enabled_only=False)
         rr.enabled=False
         rotamer.residue.atoms.coords = pm.atoms.coords
         self.remove_preview()
