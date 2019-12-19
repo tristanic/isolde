@@ -3,7 +3,7 @@
  * @Date:   26-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 17-Dec-2019
+ * @Last modified time: 19-Dec-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright:2016-2019 Tristan Croll
  */
@@ -262,7 +262,7 @@ public:
     AdaptiveDihedralRestraint(ProperDihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr);
     // Cutoff is not used in this class
     void set_kappa(double kappa) {
-        _kappa = kappa < 0 ? 0 : kappa;
+        _kappa = kappa < KAPPA_MIN ? 0 : kappa;
         _recalculate_cutoffs();
         base_mgr()->track_change(this, change_tracker()->REASON_ADAPTIVE_C_CHANGED);
     }
@@ -275,6 +275,7 @@ public:
 private:
     const double DEFAULT_KAPPA=14.59; // gives a standard deviation of about 15 degrees
     const double DEFAULT_FMAX_ANGLE = 0.260; // delta-theta giving peak force for kappa=14.59
+    const double KAPPA_MIN = 1e-3; // numerical instability develops if kappa is close to but not exactly zero
     double _kappa; // gives a standard deviation of about 15 degrees
     void _recalculate_cutoffs()
     {
