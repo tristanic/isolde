@@ -164,3 +164,25 @@ isolde adjust distances
 =======================
 
 See :ref:`adaptive_distance_restraints_cmd`
+
+
+.. _`restrain torsions`:
+
+isolde restrain torsions
+========================
+
+See :ref:`adaptive_dihedral_restraint_cmd`
+
+.. _`adjust torsions`:
+
+isolde adjust torsions
+======================
+
+See :ref:`adaptive_dihedral_restraint_cmd`
+
+.. _`release torsions`:
+
+isolde release torsions
+=======================
+
+See :ref:`adaptive_dihedral_restraint_cmd`
