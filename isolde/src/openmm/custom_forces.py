@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 09-Apr-2019
+# @Last modified time: 18-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -1234,6 +1234,7 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
     torsion angles while allowing free movement within a range (target +/-
     cutoff). Within the cutoff range the potential is constant (that is, zero
     force is applied).
+
     The effective energy function is:
 
     .. math::
@@ -1369,6 +1370,176 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
         params[:,3] = numpy.cos(cutoffs)
         f(int(self.this), n, pointer(ind), pointer(params))
         self.update_needed = True
+
+class TopOutTorsionForce(CustomTorsionForce):
+    r'''
+    Torsion-space analogy to the AdaptiveDistanceRestraintForce: often when
+    restraining the model to a template (or restraining NCS copies to their
+    average) we want to try to ensure that torsions that *truly* differ
+    substantially from the target aren't penalised.
+
+    The functional form used here is somewhat analogous to the von Mises
+    distribution (an approximation to the spherically-wrapped normal
+    distribution), but shouldn't really be considered as a probability
+    distribution. Nor should it be really used as an energy potential in
+    situations outside of the fairly narrow scope of restraining to templates,
+    since it has little physical meaning. It is normalised such that the maximum
+    value of the first derivative (i.e. the maximum applied force) is
+    independent of :math:`\kappa`, the term setting the width of the "well" in
+    which a substantial restraining force will be applied.
+
+    The effective energy function is:
+
+    .. math::
+
+        E =
+        \begin{cases}
+            0, & \text{if}\ enabled < 0.5 \\
+            1-k\frac{ \sqrt{2} e^{\frac{1}{2}\sqrt{4\kappa^2+1}-\kappa+\frac{1}{2}}
+            e^{\kappa(\cos{(\theta-\theta_0)}+1)-1)}}
+            {\sqrt{\sqrt{4\kappa^2+1}-1}}, & \text{if}\ \kappa>0 \\
+            -k\cos{(\theta-\theta_0)}, & \text{if}\ \kappa=0
+        \end{cases}
+
+    For values of :math:`\kappa` greater than about 1, :math:`\frac{1}{\kappa}`
+    is approximately equal to the variance of a periodic normal distribution
+    centred on :math:`\theta-\theta_0`. As :math:`\kappa` approaches zero, the
+    energy term converges to a standard unimodal cosine.
+    '''
+    def __init__(self):
+        default_energy_term = ('-1 + '
+                      '-k * sqrt(2)*exp(-1/2*sqrt(4*kappa^2+1)-kappa+1/2)'
+                        '* exp(kappa*(cos(theta-theta0)+1)-1)'
+                        '/ sqrt(sqrt(4*kappa^2+1)-1)')
+        limiting_energy_term = '-k*cos(theta-theta0)'
+        energy_switch_term = 'delta(kappa)'
+        full_energy_term = 'select({}, {}, {})'.format(
+            energy_switch_term, limiting_energy_term, default_energy_term)
+        enabled_function = 'step(enabled-0.5)'
+        complete_function = 'select({}, {}, 0)'.format(
+            enabled_function, full_energy_term)
+
+        super().__init__(complete_function)
+        per_bond_parameters = ('enabled', 'k', 'theta0', 'kappa')
+        for p in per_bond_parameters:
+            self.addPerTorsionParameter(p)
+
+        self.update_needed = False
+
+    def add_torsions(self, atom_indices, enableds, spring_constants, targets, kappas):
+        r'''
+        Add a set of torsion restraints using a fast C++ function. Returns a
+        NumPy integer array giving the indices of the restraints in the force
+        object. Fastest if the inputs are NumPy arrays, but most iterables
+        should work.
+
+        Args:
+            * atom_indices:
+                - A 4-tuple of arrays providing the indices of the dihedral
+                  atoms in the simulation construct
+            * enableds:
+                - A Boolean array (or any array castable to float) where values
+                  > 0.5 represent enabled restraints
+            * spring_constants:
+                - Restraint spring constants in :math:`kJ mol^{-1} rad^{-2}`
+            * targets:
+                - Target angles in radians
+            * kappas:
+                - Constants defining the width of the restrained well. For
+                  :math:`\kappa > 0.5`, :math:`1/\kappa` is approximately equal
+                  to the variance of a normal distribution centred on
+                  :math:`\theta_0`. The energy approaches
+                  :math:`-k*cos(\theta-\theta_0)` as :math:`\kappa` approaches
+                  zero. Values less than 0 are not allowed, and will be
+                  automatically set to 0.
+        '''
+        f = c_function('customtorsionforce_add_torsions',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
+                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
+        n = len(targets)
+        ind = numpy.empty((n,4), numpy.int32)
+        for i, ai in enumerate(atom_indices):
+            ind[:,i] = ai
+        params = numpy.empty((n,4), float64)
+        params[:,0] = enableds
+        params[:,1] = spring_constants
+        params[:,2] = targets
+        params[:,3] = kappas
+        params[:,3][params[:,3]<0] = 0
+        ret = numpy.empty(n, numpy.int32)
+        f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
+        return ret
+
+    def update_target(self, index, enabled=None, k = None, target = None, kappa = None):
+        '''
+        Update a single restraint. This function is mostly superseded by
+        :func:`update_targets`.
+
+        Args:
+            * index:
+                - integer index of the restraint in the force object
+            * enabled:
+                - enable/disable the restraint. None keeps the current value.
+            * k:
+                - set the spring constant in :math:`kJ mol^{-1} rad^{-2}`.
+                  None keeps the current value.
+            * target:
+                - set the target angle in radians. None keeps the current value.
+            * kappa:
+                - set the kappa (approximate units of inverse square radians)
+        '''
+        # For compatibility with int32
+        index = int(index)
+        current_params = self.getTorsionParameters(index)
+        indices = current_params[0:4]
+        new_enabled, new_k, new_theta0, new_cutoff = current_params[4]
+        if enabled is not None:
+            new_enabled = float(enabled)
+        if target is not None:
+            if type(target) == Quantity:
+                target = target.value_in_unit(OPENMM_ANGLE_UNIT)
+            new_theta0 = target
+        if k is not None:
+            if type(k) == Quantity:
+                k = k.value_in_unit(OPENMM_RADIAL_SPRING_UNIT)
+            new_k = k
+        if kappa is not None:
+            if type(kappa) == Quantity:
+                kappa = kappa.value_in_unit(OPENMM_ANGLE_UNIT)
+            new_kappa = kappa
+        self.setTorsionParameters(index, *indices, (new_enabled, new_k, new_theta0, new_kappa))
+        self.update_needed = True
+
+    def update_targets(self, indices, enableds, spring_constants, targets, kappas):
+        '''
+        Update a set of targets all at once using fast C++ code. Fastest if
+        the arguments are provided as NumPy arrays, but any iterable should work.
+
+        Args:
+            * indices:
+                - the indices of the restraints in the OpenMM force object
+            * enableds:
+                - a Boolean array defining which restraints are to be enabled
+            * spring_constants:
+                - the new spring constants in units of :math:`kJ mol^{-1} rad^{-2}`
+            * targets:
+                - the new target angles in radians
+            * cutoffs:
+                - the new kappas in inverse square radians
+        '''
+        f = c_function('customtorsionforce_update_torsion_parameters',
+            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
+                ctypes.POINTER(ctypes.c_double)))
+        n = len(indices)
+        ind = convert_and_sanitize_numpy_array(indices, int32)
+        params = numpy.empty((n,4), float64)
+        params[:,0] = enableds
+        params[:,1] = spring_constants
+        params[:,2] = targets
+        params[:,3] = kappas
+        f(int(self.this), n, pointer(ind), pointer(params))
+        self.update_needed = True
+
 
 
 class TorsionNCSForce(CustomCompoundBondForce):

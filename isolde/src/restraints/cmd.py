@@ -2,7 +2,7 @@
 # @Date:   05-Apr-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 12-Jun-2019
+# @Last modified time: 19-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -11,7 +11,8 @@ from chimerax.core.errors import UserError
 def restrain_distances(session, atoms, template_atoms=None, per_chain=False, **kwargs):
     valid_args = set((
         'protein', 'nucleic', 'custom_atom_names', 'distance_cutoff',
-        'alignment_cutoff', 'well_half_width', 'kappa', 'tolerance', 'fall_off'
+        'alignment_cutoff', 'well_half_width', 'kappa', 'tolerance', 'fall_off',
+        'display_threshold'
     ))
     log = session.logger
 
@@ -133,6 +134,74 @@ def restrain_ligands(session, models, distance_cutoff=4, max_heavy_atoms=3,
             heavy_atom_limit=max_heavy_atoms, spring_constant=spring_constant,
             bond_to_carbon=bond_to_carbon)
 
+def _dihedral_names(backbone, sidechains):
+    backbone_names = ('phi', 'psi')
+    sidechain_names = ('chi1', 'chi2', 'chi3', 'chi4')
+    names = []
+    if backbone:
+        names.extend(backbone_names)
+    if sidechains:
+        names.extend(sidechain_names)
+    return names
+
+def restrain_torsions(session, residues, template_residues=None,
+        backbone=True, sidechains=True, angle_range=30,
+        spring_constant=250, identical_sidechains_only=True):
+    logger = session.logger
+    if not residues:
+        raise UserError('Must specify residues to restrain')
+    from chimerax.atomic import Residue
+    pres = residues[residues.polymer_types==Residue.PT_AMINO]
+    if not len(pres):
+        raise UserError('This command is only applicable to amino acids, but the '
+            'selection contains none.')
+    if len(pres) != len(residues):
+        logger.warning('The "isolde restrain torsions" command only applies to '
+            'protein chains. Other residues have been ignored.')
+    if template_residues:
+        tres = template_residues[template_residues.polymer_types==Residue.PT_AMINO]
+    else:
+        tres = pres
+
+    from math import radians
+    from ..molobject import AdaptiveDihedralRestraintMgr
+    kappa = AdaptiveDihedralRestraintMgr.angle_range_to_kappa(radians(angle_range))
+
+    from .restraint_utils import restrain_torsions_to_template
+    restrain_torsions_to_template(session, tres, pres,
+        restrain_backbone=backbone,
+        restrain_sidechains=sidechains, kappa=kappa,
+        spring_constant=spring_constant,
+        identical_sidechains_only=identical_sidechains_only)
+
+def adjust_torsions(session, residues, backbone=True,
+        sidechains=True, angle_range=None, spring_constant=None):
+    from chimerax.isolde.session_extensions import get_adaptive_dihedral_restraint_mgr
+    if angle_range is not None:
+        from ..molobject import AdaptiveDihedralRestraintMgr
+        from math import radians
+        kappa = AdaptiveDihedralRestraintMgr.angle_range_to_kappa(radians(angle_range))
+    names = _dihedral_names(backbone, sidechains)
+    for m in residues.unique_structures:
+        apdrm = get_adaptive_dihedral_restraint_mgr(m, create=False)
+        if apdrm is None:
+            continue
+        for name in names:
+            apdrs = apdrm.get_restraints_by_residues_and_name(residues, name)
+            if angle_range is not None:
+                apdrs.kappas = kappa
+            if spring_constant is not None:
+                apdrs.spring_constants = spring_constants
+
+def release_torsions(session, residues, backbone=True, sidechains=True):
+    from chimerax.isolde.session_extensions import get_adaptive_dihedral_restraint_mgr
+    names = _dihedral_names(backbone, sidechains)
+    for m in residues.unique_structures:
+        apdrm = get_adaptive_dihedral_restraint_mgr(m, create=False)
+        if apdrm is None:
+            continue
+        for name in names:
+            apdrm.get_restraints_by_residues_and_name(residues, name).enableds=False
 
 
 
@@ -143,7 +212,7 @@ def register_isolde_restrain(logger):
         FloatArg, IntArg, BoolArg, StringArg, NoArg,
         ListOf, EnumOf, RepeatOf
     )
-    from chimerax.atomic import AtomsArg, AtomicStructuresArg
+    from chimerax.atomic import AtomsArg, AtomicStructuresArg, ResiduesArg
 
     def register_isolde_restrain_distances():
         desc = CmdDesc(
@@ -162,7 +231,8 @@ def register_isolde_restrain(logger):
                 ('well_half_width', FloatArg),
                 ('kappa', FloatArg),
                 ('tolerance', FloatArg),
-                ('fall_off', FloatArg)
+                ('fall_off', FloatArg),
+                ('display_threshold', FloatArg)
             ]
         )
         register('isolde restrain distances', desc, restrain_distances, logger=logger)
@@ -228,9 +298,62 @@ def register_isolde_restrain(logger):
         )
         register('isolde restrain ligands', desc, restrain_ligands, logger=logger)
 
+    def register_isolde_restrain_torsions():
+        desc = CmdDesc(
+            synopsis = ('Restrain amino acid backbone and/or sidechain torsions '
+                'to their current values or to those of a template model of '
+                'identical or homologous sequence.'),
+            required = [
+                ('residues', ResiduesArg),
+            ],
+            keyword = [
+                ('template_residues', ResiduesArg),
+                ('backbone', BoolArg),
+                ('sidechains', BoolArg),
+                ('angle_range', FloatArg),
+                ('spring_constant', FloatArg),
+                ('identical_sidechains_only', BoolArg),
+            ]
+        )
+        register('isolde restrain torsions', desc, restrain_torsions, logger=logger)
+
+    def register_isolde_adjust_torsions():
+        desc = CmdDesc(
+            synopsis = ('Adjust the strength and/or angle ranges of torsion '
+                'restraints previously applied using "isolde restrain torsions".'
+                ),
+            required = [
+                ('residues', ResiduesArg),
+            ],
+            keyword = [
+                ('backbone', BoolArg),
+                ('sidechains', BoolArg),
+                ('angle_range', FloatArg),
+                ('spring_constant', FloatArg),
+            ]
+        )
+        register('isolde adjust torsions', desc, adjust_torsions, logger=logger)
+
+    def register_isolde_release_torsions():
+        desc = CmdDesc(
+            synopsis=('Release a set of torsion restraints previously applied '
+                'using "isolde restrain torsions".'),
+            required = [
+                ('residues', ResiduesArg),
+            ],
+            keyword = [
+                ('backbone', BoolArg),
+                ('sidechains', BoolArg),
+            ]
+        )
+        register('isolde release torsions', desc, release_torsions, logger=logger)
+
 
     register_isolde_restrain_distances()
     register_isolde_restrain_single_distance()
     register_isolde_release_distances()
     register_isolde_adjust_distances()
     register_isolde_restrain_ligands()
+    register_isolde_restrain_torsions()
+    register_isolde_adjust_torsions()
+    register_isolde_release_torsions()

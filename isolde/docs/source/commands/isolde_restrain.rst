@@ -15,6 +15,7 @@ Syntax: isolde restrain distances *atoms* [**templateAtoms** *atoms*]
 [**protein** *true/false* (true)]
 [**nucleic** *true/false* (true)]
 [**customAtomNames** *list of names*]
+[**perChain** *true/false* (true)]
 [**distanceCutoff** *number* (8.0)]
 [**alignmentCutoff** *number* (5.0)]
 [**wellHalfWidth** *number* (0.05)]
@@ -50,6 +51,12 @@ The algorithm ISOLDE uses to determine which atoms to restrain is as follows:
    You may, if you wish, further extend these defaults with a comma-separated
    list of other (non-hydrogen) atom names with the customAtomNames argument,
    but this should rarely be necessary.
+
+If *templateAtoms* is provided, steps 2-6 are performed. Otherwise,
+step 5 is performed using the model as its own template. In this case, if
+*perChain* is true, only the **intra** chain distances will be restrained, with
+no restraints between chains.
+
 2. A sequence alignment is performed for each pair of chains, yielding lists
    of corresponding residues.
 3. All residue pairs found in the sequence alignment are merged into a single
@@ -193,3 +200,89 @@ restraints.
   example, to only show restraints deviating more than 10% from their targets,
   set *displayThreshold* to 0.1. To show all restraints, set displayThreshold to
   0.
+
+.. _adaptive_dihedral_restraint_cmd:
+
+isolde restrain torsions
+========================
+
+Syntax: isolde restrain torsions *residues*
+[**templateResidues** *residues*]
+[**backbone** *true/false* (true)] [**sidechains** *true/false* (true)]
+[**angleRange** *number* (30.0)] [**springConstant** *number* (250.0)]
+[**identicalSidechainsOnly** *true/false* (true)]
+
+Analogous to :ref:`isolde_restrain_distances_cmd`, this command restrains
+dihedral angles **(currently protein only)** to match either their current
+values or those of a template, using an adaptive energy function that "gives
+up" once the deviation becomes too large. The energy function has a similar
+functional form to the von Mises distribution, but is normalised such that the
+maximum applied force is independent of the range of angles over which a
+restraining force is applied.
+
+The mathematical form of the energy function is:
+
+.. math::
+
+    E =
+    \begin{cases}
+        0, & \text{if}\ enabled < 0.5 \\
+        1-k\frac{ \sqrt{2} e^{\frac{1}{2}\sqrt{4\kappa^2+1}-\kappa+\frac{1}{2}}
+        e^{\kappa(\cos{(\theta-\theta_0)}+1)-1)}}
+        {\sqrt{\sqrt{4\kappa^2+1}-1}}, & \text{if}\ \kappa>0 \\
+        -k\cos{(\theta-\theta_0)}, & \text{if}\ \kappa=0
+    \end{cases}
+
+... which looks like this:
+
+.. figure:: images/adaptive_torsion_energy_function.png
+
+* *templateResidues*: if supplied, the template will first be sequence-aligned
+  to the model, and matching residues will be used to set the target angles.
+  Otherwise, the model will simply be restrained to its current conformation.
+* *backbone*: if true, backbone *phi* and *psi* angles will be restrained using
+  adaptive restraints. The *omega* dihedrals will also be restrained to the
+  target using standard non-adaptive dihedral restraints.
+* *sidechains*: if true, sidechain *chi* angles will also be restrained.
+* *angleRange*: the size of the angle difference allowed before the applied
+  force drops away. In practice, this is defined as twice the angle at which the
+  applied force reaches a maximum, and is related to *kappa* by:
+
+  .. math::
+
+      \kappa = \frac{1-\tan^{4}(\frac{\text{angle\_range}}{4})}{4\tan^{2}(\frac{\text{angle\_range}}{4})}
+
+  Values of *kappa* less than 0.001 are automatically set to zero to avoid
+  numerical instability.
+* *springConstant*: effective strength of each restraint when close to the
+  target angle, in :math:`kJ mol^{-1} rad{-2}`
+* *identicalSidechainsOnly*: only applicable if *templateResidues* is supplied
+  and *sidechains* is true. If true, only sidechains of residues with the same
+  identity in model and template will be restrained.
+
+isolde adjust torsions
+======================
+
+Syntax: isolde adjust torsions *residues* [**backbone** *true/false* (true)]
+[**sidechains** *true/false* (true)] [**angleRange** *number*]
+[**springConstant** *number*]
+
+Adjust the strength or range of restraints previously created by
+:ref:`adaptive_dihedral_restraint_cmd` for the selected residues.
+
+* *backbone*: adjust the restraints on backbone torsions?
+* *sidechains*: adjust the restraints on sidechain torsions?
+* *angleRange*: set the range over which the restraints apply to a new value.
+* *springConstant*: set the strength of the restraints to a new value.
+
+isolde release torsions
+=======================
+
+Syntax: isolde release torsions *residues* [**backbone** *true/false* (true)]
+[**sidechains** *true/false* (true)]
+
+Release restraints previously created by :ref:`adaptive_dihedral_restraint_cmd`
+for the selected residues.
+
+* *backbone*: release backbone restraints?
+* *sidechains*: release sidechain restraints?

@@ -90,6 +90,11 @@ Dihedral Restraints
     .. autoclass:: FlatBottomTorsionRestraintForce
         :members:
 
+Adaptive Dihedral Restraints
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    .. autoclass:: TopOutTorsionForce
+        :members:
+
 CMAP Correction terms
 ~~~~~~~~~~~~~~~~~~~~~
     .. autoclass:: AmberCMAPForce

@@ -3,7 +3,7 @@
  * @Date:   26-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 02-Apr-2019
+ * @Last modified time: 17-Dec-2019
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright:2016-2019 Tristan Croll
  */
@@ -19,6 +19,9 @@ template class pyinstance::PythonInstance<isolde::ChiralRestraint>;
 
 template class pyinstance::PythonInstance<isolde::ProperDihedralRestraintMgr>;
 template class pyinstance::PythonInstance<isolde::ProperDihedralRestraint>;
+
+template class pyinstance::PythonInstance<isolde::AdaptiveDihedralRestraintMgr>;
+template class pyinstance::PythonInstance<isolde::AdaptiveDihedralRestraint>;
 
 namespace isolde
 {
@@ -127,11 +130,25 @@ ChiralRestraint::ChiralRestraint(
 ChiralRestraintMgr* ChiralRestraint::mgr() const { return static_cast<ChiralRestraintMgr*>(base_mgr()); }
 
 
+ProperDihedralRestraintBase::ProperDihedralRestraintBase(
+    ProperDihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr)
+    : Dihedral_Restraint_Base<ProperDihedral>(dihedral, mgr)
+    {}
 
- ProperDihedralRestraint::ProperDihedralRestraint(
-     ProperDihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr)
-     : Dihedral_Restraint_Base<ProperDihedral>(dihedral, mgr)
-     {}
+
+ProperDihedralRestraint::ProperDihedralRestraint(
+    ProperDihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr)
+    : ProperDihedralRestraintBase(dihedral, mgr)
+    {}
+
+AdaptiveDihedralRestraint::AdaptiveDihedralRestraint(
+    ProperDihedral *dihedral, Dihedral_Restraint_Change_Mgr *mgr)
+    : ProperDihedralRestraintBase(dihedral, mgr)
+    {
+        _kappa = DEFAULT_KAPPA;
+        _cutoffs[1] = DEFAULT_FMAX_ANGLE;
+        _cutoffs[2] = 2*DEFAULT_FMAX_ANGLE;
+    }
 
 
 //! Provide the transforms for the ProperDihedralRestraint annotation
@@ -141,7 +158,7 @@ ChiralRestraintMgr* ChiralRestraint::mgr() const { return static_cast<ChiralRest
  *  The transform matrices are in 3x4 format where the left-hand-side
  *  3x3 is the rotation and the right-hand-side is the translation.
  */
-void ProperDihedralRestraint::get_annotation_transform(float *tf)
+void ProperDihedralRestraintBase::get_annotation_transform(float *tf)
 {
     // First the rotational component (rotating the ring relative to the post)
     // Sets the direction the arrow points
@@ -177,7 +194,7 @@ void ProperDihedralRestraint::get_annotation_transform(float *tf)
     }
 } //get_annontation_transform
 
-void ProperDihedralRestraint::get_annotation_color(uint8_t *color)
+void ProperDihedralRestraintBase::get_annotation_color(uint8_t *color)
 {
     colors::color thecolor;
     colormap()->interpolate(std::abs(offset()), _cutoffs, thecolor);
@@ -188,10 +205,17 @@ void ProperDihedralRestraint::get_annotation_color(uint8_t *color)
 
 ProperDihedralRestraintMgr* ProperDihedralRestraint::mgr() const { return static_cast<ProperDihedralRestraintMgr*>(base_mgr()); }
 
+AdaptiveDihedralRestraintMgr* AdaptiveDihedralRestraint::mgr() const { return static_cast<AdaptiveDihedralRestraintMgr*>(base_mgr()); }
+
+
+
 template class Dihedral_Restraint_Base<ChiralCenter>;
 template class DihedralRestraintMgr_Base<ChiralCenter, ChiralRestraint>;
 
 template class Dihedral_Restraint_Base<ProperDihedral>;
 template class DihedralRestraintMgr_Base<ProperDihedral, ProperDihedralRestraint>;
+
+template class DihedralRestraintMgr_Base<ProperDihedral, AdaptiveDihedralRestraint>;
+
 
 } // namespace isolde

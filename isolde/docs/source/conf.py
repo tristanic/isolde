@@ -50,6 +50,8 @@ extensions = [
     # 'sphinxcontrib.fulltoc',
 ]
 
+imgmath_font_size = 14
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 

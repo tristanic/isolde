@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 02-Apr-2019
+# @Last modified time: 17-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -25,12 +25,13 @@ size_t = molc.size_t
 from chimerax.atomic import molarray as ma
 Collection = ma.Collection
 from . import molobject
-from .molobject import c_function, c_array_function, cvec_property
+from .molobject import c_function, c_array_function, cvec_property, delayed_class_init
 #from .molobject import object_map
 from .molobject import (
     ChiralCenter, ProperDihedral, Rotamer, Rama, PositionRestraint,
     TuggableAtom, MDFFAtom, DistanceRestraint, AdaptiveDistanceRestraint,
-    ChiralRestraint, ProperDihedralRestraint, RotamerRestraint
+    ChiralRestraint, ProperDihedralRestraint, AdaptiveDihedralRestraint,
+    RotamerRestraint
 )
 
 from .molobject import (
@@ -71,6 +72,8 @@ def _chiral_restraints(p):
     return ChiralRestraints(p)
 def _proper_dihedral_restraints(p):
     return ProperDihedralRestraints(p)
+def _adaptive_dihedral_restraints(p):
+    return AdaptiveDihedralRestraints(p)
 def _rotamer_restraints(p):
     return RotamerRestraints(p)
 
@@ -620,13 +623,21 @@ class ChiralRestraints(Collection):
         ])
 
 
-class ProperDihedralRestraints(Collection):
-    def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, ProperDihedralRestraint, ProperDihedralRestraints)
+class _ProperDihedralRestraints_Base(Collection):
+    _C_FUNCTION_PREFIX=None
+    _ARRAY_GETTER=None
+
+    def __init__(self, c_pointers=None, singular_py_class=None,
+            array_py_class=None):
+        super().__init__(c_pointers, singular_py_class, array_py_class)
+
+    @classmethod
+    def _c_function_prefix(cls):
+        return cls._C_FUNCTION_PREFIX
 
     def _annotation_transforms(self):
         n = len(self)
-        f = c_function('proper_dihedral_restraint_annotation_transform',
+        f = c_function(self._C_FUNCTION_PREFIX+'_annotation_transform',
             args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p))
         tf1 = numpy.empty((n,4,4), float32)
         tf2 = numpy.empty((n,4,4), float32)
@@ -635,7 +646,7 @@ class ProperDihedralRestraints(Collection):
         return (Places(opengl_array=tf1), Places(opengl_array=tf2))
 
     def clear_sim_indices(self):
-        f = c_function('proper_dihedral_restraint_clear_sim_index',
+        f = c_function(self._C_FUNCTION_PREFIX+'_clear_sim_index',
             args = (ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointers, len(self))
 
@@ -648,38 +659,38 @@ class ProperDihedralRestraints(Collection):
         Returns a new :py:class:`ProperDihedralRestraints` containing only the
         restraints for which every atom is in the given selection.
         '''
-        f = c_function('proper_dihedral_restraint_all_atoms_in_sel',
+        f = c_function(self._C_FUNCTION_PREFIX+'_all_atoms_in_sel',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t),
             ret=ctypes.py_object
             )
-        return _proper_dihedral_restraints(f(self._c_pointers, len(self), atoms._c_pointers, len(atoms)))
+        return self._ARRAY_GETTER(f(self._c_pointers, len(self), atoms._c_pointers, len(atoms)))
 
+    @classmethod
+    def _init_methods(cls):
 
-    targets = cvec_property('proper_dihedral_restraint_target', float64,
-        doc = 'Target angles for each restraint in radians. Can be written.')
-    dihedrals = cvec_property('proper_dihedral_restraint_dihedral', cptr, astype=_proper_dihedrals, read_only=True,
-        doc = 'The restrained :py:class:`ProperDihedrals`. Read only.')
-    offsets = cvec_property('proper_dihedral_restraint_offset', float64, read_only = True,
-        doc = 'Difference between current and target angles in radians. Read only.')
-    cutoffs = cvec_property('proper_dihedral_restraint_cutoff', float64,
-        doc = 'Cutoff angle offsets below which no restraint will be applied. Can be set.')
-    enableds = cvec_property('proper_dihedral_restraint_enabled', npy_bool,
-        doc = 'Enable/disable each restraint or get their current states.')
-    displays = cvec_property('proper_dihedral_restraint_display', npy_bool,
-        doc = 'Set whether you want each restraint to be displayed when active.')
-    visibles = cvec_property('proper_dihedral_restraint_visible', npy_bool, read_only=True,
-        doc = 'Is each restraint currently visible? Read-only.')
-    spring_constants = cvec_property('proper_dihedral_restraint_k', float64,
-        doc = 'Get/set the spring constant for each restraint in :math:`kJ mol^{-1} rad^{-2}`')
-    annotation_colors = cvec_property('proper_dihedral_restraint_annotation_color', uint8, 4, read_only=True,
-        doc = 'Get the annotation color for each restraint according to the current colormap. Read only.')
-    sim_indices = cvec_property('proper_dihedral_restraint_sim_index', int32,
-        doc='''
-        Index of each restraint in the relevant MDFF Force in a running
-        simulation. Restraints which are not currently in a simulation have
-        indices equal to -1. Can be set, but only if you know what you are
-        doing.
-         ''')
+        cls.targets = cvec_property(cls._C_FUNCTION_PREFIX+'_target', float64,
+            doc = 'Target angles for each restraint in radians. Can be written.')
+        cls.dihedrals = cvec_property(cls._C_FUNCTION_PREFIX+'_dihedral', cptr, astype=_proper_dihedrals, read_only=True,
+            doc = 'The restrained :py:class:`{ProperDihedrals}`. Read only.')
+        cls.offsets = cvec_property(cls._C_FUNCTION_PREFIX+'_offset', float64, read_only = True,
+            doc = 'Difference between current and target angles in radians. Read only.')
+        cls.enableds = cvec_property(cls._C_FUNCTION_PREFIX+'_enabled', npy_bool,
+            doc = 'Enable/disable each restraint or get their current states.')
+        cls.displays = cvec_property(cls._C_FUNCTION_PREFIX+'_display', npy_bool,
+            doc = 'Set whether you want each restraint to be displayed when active.')
+        cls.visibles = cvec_property(cls._C_FUNCTION_PREFIX+'_visible', npy_bool, read_only=True,
+            doc = 'Is each restraint currently visible? Read-only.')
+        cls.spring_constants = cvec_property(cls._C_FUNCTION_PREFIX+'_k', float64,
+            doc = 'Get/set the spring constant for each restraint in :math:`kJ mol^{-1} rad^{-2}`')
+        cls.annotation_colors = cvec_property(cls._C_FUNCTION_PREFIX+'_annotation_color', uint8, 4, read_only=True,
+            doc = 'Get the annotation color for each restraint according to the current colormap. Read only.')
+        cls.sim_indices = cvec_property(cls._C_FUNCTION_PREFIX+'_sim_index', int32,
+            doc='''
+            Index of each restraint in the relevant Force in a running
+            simulation. Restraints which are not currently in a simulation have
+            indices equal to -1. Can be set, but only if you know what you are
+            doing.
+             ''')
 
     def take_snapshot(self, session, flags):
         data = {
@@ -695,6 +706,42 @@ class ProperDihedralRestraints(Collection):
                 data['restraint mgrs'], data['dihedrals']
             )
         ])
+
+
+@delayed_class_init
+class ProperDihedralRestraints(_ProperDihedralRestraints_Base):
+    _C_FUNCTION_PREFIX='proper_dihedral_restraint'
+
+    @classmethod
+    def _ARRAY_GETTER(cls, p):
+        return _proper_dihedral_restraints(p)
+
+    def __init__(self, c_pointers=None):
+        super().__init__(c_pointers, ProperDihedralRestraint, ProperDihedralRestraints)
+
+
+    cutoffs = cvec_property('proper_dihedral_restraint_cutoff', float64,
+        doc = 'Cutoff angle offsets below which no restraint will be applied. Can be set.')
+
+@delayed_class_init
+class AdaptiveDihedralRestraints(_ProperDihedralRestraints_Base):
+    _C_FUNCTION_PREFIX='adaptive_dihedral_restraint'
+
+    @classmethod
+    def _ARRAY_GETTER(cls, p):
+        return _adaptive_dihedral_restraints(p)
+
+    def __init__(self, c_pointers=None):
+        super().__init__(c_pointers, AdaptiveDihedralRestraint, AdaptiveDihedralRestraints)
+
+
+    kappas = cvec_property('adaptive_dihedral_restraint_kappa', float64,
+        doc = (r'Sets the width of the region within which the dihedral will be '
+            r'restrained. For values of kappa greater than about 1, the effective '
+            r'standard deviation is approximately equal to '
+            r':math:`\sqrt{\frac{1}{\kappa}}`. As kappa approaches zero the '
+            r'shape of the energy profile approaches a standard cosine. Values '
+            r'of kappa below zero are not allowed.'))
 
 class RotamerRestraints(Collection):
     def __init__(self, c_pointers=None):

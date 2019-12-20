@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 29-Mar-2019
+# @Last modified time: 17-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -13,7 +13,7 @@ from .molobject import (
     get_rotamer_mgr
 )
 
-def get_chiral_restraint_mgr(model):
+def get_chiral_restraint_mgr(model, create=True):
     '''
     Get the :class:`ChiralRestraintMgr` for the given model, creating it if it
     doesn't yet exist.
@@ -26,9 +26,10 @@ def get_chiral_restraint_mgr(model):
     for m in model.child_models():
         if isinstance(m, ChiralRestraintMgr):
             return m
-    return ChiralRestraintMgr(model)
+    if create:
+        return ChiralRestraintMgr(model)
 
-def get_proper_dihedral_restraint_mgr(model):
+def get_proper_dihedral_restraint_mgr(model, create=True):
     '''
     Get the :class:`ProperDihedralRestraintMgr` for the given model, creating
     it if it doesn't yet exist.
@@ -39,11 +40,29 @@ def get_proper_dihedral_restraint_mgr(model):
     '''
     from .molobject import ProperDihedralRestraintMgr
     for m in model.child_models():
-        if isinstance(m, ProperDihedralRestraintMgr):
+        if type(m) == ProperDihedralRestraintMgr:
             return m
-    return ProperDihedralRestraintMgr(model)
+    if create:
+        return ProperDihedralRestraintMgr(model)
 
-def get_rotamer_restraint_mgr(model):
+def get_adaptive_dihedral_restraint_mgr(model, create=True):
+    '''
+    Get the :class:`AdaptiveDihedralRestraintMgr` for the given model, creating
+    it if it doesn't yet exist.
+
+    Args:
+        * model:
+            - a :class:`chimerax.AtomicStructure`
+    '''
+    from .molobject import AdaptiveDihedralRestraintMgr
+    for m in model.child_models():
+        if isinstance(m, AdaptiveDihedralRestraintMgr):
+            return m
+    if create:
+        return AdaptiveDihedralRestraintMgr(model)
+
+
+def get_rotamer_restraint_mgr(model, create=True):
     '''
     Get the :class:`RotamerRestraintMgr` for the given model, creating it if
     it doesn't yet exist.
@@ -58,9 +77,10 @@ def get_rotamer_restraint_mgr(model):
     for m in model.all_models():
         if isinstance(m, RotamerRestraintMgr):
             return m
-    return RotamerRestraintMgr(model)
+    if create:
+        return RotamerRestraintMgr(model)
 
-def get_position_restraint_mgr(model):
+def get_position_restraint_mgr(model, create=True):
     '''
     Get the :class:`PositionRestraintMgr` for the given model, creating it if
     it doesn't yet exist.
@@ -73,9 +93,10 @@ def get_position_restraint_mgr(model):
     for m in model.child_models():
         if isinstance(m, PositionRestraintMgr):
             return m
-    return PositionRestraintMgr(model)
+    if create:
+        return PositionRestraintMgr(model)
 
-def get_distance_restraint_mgr(model):
+def get_distance_restraint_mgr(model, create=True):
     '''
     Get the :class:`DistanceRestraintMgr` for the given model, creating it if
     it doesn't yet exist.
@@ -88,9 +109,11 @@ def get_distance_restraint_mgr(model):
     for m in model.child_models():
         if isinstance(m, DistanceRestraintMgr):
             return m
-    return DistanceRestraintMgr(model)
+    if create:
+        return DistanceRestraintMgr(model)
 
-def get_adaptive_distance_restraint_mgr(model, name='Adaptive Distance Restraints'):
+def get_adaptive_distance_restraint_mgr(model, name='Adaptive Distance Restraints',
+        create=True):
     '''
     Get a :class:`AdaptiveDistanceRestraintMgr` for the given model, creating
     it if it doesn't yet exist.
@@ -103,7 +126,8 @@ def get_adaptive_distance_restraint_mgr(model, name='Adaptive Distance Restraint
     for m in model.child_models():
         if isinstance(m, AdaptiveDistanceRestraintMgr) and m.name == name:
             return m
-    return AdaptiveDistanceRestraintMgr(model, name=name)
+    if create:
+        return AdaptiveDistanceRestraintMgr(model, name=name)
 
 def get_all_adaptive_distance_restraint_mgrs(model):
     '''
@@ -120,7 +144,7 @@ def get_all_adaptive_distance_restraint_mgrs(model):
             ret.append(m)
     return ret
 
-def get_tuggable_atoms_mgr(model, allow_hydrogens=None):
+def get_tuggable_atoms_mgr(model, allow_hydrogens=None, create=True):
     '''
     Get the :class:`TuggableAtomsMgr` for the given model, creating it if it
     doesn't yet exist.
@@ -137,7 +161,8 @@ def get_tuggable_atoms_mgr(model, allow_hydrogens=None):
             return m
     if allow_hydrogens is None:
         allow_hydrogens = 'polar'
-    return TuggableAtomsMgr(model, allow_hydrogens=allow_hydrogens)
+    if create:
+        return TuggableAtomsMgr(model, allow_hydrogens=allow_hydrogens)
 
 def get_mdff_mgr(model, volume, create=False):
     '''

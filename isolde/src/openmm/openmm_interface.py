@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 17-Jun-2019
+# @Last modified time: 17-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -736,6 +736,7 @@ class Sim_Manager:
         m = self.model
         self.chiral_restraint_mgr = sx.get_chiral_restraint_mgr(m)
         self.proper_dihedral_restraint_mgr = sx.get_proper_dihedral_restraint_mgr(m)
+        self.adaptive_dihedral_restraint_mgr = sx.get_adaptive_dihedral_restraint_mgr(m)
         self.position_restraint_mgr = sx.get_position_restraint_mgr(m)
         self.tuggable_atoms_mgr = sx.get_tuggable_atoms_mgr(m, allow_hydrogens=self.sim_params.tug_hydrogens)
         self.distance_restraint_mgr = sx.get_distance_restraint_mgr(m)
@@ -786,9 +787,13 @@ class Sim_Manager:
             omega_rs.spring_constants = sim_params.peptide_bond_spring_constant.value_in_unit(unit.kilojoule_per_mole/unit.radians**2)
             omega_rs.enableds = True
 
-
         sh.add_dihedral_restraints(pdrs)
         uh.append((pdr_m, pdr_m.triggers.add_handler('changes', self._dihe_r_changed_cb)))
+
+        apdr_m = self.adaptive_dihedral_restraint_mgr
+        apdrs = apdr_m.get_all_restraints_for_residues(mobile_res)
+        sh.add_adaptive_dihedral_restraints(apdrs)
+        uh.append((apdr_m, apdr_m.triggers.add_handler('changes', self._adaptive_dihe_r_changed_cb)))
 
         dr_m = self.distance_restraint_mgr
         # Pre-create all restraints necessary for secondary structure manipulation
@@ -988,6 +993,7 @@ class Sim_Manager:
         self._dr_sim_end_cb()
         self._adr_sim_end_cb()
         self._dihe_r_sim_end_cb()
+        self._adaptive_dihe_r_sim_end_cb()
         self._tug_sim_end_cb()
         self._rama_a_sim_end_cb()
         self._rota_a_sim_end_cb()
@@ -1108,7 +1114,7 @@ class Sim_Manager:
         return DEREGISTER
 
     def _dihe_r_changed_cb(self, trigger_name, changes):
-        '''Used for all forms of dihedral restraints.'''
+        '''Used for proper dihedral and chiral restraints.'''
         mgr, changes = changes
         change_types = list(changes.keys())
         from chimerax.atomic import concatenate
@@ -1135,7 +1141,7 @@ class Sim_Manager:
 
 
     def _dihe_r_sim_end_cb(self, *_):
-        ''' Used for all forms of dihedral restraints.'''
+        ''' Used for proper dihedral and chiral restraints.'''
         sc = self.sim_construct
         pdrs = self.proper_dihedral_restraint_mgr.get_all_restraints_for_residues(sc.mobile_residues)
         pdrs.clear_sim_indices()
@@ -1143,6 +1149,44 @@ class Sim_Manager:
         crs.clear_sim_indices()
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
+
+    def _adaptive_dihe_r_changed_cb(self, trigger_name, changes):
+        '''Used for all forms of dihedral restraints.'''
+        mgr, changes = changes
+        change_types = list(changes.keys())
+        from chimerax.atomic import concatenate
+        changeds = []
+        if 'created' in change_types:
+            # avoid double counting
+            created = changes['created']
+            created = created[created.sim_indices == -1]
+            # add only restraints with all atoms in the sim
+            all_atoms = self.sim_construct.all_atoms
+            indices = numpy.array([all_atoms.indices(atoms) for atoms in created.atoms])
+            created = created[numpy.all(indices != -1, axis=0)]
+            self.sim_handler.add_adaptive_dihedral_restraints(created)
+        if 'target changed' in change_types:
+            changeds.append(changes['target changed'])
+        if 'enabled/disabled' in change_types:
+            changeds.append(changes['enabled/disabled'])
+        if 'spring constant changed' in change_types:
+            changeds.append(changes['spring constant changed'])
+        if 'adaptive restraint constant changed' in change_types:
+            changeds.append(changes['adaptive restraint constant changed'])
+        if len(changeds):
+            all_changeds = concatenate(changeds, remove_duplicates=True)
+            all_changeds = all_changeds[all_changeds.sim_indices != -1]
+            self.sim_handler.update_adaptive_dihedral_restraints(all_changeds)
+
+
+    def _adaptive_dihe_r_sim_end_cb(self, *_):
+        ''' Used for all forms of dihedral restraints.'''
+        sc = self.sim_construct
+        apdrs = self.adaptive_dihedral_restraint_mgr.get_all_restraints_for_residues(sc.mobile_residues)
+        apdrs.clear_sim_indices()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
 
 
     def _tug_changed_cb(self, trigger_name, changes):
@@ -1384,8 +1428,8 @@ class Sim_Handler:
 
 
     def initialize_restraint_forces(self, amber_cmap=True, tugging=True, position_restraints=True,
-        distance_restraints=True, dihedral_restraints=True,
-        adaptive_distance_restraints=True):
+        distance_restraints=True, adaptive_distance_restraints=True,
+        dihedral_restraints=True, adaptive_dihedral_restraints=True):
         '''
         Create the selected Force objects, and add them to the System. No
         restraints are added at this stage - these should be added using
@@ -1406,9 +1450,15 @@ class Sim_Handler:
             * distance_restraints:
                 - Add distance restraints force (implemented as a
                   :py:class:`TopOutBondForce`)
+            * adaptive_distance_restraints:
+                - Add an "adaptive" distance restraints force (implemented as a
+                  :py:class:`AdaptiveDistanceRestraintForce`)
             * dihedral_restraints:
                 - Add dihedral restraints force (implemented as a
-                  :py:class:FlatBottomTorsionRestraintForce)
+                  :py:class:`FlatBottomTorsionRestraintForce`)
+            * adaptive_dihedral_restraints:
+                - Add an "adaptive" dihedral restraints force (implemented as a
+                  :py:class:`TopOutTorsionForce`)
         '''
         logger = self.session.logger
         params = self._params
@@ -1421,10 +1471,12 @@ class Sim_Handler:
             self.initialize_position_restraints_force(params.restraint_max_force)
         if distance_restraints:
             self.initialize_distance_restraints_force(params.restraint_max_force)
-        if dihedral_restraints:
-            self.initialize_dihedral_restraint_force()
         if adaptive_distance_restraints:
             self.initialize_adaptive_distance_restraints_force()
+        if dihedral_restraints:
+            self.initialize_dihedral_restraints_force()
+        if adaptive_dihedral_restraints:
+            self.initialize_adaptive_dihedral_restraints_force()
 
     def initialize_mdff_forces(self, volumes):
         '''
@@ -1781,7 +1833,7 @@ class Sim_Handler:
         # Before simulation starts
         ##
 
-    def initialize_dihedral_restraint_force(self):
+    def initialize_dihedral_restraints_force(self):
         '''
         Just initialise the restraint force. Must be called before the
         simulation starts, and before any restraints are added.
@@ -1800,10 +1852,8 @@ class Sim_Handler:
 
         Args:
             * restraints:
-                - Any python restraints :py:class:`chimerax.Collection` instance
-                  based on :cpp:class:`Dihedral_Restraint`. At present this is
-                  limited to :py:class:`ProperDihedralRestraints`, but
-                  expect others (e.g. chirals) to be added with time.
+                - Either a :py:class:`ProperDihedralRestraints` or a
+                  :py:class:`ChiralRestraints`.
         '''
         force = self._dihedral_restraint_force
         all_atoms = self._atoms
@@ -1824,8 +1874,8 @@ class Sim_Handler:
 
         Args:
             * restraint:
-                - A :py:class:`ProperDihedralRestraint` instance, or any other
-                  Python restraint class based on :cpp:class:`Dihedral_Restraint`
+                - A :py:class:`ProperDihedralRestraint` or
+                  :py:class:`ChiralRestraint` instance.
         '''
         force = self._dihedral_restraint_force
         all_atoms = self._atoms
@@ -1872,6 +1922,97 @@ class Sim_Handler:
             enabled=restraint.enabled, k=restraint.spring_constant,
             target=restraint.target, cutoff=restraint.cutoff)
         self.force_update_needed()
+
+    #####
+    # Adaptive Dihedral Restraints
+    #####
+
+    def initialize_adaptive_dihedral_restraints_force(self):
+        '''
+        Just initialise the restraint force. Must be called before the
+        simulation starts, and before any restraints are added.
+        '''
+        from .custom_forces import TopOutTorsionForce
+        df = self._adaptive_dihedral_restraint_force = TopOutTorsionForce()
+        self._system.addForce(df)
+        self.all_forces.append(df)
+
+    def add_adaptive_dihedral_restraints(self, restraints):
+        '''
+        Add a set of adaptive dihedral restraints to the simulation. This sets the
+        :attr:`sim_index` for each restraint so it knows its own place in the
+        simulation for later updating purposes. Automatically calls
+        :func:`context_reinit_needed()`.
+
+        Args:
+            * restraints:
+                - A :py:class:`AdaptiveDihedralRestraints` object.
+        '''
+        force = self._adaptive_dihedral_restraint_force
+        all_atoms = self._atoms
+        dihedral_atoms = restraints.dihedrals.atoms
+        atom_indices = numpy.array([all_atoms.indices(atoms) for atoms in dihedral_atoms])
+        # Filter out those which don't have all atoms in the simulation
+        ifilter = numpy.all(atom_indices!=-1, axis=0)
+        atom_indices = [a[ifilter] for a in atom_indices]
+        #atom_indices = atom_indices[ifilter]
+        restraints = restraints[ifilter]
+        restraints.sim_indices = force.add_torsions(atom_indices,
+            restraints.enableds, restraints.spring_constants, restraints.targets, restraints.kappas)
+        self.context_reinit_needed()
+
+    def add_adaptive_dihedral_restraint(self, restraint):
+        '''
+        Singular form of :func:`add_dihedral_restraints`.
+
+        Args:
+            * restraint:
+                - A :py:class:`AdaptiveDihedralRestraint` instance
+        '''
+        force = self._adaptive_dihedral_restraint_force
+        all_atoms = self._atoms
+        dihedral_atoms = restraint.dihedral.atoms
+        indices = [all_atoms.index(atom) for atom in dihedral_atoms]
+        restraint.sim_index = force.add_torsion(*indices,
+            (float(restraint.enabled), restraint.spring_constant, restraint.target, cos(restraint.kappa)))
+        self.context_reinit_needed()
+
+    def update_adaptive_dihedral_restraints(self, restraints):
+        '''
+        Update the simulation to match the parameters (target angles,
+        kappas, spring constants and enabled states) of the given restraints.
+
+        Args:
+            * restraints:
+                - A :py:class:`AdaptiveDihedralRestraints` instance. Any
+                  restraints that are not part of the current simulation will
+                  be ignored.
+        '''
+        force = self._adaptive_dihedral_restraint_force
+        restraints = restraints[restraints.sim_indices != -1]
+        force.update_targets(restraints.sim_indices,
+            restraints.enableds, restraints.spring_constants, restraints.targets, restraints.kappas)
+        self.force_update_needed()
+
+    def update_adaptive_dihedral_restraint(self, restraint):
+        '''
+        Update the simulation to match the parameters (target angle,
+        kappa, spring constant and enabled state) of the given restraint.
+
+        Args:
+            * restraint:
+                - A :py:class:`AdaptiveDihedralRestraint` instance. If the
+                  restraint is not part of the current simulation it will be
+                  ignored.
+        '''
+        force = self._adaptive_dihedral_restraint_force
+        force.update_target(restraint.sim_index,
+            enabled=restraint.enabled, k=restraint.spring_constant,
+            target=restraint.target, kappa=restraint.kappa)
+        self.force_update_needed()
+
+
+
     ####
     # Distance Restraints
     ####
