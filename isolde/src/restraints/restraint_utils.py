@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 19-Dec-2019
+# @Last modified time: 20-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -16,6 +16,8 @@ _torsion_adjustments_chi1 = {
 _torsion_adjustments_chi2 = {
     'TRP': radians(180),
 }
+
+from chimerax.core.errors import UserError
 
 def restrain_torsions_to_template(session, template_residues, restrained_residues,
     restrain_backbone=True, restrain_sidechains=True,
@@ -58,14 +60,18 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
             - if True, restraints will only be applied to a sidechain if it is
               the same amino acid as the template.
     '''
+    if not restrained_residues or not len(restrained_residues):
+        raise UserError('No residues specified to restrain!')
+    if not template_residues or not len(template_residues):
+        raise UserError('No template residues specified')
     from chimerax.isolde import session_extensions as sx
     template_us = template_residues.unique_structures
     if len(template_us) != 1:
-        raise TypeError('Template residues must be from a single model!')
+        raise UserError('Template residues must be from a single model!')
     template_model = template_us[0]
     restrained_us = restrained_residues.unique_structures
     if len(restrained_us) != 1:
-        raise TypeError('Restrained residues must be from a single model!')
+        raise UserError('Restrained residues must be from a single model!')
     restrained_model = restrained_us[0]
 
 
@@ -350,7 +356,7 @@ def _get_template_alignment(template_residues, restrained_residues,
         ts.delete()
     return tr, rr
 
-def restrain_atom_distances_to_template(template_residues, restrained_residues,
+def restrain_atom_distances_to_template(session, template_residues, restrained_residues,
     protein=True, nucleic=True, custom_atom_names=[],
     distance_cutoff=8, alignment_cutoff=5, well_half_width = 0.05,
     kappa = 5, tolerance = 0.025, fall_off = 4, display_threshold=0):
@@ -418,22 +424,25 @@ def restrain_atom_distances_to_template(template_residues, restrained_residues,
             - deviation from (target +- tolerance) as a fraction of
               :attr:`well_half_width` below which restraints will be hidden.
     '''
-    session = template_residues[0][0].session
     from chimerax.std_commands.align import IterationError
     from chimerax.isolde import session_extensions as sx
     if not protein and not nucleic and not len(custom_atom_names):
-        raise TypeError('Nothing to restrain!')
+        raise UserError('Nothing to restrain!')
     # if len(template_residues) != len(restrained_residues):
     #     raise TypeError('Template and restrained residue arrays must be the same length!')
-    for trs in template_residues:
-        template_us = trs.unique_structures
-        if len(template_us) != 1:
-            raise TypeError('Template residues must be from a single model! '
-                'Residues are {} in {}'.format(trs.numbers, ','.join(s.id_string for s in trs.structures)))
     for rrs in restrained_residues:
+        if len(rrs) == 0:
+            raise UserError('No residues specified to restrain!')
         restrained_us = rrs.unique_structures
         if len(restrained_us) != 1:
-            raise TypeError('Restrained residues must be from a single model!')
+            raise UserError('Restrained residues must be from a single model!')
+    for trs in template_residues:
+        if len(trs) == 0:
+            raise UserError('No template residues specified!')
+        template_us = trs.unique_structures
+        if len(template_us) != 1:
+            raise UserError('Template residues must be from a single model! '
+                'Residues are {} in {}'.format(trs.numbers, ','.join(s.id_string for s in trs.structures)))
     restrained_model = restrained_us[0]
     log = restrained_model.session.logger
 

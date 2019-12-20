@@ -2,7 +2,7 @@
 # @Date:   05-Apr-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 19-Dec-2019
+# @Last modified time: 20-Dec-2019
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -44,7 +44,7 @@ def restrain_distances(session, atoms, template_atoms=None, per_chain=False, **k
                 raise UserError('Each atom selection should be from a single chain!')
 
     args = {kw: arg for kw, arg in kwargs.items() if kw in valid_args and arg is not None}
-    restraint_utils.restrain_atom_distances_to_template(template_residues,
+    restraint_utils.restrain_atom_distances_to_template(session, template_residues,
         model_residues, **kwargs)
 
 def release_adaptive_distance_restraints(session, atoms,
