@@ -1981,7 +1981,7 @@ class MDFFMgr(_RestraintMgr):
         if atoms is not None:
             matoms = self.get_mdff_atoms(atoms)
             matoms.enableds=False
-            super().restore_checkpoint(data)
+            _RestraintMgr.restore_checkpoint(self,data)
 
 
 class PositionRestraintMgr(_RestraintMgr):
@@ -2287,7 +2287,7 @@ class PositionRestraintMgr(_RestraintMgr):
         if atoms is not None:
             restraints = self.get_restraints(atoms)
             restraints.enableds=False
-            super().restore_checkpoint(data)
+            _RestraintMgr.restore_checkpoint(self, data)
 
 
 class TuggableAtomsMgr(_RestraintMgr):
@@ -2996,7 +2996,7 @@ class DistanceRestraintMgr(_DistanceRestraintMgrBase):
         if atoms is not None:
             restraints = self.atoms_restraints(atoms)
             restraints.enableds=False
-            super().restore_checkpoint(data)
+            _RestraintMgr.restore_checkpoint(self, data)
 
 
 class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
@@ -3191,7 +3191,7 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
         if atoms is not None:
             restraints = self.atoms_restraints(atoms)
             restraints.enableds=False
-            super().restore_checkpoint(data)
+            _RestraintMgr.restore_checkpoint(self, data)
 
 
 
@@ -3379,7 +3379,7 @@ class ChiralRestraintMgr(_RestraintMgr):
         if atoms is not None:
             restraints = self.get_restraints_by_atoms(atoms)
             restraints.enableds=False
-            super().restore_checkpoint(data)
+            _RestraintMgr.restore_checkpoint(self, data)
 
 
 class ProperDihedralRestraintMgr(_RestraintMgr):
@@ -3790,7 +3790,7 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         if residues is not None:
             restraints = self.get_all_restraints_for_residues(residues)
             restraints.enableds=False
-            super().restore_checkpoint(data)
+            _RestraintMgr.restore_checkpoint(self, data)
 
 class AdaptiveDihedralRestraintMgr(ProperDihedralRestraintMgr):
     DEFAULT_MAX_COLOR=[139,0,139,255] # dark magenta
@@ -3895,7 +3895,7 @@ class AdaptiveDihedralRestraintMgr(ProperDihedralRestraintMgr):
         if residues is not None:
             restraints = self.get_all_restraints_for_residues(residues)
             restraints.enableds=False
-            super().restore_checkpoint(data)
+            _RestraintMgr.restore_checkpoint(self, data)
 
 
 from chimerax.atomic import AtomicStructure
