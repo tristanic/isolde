@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 20-Dec-2019
+# @Last modified time: 02-Jan-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -110,11 +110,18 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
                     rdr.enabled = True
         if restrain_backbone:
             # For omega dihedrals we really want to stick with the standard
-            # proper dihedral restraints
+            # proper dihedral restraints, but we *don't* want to blindly
+            # restrain them to the template. Rather, we want to set the target
+            # angles to either 0 or pi.
             ors = pdrm.add_restraints_by_residues_and_name(rrs, 'omega')
             tds = tdm.get_dihedrals(trs, 'omega')
-            ors.targets = tds.angles
+            targets = tds.angles
+            from math import radians, pi
+            import numpy
+            mask = numpy.abs(targets) > radians(30)
+            ors.targets = numpy.ones(len(mask))*pi*mask
             ors.enableds = True
+            ors.displays = False
 
     if template_residues==restrained_residues:
         apply_restraints(template_residues, restrained_residues)
