@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 17-Dec-2019
+# @Last modified time: 02-Jan-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -776,16 +776,19 @@ class Sim_Manager:
         if sim_params.restrain_peptide_omegas:
             import numpy
             omega_rs = pdr_m.get_restraints_by_residues_and_name(mobile_res, 'omega')
-            omega_angles = omega_rs.dihedrals.angles
-            from math import pi
-            # Restrain all bonds > cutoff to trans, otherwise cis
-            mask = numpy.abs(omega_angles) > \
-                sim_params.cis_peptide_bond_cutoff_angle.value_in_unit(unit.radians)
-            omega_rs.targets = numpy.ones(len(mask))*pi*mask
-            omega_rs.cutoffs = sim_params.dihedral_restraint_cutoff_angle.value_in_unit(unit.radians)
-            omega_rs.displays = sim_params.display_omega_restraints
-            omega_rs.spring_constants = sim_params.peptide_bond_spring_constant.value_in_unit(unit.kilojoule_per_mole/unit.radians**2)
-            omega_rs.enableds = True
+            # Only update targets for restraints which aren't already enabled
+            omega_rs = omega_rs[numpy.logical_not(omega_rs.enableds)]
+            if len(omega_rs):
+                omega_angles = omega_rs.dihedrals.angles
+                from math import pi
+                # Restrain all bonds > cutoff to trans, otherwise cis
+                mask = numpy.abs(omega_angles) > \
+                    sim_params.cis_peptide_bond_cutoff_angle.value_in_unit(unit.radians)
+                omega_rs.targets = numpy.ones(len(mask))*pi*mask
+                omega_rs.cutoffs = sim_params.dihedral_restraint_cutoff_angle.value_in_unit(unit.radians)
+                omega_rs.displays = sim_params.display_omega_restraints
+                omega_rs.spring_constants = sim_params.peptide_bond_spring_constant.value_in_unit(unit.kilojoule_per_mole/unit.radians**2)
+                omega_rs.enableds = True
 
         sh.add_dihedral_restraints(pdrs)
         uh.append((pdr_m, pdr_m.triggers.add_handler('changes', self._dihe_r_changed_cb)))
