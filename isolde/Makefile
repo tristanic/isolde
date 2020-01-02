@@ -2,7 +2,7 @@
 # @Date:   28-Jan-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 12-Dec-2019
+# @Last modified time: 02-Jan-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2017-2018 Tristan Croll
 
@@ -34,17 +34,29 @@
 OS = $(patsubst CYGWIN_NT%,CYGWIN_NT,$(shell uname -s))
 # CHIMERAX_APP is the ChimeraX install folder
 ifeq ($(OS),CYGWIN_NT)
+ifndef RELEASE
 # Windows
+CHIMERAX_APP = "/c/Program Files/ChimeraX_Daily"
+else
 CHIMERAX_APP = "/c/Program Files/ChimeraX"
 endif
+endif
+
 ifeq ($(OS),Darwin)
 # Mac
-#CHIMERAX_APP = /Applications/ChimeraX.app
+ifndef RELEASE
 CHIMERAX_APP = /Applications/ChimeraX_Daily.app
+else
+CHIMERAX_APP = /Applications/ChimeraX.app
 endif
+endif
+
 ifeq ($(OS),Linux)
+ifndef RELEASE
 CHIMERAX_APP = /opt/UCSF/ChimeraX-daily
-# CHIMERAX_APP = /opt/UCSF/ChimeraX
+else
+CHIMERAX_APP = /opt/UCSF/ChimeraX
+endif
 endif
 
 # ==================================================================
