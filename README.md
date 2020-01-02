@@ -90,12 +90,17 @@ For convenience, these are also wrapped in a simple Makefile, allowing the above
 
 respectively.
 
-In Windows, the corresponding commands are slighty more complex - an extra layer of indirection is needed for the
-command-line switches to be correctly handled. The following command will clean, build and install ISOLDE:
+In Windows, a special executable is needed for the command-line switches to be correctly handled. The following command will clean, build and install ISOLDE:
 
-`C:\Program Files\ChimeraX\bin\python.exe" "c:\Program Files\ChimeraX\bin\Lib\site-packages\ChimeraX_main.py" -m PyQt5.pyrcc_main -o src/resources/resources_rc.py src/resources/resources.qrc`
+`C:\Program Files\ChimeraX\bin\ChimeraX-console.exe" -m PyQt5.pyrcc_main -o src/resources/resources_rc.py src/resources/resources.qrc`
 
-`C:\Program Files\ChimeraX\bin\python.exe" "c:\Program Files\ChimeraX\bin\Lib\site-packages\ChimeraX_main.py" --nogui --cmd "devel clean .; devel install .; exit"`
+`C:\Program Files\ChimeraX\bin\ChimeraX-console.exe" --nogui --cmd "devel clean .; devel install .; exit"`
+
+For convenience, these commands are also wrapped in a batch file, make_win.bat.
+
+`make_win release clean app-install`
+
+... will achieve the same result as the above.
 
 ## Building the documentation
 
@@ -116,7 +121,11 @@ or
 
 Windows:
 
-`C:\Program Files\ChimeraX\bin\python.exe" "c:\Program Files\ChimeraX\bin\Lib\site-packages\ChimeraX_main.py" -m sphinx docs/source src/docs/user`
+`C:\Program Files\ChimeraX\bin\ChimeraX-console.exe" -m sphinx docs/source src/docs/user`
+
+or
+
+`make_docs.bat release`
 
 ... then reinstall ISOLDE.
 
