@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 19-Dec-2019
+# @Last modified time: 02-Jan-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -1715,6 +1715,27 @@ class _RestraintMgr(Model):
         data['restraint info'] = self._session_save_info()
         return data
 
+    def save_checkpoint(self, atoms=None):
+        '''
+        Save a snapshot of the state of restraints for all or a subset of atoms
+        (typically the mobile atoms in a running simulation). Override in
+        derived classes.
+        '''
+        self.session.logger.warning('Checkpointing is not implemented for class {}'.format(
+            self.__class__
+        ))
+        return (self, dict())
+
+    def restore_checkpoint(self, data):
+        '''
+        Restore the state of restraints from a checkpoint.
+        '''
+        data = data.copy()
+        restraints = data.pop('restraints', None)
+        if restraints is None:
+            return
+        for key, vals in data.items():
+            setattr(restraints, key, vals)
 
 
 
@@ -1937,6 +1958,31 @@ class MDFFMgr(_RestraintMgr):
         matoms = self.add_mdff_atoms(data['atoms'], True)
         matoms.enableds = data['enableds']
         matoms.coupling_constants = data['coupling constants']
+
+    def save_checkpoint(self, atoms=None):
+        if atoms is None:
+            atoms = self.model.atoms
+        matoms = self.get_mdff_atoms(atoms)
+        checkpoint_data = {
+            'atoms':    atoms,
+            'restraints':   matoms,
+            'atoms': atoms,
+            'coupling_constants':   matoms.coupling_constants,
+            'enableds': matoms.enableds,
+        }
+        return (self, checkpoint_data)
+
+    def restore_checkpoint(self, data):
+        # First disable all restraints on the given atoms, just in case any new
+        # ones were added after the checkpoint is saved. Then restore the state
+        # of the saved ones.
+        data = data.copy()
+        atoms = data.pop('atoms', None)
+        if atoms is not None:
+            matoms = self.get_mdff_atoms(atoms)
+            matoms.enableds=False
+            super().restore_checkpoint(data)
+
 
 class PositionRestraintMgr(_RestraintMgr):
     '''
@@ -2219,6 +2265,30 @@ class PositionRestraintMgr(_RestraintMgr):
         prs.spring_constants = data['spring_constants']
         prs.enableds = data['enableds']
 
+    def save_checkpoint(self, atoms=None):
+        if atoms is None:
+            atoms = self.model.atoms
+        restraints = self.get_restraints(atoms)
+        checkpoint_data = {
+            'atoms':    atoms,
+            'restraints':   restraints,
+            'targets':   restraints.targets,
+            'spring_constants': restraints.spring_constants,
+            'enableds': restraints.enableds,
+        }
+        return (self, checkpoint_data)
+
+    def restore_checkpoint(self, data):
+        # First disable all restraints on the given atoms, just in case any new
+        # ones were added after the checkpoint is saved. Then restore the state
+        # of the saved ones.
+        data = data.copy()
+        atoms = data.pop('atoms', None)
+        if atoms is not None:
+            restraints = self.get_restraints(atoms)
+            restraints.enableds=False
+            super().restore_checkpoint(data)
+
 
 class TuggableAtomsMgr(_RestraintMgr):
     '''
@@ -2444,6 +2514,17 @@ class TuggableAtomsMgr(_RestraintMgr):
         tas.targets = data['targets']
         tas.spring_constants = data['spring_constants']
         tas.enableds = False
+
+    def save_checkpoint(self, atoms=None):
+        return (self, dict())
+
+    def restore_checkpoint(self, data):
+        '''
+        Since the "restraints" in TuggbleAtomsMgr are designed to be transient
+        for user interaction, checkpoints are not saved. Instead, the
+        restore_checkpoint() method simply clears all tugging forces.
+        '''
+        self.get_tuggables(self.model.atoms).enableds = False
 
 
 class _DistanceRestraintMgrBase(_RestraintMgr):
@@ -2891,6 +2972,32 @@ class DistanceRestraintMgr(_DistanceRestraintMgrBase):
         drs.spring_constants = data['spring_constants']
         drs.enableds = data['enableds']
 
+    def save_checkpoint(self, atoms=None):
+        if atoms is None:
+            atoms = self.model.atoms
+            restraints = self.all_restraints
+        else:
+            restraints = self.atoms_restraints(atoms)
+        checkpoint_data = {
+            'atoms':    atoms,
+            'restraints':   restraints,
+            'targets':   restraints.targets,
+            'spring_constants': restraints.spring_constants,
+            'enableds': restraints.enableds,
+        }
+        return (self, checkpoint_data)
+
+    def restore_checkpoint(self, data):
+        # First disable all restraints on the given atoms, just in case any new
+        # ones were added after the checkpoint is saved. Then restore the state
+        # of the saved ones.
+        data = data.copy()
+        atoms = data.pop('atoms', None)
+        if atoms is not None:
+            restraints = self.atoms_restraints(atoms)
+            restraints.enableds=False
+            super().restore_checkpoint(data)
+
 
 class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
     '''
@@ -3057,6 +3164,34 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
         drs.alphas=data['alphas']
         drs.enableds=data['enableds']
 
+    def save_checkpoint(self, atoms=None):
+        if atoms is None:
+            atoms = self.model.atoms
+            restraints = self.all_restraints
+        else:
+            restraints = self.atoms_restraints(atoms)
+        checkpoint_data = {
+            'atoms':    atoms,
+            'restraints':   restraints,
+            'targets':   restraints.targets,
+            'tolerances': restraints.tolerances,
+            'kappas':   restraints.kappas,
+            'cs':   restraints.cs,
+            'alphas':   restraints.alphas,
+            'enableds': restraints.enableds,
+        }
+        return (self, checkpoint_data)
+
+    def restore_checkpoint(self, data):
+        # First disable all restraints on the given atoms, just in case any new
+        # ones were added after the checkpoint is saved. Then restore the state
+        # of the saved ones.
+        data = data.copy()
+        atoms = data.pop('atoms', None)
+        if atoms is not None:
+            restraints = self.atoms_restraints(atoms)
+            restraints.enableds=False
+            super().restore_checkpoint(data)
 
 
 
@@ -3221,6 +3356,30 @@ class ChiralRestraintMgr(_RestraintMgr):
         crs.spring_constants=spring_constants
         crs.cutoffs = cutoffs
         crs.enableds=enableds
+
+    def save_checkpoint(self, atoms=None):
+        if atoms is None:
+            atoms = self.model.atoms
+        restraints = self.get_restraints_by_atoms(atoms)
+        checkpoint_data = {
+            'atoms':    atoms,
+            'restraints':   restraints,
+            'spring_constants': restraints.spring_constants,
+            'cutoffs':  restraints.cutoffs,
+            'enableds': restraints.enableds,
+        }
+        return (self, checkpoint_data)
+
+    def restore_checkpoint(self, data):
+        # First disable all restraints on the given atoms, just in case any new
+        # ones were added after the checkpoint is saved. Then restore the state
+        # of the saved ones.
+        data = data.copy()
+        atoms = data.pop('atoms', None)
+        if atoms is not None:
+            restraints = self.get_restraints_by_atoms(atoms)
+            restraints.enableds=False
+            super().restore_checkpoint(data)
 
 
 class ProperDihedralRestraintMgr(_RestraintMgr):
@@ -3606,6 +3765,33 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         for attr in ('targets', 'cutoffs', 'enableds', 'displays', 'spring_constants'):
             setattr(restraints, attr, data[attr])
 
+    def save_checkpoint(self, atoms=None):
+        if atoms is None:
+            atoms = self.model.atoms
+        residues = atoms.unique_residues
+        restraints = self.get_all_restraints_for_residues(residues)
+        checkpoint_data = {
+            'residues': residues,
+            'restraints':   restraints,
+            'targets':  restraints.targets,
+            'spring_constants': restraints.spring_constants,
+            'cutoffs':  restraints.cutoffs,
+            'displays': restraints.displays,
+            'enableds': restraints.enableds,
+        }
+        return (self, checkpoint_data)
+
+    def restore_checkpoint(self, data):
+        # First disable all restraints on the given atoms, just in case any new
+        # ones were added after the checkpoint is saved. Then restore the state
+        # of the saved ones.
+        data = data.copy()
+        residues = data.pop('residues', None)
+        if residues is not None:
+            restraints = self.get_all_restraints_for_residues(residues)
+            restraints.enableds=False
+            super().restore_checkpoint(data)
+
 class AdaptiveDihedralRestraintMgr(ProperDihedralRestraintMgr):
     DEFAULT_MAX_COLOR=[139,0,139,255] # dark magenta
     DEFAULT_MID_COLOR=[255,69,0,255] # orange-red
@@ -3684,6 +3870,32 @@ class AdaptiveDihedralRestraintMgr(ProperDihedralRestraintMgr):
         for attr in ('targets', 'kappas', 'enableds', 'displays', 'spring_constants'):
             setattr(restraints, attr, data[attr])
 
+    def save_checkpoint(self, atoms=None):
+        if atoms is None:
+            atoms = self.model.atoms
+        residues = atoms.unique_residues
+        restraints = self.get_all_restraints_for_residues(residues)
+        checkpoint_data = {
+            'residues': residues,
+            'restraints':   restraints,
+            'targets':  restraints.targets,
+            'spring_constants': restraints.spring_constants,
+            'kappas':  restraints.kappas,
+            'displays': restraints.displays,
+            'enableds': restraints.enableds,
+        }
+        return (self, checkpoint_data)
+
+    def restore_checkpoint(self, data):
+        # First disable all restraints on the given atoms, just in case any new
+        # ones were added after the checkpoint is saved. Then restore the state
+        # of the saved ones.
+        data = data.copy()
+        residues = data.pop('residues', None)
+        if residues is not None:
+            restraints = self.get_all_restraints_for_residues(residues)
+            restraints.enableds=False
+            super().restore_checkpoint(data)
 
 
 from chimerax.atomic import AtomicStructure
@@ -4026,6 +4238,13 @@ class RotamerRestraintMgr(_RestraintMgr):
         Model.set_state_from_snapshot(self, session, data['model state'])
         data = data['restraint info']
         restraints = self.add_restraints(data['rotamers'])
+
+    def save_checkpoint(self, atoms=None):
+        '''
+        Since RotamerRestraintMgr is just a convenience layer over
+        ProperDihedralRestraintMgr, there is no need to save/restore checkpoints.
+        '''
+        return (self, dict())
 
 
 class _Dihedral(State):
