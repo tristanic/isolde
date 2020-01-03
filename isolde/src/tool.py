@@ -67,6 +67,22 @@ class ISOLDE_ToolUI(ToolInstance):
         self.tool_window.manage(placement=None)
         # Should load saved state here
 
+        combo_boxes = (
+            iw._tutorials_combo_box,
+            iw._master_model_combo_box,
+            iw._real_space_map_volume_combo_box,
+            iw._sim_basic_xtal_settings_map_combo_box,
+            iw._sim_force_field_combo_box,
+            iw._sim_platform_combo_box,
+            iw._experience_level_combo_box,
+            iw._rebuild_sel_res_rot_backrub_map_combo_box,
+            iw._validate_rama_case_combo_box,
+            iw._validate_rama_sel_combo_box,
+        )
+        from .ui.util import win_auto_resize_combo_box_hack
+        for cb in combo_boxes:
+            win_auto_resize_combo_box_hack(cb)
+
         ###
         # Selection manipulation buttons
         ###

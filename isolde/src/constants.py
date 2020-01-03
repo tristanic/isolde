@@ -14,6 +14,12 @@ from simtk import unit
 from simtk.openmm import VariableLangevinIntegrator, CustomGBForce
 from simtk.openmm.app import CutoffNonPeriodic, HBonds
 
+import sys
+if sys.platform=='linux':
+    _default_gpu_platform = "CUDA"
+else:
+    _default_gpu_platform = "OpenCL"
+
 '''
 Constants are a slightly difficult problem here, in that ChimeraX works
 in Angstroms while OpenMM works in nanometres
@@ -53,7 +59,7 @@ class _Defaults:
         ###
         # Simulation parameters
         ###
-        'OPENMM_DEFAULT_PLATFORM':    'CUDA',
+        'OPENMM_DEFAULT_PLATFORM':    _default_gpu_platform,
         'OPENMM_PLATFORMS':           ('CUDA', 'OpenCL', 'CPU'), # 'CPU', 'OpenCL' or 'CUDA'
         'OPENMM_FORCEFIELD':          'amber14',
         'OPENMM_INTEGRATOR_TYPE':     VariableLangevinIntegrator,
