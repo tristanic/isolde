@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 02-Jan-2020
+# @Last modified time: 06-Jan-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -614,6 +614,23 @@ class ProperDihedralMgr(_DihedralMgr):
 
     def __len__(self):
         return self.num_mapped_dihedrals
+
+    def residues_have_dihedral(self, residues, name):
+        '''
+        Returns a Numpy Boolean mask indicating which of the given residues
+        contains a dihedral of the specified name with all required atoms
+        present.
+        '''
+        f = c_function('proper_dihedral_mgr_residue_has_dihedral', args=(
+            ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p
+        ))
+        import numpy
+        n = len(residues)
+        ret = numpy.empty(n, numpy.bool)
+        key = ctypes.py_object()
+        key.value = name
+        f(self._c_pointer, residues._c_pointers, ctypes.byref(key), n, pointer(ret))
+        return ret
 
 class RamaMgr:
     '''

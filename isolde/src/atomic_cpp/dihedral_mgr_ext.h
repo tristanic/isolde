@@ -3,7 +3,7 @@
  * @Date:   25-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 11-Jun-2019
+ * @Last modified time: 06-Jan-2020
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2016-2019 Tristan Croll
  */
@@ -142,6 +142,26 @@ proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *name, s
    }
 }
 
+extern "C" EXPORT void
+proper_dihedral_mgr_residue_has_dihedral(void *mgr, void *residues, pyobject_t *name, size_t n, npy_bool* has_dihedral)
+{
+    ProperDihedralMgr *m = static_cast<ProperDihedralMgr *>(mgr);
+    Residue **r = static_cast<Residue **>(residues);
+    try {
+        std::string dname(PyUnicode_AsUTF8(static_cast<PyObject *>(name[0])));
+        for (size_t i=0; i<n; ++i) {
+            try {
+                has_dihedral[i] = (m->get_dihedral(r[i], dname, true) != nullptr);
+            } catch (std::out_of_range) {
+                has_dihedral[i] = false;
+            }
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
 extern "C" EXPORT PyObject*
 proper_dihedral_mgr_get_residue_dihedrals(void *mgr, void *residues, size_t n)
 {
@@ -164,6 +184,8 @@ proper_dihedral_mgr_get_residue_dihedrals(void *mgr, void *residues, size_t n)
        return 0;
    }
 }
+
+
 
 extern "C" EXPORT int
 proper_dihedral_mgr_num_mapped_dihedrals(void *mgr)

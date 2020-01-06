@@ -3,7 +3,7 @@
  * @Date:   24-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 11-Jun-2019
+ * @Last modified time: 06-Jan-2020
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2016-2019 Tristan Croll
  */
@@ -166,7 +166,10 @@ DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname)
         }
     }
     if (!found)
+    {
         throw std::out_of_range("Unrecognised dihedral name for this residue!");
+        return nullptr;
+    }
 
     return new_dihedral(res, dname, anames, external, first_internal_atom);
 
@@ -185,7 +188,10 @@ DType* Dihedral_Mgr<DType>::get_dihedral(Residue *res, const std::string &name, 
         }
     }
     if (!create)
+    {
         throw std::out_of_range("Dihedral not found!");
+        return nullptr;
+    }
     return new_dihedral(res, name);
 }
 

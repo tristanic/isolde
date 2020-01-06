@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 02-Jan-2020
+# @Last modified time: 06-Jan-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -75,7 +75,7 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
     restrained_model = restrained_us[0]
 
 
-    tdm = sx.get_proper_dihedral_mgr(template_model)
+    tdm = sx.get_proper_dihedral_mgr(session)
     rdrm = sx.get_adaptive_dihedral_restraint_mgr(restrained_model)
     pdrm = sx.get_proper_dihedral_restraint_mgr(restrained_model)
     backbone_names = ('phi','psi')
@@ -113,11 +113,15 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
             # proper dihedral restraints, but we *don't* want to blindly
             # restrain them to the template. Rather, we want to set the target
             # angles to either 0 or pi.
-            ors = pdrm.add_restraints_by_residues_and_name(rrs, 'omega')
-            tds = tdm.get_dihedrals(trs, 'omega')
+            import numpy
+            dmask = numpy.logical_and(
+                tdm.residues_have_dihedral(trs, 'omega'),
+                tdm.residues_have_dihedral(rrs, 'omega')
+                )
+            ors = pdrm.add_restraints_by_residues_and_name(rrs[dmask], 'omega')
+            tds = tdm.get_dihedrals(trs[dmask], 'omega')
             targets = tds.angles
             from math import radians, pi
-            import numpy
             mask = numpy.abs(targets) > radians(30)
             ors.targets = numpy.ones(len(mask))*pi*mask
             ors.enableds = True
