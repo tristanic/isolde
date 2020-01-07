@@ -213,7 +213,7 @@ def load_map(session, file_path:'string', model_id:'string'):
     from chimerax.clipper.symmetry import SymmetryManager
     from chimerax.clipper.maps import MapMgr
     if isinstance(m, AtomicStructure):
-        from chimerax.atomic import get_map_mgr
+        from chimerax.clipper import get_map_mgr
         mmgr = get_map_mgr(m)
     elif isinstance(m, SymmetryManager):
         mmgr = m.map_mgr
