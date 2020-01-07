@@ -977,6 +977,40 @@
       <ExternalBond atomName="N"/>
       <ExternalBond atomName="C"/>
     </Residue>
+    <Residue name="PTM_HZP">
+      <Atom charge="-0.131423" name="N" type="N"/>
+      <Atom charge="-0.244111" name="CD" type="CT"/>
+      <Atom charge="0.105581" name="HD21" type="H1"/>
+      <Atom charge="0.105581" name="HD22" type="H1"/>
+      <Atom charge="0.319283" name="CG" type="CT"/>
+      <Atom charge="0.066129" name="HG1" type="H1"/>
+      <Atom charge="-0.658637" name="OD1" type="OH"/>
+      <Atom charge="0.429398" name="HD11" type="HO"/>
+      <Atom charge="-0.08497" name="CB" type="CT"/>
+      <Atom charge="0.039646" name="HB1" type="HC"/>
+      <Atom charge="0.039646" name="HB2" type="HC"/>
+      <Atom charge="-0.11104" name="CA" type="CT"/>
+      <Atom charge="0.102544" name="HA" type="H1"/>
+      <Atom charge="0.59469" name="C" type="C"/>
+      <Atom charge="-0.572316" name="O" type="O"/>
+      <Bond atomName1="N" atomName2="CD"/>
+      <Bond atomName1="N" atomName2="CA"/>
+      <Bond atomName1="CD" atomName2="HD21"/>
+      <Bond atomName1="CD" atomName2="HD22"/>
+      <Bond atomName1="CD" atomName2="CG"/>
+      <Bond atomName1="CG" atomName2="HG1"/>
+      <Bond atomName1="CG" atomName2="OD1"/>
+      <Bond atomName1="CG" atomName2="CB"/>
+      <Bond atomName1="OD1" atomName2="HD11"/>
+      <Bond atomName1="CB" atomName2="HB1"/>
+      <Bond atomName1="CB" atomName2="HB2"/>
+      <Bond atomName1="CB" atomName2="CA"/>
+      <Bond atomName1="CA" atomName2="HA"/>
+      <Bond atomName1="CA" atomName2="C"/>
+      <Bond atomName1="C" atomName2="O"/>
+      <ExternalBond atomName="N"/>
+      <ExternalBond atomName="C"/>
+    </Residue>
     <Residue name="PTM_LYZ">
       <Atom charge="-0.560819" name="N" type="N"/>
       <Atom charge="0.353086" name="H" type="H"/>
