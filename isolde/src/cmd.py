@@ -6,7 +6,7 @@
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
-
+from chimerax.core.errors import UserError
 
 def get_singleton(session, create=True):
     if not session.ui.is_gui:
@@ -98,6 +98,16 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         else:
             isolde.discard_sim(revert_to=discard_to, warn=False)
 
+def isolde_report(session, report=True, report_interval=20):
+    isolde = isolde_start(session)
+    if not isolde.simulation_running:
+        raise UserError('This command is only valid when a simulation is running!')
+    sm = isolde.sim_manager
+    if report:
+        sm.start_reporting_performance(report_interval)
+    else:
+        sm.stop_reporting_performance()
+
 def isolde_ignore(session, residues=None, ignore=True):
     isolde_start(session)
     if session.isolde.simulation_running:
@@ -178,6 +188,14 @@ def register_isolde(logger):
             )
         register('isolde sim', desc, isolde_sim, logger=logger)
 
+    def register_isolde_report():
+        desc = CmdDesc(
+            optional=[('report', BoolArg),],
+            keyword=[('report_interval', IntArg)],
+            synopsis='Report the current simulation performance to the status bar'
+        )
+        register ('isolde report', desc, isolde_report, logger=logger)
+
     def register_isolde_ignore():
         desc = CmdDesc(
             optional=[('residues', ResiduesArg),],
@@ -212,6 +230,7 @@ def register_isolde(logger):
 
     register_isolde_start()
     register_isolde_sim()
+    register_isolde_report()
     register_isolde_ignore()
     register_isolde_stop_ignore()
     register_isolde_tutorial()

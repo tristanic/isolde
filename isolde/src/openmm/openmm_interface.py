@@ -620,6 +620,20 @@ class Sim_Manager:
         '''
         return self.sim_handler.sim_running
 
+    def start_reporting_performance(self, report_interval=20):
+        if hasattr(self, '_performance_tracker') and self._performance_tracker is not None:
+            pt = self._performance_tracker
+            pt.report_interval = report_interval
+            pt.start()
+        else:
+            pt = self._performance_tracker = Sim_Performance_Tracker(self.sim_handler, report_interval, self.session.logger.status)
+            pt.start()
+
+    def stop_reporting_performance(self):
+        if hasattr(self, '_performance_tracker') and self._performance_tracker is not None:
+            self._performance_tracker.stop()
+        self._performance_tracker = None
+
     def _parse_auto_template_error(self, e):
         err_text = str(e)
         if not err_text.startswith('No template found'):
@@ -2949,24 +2963,43 @@ class Map_Scale_Optimizer:
 
 class Sim_Performance_Tracker:
     c = 0
-    def __init__(self, sim_handler, report_interval=50):
+    def __init__(self, sim_handler, report_interval=50, log_func=None):
         self._ri = report_interval
         self._sh = sim_handler
+        self._params = sim_handler._params
+        if log_func is not None:
+            self._log_func = log_func
+        else:
+            self._log_func = print
+        self._running = False
     def start(self):
+        if self._running:
+            return
         from time import time
         self._start_time = time()
         self._h = self._sh.triggers.add_handler('coord update', self._update)
+        self._running = True
+
+    @property
+    def report_interval(self):
+        return self._ri
+
+    @report_interval.setter
+    def report_interval(self, interval):
+        self._ri = interval
+
     def _update(self, *_):
         self.c = (self.c+1)%self._ri
         if self.c == 0:
             from time import time
             interval = (time()-self._start_time)/self._ri
-            print('Average time per coord update: {:.2f} ms ({:.2f} updates/s)'.format(interval*1000, 1/interval))
+            self._log_func('Average time per coord update: {:.2f} ms ({:.2f} time steps/s)'.format(interval*1000, 1/interval*self._params.sim_steps_per_gui_update))
             self._start_time = time()
     def stop(self):
         if self._h is not None:
             self._sh.triggers.remove_handler(self._h)
             self._h=None
+        self._running = False
 
 def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
     '''
