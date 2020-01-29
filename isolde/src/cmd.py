@@ -25,6 +25,14 @@ def isolde_start(session):
     get_singleton(session)
     return session.isolde
 
+def isolde_set(session, time_steps_per_gui_update=None, temperature=None):
+    isolde=isolde_start(session)
+    sp = isolde.sim_params
+    if time_steps_per_gui_update is not None:
+        sp.sim_steps_per_gui_update=time_steps_per_gui_update
+    if temperature is not None:
+        sp.temperature=temperature
+
 def isolde_sim(session, cmd, atoms=None, discard_to=None):
     '''
     Start, stop or pause an interactive simulation.
@@ -179,6 +187,16 @@ def register_isolde(logger):
         )
         register('isolde start', desc, isolde_start, logger=logger)
 
+    def register_isolde_set():
+        desc = CmdDesc(
+            keyword = [
+                ('time_steps_per_gui_update', IntArg),
+                ('temperature', FloatArg),
+            ],
+            synopsis = 'Adjust ISOLDE simulation settings',
+        )
+        register('isolde set', desc, isolde_set, logger=logger)
+
     def register_isolde_sim():
         desc = CmdDesc(
             optional=[('atoms', AtomsArg)],
@@ -229,6 +247,7 @@ def register_isolde(logger):
         register('isolde demo', desc, isolde_demo, logger=logger)
 
     register_isolde_start()
+    register_isolde_set()
     register_isolde_sim()
     register_isolde_report()
     register_isolde_ignore()
