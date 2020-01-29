@@ -51,6 +51,30 @@ the display camera to orthographic projection and lighting to simple. It is
 strongly recommended that you do not change these settings during your ISOLDE
 session.
 
+.. _settings:
+
+isolde set
+==========
+
+Syntax: isolde set [**timeStepsPerGuiUpdate** *integer*]
+[**temperature** *number*]
+
+Change various ISOLDE global settings.
+
+.. _report:
+
+isolde report
+=============
+
+Sytax: isolde report [**true|false** (true)]
+[**reportInterval** *integer* (20)]
+
+Start/stop reporting information on simulation performance (time per coordinate
+update and timesteps per second) to the status bar. The optional
+*reportInterval* argument sets the number of coordinate updates to average over
+before reporting. Only valid while a simulation is running, and automatically
+terminates once that simulation stops.
+
 .. _sim:
 
 isolde sim
