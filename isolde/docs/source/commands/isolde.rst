@@ -51,7 +51,7 @@ the display camera to orthographic projection and lighting to simple. It is
 strongly recommended that you do not change these settings during your ISOLDE
 session.
 
-.. _settings:
+.. _set:
 
 isolde set
 ==========
