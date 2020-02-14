@@ -57,7 +57,7 @@ isolde set
 ==========
 
 Syntax: isolde set [**timeStepsPerGuiUpdate** *integer*]
-[**temperature** *number*]
+[**temperature** *number*] [**gpuDeviceIndex** *integer*]
 
 Change various ISOLDE global settings.
 
@@ -67,11 +67,11 @@ isolde report
 =============
 
 Sytax: isolde report [**true|false** (true)]
-[**reportInterval** *integer* (20)]
+[**interval** *integer* (20)]
 
 Start/stop reporting information on simulation performance (time per coordinate
 update and timesteps per second) to the status bar. The optional
-*reportInterval* argument sets the number of coordinate updates to average over
+*interval* argument sets the number of coordinate updates to average over
 before reporting. Only valid while a simulation is running, and automatically
 terminates once that simulation stops.
 

@@ -1517,12 +1517,14 @@ class Sim_Handler:
 
         # Thank you to Andreas Schenck for this little snippet
         properties = {}
-        device_index = os.environ.get('ISOLDE_DEVICE_INDEX', None)
+        device_index = str(params.device_index)
+        #device_index = os.environ.get('ISOLDE_DEVICE_INDEX', None)
         if device_index is not None:
             if params.platform=="CUDA":
                 properties['CudaDeviceIndex']=device_index
             elif params.platform=='OpenCL':
                 properties['OpenCLDeviceIndex']=device_index
+
 
         from simtk.openmm import app
         logger.status('Initialising primary simulation object')
