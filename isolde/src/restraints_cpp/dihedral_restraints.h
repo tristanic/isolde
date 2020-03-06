@@ -3,7 +3,7 @@
  * @Date:   26-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 19-Dec-2019
+ * @Last modified time: 05-Mar-2020
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright:2016-2019 Tristan Croll
  */
@@ -130,7 +130,7 @@ public:
 protected:
     double _cutoffs[3] {0, 1, M_PI}; // First and last cutoffs fixed, middle changes
     double _target = 0.0;
-    double _spring_constant = 0.0;
+    double _spring_constant = 500.0;
     double _cutoff = 0.0;
     bool _enabled = false;
     bool _display = true;
