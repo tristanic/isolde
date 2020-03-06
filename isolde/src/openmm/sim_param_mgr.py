@@ -43,6 +43,7 @@ SIM_MODE_UNSTABLE           = control.SIM_MODE_UNSTABLE
 CARBON_MASS = defaults.CARBON_MASS
 CARBON_ATOMIC_NUMBER = defaults.CARBON_ATOMIC_NUMBER
 
+
 def error_cb(e):
     print(e.__traceback__)
     print(e)
@@ -76,6 +77,13 @@ class SimParams(Param_Mgr):
             TypeError: Unit "kilojoule/mole" is not compatible with Unit
             "kilojoule/(nanometer*mole)".
     '''
+
+    def __init__(self):
+        super().__init__()
+        import os
+        device_index = os.environ.get('ISOLDE_DEVICE_INDEX')
+        self.device_index = device_index
+
     _default_params = {
         'restraint_max_force':                  (defaults.MAX_RESTRAINT_FORCE, OPENMM_FORCE_UNIT),
         'distance_restraint_spring_constant':   (defaults.DISTANCE_RESTRAINT_SPRING_CONSTANT, OPENMM_SPRING_UNIT),
@@ -117,6 +125,7 @@ class SimParams(Param_Mgr):
 
         'platform':                             (defaults.OPENMM_DEFAULT_PLATFORM, None),
         'platforms':                            (defaults.OPENMM_PLATFORMS, None),
+        'device_index':                         (defaults.DEVICE_INDEX, None),
         'forcefield':                           (defaults.OPENMM_FORCEFIELD, None),
         'integrator':                           (defaults.OPENMM_INTEGRATOR_TYPE, None),
         'variable_integrator_tolerance':        (defaults.OPENMM_VAR_INTEGRATOR_TOL, None),

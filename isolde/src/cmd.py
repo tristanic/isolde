@@ -25,13 +25,16 @@ def isolde_start(session):
     get_singleton(session)
     return session.isolde
 
-def isolde_set(session, time_steps_per_gui_update=None, temperature=None):
+def isolde_set(session, time_steps_per_gui_update=None, temperature=None,
+        gpu_device_index=None):
     isolde=isolde_start(session)
     sp = isolde.sim_params
     if time_steps_per_gui_update is not None:
         sp.sim_steps_per_gui_update=time_steps_per_gui_update
     if temperature is not None:
         sp.temperature=temperature
+    if gpu_device_index is not None:
+        sp.device_index=gpu_device_index
 
 def isolde_sim(session, cmd, atoms=None, discard_to=None):
     '''
@@ -106,7 +109,7 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         else:
             isolde.discard_sim(revert_to=discard_to, warn=False)
 
-def isolde_report(session, report=True, report_interval=20):
+def isolde_report(session, report=True, interval=20):
     isolde = isolde_start(session)
     if not isolde.simulation_running:
         raise UserError('This command is only valid when a simulation is running!')
@@ -192,6 +195,7 @@ def register_isolde(logger):
             keyword = [
                 ('time_steps_per_gui_update', IntArg),
                 ('temperature', FloatArg),
+                ('gpu_device_index', IntArg),
             ],
             synopsis = 'Adjust ISOLDE simulation settings',
         )
@@ -209,7 +213,7 @@ def register_isolde(logger):
     def register_isolde_report():
         desc = CmdDesc(
             optional=[('report', BoolArg),],
-            keyword=[('report_interval', IntArg)],
+            keyword=[('interval', IntArg)],
             synopsis='Report the current simulation performance to the status bar'
         )
         register ('isolde report', desc, isolde_report, logger=logger)

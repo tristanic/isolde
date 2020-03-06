@@ -60,7 +60,8 @@ class _Defaults:
         # Simulation parameters
         ###
         'OPENMM_DEFAULT_PLATFORM':    _default_gpu_platform,
-        'OPENMM_PLATFORMS':           ('CUDA', 'OpenCL', 'CPU'), # 'CPU', 'OpenCL' or 'CUDA'
+        'OPENMM_PLATFORMS':           ('CUDA', 'OpenCL', 'CPU'), 
+        'DEVICE_INDEX':               None,
         'OPENMM_FORCEFIELD':          'amber14',
         'OPENMM_INTEGRATOR_TYPE':     VariableLangevinIntegrator,
         'OPENMM_NONBONDED_METHOD':    CutoffNonPeriodic,
