@@ -3,7 +3,7 @@
 @Date:   18-Apr-2018
 @Email:  tic20@cam.ac.uk
 @Last modified by:   tic20
-@Last modified time: 05-Feb-2020
+@Last modified time: 06-Mar-2020
 @License: Free for non-commercial use (see license.pdf)
 @Copyright: Copyright 2016-2019 Tristan Croll
 -->
@@ -75,9 +75,6 @@ with the surroundings.
       <Library>atomstruct</Library>
       <Library>pyinstance</Library>
       <CompileArgument platform="mac">-mmacosx-version-min=10.12</CompileArgument>
-      <IncludeDir platform="mac">/Users/tic20/anaconda3/envs/openmm74/include</IncludeDir>
-      <IncludeDir platform="linux">/home/tic20/anaconda3/envs/openmm74/include</IncludeDir>
-      <IncludeDir platform="windows">C:\Users\tic20\Anaconda3\envs\openmm74\include</IncludeDir>
       <IncludeDir>src/deps/lbfgs/include</IncludeDir>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
       <SourceFile>src/openmm/custom_forces.cpp</SourceFile>
