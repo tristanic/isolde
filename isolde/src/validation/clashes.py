@@ -2,7 +2,7 @@
 # @Date:   24-Oct-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 14-Jun-2019
+# @Last modified time: 05-Mar-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -128,7 +128,7 @@ class Clash_Table_Mgr:
         '''
         atoms = model.atoms
         from chimerax.atomic.clashes import clashes
-        clash_dict = clashes.find_clashes(self.session, atoms)
+        clash_dict = clashes.find_clashes(self.session, atoms, inter_model=False)
         t = self._geom_clash_table
         t.setRowCount(0)
         if not clash_dict:
