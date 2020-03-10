@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 12-Dec-2019
+# @Last modified time: 10-Mar-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -34,7 +34,7 @@ class ISOLDE_ToolUI(ToolInstance):
     def __init__(self, session, tool_name):
         ToolInstance.__init__(self, session, tool_name)
         self.display_name = "ISOLDE"
-        from chimerax.core.ui.gui import MainToolWindow
+        from chimerax.ui.gui import MainToolWindow
         self.tool_window = MainToolWindow(self)
         self.tool_window.manage(placement=None)
         parent = self.tool_window.ui_area
