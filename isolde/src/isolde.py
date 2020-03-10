@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 12-Dec-2019
+# @Last modified time: 09-Mar-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -2297,7 +2297,6 @@ class Isolde():
         cis_mask = cis_mask[iffy_mask]
 
         table.setRowCount(len(iffy))
-        from PyQt5.QtWidgets import QListWidgetItem
         from PyQt5.Qt import QColor, QBrush
         from PyQt5.QtCore import Qt
         cis_nonpro_color = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
