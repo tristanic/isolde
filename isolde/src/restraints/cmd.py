@@ -2,7 +2,7 @@
 # @Date:   05-Apr-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 20-Dec-2019
+# @Last modified time: 10-Mar-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -191,7 +191,7 @@ def adjust_torsions(session, residues, backbone=True,
             if angle_range is not None:
                 apdrs.kappas = kappa
             if spring_constant is not None:
-                apdrs.spring_constants = spring_constants
+                apdrs.spring_constants = spring_constant
 
 def release_torsions(session, residues, backbone=True, sidechains=True):
     from chimerax.isolde.session_extensions import get_adaptive_dihedral_restraint_mgr
