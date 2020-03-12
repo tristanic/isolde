@@ -1515,15 +1515,13 @@ class Sim_Handler:
         integrator = self._prepare_integrator(params)
         platform = openmm.Platform.getPlatformByName(params.platform)
 
-        # Thank you to Andreas Schenck for this little snippet
         properties = {}
-        device_index = str(params.device_index)
-        #device_index = os.environ.get('ISOLDE_DEVICE_INDEX', None)
+        device_index = params.device_index
         if device_index is not None:
             if params.platform=="CUDA":
-                properties['CudaDeviceIndex']=device_index
+                properties['CudaDeviceIndex']=str(device_index)
             elif params.platform=='OpenCL':
-                properties['OpenCLDeviceIndex']=device_index
+                properties['OpenCLDeviceIndex']=str(device_index)
 
 
         from simtk.openmm import app
