@@ -1821,14 +1821,14 @@ class MDFFMgr(_RestraintMgr):
 
     def guess_global_k(self, distance_cutoff=3, percentile=90, scaling_constant=2):
         '''
-        Guesses a reasonable value for the global coupling constant defining
-        how strongly the map "pulls" on atoms, based on the steepness of the
-        map gradients in the vicinity of the model. The map is first masked down
-        to voxels within `distance_cutoff` of the model, and the gradient at
-        each voxel is calculated based on linear interpolation of surrounding
+        Guesses a reasonable value for the global coupling constant defining how
+        strongly the map "pulls" on atoms, based on the steepness of the map
+        gradients in the vicinity of the model. Each heavy atom coordinate is
+        randomly perturbed by up to 0.25 A along each axis, and the gradient at
+        that point is calculated based on linear interpolation of surrounding
         voxels. The gradients are ranked in increasing order of value, and the
-        the value at the given `percentile` is selected. The final `global_k`
-        is selected such that :math:`value * global_k = scaling_constant`.
+        the value at the given `percentile` is selected. The final `global_k` is
+        selected such that :math:`value * global_k = scaling_constant`.
 
         Args:
             * distance_cutoff:
@@ -1853,13 +1853,11 @@ class MDFFMgr(_RestraintMgr):
             spotlight_mode = sh.spotlight_mode
             sh.isolate_and_cover_selection(m.atoms, focus=False)
 
-        from chimerax.core.geometry import find_close_points, identity
-        grid_coords = v.grid_points(v.scene_position)
-
-        data = v.data.matrix()
-        close_i = find_close_points(m.atoms.scene_coords, grid_coords, distance_cutoff)[1]
-        close_points = grid_coords[close_i]
-        gradients = v.interpolated_gradients(close_points, identity())
+        from chimerax.core.geometry import identity
+        coords = m.atoms[m.atoms.element_names!='H'].coords
+        import numpy
+        coords += numpy.random.rand(len(coords),3)*0.5-0.25
+        gradients = v.interpolated_gradients(coords, identity())
         gradient_mags = numpy.linalg.norm(gradients, axis=1)
         ref_g = numpy.percentile(gradient_mags, percentile)
 
