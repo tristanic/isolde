@@ -196,6 +196,7 @@ int isolde::LocalEnergyMinimizer::minimize(Context& context, double tolerance,
             lbfgsfloatval_t fx;
             int result = -1024;
             try {
+                data.largeForceEncountered = false;
                 result = lbfgs(numParticles*3, x, &fx, evaluate, NULL, &data, &param);
             } catch (std::out_of_range) {
                 ret = INFINITE_OR_NAN_FORCE;
