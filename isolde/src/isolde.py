@@ -3353,9 +3353,6 @@ def load_crystal_demo(session):
     from chimerax.core.commands import open
     data_dir = os.path.join(_root_dir, 'demo_data', '3io0')
     before_struct = open.open(session, os.path.join(data_dir, 'before.pdb'))[0]
-    from chimerax.std_commands import color
-    color.color(session, before_struct, color='bychain', target='ac')
-    color.color(session, before_struct, color='byhetero', target='a')
     from chimerax.clipper import symmetry
     sym_handler = symmetry.get_symmetry_handler(before_struct, create=True,
         auto_add_to_session=True)
