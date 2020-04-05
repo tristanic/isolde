@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 02-Jan-2020
+# @Last modified time: 02-Apr-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -1333,6 +1333,7 @@ class Sim_Handler:
 
         self._force_update_pending = False
         self._coord_update_pending = False
+        self._coord_push_handler = None
 
         self._context_reinit_pending = False
         self._minimize = False
@@ -1694,11 +1695,14 @@ class Sim_Handler:
         if self.pause:
             self._coord_update_pending=True
         else:
-            self.triggers.add_handler('coord update', self._push_coords_to_sim)
+            if self._coord_push_handler is None:
+                self._coord_push_handler = self.triggers.add_handler('coord update', self._push_coords_to_sim)
 
     def _push_coords_to_sim(self, *_):
-        self.thread_handler.coords = self._pending_coords
+        if self._pending_coords is not None:
+            self.thread_handler.coords = self._pending_coords
         self._pending_coords = None
+        self._coord_push_handler = None
         self._unstable = True
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
