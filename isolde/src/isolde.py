@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 09-Mar-2020
+# @Last modified time: 05-Apr-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -2271,10 +2271,12 @@ class Isolde():
         self.iw._validate_pep_stub_frame.show()
 
     def _update_iffy_peptide_lists(self, *_):
+        table = self.iw._validate_pep_iffy_table
+        if not table.isVisible():
+            return
         from .session_extensions import get_proper_dihedral_mgr
         pd_mgr = get_proper_dihedral_mgr(self.session)
         model = self.selected_model
-        table = self.iw._validate_pep_iffy_table
         table.setRowCount(0)
         if model is None:
             return
@@ -2343,9 +2345,11 @@ class Isolde():
         self.iw._validate_rota_main_frame.hide()
 
     def _update_iffy_rota_list(self, *_):
+        table = self.iw._validate_rota_table
+        if not table.isVisible():
+            return
         from .session_extensions import get_rotamer_mgr
         rota_m = get_rotamer_mgr(self.session)
-        table = self.iw._validate_rota_table
         table.setRowCount(0)
         if self.selected_model is None:
             return
