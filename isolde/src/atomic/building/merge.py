@@ -81,7 +81,7 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
     if transform is not None:
         # Using Atoms.transform() rather than simply transforming the coords,
         # because this also correctly transforms any anisotropic B-factors.
-        new_atoms.transform(atoms)
+        new_atoms.transform(transform)
 
     if anchor_n:
         anchor_atom = anchor_n.find_atom('C')
