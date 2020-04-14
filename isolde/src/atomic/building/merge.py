@@ -1,7 +1,7 @@
 from . import set_new_atom_style
 
 def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
-        anchor_n=None, anchor_c=None, transform=None):
+        anchor_n=None, anchor_c=None, update_style=True, transform=None):
     '''
     Copy the atoms from a fragment into the current model, optionally reassigning
     chain ID and numbers. All residues in the fragment must have the same chain
@@ -100,7 +100,8 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         pb_atoms = [atom_map.get(a) for a in pb.atoms]
         if None not in pb_atoms:
             tpbg.new_pseudobond(*pb_atoms)
-    set_new_atom_style(m.session, new_atoms)
+    if update_style:
+        set_new_atom_style(m.session, new_atoms)
     return new_atoms
 
 def _remove_excess_terminal_atoms(atom):
