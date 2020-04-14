@@ -54,7 +54,26 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
     else:
         offset = 0
     current_residue = None
-    cid = chain_id
+    if chain_id is not None:
+        cids = [chain_id]
+    else:
+        cids = residues.unique_chain_ids
+    for cid in cids:
+        existing_residue_numbers = m.residues[m.residues.chain_ids==cid].numbers
+        cres = residues[residues.chain_ids==cid]
+        new_residue_numbers = cres.numbers+offset
+        import numpy
+        duplicate_flags = numpy.in1d(new_residue_numbers, existing_residue_numbers)
+        if numpy.any(duplicate_flags):
+            dup_residues = cres[duplicate_flags]
+            orig_nums = dup_residues.numbers
+            err_str = ('The requested merge could not be completed because the '
+                'following residues in chain {} (after applying any renumbering) '
+                'will have the same residue numbers as existing residues in '
+                'the target: {}'
+            ).format(cid, ', '.join(str(num) for num in orig_nums))
+            raise UserError(err_str)
+
     for a, coord in zip(atoms, coords):
         if a.residue != current_residue:
             r = a.residue
@@ -104,6 +123,7 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
     if update_style:
         set_new_atom_style(m.session, new_atoms)
     return new_atoms
+
 
 def _remove_excess_terminal_atoms(atom):
     if atom.name=='C':
