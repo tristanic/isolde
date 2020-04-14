@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 14-Jun-2019
+# @Last modified time: 14-Apr-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -187,6 +187,7 @@ class RamaAnnotator(Model):
             self._atomic_structure.triggers.remove_handler(h)
         Model.delete(self)
 
+
     def _update_graphics_if_needed(self, trigger_name, changes):
         if not self.visible:
             return
@@ -219,16 +220,18 @@ class RamaAnnotator(Model):
         # if 'color changed' in reasons:
         #     update_needed = True
         if update_needed:
-            self.update_graphics()
+            from chimerax.atomic import get_triggers
+            get_triggers().add_handler('changes done', self.update_graphics)
 
     def update_graphics(self, *_):
+        from chimerax.core.triggerset import DEREGISTER
         ramas = self._visible_ramas
         od = self._omega_drawing
         rd = self._rama_drawing
         if not len(ramas):
             od.display = False
             rd.display = False
-            return
+            return DEREGISTER
         mgr = self._mgr
         #mgr.color_cas_by_rama_score(ramas, self.hide_favored)
         coords, colors, selecteds = mgr._ca_positions_colors_and_selecteds(ramas, self.hide_favored)
@@ -253,6 +256,7 @@ class RamaAnnotator(Model):
             od.display = True
         else:
             od.display = False
+        return DEREGISTER
 
     def take_snapshot(self, session, flags):
         from chimerax.core.models import Model

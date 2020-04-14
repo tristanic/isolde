@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 05-Apr-2020
+# @Last modified time: 14-Apr-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -1132,8 +1132,14 @@ class Isolde():
             added = len(changes.created_atoms())
             deleted = changes.num_deleted_atoms()
             if added or deleted:
-                self._update_iffy_rota_list()
-                self._update_iffy_peptide_lists()
+                from chimerax.atomic import get_triggers
+                get_triggers().add_handler('changes done', self._changes_done_cb)
+
+    def _changes_done_cb(self, *_):
+        self._update_iffy_rota_list()
+        self._update_iffy_peptide_lists()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
 
     ####
     # General

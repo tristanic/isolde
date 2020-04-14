@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 14-Apr-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -179,18 +179,20 @@ class RotamerAnnotator(Model):
         if 'display changed' in reasons or 'hide changed' in reasons:
             update_needed = True
         if (update_needed):
-            self.update_graphics()
+            from chimerax.atomic import get_triggers
+            get_triggers().add_handler('changes done', self.update_graphics)
 
     def update_graphics(self, *_, scale_by_scores = True):
+        from chimerax.core.triggerset import DEREGISTER
         if not self.visible:
-            return
+            return DEREGISTER
         rots, scales, colors = self._mgr.validate_scale_and_color_rotamers(
             self._selected_rotamers, max_scale=self._MAX_SCALE,
             non_favored_only = self._hide_favored)
         d = self._drawing
         if not len(rots):
             d.display = False
-            return
+            return DEREGISTER
         d.display = True
         bonds = rots.ca_cb_bonds
         transforms = bond_cylinder_placements(bonds)
@@ -198,6 +200,7 @@ class RotamerAnnotator(Model):
             transforms = Places(place_array=scale_transforms(scales, transforms.array()))
         d.positions = transforms
         d.colors = colors
+        return DEREGISTER
 
     def _rota_indicator(self):
         v1, n1, t1 = exclamation_mark(radius=0.1, height=0.5, nc = 8)
