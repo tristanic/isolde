@@ -25,16 +25,17 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         - transform: a Place or None. If provided, the atoms will be placed at
             the transformed coordinates.
     '''
+    from chimerax.core.errors import UserError
     us = residues.unique_structures
     if len(us) != 1:
-        raise TypeError('All residues to be copied must be from the same model!')
+        raise UserError('All residues to be copied must be from the same model!')
     fm = us[0]
     fpbg = fm.pseudobond_group('missing structure')
     m = target_model
     tpbg = m.pseudobond_group('missing structure')
     if (chain_id or anchor_n or anchor_c or (renumber_from is not None)) \
             and len(residues.unique_chain_ids) != 1:
-        raise TypeError('If reassigning chain ID, renumbering or specifying '
+        raise UserError('If reassigning chain ID, renumbering or specifying '
             'N- and/or C-terminal anchors, all residues to be copied must be '
             'from a single chain!')
     from chimerax.atomic import Residue, Residues, Atoms
@@ -43,7 +44,7 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         from chimerax.atomic import Residue
         protein_residues = residues[residues.polymer_types==Residue.PT_AMINO]
         if not len(protein_residues):
-            raise TypeError('N- and/or C-terminal anchors were specified, but '
+            raise UserError('N- and/or C-terminal anchors were specified, but '
                 'the copied selection does not contain any amino acid residues!')
     atoms = residues.atoms
     coords = atoms.coords
