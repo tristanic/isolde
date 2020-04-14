@@ -46,10 +46,7 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
             raise TypeError('N- and/or C-terminal anchors were specified, but '
                 'the copied selection does not contain any amino acid residues!')
     atoms = residues.atoms
-    if transform:
-        coords = transform*atoms.coords
-    else:
-        coords = atoms.coords
+    coords = atoms.coords
     atom_map = {}
     if renumber_from:
         offset = residues[0].number - renumber_from
@@ -73,6 +70,7 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         na = atom_map[a] = m.new_atom(a.name, a.element)
         na.coord = coord
         na.bfactor = a.bfactor
+        na.aniso_u6 = a.aniso_u6
         na.occupancy = a.occupancy
         nr.add_atom(na)
         for n in a.neighbors:
@@ -80,21 +78,22 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
             if nn is not None:
                 m.new_bond(na, nn)
     new_atoms = Atoms(list(atom_map.values()))
+    if transform is not None:
+        # Using Atoms.transform() rather than simply transforming the coords,
+        # because this also correctly transforms any anisotropic B-factors.
+        new_atoms.transform(atoms)
+
     if anchor_n:
         anchor_atom = anchor_n.find_atom('C')
         link_atom = atom_map[protein_residues[0].find_atom('N')]
-        for a in anchor_n.neighbors:
-            if a.name=='OXT':
-                a.delete()
+        _remove_excess_terminal_atoms(anchor_atom)
+        _remove_excess_terminal_atoms(link_atom)
         m.new_bond(anchor_atom, link_atom)
     if anchor_c:
         anchor_atom = anchor_c.find_atom('N')
         link_atom = atom_map[protein_residues[-1].find_atom('C')]
-        for a in link_atom.neighbors:
-            if a.name in ('H2', 'H3'):
-                a.delete()
-            elif a.name == 'H1':
-                a.name = 'H'
+        _remove_excess_terminal_atoms(anchor_atom)
+        _remove_excess_terminal_atoms(link_atom)
         m.new_bond(anchor_atom, link_atom)
     f_pbonds = fpbg.pseudobonds
     for pb in f_pbonds:
@@ -103,3 +102,15 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
             tpbg.new_pseudobond(*pb_atoms)
     set_new_atom_style(m.session, new_atoms)
     return new_atoms
+
+def _remove_excess_terminal_atoms(atom):
+    if atom.name=='C':
+        for n in atom.neighbors:
+            if n.name=='OXT':
+                n.delete()
+    elif atom.name=='N':
+        for n in atom.neighbors:
+            if n.name in ('H2', 'H3'):
+                n.delete()
+            elif n.name == 'H1':
+                n.name = 'H'
