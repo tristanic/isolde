@@ -2,7 +2,11 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
+<<<<<<< HEAD
 # @Last modified time: 15-Apr-2020
+=======
+# @Last modified time: 30-Mar-2020
+>>>>>>> 14b701a957407e9c27874c1764a0331a32b000c8
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -38,7 +42,11 @@ def place_metal_at_coord(model, chain_id, residue_number, residue_name, atom_nam
 def place_water(session, model, position):
     from chimerax.core.geometry import find_closest_points
     from chimerax.atomic import mmcif
+<<<<<<< HEAD
     matoms = model.atoms
+=======
+    matoms = m.atoms
+>>>>>>> 14b701a957407e9c27874c1764a0331a32b000c8
     _,_,i = find_closest_points([position], matoms.coords, 3)
     na = matoms[i[0]]
     cid = na.residue.chain_id
