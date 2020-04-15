@@ -86,12 +86,16 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
             if insertion_code=='':
                 insertion_code = ' '
             nr = m.new_residue(r.name, cid, r.number-offset, insert=insertion_code)
+            nr.ribbon_hide_backbone = r.ribbon_hide_backbone
+            nr.ribbon_display = r.ribbon_display
             nr.ss_type = r.ss_type
         na = atom_map[a] = m.new_atom(a.name, a.element)
         na.coord = coord
         na.bfactor = a.bfactor
         na.aniso_u6 = a.aniso_u6
         na.occupancy = a.occupancy
+        na.draw_mode = a.draw_mode
+        na.color = a.color
         nr.add_atom(na)
         for n in a.neighbors:
             nn = atom_map.get(n, None)
@@ -102,7 +106,6 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         # Using Atoms.transform() rather than simply transforming the coords,
         # because this also correctly transforms any anisotropic B-factors.
         new_atoms.transform(transform)
-
     if anchor_n:
         anchor_atom = anchor_n.find_atom('C')
         link_atom = atom_map[protein_residues[0].find_atom('N')]
