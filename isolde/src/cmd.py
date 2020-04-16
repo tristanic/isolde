@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 12-Dec-2019
+# @Last modified time: 16-Apr-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -264,3 +264,5 @@ def register_isolde(logger):
     register_isolde_restrain(logger)
     from chimerax.isolde.manipulations.cmd import register_manip_commands
     register_manip_commands(logger)
+    from chimerax.isolde.atomic.building.cmd import register_isolde_add
+    register_isolde_add(logger)
