@@ -29,23 +29,23 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
     us = residues.unique_structures
     if len(us) != 1:
         raise UserError('All residues to be copied must be from the same model!')
-    fm = us[0]
-    fpbg = fm.pseudobond_group('missing structure')
-    m = target_model
-    tpbg = m.pseudobond_group('missing structure')
     if (chain_id or anchor_n or anchor_c or (renumber_from is not None)) \
             and len(residues.unique_chain_ids) != 1:
         raise UserError('If reassigning chain ID, renumbering or specifying '
             'N- and/or C-terminal anchors, all residues to be copied must be '
             'from a single chain!')
     from chimerax.atomic import Residue, Residues, Atoms
-    residues = Residues(sorted(residues, key=lambda r: r.number))
     if (anchor_n or anchor_c):
-        from chimerax.atomic import Residue
         protein_residues = residues[residues.polymer_types==Residue.PT_AMINO]
         if not len(protein_residues):
             raise UserError('N- and/or C-terminal anchors were specified, but '
                 'the copied selection does not contain any amino acid residues!')
+
+    import numpy
+    fm = us[0]
+    m = target_model
+    tpbg = m.pseudobond_group('missing structure')
+    residues = Residues(sorted(residues, key=lambda r: (r.chain_id, r.number, r.insertion_code)))
     atoms = residues.atoms
     coords = atoms.coords
     atom_map = {}
@@ -53,7 +53,22 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         offset = residues[0].number - renumber_from
     else:
         offset = 0
-    current_residue = None
+
+    def new_residue_number(r):
+        if r in residues:
+            return r.number+offset
+        return r.number
+    merged_residues = m.residues.merge(residues)
+    merged_residues = Residues(sorted(merged_residues,
+        key=lambda r: (r.chain_id, new_residue_number(r), r.insertion_code)
+        ))
+    new_residue_mask = numpy.in1d(merged_residues, residues)
+    new_residue_indices = numpy.argwhere(new_residue_mask).ravel()
+    existing_residue_mask = numpy.in1d(merged_residues, m.residues)
+    existing_residue_indices = numpy.argwhere(existing_residue_mask).ravel()
+
+    insertion_point_map = {}
+
     if chain_id is not None:
         cids = [chain_id]
     else:
@@ -62,7 +77,6 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         existing_residue_numbers = m.residues[m.residues.chain_ids==cid].numbers
         cres = residues[residues.chain_ids==cid]
         new_residue_numbers = cres.numbers+offset
-        import numpy
         duplicate_flags = numpy.in1d(new_residue_numbers, existing_residue_numbers)
         if numpy.any(duplicate_flags):
             dup_residues = cres[duplicate_flags]
@@ -74,33 +88,80 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
             ).format(cid, ', '.join(str(num) for num in orig_nums))
             raise UserError(err_str)
 
-    for a, coord in zip(atoms, coords):
-        if a.residue != current_residue:
-            r = a.residue
-            current_residue = r
-            if chain_id:
-                cid = chain_id
-            else:
-                cid = r.chain_id
-            insertion_code = r.insertion_code
-            if insertion_code=='':
-                insertion_code = ' '
-            nr = m.new_residue(r.name, cid, r.number-offset, insert=insertion_code)
-            nr.ribbon_hide_backbone = r.ribbon_hide_backbone
-            nr.ribbon_display = r.ribbon_display
-            nr.ss_type = r.ss_type
-        na = atom_map[a] = m.new_atom(a.name, a.element)
-        na.coord = coord
-        na.bfactor = a.bfactor
-        na.aniso_u6 = a.aniso_u6
-        na.occupancy = a.occupancy
-        na.draw_mode = a.draw_mode
-        na.color = a.color
-        nr.add_atom(na)
-        for n in a.neighbors:
-            nn = atom_map.get(n, None)
-            if nn is not None:
-                m.new_bond(na, nn)
+        chain_mask = merged_residues.chain_ids == cid
+        new_r_in_chain_mask = numpy.logical_and(chain_mask, new_residue_mask)
+        last_new_r_index = numpy.argwhere(new_r_in_chain_mask)[-1]
+        greater_indices = existing_residue_indices[existing_residue_indices > last_new_r_index]
+        if len(greater_indices):
+            insertion_point_map[cid] = merged_residues[greater_indices[0]]
+        else:
+            insertion_point_map[cid] = None
+
+
+    current_residue = None
+
+    first_index = new_residue_indices[0]
+    if first_index > 0:
+        prev_res = merged_residues[first_index-1]
+    else:
+        prev_res = None
+    prev_new_res = None
+
+    for merged_index, r in zip(new_residue_indices, residues):
+        if chain_id:
+            cid = chain_id
+        else:
+            cid = r.chain_id
+        precedes = insertion_point_map[cid]
+        insertion_code = r.insertion_code
+        if insertion_code=='':
+            insertion_code = ' '
+        nr = m.new_residue(r.name, cid, r.number-offset, insert=insertion_code,
+            precedes=precedes)
+        nr.ribbon_hide_backbone = r.ribbon_hide_backbone
+        nr.ribbon_display = r.ribbon_display
+        nr.ss_type = r.ss_type
+
+        for a in r.atoms:
+            na = atom_map[a] = m.new_atom(a.name, a.element)
+            na.coord = a.coord
+            na.bfactor = a.bfactor
+            na.aniso_u6 = a.aniso_u6
+            na.occupancy = a.occupancy
+            na.draw_mode = a.draw_mode
+            na.color = a.color
+            nr.add_atom(na)
+            for n in a.neighbors:
+                nn = atom_map.get(n, None)
+                if nn is not None:
+                    m.new_bond(na, nn)
+
+
+        if prev_res is not None:
+            if (
+              r.polymer_type==Residue.PT_AMINO and prev_res not in r.neighbors
+              and prev_res.chain_id == cid
+              and prev_res.polymer_type == Residue.PT_AMINO):
+                if prev_res.structure != r.structure:
+                    if precedes.chain_id == cid and precedes.polymer_type == Residue.PT_AMINO:
+                        ratoms = prev_res.atoms.merge(precedes.atoms)
+                        tpbg.pseudobonds[tpbg.pseudobonds.between_atoms(ratoms)].delete()
+                    pc = prev_res.find_atom('C')
+                else:
+                    if prev_new_res is not None:
+                        pc = prev_new_res.find_atom('C')
+                    else:
+                        pc = None
+                nn = nr.find_atom('N')
+                if pc and nn:
+                    tpbg.new_pseudobond(pc, nn)
+                if precedes.polymer_type==Residue.PT_AMINO:
+                    nc = nr.find_atom('C')
+                    pn = precedes.find_atom('N')
+                    if nc and pn:
+                        tpbg.new_pseudobond(nc, pn)
+        prev_res = r
+        prev_new_res = nr
     new_atoms = Atoms(list(atom_map.values()))
     if transform is not None:
         # Using Atoms.transform() rather than simply transforming the coords,
@@ -118,11 +179,6 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         _remove_excess_terminal_atoms(anchor_atom)
         _remove_excess_terminal_atoms(link_atom)
         m.new_bond(anchor_atom, link_atom)
-    f_pbonds = fpbg.pseudobonds
-    for pb in f_pbonds:
-        pb_atoms = [atom_map.get(a) for a in pb.atoms]
-        if None not in pb_atoms:
-            tpbg.new_pseudobond(*pb_atoms)
     if update_style:
         set_new_atom_style(m.session, new_atoms)
     return new_atoms
