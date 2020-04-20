@@ -74,18 +74,19 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
     else:
         cids = residues.unique_chain_ids
     for cid in cids:
-        existing_residue_numbers = m.residues[m.residues.chain_ids==cid].numbers
+        existing_residues = m.residues[m.residues.chain_ids==cid]
+        existing_residue_numbers = numpy.array([str(r.number)+r.insertion_code for r in existing_residues])
         cres = residues[residues.chain_ids==cid]
-        new_residue_numbers = cres.numbers+offset
+        new_residue_numbers = numpy.array([str(r.number+offset)+r.insertion_code for r in cres])
+
         duplicate_flags = numpy.in1d(new_residue_numbers, existing_residue_numbers)
         if numpy.any(duplicate_flags):
             dup_residues = cres[duplicate_flags]
-            orig_nums = dup_residues.numbers
             err_str = ('The requested merge could not be completed because the '
                 'following residues in chain {} (after applying any renumbering) '
                 'will have the same residue numbers as existing residues in '
                 'the target: {}'
-            ).format(cid, ', '.join(str(num) for num in orig_nums))
+            ).format(cid, ', '.join(str(r.number)+r.insertion_code for r in dup_residues))
             raise UserError(err_str)
 
         chain_mask = merged_residues.chain_ids == cid
