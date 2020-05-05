@@ -184,7 +184,7 @@ def add_metal_bonds_from_template(residue, template):
             if not rn in rmet.neighbors:
                 m.new_bond(rmet, rn)
 
-def fix_residue_from_template(residue, template):
+def fix_residue_from_template(residue, template, rename_only=False):
     import numpy
     if any([numpy.any(numpy.isnan(a.coord)) for a in template.atoms]):
         raise TypeError('Template is missing one or more atom coordinates!')
@@ -192,7 +192,8 @@ def fix_residue_from_template(residue, template):
     session = m.session
     from chimerax.atomic.struct_edit import add_dihedral_atom
     from chimerax.core.geometry import distance, angle, dihedral
-    residue.atoms[residue.atoms.element_names=='H'].delete()
+    if not rename_only:
+        residue.atoms[residue.atoms.element_names=='H'].delete()
     rnames = set(residue.atoms.names)
     tnames = set([a.name for a in template.atoms])
     # wrong_names = rnames.difference(tnames)
@@ -201,13 +202,14 @@ def fix_residue_from_template(residue, template):
     #     rnames.remove(wn)
 
     # Add missing bonds between atoms already in the residue
-    for ta in template.atoms:
-        ra = residue.find_atom(ta.name)
-        if ra is not None:
-            for tn in ta.neighbors:
-                rn = residue.find_atom(tn.name)
-                if rn is not None and rn not in ra.neighbors:
-                    m.new_bond(ra, rn)
+    if not rename_only:
+        for ta in template.atoms:
+            ra = residue.find_atom(ta.name)
+            if ra is not None:
+                for tn in ta.neighbors:
+                    rn = residue.find_atom(tn.name)
+                    if rn is not None and rn not in ra.neighbors:
+                        m.new_bond(ra, rn)
 
     rg = residue_graph(residue)
     tg = template_graph(template)
@@ -233,6 +235,8 @@ def fix_residue_from_template(residue, template):
         warn_str = '{} atoms were automatically renamed to match the template: '.format(len(renamed_atoms))
         warn_str += ', '.join(['->'.join(apair) for apair in renamed_atoms])
         session.logger.warning(warn_str)
+    if rename_only:
+        return
 
     built = set(conn_ratoms)
     all_tatom_names = set([a.name for a in template.atoms])
