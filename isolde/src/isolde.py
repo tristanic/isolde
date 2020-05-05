@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 14-Apr-2020
+# @Last modified time: 28-Apr-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -1304,7 +1304,7 @@ class Isolde():
         xmapset = map_mgr.add_xmapset_from_mtz(filename, self.params.map_shannon_rate,
             auto_choose_reflection_data=False)
         if xmapset.live_xmap_mgr is not None:
-            xmapset.live_update = self.iw._sim_basic_xtal_settings_live_recalc_checkbox.checkState()
+            xmapset.live_update = self.iw._sim_basic_xtal_settings_live_recalc_checkbox.isChecked()
             # 2mFo-DFc and mFo-DFc maps are created automatically, but should
             # not be used as MDFF potentials. For that, we need a specific map
             # that we know excludes the free reflections.
@@ -2524,7 +2524,7 @@ class Isolde():
         m = self.selected_model
         from chimerax.clipper.symmetry import get_symmetry_handler
         sh = get_symmetry_handler(m)
-        focus = self.iw._vis_focus_on_sel_checkbox.checkState()
+        focus = self.iw._vis_focus_on_sel_checkbox.isChecked()
         m.atoms.selected = False
         m.bonds.selected = False
         sel = sh.stepper.step_forward()
@@ -2540,7 +2540,7 @@ class Isolde():
         m = self.selected_model
         from chimerax.clipper.symmetry import get_symmetry_handler
         sh = get_symmetry_handler(m)
-        focus = self.iw._vis_focus_on_sel_checkbox.checkState()
+        focus = self.iw._vis_focus_on_sel_checkbox.isChecked()
         m.atoms.selected = False
         m.bonds.selected = False
         sel = sh.stepper.step_backward()
@@ -2554,7 +2554,7 @@ class Isolde():
     def _xtal_mask_to_selection(self, *_):
         atoms = self.selected_model.atoms
         sel = atoms[atoms.selecteds]
-        focus = self.iw._vis_focus_on_sel_checkbox.checkState()
+        focus = self.iw._vis_focus_on_sel_checkbox.isChecked()
         self._xtal_mask_to_atoms(sel, focus)
 
     def _xtal_mask_to_atoms(self, atoms, focus):
