@@ -216,7 +216,10 @@ class Clash_Table_Mgr:
 
     def _show_selected_clash(self, item):
         atoms = item.data
+        residues=atoms.residues
+        self.session.selection.clear()
+        residues.atoms.selected=True
         from ..navigate import get_stepper
-        get_stepper(self.selected_model).step_to(res)
+        get_stepper(residues[0].structure).step_to(residues[0])
         # session.selection.clear()
         # atoms.selected = True

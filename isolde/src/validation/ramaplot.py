@@ -325,6 +325,8 @@ class RamaPlot:
     def on_pick(self, event):
         ind = event.ind[0]
         picked_rama = self._case_ramas[ind]
+        self.session.selection.clear()
+        picked_rama.residue.atoms.selected=True
         from ..navigate import get_stepper
         get_stepper(self.current_model).step_to(picked_rama.residue)
         # from .. import view

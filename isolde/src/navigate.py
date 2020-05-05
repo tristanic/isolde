@@ -1,0 +1,255 @@
+# @Author: Tristan Croll <tic20>
+# @Date:   26-Apr-2020
+# @Email:  tic20@cam.ac.uk
+# @Last modified by:   tic20
+# @Last modified time: 05-May-2020
+# @License: Free for non-commercial use (see license.pdf)
+# @Copyright: 2016-2019 Tristan Croll
+
+def get_stepper(structure):
+    '''
+    Get the :class:`ResidueStepper` controlling ISOLDE's navigation around the
+    given structure, creating it if it doesn't yet exist.
+    '''
+    if not hasattr(structure, '_isolde_residue_stepper'):
+        structure._isolde_residue_stepper = ResidueStepper(structure)
+    return structure._isolde_residue_stepper
+
+
+
+class ResidueStepper:
+    '''
+    Provide methods to step forward/backward through the polymeric residues in
+    a structure.
+    '''
+    def __init__(self, structure, view_distance=12):
+        self.structure = structure
+        self.session = structure.session
+        self._current_residue = None
+        self._interpolate_frames = 10
+        self._max_interpolate_distance = 10
+        self._view_distance=8
+        self._current_direction = 'next'
+        import numpy
+
+    def incr_residue(self, direction=None, polymeric_only=True):
+        if direction is not None:
+            if direction not in ('next', 'prev'):
+                from chimerax.core.errors import UserError
+                raise UserError('Invalid direction argument! Must be either "next" '
+                    'or "prev".')
+                self._current_direction = direction
+        else:
+            direction = self._current_direction
+        if direction=='next':
+            incr = 1
+        else:
+            incr = -1
+        if polymeric_only:
+            residues = self._polymeric_residues()
+        else:
+            residues = self.structure.residues
+        cr = self._current_residue
+        if cr is None or cr.deleted:
+            next_res = self._first_res(residues, incr)
+        else:
+            ci = residues.index(cr)
+            if (ci == -1 or (ci == len(residues)-1 and incr==1) or
+                    (ci==0 and incr==-1)):
+                next_res = self._first_res(residues, incr)
+            else:
+                next_res = residues[ci+incr]
+        self._current_residue = next_res
+        self._new_camera_position(next_res)
+        return next_res
+
+    def next_residue(self, polymeric_only=True):
+        return self.incr_residue('next', polymeric_only)
+
+    def previous_residue(self, polymeric_only=True):
+        return self.incr_residue('prev', polymeric_only)
+
+    def _go_to_first_residue(self, incr, polymeric_only=True):
+        if polymeric_only:
+            residues = self._polymeric_residues()
+        else:
+            residues = self.structure.residues
+        r = self._current_residue = self._first_res(residues, incr)
+        self._new_camera_position(r)
+        return r
+
+    def first_residue(self, polymeric_only=True):
+        return self._go_to_first_residue(1, polymeric_only)
+
+    def last_residue(self, polymeric_only=True):
+        return self._go_to_first_residue(-1, polymeric_only)
+
+    def step_to(self, residue):
+        self._current_residue = residue
+        self._new_camera_position(residue)
+
+
+    def _first_res(self, residues, incr):
+        if incr == 1:
+            return residues[0]
+        return residues[-1]
+
+    def _new_camera_position(self, residue):
+        session = self.session
+        r = residue
+        from chimerax.atomic import Residue, Atoms
+        pt = residue.polymer_type
+        if pt == Residue.PT_NONE:
+            # No preferred orientation
+            ref_coords = None
+            target_coords = r.atoms.coords
+            centroid = target_coords.mean(axis=0)
+        elif pt == Residue.PT_AMINO:
+            ref_coords = self.peptide_ref_coords
+            target_coords = Atoms([r.find_atom(name) for name in ('N', 'CA', 'C')]).coords
+            centroid = target_coords[1]
+        elif pt == Residue.PT_NUCLEIC:
+            ref_coords = self.nucleic_ref_coords
+            target_coords = Atoms(
+                [r.find_atom(name) for name in ("C2'", "C1'", "O4'")]
+            ).coords
+            centroid=target_coords[1]
+
+        c = session.main_view.camera
+        cp = c.position
+        old_cofr = session.main_view.center_of_rotation
+
+
+        if ref_coords is not None:
+            from chimerax.geometry import align_points, Place
+            p, rms = align_points(ref_coords, target_coords)
+        else:
+            from chimerax.geometry import Place
+            p = Place(origin=centroid)
+
+        tc = self._camera_ref_pos(self.view_distance)
+        np = p*tc
+        new_cofr = centroid
+        fw = c.field_width
+        new_fw = self._view_distance*2
+
+        def interpolate_camera(session, f, cp=cp, np=np, oc=old_cofr, nc=new_cofr, fw=fw, nfw=new_fw, vr=self._view_distance, center=np.inverse()*centroid, frames=self._interpolate_frames):
+            frac = (f+1)/frames
+            v = session.main_view
+            c = v.camera
+            p = np if f+1==frames else cp.interpolate(np, center, frac=frac)
+            cofr = oc+frac*(nc-oc)
+            c.position = p
+            vd = c.view_direction()
+            cp = v.clip_planes
+            ncm, fcm = _get_clip_distances(session)
+            cp.set_clip_position('near', cofr-ncm*vr*vd, v)
+            cp.set_clip_position('far', cofr+fcm*vr*vd, v)
+            if c.name=='orthographic':
+                c.field_width = fw+frac*(nfw-fw)
+
+        from chimerax.geometry import distance
+        if distance(new_cofr, old_cofr) < self._view_distance:
+            from chimerax.core.commands import motion
+            motion.CallForNFrames(interpolate_camera, self._interpolate_frames, session)
+        else:
+            interpolate_camera(session, 0, frames=1)
+
+
+
+
+
+
+
+
+
+    def _polymeric_residues(self, strict=False):
+        from chimerax.atomic import Residue
+        import numpy
+        m = self.structure
+        residues = m.residues[m.residues.polymer_types!=Residue.PT_NONE]
+        if not len(residues):
+            if not strict:
+                self.session.logger.warning('You have selected '
+                'polymeric_only=True, but this model contains no polymeric '
+                'residues. Ignoring the argument. To suppress this warning, use '
+                'polymeric_only=False')
+                residues = self.structure.residues
+            else:
+                from chimerax.core.errors import UserError
+                raise UserError('You have selected '
+                'polymeric_only=True, but this model contains no polymeric '
+                'residues. To continue, use polymeric_only=False')
+        return residues
+
+
+    @property
+    def field_width(self):
+        return self._view_distance
+
+    @property
+    def view_distance(self):
+        return self._view_distance
+
+    @view_distance.setter
+    def view_distance(self, distance):
+        self._view_distance = distance
+
+    @property
+    def interpolate_frames(self):
+        return self._interpolate_frames
+
+    @interpolate_frames.setter
+    def interpolate_frames(self, n_frames):
+        self._interpolate_frames = n_frames
+
+    @property
+    def step_direction(self):
+        return self._current_direction
+
+    @step_direction.setter
+    def step_direction(self, direction):
+        self._current_direction = direction
+
+    @property
+    def peptide_ref_coords(self):
+        '''
+        Reference N, CA, C coords for a peptide backbone, used for setting camera
+        position and orientation.
+        '''
+        if not hasattr(self, '_peptide_ref_coords'):
+            import numpy
+            self._peptide_ref_coords = numpy.array([
+                [-0.844, 0.063, -0.438],
+                [0.326, 0.668, 0.249],
+                [1.680, 0.523, -0.433]
+            ])
+        return self._peptide_ref_coords
+
+    @property
+    def nucleic_ref_coords(self):
+        '''
+        Reference C2', C1', O4' coords for a nucleic acid residue, used for setting
+        camera position and orientation.
+        '''
+        if not hasattr(self, '_nucleic_ref_coords'):
+            import numpy
+            self._nucleic_ref_coords = numpy.array([
+                [0.822, -0.112, 1.280],
+                [0,0,0],
+                [0.624, -0.795, -0.985]
+            ])
+        return self._nucleic_ref_coords
+
+    def _camera_ref_pos(self, distance):
+        from chimerax.geometry import Place
+        return Place(axes=[[1,0,0], [0,0,1],[0,-1,0]], origin=[0,-distance,0])
+
+
+def _get_clip_distances(session):
+    from chimerax.clipper.mousemodes import ZoomMouseMode
+    mm = [b.mode for b in session.ui.mouse_modes.bindings if isinstance(b.mode, ZoomMouseMode)]
+    if len(mm):
+        zmm = mm[0]
+        return (zmm.near_clip_multiplier, zmm.far_clip_multiplier)
+    return (0.5, 0.5)

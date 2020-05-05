@@ -2338,6 +2338,8 @@ class Isolde():
 
     def _show_selected_iffy_peptide(self, item):
         res = item.data
+        self.session.selection.clear()
+        res.atoms.selected=True
         from .navigate import get_stepper
         get_stepper(self.selected_model).step_to(res)
 
@@ -2392,6 +2394,8 @@ class Isolde():
 
     def _show_selected_iffy_rota(self, item):
         res = item.data
+        self.session.selection.clear()
+        res.atoms.selected=True
         from .navigate import get_stepper
         get_stepper(self.selected_model).step_to(res)
 
