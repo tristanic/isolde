@@ -76,7 +76,7 @@ class RamaPlot:
 
         self._selection_changed_handler = self.session.triggers.add_handler(
             'selection changed',
-            self.update_scatter
+            self._selection_changed_cb
         )
 
         self._model_changes_handler = None
@@ -105,6 +105,29 @@ class RamaPlot:
         itr.add_handler('simulation resumed', self._sim_resume_cb)
 
         tab_widget.currentChanged.connect(self._tab_change_cb)
+
+    def _selection_changed_cb(self, *_):
+        if not self.visible or not self.current_model:
+            return
+        residues = self.current_model.residues
+        sel_res = residues[residues.selected]
+        ramas = self._rama_mgr.get_ramas(sel_res)
+        cenum = self._case_enum
+        if not len(ramas):
+            self.update_scatter()
+            return
+        import numpy
+        unique_cases = numpy.unique(ramas.cases)
+        if len(unique_cases) > 1:
+            case = cenum.GENERAL
+        else:
+            case = cenum(unique_cases[0])
+        if case != self.current_case:
+            cm = self._case_menu
+            cm.setCurrentIndex(cm.findData(case))
+        else:
+            self.update_scatter()
+
 
 
     def _prepare_tooltip(self):
@@ -405,13 +428,21 @@ class RamaPlot:
             edge_colors='black'
             line_widths=0.5
         else:
+            selecteds = r.ca_atoms.selecteds
+            if numpy.any(selecteds):
+                # Put the selected residues last so they show on top
+                sort_order = numpy.lexsort((r.residues.numbers, r.residues.chain_ids, selecteds))
+                r = self._case_ramas = self._case_ramas[sort_order]
+                selecteds = selecteds[sort_order]
             phipsi = numpy.degrees(r.phipsis)
             logscores = numpy.log(r.scores)
-            selecteds = r.ca_atoms.selecteds
             edge_colors = numpy.zeros((len(phipsi),3))
             edge_colors[selecteds] = [0,1,0]
             line_widths = numpy.ones(len(phipsi))*0.5
             line_widths[selecteds] = 1
+
+
+
 
 
 
