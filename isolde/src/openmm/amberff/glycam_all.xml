@@ -3,7 +3,7 @@
 @Date:   13-Feb-2019
 @Email:  tic20@cam.ac.uk
 @Last modified by:   tic20
-@Last modified time: 23-May-2019
+@Last modified time: 01-May-2020
 @License: Free for non-commercial use (see license.pdf)
 @Copyright: 2017-2018 Tristan Croll
 -->
@@ -139,9 +139,9 @@
       <Atom charge="0.3654" name="CB" type="CT"/>
       <Atom charge="0.0043" name="HB" type="H1"/>
       <Atom charge="-0.2438" name="CG2" type="CT"/>
-      <Atom charge="0.0642" name="HG21" type="Hc"/>
-      <Atom charge="0.0642" name="HG22" type="Hc"/>
-      <Atom charge="0.0642" name="HG23" type="Hc"/>
+      <Atom charge="0.0642" name="HG21" type="HC"/>
+      <Atom charge="0.0642" name="HG22" type="HC"/>
+      <Atom charge="0.0642" name="HG23" type="HC"/>
       <Atom charge="-0.4599" name="OG1" type="Os"/>
       <Atom charge="0.5973" name="C" type="C"/>
       <Atom charge="-0.5679" name="O" type="O"/>
