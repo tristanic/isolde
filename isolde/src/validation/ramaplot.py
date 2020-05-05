@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 14-Jun-2019
+# @Last modified time: 05-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -325,8 +325,10 @@ class RamaPlot:
     def on_pick(self, event):
         ind = event.ind[0]
         picked_rama = self._case_ramas[ind]
-        from .. import view
-        view.focus_on_selection(self.session, picked_rama.residue.atoms, pad=1.0)
+        from ..navigate import get_stepper
+        get_stepper(self.current_model).step_to(picked_rama.residue)
+        # from .. import view
+        # view.focus_on_selection(self.session, picked_rama.residue.atoms, pad=1.0)
 
     def change_case(self, case_key):
         import numpy

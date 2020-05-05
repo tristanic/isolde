@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 28-Apr-2020
+# @Last modified time: 05-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -2338,8 +2338,8 @@ class Isolde():
 
     def _show_selected_iffy_peptide(self, item):
         res = item.data
-        from . import view
-        view.focus_on_selection(self.session, res.atoms)
+        from .navigate import get_stepper
+        get_stepper(self.selected_model).step_to(res)
 
     def _show_rota_validation_frame(self, *_):
         self.iw._validate_rota_stub_frame.hide()
@@ -2392,8 +2392,8 @@ class Isolde():
 
     def _show_selected_iffy_rota(self, item):
         res = item.data
-        from . import view
-        view.focus_on_selection(self.session, res.atoms)
+        from .navigate import get_stepper
+        get_stepper(self.selected_model).step_to(res)
 
     ##############################################################
     # Simulation global settings functions

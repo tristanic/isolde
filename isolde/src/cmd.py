@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 16-Apr-2020
+# @Last modified time: 05-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -176,12 +176,61 @@ def isolde_demo(session, demo_name = None, model_only=False, start_isolde=True):
     load_fn(session, **kwargs)
     session.logger.info("Loaded " + description)
 
+def isolde_step(session, residue=None, camera_distance=None, interpolate_frames=None,
+        polymeric_only=True):
+    from chimerax.atomic import Residues, Residue
+    if isinstance(residue, Residues):
+        if len(residue) == 0:
+            raise UserError('Selection contains no residues!')
+        if len(residue) > 1:
+            session.logger.warning('Multiple residues selected! Going to the first...')
+        residue = residue[0]
+        m = residue.structure
+    else:
+        if hasattr(session, 'isolde'):
+            m = session.isolde.selected_model
+        else:
+            from chimerax.atomic import AtomicStructure
+            atomic_structures = session.models.list(type=AtomicStructure)
+            if len(atomic_structures):
+                m = atomic_structures[0]
+            else:
+                m = None
+        if m is None:
+            raise UserError('No atomic structures are open!')
+    from .navigate import get_stepper
+    rs = get_stepper(m)
+    if camera_distance is not None:
+        rs.view_distance = camera_distance
+    if interpolate_frames is not None:
+        rs.interpolate_frames = interpolate_frames
+    if residue is None:
+        rs.incr_residue()
+    elif isinstance(residue, Residue):
+        rs.step_to(residue)
+    else:
+        # Assume residue is a string argument
+        rarg = residue.lower()
+        if rarg=='first':
+            rs.first_residue(polymeric_only)
+            rs.step_direction='next'
+        elif rarg=='last':
+            rs.last_residue(polymeric_only)
+            rs.step_direction='previous'
+        elif rarg in ('next', 'prev'):
+            rs.incr_residue(rarg, polymeric_only)
+        else:
+            raise UserError('Unrecognised residue argument! If specified, must '
+                'be either a residue, "first", "last", "next" or "prev"')
+
+
+
 def register_isolde(logger):
     from chimerax.core.commands import (
         register, CmdDesc,
         AtomSpecArg, ModelArg,
-        FloatArg, IntArg, BoolArg, StringArg, NoArg,
-        ListOf, EnumOf, RepeatOf)
+        FloatArg, IntArg, PositiveIntArg, BoolArg, StringArg, NoArg,
+        ListOf, EnumOf, RepeatOf, Or)
     from chimerax.atomic import AtomsArg, ResiduesArg
 
     def register_isolde_start():
@@ -250,6 +299,22 @@ def register_isolde(logger):
         )
         register('isolde demo', desc, isolde_demo, logger=logger)
 
+    def register_isolde_step():
+        desc = CmdDesc(
+            synopsis=('Step the view forward or backward through the chain, or '
+                'jump to a specific residue'
+            ),
+            optional=[
+                ('residue', Or(ResiduesArg, StringArg)),
+            ],
+            keyword=[
+                ('camera_distance', FloatArg),
+                ('interpolate_frames', PositiveIntArg),
+                ('polymeric_only', BoolArg)
+            ]
+        )
+        register('isolde stepto', desc, isolde_step, logger=logger)
+
     register_isolde_start()
     register_isolde_set()
     register_isolde_sim()
@@ -258,6 +323,7 @@ def register_isolde(logger):
     register_isolde_stop_ignore()
     register_isolde_tutorial()
     register_isolde_demo()
+    register_isolde_step()
     from chimerax.isolde.remote_control import register_remote_commands
     register_remote_commands(logger)
     from chimerax.isolde.restraints.cmd import register_isolde_restrain
