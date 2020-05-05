@@ -28,6 +28,7 @@ class RamaPlot:
         from chimerax.isolde import session_extensions as sx
         mgr = self._rama_mgr = sx.get_ramachandran_mgr(session)
         self.isolde = isolde
+        isolde._ui_panels.append(self)
         cenum = self._case_enum = mgr.RamaCase
         self.container = container
         self.current_case = None
@@ -71,6 +72,11 @@ class RamaPlot:
         self._isolde_switch_model_handler = isolde.triggers.add_handler(
             'selected model changed',
             self._isolde_switch_model_cb
+        )
+
+        self._selection_changed_handler = self.session.triggers.add_handler(
+            'selection changed',
+            self.update_scatter
         )
 
         self._model_changes_handler = None
@@ -207,6 +213,17 @@ class RamaPlot:
         case_key = self._case_menu.currentData()
         self.change_case(case_key)
 
+    def chimerax_models_changed(self, model):
+        # TODO: rework UI into a consistent framework
+        pass
+
+    def remove_trigger_handlers(self):
+        if self._selection_changed_handler is not None:
+            self.session.triggers.remove_handler(self._selection_changed_handler)
+            self._selection_changed_handler = None
+        if self._model_changes_handler is not None:
+            self.current_model.triggers.remove_handler(self._model_changes_handler)
+            self._model_changes_handler = None
 
     @property
     def current_model(self):
@@ -385,9 +402,18 @@ class RamaPlot:
         if r is None or len(r) == 0:
             phipsi = self.default_coords
             logscores = self.default_logscores
+            edge_colors='black'
+            line_widths=0.5
         else:
             phipsi = numpy.degrees(r.phipsis)
             logscores = numpy.log(r.scores)
+            selecteds = r.ca_atoms.selecteds
+            edge_colors = numpy.zeros((len(phipsi),3))
+            edge_colors[selecteds] = [0,1,0]
+            line_widths = numpy.ones(len(phipsi))*0.5
+            line_widths[selecteds] = 1
+
+
 
         c = self.canvas
         s = self.scatter
@@ -399,5 +425,7 @@ class RamaPlot:
         scales = (-logscores+1)*self.base_scatter_size
         s.set_sizes(scales)
         s.set_array(-logscores)
+        s.set_edgecolors(edge_colors)
+        s.set_linewidths(line_widths)
         axes.draw_artist(s)
         c.blit(axes.bbox)
