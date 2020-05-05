@@ -1,4 +1,4 @@
-from . import set_new_atom_style
+from chimerax.isolde.atomic.building import set_new_atom_style
 
 def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         anchor_n=None, anchor_c=None, update_style=True, transform=None):
@@ -75,6 +75,9 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         cids = residues.unique_chain_ids
     for cid in cids:
         existing_residues = m.residues[m.residues.chain_ids==cid]
+        if not len(existing_residues):
+            insertion_point_map[cid] = None
+            continue
         existing_residue_numbers = numpy.array([str(r.number)+r.insertion_code for r in existing_residues])
         cres = residues[residues.chain_ids==cid]
         new_residue_numbers = numpy.array([str(r.number+offset)+r.insertion_code for r in cres])
