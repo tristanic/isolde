@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 05-May-2020
+# @Last modified time: 06-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -26,7 +26,7 @@ class ResidueStepper:
         self.structure = structure
         self.session = structure.session
         self._current_residue = None
-        self._interpolate_frames = 10
+        self._interpolate_frames = 8
         self._max_interpolate_distance = 10
         self._view_distance=8
         self._current_direction = 'next'
