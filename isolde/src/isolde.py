@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 05-May-2020
+# @Last modified time: 09-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -1671,6 +1671,9 @@ class Isolde():
         if hasattr(self, '_res_info_update_handler') and self._res_info_update_handler is not None:
             self.selected_model.triggers.remove_handler(self._res_info_update_handler)
             self._res_info_update_handler = None
+        self._rebuild_residue = None
+        self._rebuild_res_omega = None
+        self._selected_rotamer = None
         self.iw._rebuild_sel_residue_info.setText('(Select a single amino acid residue)')
         self.iw._rebuild_sel_res_pep_info.setText('')
         self.iw._rebuild_sel_res_rot_info.setText('')
