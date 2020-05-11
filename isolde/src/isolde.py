@@ -2422,7 +2422,9 @@ class Isolde():
         if self.gui_mode:
             self._change_selected_model(self, model=model, force=True)
         else:
-            self._selected_model = m
+            from .citation import add_isolde_citation
+            add_isolde_citation(model)
+            self._selected_model = model
             self.session.selection.clear()
             # self._selected_model.selected = True
             self._initialize_maps(m)
@@ -2468,6 +2470,8 @@ class Isolde():
         if force or (self._selected_model != m and m is not None):
             from chimerax.clipper.symmetry import get_symmetry_handler
             sh = get_symmetry_handler(m, create=True, auto_add_to_session=True)
+            from .citation import add_isolde_citation
+            add_isolde_citation(m)
             self._selected_model = m
             self._model_changes_handler = m.triggers.add_handler('changes',
                 self._model_changes_cb)
