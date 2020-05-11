@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 05-May-2020
+# @Last modified time: 08-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -118,9 +118,9 @@ class RamaPlot:
             return
         import numpy
         unique_cases = numpy.unique(ramas.cases)
-        if len(unique_cases) > 1:
-            case = cenum.GENERAL
-        else:
+        unique_cases = unique_cases[unique_cases!=0]
+        case = cenum.GENERAL
+        if len(unique_cases) == 1:
             case = cenum(unique_cases[0])
         if case != self.current_case:
             cm = self._case_menu
