@@ -16,7 +16,7 @@ def create_all_ncs_copies(model, transforms):
     '''
     Expand the model to include all NCS copies.
     '''
-    chain_ids = model.chains.chain_ids
+    chain_ids = model.residues.unique_chain_ids
     residues = model.residues
     chains = [residues[residues.chain_ids==cid] for cid in chain_ids]
     for tf in transforms:
