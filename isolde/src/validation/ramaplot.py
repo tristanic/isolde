@@ -360,7 +360,13 @@ class RamaPlot:
         f.patch.set_facecolor('0.5')
         c.draw()
         self.background = c.copy_from_bbox(axes.bbox)
+        #self.update_scatter()
+        self.session.triggers.add_handler('new frame', self._resize_next_frame_cb)
+
+    def _resize_next_frame_cb(self, *_):
         self.update_scatter()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
 
     def on_pick(self, event):
         ind = event.ind[0]
@@ -440,11 +446,6 @@ class RamaPlot:
             edge_colors[selecteds] = [0,1,0]
             line_widths = numpy.ones(len(phipsi))*0.5
             line_widths[selecteds] = 1
-
-
-
-
-
 
         c = self.canvas
         s = self.scatter
