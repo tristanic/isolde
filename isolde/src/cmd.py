@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 05-May-2020
+# @Last modified time: 06-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -176,7 +176,7 @@ def isolde_demo(session, demo_name = None, model_only=False, start_isolde=True):
     load_fn(session, **kwargs)
     session.logger.info("Loaded " + description)
 
-def isolde_step(session, residue=None, camera_distance=None, interpolate_frames=None,
+def isolde_step(session, residue=None, view_distance=None, interpolate_frames=None,
         polymeric_only=True):
     from chimerax.atomic import Residues, Residue
     if isinstance(residue, Residues):
@@ -200,8 +200,8 @@ def isolde_step(session, residue=None, camera_distance=None, interpolate_frames=
             raise UserError('No atomic structures are open!')
     from .navigate import get_stepper
     rs = get_stepper(m)
-    if camera_distance is not None:
-        rs.view_distance = camera_distance
+    if view_distance is not None:
+        rs.view_distance = view_distance
     if interpolate_frames is not None:
         rs.interpolate_frames = interpolate_frames
     if residue is None:
@@ -308,7 +308,7 @@ def register_isolde(logger):
                 ('residue', Or(ResiduesArg, StringArg)),
             ],
             keyword=[
-                ('camera_distance', FloatArg),
+                ('view_distance', FloatArg),
                 ('interpolate_frames', PositiveIntArg),
                 ('polymeric_only', BoolArg)
             ]
