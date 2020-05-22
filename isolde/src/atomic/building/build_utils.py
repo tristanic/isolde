@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Jun-2019
+# @Last modified time: 22-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -101,7 +101,7 @@ def set_his_protonation_state(residue, position='ND'):
         atom.bfactor = nd1.bfactor
         atom.occupancy = nd1.occupancy
     if position in ('NE', 'both'):
-        atom = add_dihedral_atom('HD1', 'H', *hd1_dihedral_atoms[::-1], bond_length, angle, dihedral, bonded=True)
+        atom = add_dihedral_atom('HE2', 'H', *hd1_dihedral_atoms[::-1], bond_length, angle, dihedral, bonded=True)
         ne2 = hd1_dihedral_atoms[-1]
         atom.bfactor = ne2.bfactor
         atom.occupancy = ne2.occupancy
