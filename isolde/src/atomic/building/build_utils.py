@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 22-May-2020
+# @Last modified time: 26-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -10,7 +10,7 @@ from . import set_new_atom_style
 
 _valid_chain_id_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
 def next_chain_id(model, prefix=''):
-    current_chain_ids = model.chains.chain_ids
+    current_chain_ids = model.residues.unique_chain_ids
     for id_char in _valid_chain_id_chars:
         if prefix+id_char not in current_chain_ids:
             return prefix+id_char
