@@ -1727,8 +1727,8 @@ class _RestraintMgr(Model):
             'model state': Model.take_snapshot(self, session, flags),
             'structure':   self.model,
         }
-        from chimerax.core.state import CORE_STATE_VERSION
-        data['version']=CORE_STATE_VERSION
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         data['restraint info'] = self._session_save_info()
         return data
 
@@ -4327,6 +4327,8 @@ class ChiralCenter(_Dihedral):
         data = {
             'atom': self.chiral_atom,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -4357,6 +4359,8 @@ class ProperDihedral(_Dihedral):
             'residue':  self.residue,
             'name':     self.name,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -4455,6 +4459,8 @@ class Rama(State):
         data = {
             'residue':  self.residue,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -4565,6 +4571,8 @@ class Rotamer(State):
         data = {
             'residue':  self.residue,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -4628,6 +4636,8 @@ class PositionRestraint(State):
             'restraint mgr':    self.mgr,
             'atom':             self.atom,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -4646,6 +4656,8 @@ class TuggableAtom(PositionRestraint):
             'restraint mgr':    self.mgr,
             'atom':             self.atom,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -4711,6 +4723,8 @@ class MDFFAtom(State):
             'restraint mgr':    self.mgr,
             'atom':             self.atom,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -4773,6 +4787,8 @@ class DistanceRestraint(State):
             'restraint mgr':    self.mgr,
             'atoms':            self.atoms,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -4868,6 +4884,8 @@ class AdaptiveDistanceRestraint(State):
             'restraint mgr':    self.mgr,
             'atoms':            self.atoms,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -4943,6 +4961,8 @@ class ChiralRestraint(State):
         'restraint mgr': self.mgr,
         'dihedral':    self.dihedral
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -5016,6 +5036,8 @@ class _ProperDihedralRestraint_Base(State):
         'restraint mgr': self.mgr,
         'dihedral':    self.dihedral
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -5124,6 +5146,8 @@ class RotamerRestraint(State):
             'restraint mgr':    self.mgr,
             'rotamer':  self.rotamer,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod

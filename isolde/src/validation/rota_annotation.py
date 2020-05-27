@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 14-Apr-2020
+# @Last modified time: 23-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -244,8 +244,8 @@ class RotamerAnnotator(Model):
             'model state': Model.take_snapshot(self, session, flags),
             'structure': self._atomic_structure,
         }
-        from chimerax.core.state import CORE_STATE_VERSION
-        data['version']=CORE_STATE_VERSION
+        from .. import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
