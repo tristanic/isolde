@@ -1030,7 +1030,7 @@ class Isolde():
     def _selection_changed(self, *_):
         if not self.gui_mode:
             return
-        from chimerax.atomic import selected_atoms
+        from chimerax.atomic import selected_atoms, Residue
         from .util import is_continuous_protein_chain
         sel = selected_atoms(self.session)
         selres = sel.unique_residues
@@ -1062,13 +1062,14 @@ class Isolde():
             else:
                 self._clear_rotamer()
                 self._disable_rebuild_residue_frame()
-            if is_continuous_protein_chain(sel):
+            is_continuous = is_continuous_protein_chain(sel)
+            if is_continuous:
                 self._enable_secondary_structure_restraints_frame()
                 self._enable_register_shift_frame()
             else:
                 self._disable_secondary_structure_restraints_frame()
                 self._disable_register_shift_frame()
-            if is_continuous_protein_chain(sel, allow_single=True):
+            if is_continuous or (len(sel)==1 and sel[0].residue.polymer_type==Residue.PT_AMINO):
                 self._enable_selection_extend_frame()
             else:
                 self._disable_selection_extend_frame()
