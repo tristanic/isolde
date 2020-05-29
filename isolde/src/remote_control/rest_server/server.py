@@ -23,7 +23,7 @@ class IsoldeRESTServer(Task):
         self._server_methods['batch'] = self.batch_run
 
 
-    SESSION_SAVE = True
+    SESSION_SAVE = False
 
     def batch_run(self, session, batch_commands):
         '''
