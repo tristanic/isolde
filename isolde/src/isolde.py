@@ -555,6 +555,7 @@ class Isolde():
         ####
 
         self._update_model_list(None, None, force=True)
+        self._prepare_ramachandran_plot()
 
     def _connect_functions(self):
         '''
