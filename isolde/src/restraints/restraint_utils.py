@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 06-Jan-2020
+# @Last modified time: 24-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -300,7 +300,7 @@ def sequence_align_all_residues(session, residues_a, residues_b):
             'nw', defaults['gap_open'],
             defaults['gap_extend'], dssp_cache
         )
-        for i, (mr, rr) in enumerate(zip(s1, s2)):
+        for i, (rr, mr) in enumerate(zip(s1, s2)):
             if mr=='.' or rr=='.':
                 continue
             ref_res = s1.residues[s1.gapped_to_ungapped(i)]
