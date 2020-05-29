@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Jun-2019
+# @Last modified time: 26-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -161,8 +161,8 @@ class Isolde_XMLRPC_Server:
         '''
         if self._start_model is not None and not self._start_model.deleted:
             self.session.models.close([self._start_model])
-        from chimerax.core.commands import open as cxopen
-        m = self._start_model = cxopen.open(self.session, file_name)[0]
+        from chimerax.open_command.cmd import provider_open
+        m = self._start_model = provider_open(self.session, [file_name])[0]
         m.bonds.radii=0.05
         from chimerax.clipper.symmetry import get_symmetry_handler
         get_symmetry_handler(m)
@@ -175,8 +175,8 @@ class Isolde_XMLRPC_Server:
             raise RuntimeError('One or more output files not found: \n'
                                '{}\n{}'.format(pdb_file, mtz_file))
         self.clear_refinement()
-        from chimerax.core.commands import open as cxopen
-        m = self._current_model = cxopen.open(self.session, pdb_file)[0]
+        from chimerax.open_command.cmd import provider_open
+        m = self._current_model = provider_open(self.session, [pdb_file])[0]
         self.isolde.add_xtal_data(mtz_file, model=m)
         self.set_default_atom_coloring()
         self.isolde.change_selected_model(m)
