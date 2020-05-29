@@ -58,9 +58,13 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         if r in residues:
             return r.number+offset
         return r.number
+    def new_chain_id(r):
+        if r in residues and chain_id:
+            return chain_id
+        return r.chain_id
     merged_residues = m.residues.merge(residues)
     merged_residues = Residues(sorted(merged_residues,
-        key=lambda r: (r.chain_id, new_residue_number(r), r.insertion_code)
+        key=lambda r: (new_chain_id(r), new_residue_number(r), r.insertion_code)
         ))
     new_residue_mask = numpy.in1d(merged_residues, residues)
     new_residue_indices = numpy.argwhere(new_residue_mask).ravel()
@@ -92,14 +96,14 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
             ).format(cid, ', '.join(str(r.number)+r.insertion_code for r in dup_residues))
             raise UserError(err_str)
 
-        chain_mask = merged_residues.chain_ids == cid
+        chain_mask = (numpy.array([new_chain_id(r) for r in merged_residues]) == cid)
         new_r_in_chain_mask = numpy.logical_and(chain_mask, new_residue_mask)
-        last_new_r_index = numpy.argwhere(new_r_in_chain_mask)[-1]
-        greater_indices = existing_residue_indices[existing_residue_indices > last_new_r_index]
-        if len(greater_indices):
-            insertion_point_map[cid] = merged_residues[greater_indices[0]]
-        else:
-            insertion_point_map[cid] = None
+        insertion_point_map[cid] = None
+        if numpy.any(new_r_in_chain_mask):
+            last_new_r_index = numpy.argwhere(new_r_in_chain_mask)[-1]
+            greater_indices = existing_residue_indices[existing_residue_indices > last_new_r_index]
+            if len(greater_indices):
+                insertion_point_map[cid] = merged_residues[greater_indices[0]]
 
 
     current_residue = None
@@ -161,7 +165,7 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
                 nn = nr.find_atom('N')
                 if pc and nn:
                     tpbg.new_pseudobond(pc, nn)
-                if precedes.polymer_type==Residue.PT_AMINO:
+                if precedes is not None and precedes.polymer_type==Residue.PT_AMINO:
                     nc = nr.find_atom('C')
                     pn = precedes.find_atom('N')
                     if nc and pn:
