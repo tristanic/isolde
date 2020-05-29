@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 12-Dec-2019
+# @Last modified time: 23-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -143,10 +143,13 @@ class TugAtomsMode(MouseMode):
                     self.session.logger.warning('Tugging of hydrogens is not enabled. '
                         'Applying tug to the nearest bonded heavy atom.')
                     a = a.neighbors[0]
-                elif h_mode == 'polar' and a.idatm_type == 'HC':
-                    self.session.logger.warning('Tugging of non-polar hydrogens is not enabled. '
-                        'Applying tug to the nearest bonded heavy atom.')
-                    a = a.neighbors[0]
+                elif h_mode == 'polar':
+                    for n in a.neighbors:
+                        if n.element.name == 'C':
+                            self.session.logger.warning('Tugging of non-polar hydrogens is not enabled. '
+                                'Applying tug to the nearest bonded heavy atom.')
+                            a = n
+                            break
             self._focal_atom = a #a = self._focal_atom = pick
 
         tm = self.tug_mode

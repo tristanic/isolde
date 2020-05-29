@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 09-May-2020
+# @Last modified time: 29-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -3358,7 +3358,8 @@ class Isolde():
         set.set(self.session, bg_color=Color([255,255,255,255]))
 
         self._change_selected_model(model=model, force=True)
-        model.atoms[model.atoms.idatm_types != 'HC'].displays = True
+        from chimerax.clipper.util import exclude_nonpolar_hydrogens
+        model.atoms[exclude_nonpolar_hydrogens(model.atoms)].displays = True
         from . import view
         view.focus_on_selection(self.session, model.atoms)
 
@@ -3398,7 +3399,8 @@ def load_crystal_demo(session):
 
     if hasattr(session, 'isolde'):
         session.isolde._change_selected_model(model=before_struct, force=True)
-    before_struct.atoms[before_struct.atoms.idatm_types != 'HC'].displays = True
+    from chimerax.clipper.util import exclude_nonpolar_hydrogens
+    before_struct.atoms[exclude_nonpolar_hydrogens(before_struct.atoms)].displays = True
     from . import view
     view.focus_on_selection(session, before_struct.atoms)
 

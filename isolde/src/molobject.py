@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 06-Jan-2020
+# @Last modified time: 23-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -2162,7 +2162,8 @@ class PositionRestraintMgr(_RestraintMgr):
         if allow_h == 'no':
             atoms = atoms[atoms.element_names != 'H']
         elif allow_h == 'polar':
-            atoms = atoms[atoms.idatm_types != 'HC']
+            from chimerax.clipper.util import exclude_nonpolar_hydrogens
+            atoms = atoms[exclude_nonpolar_hydrogens(atoms)]
         n = len(atoms)
         ret = numpy.empty(n, cptr)
         num = f(self._c_pointer, atoms._c_pointers, create, n, pointer(ret))
@@ -2416,7 +2417,8 @@ class TuggableAtomsMgr(_RestraintMgr):
         if allow_h == 'no':
             atoms = atoms[atoms.element_names != 'H']
         elif allow_h == 'polar':
-            atoms = atoms[atoms.idatm_types != 'HC']
+            from chimerax.clipper.util import exclude_nonpolar_hydrogens
+            atoms = atoms[exclude_nonpolar_hydrogens(atoms)]
         n = len(atoms)
         ret = numpy.empty(n, cptr)
         num = f(self._c_pointer, atoms._c_pointers, create, n, pointer(ret))
