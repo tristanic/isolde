@@ -3334,8 +3334,8 @@ class Isolde():
                 - a MTZ file containing experimental F/sigF and/or precalculated
                   F/phi columns.
         '''
-        from chimerax.core.commands import open
-        model = open.open(self.session, model_file)[0]
+        from chimerax.open_command.cmd import provider_open
+        model = provider_open(self.session, [model_file])[0]
         from chimerax.std_commands import color
         color.color(self.session, model, color='bychain', target='ac')
         color.color(self.session, model, color='byhetero', target='a')
@@ -3369,9 +3369,9 @@ def load_crystal_demo(session):
     '''
     Load a small protein model with crystallographic maps to explore.
     '''
-    from chimerax.core.commands import open
+    from chimerax.open_command.cmd import provider_open
     data_dir = os.path.join(_root_dir, 'demo_data', '3io0')
-    before_struct = open.open(session, os.path.join(data_dir, 'before.pdb'))[0]
+    before_struct = provider_open(session, [os.path.join(data_dir, 'before.pdb')])[0]
     from chimerax.clipper import symmetry
     sym_handler = symmetry.get_symmetry_handler(before_struct, create=True,
         auto_add_to_session=True)
@@ -3406,11 +3406,11 @@ def load_cryo_em_demo(session, model_only=True):
     '''
     Load a high-resolution cryo-EM model and map.
     '''
-    from chimerax.core.commands import open as cxopen
+    from chimerax.open_command.cmd import provider_open
     data_dir = os.path.join(_root_dir, 'demo_data', '6out')
-    m = cxopen.open(session, os.path.join(data_dir, '6out.pdb'))[0]
+    m = provider_open(session, [os.path.join(data_dir, '6out.pdb')])[0]
     if not model_only:
-        mmap = cxopen.open(session, '20205', from_database='emdb')[0]
+        mmap = provider_open(session, ['20205'], from_database='emdb')[0]
         from chimerax.clipper import get_symmetry_handler
         sh = get_symmetry_handler(m, create=True)
         sh.map_mgr.nxmapset.add_nxmap_handler_from_volume(mmap)

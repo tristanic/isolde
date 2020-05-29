@@ -87,10 +87,10 @@ def load_model(session, file_path:'string'):
          'model': model id for the atomic structure itself.
          }
     '''
-    from chimerax.core.commands import open as cxopen
+    from chimerax.open_command.cmd import provider_open
     from chimerax.clipper import get_symmetry_handler
 
-    m = cxopen.open(session, file_path)[0]
+    m = provider_open(session, [file_path])[0]
     sh = get_symmetry_handler(m, create=True, auto_add_to_session=True)
     return {'manager': sh.id_string, 'model id': m.id_string}
 
