@@ -2,10 +2,17 @@
 # @Date:   17-Jun-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 17-Jun-2020
+# @Last modified time: 25-Jun-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
-def test_make_graph(residue):
+
+from ..mcsplit import Graph
+
+def make_graph_from_residue(residue):
+    '''
+    Create a graph representation of a residue's topology, with nodes labelled
+    by atomic number.
+    '''
     import numpy
     from chimerax.atomic import Atoms
     ratoms = residue.atoms

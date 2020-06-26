@@ -3,7 +3,7 @@
  * @Date:   17-Jun-2020
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 18-Jun-2020
+ * @Last modified time: 25-Jun-2020
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2016-2019 Tristan Croll
  */
@@ -76,12 +76,12 @@ PYBIND11_MODULE(mcsplit, m) {
             return py::make_tuple(py::array(i0.size(), i0.data()), py::array(i1.size(), i1.data()), aborted);
         },
         py::arg("g1"),
-        py::arg("timeout")=0.0,
+        py::arg("timeout")=1.0,
         py::arg("connected")=true,
         py::arg("directed")=false,
         py::arg("vertex_labelled")=true,
         py::arg("edge_labelled")=false,
-        py::arg("big_first")=false,
+        py::arg("big_first")=true,
         py::arg("verbose")=false,
         py::arg("quiet")=true
         );
