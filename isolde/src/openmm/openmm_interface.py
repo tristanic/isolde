@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 02-Apr-2020
+# @Last modified time: 10-Jun-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -1317,8 +1317,8 @@ class Sim_Handler:
         logger = self.session.logger
         # Overall simulation topology
         template_dict = find_residue_templates(sim_construct.all_residues, ff, ligand_db=ligand_db, logger=session.logger)
-        top, residue_templates = self.create_openmm_topology(atoms, template_dict)
-        self._topology = top
+        top, residue_templates = create_openmm_topology(atoms, template_dict)
+        self.topology = top
 
 
         self._temperature = sim_params.temperature
@@ -1412,6 +1412,24 @@ class Sim_Handler:
         return self._atoms
 
     def _create_openmm_system(self, forcefield, top, params, residue_templates):
+        residue_to_template, ambiguous, unassigned = forcefield.assignTemplates(
+            top, ignoreExternalBonds=True, explicit_templates=residue_templates
+        )
+        if len(ambiguous) or len(unassigned):
+            from chimerax.core.errors import UserError
+            err_text = ''
+            if len(ambiguous):
+                err_text += "The following residues match multiple topologies: \n"
+                for r, tlist in ambiguous.items():
+                    err_text += "{}{}: ({})\n".format(r.name, r.index, ', '.join([info[0].name for info in tlist]))
+            if len(unassigned):
+                err_text += "The following residues did not match any template: ({})".format(
+                    ', '.join(['{}{}'.format(r.name, r.index) for r in unassigned])
+                )
+            raise UserError(err_text)
+
+            residue_templates = {r: t[0].name for r, t in residue_to_template.items()}
+
         system_params = {
             'nonbondedMethod':      params.nonbonded_cutoff_method,
             'nonbondedCutoff':      params.nonbonded_cutoff_distance,
@@ -1527,7 +1545,7 @@ class Sim_Handler:
 
         from simtk.openmm import app
         logger.status('Initialising primary simulation object')
-        s = self._simulation = app.Simulation(self._topology, self._system,
+        s = self._simulation = app.Simulation(self.topology, self._system,
             integrator, platform, properties)
         c = self._context = s.context
         c.setPositions(0.1*self._atoms.coords)
@@ -2667,60 +2685,6 @@ class Sim_Handler:
         ff = ForceField(*[f for f in forcefield_file_list if f is not None])
         return ff
 
-    def create_openmm_topology(self, atoms, residue_templates):
-        '''
-        Generate a simulation topology from a set of atoms.
-
-        Args:
-            * atoms:
-                - a :py:class:`chimerax.Atoms` instance. Residues must be
-                  complete, and the atoms in each residue must be contiguous
-                  in the array.
-            * residue_templates:
-                - A {residue_index: residue_type} dict for residues whose
-                  topology is otherwise ambiguous, where residue_type is the
-                  name of the residue in the forcefield definition. OpenMM
-                  requires a {:py:class:`openmm.Residue`: residue_type} dict, so
-                  we need to do the conversion here.
-        '''
-
-        anames   = atoms.names
-        n = len(anames)
-        enames   = atoms.element_names
-        rnames   = atoms.residues.names
-        rnums    = atoms.residues.numbers
-        insertion_codes = atoms.residues.insertion_codes
-        cids    = atoms.chain_ids
-        bonds = atoms.intra_bonds
-        bond_is = [atoms.indices(alist) for alist in bonds.atoms]
-
-        #template_indices = list(residue_templates.keys())
-        templates_out = {}
-        from simtk.openmm.app import Topology, Element
-        top = self.topology = Topology()
-        cmap = {}
-        rmap = {}
-        atoms = {}
-        rcount = 0
-        for i, (aname, ename, rname, rnum, icode, cid) in enumerate(
-                zip(anames, enames, rnames, rnums, insertion_codes, cids)):
-            if not cid in cmap:
-                cmap[cid] = top.addChain()   # OpenMM chains have no name
-            rid = (rname, rnum, icode, cid)
-            if not rid in rmap:
-                res = rmap[rid] = top.addResidue(rname, cmap[cid])
-                if rcount in residue_templates.keys():
-                    templates_out[res] = residue_templates[rcount]
-                rcount += 1
-
-
-            element = Element.getBySymbol(ename)
-            atoms[i] = top.addAtom(aname, element,rmap[rid])
-
-        for i1, i2 in zip(*bond_is):
-            top.addBond(atoms[i1],  atoms[i2])
-
-        return top, templates_out
 
     def initialize_implicit_solvent(self, params):
         '''
@@ -3004,6 +2968,62 @@ class Sim_Performance_Tracker:
             self._sh.triggers.remove_handler(self._h)
             self._h=None
         self._running = False
+
+def create_openmm_topology(atoms, residue_templates):
+    '''
+    Generate a simulation topology from a set of atoms.
+
+    Args:
+        * atoms:
+            - a :py:class:`chimerax.Atoms` instance. Residues must be
+              complete, and the atoms in each residue must be contiguous
+              in the array.
+        * residue_templates:
+            - A {residue_index: residue_type} dict for residues whose
+              topology is otherwise ambiguous, where residue_type is the
+              name of the residue in the forcefield definition. OpenMM
+              requires a {:py:class:`openmm.Residue`: residue_type} dict, so
+              we need to do the conversion here.
+    '''
+
+    anames   = atoms.names
+    n = len(anames)
+    enames   = atoms.element_names
+    rnames   = atoms.residues.names
+    rnums    = atoms.residues.numbers
+    insertion_codes = atoms.residues.insertion_codes
+    cids    = atoms.chain_ids
+    bonds = atoms.intra_bonds
+    bond_is = [atoms.indices(alist) for alist in bonds.atoms]
+
+    #template_indices = list(residue_templates.keys())
+    templates_out = {}
+    from simtk.openmm.app import Topology, Element
+    top = topology = Topology()
+    cmap = {}
+    rmap = {}
+    atoms = {}
+    rcount = 0
+    for i, (aname, ename, rname, rnum, icode, cid) in enumerate(
+            zip(anames, enames, rnames, rnums, insertion_codes, cids)):
+        if not cid in cmap:
+            cmap[cid] = top.addChain()   # OpenMM chains have no name
+        rid = (rname, rnum, icode, cid)
+        if not rid in rmap:
+            res = rmap[rid] = top.addResidue(rname, cmap[cid])
+            if rcount in residue_templates.keys():
+                templates_out[res] = residue_templates[rcount]
+            rcount += 1
+
+
+        element = Element.getBySymbol(ename)
+        atoms[i] = top.addAtom(aname, element,rmap[rid])
+
+    for i1, i2 in zip(*bond_is):
+        top.addBond(atoms[i1],  atoms[i2])
+
+    return top, templates_out
+
 
 def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
     '''
