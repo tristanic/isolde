@@ -56,7 +56,7 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
 
     def new_residue_number(r):
         if r in residues:
-            return r.number+offset
+            return r.number-offset
         return r.number
     def new_chain_id(r):
         if r in residues and chain_id:
@@ -84,7 +84,7 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
             continue
         existing_residue_numbers = numpy.array([str(r.number)+r.insertion_code for r in existing_residues])
         cres = residues[residues.chain_ids==cid]
-        new_residue_numbers = numpy.array([str(r.number+offset)+r.insertion_code for r in cres])
+        new_residue_numbers = numpy.array([str(r.number-offset)+r.insertion_code for r in cres])
 
         duplicate_flags = numpy.in1d(new_residue_numbers, existing_residue_numbers)
         if numpy.any(duplicate_flags):
