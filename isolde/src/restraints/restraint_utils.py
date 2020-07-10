@@ -314,10 +314,13 @@ def sequence_align_all_residues(session, residues_a, residues_b):
 
 def paired_principal_atoms(aligned_residues):
     from chimerax.atomic import Atoms
-    return [Atoms(aa) for aa in zip(*((a1, a2) for a1, a2 in zip(
+    result = [Atoms(aa) for aa in zip(*((a1, a2) for a1, a2 in zip(
         aligned_residues[0].principal_atoms, aligned_residues[1].principal_atoms
     ) if a1 is not None and a2 is not None
     ))]
+    if not len(result):
+        return [Atoms(), Atoms()]
+    return result
 
 
 
