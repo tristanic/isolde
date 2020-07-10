@@ -2711,7 +2711,7 @@ class Sim_Handler:
             if isinstance(f, NonbondedForce):
                 break
         n = f.getNumParticles()
-        params = numpy.empty((n, 6))
+        params = numpy.empty((n, 3))
 
         for i in range(f.getNumParticles()):
             params[i,0] = f.getParticleParameters(i)[0].value_in_unit(

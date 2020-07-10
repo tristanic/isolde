@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 18-Dec-2019
+# @Last modified time: 08-Jul-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -1644,7 +1644,7 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
 
 
 
-class GBSAForce(customgbforces.GBSAGBn2Force):
+class GBSAForce(customgbforces.GBSAGBnForce):
     '''
     Wrapper around :py:class:`openmm.GBSAGBn2Force` which implements the
     generalised Born GB-Neck2 implicit solvent implementation.
