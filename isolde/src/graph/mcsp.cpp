@@ -13,7 +13,6 @@
 #include <condition_variable>
 #include <atomic>
 
-#include <argp.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
