@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 20-Jun-2019
+# @Last modified time: 06-Jul-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -40,6 +40,7 @@ _forcefield_files = {
         'bryce_set.xml',             # A small collection of ligands and PTMs (most notably ATP/GDP/NAD(P)(H)/FAD(H)) from http://research.bmh.manchester.ac.uk/bryce/amber
         'ptms.xml',                  # Post-translational modifications from ares.tamu.ed/FFPTM DOI: 10.1021/ct400556v
         'truncated_aa.xml',          # Artifical amino acid "stubs" to support common truncations used in model building
+        'free_amino_acids.xml',      # Free amino acids, DOI: 10.1007/s00894-014-2478-z
         ]],
 
     'charmm36': ['charmm36.xml', 'charmm36/water.xml',]
@@ -53,7 +54,7 @@ _ligand_files = {
 default_forcefields = list(_forcefield_files.keys())
 
 def _define_forcefield(ff_files):
-    from simtk.openmm.app import ForceField
+    #from simtk.openmm.app import ForceField
     ff = ForceField(*[f for f in ff_files if f is not None])
     return ff
 
@@ -166,3 +167,168 @@ class Forcefield_Mgr:
         executor = ThreadPoolExecutor(max_workers=1)
         self._task = executor.submit(_background_load_ff, name, ff_files, self._openmm_version, self._isolde_version)
         executor.shutdown(wait=False)
+
+from simtk.openmm.app import ForceField as _ForceField
+class ForceField(_ForceField):
+    def assignTemplates(self, topology, ignoreExternalBonds=False,
+            explicit_templates={}):
+        '''
+        Parameters
+        ----------
+
+        topology: openmm `Topology`
+            The Topology whose residues are to be checked against the forcefield
+            residue template
+        ignoreExternalBonds: bool=False
+            If true, ignore external bonds when matching residues to templates.
+        explicit_templates: dict={}
+            An optional {residue: template_name} dict specifying the templates to
+            use for particular residues
+
+
+        Returns three items:
+
+            - a {residue: template} dict for all residues in the topology for
+              which a unique template was found
+            - a {residue: [templates]} dict for any residues with multiple
+              matching templates
+            - a list of residues with no matching template.
+
+        For a simulation to start the second and third objects should be empty.
+        '''
+        from simtk.openmm.app.forcefield import _createResidueSignature
+        from simtk.openmm.app.internal import compiled
+        bondedToAtom = self._buildBondedToAtomList(topology)
+        unique_matches = {}
+        multiple_matches = {}
+        unmatched = []
+
+        templateSignatures = self._templateSignatures
+        for res in topology.residues():
+            sig = _createResidueSignature([atom.element for atom in res.atoms()])
+            explicit = explicit_templates.get(res, None)
+            if explicit:
+                t = self._templates[explicit]
+                match = compiled.matchResidueToTemplate(res, t, bondedToAtom, ignoreExternalBonds)
+                if match is not None:
+                    unique_matches[res] = (t, match)
+                else:
+                    unmatched.append(res)
+                continue
+            if sig in templateSignatures:
+                allMatches = []
+                for t in templateSignatures[sig]:
+                    match = compiled.matchResidueToTemplate(res, t, bondedToAtom, ignoreExternalBonds)
+                    if match is not None:
+                        allMatches.append((t, match))
+                if len(allMatches) == 1:
+                    unique_matches[res] = allMatches[0]
+                elif len(allMatches) > 1:
+                    multiple_matches[res] = allMatches
+                else:
+                    unmatched.append(res)
+            else:
+                unmatched.append(res)
+        return unique_matches, multiple_matches, unmatched
+
+    def findNearestTemplates(self, residue):
+        '''
+        Find potential templates for the given residue by name and topology.
+        '''
+        pass
+
+    def registerResidueTemplate(self, template):
+        super().registerResidueTemplate(template)
+        if len(template.atoms) > 3:
+            template.graph = self.template_graph(template)
+        else:
+            template.graph = None
+
+    @staticmethod
+    def residue_graph(residue):
+        '''
+        Make a graph representing the connectivity of a residue's atoms.
+        '''
+        from chimerax.isolde.graph import Graph
+        import numpy
+        atoms = [a for a in residue.atoms()]
+        labels = [a.element.atomic_number for a in atoms]
+        edges = numpy.array([[atoms.index(b.atom1), atoms.index(b.atom2)] for b in residue.internal_bonds()])
+        return Graph(labels, edges)
+
+    @staticmethod
+    def template_graph(template):
+        '''
+        Make a graph representing the connectivity of a template's atoms.
+        '''
+        from chimerax.isolde.graph import Graph
+        import numpy
+        atoms = template.atoms
+        labels = [a.element.atomic_number for a in atoms]
+        edges = numpy.array(list(template.bonds))
+        try:
+            return Graph(labels, edges)
+        except:
+            raise RuntimeError('Failed to make graph for {}. Labels: {}\nEdges: {}\n'.format(
+                template.name, labels, edges
+            ))
+
+
+    def find_possible_templates(self, res, max_missing_heavy_atoms=3,
+            max_missing_heavy_atom_fraction = 0.2,
+            minimum_graph_match = 0.9):
+        from simtk.openmm.app import element
+        from collections import Counter
+        from ..atomic.template_utils import find_maximal_isomorphous_fragment
+        residue_counts = Counter(a.element for a in res.atoms())
+        residue_elements = set(residue_counts.keys())
+        num_atoms = sum(residue_counts.values())
+        num_heavy_atoms = sum(count for e, count in residue_counts.items() if e not in (None, element.hydrogen))
+        matches_by_name = []
+        matches_by_composition = []
+        rname = res.name
+        if num_atoms >= 3:
+            rgraph = self.residue_graph(res)
+        else:
+            rgraph = None
+        for template_name, template in self._templates.items():
+            split_name = template_name.split('_')
+            if len(split_name) > 1:
+                base_name = split_name[1].upper()
+            else:
+                base_name = template_name.upper()
+            tgraph = template.graph
+            # if len(template.atoms) >= 3:
+            #     tgraph = self.template_graph(template)
+            # else:
+            #     tgraph = None
+            # Keep all templates with similar names
+            if rname.upper() == base_name:
+                if rgraph and tgraph:
+                    r_indices, t_indices, aborted = rgraph.maximum_common_subgraph(tgraph, timeout=0.25)
+                    match_len = len(r_indices)
+                else:
+                    match_len = -1
+                matches_by_name.append((template_name, match_len))
+                continue
+            # If the residue has at least 3 atoms, try template matching
+            if rgraph is None or tgraph is None:
+                continue
+            template_counts = Counter(a.element for a in template.atoms)
+            all_elements = set(template_counts.keys()).union(residue_elements)
+            differences = {e:abs(template_counts.get(e, 0) - residue_counts.get(e, 0)) for e in all_elements}
+            heavy_differences = {e: d for e, d in differences.items() if e != element.hydrogen}
+            hd = sum(heavy_differences.values())
+            if hd > max_missing_heavy_atoms and hd/num_heavy_atoms > max_missing_heavy_atom_fraction:
+                continue
+            r_indices, t_indices, aborted = rgraph.maximum_common_subgraph(tgraph, timeout=0.25)
+            num_matched = len(r_indices)
+            score = num_matched - hd
+            if num_matched/num_atoms > minimum_graph_match:
+                matches_by_composition.append((template_name, score))
+        matches_by_name = list(sorted(matches_by_name, reverse=True, key=lambda t: t[1]))
+        # matches_by_name = [t[0] for t in matches_by_name]
+        matches_by_composition = list(sorted(matches_by_composition, reverse=True, key=lambda t: t[1]))
+        # matches_by_name = [t[0] for t in matches_by_composition]
+
+        return matches_by_name, matches_by_composition

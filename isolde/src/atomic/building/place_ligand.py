@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 15-Apr-2020
+# @Last modified time: 16-Apr-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -35,20 +35,126 @@ def place_metal_at_coord(model, chain_id, residue_number, residue_name, atom_nam
     a.bfactor=bfactor
     r.add_atom(a)
 
-def place_water(session, model, position):
+def place_water(session, model=None, position=None, bfactor=None, chain=None,
+        distance_cutoff=3.0, sim_settle=True):
+    '''
+    Place a water molecule at the given position, or the current centre of
+    rotation if no :attr:`position` is specified. If the :attr:`bfactor` or
+    :attr:`chain` arguments are not specified, the water will be assigned the
+    missing properties based on the nearest residue within
+    :attr:`distance_cutoff` of :attr:`position`, with the assigned B-factor
+    being (average B-factor of nearest residue)+5. If :attr:`sim_settle` is
+    True, a small local simulation will automatically start to settle the
+    water into position.
+    '''
+    place_ligand(session, 'HOH', model=model, position=position, bfactor=bfactor,
+        chain=chain, distance_cutoff=distance_cutoff, sim_settle=sim_settle)
+
+def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, chain=None,
+        distance_cutoff=8.0, sim_settle=False):
+    '''
+    Place a ligand at the given position, or the current centre of
+    rotation if no :attr:`position` is specified. If the :attr:`bfactor` or
+    :attr:`chain` arguments are not specified, the water will be assigned the
+    missing properties based on the nearest residue within
+    :attr:`distance_cutoff` of :attr:`position`, with the assigned B-factor
+    being (average B-factor of nearest residue)+5. If :attr:`sim_settle` is
+    True, a small local simulation will automatically start to settle the
+    ligand into position.
+
+    Note that at this stage no attempt is made at a preliminary fit to the
+    density, or to avoid clashes: the ligand is simply placed at the given
+    position with coordinates defined by the template in the Chemical
+    Components Dictionary. Except for small, rigid ligands the use of
+    :attr:`sim_settle`=True is inadvisable. If the ligand as placed clashes
+    badly with the existing model, the best approach is to run the command
+    `isolde ignore ~selAtoms` then start a simulation (which will involve *only*
+    the new residue) to pull it into position (you may want to use pins where
+    necessary). Once satisfied that there are no severe clashes, stop the
+    simulation and run `isolde ~ignore` to reinstate all atoms for simulation
+    purposes, and continue with your model building.
+
+    Another problem that you may encounter is that the protonation state of the
+    template stored in the Chemical Components Dictionary may not match that of
+    the molecular dynamics parameterisation. In many cases this may be simply
+    fixed by deleting the residue's hydrogens (`delete selAtoms&H`) and running
+    `AddH` again. If this still fails, there are two possibilities:
+
+        * AddH's hydrogen choices *also* don't match the MD template. This can
+          happen for certain aromatic residues with multiple legitimate
+          tautomeric states, or for groups like phosphate where it may
+          occasionally add an excess hydrogen. ISOLDE does not currently provide
+          a good solution for this.
+
+        * ISOLDE doesn't have a built-in parameterisation for this ligand. You
+          will need to provide a parameterisation in OpenMM's ffXML format.
+          There is not yet a complete pipeline for this in ChimeraX, but for
+          most ligands you can do the following:
+
+          - Generate AMBER parameters for the ligand using Phenix eLBOW, e.g.:
+            phenix.elbow --amber --chemical_component {ligand ID}
+          - Install ParmEd into ChimeraX's Python environment (this requires a
+            system compiler - gcc in Linux, XCode in MacOS, Visual Studio in
+            Windows):
+            /path/to/chimerax/bin/python3.7 -m pip install versioneer parmed
+            (you should only have to do this once for a given ChimeraX
+            distribution)
+          - Start a ChimeraX instance in the directory where you ran eLBOW, and
+            open the Python console (Tools/General/Shell). There, run the
+            following commands:
+            from chimerax.isolde.openmm.amberff.amber_convert import amber_to_xml_individual
+            amber_to_xml_individual('.','.')
+          - This will generate a file called {ligand id}.xml in the directory
+            you ran eLBOW. This is the only file you need for ISOLDE. In the
+            ChimeraX instance containing your model, go to ISOLDE's
+            "Sim settings" tab and click "Load custom residue definition(s)".
+            Choose your xml file and click "Open". Your residue should now run
+            in simulations for the remainder of the session.
+    '''
     from chimerax.core.geometry import find_closest_points
     from chimerax.atomic import mmcif
+    from chimerax.core.errors import UserError
+    if hasattr(session, 'isolde') and session.isolde.simulation_running:
+        raise UserError('Cannot add atoms when a simulation is running!')
+    if model is None:
+        if hasattr(session, 'isolde') and session.isolde.selected_model is not None:
+            model = session.isolde.selected_model
+        else:
+            raise UserError('If model is not specified, ISOLDE must be started '
+                'with a model loaded')
+    if position is None:
+        position = session.view.center_of_rotation
     matoms = model.atoms
-    _,_,i = find_closest_points([position], matoms.coords, 3)
-    na = matoms[i[0]]
-    cid = na.residue.chain_id
-    bfactor = na.residue.atoms.bfactors.mean()+5
-    hoh = mmcif.find_template_residue(session, 'HOH')
-    r = new_residue_from_template(model, hoh, cid, position, b_factor=    bfactor)
+    if bfactor is None or chain is None:
+        _,_,i = find_closest_points([position], matoms.coords, distance_cutoff)
+        if not len(i):
+            err_str = ('No existing atoms found within the given distance cutoff '
+                'of the target position. You may repeat with a larger cutoff or '
+                'explicitly specify the B-factor and chain ID')
+            if ligand_id == 'HOH':
+                err_str += (', but keep in mind that placing waters outside of '
+                    'H-bonding distance to the model is generally inadvisable.')
+            else:
+                err_str += '.'
+            raise UserError(err_str)
+        na = matoms[i[0]]
+        if chain is None:
+            chain = na.residue.chain_id
+        if bfactor is None:
+            bfactor = na.residue.atoms.bfactors.mean()+5
+    tmpl = mmcif.find_template_residue(session, ligand_id)
+    r = new_residue_from_template(model, tmpl, chain, position, b_factor=bfactor)
     matoms.selected=False
     r.atoms.selected=True
-    from chimerax.core.commands import run
-    run(session, 'isolde sim start sel')
+    if sim_settle:
+        if not hasattr(session, 'isolde'):
+            session.logger.warning('ISOLDE is not running. sim_settle argument ignored.')
+        elif model != session.isolde.selected_model:
+            session.logger.warning("New ligand was not added to ISOLDE's "
+                "selected model. sim_settle argument ignored.")
+        else:
+            from chimerax.core.commands import run
+            run(session, 'isolde sim start sel')
 
 def new_residue_from_template(model, template, chain_id, center,
         residue_number=None, insert_code=' ', b_factor=50, precedes=None):

@@ -2,7 +2,7 @@
 # @Date:   24-Oct-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 05-Mar-2020
+# @Last modified time: 05-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -216,8 +216,10 @@ class Clash_Table_Mgr:
 
     def _show_selected_clash(self, item):
         atoms = item.data
-        from .. import view
-        session = self.session
-        view.focus_on_selection(session, atoms)
+        residues=atoms.residues
+        self.session.selection.clear()
+        residues.atoms.selected=True
+        from ..navigate import get_stepper
+        get_stepper(residues[0].structure).step_to(residues[0])
         # session.selection.clear()
         # atoms.selected = True

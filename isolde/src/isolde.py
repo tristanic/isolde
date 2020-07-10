@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 14-Apr-2020
+# @Last modified time: 06-Jul-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -555,6 +555,7 @@ class Isolde():
         ####
 
         self._update_model_list(None, None, force=True)
+        self._prepare_ramachandran_plot()
 
     def _connect_functions(self):
         '''
@@ -862,6 +863,15 @@ class Isolde():
         iw._validate_rota_table.itemClicked.connect(
             self._show_selected_iffy_rota
         )
+        iw._validate_unparameterised_residues_show_button.clicked.connect(
+            self._show_unparameterised_residues_frame
+        )
+        iw._validate_unparameterised_residues_hide_button.clicked.connect(
+            self._hide_unparameterised_residues_frame
+        )
+        iw._validate_unparameterised_residues_table.itemClicked.connect(
+            self._show_selected_unparameterised_residue
+            )
 
         from .validation.clashes import Clash_Table_Mgr
         self._clash_mgr = Clash_Table_Mgr(self)
@@ -1029,7 +1039,7 @@ class Isolde():
     def _selection_changed(self, *_):
         if not self.gui_mode:
             return
-        from chimerax.atomic import selected_atoms
+        from chimerax.atomic import selected_atoms, Residue
         from .util import is_continuous_protein_chain
         sel = selected_atoms(self.session)
         selres = sel.unique_residues
@@ -1061,13 +1071,14 @@ class Isolde():
             else:
                 self._clear_rotamer()
                 self._disable_rebuild_residue_frame()
-            if is_continuous_protein_chain(sel):
+            is_continuous = is_continuous_protein_chain(sel)
+            if is_continuous:
                 self._enable_secondary_structure_restraints_frame()
                 self._enable_register_shift_frame()
             else:
                 self._disable_secondary_structure_restraints_frame()
                 self._disable_register_shift_frame()
-            if is_continuous_protein_chain(sel, allow_single=True):
+            if is_continuous or (len(sel)==1 and sel[0].residue.polymer_type==Residue.PT_AMINO):
                 self._enable_selection_extend_frame()
             else:
                 self._disable_selection_extend_frame()
@@ -1304,7 +1315,7 @@ class Isolde():
         xmapset = map_mgr.add_xmapset_from_mtz(filename, self.params.map_shannon_rate,
             auto_choose_reflection_data=False)
         if xmapset.live_xmap_mgr is not None:
-            xmapset.live_update = self.iw._sim_basic_xtal_settings_live_recalc_checkbox.checkState()
+            xmapset.live_update = self.iw._sim_basic_xtal_settings_live_recalc_checkbox.isChecked()
             # 2mFo-DFc and mFo-DFc maps are created automatically, but should
             # not be used as MDFF potentials. For that, we need a specific map
             # that we know excludes the free reflections.
@@ -1671,6 +1682,9 @@ class Isolde():
         if hasattr(self, '_res_info_update_handler') and self._res_info_update_handler is not None:
             self.selected_model.triggers.remove_handler(self._res_info_update_handler)
             self._res_info_update_handler = None
+        self._rebuild_residue = None
+        self._rebuild_res_omega = None
+        self._selected_rotamer = None
         self.iw._rebuild_sel_residue_info.setText('(Select a single amino acid residue)')
         self.iw._rebuild_sel_res_pep_info.setText('')
         self.iw._rebuild_sel_res_rot_info.setText('')
@@ -2338,8 +2352,10 @@ class Isolde():
 
     def _show_selected_iffy_peptide(self, item):
         res = item.data
-        from . import view
-        view.focus_on_selection(self.session, res.atoms)
+        self.session.selection.clear()
+        res.atoms.selected=True
+        from .navigate import get_stepper
+        get_stepper(self.selected_model).step_to(res)
 
     def _show_rota_validation_frame(self, *_):
         self.iw._validate_rota_stub_frame.hide()
@@ -2349,6 +2365,7 @@ class Isolde():
     def _hide_rota_validation_frame(self, *_):
         self.iw._validate_rota_stub_frame.show()
         self.iw._validate_rota_main_frame.hide()
+
 
     def _update_iffy_rota_list(self, *_):
         table = self.iw._validate_rota_table
@@ -2392,8 +2409,98 @@ class Isolde():
 
     def _show_selected_iffy_rota(self, item):
         res = item.data
-        from . import view
-        view.focus_on_selection(self.session, res.atoms)
+        self.session.selection.clear()
+        res.atoms.selected=True
+        from .navigate import get_stepper
+        get_stepper(self.selected_model).step_to(res)
+
+    def _show_unparameterised_residues_frame(self, *_):
+        self.iw._validate_unparameterised_residues_stub_frame.hide()
+        self.iw._validate_unparameterised_residues_main_frame.show()
+        self._update_unparameterised_residues_list()
+
+    def _hide_unparameterised_residues_frame(self, *_):
+        self.iw._validate_unparameterised_residues_stub_frame.show()
+        self.iw._validate_unparameterised_residues_main_frame.hide()
+
+    def _update_unparameterised_residues_list(self, *_, ff=None, ambiguous=None, unmatched=None, residues=None):
+        table = self.iw._validate_unparameterised_residues_table
+        rlist = self.iw._validate_possible_templates_list
+        if not table.isVisible():
+            return
+        table.setRowCount(0)
+        rlist.clear()
+        if ambiguous is None and unmatched is None:
+            if self.selected_model is None:
+                return
+            residues = self.selected_model.residues
+            h = residues.atoms[residues.atoms.element_names =='H']
+            if not len(h):
+                from .dialog import choice_warning
+                addh = choice_warning('This model does not appear to have hydrogens. Would you like to add them first?')
+                if addh:
+                    from chimerax.core.commands import run
+                    run(self.session, 'addh')
+            from chimerax.atomic import Residues
+            residues = Residues(sorted(residues, key=lambda r:(r.chain_id, r.number, r.insertion_code)))
+            if ff is None:
+                ff = self.forcefield_mgr[self.sim_params.forcefield]
+                ligand_db = self.forcefield_mgr.ligand_db(self.sim_params.forcefield)
+            from .openmm.openmm_interface import find_residue_templates, create_openmm_topology
+            template_dict = find_residue_templates(residues, ff, ligand_db=ligand_db, logger=self.session.logger)
+            top, residue_templates=create_openmm_topology(residues.atoms, template_dict)
+            _, ambiguous, unmatched = ff.assignTemplates(top,
+                ignoreExternalBonds=True, explicit_templates=residue_templates)
+        from PyQt5.QtWidgets import QTableWidgetItem
+        table.setRowCount(len(unmatched)+len(ambiguous))
+        count = 0
+        for r in unmatched:
+            by_name, by_comp = ff.find_possible_templates(r)
+            cx_res = residues[r.index]
+            data = (
+                cx_res.chain_id,
+                cx_res.name + ' ' + str(cx_res.number),
+                ''
+            )
+            for j, d in enumerate(data):
+                item = QTableWidgetItem(d)
+                item.data = (cx_res, by_name, by_comp)
+                table.setItem(count, j, item)
+            count += 1
+        for r, template_info in ambiguous.items():
+            cx_res = residues[r.index]
+            data = (
+                cx_res.chain_id,
+                cx_res.name + ' ' + str(cx_res.number),
+                ', '.join([ti[0].name for ti in template_info])
+            )
+            for j, d in enumerate(data):
+                item = QTableWidgetItem(d)
+                item.data = (cx_res, [ti[0] for ti in template_info])
+                table.setItem(count, j, item)
+            count += 1
+        table.resizeColumnsToContents()
+
+    def _show_selected_unparameterised_residue(self, item):
+        residue, by_name, by_comp = item.data
+        tlist = self.iw._validate_possible_templates_list
+        tlist.clear()
+        from PyQt5.QtWidgets import QListWidgetItem
+        tlist.addItem(QListWidgetItem("Matches by residue name"))
+        for (tname, match_atom_count) in by_name:
+            entry = QListWidgetItem(tname + " (Score: {})".format(match_atom_count))
+            entry.data = (residue, tname)
+            tlist.addItem(entry)
+        tlist.addItem(QListWidgetItem("Matches by similar topology"))
+        for (tname, match_atom_count) in by_comp:
+            entry = QListWidgetItem(tname + " (Score: {})".format(match_atom_count))
+            entry.data = (residue, tname)
+            tlist.addItem(entry)
+
+        tlist.repaint()
+        from .view import focus_on_selection
+        focus_on_selection(self.session, residue.atoms)
+
 
     ##############################################################
     # Simulation global settings functions
@@ -2418,7 +2525,9 @@ class Isolde():
         if self.gui_mode:
             self._change_selected_model(self, model=model, force=True)
         else:
-            self._selected_model = m
+            from .citation import add_isolde_citation
+            add_isolde_citation(model)
+            self._selected_model = model
             self.session.selection.clear()
             # self._selected_model.selected = True
             self._initialize_maps(m)
@@ -2464,6 +2573,8 @@ class Isolde():
         if force or (self._selected_model != m and m is not None):
             from chimerax.clipper.symmetry import get_symmetry_handler
             sh = get_symmetry_handler(m, create=True, auto_add_to_session=True)
+            from .citation import add_isolde_citation
+            add_isolde_citation(m)
             self._selected_model = m
             self._model_changes_handler = m.triggers.add_handler('changes',
                 self._model_changes_cb)
@@ -2524,7 +2635,7 @@ class Isolde():
         m = self.selected_model
         from chimerax.clipper.symmetry import get_symmetry_handler
         sh = get_symmetry_handler(m)
-        focus = self.iw._vis_focus_on_sel_checkbox.checkState()
+        focus = self.iw._vis_focus_on_sel_checkbox.isChecked()
         m.atoms.selected = False
         m.bonds.selected = False
         sel = sh.stepper.step_forward()
@@ -2540,7 +2651,7 @@ class Isolde():
         m = self.selected_model
         from chimerax.clipper.symmetry import get_symmetry_handler
         sh = get_symmetry_handler(m)
-        focus = self.iw._vis_focus_on_sel_checkbox.checkState()
+        focus = self.iw._vis_focus_on_sel_checkbox.isChecked()
         m.atoms.selected = False
         m.bonds.selected = False
         sel = sh.stepper.step_backward()
@@ -2554,7 +2665,7 @@ class Isolde():
     def _xtal_mask_to_selection(self, *_):
         atoms = self.selected_model.atoms
         sel = atoms[atoms.selecteds]
-        focus = self.iw._vis_focus_on_sel_checkbox.checkState()
+        focus = self.iw._vis_focus_on_sel_checkbox.isChecked()
         self._xtal_mask_to_atoms(sel, focus)
 
     def _xtal_mask_to_atoms(self, atoms, focus):
@@ -3321,8 +3432,8 @@ class Isolde():
                 - a MTZ file containing experimental F/sigF and/or precalculated
                   F/phi columns.
         '''
-        from chimerax.core.commands import open
-        model = open.open(self.session, model_file)[0]
+        from chimerax.open_command.cmd import provider_open
+        model = provider_open(self.session, [model_file])[0]
         from chimerax.std_commands import color
         color.color(self.session, model, color='bychain', target='ac')
         color.color(self.session, model, color='byhetero', target='a')
@@ -3345,7 +3456,8 @@ class Isolde():
         set.set(self.session, bg_color=Color([255,255,255,255]))
 
         self._change_selected_model(model=model, force=True)
-        model.atoms[model.atoms.idatm_types != 'HC'].displays = True
+        from chimerax.clipper.util import exclude_nonpolar_hydrogens
+        model.atoms[exclude_nonpolar_hydrogens(model.atoms)].displays = True
         from . import view
         view.focus_on_selection(self.session, model.atoms)
 
@@ -3356,9 +3468,9 @@ def load_crystal_demo(session):
     '''
     Load a small protein model with crystallographic maps to explore.
     '''
-    from chimerax.core.commands import open
+    from chimerax.open_command.cmd import provider_open
     data_dir = os.path.join(_root_dir, 'demo_data', '3io0')
-    before_struct = open.open(session, os.path.join(data_dir, 'before.pdb'))[0]
+    before_struct = provider_open(session, [os.path.join(data_dir, 'before.pdb')])[0]
     from chimerax.clipper import symmetry
     sym_handler = symmetry.get_symmetry_handler(before_struct, create=True,
         auto_add_to_session=True)
@@ -3385,7 +3497,8 @@ def load_crystal_demo(session):
 
     if hasattr(session, 'isolde'):
         session.isolde._change_selected_model(model=before_struct, force=True)
-    before_struct.atoms[before_struct.atoms.idatm_types != 'HC'].displays = True
+    from chimerax.clipper.util import exclude_nonpolar_hydrogens
+    before_struct.atoms[exclude_nonpolar_hydrogens(before_struct.atoms)].displays = True
     from . import view
     view.focus_on_selection(session, before_struct.atoms)
 
@@ -3393,11 +3506,11 @@ def load_cryo_em_demo(session, model_only=True):
     '''
     Load a high-resolution cryo-EM model and map.
     '''
-    from chimerax.core.commands import open as cxopen
+    from chimerax.open_command.cmd import provider_open
     data_dir = os.path.join(_root_dir, 'demo_data', '6out')
-    m = cxopen.open(session, os.path.join(data_dir, '6out.pdb'))[0]
+    m = provider_open(session, [os.path.join(data_dir, '6out.pdb')])[0]
     if not model_only:
-        mmap = cxopen.open(session, '20205', from_database='emdb')[0]
+        mmap = provider_open(session, ['20205'], from_database='emdb')[0]
         from chimerax.clipper import get_symmetry_handler
         sh = get_symmetry_handler(m, create=True)
         sh.map_mgr.nxmapset.add_nxmap_handler_from_volume(mmap)

@@ -56,6 +56,10 @@
       <Bond atomName1="FE4" atomName2="S1"/>
       <Bond atomName1="FE4" atomName2="S3"/>
       <Bond atomName1="FE4" atomName2="S4"/>
+      <ExternalBond atomName="FE1"/>
+      <ExternalBond atomName="FE2"/>
+      <ExternalBond atomName="FE3"/>
+      <ExternalBond atomName="FE4"/>
     </Residue>
     <Residue name="MC_FES">
       <Atom charge="0.429" name="FE1" type="F2"/>
@@ -66,6 +70,8 @@
       <Bond atomName1="FE1" atomName2="S2"/>
       <Bond atomName1="FE2" atomName2="S2"/>
       <Bond atomName1="FE2" atomName2="S1"/>
+      <ExternalBond atomName="FE1"/>
+      <ExternalBond atomName="FE2"/>
     </Residue>
 
   </Residues>
@@ -79,6 +85,8 @@
     <Bond k="103893.74079999999" length="0.18400000000000002" type1="CT" type2="SM"/>
     <Bond k="48437.33119999999" length="0.23500000000000001" type1="F2" type2="ST"/>
     <Bond k="70310.44639999999" length="0.229" type1="F2" type2="SM"/>
+    <!-- Histidine coordination -->
+    <Bond k="70000" length="0.210" type1="F2" type2="NB"/>
   </HarmonicBondForce>
   <HarmonicAngleForce>
     <Angle angle="1.361356816555577" k="429.688432" type1="FT" type2="ST" type3="FT"/>
@@ -101,6 +109,16 @@
     <Angle angle="1.760" k="316.0" type1="SM" type2="F2" type3="SM"/>
     <Angle angle="1.9315" k="316.034256" type1="SM" type2="F2" type3="ST"/>
     <Angle angle="1.7802358370342162" k="250.989792" type1="F2" type2="SM" type3="CT"/>
+    <!-- Histidine coordination -->
+    <Angle angle="1.628" k="316.0" type1="NB" type2="F2" type3="NB" />
+    <Angle angle="2.020" k="316.0" type1="NB" type2="F2" type3="ST" />
+    <Angle angle="2.17" k="316.0" type1="CC" type2="NB" type3="F2" />
+    <Angle angle="2.20" k="316.0" type1="CR" type2="NB" type3="F2" />
+    <Angle angle="2.17" k="316.0" type1="CV" type2="NB" type3="F2" />
+
+
+
+
   </HarmonicAngleForce>
   <AmoebaUreyBradleyForce>
       <UreyBradley d="0.27103" k="100000.0" type1="FT" type2="ST" type3="FT"/>
@@ -129,6 +147,9 @@
     <Proper k1="7.5312" periodicity1="2" phase1="3.141592653589793" type1="ST" type2="FB" type3="SM" type4="CT"/>
     <Improper type1="CA" type2="" type3="N2" type4="N2" periodicity1="2" phase1="3.14159265359" k1="43.932"/>
     <Improper type1="SB" type2="" type3="" type4="ST" periodicity1="2" phase1="2.7753" k1="43.932"/>
+
+
+
 
   </PeriodicTorsionForce>
   <NonbondedForce coulomb14scale="0.8333333333333334" lj14scale="0.5">

@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 14-Jun-2019
+# @Last modified time: 08-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -28,6 +28,7 @@ class RamaPlot:
         from chimerax.isolde import session_extensions as sx
         mgr = self._rama_mgr = sx.get_ramachandran_mgr(session)
         self.isolde = isolde
+        isolde._ui_panels.append(self)
         cenum = self._case_enum = mgr.RamaCase
         self.container = container
         self.current_case = None
@@ -73,6 +74,11 @@ class RamaPlot:
             self._isolde_switch_model_cb
         )
 
+        self._selection_changed_handler = self.session.triggers.add_handler(
+            'selection changed',
+            self._selection_changed_cb
+        )
+
         self._model_changes_handler = None
         self.current_model = isolde.selected_model
         #self.on_resize()
@@ -99,6 +105,29 @@ class RamaPlot:
         itr.add_handler('simulation resumed', self._sim_resume_cb)
 
         tab_widget.currentChanged.connect(self._tab_change_cb)
+
+    def _selection_changed_cb(self, *_):
+        if not self.visible or not self.current_model:
+            return
+        residues = self.current_model.residues
+        sel_res = residues[residues.selected]
+        ramas = self._rama_mgr.get_ramas(sel_res)
+        cenum = self._case_enum
+        if not len(ramas):
+            self.update_scatter()
+            return
+        import numpy
+        unique_cases = numpy.unique(ramas.cases)
+        unique_cases = unique_cases[unique_cases!=0]
+        case = cenum.GENERAL
+        if len(unique_cases) == 1:
+            case = cenum(unique_cases[0])
+        if case != self.current_case:
+            cm = self._case_menu
+            cm.setCurrentIndex(cm.findData(case))
+        else:
+            self.update_scatter()
+
 
 
     def _prepare_tooltip(self):
@@ -207,6 +236,17 @@ class RamaPlot:
         case_key = self._case_menu.currentData()
         self.change_case(case_key)
 
+    def chimerax_models_changed(self, model):
+        # TODO: rework UI into a consistent framework
+        pass
+
+    def remove_trigger_handlers(self):
+        if self._selection_changed_handler is not None:
+            self.session.triggers.remove_handler(self._selection_changed_handler)
+            self._selection_changed_handler = None
+        if self._model_changes_handler is not None:
+            self.current_model.triggers.remove_handler(self._model_changes_handler)
+            self._model_changes_handler = None
 
     @property
     def current_model(self):
@@ -320,13 +360,23 @@ class RamaPlot:
         f.patch.set_facecolor('0.5')
         c.draw()
         self.background = c.copy_from_bbox(axes.bbox)
+        #self.update_scatter()
+        self.session.triggers.add_handler('new frame', self._resize_next_frame_cb)
+
+    def _resize_next_frame_cb(self, *_):
         self.update_scatter()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
 
     def on_pick(self, event):
         ind = event.ind[0]
         picked_rama = self._case_ramas[ind]
-        from .. import view
-        view.focus_on_selection(self.session, picked_rama.residue.atoms, pad=1.0)
+        self.session.selection.clear()
+        picked_rama.residue.atoms.selected=True
+        from ..navigate import get_stepper
+        get_stepper(self.current_model).step_to(picked_rama.residue)
+        # from .. import view
+        # view.focus_on_selection(self.session, picked_rama.residue.atoms, pad=1.0)
 
     def change_case(self, case_key):
         import numpy
@@ -381,9 +431,21 @@ class RamaPlot:
         if r is None or len(r) == 0:
             phipsi = self.default_coords
             logscores = self.default_logscores
+            edge_colors='black'
+            line_widths=0.5
         else:
+            selecteds = r.ca_atoms.selecteds
+            if numpy.any(selecteds):
+                # Put the selected residues last so they show on top
+                sort_order = numpy.lexsort((r.residues.numbers, r.residues.chain_ids, selecteds))
+                r = self._case_ramas = self._case_ramas[sort_order]
+                selecteds = selecteds[sort_order]
             phipsi = numpy.degrees(r.phipsis)
             logscores = numpy.log(r.scores)
+            edge_colors = numpy.zeros((len(phipsi),3))
+            edge_colors[selecteds] = [0,1,0]
+            line_widths = numpy.ones(len(phipsi))*0.5
+            line_widths[selecteds] = 1
 
         c = self.canvas
         s = self.scatter
@@ -395,5 +457,7 @@ class RamaPlot:
         scales = (-logscores+1)*self.base_scatter_size
         s.set_sizes(scales)
         s.set_array(-logscores)
+        s.set_edgecolors(edge_colors)
+        s.set_linewidths(line_widths)
         axes.draw_artist(s)
         c.blit(axes.bbox)

@@ -73,7 +73,13 @@ def find_incorrect_residues(session, model, heavy_atoms_only = True):
             questionable.append(r)
     return questionable
 
-def residue_graph(residue):
+class AtomProxy:
+    def __init__(self, atom):
+        self.atom = atom
+    def __lt__(self, other):
+        return self.atom.name < other.atom.name
+
+def _nx_residue_graph(residue):
     '''
     Make a :class:`networkx.Graph` representing the connectivity of a residue's
     atoms.
@@ -81,12 +87,18 @@ def residue_graph(residue):
     import networkx as nx
     rn = nx.Graph()
     atoms = residue.atoms
-    rn.add_nodes_from(atoms)
-    nx.set_node_attributes(rn, {a: {'element': e, 'name': n} for a, e, n in zip(atoms, atoms.element_names, atoms.names)})
-    rn.add_edges_from([b.atoms for b in atoms.intra_bonds])
+    proxies = [AtomProxy(atom) for atom in atoms]
+    proxy_map = {atom: proxy for atom, proxy in zip(atoms, proxies)}
+    rn.add_nodes_from(proxies)
+    nx.set_node_attributes(rn, {a: {'element': e, 'name': n} for a, e, n in zip(proxies, atoms.element_names, atoms.names)})
+    rn.add_edges_from([[proxy_map[a] for a in b.atoms] for b in atoms.intra_bonds])
     return rn
 
-def template_graph(template):
+def residue_graph(residue):
+    from chimerax.isolde.graph import make_graph_from_residue
+    return make_graph_from_residue(residue)
+
+def _nx_template_graph(template):
     '''
     Make a :class:`networkx.Graph` representing the connectivity of a template's
     atoms.
@@ -94,15 +106,21 @@ def template_graph(template):
     import networkx as nx
     tn = nx.Graph()
     atoms = template.atoms
-    tn.add_nodes_from(atoms)
-    nx.set_node_attributes(tn, {a: {'element': e, 'name': n} for a, e, n in zip(atoms, [aa.element.name for aa in atoms], [aa.name for aa in atoms])})
+    proxies = [AtomProxy(atom) for atom in atoms]
+    proxy_map = {atom: proxy for atom, proxy in zip(atoms, proxies)}
+    tn.add_nodes_from(proxies)
+    nx.set_node_attributes(tn, {a: {'element': e, 'name': n} for a, e, n in zip(proxies, [aa.element.name for aa in atoms], [aa.name for aa in atoms])})
     bonds = set()
     for a in atoms:
         bonds.update(set(a.bonds))
-    tn.add_edges_from([b.atoms for b in bonds])
+    tn.add_edges_from([[proxy_map[a] for a in b.atoms] for b in bonds])
     return tn
 
-def find_maximal_isomorphous_fragment(residue_graph, template_graph, match_by='name'):
+def template_graph(template):
+    from chimerax.isolde.graph import make_graph_from_residue_template
+    return make_graph_from_residue_template(template)
+
+def find_maximal_isomorphous_fragment(residue, template):
     '''
     When a residue doesn't quite match its template, there can be various
     explanations:
@@ -112,65 +130,36 @@ def find_maximal_isomorphous_fragment(residue_graph, template_graph, match_by='n
     - this isn't actually the correct template for the residue
 
     This method compares the graph representations of residue and template to
-    find the maximal overlap, returning a dict mapping nodes in the larger
-    to their equivalent in the smaller.
+    find the maximal overlap, returning a dict mapping atoms in the residue to
+    those in the template.
 
     Args:
-        * residue_graph
-            - a :class:`networkx.Graph` object representing the residue atoms
-              present in the model (e.g. as built by :func:`residue_graph`)
-        * template_graph
-            - a :class:`networkx.Graph` object representing the residue atoms
-              present in the template (e.g. as built by :func:`template_graph`)
-        * match_by (default: 'name')
-            - atomic property to match nodes by (one of 'element' or 'name')
+        * residue
+            - a :class:`chimerax.atomic.Residue` object
+        * template
+            - a :class:`chimerax.atomic.cytmpl.TmplResidue` object
 
     Returns:
-        * bool
-            - True if the residue is larger than or equal to the template,
-              False otherwise
-        * dict
-            - mapping of nodes in the larger graph (or the residue graph if the
-              sizes are equal) to their equivalent in the smaller
+        * matched_atoms (dict)
+            - mapping of residue atoms to matching template atoms
+        * residue_extra_atoms (list)
+            - atoms that are in the residue but were not matched to the template
+              (if the residue is disconnected into two or more fragments, all
+              atoms that aren't in the largest will be found here).
+        * template_extra_atoms (list)
+            - atoms in the template that aren't in the residue.
     '''
-    import networkx as nx
-    from networkx import isomorphism as iso
-    if len(residue_graph) >= len(template_graph):
-        lg = residue_graph
-        sg = template_graph
-        residue_larger = True
-    else:
-        lg = template_graph
-        sg = residue_graph
-        residue_larger = False
+    rg = residue_graph(residue)
+    tg = template_graph(template)
+    residue_indices, template_indices, timed_out = rg.maximum_common_subgraph(tg)
 
-    max_nodes = 0
-    largest_sg = None
-    for cg in nx.connected.connected_components(sg):
-        if len(cg) > max_nodes:
-            max_nodes = len(cg)
-            largest_sg = sg.subgraph(cg)
-    gm = iso.GraphMatcher(lg, largest_sg,
-            node_match=iso.categorical_node_match(match_by, None))
-    subgraph = None
-    # GraphMatcher will typically find multiple maximal subgraphs since we're
-    # filtering by element only, not by strict atom name. Since CCD and AMBER
-    # don't always agree on atom nomenclature (and ChimeraX hydrogen names may
-    # not necessarily match either) there is not much more we can do. Should be
-    # safe to just take the first.
-    for subgraph in gm.subgraph_isomorphisms_iter():
-        break
+    amap = {residue.atoms[ri]: template.atoms[ti] for ri, ti in zip(residue_indices, template_indices)}
 
-    if (subgraph is None
-        or len(subgraph) <2
-        or len(subgraph)/len(lg) < 0.1
-        ):
-        raise TypeError('Residue does not appear to match template!')
+    from chimerax.atomic import Atoms
+    residue_extra_atoms = Atoms(set(residue.atoms).difference(set(amap.keys())))
+    template_extra_atoms = list(set(template.atoms).difference(set(amap.values())))
 
-    if residue_larger:
-        subgraph = {v:k for k,v in subgraph.items()}
-
-    return residue_larger, subgraph
+    return amap, residue_extra_atoms, template_extra_atoms
 
 def add_metal_bonds_from_template(residue, template):
     m = residue.structure
@@ -184,15 +173,25 @@ def add_metal_bonds_from_template(residue, template):
             if not rn in rmet.neighbors:
                 m.new_bond(rmet, rn)
 
-def fix_residue_from_template(residue, template):
+def fix_residue_from_template(residue, template, rename_atoms_only=False, rename_residue=False):
     import numpy
+    from chimerax.atomic import Atoms
     if any([numpy.any(numpy.isnan(a.coord)) for a in template.atoms]):
         raise TypeError('Template is missing one or more atom coordinates!')
+    matched_nodes, residue_extra, template_extra = find_maximal_isomorphous_fragment(residue, template)
+
+    if len(matched_nodes) < 3:
+        from chimerax.core.errors import UserError
+        raise UserError('Residue {} {}{} has only {} connected atoms in common with template {}. At least 3 matching atoms are needed.'.format(
+            residue.name, residue.chain_id, residue.number, len(matched_nodes), template.name
+        ))
+
     m = residue.structure
     session = m.session
     from chimerax.atomic.struct_edit import add_dihedral_atom
     from chimerax.core.geometry import distance, angle, dihedral
-    residue.atoms[residue.atoms.element_names=='H'].delete()
+    # if not rename_atoms_only:
+    #     residue.atoms[residue.atoms.element_names=='H'].delete()
     rnames = set(residue.atoms.names)
     tnames = set([a.name for a in template.atoms])
     # wrong_names = rnames.difference(tnames)
@@ -201,31 +200,33 @@ def fix_residue_from_template(residue, template):
     #     rnames.remove(wn)
 
     # Add missing bonds between atoms already in the residue
-    for ta in template.atoms:
-        ra = residue.find_atom(ta.name)
-        if ra is not None:
-            for tn in ta.neighbors:
-                rn = residue.find_atom(tn.name)
-                if rn is not None and rn not in ra.neighbors:
-                    m.new_bond(ra, rn)
+    if not rename_atoms_only:
+        for ta in template.atoms:
+            ra = residue.find_atom(ta.name)
+            if ra is not None:
+                for tn in ta.neighbors:
+                    rn = residue.find_atom(tn.name)
+                    if rn is not None and rn not in ra.neighbors:
+                        m.new_bond(ra, rn)
 
-    rg = residue_graph(residue)
-    tg = template_graph(template)
-    residue_larger, matched_nodes = find_maximal_isomorphous_fragment(rg, tg, match_by='element')
 
-    if len(matched_nodes) < 3:
-        raise TypeError('Need at least 3 contiguous atoms to complete residue!')
 
     # Delete any isolated atoms and rebuild from template
-    from chimerax.atomic import Atoms
-    # if residue_larger:
-    #     conn_ratoms = Atoms(matched_nodes.keys())
-    # else:
-    #     conn_ratoms = Atoms(matched_nodes.values())
-    conn_ratoms = Atoms(matched_nodes.values())
-    residue.atoms.subtract(conn_ratoms).delete()
+    if len(residue_extra):
+        if rename_atoms_only:
+            session.logger.warning('The following atoms in {} {}{} did not match template {}, and will not be renamed: {}.'.format(
+                residue.name, residue.chain_id, residue.number, template.name,
+                ', '.join(residue_extra.names)
+            ))
+        else:
+            session.logger.warning('Deleted the following atoms from the residue: {}'.format(
+                ', '.join(residue_extra.names)
+            ))
+            residue_extra.delete()
+
+    conn_ratoms = Atoms(matched_nodes.keys())
     renamed_atoms = []
-    for tatom, ratom in matched_nodes.items():
+    for ratom, tatom in matched_nodes.items():
         if ratom.name != tatom.name:
             renamed_atoms.append((ratom.name, tatom.name))
             ratom.name = tatom.name
@@ -233,33 +234,47 @@ def fix_residue_from_template(residue, template):
         warn_str = '{} atoms were automatically renamed to match the template: '.format(len(renamed_atoms))
         warn_str += ', '.join(['->'.join(apair) for apair in renamed_atoms])
         session.logger.warning(warn_str)
+    if rename_atoms_only:
+        return
 
     built = set(conn_ratoms)
     all_tatom_names = set([a.name for a in template.atoms])
-    last_len = len(residue.atoms)-1
-    while len(residue.atoms) < len(template.atoms):
-        tnames = [a.name for a in matched_nodes.keys()]
-        rnames = [a.name for a in matched_nodes.values()]
-        still_missing = all_tatom_names.difference(set(residue.atoms.names))
-        if not len(residue.atoms) > last_len:
+    still_missing = set(template_extra)
+    remaining = len(still_missing)
+    # last_len = len(residue.atoms)-1
+    found = set()
+    while remaining:
+        for ta in still_missing:
+            found_neighbors = []
+            for tn in ta.neighbors:
+                ra = residue.find_atom(tn.name)
+                if ra:
+                    found_neighbors.append((ra, tn))
+            if len(found_neighbors) == 0:
+                continue
+            elif len(found_neighbors) == 1:
+                ra, tn = found_neighbors[0]
+                build_next_atom_from_geometry(residue, ra, tn, ta)
+            else:
+                build_next_atom_from_coords(residue, found_neighbors, ta)
+            found.add(ta)
+        still_missing = still_missing.difference(found)
+        if len(still_missing) and not len(found):
             raise RuntimeError('Failed to add atoms on last iteration for residue {}. Still missing: {}'.format(
                 '{}{}'.format(residue.chain_id, residue.number), ','.join(still_missing)
             ))
-        last_len = len(residue.atoms)
-        # print('Atom numbers: Residue {}, Template {}'.format(
-        #     len(rnames), len(tnames)
+        # m.session.logger.status('Still missing: {}'.format(
+        #     ','.join([ta.name for ta in still_missing])
         # ))
-        m.session.logger.status('Still missing: {}'.format(
-            ','.join(still_missing)
-        ))
-        new_atoms = {}
-        for ta, ra in matched_nodes.items():
-            for tn in ta.neighbors:
-                if not residue.find_atom(tn.name):
-                    a = build_next_atom_from(tn.name, ta.name, residue, template)
-                    new_atoms[tn] = a
-        matched_nodes = new_atoms
-        # print('New atoms added: {}'.format(','.join([a.name for a in new_atoms.values()])))
+        remaining = len(still_missing)
+        # new_atoms = {}
+        # for ta, ra in matched_nodes.items():
+        #     for tn in ta.neighbors:
+        #         if not residue.find_atom(tn.name):
+        #             a = build_next_atom_from(tn.name, ta.name, residue, template)
+        #             new_atoms[tn] = a
+        # matched_nodes = new_atoms
+        # print('New atoms added: {}'.format(','.join([a.name for a in found])))
     bonds = set()
     for a in template.atoms:
         bonds.update(set(a.bonds))
@@ -267,33 +282,61 @@ def fix_residue_from_template(residue, template):
         a1, a2 = [residue.find_atom(a.name) for a in b.atoms]
         if a2 not in a1.neighbors:
             m.new_bond(a1, a2)
+    from .building import set_new_atom_style
+    set_new_atom_style(residue.session, residue.atoms)
+    if rename_residue:
+        residue.name = template.name
+
+def fix_residue_from_md_template(residue, md_template, cif_template=None):
+    '''
+    For the given residue, add/remove atoms as necessary to match the given MD
+    template. If `cif_template` is provided, the geometry and atom names will be
+    taken from that. Otherwise, any required new atoms will be added based on
+    ideal geometry.
+    '''
+    pass
 
 
-def build_next_atom_from(next_atom_name, stub_atom_name, residue, template):
+def build_next_atom_from_coords(residue, found_neighbors, template_new_atom):
+    bonded_to = [f[0] for f in found_neighbors]
+    m = residue.structure
+    n = len(found_neighbors)
+    found = set(f[0] for f in found_neighbors)
+    while len(found_neighbors) < 3:
+        for ra, ta in found_neighbors:
+            for tn in ta.neighbors:
+                rn = residue.find_atom(tn.name)
+                if rn and rn not in found:
+                    found_neighbors.append((rn, tn))
+                    found.add(rn)
+        if len(found_neighbors) <= n:
+            residue.session.logger.warning("Couldn't find more than two neighbor atoms. Falling back to simple geometry-based addition.")
+            return build_next_atom_from_geometry(residue, *found_neighbors[0], template_new_atom)
+        n = len(found_neighbors)
+    from chimerax.geometry import align_points
+    import numpy
+    ra_coords = numpy.array([f[0].coord for f in found_neighbors])
+    ta_coords = numpy.array([f[1].coord for f in found_neighbors])
+    tf, rms = align_points(ta_coords, ra_coords)
+    from chimerax.atomic.struct_edit import add_atom
+    ta = template_new_atom
+    a = add_atom(ta.name, ta.element, residue, tf*ta.coord)
+    for b in bonded_to:
+        m.new_bond(a, b)
+
+
+
+
+def build_next_atom_from_geometry(residue, residue_anchor, template_anchor, template_new_atom):
     from chimerax.atomic import struct_edit
     from chimerax.core.geometry import distance, angle, dihedral
     r = residue
     m = r.structure
-    tnext = template.find_atom(next_atom_name)
+    tnext = template_new_atom
     if tnext is None:
         raise TypeError('Template does not contain an atom with that name!')
-    tstub = template.find_atom(stub_atom_name)
-    rstub = r.find_atom(stub_atom_name)
-    # paired_atom_count = 1
-    # paired_atoms = {tstub: rstub,}
-    # search_list = tstub.neighbors
-    # while paired_atom_count < 4:
-    #     seen = set()
-    #     new_search_list = set()
-    #     for ta in search_list:
-    #         if ta.element.name != 'H' and ta not in seen:
-    #             seen.add(ta)
-    #             new_search_list.update(set(ta.neighbors))
-    #             ra = r.find_atom(ta.name)
-    #             if ra is not None:
-    #                 paired_atoms[ta] = ra
-    #                 paired_atom_count += 1
-    #     search_list = new_search_list
+    tstub = template_anchor
+    rstub = residue_anchor
 
     n1 = rstub
     n2 = n3 = None
@@ -321,24 +364,13 @@ def build_next_atom_from(next_atom_name, stub_atom_name, residue, template):
                     break
         if not n3:
             raise TypeError('No n3 found - Not enough connected atoms to form a dihedral!')
-    # from chimerax.core.geometry import align_points
-    # import numpy
-
-    #tas, ras = paired_atoms.
-    # tf = align_points(numpy.array([a.coord for a in paired_atoms.keys()]), numpy.array([a.coord for a in paired_atoms.values()]))[0]
-
-    # tf = align_points(numpy.array([a.coord for a in [tstub, a2, a3]]),
-    #     numpy.array([a.coord for a in [rstub, n2, n3]]))[0]
-    # apos = tf*tnext.coord
-    # a = struct_edit.add_atom(next_atom_name, tnext.element, residue, apos)
-    # return a
 
 
     dist = distance(tnext.coord, tstub.coord)
     ang = angle(tnext.coord, tstub.coord, a2.coord)
     dihe = dihedral(tnext.coord, tstub.coord, a2.coord, a3.coord)
     # print('{}: {} {} {}'.format(next_atom_name, dist, ang, dihe))
-    a = struct_edit.add_dihedral_atom(next_atom_name, tnext.element, n1, n2, n3, dist, ang, dihe)
+    a = struct_edit.add_dihedral_atom(tnext.name, tnext.element, n1, n2, n3, dist, ang, dihe)
     return a
 
 

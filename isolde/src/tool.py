@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 10-Mar-2020
+# @Last modified time: 10-Jun-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -122,6 +122,7 @@ class ISOLDE_ToolUI(ToolInstance):
             iw._validate_rama_main_frame,
             iw._validate_pep_main_frame,
             iw._validate_rota_main_frame,
+            iw._validate_unparameterised_residues_main_frame,
             iw._sim_basic_xtal_init_open_button,
             iw._sim_basic_xtal_init_main_frame,
             iw._sim_basic_xtal_settings_live_recalc_checkbox,

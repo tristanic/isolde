@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 17-Dec-2019
+# @Last modified time: 23-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -82,7 +82,6 @@ class _Dihedrals(Collection):
     Base class for ProperDihedrals and Improper_Dihedrals. Do not
     instantiate directly.
     '''
-    SESSION_SAVE=False
     def __init__(self, c_pointers, single_class, array_class):
         super().__init__(c_pointers, single_class, array_class)
 
@@ -124,6 +123,8 @@ class ChiralCenters(_Dihedrals):
         data = {
             'atoms':    self.chiral_atoms,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -167,6 +168,8 @@ class ProperDihedrals(_Dihedrals):
             'residues': self.residues,
             'names':    list(self.names),
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -252,6 +255,8 @@ class Ramas(Collection):
         data = {
             'residues': self.residues,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -276,6 +281,8 @@ class Rotamers(Collection):
         data = {
             'residues': self.residues,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -335,6 +342,8 @@ class PositionRestraints(Collection):
             'restraint mgrs': prms,
             'atoms':          self.atoms,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -354,6 +363,8 @@ class TuggableAtoms(PositionRestraints):
             'restraint mgrs': tams,
             'atoms':          self.atoms,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -398,6 +409,8 @@ class MDFFAtoms(Collection):
             'restraint mgrs':   mgrs,
             'atoms':            atoms,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -467,6 +480,8 @@ class DistanceRestraints(Collection):
         'restraint mgrs': [r.mgr for r in self],
         'atoms':    self.atoms
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -550,6 +565,8 @@ class AdaptiveDistanceRestraints(Collection):
         'restraint mgrs': [r.mgr for r in self],
         'atoms':    self.atoms
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -612,6 +629,8 @@ class ChiralRestraints(Collection):
             'restraint mgrs':   [r.mgr for r in self],
             'dihedrals':        self.dihedrals,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -697,6 +716,8 @@ class _ProperDihedralRestraints_Base(Collection):
             'restraint mgrs':   [r.mgr for r in self],
             'dihedrals':        self.dihedrals,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod
@@ -781,6 +802,8 @@ class RotamerRestraints(Collection):
             'restraint mgrs': [r.mgr for r in self],
             'rotamers':       self.rotamers,
         }
+        from . import ISOLDE_STATE_VERSION
+        data['version']=ISOLDE_STATE_VERSION
         return data
 
     @staticmethod

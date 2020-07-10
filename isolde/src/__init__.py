@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 17-Dec-2019
+# @Last modified time: 23-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -32,6 +32,8 @@ def _version():
     return pkg_resources.require('ChimeraX-ISOLDE')[0].version
 
 __version__ = _version()
+
+ISOLDE_STATE_VERSION = 1
 
 from chimerax.core.toolshed import BundleAPI
 from . import geometry

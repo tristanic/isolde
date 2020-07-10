@@ -2,7 +2,7 @@
 # @Date:   20-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 14-Jan-2020
+# @Last modified time: 23-May-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -53,5 +53,6 @@ def default_atom_visualisation(model):
     model.bonds.displays=True
     atoms.draw_modes = Atom.STICK_STYLE
     atoms.displays = True
-    atoms[atoms.idatm_types == 'HC'].displays=False
+    from chimerax.clipper.util import nonpolar_hydrogens
+    atoms[nonpolar_hydrogens(atoms)].displays=False
     model.residues.ribbon_displays = True

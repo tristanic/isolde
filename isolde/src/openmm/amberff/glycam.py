@@ -2,7 +2,7 @@
 # @Date:   15-Feb-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 23-May-2019
+# @Last modified time: 27-Apr-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -71,12 +71,17 @@ _residue_name_to_glycam_code = {
     'IDR':  'uA',    # alpha-L-iduronic acid
 
     'NGA':  'VB',    # N-acetyl-beta-D-galactosamine
+    'A2G':  'VA',    # N-acetyl-alpha-D-galactosamine
 
     'NAG':  'YB',    # N-acetyl-beta-D-glucosamine
 
     'SLB':  'SB',    # 5-N-acetyl-beta-D-neuraminic acid
-
 }
+
+_special_reducing_termini = {
+    'SLB':  '2',
+}
+
 
 _anchor_name_map = {
     'ASN'   : 'NLN',
@@ -114,23 +119,32 @@ def find_glycan_template_name_and_link(residue):
     '''
     bonded_atoms = []
     link_res = None
-    neighbors = residue.neighbors
+    r = residue
+    neighbors = r.neighbors
     from chimerax.atomic import Residue
-    core_name = _residue_name_to_glycam_code[residue.name]
+    core_name = _residue_name_to_glycam_code[r.name]
+    reducing_terminal_number = _special_reducing_termini.get(r.name, '1')
     for n in neighbors:
         if n.polymer_type==Residue.PT_AMINO:
             link_res = n
-        bonds = residue.bonds_between(n)
-        assert len(bonds) == 1
+        bonds = r.bonds_between(n)
+        if not len(bonds) == 1:
+            raise RuntimeError('Residue {}{} has multiple bonds to neighbor {}{}'.format(
+                r.chain_id, r.number, n.chain_id, n.number
+            ))
         for atom in bonds[0].atoms:
             if atom.residue == residue:
                 bonded_atoms.append(atom)
     bonded_atom_numbers = tuple(sorted(
-        [int(s) for atom in bonded_atoms for s in atom.name if s.isdigit() and s != '1']
+        [int(s) for atom in bonded_atoms for s in atom.name if s.isdigit() and s != reducing_terminal_number]
     ))
     if not len(bonded_atom_numbers):
         bonded_atom_numbers = (0,)
-    return ('GLYCAM_'+_glycam_prefix[bonded_atom_numbers]+core_name, link_res)
+    try:
+        prefix = _glycam_prefix[bonded_atom_numbers]
+    except:
+        raise RuntimeError('Residue {}{} has incorrect bonding: {}'.format(residue.chain_id, residue.number, bonded_atom_numbers))
+    return ('GLYCAM_'+prefix+core_name, link_res)
 
 def find_glycan_anchor_name(residue):
     base_name = _anchor_name_map.get(residue.name, None)
