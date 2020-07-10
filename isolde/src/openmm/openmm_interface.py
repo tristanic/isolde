@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 10-Jun-2020
+# @Last modified time: 08-Jul-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -869,7 +869,8 @@ class Sim_Manager:
         uh = update_handlers
         mdff_mgrs = self.mdff_mgrs
         sh.initialize_mdff_forces(list(mdff_mgrs.keys()))
-        for v, mgr in mdff_mgrs.items():
+        for v in sh.mdff_forces.keys():
+            mgr = mdff_mgrs[v]
             mdff_atoms = mgr.add_mdff_atoms(sc.mobile_atoms,
                 hydrogens = sp.hydrogens_feel_maps)
             sh.set_mdff_global_k(v, mgr.global_k)
@@ -2465,6 +2466,9 @@ class Sim_Handler:
         # Ensure that the region ijk step size is [1,1,1]
         v.new_region(ijk_min=region[0], ijk_max=region[1], ijk_step=[1,1,1])
         data = v.region_matrix()
+        if any (dim < 3 for dim in data.shape):
+            # Not enough of this map is covering the atoms. Leave it out.
+            return
         if not data.data.c_contiguous:
             data_copy = numpy.empty(data.shape, numpy.float32)
             data_copy[:] = data
