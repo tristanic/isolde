@@ -425,3 +425,71 @@ def copy_ideal_coords_to_exp(ciffile):
         count += i
         for line in lines[count:]:
             outfile.write(line+'\n')
+
+def get_valid_template_names(cif_file):
+    '''
+    Get the names of all non-obsolete templates in a chemical components cif file.
+    '''
+    from chimerax.atomic import mmcif
+    tables = mmcif.get_cif_tables(cif_file, ['chem_comp'], all_data_blocks=True)
+    residue_names = [t[0] for t in tables if t[1][0].fields(['pdbx_release_status'])[0][0] != 'OBS']
+    return residue_names
+
+def match_ff_templates_to_ccd_templates(session, forcefield, ccd_names):
+    '''
+    For each template in the MD forcefield, try to find the CCD template that
+    most closely matches it. This will take a long time!
+    '''
+    from chimerax.isolde.graph import make_graph_from_residue_template
+    from chimerax.atomic import mmcif
+    ff_templates = forcefield._templates
+    best_matches = {}
+    ccd_graphs = {}
+    small_ccd_templates = []
+    for name in ccd_names:
+        ccd_template = mmcif.find_template_residue(session, name)
+        if len(ccd_template.atoms) > 2:
+            ccd_graphs[name] = make_graph_from_residue_template(ccd_template)
+        else:
+            small_ccd_templates.append(ccd_template)
+    for tname, template in ff_templates.items():
+        best_score = -1000
+        if len(template.atoms) < 4:
+            best_match, score = match_small_ff_template_to_ccd_templates(template, small_ccd_templates)
+            best_matches[tname] = (best_match, score)
+            continue
+        tgraph = template.graph
+        num_heavy_atoms = len(tgraph.labels[tgraph.labels != 1])
+        for ccd_name, ccd_graph in ccd_graphs.items():
+            ccd_heavy_atoms = len(ccd_graph.labels[ccd_graph.labels!=1])
+            if abs(ccd_heavy_atoms - num_heavy_atoms) > 2:
+                continue
+            fti, cti, _ = tgraph.maximum_common_subgraph(ccd_graph)
+            score = len(fti)*3 - len(tgraph.labels) - len(ccd_graph.labels)
+            if score > best_score:
+                best_matches[tname] = ([ccd_name], score)
+                best_score = score
+            elif score == best_score:
+                best_matches[tname][0].append(ccd_name)
+        print('Best matches for {}: {}'.format(tname, ', '.join(best_matches[tname][0])), flush=True)
+    return best_matches
+
+def match_small_ff_template_to_ccd_templates(ff_template, ccd_templates):
+    '''
+    For a MD template with two or fewer atoms, find any CCD templates with the
+    same cohort of elements.
+    '''
+    found = []
+    elements = list(sorted(a.element.atomic_number for a in ff_template.atoms))
+    for ct in ccd_templates:
+        if len(ct.atoms) != len(ff_template.atoms):
+            continue
+        c_elements = list(sorted(a.element.number for a in ct.atoms))
+        matches = all(cn==n for cn, n in zip(c_elements, elements))
+        if matches:
+            found.append(ct.name)
+    if len(found):
+        score = len(elements)
+    else:
+        score = 0
+    return found, score
