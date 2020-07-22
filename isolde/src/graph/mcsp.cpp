@@ -1,6 +1,7 @@
 #include "graph.h"
 
 #include <algorithm>
+#include <iterator>
 #include <numeric>
 #include <chrono>
 #include <iostream>
