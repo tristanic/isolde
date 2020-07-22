@@ -78,7 +78,7 @@ def _background_load_ff(name, ff_files, openmm_version, isolde_version):
         print('Done loading forcefield')
         return {name: ff}
 
-class Forcefield_Mgr:
+class ForcefieldMgr:
     def __init__(self, session):
         self.session=session
         self._ff_dict = {}
@@ -239,7 +239,7 @@ class ForceField(_ForceField):
 
     def registerResidueTemplate(self, template):
         super().registerResidueTemplate(template)
-        if len(template.atoms) > 3:
+        if len(template.atoms) > 2:
             template.graph = self.template_graph(template)
         else:
             template.graph = None
