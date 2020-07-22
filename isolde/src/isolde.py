@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 06-Jul-2020
+# @Last modified time: 12-Jul-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -2242,15 +2242,15 @@ class Isolde():
 
 
     def _flip_peptide_bond(self, *_):
+        res = self._rebuild_residue
         if not self.simulation_running:
             self.start_sim()
-        res = self._rebuild_residue
         self.flip_peptide_bond(res)
 
     def _flip_cis_trans(self, *_):
+        res = self._rebuild_residue
         if not self.simulation_running:
             self.start_sim()
-        res = self._rebuild_residue
         self.flip_peptide_omega(res)
 
     ####
