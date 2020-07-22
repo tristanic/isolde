@@ -2,86 +2,185 @@
 # @Date:   15-Feb-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 27-Apr-2020
+# @Last modified time: 20-Jul-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
+glycam_suffix_to_ccd_name = {
+    'TA':   None,   # alpha-D-talopyranose - not in CCD
+    'TB':   None,   # beta-D-talopyranose - not in CCD
+    'NA':   'AFD',  # alpha-D-allopyranose
+    'NB':   'ALL',  # beta-D-allopyranose
+    'EA':   'SHD',  # alpha-D-altropyranose
+    'EB':   None,   # beta-D-altropyranse. Not currently in CCD - does appear as part of disaccharides 9QZ and M13
+    'FA':   'FCA',  # alpha-D-fucopyranose
+    'FB':   'FCB',  # beta-D-fucopyranose
+    'LA':   'GLA',  # alpha-D-galactopyranose
+    'LB':   'GAL',  # beta-D-galactopyranose
+    'GA':   'GLC',  # alpha-D-glucopyranose
+    'GB':   'BGC',  # beta-D-glucopyranose
+    'KA':   None,   # alpha-D-gulopyranose. Doesn't appear in isolation in CCD
+    'KB':   'GL0',  # beta-D-gulopyranose
+    'MA':   'MAN',  # alpha-D-mannopyranose
+    'MB':   'BMA',  # beta-D-mannopyranose
+    'QA':   'G6D',  # alpha-D-quinovopyranose
+    'QB':   None,   # beta-D-quinovopyranose. Not in CCD
+    'HA':   'XXR',  # alpha-D-rhamnopyranose
+    'HB':   None,   # beta-D-rhamnopyranose. Not in CCD
+    'tA':   None,   # alpha-L-talopyranose. Not in CCD
+    'tB':   None,   # beta-L-talopyranose. Not in CCD
+    'nA':   None,   # alpha-L-allopyranose. Not in CCD
+    'nB':   'WOO',  # beta-L-allopyranose
+    'eA':   'Z6H',  # alpha-L-altropyranose
+    'eB':   None,   # beta-L-altropyranose. Not in CCD
+    'fA':   'FUC',  # alpha-L-fucopyranose
+    'fB':   'FUL',  # beta-L-fucopyranose
+    'lA':   'GXL',  # alpha-L-galactopyranose
+    'lB':   'GIV',  # beta-L-galactopyranose
+    'gA':   None,   # alpha-L-glucopyranose. Not in CCD
+    'gB':   None,   # beta-L-glucopyranose. Not in CCD
+    'kA':   'GUP',  # alpha-L-gulopyranose
+    'kB':   None,   # beta-L-gulopyranose. Not in CCD
+    'mA':   None,   # alpha-L-mannopyranose. Not in CCD
+    'mB':   None,   # beta-L-mannopyranose. Not in CCD
+    'qA':   None,   # alpha-L-quinovopyranose. Not in CCD
+    'qB':   None,   # beta-L-quinovopyranose. Not in CCD
+    'hA':   'RAM',  # alpha-L-rhamnopyranose.
+    'hB':   'RM4',  # beta-L-rhamnopyranose
+    'VA':   'A2G',  # N-acetyl-alpha-D-galactosamine
+    'VB':   'NGA',  # N-acetyl-beta-D-galactosamine
+    'YA':   'NDG',  # N-acetyl-alpha-D-glucosamine
+    'YB':   'NAG',  # N-acetyl-beta-D-glucosamine
+    'WA':   'BM3',  # N-acetyl-alpha-D-mannosamine
+    'WB':   'BM7',  # N-acetyl-beta-D-mannosamine
+    'vA':   None,   # N-acetyl-alpha-L-galactosamine. Not in CCD
+    'vB':   None,   # N-acetyl-beta-L-galactosamine. Not in CCD
+    'yA':   None,   # N-acetyl-alpha-L-glucosamine. Not in CCD
+    'yB':   None,   # N-acetyl-beta-L-glucosamine. Not in CCD
+    'wA':   None,   # N-acetyl-alpha-L-mannosamine. Not in CCD
+    'wB':   None,   # N-acetyl-beta-L-mannosamine. Not in CCD
+    'Bc':   None,   # Not even sure what this is. Not clearly described in GLYCAM code
+    'bc':   None,
+    'YN':   'PA1',  # alpha-D-glucosamine
+    'Yn':   'GCS',  # beta-D-glucosamine
+    'YNP':  'PA1',  # protonated alpha-D-glucosamine
+    'YnP':  'GCS',  # protonated beta-D-glucosamine
+    'OA':   'ADA',  # alpha-D-galacturonic acid
+    'OB':   'GTR',  # beta-D-galacturonic acid
+    'ZB':   'BDP',  # beta-D-glucuronic acid
+    'ZA':   'GCU',  # alpha-D-glucuronic acid
+    'UA':   None,   # alpha-D-iduronic acid
+    'UB':   None,   # beta-D-iduronic acid
+    'oA':   None,   # alpha-L-galacturonic acid
+    'oB':   None,   # beta-L-galacturonic acid
+    'zA':   None,   # alpha-L-glucuronic acid
+    'zB':   None,   # beta-L-glucuronic acid
+    'uA':   'IDR',  # alpha-L-iduronic acid
+    'uB':   None,   # beta-L-iduronic acid
+    'AA':  '64K',   # alpha-D-arabinopyranose
+    'AB':   None,   # beta-D-arabinopyranose
+    'DA':  'LDY',   # alpha-D-lyxopyranose
+    'DB':   None,   # beta-D-lyxopyranose
+    'RA':   None,   # alpha-D-ribopyranose
+    'RB':  'RIP',   # beta-D-ribopyranose
+    'XA':  'XYS',   # alpha-D-xylopyranose
+    'XB':  'XYP',   # beta-D-xylopyranose
+    'aA':  'ARA',   # alpha-L-arabinopyranose
+    'aB':  'ARB',   # beta-L-arabinopyranose
+    'dA':   None,   # alpha-L-lyxopyranose
+    'dB':   None,   # beta-L-lyxopyranose
+    'rA':   None,   # alpha-L-ribopyranose
+    'rB':  '0MK',   # beta-L-ribopyranose
+    'xA':  'HSY',   # alpha-L-xylopyranose
+    'xB':  'LXC',   # beta-L-xylopyranose
+    'AE':   'ABE',  # alpha-D-abequopyranose
+    'Ae':   None,   # beta-D-abequopyranose
+    'TV':   'TYV',  # alpha-D-tyvelopyranose
+    'Tv':   None,   # beta-D-tyvelopyranose
+    'tV':   None,   # alpha-L-tyvelopyranose
+    'tv':   None,   # beta-L-tyvelopyranose
+    'CA':   None,   # alpha-D-fructopyranose
+    'CB':  'BDF',   # beta-D-fructopyranose
+    'PA':   None,   # alpha-D-psicopyranose
+    'PB':   None,   # beta-D-psicopyranose
+    'BA':   None,   # alpha-D-sorbopyranose
+    'BB':   None,   # beta-D-sorbopyranose
+    'JA':  'T6T',   # alpha-D-tagatopyranose
+    'JB':   None,   # beta-D-tagatopyranose
+    'cA':   None,   # alpha-L-fructopyranose
+    'cB':   None,   # beta-L-fructopyranose
+    'pA':   None,   # alpha-L-psicopyranose
+    'pB':   None,   # beta-L-psicopyranose
+    'bA':   'SOE',  # alpha-L-sorbopyranose
+    'bB':   None,   # beta-L-sorbopyranose
+    'jA':   None,   # alpha-L-tagatopyranose
+    'jB':   None,   # beta-L-tagatopyranose
 
+    'SA':   'SIA',  # alpha-D-sialic acid
+    'SB':   'SLB',  # beta-D-sialic acid
+    'sA':   None,   # alpha-L-sialic acid
+    'sB':   None,   # beta-L-sialic acid
+    'GL':   'NGC',  # alpha-D-N-glycolylneuraminic acid
+    'gL':   None,   # alpha-L-N-glycloylneuraminic acid
 
-_residue_name_to_glycam_code = {
-    '64K':  'AA',    # alpha-D-arabinopyranose
-    'ARA':  'aA',    # alpha-L-arabinopyranose
-    'ARB':  'aB',    # beta-L-arabinopyranose
-                     # NOTE: beta-D-arabinopyranose doesn't seem to appear in the CCD
-
-    'LDY':  'DA',    # alpha-D-lyxopyranose
-
-    'RIP':  'RB',    # beta-D-ribopyranose
-    '0MK':  'rB',    # beta-L-ribopyranose
-
-    'XYP':  'XB',    # beta-D-xylopyranose
-    'XYS':  'XA',    # alpha-D-xylopyranose
-    'LXC':  'xB',    # beta-L-xylopyranose
-    'HSY':  'xA',    # alpha-L-xylopyranose
-
-
-    'ALL':  'NB',    # beta-D-allopyranose
-    'AFD':  'NA',    # alpha-D-allopyranose
-    'WOO':  'nB',    # beta-L-allopyranose
-
-    'SHD':  'EA',    # alpha-D-altropyranose
-
-    'GAL':  'LB',    # beta-D-galactopyranose
-    'GLA':  'LA',    # alpha-D-galactopyranose
-    'GXL':  'lA',    # alpha-L-galactopyranose
-    'GIV':  'lB',    # beta-L-galactopyranose
-
-    'BGC':  'GB',    # beta-D-glucopyranose
-    'GLC':  'GA',    # alpha-D-glucopyranose
-
-    'GL0':  'KB',    # beta-D-gulopyranose
-    'GUP':  'kA',    # alpha-L-gulopyranose
-
-    '4N2':  'IB',    # beta-L-idopyranose
-
-    'BMA':  'MB',    # beta-D-mannopyranose
-    'MAN':  'MA',    # alpha-D-mannose
-
-    'BDF':  'CB',    # beta-D-fructopyranose
-
-    'SOE':  'bA',    # alpha-L-sorbopyranose
-
-    'T6T':  'JA',    # alpha-D-tagatopyranose
-
-    'FCA':  'FA',    # alpha-D-fucose
-    'FCB':  'FB',    # beta-D-fucose
-    'FUC':  'fA',    # alpha-L-fucose
-    'FUL':  'fB',    # beta-L-fucose
-
-    'G6D':  'QA',    # alpha-D-quinovose
-
-    'RAM':  'hA',    # alpha-L-rhamnose
-
-    'ADA':  'OA',    # alpha-D-galacturonic acid
-    'GTR':  'OB',    # beta-D-galacturonic acid
-
-    'BDP':  'ZB',    # beta-D-glucuronic acid
-    'GCU':  'ZA',    # alpha-D-glucuronic acid
-
-    'IDR':  'uA',    # alpha-L-iduronic acid
-
-    'NGA':  'VB',    # N-acetyl-beta-D-galactosamine
-    'A2G':  'VA',    # N-acetyl-alpha-D-galactosamine
-
-    'NAG':  'YB',    # N-acetyl-beta-D-glucosamine
-
-    'SLB':  'SB',    # 5-N-acetyl-beta-D-neuraminic acid
+    'AD':   'BXY',  # alpha-D-arabinofuranose
+    'AU':   'BXX',  # beta-D-arabinofuranose
+    'DD':   None,   # alpha-D-lyxofuranose
+    'DU':   None,   # beta-D-lyxofuranose
+    'RD':   'RIB',  # alpha-D-ribofuranose
+    'RU':   'BDR',  # beta-D-ribofuranose
+    'XD':   None,   # alpha-D-xylofuranose
+    'XU':   'XYZ',  # beta-D-xylofuranose
+    'aD':   'AHR',  # alpha-L-arabinofuranose
+    'aU':   'FUB',  # beta-L-arabinofuranose
+    'dD':   None,   # alpha-L-lyxofuranose
+    'dU':   None,   # beta-L-lyxofuranose
+    'rD':   'Z6J',  # alpha-L-ribofuranose
+    'rU':   '32O',  # beta-L-ribofuranose
+    'xD':   None,   # alpha-L-xylofuranose
+    'xU':   None,   # beta-L-xylofuranose
+    'CD':   'Z9N',  # alpha-D-fructofuranose
+    'CU':   'FRU',  # beta-D-fructofuranose
+    'PD':   'PSV',  # alpha-D-psicofuranose
+    'PU':   None,   # beta-D-psicofuranose
+    'BD':   None,   # alpha-D-sorbofuranose
+    'BU':   None,   # beta-D-sorbofuranose
+    'JD':   None,   # alpha-D-tagatofuranose
+    'JU':   None,   # beta-D-tagatofuranose
+    'cD':   None,   # alpha-L-fructofuranose
+    'cU':   'LFR',  # beta-L-fructofuranose
+    'pD':   None,   # alpha-L-psicofuranose
+    'pU':   None,   # beta-L-psicofuranose
+    'bD':   None,   # alpha-L-sorbofuranose
+    'bU':   None,   # beta-L-sorbofuranose
+    'jD':   None,   # alpha-L-tagatofuranose
+    'jU':   None,   # beta-L-tagatofuranose
 }
+
+residue_name_to_glycam_code = {val: key for key, val in glycam_suffix_to_ccd_name.items() if val is not None}
+
+anchor_name_to_ccd_template = {
+    "OLS": "SER_LL_DHG",
+    "OLT": "THR_LL_DHG1",
+    "NLN": "ASN_LL",
+    "COLS": "SER_LEO2_DHG",
+    "COLT": "THR_LEO2_DHG1",
+    "CNLN": "ASN_LEO2",
+    "NOLS": "SER_LSN3_DHG",
+    "NOLT": "THR_LSN3_DHG1",
+    "NNLN": "ASN_LSN3",
+    # "MEX": "74C",
+    # "ROH": "OH",
+    # "SO3": "SO3",
+    "ZOLS": "SER_LFZW_DHG",
+    "ZOLT": "THR_LFZW_DHG1",
+
+}
+
 
 _special_reducing_termini = {
     'SLB':  '2',
 }
-
 
 _anchor_name_map = {
     'ASN'   : 'NLN',
@@ -90,7 +189,7 @@ _anchor_name_map = {
     'HYP'   : 'OLP',
 }
 
-known_sugars = set(_residue_name_to_glycam_code.keys())
+known_sugars = set(residue_name_to_glycam_code.keys())
 
 _glycam_prefix = {
     (0,):       '0',
@@ -122,7 +221,7 @@ def find_glycan_template_name_and_link(residue):
     r = residue
     neighbors = r.neighbors
     from chimerax.atomic import Residue
-    core_name = _residue_name_to_glycam_code[r.name]
+    core_name = residue_name_to_glycam_code[r.name]
     reducing_terminal_number = _special_reducing_termini.get(r.name, '1')
     for n in neighbors:
         if n.polymer_type==Residue.PT_AMINO:
@@ -153,16 +252,27 @@ def find_glycan_anchor_name(residue):
             'parameters are available for this type of linkage.'.format(
             residue.name, residue.chain_id, residue.number
             ))
-    n_term=True
-    c_term=True
+    n_term=False
+    c_term=False
     N = residue.find_atom('N')
+    h_count = 0
     for na in N.neighbors:
         if na.residue != residue:
-            n_term=False
+            break
+        if na.element.name=='H':
+            h_count += 1
+    if h_count == 3:
+        n_term=True
+
     C = residue.find_atom('C')
+    o_count = 0
     for ca in C.neighbors:
         if ca.residue != residue:
-            c_term = False
+            break
+        if ca.element.name == 'O':
+            o_count += 1
+    if o_count == 2:
+        c_term=True
     if n_term:
         prefix='N'
     elif c_term:
