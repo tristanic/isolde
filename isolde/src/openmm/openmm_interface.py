@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 08-Jul-2020
+# @Last modified time: 17-Jul-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -2990,12 +2990,16 @@ def create_openmm_topology(atoms, residue_templates):
               we need to do the conversion here.
     '''
 
+    m = atoms.unique_structures[0]
+    session = m.session
     anames   = atoms.names
     n = len(anames)
     enames   = atoms.element_names
-    rnames   = atoms.residues.names
-    rnums    = atoms.residues.numbers
-    insertion_codes = atoms.residues.insertion_codes
+    residues = atoms.residues
+    rnames   = residues.names
+    rindices = m.residues.indices(residues)
+    rnums    = residues.numbers
+    insertion_codes = residues.insertion_codes
     cids    = atoms.chain_ids
     bonds = atoms.intra_bonds
     bond_is = [atoms.indices(alist) for alist in bonds.atoms]
@@ -3006,22 +3010,29 @@ def create_openmm_topology(atoms, residue_templates):
     top = topology = Topology()
     cmap = {}
     rmap = {}
+    unique_check = {}
     atoms = {}
     rcount = 0
-    for i, (aname, ename, rname, rnum, icode, cid) in enumerate(
-            zip(anames, enames, rnames, rnums, insertion_codes, cids)):
+    for i, (aname, ename, rname, rindex, rnum, icode, cid) in enumerate(
+            zip(anames, enames, rnames, rindices, rnums, insertion_codes, cids)):
         if not cid in cmap:
             cmap[cid] = top.addChain()   # OpenMM chains have no name
-        rid = (rname, rnum, icode, cid)
-        if not rid in rmap:
-            res = rmap[rid] = top.addResidue(rname, cmap[cid])
+        if not rindex in rmap:
+            rid = (rnum, icode, cid)
+            if rid in unique_check:
+                session.logger.warning('Chain {}, residue {}{} specifies more '
+                    'than one residue! The simulation can still run, but this '
+                    'will probably cause problems later if not rectified by '
+                    'renumbering.'.format(cid, rnum, icode))
+            unique_check[rid]=rindex
+            res = rmap[rindex] = top.addResidue(rname, cmap[cid])
             if rcount in residue_templates.keys():
                 templates_out[res] = residue_templates[rcount]
             rcount += 1
 
 
         element = Element.getBySymbol(ename)
-        atoms[i] = top.addAtom(aname, element,rmap[rid])
+        atoms[i] = top.addAtom(aname, element,rmap[rindex])
 
     for i1, i2 in zip(*bond_is):
         top.addBond(atoms[i1],  atoms[i2])
