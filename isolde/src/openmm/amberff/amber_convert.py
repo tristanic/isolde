@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Jun-2019
+# @Last modified time: 27-Apr-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -347,7 +347,9 @@ def find_duplicate_definitions(dirname):
 
 
 
-
+if __name__ == "__main__":
+    import sys
+    amber_to_ffxml(sys.argv[1], sys.argv[2])
 
 # if __name__ == "__main__":
 #     import sys
