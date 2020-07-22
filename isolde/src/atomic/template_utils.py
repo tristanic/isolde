@@ -94,9 +94,9 @@ def _nx_residue_graph(residue):
     rn.add_edges_from([[proxy_map[a] for a in b.atoms] for b in atoms.intra_bonds])
     return rn
 
-def residue_graph(residue):
+def residue_graph(residue, label='element'):
     from chimerax.isolde.graph import make_graph_from_residue
-    return make_graph_from_residue(residue)
+    return make_graph_from_residue(residue, label=label)
 
 def _nx_template_graph(template):
     '''
@@ -116,11 +116,11 @@ def _nx_template_graph(template):
     tn.add_edges_from([[proxy_map[a] for a in b.atoms] for b in bonds])
     return tn
 
-def template_graph(template):
+def template_graph(template, label='element'):
     from chimerax.isolde.graph import make_graph_from_residue_template
-    return make_graph_from_residue_template(template)
+    return make_graph_from_residue_template(template, label=label)
 
-def find_maximal_isomorphous_fragment(residue, template):
+def find_maximal_isomorphous_fragment(residue, template, match_by='element'):
     '''
     When a residue doesn't quite match its template, there can be various
     explanations:
@@ -149,8 +149,8 @@ def find_maximal_isomorphous_fragment(residue, template):
         * template_extra_atoms (list)
             - atoms in the template that aren't in the residue.
     '''
-    rg = residue_graph(residue)
-    tg = template_graph(template)
+    rg = residue_graph(residue, label=match_by)
+    tg = template_graph(template, label=match_by)
     residue_indices, template_indices, timed_out = rg.maximum_common_subgraph(tg)
 
     amap = {residue.atoms[ri]: template.atoms[ti] for ri, ti in zip(residue_indices, template_indices)}
@@ -173,12 +173,13 @@ def add_metal_bonds_from_template(residue, template):
             if not rn in rmet.neighbors:
                 m.new_bond(rmet, rn)
 
-def fix_residue_from_template(residue, template, rename_atoms_only=False, rename_residue=False):
+def fix_residue_from_template(residue, template, rename_atoms_only=False,
+        rename_residue=False, match_by='name'):
     import numpy
     from chimerax.atomic import Atoms
     if any([numpy.any(numpy.isnan(a.coord)) for a in template.atoms]):
         raise TypeError('Template is missing one or more atom coordinates!')
-    matched_nodes, residue_extra, template_extra = find_maximal_isomorphous_fragment(residue, template)
+    matched_nodes, residue_extra, template_extra = find_maximal_isomorphous_fragment(residue, template, match_by=match_by)
 
     if len(matched_nodes) < 3:
         from chimerax.core.errors import UserError
@@ -199,15 +200,15 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False, rename
     #     residue.find_atom(wn).delete()
     #     rnames.remove(wn)
 
-    # Add missing bonds between atoms already in the residue
-    if not rename_atoms_only:
-        for ta in template.atoms:
-            ra = residue.find_atom(ta.name)
-            if ra is not None:
-                for tn in ta.neighbors:
-                    rn = residue.find_atom(tn.name)
-                    if rn is not None and rn not in ra.neighbors:
-                        m.new_bond(ra, rn)
+    # # Add missing bonds between atoms already in the residue
+    # if not rename_atoms_only:
+    #     for ta in template.atoms:
+    #         ra = residue.find_atom(ta.name)
+    #         if ra is not None:
+    #             for tn in ta.neighbors:
+    #                 rn = residue.find_atom(tn.name)
+    #                 if rn is not None and rn not in ra.neighbors:
+    #                     m.new_bond(ra, rn)
 
 
 
