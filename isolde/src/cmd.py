@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 06-May-2020
+# @Last modified time: 17-Jul-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -332,3 +332,5 @@ def register_isolde(logger):
     register_manip_commands(logger)
     from chimerax.isolde.atomic.building.cmd import register_isolde_add
     register_isolde_add(logger)
+    from chimerax.isolde.openmm.cmd import register_ff_cmd
+    register_ff_cmd(logger)

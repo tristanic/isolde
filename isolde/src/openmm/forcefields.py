@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 06-Jul-2020
+# @Last modified time: 18-Jul-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -88,6 +88,20 @@ class ForcefieldMgr:
         self._openmm_version = version.version
         from chimerax.isolde import __version__
         self._isolde_version = __version__
+
+    def reset(self, clear_cache=False):
+        if clear_cache:
+            self.clear_cache()
+        self._ff_dict.clear()
+
+    @staticmethod
+    def clear_cache():
+        ff_dir = get_forcefield_cache_dir()
+        import glob, os
+        for f in glob.glob(os.path.join(ff_dir, '*.pickle')):
+            os.remove(f)
+
+
 
     def _complete_task(self):
         from time import sleep
