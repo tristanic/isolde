@@ -428,7 +428,7 @@
       <ExternalBond atomName="O1G"/>
       <ExternalBond atomName="C2'"/>
     </Residue>
-    <Residue name="BRYCE_FAD">
+    <!-- <Residue name="BRYCE_FAD">
       <Atom charge="1.046883" name="PA" type="P"/>
       <Atom charge="-0.740567" name="O1A1" type="O2"/>
       <Atom charge="-0.833331" name="O2A1" type="O2"/>
@@ -604,7 +604,7 @@
       <Bond atomName1="H31" atomName2="O4"/>
       <Bond atomName1="H32" atomName2="C11"/>
       <Bond atomName1="H33" atomName2="C11"/>
-    </Residue>
+    </Residue> -->
     <Residue name="BRYCE_FMN">
       <Atom charge="-0.325579" name="N1" type="NC"/>
       <Atom charge="0.548718" name="C2" type="C"/>
