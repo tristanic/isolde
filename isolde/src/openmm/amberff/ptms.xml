@@ -943,7 +943,7 @@
       <ExternalBond atomName="N"/>
       <ExternalBond atomName="C"/>
     </Residue>
-    <Residue name="PTM_HYP">
+    <!-- <Residue name="PTM_HYP">
       <Atom charge="-0.131423" name="N" type="N"/>
       <Atom charge="-0.244111" name="CD" type="CT"/>
       <Atom charge="0.105581" name="HD21" type="H1"/>
@@ -976,8 +976,8 @@
       <Bond atomName1="C" atomName2="O"/>
       <ExternalBond atomName="N"/>
       <ExternalBond atomName="C"/>
-    </Residue>
-    <Residue name="PTM_HZP">
+    </Residue> -->
+    <!-- <Residue name="PTM_HZP">
       <Atom charge="-0.131423" name="N" type="N"/>
       <Atom charge="-0.244111" name="CD" type="CT"/>
       <Atom charge="0.105581" name="HD21" type="H1"/>
@@ -1010,7 +1010,7 @@
       <Bond atomName1="C" atomName2="O"/>
       <ExternalBond atomName="N"/>
       <ExternalBond atomName="C"/>
-    </Residue>
+    </Residue> -->
     <Residue name="PTM_LYZ">
       <Atom charge="-0.560819" name="N" type="N"/>
       <Atom charge="0.353086" name="H" type="H"/>

@@ -3,7 +3,7 @@
 @Date:   13-Feb-2019
 @Email:  tic20@cam.ac.uk
 @Last modified by:   tic20
-@Last modified time: 01-May-2020
+@Last modified time: 20-Jul-2020
 @License: Free for non-commercial use (see license.pdf)
 @Copyright: 2017-2018 Tristan Croll
 -->
@@ -160,7 +160,7 @@
       <ExternalBond atomName="N"/>
       <ExternalBond atomName="C"/>
     </Residue>
-    <Residue name="GLYCAM_CHYP">
+    <!-- <Residue name="GLYCAM_CHYP">
       <Atom charge="-0.28" name="N" type="N"/>
       <Atom charge="-0.2983" name="CD" type="CT"/>
       <Atom charge="0.1104" name="HD22" type="H1"/>
@@ -195,7 +195,7 @@
       <Bond atomName1="C" atomName2="OXT"/>
       <ExternalBond atomName="N"/>
       <ExternalBond atomName="C"/>
-    </Residue>
+    </Residue> -->
     <Residue name="GLYCAM_CNLN">
       <Atom charge="-0.3821" name="N" type="N"/>
       <Atom charge="0.2681" name="H" type="H"/>
@@ -484,7 +484,7 @@
       <ExternalBond atomName="N"/>
       <ExternalBond atomName="C"/>
     </Residue>
-    <Residue name="GLYCAM_HYP">
+    <!-- <Residue name="GLYCAM_HYP">
       <Atom charge="-0.2548" name="N" type="N"/>
       <Atom charge="0.302" name="CD" type="CT"/>
       <Atom charge="-0.0431" name="HD2" type="H1"/>
@@ -517,7 +517,7 @@
       <Bond atomName1="C" atomName2="O"/>
       <ExternalBond atomName="N"/>
       <ExternalBond atomName="C"/>
-    </Residue>
+    </Residue> -->
     <Residue name="GLYCAM_0AA">
       <Atom charge="0.448" name="C1" type="Cg"/>
       <Atom charge="0.0" name="H1" type="H2"/>
