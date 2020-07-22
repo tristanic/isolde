@@ -31,16 +31,16 @@ Graph induced_subgraph(Graph& g, std::vector<int> vv) {
 void add_edge(Graph& g, int v, int w, bool directed=false, unsigned int val=1) {
     if (v != w) {
         if (directed) {
-            g.adjmat[v][w] |= val;
+            g.adjmat.at(v).at(w) |= val;
             g.adjmat[w][v] |= (val<<16);
         } else {
-            g.adjmat[v][w] = val;
+            g.adjmat.at(v).at(w) = val;
             g.adjmat[w][v] = val;
         }
     } else {
         // To indicate that a vertex has a loop, we set the most
         // significant bit of its label to 1
-        g.label[v] |= (1u << (BITS_PER_UNSIGNED_INT-1));
+        g.label.at(v) |= (1u << (BITS_PER_UNSIGNED_INT-1));
     }
 }
 
