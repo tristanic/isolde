@@ -2,7 +2,7 @@
 # @Date:   15-Feb-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 20-Jul-2020
+# @Last modified time: 29-Jul-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -208,7 +208,25 @@ _glycam_prefix = {
     (2,4,6):    'R',
     (3,4,6):    'Q',
     (2,3,4,6):  'P',
+}
 
+glycam_prefix_to_description = {
+    '0':    'non-reducing terminal',
+    '2':    'O2-linked',
+    '3':    'O3-linked',
+    '4':    'O4-linked',
+    '6':    'O6-linked',
+    'Z':    '2,3-linked',
+    'Y':    '2,4-linked',
+    'X':    '2,6-linked',
+    'W':    '3,4-linked',
+    'V':    '3,6-linked',
+    'U':    '4,6-linked',
+    'T':    '2,3,4-linked',
+    'S':    '2,3,6-linked',
+    'R':    '2,4,6-linked',
+    'Q':    '3,4,6-linked',
+    'P':    '2,3,4,6-linked'
 }
 
 def find_glycan_template_name_and_link(residue):
