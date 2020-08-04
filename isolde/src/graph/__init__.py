@@ -2,7 +2,7 @@
 # @Date:   17-Jun-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 22-Jul-2020
+# @Last modified time: 30-Jul-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -59,6 +59,18 @@ def save_residue_graphs_to_text(residues, filename):
             outfile.write('edges\n')
             for e in edges:
                 outfile.write('{},{}\n'.format(e[0],e[1]))
+
+def save_graphs_to_text(graph_dict, filename):
+    with open(filename, 'wt') as outfile:
+        for graph_name, graph in graph_dict.items():
+            labels, edges1, edges2 = graph.__getstate__()
+            outfile.write('graph_{}\n'.format(graph_name))
+            outfile.write('labels\n')
+            outfile.write(', '.join([str(l) for l in labels])+'\n')
+            outfile.write('edges\n')
+            for e0, e1 in zip(edges1, edges2):
+                outfile.write('{},{}\n'.format(e0,e1))
+
 
 def simple_name_to_int(name):
     '''
