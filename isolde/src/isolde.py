@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 12-Jul-2020
+# @Last modified time: 03-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -702,6 +702,9 @@ class Isolde():
         iw._sim_basic_ff_file_load_button.clicked.connect(
             self._add_ff_files_gui
         )
+        iw._sim_basic_load_cif_templates_button.clicked.connect(
+            self._add_cif_template_files_gui
+        )
 
         # Live maps direct from structure factors
         iw._sim_basic_xtal_init_exp_data_button.clicked.connect(
@@ -1223,6 +1226,33 @@ class Isolde():
         dlg.setDirectory(os.getcwd())
         if dlg.exec():
             return dlg.selectedFiles()
+
+    def _add_cif_template_files_gui(self, *_):
+        files = self._choose_cif_template_files(self)
+        if files is not None and len(files):
+            try:
+                from .atomic.template_utils import load_cif_templates
+                load_cif_templates(self.session, files)
+                self.session.logger.info('You will now be able to add these residues to '
+                    'your model with "isolde add ligand {ID}". To be able to simulate '
+                    'them, you will need to provide matching ffXML MD parameterisations.')
+            except:
+                raise
+
+    def _choose_cif_template_files(self, *_):
+        options = QFileDialog.Options()
+        caption = 'Choose one or more CIF files'
+        filetypes = 'CIF template dictionaries (*.cif)'
+        dlg = QFileDialog(caption=caption)
+        dlg.setAcceptMode(QFileDialog.AcceptOpen)
+        dlg.setNameFilter(filetypes)
+        dlg.setFileMode(QFileDialog.ExistingFiles)
+        import os
+        dlg.setDirectory(os.getcwd())
+        if dlg.exec():
+            return dlg.selectedFiles()
+
+
 
     def add_ffxml_files(self, forcefield, file_list):
         log = self.session.logger
