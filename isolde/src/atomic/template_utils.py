@@ -120,7 +120,8 @@ def template_graph(template, label='element'):
     from chimerax.isolde.graph import make_graph_from_residue_template
     return make_graph_from_residue_template(template, label=label)
 
-def find_maximal_isomorphous_fragment(residue, template, match_by='element'):
+def find_maximal_isomorphous_fragment(residue, template, match_by='element',
+        limit_template_indices=None):
     '''
     When a residue doesn't quite match its template, there can be various
     explanations:
@@ -151,13 +152,28 @@ def find_maximal_isomorphous_fragment(residue, template, match_by='element'):
     '''
     rg = residue_graph(residue, label=match_by)
     tg = template_graph(template, label=match_by)
-    residue_indices, template_indices, timed_out = rg.maximum_common_subgraph(tg)
+    residue_indices, template_indices, timed_out = rg.maximum_common_subgraph(tg, big_first=True)
+    if timed_out:
+        ri2, ti2, to2 = rg.maximum_common_subgraph(tg, timeout=5)
+        if len(ri2) > len(residue_indices):
+            residue_indices, template_indices = ri2, ti2
+        if to2:
+            residue.session.logger.warning('Timed out trying to match residue {} to template {}. Match may not be ideal.'.format(residue.name, template.name))
+    tatoms = template.atoms
+    if limit_template_indices is not None:
+        import numpy
+        tatoms = [tatoms[i] for i in range(len(tatoms)) if i in limit_template_indices]
+        mask = numpy.in1d(template_indices, limit_template_indices)
+        residue_indices = residue_indices[mask]
+        template_indices = template_indices[mask]
 
     amap = {residue.atoms[ri]: template.atoms[ti] for ri, ti in zip(residue_indices, template_indices)}
 
     from chimerax.atomic import Atoms
     residue_extra_atoms = Atoms(set(residue.atoms).difference(set(amap.keys())))
-    template_extra_atoms = list(set(template.atoms).difference(set(amap.values())))
+    template_extra_atoms = list(set(tatoms).difference(set(amap.values())))
+
+
 
     return amap, residue_extra_atoms, template_extra_atoms
 
@@ -174,12 +190,12 @@ def add_metal_bonds_from_template(residue, template):
                 m.new_bond(rmet, rn)
 
 def fix_residue_from_template(residue, template, rename_atoms_only=False,
-        rename_residue=False, match_by='name'):
+        rename_residue=False, match_by='name', template_indices=None):
     import numpy
     from chimerax.atomic import Atoms
     if any([numpy.any(numpy.isnan(a.coord)) for a in template.atoms]):
         raise TypeError('Template is missing one or more atom coordinates!')
-    matched_nodes, residue_extra, template_extra = find_maximal_isomorphous_fragment(residue, template, match_by=match_by)
+    matched_nodes, residue_extra, template_extra = find_maximal_isomorphous_fragment(residue, template, limit_template_indices=template_indices, match_by=match_by)
 
     if len(matched_nodes) < 3:
         from chimerax.core.errors import UserError
@@ -253,11 +269,11 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
                     found_neighbors.append((ra, tn))
             if len(found_neighbors) == 0:
                 continue
-            elif len(found_neighbors) == 1:
+            else:
                 ra, tn = found_neighbors[0]
                 build_next_atom_from_geometry(residue, ra, tn, ta)
-            else:
-                build_next_atom_from_coords(residue, found_neighbors, ta)
+            # else:
+            #     build_next_atom_from_coords(residue, found_neighbors, ta)
             found.add(ta)
         still_missing = still_missing.difference(found)
         if len(still_missing) and not len(found):
@@ -268,19 +284,13 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
         #     ','.join([ta.name for ta in still_missing])
         # ))
         remaining = len(still_missing)
-        # new_atoms = {}
-        # for ta, ra in matched_nodes.items():
-        #     for tn in ta.neighbors:
-        #         if not residue.find_atom(tn.name):
-        #             a = build_next_atom_from(tn.name, ta.name, residue, template)
-        #             new_atoms[tn] = a
-        # matched_nodes = new_atoms
-        # print('New atoms added: {}'.format(','.join([a.name for a in found])))
     bonds = set()
     for a in template.atoms:
         bonds.update(set(a.bonds))
     for b in bonds:
         a1, a2 = [residue.find_atom(a.name) for a in b.atoms]
+        if a1 is None or a2 is None:
+            continue
         if a2 not in a1.neighbors:
             m.new_bond(a1, a2)
     from .building import set_new_atom_style
@@ -288,17 +298,111 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
     if rename_residue:
         residue.name = template.name
 
-def fix_residue_from_md_template(residue, md_template, cif_template=None):
+def fix_residue_to_match_md_template(session, residue, md_template, cif_template = None,
+        rename=False):
     '''
     For the given residue, add/remove atoms as necessary to match the given MD
-    template. If `cif_template` is provided, the geometry and atom names will be
-    taken from that. Otherwise, any required new atoms will be added based on
-    ideal geometry.
+    template. If no explicit cif_template argument is given, an attempt will be
+    made to find a match using ISOLDE's database. If no CIF template is found,
+    corrections to the residue will be limited to deleting excess atoms.
     '''
-    pass
+    import numpy
+    from chimerax.isolde.openmm.amberff.template_utils import (
+        template_name_to_ccd_name,
+        match_template_atoms_to_ccd_atoms
+    )
+    if cif_template is None:
+        ccd_name, _ = template_name_to_ccd_name(md_template.name)
+        if ccd_name is not None:
+            from chimerax.atomic import mmcif
+            cif_template = mmcif.find_template_residue(session, ccd_name)
+    else:
+        ccd_name = cif_template.name
+    if cif_template is None:
+        return trim_residue_to_md_template(residue, md_template)
+    template_indices, ccd_indices = match_template_atoms_to_ccd_atoms(session, md_template, ccd_name)
+    fix_residue_from_template(residue, cif_template, template_indices=ccd_indices)
+    template_extra_indices = [i for i in range(len(md_template.atoms)) if i not in template_indices]
+    #template_extra_atoms = [md_template.atoms[i] for i in template_extra_indices]
+    if len(template_extra_indices):
+        template_extra_bonds = set([b for b in md_template.bonds if any([i in template_extra_indices for i in b])])
+        from collections import defaultdict
+        stub_map = defaultdict(list)
+        # stub_map maps an existing atom in the residue to any atoms in the MD
+        # template that should be connected to it, but aren't yet modelled.
+        found_bonds = set()
+        for b in template_extra_bonds:
+            i1, i2 = b
+            i1_index = numpy.where(template_indices==i1)[0]
+            i2_index = numpy.where(template_indices==i2)[0]
+            if not len(i1_index) and not len(i2_index):
+                continue
+            if len(i2_index):
+                i1, i2 = i2, i1
+                i1_index = i2_index
+            i1_index = i1_index[0]
+            ccd_atom = cif_template.atoms[ccd_indices[i1_index]]
+            res_atom = residue.find_atom(ccd_atom.name)
+            if not res_atom:
+                raise RuntimeError("Atom {} should be in residue, but isn't".format(ccd_atom.name))
+            stub_map[res_atom].append(i2)
+            found_bonds.add(b)
+        template_extra_bonds = template_extra_bonds.difference(found_bonds)
+        from chimerax.core.errors import UserError
+        if len(template_extra_bonds):
+            err_str = ('MD template {} contains extra atoms that are not in '
+                'CCD template {}, and are not directly connected to existing '
+                'atoms. Since MD templates do not explicitly provide geometry,'
+                'these atoms will not be built. As it stands, the resulting '
+                'residue will contain only those atoms which the MD and CCD '
+                'templates have in common.').format(md_template.name, ccd_name)
+            raise UserError(err_str)
+        seen = set()
+        for new_atom_list in stub_map.values():
+            for i in new_atom_list:
+                if i in seen:
+                    err_str = ('The atom {} in MD template {} bonds to more than '
+                        'one existing atom in residue {}. Since MD templates do '
+                        'not explicitly specify geometry, this type of atom addition '
+                        'is not currently supported. The resulting residue will '
+                        'contain only those atoms which the MD and CCD templates '
+                        'have in common').format(
+                            md_template.atoms[i].name, md_template.name, ccd_name)
+                    raise UserError(err_str)
+                seen.add(i)
+        from chimerax.atomic import Element
+        from chimerax.atomic.build_structure import modify_atom
+        for existing_atom, new_indices in stub_map.items():
+            num_new_atoms = len(new_indices)
+            num_bonds = len(existing_atom.neighbors) + num_new_atoms
+            new_tatoms = [md_template.atoms[i] for i in new_indices]
+            modified_atoms = modify_atom(existing_atom, existing_atom.element,
+                num_bonds, res_name=residue.name)
+            new_atoms = modified_atoms[1:]
+            for na, ta in zip(new_atoms, new_tatoms):
+                modify_atom(na, Element.get_element(ta.element.atomic_number),
+                    1, name=ta.name, res_name=residue.name
+                )
+
+
+def trim_residue_to_md_template(residue, md_template):
+    residue.session.logger.status('Trimming residue to MD template...')
+    if len(md_template.atoms) > 2:
+        from chimerax.isolde.graph import make_graph_from_residue
+        rgraph = make_graph_from_residue(residue)
+        ri, ti, _ = rgraph.maximum_common_subgraph(md_template.graph, timeout=5)
+        if len(ti) != len(md_template.atoms):
+            from chimerax.core.errors import UserError
+            err_string = ('Template {} contains atoms not found in residue '
+            '{} {}{}, and no matching CIF template is available to provide '
+            'coordinates.'.format(md_template.name, residue.name, residue.chain_id, residue.number))
+            raise UserError(err_string)
+        residue.atoms.subtract(residue.atoms[ri]).delete()
 
 
 def build_next_atom_from_coords(residue, found_neighbors, template_new_atom):
+    # print('Building next atom {} from aligned coords of {}'.format(template_new_atom.name,
+    #     ','.join([f[0].name for f in found_neighbors])))
     bonded_to = [f[0] for f in found_neighbors]
     m = residue.structure
     n = len(found_neighbors)
@@ -318,10 +422,12 @@ def build_next_atom_from_coords(residue, found_neighbors, template_new_atom):
     import numpy
     ra_coords = numpy.array([f[0].coord for f in found_neighbors])
     ta_coords = numpy.array([f[1].coord for f in found_neighbors])
+    bfactor = numpy.mean([f[0].bfactor for f in found_neighbors])
+    occupancy = numpy.mean([f[0].occupancy for f in found_neighbors])
     tf, rms = align_points(ta_coords, ra_coords)
     from chimerax.atomic.struct_edit import add_atom
     ta = template_new_atom
-    a = add_atom(ta.name, ta.element, residue, tf*ta.coord)
+    a = add_atom(ta.name, ta.element, residue, tf*ta.coord, occupancy=occupancy, bfactor=bfactor)
     for b in bonded_to:
         m.new_bond(a, b)
 
@@ -366,12 +472,16 @@ def build_next_atom_from_geometry(residue, residue_anchor, template_anchor, temp
         if not n3:
             raise TypeError('No n3 found - Not enough connected atoms to form a dihedral!')
 
+    # print('Building next atom {} from geometry of {}'.format(template_new_atom.name,
+    #     ','.join([n.name for n in (n1, n2, n3)])))
 
     dist = distance(tnext.coord, tstub.coord)
     ang = angle(tnext.coord, tstub.coord, a2.coord)
     dihe = dihedral(tnext.coord, tstub.coord, a2.coord, a3.coord)
     # print('{}: {} {} {}'.format(next_atom_name, dist, ang, dihe))
     a = struct_edit.add_dihedral_atom(tnext.name, tnext.element, n1, n2, n3, dist, ang, dihe)
+    a.occupancy = rstub.occupancy
+    a.bfactor = rstub.bfactor
     return a
 
 
@@ -414,7 +524,7 @@ def copy_ideal_coords_to_exp(ciffile):
                     target[1] = i
                 elif '_z' in line:
                     target[2] = i
-        print('Ideal indices: {}, experimental indices: {}'.format(ideal_indices, exp_indices))
+        # print('Ideal indices: {}, experimental indices: {}'.format(ideal_indices, exp_indices))
         count += i
         for i, line in enumerate(lines[count:]):
             if not line.startswith(resid):
@@ -427,13 +537,45 @@ def copy_ideal_coords_to_exp(ciffile):
         for line in lines[count:]:
             outfile.write(line+'\n')
 
-def get_valid_template_names(cif_file):
+def load_cif_templates(session, cif_files):
+    from chimerax.atomic import mmcif
+    all_names = []
+    for cif_file in cif_files:
+        try:
+            current_names = get_template_names(cif_file, filter_out_obsolete=False)
+            if not len(current_names):
+                session.logger.warning("File {} does not appear to contain any "
+                    "valid residue templates.".format(cif_file))
+                session.logger.status("At least one file did not load correctly. Check the log.")
+                continue
+            mmcif.load_mmCIF_templates(cif_file)
+            session.logger.info("Loaded CIF templates for [{}] from {}".format(
+                ', '.join(current_names), cif_file
+            ))
+            all_names.extend(current_names)
+        except Exception as e:
+            err_string = ("Attempt to load CIF template(s) [{}] from {} failed "
+                "with the following error. Are you sure this is a valid template "
+                "file? \n {}"
+            ).format(', '.join(current_names), cif_file, str(e))
+            session.logger.warning(err_string)
+            continue
+    if not len(all_names):
+        raise RuntimeError('No files successfully loaded.')
+
+
+
+def get_template_names(cif_file, filter_out_obsolete=True):
     '''
     Get the names of all non-obsolete templates in a chemical components cif file.
     '''
     from chimerax.atomic import mmcif
-    tables = mmcif.get_cif_tables(cif_file, ['chem_comp'], all_data_blocks=True)
-    residue_names = [t[0] for t in tables if t[1][0].fields(['pdbx_release_status'])[0][0] != 'OBS']
+    tables = mmcif.get_cif_tables(cif_file, ['chem_comp','chem_comp_atom'], all_data_blocks=True)
+    tables = [t for t in tables if t[1][1].has_field('model_Cartn_x') or t[1][1].has_field('pdbx_model_Cartn_x_ideal')]
+    if filter_out_obsolete:
+        residue_names = [t[0] for t in tables if t[1][0].fields(['pdbx_release_status'])[0][0] != 'OBS']
+    else:
+        residue_names = [t[0] for t in tables]
     return residue_names
 
 def match_ff_templates_to_ccd_templates(session, forcefield, ccd_names):
