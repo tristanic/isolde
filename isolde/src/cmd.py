@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 17-Jul-2020
+# @Last modified time: 02-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -223,7 +223,15 @@ def isolde_step(session, residue=None, view_distance=None, interpolate_frames=No
             raise UserError('Unrecognised residue argument! If specified, must '
                 'be either a residue, "first", "last", "next" or "prev"')
 
-
+def isolde_jump(session, direction="next"):
+    isolde_start(session)
+    m = session.isolde.selected_model
+    from chimerax.core.errors import UserError
+    if m is None:
+        raise UserError("Please open a model first!")
+    from .navigate import get_stepper
+    rs = get_stepper(m)
+    rs.incr_chain(direction)
 
 def register_isolde(logger):
     from chimerax.core.commands import (
@@ -315,6 +323,17 @@ def register_isolde(logger):
         )
         register('isolde stepto', desc, isolde_step, logger=logger)
 
+    def register_isolde_jump():
+        desc = CmdDesc(
+            synopsis=('Jump the view to the first residue of the next chain or '
+                'the last residue of the previous chain.'),
+            optional=[
+                ('direction', EnumOf(('next', 'prev')))
+            ]
+        )
+        register('isolde jumpto', desc, isolde_jump, logger=logger)
+
+
     register_isolde_start()
     register_isolde_set()
     register_isolde_sim()
@@ -324,6 +343,7 @@ def register_isolde(logger):
     register_isolde_tutorial()
     register_isolde_demo()
     register_isolde_step()
+    register_isolde_jump()
     from chimerax.isolde.remote_control import register_remote_commands
     register_remote_commands(logger)
     from chimerax.isolde.restraints.cmd import register_isolde_restrain
