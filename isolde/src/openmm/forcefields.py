@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 18-Jul-2020
+# @Last modified time: 31-Jul-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -286,6 +286,16 @@ class ForceField(_ForceField):
                 template.name, labels, edges
             ))
 
+    @staticmethod
+    def match_score(residue, template, residue_indices):
+        ratoms = list(residue.atoms())
+        residue_size = sum(a.element.atomic_number for a in ratoms)
+        template_size = sum(a.element.atomic_number for a in template.atoms)
+        match_size = sum(ratoms[i].element.atomic_number for i in residue_indices)
+        residue_delta = residue_size - match_size
+        template_delta = template_size - match_size
+        return 1 - (residue_delta + template_delta)/min(residue_size, template_size)
+
 
     def find_possible_templates(self, res, max_missing_heavy_atoms=3,
             max_missing_heavy_atom_fraction = 0.2,
@@ -293,6 +303,11 @@ class ForceField(_ForceField):
         from simtk.openmm.app import element
         from collections import Counter
         from ..atomic.template_utils import find_maximal_isomorphous_fragment
+        from .amberff.glycam import (
+            known_sugars,
+            residue_name_to_glycam_code,
+            _glycam_prefix
+            )
         residue_counts = Counter(a.element for a in res.atoms())
         residue_elements = set(residue_counts.keys())
         num_atoms = sum(residue_counts.values())
@@ -304,6 +319,31 @@ class ForceField(_ForceField):
             rgraph = self.residue_graph(res)
         else:
             rgraph = None
+        if rname in known_sugars:
+            base_name = residue_name_to_glycam_code[rname]
+            o_links = []
+            for b in res.external_bonds():
+                a0, a1 = b
+                if a0.residue == res:
+                    if a0.name.startswith('O'):
+                        o_links.append(int(a0.name[1]))
+                elif a1.name.startswith('O'):
+                    o_links.append(int(a1.name[1]))
+            o_links = tuple(sorted(o_links))
+            if not len(o_links):
+                o_links = (0,)
+            prefix = _glycam_prefix.get(o_links, None)
+
+            if prefix is not None:
+                tmpl_name = 'GLYCAM_'+prefix+base_name
+                template = self._templates[tmpl_name]
+                tgraph = template.graph
+                if rgraph:
+                    r_indices, t_indices, timed_out = rgraph.maximum_common_subgraph(tgraph, timeout=0.25)
+                    score = self.match_score(res, template, r_indices)
+                else:
+                    score = -1
+                matches_by_name.append((tmpl_name, score))
         for template_name, template in self._templates.items():
             split_name = template_name.split('_')
             if len(split_name) > 1:
@@ -319,10 +359,10 @@ class ForceField(_ForceField):
             if rname.upper() == base_name:
                 if rgraph and tgraph:
                     r_indices, t_indices, aborted = rgraph.maximum_common_subgraph(tgraph, timeout=0.25)
-                    match_len = len(r_indices)
+                    score = self.match_score(res, template, r_indices)
                 else:
-                    match_len = -1
-                matches_by_name.append((template_name, match_len))
+                    score = -1
+                matches_by_name.append((template_name, score))
                 continue
             # If the residue has at least 3 atoms, try template matching
             if rgraph is None or tgraph is None:
@@ -334,9 +374,10 @@ class ForceField(_ForceField):
             hd = sum(heavy_differences.values())
             if hd > max_missing_heavy_atoms and hd/num_heavy_atoms > max_missing_heavy_atom_fraction:
                 continue
+            template_size = len(template.atoms)
             r_indices, t_indices, aborted = rgraph.maximum_common_subgraph(tgraph, timeout=0.25)
             num_matched = len(r_indices)
-            score = num_matched - hd
+            score = self.match_score(res, template, r_indices)
             if num_matched/num_atoms > minimum_graph_match:
                 matches_by_composition.append((template_name, score))
         matches_by_name = list(sorted(matches_by_name, reverse=True, key=lambda t: t[1]))
