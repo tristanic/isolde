@@ -481,6 +481,8 @@ class Isolde():
 
         st = iw._sim_tab_widget
         st.setCurrentIndex(0)
+        from .menu import prepare_isolde_menu
+        prepare_isolde_menu(self.session)
 
 
     def _populate_menus_and_update_params(self):
