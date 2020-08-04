@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-May-2020
+# @Last modified time: 04-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -312,27 +312,6 @@ def break_disulfide(cys1, cys2):
     b = Atoms((s1, s2)).intra_bonds[0]
     b.delete()
     if has_hydrogens:
-        m = cys1.structure
-        import numpy
-        from chimerax.core.geometry import align_points, rotation, angle
-        from chimerax.atomic import TmplResidue
-        from math import copysign
-        templ = TmplResidue.get_template('CYS')
-        tatom = templ.find_atom('HG')
-        align_coords = numpy.array([templ.find_atom(a).coord for a in _CYS_ALIGN_ATOMS])
-        for (s, cys, s_prime) in ((s1, cys1, s2), (s2, cys2, s1)):
-            target_coords = numpy.array([cys.find_atom(a).coord for a in _CYS_ALIGN_ATOMS])
-            p, _ = align_points(align_coords, target_coords)
-            # Adding the hydrogens straight from the template can leave them
-            # essentially on top of each other. We need to check the H-SG-SG'
-            # angle, and if it's too tight rotate the H around the CB-SG bond
-            h = m.new_atom(tatom.name, tatom.element)
-            h.coord = p*tatom.coord
-            cys.add_atom(h)
-            m.new_bond(s, h)
-            ang = angle(h.coord, s.coord, s_prime.coord)
-            if abs(ang) < 30:
-                r_angle = copysign(90, ang)-ang
-                r = rotation(target_coords[2]-target_coords[1], r_angle, center=target_coords[2])
-                h.coord = r*h.coord
-            h.draw_mode = h.STICK_STYLE
+        from chimerax.atomic.build_structure import modify_atom
+        modify_atom(s1, s1.element, 2, res_name = 'CYS', connect_back=False)
+        modify_atom(s2, s2.element, 2, res_name = 'CYS', connect_back=False)
