@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 27-Apr-2020
+# @Last modified time: 01-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -87,12 +87,12 @@ _leap_files = {
 'GLYCAM06': 'leaprc.GLYCAM_06j-1'
 }
 
-def _find_mol2_frcmod_pairs(input_dir, blacklist=set()):
+def _find_mol2_frcmod_pairs(input_dir, blacklist=set(), search_subdirs=True):
     import os
     from glob import glob
 
     file_dict = {}
-    mol2files = glob(os.path.join(input_dir, '**/*.mol2'), recursive = True)
+    mol2files = glob(os.path.join(input_dir, '**/*.mol2'), recursive = search_subdirs)
     for m in mol2files:
         name = os.path.splitext(os.path.basename(m))[0].upper()
         if name in blacklist:
@@ -118,7 +118,7 @@ def amber_to_ffxml(frcmod_file, mol2_file):
 
 
 def amber_to_xml_individual(input_dir, output_dir, resname_prefix=None,
-        dict_filename = None, compress_to = None):
+        dict_filename = None, compress_to = None, blacklist=False, search_subdirs=True):
     '''
     Convert all .mol2/.frcmod pairs found under input_dir into OpenMM XML files
     in output_dir. If resname_prefix is given, it will be prepended to all
@@ -128,7 +128,12 @@ def amber_to_xml_individual(input_dir, output_dir, resname_prefix=None,
     import parmed as pmd
     from glob import glob
 
-    file_dict = _find_mol2_frcmod_pairs(input_dir, blacklist=_blacklist.union(_obsolete))
+    if blacklist:
+        blacklist = _blacklist.union(_obsolete)
+    else:
+        blacklist=set()
+
+    file_dict = _find_mol2_frcmod_pairs(input_dir, blacklist=blacklist, search_subdirs=search_subdirs)
 
     resname_to_ff = {}
     xmlfiles = []
