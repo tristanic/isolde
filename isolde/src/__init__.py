@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 23-May-2020
+# @Last modified time: 03-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -75,6 +75,7 @@ class _MyAPI(BundleAPI):
             ProperDihedralRestraints, AdaptiveDihedralRestraints, RotamerRestraints,
         )
         from .remote_control.rest_server import IsoldeRESTServer
+        from .navigate import ResidueStepper
         ct = {
             'RamaAnnotator':                RamaAnnotator,
             'RotamerAnnotator':             RotamerAnnotator,
@@ -119,6 +120,7 @@ class _MyAPI(BundleAPI):
             'RotamerRestraint':             RotamerRestraint,
             'RotamerRestraints':            RotamerRestraints,
             'IsoldeRESTServer':             IsoldeRESTServer,
+            'ResidueStepper':               ResidueStepper,
         }
         return ct.get(class_name)
 

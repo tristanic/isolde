@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 06-May-2020
+# @Last modified time: 04-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -15,22 +15,27 @@ def get_stepper(structure):
         structure._isolde_residue_stepper = ResidueStepper(structure)
     return structure._isolde_residue_stepper
 
+from chimerax.core.state import StateManager
 
+class ResidueStepper(StateManager):
 
-class ResidueStepper:
+    DEFAULT_INTERPOLATE_FRAMES=8
+    DEFAULT_MAX_INTERPOLATE_DISTANCE=10
+    DEFAULT_VIEW_DISTANCE=10
+    DEFAULT_DIRECTION="next"
     '''
     Provide methods to step forward/backward through the polymeric residues in
     a structure.
     '''
     def __init__(self, structure, view_distance=12):
-        self.structure = structure
+        self.init_state_manager(structure.session, "isolde residue stepper")
         self.session = structure.session
+        self.structure = structure
         self._current_residue = None
-        self._interpolate_frames = 8
-        self._max_interpolate_distance = 10
-        self._view_distance=8
-        self._current_direction = 'next'
-        import numpy
+        self._interpolate_frames = self.DEFAULT_INTERPOLATE_FRAMES
+        self._max_interpolate_distance = self.DEFAULT_MAX_INTERPOLATE_DISTANCE
+        self._view_distance=self.DEFAULT_VIEW_DISTANCE
+        self._current_direction = self.DEFAULT_DIRECTION
 
     def incr_residue(self, direction=None, polymeric_only=True):
         if direction is not None:
@@ -62,6 +67,34 @@ class ResidueStepper:
         self._current_residue = next_res
         self._new_camera_position(next_res)
         return next_res
+
+
+    def reset_state(self, session):
+        self._current_residue=None
+        self._interpolate_frames = self.DEFAULT_INTERPOLATE_FRAMES
+        self._max_interpolate_distance = self.DEFAULT_MAX_INTERPOLATE_DISTANCE
+        self._view_distance=self.DEFAULT_VIEW_DISTANCE
+        self._current_direction = self.DEFAULT_DIRECTION
+
+    def incr_chain(self, direction="next"):
+        r = self._current_residue
+        c = r.chain
+        m = self.structure
+        i = m.chains.index(c)
+        if direction=='next':
+            new_i = i+1
+            if new_i >= len(m.chains):
+                new_i = 0
+            new_r = m.chains[new_i].residues[0]
+        elif direction=='prev':
+            if i == 0:
+                new_i = -1
+            else:
+                new_i = i-1
+            new_r = m.chains[new_i].residues[-1]
+        else:
+            raise TypeError('Direction should be one of "next" or "prev"')
+        self.step_to(new_r)
 
     def next_residue(self, polymeric_only=True):
         return self.incr_residue('next', polymeric_only)
@@ -156,13 +189,6 @@ class ResidueStepper:
             interpolate_camera(session, 0, frames=1)
 
 
-
-
-
-
-
-
-
     def _polymeric_residues(self, strict=False):
         from chimerax.atomic import Residue
         import numpy
@@ -245,6 +271,33 @@ class ResidueStepper:
         from chimerax.geometry import Place
         return Place(axes=[[1,0,0], [0,0,1],[0,-1,0]], origin=[0,-distance,0])
 
+    def take_snapshot(self, session, flags):
+        print('Taking snapshot of stepper: {}'.format(self.structure.name))
+        from . import ISOLDE_STATE_VERSION
+        data = {
+            'version':  ISOLDE_STATE_VERSION,
+            'structure':    self.structure,
+            'residue':      self._current_residue,
+            'direction':    self._current_direction,
+            'interp':       self._interpolate_frames,
+            'interp_distance':  self._max_interpolate_distance,
+            'view_distance':    self._view_distance,
+        }
+        return data
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        stepper = get_stepper(data['structure'])
+        stepper.set_state_from_snapshot(session, data)
+        print('Restoring stepper: {}'.format(stepper.structure.name))
+        return stepper
+
+    def set_state_from_snapshot(self, session, data):
+        self._current_residue = data['residue']
+        self._current_direction = data['direction']
+        self._interpolate_frames = data['interp']
+        self._max_interpolate_distance = data['interp_distance']
+        self._view_distance = data['view_distance']
 
 def _get_clip_distances(session):
     from chimerax.clipper.mousemodes import ZoomMouseMode
