@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 17-Jul-2020
+# @Last modified time: 01-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -591,6 +591,9 @@ class Sim_Manager:
                 isolde.forcefield_mgr)
         except Exception as e:
             self._sim_end_cb(None, None)
+            # if isinstance(e, RuntimeError):
+            #     if 'Unpararameterised' in e.args[0]:
+            #         return
             if isinstance(e, ValueError):
                 # If it's an error in template handling, parse out the offending
                 # residue and tell ISOLDE about it
@@ -1324,8 +1327,23 @@ class Sim_Handler:
 
         self._temperature = sim_params.temperature
 
+        trigger_names = (
+            'sim started',
+            'clash detected',
+            'coord update',
+            'sim paused',
+            'sim resumed',
+            'sim terminated',
+        )
+        from chimerax.core.triggerset import TriggerSet
+        t = self._triggers = TriggerSet()
+        for name in trigger_names:
+            t.add_trigger(name)
+
         system = self._system = self._create_openmm_system(ff, top,
             sim_params, residue_templates)
+
+
 
         self.set_fixed_atoms(sim_construct.fixed_atoms)
         self._thread_handler = None
@@ -1340,18 +1358,6 @@ class Sim_Handler:
         self._minimize = False
         self._current_mode = 'min' # One of "min" or "equil"
 
-        trigger_names = (
-            'sim started',
-            'clash detected',
-            'coord update',
-            'sim paused',
-            'sim resumed',
-            'sim terminated',
-        )
-        from chimerax.core.triggerset import TriggerSet
-        t = self._triggers = TriggerSet()
-        for name in trigger_names:
-            t.add_trigger(name)
 
     @property
     def triggers(self):
@@ -1417,19 +1423,21 @@ class Sim_Handler:
             top, ignoreExternalBonds=True, explicit_templates=residue_templates
         )
         if len(ambiguous) or len(unassigned):
-            from chimerax.core.errors import UserError
-            err_text = ''
-            if len(ambiguous):
-                err_text += "The following residues match multiple topologies: \n"
-                for r, tlist in ambiguous.items():
-                    err_text += "{}{}: ({})\n".format(r.name, r.index, ', '.join([info[0].name for info in tlist]))
-            if len(unassigned):
-                err_text += "The following residues did not match any template: ({})".format(
-                    ', '.join(['{}{}'.format(r.name, r.index) for r in unassigned])
-                )
-            raise UserError(err_text)
+            raise RuntimeError('Unparameterised residue detected')
 
-            residue_templates = {r: t[0].name for r, t in residue_to_template.items()}
+            # from chimerax.core.errors import UserError
+            # err_text = ''
+            # if len(ambiguous):
+            #     err_text += "The following residues match multiple topologies: \n"
+            #     for r, tlist in ambiguous.items():
+            #         err_text += "{}{}: ({})\n".format(r.name, r.index, ', '.join([info[0].name for info in tlist]))
+            # if len(unassigned):
+            #     err_text += "The following residues did not match any template: ({})".format(
+            #         ', '.join(['{}{}'.format(r.name, r.index) for r in unassigned])
+            #     )
+            # raise UserError(err_text)
+            #
+            # residue_templates = {r: t[0].name for r, t in residue_to_template.items()}
 
         system_params = {
             'nonbondedMethod':      params.nonbonded_cutoff_method,

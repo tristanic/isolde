@@ -865,18 +865,12 @@ class Isolde():
         iw._validate_rota_table.itemClicked.connect(
             self._show_selected_iffy_rota
         )
-        iw._validate_unparameterised_residues_show_button.clicked.connect(
-            self._show_unparameterised_residues_frame
-        )
-        iw._validate_unparameterised_residues_hide_button.clicked.connect(
-            self._hide_unparameterised_residues_frame
-        )
-        iw._validate_unparameterised_residues_table.itemClicked.connect(
-            self._show_selected_unparameterised_residue
-            )
 
         from .validation.clashes import Clash_Table_Mgr
         self._clash_mgr = Clash_Table_Mgr(self)
+
+        from .validation.unparameterised import Unparameterised_Residues_Mgr
+        self._unparam_mgr = Unparameterised_Residues_Mgr(self)
 
         ####
         # Simulation control functions
@@ -2416,93 +2410,6 @@ class Isolde():
         from .navigate import get_stepper
         get_stepper(self.selected_model).step_to(res)
 
-    def _show_unparameterised_residues_frame(self, *_):
-        self.iw._validate_unparameterised_residues_stub_frame.hide()
-        self.iw._validate_unparameterised_residues_main_frame.show()
-        self._update_unparameterised_residues_list()
-
-    def _hide_unparameterised_residues_frame(self, *_):
-        self.iw._validate_unparameterised_residues_stub_frame.show()
-        self.iw._validate_unparameterised_residues_main_frame.hide()
-
-    def _update_unparameterised_residues_list(self, *_, ff=None, ambiguous=None, unmatched=None, residues=None):
-        table = self.iw._validate_unparameterised_residues_table
-        rlist = self.iw._validate_possible_templates_list
-        if not table.isVisible():
-            return
-        table.setRowCount(0)
-        rlist.clear()
-        if ambiguous is None and unmatched is None:
-            if self.selected_model is None:
-                return
-            residues = self.selected_model.residues
-            h = residues.atoms[residues.atoms.element_names =='H']
-            if not len(h):
-                from .dialog import choice_warning
-                addh = choice_warning('This model does not appear to have hydrogens. Would you like to add them first?')
-                if addh:
-                    from chimerax.core.commands import run
-                    run(self.session, 'addh')
-            from chimerax.atomic import Residues
-            residues = Residues(sorted(residues, key=lambda r:(r.chain_id, r.number, r.insertion_code)))
-            if ff is None:
-                ff = self.forcefield_mgr[self.sim_params.forcefield]
-                ligand_db = self.forcefield_mgr.ligand_db(self.sim_params.forcefield)
-            from .openmm.openmm_interface import find_residue_templates, create_openmm_topology
-            template_dict = find_residue_templates(residues, ff, ligand_db=ligand_db, logger=self.session.logger)
-            top, residue_templates=create_openmm_topology(residues.atoms, template_dict)
-            _, ambiguous, unmatched = ff.assignTemplates(top,
-                ignoreExternalBonds=True, explicit_templates=residue_templates)
-        from PyQt5.QtWidgets import QTableWidgetItem
-        table.setRowCount(len(unmatched)+len(ambiguous))
-        count = 0
-        for r in unmatched:
-            by_name, by_comp = ff.find_possible_templates(r)
-            cx_res = residues[r.index]
-            data = (
-                cx_res.chain_id,
-                cx_res.name + ' ' + str(cx_res.number),
-                ''
-            )
-            for j, d in enumerate(data):
-                item = QTableWidgetItem(d)
-                item.data = (cx_res, by_name, by_comp)
-                table.setItem(count, j, item)
-            count += 1
-        for r, template_info in ambiguous.items():
-            cx_res = residues[r.index]
-            data = (
-                cx_res.chain_id,
-                cx_res.name + ' ' + str(cx_res.number),
-                ', '.join([ti[0].name for ti in template_info])
-            )
-            for j, d in enumerate(data):
-                item = QTableWidgetItem(d)
-                item.data = (cx_res, [ti[0] for ti in template_info])
-                table.setItem(count, j, item)
-            count += 1
-        table.resizeColumnsToContents()
-
-    def _show_selected_unparameterised_residue(self, item):
-        residue, by_name, by_comp = item.data
-        tlist = self.iw._validate_possible_templates_list
-        tlist.clear()
-        from PyQt5.QtWidgets import QListWidgetItem
-        tlist.addItem(QListWidgetItem("Matches by residue name"))
-        for (tname, match_atom_count) in by_name:
-            entry = QListWidgetItem(tname + " (Score: {})".format(match_atom_count))
-            entry.data = (residue, tname)
-            tlist.addItem(entry)
-        tlist.addItem(QListWidgetItem("Matches by similar topology"))
-        for (tname, match_atom_count) in by_comp:
-            entry = QListWidgetItem(tname + " (Score: {})".format(match_atom_count))
-            entry.data = (residue, tname)
-            tlist.addItem(entry)
-
-        tlist.repaint()
-        from .view import focus_on_selection
-        focus_on_selection(self.session, residue.atoms)
-
 
     ##############################################################
     # Simulation global settings functions
@@ -2821,9 +2728,18 @@ class Isolde():
             if err_text.startswith("No template found") or \
                err_text.startswith("User-supplied template"):
                 # These errors are already handled
+                self._sim_end_cb()
+                return
+            raise
+        except RuntimeError as e:
+            self._sim_end_cb()
+            err_text = str(e)
+            if err_text.startswith("Unparameterised"):
+                self._unparam_mgr._sim_unparam_res_cb()
                 return
             raise
         except:
+            self._sim_end_cb()
             raise
         sm.start_sim()
         self._sim_start_cb()

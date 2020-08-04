@@ -322,7 +322,7 @@ border: 1px;
 }</string>
            </property>
            <property name="currentIndex">
-            <number>3</number>
+            <number>0</number>
            </property>
            <property name="elideMode">
             <enum>Qt::ElideNone</enum>
@@ -370,7 +370,7 @@ border: 1px;
                   <x>0</x>
                   <y>0</y>
                   <width>566</width>
-                  <height>739</height>
+                  <height>741</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0">
@@ -688,11 +688,31 @@ border: 1px;
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="_sim_basic_ff_file_load_button">
-                      <property name="text">
-                       <string>Load custom residue definition(s)</string>
+                     <layout class="QHBoxLayout" name="horizontalLayout_49">
+                      <property name="topMargin">
+                       <number>0</number>
                       </property>
-                     </widget>
+                      <item>
+                       <widget class="QPushButton" name="_sim_basic_ff_file_load_button">
+                        <property name="toolTip">
+                         <string>Load AMBER parameterisations for one or more ligands in OpenMM ffXML format</string>
+                        </property>
+                        <property name="text">
+                         <string>Load residue MD definition(s)</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="_sim_basic_load_cif_templates_button">
+                        <property name="toolTip">
+                         <string>Load one or more residue mmCIF templates (only necessary for residues not in the Chemical Components Dictionary)</string>
+                        </property>
+                        <property name="text">
+                         <string>Load residue CIF template(s)</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
                     </item>
                     <item>
                      <widget class="QPushButton" name="_sim_basic_xtal_map_settings_show_button">
@@ -3179,9 +3199,9 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-1088</y>
+                  <y>0</y>
                   <width>566</width>
-                  <height>1564</height>
+                  <height>2012</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -3742,6 +3762,12 @@ border: 1px;
                     </item>
                     <item>
                      <widget class="QTableWidget" name="_validate_rota_table">
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>150</height>
+                       </size>
+                      </property>
                       <column>
                        <property name="text">
                         <string>Chain</string>
@@ -3902,6 +3928,12 @@ border: 1px;
                     </item>
                     <item>
                      <widget class="QTableWidget" name="_validate_clashes_geom_table">
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>150</height>
+                       </size>
+                      </property>
                       <column>
                        <property name="text">
                         <string>Atom 1</string>
@@ -3921,6 +3953,12 @@ border: 1px;
                     </item>
                     <item>
                      <widget class="QTableWidget" name="_validate_clashes_energy_table">
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>150</height>
+                       </size>
+                      </property>
                       <column>
                        <property name="text">
                         <string>Chain</string>
@@ -4038,7 +4076,7 @@ border: 1px;
                    <property name="minimumSize">
                     <size>
                      <width>0</width>
-                     <height>250</height>
+                     <height>0</height>
                     </size>
                    </property>
                    <property name="frameShape">
@@ -4071,6 +4109,13 @@ border: 1px;
                        </spacer>
                       </item>
                       <item>
+                       <widget class="QPushButton" name="_validate_unparameterised_residues_update_button">
+                        <property name="text">
+                         <string>Update</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
                        <widget class="QPushButton" name="_validate_unparameterised_residues_hide_button">
                         <property name="text">
                          <string>Hide</string>
@@ -4081,6 +4126,12 @@ border: 1px;
                     </item>
                     <item>
                      <widget class="QTableWidget" name="_validate_unparameterised_residues_table">
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>150</height>
+                       </size>
+                      </property>
                       <column>
                        <property name="text">
                         <string>Chain</string>
@@ -4091,15 +4142,16 @@ border: 1px;
                         <string>Residue</string>
                        </property>
                       </column>
-                      <column>
-                       <property name="text">
-                        <string>Possible templates</string>
-                       </property>
-                      </column>
                      </widget>
                     </item>
                     <item>
                      <widget class="QFrame" name="frame_16">
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>0</height>
+                       </size>
+                      </property>
                       <property name="frameShape">
                        <enum>QFrame::StyledPanel</enum>
                       </property>
@@ -4107,24 +4159,31 @@ border: 1px;
                        <enum>QFrame::Raised</enum>
                       </property>
                       <layout class="QGridLayout" name="gridLayout_2">
-                       <item row="0" column="0" rowspan="2">
-                        <widget class="QPushButton" name="_validate_fix_to_template_button">
-                         <property name="text">
-                          <string>Fix atoms to match template</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="1">
+                       <item row="0" column="0">
                         <widget class="QLabel" name="label_19">
                          <property name="text">
                           <string>Possible templates</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="1" column="1" rowspan="2">
-                        <widget class="QListWidget" name="_validate_possible_templates_list"/>
+                       <item row="1" column="0" colspan="2">
+                        <widget class="QListWidget" name="_validate_possible_templates_list">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>150</height>
+                          </size>
+                         </property>
+                        </widget>
                        </item>
                        <item row="2" column="0">
+                        <widget class="QPushButton" name="_validate_fix_to_template_button">
+                         <property name="text">
+                          <string>Fix atoms to match template</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="2" column="1">
                         <widget class="QCheckBox" name="_validate_fix_to_template_all_residues_checkbox">
                          <property name="text">
                           <string>For all residues of this name</string>
