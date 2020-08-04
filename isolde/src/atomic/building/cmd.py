@@ -2,9 +2,59 @@
 # @Date:   16-Apr-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 16-Apr-2020
+# @Last modified time: 01-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
+
+def replace_residue(session, residue, new_residue_name):
+    from chimerax.core.errors import UserError
+    from chimerax.core.commands import run
+    run(session, 'isolde start')
+    from chimerax.atomic import Residues
+    if isinstance(residue, Residues):
+        if len(residue) != 1:
+            raise UserError('Must have a single residue selected!')
+        residue = residue[0]
+    from ..template_utils import (
+        fix_residue_from_template,
+        fix_residue_to_match_md_template
+    )
+    from chimerax.atomic import mmcif
+    try:
+        cif_template = mmcif.find_template_residue(session, new_residue_name)
+    except:
+        err_str = ('Could not find a mmCIF template for residue name {}. '
+            'For novel residues not in the Chemical Components Dictionary, '
+            'you will need to provide this first.').format(new_residue_name)
+        raise UserError(err_str)
+    fix_residue_from_template(residue, cif_template, rename_residue=True,
+        match_by='element')
+    ff = session.isolde.forcefield_mgr[session.isolde.sim_params.forcefield]
+    ligand_db = session.isolde.forcefield_mgr.ligand_db(session.isolde.sim_params.forcefield)
+    from chimerax.isolde.openmm.openmm_interface import find_residue_templates
+    from chimerax.atomic import Residues
+    tdict = find_residue_templates(Residues([residue]), ff, ligand_db=ligand_db, logger=session.logger)
+    md_template_name = tdict.get(0)
+    if md_template_name is not None:
+        fix_residue_to_match_md_template(session, residue, ff._templates[md_template_name], cif_template=cif_template)
+
+def register_building_commands(logger):
+    register_isolde_replace(logger)
+    register_isolde_add(logger)
+
+def register_isolde_replace(logger):
+    from chimerax.core.commands import (
+        register, CmdDesc, StringArg
+    )
+    from chimerax.atomic import ResiduesArg
+    desc = CmdDesc(
+        required=[
+            ('residue', ResiduesArg),
+            ('new_residue_name', StringArg)
+        ],
+        synopsis='Replace an existing residue or ligand with a related one, keeping as much of the original as possible'
+    )
+    register('isolde replace residue', desc, replace_residue, logger=logger)
 
 def register_isolde_add(logger):
     from chimerax.core.commands import (
@@ -47,7 +97,9 @@ def register_isolde_add(logger):
                 ('bfactor', FloatArg),
                 ('chain', StringArg),
                 ('distance_cutoff', FloatArg),
-                ('sim_settle', BoolArg)
+                ('sim_settle', BoolArg),
+                ('use_md_template', BoolArg),
+                ('md_template_name', StringArg)
             ],
             synopsis = 'Add a ligand from the Chemical Components Dictionary'
         )

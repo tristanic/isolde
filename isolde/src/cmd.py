@@ -330,7 +330,7 @@ def register_isolde(logger):
     register_isolde_restrain(logger)
     from chimerax.isolde.manipulations.cmd import register_manip_commands
     register_manip_commands(logger)
-    from chimerax.isolde.atomic.building.cmd import register_isolde_add
-    register_isolde_add(logger)
+    from chimerax.isolde.atomic.building.cmd import register_building_commands
+    register_building_commands(logger)
     from chimerax.isolde.openmm.cmd import register_ff_cmd
     register_ff_cmd(logger)
