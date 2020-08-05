@@ -2,7 +2,7 @@
 # @Date:   16-Apr-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 01-Aug-2020
+# @Last modified time: 05-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -15,6 +15,9 @@ def replace_residue(session, residue, new_residue_name):
         if len(residue) != 1:
             raise UserError('Must have a single residue selected!')
         residue = residue[0]
+    if len(residue.neighbors):
+        raise UserError('Replacement by graph matching is currently only '
+            'supported for ligands with no covalent bonds to other residues!')
     from ..template_utils import (
         fix_residue_from_template,
         fix_residue_to_match_md_template
@@ -37,6 +40,23 @@ def replace_residue(session, residue, new_residue_name):
     md_template_name = tdict.get(0)
     if md_template_name is not None:
         fix_residue_to_match_md_template(session, residue, ff._templates[md_template_name], cif_template=cif_template)
+    from chimerax.atomic import Atoms, Atom
+    chiral_centers = Atoms([a for a in residue.atoms if residue.ideal_chirality(a.name) != 'N'])
+    if len(chiral_centers):
+        warn_str = ('Rebuilt ligand {} has chiral centres at atoms {} '
+            '(highlighted). Since the current algorithm used to match topologies '
+            'is not chirality aware, you should check these sites carefully to '
+            'ensure they are sensible. If in doubt, it is best to delete with '
+            '"del #{}/{}:{}{}" and replace with "isolde add ligand {}".').format(
+                residue.name, ','.join(chiral_centers.names),
+                residue.structure.id_string, residue.chain_id, residue.number,
+                residue.insertion_code, residue.name)
+        session.selection.clear()
+        chiral_centers.selected=True
+        chiral_centers.draw_modes = Atom.BALL_STYLE
+        from chimerax.isolde.view import focus_on_selection
+        focus_on_selection(session, chiral_centers)
+        session.logger.warning(warn_str)
 
 def register_building_commands(logger):
     register_isolde_replace(logger)
@@ -52,9 +72,9 @@ def register_isolde_replace(logger):
             ('residue', ResiduesArg),
             ('new_residue_name', StringArg)
         ],
-        synopsis='Replace an existing residue or ligand with a related one, keeping as much of the original as possible'
+        synopsis='(EXPERIMENTAL) Replace an existing ligand with a related one, keeping as much of the original as possible'
     )
-    register('isolde replace residue', desc, replace_residue, logger=logger)
+    register('isolde replace ligand', desc, replace_residue, logger=logger)
 
 def register_isolde_add(logger):
     from chimerax.core.commands import (
