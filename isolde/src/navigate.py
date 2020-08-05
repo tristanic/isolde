@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 04-Aug-2020
+# @Last modified time: 05-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -19,6 +19,8 @@ from chimerax.core.state import StateManager
 
 class ResidueStepper(StateManager):
 
+    _num_created = 0
+
     DEFAULT_INTERPOLATE_FRAMES=8
     DEFAULT_MAX_INTERPOLATE_DISTANCE=10
     DEFAULT_VIEW_DISTANCE=10
@@ -28,7 +30,8 @@ class ResidueStepper(StateManager):
     a structure.
     '''
     def __init__(self, structure, view_distance=12):
-        self.init_state_manager(structure.session, "isolde residue stepper")
+        self.init_state_manager(structure.session, "isolde residue stepper {}".format(self._num_created))
+        ResidueStepper._num_created += 1
         self.session = structure.session
         self.structure = structure
         self._current_residue = None
@@ -36,6 +39,7 @@ class ResidueStepper(StateManager):
         self._max_interpolate_distance = self.DEFAULT_MAX_INTERPOLATE_DISTANCE
         self._view_distance=self.DEFAULT_VIEW_DISTANCE
         self._current_direction = self.DEFAULT_DIRECTION
+        self.structure.triggers.add_handler('deleted', self._model_deleted_cb)
 
     def incr_residue(self, direction=None, polymeric_only=True):
         if direction is not None:
@@ -68,6 +72,8 @@ class ResidueStepper(StateManager):
         self._new_camera_position(next_res)
         return next_res
 
+    def _model_deleted_cb(self, *_):
+        self.destroy()
 
     def reset_state(self, session):
         self._current_residue=None
