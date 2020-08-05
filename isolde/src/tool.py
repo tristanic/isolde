@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 10-Jun-2020
+# @Last modified time: 05-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -112,6 +112,7 @@ class ISOLDE_ToolUI(ToolInstance):
         # Define intermediate and expert frames
         self._intermediate_frames = [
             iw._sim_platform_frame,
+            iw._sim_basic_load_cif_templates_button,
             ]
         self._expert_frames = [
             iw._force_field_selection_frame,
