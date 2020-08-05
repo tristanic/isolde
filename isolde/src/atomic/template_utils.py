@@ -236,8 +236,8 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
                 ', '.join(residue_extra.names)
             ))
         else:
-            session.logger.warning('Deleted the following atoms from the residue: {}'.format(
-                ', '.join(residue_extra.names)
+            session.logger.info('Deleted the following atoms from residue {} {}{}{}: {}'.format(
+                residue.name, residue.chain_id, residue.number, residue.insertion_code, ', '.join(residue_extra.names)
             ))
             residue_extra.delete()
 
