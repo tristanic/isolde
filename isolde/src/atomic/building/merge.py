@@ -153,9 +153,10 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
               and prev_res.chain_id == cid
               and prev_res.polymer_type == Residue.PT_AMINO):
                 if prev_res.structure != r.structure:
-                    if precedes.chain_id == cid and precedes.polymer_type == Residue.PT_AMINO:
-                        ratoms = prev_res.atoms.merge(precedes.atoms)
-                        tpbg.pseudobonds[tpbg.pseudobonds.between_atoms(ratoms)].delete()
+                    if precedes is not None:
+                        if precedes.chain_id == cid and precedes.polymer_type == Residue.PT_AMINO:
+                            ratoms = prev_res.atoms.merge(precedes.atoms)
+                            tpbg.pseudobonds[tpbg.pseudobonds.between_atoms(ratoms)].delete()
                     pc = prev_res.find_atom('C')
                 else:
                     if prev_new_res is not None:

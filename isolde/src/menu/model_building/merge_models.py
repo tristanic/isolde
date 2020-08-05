@@ -12,6 +12,7 @@ def run_script(session):
     if not len(us) > 1:
         from chimerax.core.errors import UserError
         raise UserError('Must have at least two atomic models selected!')
+    us = list(sorted(us, key=lambda m: m.id_string))
     target = us[0]
     import numpy
     for m in us[1:]:
