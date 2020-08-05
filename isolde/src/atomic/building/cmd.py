@@ -8,8 +8,8 @@
 
 def replace_residue(session, residue, new_residue_name):
     from chimerax.core.errors import UserError
-    from chimerax.core.commands import run
-    run(session, 'isolde start')
+    from chimerax.isolde.cmd import isolde_start
+    isolde_start(session)
     from chimerax.atomic import Residues
     if isinstance(residue, Residues):
         if len(residue) != 1:
@@ -58,6 +58,20 @@ def replace_residue(session, residue, new_residue_name):
         focus_on_selection(session, chiral_centers)
         session.logger.warning(warn_str)
 
+def add_ligand(session, *args, **kwargs):
+    from chimerax.isolde.cmd import isolde_start
+    isolde_start(session)
+    from .place_ligand import place_ligand
+    place_ligand(session, *args, **kwargs)
+
+def add_water(session, *args, **kwargs):
+    from chimerax.isolde.cmd import isolde_start
+    isolde_start(session)
+    from .place_ligand import place_water
+    place_water(session, *args, **kwargs)
+
+
+
 def register_building_commands(logger):
     register_isolde_replace(logger)
     register_isolde_add(logger)
@@ -86,7 +100,6 @@ def register_isolde_add(logger):
     from chimerax.atomic import AtomsArg, ResiduesArg, StructureArg
 
     def register_isolde_add_water():
-        from .place_ligand import place_water
         desc = CmdDesc(
             optional = [
                 ('model', StructureArg),
@@ -100,11 +113,10 @@ def register_isolde_add(logger):
             ],
             synopsis = 'Add a water molecule'
         )
-        register('isolde add water', desc, place_water, logger=logger)
+        register('isolde add water', desc, add_water, logger=logger)
     register_isolde_add_water()
 
     def register_isolde_add_ligand():
-        from .place_ligand import place_ligand
         desc = CmdDesc(
             required = [
                 ('ligand_id', StringArg),
@@ -123,5 +135,5 @@ def register_isolde_add(logger):
             ],
             synopsis = 'Add a ligand from the Chemical Components Dictionary'
         )
-        register('isolde add ligand', desc, place_ligand, logger=logger)
+        register('isolde add ligand', desc, add_ligand, logger=logger)
     register_isolde_add_ligand()

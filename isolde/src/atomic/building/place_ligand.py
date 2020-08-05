@@ -123,11 +123,16 @@ def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, ch
             from chimerax.atomic import Residues
             tdict = find_residue_templates(Residues([r]), ff, ligand_db=ligand_db, logger=session.logger)
             md_template_name = tdict.get(0)
-        if md_template_name is None:
+        md_template = None
+        if md_template_name is not None:
+            md_template = ff._templates.get(md_template_name, None)
+
+        if md_template is None:
             session.logger.warning('place_ligand() was called with use_md_template=True, '
                 'but no suitable template was found. This command has been ignored.')
+            return
         from ..template_utils import fix_residue_to_match_md_template
-        fix_residue_to_match_md_template(session, r, ff._templates[md_template_name], cif_template=tmpl)
+        fix_residue_to_match_md_template(session, r, md_template, cif_template=tmpl)
 
 
     matoms.selected=False
