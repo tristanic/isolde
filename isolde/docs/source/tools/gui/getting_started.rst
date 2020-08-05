@@ -9,7 +9,7 @@ Getting Started
     :local:
     :depth: 3
 
-**(NEW in 1.0b3: if you are reading this from within the ChimeraX Help browser,
+**(If you are reading this from within the ChimeraX Help browser,
 you may prefer trying out the :ref:`isolde_intro_tutorial` interactive
 tutorial.)**
 

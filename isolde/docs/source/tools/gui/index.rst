@@ -9,3 +9,4 @@ GUI Details
     sim_settings
     rebuild
     validate
+    menu

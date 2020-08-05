@@ -61,6 +61,11 @@ Syntax: isolde set [**timeStepsPerGuiUpdate** *integer*]
 
 Change various ISOLDE global settings.
 
+isolde reset forcefield
+=======================
+
+Delete cached forcefield files to reset to the as-installed state.
+
 .. _report:
 
 isolde report
@@ -166,6 +171,107 @@ Syntax: isolde ~ignore *residues*
 
 Tell ISOLDE to stop ignoring a selection of residues for simulation purposes.
 This will not take effect until the next new simulation is started.
+
+isolde stepto
+=============
+
+Syntax: isolde stepto [*residue or {next|prev}*] [**viewDistance** *number*]
+[**interpolateFrames** *integer*] [**polymericOnly** {*TRUE|false*}]
+
+Focus the camera on the specified residue, or the next/previous residue in the
+chain if no residue is specified. *isolde stepto next* will move the camera to
+the next residue in the model, while *isolde stepto prev* will move back to the
+previous one. The stepper will remember the last specified direction, so
+repeated calls of "isolde stepto" without arguments will keep moving along the
+chain in the same direction. Providing the *viewDistance* argument will cause
+the camera to zoom in/out to the specified distance; this distance will be
+maintained for future calls. If the current camera position is close, the view
+will slide smoothly to the new position over *interpolateFrames* frames, otherwise
+it will jump directly there. If *polymericOnly* is true (default), any residues
+not part of a protein or nucleic acid chain will be skipped. As for the other
+arguments, this will be remembered for all future calls.
+
+Each loaded model is given its own independent residue stepper - the settings
+you make for one will not be carried over to others.
+
+isolde jumpto
+=============
+
+Syntax: isolde jumpto [*next|prev*]
+
+Jump the residue stepper to the first residue of the next chain, or last residue
+of the previous chain.
+
+isolde add ligand
+=================
+
+Syntax: isolde add ligand *{residue ID}* [*model*]
+[**position** *list of three floats*] [**bfactor** *number*] [**chain** *string*]
+[**distanceCutoff** *number*] [**simSettle** {*true|FALSE*}]
+[**useMdTemplate** {*TRUE|false*}] [**mdTemplateName** *string*]
+
+*NOTE: when placing ligands using this command, ISOLDE does not currently make
+any attempt at a preliminary fit prior to starting simulations - it will simply
+place the "ideal" coordinates specified in the template file. When adding large,
+flexible ligands this will almost always lead to severe clashes with the
+surroundings. In such cases, it is advisable to use* **isolde ignore ~sel** *to
+exclude everything but the ligand from simulations, perform an initial fit to
+the density using tugging and/or position restraints on key atoms, then use
+* **isolde ~ignore** *to reinstate the rest of the model for simulations and
+continue on.*
+
+Add a ligand based on its template in the Chemical Components Dictionary. The
+residue ID must match the 3-letter code for the ligand (if you don't know this,
+you can search for it at http://ligand-expo.rcsb.org/). If ISOLDE is started,
+then the *model* argument is optional (if not provided, the ligand will be added
+to ISOLDE's currently selected model). Otherwise, you will need to explicitly
+specify the model to add to. By default, the ligand will be added at the current
+centre of rotation; you may, however, specify an alternative location by
+providing coordinates as a comma-separated list after the *position* keyword.
+
+By default, the b-factor and chain assigned to the residue will be determined
+based on the closest atoms within *distanceCutoff* (default: 8 Angstroms) to the
+site of addition, but you may explicitly specify these if you wish. If
+*simSettle* is true, a local simulation will automatically be started - this is
+only advisable for small, rigid molecules for which severe clashes with the
+surroundings are unlikely.
+
+If *useMdTemplate* is true, the added residue will be checked against the
+corresponding molecular dynamics template (if present), and atoms will be added
+or removed as needed to match (templates provided by the CCD are often not in
+the protonation states most common under biological conditions). You should not
+usually need to use the *mdTemplateName* argument: if you have loaded a custom
+template, it will be found and used as long as its name matches the residue
+name.
+
+isolde add water
+================
+
+Syntax: isolde add water [*model*] [**position** *list of three floats*]
+[**bfactor** *number*] [**chain** *string*]
+[**distanceCutoff** *number*] [**simSettle** {*TRUE|false*}]
+
+Essentially a special case of *isolde add ligand*. The primary difference is
+that *simSettle* defaults to true (that is, adding a water will automatically
+start a local simulation to settle it). In addition, the default value for
+*distanceCutoff* is reduced from 8.0 to 3.0 Angstroms, on the basis that it is
+rarely a good idea to add a water outside of hydrogen bonding distance from the
+nearest existing atom(s).
+
+isolde replace ligand
+=====================
+
+Syntax: isolde replace ligand *residue* *newResidueName*
+
+*(EXPERIMENTAL)*
+
+Replace one ligand with a related one, keeping as many atoms common to both as
+possible. Matching of common atoms is performed by graph matching based on
+bonding between elements. Use with caution: the current implementation is not
+aware of bond order nor of chirality, so attempting to replace (for example) a
+D-sugar with its L-enantiomer will simply rename the residue while retaining the
+D coordinates. This will be improved upon in a future release.
+
 
 
 .. _`restrain distances`:
