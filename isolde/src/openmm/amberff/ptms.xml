@@ -121,6 +121,49 @@
       <ExternalBond atomName="N"/>
       <ExternalBond atomName="C"/>
     </Residue>
+    <Residue name="PTM_MEN">
+     <!-- ND-methyl-asparagine. Charges for sidechain amide merged from ANTECHAMBER -->
+     <Atom name="N" type="N" charge="-0.4157"/>
+     <Atom name="H" type="H" charge="0.2719"/>
+     <Atom name="CA" type="CX" charge="0.0143"/>
+     <Atom name="HA" type="H1" charge="0.1048"/>
+     <Atom name="CB" type="2C" charge="-0.2041"/>
+     <Atom name="HB2" type="HC" charge="0.0797"/>
+     <Atom name="HB3" type="HC" charge="0.0797"/>
+     <Atom name="CG" type="C" charge="0.713"/>
+     <Atom name="OD1" type="O" charge="-0.5931"/>
+     <Atom name="ND2" type="N" charge="-0.6139"/>
+     <Atom name="HD2" type="H" charge="0.3025"/>
+     <Atom name="CE2" type="CT" charge="0.1064"/>
+     <Atom name="HE21" type="HC" charge="0.0417"/>
+     <Atom name="HE22" type="HC" charge="0.0417"/>
+     <Atom name="HE23" type="HC" charge="0.0417"/>
+
+
+     <!-- <Atom name="HD22" type="H" charge="0.4196"/> -->
+     <Atom name="C" type="C" charge="0.5973"/>
+     <Atom name="O" type="O" charge="-0.5679"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="CB"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="CB" atomName2="HB2"/>
+     <Bond atomName1="CB" atomName2="HB3"/>
+     <Bond atomName1="CB" atomName2="CG"/>
+     <Bond atomName1="CG" atomName2="OD1"/>
+     <Bond atomName1="CG" atomName2="ND2"/>
+     <Bond atomName1="ND2" atomName2="HD2"/>
+     <Bond atomName1="ND2" atomName2="CE2"/>
+     <Bond atomName1="CE2" atomName2="HE21"/>
+     <Bond atomName1="CE2" atomName2="HE22"/>
+     <Bond atomName1="CE2" atomName2="HE23"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="N"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
+
+
     <Residue name="PTM_ALY">
       <Atom charge="-0.383812" name="N" type="N"/>
       <Atom charge="0.271318" name="H" type="H"/>
