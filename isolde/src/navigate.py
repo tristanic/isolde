@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 05-Aug-2020
+# @Last modified time: 08-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -21,7 +21,7 @@ class ResidueStepper(StateManager):
 
     _num_created = 0
 
-    DEFAULT_INTERPOLATE_FRAMES=8
+    DEFAULT_INTERPOLATE_FRAMES=15
     DEFAULT_MAX_INTERPOLATE_DISTANCE=10
     DEFAULT_VIEW_DISTANCE=10
     DEFAULT_DIRECTION="next"
@@ -40,6 +40,21 @@ class ResidueStepper(StateManager):
         self._view_distance=self.DEFAULT_VIEW_DISTANCE
         self._current_direction = self.DEFAULT_DIRECTION
         self.structure.triggers.add_handler('deleted', self._model_deleted_cb)
+
+    def _block_clipper_spotlights(self):
+        from chimerax.clipper import get_all_symmetry_handlers
+        sym_handlers = get_all_symmetry_handlers(self.session)
+        for sh in sym_handlers:
+            sh.triggers.block_trigger('spotlight moved')
+
+    def _release_clipper_spotlights(self):
+        from chimerax.clipper import get_all_symmetry_handlers
+        sym_handlers = get_all_symmetry_handlers(self.session)
+        for sh in sym_handlers:
+            sh.triggers.release_trigger('spotlight moved')
+            if sh.spotlight_mode:
+                sh.update()
+
 
     def incr_residue(self, direction=None, polymeric_only=True):
         if direction is not None:
@@ -91,13 +106,13 @@ class ResidueStepper(StateManager):
             new_i = i+1
             if new_i >= len(m.chains):
                 new_i = 0
-            new_r = m.chains[new_i].residues[0]
+            new_r = m.chains[new_i].existing_residues[0]
         elif direction=='prev':
             if i == 0:
                 new_i = -1
             else:
                 new_i = i-1
-            new_r = m.chains[new_i].residues[-1]
+            new_r = m.chains[new_i].existing_residues[-1]
         else:
             raise TypeError('Direction should be one of "next" or "prev"')
         self.step_to(new_r)
@@ -133,7 +148,7 @@ class ResidueStepper(StateManager):
             return residues[0]
         return residues[-1]
 
-    def _new_camera_position(self, residue):
+    def _new_camera_position(self, residue, block_spotlight=True):
         session = self.session
         r = residue
         from chimerax.atomic import Residue, Atoms
@@ -189,6 +204,10 @@ class ResidueStepper(StateManager):
 
         from chimerax.geometry import distance
         if distance(new_cofr, old_cofr) < self._view_distance:
+            if block_spotlight:
+                self._block_clipper_spotlights()
+                from .delayed_reaction import call_after_n_events
+                call_after_n_events(self.session.triggers, 'frame drawn', self._interpolate_frames, self._release_clipper_spotlights, [])
             from chimerax.core.commands import motion
             motion.CallForNFrames(interpolate_camera, self._interpolate_frames, session)
         else:
