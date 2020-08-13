@@ -2,10 +2,25 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Apr-2018
+# @Last modified time: 08-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
+def call_after_n_events(triggerset, trigger_name, n, callback, callback_args):
+    class _cb:
+        def __init__(self, triggerset, trigger_name, n, cb, cb_args):
+            self.count = 0
+            self.max_count = n
+            self.cb = cb
+            self.cb_args = cb_args
+            triggerset.add_handler(trigger_name, self.callback)
+        def callback(self, *_):
+            c = self.count = self.count + 1
+            if c >= self.max_count:
+                self.cb(*self.cb_args)
+                from chimerax.core.triggerset import DEREGISTER
+                return DEREGISTER
+    _cb(triggerset, trigger_name, n, callback, callback_args)
 
 
 def delayed_reaction(triggerset, trigger_name, initiator_func, initiator_args, ready_test_func,
