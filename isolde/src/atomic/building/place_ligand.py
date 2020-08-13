@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 03-Aug-2020
+# @Last modified time: 10-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -117,6 +117,9 @@ def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, ch
     r = new_residue_from_template(model, tmpl, chain, position, b_factor=bfactor)
     if use_md_template and len(r.atoms) > 3:
         ff = session.isolde.forcefield_mgr[session.isolde.sim_params.forcefield]
+        if md_template_name is None:
+            from chimerax.isolde.openmm.amberff.template_utils import ccd_to_known_template
+            md_template_name = ccd_to_known_template.get(ligand_id, None)
         if md_template_name is None:
             ligand_db = session.isolde.forcefield_mgr.ligand_db(session.isolde.sim_params.forcefield)
             from chimerax.isolde.openmm.openmm_interface import find_residue_templates
