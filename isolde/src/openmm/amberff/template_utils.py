@@ -2,7 +2,7 @@
 # @Date:   24-Jul-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 01-Aug-2020
+# @Last modified time: 10-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -14,6 +14,8 @@ def _load_template_maps():
     return template_map
 
 template_map = _load_template_maps()
+ccd_to_known_template = {val:key for key,val in template_map.items() if val is not None}
+
 
 def template_name_to_ccd_name(template_name):
     ccd_name = None
