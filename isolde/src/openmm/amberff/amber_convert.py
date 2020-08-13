@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 01-Aug-2020
+# @Last modified time: 10-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -19,6 +19,7 @@ _blacklist = set((
 # 'NH3', # Incorrectly protonated as NH4
 'PI', '2HP', # Should be HPO4(2-), H2PO4(-), both PO4(3-)
 'SOH', # Should be HSO4-, modelled as SO42-
+'ACE', # N-terminal acetylation - not a free ligand
 ))
 
 _obsolete = set((
@@ -92,7 +93,10 @@ def _find_mol2_frcmod_pairs(input_dir, blacklist=set(), search_subdirs=True):
     from glob import glob
 
     file_dict = {}
-    mol2files = glob(os.path.join(input_dir, '**/*.mol2'), recursive = search_subdirs)
+    if search_subdirs:
+        mol2files = glob(os.path.join(input_dir, '**/*.mol2'), recursive=True)
+    else:
+        mol2files = glob(os.path.join(input_dir, '*.mol2'), recursive=False)
     for m in mol2files:
         name = os.path.splitext(os.path.basename(m))[0].upper()
         if name in blacklist:
