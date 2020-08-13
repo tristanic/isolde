@@ -3,7 +3,7 @@
 @Date:   13-Feb-2019
 @Email:  tic20@cam.ac.uk
 @Last modified by:   tic20
-@Last modified time: 20-Jul-2020
+@Last modified time: 10-Aug-2020
 @License: Free for non-commercial use (see license.pdf)
 @Copyright: 2017-2018 Tristan Croll
 -->
@@ -24230,7 +24230,7 @@
       <ExternalBond atomName="C2"/>
       <ExternalBond atomName="O9"/>
     </Residue>
-    <Residue name="GLYCAM_ACX">
+    <!-- <Residue name="GLYCAM_ACX">
       <Atom charge="0.763" name="C1A" type="C"/>
       <Atom charge="-0.612" name="O1A" type="O"/>
       <Atom charge="0.035" name="C2A" type="Cg"/>
@@ -24243,7 +24243,7 @@
       <Bond atomName1="C2A" atomName2="H2A"/>
       <Bond atomName1="C2A" atomName2="H3A"/>
       <ExternalBond atomName="C1A"/>
-    </Residue>
+    </Residue> -->
     <Residue name="GLYCAM_AGL">
       <Atom charge="-0.014" name="C2" type="Cy"/>
       <Atom charge="0.996" name="C1" type="C"/>
