@@ -2,7 +2,7 @@
 # @Date:   01-Aug-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 01-Aug-2020
+# @Last modified time: 10-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -96,6 +96,7 @@ class Unparameterised_Residues_Mgr:
                 table.setItem(count, j, item)
             count += 1
         for r, template_info in ambiguous.items():
+
             cx_res = residues[r.index]
             data = (
                 cx_res.chain_id,
@@ -104,7 +105,7 @@ class Unparameterised_Residues_Mgr:
             )
             for j, d in enumerate(data):
                 item = QTableWidgetItem(d)
-                item.data = (cx_res, [ti[0] for ti in template_info])
+                item.data = (cx_res, [], [[ti[0].name,0] for ti in template_info])
                 table.setItem(count, j, item)
             count += 1
         table.resizeColumnsToContents()
