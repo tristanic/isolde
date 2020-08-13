@@ -374,10 +374,24 @@ def fix_residue_to_match_md_template(session, residue, md_template, cif_template
         from chimerax.atomic.build_structure import modify_atom
         for existing_atom, new_indices in stub_map.items():
             num_new_atoms = len(new_indices)
+            num_existing_neighbors = len(existing_atom.neighbors)
             num_bonds = len(existing_atom.neighbors) + num_new_atoms
             new_tatoms = [md_template.atoms[i] for i in new_indices]
-            modified_atoms = modify_atom(existing_atom, existing_atom.element,
-                num_bonds, res_name=residue.name)
+            from chimerax.atomic.build_structure.mod import ParamError
+            try:
+                modified_atoms = modify_atom(existing_atom, existing_atom.element,
+                    num_bonds, res_name=residue.name)
+            except ParamError:
+                from chimerax.core.errors import UserError
+                err_str = ('Failed to add atoms {} to atom {} because this will '
+                    'lead to having {} atoms attached, which is more than its '
+                    'assigned geometry can support. This is probably due to an '
+                    'error in the MD template ({}). If this template is built '
+                    'into ISOLDE, please report this using Help/Report a bug').format(
+                    [a.name for a in new_tatoms], existing_atom.name,
+                    num_existing_neighbors+len(new_tatoms), md_template.name
+                )
+                raise UserError(err_str)
             new_atoms = modified_atoms[1:]
             for na, ta in zip(new_atoms, new_tatoms):
                 modify_atom(na, Element.get_element(ta.element.atomic_number),
