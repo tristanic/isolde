@@ -3,14 +3,14 @@
 @Date:   18-Apr-2018
 @Email:  tic20@cam.ac.uk
 @Last modified by:   tic20
-@Last modified time: 05-Aug-2020
+@Last modified time: 08-Aug-2020
 @License: Free for non-commercial use (see license.pdf)
 @Copyright: Copyright 2016-2019 Tristan Croll
 -->
 
 
 
-<BundleInfo name="ChimeraX-ISOLDE" version="1.0" package="chimerax.isolde"
+<BundleInfo name="ChimeraX-ISOLDE" version="1.0.1" package="chimerax.isolde"
   	    customInit="true" minSessionVersion="1" maxSessionVersion="1">
 
   <!-- Additional information about bundle source -->
@@ -98,7 +98,7 @@ with the surroundings.
   <Dependencies>
     <Dependency name="ChimeraX-Core" version="~=1.0.0"/>
     <Dependency name="ChimeraX-Atomic" version="~=1.0.0"/>
-    <Dependency name="ChimeraX-Clipper" version="~=0.13.0"/>
+    <Dependency name="ChimeraX-Clipper" version="~=0.14.0"/>
     <Dependency name="ChimeraX-Arrays" version="~=1.0"/>
 
     <!-- <Dependency name="websockets" version=">=8.0.1"/> -->
