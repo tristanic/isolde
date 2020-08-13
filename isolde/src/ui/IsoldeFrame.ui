@@ -153,13 +153,6 @@
              </property>
             </spacer>
            </item>
-           <item>
-            <widget class="QPushButton" name="_save_model_button">
-             <property name="text">
-              <string>Save current model as...</string>
-             </property>
-            </widget>
-           </item>
           </layout>
          </widget>
         </item>
@@ -1214,8 +1207,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>580</width>
-                  <height>476</height>
+                  <width>439</width>
+                  <height>45</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1899,7 +1892,7 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>566</width>
+                  <width>529</width>
                   <height>635</height>
                  </rect>
                 </property>
@@ -3200,7 +3193,7 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>566</width>
+                  <width>464</width>
                   <height>2012</height>
                  </rect>
                 </property>

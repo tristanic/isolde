@@ -632,11 +632,6 @@ class Isolde():
         self._change_b_and_a_padding()
         self._change_sim_platform()
 
-
-        iw._save_model_button.clicked.connect(
-            self._save_cif_file
-            )
-
         ####
         # Buttons to grow/shrink a continuous selection
         ####
@@ -1150,32 +1145,6 @@ class Isolde():
         self._update_iffy_peptide_lists()
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
-
-    ####
-    # General
-    ####
-
-    def _save_cif_file(self, *_):
-        options = QFileDialog.Options()
-        #options |= QFileDialog.DontUseNativeDialog
-        caption = 'Save structure as...'
-        filetypes = 'mmCIF files (*.cif)'
-        filename, _ = QFileDialog.getSaveFileName(None, caption, '', filetypes, options = options)
-        if filename:
-            self.save_cif_file(self._selected_model, filename)
-
-    def save_cif_file(self, model, filename):
-        '''
-        Save a model in mmCIF format.
-
-        Args:
-            * model:
-                - an :class:`AtomicStructure`
-            * filename:
-                - a text string providing a valid filename (must end with .cif).
-        '''
-        from chimerax.core.commands import save
-        save.save(self.session, filename, [model])
 
     ####
     # Xtal
