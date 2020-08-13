@@ -72,7 +72,7 @@
     <!-- <Type class="LO" element="O" mass="16.0" name="LO"/> -->
   </AtomTypes>
   <Residues>
-    <Residue name="BRYCE_adp">
+    <Residue name="BRYCE_ADP">
       <Atom charge="-0.9552" name="O1B" type="O3"/>
       <Atom charge="1.3672" name="PB" type="P"/>
       <Atom charge="-0.9552" name="O2B" type="O3"/>
@@ -156,7 +156,7 @@
       <ExternalBond atomName="O1B"/>
       <ExternalBond atomName="C2*"/>
     </Residue>
-    <Residue name="BRYCE_atp">
+    <Residue name="BRYCE_ATP">
       <Atom charge="-0.9526" name="O1G" type="O3"/>
       <Atom charge="1.265" name="PG" type="P"/>
       <Atom charge="-0.9526" name="O2G" type="O3"/>
@@ -248,7 +248,7 @@
       <ExternalBond atomName="O1G"/>
       <ExternalBond atomName="C2*"/>
     </Residue>
-    <Residue name="BRYCE_gdp">
+    <Residue name="BRYCE_GDP">
       <Atom charge="-0.9552" name="O1B" type="O3"/>
       <Atom charge="1.3672" name="PB" type="P"/>
       <Atom charge="-0.9552" name="O2B" type="O3"/>
@@ -334,7 +334,7 @@
       <ExternalBond atomName="O1B"/>
       <ExternalBond atomName="H3*"/>
     </Residue>
-    <Residue name="BRYCE_gtp">
+    <Residue name="BRYCE_GTP">
       <Atom charge="-0.9526" name="O1G" type="O3"/>
       <Atom charge="1.265" name="PG" type="P"/>
       <Atom charge="-0.9526" name="O2G" type="O3"/>
