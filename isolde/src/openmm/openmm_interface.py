@@ -2736,6 +2736,9 @@ class Sim_Handler:
         gbforce.addParticles(params)
         gbforce.finalize()
         system.addForce(gbforce)
+        # set the base NonbondedForce dielectric to vacuum
+        f.setReactionFieldDielectric(1.0)
+
 
 class Map_Scale_Optimizer:
     '''
