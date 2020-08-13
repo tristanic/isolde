@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 03-Aug-2020
+# @Last modified time: 13-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -2104,7 +2104,10 @@ class Isolde():
 
     def _clear_rotamer(self, *_):
         from . import session_extensions
-        rrm = session_extensions.get_rotamer_restraint_mgr(self.selected_model)
+        sm = self.selected_model
+        if sm is None or sm .deleted:
+            return
+        rrm = session_extensions.get_rotamer_restraint_mgr(sm)
         rrm.remove_preview()
         self._target_rotamer = None
         self._clear_rotamer_preview_text()
