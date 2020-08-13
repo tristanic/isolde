@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 01-Aug-2020
+# @Last modified time: 11-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -2470,10 +2470,11 @@ class Sim_Handler:
             CubicInterpMapForce_Low_Memory
             )
         v = volume
-        region = v.region
+        region = list(v.region)
         # Ensure that the region ijk step size is [1,1,1]
-        v.new_region(ijk_min=region[0], ijk_max=region[1], ijk_step=[1,1,1])
-        data = v.region_matrix()
+        region[-1] = [1,1,1]
+        #v.new_region(ijk_min=region[0], ijk_max=region[1], ijk_step=[1,1,1])
+        data = v.region_matrix(region=region)
         if any (dim < 3 for dim in data.shape):
             # Not enough of this map is covering the atoms. Leave it out.
             return
@@ -2491,7 +2492,7 @@ class Sim_Handler:
         tf = v.data.xyz_to_ijk_transform
         # Shift the transform to the origin of the region
         region_tf = Place(axes=tf.axes(), origin = tf.origin() -
-            v.data.xyz_to_ijk(v.region_origin_and_step(v.region)[0]))
+            v.data.xyz_to_ijk(v.region_origin_and_step(region)[0]))
         # In OpenMM forces, parameters can only be per-particle, or global to
         # the entire context. So if we want a parameter that's constant to all
         # particles in this force, it needs a unique name so it doesn't
