@@ -172,6 +172,8 @@ Syntax: isolde ~ignore *residues*
 Tell ISOLDE to stop ignoring a selection of residues for simulation purposes.
 This will not take effect until the next new simulation is started.
 
+.. _`stepto`:
+
 isolde stepto
 =============
 
@@ -194,6 +196,8 @@ arguments, this will be remembered for all future calls.
 Each loaded model is given its own independent residue stepper - the settings
 you make for one will not be carried over to others.
 
+.. _`jumpto`:
+
 isolde jumpto
 =============
 
@@ -201,6 +205,8 @@ Syntax: isolde jumpto [*next|prev*]
 
 Jump the residue stepper to the first residue of the next chain, or last residue
 of the previous chain.
+
+.. _`add ligand`:
 
 isolde add ligand
 =================
@@ -244,6 +250,8 @@ usually need to use the *mdTemplateName* argument: if you have loaded a custom
 template, it will be found and used as long as its name matches the residue
 name.
 
+.. _`add water`:
+
 isolde add water
 ================
 
@@ -257,6 +265,8 @@ start a local simulation to settle it). In addition, the default value for
 *distanceCutoff* is reduced from 8.0 to 3.0 Angstroms, on the basis that it is
 rarely a good idea to add a water outside of hydrogen bonding distance from the
 nearest existing atom(s).
+
+.. _`replace ligand`:
 
 isolde replace ligand
 =====================
