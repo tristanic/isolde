@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 24-May-2020
+# @Last modified time: 18-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -118,8 +118,24 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
                 tdm.residues_have_dihedral(trs, 'omega'),
                 tdm.residues_have_dihedral(rrs, 'omega')
                 )
-            ors = pdrm.add_restraints_by_residues_and_name(rrs[dmask], 'omega')
-            tds = tdm.get_dihedrals(trs[dmask], 'omega')
+            valid_trs = trs[dmask]
+            valid_rrs = rrs[dmask]
+            # Filter out residues that are cis-pro in the template but non-Pro
+            # in the target
+            tds = tdm.get_dihedrals(valid_trs, 'omega')
+            from math import radians
+            pro_mut_mask = numpy.logical_and(
+                valid_trs.names=='PRO',
+                valid_rrs.names!='PRO'
+            )
+            cispro_mask = numpy.logical_not(numpy.logical_and(
+                pro_mut_mask, numpy.abs(tds.angles) < radians(30)
+            ))
+            valid_trs = valid_trs[cispro_mask]
+            valid_rrs = valid_rrs[cispro_mask]
+
+            tds = tdm.get_dihedrals(valid_trs, 'omega')
+            ors = pdrm.add_restraints_by_residues_and_name(valid_rrs, 'omega')
             targets = tds.angles
             from math import radians, pi
             mask = numpy.abs(targets) > radians(30)
