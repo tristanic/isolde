@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 23-May-2020
+# @Last modified time: 26-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -1579,7 +1579,7 @@ class RestraintChangeTracker:
         f(self._c_pointer, self)
         self.session = session
         session.isolde_changes = self
-        self._update_handler = session.triggers.add_handler('new frame', self._get_and_clear_changes)
+        self._update_handler = session.triggers.add_handler('new frame', self._get_and_process_changes)
 
     def delete(self):
         self.session.triggers.remove_handler(self._update_handler)
@@ -1601,10 +1601,6 @@ class RestraintChangeTracker:
             args = (ctypes.c_void_p,))
         f(self._c_pointer)
 
-    def _get_and_clear_changes(self, *_):
-        self._get_and_process_changes()
-        self.clear()
-
     def _process_changes(self, changes):
         processed_dict = {}
         for mgr_name, type_dict in changes.items():
@@ -1623,11 +1619,13 @@ class RestraintChangeTracker:
                     raise KeyError('Manager {} is missing trigger "changes"!'.format(mgr))
         return processed_dict
 
-    def _get_and_process_changes(self):
+    def _get_and_process_changes(self, *_):
         f = c_function('change_tracker_changes',
             args = (ctypes.c_void_p,),
             ret = ctypes.py_object)
-        return self._process_changes(f(self._c_pointer))
+        changes = f(self._c_pointer)
+        self.clear()
+        return self._process_changes(changes)
 
     @property
     def reason_names(self):
