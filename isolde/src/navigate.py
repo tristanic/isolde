@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 08-Aug-2020
+# @Last modified time: 25-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -160,14 +160,26 @@ class ResidueStepper(StateManager):
             centroid = target_coords.mean(axis=0)
         elif pt == Residue.PT_AMINO:
             ref_coords = self.peptide_ref_coords
-            target_coords = Atoms([r.find_atom(name) for name in ('N', 'CA', 'C')]).coords
-            centroid = target_coords[1]
+            try:
+                target_coords = Atoms([r.find_atom(name) for name in ('N', 'CA', 'C')]).coords
+                centroid = target_coords[1]
+            except ValueError:
+                # Either a key atom is missing, or this is a special residue
+                # e.g. NH2
+                ref_coords=None
+                target_coords = r.atoms.coords
+                centroid = target_coords.mean(axis=0)
         elif pt == Residue.PT_NUCLEIC:
             ref_coords = self.nucleic_ref_coords
-            target_coords = Atoms(
-                [r.find_atom(name) for name in ("C2'", "C1'", "O4'")]
-            ).coords
-            centroid=target_coords[1]
+            try:
+                target_coords = Atoms(
+                    [r.find_atom(name) for name in ("C2'", "C1'", "O4'")]
+                ).coords
+                centroid=target_coords[1]
+            except ValueError:
+                ref_coords=None
+                target_coords = r.atoms.coords
+                centroid = target_coords.mean(axis=0)
 
         c = session.main_view.camera
         cp = c.position
