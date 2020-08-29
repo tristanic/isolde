@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 23-May-2020
+# @Last modified time: 29-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -148,10 +148,12 @@ class RamaAnnotator(Model):
         if not hasattr(self, '_omega_drawing'):
             od = self._omega_drawing = Drawing('cis/twisted omegas')
             od.skip_bounds = True
+            od.pickable = False
             self.add_drawing(od)
         if not hasattr(self, '_rama_drawing'):
             rd = self._rama_drawing = Drawing('Ramachandran score indicators')
             rd.skip_bounds = True
+            rd.pickable = False
             from chimerax.surface.shapes import sphere_geometry2
             rd.set_geometry(*sphere_geometry2(80))
             self.add_drawing(rd)

@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 26-Aug-2020
+# @Last modified time: 29-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -1637,6 +1637,7 @@ class RestraintChangeTracker:
 class _RestraintMgr(Model):
     '''Base class. Do not instantiate directly.'''
     SESSION_SAVE=False
+    pickable=False
     def __init__(self, name, model, c_pointer=None, c_class_name = None,
         allow_hydrogens='no'):
         session = model.session
@@ -2031,6 +2032,8 @@ class PositionRestraintMgr(_RestraintMgr):
     def _prepare_drawings(self):
         pd = self._pin_drawing = Drawing('Target pins')
         bd = self._bond_drawing = Drawing('Restraint bonds')
+        pd.pickable=False
+        bd.pickable=False
         bd.skip_bounds = True
         self.add_drawing(pd)
         self.add_drawing(bd)
@@ -2333,6 +2336,7 @@ class TuggableAtomsMgr(_RestraintMgr):
 
     def _prepare_drawings(self):
         ad = self._arrow_drawing = Drawing('Tugging force vectors')
+        ad.pickable=False
         self.add_drawing(ad)
         ad.set_geometry(*self._arrow_geometry())
         self.set_arrow_color(self._DEFAULT_ARROW_COLOR)
@@ -2586,11 +2590,13 @@ class _DistanceRestraintMgrBase(_RestraintMgr):
     def _prepare_drawing(self):
         bd = self._bond_drawing = Drawing('Restraint bonds')
         bd.skip_bounds = True
+        bd.pickable=False
         self.add_drawing(bd)
         bd.set_geometry(*self._pseudobond_geometry())
         self.set_bond_color(self._DEFAULT_BOND_COLOR)
         td = self._target_drawing = Drawing('Target distances')
         td.skip_bounds = True
+        td.pickable=False
         td.set_geometry(*self._target_geometry())
         self.add_drawing(td)
         self.set_target_color(self._DEFAULT_TARGET_COLOR)
@@ -3443,10 +3449,12 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         if not hasattr(self, '_ring_drawing') or self._ring_drawing is None:
             ring_d = self._ring_drawing = Drawing('rings')
             ring_d.skip_bounds = True
+            ring_d.pickable=False
             self.add_drawing(ring_d)
         if not hasattr(self, '_post_drawing') or self._post_drawing is None:
             post_d = self._post_drawing = Drawing('posts')
             post_d.skip_bounds = True
+            post_d.pickable=False
             self.add_drawing(post_d)
         ring_d = self._ring_drawing
         post_d = self._post_drawing

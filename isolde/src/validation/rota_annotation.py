@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 23-May-2020
+# @Last modified time: 29-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -216,6 +216,7 @@ class RotamerAnnotator(Model):
         translation((0,0.5,0.25)).transform_points(v, in_place=True)
         d = Drawing('rotamer indicator')
         d.skip_bounds = True
+        d.pickable = False
         d.set_geometry(v, n, t)
         return d
 

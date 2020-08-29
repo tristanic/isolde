@@ -2,7 +2,7 @@
 # @Date:   20-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 14-Jun-2019
+# @Last modified time: 28-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -64,7 +64,7 @@ class AtomPicker(SelectMouseMode):
         x,y = event.position()
         rm, ra = self._find_restrictions()
         self._restriction_model = rm
-        pick = view.first_intercept(x, y, self._pick_exclude)
+        pick = view.picked_object(x, y, self._pick_exclude)
         if ra is not None:
             if hasattr(pick, 'atom'):
                 if pick.atom not in ra:
@@ -97,7 +97,7 @@ class AtomPicker(SelectMouseMode):
         self._restriction_model = rm
         sx, sy = start_xy
         x, y = event.position()
-        pick = view.rectangle_intercept(sx, sy, x, y, exclude=self._pick_exclude)
+        pick = view.rectangle_pick(sx, sy, x, y, exclude=self._pick_exclude)
         if ra is not None:
             rr = ra.unique_residues
             rb = ra.intra_bonds
@@ -292,7 +292,7 @@ class AtomPicker_Old(MouseMode):
         sx, sy = start_xy
         x, y = event.position()
         # Pick all objects under the rectangle
-        pick = view.rectangle_intercept(sx, sy, x, y)
+        pick = view.rectangle_pick(sx, sy, x, y)
         # ... then weed out the non-atomic ones
         #add_toggle = event.shift_down()
         #sub_toggle = event.alt_down()
