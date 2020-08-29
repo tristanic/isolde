@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Aug-2020
+# @Last modified time: 28-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -2883,9 +2883,9 @@ class Map_Scale_Optimizer:
         energies[index] = self.get_current_energy()
         scale = search_vals[index]
         if self._save:
-            from chimerax.core.commands import save
+            from chimerax.save_command.cmd import provider_save
             filename = 'map_scale_optimize_{:.2f}.pdb'.format(scale)
-            save.save(self.sim_manager.isolde.session, filename, [self.sim_manager.isolde.selected_model])
+            provider_save(self.sim_manager.isolde.session, filename, [self.sim_manager.isolde.selected_model])
         sh = self.sim_handler
         from ..delayed_reaction import delayed_reaction
         delayed_reaction(sh.triggers, 'coord update',
