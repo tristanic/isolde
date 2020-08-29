@@ -127,7 +127,7 @@ class Clash_Table_Mgr:
         and list geometric clashes in decreasing order of overlap severity.
         '''
         atoms = model.atoms
-        from chimerax.atomic.clashes import clashes
+        from chimerax.clashes import clashes
         clash_dict = clashes.find_clashes(self.session, atoms, inter_model=False)
         t = self._geom_clash_table
         t.setRowCount(0)

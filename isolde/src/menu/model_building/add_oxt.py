@@ -24,7 +24,7 @@ def add_oxt(session, residue):
             return
         if n.residue != residue:
             raise UserError('Residue {} {}{} is not a C-terminal residue!'.format(residue.name, residue.chain_id, residue.number))
-    from chimerax.atomic.build_structure import modify_atom
+    from chimerax.build_structure import modify_atom
     from chimerax.atomic import Element
     atoms = modify_atom(catom, catom.element, 3, res_name=residue.name)
     for a in atoms:

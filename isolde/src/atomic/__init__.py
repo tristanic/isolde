@@ -28,7 +28,7 @@ def load_default_mmcif_templates():
     global _templates_loaded
     if not _templates_loaded:
         import os
-        from chimerax.atomic import mmcif
+        from chimerax import mmcif
         base_dir = os.path.dirname(os.path.abspath(__file__))
         mmcif.load_mmCIF_templates(os.path.join(base_dir, '..', 'dictionaries', 'core_components.cif'))
         _templates_loaded=True

@@ -52,7 +52,7 @@ def match_template_atoms_to_ccd_atoms(session, template, ccd_name = None, timeou
     matches = _template_atom_to_ccd_atom_cache.get((template.name, ccd_name))
     if matches is not None:
         return matches
-    from chimerax.atomic import mmcif
+    from chimerax import mmcif
     ccd_template = mmcif.find_template_residue(session, ccd_name)
     if len(template.atoms) > 2:
         # Try by name first (typically very fast)

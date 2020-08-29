@@ -10,8 +10,8 @@ tooltip = ('Add a hydrogen to the currently selected atom, if chemically sensibl
 
 def run_script(session):
     from chimerax.atomic import selected_atoms
-    from chimerax.atomic.build_structure import modify_atom
-    from chimerax.atomic.build_structure.mod import ParamError
+    from chimerax.build_structure import modify_atom
+    from chimerax.build_structure.mod import ParamError
     from chimerax.core.errors import UserError
 
     sel = selected_atoms(session)

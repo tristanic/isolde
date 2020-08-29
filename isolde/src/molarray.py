@@ -428,7 +428,7 @@ class DistanceRestraints(Collection):
     @property
     def _bond_cylinder_transforms(self):
         '''Transforms mapping a unit cylinder onto the restraint bonds. Read only.'''
-        from chimerax.core.geometry import Places
+        from chimerax.geometry import Places
         f = c_function('distance_restraint_bond_transform',
             args = (ctypes.c_void_p, ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_float)))
@@ -439,7 +439,7 @@ class DistanceRestraints(Collection):
 
     @property
     def _target_transforms(self):
-        from chimerax.core.geometry import Places
+        from chimerax.geometry import Places
         f = c_function('distance_restraint_target_transform',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_float)))
         n = len(self)
@@ -502,7 +502,7 @@ class AdaptiveDistanceRestraints(Collection):
         '''
         Transforms mapping a tripartite bond onto the restraint vectors. Read only.
         '''
-        from chimerax.core.geometry import Places
+        from chimerax.geometry import Places
         f = c_function('adaptive_distance_restraint_bond_transforms',
             args= (ctypes.c_void_p, ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_float),
@@ -661,7 +661,7 @@ class _ProperDihedralRestraints_Base(Collection):
         tf1 = numpy.empty((n,4,4), float32)
         tf2 = numpy.empty((n,4,4), float32)
         f(self._c_pointers, n, pointer(tf1), pointer(tf2))
-        from chimerax.core.geometry import Places
+        from chimerax.geometry import Places
         return (Places(opengl_array=tf1), Places(opengl_array=tf2))
 
     def clear_sim_indices(self):

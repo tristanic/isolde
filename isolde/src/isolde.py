@@ -2820,7 +2820,7 @@ class Isolde():
         if choice == 'addh':
             print('Adding hydrogens')
             from chimerax.atomic import AtomicStructures
-            from chimerax.atomic.addh import cmd
+            from chimerax.addh import cmd
             cmd.cmd_addh(self.session, AtomicStructures([self.selected_model]), hbond=True)
             self._sim_end_cb()
             self.selected_model.atoms.selected = False

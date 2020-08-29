@@ -1,8 +1,11 @@
 
+from chimerax.core.errors import UserError
+
 _fetched_templates = set()
 
 def find_incorrect_residues(session, model, heavy_atoms_only = True):
-    from chimerax.atomic import Residue, mmcif, TmplResidue
+    from chimerax.atomic import Residue, TmplResidue
+    from chimerax import mmcif
     residues = model.residues
     questionable = []
     for r in residues:
@@ -198,7 +201,6 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
     matched_nodes, residue_extra, template_extra = find_maximal_isomorphous_fragment(residue, template, limit_template_indices=template_indices, match_by=match_by)
 
     if len(matched_nodes) < 3:
-        from chimerax.core.errors import UserError
         raise UserError('Residue {} {}{} has only {} connected atoms in common with template {}. At least 3 matching atoms are needed.'.format(
             residue.name, residue.chain_id, residue.number, len(matched_nodes), template.name
         ))
@@ -206,7 +208,7 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
     m = residue.structure
     session = m.session
     from chimerax.atomic.struct_edit import add_dihedral_atom
-    from chimerax.core.geometry import distance, angle, dihedral
+    from chimerax.geometry import distance, angle, dihedral
     # if not rename_atoms_only:
     #     residue.atoms[residue.atoms.element_names=='H'].delete()
     rnames = set(residue.atoms.names)
@@ -552,7 +554,7 @@ def copy_ideal_coords_to_exp(ciffile):
             outfile.write(line+'\n')
 
 def load_cif_templates(session, cif_files):
-    from chimerax.atomic import mmcif
+    from chimerax import mmcif
     all_names = []
     for cif_file in cif_files:
         try:
@@ -583,7 +585,7 @@ def get_template_names(cif_file, filter_out_obsolete=True):
     '''
     Get the names of all non-obsolete templates in a chemical components cif file.
     '''
-    from chimerax.atomic import mmcif
+    from chimerax import mmcif
     tables = mmcif.get_cif_tables(cif_file, ['chem_comp','chem_comp_atom'], all_data_blocks=True)
     tables = [t for t in tables if t[1][1].has_field('model_Cartn_x') or t[1][1].has_field('pdbx_model_Cartn_x_ideal')]
     if filter_out_obsolete:
@@ -598,7 +600,7 @@ def match_ff_templates_to_ccd_templates(session, forcefield, ccd_names):
     most closely matches it. This will take a long time!
     '''
     from chimerax.isolde.graph import make_graph_from_residue_template
-    from chimerax.atomic import mmcif
+    from chimerax import mmcif
     ff_templates = forcefield._templates
     best_matches = {}
     ccd_graphs = {}

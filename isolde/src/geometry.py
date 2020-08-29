@@ -324,7 +324,7 @@ def exclamation_mark(radius = 0.1, height = 2, nc=8, color = [255,0,0,255]):
     An exclamation mark for annotating rotamer outliers
     '''
     from chimerax.surface.shapes import cone_geometry, sphere_geometry2
-    from chimerax.core.geometry import translation, scale
+    from chimerax.geometry import translation, scale
     import numpy
     stem = cone_geometry(radius=radius, height=height, nc=nc, caps=True)
     spheres = list(sphere_geometry2(nc*4))
@@ -426,7 +426,7 @@ def arrow_between_points(arrow, xyz0, xyz1):
     arrow). In either case the arrow will have one end on xyz0. The other end
     will be on xyz1 if the height of the original arrow was 1 unit.
     '''
-    from chimerax.core.geometry.place import translation, vector_rotation, scale, Place, product
+    from chimerax.geometry.place import translation, vector_rotation, scale, Place, product
     import numpy
 
     # Original arrow points along the z axis
@@ -446,7 +446,7 @@ def arrow_along_force_vector(arrow, xyz0, force, scale = 1.0):
     it to point from xyz0 along a force vector, with length scaled according
     to the magnitude of the force.
     '''
-    from chimerax.core.geometry.place import translation, vector_rotation, scale, Place, product
+    from chimerax.geometry.place import translation, vector_rotation, scale, Place, product
     import numpy
 
     # Original arrow points along the z axis
@@ -471,7 +471,7 @@ def pin_geometry(handle_radius, pin_radius, total_height):
     '''
     import numpy
     from chimerax.surface.shapes import cylinder_geometry, cone_geometry
-    from chimerax.core.geometry import translation
+    from chimerax.geometry import translation
     pin_height = total_height*5/12
     handle_height = total_height*7/12
     tb_height = total_height/4
@@ -544,7 +544,7 @@ def split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segme
     '''
     from math import pi
     from chimerax.surface import tube
-    from chimerax.core.geometry import rotation
+    from chimerax.geometry import rotation
     path = arc_points(ring_segments, major_radius, starting_angle, final_angle)
     return tube.tube_spline(path, minor_radius, segment_subdivisions = 2, circle_subdivisions = circle_segments)
 
@@ -555,7 +555,7 @@ def ring_arrow(major_radius, minor_radius, circle_segments, ring_segments, head_
     starting_angle = 2*asin(head_length/(2*major_radius))
     vr, nr, tr = split_torus_geometry(major_radius, minor_radius, circle_segments, ring_segments, starting_angle*0.8, 3*pi/2)
     vh, nh, th = cone_geometry(head_radius, head_length, circle_segments)
-    from chimerax.core.geometry import rotation
+    from chimerax.geometry import rotation
     # Rotate the cone
     move_dir = numpy.array(((major_radius, 0, -head_length),), numpy.double)
     r1 = rotation((1,0,0), -90)
@@ -600,7 +600,7 @@ def post_geometry(radius, height, caps=False):
     the origin and it points along (1,0,0)
     '''
     from chimerax.surface.shapes import cylinder_geometry
-    from chimerax.core.geometry import rotation, translation
+    from chimerax.geometry import rotation, translation
     v, n, t = cylinder_geometry(radius=radius, height=height, caps=caps, nc=6)
     tr = translation([0,0,height/2])
     tr.transform_points(v, in_place=True)
@@ -617,7 +617,7 @@ def bond_cylinder_placements(bonds):
     p = empty((n,4,4), float32)
 
     radii = numpy.ones(len(bonds))
-    from chimerax.core.geometry import cylinder_rotations, Places
+    from chimerax.geometry import cylinder_rotations, Places
     axyz0, axyz1 = [a.coords for a in bonds.atoms]
     cylinder_rotations(axyz0, axyz1, radii, p)
 

@@ -255,9 +255,9 @@ class Backrub:
         from math import degrees
         coords = chi_dihedral.atoms.coords
         axis = coords[2]-coords[1]
-        from chimerax.core.geometry import matrix
+        from chimerax.geometry import matrix
         center = matrix.project_to_axis(coords[3], axis, coords[1])
-        from chimerax.core.geometry import rotation
+        from chimerax.geometry import rotation
         tf = rotation(axis, degrees(target_angle-chi_dihedral.angle), center)
         ma.coords = tf.transform_points(ma.coords)
 
@@ -287,7 +287,7 @@ class Backrub:
         each of the atoms in check_atoms after rotating moving_atoms by angle
         around axis.
         '''
-        from chimerax.core.geometry import Place, rotation
+        from chimerax.geometry import Place, rotation
         coords = moving_atoms.coords
         weights = check_atoms.elements.numbers
         tf = rotation(axis, angle, center)
@@ -312,7 +312,7 @@ class Backrub:
         nchi = rotamer.num_chi_dihedrals
         import numpy
         weights = check_atoms.elements.numbers
-        from chimerax.core.geometry import Place, rotation, matrix
+        from chimerax.geometry import Place, rotation, matrix
         #angles = numpy.array(angles)
         rot_angles = numpy.degrees(angles-rotamer.angles)
         for i in range(nchi):
@@ -347,7 +347,7 @@ def clash_score(session, atoms, surrounds):
     '''
     Returns the sum of overlap distances for clashing atoms
     '''
-    from chimerax.atomic.clashes import clashes
+    from chimerax.clashes import clashes
     clash_dict = clashes.find_clashes(session, atoms, restrict=surrounds)
     # Make list of unique clashing atom pairs and their distances
     seen = set()
@@ -362,7 +362,7 @@ def clash_score(session, atoms, surrounds):
 
 
 def near_atoms(atoms, model, distance):
-    from chimerax.core.geometry import find_close_points
+    from chimerax.geometry import find_close_points
     all_atoms = model.atoms
     other_atoms = all_atoms.subtract(atoms)
     other_coords = other_atoms.coords

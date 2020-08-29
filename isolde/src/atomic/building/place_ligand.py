@@ -82,8 +82,8 @@ def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, ch
     simulation and run `isolde ~ignore` to reinstate all atoms for simulation
     purposes, and continue with your model building.
     '''
-    from chimerax.core.geometry import find_closest_points
-    from chimerax.atomic import mmcif
+    from chimerax.geometry import find_closest_points
+    from chimerax import mmcif
     from chimerax.core.errors import UserError
     if hasattr(session, 'isolde') and session.isolde.simulation_running:
         raise UserError('Cannot add atoms when a simulation is running!')

@@ -14,7 +14,7 @@ from time import time
 
 from chimerax.core.models import Drawing, Model
 from chimerax.atomic import Bonds
-from chimerax.core.geometry import translation, rotation, Places
+from chimerax.geometry import translation, rotation, Places
 
 from ..geometry import exclamation_mark, spiral, bond_cylinder_placements
 from ..geometry import scale_transforms

@@ -194,7 +194,7 @@ def restrain_ca_distances_to_template(template_residues, restrained_residues,
     restrained_cas = restrained_residues.atoms[restrained_residues.atoms.names=='CA']
     template_coords = template_cas.coords
     drm = sx.get_distance_restraint_mgr(restrained_model)
-    from chimerax.core.geometry import find_close_points, distance
+    from chimerax.geometry import find_close_points, distance
     for i, rca1 in enumerate(restrained_cas):
         query_coord = numpy.array([template_coords[i]])
         indices = find_close_points(query_coord, template_coords, distance_cutoff)[1]
@@ -243,7 +243,7 @@ def restrain_small_ligands(model, distance_cutoff=4, heavy_atom_limit=3, spring_
         all_heavy_atoms = all_heavy_atoms[all_heavy_atoms.element_names != 'C']
     all_heavy_coords = all_heavy_atoms.coords
 
-    from chimerax.core.geometry import find_close_points, distance
+    from chimerax.geometry import find_close_points, distance
     for r in small_ligands:
         r_heavy_atoms = r.atoms[r.atoms.element_names != 'H']
         if not bond_to_carbon:
@@ -480,7 +480,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
     if display_threshold is None:
         display_threshold = 0
     adrm.display_threshold = display_threshold
-    from chimerax.core.geometry import find_close_points, distance
+    from chimerax.geometry import find_close_points, distance
     from chimerax.atomic import concatenate
 
     atom_names = []

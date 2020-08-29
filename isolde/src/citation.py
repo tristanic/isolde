@@ -7,7 +7,7 @@
 # @Copyright: 2016-2019 Tristan Croll
 
 def add_isolde_citation(model):
-    from chimerax.atomic import mmcif
+    from chimerax import mmcif
     mmcif.add_citation(model, 'isolde2018', {
         'title':    'ISOLDE: a physically realistic environment for model building into low-resolution electron density maps',
         'pdbx_database_id_DOI':     '10.1107/S2059798318002425',

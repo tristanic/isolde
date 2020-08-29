@@ -128,7 +128,7 @@ class TugAtomsMode(MouseMode):
         elif hasattr(pick, 'bond'):
             b = pick.bond
             coords = [a.coord for a in b.atoms]
-            from chimerax.core.geometry import distance
+            from chimerax.geometry import distance
             distances = [distance(c, pick.position) for c in coords]
             a = b.atoms[distances.index(min(distances))]
             r = a.residue
@@ -210,7 +210,7 @@ class TugAtomsMode(MouseMode):
         # Project atom onto view ray to get displacement.
         dir = x1 - x0
         da = axyz - x0
-        from chimerax.core.geometry import inner_product
+        from chimerax.geometry import inner_product
         offset = self.structure.scene_position.inverse(is_orthonormal=True).transform_vectors(
             da - (inner_product(da, dir)/inner_product(dir,dir)) * dir
         )

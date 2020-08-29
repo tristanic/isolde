@@ -240,7 +240,7 @@ class RamaAnnotator(Model):
             xyzr = numpy.empty((n, 4), numpy.float32)
             xyzr[:,:3] = coords
             xyzr[:,3] = self.ca_radius
-            from chimerax.core.geometry import Places
+            from chimerax.geometry import Places
             rd.positions = Places(shift_and_scale = xyzr)
             rd.colors = colors
             rd.highlighted_positions = selecteds

@@ -14,7 +14,7 @@ def get_shell_of_residues(residues, dist_cutoff):
     within a user-defined cut-off distance surrounding residues. Expects
     all residues to be within the same model.
     '''
-    from chimerax.core.geometry import find_close_points
+    from chimerax.geometry import find_close_points
     from chimerax.atomic import selected_atoms, Atoms, concatenate
     us = residues.unique_structures
     selatoms = residues.atoms

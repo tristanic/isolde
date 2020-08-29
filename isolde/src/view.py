@@ -26,7 +26,7 @@ def focus_on_coord(session, center, radius = 5.0, clip=True, rescale=True):
     v = session.main_view
     import numpy
     center = numpy.array(center)
-    from chimerax.core.geometry import Bounds
+    from chimerax.geometry import Bounds
     xyz_min = center-radius
     xyz_max = center+radius
     bounds = Bounds(xyz_min, xyz_max)
@@ -38,7 +38,7 @@ def focus_on_coord(session, center, radius = 5.0, clip=True, rescale=True):
     else:
         # Keep the view direction and scale, and just move the camera
         camera_to_cofr = cam.position.origin() - v.center_of_rotation
-        from chimerax.core.geometry import Place
+        from chimerax.geometry import Place
         cam.position = Place(axes=cam.position.axes(), origin=center+camera_to_cofr)
 
     v.center_of_rotation = center

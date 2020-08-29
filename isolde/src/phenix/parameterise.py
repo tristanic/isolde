@@ -10,7 +10,7 @@ def parameterise_residue_with_elbow(residue, include_hydrogens=True, keep_elbow_
     session = residue.session
     resname = residue.name
     from chimerax.core.errors import UserError
-    from chimerax.atomic import mmcif
+    from chimerax import mmcif
     from . import check_for_phenix
     from chimerax.isolde.parmed import install_parmed_if_necessary
     install_parmed_if_necessary(session)
@@ -32,7 +32,7 @@ def parameterise_residue_with_elbow(residue, include_hydrogens=True, keep_elbow_
     tmpdirname = tmpdir.name
     os.chdir(tmpdirname)
 
-    from chimerax.atomic.mol2 import write_mol2
+    from chimerax.mol2 import write_mol2
     session.logger.status('Running eLBOW. This may take a while...')
     filename = resname + '_for_elbow.mol2'
     atoms = residue.atoms

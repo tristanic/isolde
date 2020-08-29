@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Jun-2019
+# @Last modified time: 28-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -25,7 +25,7 @@ def _get_template(session, name):
 
 def residue_info_from_ccd_cif(session, residue):
     template = _get_template(session, residue.name)
-    from chimerax.atomic.mmcif import get_mmcif_tables
+    from chimerax.mmcif import get_mmcif_tables
     res_info_raw = get_mmcif_tables(template, (
         'chem_comp',
         'chem_comp_atom',

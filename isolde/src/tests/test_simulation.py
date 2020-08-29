@@ -246,7 +246,7 @@ class SimTester:
 
 
 def get_shell_of_residues(model, existing_sel, dist_cutoff):
-    from chimerax.core.geometry import find_close_points
+    from chimerax.geometry import find_close_points
     from chimerax.atomic import selected_atoms, Atoms, concatenate
     selatoms = existing_sel
     allatoms = model.atoms

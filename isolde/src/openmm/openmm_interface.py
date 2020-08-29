@@ -2488,7 +2488,7 @@ class Sim_Handler:
             print("Map is too large for fast cubic interpolation on the GPU!"\
                   +" Switching to slower, more memory-efficient implementation.")
             Map_Force = CubicInterpMapForce_Low_Memory
-        from chimerax.core.geometry import Place
+        from chimerax.geometry import Place
         tf = v.data.xyz_to_ijk_transform
         # Shift the transform to the origin of the region
         region_tf = Place(axes=tf.axes(), origin = tf.origin() -
@@ -2572,7 +2572,7 @@ class Sim_Handler:
         f = self.mdff_forces[volume]
         region = volume.region
         tf = volume.data.xyz_to_ijk_transform
-        from chimerax.core.geometry import Place
+        from chimerax.geometry import Place
         region_tf = Place(axes=tf.axes(), origin = tf.origin() -
             volume.data.xyz_to_ijk(volume.region_origin_and_step(region)[0]))
 

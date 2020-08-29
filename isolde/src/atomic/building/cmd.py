@@ -22,7 +22,7 @@ def replace_residue(session, residue, new_residue_name):
         fix_residue_from_template,
         fix_residue_to_match_md_template
     )
-    from chimerax.atomic import mmcif
+    from chimerax import mmcif
     try:
         cif_template = mmcif.find_template_residue(session, new_residue_name)
     except:

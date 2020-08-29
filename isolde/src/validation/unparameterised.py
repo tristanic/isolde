@@ -119,7 +119,7 @@ class Unparameterised_Residues_Mgr:
         tlist.addItem(QListWidgetItem("Matches by residue name"))
         def get_ccd_template_and_name(session, tname):
             from ..openmm.amberff.template_utils import template_name_to_ccd_name
-            from chimerax.atomic import mmcif
+            from chimerax import mmcif
             ccd_name, extra_info = template_name_to_ccd_name(tname)
             if ccd_name is None:
                 return (None, '')

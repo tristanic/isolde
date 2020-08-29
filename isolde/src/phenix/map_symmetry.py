@@ -41,7 +41,7 @@ def parse_map_symmetry_file(filename):
         else:
             i+=1
             continue
-    from chimerax.core.geometry import Places
+    from chimerax.geometry import Places
     ret = {}
     for gid, ncslist in ncs_map.items():
         ret[gid] = Places(place_array=numpy.array(ncslist))

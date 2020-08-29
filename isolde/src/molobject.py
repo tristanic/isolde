@@ -1851,7 +1851,7 @@ class MDFFMgr(_RestraintMgr):
             spotlight_mode = sh.spotlight_mode
             sh.isolate_and_cover_selection(m.atoms, focus=False)
 
-        from chimerax.core.geometry import identity
+        from chimerax.geometry import identity
         coords = m.atoms[m.atoms.element_names!='H'].coords
         import numpy
         coords += numpy.random.rand(len(coords),3)*0.5-0.25
@@ -2137,13 +2137,13 @@ class PositionRestraintMgr(_RestraintMgr):
             self._update_pin_drawing(pd, visibles, n)
 
     def _update_pin_drawing(self, pd, visibles, n):
-        from chimerax.core.geometry import Places
+        from chimerax.geometry import Places
         xyzr = numpy.ones((n,4), numpy.float32)
         xyzr[:, :3] = visibles.targets
         pd.positions = Places(shift_and_scale=xyzr)
 
     def _update_bond_drawing(self, bd, visibles, n):
-        from chimerax.core.geometry import Places
+        from chimerax.geometry import Places
         bd.positions = Places(opengl_array = visibles._bond_cylinder_transforms)
 
     def _get_restraints(self, atoms, create=False):
@@ -2403,7 +2403,7 @@ class TuggableAtomsMgr(_RestraintMgr):
         self._update_arrow_drawing(ad, visibles, n)
 
     def _update_arrow_drawing(self, ad, visibles, n):
-        from chimerax.core.geometry import Places
+        from chimerax.geometry import Places
         ad.positions = Places(opengl_array = visibles._bond_cylinder_transforms)
 
     def _get_tuggables(self, atoms, create=False):
@@ -4213,7 +4213,7 @@ class RotamerRestraintMgr(_RestraintMgr):
         current_angles = rotamer.angles
         rot_angles = numpy.degrees(target_angles-current_angles)
         chis = rotamer.chi_dihedrals
-        from chimerax.core.geometry import Place, rotation, matrix
+        from chimerax.geometry import Place, rotation, matrix
         master_atoms = rotamer.residue.atoms
         pm.atoms.coords = master_atoms.coords
         for i in range(rotamer.num_chi_dihedrals):

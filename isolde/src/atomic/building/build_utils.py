@@ -157,7 +157,7 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
         elif next_res:
             number = next_res.number - 1
 
-    from chimerax.atomic import mmcif
+    from chimerax import mmcif
     tmpl = mmcif.find_template_residue(session, resname)
     from .place_ligand import new_residue_from_template
     import numpy
@@ -170,7 +170,7 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
     if not next_res and not prev_res:
         r.atoms.coords += numpy.array(center) - r.atoms.coords.mean(axis=0)
     else:
-        from chimerax.core.geometry import align_points
+        from chimerax.geometry import align_points
         if prev_res:
             model.new_bond(r.find_atom('N'), prev_res.find_atom('C'))
             n_pos = _find_next_N_position(prev_res)
@@ -261,7 +261,7 @@ def current_and_possible_disulfides(model, cutoff_distance=3.0):
     from chimerax.atomic import Atoms
     atoms = model.atoms
     cys_s = atoms[numpy.logical_and(atoms.residues.names=='CYS', atoms.names=='SG')]
-    from chimerax.atomic.search import AtomSearchTree
+    from chimerax.atom_search import AtomSearchTree
     tree = AtomSearchTree(cys_s)
     current_disulfides = set()
     possible_disulfides = set()
@@ -312,6 +312,6 @@ def break_disulfide(cys1, cys2):
     b = Atoms((s1, s2)).intra_bonds[0]
     b.delete()
     if has_hydrogens:
-        from chimerax.atomic.build_structure import modify_atom
+        from chimerax.build_structure import modify_atom
         modify_atom(s1, s1.element, 2, res_name = 'CYS', connect_back=False)
         modify_atom(s2, s2.element, 2, res_name = 'CYS', connect_back=False)
