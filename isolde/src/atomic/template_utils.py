@@ -316,104 +316,122 @@ def fix_residue_to_match_md_template(session, residue, md_template, cif_template
     if cif_template is None:
         ccd_name, _ = template_name_to_ccd_name(md_template.name)
         if ccd_name is not None:
-            from chimerax.atomic import mmcif
-            cif_template = mmcif.find_template_residue(session, ccd_name)
+            from chimerax import mmcif
+            try:
+                cif_template = mmcif.find_template_residue(session, ccd_name)
+            except ValueError:
+                pass
     else:
         ccd_name = cif_template.name
     if cif_template is None:
         return trim_residue_to_md_template(residue, md_template)
     template_indices, ccd_indices = match_template_atoms_to_ccd_atoms(session, md_template, ccd_name)
     fix_residue_from_template(residue, cif_template, template_indices=ccd_indices)
-    template_extra_indices = [i for i in range(len(md_template.atoms)) if i not in template_indices]
+    from chimerax.atomic import Atoms
+    ratoms = Atoms([residue.find_atom(cif_template.atoms[i].name) for i in ccd_indices])
+    residue_indices = residue.atoms.indices(ratoms)
     #template_extra_atoms = [md_template.atoms[i] for i in template_extra_indices]
-    if len(template_extra_indices):
-        template_extra_bonds = set([b for b in md_template.bonds if any([i in template_extra_indices for i in b])])
-        from collections import defaultdict
-        stub_map = defaultdict(list)
-        # stub_map maps an existing atom in the residue to any atoms in the MD
-        # template that should be connected to it, but aren't yet modelled.
-        found_bonds = set()
-        for b in template_extra_bonds:
-            i1, i2 = b
-            i1_index = numpy.where(template_indices==i1)[0]
-            i2_index = numpy.where(template_indices==i2)[0]
-            if not len(i1_index) and not len(i2_index):
-                continue
-            if len(i2_index):
-                i1, i2 = i2, i1
-                i1_index = i2_index
-            i1_index = i1_index[0]
-            ccd_atom = cif_template.atoms[ccd_indices[i1_index]]
-            res_atom = residue.find_atom(ccd_atom.name)
-            if not res_atom:
-                raise RuntimeError("Atom {} should be in residue, but isn't".format(ccd_atom.name))
-            stub_map[res_atom].append(i2)
-            found_bonds.add(b)
-        template_extra_bonds = template_extra_bonds.difference(found_bonds)
-        from chimerax.core.errors import UserError
-        if len(template_extra_bonds):
-            err_str = ('MD template {} contains extra atoms that are not in '
-                'CCD template {}, and are not directly connected to existing '
-                'atoms. Since MD templates do not explicitly provide geometry,'
-                'these atoms will not be built. As it stands, the resulting '
-                'residue will contain only those atoms which the MD and CCD '
-                'templates have in common.').format(md_template.name, ccd_name)
-            raise UserError(err_str)
-        seen = set()
-        for new_atom_list in stub_map.values():
-            for i in new_atom_list:
-                if i in seen:
-                    err_str = ('The atom {} in MD template {} bonds to more than '
-                        'one existing atom in residue {}. Since MD templates do '
-                        'not explicitly specify geometry, this type of atom addition '
-                        'is not currently supported. The resulting residue will '
-                        'contain only those atoms which the MD and CCD templates '
-                        'have in common').format(
-                            md_template.atoms[i].name, md_template.name, ccd_name)
-                    raise UserError(err_str)
-                seen.add(i)
-        from chimerax.atomic import Element
-        from chimerax.atomic.build_structure import modify_atom
-        for existing_atom, new_indices in stub_map.items():
-            num_new_atoms = len(new_indices)
-            num_existing_neighbors = len(existing_atom.neighbors)
-            num_bonds = len(existing_atom.neighbors) + num_new_atoms
-            new_tatoms = [md_template.atoms[i] for i in new_indices]
-            from chimerax.atomic.build_structure.mod import ParamError
-            try:
-                modified_atoms = modify_atom(existing_atom, existing_atom.element,
-                    num_bonds, res_name=residue.name)
-            except ParamError:
-                from chimerax.core.errors import UserError
-                err_str = ('Failed to add atoms {} to atom {} because this will '
-                    'lead to having {} atoms attached, which is more than its '
-                    'assigned geometry can support. This is probably due to an '
-                    'error in the MD template ({}). If this template is built '
-                    'into ISOLDE, please report this using Help/Report a bug').format(
-                    [a.name for a in new_tatoms], existing_atom.name,
-                    num_existing_neighbors+len(new_tatoms), md_template.name
-                )
+    add_missing_md_template_atoms(session, residue, md_template, residue_indices, template_indices)
+
+def add_missing_md_template_atoms(session, residue, md_template, residue_indices, template_indices):
+    import numpy
+    template_extra_indices = [i for i in range(len(md_template.atoms)) if i not in template_indices]
+    if not len(template_extra_indices):
+        return
+    template_extra_bonds = set([b for b in md_template.bonds if any([i in template_extra_indices for i in b])])
+    from collections import defaultdict
+    stub_map = defaultdict(list)
+    # stub_map maps an existing atom in the residue to any atoms in the MD
+    # template that should be connected to it, but aren't yet modelled.
+    found_bonds = set()
+    for b in template_extra_bonds:
+        i1, i2 = b
+        i1_index = numpy.where(template_indices==i1)[0]
+        i2_index = numpy.where(template_indices==i2)[0]
+        if not len(i1_index) and not len(i2_index):
+            continue
+        if len(i2_index):
+            i1, i2 = i2, i1
+            i1_index = i2_index
+        i1_index = i1_index[0]
+        res_atom = residue.atoms[residue_indices[i1_index]]
+        # if not res_atom:
+        #     raise RuntimeError("Atom {} should be in residue, but isn't".format(ccd_atom.name))
+        stub_map[res_atom].append(i2)
+        found_bonds.add(b)
+    template_extra_bonds = template_extra_bonds.difference(found_bonds)
+    if len(template_extra_bonds):
+        err_str = ('MD template {} for residue {} {}{}{} contains extra atoms that are not in '
+            'a coordinate template, and are not directly connected to existing '
+            'atoms. Since MD templates do not explicitly provide geometry,'
+            'these atoms will not be built.').format(md_template.name,
+                residue.name, residue.chain_id, residue.number, residue.insertion_code)
+        session.logger.warning(err_str)
+    seen = set()
+    for new_atom_list in stub_map.values():
+        for i in new_atom_list:
+            if i in seen:
+                err_str = ('The atom {} in MD template {} bonds to more than '
+                    'one existing atom in residue {}. Since MD templates do '
+                    'not explicitly specify geometry, this type of atom addition '
+                    'is not currently supported. The resulting residue will '
+                    'contain only those atoms which the MD and coordinate templates '
+                    'have in common').format(
+                        md_template.atoms[i].name, md_template.name, residue.name)
                 raise UserError(err_str)
-            new_atoms = modified_atoms[1:]
-            for na, ta in zip(new_atoms, new_tatoms):
-                modify_atom(na, Element.get_element(ta.element.atomic_number),
-                    1, name=ta.name, res_name=residue.name
-                )
+            seen.add(i)
+    from chimerax.atomic import Element
+    from chimerax.build_structure import modify_atom
+    for existing_atom, new_indices in stub_map.items():
+        num_new_atoms = len(new_indices)
+        num_existing_neighbors = len(existing_atom.neighbors)
+        num_bonds = len(existing_atom.neighbors) + num_new_atoms
+        new_tatoms = [md_template.atoms[i] for i in new_indices]
+        from chimerax.build_structure.mod import ParamError
+        try:
+            modified_atoms = modify_atom(existing_atom, existing_atom.element,
+                num_bonds, res_name=residue.name)
+        except ParamError:
+            err_str = ('Failed to add atoms {} to atom {} because this will '
+                'lead to having {} atoms attached, which is more than its '
+                'assigned geometry can support. This is probably due to an '
+                'error in the MD template ({}). If this template is built '
+                'into ISOLDE, please report this using Help/Report a bug').format(
+                [a.name for a in new_tatoms], existing_atom.name,
+                num_existing_neighbors+len(new_tatoms), md_template.name
+            )
+            raise UserError(err_str)
+        new_atoms = modified_atoms[1:]
+        for na, ta in zip(new_atoms, new_tatoms):
+            modify_atom(na, Element.get_element(ta.element.atomic_number),
+                1, name=ta.name, res_name=residue.name
+            )
 
 
 def trim_residue_to_md_template(residue, md_template):
     residue.session.logger.status('Trimming residue to MD template...')
-    if len(md_template.atoms) > 2:
+    if len(md_template.atoms) > 2 and len(residue.atoms) > 2:
         from chimerax.isolde.graph import make_graph_from_residue
         rgraph = make_graph_from_residue(residue)
         ri, ti, _ = rgraph.maximum_common_subgraph(md_template.graph, timeout=5)
-        if len(ti) != len(md_template.atoms):
-            from chimerax.core.errors import UserError
-            err_string = ('Template {} contains atoms not found in residue '
-            '{} {}{}, and no matching CIF template is available to provide '
-            'coordinates.'.format(md_template.name, residue.name, residue.chain_id, residue.number))
-            raise UserError(err_string)
+        # if len(ti) != len(md_template.atoms):
+        #     from chimerax.core.errors import UserError
+        #     err_string = ('Template {} contains atoms not found in residue '
+        #     '{} {}{}, and no matching CIF template is available to provide '
+        #     'coordinates.'.format(md_template.name, residue.name, residue.chain_id, residue.number))
+        #     raise UserError(err_string)
+        ratoms = residue.atoms[ri]
         residue.atoms.subtract(residue.atoms[ri]).delete()
+        # Need to redo the graph matching, because indices may have changed
+        rgraph = make_graph_from_residue(residue)
+        ri, ti, _ = rgraph.maximum_common_subgraph(md_template.graph, timeout=5)
+        add_missing_md_template_atoms(residue.session, residue, md_template, ri, ti)
+    else:
+        raise UserError('Auto-correction to a MD template is currently only '
+            'possible when both residue and template have at least 3 atoms. '
+            'For smaller residues it is best to just delete and replace the '
+            'existing one.')
+
 
 
 def build_next_atom_from_coords(residue, found_neighbors, template_new_atom):
@@ -447,12 +465,15 @@ def build_next_atom_from_coords(residue, found_neighbors, template_new_atom):
     for b in bonded_to:
         m.new_bond(a, b)
 
-
+_geometry_to_angle = {
+    3:  180,
+    4:  120,
+}
 
 
 def build_next_atom_from_geometry(residue, residue_anchor, template_anchor, template_new_atom):
     from chimerax.atomic import struct_edit
-    from chimerax.core.geometry import distance, angle, dihedral
+    from chimerax.geometry import distance, angle, dihedral
     r = residue
     m = r.structure
     tnext = template_new_atom
@@ -460,6 +481,7 @@ def build_next_atom_from_geometry(residue, residue_anchor, template_anchor, temp
         raise TypeError('Template does not contain an atom with that name!')
     tstub = template_anchor
     rstub = residue_anchor
+    existing_rstub_neighbors = rstub.neighbors
 
     n1 = rstub
     n2 = n3 = None
@@ -496,6 +518,7 @@ def build_next_atom_from_geometry(residue, residue_anchor, template_anchor, temp
     dihe = dihedral(tnext.coord, tstub.coord, a2.coord, a3.coord)
     # print('{}: {} {} {}'.format(next_atom_name, dist, ang, dihe))
     a = struct_edit.add_dihedral_atom(tnext.name, tnext.element, n1, n2, n3, dist, ang, dihe)
+
     a.occupancy = rstub.occupancy
     a.bfactor = rstub.bfactor
     return a
