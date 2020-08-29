@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 11-Jun-2019
+# @Last modified time: 28-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -27,7 +27,7 @@ class UI_Live_Map_Controls(UI_Panel_Base):
     def _enable_check(self, selected_model):
         if selected_model is None:
             return False
-        from chimerax.clipper.crystal_exp import XmapHandler_Live
+        from chimerax.clipper.maps import XmapHandler_Live
         for m in selected_model.all_models():
             if isinstance(m, XmapHandler_Live):
                 return True
