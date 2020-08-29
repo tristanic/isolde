@@ -2,7 +2,7 @@
 # @Date:   01-Aug-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 10-Aug-2020
+# @Last modified time: 28-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -123,8 +123,10 @@ class Unparameterised_Residues_Mgr:
             ccd_name, extra_info = template_name_to_ccd_name(tname)
             if ccd_name is None:
                 return (None, '')
-
-            tmpl = mmcif.find_template_residue(session, ccd_name)
+            try:
+                tmpl = mmcif.find_template_residue(session, ccd_name)
+            except ValueError:
+                return (None, "No CCD template found")
             description = tmpl.description
             if extra_info is not None:
                 description += ', ' + extra_info
