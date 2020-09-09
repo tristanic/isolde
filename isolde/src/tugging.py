@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 23-May-2020
+# @Last modified time: 01-Sep-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -109,7 +109,7 @@ class TugAtomsMode(MouseMode):
         else:
             # from . import picking
             # pick = picking.pick_closest_to_line(self.session, x, y, self._atoms, 0.5, hydrogens=True)
-            pick = v.first_intercept(x, y, self._pick_exclude)
+            pick = v.picked_object(x, y, self._pick_exclude)
             pa = self._pick_atoms(pick)
 
         if pa is not None and len(pa):
