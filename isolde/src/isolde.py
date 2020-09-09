@@ -2872,6 +2872,7 @@ class Isolde():
                     xmapset.live_xmap_mgr.bulk_solvent_optimization_needed()
                     xmapset.recalc_needed()
         self._update_sim_status_indicator()
+        self._sim_manager = None
         # self.iw._sim_running_indicator.setVisible(False)
 
     def _update_sim_status_indicator(self):
