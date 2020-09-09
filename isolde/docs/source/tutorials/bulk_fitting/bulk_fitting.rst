@@ -33,7 +33,7 @@ case is that this heterotetrameric complex undergoes a large conformational
 change between its ATP-bound/LPS-free and LPS-bound/ATP-free states.
 
 These two states have been captured using cryo-EM at 4.1 and 4.0 Angstrom
-resolutions as 6mhz_ / EMD-1924_ and 6mhu_ / EMD-9118_ respectively. These are
+resolutions as 6mhz_ / EMD-9124_ and 6mhu_ / EMD-9118_ respectively. These are
 representative of a fairly common challenge in cryo-EM: you've captured a
 structure in multiple conformations, and would like to be able to refit the one
 model into each state with minimal fuss. In this tutorial, we'll be using
