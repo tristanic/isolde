@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 13-Aug-2020
+# @Last modified time: 03-Sep-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -1072,7 +1072,7 @@ class Isolde():
             else:
                 self._disable_secondary_structure_restraints_frame()
                 self._disable_register_shift_frame()
-            if is_continuous or (len(sel)==1 and sel[0].residue.polymer_type==Residue.PT_AMINO):
+            if is_continuous or (len(selres)==1 and selres[0].polymer_type!=Residue.PT_NONE):
                 self._enable_selection_extend_frame()
             else:
                 self._disable_selection_extend_frame()
