@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 08-Aug-2020
+# @Last modified time: 03-Sep-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -74,12 +74,13 @@ def delayed_reaction(triggerset, trigger_name, initiator_func, initiator_args, r
             self.tf = ready_test_func
             self.ff = final_func
             self.ff_args = final_func_args
-            self.handler = triggerset.add_handler(trigger_name, self.callback)
+            triggerset.add_handler(trigger_name, self.callback)
         def callback(self, *_):
             if self.tf is None or self.tf():
                 self.ff(*self.ff_args)
                 from chimerax.core.triggerset import DEREGISTER
                 return DEREGISTER
+
     cb = _cb(triggerset, trigger_name, ready_test_func, final_func, final_func_args)
 
 class Delayed_Reaction_Tester:
