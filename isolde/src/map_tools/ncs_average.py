@@ -2,7 +2,7 @@
 # @Date:   24-May-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 24-May-2020
+# @Last modified time: 01-Sep-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -15,7 +15,7 @@ def ncs_average_map(session, asu_map, full_map, reference_chain, ncs_chains):
     interpolated_maps = []
     interpolated_maps.append(asu_map.data.matrix())
     original_map_position = full_map.position
-    dssp_cache=set()
+    dssp_cache={}
     for ncs in ncs_chains:
         score, s1, s2 = align(session, ncs, reference_chain, defaults['matrix'],
             'nw', defaults['gap_open'], defaults['gap_extend'], dssp_cache)

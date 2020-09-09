@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 18-Aug-2020
+# @Last modified time: 01-Sep-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -303,7 +303,7 @@ def sequence_align_all_residues(session, residues_a, residues_b):
     '''
     from chimerax.match_maker.match import defaults, align, check_domain_matching
     alignments = ([],[])
-    dssp_cache=set()
+    dssp_cache={}
     for ra, rb in zip(residues_a, residues_b):
         uca = ra.unique_chains
         ucb = rb.unique_chains
