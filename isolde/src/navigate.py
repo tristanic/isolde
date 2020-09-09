@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 25-Aug-2020
+# @Last modified time: 01-Sep-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -45,13 +45,13 @@ class ResidueStepper(StateManager):
         from chimerax.clipper import get_all_symmetry_handlers
         sym_handlers = get_all_symmetry_handlers(self.session)
         for sh in sym_handlers:
-            sh.triggers.block_trigger('spotlight moved')
+            sh.triggers._triggers['spotlight moved'].block()
 
     def _release_clipper_spotlights(self):
         from chimerax.clipper import get_all_symmetry_handlers
         sym_handlers = get_all_symmetry_handlers(self.session)
         for sh in sym_handlers:
-            sh.triggers.release_trigger('spotlight moved')
+            sh.triggers._triggers['spotlight moved'].release()
             if sh.spotlight_mode:
                 sh.update()
 
