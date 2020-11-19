@@ -6,6 +6,13 @@
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
+# Workaround to ensure libraries are properly loaded when running in nogui mode
+# to generate docs
+from chimerax import arrays
+arrays.load_libarrays()
+from chimerax.atomic import Atom
+
+
 _openmm_initialized = False
 def initialize_openmm():
     # On linux need to set environment variable to find plugins.
