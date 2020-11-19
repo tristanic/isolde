@@ -273,13 +273,6 @@ class ChiralMgr(_DihedralMgr):
         import json
         with open(os.path.join(DICT_DIR, 'chirals.json'), 'r') as f:
             cdict = self._chiral_dict = json.load(f)
-
-        f = c_function('chiral_mgr_add_chiral_def',
-            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
-                ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
-                ctypes.c_size_t,ctypes.c_size_t, ctypes.c_size_t,
-                ctypes.c_double)
-            )
         for resname, res_data in cdict.items():
             for center, cdata in res_data.items():
                 self._add_chiral_def(resname, center, *cdata[0], cdata[1])
@@ -289,12 +282,12 @@ class ChiralMgr(_DihedralMgr):
         return self._chiral_dict
 
     def _add_chiral_def(self, residue_name, chiral_atom_name, s1_names, s2_names,
-        s3_names, expected_angle):
+        s3_names, expected_angle, externals=[0,0,0]):
         f = c_function('chiral_mgr_add_chiral_def',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                 ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                 ctypes.c_size_t,ctypes.c_size_t, ctypes.c_size_t,
-                ctypes.c_double)
+                ctypes.c_double, ctypes.c_void_p)
             )
         rn_key = ctypes.py_object()
         rn_key.value = residue_name
@@ -311,7 +304,7 @@ class ChiralMgr(_DihedralMgr):
 
 
     def add_chiral_def(self, residue_name, chiral_atom_name, s1_names, s2_names,
-        s3_names, expected_angle):
+        s3_names, expected_angle, externals=[0,0,0]):
         '''
         Add a definition to the dictionary of known chiral centres. The
         definition will only be valid for the current session. All instances of
@@ -472,9 +465,6 @@ class ProperDihedralMgr(_DihedralMgr):
         for aa_key in aa_resnames:
             for bd_key, data in dd['all_protein'].items():
                 rd[aa_key][bd_key] = data
-        f = c_function('proper_dihedral_mgr_add_dihedral_def',
-                        args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
-                        ctypes.POINTER(ctypes.c_bool)))
 
         for res_key, res_data in rd.items():
             for d_key, d_data in res_data.items():
@@ -484,13 +474,8 @@ class ProperDihedralMgr(_DihedralMgr):
                 if type(d_data[1]) == list and d_data[1][0] in (0,1):
                     externals = numpy.array(d_data[1]).astype(numpy.bool)
                 d_data = d_data[0]
-                rk = ctypes.py_object()
-                rk.value = res_key
-                dk = ctypes.py_object()
-                dk.value = d_key
-                anames = numpy.array(d_data).astype(string)
-                f(self._c_pointer, ctypes.byref(rk), ctypes.byref(dk),
-                    pointer(anames), pointer(externals))
+                self.add_dihedral_def(res_key, d_key, d_data, externals)
+
 
     def _reserve(self, n):
         '''

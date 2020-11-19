@@ -3,7 +3,7 @@
  * @Date:   25-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 11-Jun-2019
+ * @Last modified time: 16-Nov-2020
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2016-2019 Tristan Croll
  */
@@ -47,6 +47,7 @@ public:
     double expected_angle() const { return _expected_angle; }
     double deviation() const { return util::wrapped_angle(angle()-expected_angle()); }
     Atom* chiral_atom() const { return _atoms[0]; }
+    const Bonds& bonds() const { return _bonds; }
 
 private:
     const char* err_msg_not_bonded() const

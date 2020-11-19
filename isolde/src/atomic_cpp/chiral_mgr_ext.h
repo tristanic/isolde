@@ -3,7 +3,7 @@
  * @Date:   25-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 11-Jun-2019
+ * @Last modified time: 08-Nov-2020
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2016-2019 Tristan Croll
  */
@@ -81,7 +81,7 @@ a list of possible names.
 extern "C" EXPORT void
 chiral_mgr_add_chiral_def(void *mgr, pyobject_t *rname, pyobject_t *cname,
     pyobject_t *s1_names, pyobject_t *s2_names, pyobject_t *s3_names,
-    size_t ns1, size_t ns2, size_t ns3, double expected_angle)
+    size_t ns1, size_t ns2, size_t ns3, double expected_angle, npy_bool* externals)
 {
     ChiralMgr *m = static_cast<ChiralMgr *>(mgr);
     try {
@@ -96,7 +96,10 @@ chiral_mgr_add_chiral_def(void *mgr, pyobject_t *rname, pyobject_t *cname,
         std::vector<std::string> subs3;
         for (size_t i=0; i<ns3; ++i)
             subs3.push_back(PyUnicode_AsUTF8(static_cast<PyObject *>(*s3_names++)));
-        m->add_chiral_def(resname, chiral_name, subs1, subs2, subs3, expected_angle);
+        std::vector<bool> ext;
+        for (size_t i=0; i<3; ++i)
+            ext.push_back(externals[i]);
+        m->add_chiral_def(resname, chiral_name, subs1, subs2, subs3, expected_angle, ext);
     } catch(...) {
         molc_error();
     }

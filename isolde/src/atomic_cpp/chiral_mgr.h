@@ -3,7 +3,7 @@
  * @Date:   24-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 11-Jun-2019
+ * @Last modified time: 08-Nov-2020
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2016-2019 Tristan Croll
  */
@@ -41,15 +41,29 @@ struct Chiral_Def
     // for multiple different names at each substituent site. This will be
     // particularly important for sugars
     std::array<std::vector<std::string>, 3> substituents;
+    std::array<bool, 3> externals = {{false, false, false}};
     double expected_angle;
     Chiral_Def() {} // null constructor
     Chiral_Def(const std::vector<std::string>& s1, const std::vector<std::string>& s2,
         const std::vector<std::string>& s3, double angle)
     {
+        for (const auto& s: s1)
+            if (s=="*")
+                throw std::runtime_error("Wildcards are only allowed for the final atom!");
+        for (const auto& s: s2)
+            if (s=="*")
+                throw std::runtime_error("Wildcards are only allowed for the final atom!");
         substituents[0] = s1;
         substituents[1] = s2;
         substituents[2] = s3;
         expected_angle = angle;
+    }
+    Chiral_Def(const std::vector<std::string>& s1, const std::vector<std::string>& s2,
+        const std::vector<std::string>& s3, double angle, const std::vector<bool>& ext)
+        : Chiral_Def(s1, s2, s3, angle)
+    {
+        for (size_t i=0; i<3; ++i)
+            externals[i] = ext[i];
     }
 }; // struct Chiral_Def
 
@@ -78,6 +92,14 @@ public:
         const std::vector<std::string>& s2,
         const std::vector<std::string>& s3,
         double expected_angle);
+
+    void add_chiral_def(const std::string& resname, const std::string& atom_name,
+        const std::vector<std::string>& s1,
+        const std::vector<std::string>& s2,
+        const std::vector<std::string>& s3,
+        double expected_angle,
+        const std::vector<bool>& externals);
+
 
     const Chiral_Def& get_chiral_def(const std::string& resname, const std::string& atom_name);
     const Chiral_Def& get_chiral_def(const ResName& resname, const AtomName& atom_name);

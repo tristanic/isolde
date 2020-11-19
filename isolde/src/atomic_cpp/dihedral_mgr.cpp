@@ -3,7 +3,7 @@
  * @Date:   24-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 06-Jan-2020
+ * @Last modified time: 11-Nov-2020
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright: 2016-2019 Tristan Croll
  */
@@ -245,12 +245,27 @@ void Dihedral_Mgr<DType>::destructors_done(const std::set<void*>& destroyed)
             }
         }
     }
-    for (auto it = _residue_map.begin(); it != _residue_map.end(); ) {
-        auto r = it->first;
+    for (auto rit = _residue_map.begin(); rit != _residue_map.end(); ) {
+        auto r = rit->first;
         if (destroyed.find(static_cast<void *>(r)) != destroyed.end())
-            it = _residue_map.erase(it);
-        else
-            ++it;
+            rit = _residue_map.erase(rit);
+        else {
+            auto dmap = rit->second;
+            for (const auto& dpair: dmap)
+            {
+                auto d = dpair.second;
+                auto bonds = d->bonds();
+                for (size_t i=0; i<3; ++i)
+                {
+                    if (destroyed.find(static_cast<void *>(bonds[i])) != destroyed.end())
+                    {
+                        to_delete.insert(d);
+                        break;
+                    }
+                }
+            }
+            ++rit;
+        }
     }
 
     _delete_dihedrals(to_delete);
