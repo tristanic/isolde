@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 23-May-2020
+# @Last modified time: 06-Nov-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -175,9 +175,31 @@ class ProperDihedrals(_Dihedrals):
     @staticmethod
     def restore_snapshot(session, data):
         pdm = get_proper_dihedral_mgr(session)
-        return ProperDihedrals([pdm.get_dihedral(r, name) for r, name in zip(
-            data['residues'], data['names']
-        )])
+        dihedrals = []
+        from collections import defaultdict
+        failure_counts = defaultdict(lambda: 0)
+        first_failures = {}
+        for r, name in zip(data['residues'], data['names']):
+            d = pdm.get_dihedral(r, name)
+            if d is None:
+                sig = (r.name, name)
+                if sig not in first_failures:
+                    first_failures[sig] = r
+                failure_counts[sig] += 1
+                continue
+            dihedrals.append(d)
+        if len(failure_counts):
+            for sig, count in failure_counts.items():
+                resname, dname = sig
+                r = first_failures[sig]
+                warn_str = ('Failed to retrieve dihedral {} for residue {} {} {}.'
+                    ' {} warnings for the same dihedral name / residue name '
+                    'combination suppressed.').format(
+                        sig, r.name, r.chain_id, r.number, count
+                    )
+                session.logger.warning(warn_str)
+
+        return ProperDihedrals(dihedrals)
 
 class Ramas(Collection):
     def __init__(self, c_pointers=None):

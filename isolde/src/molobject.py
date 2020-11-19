@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 29-Aug-2020
+# @Last modified time: 08-Nov-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -4016,9 +4016,13 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         from chimerax.core.models import Model
         Model.set_state_from_snapshot(self, session, data['model state'])
         data = data['restraint info']
-        restraints = self.add_restraints(data['dihedrals'])
-        for attr in ('targets', 'cutoffs', 'enableds', 'displays', 'spring_constants'):
-            setattr(restraints, attr, data[attr])
+        try:
+            restraints = self.add_restraints(data['dihedrals'])
+            for attr in ('targets', 'cutoffs', 'enableds', 'displays', 'spring_constants'):
+                setattr(restraints, attr, data[attr])
+        except:
+            session.logger.warning('Failed to recover dihedral restraints - all '
+                'restraints reset to default values.')
 
     def save_checkpoint(self, atoms=None):
         if atoms is None:
