@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 01-Sep-2020
+# @Last modified time: 17-Sep-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -184,7 +184,7 @@ class TugAtomsMode(MouseMode):
         import numpy
         tugs.spring_constants = ((
             self.spring_constant * pa.elements.masses.astype(numpy.double)
-            /_CARBON_MASS)/ n**(0.7)).reshape((n,1))
+            /_CARBON_MASS)/ n**(0.7))
         tugs.enableds = True
 
         self.tugging = True
