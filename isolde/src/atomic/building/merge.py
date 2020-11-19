@@ -1,11 +1,10 @@
-from chimerax.isolde.atomic.building import set_new_atom_style
 
 def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
-        anchor_n=None, anchor_c=None, update_style=True, transform=None):
+        anchor_n=None, anchor_c=None, transform=None):
     '''
     Copy the atoms from a fragment into the current model, optionally reassigning
-    chain ID and numbers. All residues in the fragment must have the same chain
-    ID. If alternate conformers are present, only the active one will be copied.
+    chain ID and numbers. If alternate conformers are present, only the active
+    one will be copied.
 
     * Args:
 
@@ -149,30 +148,23 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
 
         if prev_res is not None:
             if (
-              r.polymer_type==Residue.PT_AMINO and prev_res not in r.neighbors
+              r.polymer_type==Residue.PT_AMINO and prev_res not in nr.neighbors
               and prev_res.chain_id == cid
               and prev_res.polymer_type == Residue.PT_AMINO):
-                if prev_res.structure != r.structure:
-                    if precedes is not None:
-                        if precedes.chain_id == cid and precedes.polymer_type == Residue.PT_AMINO:
-                            ratoms = prev_res.atoms.merge(precedes.atoms)
-                            tpbg.pseudobonds[tpbg.pseudobonds.between_atoms(ratoms)].delete()
-                    pc = prev_res.find_atom('C')
-                else:
-                    if prev_new_res is not None:
-                        pc = prev_new_res.find_atom('C')
-                    else:
-                        pc = None
+                if precedes is not None:
+                    if precedes.chain_id == cid and precedes.polymer_type == Residue.PT_AMINO:
+                        ratoms = prev_res.atoms.merge(precedes.atoms)
+                        tpbg.pseudobonds[tpbg.pseudobonds.between_atoms(ratoms)].delete()
+                pc = prev_res.find_atom('C')
                 nn = nr.find_atom('N')
                 if pc and nn:
                     tpbg.new_pseudobond(pc, nn)
-                if precedes is not None and precedes.polymer_type==Residue.PT_AMINO:
+                if precedes is not None and precedes.polymer_type==Residue.PT_AMINO and precedes.chain_id==cid:
                     nc = nr.find_atom('C')
                     pn = precedes.find_atom('N')
                     if nc and pn:
                         tpbg.new_pseudobond(nc, pn)
-        prev_res = r
-        prev_new_res = nr
+        prev_res = nr
     new_atoms = Atoms(list(atom_map.values()))
     if transform is not None:
         # Using Atoms.transform() rather than simply transforming the coords,
@@ -184,12 +176,18 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         _remove_excess_terminal_atoms(anchor_atom)
         _remove_excess_terminal_atoms(link_atom)
         m.new_bond(anchor_atom, link_atom)
+        for r in new_atoms.unique_residues:
+            merged_atoms = anchor_n.atoms.merge(r.atoms)
+            tpbg.pseudobonds[tpbg.pseudobonds.between_atoms(merged_atoms)].delete()
     if anchor_c:
         anchor_atom = anchor_c.find_atom('N')
         link_atom = atom_map[protein_residues[-1].find_atom('C')]
         _remove_excess_terminal_atoms(anchor_atom)
         _remove_excess_terminal_atoms(link_atom)
         m.new_bond(anchor_atom, link_atom)
+        for r in new_atoms.unique_residues:
+            tpbg.pseudobonds[tpbg.pseudobonds.between_atoms(anchor_c.atoms.merge(r.atoms))].delete()
+    new_atoms.displays=True
     return new_atoms
 
 
