@@ -3873,6 +3873,7 @@ class AdaptiveDihedralRestraintMgr(ProperDihedralRestraintMgr):
             'dihedrals': restraints.dihedrals,
             'targets':   restraints.targets,
             'kappas':   restraints.kappas,
+            'alphas':   restraints.alphas,
             'enableds':  restraints.enableds,
             'displays':  restraints.displays,
             'spring_constants': restraints.spring_constants,
@@ -3890,8 +3891,11 @@ class AdaptiveDihedralRestraintMgr(ProperDihedralRestraintMgr):
         Model.set_state_from_snapshot(self, session, data['model state'])
         data = data['restraint info']
         restraints = self.add_restraints(data['dihedrals'])
-        for attr in ('targets', 'kappas', 'enableds', 'displays', 'spring_constants'):
-            setattr(restraints, attr, data[attr])
+        for attr in ('targets', 'kappas', 'alphas', 'enableds', 'displays', 'spring_constants'):
+            # For backward compatibility - older session files may not have the
+            # 'alphas' parameter
+            if hasattr(data, attr):
+                setattr(restraints, attr, data[attr])
 
     def save_checkpoint(self, atoms=None):
         if atoms is None:
@@ -5069,10 +5073,22 @@ class AdaptiveDihedralRestraint(_ProperDihedralRestraint_Base):
         doc = (r'Sets the width of the region within which the dihedral will be '
             r'restrained. For values of kappa greater than about 1, the effective '
             r'standard deviation is approximately equal to '
-            r':math:`\sqrt{\frac{1}{\kappa}}`. As kappa approaches zero the '
+            r'sqrt(1/kappa)`. As kappa approaches zero the '
             r'shape of the energy profile approaches a standard cosine. Values '
-            r'of kappa below zero are not allowed.'))
+            r'of kappa below zero are not allowed.')
+        )
 
+    alpha = c_property('adaptive_dihedral_restraint_alpha', float64,
+        doc = (r'Sets the rate at which the restraining potential flattens out '
+            r'(in other words, how fast the force drops to zero) outside of the '
+            r'well region set by :attr:`kappa`. If alpha is zero, the force '
+            r'outside the well is essentially zero. Increasing alpha increases '
+            r'the applied force. While values between -1 and 2 are allowed, in '
+            r'general it is advisable to stick to values between 0 and 1. For '
+            r'values larger than 1, the force outside the well will grow more '
+            r'steeply than inside; for values less than zero the force outside '
+            r'the well will become repulsive.')
+        )
 
 class RotamerRestraint(State):
     '''

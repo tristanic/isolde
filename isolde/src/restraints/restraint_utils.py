@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 01-Sep-2020
+# @Last modified time: 17-Sep-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -21,7 +21,7 @@ from chimerax.core.errors import UserError
 
 def restrain_torsions_to_template(session, template_residues, restrained_residues,
     restrain_backbone=True, restrain_sidechains=True,
-    kappa=10, spring_constant=100, identical_sidechains_only=True):
+    kappa=10, alpha=0.2, spring_constant=100, identical_sidechains_only=True):
     r'''
     (EXPERIMENTAL)
 
@@ -54,6 +54,11 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
               A torsion restrained with this kappa will begin to "feel" the
               restraint once it comes within about two standard deviations of
               the target angle.
+        * alpha:
+            - sets the rate of fall-off of the potential outside the restraint
+              well. For alpha==0, the potential quickly falls to a constant
+              (zero force). Increasing alpha increases the force felt outside
+              the core well region.
         * spring_constant:
             - strength of each restraint, in :math:`kJ mol^{-1} rad^{-2}`
         * identical_sidechains_only:
@@ -107,6 +112,7 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
                     rdr.target = target
                     rdr.spring_constant = spring_constant
                     rdr.kappa = kappa
+                    rdr.alpha = alpha
                     rdr.enabled = True
         if restrain_backbone:
             # For omega dihedrals we really want to stick with the standard

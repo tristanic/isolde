@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 28-Aug-2020
+# @Last modified time: 17-Sep-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -41,6 +41,10 @@ c_function = _c_functions.c_function
 c_array_function = _c_functions.c_array_function
 
 from ..constants import defaults
+
+CORE_FORCE_GROUP=0
+MAP_FORCE_GROUP=1
+RESTRAINT_FORCE_GROUP=2
 
 class OpenMM_Thread_Handler:
     '''
@@ -1503,7 +1507,7 @@ class Sim_Handler:
                   :py:class:`FlatBottomTorsionRestraintForce`)
             * adaptive_dihedral_restraints:
                 - Add an "adaptive" dihedral restraints force (implemented as a
-                  :py:class:`TopOutTorsionForce`)
+                  :py:class:`AdaptiveTorsionForce`)
         '''
         logger = self.session.logger
         params = self._params
@@ -1888,6 +1892,7 @@ class Sim_Handler:
         '''
         from .custom_forces import FlatBottomTorsionRestraintForce
         df = self._dihedral_restraint_force = FlatBottomTorsionRestraintForce()
+        df.setForceGroup(RESTRAINT_FORCE_GROUP)
         self._system.addForce(df)
         self.all_forces.append(df)
 
@@ -1929,7 +1934,7 @@ class Sim_Handler:
         all_atoms = self._atoms
         dihedral_atoms = restraint.dihedral.atoms
         indices = [all_atoms.index(atom) for atom in dihedral_atoms]
-        restraint.sim_index = force.add_torsion(*indices,
+        restraint.sim_index = force.addTorsion(*indices,
             (float(restraint.enabled), restraint.spring_constant, restraint.target, cos(restraint.cutoff)))
         self.context_reinit_needed()
 
@@ -1980,8 +1985,9 @@ class Sim_Handler:
         Just initialise the restraint force. Must be called before the
         simulation starts, and before any restraints are added.
         '''
-        from .custom_forces import TopOutTorsionForce
-        df = self._adaptive_dihedral_restraint_force = TopOutTorsionForce()
+        from .custom_forces import AdaptiveTorsionForce
+        df = self._adaptive_dihedral_restraint_force = AdaptiveTorsionForce()
+        df.setForceGroup(RESTRAINT_FORCE_GROUP)
         self._system.addForce(df)
         self.all_forces.append(df)
 
@@ -2006,7 +2012,8 @@ class Sim_Handler:
         #atom_indices = atom_indices[ifilter]
         restraints = restraints[ifilter]
         restraints.sim_indices = force.add_torsions(atom_indices,
-            restraints.enableds, restraints.spring_constants, restraints.targets, restraints.kappas)
+            restraints.enableds, restraints.spring_constants,
+            restraints.targets, restraints.kappas, restraints.alphas)
         self.context_reinit_needed()
 
     def add_adaptive_dihedral_restraint(self, restraint):
@@ -2021,8 +2028,9 @@ class Sim_Handler:
         all_atoms = self._atoms
         dihedral_atoms = restraint.dihedral.atoms
         indices = [all_atoms.index(atom) for atom in dihedral_atoms]
-        restraint.sim_index = force.add_torsion(*indices,
-            (float(restraint.enabled), restraint.spring_constant, restraint.target, cos(restraint.kappa)))
+        restraint.sim_index = force.addTorsion(*indices,
+            float(restraint.enabled), restraint.spring_constant,
+            restraint.target, restraint.kappa, restraint.alpha)
         self.context_reinit_needed()
 
     def update_adaptive_dihedral_restraints(self, restraints):
@@ -2039,7 +2047,8 @@ class Sim_Handler:
         force = self._adaptive_dihedral_restraint_force
         restraints = restraints[restraints.sim_indices != -1]
         force.update_targets(restraints.sim_indices,
-            restraints.enableds, restraints.spring_constants, restraints.targets, restraints.kappas)
+            restraints.enableds, restraints.spring_constants,
+            restraints.targets, restraints.kappas, restraints.alphas)
         self.force_update_needed()
 
     def update_adaptive_dihedral_restraint(self, restraint):
@@ -2056,7 +2065,8 @@ class Sim_Handler:
         force = self._adaptive_dihedral_restraint_force
         force.update_target(restraint.sim_index,
             enabled=restraint.enabled, k=restraint.spring_constant,
-            target=restraint.target, kappa=restraint.kappa)
+            target=restraint.target, kappa=restraint.kappa,
+            alpha=restraint.alpha)
         self.force_update_needed()
 
 
@@ -2080,6 +2090,7 @@ class Sim_Handler:
         '''
         from .custom_forces import TopOutBondForce
         tf = self._distance_restraints_force = TopOutBondForce(max_force)
+        tf.setForceGroup(RESTRAINT_FORCE_GROUP)
         self._system.addForce(tf)
         self.all_forces.append(tf)
         return tf
@@ -2177,6 +2188,7 @@ class Sim_Handler:
         '''
         from .custom_forces import AdaptiveDistanceRestraintForce
         f = self._adaptive_distance_restraints_force = AdaptiveDistanceRestraintForce()
+        f.setForceGroup(RESTRAINT_FORCE_GROUP)
         self._system.addForce(f)
         self.all_forces.append(f)
         return f
@@ -2281,6 +2293,7 @@ class Sim_Handler:
         '''
         from .custom_forces import TopOutRestraintForce
         rf = self._position_restraints_force = TopOutRestraintForce(max_force)
+        rf.setForceGroup(RESTRAINT_FORCE_GROUP)
         self._system.addForce(rf)
         self.all_forces.append(rf)
         return rf
@@ -2373,6 +2386,7 @@ class Sim_Handler:
         '''
         from .custom_forces import TopOutRestraintForce
         f = self._tugging_force = TopOutRestraintForce(max_force)
+        f.setForceGroup(RESTRAINT_FORCE_GROUP)
         self._system.addForce(f)
         self.all_forces.append(f)
 
@@ -2499,7 +2513,7 @@ class Sim_Handler:
         # interfere with other instances of the same force.
         suffix = str(len(self.mdff_forces)+1)
         f = Map_Force(data, region_tf.matrix, suffix, units='angstroms')
-        f.setForceGroup(1)
+        f.setForceGroup(MAP_FORCE_GROUP)
         self.all_forces.append(f)
         self._system.addForce(f)
         self.mdff_forces[v] = f
@@ -2838,7 +2852,7 @@ class Map_Scale_Optimizer:
 
     def get_current_energy(self):
         from simtk.openmm import unit
-        state = self.context.getState(getEnergy=True, groups=set([0]))
+        state = self.context.getState(getEnergy=True, groups=set([CORE_FORCE_GROUP]))
         return state.getPotentialEnergy().value_in_unit(unit.kilojoule_per_mole)
 
     def _energy_converged(self):

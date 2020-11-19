@@ -3,7 +3,7 @@
  * @Date:   26-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 05-Mar-2020
+ * @Last modified time: 17-Sep-2020
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright:2016-2019 Tristan Croll
  */
@@ -267,6 +267,14 @@ public:
         base_mgr()->track_change(this, change_tracker()->REASON_ADAPTIVE_C_CHANGED);
     }
     double get_kappa() const { return _kappa; }
+    void set_alpha(double alpha) {
+        alpha = alpha < ALPHA_MIN ? ALPHA_MIN : alpha;
+        alpha = alpha > ALPHA_MAX ? ALPHA_MAX : alpha;
+        _alpha = alpha;
+        base_mgr()->track_change(this, change_tracker()->REASON_ADAPTIVE_C_CHANGED);
+    }
+    double get_alpha() const { return _alpha; }
+
     double effective_sdev() const { return atan(sqrt(sqrt(4*_kappa*_kappa+1)-2*_kappa)); }
 
 
@@ -276,7 +284,11 @@ private:
     const double DEFAULT_KAPPA=14.59; // gives a standard deviation of about 15 degrees
     const double DEFAULT_FMAX_ANGLE = 0.260; // delta-theta giving peak force for kappa=14.59
     const double KAPPA_MIN = 1e-3; // numerical instability develops if kappa is close to but not exactly zero
-    double _kappa; // gives a standard deviation of about 15 degrees
+    const double DEFAULT_ALPHA=0.0; // Default flat outside well
+    const double ALPHA_MIN=-1;
+    const double ALPHA_MAX=2;
+    double _kappa;
+    double _alpha;
     void _recalculate_cutoffs()
     {
         auto fmax_dtheta = effective_sdev();

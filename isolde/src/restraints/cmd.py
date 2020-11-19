@@ -2,7 +2,7 @@
 # @Date:   05-Apr-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 10-Mar-2020
+# @Last modified time: 17-Sep-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -145,7 +145,7 @@ def _dihedral_names(backbone, sidechains):
     return names
 
 def restrain_torsions(session, residues, template_residues=None,
-        backbone=True, sidechains=True, angle_range=30,
+        backbone=True, sidechains=True, angle_range=30, alpha=0.2,
         spring_constant=250, identical_sidechains_only=True):
     logger = session.logger
     if not residues:
@@ -170,12 +170,12 @@ def restrain_torsions(session, residues, template_residues=None,
     from .restraint_utils import restrain_torsions_to_template
     restrain_torsions_to_template(session, tres, pres,
         restrain_backbone=backbone,
-        restrain_sidechains=sidechains, kappa=kappa,
+        restrain_sidechains=sidechains, kappa=kappa, alpha=alpha,
         spring_constant=spring_constant,
         identical_sidechains_only=identical_sidechains_only)
 
 def adjust_torsions(session, residues, backbone=True,
-        sidechains=True, angle_range=None, spring_constant=None):
+        sidechains=True, angle_range=None, alpha=None, spring_constant=None):
     from chimerax.isolde.session_extensions import get_adaptive_dihedral_restraint_mgr
     if angle_range is not None:
         from ..molobject import AdaptiveDihedralRestraintMgr
@@ -192,6 +192,8 @@ def adjust_torsions(session, residues, backbone=True,
                 apdrs.kappas = kappa
             if spring_constant is not None:
                 apdrs.spring_constants = spring_constant
+            if alpha is not None:
+                apdrs.alphas = alpha
 
 def release_torsions(session, residues, backbone=True, sidechains=True):
     from chimerax.isolde.session_extensions import get_adaptive_dihedral_restraint_mgr
@@ -311,6 +313,7 @@ def register_isolde_restrain(logger):
                 ('backbone', BoolArg),
                 ('sidechains', BoolArg),
                 ('angle_range', FloatArg),
+                ('alpha', FloatArg),
                 ('spring_constant', FloatArg),
                 ('identical_sidechains_only', BoolArg),
             ]
@@ -329,6 +332,7 @@ def register_isolde_restrain(logger):
                 ('backbone', BoolArg),
                 ('sidechains', BoolArg),
                 ('angle_range', FloatArg),
+                ('alpha', FloatArg),
                 ('spring_constant', FloatArg),
             ]
         )

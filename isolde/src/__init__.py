@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 03-Aug-2020
+# @Last modified time: 06-Nov-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -33,7 +33,7 @@ def _version():
 
 __version__ = _version()
 
-ISOLDE_STATE_VERSION = 1
+ISOLDE_STATE_VERSION = 3
 
 from chimerax.core.toolshed import BundleAPI
 from . import geometry

@@ -764,6 +764,18 @@ class AdaptiveDihedralRestraints(_ProperDihedralRestraints_Base):
             r'shape of the energy profile approaches a standard cosine. Values '
             r'of kappa below zero are not allowed.'))
 
+    alphas = cvec_property('adaptive_dihedral_restraint_alpha', float64,
+        doc = (r'Sets the rate at which the restraining potential flattens out '
+            r'(in other words, how fast the force drops to zero) outside of the '
+            r'well region set by :attr:`kappa`. If alpha is zero, the force '
+            r'outside the well is essentially zero. Increasing alpha increases '
+            r'the applied force. While values between -1 and 2 are allowed, in '
+            r'general it is advisable to stick to values between 0 and 1. For '
+            r'values larger than 1, the force outside the well will grow more '
+            r'steeply than inside; for values less than zero the force outside '
+            r'the well will become repulsive.')
+        )
+
 class RotamerRestraints(Collection):
     def __init__(self, c_pointers=None):
         super().__init__(c_pointers, RotamerRestraint, RotamerRestraints)

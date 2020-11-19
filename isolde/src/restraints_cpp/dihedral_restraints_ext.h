@@ -3,7 +3,7 @@
  * @Date:   26-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 17-Dec-2019
+ * @Last modified time: 17-Sep-2020
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright:2016-2019 Tristan Croll
  */
@@ -1047,6 +1047,32 @@ set_adaptive_dihedral_restraint_kappa(void *restraint, size_t n, double *kappa)
         molc_error();
     }
 }
+
+extern "C" EXPORT void
+adaptive_dihedral_restraint_alpha(void *restraint, size_t n, double *alpha)
+{
+    AdaptiveDihedralRestraint **r = static_cast<AdaptiveDihedralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(alpha++) = (*r++)->get_alpha();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+extern "C" EXPORT void
+set_adaptive_dihedral_restraint_alpha(void *restraint, size_t n, double *alpha)
+{
+    AdaptiveDihedralRestraint **r = static_cast<AdaptiveDihedralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->set_alpha(*(alpha++));
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
 
 extern "C" EXPORT void
 adaptive_diheddral_restraint_effective_sd(void *restraint, size_t n, double *sd)
