@@ -1,0 +1,123 @@
+{
+    "D-pyranoses":  {
+        "C1": {
+            "alpha":    ["ADA","GLC","AFD","TYV","ABE","G6D","LDY","64K","FCA",
+                         "XXR","GLA","A2G","GCU","SHD","T6T","MAN","NDG","BM3",
+                         "XYS","PA1"],
+            "beta":     ["GCS","FCB","ALL","XYP","GTR","GL0","BDF","BGC","BDP",
+                         "BMA","RIP","FRU","GAL","NGA","BM7","NAG"]
+        },
+        "C2": {
+            "alpha": ["NGC","SIA"],
+            "beta":  ["SLB"]
+        }
+    },
+
+    "L-pyranoses":  {
+        "C1": {
+            "alpha":    ["HSY","ARA","RAM","FUC","Z6H","GXL","GUP","SOE","IDR"],
+            "beta":     ["ARB","LXC","WOO","RM4","FUL","0MK","GIV"]
+        },
+        "C2": {
+            "alpha":    [],
+            "beta":     []
+        }
+    },
+    "D-furanoses":  {
+        "C1": {
+            "alpha":    ["RIB","BXY"],
+            "beta":     ["BXX","XYZ","BDR"]
+        },
+        "C2": {
+            "alpha": ["Z9N","PSV"],
+            "beta": []
+        }
+    },
+    "L-furanoses":  {
+        "C1": {
+            "alpha":    ["AHR","Z6J"],
+            "beta":     ["FUB","32O"]
+        },
+        "C2": {
+            "alpha": [],
+            "beta":  ["LFR"]
+        }
+    },
+
+    "ring_targets": {
+        "D-pyranoses": {
+            "C1":   {
+                "nu1": 61,
+                "nu2": -54,
+                "nu3": 54,
+                "nu4": -61,
+                "nu5": 68,
+                "nu6": -61
+            },
+            "C2":  {
+                "nu1": -61,
+                "nu2": 54,
+                "nu3": -53,
+                "nu4": 61,
+                "nu5": -67,
+                "nu6": 68
+            }
+        },
+        "L-pyranoses": {
+            "C1": {
+                "nu1": -57,
+                "nu2": 57,
+                "nu3": -57,
+                "nu4": 58,
+                "nu5": -61,
+                "nu6": 61
+            },
+            "C2": {
+                "nu1": 61,
+                "nu2": -54,
+                "nu3": 53,
+                "nu4": -61,
+                "nu5": 67,
+                "nu6":  68
+            }
+        },
+        "D-furanoses": {
+            "C1":   {
+                "nu1": 37,
+                "nu2": -21,
+                "nu3": -2,
+                "nu4": 26,
+                "nu5": -40
+            },
+            "C2":   {
+                "nu1": 37,
+                "nu2": -21,
+                "nu3": -2,
+                "nu4": 26,
+                "nu5": -40
+            }
+        },
+        "L-furanoses": {
+            "C1": {
+                "nu1": 21,
+                "nu2": -34,
+                "nu3": 36,
+                "nu4": -24,
+                "nu5": 2
+            },
+            "C2": {
+                "nu1": 21,
+                "nu2": -34,
+                "nu3": 36,
+                "nu4": -24,
+                "nu5": 2
+            }
+        }
+    },
+    "per_residue":  {
+        "NAG":  {
+            "omega_N":  180,
+            "omega_NAc":    180
+        }
+    }
+}

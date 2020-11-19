@@ -271,11 +271,55 @@ class ChiralMgr(_DihedralMgr):
 
     def _load_dict(self):
         import json
+        # Protein and nucleic acid
         with open(os.path.join(DICT_DIR, 'chirals.json'), 'r') as f:
             cdict = self._chiral_dict = json.load(f)
         for resname, res_data in cdict.items():
             for center, cdata in res_data.items():
                 self._add_chiral_def(resname, center, *cdata[0], cdata[1])
+
+        # Sugar a/b anomers
+        with open(os.path.join(DICT_DIR, 'sugars.json'), 'rt') as f:
+            sd = json.load(f)
+        with open(os.path.join(DICT_DIR, 'glycan_chirals.json'), 'rt') as f:
+            gd = json.load(f)
+
+        def _apply_sugar_anomer(cdict, residue_names, atoms, target):
+            chiral_atom = atoms[0]
+            improp_atoms = [[a] for a in atoms[1:]]
+            for resname in residue_names:
+                rdict = cdict.get(resname, dict())
+                rdict[chiral_atom] = [improp_atoms, target]
+                self._add_chiral_def(resname, chiral_atom, *improp_atoms, target, [0,0,1])
+        generic_defs = gd['generic']
+        atoms, target = generic_defs['D-alpha_pyr_C1']
+        _apply_sugar_anomer(cdict, sd['D-pyranoses']['C1']['alpha'], atoms, target)
+        atoms, target = generic_defs['D-alpha_pyr_C2']
+        _apply_sugar_anomer(cdict, sd['D-pyranoses']['C2']['alpha'], atoms, target)
+        atoms, target = generic_defs['D-beta_pyr_C1']
+        _apply_sugar_anomer(cdict, sd['D-pyranoses']['C1']['beta'], atoms, target)
+        atoms, target = generic_defs['D-beta_pyr_C2']
+        _apply_sugar_anomer(cdict, sd['D-pyranoses']['C2']['beta'], atoms, target)
+        atoms, target = generic_defs['L-alpha_pyr']
+        _apply_sugar_anomer(cdict, sd['L-pyranoses']['C1']['alpha'], atoms, target)
+        atoms, target = generic_defs['L-beta_pyr']
+        _apply_sugar_anomer(cdict, sd['L-pyranoses']['C1']['beta'], atoms, target)
+        atoms, target = generic_defs['D-alpha_fur_C1']
+        _apply_sugar_anomer(cdict, sd['D-furanoses']['C1']['alpha'], atoms, target)
+        atoms, target = generic_defs['D-alpha_fur_C2']
+        _apply_sugar_anomer(cdict, sd['D-furanoses']['C2']['alpha'], atoms, target)
+        atoms, target = generic_defs['D-beta_fur']
+        _apply_sugar_anomer(cdict, sd['D-furanoses']['C1']['beta'], atoms, target)
+        atoms, target = generic_defs['L-alpha_fur']
+        _apply_sugar_anomer(cdict, sd['L-furanoses']['C1']['alpha'], atoms, target)
+        atoms, target = generic_defs['L-beta_fur_C1']
+        _apply_sugar_anomer(cdict, sd['L-furanoses']['C1']['beta'], atoms, target)
+        atoms, target = generic_defs['L-beta_fur_C2']
+        _apply_sugar_anomer(cdict, sd['L-furanoses']['C2']['beta'], atoms, target)
+
+
+
+
 
     @property
     def chiral_center_dict(self):
@@ -298,9 +342,11 @@ class ChiralMgr(_DihedralMgr):
         for sname_list in (s1_names, s2_names, s3_names):
             snums.append(len(sname_list))
             sname_objs.append(numpy.array(sname_list, numpy.object))
+        ext = numpy.empty(3, numpy.bool)
+        ext[:] = externals
 
         f(self._c_pointer, ctypes.byref(rn_key), ctypes.byref(cn_key),
-            *[pointer(n) for n in sname_objs], *snums, expected_angle)
+            *[pointer(n) for n in sname_objs], *snums, expected_angle, pointer(ext))
 
 
     def add_chiral_def(self, residue_name, chiral_atom_name, s1_names, s2_names,
@@ -333,7 +379,11 @@ class ChiralMgr(_DihedralMgr):
                   for deviations more than 15 degrees (0.26 radians), from the
                   expected angle, relying on the forcefield parameterisation
                   inside that range.
-        '''
+            * externals:
+                - an array of three Boolean values, where True indicates that
+                  the corresponding atom should be outside the main atom's
+                  residue.
+            '''
         cdict = self._chiral_dict
         try:
             # Raise an error if the entry already exists
@@ -345,7 +395,7 @@ class ChiralMgr(_DihedralMgr):
             cdict[residue_name] = {}
         cdict[residue_name][chiral_atom_name] = [[s1_names, s2_names, s3_names], expected_angle]
         self._add_chiral_def(residue_name, chiral_atom_name, s1_names, s2_names,
-            s3_names, expected_angle)
+            s3_names, expected_angle, externals)
 
     def get_chiral(self, atom, create=True):
         '''
@@ -430,6 +480,7 @@ class ProperDihedralMgr(_DihedralMgr):
             raise RuntimeError('Session already has a proper dihedral manager!')
         session.proper_dihedral_mgr = self
         self._load_dict()
+        self._prepare_standard_dihedrals()
 
     def delete(self):
         c_function('proper_dihedral_mgr_delete', args=(ctypes.c_void_p,))(self.cpp_pointer)
@@ -458,6 +509,13 @@ class ProperDihedralMgr(_DihedralMgr):
         import json
         with open(os.path.join(DICT_DIR, 'named_dihedrals.json'), 'r') as f:
             dd = self._dihedral_dict = json.load(f)
+
+    def _prepare_standard_dihedrals(self):
+        self._prepare_amino_acid_dihedrals()
+        self._prepare_sugar_dihedrals()
+
+    def _prepare_amino_acid_dihedrals(self):
+        dd = self._dihedral_dict
         aa_resnames = dd['aminoacids']
         # Copy the definitions common to all amino acids to each individual
         # entry for easier lookup later
@@ -475,6 +533,75 @@ class ProperDihedralMgr(_DihedralMgr):
                     externals = numpy.array(d_data[1]).astype(numpy.bool)
                 d_data = d_data[0]
                 self.add_dihedral_def(res_key, d_key, d_data, externals)
+
+    def _prepare_sugar_dihedrals(self):
+        import json
+        with open(os.path.join(DICT_DIR, "sugars.json"), 'rt') as f:
+            sd = json.load(f)
+        dd = self._dihedral_dict
+        d_pyr_dict = sd['D-pyranoses']
+        l_pyr_dict=sd['L-pyranoses']
+        d_fur_dict=sd['D-furanoses']
+        l_fur_dict=sd['L-furanoses']
+        c1_d_pyranoses = d_pyr_dict['C1']['alpha']+d_pyr_dict['C1']['beta']
+        c2_d_pyranoses = d_pyr_dict['C2']['alpha']+d_pyr_dict['C2']['beta']
+        l_pyranoses = l_pyr_dict['C1']['alpha']+l_pyr_dict['C1']['beta']
+        c1_d_furanoses = d_fur_dict['C1']['alpha']+d_fur_dict['C1']['beta']
+        c2_d_furanoses = d_fur_dict['C2']['alpha']
+        c1_l_furanoses = l_fur_dict['C1']['alpha']+l_fur_dict['C1']['beta']
+        c2_l_furanoses = l_fur_dict['C2']['beta']
+
+        ring_def_dict = dd['glycan']['ring']
+        def_pairs = (
+            (c1_d_pyranoses+l_pyranoses, ring_def_dict['pyranose_c1']),
+            (c2_d_pyranoses, ring_def_dict['pyranose_c2']),
+            (c1_d_furanoses+c1_l_furanoses, ring_def_dict['furanose_c1']),
+            (c2_d_furanoses+c2_l_furanoses, ring_def_dict['furanose_c2'])
+        )
+        for (resnames, def_dict) in def_pairs:
+            for resname in resnames:
+                for dname, datoms in def_dict.items():
+                    self.add_dihedral_def(resname, dname, datoms)
+        per_residue = dd['glycan']['per_residue']
+        for resname, res_dict in per_residue.items():
+            for dname, d_def in res_dict.items():
+                anames = d_def[0]
+                if len(d_def)==2:
+                    external_mask = d_def[1]
+                else:
+                    external_mask = None
+                self.add_dihedral_def(resname, dname, anames, external_mask)
+
+    def add_dihedral_def(self, resname, dihedral_name, atom_names, external_mask=None):
+        '''
+        Add a custom dihedral definition for tracking and restraint purposes.
+
+        Args:
+
+            * resname: the 3-letter residue name
+            * dihedral_name: a descriptive name for the dihedral (must be unique
+              to the residue, but is otherwise free-form)
+            * atom_names: a list of 4 atom names
+            * external_mask: a binary mask: 0 for atoms to be found in the
+              residue, 1 for atoms in a neighboring bonded residue
+        '''
+        f = c_function('proper_dihedral_mgr_add_dihedral_def',
+                        args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                        ctypes.POINTER(ctypes.c_bool)))
+        import numpy
+        emask = numpy.zeros(4, numpy.bool)
+        if external_mask is not None:
+            emask[:] = external_mask
+        rk = ctypes.py_object()
+        rk.value=resname
+        dk = ctypes.py_object()
+        dk.value=dihedral_name
+        anames = numpy.array(atom_names).astype(string)
+        f(self._c_pointer, ctypes.byref(rk), ctypes.byref(dk),
+            pointer(anames), pointer(emask))
+
+
+
 
 
     def _reserve(self, n):
@@ -3218,7 +3345,7 @@ class ChiralRestraintMgr(_RestraintMgr):
     .. code:: python
 
         from chimerax.isolde import session_extensions as sx
-        chir_mgr = sx.get_chir_restraint_mgr(m)
+        chir_mgr = sx.get_chiral_restraint_mgr(m)
     '''
     SESSION_SAVE=True
     def __init__(self, model, c_pointer = None, auto_add_to_session=True):
@@ -3419,6 +3546,7 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         self._last_visibles = None
         self._restraint_changes_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
         self._atom_changes_handler = model.triggers.add_handler('changes', self._model_changes_cb)
+        self._load_sugar_restraints()
         if auto_add_to_session:
             model.add([self])
             self.update_graphics()
@@ -3428,6 +3556,123 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
         if ah is not None:
             self.model.triggers.remove_handler(ah)
         super().delete()
+
+    def _load_sugar_restraints(self):
+        from math import radians
+        import json
+        with open(os.path.join(DICT_DIR, 'sugars.json'), 'rt') as f:
+            sugar_dict = json.load(f)
+
+
+        sd = self._sugar_targets = {}
+        rt = sugar_dict['ring_targets']
+        for sugar_type, ring_defs in rt.items():
+            for ring_type, tdict in ring_defs.items():
+                for dname, target in tdict.items():
+                    tdict[dname] = radians(target)
+                for _,rnamelist in sugar_dict[sugar_type][ring_type].items():
+                    for rname in rnamelist:
+                        sd[rname] = tdict
+        per_res = sugar_dict['per_residue']
+        for resname, target_dict in per_res.items():
+            for dname, target in target_dict.items():
+                target_dict[dname]=radians(target)
+            sd[resname].update(target_dict)
+
+    def restrain_sugar_rings(self, residues, reset=False):
+        from math import radians
+        cutoff = radians(15)
+        sd = self._sugar_targets
+        for torsion in ('nu2', 'nu4', 'nu6'):
+            self._restrain_torsions(residues, torsion, sd, reset=reset, cutoff=cutoff)
+
+        # names = residues.unique_names
+        # for name in names:
+        #     targets = sd.get(name, None)
+        #     if targets is None:
+        #         continue
+        #     sugars = residues[residues.names==name]
+        #     if not reset:
+        #         # Don't modify existing restraints
+        #         existing_r1=self.get_restraints_by_residues_and_name(sugars, 'ring1')
+        #         existing_r3=self.get_restraints_by_residues_and_name(sugars, 'ring3')
+        #         existing_r5=self.get_restraints_by_residues_and_name(sugars, 'ring5')
+        #     r1 = self.add_restraints_by_residues_and_name(sugars, 'ring1')
+        #     r3 = self.add_restraints_by_residues_and_name(sugars, 'ring3')
+        #     r5 = self.add_restraints_by_residues_and_name(sugars, 'ring5')
+        #
+        #     if not reset:
+        #         r1 = r1.subtract(existing_r1)
+        #         r3 = r3.subtract(existing_r3)
+        #         r5 = r5.subtract(existing_r5)
+        #
+        #     r1.targets = targets['nu2']
+        #     r3.targets = targets['nu4']
+        #     # Furanoses don't have the 'nu6' dihedral
+        #     r5.targets = targets.get('nu6', 0)
+        #     r1.cutoffs = cutoff
+        #     r3.cutoffs = cutoff
+        #     r5.cutoffs = cutoff
+        #     r1.enableds=True
+        #     r3.enableds=True
+        #     r5.enableds=True
+
+    def _restrain_torsions(self, residues, torsion_name, target_dict,
+            reset=False, cutoff=0, display=True):
+        resnames = residues.unique_names
+        allowed_names = list(target_dict.keys())
+        for rname in resnames:
+            rdict = target_dict.get(rname, None)
+            if rdict is None:
+                continue
+            target = rdict.get(torsion_name, None)
+            if target is None:
+                continue
+            current = residues[residues.names==rname]
+            if not len(current):
+                continue
+            if not reset:
+                existing = self.get_restraints_by_residues_and_name(current, torsion_name)
+            restraints = self.add_restraints_by_residues_and_name(current, torsion_name)
+            if not reset:
+                restraints = restraints.subtract(existing)
+            if not len(restraints):
+                continue
+            restraints.targets = target
+            restraints.displays = display
+            restraints.enableds = True
+            restraints.cutoffs = cutoff
+
+    def restrain_sugar_amides(self, residues, reset=False):
+        n_acetyl_glycans = ["A2G","NGA","NDG","NAG","BM3","BM7"]
+        import numpy
+        residues = residues[numpy.in1d(residues.names, n_acetyl_glycans)]
+        if not len(residues):
+            return
+        from math import radians
+        cutoff = radians(30)
+        self._restrain_torsions(residues, 'omega_NAc', self._sugar_targets,
+            reset=reset, cutoff=cutoff)
+        self._restrain_torsions(residues[residues.names=='NAG'], 'omega_N',
+            self._sugar_targets, reset=reset, cutoff=cutoff, display=False)
+
+        # sd = self._sugar_targets
+        # for name in n_acetyl_glycans:
+        #     residues = residues[residues.names==name]
+        #     if not len(residues):
+        #         continue
+        #         targets = sd[name]
+        #     if not reset:
+        #         existing_ron = self.get_restraints_by_residues_and_name(residues, 'omega_N')
+        #         existing_ronac = self.get_restraints_by_residues_and_name(residues, 'omega_NAc')
+        #     ron = self.add_restraints_by_residues_and_name(residues, 'omega_N')
+        #     ronac = self.add_restraints_by_residues_and_name(residues, 'omega_NAc')
+        #     if not reset:
+        #         ron = ron.subtract(existing_ron)
+        #         ronac = ronac.subtract(existing_ronac)
+        #     ron.targets = targets['omega_N']
+        #     ronac.targets = targets['omega_NAc']
+
 
     def _prepare_drawings(self):
         from . import geometry
@@ -3615,6 +3860,8 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
             * residues:
                 - a :py:class:`chimerax.Residues` instance
         '''
+        self.restrain_sugar_rings(residues)
+        self.restrain_sugar_amides(residues)
         return self._get_all_restraints_for_residues(residues, True)
 
     @property
