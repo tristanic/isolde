@@ -12,7 +12,7 @@ prefer you can also perform many tasks via the command line, such as launching
 the GUI (:ref:`start`), starting, stopping and pausing simulations (:ref:`sim`),
 and performing basic manipulations (:ref:`pepflip` and :ref:`cisflip`). Some
 functions are currently available *only* through the command line - in
-particular, :ref:`adaptive_distance_restraints_cmd`.
+particular, :ref:`adaptive_restraint_schemes`.
 
 
 .. _tutorial:
@@ -289,21 +289,21 @@ D coordinates. This will be improved upon in a future release.
 isolde restrain distances
 =========================
 
-See :ref:`adaptive_distance_restraints_cmd`
+See :ref:`adaptive_restraint_schemes`
 
 .. _`release distances`:
 
 isolde release distances
 ========================
 
-See :ref:`adaptive_distance_restraints_cmd`
+See :ref:`adaptive_restraint_schemes`
 
 .. _`adjust distances`:
 
 isolde adjust distances
 =======================
 
-See :ref:`adaptive_distance_restraints_cmd`
+See :ref:`adaptive_restraint_schemes`
 
 
 .. _`restrain torsions`:

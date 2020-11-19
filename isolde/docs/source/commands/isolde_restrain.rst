@@ -1,7 +1,7 @@
-.. _adaptive_distance_restraints_cmd:
+.. _adaptive_restraint_schemes:
 
-Adaptive Distance Restraints
-----------------------------
+Adaptive Restraint Schemes
+--------------------------
 
 .. contents::
     :local:
@@ -80,9 +80,9 @@ requires some explanation. The functional form is as follows:
     E = \kappa *
     \begin{cases}
         0, & \text{if}\ enabled < 0.5 \text{ or}\ |r-r_0| < \tau \\
-        1/2 (\frac{r-\rho}{c})^2, & \text{if}\ \alpha = 2 \\
-        ln(\frac{1}{2} (\frac{r-\rho}{c})^2 + 1), & \text{if}\ \alpha = 0 \\
-        \frac{|2-\alpha|}{\alpha} ((\frac{ (\frac{r-\rho}{c})^2 }{|2-\alpha|} + 1)^\frac{\alpha}{2} - 1), & \text{otherwise}
+        1/2 (\frac{\rho}{c})^2, & \text{if}\ \alpha = 2 \\
+        ln(\frac{1}{2} (\frac{\rho}{c})^2 + 1), & \text{if}\ \alpha = 0 \\
+        \frac{|2-\alpha|}{\alpha} ((\frac{ (\frac{\rho}{c})^2 }{|2-\alpha|} + 1)^\frac{\alpha}{2} - 1), & \text{otherwise}
     \end{cases}
 
 where
@@ -90,8 +90,8 @@ where
 .. math::
     \rho =
     \begin{cases}
-        r-\tau, & \text{if}\ (r-r_0) < -\tau \\
-        r+\tau, & \text{if}\ (r-r_0) > \tau
+        |r-r_0|-\tau, & \text{if}\ |r-r_0| > \tau \\
+        0, & \text{otherwise}
     \end{cases}
 
 ... leading to energy potentials that look like this:
@@ -209,7 +209,8 @@ isolde restrain torsions
 Syntax: isolde restrain torsions *residues*
 [**templateResidues** *residues*]
 [**backbone** *true/false* (true)] [**sidechains** *true/false* (true)]
-[**angleRange** *number* (30.0)] [**springConstant** *number* (250.0)]
+[**angleRange** *number* (60.0)] [**alpha** *number* (0.2)]
+[**springConstant** *number* (250.0)]
 [**identicalSidechainsOnly** *true/false* (true)]
 
 Analogous to :ref:`isolde_restrain_distances_cmd`, this command restrains
@@ -224,18 +225,22 @@ The mathematical form of the energy function is:
 
 .. math::
 
-    E =
+    E_{core} &=
     \begin{cases}
         0, & \text{if}\ enabled < 0.5 \\
-        1-k\frac{ \sqrt{2} e^{\frac{1}{2}\sqrt{4\kappa^2+1}-\kappa+\frac{1}{2}}
+        1-\frac{ \sqrt{2} e^{\frac{-1}{2}\sqrt{4\kappa^2+1}-\kappa+\frac{1}{2}}
         e^{\kappa(\cos{(\theta-\theta_0)}+1)-1)}}
         {\sqrt{\sqrt{4\kappa^2+1}-1}}, & \text{if}\ \kappa>0 \\
-        -k\cos{(\theta-\theta_0)}, & \text{if}\ \kappa=0
-    \end{cases}
+        -\cos{(\theta-\theta_0)}, & \text{if}\ \kappa=0
+    \end{cases} \\
+    E_{final} &= k (E_{core} + \alpha*(e^{\sqrt{\alpha}*(E_{core}-1)}(1-\cos{\theta-\theta_0}) )
 
 ... which looks like this:
 
 .. figure:: images/adaptive_torsion_energy_function.png
+
+   Adaptive energy function. (a) angleRange=60 (equivalent to kappa=3.46). (b)
+   angleRange=120 (equivalent to kappa=0.67)
 
 * *templateResidues*: if supplied, the template will first be sequence-aligned
   to the model, and matching residues will be used to set the target angles.
