@@ -146,8 +146,14 @@ def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, ch
             session.logger.warning("New ligand was not added to ISOLDE's "
                 "selected model. sim_settle argument ignored.")
         else:
-            from chimerax.core.commands import run
-            run(session, 'isolde sim start sel')
+            # defer the simulation starting until after the new atoms have been
+            # drawn, to make sure their styling "sticks"
+            def do_run(*_, session=session):
+                from chimerax.core.commands import run
+                run(session, 'isolde sim start sel')
+                from chimerax.core.triggerset import DEREGISTER
+                return DEREGISTER
+            session.triggers.add_handler('frame drawn', do_run)
 
 def new_residue_from_template(model, template, chain_id, center,
         residue_number=None, insert_code=' ', b_factor=50, precedes=None):
