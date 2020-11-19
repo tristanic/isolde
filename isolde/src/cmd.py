@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 02-Aug-2020
+# @Last modified time: 19-Sep-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -115,7 +115,7 @@ def isolde_report(session, report=True, interval=20):
         raise UserError('This command is only valid when a simulation is running!')
     sm = isolde.sim_manager
     if report:
-        sm.start_reporting_performance(report_interval)
+        sm.start_reporting_performance(interval)
     else:
         sm.stop_reporting_performance()
 
