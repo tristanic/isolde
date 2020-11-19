@@ -2,7 +2,7 @@
 # @Date:   04-Aug-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 04-Aug-2020
+# @Last modified time: 17-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -44,7 +44,7 @@ def parameterise_residue_with_elbow(residue, include_hydrogens=True, keep_elbow_
     except:
         os.chdir(cwd)
         raise
-    expected_files = (resname+'.frcmod', resname+'.mol2')
+    expected_files = (resname+'.frcmod', resname+'.mol2', resname+'.cif')
     if not all(os.path.isfile(efile) for efile in expected_files):
         os.chdir(cwd)
         raise UserError('phenix.elbow finished without an error code, but the expected files were not written. Bailing out.')
@@ -60,9 +60,11 @@ def parameterise_residue_with_elbow(residue, include_hydrogens=True, keep_elbow_
         all_files = glob.glob('*')
         for f in all_files:
             shutil.copy(os.path.join(tmpdirname, f), os.path.join(cwd, f))
+            shutil.move(os.path.join(cwd, resname+'.cif'), os.path.join(cwd, resname+'_restraints.cif'))
     else:
         final_loc = os.path.join(cwd, xmlfile)
         shutil.copy(os.path.join(tmpdirname, xmlfile), final_loc)
+        shutil.copy(os.path.join(tmpdirname, resname+'.cif'), os.path.join(cwd, resname+'_restraints.cif'))
     os.chdir(cwd)
     ff_name = session.isolde.sim_params.forcefield
     ff = session.isolde.forcefield_mgr[ff_name]
