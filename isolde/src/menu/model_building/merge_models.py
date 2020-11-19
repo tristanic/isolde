@@ -1,4 +1,3 @@
-from chimerax.isolde.atomic.building import set_new_atom_style
 from chimerax.isolde.atomic.building.build_utils import next_chain_id
 
 tooltip=('Merge all models with any atoms selected into the first selected model.')
@@ -24,4 +23,3 @@ def run_script(session):
                 if any(numpy.isin(cres.numbers, tres.numbers)):
                     new_cid = next_chain_id(target)
             merge_fragment(target, m.residues[m.residues.chain_ids==cid], chain_id=new_cid, transform=m.position, update_style=False)
-    set_new_atom_style(session, target.atoms)

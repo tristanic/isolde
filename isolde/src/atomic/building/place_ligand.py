@@ -6,7 +6,6 @@
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
-from . import set_new_atom_style
 
 
 def _get_metals():
@@ -177,7 +176,6 @@ def new_residue_from_template(model, template, chain_id, center,
             n = tatom_to_atom.get(tn, None)
             if n is not None:
                 model.new_bond(a, n)
-    set_new_atom_style(model.session, r.atoms)
     return r
 
 

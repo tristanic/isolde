@@ -2,11 +2,10 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 04-Aug-2020
+# @Last modified time: 31-Oct-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
-from . import set_new_atom_style
 
 _valid_chain_id_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
 def next_chain_id(model, prefix=''):
@@ -105,7 +104,6 @@ def set_his_protonation_state(residue, position='ND'):
         ne2 = hd1_dihedral_atoms[-1]
         atom.bfactor = ne2.bfactor
         atom.occupancy = ne2.occupancy
-    set_new_atom_style(residue.session, residue.atoms)
 
 def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
         chain_id=None, number=None, center=None, insertion_code=' ', b_factor=50,
@@ -164,7 +162,7 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
     # delete extraneous atoms
     r = new_residue_from_template(model, tmpl, chain_id, [0,0,0], number,
             insert_code=insertion_code, b_factor=b_factor, precedes=insertion_point)
-    r.atoms[numpy.in1d(r.atoms.names, ['OXT', 'HXT', 'H2'])].delete()
+    r.atoms[numpy.in1d(r.atoms.names, ['OXT', 'HXT', 'H2', 'H1', 'HN1', 'HN2'])].delete()
 
     # Translate and rotate residue to (roughly) match the desired position
     if not next_res and not prev_res:
@@ -196,7 +194,6 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
     r.atoms.bfactors = b_factor
     r.atoms.occupancies = occupancy
 
-    set_new_atom_style(session, r.atoms)
     return r
 
 

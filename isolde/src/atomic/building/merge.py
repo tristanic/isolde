@@ -190,9 +190,6 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         _remove_excess_terminal_atoms(anchor_atom)
         _remove_excess_terminal_atoms(link_atom)
         m.new_bond(anchor_atom, link_atom)
-    if update_style:
-        new_atoms.displays=True
-        set_new_atom_style(m.session, new_atoms)
     return new_atoms
 
 
