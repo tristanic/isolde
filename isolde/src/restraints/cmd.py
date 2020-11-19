@@ -2,7 +2,7 @@
 # @Date:   05-Apr-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 17-Sep-2020
+# @Last modified time: 19-Nov-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -145,7 +145,7 @@ def _dihedral_names(backbone, sidechains):
     return names
 
 def restrain_torsions(session, residues, template_residues=None,
-        backbone=True, sidechains=True, angle_range=30, alpha=0.2,
+        backbone=True, sidechains=True, angle_range=60, alpha=0.2,
         spring_constant=250, identical_sidechains_only=True):
     logger = session.logger
     if not residues:
