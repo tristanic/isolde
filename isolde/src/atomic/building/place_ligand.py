@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 10-Aug-2020
+# @Last modified time: 19-Nov-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -46,7 +46,7 @@ def place_water(session, model=None, position=None, bfactor=None, chain=None,
     True, a small local simulation will automatically start to settle the
     water into position.
     '''
-    place_ligand(session, 'HOH', model=model, position=position, bfactor=bfactor,
+    return place_ligand(session, 'HOH', model=model, position=position, bfactor=bfactor,
         chain=chain, distance_cutoff=distance_cutoff, sim_settle=sim_settle)
 
 def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, chain=None,
@@ -154,6 +154,7 @@ def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, ch
                 from chimerax.core.triggerset import DEREGISTER
                 return DEREGISTER
             session.triggers.add_handler('frame drawn', do_run)
+    return r
 
 def new_residue_from_template(model, template, chain_id, center,
         residue_number=None, insert_code=' ', b_factor=50, precedes=None):
