@@ -2,7 +2,7 @@
 # @Date:   15-Feb-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 29-Jul-2020
+# @Last modified time: 06-Nov-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -250,7 +250,7 @@ def find_glycan_template_name_and_link(residue):
                 r.chain_id, r.number, n.chain_id, n.number
             ))
         for atom in bonds[0].atoms:
-            if atom.residue == residue:
+            if atom.residue == residue and atom.element.name=='O':
                 bonded_atoms.append(atom)
     bonded_atom_numbers = tuple(sorted(
         [int(s) for atom in bonded_atoms for s in atom.name if s.isdigit() and s != reducing_terminal_number]
