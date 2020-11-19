@@ -295,8 +295,6 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
             continue
         if a2 not in a1.neighbors:
             m.new_bond(a1, a2)
-    from .building import set_new_atom_style
-    set_new_atom_style(residue.session, residue.atoms)
     if rename_residue:
         residue.name = template.name
 
@@ -413,7 +411,7 @@ def trim_residue_to_md_template(residue, md_template):
     if len(md_template.atoms) > 2 and len(residue.atoms) > 2:
         from chimerax.isolde.graph import make_graph_from_residue
         rgraph = make_graph_from_residue(residue)
-        ri, ti, _ = rgraph.maximum_common_subgraph(md_template.graph, timeout=5)
+        ri, ti, _ = rgraph.maximum_common_subgraph(md_template.graph, big_first=True, timeout=5)
         # if len(ti) != len(md_template.atoms):
         #     from chimerax.core.errors import UserError
         #     err_string = ('Template {} contains atoms not found in residue '
@@ -424,7 +422,7 @@ def trim_residue_to_md_template(residue, md_template):
         residue.atoms.subtract(residue.atoms[ri]).delete()
         # Need to redo the graph matching, because indices may have changed
         rgraph = make_graph_from_residue(residue)
-        ri, ti, _ = rgraph.maximum_common_subgraph(md_template.graph, timeout=5)
+        ri, ti, _ = rgraph.maximum_common_subgraph(md_template.graph, big_first=True, timeout=5)
         add_missing_md_template_atoms(residue.session, residue, md_template, ri, ti)
     else:
         raise UserError('Auto-correction to a MD template is currently only '
