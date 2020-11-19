@@ -197,8 +197,15 @@ def _remove_excess_terminal_atoms(atom):
             if n.name=='OXT':
                 n.delete()
     elif atom.name=='N':
-        for n in atom.neighbors:
-            if n.name in ('H2', 'H3'):
-                n.delete()
-            elif n.name == 'H1':
-                n.name = 'H'
+        from chimerax.atomic import Atoms
+        neighbors = Atoms(atom.neighbors)
+        hydrogens = neighbors[neighbors.element_names == 'H']
+        if not len(hydrogens):
+            return
+        h = hydrogens[hydrogens.names=='H']
+        if len(h) == 1:
+            hydrogens.subtract(h).delete()
+            return
+        elif len(hydrogens)>1:
+            hydrogens[1:].delete()
+        hydrogens[0].name='H'
