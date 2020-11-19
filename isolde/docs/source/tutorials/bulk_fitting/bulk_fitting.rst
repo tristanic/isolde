@@ -41,7 +41,7 @@ ISOLDE's adaptive distance restraints to maintain the local geometry of the
 model from 6mhz as we interactively re-fit it into the map from 6mhu.
 
  .. _6mhz: https://www.rcsb.org/structure/6mhz
- .. _EMD-1924: https://www.emdataresource.org/EMD-9124
+ .. _EMD-9124: https://www.emdataresource.org/EMD-9124
  .. _6mhu:  https://www.rcsb.org/structure/6mhu
  .. _EMD-9118: https://www.emdataresource.org/EMD-9118
 
