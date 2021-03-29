@@ -2,7 +2,7 @@
 # @Date:   20-Dec-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 17-Sep-2020
+# @Last modified time: 10-Dec-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -493,7 +493,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
     if protein:
         atom_names.extend(['CA', 'CB', 'CG', 'CG1', 'OG', 'OG1'])
     if nucleic:
-        atom_names.extend(["OP1", "OP2", "C4'", "C2'", "O2", "O4", "N4", "N2", "O6", "N1", "N6"])
+        atom_names.extend(["OP1", "OP2", "C4'", "C2'", "O2", "O4", "N4", "N2", "O6", "N1", "N6", "N9"])
     atom_names.extend(custom_atom_names)
 
     import numpy
