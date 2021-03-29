@@ -22,4 +22,4 @@ def run_script(session):
                 tres = target.residues[target.residues.chain_ids==cid]
                 if any(numpy.isin(cres.numbers, tres.numbers)):
                     new_cid = next_chain_id(target)
-            merge_fragment(target, m.residues[m.residues.chain_ids==cid], chain_id=new_cid, transform=m.position, update_style=False)
+            merge_fragment(target, m.residues[m.residues.chain_ids==cid], chain_id=new_cid, transform=m.position)
