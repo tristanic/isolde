@@ -114,7 +114,10 @@ class TugAtomsMode(MouseMode):
 
         if pa is not None and len(pa):
             if self._start_tugging_atoms(pa):
-                self._set_pull_direction(x, y)
+                try:
+                    self._set_pull_direction(x, y)
+                except:
+                    self.tugging=False
 
     def _pick_atoms(self, pick):
         if pick is None:
