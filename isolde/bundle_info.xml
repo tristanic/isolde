@@ -10,7 +10,7 @@
 
 
 
-<BundleInfo name="ChimeraX-ISOLDE" version="1.1.0" package="chimerax.isolde"
+<BundleInfo name="ChimeraX-ISOLDE" version="1.2.dev20" package="chimerax.isolde"
   	    customInit="true" minSessionVersion="1" maxSessionVersion="1">
 
   <!-- Additional information about bundle source -->
@@ -83,8 +83,9 @@ with the surroundings.
       <Library>atomstruct</Library>
       <Library>pyinstance</Library>
       <CompileArgument platform="mac">-mmacosx-version-min=10.12</CompileArgument>
+      <!-- <CompileArgument>-fno-stack-protector</CompileArgument> -->
       <IncludeDir platform="mac">/Users/tic20/anaconda3/envs/openmm74/include</IncludeDir>
-      <IncludeDir platform="linux">/home/tic20/anaconda3/envs/openmm74/include</IncludeDir>
+      <IncludeDir platform="linux">/opt/openmm750/include</IncludeDir>
       <IncludeDir platform="windows">C:\Users\tic20\Anaconda3\envs\openmm74\include</IncludeDir>
       <IncludeDir>src/deps/lbfgs/include</IncludeDir>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
@@ -96,10 +97,11 @@ with the surroundings.
 
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>
-    <Dependency name="ChimeraX-Core" version="~=1.1"/>
-    <Dependency name="ChimeraX-Atomic" version="~=1.6"/>
+    <Dependency name="ChimeraX-Core" version="~=1.2.dev202103230345"/>
+    <Dependency name="ChimeraX-Atomic" version="~=1.12.0"/>
+    <Dependency name="ChimeraX-AtomicLibrary" build="true" version="~=2.1.0"/>
     <Dependency name="ChimeraX-Clipper" version="~=0.15.0"/>
-    <Dependency name="ChimeraX-Arrays" version="~=1.0"/>
+    <Dependency name="ChimeraX-Arrays" build="true" version="~=1.0.0"/>
   </Dependencies>
 
   <!-- Python and ChimeraX-specific classifiers
