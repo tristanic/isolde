@@ -30,11 +30,6 @@ public:
     typedef std::chrono::duration<double, std::ratio<1,1000>> milliseconds;
     OpenMM_Thread_Handler() {}
     ~OpenMM_Thread_Handler() { if (_thread_running) _thread.join(); }
-    /*! Rather annoyingly, we have to set the temperature explicitly here
-     *  since the Integrator base class doesn't provide a virtual
-     *  getTemperature() method
-     *
-     */
     OpenMM_Thread_Handler(OpenMM::Context* context);
 
     OpenMM::Integrator& integrator() { return _context->getIntegrator();}
