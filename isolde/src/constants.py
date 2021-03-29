@@ -73,7 +73,7 @@ class _Defaults:
         'SIM_STEPS_PER_GUI_UPDATE':   50,
         'SIM_STARTUP_ROUNDS':         10,
         'MAX_UNSTABLE_ROUNDS':        20,
-        'TEMPERATURE':                100.0, # * unit.kelvin,
+        'TEMPERATURE':                20.0, # * unit.kelvin,
         'USE_GBSA':                   True,
         'GBSA_NONBONDED_METHOD':      CustomGBForce.CutoffNonPeriodic,
         'GBSA_SOLVENT_DIELECTRIC':    78.5, # * unit.debye,
