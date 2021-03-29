@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 31-Oct-2020
+# @Last modified time: 04-Jan-2021
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -42,13 +42,8 @@ def add_hydrogen_to_atom(atom, coord, name = None):
 
         name = 'H'+atom.name[1:]+str(num)
 
-    na = s.new_atom(name, Element.get_element('H'))
-    na.coord = coord
-    na.bfactor = atom.bfactor
-    na.aniso_u6 = atom.aniso_u6
-    na.draw_mode = atom.draw_mode
-    r.add_atom(na)
-    s.new_bond(atom, na)
+    from chimerax.atomic.struct_edit import add_atom
+    na=add_atom(name, Element.get_element('H'),r,coord,bonded_to=atom)
     return na
 
 def fix_amino_acid_protonation_state(residue):
@@ -169,15 +164,16 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
         r.atoms.coords += numpy.array(center) - r.atoms.coords.mean(axis=0)
     else:
         from chimerax.geometry import align_points
+        from chimerax.atomic.struct_edit import add_bond
         if prev_res:
-            model.new_bond(r.find_atom('N'), prev_res.find_atom('C'))
+            add_bond(r.find_atom('N'), prev_res.find_atom('C'))
             n_pos = _find_next_N_position(prev_res)
             ca_pos = _find_next_CA_position(n_pos, prev_res)
             c_pos = _find_next_C_position(ca_pos, n_pos, prev_res, phi)
             target_coords = numpy.array([n_pos, ca_pos, c_pos])
             align_coords = numpy.array([r.find_atom(a).coord for a in ['N', 'CA', 'C']])
         elif next_res:
-            model.new_bond(r.find_atom('C'), next_res.find_atom('N'))
+            add_bond(r.find_atom('C'), next_res.find_atom('N'))
             c_pos = _find_prev_C_position(next_res, psi)
             ca_pos = _find_prev_CA_position(c_pos, next_res)
             o_pos = _find_prev_O_position(c_pos, next_res)
@@ -293,7 +289,8 @@ def create_disulfide(cys1, cys2):
         for a in s.neighbors:
             if a.element.name == 'H':
                 a.delete()
-    structure.new_bond(s1, s2)
+    from chimerax.atomic.struct_edit import add_bond
+    add_bond(s1, s2)
 
 _CYS_ALIGN_ATOMS=('CA', 'CB', 'SG')
 def break_disulfide(cys1, cys2):
