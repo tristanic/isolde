@@ -2,7 +2,7 @@
 # @Date:   11-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 19-Nov-2020
+# @Last modified time: 04-Jan-2021
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -174,6 +174,7 @@ def new_residue_from_template(model, template, chain_id, center,
     tatom_to_atom = {}
     r = model.new_residue(template.name, chain_id, residue_number,
         insert=insert_code, precedes=precedes)
+    from chimerax.atomic.struct_edit import add_bond
     for i, ta in enumerate(template.atoms):
         a = tatom_to_atom[ta] = model.new_atom(ta.name, ta.element)
         a.coord = t_coords[i]
@@ -182,7 +183,7 @@ def new_residue_from_template(model, template, chain_id, center,
         for tn in ta.neighbors:
             n = tatom_to_atom.get(tn, None)
             if n is not None:
-                model.new_bond(a, n)
+                add_bond(a, n)
     return r
 
 
