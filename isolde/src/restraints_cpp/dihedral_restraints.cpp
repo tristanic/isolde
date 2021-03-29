@@ -3,7 +3,7 @@
  * @Date:   26-Apr-2018
  * @Email:  tic20@cam.ac.uk
  * @Last modified by:   tic20
- * @Last modified time: 17-Dec-2019
+ * @Last modified time: 28-Nov-2020
  * @License: Free for non-commercial use (see license.pdf)
  * @Copyright:2016-2019 Tristan Croll
  */
@@ -146,6 +146,7 @@ AdaptiveDihedralRestraint::AdaptiveDihedralRestraint(
     : ProperDihedralRestraintBase(dihedral, mgr)
     {
         _kappa = DEFAULT_KAPPA;
+        _alpha = DEFAULT_ALPHA;
         _cutoffs[1] = DEFAULT_FMAX_ANGLE;
         _cutoffs[2] = 2*DEFAULT_FMAX_ANGLE;
     }
