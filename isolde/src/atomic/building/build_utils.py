@@ -46,6 +46,33 @@ def add_hydrogen_to_atom(atom, coord, name = None):
     na=add_atom(name, Element.get_element('H'),r,coord,bonded_to=atom)
     return na
 
+def make_fmet_from_met(session, residue):
+    err_string = "make_fmet_from_met() is only applicable to N-terminal methionine residues!"
+    if residue.name != 'MET':
+        raise TypeError(err_string)
+    n = residue.find_atom('N')
+    if n is None:
+        raise TypeError('Missing N atom! Is your residue complete?')
+    for nb in n.neighbors:
+        if nb.residue != residue:
+            raise TypeError(err_string)
+        if nb.element.name == 'H':
+            nb.delete()
+    from chimerax.mmcif import find_template_residue
+    import numpy
+    fme = find_template_residue(session, 'FME')
+    ref_atoms = ('C','CA','N')
+    r_coords = numpy.array([residue.find_atom(a).coord for a in ref_atoms])
+    t_coords = numpy.array([fme.find_atom(a).coord for a in ref_atoms])
+    from chimerax.geometry import align_points
+    tf, rms = align_points(t_coords, r_coords)
+    from chimerax.atomic.struct_edit import add_atom
+    atom_pairs = (('N','H'),('N','CN'),('CN','O1'),('CN','HCN'))
+    for (bname, aname) in atom_pairs:
+        ta = fme.find_atom(aname)
+        add_atom(aname, ta.element, residue, tf*ta.coord, bonded_to=residue.find_atom(bname))
+    residue.name='FME'    
+
 def fix_amino_acid_protonation_state(residue):
     if residue.name not in ('GLU', 'ASP'):
         raise TypeError('This method is only applicable to GLU and ASP residues!')
