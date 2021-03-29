@@ -3406,6 +3406,89 @@
    <Bond atomName1="O2'" atomName2="HO2'"/>
    <Bond atomName1="O3'" atomName2="HO3'"/>
   </Residue>
+
+  <Residue name="3DR">
+<!-- Abasic DNA -->
+   <Atom name="P" type="P" charge="1.1659"/>
+   <Atom name="OP1" type="O2" charge="-0.7761"/>
+   <Atom name="OP2" type="O2" charge="-0.7761"/>
+   <Atom name="O5'" type="OS" charge="-0.4954"/>
+   <Atom name="C5'" type="CI" charge="-0.0069"/>
+   <Atom name="H5'" type="H1" charge="0.0754"/>
+   <Atom name="H5''" type="H1" charge="0.0754"/>
+   <Atom name="C4'" type="CT" charge="0.1629"/>
+   <Atom name="H4'" type="H1" charge="0.1176"/>
+   <Atom name="O4'" type="OS" charge="-0.3691"/>
+   <Atom name="C1'" type="CT" charge="0.0431"/>
+   <Atom name="H1'1" type="H2" charge="0.0392"/>
+   <Atom name="H1'2" type="H2" charge="0.0392"/>
+   <Atom name="C3'" type="CT" charge="0.0713"/>
+   <Atom name="H3'" type="H1" charge="0.0985"/>
+   <Atom name="C2'" type="CT" charge="-0.0854"/>
+   <Atom name="H2'" type="HC" charge="0.0718"/>
+   <Atom name="H2''" type="HC" charge="0.0718"/>
+   <Atom name="O3'" type="OS" charge="-0.5232"/>
+   <Bond atomName1="P" atomName2="OP1"/>
+   <Bond atomName1="P" atomName2="OP2"/>
+   <Bond atomName1="P" atomName2="O5'"/>
+   <Bond atomName1="O5'" atomName2="C5'"/>
+   <Bond atomName1="C5'" atomName2="H5'"/>
+   <Bond atomName1="C5'" atomName2="H5''"/>
+   <Bond atomName1="C5'" atomName2="C4'"/>
+   <Bond atomName1="C4'" atomName2="H4'"/>
+   <Bond atomName1="C4'" atomName2="O4'"/>
+   <Bond atomName1="C4'" atomName2="C3'"/>
+   <Bond atomName1="O4'" atomName2="C1'"/>
+   <Bond atomName1="C1'" atomName2="H1'1"/>
+   <Bond atomName1="C1'" atomName2="H1'2"/>
+   <Bond atomName1="C1'" atomName2="C2'"/>
+   <Bond atomName1="C3'" atomName2="H3'"/>
+   <Bond atomName1="C3'" atomName2="C2'"/>
+   <Bond atomName1="C3'" atomName2="O3'"/>
+   <Bond atomName1="C2'" atomName2="H2'"/>
+   <Bond atomName1="C2'" atomName2="H2''"/>
+   <ExternalBond atomName="P"/>
+   <ExternalBond atomName="O3'"/>
+  </Residue>
+  <Residue name="3DR5">
+   <Atom name="HO5'" type="HO" charge="0.4422"/>
+   <Atom name="O5'" type="OH" charge="-0.6318"/>
+   <Atom name="C5'" type="CI" charge="-0.0069"/>
+   <Atom name="H5'" type="H1" charge="0.0754"/>
+   <Atom name="H5''" type="H1" charge="0.0754"/>
+   <Atom name="C4'" type="CT" charge="0.1629"/>
+   <Atom name="H4'" type="H1" charge="0.1176"/>
+   <Atom name="O4'" type="OS" charge="-0.3691"/>
+   <Atom name="C1'" type="CT" charge="0.0431"/>
+   <Atom name="H1'1" type="H2" charge="0.0392"/>
+   <Atom name="H1'2" type="H2" charge="0.0392"/>
+   <Atom name="C3'" type="CT" charge="0.0713"/>
+   <Atom name="H3'" type="H1" charge="0.0985"/>
+   <Atom name="C2'" type="CT" charge="-0.0854"/>
+   <Atom name="H2'" type="HC" charge="0.0718"/>
+   <Atom name="H2''" type="HC" charge="0.0718"/>
+   <Atom name="O3'" type="OS" charge="-0.5232"/>
+   <Bond atomName1="HO5'" atomName2="O5'"/>
+   <Bond atomName1="O5'" atomName2="C5'"/>
+   <Bond atomName1="C5'" atomName2="H5'"/>
+   <Bond atomName1="C5'" atomName2="H5''"/>
+   <Bond atomName1="C5'" atomName2="C4'"/>
+   <Bond atomName1="C4'" atomName2="H4'"/>
+   <Bond atomName1="C4'" atomName2="O4'"/>
+   <Bond atomName1="C4'" atomName2="C3'"/>
+   <Bond atomName1="O4'" atomName2="C1'"/>
+   <Bond atomName1="C1'" atomName2="H1'1"/>
+   <Bond atomName1="C1'" atomName2="H1'2"/>
+   <Bond atomName1="C1'" atomName2="C2'"/>
+   <Bond atomName1="C3'" atomName2="H3'"/>
+   <Bond atomName1="C3'" atomName2="C2'"/>
+   <Bond atomName1="C3'" atomName2="O3'"/>
+   <Bond atomName1="C2'" atomName2="H2'"/>
+   <Bond atomName1="C2'" atomName2="H2''"/>
+   <ExternalBond atomName="O3'"/>
+  </Residue>
+
+
   <Residue name="DA">
    <Atom name="P" type="P" charge="1.1659"/>
    <Atom name="OP1" type="O2" charge="-0.7761"/>
