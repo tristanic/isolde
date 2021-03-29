@@ -2,7 +2,7 @@
 # @Date:   07-Apr-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 03-Aug-2020
+# @Last modified time: 04-Jan-2021
 # @License: Lesser GNU Public License version 3.0 (see LICENSE.md)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -18,4 +18,5 @@ def run_script(session):
     if len(us) != 1:
         raise UserError('Both atoms must be from the same structure!')
     m = us[0]
-    m.new_bond(*sel)
+    from chimerax.atomic.struct_edit import add_bond
+    add_bond(*sel)
