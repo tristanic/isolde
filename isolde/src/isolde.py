@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2019
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 03-Sep-2020
+# @Last modified time: 09-Dec-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -1232,7 +1232,7 @@ class Isolde():
         #
         for f in file_list:
             try:
-                forcefield.loadFile(f, prefix="USER_")
+                forcefield.loadFile(f, resname_prefix="USER_")
             except ValueError as e:
                 log.warning('Failed to add {}: {}'.format(f, str(e)))
             except:
@@ -2220,15 +2220,16 @@ class Isolde():
             rot_m = get_rotamer_mgr(self.session)
 
             if rot is not None:
-                t_info = rot.nearest_target
-                r_desc = "{}, f={}, Z=({})".format(
-                    t_info['Name'],
-                    t_info['Frequency'],
-                    ','.join(['{:0.2f}'.format(z) for z in t_info['Z scores']])
-                    )
-                score = rot.score
-                from . import session_extensions as sx
-                rot_m = sx.get_rotamer_mgr(self.session)
+                try:
+                    t_info = rot.nearest_target
+                    r_desc = "{}, f={}, Z=({})".format(
+                        t_info['Name'],
+                        t_info['Frequency'],
+                        ','.join(['{:0.2f}'.format(z) for z in t_info['Z scores']])
+                        )
+                    score = rot.score
+                except IndexError:
+                    return
                 cutoffs = rot_m.cutoffs
                 if score > cutoffs[0]:
                     desc_color = 'green'
@@ -3435,7 +3436,6 @@ def load_cryo_em_demo(session, model_only=True):
         from chimerax.clipper import get_symmetry_handler
         sh = get_symmetry_handler(m, create=True)
         sh.map_mgr.nxmapset.add_nxmap_handler_from_volume(mmap)
-        session.models.add([sh])
 
 
 
