@@ -114,6 +114,7 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         prev_res = None
     prev_new_res = None
 
+    from chimerax.atomic.struct_edit import add_bond
     for merged_index, r in zip(new_residue_indices, residues):
         if chain_id:
             cid = chain_id
@@ -143,7 +144,7 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
             for n in a.neighbors:
                 nn = atom_map.get(n, None)
                 if nn is not None:
-                    m.new_bond(na, nn)
+                    add_bond(na, nn)
 
 
         if prev_res is not None:
@@ -175,7 +176,7 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         link_atom = atom_map[protein_residues[0].find_atom('N')]
         _remove_excess_terminal_atoms(anchor_atom)
         _remove_excess_terminal_atoms(link_atom)
-        m.new_bond(anchor_atom, link_atom)
+        add_bond(anchor_atom, link_atom)
         for r in new_atoms.unique_residues:
             merged_atoms = anchor_n.atoms.merge(r.atoms)
             tpbg.pseudobonds[tpbg.pseudobonds.between_atoms(merged_atoms)].delete()
@@ -184,7 +185,7 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         link_atom = atom_map[protein_residues[-1].find_atom('C')]
         _remove_excess_terminal_atoms(anchor_atom)
         _remove_excess_terminal_atoms(link_atom)
-        m.new_bond(anchor_atom, link_atom)
+        add_bond(anchor_atom, link_atom)
         for r in new_atoms.unique_residues:
             tpbg.pseudobonds[tpbg.pseudobonds.between_atoms(anchor_c.atoms.merge(r.atoms))].delete()
     new_atoms.displays=True
