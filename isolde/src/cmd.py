@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 19-Sep-2020
+# @Last modified time: 25-Nov-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -85,7 +85,11 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         isolde.change_selected_model(model)
         session.selection.clear()
         atoms.selected = True
-        isolde.start_sim()
+        def _sim_start_cb(*_, isolde=isolde):
+            isolde.start_sim()
+            from chimerax.core.triggerset import DEREGISTER
+            return DEREGISTER
+        session.triggers.add_handler('frame drawn', _sim_start_cb)
         return
 
     if not isolde.simulation_running:
@@ -177,7 +181,7 @@ def isolde_demo(session, demo_name = None, model_only=False, start_isolde=True):
     session.logger.info("Loaded " + description)
 
 def isolde_step(session, residue=None, view_distance=None, interpolate_frames=None,
-        polymeric_only=True):
+        polymeric_only=True, select=True):
     from chimerax.atomic import Residues, Residue
     if isinstance(residue, Residues):
         if len(residue) == 0:
@@ -204,6 +208,8 @@ def isolde_step(session, residue=None, view_distance=None, interpolate_frames=No
         rs.view_distance = view_distance
     if interpolate_frames is not None:
         rs.interpolate_frames = interpolate_frames
+    if select:
+        session.selection.clear()
     if residue is None:
         rs.incr_residue()
     elif isinstance(residue, Residue):
@@ -222,6 +228,11 @@ def isolde_step(session, residue=None, view_distance=None, interpolate_frames=No
         else:
             raise UserError('Unrecognised residue argument! If specified, must '
                 'be either a residue, "first", "last", "next" or "prev"')
+    if select:
+        atoms = rs.current_residue.atoms
+        atoms.selected=True
+        atoms.intra_bonds.selected=True
+
 
 def isolde_jump(session, direction="next"):
     isolde_start(session)
@@ -318,7 +329,8 @@ def register_isolde(logger):
             keyword=[
                 ('view_distance', FloatArg),
                 ('interpolate_frames', PositiveIntArg),
-                ('polymeric_only', BoolArg)
+                ('polymeric_only', BoolArg),
+                ('select', BoolArg)
             ]
         )
         register('isolde stepto', desc, isolde_step, logger=logger)
