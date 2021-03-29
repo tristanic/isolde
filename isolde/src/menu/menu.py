@@ -54,7 +54,7 @@ def prepare_isolde_menu(session):
         session.logger.warning('Initialisation of ISOLDE menu failed: {}'.format(str(e)))
 
 def item_runner_factory(session, module):
-    def f(session=session, module=module):
+    def f(*_, session=session, module=module):
         module.run_script(session)
     return f
 
