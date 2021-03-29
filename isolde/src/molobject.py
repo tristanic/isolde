@@ -509,6 +509,11 @@ class ProperDihedralMgr(_DihedralMgr):
         import json
         with open(os.path.join(DICT_DIR, 'named_dihedrals.json'), 'r') as f:
             dd = self._dihedral_dict = json.load(f)
+        for syn_key, syn_dict in dd['residues']['synonyms'].items():
+            rdict = dd['residues'][syn_key]
+            for res, syn_list in syn_dict.items():
+                for syn in syn_list:
+                    rdict[syn] = rdict[res]
 
     def _prepare_standard_dihedrals(self):
         self._prepare_amino_acid_dihedrals()
@@ -1517,10 +1522,12 @@ class RotaMgr:
         cache_dir = validation.get_molprobity_cache_dir()
         prefix = 'rota8000-'
         for aa in dmgr.dihedral_dict['aminoacids']:
-            # Ugly hack to avoid adding duplicate dict for MSE. TODO: Will need to
+            # Ugly hack to avoid adding duplicate dict for known modified amino acids. TODO: Will need to
             # revisit to work out how to handle all modified amino acids.
-            if aa == 'MSE':
+            if aa in ('MSE', 'FME'):
                 fname = prefix+'met'
+            elif aa == '2MR':
+                fname = prefix+'arg'
             else:
                 fname = prefix + aa.lower()
             if (not os.path.isfile(os.path.join(data_dir, fname+'.data'))
@@ -2071,8 +2078,11 @@ class MDFFMgr(_RestraintMgr):
 
     @staticmethod
     def restore_snapshot(session, data):
-        mdm = MDFFMgr(data['structure'], data['volume'], guess_global_k=False,
-            auto_add_to_session=False)
+        try:
+            mdm = MDFFMgr(data['structure'], data['volume'], guess_global_k=False,
+                auto_add_to_session=False)
+        except AttributeError:
+            return None
         mdm.set_state_from_snapshot(session, data)
         return mdm
 
@@ -3480,15 +3490,19 @@ class ChiralRestraintMgr(_RestraintMgr):
     def set_state_from_snapshot(self, session, data):
         from chimerax.core.models import Model
         Model.set_state_from_snapshot(self, session, data['model state'])
-        data = data['restraint info']
-        atoms = data['atoms']
-        spring_constants = data['spring_constants']
-        cutoffs = data['cutoffs']
-        enableds = data['enableds']
-        crs = self.add_restraints_by_atoms(atoms)
-        crs.spring_constants=spring_constants
-        crs.cutoffs = cutoffs
-        crs.enableds=enableds
+        try:
+            data = data['restraint info']
+            atoms = data['atoms']
+            spring_constants = data['spring_constants']
+            cutoffs = data['cutoffs']
+            enableds = data['enableds']
+            crs = self.add_restraints_by_atoms(atoms)
+            crs.spring_constants=spring_constants
+            crs.cutoffs = cutoffs
+            crs.enableds=enableds
+        except:
+            session.logger.warning('Failed to restore chiral restraints. This is usually not a problem - they will be automatically regenerated on first simulation.')
+            return
 
     def save_checkpoint(self, atoms=None):
         if atoms is None:
