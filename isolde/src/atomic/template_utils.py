@@ -183,6 +183,7 @@ def find_maximal_isomorphous_fragment(residue, template, match_by='element',
 def add_metal_bonds_from_template(residue, template):
     m = residue.structure
     metal_atoms = [a for a in template.atoms if a.element.is_metal]
+    from chimerax.atomic.struct_edit import add_bond
     for met in metal_atoms:
         rmet = residue.find_atom(met.name)
         if rmet is None:
@@ -190,12 +191,13 @@ def add_metal_bonds_from_template(residue, template):
         for n in met.neighbors:
             rn = residue.find_atom(n.name)
             if not rn in rmet.neighbors:
-                m.new_bond(rmet, rn)
+                add_bond(rmet, rn)
 
 def fix_residue_from_template(residue, template, rename_atoms_only=False,
         rename_residue=False, match_by='name', template_indices=None):
     import numpy
     from chimerax.atomic import Atoms
+    from chimerax.atomic.struct_edit import add_bond
     if any([numpy.any(numpy.isnan(a.coord)) for a in template.atoms]):
         raise TypeError('Template is missing one or more atom coordinates!')
     matched_nodes, residue_extra, template_extra = find_maximal_isomorphous_fragment(residue, template, limit_template_indices=template_indices, match_by=match_by)
@@ -294,7 +296,7 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
         if a1 is None or a2 is None:
             continue
         if a2 not in a1.neighbors:
-            m.new_bond(a1, a2)
+            add_bond(a1, a2)
     if rename_residue:
         residue.name = template.name
 
@@ -460,8 +462,9 @@ def build_next_atom_from_coords(residue, found_neighbors, template_new_atom):
     from chimerax.atomic.struct_edit import add_atom
     ta = template_new_atom
     a = add_atom(ta.name, ta.element, residue, tf*ta.coord, occupancy=occupancy, bfactor=bfactor)
+    from chimerax.atomic.struct_edit import add_bond
     for b in bonded_to:
-        m.new_bond(a, b)
+        add_bond(a, b)
 
 _geometry_to_angle = {
     3:  180,
