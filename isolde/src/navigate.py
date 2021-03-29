@@ -2,7 +2,7 @@
 # @Date:   26-Apr-2020
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 01-Sep-2020
+# @Last modified time: 24-Nov-2020
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
@@ -275,6 +275,12 @@ class ResidueStepper(StateManager):
         self._current_direction = direction
 
     @property
+    def current_residue(self):
+        if self._current_residue is None or self._current_residue.deleted:
+            return None
+        return self._current_residue
+
+    @property
     def peptide_ref_coords(self):
         '''
         Reference N, CA, C coords for a peptide backbone, used for setting camera
@@ -314,7 +320,7 @@ class ResidueStepper(StateManager):
         data = {
             'version':  ISOLDE_STATE_VERSION,
             'structure':    self.structure,
-            'residue':      self._current_residue,
+            'residue':      self.current_residue,
             'direction':    self._current_direction,
             'interp':       self._interpolate_frames,
             'interp_distance':  self._max_interpolate_distance,
