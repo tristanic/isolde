@@ -1,5 +1,6 @@
 {
-    "aminoacids":   ["GLY","ALA","VAL","LEU","ILE","PRO","PHE","TYR","TRP","SER","THR","CYS","MET","MSE","LYS","HIS","ARG","ASP","ASN","GLN","GLU"],
+    "aminoacids":   ["GLY","ALA","VAL","LEU","ILE","PRO","PHE","TYR","TRP","SER","THR","CYS","MET","LYS","HIS","ARG","ASP","ASN","GLN","GLU",
+                    "FME","MSE","2MR"],
 
     "all_protein": {
         "omega":    [["CA","C","N","CA"],[1,1,0,0]],
@@ -66,6 +67,12 @@
 
 
     "residues": {
+        "synonyms": {
+            "protein": { 
+                "MET": ["FME","MSE"],
+                "ARG": ["2MR"]
+            }
+        },
         "protein": {
             "GLY": {
                 "nchi":     0,
