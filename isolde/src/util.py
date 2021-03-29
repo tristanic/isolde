@@ -2,7 +2,7 @@
 # @Date:   18-Apr-2018
 # @Email:  tic20@cam.ac.uk
 # @Last modified by:   tic20
-# @Last modified time: 27-Apr-2018
+# @Last modified time: 04-Jan-2021
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -60,6 +60,7 @@ def add_disulfides_from_model_metadata(model):
         disulfide_list = metadata['SSBOND']
     except KeyError:
         return
+    from chimerax.atomic.struct_edit import add_bond
     for disulfide in disulfide_list:
         sym1 = None
         sym2 = None
@@ -79,7 +80,7 @@ def add_disulfides_from_model_metadata(model):
         bonds = atoms.intra_bonds
         if not len(bonds):
             a1, a2 = atoms
-            b = model.new_bond(a1, a2)
+            add_bond(a1, a2)
 
 def compiled_lib_extension():
     import platform
