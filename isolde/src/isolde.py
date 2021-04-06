@@ -1137,6 +1137,7 @@ class Isolde():
                 iw._sim_equil_button.setChecked(True)
             else:
                 iw._sim_min_button.setChecked(True)
+            self._set_sim_go_button_state()
 
         # Update the status of the Go button
         self._selection_changed()
@@ -2718,6 +2719,21 @@ class Isolde():
             self.start_sim()
         else:
             self.pause_sim_toggle()
+
+    def _set_sim_go_button_state(self):
+        # Annoying monkey-patch, since the automatic cycling of icons seems to be 
+        # broken in the latest PyQt
+        pb = self.iw._sim_go_button
+        from Qt.QtGui import QIcon, QPixmap
+        from Qt.QtCore import QSize
+        icon = QIcon()
+        if not self.simulation_running or self.sim_paused:
+            icon.addPixmap(QPixmap(":/icons/play_icon.png"), QIcon.Normal)
+        else:
+            icon.addPixmap(QPixmap(":/icons/pause_icon.png"), QIcon.Normal)
+        pb.setIcon(icon)
+        pb.setIconSize(QSize(32, 32))
+
 
     def start_sim(self):
         '''
