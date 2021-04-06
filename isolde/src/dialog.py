@@ -13,7 +13,7 @@ Dialog boxes for use by the ISOLDE gui
 '''
 
 def generic_warning(message):
-    from PyQt5.QtWidgets import QMessageBox
+    from Qt.QtWidgets import QMessageBox
     msg = QMessageBox()
     msg.setIcon(QMessageBox.Warning)
     msg.setText(message)
@@ -25,7 +25,7 @@ def choice_warning(message):
     Pop up a warning dialog box with the given message, and return True
     if the user wants to go ahead.
     '''
-    from PyQt5.QtWidgets import QMessageBox
+    from Qt.QtWidgets import QMessageBox
     msg = QMessageBox()
     msg.setIcon(QMessageBox.Warning)
     msg.setText(message)
@@ -40,7 +40,7 @@ def failed_template_warning(residue):
     Warning dialog handling the case where a template is not recognised by
     OpenMM when attempting to start a simulation.
     '''
-    from PyQt5.QtWidgets import QMessageBox, QPushButton
+    from Qt.QtWidgets import QMessageBox, QPushButton
     msg = QMessageBox()
     msg.setIcon(QMessageBox.Warning)
     msgtext = 'Residue {} {} of chain {} (shown) does not match any template'\

@@ -11,15 +11,10 @@ import numpy
 from math import inf, degrees, radians, pi
 from enum import IntEnum
 
-import PyQt5
-from PyQt5.QtCore import QObject, pyqtSignal
-from PyQt5.QtWidgets import QFileDialog
+from Qt.QtWidgets import QFileDialog
 
 from simtk import unit
 
-import chimerax
-
-from chimerax import clipper
 
 from chimerax.core import triggerset
 from chimerax.core.models import Drawing, Model
@@ -33,7 +28,7 @@ from .checkpoint import CheckPoint
 #from .openmm import sim_interface
 from .openmm.sim_param_mgr import SimParams
 
-from PyQt5.QtWidgets import QMessageBox
+from Qt.QtWidgets import QMessageBox
 
 OPENMM_LENGTH_UNIT =        defaults.OPENMM_LENGTH_UNIT
 OPENMM_FORCE_UNIT =         defaults.OPENMM_FORCE_UNIT
@@ -290,9 +285,9 @@ class Isolde():
         self._ui_panels = []
 
         if gui is not None:
-            from PyQt5.QtGui import QPixmap
-            from PyQt5.QtWidgets import QSplashScreen
-            from PyQt5.QtCore import Qt
+            from Qt.QtGui import QPixmap
+            from Qt.QtWidgets import QSplashScreen
+            from Qt.QtCore import Qt
             import os
 
             splash_pix = QPixmap(os.path.join(
@@ -2318,12 +2313,12 @@ class Isolde():
         cis_mask = cis_mask[iffy_mask]
 
         table.setRowCount(len(iffy))
-        from PyQt5.Qt import QColor, QBrush
-        from PyQt5.QtCore import Qt
+        from Qt.Qt import QColor, QBrush
+        from Qt.QtCore import Qt
         cis_nonpro_color = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
         cis_pro_color = QBrush(QColor(100,255,100), Qt.SolidPattern)
         twisted_color = QBrush(QColor(240, 200, 160), Qt.SolidPattern)
-        from PyQt5.QtWidgets import QTableWidgetItem
+        from Qt.QtWidgets import QTableWidgetItem
         for i, (omega, angle, cis) in enumerate(zip(iffy, angles, cis_mask)):
             res1, res2 = omega.atoms.unique_residues
             if cis:
@@ -2383,11 +2378,11 @@ class Isolde():
         iffy, scores = rota_m.non_favored_rotamers(rotas)
         order = numpy.argsort(scores)
         outlier_cutoff = rota_m.cutoffs[1]
-        from PyQt5.Qt import QColor, QBrush
-        from PyQt5.QtCore import Qt
+        from Qt.Qt import QColor, QBrush
+        from Qt.QtCore import Qt
         badColor = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
         table.setRowCount(len(iffy))
-        from PyQt5.QtWidgets import QTableWidgetItem
+        from Qt.QtWidgets import QTableWidgetItem
         for i, index in enumerate(order):
             r = iffy[index]
             score = scores[index]
@@ -2625,7 +2620,7 @@ class Isolde():
 
     def _choose_map_color(self, *_):
         v = self.iw._sim_basic_xtal_settings_map_combo_box.currentData()
-        from PyQt5.QtWidgets import QColorDialog
+        from Qt.QtWidgets import QColorDialog
         cd = QColorDialog(self.iw._map_settings_color_button)
         sa = cd.ShowAlphaChannel
         colors = []

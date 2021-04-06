@@ -80,7 +80,7 @@ class Unparameterised_Residues_Mgr:
             top, residue_templates=create_openmm_topology(residues.atoms, template_dict)
             _, ambiguous, unmatched = ff.assignTemplates(top,
                 ignoreExternalBonds=True, explicit_templates=residue_templates)
-        from PyQt5.QtWidgets import QTableWidgetItem
+        from Qt.QtWidgets import QTableWidgetItem
         table.setRowCount(len(unmatched)+len(ambiguous))
         count = 0
         for r in unmatched:
@@ -115,7 +115,7 @@ class Unparameterised_Residues_Mgr:
         tlist = self._template_list
         tlist.clear()
         self._do_for_all.setCheckState(False)
-        from PyQt5.QtWidgets import QListWidgetItem
+        from Qt.QtWidgets import QListWidgetItem
         tlist.addItem(QListWidgetItem("Matches by residue name"))
         def get_ccd_template_and_name(session, tname):
             from ..openmm.amberff.template_utils import template_name_to_ccd_name
