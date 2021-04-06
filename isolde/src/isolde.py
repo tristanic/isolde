@@ -292,18 +292,33 @@ class Isolde():
 
             splash_pix = QPixmap(os.path.join(
                 self._root_dir,'resources/isolde_splash_screen.jpg'))
-            splash = self._splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+            splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
             splash.setMask(splash_pix.mask())
             splash.show()
             # Make sure the splash screen is actually shown
-            from time import sleep
+            from time import sleep, time
             for i in range(5):
                 self.session.ui.processEvents()
-                sleep(0.01)
-            from PyQt5 import QtCore
-            # Close the splash after 5 seconds
-            QtCore.QTimer.singleShot(5000, splash.close)
-
+                sleep(0.005)
+            start_time = [time()]
+            def _splash_remove_cb(trigger_name, data, splash=splash, start_time=start_time, min_time=1):
+                from time import time
+                elapsed_time = time()-start_time[0]
+                if elapsed_time > min_time:
+                    start_time[0] = time()
+                    session.triggers.add_handler('frame drawn', _splash_fade_cb)
+                    from chimerax.core.triggerset import DEREGISTER
+                    return DEREGISTER
+            def _splash_fade_cb(trigger_name, data, splash=splash, start_time=start_time, fade_time=0.25):
+                from time import time
+                et = time()-start_time[0]
+                opacity = 1-et/fade_time
+                if opacity <= 0:
+                    splash.close()
+                    from chimerax.core.triggerset import DEREGISTER
+                    return DEREGISTER
+                splash.setWindowOpacity(opacity)
+            session.triggers.add_handler('frame drawn', _splash_remove_cb)
             self._start_gui(gui)
 
         session.isolde = self
