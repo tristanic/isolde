@@ -2329,7 +2329,7 @@ class Isolde():
         cis_mask = cis_mask[iffy_mask]
 
         table.setRowCount(len(iffy))
-        from Qt.Qt import QColor, QBrush
+        from Qt.QtGui import QColor, QBrush
         from Qt.QtCore import Qt
         cis_nonpro_color = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
         cis_pro_color = QBrush(QColor(100,255,100), Qt.SolidPattern)
@@ -2394,7 +2394,7 @@ class Isolde():
         iffy, scores = rota_m.non_favored_rotamers(rotas)
         order = numpy.argsort(scores)
         outlier_cutoff = rota_m.cutoffs[1]
-        from Qt.Qt import QColor, QBrush
+        from Qt.QtGui import QColor, QBrush
         from Qt.QtCore import Qt
         badColor = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
         table.setRowCount(len(iffy))
