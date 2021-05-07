@@ -63,8 +63,8 @@ glycam_suffix_to_ccd_name = {
     'bc':   None,
     'YN':   'PA1',  # alpha-D-glucosamine
     'Yn':   'GCS',  # beta-D-glucosamine
-    'YNP':  'PA1',  # protonated alpha-D-glucosamine
-    'YnP':  'GCS',  # protonated beta-D-glucosamine
+    #'YNP':  'PA1',  # protonated alpha-D-glucosamine
+    #'YnP':  'GCS',  # protonated beta-D-glucosamine
     'OA':   'ADA',  # alpha-D-galacturonic acid
     'OB':   'GTR',  # beta-D-galacturonic acid
     'ZB':   'BDP',  # beta-D-glucuronic acid
