@@ -3326,6 +3326,8 @@ class Isolde():
         if self.simulation_running:
             self.sim_manager.stop_sim()
 
+        self._disable_rebuild_residue_frame()
+
         # Remove all registered event handlers
         self._event_handler.remove_all_handlers()
         self._isolde_events.remove_all_handlers()
@@ -3334,6 +3336,9 @@ class Isolde():
         # self._set_chimerax_mouse_mode_panel_enabled(True)
         self._mouse_modes.remove_all_modes()
         self.triggers.activate_trigger('isolde closed', None)
+        
+        # Remove the ISOLDE object from the session
+        delattr(self.session, 'isolde')
 
 
 
