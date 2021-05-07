@@ -17,6 +17,12 @@ def refmac_distance_restraints(session, model, distance_cutoff=4.5, include_wate
         file_name='RESTRAINTS.txt'):
     import numpy
     m = model
+    from chimerax.atomic import AtomicStructures
+    if isinstance(m, AtomicStructures):
+        if len(m) != 1:
+            from chimerax.core.errors import UserError
+            raise UserError('Please specify a single atomic model!')
+        m = m[0]
     residues = m.residues
     if not include_waters:
         residues = residues[residues.names !='HOH']
@@ -46,25 +52,33 @@ def refmac_distance_restraints(session, model, distance_cutoff=4.5, include_wate
                     continue
                 rfile.write(refmac_distance_restraint(atom, atom2)+'\n')
                 seen.add(pair)
+    import os
+    session.logger.info(
+        f'Top-out distance restraints file for REFMAC5 written to {file_name}. '
+        f'This is essentially equivalent to a ProSMART restraints file, restraining '
+        f'interatomic distances to their current values. Use it in the "External restraints" '
+        f'section of a Refmac5 job in the CCP-EM GUI, or at the command line as: \n'
+        f'refmac5 {{all other arguments}} < {file_name}'
+    )
 
 
 def register_ccp4_commands(logger):
     from chimerax.core.commands import (
         register, CmdDesc,
-        ModelArg,
-        StringArg, BoolArg, FloatArg
-    )             
+        FileNameArg, BoolArg, FloatArg
+    )
+    from chimerax.atomic import AtomicStructuresArg             
 
     cmd_desc = CmdDesc(
         synopsis = "Write REFMAC input to restrain a model to its current geometry",
         required = [
-            ('model', ModelArg),
+            ('model', AtomicStructuresArg),
         ],
         keyword = [
             ('distance_cutoff', FloatArg),
             ('include_waters', BoolArg),
-            ('file_name', StringArg)
+            ('file_name', FileNameArg)
         ]
     )
-    register('writeRefmacRestraints', cmd_desc, refmac_distance_restraints, logger=logger)
+    register('isolde write refmacRestraints', cmd_desc, refmac_distance_restraints, logger=logger)
 

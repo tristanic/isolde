@@ -366,3 +366,7 @@ def register_isolde(logger):
     register_building_commands(logger)
     from chimerax.isolde.openmm.cmd import register_ff_cmd
     register_ff_cmd(logger)
+    from chimerax.isolde.output.refinement.phenix.cmd import register_phenix_commands
+    register_phenix_commands(logger)
+    from chimerax.isolde.output.refinement.ccp4 import register_ccp4_commands
+    register_ccp4_commands(logger)
