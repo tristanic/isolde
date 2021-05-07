@@ -74,14 +74,21 @@ def delayed_reaction(triggerset, trigger_name, initiator_func, initiator_args, r
             self.tf = ready_test_func
             self.ff = final_func
             self.ff_args = final_func_args
-            triggerset.add_handler(trigger_name, self.callback)
+            self.triggerset = triggerset
+            self._handler = triggerset.add_handler(trigger_name, self.callback)
         def callback(self, *_):
             if self.tf is None or self.tf():
                 self.ff(*self.ff_args)
                 from chimerax.core.triggerset import DEREGISTER
                 return DEREGISTER
+        def cancel(self):
+            if self._handler is not None:
+                self.triggerset.remove_handler(self._handler)
+                self._handler = None
 
     cb = _cb(triggerset, trigger_name, ready_test_func, final_func, final_func_args)
+    return cb
+
 
 class Delayed_Reaction_Tester:
     def __init__(self):
