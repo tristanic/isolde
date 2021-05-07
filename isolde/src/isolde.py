@@ -2962,7 +2962,7 @@ class Isolde():
                     ub = frag_nres
                 sel_mask[lb:ub] = True
             frag[sel_mask].atoms.selected = True
-        return selected_atoms(self.session)
+        return sm.atoms[sm.atoms.selecteds]
 
     ##############################################################
     # Simulation on-the-fly control functions
