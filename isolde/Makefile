@@ -88,14 +88,14 @@ SRCS = $(SOURCE)/*.py $(SOURCE)/*.cpp
 
 wheel $(WHEEL): bundle_info.xml $(SRCS)
 	$(CHIMERAX_EXE) -m PyQt5.pyrcc_main -o src/resources/resources_rc.py src/resources/resources.qrc; \
-	$(CHIMERAX_EXE) --nogui --cmd "devel build . ; exit"
+	$(CHIMERAX_EXE) --nogui --safemode --cmd "devel build . ; exit"
 
 install app-install: $(WHEEL)
 	$(CHIMERAX_EXE) -m PyQt5.pyrcc_main -o src/resources/resources_rc.py src/resources/resources.qrc; \
-	$(CHIMERAX_EXE) --nogui --cmd "devel install . ; exit"
+	$(CHIMERAX_EXE) --nogui --safemode --cmd "devel install . ; exit"
 
 uninstall app-uninstall:	$(WHEEL)
-	$(CHIMERAX_EXE) --nogui --cmd "toolshed uninstall $(BUNDLE_BASE_NAME) ; exit"
+	$(CHIMERAX_EXE) --nogui --safemode --cmd "toolshed uninstall $(BUNDLE_BASE_NAME) ; exit"
 
 docs:
 	$(CHIMERAX_EXE) -m sphinx docs/source src/docs/user
@@ -107,6 +107,6 @@ debug:
 	$(CHIMERAX_EXE) --debug
 
 clean:
-	$(CHIMERAX_EXE) --nogui --cmd "devel clean . ; exit"
+	$(CHIMERAX_EXE) --nogui --safemode --cmd "devel clean . ; exit"
 
 .PHONY: docs
