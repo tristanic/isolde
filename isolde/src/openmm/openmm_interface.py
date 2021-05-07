@@ -1628,7 +1628,7 @@ class Sim_Handler:
 
     def _minimize_and_go(self):
         th = self.thread_handler
-        delayed_reaction(self.session.triggers, 'new frame', th.minimize, [],
+        self._delayed_reaction_handler = delayed_reaction(self.session.triggers, 'new frame', th.minimize, [],
             th.thread_finished, self._update_coordinates_and_repeat, [True])
 
     def _repeat_step(self):
@@ -1650,7 +1650,7 @@ class Sim_Handler:
             f = th.step
             f_args = (params.sim_steps_per_gui_update,)
             final_args = []
-        delayed_reaction(self.session.triggers, 'new frame', f, f_args,
+        self._delayed_reaction_handler = delayed_reaction(self.session.triggers, 'new frame', f, f_args,
             th.thread_finished, self._update_coordinates_and_repeat, final_args)
         self._unstable = False
 
@@ -1692,6 +1692,7 @@ class Sim_Handler:
         if reinit_vels:
             th.reinitialize_velocities()
         if self._stop:
+            self._delayed_reaction_handler.cancel()
             self._thread_handler.delete()
             self._thread_handler = None
             self._simulation = None
@@ -1784,6 +1785,8 @@ class Sim_Handler:
         self._stop = True
         self._stop_reason = reason
         if self.pause:
+            if hasattr(self, '_delayed_reaction_handler'):
+                self._delayed_reaction_handler.cancel()
             self._thread_handler.delete()
             self._thread_handler = None
             self._simulation = None
