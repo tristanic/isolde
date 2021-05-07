@@ -102,7 +102,6 @@ public:
 
 
     const Chiral_Def& get_chiral_def(const std::string& resname, const std::string& atom_name);
-    const Chiral_Def& get_chiral_def(const ResName& resname, const AtomName& atom_name);
 
     //! Retrieve or create a ChiralCenter (if possible) for the given atom
     /*! A ChiralCenter will only be created if a definition exists for the

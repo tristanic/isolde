@@ -61,11 +61,6 @@ const Chiral_Def& ChiralMgr::get_chiral_def(
     }
 }
 
-const Chiral_Def& ChiralMgr::get_chiral_def(const ResName& resname, const AtomName& atom_name)
-{
-    return get_chiral_def(std::string(resname), std::string(atom_name));
-}
-
 
 ChiralCenter* ChiralMgr::get_chiral(Atom* center, bool create)
 {
