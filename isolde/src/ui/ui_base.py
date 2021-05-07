@@ -9,7 +9,7 @@
 
 
 class UI_Panel_Base:
-    def __init__(self, isolde, main_frame):
+    def __init__(self, session, isolde, main_frame):
         self.isolde = isolde
         self.session = session
         self.main_frame = main_frame

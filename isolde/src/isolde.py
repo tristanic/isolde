@@ -636,6 +636,13 @@ class Isolde():
         iw._sim_basic_xtal_settings_spotlight_radius_spinbox.valueChanged.connect(
             self._change_spotlight_radius
         )
+        from .ui.sim_fidelity_panel import SimFidelityPanel
+        self._sim_fidelity_panel = SimFidelityPanel(self.session, self, iw._sim_fidelity_frame,
+            [
+                iw._sim_fidelity_low_rb,
+                iw._sim_fidelity_med_rb,
+                iw._sim_fidelity_high_rb
+            ])
         # Run all connected functions once to initialise
         self._change_force_field()
         self._change_selected_model(force=True)

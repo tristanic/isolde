@@ -11,10 +11,10 @@
 from .ui_base import UI_Panel_Base
 
 class UI_Live_Map_Controls(UI_Panel_Base):
-    def __init__(self, isolde, main_frame,
+    def __init__(self, session, isolde, main_frame,
         live_recalc_checkbox, manual_recalc_button,
         update_sim_potential_button):
-        super().__init__(isolde, main_frame)
+        super().__init__(session, isolde, main_frame)
         self._live_checkbox = live_recalc_checkbox
         self._recalc_button = manual_recalc_button
         self._update_sim_button = update_sim_potential_button

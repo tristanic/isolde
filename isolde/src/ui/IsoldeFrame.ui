@@ -361,12 +361,12 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>0</y>
+                  <y>-369</y>
                   <width>566</width>
-                  <height>741</height>
+                  <height>792</height>
                  </rect>
                 </property>
-                <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0">
+                <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0">
                  <property name="spacing">
                   <number>1</number>
                  </property>
@@ -1098,6 +1098,77 @@ border: 1px;
                   </widget>
                  </item>
                  <item>
+                  <widget class="QFrame" name="_sim_fidelity_frame">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>50</height>
+                    </size>
+                   </property>
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                   <layout class="QHBoxLayout" name="horizontalLayout_50">
+                    <item>
+                     <widget class="QLabel" name="label_20">
+                      <property name="text">
+                       <string>Sim Fidelity</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <spacer name="horizontalSpacer_37">
+                      <property name="orientation">
+                       <enum>Qt::Horizontal</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>40</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                     </spacer>
+                    </item>
+                    <item>
+                     <widget class="QRadioButton" name="_sim_fidelity_low_rb">
+                      <property name="toolTip">
+                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lowest fidelity, highest speed - useful for low-end GPUs when working in good density. Nonbonded interactions cutoff at 9 Å; vacuum electrostatics. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                      </property>
+                      <property name="text">
+                       <string>Quick</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QRadioButton" name="_sim_fidelity_med_rb">
+                      <property name="toolTip">
+                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Moderate fidelity, high speed. Nonbonded interactions cutoff at 9 Å; implicit solvent electrostatics. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                      </property>
+                      <property name="text">
+                       <string>Medium</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QRadioButton" name="_sim_fidelity_high_rb">
+                      <property name="toolTip">
+                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Best quality, recommended when using a high-end GPU. Nonbonded interactions cutoff at 17 Å; implicit solvent electrostatics.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                      </property>
+                      <property name="text">
+                       <string>High</string>
+                      </property>
+                      <property name="checked">
+                       <bool>true</bool>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
                   <spacer name="verticalSpacer">
                    <property name="orientation">
                     <enum>Qt::Vertical</enum>
@@ -1117,6 +1188,7 @@ border: 1px;
                 <zorder>_force_field_selection_frame</zorder>
                 <zorder>_sim_platform_frame</zorder>
                 <zorder>_sim_basic_xtal_settings_general_settings_frame</zorder>
+                <zorder>_sim_fidelity_frame</zorder>
                </widget>
               </widget>
              </item>
@@ -5053,6 +5125,7 @@ background-color: rgb(5, 200, 0);
  </widget>
  <resources>
   <include location="../resources/resources.qrc"/>
+  <include location="../../../../../.designer/resources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>
