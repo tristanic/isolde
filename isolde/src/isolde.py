@@ -299,14 +299,14 @@ class Isolde():
             from time import sleep, time
             for i in range(5):
                 self.session.ui.processEvents()
-                sleep(0.005)
+                sleep(0.01)
             start_time = [time()]
             def _splash_remove_cb(trigger_name, data, splash=splash, start_time=start_time, min_time=1):
                 from time import time
                 elapsed_time = time()-start_time[0]
                 if elapsed_time > min_time:
                     start_time[0] = time()
-                    session.triggers.add_handler('frame drawn', _splash_fade_cb)
+                    session.triggers.add_handler('new frame', _splash_fade_cb)
                     from chimerax.core.triggerset import DEREGISTER
                     return DEREGISTER
             def _splash_fade_cb(trigger_name, data, splash=splash, start_time=start_time, fade_time=0.25):
@@ -318,7 +318,7 @@ class Isolde():
                     from chimerax.core.triggerset import DEREGISTER
                     return DEREGISTER
                 splash.setWindowOpacity(opacity)
-            session.triggers.add_handler('frame drawn', _splash_remove_cb)
+            session.triggers.add_handler('new frame', _splash_remove_cb)
             self._start_gui(gui)
 
         session.isolde = self
