@@ -43,7 +43,6 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
     import numpy
     fm = us[0]
     m = target_model
-    tpbg = m.pseudobond_group('missing structure')
     residues = Residues(sorted(residues, key=lambda r: (r.chain_id, r.number, r.insertion_code)))
     atoms = residues.atoms
     coords = atoms.coords
@@ -155,16 +154,11 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
                 if precedes is not None:
                     if precedes.chain_id == cid and precedes.polymer_type == Residue.PT_AMINO:
                         ratoms = prev_res.atoms.merge(precedes.atoms)
-                        tpbg.pseudobonds[tpbg.pseudobonds.between_atoms(ratoms)].delete()
                 pc = prev_res.find_atom('C')
                 nn = nr.find_atom('N')
-                if pc and nn:
-                    tpbg.new_pseudobond(pc, nn)
                 if precedes is not None and precedes.polymer_type==Residue.PT_AMINO and precedes.chain_id==cid:
                     nc = nr.find_atom('C')
                     pn = precedes.find_atom('N')
-                    if nc and pn:
-                        tpbg.new_pseudobond(nc, pn)
         prev_res = nr
     new_atoms = Atoms(list(atom_map.values()))
     if transform is not None:
@@ -179,15 +173,12 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         add_bond(anchor_atom, link_atom)
         for r in new_atoms.unique_residues:
             merged_atoms = anchor_n.atoms.merge(r.atoms)
-            tpbg.pseudobonds[tpbg.pseudobonds.between_atoms(merged_atoms)].delete()
     if anchor_c:
         anchor_atom = anchor_c.find_atom('N')
         link_atom = atom_map[protein_residues[-1].find_atom('C')]
         _remove_excess_terminal_atoms(anchor_atom)
         _remove_excess_terminal_atoms(link_atom)
         add_bond(anchor_atom, link_atom)
-        for r in new_atoms.unique_residues:
-            tpbg.pseudobonds[tpbg.pseudobonds.between_atoms(anchor_c.atoms.merge(r.atoms))].delete()
     new_atoms.displays=True
     return new_atoms
 
