@@ -84,7 +84,7 @@ with the surroundings.
       <Library>pyinstance</Library>
       <CompileArgument platform="mac">-mmacosx-version-min=10.12</CompileArgument>
       <!-- <CompileArgument>-fno-stack-protector</CompileArgument> -->
-      <IncludeDir platform="mac">/Users/tic20/anaconda3/envs/openmm74/include</IncludeDir>
+      <IncludeDir platform="mac">/opt/openmm750/include</IncludeDir>
       <IncludeDir platform="linux">/opt/openmm750/include</IncludeDir>
       <IncludeDir platform="windows">C:\Users\tic20\Anaconda3\envs\openmm74\include</IncludeDir>
       <IncludeDir>src/deps/lbfgs/include</IncludeDir>
