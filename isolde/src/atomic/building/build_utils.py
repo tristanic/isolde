@@ -100,11 +100,12 @@ def set_his_protonation_state(residue, position='ND'):
     from chimerax.atomic.struct_edit import add_dihedral_atom
     he2 = residue.find_atom('HE2')
     hd1 = residue.find_atom('HD1')
+    position = position.upper()
     if position == 'ND' and hd1 and not he2:
         return
     if position=='NE' and he2 and not hd1:
         return
-    if position=='both' and he2 and hd1:
+    if position=='BOTH' and he2 and hd1:
         return
     if he2:
         he2.delete()
