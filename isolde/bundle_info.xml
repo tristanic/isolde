@@ -86,7 +86,7 @@ with the surroundings.
       <!-- <CompileArgument>-fno-stack-protector</CompileArgument> -->
       <IncludeDir platform="mac">/opt/openmm750/include</IncludeDir>
       <IncludeDir platform="linux">/opt/openmm750/include</IncludeDir>
-      <IncludeDir platform="windows">C:\Users\tic20\Anaconda3\envs\openmm74\include</IncludeDir>
+      <IncludeDir platform="windows">C:\opt\openmm750\Library\include</IncludeDir>
       <IncludeDir>src/deps/lbfgs/include</IncludeDir>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
       <SourceFile>src/openmm/custom_forces.cpp</SourceFile>
