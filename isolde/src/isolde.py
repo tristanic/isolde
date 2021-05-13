@@ -2888,6 +2888,7 @@ class Isolde():
         sh.triggers.add_handler('sim terminated', self._sim_end_cb)
         sh.triggers.add_handler('sim paused', self._sim_pause_cb)
         sh.triggers.add_handler('sim resumed', self._sim_resume_cb)
+        self.session.logger.info('ISOLDE: started sim')
 
     def _sim_end_cb(self, *_):
         self._update_menu_after_sim()
@@ -2907,6 +2908,7 @@ class Isolde():
                     xmapset.recalc_needed()
         self._update_sim_status_indicator()
         self._sim_manager = None
+        self.session.logger.info('ISOLDE: stopped sim')
         # self.iw._sim_running_indicator.setVisible(False)
 
     def _update_sim_status_indicator(self):
@@ -2999,11 +3001,13 @@ class Isolde():
         return True
 
     def _sim_pause_cb(self, *_):
+        self.session.logger.info('ISOLDE: paused sim')
         self._update_sim_control_button_states()
         self._update_sim_status_indicator()
         self.triggers.activate_trigger('simulation paused', None)
 
     def _sim_resume_cb(self, *_):
+        self.session.logger.info('ISOLDE: resumed sim')
         self._update_sim_control_button_states()
         self._update_sim_status_indicator()
         self.triggers.activate_trigger('simulation resumed', None)

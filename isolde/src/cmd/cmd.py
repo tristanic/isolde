@@ -8,11 +8,15 @@
 
 from chimerax.core.errors import UserError
 
+def block_if_sim_running(session):
+    if hasattr(session, 'isolde') and session.isolde.simulation_running:
+        raise UserError('This command is not available when a simulation is running!')
+
 def get_singleton(session, create=True):
     if not session.ui.is_gui:
         return None
     from chimerax.core import tools
-    from .tool import ISOLDE_ToolUI
+    from ..tool import ISOLDE_ToolUI
     return tools.get_singleton(session, ISOLDE_ToolUI, 'ISOLDE', create=create)
 
 
@@ -59,7 +63,7 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
     valid_commands = ('start', 'pause', 'checkpoint', 'revert', 'stop')
     log = session.logger
     if cmd not in valid_commands:
-        raise TypeError('Unrecognised command! Should be one of {}'.format(
+        raise UserError('Unrecognised command! Should be one of {}'.format(
             ', '.join(valid_commands)
         ))
     if cmd != 'start' and atoms is not None:
@@ -70,7 +74,7 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         if atoms is None:
             model = isolde.selected_model
             if model is None:
-                raise RuntimeError('You must load a model before starting a simulation!')
+                raise UserError('You must load a model before starting a simulation!')
             atoms = model.atoms
 
         # from chimerax.core.atomspec import AtomSpec
@@ -79,8 +83,10 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
 
 
         us = atoms.unique_structures
+        if len(us) == 0:
+            raise UserError('No atoms selected!')
         if len(us) != 1:
-            raise RuntimeError('All atoms must be from the same model!')
+            raise UserError('All atoms must be from the same model!')
         model = us[0]
         isolde.change_selected_model(model)
         session.selection.clear()
@@ -143,6 +149,13 @@ def isolde_ignore(session, residues=None, ignore=True):
                 len([r for r in m.residues if r.isolde_ignore]), m.id_string
             ))
 
+def incr_b_factor(session, atoms, b_add):
+    B_MAX = 500
+    if any(atoms.bfactors+b_add < 0):
+        raise UserError('Applying this command would reduce the B-factor of at least one atom to below zero.')
+    atoms.bfactors += b_add
+    atoms[atoms.bfactors > B_MAX].bfactors = B_MAX 
+
 def isolde_stop_ignoring(session, residues=None):
     isolde_ignore(session, residues, ignore=False)
 
@@ -175,7 +188,7 @@ def isolde_demo(session, demo_name = None, model_only=False, start_isolde=True):
     kwargs = {}
     if 'model_only' in kwarg_names:
         kwargs['model_only']=model_only
-    from . import isolde
+    from .. import isolde
     load_fn = getattr(isolde, load_fn_name)
     load_fn(session, **kwargs)
     session.logger.info("Loaded " + description)
@@ -202,7 +215,7 @@ def isolde_step(session, residue=None, view_distance=None, interpolate_frames=No
                 m = None
         if m is None:
             raise UserError('No atomic structures are open!')
-    from .navigate import get_stepper
+    from ..navigate import get_stepper
     rs = get_stepper(m)
     if view_distance is not None:
         rs.view_distance = view_distance
@@ -240,7 +253,7 @@ def isolde_jump(session, direction="next"):
     from chimerax.core.errors import UserError
     if m is None:
         raise UserError("Please open a model first!")
-    from .navigate import get_stepper
+    from ..navigate import get_stepper
     rs = get_stepper(m)
     rs.incr_chain(direction)
 
@@ -334,6 +347,16 @@ def register_isolde(logger):
             ]
         )
         register('isolde stepto', desc, isolde_step, logger=logger)
+    
+    def register_isolde_change_b():
+        desc = CmdDesc(
+            synopsis=('Change the B-factors of a group of atoms by the specified amount'),
+            required=[
+                ('atoms', AtomsArg),
+                ('b_add', FloatArg)
+            ]
+        )
+        register('isolde adjust bfactors', desc, incr_b_factor, logger=logger)
 
     def register_isolde_jump():
         desc = CmdDesc(
@@ -345,6 +368,12 @@ def register_isolde(logger):
         )
         register('isolde jumpto', desc, isolde_jump, logger=logger)
 
+    def register_isolde_shorthand():
+        desc = CmdDesc(
+            synopsis=('Initialise two-character aliases for commonly-used ISOLDE commands')
+        )
+        from .shorthand import register_isolde_shorthand_commands
+        register('isolde shorthand', desc, register_isolde_shorthand_commands, logger=logger)
 
     register_isolde_start()
     register_isolde_set()
@@ -356,6 +385,8 @@ def register_isolde(logger):
     register_isolde_demo()
     register_isolde_step()
     register_isolde_jump()
+    register_isolde_change_b()
+    register_isolde_shorthand()
     from chimerax.isolde.remote_control import register_remote_commands
     register_remote_commands(logger)
     from chimerax.isolde.restraints.cmd import register_isolde_restrain

@@ -100,11 +100,12 @@ def set_his_protonation_state(residue, position='ND'):
     from chimerax.atomic.struct_edit import add_dihedral_atom
     he2 = residue.find_atom('HE2')
     hd1 = residue.find_atom('HD1')
+    position = position.upper()
     if position == 'ND' and hd1 and not he2:
         return
     if position=='NE' and he2 and not hd1:
         return
-    if position=='both' and he2 and hd1:
+    if position=='BOTH' and he2 and hd1:
         return
     if he2:
         he2.delete()
@@ -128,7 +129,7 @@ def set_his_protonation_state(residue, position='ND'):
         atom.occupancy = ne2.occupancy
 
 def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
-        chain_id=None, number=None, center=None, insertion_code=' ', b_factor=50,
+        chain_id=None, number=None, center=None, insertion_code=' ', add_b_factor=0,
         occupancy=1, phi=-135, psi=135):
     session = model.session
     if (not chain_id or not number or not center) and (not prev_res and not next_res):
@@ -138,8 +139,10 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
         raise TypeError('Cannot specify both previous and next residues!')
     other_atom = None
     insertion_point = None
-
+    import numpy
     if prev_res:
+        ref_res = prev_res
+        b_factor = prev_res.atoms[numpy.in1d(prev_res.atoms.names, ('N','CA','C','O','CB'))].bfactors.mean()+add_b_factor
         pri = model.residues.index(prev_res)
         if pri > 0 and pri < len(model.residues)-1:
             insertion_point = model.residues[pri+1]
@@ -148,17 +151,23 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
             if n.residue != prev_res:
                 raise TypeError('This residue already has another bonded to its '
                     'C terminus!')
+        if chain_id is not None:
+            session.logger.warning('AddAA: chain_id argument is ignored when adding to an existing residue.')
         chain_id = prev_res.chain_id
         oxt = prev_res.find_atom('OXT')
         if oxt is not None:
             oxt.delete()
     elif next_res:
+        ref_res = next_res
+        b_factor = next_res.atoms[numpy.in1d(next_res.atoms.names, ('N','CA','C','O','CB'))].bfactors.mean()+add_b_factor
         insertion_point = next_res
         natom = next_res.find_atom('N')
         for n in natom.neighbors:
             if n.residue != next_res:
                 raise TypeError('This residue already has another bonded to its '
                     'N terminus!')
+        if chain_id is not None:
+            session.logger.warning('AddAA: chain_id argument is ignored when adding to an existing residue.')
         chain_id = next_res.chain_id
         for hname in ('H2', 'H3'):
             h = next_res.find_atom(hname)
@@ -189,10 +198,12 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
     # Translate and rotate residue to (roughly) match the desired position
     if not next_res and not prev_res:
         r.atoms.coords += numpy.array(center) - r.atoms.coords.mean(axis=0)
+        b_factor = max(add_b_factor, 5)
     else:
         from chimerax.geometry import align_points
         from chimerax.atomic.struct_edit import add_bond
         if prev_res:
+            correct_o_position(prev_res, psi)
             add_bond(r.find_atom('N'), prev_res.find_atom('C'))
             n_pos = _find_next_N_position(prev_res)
             ca_pos = _find_next_CA_position(n_pos, prev_res)
@@ -203,12 +214,14 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
             add_bond(r.find_atom('C'), next_res.find_atom('N'))
             c_pos = _find_prev_C_position(next_res, psi)
             ca_pos = _find_prev_CA_position(c_pos, next_res)
-            o_pos = _find_prev_O_position(c_pos, next_res)
-            target_coords = numpy.array([c_pos, ca_pos, o_pos])
-            align_coords = numpy.array([r.find_atom(a).coord for a in ['C', 'CA', 'O']])
+            #o_pos = _find_prev_O_position(c_pos, next_res)
+            n_pos = _find_prev_N_position(c_pos, ca_pos, next_res, psi)
+            target_coords = numpy.array([c_pos, ca_pos, n_pos])
+            align_coords = numpy.array([r.find_atom(a).coord for a in ['C', 'CA', 'N']])
 
         tf = align_points(align_coords, target_coords)[0]
         r.atoms.coords = tf*r.atoms.coords
+        correct_o_position(r, psi)
     if r.name in ('GLU', 'ASP'):
         fix_amino_acid_protonation_state(r)
     if r.name == 'PRO':
@@ -217,9 +230,19 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
     r.atoms.bfactors = b_factor
     r.atoms.occupancies = occupancy
 
+    from . import copy_atom_style_from
+    copy_atom_style_from(session, r.atoms, ref_res)
+    model.atoms.selecteds=False
+    r.atoms.selecteds=True
     return r
 
-
+def correct_o_position(res, psi):
+    n, ca, c, o = [res.find_atom(name) for name in ['N', 'CA', 'C', 'O']]
+    from chimerax.geometry import rotation, dihedral
+    d = dihedral(*[a.coord for a in (n, ca, c, o)])
+    r = rotation(c.coord-ca.coord, psi+180-d, center=c.coord)
+    from chimerax.atomic import Atoms
+    Atoms([o]).transform(r)
 
 def _find_next_N_position(prev_res):
     from chimerax.atomic.struct_edit import find_pt
@@ -275,6 +298,12 @@ def _find_prev_O_position(c_pos, next_res):
     ca = next_res.find_atom('CA')
     return find_pt(c_pos, *[a.coord for a in (n, ca)], bond_length, angle, dihedral)
 
+def _find_prev_N_position(c_pos, ca_pos, next_res, psi):
+    from chimerax.atomic.struct_edit import find_pt
+    nn = next_res.find_atom('N')
+    bond_length = 1.44
+    angle = 120
+    return find_pt(ca_pos, c_pos, nn.coord, bond_length, angle, psi)
 
 def current_and_possible_disulfides(model, cutoff_distance=3.0):
     import numpy

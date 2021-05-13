@@ -38,7 +38,7 @@ def prepare_isolde_menu(session):
                 menu_labels = os.path.normpath(e_path[0]).split(os.sep)
                 formatted_labels = ['ISOLDE']
                 for label in menu_labels:
-                    if len(label):
+                    if len(label) and label != '.':
                         formatted_labels.append(format_label(label))
                 menu_entry = format_label(file)
                 # def f(session=session):
