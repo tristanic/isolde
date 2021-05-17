@@ -20,14 +20,23 @@ aliases = (
 
 )
 
+global _shorthand_initialized
+_shorthand_initialized = False
+
 def register_isolde_shorthand_commands(session):
+    global _shorthand_initialized
     from chimerax.core.commands import create_alias
-    log_string = ('<Pre>Initialising ISOLDE-specific command aliases:\n'
-                  'Alias\tEquivalent full command\n'
-                  '-------------------------------------------------\n'
+    if not _shorthand_initialized:
+        log_string = ('<Pre>Initialising ISOLDE-specific command aliases:\n')
+    else:
+        log_string = ('<Pre>Registered ISOLDE-specific command aliases:\n')
+    log_string += ('Alias\tEquivalent full command\n'
+                   '-------------------------------------------------\n'
     )
     for (alias, command) in aliases:
-        create_alias(alias, command, logger=session.logger)
+        if not _shorthand_initialized:
+            create_alias(alias, command, logger=session.logger)
         log_string += f'{alias}\t{command}\n'.replace('$*', f'{{arguments}}')
     log_string += '</Pre>'
     session.logger.info(log_string, is_html=True)
+    _shorthand_initialized = True
