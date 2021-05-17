@@ -18,7 +18,7 @@ def write_real_space_refine_defaults(session, model, volume, resolution, file_na
     if not include_hydrogens:
         sel_mask = model.atoms.selecteds
         model.atoms.selecteds=False
-        model.atoms[model.atoms.element_numbers != 'H'].selecteds=True
+        model.atoms[model.atoms.element_names != 'H'].selecteds=True
         sel_text = 'sel true'
     else:
         sel_text = ''

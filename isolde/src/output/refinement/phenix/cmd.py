@@ -3,17 +3,14 @@ from chimerax.core.commands import (
     FloatArg, IntArg, BoolArg, FileNameArg,
     
 )
-from chimerax.atomic import AtomicStructuresArg
+from chimerax.atomic import AtomicStructuresArg, StructureArg
 from chimerax.map import MapArg
 from chimerax.core.errors import UserError
 
-def write_rsr_cmd(session, model, volume, resolution, file_name=None, 
+def write_rsr_cmd(session, model, resolution, volume, file_name=None, 
         restrain_coordination_sites=False,
         restrain_positions=False,
         include_hydrogens=False):
-    if len(model) != 1:
-        raise UserError('You must specify exactly one atomic model!')
-    model = model[0]
     from .real_space_refine_input import write_real_space_refine_defaults
     write_real_space_refine_defaults(
         session, model, volume, resolution, file_name=file_name,
@@ -28,9 +25,6 @@ def write_phenix_refine_cmd(session, model, file_name=None,
         num_processors=1,
         num_macrocycles=6,
         nqh_flips=True):
-    if len(model) != 1:
-        raise UserError('You must specify exactly one atomic model!')
-    model = model[0]
     from chimerax.clipper import get_symmetry_handler
     sh = get_symmetry_handler(model, create=False)
     crystal_error_str = 'Model must be a crystal structure initialised in Clipper with experimental data!'
@@ -50,9 +44,9 @@ def write_phenix_refine_cmd(session, model, file_name=None,
 def register_write_phenix_rsr(logger):
     desc = CmdDesc(
         required=[
-            ('model', AtomicStructuresArg),
+            ('model', StructureArg),
+            ('resolution', FloatArg),
             ('volume', MapArg),
-            ('resolution', FloatArg)
         ],
         keyword=[
             ('file_name', FileNameArg),
@@ -66,7 +60,7 @@ def register_write_phenix_rsr(logger):
 def register_write_phenix_refine(logger):
     desc = CmdDesc(
         required=[
-            ('model', AtomicStructuresArg),
+            ('model', StructureArg),
         ],
         keyword=[
             ('file_name', FileNameArg),

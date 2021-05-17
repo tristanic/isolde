@@ -27,12 +27,11 @@ def place_metal_at_coord(model, chain_id, residue_number, residue_name, atom_nam
     if element_name is None:
         element_name = atom_name.title()
     from chimerax.atomic import Element
+    from chimerax.atomic.struct_edit import add_atom
     e = Element.get_element(element_name)
     r = model.new_residue(residue_name, chain_id, residue_number)
-    a = model.new_atom(atom_name, e)
-    a.coord = coord
-    a.bfactor=bfactor
-    r.add_atom(a)
+    add_atom(atom_name, e, r, coord, bfactor=bfactor)
+    return r
 
 def place_water(session, model=None, position=None, bfactor=None, chain=None,
         distance_cutoff=3.0, sim_settle=True):
@@ -174,12 +173,9 @@ def new_residue_from_template(model, template, chain_id, center,
     tatom_to_atom = {}
     r = model.new_residue(template.name, chain_id, residue_number,
         insert=insert_code, precedes=precedes)
-    from chimerax.atomic.struct_edit import add_bond
+    from chimerax.atomic.struct_edit import add_bond, add_atom
     for i, ta in enumerate(template.atoms):
-        a = tatom_to_atom[ta] = model.new_atom(ta.name, ta.element)
-        a.coord = t_coords[i]
-        a.bfactor = b_factor
-        r.add_atom(a)
+        a = tatom_to_atom[ta] = add_atom(ta.name, ta.element, r, t_coords[i], bfactor=b_factor)
         for tn in ta.neighbors:
             n = tatom_to_atom.get(tn, None)
             if n is not None:
