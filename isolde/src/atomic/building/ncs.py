@@ -19,10 +19,21 @@ def create_all_ncs_copies(model, transforms):
     chain_ids = model.residues.unique_chain_ids
     residues = model.residues
     chains = [residues[residues.chain_ids==cid] for cid in chain_ids]
-    for tf in transforms:
-        if not tf.is_identity():
-            for chain in chains:
-                create_ncs_copy(model, chain, tf)
+    import numpy
+    from chimerax.atomic import Residue
+    # Do polymeric chains first so they take precedence for assigning new chain IDs
+    polymeric_chains = []
+    non_polymeric_chains = []
+    for c in chains:
+        if numpy.any(c.polymer_types!=Residue.PT_NONE):
+            polymeric_chains.append(c)
+        else:
+            non_polymeric_chains.append(c)
+    for chains in (polymeric_chains, non_polymeric_chains):
+        for tf in transforms:
+            if not tf.is_identity():
+                for chain in chains:
+                    create_ncs_copy(model, chain, tf)
 
 def apply_strict_ncs(template_atoms, ncs_map):
     '''
