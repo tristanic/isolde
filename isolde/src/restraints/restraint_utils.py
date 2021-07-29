@@ -212,6 +212,7 @@ def restrain_ca_distances_to_template(template_residues, restrained_residues,
             dr.target = distance(query_coord[0], template_coords[ind])
             dr.enabled = True
 
+
 def restrain_small_ligands(model, distance_cutoff=4, heavy_atom_limit=3, spring_constant=5000,
     bond_to_carbon=False):
     '''
@@ -395,7 +396,8 @@ def _get_template_alignment(template_residues, restrained_residues,
 def restrain_atom_distances_to_template(session, template_residues, restrained_residues,
     protein=True, nucleic=True, custom_atom_names=[],
     distance_cutoff=8, alignment_cutoff=5, well_half_width = 0.05,
-    kappa = 5, tolerance = 0.025, fall_off = 4, display_threshold=0):
+    kappa = 5, tolerance = 0.025, fall_off = 4, display_threshold=None,
+    adjust_for_confidence=False, confidence_type='plddt'):
     r'''
     Creates a "web" of adaptive distance restraints between nearby atoms,
     restraining one set of residues to the same spatial organisation as another.
@@ -448,7 +450,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
               bottom" of the restraint profile. If
               :math:`abs(distance-target) < tolerance * target`,
               no restraining force will be applied.
-        * fall_off (default = 6):
+        * fall_off (default = 4):
             - Sets the rate at which the energy function will fall off when the
               distance deviates strongly from the target, as a function of the
               target distance. The exponent on the energy term at large
@@ -459,6 +461,14 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
         * display_threshold (default = 0):
             - deviation from (target +- tolerance) as a fraction of
               :attr:`well_half_width` below which restraints will be hidden.
+        * adjust_for_confidence (default = False):
+            - if true, interpret B-factors of the template atoms as a confidence score, the 
+              definition of which is controlled by :attr:`confidence_type`, and adjust 
+              :attr:`kappa`, :attr:`tolerance` and :attr:`fall_off` according to the mean 
+              confidence for each restrained atom pair.
+        * confidence_type (default = "plddt"):
+            - the type of confidence score used. Currently only "plddt" (predicted local distance 
+              difference test) is supported. This is the scoring scheme used by AlphaFold2.
     '''
     from chimerax.std_commands.align import IterationError
     from chimerax.isolde import session_extensions as sx
@@ -483,9 +493,8 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
     log = restrained_model.session.logger
 
     adrm = sx.get_adaptive_distance_restraint_mgr(restrained_model)
-    if display_threshold is None:
-        display_threshold = 0
-    adrm.display_threshold = display_threshold
+    if display_threshold is not None:
+        adrm.display_threshold = display_threshold
     from chimerax.geometry import find_close_points, distance
     from chimerax.atomic import concatenate
 
@@ -499,7 +508,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
     import numpy
     atom_names = set(atom_names)
 
-    def apply_restraints(trs, rrs):
+    def apply_restraints(trs, rrs, adjust_for_confidence, confidence_type):
         template_as = []
         restrained_as = []
         for tr, rr in zip(trs, rrs):
@@ -523,28 +532,35 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                 ra2 = restrained_as[ind]
                 if ra1.residue == ra2.residue:
                     continue
+                if adjust_for_confidence:
+                    scores = [template_as[i].bfactor, template_as[ind].bfactor]
+                    kappa_adj, tol_adj, falloff_adj = adjust_distance_restraint_terms_by_confidence(scores, confidence_type)
+                    if kappa_adj == 0:
+                        continue
+                else:
+                    kappa_adj = tol_adj = falloff_adj = 1
                 try:
                     dr = adrm.add_restraint(ra1, ra2)
                 except ValueError:
                     continue
                 dist = distance(query_coord[0], template_coords[ind])
-                dr.tolerance = tolerance * dist
+                dr.tolerance = tolerance * dist * tol_adj
                 dr.target = dist
                 dr.c = max(dist*well_half_width, 0.1)
                 #dr.effective_spring_constant = spring_constant
-                dr.kappa = kappa
+                dr.kappa = kappa * kappa_adj
                 from math import log
                 if dist < 1:
                     dr.alpha = -2
                 else:
-                    dr.alpha = -2 - fall_off * log(dist)
+                    dr.alpha = -2 - fall_off * log(dist) - falloff_adj
                 dr.enabled = True
 
 
     if all(trs == rrs for trs, rrs in zip(template_residues, restrained_residues)):
         # If the template is identical to the model, we can just go ahead and restrain
 
-        [apply_restraints(trs, rrs) for trs, rrs in zip(template_residues, restrained_residues)]
+        [apply_restraints(trs, rrs, adjust_for_confidence, confidence_type) for trs, rrs in zip(template_residues, restrained_residues)]
     else:
         # If we're not simply restraining the model to itself, we need to do an
         # alignment to get a matching pair of residue sequences
@@ -561,7 +577,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                 log.info(('No further alignments of 3 or more residues found.'))
                 break
             tr, rr = [ta.residues, ra.residues]
-            apply_restraints(tr, rr)
+            apply_restraints(tr, rr, adjust_for_confidence, confidence_type)
             tpa = tpa.subtract(ta)
             rpa = rpa.subtract(ra)
 
@@ -598,6 +614,28 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
         #         trs = concatenate(found_trs)
         #         rrs = concatenate(found_rrs)
         #         apply_restraints(trs, rrs)
+
+def adjust_distance_restraint_terms_by_confidence(confidence_scores, confidence_type='plddt'):
+    if confidence_type=='plddt':
+        return adjust_distance_restraint_terms_by_predicted_lddt(confidence_scores)
+    from chimerax.core.errors import UserError
+    raise UserError(f'No confidence type "{confidence_type}"!')
+
+
+def adjust_distance_restraint_terms_by_predicted_lddt(confidence_scores):
+    from math import exp
+    # Use the least-confident position for weighting purposes
+    c = min(confidence_scores)/100
+    if c<0.5:
+        return 0,0,0
+    kappa_adj = exp(-5*(c-1)**2)
+    tol_adj = exp(2*(c-1)**2)
+    falloff_adj = exp(-3*(c-1))-1
+    return kappa_adj, tol_adj, falloff_adj
+
+
+
+
 
 def restrain_atom_pair_adaptive_distance(atom1, atom2, target, tolerance, kappa, c, alpha=-2):
     if not atom1.structure == atom2.structure:
