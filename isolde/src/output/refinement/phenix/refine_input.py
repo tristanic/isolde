@@ -41,7 +41,7 @@ refinement {{
             r_free_flags {{
                 file_name = "{reflections_file_name}"
                 label = "Free_Flags"
-                test_flag_value = 0
+                test_flag_value = {xmapset.live_xmap_mgr.free_flag}
             }}
         }}
     }}
