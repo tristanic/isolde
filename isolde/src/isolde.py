@@ -2763,7 +2763,8 @@ class Isolde():
             color='red')
         self.sim_params.platform = self.iw._sim_platform_combo_box.currentText()
         from .openmm.openmm_interface import Sim_Manager
-        main_sel = self._last_main_sel = self._get_main_sim_selection()
+        sm = self.selected_model
+        main_sel = self._last_main_sel = sm.atoms[sm.atoms.selected]
         try:
             sm = self._sim_manager = Sim_Manager(self, self.selected_model, main_sel,
                 self.params, self.sim_params, excluded_residues = self.ignored_residues)
@@ -2930,56 +2931,6 @@ class Isolde():
         else:
             indicator.setText("<font color='red'>SIMULATION RUNNING</font>")
         indicator.setVisible(True)
-
-
-    def _get_main_sim_selection(self):
-        '''
-        Get the primary selection that will be the focus of the simulation. In
-        most cases, this involves taking the existing selected atoms, expanding
-        the selection to cover whole residues, and further expanding the
-        selection by the desired padding up and down the chain (stopping at
-        chain breaks and ends).
-        '''
-        sm = self.selected_model
-        all_atoms = sm.atoms
-        pad = self.params.num_selection_padding_residues
-        selatoms = sm.atoms[sm.atoms.selected]
-        from chimerax.atomic import selected_atoms
-        selected_atoms(self.session).selected=False
-        selatoms.selected = True
-        if not len(selatoms):
-            raise TypeError('You must select at least one atom from the current '
-                'working model prior to starting a simulation!')
-        all_res = sm.residues
-        sel_res = selatoms.unique_residues
-        sel_res_indices = all_res.indices(sel_res)
-        from chimerax.atomic import Structure
-
-        allfrags = sm.polymers(missing_structure_treatment=Structure.PMS_NEVER_CONNECTS)
-
-        sel_frags = []
-        sel_frag_res_indices = []
-        for frag in allfrags:
-            frag = frag[0]
-            if not frag.atoms.num_selected:
-                continue
-            sel_frags.append(frag)
-            sel_frag_res_indices.append(all_res.indices(frag))
-
-        for frag, frag_indices in zip(sel_frags, sel_frag_res_indices):
-            frag_nres = len(frag_indices)
-            sel_mask = numpy.isin(frag_indices, sel_res_indices, assume_unique=True)
-            sel_pol_indices = numpy.where(sel_mask)[0]
-            for i in sel_pol_indices:
-                lb = i-pad
-                ub = i+pad+1
-                if lb<0:
-                    lb = 0
-                if ub > frag_nres:
-                    ub = frag_nres
-                sel_mask[lb:ub] = True
-            frag[sel_mask].atoms.selected = True
-        return sm.atoms[sm.atoms.selecteds]
 
     ##############################################################
     # Simulation on-the-fly control functions

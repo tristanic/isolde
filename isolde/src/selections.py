@@ -29,44 +29,21 @@ def get_shell_of_residues(residues, dist_cutoff):
     shell_residues = unselected_atoms[shell_indices].unique_residues
     return shell_residues
 
-def expand_selection_along_chains(atoms, extension):
+def expand_selection_along_chains(atoms, pad):
     '''
-    Expand an existing selection to whole residues, and extend backwards and
-    forwards along each chain by the number of residues defined by extension,
-    stopping at chain breaks.
+    Expand an existing selection to whole residues, and extend outwards by `pad` covalently-bonded 
+    neighbors.
     '''
     us = atoms.unique_structures
     if len(us) != 1:
         raise TypeError('Selected atoms must all be in the same model!')
-    m = us[0]
-    residues = atoms.unique_residues
-    all_residues = m.residues
-    res_indices = all_residues.indices(residues)
-
-    from chimerax.atomic import Structure
-    all_frags = m.polymers(missing_structure_treatment = Structure.PMS_NEVER_CONNECTS)
-    import numpy
-    sel_frags = []
-    sel_frag_res_indices = []
-    master_sel_mask = numpy.zeros(len(all_residues), numpy.bool)
-    # Make sure we keep the original selection including heteroatoms
-    master_sel_mask[res_indices] = True
-    for frag in all_frags:
-        frag = frag[0]
-        if numpy.any(frag.indices(residues) > -1):
-            sel_frags.append(frag)
-            sel_frag_res_indices.append(all_residues.indices(frag))
-    for frag, frag_indices in zip(sel_frags, sel_frag_res_indices):
-        frag_nres = len(frag_indices)
-        sel_mask = numpy.isin(frag_indices, res_indices, assume_unique=True)
-        sel_pol_indices = numpy.where(sel_mask)[0]
-        for i in sel_pol_indices:
-            lb = i-extension
-            ub = i+extension+1
-            if lb<0:
-                lb = 0
-            if ub > frag_nres:
-                ub = frag_nres
-            sel_mask[lb:ub] = True
-        master_sel_mask[frag_indices[sel_mask]] = True
-    return all_residues[master_sel_mask].atoms
+    sm = us[0]
+    session = sm.session
+    selatoms = sm.atoms[sm.atoms.selected]
+    from chimerax.atomic import selected_atoms
+    sm.atoms.selected=False
+    sm.bonds.selected=False
+    selres = selatoms.unique_residues
+    from .util import expand_selection
+    expand_selection(selres, pad)
+    return sm.atoms[sm.atoms.selected]

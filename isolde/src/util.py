@@ -82,6 +82,16 @@ def add_disulfides_from_model_metadata(model):
             a1, a2 = atoms
             add_bond(a1, a2)
 
+def expand_selection(residues, num_steps):
+    from .molobject import c_function
+    import ctypes
+    f = c_function('expand_selection',
+        args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32)
+        )
+    f(residues._c_pointers, len(residues), num_steps)
+
+
+
 def compiled_lib_extension():
     import platform
     pname = platform.system()
