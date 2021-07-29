@@ -6,6 +6,7 @@ tooltip=('Merge all models with any atoms selected into the first selected model
 def run_script(session):
     from chimerax.atomic import selected_residues
     from chimerax.isolde.atomic.building.merge import merge_fragment
+    from chimerax.geometry import Place
     selres = selected_residues(session)
     us = selres.unique_structures
     if not len(us) > 1:
@@ -13,6 +14,8 @@ def run_script(session):
         raise UserError('Must have at least two atomic models selected!')
     us = list(sorted(us, key=lambda m: m.id_string))
     target = us[0]
+    target.atoms.coords = target.atoms.scene_coords
+    target.position=Place()
     import numpy
     for m in us[1:]:
         for cid in m.residues.unique_chain_ids:
