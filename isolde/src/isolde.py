@@ -2499,6 +2499,16 @@ class Isolde():
             mmcb.setCurrentIndex(0)
         m = mmcb.currentData()
         if force or (self._selected_model != m and m is not None):
+                   self.session.logger.info(f'Removed all altlocs in #{m.id_string} and reset associated occupancies to 1.')
+             atoms_with_alt_locs = m.atoms[m.atoms.num_alt_locs>0]
+            if len(atoms_with_alt_locs):
+                from .dialog import choice_warning
+                result = choice_warning(f'This model contains {len(atoms_with_alt_locs)} atoms with alternate '
+                    'conformers. ISOLDE cannot currently see these, but they will be carried through to the '
+                    'output model. In most cases it is best to remove them. Would you like to do so now?')
+                if result:
+                    m.delete_alt_locs()
+                    atoms_with_alt_locs.occupancies = 1
             from chimerax.clipper.symmetry import get_symmetry_handler
             sh = get_symmetry_handler(m, create=True, auto_add_to_session=True)
             from .citation import add_isolde_citation
