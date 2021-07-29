@@ -1621,7 +1621,7 @@ class Sim_Handler:
         if not self._sim_running:
             raise RuntimeError('Simulation must be running first!')
         c = self._context
-        state = c.getState(getForces=True)
+        state = c.getState(getPositions=True, getForces=True)
         forces = state.getForces(asNumpy = True)
         import numpy
         force_mags = numpy.linalg.norm(forces, axis=1)
