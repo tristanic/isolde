@@ -27,7 +27,7 @@ size_t = molc.size_t
 
 from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
 
-from simtk import unit, openmm
+from openmm import unit, openmm
 
 from ..delayed_reaction import delayed_reaction
 from ..util import compiled_lib_extension
@@ -1457,7 +1457,7 @@ class Sim_Handler:
         return sys
 
     def _convert_to_soft_core_potentials(self, system):
-        from simtk.openmm.openmm import NonbondedForce
+        from openmm.openmm import NonbondedForce
         for f in system.getForces():
             if type(f) == NonbondedForce:
                 break
@@ -1556,7 +1556,7 @@ class Sim_Handler:
                 properties['OpenCLDeviceIndex']=str(device_index)
 
 
-        from simtk.openmm import app
+        from openmm import app
         logger.status('Initialising primary simulation object')
         s = self._simulation = app.Simulation(self.topology, self._system,
             integrator, platform, properties)
@@ -2711,7 +2711,7 @@ class Sim_Handler:
             * forcefield_file_list:
                 - An iterable of file names.
         '''
-        from simtk.openmm.app import ForceField
+        from openmm.app import ForceField
         ff = ForceField(*[f for f in forcefield_file_list if f is not None])
         return ff
 
@@ -2736,7 +2736,7 @@ class Sim_Handler:
 
         top = self.topology
         system = self._system
-        from simtk.openmm.openmm import NonbondedForce
+        from openmm.openmm import NonbondedForce
         for f in system.getForces():
             if isinstance(f, NonbondedForce):
                 break
@@ -2854,7 +2854,7 @@ class Map_Scale_Optimizer:
         sh.temperature = self._original_temperature
 
     def get_current_energy(self):
-        from simtk.openmm import unit
+        from openmm import unit
         state = self.context.getState(getEnergy=True, groups=set([CORE_FORCE_GROUP]))
         return state.getPotentialEnergy().value_in_unit(unit.kilojoule_per_mole)
 
@@ -3035,7 +3035,7 @@ def create_openmm_topology(atoms, residue_templates):
 
     #template_indices = list(residue_templates.keys())
     templates_out = {}
-    from simtk.openmm.app import Topology, Element
+    from openmm.app import Topology, Element
     top = topology = Topology()
     cmap = {}
     rmap = {}
@@ -3188,7 +3188,7 @@ def cys_type(residue):
             return 'CYS'
 
 def get_available_platforms():
-        from simtk.openmm import Platform
+        from openmm import Platform
         platform_names = []
         for i in range(Platform.getNumPlatforms()):
             p = Platform.getPlatform(i)

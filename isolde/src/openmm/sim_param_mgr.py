@@ -15,8 +15,8 @@ import ctypes
 from math import pi, radians, degrees, cos
 from warnings import warn
 from time import time, sleep
-from simtk import unit
-from simtk.unit import Quantity, Unit
+from openmm import unit
+from openmm.unit import Quantity, Unit
 from chimerax.atomic import concatenate, Bonds
 
 from ..checkpoint import CheckPoint
@@ -69,7 +69,7 @@ class SimParams(Param_Mgr):
         params.restraint_max_force = 20000
 
         # Automatically converts the value into the stored unit system
-        from simtk.unit import kilojoule_per_mole, angstrom
+        from openmm.unit import kilojoule_per_mole, angstrom
         params.restraint_max_force = 2000 * kilojoule_per_mole/angstrom
 
         # Raises an error if you attempt to set a value with incompatible units

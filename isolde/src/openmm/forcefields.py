@@ -53,7 +53,7 @@ _ligand_files = {
 default_forcefields = list(_forcefield_files.keys())
 
 def _define_forcefield(ff_files):
-    #from simtk.openmm.app import ForceField
+    #from openmm.app import ForceField
     ff = ForceField(*[f for f in ff_files if f is not None])
     return ff
 
@@ -83,7 +83,7 @@ class ForcefieldMgr:
         self._ff_dict = {}
         self._ligand_dict = {}
         self._task = None
-        from simtk.openmm import version
+        from openmm import version
         self._openmm_version = version.version
         from chimerax.isolde import __version__
         self._isolde_version = __version__
@@ -181,7 +181,7 @@ class ForcefieldMgr:
         self._task = executor.submit(_background_load_ff, name, ff_files, self._openmm_version, self._isolde_version)
         executor.shutdown(wait=False)
 
-from simtk.openmm.app import ForceField as _ForceField
+from openmm.app import ForceField as _ForceField
 class ForceField(_ForceField):
     def assignTemplates(self, topology, ignoreExternalBonds=False,
             explicit_templates={}):
@@ -209,8 +209,8 @@ class ForceField(_ForceField):
 
         For a simulation to start the second and third objects should be empty.
         '''
-        from simtk.openmm.app.forcefield import _createResidueSignature
-        from simtk.openmm.app.internal import compiled
+        from openmm.app.forcefield import _createResidueSignature
+        from openmm.app.internal import compiled
         bondedToAtom = self._buildBondedToAtomList(topology)
         unique_matches = {}
         multiple_matches = {}
@@ -300,7 +300,7 @@ class ForceField(_ForceField):
     def find_possible_templates(self, res, max_missing_heavy_atoms=3,
             max_missing_heavy_atom_fraction = 0.2,
             minimum_graph_match = 0.9):
-        from simtk.openmm.app import element
+        from openmm.app import element
         from collections import Counter
         from ..atomic.template_utils import find_maximal_isomorphous_fragment
         from .amberff.glycam import (

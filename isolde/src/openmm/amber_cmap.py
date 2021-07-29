@@ -13,7 +13,7 @@
 import os
 import numpy
 import math
-from simtk import openmm
+import openmm
 
 class CMAPLoader:
     _map_index = {

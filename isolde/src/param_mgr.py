@@ -8,8 +8,8 @@
 
 
 
-from simtk import unit
-from simtk.unit import Quantity, Unit
+from openmm import unit
+from openmm.unit import Quantity, Unit
 
 def _property_factory(name):
     def fget(self):

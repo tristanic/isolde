@@ -12,15 +12,15 @@
 
 import numpy
 from math import pi, radians, degrees, cos
-from simtk import unit, openmm
-from simtk.unit.quantity import Quantity
-from simtk.openmm import app
-from simtk.openmm.openmm import CustomBondForce, CustomExternalForce, \
+from openmm import unit, openmm
+from openmm.unit.quantity import Quantity
+from openmm import app
+from openmm.openmm import CustomBondForce, CustomExternalForce, \
                                 CustomCompoundBondForce, CustomTorsionForce, \
                                 CMAPTorsionForce, CustomNonbondedForce
-from simtk.openmm.openmm import Continuous1DFunction, Continuous3DFunction, \
+from openmm.openmm import Continuous1DFunction, Continuous3DFunction, \
                                 Discrete3DFunction
-from simtk.openmm.app.internal import customgbforces
+from openmm.app.internal import customgbforces
 from . import amber_cmap
 from ..constants import defaults
 

@@ -13,7 +13,7 @@ from enum import IntEnum
 
 from Qt.QtWidgets import QFileDialog
 
-from simtk import unit
+from openmm import unit
 
 
 from chimerax.core import triggerset
@@ -1241,7 +1241,7 @@ class Isolde():
 
     def add_ffxml_files(self, forcefield, file_list):
         log = self.session.logger
-        # from simtk.openmm.app import ForceField
+        # from openmm.app import ForceField
         # temp_ff = ForceField(tuple(file_list))
         # for tname, template in temp_ff._templates.items():
         #

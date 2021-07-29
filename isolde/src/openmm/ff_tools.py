@@ -146,7 +146,7 @@ def make_truncated_residue_template(residue, full_template):
         raise TypeError('Cannot model a partial ring!')
 
     keep_heavy_atom_names = set(residue.atoms[residue.atoms.element_names != 'H'].names)
-    from simtk.openmm.app import ForceField
+    from openmm.app import ForceField
     new_template = ForceField._TemplateData('TRUNC_'+residue.name+residue.chain_id+str(residue.number))
     for atom in full_template.atoms:
         if atom.name in keep_heavy_atom_names:
