@@ -132,7 +132,7 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
         chain_id=None, number=None, center=None, insertion_code=' ', add_b_factor=0,
         occupancy=1, phi=-135, psi=135):
     session = model.session
-    if (not chain_id or not number or not center) and (not prev_res and not next_res):
+    if (not chain_id or not number or center is None) and (not prev_res and not next_res):
         raise TypeError('If no anchor residues are specified, chain ID, '
             'number and center must be provided!')
     if prev_res and next_res:
