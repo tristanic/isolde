@@ -3125,6 +3125,17 @@ class Isolde():
         '''Is checkpoint save/revert currently allowed?'''
         return self.simulation_running and not len(self.checkpoint_disabled_reasons)
 
+    def _cant_checkpoint_error(self):
+        if not self.simulation_running:
+            self.session.logger.warning('Checkpointing is only available when a simulation is running!')
+        else:
+            err_str = 'Checkpointing is currently disabled by the '\
+                +'following scripts and will be re-enabled when they '\
+                +'terminate: \n{}'.format(
+                    '\n'.join([r for r in self.checkpoint_disabled_reasons.values()]))
+            self.session.logger.warning(err_str)
+
+
     def checkpoint(self, *_):
         '''
         Save the current state of the simulation (coordinates and all
@@ -3133,11 +3144,7 @@ class Isolde():
         if self.can_checkpoint:
             self.sim_manager.checkpoint()
         else:
-            err_str = 'Checkpointing is currently disabled by the '\
-                +'following scripts and will be re-enabled when they '\
-                +'terminate: \n{}'.format(
-                    '\n'.join([r for r in self.checkpoint_disabled_reasons.values()]))
-            self.session.logger.warning(err_str)
+            self._cant_checkpoint_error()
 
     def revert_to_checkpoint(self, *_):
         '''
@@ -3147,11 +3154,7 @@ class Isolde():
         if self.can_checkpoint:
             self.sim_manager.revert_to_checkpoint()
         else:
-            err_str = 'Checkpointing is currently disabled by the '\
-                +'following scripts and will be re-enabled when they '\
-                +'terminate: \n{}'.format(
-                    '\n'.join([r for r in self.checkpoint_disabled_reasons.values()]))
-            self._log.warning(err_str)
+            self._cant_checkpoint_error()
 
 
     @property
