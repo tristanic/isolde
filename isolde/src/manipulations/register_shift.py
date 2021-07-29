@@ -91,7 +91,9 @@ class Protein_Register_Shifter:
         from .. import session_extensions as sx
         self._pr_mgr = sx.get_position_restraint_mgr(isolde.selected_model)
         self.polymer = find_polymer(atoms)
-        residues = self.residues = atoms.unique_residues
+        residues = atoms.unique_residues
+        from chimerax.atomic import Residues
+        residues = self.residues = Residues(sorted(residues, key=lambda r:(r.chain_id, r.number, r.insertion_code)))
         self._extended_atoms = None
 
         nres = len(residues)
