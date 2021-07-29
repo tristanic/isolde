@@ -91,11 +91,7 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         isolde.change_selected_model(model)
         session.selection.clear()
         atoms.selected = True
-        def _sim_start_cb(*_, isolde=isolde):
-            isolde.start_sim()
-            from chimerax.core.triggerset import DEREGISTER
-            return DEREGISTER
-        session.triggers.add_handler('frame drawn', _sim_start_cb)
+        isolde.start_sim()
         return
 
     if not isolde.simulation_running:
