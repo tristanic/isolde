@@ -1598,7 +1598,18 @@ class Sim_Handler:
         '''
         if self._sim_running:
             raise RuntimeError('Simulation is already running!')
-        self._prepare_sim()
+        from openmm import OpenMMException
+        try:
+            self._prepare_sim()
+        except OpenMMException as e:
+            if self._params.platform=='CUDA':
+                self.session.logger.warning(f'Launching using CUDA failed with the below message. Falling back to using OpenCL.\n\n{str(e)}')
+                self._params.platform='OpenCL'
+                self._prepare_sim()
+            else:
+                raise
+
+        
         self._pause = False
         self._stop = False
         self._sim_running = True
