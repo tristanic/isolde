@@ -29,6 +29,8 @@ def pep_flip(session, atoms):
     '''
     isolde = _check_for_isolde(session)
     residues = _eligible_residues(isolde, atoms)
+    if not len(residues):
+        return
     from .peptide_flip import Peptide_Bond_Flipper
     session.logger.info('Flipping the peptide bond for {} residues'.format(len(residues)))
     if not isolde.simulation_running:
@@ -49,6 +51,8 @@ def cis_flip(session, atoms):
     '''
     isolde = _check_for_isolde(session)
     residues = _eligible_residues(isolde, atoms)
+    if not len(residues):
+        return
     session.logger.info('Performing cis<-->trans flip for {} residues'.format(len(residues)))
     if not isolde.simulation_running:
         from ..cmd import isolde_sim
