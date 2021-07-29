@@ -81,7 +81,9 @@ def add_aa_cmd(session, resname, stem_residue=None, add_direction=None, structur
     from chimerax.core.errors import UserError
     if stem_residue is None and (structure is None or chain_id is None or number is None):
         raise UserError('If stem residue is not specified, structure, chain ID and number must be provided!')
-    elif stem_residue is not None:
+    if stem_residue is None:
+        residue = None
+    else:
         if len(stem_residue) != 1:
             raise UserError('Please select a single residue!')
         residue = stem_residue[0]
