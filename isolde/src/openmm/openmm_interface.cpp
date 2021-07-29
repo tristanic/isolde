@@ -124,7 +124,8 @@ void OpenMM_Thread_Handler::_minimize_threaded(const double &tolerance, int max_
             // Minimisation failed. Revert the model to its initial state
             // and let ISOLDE point out problem areas to the user.
             _clash = true;
-            _final_state = _starting_state;
+            _final_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Forces | OpenMM::State::Energy);
+            // _final_state = _starting_state;
         }
         //if (_min_converged && max_force(_final_state.getForces()) > MAX_FORCE)
         if (_min_converged && max_force(_context->getSystem(), _final_state) > MAX_FORCE)
