@@ -33,6 +33,10 @@ def register_ignored_residues_attr(session):
     Residue.register_attr(session, 'isolde_ignore',
         'isolde', default_value=False, attr_type=bool)
 
+def register_domain_cluster_attr(session):
+    from chimerax.atomic import Residue
+    Residue.register_attr(session, 'isolde_domain',
+        'isolde', attr_type=int, default_value=-1)
 
 def _version():
     import pkg_resources
@@ -50,8 +54,9 @@ class _MyAPI(BundleAPI):
 
     @staticmethod
     def initialize(session, bundle_info):
-        initialize_openmm()
-        # register_ignored_residues_attr(session)
+        #initialize_openmm()
+        register_ignored_residues_attr(session)
+        register_domain_cluster_attr(session)
 
     @staticmethod
     def get_class(class_name):
@@ -152,5 +157,12 @@ class _MyAPI(BundleAPI):
         elif command_name in ('rota', '~rota'):
             from .validation import cmd
             cmd.register_rota(logger)
+
+
+    @staticmethod
+    def run_provider(session, name, mgr, **kw):
+        if mgr == session.toolbar:
+            from .toolbar import toolbar_command
+            toolbar_command(session, name)
 
 bundle_api = _MyAPI()

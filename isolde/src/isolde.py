@@ -150,8 +150,6 @@ class Isolde():
                   ChimeraX GUI menu).
         '''
         self.session = session = gui.session
-        from . import register_ignored_residues_attr
-        register_ignored_residues_attr(session)
 
 
         self.triggers = triggerset.TriggerSet()
