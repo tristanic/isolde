@@ -4513,6 +4513,7 @@ class RotamerRestraintMgr(_RestraintMgr):
     def restore_snapshot(session, data):
         rrm = RotamerRestraintMgr(data['structure'], auto_add_to_session=False)
         rrm.set_state_from_snapshot(session, data)
+        return rrm
 
     def set_state_from_snapshot(self, session, data):
         from chimerax.core.models import Model
