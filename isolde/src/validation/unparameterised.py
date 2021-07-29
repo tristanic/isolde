@@ -8,6 +8,8 @@
 
 # Make sure core CIF templates are pre-loaded
 from chimerax.isolde import atomic
+from Qt.QtCore import Qt
+USER_ROLE = Qt.ItemDataRole.UserRole
 
 class Unparameterised_Residues_Mgr:
 
@@ -92,7 +94,7 @@ class Unparameterised_Residues_Mgr:
             )
             for j, d in enumerate(data):
                 item = QTableWidgetItem(d)
-                item.data = (cx_res, by_name, by_comp)
+                item.setData (USER_ROLE, (cx_res, by_name, by_comp))
                 table.setItem(count, j, item)
             count += 1
         for r, template_info in ambiguous.items():
@@ -105,13 +107,13 @@ class Unparameterised_Residues_Mgr:
             )
             for j, d in enumerate(data):
                 item = QTableWidgetItem(d)
-                item.data = (cx_res, [], [[ti[0].name,0] for ti in template_info])
+                item.setData(USER_ROLE, (cx_res, [], [[ti[0].name,0] for ti in template_info]))
                 table.setItem(count, j, item)
             count += 1
         table.resizeColumnsToContents()
 
     def _show_selected_unparameterised_residue(self, item):
-        residue, by_name, by_comp = item.data
+        residue, by_name, by_comp = item.data(USER_ROLE)
         tlist = self._template_list
         tlist.clear()
         self._do_for_all.setCheckState(False)
@@ -140,7 +142,7 @@ class Unparameterised_Residues_Mgr:
             if len(description):
                 entry_text += " " + description
             entry = QListWidgetItem(entry_text)
-            entry.data = (residue, tname, ccd_template)
+            entry.setData (USER_ROLE, (residue, tname, ccd_template))
             tlist.addItem(entry)
         tlist.addItem(QListWidgetItem("Matches by similar topology"))
         for (tname, score) in by_comp:
@@ -150,7 +152,7 @@ class Unparameterised_Residues_Mgr:
             if len(description):
                 entry_text += " " + description
             entry = QListWidgetItem(entry_text)
-            entry.data = (residue, tname, ccd_template)
+            entry.setData (USER_ROLE, (residue, tname, ccd_template))
             tlist.addItem(entry)
 
         tlist.repaint()
@@ -169,13 +171,14 @@ class Unparameterised_Residues_Mgr:
         index = table.currentRow()
         if item is None:
             return
-        if not hasattr(item, 'data') or item.data is None:
+        data = item.data(USER_ROLE)
+        if data is None:
             return
-        residue, template_name, ccd_template = item.data
+        residue, template_name, ccd_template = data
         fix_all = self._do_for_all.isChecked()
         if fix_all:
-            indices = [i for i in range(table.rowCount()) if table.item(i, 0).data[0].name == residue.name]
-            residues = [table.item(i,0).data[0] for i in indices]
+            indices = [i for i in range(table.rowCount()) if table.item(i, 0).data(USER_ROLE)[0].name == residue.name]
+            residues = [table.item(i,0).data(USER_ROLE)[0] for i in indices]
         else:
             residues=[residue]
             indices = [index]
