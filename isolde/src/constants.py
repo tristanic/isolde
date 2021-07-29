@@ -10,9 +10,9 @@
 
 from math import pi, radians
 import ctypes
-from simtk import unit
-from simtk.openmm import VariableLangevinIntegrator, CustomGBForce
-from simtk.openmm.app import CutoffNonPeriodic, HBonds
+from openmm import unit
+from openmm import VariableLangevinIntegrator, CustomGBForce
+from openmm.app import CutoffNonPeriodic, HBonds
 
 import sys
 if sys.platform=='linux':
