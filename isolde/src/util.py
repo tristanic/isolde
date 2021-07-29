@@ -31,6 +31,23 @@ def is_continuous_protein_chain(sel, allow_single = False):
     # Check if the indices are continuous
     return all(a == b for a, b in enumerate(indices, indices[0]))
 
+def peptide_has_adducts(residues):
+    from chimerax.atomic import Residue
+    residues = residues[residues.polymer_types==Residue.PT_AMINO]
+    for r in residues:
+        neighbors = r.neighbors
+        if len(neighbors) > 2:
+            return True
+        for n in neighbors:
+            bonds = n.bonds_between(r)
+            for b in bonds:
+                for a in b.atoms:
+                    if a.residue==r and a.name not in ('C', 'N'):
+                        return True
+    return False
+
+
+
 def find_polymer(sel):
     '''
     Find the polymer containing the first residue in a selection.
