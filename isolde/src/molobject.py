@@ -1524,7 +1524,7 @@ class RotaMgr:
         for aa in dmgr.dihedral_dict['aminoacids']:
             # Ugly hack to avoid adding duplicate dict for known modified amino acids. TODO: Will need to
             # revisit to work out how to handle all modified amino acids.
-            if aa in ('MSE', 'FME'):
+            if aa in ('MSE', 'FME','CXM'):
                 fname = prefix+'met'
             elif aa == '2MR':
                 fname = prefix+'arg'

@@ -667,6 +667,52 @@ PRODUCTION EQUILIBRIUM SIMULATIONS. -->
      <Bond atomName1="C" atomName2="O"/>
      <ExternalBond atomName="C"/>
     </Residue>
+    <Residue name="CXM">
+        <!-- N-carboxylmethionine, hacked from combination of ff14sb MET and
+             Antechamber parameterisation of CXM C-amide -->
+     <Atom name="CN" type="C" charge="0.9946"/>
+     <Atom name="ON1" type="O" charge="-0.8206"/>
+     <Atom name="ON2" type="O" charge="-0.8206"/>
+
+
+     <Atom name="N" type="N" charge="-0.6179"/>
+     <Atom name="H" type="H" charge="0.2645"/>
+     <Atom name="CA" type="CX" charge="-0.0237"/>
+     <Atom name="HA" type="H1" charge="0.088"/>
+     <Atom name="CB" type="2C" charge="0.0342"/>
+     <Atom name="HB2" type="HC" charge="0.0241"/>
+     <Atom name="HB3" type="HC" charge="0.0241"/>
+     <Atom name="CG" type="2C" charge="0.0018"/>
+     <Atom name="HG2" type="H1" charge="0.044"/>
+     <Atom name="HG3" type="H1" charge="0.044"/>
+     <Atom name="SD" type="S" charge="-0.2737"/>
+     <Atom name="CE" type="CT" charge="-0.0536"/>
+     <Atom name="HE1" type="H1" charge="0.0684"/>
+     <Atom name="HE2" type="H1" charge="0.0684"/>
+     <Atom name="HE3" type="H1" charge="0.0684"/>
+     <Atom name="C" type="C" charge="0.5973"/>
+     <Atom name="O" type="O" charge="-0.5679"/>
+     <Bond atomName1="N" atomName2="CN"/>
+     <Bond atomName1="CN" atomName2="ON1"/>
+     <Bond atomName1="CN" atomName2="ON2"/>
+     <Bond atomName1="N" atomName2="H"/>
+     <Bond atomName1="N" atomName2="CA"/>
+     <Bond atomName1="CA" atomName2="HA"/>
+     <Bond atomName1="CA" atomName2="CB"/>
+     <Bond atomName1="CA" atomName2="C"/>
+     <Bond atomName1="CB" atomName2="HB2"/>
+     <Bond atomName1="CB" atomName2="HB3"/>
+     <Bond atomName1="CB" atomName2="CG"/>
+     <Bond atomName1="CG" atomName2="HG2"/>
+     <Bond atomName1="CG" atomName2="HG3"/>
+     <Bond atomName1="CG" atomName2="SD"/>
+     <Bond atomName1="SD" atomName2="CE"/>
+     <Bond atomName1="CE" atomName2="HE1"/>
+     <Bond atomName1="CE" atomName2="HE2"/>
+     <Bond atomName1="CE" atomName2="HE3"/>
+     <Bond atomName1="C" atomName2="O"/>
+     <ExternalBond atomName="C"/>
+    </Residue>
 
   </Residues>
   <HarmonicBondForce>
