@@ -4146,8 +4146,10 @@ class AdaptiveDihedralRestraintMgr(ProperDihedralRestraintMgr):
         for attr in ('targets', 'kappas', 'alphas', 'enableds', 'displays', 'spring_constants'):
             # For backward compatibility - older session files may not have the
             # 'alphas' parameter
-            if hasattr(data, attr):
+            if attr in data.keys():
                 setattr(restraints, attr, data[attr])
+            else:
+                session.logger.warning(f'Failed to restore AdaptiveDihedralRestraint parameter {attr}!')
 
     def save_checkpoint(self, atoms=None):
         if atoms is None:
