@@ -205,7 +205,7 @@ class RamaAnnotator(Model):
                 from chimerax.atomic import Residue
                 # Only need to update if the additions are non-hydrogen protein atoms
                 ur = created[created.element_names !='H'].unique_residues
-                if sum(ur.polymer_types == Residue.PT_AMINO):
+                if any(ur.polymer_types == Residue.PT_AMINO):
                     # Trigger rebuild of rama array and graphics update
                     self.track_whole_model = True
                     # self._prepare_ca_display()
