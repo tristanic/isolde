@@ -3277,6 +3277,7 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
     def _session_save_info(self):
         drs = self.all_restraints
         save_info = {
+            'display_threshold':    self.display_threshold,
             'atoms':                drs.atoms,
             'targets':              drs.targets,
             'tolerances':           drs.tolerances,
@@ -3306,6 +3307,7 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
         drs.cs = data['cs']
         drs.alphas=data['alphas']
         drs.enableds=data['enableds']
+        self.display_threshold = data['display_threshold']
 
     def save_checkpoint(self, atoms=None):
         if atoms is None:
