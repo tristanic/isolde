@@ -10,7 +10,7 @@
 
 
 
-<BundleInfo name="ChimeraX-ISOLDE" version="1.3.dev0" package="chimerax.isolde"
+<BundleInfo name="ChimeraX-ISOLDE" version="1.3.dev32" package="chimerax.isolde"
   	    customInit="true" minSessionVersion="1" maxSessionVersion="1">
 
   <!-- Additional information about bundle source -->
@@ -85,8 +85,9 @@ with the surroundings.
       <CompileArgument platform="mac">-mmacosx-version-min=10.12</CompileArgument>
       <!-- <CompileArgument>-fno-stack-protector</CompileArgument> -->
       <IncludeDir platform="mac">/opt/openmm750/include</IncludeDir>
-      <IncludeDir platform="linux">/opt/openmm750/include</IncludeDir>
+      <IncludeDir platform="linux">/home/tic20/my-gits/openmm/build/python/openmm/include/</IncludeDir>
       <IncludeDir platform="windows">C:\opt\openmm750\Library\include</IncludeDir>
+      <LibraryDir>/home/tic20/.local/share/ChimeraX/1.3/site-packages/openmm/lib</LibraryDir>
       <IncludeDir>src/deps/lbfgs/include</IncludeDir>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
       <SourceFile>src/openmm/custom_forces.cpp</SourceFile>
@@ -98,8 +99,8 @@ with the surroundings.
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>
     <Dependency name="ChimeraX-Core" version="~=1.3.dev0"/>
-    <Dependency name="ChimeraX-Atomic" version="~=1.22.0"/>
-    <Dependency name="ChimeraX-AtomicLibrary" build="true" version="~=3.2.0"/>
+    <Dependency name="ChimeraX-Atomic" version="~=1.27.0"/>
+    <Dependency name="ChimeraX-AtomicLibrary" build="true" version="~=4.0.0"/>
     <Dependency name="ChimeraX-Clipper" version="~=0.17.0"/>
     <Dependency name="ChimeraX-Arrays" build="true" version="~=1.0.0"/>
   </Dependencies>
@@ -121,6 +122,7 @@ with the surroundings.
     <DataDir>openmm/amberff/amap</DataDir>
     <DataDir>validation/molprobity_data</DataDir>
     <DataDir>resources</DataDir>
+    <DataDir>icons</DataDir>
     <DataDir>demo_data</DataDir>
     <DataDir>demo_data/3io0</DataDir>
     <DataDir>dictionaries</DataDir>
@@ -128,6 +130,42 @@ with the surroundings.
     <DataDir>docs</DataDir>
     <DataDir>ui</DataDir>
   </DataFiles>
+
+  <Providers manager="toolbar">
+    <Provider tab="ISOLDE" section="Main"
+      name="isolde start" display_name="Start ISOLDE" icon="logo_small.png"
+      description="Start the ISOLDE GUI"/>
+    <Provider tab="ISOLDE" section="Prep"
+      name="associate map" display_name="Add map" icon="spotlight.png"
+      description="Associate a real-space map with the working model"/>
+    <Provider tab="ISOLDE" section="Control"
+      name="start-pause" display_name="Start/Pause" icon="play_pause_icon.png"
+      description="Start, pause or resume a simulation"/>
+    <Provider tab="ISOLDE" section="Control"
+      name="checkpoint save" display_name = "Store checkpoint" icon="checkpoint_green.png"
+      description="Store the current state of the simulation as a checkpoint"/>
+    <Provider tab="ISOLDE" section="Control"
+      name="checkpoint revert" display_name = "Revert to checkpoint" icon="checkpoint_red.png"
+      description="Revert the simulation to the last saved checkpoint"/>
+    <Provider tab="ISOLDE" section="Control"
+      name="stop-keep" display_name="Stop (keep)" icon="stop_sign_green.png"
+      description="Stop the simulation and keep the current coordinates"/>
+    <Provider tab="ISOLDE" section="Control"
+      name="stop-revert" display_name="Stop (revert)" icon="checkpoint_stop_red.png"
+      description="Stop the simulation and revert to the last checkpoint"/>
+    <Provider tab="ISOLDE" section="Control"
+      name="stop-discard" display_name="Stop (discard)" icon="stop_sign_red.png"
+      description="Stop the simulation and discard all changes since it was started"/>
+    <Provider tab="ISOLDE" section="Peptide bond"
+      name="flip peptide" display_name = "Flip peptide" icon="pep-flip-icon.png"
+      description="Flip the peptide bond N-terminal to the selection by 180 degrees"/>
+    <Provider tab="ISOLDE" section="Peptide bond"
+      name="flip cis-trans" display_name = "cis&lt;-&gt;trans" icon="cis-trans-icon.png"
+      description="Flip the peptide bond N-terminal to the selection from cis to trans or vice versa"/>
+
+
+
+  </Providers>
   <Classifiers>
     <!-- Development Status should be compatible with bundle version number -->
     <PythonClassifier>Development Status :: 4 - Beta</PythonClassifier>
