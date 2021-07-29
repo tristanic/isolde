@@ -11,6 +11,7 @@ aliases = (
     ('ss', 'isolde sim start sel'),
     ('rt', 'isolde release torsions sel $*'),
     ('rd', 'isolde release distances sel $*'),
+    ('ra', 'rd; rt'),
     ('pf', 'isolde pepflip sel'),
     ('cf', 'isolde cisflip sel'),
     ('cbb', 'color bfactor $*'),
