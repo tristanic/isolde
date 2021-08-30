@@ -1,5 +1,6 @@
+MIN_CLUSTER_SIZE=10
 
-def cluster_into_domains(session, model, pae_matrix, pae_power=1, pae_cutoff=5, adjust_weights_for_distance=True, distance_power=1, graph_resolution=1, color_by_cluster=True):
+def cluster_into_domains(session, model, pae_matrix, pae_power=1, pae_cutoff=5, adjust_weights_for_distance=False, distance_power=1, graph_resolution=1, color_by_cluster=True):
     import networkx as nx
     import numpy
     weights = 1/pae_matrix**pae_power
@@ -18,13 +19,10 @@ def cluster_into_domains(session, model, pae_matrix, pae_power=1, pae_cutoff=5, 
     g = nx.Graph()
     size = weights.shape[0]
     g.add_nodes_from(range(size))
-    for i in range(size):
-        for j in range(i+1, size):
-            pae = pae_matrix[i,j]
-            if pae < pae_cutoff:
-                weight = weights[i,j]
-                if weight > 0:
-                    g.add_edge(i, j, weight=weight)
+    edges = numpy.argwhere(pae_matrix < pae_cutoff)
+    sel_weights = weights[edges.T[0], edges.T[1]]
+    wedges = [(i,j,w) for (i,j),w in zip(edges,sel_weights)]
+    g.add_weighted_edges_from(wedges)
 
     from networkx.algorithms import community
 
@@ -36,11 +34,69 @@ def cluster_into_domains(session, model, pae_matrix, pae_power=1, pae_cutoff=5, 
         for r in residues:
             r.isolde_domain = i
     
+
     if color_by_cluster:
+        large_cluster_count = 0
+        for c in residue_clusters:
+            large_cluster_count +=1
+            if len(c)<MIN_CLUSTER_SIZE:
+                break
+
         from chimerax.core.commands import run
-        run(session, f'color byattribute r:isolde_domain #{model.id_string} target ra palette Paired-12')
+        run(session, f'color byattribute r:isolde_domain #{model.id_string} target ra palette Paired-12 range 0,{max(12, large_cluster_count)}')
 
     return residue_clusters
+
+def cluster_into_domains_igraph(session, model, pae_matrix, pae_power=1, pae_cutoff=5, adjust_weights_for_distance=False, distance_power=1, graph_resolution=1, color_by_cluster=True):
+    try: 
+        import igraph
+    except ImportError:
+        from chimerax.core.errors import UserError
+        raise UserError('This method requires the python-igraph library. You can install it at the command line with:\n'
+            'ChimeraX -m pip install --user python-igraph')
+    import numpy
+    weights = 1/pae_matrix**pae_power
+    if adjust_weights_for_distance:
+        distances = distance_matrix(model, num_residues = pae_matrix.shape[0])
+        weights = weights/distances**distance_power
+
+    g = igraph.Graph()
+    size = weights.shape[0]
+    g.add_vertices(range(size))
+    edges = numpy.argwhere(pae_matrix < pae_cutoff)
+    sel_weights = weights[edges.T[0], edges.T[1]]
+    g.add_edges(edges)
+    g.es['weight']=sel_weights
+
+    vc = g.community_leiden(weights='weight', resolution_parameter=graph_resolution/100, n_iterations=-1)
+    # cluster_count = vc.optimal_count
+    # clusters = vc.as_clustering(cluster_count)
+    residue_clusters = []
+    membership = numpy.array(vc.membership)
+    from collections import Counter
+    member_counts = Counter(membership)
+    sorted_member_ids = sorted(member_counts.keys(), key=lambda k: member_counts[k], reverse=True)
+    indices = numpy.array(range(size))
+    all_residues = model.residues
+    for i, id in enumerate(sorted_member_ids):
+        rindices = indices[membership==id]
+        residues = all_residues[numpy.in1d(all_residues.numbers-1, rindices)]
+        residue_clusters.append(residues)
+        for r in residues:
+            r.isolde_domain = i
+
+    if color_by_cluster:
+        large_cluster_count = 0
+        for c in residue_clusters:
+            large_cluster_count +=1
+            if len(c)<MIN_CLUSTER_SIZE:
+                break
+        from chimerax.core.commands import run
+        run(session, f'color byattribute r:isolde_domain #{model.id_string} target ra palette Paired-12 range 0,{max(12, large_cluster_count)}')
+
+    return residue_clusters
+
+
 
 def distance_matrix(m, num_residues = None):
     if num_residues is None:
