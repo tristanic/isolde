@@ -97,23 +97,24 @@ def cluster_into_domains_igraph(session, model, pae_matrix, pae_power=1, pae_cut
     return residue_clusters
 
 
-
 def distance_matrix(m, num_residues = None):
     if num_residues is None:
         num_residues = max(m.residues.numbers)
     from chimerax.geometry import distance
     import numpy
     size = num_residues
-    distances = numpy.ones([size,size])
+    cmatrix = numpy.ones([size,size,3])
     cas = m.atoms[m.atoms.names=='CA']
-    for i, ca1 in enumerate(cas):
-        for ca2 in cas[i+1:]:
-            dist = distance(ca1.coord, ca2.coord)
-            r1num = ca1.residue.number
-            r2num = ca2.residue.number
-            distances[r1num-1,r2num-1] = dist
-            distances[r2num-1,r1num-1] = dist
+    coords = cas.coords
+    for ca, coord in zip(cas, coords):
+        cmatrix[ca.residue.number-1, :] = coord
+    diffs = cmatrix-cmatrix.transpose(1,0,2)
+    distances = numpy.linalg.norm(diffs, axis=2)
+    for i in range(size):
+        distances[i,i]=1
     return distances
+
+
 
 
 def domains_from_pae_matrix(pae_matrix, pae_power=1, pae_cutoff=5, graph_resolution=1):
