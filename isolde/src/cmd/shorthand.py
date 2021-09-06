@@ -16,7 +16,7 @@ aliases = (
     ('cf', 'isolde cisflip sel'),
     ('cbb', 'color bfactor $*'),
     ('cbo', 'color byattr occupancy $*'),
-    ('cbc', 'color bychain; color byhet'),
+    ('cbc', 'color $* bychain; color $* byhet'),
     ('cs', 'clipper set contourSensitivity $*')
 
 )

@@ -564,7 +564,7 @@ class Isolde():
         # Validate tab
         ####
 
-        self._update_model_list(None, None, force=True)
+        # self._update_model_list(None, None, force=True)
         self._prepare_ramachandran_plot()
 
     def _connect_functions(self):
@@ -643,7 +643,7 @@ class Isolde():
             ])
         # Run all connected functions once to initialise
         self._change_force_field()
-        self._change_selected_model(force=True)
+        #self._change_selected_model(force=True)
         self._change_b_and_a_padding()
         self._change_sim_platform()
 
@@ -973,6 +973,8 @@ class Isolde():
     ##############################################################
     # Menu control functions to run on key events
     ##############################################################
+
+
     # TODO: This function has become somewhat monolithic and has expanded well
     #       beyond its original remit. Needs some rethinking.
     def _update_model_list(self, trigger_name, models, force=False):
@@ -2460,6 +2462,7 @@ class Isolde():
             # self._selected_model.selected = True
             self._initialize_maps(m)
 
+
     def _change_selected_model(self, *_, model = None, force = False):
         if self.simulation_running:
             return
@@ -2499,8 +2502,7 @@ class Isolde():
             mmcb.setCurrentIndex(0)
         m = mmcb.currentData()
         if force or (self._selected_model != m and m is not None):
-                   self.session.logger.info(f'Removed all altlocs in #{m.id_string} and reset associated occupancies to 1.')
-             atoms_with_alt_locs = m.atoms[m.atoms.num_alt_locs>0]
+            atoms_with_alt_locs = m.atoms[m.atoms.num_alt_locs>0]
             if len(atoms_with_alt_locs):
                 from .dialog import choice_warning
                 result = choice_warning(f'This model contains {len(atoms_with_alt_locs)} atoms with alternate '
@@ -2509,6 +2511,7 @@ class Isolde():
                 if result:
                     m.delete_alt_locs()
                     atoms_with_alt_locs.occupancies = 1
+                    self.session.logger.info(f'Removed all altlocs in #{m.id_string} and reset associated occupancies to 1.')
             from chimerax.clipper.symmetry import get_symmetry_handler
             sh = get_symmetry_handler(m, create=True, auto_add_to_session=True)
             from .citation import add_isolde_citation

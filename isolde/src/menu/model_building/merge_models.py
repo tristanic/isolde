@@ -17,12 +17,13 @@ def run_script(session):
     target.atoms.coords = target.atoms.scene_coords
     target.position=Place()
     import numpy
-    for m in us[1:]:
-        for cid in m.residues.unique_chain_ids:
-            new_cid = cid
-            cres = m.residues[m.residues.chain_ids==cid]
-            if cid in target.residues.unique_chain_ids:
-                tres = target.residues[target.residues.chain_ids==cid]
-                if any(numpy.isin(cres.numbers, tres.numbers)):
-                    new_cid = next_chain_id(target)
-            merge_fragment(target, m.residues[m.residues.chain_ids==cid], chain_id=new_cid, transform=m.position)
+    with target.triggers.block_trigger('changes'):
+        for m in us[1:]:
+            for cid in m.residues.unique_chain_ids:
+                new_cid = cid
+                cres = m.residues[m.residues.chain_ids==cid]
+                if cid in target.residues.unique_chain_ids:
+                    tres = target.residues[target.residues.chain_ids==cid]
+                    if any(numpy.isin(cres.numbers, tres.numbers)):
+                        new_cid = next_chain_id(target)
+                merge_fragment(target, m.residues[m.residues.chain_ids==cid], chain_id=new_cid, transform=m.position)

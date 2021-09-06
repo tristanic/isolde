@@ -1,6 +1,7 @@
 from chimerax.core.commands import (
     register, CmdDesc,
     FloatArg, IntArg, BoolArg, FileNameArg,
+    EnumOf
     
 )
 from chimerax.atomic import AtomicStructuresArg, StructureArg
@@ -24,7 +25,8 @@ def write_phenix_refine_cmd(session, model, file_name=None,
         include_hydrogens=False,
         num_processors=1,
         num_macrocycles=6,
-        nqh_flips=True):
+        nqh_flips=True,
+        scattering_type='xray'):
     from chimerax.clipper import get_symmetry_handler
     sh = get_symmetry_handler(model, create=False)
     crystal_error_str = 'Model must be a crystal structure initialised in Clipper with experimental data!'
@@ -39,7 +41,8 @@ def write_phenix_refine_cmd(session, model, file_name=None,
         include_hydrogens=include_hydrogens,
         num_processors=num_processors,
         num_macrocycles=num_macrocycles,
-        nqh_flips=nqh_flips)
+        nqh_flips=nqh_flips,
+        scattering_type=scattering_type)
 
 def register_write_phenix_rsr(logger):
     desc = CmdDesc(
@@ -67,7 +70,8 @@ def register_write_phenix_refine(logger):
             ('include_hydrogens', BoolArg),
             ('num_processors', IntArg),
             ('num_macrocycles', IntArg),
-            ('nqh_flips', BoolArg)
+            ('nqh_flips', BoolArg),
+            ('scattering_type', EnumOf(('xray','electron','neutron')))
         ],
         synopsis='Write input files for phenix.refine, restraining the model to its current geometry.'
     )

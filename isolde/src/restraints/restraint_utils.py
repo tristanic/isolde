@@ -17,14 +17,15 @@ _torsion_adjustments_chi2 = {
     'TRP': radians(180),
 }
 
+KAPPA_MAX=30
+
 from chimerax.core.errors import UserError
 
 def restrain_torsions_to_template(session, template_residues, restrained_residues,
     restrain_backbone=True, restrain_sidechains=True,
-    kappa=10, alpha=0.2, spring_constant=100, identical_sidechains_only=True):
+    kappa=10, alpha=0.2, spring_constant=100, identical_sidechains_only=True,
+    adjust_for_confidence=False, confidence_type='plddt'):
     r'''
-    (EXPERIMENTAL)
-
     Restrain all phi, psi, omega and/or chi dihedrals in `restrained_residues`
     to  match their counterparts (if present) in template_residues.
 
@@ -64,6 +65,17 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
         * identical_sidechains_only:
             - if True, restraints will only be applied to a sidechain if it is
               the same amino acid as the template.
+        * adjust_for_confidence:
+            - for use when the reference model is a predicted structure. If True, 
+              the parameters of each individual restraint will be adjusted 
+              according to the predicted confidence in local conformation (less
+              confident restraints will be both weaker and "fuzzier")
+        * confidence_type:
+            - the confidence metric used in the prediction. Currently only "plddt"
+              (predicted local distance difference test) is supported, and is 
+              expected to be provided in the B-factor column of the reference 
+              model as for models fetched from the AlphaFold2-EBI database. Scores
+              should be on either a 0-100 or 0-1 scale.
     '''
     if not restrained_residues or not len(restrained_residues):
         raise UserError('No residues specified to restrain!')
@@ -78,6 +90,9 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
     if len(restrained_us) != 1:
         raise UserError('Restrained residues must be from a single model!')
     restrained_model = restrained_us[0]
+    if adjust_for_confidence:
+        if confidence_type=='plddt':
+            confidence_multiplier=plddt_multiplier(template_model.atoms)
 
 
     tdm = sx.get_proper_dihedral_mgr(session)
@@ -91,7 +106,7 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
     if restrain_sidechains:
         names.extend(sidechain_names)
 
-    def apply_restraints(trs, rrs):
+    def apply_restraints(trs, rrs, adjust_for_confidence=False, confidence_type='plddt'):
         for name in names:
             for tr, rr in zip(trs, rrs):
                 if 'chi' in name and identical_sidechains_only and tr.name != rr.name:
@@ -99,6 +114,17 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
                 td = tdm.get_dihedral(tr, name)
                 rdr = rdrm.add_restraint_by_residue_and_name(rr, name)
                 if td and rdr:
+                    if adjust_for_confidence:
+                        if confidence_type=='plddt':
+                            alpha_mult, k_mult, kappa_add = _adjust_torsion_restraint_terms_for_plddt(td.atoms.bfactors.min()*confidence_multiplier)
+                        else:
+                            raise RuntimeError(f'Unknown confidence type "{confidence_type}"!')
+                        if alpha_mult == 0:
+                            continue
+                    else:
+                        alpha_mult = 1
+                        k_mult = 1
+                        kappa_add = 0
                     # Due to naming conventions, some sidechain torsions need to be
                     # rotated for best match to other residues
                     if name == 'chi1':
@@ -110,9 +136,9 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
                     else:
                         target = td.angle
                     rdr.target = target
-                    rdr.spring_constant = spring_constant
-                    rdr.kappa = kappa
-                    rdr.alpha = alpha
+                    rdr.spring_constant = spring_constant*k_mult
+                    rdr.kappa = min(kappa+kappa_add, KAPPA_MAX)
+                    rdr.alpha = alpha*alpha_mult
                     rdr.enabled = True
         if restrain_backbone:
             # For omega dihedrals we really want to stick with the standard
@@ -150,7 +176,7 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
             ors.displays = False
 
     if template_residues==restrained_residues:
-        apply_restraints(template_residues, restrained_residues)
+        apply_restraints(template_residues, restrained_residues, adjust_for_confidence, confidence_type)
 
     else:
         # Just do it based on sequence alignment for now.
@@ -159,8 +185,20 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
         trs, rrs = sequence_align_all_residues(
             session, [template_residues], [restrained_residues]
         )
-        apply_restraints(trs, rrs)
+        apply_restraints(trs, rrs, adjust_for_confidence, confidence_type)
 
+def adjust_torsion_restraint_terms_for_confidence(score, confidence_type):
+    if confidence_type=='plddt':
+        return _adjust_torsion_restraint_terms_for_plddt(score)
+
+def _adjust_torsion_restraint_terms_for_plddt(score):
+    if score < 0.5:
+        return 0,0,0
+    from math import exp
+    alpha_multiplier=exp(-10*(score-1)**2)
+    spring_constant_multiplier= exp(-6*(score-1)**2)
+    kappa_add = 2400*exp(-9.5*score)
+    return alpha_multiplier, spring_constant_multiplier, kappa_add
 
 
 def restrain_ca_distances_to_template(template_residues, restrained_residues,
@@ -397,7 +435,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
     protein=True, nucleic=True, custom_atom_names=[],
     distance_cutoff=8, alignment_cutoff=5, well_half_width = 0.05,
     kappa = 5, tolerance = 0.025, fall_off = 4, display_threshold=None,
-    adjust_for_confidence=False, confidence_type='plddt'):
+    adjust_for_confidence=False, use_coordinate_alignment=True, confidence_type='pae', pae_matrix=None):
     r'''
     Creates a "web" of adaptive distance restraints between nearby atoms,
     restraining one set of residues to the same spatial organisation as another.
@@ -433,7 +471,8 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
         * alignment_cutoff (default = 5):
             - distance cutoff (in Angstroms) for rigid-body alignment of model
               against  template. Residues with a CA RMSD greater than this
-              value after alignment will not be restrained.
+              value after alignment will not be restrained. Ignored if `use_coordinate_alignment`
+              is `False`.
         * well_half_width (default = 0.05):
             - distance range (as a fraction of the target distance) within which
               the restraint will behave like a normal harmonic restraint.
@@ -461,14 +500,27 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
         * display_threshold (default = 0):
             - deviation from (target +- tolerance) as a fraction of
               :attr:`well_half_width` below which restraints will be hidden.
+        * use_coordinate_alignment (default = True):
+            - if True, reference and template residues will be matched by progressively breaking down
+              the models into groups that approximately align as rigid bodies. This is usually the 
+              preferable approach, but fails in cases where the working model is badly wrong (e.g. has 
+              large register errors). If False, residues will be matched strictly by sequence alignment.
+              This may be preferable when restraining against an AlphaFold model.
         * adjust_for_confidence (default = False):
             - if true, interpret B-factors of the template atoms as a confidence score, the 
               definition of which is controlled by :attr:`confidence_type`, and adjust 
               :attr:`kappa`, :attr:`tolerance` and :attr:`fall_off` according to the mean 
               confidence for each restrained atom pair.
-        * confidence_type (default = "plddt"):
-            - the type of confidence score used. Currently only "plddt" (predicted local distance 
-              difference test) is supported. This is the scoring scheme used by AlphaFold2.
+        * confidence_type (default = "pae"):
+            - the type of confidence score used. Current options are "pae" (predicted aligned error) and
+              "plddt" (predicted local distance difference test). For the "pae" option, multi-chain template 
+              models are NOT currently supported.
+        * pae_matrix (default = None):
+            - used if adjust_for_confidence is True and confidence_type is "pae". If the reference model
+              was downloaded from the AlphaFold database, leave this argument as None and the relevant PAE
+              matrix will be automatically fetched. Otherwise, the matrix should be a 2D Numpy array with entry (i,j) 
+              equal to the PAE of residue number i relative to residue number j. 
+
     '''
     from chimerax.std_commands.align import IterationError
     from chimerax.isolde import session_extensions as sx
@@ -491,6 +543,31 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                 'Residues are {} in {}'.format(trs.numbers, ','.join(s.id_string for s in trs.structures)))
     restrained_model = restrained_us[0]
     log = restrained_model.session.logger
+    if adjust_for_confidence and confidence_type not in ('plddt','pae'):
+        raise UserError('confidence_type must be one of ("plddt", "pae")!')
+
+    if adjust_for_confidence:
+        if confidence_type=='pae':
+            chains = set()
+            for trs in template_residues:
+                chains.update(set(trs.unique_chain_ids))
+            if len(chains) != 1:
+                raise UserError('Weighting according to PAE is currently only supported for single-chain templates!')
+            if pae_matrix is None:
+                from chimerax.isolde.reference_model.alphafold import alphafold_id, fetch_alphafold_pae
+                tm = template_residues[0].unique_structures[0]
+                aid = alphafold_id(tm)
+                if aid is None:
+                    raise UserError(f'Template model #{tm.id_string} does not appear to be from the AlphaFold server. You will need to provide a PAE matrix separately.')
+                uniprot_id = aid.split('-')[1]
+                try:
+                    pae_matrix = fetch_alphafold_pae(session, uniprot_id)
+                except:
+                    raise UserError(f'Failed to fetch the PAE matrix for template model #{tm.id_string}!')
+        elif confidence_type=='plddt':
+            confidence_multiplier = plddt_multiplier(template_us.atoms)
+
+
 
     adrm = sx.get_adaptive_distance_restraint_mgr(restrained_model)
     if display_threshold is not None:
@@ -533,7 +610,10 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                 if ra1.residue == ra2.residue:
                     continue
                 if adjust_for_confidence:
-                    scores = [template_as[i].bfactor, template_as[ind].bfactor]
+                    if confidence_type=='plddt':
+                        scores = [template_as[i].bfactor*confidence_multiplier, template_as[ind].bfactor*confidence_multiplier]
+                    elif confidence_type=='pae':
+                        scores = [pae_matrix[template_as[i].residue.number-1,template_as[ind].residue.number-1]]
                     kappa_adj, tol_adj, falloff_adj = adjust_distance_restraint_terms_by_confidence(scores, confidence_type)
                     if kappa_adj == 0:
                         continue
@@ -556,30 +636,32 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                     dr.alpha = -2 - fall_off * log(dist) - falloff_adj
                 dr.enabled = True
 
-
     if all(trs == rrs for trs, rrs in zip(template_residues, restrained_residues)):
         # If the template is identical to the model, we can just go ahead and restrain
 
-        [apply_restraints(trs, rrs, adjust_for_confidence, confidence_type) for trs, rrs in zip(template_residues, restrained_residues)]
+        return [apply_restraints(trs, rrs, adjust_for_confidence, confidence_type) for trs, rrs in zip(template_residues, restrained_residues)]
     else:
-        # If we're not simply restraining the model to itself, we need to do an
-        # alignment to get a matching pair of residue sequences
-        tpa, rpa = paired_principal_atoms(sequence_align_all_residues(
-            session, template_residues, restrained_residues
-        ))
-        from chimerax.std_commands import align
-        from chimerax.atomic import Residues
-        while len(tpa) >3 and len(rpa) >3:
-            try:
-                ta, ra, *_ = align.align(session, tpa, rpa, move=False,
-                    cutoff_distance=alignment_cutoff)
-            except IterationError:
-                log.info(('No further alignments of 3 or more residues found.'))
-                break
-            tr, rr = [ta.residues, ra.residues]
-            apply_restraints(tr, rr, adjust_for_confidence, confidence_type)
-            tpa = tpa.subtract(ta)
-            rpa = rpa.subtract(ra)
+        if not use_coordinate_alignment:
+            atrs, arrs = sequence_align_all_residues(session, template_residues, restrained_residues)
+            return apply_restraints(atrs, arrs, adjust_for_confidence, confidence_type)
+        else:
+            # If we're not simply restraining the model to itself, we need to do an
+            # alignment to get a matching pair of residue sequences
+            tpa, rpa = paired_principal_atoms(sequence_align_all_residues(
+                session, template_residues, restrained_residues
+            ))
+            from chimerax.std_commands import align
+            while len(tpa) >3 and len(rpa) >3:
+                try:
+                    ta, ra, *_ = align.align(session, tpa, rpa, move=False,
+                        cutoff_distance=alignment_cutoff)
+                except IterationError:
+                    log.info(('No further alignments of 3 or more residues found.'))
+                    break
+                tr, rr = [ta.residues, ra.residues]
+                apply_restraints(tr, rr, adjust_for_confidence, confidence_type)
+                tpa = tpa.subtract(ta)
+                rpa = rpa.subtract(ra)
 
 
 
@@ -615,9 +697,21 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
         #         rrs = concatenate(found_rrs)
         #         apply_restraints(trs, rrs)
 
+def plddt_multiplier(atoms):
+    '''
+    Different implementations of the AlphaFold2 algorithm provide pLDDT in the B-factor column on 
+    either a 0-1 or 0-100 range. For normalisation purposes, we assume that if any atom has a 
+    B-factor over 1 then the range is 0-100. 
+    '''
+    if atoms.bfactors.max() <= 1:
+        return 1.0
+    return 0.01
+
 def adjust_distance_restraint_terms_by_confidence(confidence_scores, confidence_type='plddt'):
     if confidence_type=='plddt':
         return adjust_distance_restraint_terms_by_predicted_lddt(confidence_scores)
+    elif confidence_type=='pae':
+        return adjust_distance_restraint_terms_by_pae(confidence_scores[0])
     from chimerax.core.errors import UserError
     raise UserError(f'No confidence type "{confidence_type}"!')
 
@@ -625,12 +719,21 @@ def adjust_distance_restraint_terms_by_confidence(confidence_scores, confidence_
 def adjust_distance_restraint_terms_by_predicted_lddt(confidence_scores):
     from math import exp
     # Use the least-confident position for weighting purposes
-    c = min(confidence_scores)/100
+    c = min(confidence_scores)
     if c<0.5:
         return 0,0,0
     kappa_adj = exp(-5*(c-1)**2)
     tol_adj = exp(2*(c-1)**2)
     falloff_adj = exp(-3*(c-1))-1
+    return kappa_adj, tol_adj, falloff_adj
+
+def adjust_distance_restraint_terms_by_pae(pae):
+    if pae > 4:
+        return 0,0,0
+    from math import exp
+    kappa_adj = exp(-0.1*pae**2)
+    tol_adj = exp((pae/4)**2)
+    falloff_adj = (pae-0.2)/2
     return kappa_adj, tol_adj, falloff_adj
 
 

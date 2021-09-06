@@ -145,8 +145,20 @@ def _dihedral_names(backbone, sidechains):
     return names
 
 def restrain_torsions(session, residues, template_residues=None,
-        backbone=True, sidechains=True, angle_range=60, alpha=0.2,
-        spring_constant=250, identical_sidechains_only=True):
+        backbone=True, sidechains=True, angle_range=None, alpha=None,
+        spring_constant=250, identical_sidechains_only=True, adjust_for_confidence=False,
+        confidence_type='plddt'):
+    if angle_range is None:
+        if adjust_for_confidence:
+            angle_range = 150
+        else:
+            angle_range = 60
+    if alpha is None:
+        if adjust_for_confidence:
+            alpha = 0.5
+        else:
+            alpha = 0.2
+
     logger = session.logger
     if not residues:
         raise UserError('Must specify residues to restrain')
@@ -172,7 +184,8 @@ def restrain_torsions(session, residues, template_residues=None,
         restrain_backbone=backbone,
         restrain_sidechains=sidechains, kappa=kappa, alpha=alpha,
         spring_constant=spring_constant,
-        identical_sidechains_only=identical_sidechains_only)
+        identical_sidechains_only=identical_sidechains_only,
+        adjust_for_confidence=adjust_for_confidence, confidence_type=confidence_type)
 
 def adjust_torsions(session, residues, backbone=True,
         sidechains=True, angle_range=None, alpha=None, spring_constant=None):
@@ -229,12 +242,15 @@ def register_isolde_restrain(logger):
                 ('custom_atom_names', ListOf(StringArg)),
                 ('per_chain', BoolArg),
                 ('distance_cutoff', FloatArg),
+                ('use_coordinate_alignment', BoolArg),
                 ('alignment_cutoff', FloatArg),
                 ('well_half_width', FloatArg),
                 ('kappa', FloatArg),
                 ('tolerance', FloatArg),
                 ('fall_off', FloatArg),
-                ('display_threshold', FloatArg)
+                ('display_threshold', FloatArg),
+                ('adjust_for_confidence', BoolArg),
+                ('confidence_type', EnumOf(['plddt','pae']))
             ]
         )
         register('isolde restrain distances', desc, restrain_distances, logger=logger)
@@ -316,6 +332,7 @@ def register_isolde_restrain(logger):
                 ('alpha', FloatArg),
                 ('spring_constant', FloatArg),
                 ('identical_sidechains_only', BoolArg),
+                ('adjust_for_confidence', BoolArg),
             ]
         )
         register('isolde restrain torsions', desc, restrain_torsions, logger=logger)

@@ -4,7 +4,8 @@ def write_phenix_refine_defaults(session, model, xmapset,
         include_hydrogens=False,
         num_processors=1,
         num_macrocycles=6,
-        nqh_flips=True
+        nqh_flips=True,
+        scattering_type='xray',
         ):
     if restrain_coordination_sites:
         raise NotImplementedError('Coordination site restraints not yet implemented')
@@ -25,6 +26,8 @@ def write_phenix_refine_defaults(session, model, xmapset,
     if not include_hydrogens:
         model.atoms.selecteds=sel_mask
 
+    if scattering_type=='xray':
+        scattering_type='n_gaussian'
     run(session, 'save {} #{}'.format(reflections_file_name, xmapset.id_string))
     out_str = f'''
 
@@ -84,6 +87,7 @@ refinement {{
         nqh_flips = {nqh_flips}
         number_of_macro_cycles = {num_macrocycles}
         nproc = {num_processors}
+        scattering_table = {scattering_type}
     }}
     hydrogens {{
         refine = individual *riding Auto

@@ -2456,6 +2456,13 @@ class TuggableAtomsMgr(_RestraintMgr):
         # self._near_atoms_radius = 0.5
         model.add([self])
 
+    def delete(self):
+        try:
+            self.model.triggers.remove_handler(self._model_update_handler)
+        except:
+            pass
+        super().delete()
+
     def _prepare_drawings(self):
         ad = self._arrow_drawing = Drawing('Tugging force vectors')
         ad.pickable=False
@@ -3307,7 +3314,10 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
         drs.cs = data['cs']
         drs.alphas=data['alphas']
         drs.enableds=data['enableds']
-        self.display_threshold = data['display_threshold']
+        # Required for backward-compatibility (versions <= 1.2 didn't save this)
+        display_threshold = data.get('display_threshold', None)
+        if display_threshold is not None:
+            self.display_threshold = display_threshold
 
     def save_checkpoint(self, atoms=None):
         if atoms is None:

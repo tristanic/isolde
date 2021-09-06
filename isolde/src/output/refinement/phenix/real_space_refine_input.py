@@ -2,7 +2,8 @@
 def write_real_space_refine_defaults(session, model, volume, resolution, file_name=None, 
         restrain_coordination_sites=False,
         restrain_positions=False,
-        include_hydrogens=False
+        include_hydrogens=False,
+        ncs_constraints=False
         ):
     from chimerax.clipper.maps.map_handler_base import XmapHandlerBase
     if isinstance(volume, XmapHandlerBase):
@@ -49,7 +50,7 @@ write_pkl_stats = False
 model_format = pdb *mmcif
 mask_and_he_map = False
 resolution_factor = 0.25
-ncs_constraints = False
+ncs_constraints = {ncs_constraints}
 refine_ncs_operators = Auto
 variable_rama_potential = False
 weight = None

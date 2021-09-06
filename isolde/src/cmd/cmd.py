@@ -88,7 +88,8 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         if len(us) != 1:
             raise UserError('All atoms must be from the same model!')
         model = us[0]
-        isolde.change_selected_model(model)
+        if model != isolde.selected_model:
+            isolde.change_selected_model(model)
         session.selection.clear()
         atoms.selected = True
         isolde.start_sim()
@@ -145,8 +146,11 @@ def isolde_ignore(session, residues=None, ignore=True):
                 len([r for r in m.residues if r.isolde_ignore]), m.id_string
             ))
 
-def incr_b_factor(session, atoms, b_add):
+def incr_b_factor(session, b_add, atoms=None):
     B_MAX = 500
+    if atoms is None:
+        from chimerax.atomic import selected_atoms
+        atoms = selected_atoms(session)
     if any(atoms.bfactors+b_add < 0):
         raise UserError('Applying this command would reduce the B-factor of at least one atom to below zero.')
     atoms.bfactors += b_add
@@ -348,9 +352,11 @@ def register_isolde(logger):
         desc = CmdDesc(
             synopsis=('Change the B-factors of a group of atoms by the specified amount'),
             required=[
+                ('b_add', FloatArg),
+            ],
+            optional=[
                 ('atoms', AtomsArg),
-                ('b_add', FloatArg)
-            ]
+            ],
         )
         register('isolde adjust bfactors', desc, incr_b_factor, logger=logger)
 
