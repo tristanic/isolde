@@ -188,7 +188,7 @@ class Isolde():
 
         self._available_colors = copy.copy(colors.BuiltinColors)
         # Remove duplicates
-        for key in self._available_colors:
+        for key in list(self._available_colors):
             if ' ' in key:
                 stripped_key = key.replace(' ',"")
                 self._available_colors.pop(stripped_key, None)
