@@ -25,7 +25,7 @@ def initialize_openmm():
             from os import environ, path
             from chimerax import app_lib_dir
             environ['OPENMM_PLUGIN_DIR'] = path.join(app_lib_dir, 'plugins')
-# initialize_openmm()
+initialize_openmm()
 
 
 def register_ignored_residues_attr(session):
