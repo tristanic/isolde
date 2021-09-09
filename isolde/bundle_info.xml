@@ -85,6 +85,8 @@ with the surroundings.
       <CompileArgument platform="mac">-mmacosx-version-min=10.12</CompileArgument>
       <!-- <CompileArgument>-fno-stack-protector</CompileArgument> -->
       <IncludeDir>extern/openmm/openmmapi/include</IncludeDir>
+      <IncludeDir>extern/openmm/serialization/include</IncludeDir>
+      <IncludeDir>extern/openmm/olla/include</IncludeDir>
       <LibraryDir>/home/tic20/.local/share/ChimeraX/1.3/site-packages/openmm/lib</LibraryDir>
       <IncludeDir>src/deps/lbfgs/include</IncludeDir>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
