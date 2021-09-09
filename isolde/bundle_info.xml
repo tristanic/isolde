@@ -39,7 +39,7 @@ with the surroundings.
        CLibrary gives the name of the module
        Source files are listed in one or more SourceFile elements -->
   <CModule name="mcsplit" usesNumpy="True">
-      <IncludeDir platform="windows">C:\include</IncludeDir>
+      <IncludeDir>extern/pybind11/include</IncludeDir>
       <SourceFile>src/graph/graph.cpp</SourceFile>
       <SourceFile>src/graph/mcsp.cpp</SourceFile>
       <SourceFile>src/graph/mcsplit_ext.cpp</SourceFile>
@@ -84,9 +84,7 @@ with the surroundings.
       <Library>pyinstance</Library>
       <CompileArgument platform="mac">-mmacosx-version-min=10.12</CompileArgument>
       <!-- <CompileArgument>-fno-stack-protector</CompileArgument> -->
-      <IncludeDir platform="mac">/opt/openmm750/include</IncludeDir>
-      <IncludeDir platform="linux">/home/tic20/my-gits/openmm/build/python/openmm/include/</IncludeDir>
-      <IncludeDir platform="windows">C:\opt\openmm750\Library\include</IncludeDir>
+      <IncludeDir>extern/openmm/openmmapi/include</IncludeDir>
       <LibraryDir>/home/tic20/.local/share/ChimeraX/1.3/site-packages/openmm/lib</LibraryDir>
       <IncludeDir>src/deps/lbfgs/include</IncludeDir>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>

@@ -1,0 +1,6 @@
+[submodule "isolde/extern/openmm"]
+	path = isolde/extern/openmm
+	url = https://github.com/openmm/openmm.git
+[submodule "isolde/extern/pybind11"]
+	path = isolde/extern/pybind11
+	url = https://github.com/pybind/pybind11.git
