@@ -150,7 +150,7 @@ class Clash_Table_Mgr:
         # Sort clashes in decreasing order of overlap
         clash_list = sorted(clash_list, key=lambda x: x[1], reverse=True)
 
-        from PyQt5.QtWidgets import QTableWidgetItem
+        from Qt.QtWidgets import QTableWidgetItem
         for i, (catoms, overlap) in enumerate(clash_list):
             a1, a2 = catoms
             r1, r2 = catoms.residues
@@ -196,7 +196,7 @@ class Clash_Table_Mgr:
         resnames = residues.names
         resnums = residues.numbers
         anames = catoms.names
-        from PyQt5.QtWidgets import QTableWidgetItem
+        from Qt.QtWidgets import QTableWidgetItem
         from chimerax.atomic import Atoms
         t.setRowCount(len(catoms))
         for i, (a, cid, rname, rnum, aname, force) in enumerate(zip(

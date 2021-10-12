@@ -45,7 +45,7 @@ class ISOLDE_ToolUI(ToolInstance):
         basedir = os.path.dirname(os.path.abspath(__file__))
         from PyQt5 import uic
         uifile = os.path.join(basedir, 'ui', 'IsoldeFrame.ui')
-        from PyQt5 import QtWidgets, QtGui
+        from Qt import QtWidgets, QtGui
         #from . import isoldewidget
         from .resources import resources_rc
         mw = self.mainwin = QtWidgets.QFrame(parent=parent)

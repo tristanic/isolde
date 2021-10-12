@@ -9,7 +9,7 @@
 
 
 class IntermediatePalette():
-    from PyQt5 import QtGui, QtCore
+    from Qt import QtGui, QtCore
     palette = QtGui.QPalette()
     brush = QtGui.QBrush(QtGui.QColor(0, 0, 0))
     brush.setStyle(QtCore.Qt.SolidPattern)
@@ -149,7 +149,7 @@ class IntermediatePalette():
 
 
 class ExpertPalette():
-    from PyQt5 import QtGui, QtCore
+    from Qt import QtGui, QtCore
     palette = QtGui.QPalette()
     brush = QtGui.QBrush(QtGui.QColor(0, 0, 0))
     brush.setStyle(QtCore.Qt.SolidPattern)
