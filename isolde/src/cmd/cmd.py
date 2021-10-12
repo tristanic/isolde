@@ -143,7 +143,7 @@ def isolde_ignore(session, residues=None, ignore=True):
             for r in mres:
                 r.isolde_ignore = ignore
             session.logger.info('ISOLDE: currently ignoring {} residues in model {}'.format(
-                len([r for r in m.residues if r.isolde_ignore]), m.id_string
+                len([r for r in m.residues if getattr(r, 'isolde_ignore', False)]), m.id_string
             ))
 
 def incr_b_factor(session, b_add, atoms=None):

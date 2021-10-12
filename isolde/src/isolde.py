@@ -352,7 +352,7 @@ class Isolde():
         if m is None:
             return None
         from chimerax.atomic import Residues
-        return Residues([r for r in m.residues if r.isolde_ignore])
+        return Residues([r for r in m.residues if getattr(r, 'isolde_ignore', False)])
 
     @ignored_residues.setter
     def ignored_residues(self, residues):
@@ -2505,7 +2505,7 @@ class Isolde():
                 # I don't *think* this can happen, but may as well be safe
                 return
             
-            if not m.isolde_initialized:
+            if not getattr(m, 'isolde_initialized', False):
                 atoms_with_alt_locs = m.atoms[m.atoms.num_alt_locs>0]
                 if len(atoms_with_alt_locs):
                     from .dialog import choice_warning

@@ -31,17 +31,17 @@ initialize_openmm()
 def register_ignored_residues_attr(session):
     from chimerax.atomic import Residue
     Residue.register_attr(session, 'isolde_ignore',
-        'isolde', default_value=False, attr_type=bool)
+        'isolde', attr_type=bool)
 
 def register_domain_cluster_attr(session):
     from chimerax.atomic import Residue
     Residue.register_attr(session, 'isolde_domain',
-        'isolde', attr_type=int, default_value=-1)
+        'isolde', attr_type=int, can_return_none=True)
 
 def register_model_isolde_init_attr(session):
     from chimerax.atomic import AtomicStructure
     AtomicStructure.register_attr(session, 'isolde_initialized',
-        'isolde', attr_type=bool, default_value=False)
+        'isolde', attr_type=bool)
 
 
 def _version():
