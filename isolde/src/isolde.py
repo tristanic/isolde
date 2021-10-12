@@ -1010,39 +1010,39 @@ class Isolde():
 
 
         if structures_need_update:
-            mmcb.blockSignals(True)
-            mmcb.clear()
+            from .ui.util import slot_disconnected
+            with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model):
+                mmcb.clear()
 
-            _models = self.session.models.list()
-            models = sorted(_models, key = lambda m: m.id)
-            mtd = {
-                AtomicStructure: [],
-                Volume: []
-            }
+                _models = self.session.models.list()
+                models = sorted(_models, key = lambda m: m.id)
+                mtd = {
+                    AtomicStructure: [],
+                    Volume: []
+                }
 
-            for m in models:
-                for mtype in mtd.keys():
-                    if type(m) == mtype:
-                        mtd[mtype].append(m)
+                for m in models:
+                    for mtype in mtd.keys():
+                        if type(m) == mtype:
+                            mtd[mtype].append(m)
 
 
-            valid_models = mtd[AtomicStructure]
-            valid_models = sorted(valid_models, key=lambda m: m.id)
+                valid_models = mtd[AtomicStructure]
+                valid_models = sorted(valid_models, key=lambda m: m.id)
 
-            self._available_models = {}
+                self._available_models = {}
 
-            for m in valid_models:
-                id_str = '{}. {}'.format(m.id_string, m.name)
-                mmcb.addItem(id_str, m)
-                self._available_models[id_str] = m
-            mmcb.blockSignals(False)
+                for m in valid_models:
+                    id_str = '{}. {}'.format(m.id_string, m.name)
+                    mmcb.addItem(id_str, m)
+                    self._available_models[id_str] = m
 
         if volumes_need_update:
             self._populate_available_volumes_combo_box()
             self._populate_rot_mdff_target_combo_box()
 
-        self._change_selected_model(model=current_model)
         self._initialize_maps(current_model)
+        self._change_selected_model(model=current_model)
         for p in self._ui_panels:
             p.chimerax_models_changed(self.selected_model)
         self._update_sim_control_button_states()
@@ -2462,56 +2462,61 @@ class Isolde():
             # self._selected_model.selected = True
             self._initialize_maps(m)
 
-
-    def _change_selected_model(self, *_, model = None, force = False):
+    def _change_selected_model(self, *_, model=None, force=False):
         if self.simulation_running:
             return
         if not hasattr(self, '_model_changes_handler'):
             self._model_changes_handler = None
-        sm = self._selected_model
-        if sm is not None:
-            if self._model_changes_handler is not None:
-                sm.triggers.remove_handler(self._model_changes_handler)
-                self._model_changes_handler = None
-
-        if len(self._available_models) == 0:
-            self._selected_model = None
-            self._update_iffy_rota_list()
-            self._update_iffy_peptide_lists()
-            return
+        from .ui.util import slot_disconnected
+        session = self.session
         iw = self.iw
         mmcb = iw._master_model_combo_box
-        if not mmcb.count():
+
+        sm = self._selected_model
+
+        if sm is not None:
+            if sm == model:
+                with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model):
+                    mmcb.setCurrentIndex(mmcb.findData(model))
+                return
+            else:
+                if self._model_changes_handler is not None:
+                    sm.triggers.remove_handler(self._model_changes_handler)
+                    self._model_changes_handler = None
+        
+        if len(self._available_models) == 0 or mmcb.count() == 0:
             self._selected_model = None
             self._update_iffy_rota_list()
             self._update_iffy_peptide_lists()
             return
-        old_index = mmcb.currentIndex()
-        if model is not None:
-            # Find and select the model in the master combo box, which
-            # will automatically call this function again with model = None
-            index = iw._master_model_combo_box.findData(model)
-            if index == -1 and mmcb.count():
-                index = 0
-            mmcb.setCurrentIndex(index)
-            # If the new index happens to be the same as the old one, then the
-            # currentIndexChanged trigger won't fire.
-            if index != old_index:
+
+        with session.triggers.block_trigger('remove models'), session.triggers.block_trigger('add models'), \
+                slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model):
+
+            if model is not None:
+                index = mmcb.findData(model)
+                if index == -1 and mmcb.count():
+                    index = 0
+                mmcb.setCurrentIndex(index)
+            if mmcb.currentIndex() == -1:
+                mmcb.setCurrentIndex(0)
+            m = mmcb.currentData()
+            if m == sm:
+                # I don't *think* this can happen, but may as well be safe
                 return
-        if mmcb.currentIndex() == -1:
-            mmcb.setCurrentIndex(0)
-        m = mmcb.currentData()
-        if force or (self._selected_model != m and m is not None):
-            atoms_with_alt_locs = m.atoms[m.atoms.num_alt_locs>0]
-            if len(atoms_with_alt_locs):
-                from .dialog import choice_warning
-                result = choice_warning(f'This model contains {len(atoms_with_alt_locs)} atoms with alternate '
-                    'conformers. ISOLDE cannot currently see these, but they will be carried through to the '
-                    'output model. In most cases it is best to remove them. Would you like to do so now?')
-                if result:
-                    m.delete_alt_locs()
-                    atoms_with_alt_locs.occupancies = 1
-                    self.session.logger.info(f'Removed all altlocs in #{m.id_string} and reset associated occupancies to 1.')
+            
+            if not m.isolde_initialized:
+                atoms_with_alt_locs = m.atoms[m.atoms.num_alt_locs>0]
+                if len(atoms_with_alt_locs):
+                    from .dialog import choice_warning
+                    result = choice_warning(f'This model contains {len(atoms_with_alt_locs)} atoms with alternate '
+                        'conformers. ISOLDE cannot currently see these, but they will be carried through to the '
+                        'output model. In most cases it is best to remove them. Would you like to do so now?')
+                    if result:
+                        m.delete_alt_locs()
+                        atoms_with_alt_locs.occupancies = 1
+                        self.session.logger.info(f'Removed all altlocs in #{m.id_string} and reset associated occupancies to 1.')
+                m.isolde_initialized = True
             from chimerax.clipper.symmetry import get_symmetry_handler
             sh = get_symmetry_handler(m, create=True, auto_add_to_session=True)
             from .citation import add_isolde_citation
@@ -2535,7 +2540,7 @@ class Isolde():
             self.triggers.activate_trigger('selected model changed', data=m)
             self._update_iffy_rota_list()
             self._update_iffy_peptide_lists()
-        self._status('')
+
 
     def _change_b_and_a_padding(self, *_):
         self.params.num_selection_padding_residues = self.iw._sim_basic_mobile_b_and_a_spinbox.value()

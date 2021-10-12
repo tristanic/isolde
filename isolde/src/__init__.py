@@ -38,6 +38,12 @@ def register_domain_cluster_attr(session):
     Residue.register_attr(session, 'isolde_domain',
         'isolde', attr_type=int, default_value=-1)
 
+def register_model_isolde_init_attr(session):
+    from chimerax.atomic import AtomicStructure
+    AtomicStructure.register_attr(session, 'isolde_initialized',
+        'isolde', attr_type=bool, default_value=False)
+
+
 def _version():
     import pkg_resources
     return pkg_resources.require('ChimeraX-ISOLDE')[0].version
@@ -57,6 +63,7 @@ class _MyAPI(BundleAPI):
         #initialize_openmm()
         register_ignored_residues_attr(session)
         register_domain_cluster_attr(session)
+        register_model_isolde_init_attr(session)
 
     @staticmethod
     def get_class(class_name):

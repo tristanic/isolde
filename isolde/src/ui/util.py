@@ -1,5 +1,6 @@
 
-from PyQt5.QtWidgets import QComboBox, QApplication
+from Qt.QtWidgets import QComboBox, QApplication
+from contextlib import contextmanager
 
 def win_auto_resize_combo_box_hack(combobox):
     import sys
@@ -69,3 +70,23 @@ def fix_combo_box_view_width(combobox):
             max_width = width
 
     v.setMinimumWidth(max_width+scroll_width)
+
+@contextmanager
+def slot_disconnected(signal, slot):
+    '''
+    Temporarily disconnect a slot from a signal using
+
+    .. code-block:: python
+    
+        with slot_disconnected(signal, slot):
+            do_something()
+    
+    The signal is guaranteed to be reconnected even if do_something() throws an error.
+    '''
+    try:
+        # disconnect() throws a TypeError if the method is not connected
+        signal.disconnect(slot)
+    except TypeError:
+        pass
+    yield
+    signal.connect(slot)
