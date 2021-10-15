@@ -53,6 +53,19 @@ class Unparameterised_Residues_Mgr:
         self._stub_frame.show()
         self._main_frame.hide()
 
+    H_TO_HEAVY_ATOM_THRESHOLD_RATIO = 0.5
+    def suspiciously_low_h(self, residues):
+        hydrogens = residues.atoms[residues.atoms.element_names=='H']
+        heavy_atoms = residues.atoms[residues.atoms.element_names!='H']
+        if len(hydrogens)/len(heavy_atoms) < self.H_TO_HEAVY_ATOM_THRESHOLD_RATIO:
+            return True
+    
+    def waters_without_h(self, residues):
+        waters = residues[residues.names=='HOH']
+        for w in waters:
+            if len(w.atoms) != 3:
+                return True
+
     def _update_unparameterised_residues_list(self, *_, ff=None, ambiguous=None, unmatched=None, residues=None):
         table = self._residue_table
         tlist = self._template_list
@@ -65,12 +78,17 @@ class Unparameterised_Residues_Mgr:
                 return
             residues = self.isolde.selected_model.residues
             h = residues.atoms[residues.atoms.element_names =='H']
+            addh = False
+            from ..dialog import choice_warning
             if not len(h):
-                from ..dialog import choice_warning
                 addh = choice_warning('This model does not appear to have hydrogens. Would you like to add them first?')
-                if addh:
-                    from chimerax.core.commands import run
-                    run(self.session, 'addh')
+            elif self.suspiciously_low_h(residues):
+                addh = choice_warning('This model has significantly fewer hydrogens than expected for a natural molecule. Would you like to run AddH first?')
+            elif self.waters_without_h(residues):
+                addh = choice_warning('Some or all waters are missing hydrogens. Would you like to add them first?')
+            if addh:
+                from chimerax.core.commands import run
+                run(self.session, 'addh')
             from chimerax.atomic import Residues
             residues = Residues(sorted(residues, key=lambda r:(r.chain_id, r.number, r.insertion_code)))
             if ff is None:
