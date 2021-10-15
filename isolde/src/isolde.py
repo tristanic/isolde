@@ -2516,6 +2516,8 @@ class Isolde():
                         m.delete_alt_locs()
                         atoms_with_alt_locs.occupancies = 1
                         self.session.logger.info(f'Removed all altlocs in #{m.id_string} and reset associated occupancies to 1.')
+                from .atomic.util import correct_pseudosymmetric_sidechain_atoms
+                correct_pseudosymmetric_sidechain_atoms(session, m.residues)
                 m.isolde_initialized = True
             from chimerax.clipper.symmetry import get_symmetry_handler
             sh = get_symmetry_handler(m, create=True, auto_add_to_session=True)
@@ -2924,6 +2926,8 @@ class Isolde():
                     xmapset.live_xmap_mgr.bulk_solvent_optimization_needed()
                     xmapset.recalc_needed()
         self._update_sim_status_indicator()
+        from .atomic.util import correct_pseudosymmetric_sidechain_atoms
+        correct_pseudosymmetric_sidechain_atoms(self.session, self.sim_manager.sim_construct.mobile_residues)
         self._sim_manager = None
         self.session.logger.info('ISOLDE: stopped sim')
         # self.iw._sim_running_indicator.setVisible(False)

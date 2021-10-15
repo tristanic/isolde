@@ -90,6 +90,10 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
     if len(restrained_us) != 1:
         raise UserError('Restrained residues must be from a single model!')
     restrained_model = restrained_us[0]
+    from ..atomic.util import correct_pseudosymmetric_sidechain_atoms
+    correct_pseudosymmetric_sidechain_atoms(session, restrained_residues)
+    if template_model != restrained_model:
+        correct_pseudosymmetric_sidechain_atoms(session, template_residues)
     if adjust_for_confidence:
         if confidence_type=='plddt':
             confidence_multiplier=plddt_multiplier(template_model.atoms)
