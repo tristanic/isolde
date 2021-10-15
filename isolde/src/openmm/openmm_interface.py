@@ -582,6 +582,9 @@ class Sim_Manager:
         fixed_atoms = self._add_fixed_atoms_from_distance_restraints(mobile_atoms, fixed_atoms)
         if excluded_residues is not None:
             mobile_atoms, fixed_atoms, excluded_atoms = self._add_fixed_atoms_from_excluded_residues(mobile_atoms, fixed_atoms, excluded_residues)
+        if len(mobile_atoms) == 0:
+            from chimerax.core.errors import UserError
+            raise UserError('Selection leads to a simulation with no mobile atoms!')
 
         sc = self.sim_construct = Sim_Construct(model, mobile_atoms, fixed_atoms, excluded_atoms)
         self.prepare_sim_visualisation()
