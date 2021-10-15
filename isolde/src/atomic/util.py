@@ -13,9 +13,11 @@ def correct_pseudosymmetric_sidechain_atoms(session, residues):
     for r in residues[numpy.in1d(residues.names, rings)]:
         flip_if_necessary(session, r, ('CA','CB','CG','CD1'))
     for r in residues[residues.names=='ASP']:
-        flip_if_necessary(session, r, ('CA','CB','CG','OD1'))
+        if not acid_is_substituted_or_protonated(r):
+            flip_if_necessary(session, r, ('CA','CB','CG','OD1'))
     for r in residues[residues.names=='GLU']:
-        flip_if_necessary(session, r, ('CB','CG','CD1','OE1'))
+        if not acid_is_substituted_or_protonated(r):
+            flip_if_necessary(session, r, ('CB','CG','CD1','OE1'))
     for r in residues[residues.names=='ARG']:
         flip_if_necessary(session, r, ('CD','NE','CZ','NH2'))
         
@@ -31,7 +33,20 @@ def flip_if_necessary(session, residue, chi_atom_names):
     if abs(angle) > 90:
         flip_sidechain_on_bond(session, atoms[1:3])
 
-
+def acid_is_substituted_or_protonated(residue):
+    if residue.name == 'ASP':
+        pos = 'D'
+    elif residue.name == 'GLU':
+        pos = 'E'
+    else:
+        raise TypeError('This method is only applicable to ASP or GLU residues!')
+    for i in (1,2):
+        o = residue.find_atom(f'O{pos}{i}')
+        if o is None:
+            return False
+        if len(o.neighbors) > 1:
+            return True
+    return False
 
 def flip_sidechain_on_bond(session, atoms):
     a, b = atoms
