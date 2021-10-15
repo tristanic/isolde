@@ -250,11 +250,13 @@ class RamaPlot:
 
     @property
     def current_model(self):
+        if self._current_model is not None and self._current_model.was_deleted:
+            self._current_model = None
         return self._current_model
 
     @current_model.setter
     def current_model(self, model):
-        if self._model_changes_handler is not None:
+        if self._model_changes_handler is not None and self.current_model is not None:
             self.current_model.triggers.remove_handler(
                 self._model_changes_handler
             )
