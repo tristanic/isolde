@@ -78,7 +78,7 @@ class CMAPLoader:
         return self._maps
 
     def __getitem__(self, resname):
-        return self._map_index[resname]
+        return self._map_index.get(resname, 3)
 
     def map_index(self, resname):
         return self._map_index[resname]
