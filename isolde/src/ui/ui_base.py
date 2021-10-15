@@ -9,15 +9,17 @@
 
 
 class UI_Panel_Base:
-    def __init__(self, session, isolde, main_frame):
+    def __init__(self, session, isolde, main_frame, sim_sensitive=True):
         self.isolde = isolde
         self.session = session
         self.main_frame = main_frame
         self._chimerax_trigger_handlers = []
-        self._isolde_trigger_handlers = [
-            isolde.triggers.add_handler('simulation started', self.sim_start_cb),
-            isolde.triggers.add_handler('simulation terminated', self.sim_end_cb)
-        ]
+        self._isolde_trigger_handlers = []
+        if sim_sensitive:
+            self._isolde_trigger_handlers.extend( [
+                isolde.triggers.add_handler('simulation started', self.sim_start_cb),
+                isolde.triggers.add_handler('simulation terminated', self.sim_end_cb)
+            ])
 
     def sim_start_cb(self, trigger_name, data):
         '''
