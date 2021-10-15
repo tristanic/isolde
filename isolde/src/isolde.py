@@ -3313,6 +3313,12 @@ class Isolde():
         self._event_handler.remove_all_handlers()
         self._isolde_events.remove_all_handlers()
 
+        sm = self.selected_model
+        if sm is not None:
+            if self._model_changes_handler is not None:
+                sm.triggers.remove_handler(self._model_changes_handler)
+                
+
         # Revert mouse modes
         # self._set_chimerax_mouse_mode_panel_enabled(True)
         self._mouse_modes.remove_all_modes()
