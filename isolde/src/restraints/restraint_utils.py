@@ -546,6 +546,11 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
             raise UserError('Template residues must be from a single model! '
                 'Residues are {} in {}'.format(trs.numbers, ','.join(s.id_string for s in trs.structures)))
     restrained_model = restrained_us[0]
+    from ..atomic.util import correct_pseudosymmetric_sidechain_atoms
+    correct_pseudosymmetric_sidechain_atoms(session, restrained_model.residues)
+    for tu in template_us:
+        if tu != restrained_model:
+            correct_pseudosymmetric_sidechain_atoms(session, tu.residues)
     log = restrained_model.session.logger
     if adjust_for_confidence and confidence_type not in ('plddt','pae'):
         raise UserError('confidence_type must be one of ("plddt", "pae")!')
