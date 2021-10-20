@@ -131,7 +131,7 @@ with the surroundings.
     <DataDir>ui</DataDir>
   </DataFiles>
 
-  <Providers manager="toolbar">
+  <!-- <Providers manager="toolbar">
     <Provider tab="ISOLDE" section="Main"
       name="isolde start" display_name="Start ISOLDE" icon="logo_small.png"
       description="Start the ISOLDE GUI"/>
@@ -165,7 +165,7 @@ with the surroundings.
 
 
 
-  </Providers>
+  </Providers> -->
   <Classifiers>
     <!-- Development Status should be compatible with bundle version number -->
     <PythonClassifier>Development Status :: 4 - Beta</PythonClassifier>
