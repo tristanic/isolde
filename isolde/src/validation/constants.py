@@ -30,7 +30,7 @@ def _constant_properties(cls):
     return cls
 
 @_constant_properties
-class _Validation_Defaults:
+class _RotaRamaDefaults:
     _constants = {
         'ROTA_ALLOWED_CUTOFF':      0.02,
         'ROTA_OUTLIER_CUTOFF':      0.0005,
@@ -51,12 +51,9 @@ class _Validation_Defaults:
         'OUTLIER_COLOR':     [255,0,100,255], # Hot pink
         'NA_COLOR':          [100,100,100,255], # Grey
         'TRACK_RAMACHANDRAN_STATUS':    True,
-        'ROUNDS_PER_RAMA_UPDATE':       10,
         'TRACK_ROTAMER_STATUS':         True,
-        'ROUNDS_PER_ROTA_UPDATE':       10,
     }
 
 
 
-
-validation_defaults = _Validation_Defaults()
+rotarama_defaults = _RotaRamaDefaults()

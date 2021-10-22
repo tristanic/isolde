@@ -269,14 +269,3 @@ def generate_interpolator_data(data_dir, cache_dir, file_prefix, wrap_axes = Tru
         outfile.close()
     return (ndim, axis_lengths, min_vals, max_vals, grid_data)
 
-from ..param_mgr import Param_Mgr, autodoc, param_properties
-from .constants import validation_defaults as _val_defaults
-@param_properties
-@autodoc
-class Validation_Params(Param_Mgr):
-    _default_params = {
-        'track_ramachandran_status':    (_val_defaults.TRACK_RAMACHANDRAN_STATUS, None),
-        'rounds_per_rama_update':       (_val_defaults.ROUNDS_PER_RAMA_UPDATE, None),
-        'track_rotamer_status':         (_val_defaults.TRACK_ROTAMER_STATUS, None),
-        'rounds_per_rota_update':       (_val_defaults.ROUNDS_PER_ROTA_UPDATE, None),
-    }
