@@ -75,11 +75,8 @@ class IsoldeParams(Param_Mgr):
             # atom movements
         'remask_maps_during_sim':               (defaults.REMASK_MAPS_DURING_SIM, None),
         'rounds_per_map_remask':                (defaults.ROUNDS_PER_MAP_REMASK, None),
-            # Mask cutoff for a 2mFo-DFc crystallographic or standard EM map
-        'standard_map_mask_cutoff':             (defaults.STANDARD_MAP_MASK_RADIUS, None),
-            # Mask cutoff for a difference map (e.g. mFo-DFc)
-        'difference_map_mask_cutoff':           (defaults.DIFFERENCE_MAP_MASK_RADIUS, None),
-            # Use multiprocessing instead of threads (only available on Linux)
+            # Radius of mask when isolating a selection
+        'map_mask_radius':                      (defaults.STANDARD_MAP_MASK_RADIUS, None),
         'map_shannon_rate':                     (defaults.MAP_SHANNON_RATE, None),
             # Width of the green outline surrounding a selection
         'selection_outline_width':              (defaults.SELECTION_OUTLINE_WIDTH, None),
@@ -545,7 +542,7 @@ class Isolde():
         iw._sim_basic_mobile_b_and_a_spinbox.setValue(params.num_selection_padding_residues)
         iw._sim_basic_mobile_sel_within_spinbox.setValue(params.soft_shell_cutoff_distance)
 
-        iw._sim_basic_xtal_settings_mask_radius_spinbox.setValue(params.standard_map_mask_cutoff)
+        iw._sim_basic_xtal_settings_mask_radius_spinbox.setValue(params.map_mask_radius)
         # iw._sim_basic_xtal_map_weight_spin_box.setValue(params.difference_map_mask_cutoff)
         ####
         # Rebuild tab
@@ -2557,7 +2554,7 @@ class Isolde():
 
     def _change_mask_radius(self, *_):
         rad = self.iw._sim_basic_xtal_settings_mask_radius_spinbox.value()
-        self.params.standard_map_mask_cutoff = rad
+        self.params.map_mask_radius = rad
         if self.selected_model is not None:
             from chimerax.clipper import get_map_mgr
             mmgr = get_map_mgr(self.selected_model)
@@ -2620,7 +2617,7 @@ class Isolde():
         m = self.selected_model
         from chimerax.clipper.symmetry import get_symmetry_handler
         sh = get_symmetry_handler(m)
-        cutoff = self.params.standard_map_mask_cutoff
+        cutoff = self.params.map_mask_radius
         context = self.params.soft_shell_cutoff_distance
         sh.isolate_and_cover_selection(
             atoms, 0, context, cutoff, focus=focus)
@@ -2927,7 +2924,8 @@ class Isolde():
                     xmapset.recalc_needed()
         self._update_sim_status_indicator()
         from .atomic.util import correct_pseudosymmetric_sidechain_atoms
-        correct_pseudosymmetric_sidechain_atoms(self.session, self.sim_manager.sim_construct.mobile_residues)
+        if self.sim_manager is not None:
+            correct_pseudosymmetric_sidechain_atoms(self.session, self.sim_manager.sim_construct.mobile_residues)
         self._sim_manager = None
         self.session.logger.info('ISOLDE: stopped sim')
         # self.iw._sim_running_indicator.setVisible(False)
