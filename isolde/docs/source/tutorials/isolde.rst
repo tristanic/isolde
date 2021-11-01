@@ -14,3 +14,4 @@ situation.)*
     intro/crystal_intro/crystal_intro
     intro/cryo_intro/cryo_intro
     bulk_fitting/bulk_fitting
+    alphafold/from_scratch/from_scratch
