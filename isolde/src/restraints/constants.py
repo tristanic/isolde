@@ -65,3 +65,30 @@ ss_restraints = {
     'Parallel Beta':        _SS_Beta_Parallel(),
     'Antiparallel Beta':    _SS_Beta_Antiparallel(),
 }
+
+@_constant_properties
+class _DefaultColors:
+    _constants = {
+        'PROPER_DIHEDRAL_RESTRAINT_SATISFIED_COLOR': [0,255,0,255], # Bright green
+        'PROPER_DIHEDRAL_RESTRAINT_STRAINED_COLOR':     [255,240,50,255], # Yellow
+        'PROPER_DIHEDRAL_RESTRAINT_SEVERE_COLOR':     [255,0,100,255], # Hot pink
+
+        'DISTANCE_RESTRAINT_BOND_COLOR':                [168, 255, 230, 255],
+        'DISTANCE_RESTRAINT_TARGET_COLOR':              [128, 215, 190, 255],        
+
+        'ADAPTIVE_DIHEDRAL_RESTRAINT_SATISFIED_COLOR':  [0,191,255,255],
+        'ADAPTIVE_DIHEDRAL_RESTRAINT_STRAINED_COLOR':   [255,69,0,255],
+        'ADAPTIVE_DIHEDRAL_RESTRAINT_SEVERE_COLOR':     [139,0,139,255],
+
+        'ADAPTIVE_DISTANCE_RESTRAINT_SATISFIED_COLOR':  [0, 255, 0, 255],  # Bright green
+        'ADAPTIVE_DISTANCE_RESTRAINT_TOO_CLOSE_COLOR':  [204, 204, 0, 255], # Yellow
+        'ADAPTIVE_DISTANCE_RESTRAINT_TOO_FAR_COLOR':    [102, 0, 204, 255], # Purple
+
+        'POSITION_RESTRAINT_PIN_COLOR':                 [255,215,0,255],
+        'POSITION_RESTRAINT_BOND_COLOR':                [200, 250, 120, 255],
+
+        'TUGGING_ARROW_COLOR':                          [100, 255, 100, 255],
+
+    }
+
+restraint_color_defaults = _DefaultColors()
