@@ -1,4 +1,4 @@
-rings = ('PHE','TYR','TYS','PTR')
+rings = ('PHE','TYR') #,'TYS','PTR') <- non-standard amino acids current throw a RuntimeError (25/10/2021)
 
 def correct_pseudosymmetric_sidechain_atoms(session, residues):
     '''
@@ -56,6 +56,7 @@ def any_atom_restrained(model, atoms):
 def flip_if_necessary(residue, chi_atom_names):
     if residue.is_missing_heavy_template_atoms():
         return
+
     atoms = [residue.find_atom(name) for name in chi_atom_names]
     from chimerax.geometry import dihedral
     angle = dihedral(*[a.coord for a in atoms])

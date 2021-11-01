@@ -8,10 +8,10 @@
  * @Copyright: 2016-2019 Tristan Croll
  */
 
-#if defined(_MSC_VER) && _MSC_VER >= 1600
-#include <string>
-const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) -1;
-#endif
+// #if defined(_MSC_VER) && _MSC_VER >= 1600
+// #include <string>
+// const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) -1;
+// #endif
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
