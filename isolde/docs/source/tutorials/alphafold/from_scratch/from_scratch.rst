@@ -26,7 +26,7 @@ operation of ISOLDE. If this is your first time using it, it is highly
 recommended that you first work through the** :ref:`isolde_cryo_intro_tutorial`
 **tutorial before attempting this one.**
 
-In the :ref:`_bulk_fitting_tutorial` tutorial we used 6mhz_, the 4.1 Angstrom
+In the :ref:`bulk_fitting_tutorial` tutorial we used 6mhz_, the 4.1 Angstrom
 structure of the ATP-bound *E. coli* LptB2FGC complex, to fit EMD-9118_, the 4.0
 Angstrom map of the ATP-free, lipid-bound form. While quite achievable with
 patience, this approach suffered from two key burdens: (1) unsurprisingly given
@@ -72,7 +72,7 @@ To avoid re-treading old ground, we'll start at the point of the bulk fitting
 tutorial where chains A and G are already rigid-body fitted into the map. 
 `Click here`_ to set that up.
 
-.. _Click here: `cxcmd:open\ 6mhz;open\ 9118\ from\ emdb;hide;cartoon;color\ bych;
+.. _Click here: cxcmd:open\ 6mhz;open\ 9118\ from\ emdb;hide;cartoon;color\ bych;
     color\ byhet;volume\ \#2\ level\ 0.1; 
     view\ initial\ \#1;\ view\ matrix\ model\ \#1,0.198,-0.674,0.699,86.9,0.821,0.511,0.260,-63.7,-0.534,0.522,0.655,53.6;
-    fitmap\ \#1/A,G\ inMap\ \#2`
+    fitmap\ \#1/A,G\ inMap\ \#2
