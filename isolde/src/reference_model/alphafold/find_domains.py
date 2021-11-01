@@ -1,20 +1,18 @@
 MIN_CLUSTER_SIZE=10
 
-def cluster_into_domains(session, model, pae_matrix, pae_power=1, pae_cutoff=5, adjust_weights_for_distance=False, distance_power=1, graph_resolution=1, color_by_cluster=True):
+def cluster_into_domains(session, model, pae_matrix, pae_power=1, pae_cutoff=5, bonded_weight=0, adjust_weights_for_distance=False, distance_power=1, graph_resolution=1, color_by_cluster=True):
     import networkx as nx
     import numpy
     weights = 1/pae_matrix**pae_power
     if adjust_weights_for_distance:
         distances = distance_matrix(model, num_residues = pae_matrix.shape[0])
         weights = weights/distances**distance_power
-    # Within the NetworkX greedy_modularity_communities() method the weight is used to define a term
-    # that becomes one element of a dict key. Therefore the use of floating point is inadvisable (can 
-    # lead to random `KeyError`s). So, we convert the weights to integers, first multiplying by a 
-    # sufficiently large number to make sure everything is left of the decimal place.
-    # Note that as of 19 August 2021 `KeyError`s can still happen - this has been reported to the
-    # NetworkX developers (https://github.com/networkx/networkx/issues/4992) and possible fixes are being 
-    # explored.
-    #weights = (weights * 1e6).astype(numpy.int)
+    if bonded_weight !=0:
+        bw_matrix = numpy.ones(weights.shape)
+        bw = [bonded_weight]*(weights.shape[0]-1)
+        for k in (-1,1):
+            bw_matrix += numpy.diag(bw, k)
+        weights *= bw_matrix
 
     g = nx.Graph()
     size = weights.shape[0]
@@ -47,7 +45,7 @@ def cluster_into_domains(session, model, pae_matrix, pae_power=1, pae_cutoff=5, 
 
     return residue_clusters
 
-def cluster_into_domains_igraph(session, model, pae_matrix, pae_power=1, pae_cutoff=5, adjust_weights_for_distance=False, distance_power=1, graph_resolution=1, color_by_cluster=True):
+def cluster_into_domains_igraph(session, model, pae_matrix, pae_power=1, pae_cutoff=5, bonded_weight=0, adjust_weights_for_distance=False, distance_power=1, graph_resolution=1, color_by_cluster=True):
     try: 
         import igraph
     except ImportError:
@@ -59,6 +57,12 @@ def cluster_into_domains_igraph(session, model, pae_matrix, pae_power=1, pae_cut
     if adjust_weights_for_distance:
         distances = distance_matrix(model, num_residues = pae_matrix.shape[0])
         weights = weights/distances**distance_power
+    if bonded_weight !=0:
+        bw_matrix = numpy.ones(weights.shape)
+        bw = [bonded_weight]*(weights.shape[0]-1)
+        for k in (-1,1):
+            bw_matrix += numpy.diag(bw, k)
+        weights *= bw_matrix
 
     g = igraph.Graph()
     size = weights.shape[0]
