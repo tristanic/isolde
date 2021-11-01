@@ -94,8 +94,9 @@ class _Defaults:
         'TUGGABLE_HYDROGENS':         'polar',
         'RESTRAIN_PEPTIDE_OMEGA':     True,
         'DISPLAY_OMEGA_RESTRAINTS':   False,
-        'MAX_CUBIC_MAP_SIZE':         5e6, # Switch to linear interpolation above this size
+        'MAX_CUBIC_MAP_SIZE':         5e6, # Switch to on-the-fly cubic interpolation above this size
 
+        'SIM_FIDELITY_MODE':          'High',
 
         ###
         # Force constants
@@ -163,7 +164,6 @@ class _Defaults:
         'USE_HAPTIC_DEVICE_IF_AVAIL':   True,
 
         'STANDARD_MAP_MASK_RADIUS':     4.0, # Angstroms
-        'DIFFERENCE_MAP_MASK_RADIUS':   8.0, # Angstroms
 
         'COMMS_TIMEOUT':                10.0, # seconds
         # Time for threads to sleep when paused or no input, to avoid
