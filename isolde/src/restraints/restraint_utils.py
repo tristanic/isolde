@@ -201,7 +201,7 @@ def _adjust_torsion_restraint_terms_for_plddt(score):
     from math import exp
     alpha_multiplier=exp(-10*(score-1)**2)
     spring_constant_multiplier= exp(-6*(score-1)**2)
-    kappa_add = 2400*exp(-9.5*score)
+    kappa_add = 2400*(exp(-9.5*score)-exp(-9.5))
     return alpha_multiplier, spring_constant_multiplier, kappa_add
 
 
@@ -627,7 +627,8 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                     if kappa_adj == 0:
                         continue
                 else:
-                    kappa_adj = tol_adj = falloff_adj = 1
+                    kappa_adj = tol_adj = 1
+                    falloff_adj = 0
                 try:
                     dr = adrm.add_restraint(ra1, ra2)
                 except ValueError:
@@ -639,10 +640,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                 #dr.effective_spring_constant = spring_constant
                 dr.kappa = kappa * kappa_adj
                 from math import log
-                if dist < 1:
-                    dr.alpha = -2
-                else:
-                    dr.alpha = -2 - fall_off * log(dist) - falloff_adj
+                dr.alpha = -2 - fall_off * log((max(dist-1,1))) - falloff_adj
                 dr.enabled = True
 
     if all(trs == rrs for trs, rrs in zip(template_residues, restrained_residues)):
