@@ -86,8 +86,12 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         if len(us) == 0:
             raise UserError('No atoms selected!')
         if len(us) != 1:
-            raise UserError('All atoms must be from the same model!')
-        model = us[0]
+            if isolde.selected_model is not None and isolde.selected_model in us:
+                model = isolde.selected_model
+            else:
+                raise UserError('If selection is not from the current model active in ISOLDE, all atoms must be from the same model!')
+        else:
+            model = us[0]
         if model != isolde.selected_model:
             isolde.change_selected_model(model)
         session.selection.clear()
