@@ -437,8 +437,8 @@ def _get_template_alignment(template_residues, restrained_residues,
 
 def restrain_atom_distances_to_template(session, template_residues, restrained_residues,
     protein=True, nucleic=True, custom_atom_names=[],
-    distance_cutoff=8, alignment_cutoff=5, well_half_width = 0.05,
-    kappa = 5, tolerance = 0.025, fall_off = 4, display_threshold=None,
+    distance_cutoff=8, alignment_cutoff=5, well_half_width = 0.1,
+    kappa = 10, tolerance = 0.025, fall_off = 2, display_threshold=None,
     adjust_for_confidence=False, use_coordinate_alignment=True, confidence_type='pae', pae_matrix=None):
     r'''
     Creates a "web" of adaptive distance restraints between nearby atoms,
@@ -477,12 +477,12 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
               against  template. Residues with a CA RMSD greater than this
               value after alignment will not be restrained. Ignored if `use_coordinate_alignment`
               is `False`.
-        * well_half_width (default = 0.05):
-            - distance range (as a fraction of the target distance) within which
+        * well_half_width (default = 0.1):
+            - distance range (as a fraction of the square root of target distance) within which
               the restraint will behave like a normal harmonic restraint.
               The applied force will gradually taper off for any restraint
               deviating from (target + tolerance) by more than this amount.
-        * kappa (default = 5):
+        * kappa (default = 10):
             - defines the strength of each restraint when the current distance
               is within :attr:`well_half_width` of the target +/-
               :attr:`tolerance`. The effective spring constant is
@@ -493,12 +493,12 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
               bottom" of the restraint profile. If
               :math:`abs(distance-target) < tolerance * target`,
               no restraining force will be applied.
-        * fall_off (default = 4):
+        * fall_off (default = 2):
             - Sets the rate at which the energy function will fall off when the
               distance deviates strongly from the target, as a function of the
               target distance. The exponent on the energy term at large
               deviations from the target distance will be set as
-              :math:`\alpha = -2 -\text{fall\_off} ln(\text{target})`. In other
+              :math:`\alpha = -1 -\text{fall\_off} ln(\text{target})`. In other
               words, long-distance restraints are treated as less confident than
               short-distance ones.
         * display_threshold (default = 0):
@@ -610,6 +610,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
         restrained_as = Atoms(restrained_as)
 
         template_coords = template_as.coords
+        from math import sqrt
         for i, ra1 in enumerate(restrained_as):
             query_coord = numpy.array([template_coords[i]])
             indices = find_close_points(query_coord, template_coords, distance_cutoff)[1]
@@ -636,11 +637,11 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                 dist = distance(query_coord[0], template_coords[ind])
                 dr.tolerance = tolerance * dist * tol_adj
                 dr.target = dist
-                dr.c = max(dist*well_half_width, 0.1)
+                dr.c = max(sqrt(dist)*well_half_width, 0.1)
                 #dr.effective_spring_constant = spring_constant
                 dr.kappa = kappa * kappa_adj
                 from math import log
-                dr.alpha = -2 - fall_off * log((max(dist-1,1))) - falloff_adj
+                dr.alpha = -1 - fall_off * log((max(dist-1,1))) - falloff_adj
                 dr.enabled = True
 
     if all(trs == rrs for trs, rrs in zip(template_residues, restrained_residues)):

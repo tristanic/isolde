@@ -460,12 +460,15 @@ printed to the log:
 
 .. figure:: images/isolde_shorthand.png
 
-The ones we want here are "rd" (release distances), "rt" (release torsions), and "ra" (release all). Unlike the full command,
-these will act on the currently-selected atoms - "rd" will release all distance restraints on selected atoms,
-"rt" will release all torsion restraints for residues with at least one atom selected. The optional arguments
-to the full commands are still valid, so e.g. "rd ext t" will preserve distance restraints where *both* atoms 
-are currently selected; "rt backbone f" will release only the torsion restraints on sidechains. Go ahead and 
-try this, either by manually selecting then typing for yourself, or:
+The ones we want here are "rd" (release distances), "rt" (release torsions), and
+"ra" (release all). Unlike the full command, these will act on the
+currently-selected atoms - "rd" will release all distance restraints on selected
+atoms, "rt" will release all torsion restraints for residues with at least one
+atom selected. The optional arguments to the full commands are still valid, so
+e.g. "rd ext t" will preserve distance restraints where *both* atoms are
+currently selected; "rt backbone f" will release only the torsion restraints on
+sidechains. Go ahead and try this, either by manually selecting then typing for
+yourself, or:
 
 `sel /F:291;rd`__
 
@@ -483,44 +486,51 @@ __ cxcmd:sel\ \/F:80,291;isolde\ sim\ start\ sel
 
 .. figure:: images/F80_291_corrected.jpg
   
-That's better. Now, we can also inspect along the rest of the previously out-of-register stretch to see how it's 
-settled. You can do that either by simply dragging the display along the helix, but if you want to be more systematic
-try using the "isolde step" (shorthand "st") command:
+That's better. Now, we can also inspect along the rest of the previously
+out-of-register stretch to see how it's settled. You can do that either by
+simply dragging the display along the helix, but if you want to be more
+systematic try using the "isolde step" (shorthand "st") command:
 
 `st /F:291`__
 
 __ cxcmd:st\ \#4/F:291
 
-\... then simply repeat the command `st`__ to move residue-by-residue along the chain from that point. Stop for now when 
-you get to Phe310.
+\... then simply repeat the command `st`__ to move residue-by-residue along the
+chain from that point. Stop for now when you get to Phe310.
 
 __ cxcmd:st
 
-I hope you'll agree that with the exception of a few minor rotamer issues (e.g. Met 303 - if you want to take care of this,
-you know what to do by now)
+I hope you'll agree that with the exception of a few minor rotamer issues (e.g.
+Met 303 - if you want to take care of this, you know what to do by now)
 
 .. figure:: images/Met_F303_rotamer.jpg
 
-\... everything's looking pretty good. While there are other details to clean up here and there, most of them are 
-rather minor and won't be covered here - they're the sort of thing you tackle by settling in with some nice 
-music and running through residue-by-residue once the big things are all done. The last thing I'd like to tackle for
-the purposes of this tutorial is that pair of poorly-resolved domains at top.
+\... everything's looking pretty good. While there are other details to clean up
+here and there, most of them are rather minor and won't be covered here -
+they're the sort of thing you tackle by settling in with some nice music and
+running through residue-by-residue once the big things are all done. The last
+thing I'd like to tackle for the purposes of this tutorial is that pair of
+poorly-resolved domains at top.
 
-**(NOTE: this region is right on the edge of what can be described as "resolved" in this map, and the question of 
-whether it should be modelled at all really depends on your goals. In a real-world scenario where you are responsible
-for generating the maps themselves from original particle images, it would be a very good idea to look at options such 
-as masked or focused reconstruction to get a clearer picture of this site, and/or methods such as CryoDRGN which attempt
-to extract a continuous representation of the flexibility seen in the particles. But in this case this map is all we 
-have, so let's try to make the best of it.)**
+**(NOTE: this region is right on the edge of what can be described as "resolved"
+in this map, and the question of whether it should be modelled at all really
+depends on your goals. In a real-world scenario where you are responsible for
+generating the maps themselves from original particle images, it would be a very
+good idea to look at options such as masked or focused reconstruction to get a
+clearer picture of this site, and/or methods such as CryoDRGN which attempt to
+extract a continuous representation of the flexibility seen in the particles.
+But in this case this map is all we have, so let's try to make the best of
+it.)**
 
-First, let's see if we can get a somewhat better view of this region through the high-resolution noise. A trick that is
-often helpful in regions where the local resolution is substantially lower than the average is to generate a blurred map.
-Here, "blurring" refers to the act of emphasizing the low-resolution components of the map in Fourier space; the result is
-often good at showing connectivity and the overall "envelope" where a more sharpened map just looks like noise. Let's go 
-ahead and do this. First:
+First, let's see if we can get a somewhat better view of this region through the
+high-resolution noise. A trick that is often helpful in regions where the local
+resolution is substantially lower than the average is to generate a blurred map.
+Here, "blurring" refers to the act of emphasizing the low-resolution components
+of the map in Fourier space; the result is often good at showing connectivity
+and the overall "envelope" where a more sharpened map just looks like noise.
+Let's go ahead and do this. First:
 
-`volume gaussian #4 bfactor 300`__
-__ cxcmd:vol\ gaus\ \#4\ bfactor\ 300
+`volume gaussian #4 bfactor 300`__ __ cxcmd:vol\ gaus\ \#4\ bfactor\ 300
 
 \... and associate it with your model for ISOLDE's purposes:
 
@@ -534,47 +544,58 @@ Now, focus your view around the region we're interested in:
 
 __ cxcmd:view\ \#4\/F:209
 
-\... and adjust your map contour levels for both maps to around 3.6 sigma (remember: alt-scroll to adjust contours, 
-ctrl-scroll to select which map is to be contoured. To save your scroll wheel, you can adjust the sensitivity with 
-another piece of handy shorthand - `cs 0.25`__ will set the level change per "click" of the scroll wheel to 0.25 sigma).
-The result should look something like this:
+\... and adjust your map contour levels for both maps to around 3.6 sigma
+(remember: alt-scroll to adjust contours, ctrl-scroll to select which map is to
+be contoured. To save your scroll wheel, you can adjust the sensitivity with
+another piece of handy shorthand - `cs 0.25`__ will set the level change per
+"click" of the scroll wheel to 0.25 sigma). The result should look something
+like this:
 
 __ cxcmd:cs\ 0.25
 
 .. figure:: images/blurred_map_contour.jpg
 
-Still far from great, but there's enough there to suggest pretty strongly that the bottom domain (chain F, grey) needs to 
-shift quite a bit to the right. That suspicion should be strengthened when you look more closely at the residues along the 
-edge - note in particular the line of acidic residues on chain F which look like they want to form a complex salt bridge with 
-a line of basic residues on chain G:
+Still far from great, but there's enough there to suggest pretty strongly that
+the bottom domain (chain F, grey) needs to shift quite a bit to the right. That
+suspicion should be strengthened when you look more closely at the residues
+along the edge - note in particular the line of acidic residues on chain F which
+look like they want to form a complex salt bridge with a line of basic residues
+on chain G:
 
 .. figure:: images/blurred_map_contour_potential_salt_bridges.jpg
 
-So... let's see if we can make this happen, and if the result makes more sense. First, start a suitable simulation. You can 
-do this by interactively building a selection encompassing those two head domains with a combination of ctrl-click,
-ctrl-shift-click and the up/down arrow keys, or make a suitable selection using commands:
+So... let's see if we can make this happen, and if the result makes more sense.
+First, start a suitable simulation. You can do this by interactively building a
+selection encompassing those two head domains with a combination of ctrl-click,
+ctrl-shift-click and the up/down arrow keys, or make a suitable selection using
+commands:
 
 `sel /F:134-257|/G:141-253; isolde sim start sel`__
 
 __ cxcmd:sel\ \/F:134-257|\/G:141-253;isolde\ sim\ start\ sel
 
-Now, make sure your view is lined up in about the same way as in the image above. What we're going to do now is use 
-ISOLDE's "tug selection" mouse mode (the button third from bottom left of the ISOLDE panel) to induce a bulk shift. Click
-that button. Now, perhaps the hardest thing about using this mode is defining a reasonable selection that includes what 
-you want to tug and excludes what you don't. In this case it can be done fairly easily with the combination of mouse selection
-and a little Boolean logic. First, pause the simulation, then reduce the view to a C-alpha trace:
+Now, make sure your view is lined up in about the same way as in the image
+above. What we're going to do now is use ISOLDE's "tug selection" mouse mode
+(the button third from bottom left of the ISOLDE panel) to induce a bulk shift.
+Click that button. Now, perhaps the hardest thing about using this mode is
+defining a reasonable selection that includes what you want to tug and excludes
+what you don't. In this case it can be done fairly easily with the combination
+of mouse selection and a little Boolean logic. First, pause the simulation, then
+reduce the view to a C-alpha trace:
 
 `hide ~@CA`__
 
 __ cxcmd:hide\ ~@CA
 
-\... and ctrl-click-and-drag to make a box encompassing the face of chain F contacting chain G (don't worry if you get a 
-few chain-G residues in - we'll weed them out in a minute). The result should look something like this (selected residues 
-highlighted in bright green). 
+\... and ctrl-click-and-drag to make a box encompassing the face of chain F
+contacting chain G (don't worry if you get a few chain-G residues in - we'll
+weed them out in a minute). The result should look something like this (selected
+residues highlighted in bright green). 
 
 .. figure:: images/chain_F_face_selected.jpg
 
-Now, we'll reduce this selection to only the residues from chain F we're interested in:
+Now, we'll reduce this selection to only the residues from chain F we're
+interested in:
 
 `sel sel&/F:145-240`__
 
@@ -586,14 +607,16 @@ Now, let's get the all-atom view back:
 
 __ cxcmd:show\ ~HC
 
-\... resume the simulation, and start *gently* tugging to the right. You should pretty quickly get to something 
-looking a bit like this (minus the labels):
+\... resume the simulation, and start *gently* tugging to the right. You should
+pretty quickly get to something looking a bit like this (minus the labels):
 
 .. figure:: images/save F_rough_fitted.jpg
 
-As well as the acids and basic residues lining up better, notice the cluster of three phenylalanines on chain F 
-which all now sit in reasonable density and stack nicely against aromatic residues from chain G. A good sign that 
-we're on the right track... Now would be a good time to stop and do another overall settle of the complete model.
+As well as the acids and basic residues lining up better, notice the cluster of
+three phenylalanines on chain F which all now sit in reasonable density and
+stack nicely against aromatic residues from chain G. A good sign that we're on
+the right track... Now would be a good time to stop and do another overall
+settle of the complete model.
 
 `isolde sim stop`__
 
@@ -605,13 +628,18 @@ __ cxcmd:isolde\ sim\ start\ \#4
 
 Let that settle for a minute or so, then stop.
 
-While there is of course more that can (and should) be done with this model before downstream use, that's where we'll
-leave this tutorial. The next advisable step would be a thorough residue-by-residue checkup *(hint: you can go to the 
-first residue in the model with* `st first`__ *and step through from there)*, releasing restraints where they don't agree
-with the map and making adjustments in short sims as necessary. Given the poor residue around those top domains there's 
-not a whole lot more ISOLDE can do to help there - but the result is at least good enough to help guide further 
-experiments in future. Another thing that ISOLDE can't yet do (at least not without a lot of effort first) is help with 
-modelling the bound lipopolysaccharide - while in theory this could certainly be parameterised for MD, in practice 
-using current tools this would be a very challenging project in its own right. This is, however, something that is 
-likely to change in the reasonably near future - watch this space!
+While there is of course more that can (and should) be done with this model
+before downstream use, that's where we'll leave this tutorial. The next
+advisable step would be a thorough residue-by-residue checkup *(hint: you can go
+to the first residue in the model with* `st first`__ *and step through from
+there)*, releasing restraints where they don't agree with the map and making
+adjustments in short sims as necessary. Given the poor residue around those top
+domains there's not a whole lot more ISOLDE can do to help there - but the
+result is at least good enough to help guide further experiments in future.
+Another thing that ISOLDE can't yet do (at least not without a lot of effort
+first) is help with modelling the bound lipopolysaccharide - while in theory
+this could certainly be parameterised for MD, in practice using current tools
+this would be a very challenging project in its own right. This is, however,
+something that is likely to change in the reasonably near future - watch this
+space!
 
