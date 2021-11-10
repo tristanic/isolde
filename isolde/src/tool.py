@@ -188,13 +188,7 @@ class ISOLDE_ToolUI(ToolInstance):
 
 
     def delete(self):
-        try:
-            self.isolde._on_close()
-        except Exception as e:
-            print(e)
-            import traceback
-            import sys
-            traceback.print_stack(file=sys.__stderr__)
+        self.isolde._on_close()
         super().delete()
 
     def _change_experience_level(self):
