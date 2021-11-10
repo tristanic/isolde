@@ -40,6 +40,10 @@ def isolde_set(session, time_steps_per_gui_update=None, temperature=None,
     if gpu_device_index is not None:
         sp.device_index=gpu_device_index
 
+def isolde_select(session, model):
+    isolde = isolde_start(session)
+    isolde.selected_model = model
+
 def isolde_sim(session, cmd, atoms=None, discard_to=None):
     '''
     Start, stop or pause an interactive simulation.
@@ -295,6 +299,14 @@ def register_isolde(logger):
             )
         register('isolde sim', desc, isolde_sim, logger=logger)
 
+    def register_isolde_select():
+        from .argspec import IsoldeStructureArg
+        desc = CmdDesc(
+            required=[('model', IsoldeStructureArg)],
+            synopsis = "Set the specified model as ISOLDE's current selected model"
+        )
+        register('isolde select', desc, isolde_select, logger=logger)
+
     def register_isolde_report():
         desc = CmdDesc(
             optional=[('report', BoolArg),],
@@ -383,6 +395,7 @@ def register_isolde(logger):
 
     register_isolde_start()
     register_isolde_set()
+    register_isolde_select()
     register_isolde_sim()
     register_isolde_report()
     register_isolde_ignore()
