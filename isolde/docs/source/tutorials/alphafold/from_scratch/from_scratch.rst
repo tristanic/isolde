@@ -165,6 +165,12 @@ entry:
 
 This is the one we're going to actually work on from here. Go to the "Working
 on:" drop-down menu at the top of the ISOLDE panel, and choose "4. combination".
+Or, just click the following command:
+
+`isolde select #4`__
+
+__ cxcmd:isolde\ select\ \#4
+
 At this point you can close the original 6mhz:
 
 `close #1`__
@@ -398,7 +404,7 @@ is now quite tightly restrained, and (b) we can always go back to high-fidelity 
 to clean up the details once this initial fitting is done. Anyway, go ahead and start
 the simulation, either by pressing the play button, or using:
 
-`isolde sim start set`__
+`isolde sim start sel`__
 
 __ cxcmd:isolde\ sim\ start\ sel
 
@@ -432,7 +438,22 @@ __ cxcmd:view\ \#4\/A:123-139,169-186
 
 As we saw in the previous tutorial, this is adjacent to the ATP binding site and closes 
 substantially on ATP binding. As it happens the AlphaFold model was closest to the ATP-bound
-conformation, but this site has opened up readily as guided by the density.
+conformation, but this site has opened up readily as guided by the density. While the restraints in 
+purple are weakened, they are still biasing the model towards a conformation that is clearly wrong -
+so it would be best to release them. This can be done with the "isolde release distances" command,
+with varying options to decide the level of specificity you want. At the simplest end,
+"isolde release distances sel" will release *all* distance restraints on a given selection. Adding 
+the option "externalOnly true" will cause ISOLDE to release only those restraints leading to atoms
+*outside* the selection. The argument "strainedOnly true" will release any strongly deviating 
+restraints involving at least one selected atom  For maximum specificity, however, you can use the 
+"to" argument to specify a second set of atoms; this will release only those restraints between the
+main selection and the "to" selection. For example:
+
+`isolde release distances #4/A:164-186 to #4/A:124-126,139-154`__
+
+__ cxcmd:isolde\ release\ distances\ \#4\/A:164-186\ to\ \#4\/A:124-126,139-154
+
+\... should selectively release the restraints across this gap.
 
 Now, on to a site that was previously challenging but has become straightforward. The loop from 
 287-297 of chain F, along with most of the following helix, typically came out one residue out 
@@ -530,7 +551,9 @@ of the map in Fourier space; the result is often good at showing connectivity
 and the overall "envelope" where a more sharpened map just looks like noise.
 Let's go ahead and do this. First:
 
-`volume gaussian #4 bfactor 300`__ __ cxcmd:vol\ gaus\ \#4\ bfactor\ 300
+`volume gaussian #4 bfactor 300`__
+
+__ cxcmd:vol\ gaus\ \#4\ bfactor\ 300
 
 \... and associate it with your model for ISOLDE's purposes:
 
@@ -610,7 +633,7 @@ __ cxcmd:show\ ~HC
 \... resume the simulation, and start *gently* tugging to the right. You should
 pretty quickly get to something looking a bit like this (minus the labels):
 
-.. figure:: images/save F_rough_fitted.jpg
+.. figure:: images/F_rough_fitted.jpg
 
 As well as the acids and basic residues lining up better, notice the cluster of
 three phenylalanines on chain F which all now sit in reasonable density and
@@ -643,3 +666,4 @@ this would be a very challenging project in its own right. This is, however,
 something that is likely to change in the reasonably near future - watch this
 space!
 
+__ cxcmd:st\ first
