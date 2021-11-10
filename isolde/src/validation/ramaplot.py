@@ -244,7 +244,7 @@ class RamaPlot:
         if self._selection_changed_handler is not None:
             self.session.triggers.remove_handler(self._selection_changed_handler)
             self._selection_changed_handler = None
-        if self._model_changes_handler is not None:
+        if self._model_changes_handler is not None and self.current_model is not None:
             self.current_model.triggers.remove_handler(self._model_changes_handler)
             self._model_changes_handler = None
 
