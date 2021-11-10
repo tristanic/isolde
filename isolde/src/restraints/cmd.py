@@ -48,13 +48,14 @@ def restrain_distances(session, atoms, template_atoms=None, per_chain=False, **k
         model_residues, **kwargs)
 
 def release_adaptive_distance_restraints(session, atoms,
-        internal_only=False, external_only=False,
+        internal_only=False, external_only=False, to=None,
         longer_than=None, strained_only=False,
         stretch_limit=1.2, compression_limit=0.8):
     log = session.logger
     if internal_only and external_only:
-        log.warning('Cannot specify both internal only and external only!')
-        return
+        raise UserError('Cannot specify both internal only and external only!')
+    if to is not None and (internal_only or external_only):
+        raise UserError('Argument "to" cannot be used with internal_only=True or external_only=True!')
     from chimerax.isolde import session_extensions as sx
     for m in atoms.unique_structures:
         adrm = sx.get_adaptive_distance_restraint_mgr(m)
@@ -62,6 +63,8 @@ def release_adaptive_distance_restraints(session, atoms,
             adrs = adrm.intra_restraints(atoms)
         elif external_only:
             adrs = adrm.atoms_restraints(atoms).subtract(adrm.intra_restraints(atoms))
+        elif to is not None:
+            adrs = adrm.atoms_restraints(atoms).intersect(adrm.atoms_restraints(to))
         else:
             adrs = adrm.atoms_restraints(atoms)
         if longer_than:
@@ -276,6 +279,7 @@ def register_isolde_restrain(logger):
             keyword = [
                 ('internal_only', BoolArg),
                 ('external_only', BoolArg),
+                ('to', AtomsArg),
                 ('longer_than', FloatArg),
                 ('strained_only', BoolArg),
                 ('stretch_limit', FloatArg),
