@@ -302,7 +302,9 @@ single residue pair in the model (technically, each point [i,j] is the expected
 error in the position of residue i if the predicted and true structures were
 aligned on residue j). This is a rich source of information to control the
 weighting of atom-atom distance restraints in ISOLDE. As an example, the PAE
-matrix for chain G looks like this:
+matrix for chain G looks like this on the `page for its AlphaFold DB entry`__:
+
+__ https://alphafold.ebi.ac.uk/entry/P0ADC6
 
 .. figure:: images/pae_chain_g.png
 
@@ -339,6 +341,16 @@ currently only works for single-chain models fetched from the AlphaFold database
 it uses information in the model's mmCIF header to find and download the associated 
 PAE matrix. Future versions will support the use of custom models with user-provided 
 PAE matrices.)**
+
+To understand how these will be used, let's first take a closer look at that PAE matrix for 
+chain G. Note the color scale - dark green is an expected error of zero (in reality, the 
+minimum value is 0.2), and white is a whopping 32 angstroms! I hope you'll agree that a 32
+angstrom margin of error isn't particularly useful for (near-) atomic resolution modelling...
+when "adjustForConfidence True" is used, ISOLDE will avoid creating *any* distance restraints 
+for atom pairs whose PAE is greater than 4 Angstroms. Here's what that same PAE matrix looks 
+like with the colours scaled to that range:
+
+.. figure:: images/pae_chain_g_scaled_to_4A.png
 
 Anyway, let's go ahead and apply those restraints. This needs to be done chain-by-chain. Looking
 at the Models panel we see that our working model is model #4 and the reference models are grouped
