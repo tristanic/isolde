@@ -73,6 +73,9 @@ public:
     bool enabled() const { return _enabled; }
     void set_enabled(bool flag);
 
+    void set_satisfied_limit(double limit) { _satisfied_limit = limit; }
+    double get_satisfied_limit() const { return _satisfied_limit; }
+
     colors::variable_colormap* colormap() const;
     void color(uint8_t *color) const;
 
@@ -82,12 +85,14 @@ public:
     void bond_transforms(float *rot44_e1, float *rot44_m, float *rot44_e2) const;
     double display_threshold() const;
     bool visible() const;
+    Coord center() const { return (_atoms[0]->coord() + _atoms[1]->coord())*0.5; }
 
     // General monitoring
     const Atoms &atoms() const {return _atoms;}
     double distance() const {return _atoms[0]->coord().distance(_atoms[1]->coord());}
     // Current magnitude of the applied force (for scaling/colouring bonds)
     double force_magnitude() const;
+    bool satisfied() const;
     Structure* structure() const {return _atoms[0]->structure();}
     Change_Tracker *change_tracker() const;
     DistanceRestraintMgr_Tmpl<AdaptiveDistanceRestraint> *mgr() const { return _mgr; }
@@ -116,6 +121,7 @@ private:
         _thresholds[2] = _target + _tolerance;
         _thresholds[3] = _target + _tolerance + 5*_c;
     }
+    double _satisfied_limit = 0.5;
 
 }; // class DistanceRestraint
 
@@ -153,6 +159,7 @@ private:
     std::type_index _mgr_type = std::type_index(typeid(this));
     colors::variable_colormap _colormap;
     double _display_threshold = 0;
+    // A given restraint will be designated unsatisfied if (abs(distance-target)-tolerance)/c >= _satisfied_limit.
 };
 
 

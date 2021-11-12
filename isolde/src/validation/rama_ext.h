@@ -188,7 +188,7 @@ rama_mgr_get_rama(void *mgr, void *residue, size_t n, pyobject_t *ramas)
             try {
                 Rama *ram = m->get_rama(thisr);
                 ramas[found++] = ram;
-            } catch (std::logic_error) {
+            } catch (std::logic_error&) {
                 continue;
             }
         }

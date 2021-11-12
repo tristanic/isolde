@@ -117,6 +117,7 @@ bool AdaptiveDistanceRestraint::visible() const
         && display_threshold_trigger;
 }
 
+
 double AdaptiveDistanceRestraint::radius() const
 {
     auto f = std::min(std::abs(force_magnitude()), SCALING_MAX_FORCE);
@@ -146,6 +147,12 @@ double AdaptiveDistanceRestraint::force_magnitude() const
     return
         _kappa*r_m_rho/c_sq * pow( ( pow(r_m_rho,2) / (c_sq*std::abs(2-_alpha)) +1), (_alpha/2-1));
 } // force_magnitude
+
+bool AdaptiveDistanceRestraint::satisfied() const
+{
+    return (std::abs(distance()-_target)-_tolerance)/_c < _satisfied_limit;
+}
+
 
 colors::variable_colormap*
 AdaptiveDistanceRestraint::colormap() const

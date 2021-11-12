@@ -221,6 +221,7 @@ set_adaptive_distance_restraint_mgr_colors(void *mgr, uint8_t *colors)
     }
 }
 
+
 /***************************************************************
  *
  * AdaptiveDistanceRestraint functions
@@ -325,6 +326,54 @@ adaptive_distance_restraint_alpha(void *restraint, size_t n, double *alpha)
 {
     AdaptiveDistanceRestraint **d = static_cast<AdaptiveDistanceRestraint **>(restraint);
     error_wrap_array_get<AdaptiveDistanceRestraint, double, double>(d, n, &AdaptiveDistanceRestraint::get_alpha, alpha);
+}
+
+extern "C" EXPORT void
+set_adaptive_distance_restraint_satisfied_limit(void *restraint, size_t n, double *limit)
+{
+    AdaptiveDistanceRestraint **d = static_cast<AdaptiveDistanceRestraint **>(restraint);
+    error_wrap_array_set<AdaptiveDistanceRestraint, double, double>(d, n, &AdaptiveDistanceRestraint::set_satisfied_limit, limit);
+}
+
+extern "C" EXPORT void
+adaptive_distance_restraint_satisfied_limit(void *restraint, size_t n, double *limit)
+{
+    AdaptiveDistanceRestraint **d = static_cast<AdaptiveDistanceRestraint **>(restraint);
+    error_wrap_array_get<AdaptiveDistanceRestraint, double, double>(d, n, &AdaptiveDistanceRestraint::get_satisfied_limit, limit);
+}
+
+extern "C" EXPORT void
+adaptive_distance_restraint_satisfied(void *restraint, size_t n, npy_bool *satisfied)
+{
+    AdaptiveDistanceRestraint **d = static_cast<AdaptiveDistanceRestraint **>(restraint);
+    error_wrap_array_get<AdaptiveDistanceRestraint, bool, npy_bool>(d, n, &AdaptiveDistanceRestraint::satisfied, satisfied);
+}
+
+extern "C" EXPORT void
+adaptive_distance_restraint_unsatisfied(void *restraint, size_t n, npy_bool *unsatisfied)
+{
+    AdaptiveDistanceRestraint **d = static_cast<AdaptiveDistanceRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            *(unsatisfied++) = !( (*d++)->satisfied() );
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+adaptive_distance_restraint_center(void *restraint, size_t n, double *coords)
+{
+    AdaptiveDistanceRestraint **d = static_cast<AdaptiveDistanceRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            auto center = (*d++)->center();
+            for (size_t j=0; j<3; ++j)
+                *coords++ = center[j];
+        }
+    } catch(...) {
+        molc_error();
+    }
 }
 
 

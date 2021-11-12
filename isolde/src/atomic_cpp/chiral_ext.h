@@ -82,6 +82,20 @@ chiral_center_chiral_atom(void *chirals, size_t n, pyobject_t *atoms)
     }
 }
 
+extern "C" EXPORT void
+chiral_center_center(void *chirals, size_t n, double *coords)
+{
+    ChiralCenter **c = static_cast<ChiralCenter **>(chirals);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            auto center = (*c++)->center();
+            for (size_t j=0; j<3; ++j)
+                *coords++ = center[j];
+        }
+    } catch(...) {
+        molc_error();
+    }
+}
 
 
 #endif //CHIRAL_EXT

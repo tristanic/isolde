@@ -118,6 +118,8 @@ class ChiralCenters(_Dihedrals):
         doc='The difference between each current dihedral angle and its :attr:`expected_angle`. Read only.')
     chiral_atoms = cvec_property('chiral_center_chiral_atom', cptr, astype=convert.atoms, read_only=True,
         doc='The chiral atoms. Read only.')
+    centers = cvec_property('chiral_center_center', float64, value_count=3, read_only=True,
+        doc = 'Centroid of the coordinates for the atoms defining the chiral center. Read only.')
 
     def take_snapshot(self, session, flags):
         data = {
@@ -162,6 +164,8 @@ class ProperDihedrals(_Dihedrals):
 
     axial_bonds = cvec_property('proper_dihedral_axial_bond', cptr, astype=convert.bonds, read_only=True,
         doc='Returns a :class:`Bonds` giving the axial bond for each dihedral. Read-only')
+    centers = cvec_property('proper_dihedral_center', float64, value_count=3, read_only=True,
+        doc = 'Centroid of the coordinates for the dihedral atoms. Read only.')
 
     def take_snapshot(self, session, flags):
         data = {
@@ -489,6 +493,14 @@ class DistanceRestraints(Collection):
             doc = 'Restraint spring constants in :math:`kJ mol^{-1} nm^{-2}`')
     distances = cvec_property('distance_restraint_distance', float64, read_only=True,
             doc = 'Current distances between restrained atoms in Angstroms. Read only.')
+    satisfied_limits = cvec_property('distance_restraint_satisfied_limit', float64, 
+            doc = 'Deviations from target distances (in Angstroms) beyond which restraints will be considered unsatisfied.')
+    satisfieds = cvec_property('distance_restraint_satisfied', npy_bool, read_only=True,
+            doc = 'Returns true for restraints whose deviations from their target distances are less than satisfied_limit. Read only.')
+    unsatisfieds = cvec_property('distance_restraint_unsatisfied', npy_bool, read_only=True,
+            doc = 'Returns true for restraints whose deviations from their target distances are greater than or equal to satisfied_limit. Read only.')
+    centers = cvec_property('distance_restraint_center', float64, value_count=3, read_only=True,
+            doc = 'Returns the mid-point between the two restrained atoms for each restraint. Read only.')
     sim_indices = cvec_property('distance_restraint_sim_index', int32,
         doc='''
         Index of each restraint in the relevant MDFF Force in a running
@@ -572,6 +584,14 @@ class AdaptiveDistanceRestraints(Collection):
             doc = 'Current distances between restrained atoms in Angstroms. Read only.')
     applied_forces = cvec_property('adaptive_distance_restraint_force_magnitude', float64, read_only=True,
             doc = 'Total force currently being applied to each restraint. Read only.')
+    satisfied_limits = cvec_property('adaptive_distance_restraint_satisfied_limit', float64, 
+            doc = 'Deviations from target distances (in Angstroms) beyond which restraints will be considered unsatisfied.')
+    satisfieds = cvec_property('adaptive_distance_restraint_satisfied', npy_bool, read_only=True,
+            doc = 'Returns true for restraints whose deviations from their target distances are less than satisfied_limit. Read only.')
+    unsatisfieds = cvec_property('adaptive_distance_restraint_unsatisfied', npy_bool, read_only=True,
+            doc = 'Returns true for restraints whose deviations from their target distances are greater than or equal to satisfied_limit. Read only.')
+    centers = cvec_property('adaptive_distance_restraint_center', float64, value_count=3, read_only=True,
+            doc = 'Returns the mid-point between the two restrained atoms for each restraint. Read only.')
     sim_indices = cvec_property('adaptive_distance_restraint_sim_index', int32,
         doc='''
         Index of each restraint in the relevant MDFF Force in a running
@@ -627,6 +647,14 @@ class ChiralRestraints(Collection):
             )
         return _chiral_restraints(f(self._c_pointers, len(self), atoms._c_pointers, len(atoms)))
 
+    @property
+    def centers(self):
+        '''
+        Centroids of the atoms defining each restrained chiral center. Read only.
+        '''
+        return self.dihedrals.centers
+
+
     targets = cvec_property('chiral_restraint_target', float64, read_only = True,
         doc = 'Target angles for each restraint in radians. Read only.')
     dihedrals = cvec_property('chiral_restraint_chiral_center', cptr, astype=_chiral_centers, read_only=True,
@@ -639,6 +667,12 @@ class ChiralRestraints(Collection):
         doc = 'Enable/disable each restraint or get their current states.')
     spring_constants = cvec_property('chiral_restraint_k', float64,
         doc = 'Get/set the spring constants for each restraint in :math:`kJ mol^{-1} rad^{-2}`')
+    satisfied_limits = cvec_property('chiral_restraint_satisfied_limit', float64, 
+        doc = 'Deviations from target angle beyond which restraint will be considered unsatisfied.')
+    satisfieds = cvec_property('chiral_restraint_satisfied', npy_bool, read_only=True,
+        doc='Returns True for all restraints where the current deviation from the target angle is less than satisfied_limit.')
+    unsatisfieds = cvec_property('chiral_restraint_unsatisfied', npy_bool, read_only=True,
+        doc='Returns True for all restraints where the current deviation from the target angle is greater than or equal to satisfied_limit.')
     sim_indices = cvec_property('chiral_restraint_sim_index', int32,
         doc='''
         Index of each restraint in the relevant Force in a running simulation.
@@ -695,6 +729,13 @@ class _ProperDihedralRestraints_Base(Collection):
     def atoms(self):
         return self.dihedrals.atoms
 
+    @property
+    def centers(self):
+        '''
+        Centroids of the atoms defining each restrained dihedral. Read only.
+        '''
+        return self.dihedrals.centers
+
     def restrict_to_sel(self, atoms):
         '''
         Returns a new :py:class:`ProperDihedralRestraints` containing only the
@@ -723,6 +764,12 @@ class _ProperDihedralRestraints_Base(Collection):
             doc = 'Is each restraint currently visible? Read-only.')
         cls.spring_constants = cvec_property(cls._C_FUNCTION_PREFIX+'_k', float64,
             doc = 'Get/set the spring constant for each restraint in :math:`kJ mol^{-1} rad^{-2}`')
+        cls.satisfied_limits = cvec_property(cls._C_FUNCTION_PREFIX+'_satisfied_limit', float64, 
+            doc = 'Deviations from target angle beyond which restraint will be considered unsatisfied.')
+        cls.satisfieds = cvec_property(cls._C_FUNCTION_PREFIX+'_satisfied', npy_bool, read_only=True,
+            doc='Returns True for restraints where the current deviation from the target angle is less than satisfied_limit.')
+        cls.unsatisfieds = cvec_property(cls._C_FUNCTION_PREFIX+'_unsatisfied', npy_bool, read_only=True,
+            doc='Returns True for restraints where the current deviation from the target angle is greater than or equal to satisfied_limit.')
         cls.annotation_colors = cvec_property(cls._C_FUNCTION_PREFIX+'_annotation_color', uint8, 4, read_only=True,
             doc = 'Get the annotation color for each restraint according to the current colormap. Read only.')
         cls.sim_indices = cvec_property(cls._C_FUNCTION_PREFIX+'_sim_index', int32,

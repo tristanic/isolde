@@ -92,6 +92,7 @@ public:
         return true;
     }
     const Coords &coords() const;
+    Coord center() const { return (_atoms[0]->coord() + _atoms[1]->coord() + _atoms[2]->coord() + _atoms[3]->coord())*0.25; }
 
 }; // class Dihedral
 

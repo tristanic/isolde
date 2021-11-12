@@ -58,6 +58,8 @@ public:
     void set_k(double k);
     bool enabled() const { return _enabled; }
     void set_enabled(bool flag);
+    void set_satisfied_limit(double limit) { _satisfied_limit = limit; }
+    double get_satisfied_limit() const { return _satisfied_limit; }
 
     // Visualisation functions
     double radius() const;
@@ -67,7 +69,9 @@ public:
 
     // General monitoring
     const Atoms &atoms() const {return _atoms;}
+    Coord center() const { return (_atoms[0]->coord() + _atoms[1]->coord())*0.5; }
     double distance() const {return _atoms[0]->coord().distance(_atoms[1]->coord());}
+    bool satisfied() const {return std::abs(distance()-_target) < _satisfied_limit; }
     Structure* structure() const {return _atoms[0]->structure();}
     Change_Tracker *change_tracker() const;
     DistanceRestraintMgr_Tmpl<DistanceRestraint> *mgr() const { return _mgr; }
@@ -81,7 +85,7 @@ private:
     bool _enabled=false;
     const char* err_msg_bonded()
     { return "Can't create a distance restraint between bonded atoms!";}
-
+    double _satisfied_limit = 0.2;
 
 }; // class DistanceRestraint
 

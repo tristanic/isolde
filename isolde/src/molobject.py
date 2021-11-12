@@ -3482,6 +3482,7 @@ class ChiralRestraintMgr(_RestraintMgr):
             ret=ctypes.c_size_t)
         return f(self._c_pointer)
 
+
     def _session_save_info(self):
         chirals = self.get_restraints_by_atoms(self.model.atoms)
         save_info = {
@@ -4599,6 +4600,8 @@ class ChiralCenter(_Dihedral):
         doc='The difference between the current dihedral angle and :attr:`expected_angle`. Read only.')
     chiral_atom = c_property('chiral_center_chiral_atom', cptr, astype=convert.atom_or_none, read_only=True,
         doc='The chiral atom. Read only.')
+    center = c_property('chiral_center_center', float64, value_count=3, read_only=True,
+        doc = 'Centroid of the coordinates for the atoms defining the chiral center. Read only.')
 
     def take_snapshot(self, session, flags):
         data = {
@@ -4630,6 +4633,8 @@ class ProperDihedral(_Dihedral):
         doc = 'Residue this dihedral belongs to. Read only.')
     axial_bond = c_property('proper_dihedral_axial_bond', cptr, astype=_bond_or_none, read_only=True,
         doc='Bond forming the axis of this dihedral. Read-only')
+    center = c_property('proper_dihedral_center', float64, value_count=3, read_only=True,
+        doc = 'Centroid of the coordinates for the dihedral atoms. Read only.')
 
     def take_snapshot(self, session, flags):
         data = {
@@ -5052,6 +5057,14 @@ class DistanceRestraint(State):
             doc = 'Restraint spring constant in :math:`kJ mol^{-1} nm^{-2}`')
     distance = c_property('distance_restraint_distance', float64, read_only=True,
             doc = 'Current distance between restrained atoms in Angstroms. Read only.')
+    satisfied_limit = c_property('distance_restraint_satisfied_limit', float64, 
+            doc = 'Deviation from target distance (in Angstroms) beyond which this restraint will be considered unsatisfied.')
+    satisfied = c_property('distance_restraint_satisfied', npy_bool, read_only=True,
+            doc = 'Returns true if deviation from target distance is less than satisfied_limit. Read only.')
+    unsatisfied = c_property('distance_restraint_unsatisfied', npy_bool, read_only=True,
+            doc = 'Returns true if deviation from target distance is greater than or equal to satisfied_limit. Read only.')
+    center = c_property('distance_restraint_center', float64, value_count=3, read_only=True,
+            doc = 'Returns the mid-point between the two restrained atoms. Read only.')
     sim_index = c_property('distance_restraint_sim_index', int32,
         doc='''
         Index of this restraint in the relevant MDFF Force in a running
@@ -5149,6 +5162,14 @@ class AdaptiveDistanceRestraint(State):
             doc = 'Current distance between restrained atoms in Angstroms. Read only.')
     applied_force = c_property('adaptive_distance_restraint_force_magnitude', float64, read_only=True,
             doc = 'Total force currently being applied to this restraint. Read only.')
+    satisfied_limit = c_property('adaptive_distance_restraint_satisfied_limit', float64, 
+            doc = 'Deviation from target distance (in Angstroms) beyond which this restraint will be considered unsatisfied.')
+    satisfied = c_property('adaptive_distance_restraint_satisfied', npy_bool, read_only=True,
+            doc = 'Returns true if deviation from target distance is less than satisfied_limit. Read only.')
+    unsatisfied = c_property('adaptive_distance_restraint_unsatisfied', npy_bool, read_only=True,
+            doc = 'Returns true if deviation from target distance is greater than or equal to satisfied_limit. Read only.')
+    center = c_property('adaptive_distance_restraint_center', float64, value_count=3, read_only=True,
+            doc = 'Returns the mid-point between the two restrained atoms. Read only.')
     sim_index = c_property('adaptive_distance_restraint_sim_index', int32,
         doc='''
         Index of this restraint in the relevant MDFF Force in a running
@@ -5212,6 +5233,14 @@ class ChiralRestraint(State):
     def chiral_atom(self):
         return self.dihedral.chiral_atom
 
+    @property
+    def center(self):
+        '''
+        Centroid of the atoms defining the restrained chiral center. Read only.
+        '''
+        return self.dihedral.center
+
+
     mgr = c_property('chiral_restraint_get_manager', cptr, astype=_chiral_restraint_mgr, read_only=True,
         doc=':class:`ChiralRestraintMgr` for this restraint. Read only.')
     target = c_property('chiral_restraint_target', float64, read_only = True,
@@ -5226,6 +5255,12 @@ class ChiralRestraint(State):
         doc = 'Enable/disable this restraint or get its current state.')
     spring_constant = c_property('chiral_restraint_k', float64,
         doc = 'Get/set the spring constant for this restraint in :math:`kJ mol^{-1} rad^{-2}`')
+    satisfied_limit = c_property('chiral_restraint_satisfied_limit', float64, 
+        doc = 'Deviation from target angle beyond which restraint will be considered unsatisfied.')
+    satisfied = c_property('chiral_restraint_satisfied', npy_bool, read_only=True,
+        doc='Returns True if the current deviation from the target angle is less than satisfied_limit.')
+    unsatisfied = c_property('chiral_restraint_unsatisfied', npy_bool, read_only=True,
+        doc='Returns True if the current deviation from the target angle is greater than or equal to satisfied_limit.')
     sim_index = c_property('chiral_restraint_sim_index', int32,
         doc='''
         Index of this restraint in the relevant Force in a running simulation.
@@ -5270,19 +5305,19 @@ class _ProperDihedralRestraint_Base(State):
     def reset_state(self):
         pass
 
-    def clear_sim_index(self):
-        f = c_function('proper_dihedral_restraint_clear_sim_index',
-            args = (ctypes.c_void_p, ctypes.c_size_t))
-        f(self._c_pointer_ref, 1)
 
     @property
     def atoms(self):
         return self.dihedral.atoms
 
+    def clear_sim_index(self):
+        f = c_function(self._C_FUNCTION_PREFIX+'_restraint_clear_sim_index',
+            args = (ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointer_ref, 1)
+
 
     @classmethod
     def _init_methods(cls):
-
         cls.mgr = c_property(cls._C_FUNCTION_PREFIX+'_get_manager', cptr, astype=cls._MGR_GETTER, read_only=True,
             doc=':class:`{}Mgr` for this restraint. Read only.'.format(cls.__name__))
         cls.target = c_property(cls._C_FUNCTION_PREFIX+'_target', float64,
@@ -5301,12 +5336,27 @@ class _ProperDihedralRestraint_Base(State):
             doc = 'Get/set the spring constant for this restraint in :math:`kJ mol^{-1} rad^{-2}`')
         cls.annotation_color = c_property(cls._C_FUNCTION_PREFIX+'_annotation_color', uint8, 4, read_only=True,
             doc = 'Get the color of the annotation for this restraint according to the current colormap. Read only.')
+        cls.satisfied_limit = c_property(cls._C_FUNCTION_PREFIX+'_satisfied_limit', float64, 
+            doc = 'Deviation from target angle beyond which restraint will be considered unsatisfied.')
+        cls.satisfied = c_property(cls._C_FUNCTION_PREFIX+'_satisfied', npy_bool, read_only=True,
+            doc='Returns True if the current deviation from the target angle is less than satisfied_limit.')
+        cls.unsatisfied = c_property(cls._C_FUNCTION_PREFIX+'_unsatisfied', npy_bool, read_only=True,
+            doc='Returns True if the current deviation from the target angle is greater than or equal to satisfied_limit.')
+
+
         cls.sim_index = c_property(cls._C_FUNCTION_PREFIX+'_sim_index', int32,
             doc='''
             Index of this restraint in the relevant Force in a running simulation.
             Returns -1 if the restraint is not currently in a simulation. Can be
             set, but only if you know what you are doing.
             ''')
+
+    @property
+    def center(self):
+        '''
+        Centroid of the atoms defining the restrained dihedral. Read only.
+        '''
+        return self.dihedral.center
 
     def take_snapshot(self, session, flags):
         data = {

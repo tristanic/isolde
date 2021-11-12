@@ -72,22 +72,20 @@ proper_dihedral_atoms(void *dihedrals, size_t n, pyobject_t *atoms)
   }
 }
 
-
-// extern "C" EXPORT void
-// proper_dihedral_atoms(void *dihedrals, size_t n, pyobject_t *atoms)
-// {
-//   ProperDihedral **d = static_cast<ProperDihedral **>(dihedrals);
-//   try {
-//       for (size_t i=0; i<n; ++i) {
-//           const ProperDihedral::Atoms &a = d[i]->atoms();
-//           for (auto ta: a) {
-//               *atoms++ = ta;
-//           }
-//       }
-//   } catch (...) {
-//       molc_error();
-//   }
-// }
+extern "C" EXPORT void
+proper_dihedral_center(void *dihedrals, size_t n, double *coords)
+{
+    ProperDihedral **d = static_cast<ProperDihedral **>(dihedrals);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            auto center = (*d++)->center();
+            for (size_t j=0; j<3; ++j)
+                *coords++ = center[j];
+        }
+    } catch(...) {
+        molc_error();
+    }
+}
 
 
 extern "C" EXPORT void

@@ -440,6 +440,60 @@ set_chiral_restraint_k(void *restraint, size_t n, double *spring_constant)
 }
 
 extern "C" EXPORT void
+chiral_restraint_satisfied_limit(void *restraint, size_t n, double *limit)
+{
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(limit++) = (*r++)->get_satisfied_limit();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
+extern "C" EXPORT void
+set_chiral_restraint_satisfied_limit(void *restraint, size_t n, double *limit)
+{
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->set_satisfied_limit(*(limit++));
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+chiral_restraint_satisfied(void *restraint, size_t n, npy_bool *satisfied)
+{
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(satisfied++) = (*r++)->satisfied();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+chiral_restraint_unsatisfied(void *restraint, size_t n, npy_bool *unsatisfied)
+{
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(unsatisfied++) = !( (*r++)->satisfied() );
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
+extern "C" EXPORT void
 chiral_restraint_sim_index(void *restraint, size_t n, int *index)
 {
     ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
@@ -696,6 +750,60 @@ set_proper_dihedral_restraint_k(void *restraint, size_t n, double *spring_consta
         molc_error();
     }
 }
+
+extern "C" EXPORT void
+proper_dihedral_restraint_satisfied_limit(void *restraint, size_t n, double *limit)
+{
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(limit++) = (*r++)->get_satisfied_limit();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
+extern "C" EXPORT void
+set_proper_dihedral_restraint_satisfied_limit(void *restraint, size_t n, double *limit)
+{
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->set_satisfied_limit(*(limit++));
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_restraint_satisfied(void *restraint, size_t n, npy_bool *satisfied)
+{
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(satisfied++) = (*r++)->satisfied();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+proper_dihedral_restraint_unsatisfied(void *restraint, size_t n, npy_bool *unsatisfied)
+{
+    ProperDihedralRestraint **r = static_cast<ProperDihedralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(unsatisfied++) = !( (*r++)->satisfied() );
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
 
 extern "C" EXPORT void
 proper_dihedral_restraint_sim_index(void *restraint, size_t n, int *index)
@@ -973,6 +1081,60 @@ adaptive_dihedral_restraint_k(void *restraint, size_t n, double *spring_constant
         molc_error();
     }
 }
+
+extern "C" EXPORT void
+adaptive_dihedral_restraint_satisfied_limit(void *restraint, size_t n, double *limit)
+{
+    AdaptiveDihedralRestraint **r = static_cast<AdaptiveDihedralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(limit++) = (*r++)->get_satisfied_limit();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+
+extern "C" EXPORT void
+set_adaptive_dihedral_restraint_satisfied_limit(void *restraint, size_t n, double *limit)
+{
+    AdaptiveDihedralRestraint **r = static_cast<AdaptiveDihedralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            (*r++)->set_satisfied_limit(*(limit++));
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+adaptive_dihedral_restraint_satisfied(void *restraint, size_t n, npy_bool *satisfied)
+{
+    AdaptiveDihedralRestraint **r = static_cast<AdaptiveDihedralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(satisfied++) = (*r++)->satisfied();
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+adaptive_dihedral_restraint_unsatisfied(void *restraint, size_t n, npy_bool *unsatisfied)
+{
+    AdaptiveDihedralRestraint **r = static_cast<AdaptiveDihedralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *(unsatisfied++) = !( (*r++)->satisfied() );
+        }
+    } catch (...) {
+        molc_error();
+    }
+}
+
 
 extern "C" EXPORT void
 set_adaptive_dihedral_restraint_k(void *restraint, size_t n, double *spring_constant)

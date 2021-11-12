@@ -303,6 +303,55 @@ distance_restraint_k(void *restraint, size_t n, double *k)
 }
 
 extern "C" EXPORT void
+set_distance_restraint_satisfied_limit(void *restraint, size_t n, double *limit)
+{
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
+    error_wrap_array_set<DistanceRestraint, double, double>(d, n, &DistanceRestraint::set_satisfied_limit, limit);
+}
+
+extern "C" EXPORT void
+distance_restraint_satisfied_limit(void *restraint, size_t n, double *limit)
+{
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
+    error_wrap_array_get<DistanceRestraint, double, double>(d, n, &DistanceRestraint::get_satisfied_limit, limit);
+}
+
+extern "C" EXPORT void
+distance_restraint_satisfied(void *restraint, size_t n, npy_bool *satisfied)
+{
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
+    error_wrap_array_get<DistanceRestraint, bool, npy_bool>(d, n, &DistanceRestraint::satisfied, satisfied);
+}
+
+extern "C" EXPORT void
+distance_restraint_unsatisfied(void *restraint, size_t n, npy_bool *unsatisfied)
+{
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            *(unsatisfied++) = !( (*d++)->satisfied() );
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
+distance_restraint_center(void *restraint, size_t n, double *coords)
+{
+    DistanceRestraint **d = static_cast<DistanceRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            auto center = (*d++)->center();
+            for (size_t j=0; j<3; ++j)
+                *coords++ = center[j];
+        }
+    } catch(...) {
+        molc_error();
+    }
+}
+
+
+extern "C" EXPORT void
 distance_restraint_sim_index(void *restraint, size_t n, int *index)
 {
     DistanceRestraint **r = static_cast<DistanceRestraint **>(restraint);

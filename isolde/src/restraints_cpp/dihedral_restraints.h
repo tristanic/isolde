@@ -96,6 +96,11 @@ public:
         throw std::runtime_error("This class does not implement a cutoff!");
     }
 
+    void set_satisfied_limit(double limit) { _satisfied_limit = limit; }
+    double get_satisfied_limit() const { return _satisfied_limit; }
+    bool satisfied() const { return std::abs(offset()) < _satisfied_limit; }
+
+    Coord center() const { return _dihedral->center(); }
 
 
     bool get_display() const { return _display; }
@@ -135,6 +140,7 @@ protected:
     bool _enabled = false;
     bool _display = true;
     DType *_dihedral;
+    double _satisfied_limit = 0.523598; // 30 degrees
 
 private:
     Dihedral_Restraint_Change_Mgr *_mgr;
