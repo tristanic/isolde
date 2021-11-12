@@ -15,3 +15,4 @@ situation.)*
     intro/cryo_intro/cryo_intro
     bulk_fitting/bulk_fitting
     alphafold/from_scratch/from_scratch
+    alphafold/reference_model/af2_reference
