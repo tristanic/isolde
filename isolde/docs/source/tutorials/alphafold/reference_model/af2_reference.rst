@@ -1,6 +1,7 @@
 .. _alphafold_reference_tutorial:
 
-Improving Legacy Models Using AlphaFold =======================================
+Improving Legacy Models Using AlphaFold 
+=======================================
 
 **(NOTE: Most links on this page will only work correctly when the page is
 loaded in ChimeraX's help viewer. You will also need to be connected to the
@@ -292,13 +293,13 @@ __ cxcmd:sel\ #1
 
 `clipper isolate sel`__
 
-__ cxcmd:clipper isolate sel
+__ cxcmd:clipper\ isolate\ sel
 
 To get a closer look at an overview of the distance restraints, let's turn off the map view:
 
 `hide #!1.1 model`__
 
-__ cxcmd:hide\ \#!1.1 model
+__ cxcmd:hide\ \#!1.1\ model
 
 *(Note: the exclamation mark in "#!1.1" here tells ChimeraX to change the display setting of 
 only the top-level "container" model for the maps, without changing the display settings of 
@@ -371,7 +372,7 @@ fit to the map and reduced a bunch of model bias.
 
 Clearly, there's still a bunch to be done - but now we're not going to be shooting in the dark quite
 as much as we would have been without the help of AlphaFold. The next obvious thing to do is start 
-working through the big clusters of distance restraints 
+working through the big clusters of unsatisfied distance restraints. 
 
 
 
