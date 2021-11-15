@@ -1,5 +1,4 @@
 
-from src.ui.ui_base import UI_Panel_Base
 from ..ui.ui_base import UI_Panel_Base
 
 class ProblemAggregatorGUI(UI_Panel_Base):
