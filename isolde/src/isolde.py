@@ -564,6 +564,14 @@ class Isolde():
         # self._update_model_list(None, None, force=True)
         self._prepare_ramachandran_plot()
 
+        ####
+        # Problem aggregator
+        ####
+
+        from .problem_regions.ui import ProblemAggregatorGUI
+        self._problem_aggregator_ui = ProblemAggregatorGUI(self.session, self, 
+            iw.problem_zones, iw._problem_category_grid_layout, iw._problem_region_table, iw._problem_zones_update_button)
+
     def _connect_functions(self):
         '''
         Connect PyQt events from the ISOLDE gui widget to functions.

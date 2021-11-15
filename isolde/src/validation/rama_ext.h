@@ -615,5 +615,19 @@ rama_case(void *rama, size_t n, uint8_t *rcase)
     }
 }
 
+extern "C" EXPORT void
+rama_center(void *rama, size_t n, double *coords)
+{
+    Rama **r = static_cast<Rama **>(rama);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            auto center = (*r++)->center();
+            for (size_t j=0; j<3; ++j)
+                *coords++ = center[j];
+        }
+    } catch(...) {
+        molc_error();
+    }
+}
 
 #endif

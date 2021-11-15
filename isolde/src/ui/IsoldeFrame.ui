@@ -259,8 +259,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>596</width>
-        <height>693</height>
+        <width>590</width>
+        <height>644</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -362,8 +362,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>571</width>
-                  <height>602</height>
+                  <width>566</width>
+                  <height>792</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0,0">
@@ -1279,8 +1279,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>588</width>
-                  <height>558</height>
+                  <width>580</width>
+                  <height>476</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1964,8 +1964,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>571</width>
-                  <height>595</height>
+                  <width>566</width>
+                  <height>635</height>
                  </rect>
                 </property>
                 <property name="sizePolicy">
@@ -3265,8 +3265,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>571</width>
-                  <height>1707</height>
+                  <width>566</width>
+                  <height>1967</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -4320,7 +4320,7 @@ border: 1px;
                  </widget>
                 </item>
                 <item>
-                 <layout class="QGridLayout" name="gridLayout_3"/>
+                 <layout class="QGridLayout" name="_problem_category_grid_layout"/>
                 </item>
                </layout>
               </widget>
@@ -4343,12 +4343,7 @@ border: 1px;
                   </column>
                   <column>
                    <property name="text">
-                    <string>Volume</string>
-                   </property>
-                  </column>
-                  <column>
-                   <property name="text">
-                    <string>Count</string>
+                    <string>Issue Count</string>
                    </property>
                   </column>
                  </widget>
