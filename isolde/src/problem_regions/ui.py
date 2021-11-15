@@ -5,8 +5,11 @@ class ProblemAggregatorGUI(UI_Panel_Base):
 
     def __init__(self, session, isolde, main_frame, category_grid, region_table, update_button):
         super().__init__(session, isolde, main_frame, sim_sensitive=True)
+        from Qt.QtCore import Qt
+        self._data_role = Qt.ItemDataRole.UserRole
         cg = self.category_grid = category_grid
-        self.region_table = region_table
+        rt = self.region_table = region_table
+        rt.itemClicked.connect(self.item_clicked_cb)
         self.update_button = update_button
         update_button.clicked.connect(self.update)
 
@@ -21,12 +24,14 @@ class ProblemAggregatorGUI(UI_Panel_Base):
         self.restraint_checkboxes = []
         for i, name in enumerate(pa.registered_restraint_problem_types):
             cb = QCheckBox(name)
+            cb.setChecked(True)
             self.restraint_checkboxes.append(cb)
             cg.addWidget(cb, i+1, 0)
         
         self.validation_checkboxes = []
         for i, name in enumerate(pa.registered_validation_problem_types):
             cb = QCheckBox(name)
+            cb.setChecked(True)
             self.validation_checkboxes.append(cb)
             cg.addWidget(cb, i+1, 1)
 
@@ -36,7 +41,8 @@ class ProblemAggregatorGUI(UI_Panel_Base):
             self.update()
     
     def item_clicked_cb(self, item):
-        atoms = item.getData()
+        row = item.row()
+        atoms = self.region_table.item(row,0).data(self._data_role)
         if atoms is not None:
             self.session.selection.clear()
             atoms.selected=True
@@ -55,18 +61,20 @@ class ProblemAggregatorGUI(UI_Panel_Base):
         outliers_only = self.outliers_only_checkbox.isChecked()
 
         restraint_types = [cb.text() for cb in self.restraint_checkboxes if cb.isChecked()]
+        print(restraint_types)
         validation_types = [cb.text() for cb in self.validation_checkboxes if cb.isChecked()]
+        print(validation_types)
 
         clusters, noise = pa.problem_zones(m, restraint_types=restraint_types, 
             validation_types=validation_types, validation_outliers_only=outliers_only)
+        print(len(clusters))
 
         t.setRowCount(len(clusters))
-        for i, cluster in clusters:
+        for i, cluster in enumerate(clusters):
             atoms = pa.cluster_atoms(cluster)
             rank = QTableWidgetItem(str(i+1))
-            rank.setData(atoms)
+            rank.setData(self._data_role,atoms)
             issue_count = QTableWidgetItem(str(len(cluster)))
-            issue_count.setData(atoms)
             t.setItem(i,0, rank)
             t.setItem(i,1, issue_count)
 
