@@ -1035,6 +1035,23 @@ class RamaMgr:
         bins = self.bin_scores(scores, cases)
         return residues[bins==self.RamaBin.OUTLIER]
 
+    def non_favored(self, residues):
+        '''
+        Returns a :class:`chimerax.Residues` instance encompassing the
+        subset of input residues that are outside favored Ramachandran space.
+
+        Args:
+            * residues:
+                - a :class:`chimerax.Residues` instance
+        '''
+        from chimerax.atomic import Residue
+        import numpy
+        residues = residues[residues.polymer_types==Residue.PT_AMINO]
+        scores, cases = self.validate(residues)
+        bins = self.bin_scores(scores, cases)
+        return residues[numpy.logical_or(bins==self.RamaBin.OUTLIER, bins==self.RamaBin.ALLOWED)]
+
+
     def cis(self, residues):
         '''
         Returns a :class:`chimerax.Residues` instance encompassing the subset
@@ -1627,6 +1644,25 @@ class RotaMgr:
         scores = numpy.empty(n, float64)
         found = f(self._c_pointer, rotamers._c_pointers, n, pointer(ptrs), pointer(scores))
         return (_rotamers(ptrs[0:found]), scores[0:found])
+
+    def outliers(self, rotamers):
+        '''
+        Returns a 2-tuple containing only the rotamers in outlying
+        conformations, and their current scores.
+
+        Args:
+            * rotamers:
+                - a :class:`Rotamers` instance
+        '''
+        f = c_function('rota_mgr_outliers',
+            args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.POINTER(ctypes.c_double)),
+            ret=ctypes.c_size_t)
+        n = len(rotamers)
+        ptrs = numpy.empty(n, cptr)
+        scores = numpy.empty(n, float64)
+        found = f(self._c_pointer, rotamers._c_pointers, n, pointer(ptrs), pointer(scores))
+        return (_rotamers(ptrs[0:found]), scores[0:found])
+
 
     def validate_scale_and_color_rotamers(self, rotamers, max_scale = 2.0, non_favored_only = True, visible_only = True):
         '''
@@ -4736,6 +4772,16 @@ class Rama(State):
     case = c_property('rama_case', uint8, read_only=True,
             doc = '''A value representing the Ramachandran case for this residue,
                 matching the case definitions in :class:`RamaMgr.RamaCase`. Read only.''')
+    center = c_property('rama_center', float64, value_count=3, read_only=True,
+            doc = 'Returns centroid of the defining phi, psi and omega dihedrals. Read only.')
+
+    @property
+    def atoms(self):
+        '''
+        Returns an unsorted `Atoms` object encompassing all atoms in phi, psi and omega (if present)
+        '''
+        from chimerax.atomic import Atoms, concatenate
+        return concatenate([Atoms(dihedral.atoms) for dihedral in [self.phi_dihedral, self.psi_dihedral, self.omega_dihedral] if dihedral is not None]).unique()
 
     def take_snapshot(self, session, flags):
         data = {
@@ -4848,6 +4894,16 @@ class Rotamer(State):
                 doc='Number of available target conformations. Read only.')
     visible = c_property('rotamer_visible', npy_bool, read_only=True,
                 doc='True if the CA-CB bond of the rotamer is visible. Read only.')
+    center = c_property('rotamer_center', float64, value_count=3, read_only=True,
+            doc = 'Returns mid-point between the CA and CB atoms. Read only.')
+
+    @property
+    def atoms(self):
+        '''
+        Returns an unsorted `Atoms` object containing all atoms making up this residue's chi dihedrals
+        '''
+        from chimerax.atomic import Atoms, concatenate
+        return concatenate([Atoms(dihedral.atoms) for dihedral in self.chi_dihedrals]).unique()
 
     def take_snapshot(self, session, flags):
         data = {

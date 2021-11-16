@@ -12,6 +12,8 @@
 
 #define PYINSTANCE_EXPORT
 
+#include <numeric>
+
 #include "rama.h"
 #include <pyinstance/PythonInstance.instantiate.h>
 
@@ -74,6 +76,19 @@ void Rama::phipsi(double *angles)
     *angles++ = phi_angle();
     *angles   = psi_angle();
 }
+
+Coord Rama::center()
+{
+    std::vector<Coord> coords;
+    if (omega() != nullptr) coords.push_back(omega()->center());
+    if (phi() != nullptr) coords.push_back(phi()->center());
+    if (psi() != nullptr) coords.push_back(psi()->center());
+    if (coords.size()==0)
+        throw std::runtime_error("Residue has no phi, psi or omega dihedrals!");
+    auto sum = std::accumulate(coords.begin(), coords.end(), Coord());
+    return sum * (1.0/(double)coords.size());
+}
+
 bool Rama::is_valid_rama()
 {
     return !(omega()==nullptr || phi()==nullptr || psi()==nullptr);

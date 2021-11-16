@@ -107,6 +107,8 @@ public:
     Residue* residue() const { return _residue; }
     Structure* structure() const { return residue()->structure(); }
     Bond* ca_cb_bond() const { return _chi_dihedrals[0]->axial_bond(); }
+    // Gives the mid-point between the CA and CB atoms
+    Coord center() const;
     bool is_symmetric() const { return _def->symmetric(); }
     bool visible() const { return ca_cb_bond()->shown(); }
 

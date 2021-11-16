@@ -276,6 +276,17 @@ class Ramas(Collection):
     cases = cvec_property('rama_case', uint8, read_only=True,
             doc = '''Values representing the Ramachandran case for these residues,
                 matching the case definitions in :class:`RamaMgr.RamaCase`. Read only.''')
+    centers = cvec_property('rama_center', float64, value_count=3, read_only=True,
+            doc = 'Returns the centroid of the defining phi, psi and omega dihedrals for each residue. Read only.')
+
+    @property
+    def atoms(self):
+        '''
+        Returns an unsorted `Atoms` object encompassing all atoms in phi, psi and omega (if present).
+        '''
+        from chimerax.atomic import Atoms, concatenate
+        return concatenate([concatenate(dihedrals.atoms) for dihedrals in [self.phi_dihedrals, self.psi_dihedrals, self.omega_dihedrals]]).unique()
+
 
     def take_snapshot(self, session, flags):
         data = {
@@ -302,6 +313,18 @@ class Rotamers(Collection):
                 doc='The "stem" :py:class:`chimerax.Bond` of this rotamer. Read only.')
     visibles = cvec_property('rotamer_visible', npy_bool, read_only=True,
                 doc='True for each rotamer whose CA-CB bond is visible')
+    centers = cvec_property('rotamer_center', float64, value_count=3, read_only=True,
+            doc = 'Returns mid-point between the CA and CB atoms for each rotamer. Read only.')
+
+    @property
+    def atoms(self):
+        '''
+        Returns an unsorted `Atoms` object encompassing all atoms in chi dihedrals. Read only.
+        '''
+        from chimerax.atomic import concatenate, Atoms
+        dihedrals = concatenate([r.chi_dihedrals for r in self])
+        return concatenate([Atoms(d.atoms) for d in dihedrals]).unique()
+
 
     def take_snapshot(self, session, flags):
         data = {
@@ -361,6 +384,8 @@ class PositionRestraints(Collection):
         simulation. Restraints tha are not part of a simulation have indices of
         -1. Can be set, but only if you know what you are doing.
         ''')
+    
+        
 
     def take_snapshot(self, session, flags):
         prms = [r.mgr for r in self]

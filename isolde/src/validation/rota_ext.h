@@ -336,6 +336,32 @@ rota_mgr_non_favored(void *mgr, void *rotamer, size_t n, pyobject_t *bad, double
     }
 }
 
+extern "C" EXPORT size_t
+rota_mgr_outliers(void *mgr, void *rotamer, size_t n, pyobject_t *bad, double *scores)
+{
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
+    Rotamer **r = static_cast<Rotamer **>(rotamer);
+    size_t found=0;
+    std::vector<double> vscores(n);
+    int32_t bin;
+    int32_t OUTLIER=m->OUTLIER;
+    try {
+        m->validate(r, n, vscores.data());
+        for(size_t i=0; i<n; ++i) {
+            bin = m->bin_score(vscores[i]);
+            if (bin==OUTLIER)
+            {
+                bad[found] = r[i];
+                scores[found++] = vscores[i];
+            }
+        }
+        return found;
+    } catch (...) {
+        molc_error();
+        return 0;
+    }
+}
+
 
  /*************************************************************
   *
@@ -531,6 +557,21 @@ rotamer_moving_atoms(void *rotamer, size_t chi_index)
     } catch(...) {
         molc_error();
         return 0;
+    }
+}
+
+extern "C" EXPORT void
+rotamer_center(void *rotamer, size_t n, double *coords)
+{
+    Rotamer **r = static_cast<Rotamer **>(rotamer);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            auto center = (*r++)->center();
+            for (size_t j=0; j<3; ++j)
+                *coords++ = center[j];
+        }
+    } catch(...) {
+        molc_error();
     }
 }
 

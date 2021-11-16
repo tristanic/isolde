@@ -315,7 +315,7 @@ border: 1px;
 }</string>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>4</number>
            </property>
            <property name="elideMode">
             <enum>Qt::ElideNone</enum>
@@ -361,7 +361,7 @@ border: 1px;
                 <property name="geometry">
                  <rect>
                   <x>0</x>
-                  <y>-369</y>
+                  <y>0</y>
                   <width>566</width>
                   <height>792</height>
                  </rect>
@@ -1279,8 +1279,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>439</width>
-                  <height>45</height>
+                  <width>580</width>
+                  <height>476</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1964,7 +1964,7 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>529</width>
+                  <width>566</width>
                   <height>635</height>
                  </rect>
                 </property>
@@ -3265,8 +3265,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>464</width>
-                  <height>2012</height>
+                  <width>566</width>
+                  <height>1967</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -3301,13 +3301,13 @@ border: 1px;
                      <number>3</number>
                     </property>
                     <property name="topMargin">
-                     <number>3</number>
+                     <number>0</number>
                     </property>
                     <property name="rightMargin">
                      <number>3</number>
                     </property>
                     <property name="bottomMargin">
-                     <number>3</number>
+                     <number>0</number>
                     </property>
                     <item>
                      <widget class="QLabel" name="label_22">
@@ -3554,13 +3554,13 @@ border: 1px;
                      <number>3</number>
                     </property>
                     <property name="topMargin">
-                     <number>3</number>
+                     <number>0</number>
                     </property>
                     <property name="rightMargin">
                      <number>3</number>
                     </property>
                     <property name="bottomMargin">
-                     <number>3</number>
+                     <number>0</number>
                     </property>
                     <item>
                      <widget class="QLabel" name="label_26">
@@ -3726,13 +3726,13 @@ border: 1px;
                      <number>1</number>
                     </property>
                     <property name="topMargin">
-                     <number>1</number>
+                     <number>0</number>
                     </property>
                     <property name="rightMargin">
                      <number>1</number>
                     </property>
                     <property name="bottomMargin">
-                     <number>1</number>
+                     <number>0</number>
                     </property>
                     <item>
                      <widget class="QLabel" name="label_10">
@@ -3858,7 +3858,7 @@ border: 1px;
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_26">
                       <property name="bottomMargin">
-                       <number>20</number>
+                       <number>3</number>
                       </property>
                       <item>
                        <spacer name="horizontalSpacer_20">
@@ -3907,13 +3907,13 @@ border: 1px;
                      <number>1</number>
                     </property>
                     <property name="topMargin">
-                     <number>1</number>
+                     <number>0</number>
                     </property>
                     <property name="rightMargin">
                      <number>1</number>
                     </property>
                     <property name="bottomMargin">
-                     <number>1</number>
+                     <number>0</number>
                     </property>
                     <item>
                      <widget class="QLabel" name="label_11">
@@ -3960,6 +3960,12 @@ border: 1px;
                     <enum>QFrame::Raised</enum>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_10">
+                    <property name="topMargin">
+                     <number>3</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>3</number>
+                    </property>
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_46">
                       <item>
@@ -4224,6 +4230,12 @@ border: 1px;
                        <enum>QFrame::Raised</enum>
                       </property>
                       <layout class="QGridLayout" name="gridLayout_2">
+                       <property name="topMargin">
+                        <number>3</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>3</number>
+                       </property>
                        <item row="0" column="0">
                         <widget class="QLabel" name="label_19">
                          <property name="text">
@@ -4276,6 +4288,91 @@ border: 1px;
                  </item>
                 </layout>
                </widget>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+           <widget class="QWidget" name="problem_zones">
+            <attribute name="title">
+             <string>Problem Zones</string>
+            </attribute>
+            <layout class="QVBoxLayout" name="verticalLayout_29">
+             <item>
+              <widget class="QFrame" name="_problem_zone_problem_types_frame">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>50</height>
+                </size>
+               </property>
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_30">
+                <item>
+                 <widget class="QLabel" name="label_23">
+                  <property name="text">
+                   <string>Problem categories</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <layout class="QGridLayout" name="_problem_category_grid_layout"/>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QFrame" name="frame_17">
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_27">
+                <item>
+                 <widget class="QTableWidget" name="_problem_region_table">
+                  <column>
+                   <property name="text">
+                    <string>Rank</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
+                    <string>Issue Count</string>
+                   </property>
+                  </column>
+                 </widget>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="_problem_zones_bottom_layout">
+                  <item>
+                   <spacer name="horizontalSpacer_38">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="_problem_zones_update_button">
+                    <property name="text">
+                     <string>Update</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
               </widget>
              </item>
             </layout>
@@ -5125,7 +5222,7 @@ background-color: rgb(5, 200, 0);
  </widget>
  <resources>
   <include location="../resources/resources.qrc"/>
-  <include location="../../../../../.designer/resources/resources.qrc"/>
+  <include location="../resources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

@@ -79,6 +79,12 @@ void Rotamer::angles(double *a) const
 
 }
 
+Coord Rotamer::center() const
+{
+    auto bond = ca_cb_bond();
+    return (bond->atoms()[0]->coord() + bond->atoms()[1]->coord()) * (1.0/2.0);
+}
+
 double Rotamer::score() const
 {
     auto interpolator = _mgr->get_interpolator(_residue->name());

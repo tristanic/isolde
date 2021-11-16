@@ -49,6 +49,8 @@ public:
     //! Provides the omega, phi and psi angles, with std::nan for any that don't exist
     void angles(double *angles);
     void phipsi(double *angles);
+    // Returns a point representing the centroid of the valid phi, psi and omega dihedrals present
+    Coord center();
     double omega_angle();
     double phi_angle();
     double psi_angle();
