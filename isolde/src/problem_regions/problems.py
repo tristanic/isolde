@@ -14,7 +14,22 @@ class ProblemAggregator:
             'Protein sidechains':               self.get_rotamer_problems,
             'Protein backbone':                 self.get_protein_backbone_problems,
         }
-       
+
+    from chimerax.isolde.molobject import (
+        ProperDihedralRestraint, DistanceRestraint,
+        AdaptiveDihedralRestraint, AdaptiveDistanceRestraint,
+        Rotamer, Rama
+    )
+
+    _registered_types = {
+        'Standard torsion restraints': ProperDihedralRestraint,
+        'Standard distance restraints': DistanceRestraint,
+        'Adaptive torsion restraints': AdaptiveDihedralRestraint,
+        'Adaptive distance restraints': AdaptiveDistanceRestraint,
+        'Protein sidechains': Rotamer,
+        'Protein backbone': Rama,
+    }
+
     @property
     def registered_restraint_problem_types(self):
         return list(self._restraint_problem_getters.keys())
@@ -22,6 +37,9 @@ class ProblemAggregator:
     @property
     def registered_validation_problem_types(self):
         return list(self._validation_problem_getters.keys())
+    
+    def registered_type(self, name):
+        return self._registered_types[name]
 
     def register_indicator_type(self, problem_getter):
         '''

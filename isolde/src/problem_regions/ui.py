@@ -3,7 +3,7 @@ from ..ui.ui_base import UI_Panel_Base
 
 class ProblemAggregatorGUI(UI_Panel_Base):
 
-    def __init__(self, session, isolde, main_frame, category_grid, region_table, update_button):
+    def __init__(self, session, isolde, main_frame, category_grid, region_table, bottom_layout, update_button):
         super().__init__(session, isolde, main_frame, sim_sensitive=True)
         from Qt.QtCore import Qt
         self._data_role = Qt.ItemDataRole.UserRole
@@ -15,7 +15,7 @@ class ProblemAggregatorGUI(UI_Panel_Base):
 
         from .problems import ProblemAggregator
         pa = self.problem_aggregator = ProblemAggregator(session)
-        from Qt.QtWidgets import QCheckBox, QLabel
+        from Qt.QtWidgets import QCheckBox, QLabel, QSpinBox, QDoubleSpinBox, QLabel
         cg.addWidget(QLabel("Unsatisfied restraints"),0,0)
         cg.addWidget(QLabel("Validation issues"),0,1)
         ocb = self.outliers_only_checkbox = QCheckBox("Outliers only")
@@ -34,6 +34,21 @@ class ProblemAggregatorGUI(UI_Panel_Base):
             cb.setChecked(True)
             self.validation_checkboxes.append(cb)
             cg.addWidget(cb, i+1, 1)
+
+        csb = self.cutoff_spinbox = QDoubleSpinBox(main_frame)
+        csbl = QLabel("Dist cutoff")
+        csb.setRange(1.0,10.0)
+        csb.setSingleStep(1.0)
+        csb.setValue(4.0)
+        bottom_layout.insertWidget(0, csb)
+        bottom_layout.insertWidget(1, csbl)
+
+        clsb = self.cluster_spinbox = QSpinBox(main_frame)
+        clsbl = QLabel("Min cluster size")
+        clsb.setRange(2, 20)
+        clsb.setValue(5)
+        bottom_layout.insertWidget(2, clsb)
+        bottom_layout.insertWidget(3, clsbl)
 
 
     def sim_end_cb(self, trigger_name, data):
@@ -61,22 +76,26 @@ class ProblemAggregatorGUI(UI_Panel_Base):
         outliers_only = self.outliers_only_checkbox.isChecked()
 
         restraint_types = [cb.text() for cb in self.restraint_checkboxes if cb.isChecked()]
-        print(restraint_types)
         validation_types = [cb.text() for cb in self.validation_checkboxes if cb.isChecked()]
-        print(validation_types)
 
         clusters, noise = pa.problem_zones(m, restraint_types=restraint_types, 
-            validation_types=validation_types, validation_outliers_only=outliers_only)
-        print(len(clusters))
+            validation_types=validation_types, validation_outliers_only=outliers_only,
+            cutoff = self.cutoff_spinbox.value(), min_points=self.cluster_spinbox.value())
 
+        t.clear()
+        t.setColumnCount(1+len(restraint_types)+len(validation_types))
         t.setRowCount(len(clusters))
+        labels = [t.replace(' ','\n') for t in ['Total']+restraint_types+validation_types]
+        t.setHorizontalHeaderLabels(labels)
         for i, cluster in enumerate(clusters):
             atoms = pa.cluster_atoms(cluster)
-            rank = QTableWidgetItem(str(i+1))
-            rank.setData(self._data_role,atoms)
             issue_count = QTableWidgetItem(str(len(cluster)))
-            t.setItem(i,0, rank)
-            t.setItem(i,1, issue_count)
+            issue_count.setData(self._data_role,atoms)
+            t.setItem(i,0, issue_count)
+            for j,it in enumerate(restraint_types+validation_types):
+                vtype = pa.registered_type(it)
+                vcount = len([v for v in cluster if isinstance(v, vtype)])
+                t.setItem(i,j+1,QTableWidgetItem(str(vcount)))
 
             
 

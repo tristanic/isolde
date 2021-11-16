@@ -570,7 +570,7 @@ class Isolde():
 
         from .problem_regions.ui import ProblemAggregatorGUI
         self._problem_aggregator_ui = ProblemAggregatorGUI(self.session, self, 
-            iw.problem_zones, iw._problem_category_grid_layout, iw._problem_region_table, iw._problem_zones_update_button)
+            iw.problem_zones, iw._problem_category_grid_layout, iw._problem_region_table, iw._problem_zones_bottom_layout, iw._problem_zones_update_button)
 
     def _connect_functions(self):
         '''

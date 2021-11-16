@@ -4349,7 +4349,7 @@ border: 1px;
                  </widget>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_51">
+                 <layout class="QHBoxLayout" name="_problem_zones_bottom_layout">
                   <item>
                    <spacer name="horizontalSpacer_38">
                     <property name="orientation">
