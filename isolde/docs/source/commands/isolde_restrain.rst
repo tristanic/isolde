@@ -212,6 +212,7 @@ Syntax: isolde restrain torsions *residues*
 [**angleRange** *number* (60.0)] [**alpha** *number* (0.2)]
 [**springConstant** *number* (250.0)]
 [**identicalSidechainsOnly** *true/false* (true)]
+[**adjustForConfidence** *true/false* (true)]
 
 Analogous to :ref:`isolde_restrain_distances_cmd`, this command restrains
 dihedral angles **(currently protein only)** to match either their current
@@ -264,6 +265,17 @@ The mathematical form of the energy function is:
 * *identicalSidechainsOnly*: only applicable if *templateResidues* is supplied
   and *sidechains* is true. If true, only sidechains of residues with the same
   identity in model and template will be restrained.
+* *adjustForConfidence*: **(only use if the template is an AlphaFold model or 
+  similar with pLDDT values in the B-factor column)** Uses the per-residue 
+  confidence values to adjust the *angleRange*, *springConstant* and 
+  *alpha* values for each restraint. If *angleRange* and *alpha* are left
+  blank, their default values are adjusted to 150 and 0.5 respectively; 
+  otherwise the user-supplied values become the limiting values applied 
+  to residues with pLDDT=100. With default arguments the resulting restraint 
+  profile distribution looks like the following. Residues where the template 
+  pLDDT is less than 50 will not be restrained.
+
+.. figure:: images/torsion_restraint_plddt_adjustments.png
 
 isolde adjust torsions
 ======================
