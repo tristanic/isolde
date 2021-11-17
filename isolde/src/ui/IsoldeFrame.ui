@@ -315,7 +315,7 @@ border: 1px;
 }</string>
            </property>
            <property name="currentIndex">
-            <number>4</number>
+            <number>0</number>
            </property>
            <property name="elideMode">
             <enum>Qt::ElideNone</enum>
@@ -1279,8 +1279,8 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>580</width>
-                  <height>476</height>
+                  <width>439</width>
+                  <height>45</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1964,7 +1964,7 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>566</width>
+                  <width>529</width>
                   <height>635</height>
                  </rect>
                 </property>
@@ -3265,7 +3265,7 @@ border: 1px;
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>566</width>
+                  <width>464</width>
                   <height>1967</height>
                  </rect>
                 </property>
