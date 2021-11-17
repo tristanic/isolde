@@ -64,6 +64,10 @@ class _MyAPI(BundleAPI):
         register_ignored_residues_attr(session)
         register_domain_cluster_attr(session)
         register_model_isolde_init_attr(session)
+        from . import settings
+        settings.basic_settings = settings._IsoldeBasicSettings(session, 'isolde')
+        settings.color_settings = settings._IsoldeColorSettings(session, 'isolde')
+        settings.advanced_settings = settings._IsoldeAdvancedSettings(session, 'isolde')
 
     @staticmethod
     def get_class(class_name):

@@ -5,8 +5,8 @@ from .restraints.constants import restraint_color_defaults
 class _IsoldeBasicSettings(Settings):
     AUTO_SAVE = {
         'num_selection_padding_residues':   defaults.SELECTION_SEQUENCE_PADDING,
-        'soft_shell_cutoff_distance':       defaults.SOFT_SHELL_CUTOFF_DISTANCE,
-        'hard_shell_cutoff_distance':       defaults.HARD_SHELL_CUTOFF_DISTANCE,
+        'soft_shell_cutoff_distance':       defaults.SOFT_SHELL_CUTOFF,
+        'hard_shell_cutoff_distance':       defaults.HARD_SHELL_CUTOFF,
         'fixed_bond_radius_ratio':          defaults.FIXED_BOND_RADIUS_RATIO,
         'hide_surroundings_during_sim':     defaults.HIDE_SURROUNDINGS_DURING_SIM,
         #'remask_maps_during_sim':           defaults.REMASK_MAPS_DURING_SIM,
@@ -17,6 +17,8 @@ class _IsoldeBasicSettings(Settings):
         'sim_fidelity_mode':                defaults.SIM_FIDELITY_MODE,
         'trajectory_smoothing':             defaults.TRAJECTORY_SMOOTHING,
         'smoothing_alpha':                  defaults.SMOOTHING_ALPHA,
+
+        'phenix_base_path':                 None,
     }
 
 class _IsoldeColorSettings(Settings):
@@ -63,3 +65,7 @@ def register_settings_options(session):
     from chimerax.ui.options import (
         ColorOption, BooleanOption, IntOption, FloatOption,
     )
+
+basic_settings = None # set during bundle initialisation
+color_settings = None # set during bundle initialisation
+advanced_settings = None # set during bundle initialisation

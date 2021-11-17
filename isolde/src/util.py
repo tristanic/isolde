@@ -117,3 +117,28 @@ def compiled_lib_extension():
     elif pname == "Darwin":
         return "dylib"
     return "so"
+
+class SafeTempDir:
+    '''
+    Create and change to a temporary directory. When called with
+
+    with SafeTempDir():
+        do_something()
+
+    ... it is guaranteed to change back to the original working directory and
+    delete the temporary directory.
+    '''
+    def __init__(self):
+        import os
+        self.cwd = os.path.abspath(os.curdir)
+
+    def __enter__(self):
+        import tempfile, os
+        td = self._temp_dir = tempfile.mkdtemp()
+        os.chdir(td)
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        import os
+        os.chdir(self.cwd)
+        import shutil
+        shutil.rmtree(self._temp_dir)
