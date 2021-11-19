@@ -107,7 +107,7 @@ def _find_mol2_frcmod_pairs(input_dir, blacklist=set(), search_subdirs=True):
 
     return file_dict
 
-def amber_to_ffxml(frcmod_file, mol2_file):
+def amber_to_ffxml(frcmod_file, mol2_file, output_name=None):
     import os
     import parmed as pmd
     mol2 = pmd.load_file(mol2_file)
@@ -115,8 +115,9 @@ def amber_to_ffxml(frcmod_file, mol2_file):
         pmd.amber.AmberParameterSet(frcmod_file)
     )
     ff.residues[mol2.name] = mol2
-    out_name = os.path.splitext(os.path.basename(mol2_file))[0]+'.xml'
-    ff.write(out_name)
+    if output_name is None:
+        output_name = os.path.splitext(os.path.basename(mol2_file))[0]+'.xml'
+    ff.write(output_name)
 
 
 

@@ -420,3 +420,5 @@ def register_isolde(logger):
     register_phenix_commands(logger)
     from chimerax.isolde.output.refinement.ccp4 import register_ccp4_commands
     register_ccp4_commands(logger)
+    from chimerax.isolde.openmm.amberff.parameterise import register_isolde_param
+    register_isolde_param(logger)
