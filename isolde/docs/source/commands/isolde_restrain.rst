@@ -18,10 +18,12 @@ Syntax: isolde restrain distances *atoms* [**templateAtoms** *atoms*]
 [**perChain** *true/false* (true)]
 [**distanceCutoff** *number* (8.0)]
 [**alignmentCutoff** *number* (5.0)]
-[**wellHalfWidth** *number* (0.05)]
-[**kappa** *number* (5.0)]
+[**wellHalfWidth** *number* (0.1)]
+[**kappa** *number* (10.0)]
 [**tolerance** *number* (0.025)]
-[**fallOff** *number* (4.0)]
+[**fallOff** *number* (2.0)]
+[**useCoordinateAlignment** *true/false* (true)]
+[**adjustForConfidence** *true/false* (false)]
 
 Creates a "web" of adaptive distance restraints between nearby atoms,
 restraining them either to their current geometry or to that of a template.
@@ -52,8 +54,8 @@ The algorithm ISOLDE uses to determine which atoms to restrain is as follows:
    list of other (non-hydrogen) atom names with the customAtomNames argument,
    but this should rarely be necessary.
 
-If *templateAtoms* is provided, steps 2-6 are performed. Otherwise,
-step 5 is performed using the model as its own template. In this case, if
+If *templateAtoms* is provided and *useCoordinateAlignment* is True, steps 2-6 are performed. Otherwise,
+steps 4-6 are omitted. If the model is used as its own reference and 
 *perChain* is true, only the **intra** chain distances will be restrained, with
 no restraints between chains.
 
@@ -97,6 +99,17 @@ where
 ... leading to energy potentials that look like this:
 
 .. figure:: images/adaptive_energy_function.png
+
+If *adjustForConfidence* is True, the template is expected to be a predicted 
+model fetched from the AlphaFold database (e.g. using the *alphafold match* command).
+In this case the associated predicted aligned error (PAE) matrix will be 
+fetched from the database, and used to adjust the parameters for each 
+individual distance restraint. Atom pairs with a mutual PAE greater than 4 
+Angstroms will not be restrained. The adjustment scheme looks like this:
+
+.. figure:: images/distance_restraint_pae_adjustments.png
+
+
 
 To interpret this, keep in mind that the force applied to a given atom is
 proportional to the *derivative* (that is, the slope) of the energy with
@@ -144,7 +157,8 @@ and the tolerance becomes (*maxDist*-*minDist*)/2.
 isolde release distances
 ========================
 
-Syntax: isolde release distances *atoms* [**internalOnly** *true/false* (false)]
+Syntax: isolde release distances *atoms* [**to** *atoms*]
+[**internalOnly** *true/false* (false)]
 [**externalOnly** *true/false* (false)] [**longerThan** *number*]
 [**strainedOnly** *true/false* (false)] [**stretchLimit** *number* (1.2)]
 [**compressionLimit** *number* (0.8)]
@@ -158,6 +172,9 @@ simply release all restraints involving any of the specified atoms (including
 restraints to atoms outside the selection). The remaining arguments allow fine-
 tuning of the selection to release:
 
+* *to* (**incompatible with internalOnly and externalOnly**): if provided, 
+  only those restraints between the *to* selection and the main selection 
+  will be released.
 * *internalOnly* (**incompatible with externalOnly**): if true, only those
   restraints for which both atoms are within the selection will be
   released.
@@ -180,7 +197,7 @@ isolde adjust distances
 Syntax: isolde adjust distances *atoms* [**internalOnly** *true/false* (false)]
 [**externalOnly** *true/false* (false)] [**kappa** *number*]
 [**wellHalfWidth** *number*] [**tolerance** *number*] [**fallOff** *number*]
-[**displayThreshold** *number*]
+[**displayThreshold** *number*] 
 
 Adjust the strength and/or display properties of a set of adaptive distance
 restraints.
