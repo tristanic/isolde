@@ -35,24 +35,25 @@ def parameterise_ligand(session, residue, net_charge=None, charge_method='am1-bc
 
 def parameterise_cmd(session, residues, override=False, net_charge=None):
     from chimerax.core.errors import UserError
-    unique_residue_names = residues.names.unique()
-    unique_residue_types = [residues[residues.names==name][0] for name in unique_residue_names]
-    for residue in residues:
+    unique_residue_types = [residues[residues.names==name][0] for name in residues.unique_names]
+    for residue in unique_residue_types:
         if hasattr(session, 'isolde'):
             ff_name = session.isolde.sim_params.forcefield
             forcefield = session.isolde.forcefield_mgr[ff_name]
             ligand_db = session.isolde.forcefield_mgr.ligand_db(ff_name)
             from chimerax.isolde.openmm.openmm_interface import find_residue_templates
             from chimerax.atomic import Residues
-            templates = find_residue_templates(Residues[residue], ligand_db=ligand_db)
+            templates = find_residue_templates(Residues([residue]), forcefield, ligand_db=ligand_db)
             if len(templates):
-                if not override_existing:
+                if not override:
                     raise UserError(f'Residue name {residue.name} already corresponds to template {templates[0]} in '
                         f'the {ff_name} forcefield. If you wish to replace that template, re-run this '
                         'command with override=True')
         parameterise_ligand(session, residue, net_charge=net_charge)
         session.logger.info(f'OpenMM ffXML file {residue.name} written to the current working directory.')
         if hasattr(session, 'isolde'):
+            if len(templates):
+                forcefield._templates.pop(templates[0])
             forcefield.loadFile(f'{residue.name}.xml', resname_prefix='USER_')
             session.logger.info(f'New template added to forcefield as USER_{residue.name}. This ligand should '
                 'now work in all remaining simulations for this session. To use in '
@@ -60,7 +61,7 @@ def parameterise_cmd(session, residues, override=False, net_charge=None):
 
 def register_isolde_param(logger):
     from chimerax.atomic import ResiduesArg
-    from chimerax.core.commands import CmdDesc,BoolArg,IntArg
+    from chimerax.core.commands import CmdDesc, BoolArg, IntArg, register 
     desc = CmdDesc(
         required=[('residues', ResiduesArg)],
         keyword=[
