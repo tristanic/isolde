@@ -43,7 +43,7 @@ def parameterise_cmd(session, residues, override=False, net_charge=None):
             ligand_db = session.isolde.forcefield_mgr.ligand_db(ff_name)
             from chimerax.isolde.openmm.openmm_interface import find_residue_templates
             from chimerax.atomic import Residues
-            templates = find_residue_templates(Residues([residue]), forcefield, ligand_db=ligand_db)
+            templates = find_residue_templates(Residues([residue]), forcefield, ligand_db=ligand_db, logger=session.logger)
             if len(templates):
                 if not override:
                     raise UserError(f'Residue name {residue.name} already corresponds to template {templates[0]} in '
