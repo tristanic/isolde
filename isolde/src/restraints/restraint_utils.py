@@ -573,6 +573,8 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                     pae_matrix = fetch_alphafold_pae(session, uniprot_id)
                 except:
                     raise UserError(f'Failed to fetch the PAE matrix for template model #{tm.id_string}!')
+            # Symmetrify the PAE matrix by taking the lowest value for each (i,j) pair
+            pae_matrix = numpy.minimum(pae_matrix, pae_matrix.T)
         elif confidence_type=='plddt':
             confidence_multiplier = plddt_multiplier(template_us.atoms)
 

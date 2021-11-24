@@ -3,6 +3,9 @@ MIN_CLUSTER_SIZE=10
 def cluster_into_domains(session, model, pae_matrix, pae_power=1, pae_cutoff=5, bonded_weight=0, adjust_weights_for_distance=False, distance_power=1, graph_resolution=1, color_by_cluster=True):
     import networkx as nx
     import numpy
+    # PAE matrix is not strictly symmetric - prediction for error in residue i when aligned on residue j may be different from 
+    # error in j when aligned on i. Take the smallest error estimate for each pair.
+    pae_matrix = numpy.minimum(pae_matrix, pae_matrix.T)
     weights = 1/pae_matrix**pae_power
     if adjust_weights_for_distance:
         distances = distance_matrix(model, num_residues = pae_matrix.shape[0])
@@ -18,6 +21,8 @@ def cluster_into_domains(session, model, pae_matrix, pae_power=1, pae_cutoff=5, 
     size = weights.shape[0]
     g.add_nodes_from(range(size))
     edges = numpy.argwhere(pae_matrix < pae_cutoff)
+    # Limit to bottom triangle of matrix
+    edges = edges[edges[:,0]<edges[:,1]]
     sel_weights = weights[edges.T[0], edges.T[1]]
     wedges = [(i,j,w) for (i,j),w in zip(edges,sel_weights)]
     g.add_weighted_edges_from(wedges)
@@ -50,9 +55,12 @@ def cluster_into_domains_igraph(session, model, pae_matrix, pae_power=1, pae_cut
         import igraph
     except ImportError:
         from chimerax.core.errors import UserError
-        raise UserError('This method requires the python-igraph library. You can install it at the command line with:\n'
-            'ChimeraX -m pip install --user python-igraph')
+        raise UserError('This method requires the igraph library. You can install it at the command line with:\n'
+            'ChimeraX -m pip install --user igraph')
     import numpy
+    # PAE matrix is not strictly symmetric - prediction for error in residue i when aligned on residue j may be different from 
+    # error in j when aligned on i. Take the smallest error estimate for each pair.
+    pae_matrix = numpy.minimum(pae_matrix, pae_matrix.T)
     weights = 1/pae_matrix**pae_power
     if adjust_weights_for_distance:
         distances = distance_matrix(model, num_residues = pae_matrix.shape[0])
@@ -68,6 +76,8 @@ def cluster_into_domains_igraph(session, model, pae_matrix, pae_power=1, pae_cut
     size = weights.shape[0]
     g.add_vertices(range(size))
     edges = numpy.argwhere(pae_matrix < pae_cutoff)
+    # Limit to bottom triangle of matrix
+    edges = edges[edges[:,0]<edges[:,1]]
     sel_weights = weights[edges.T[0], edges.T[1]]
     g.add_edges(edges)
     g.es['weight']=sel_weights
